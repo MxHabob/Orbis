@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// Lives in the unified `orbis.db` (no separate registry or year databases).
 ///
-/// Lifecycle: planning → active → closing → archived
+/// Lifeperiod: planning → active → closing → archived
 /// Lock: `is_locked` is independent from `status` — allows temporary
 ///       read-only mode during an active year (e.g., grade review).
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize, utoipa::ToSchema)]
@@ -22,7 +22,7 @@ pub struct Model {
     pub hijri_start: Option<String>,
     pub hijri_end: Option<String>,
 
-    /// Lifecycle status: planning, active, closing, archived
+    /// Lifeperiod status: planning, active, closing, archived
     pub status: String,
 
     /// Operational lock — independent from status.

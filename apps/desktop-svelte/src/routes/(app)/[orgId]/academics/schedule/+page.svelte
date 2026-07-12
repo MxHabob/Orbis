@@ -56,9 +56,9 @@ function toStore<T>(getter: () => T) {
 }
 
 // Reactive Queries using toStore for Svelte 5 runes responsiveness
-const cyclesQuery = createQuery(toStore(() => ({
-  queryKey: ["cycles", data.orgId],
-  queryFn: () => commands.academic.listCycles(data.orgId),
+const periodsQuery = createQuery(toStore(() => ({
+  queryKey: ["periods", data.orgId],
+  queryFn: () => commands.academic.listPeriods(data.orgId),
   enabled: !!data.orgId,
   staleTime: 10 * 60 * 1000,
 })));
@@ -84,7 +84,7 @@ const usersQuery = createQuery(toStore(() => ({
   staleTime: 5 * 60 * 1000,
 })));
 
-const cycles = $derived($cyclesQuery.data ?? []);
+const periods = $derived($periodsQuery.data ?? []);
 const classes = $derived($classesQuery.data ?? []);
 const subjects = $derived($subjectsQuery.data ?? []);
 const users = $derived($usersQuery.data ?? []);
@@ -99,12 +99,12 @@ const teachers = $derived(
   )
 );
 
-// Track cycles and activeYearId selection
+// Track periods and activeYearId selection
 $effect(() => {
-  if (cycles.length > 0 && !activeYearId) {
+  if (periods.length > 0 && !activeYearId) {
     const active =
-      cycles.find((c: any) => c.is_current === 1 || c.is_current === true) ||
-      cycles[0];
+      periods.find((c: any) => c.is_current === 1 || c.is_current === true) ||
+      periods[0];
     if (active) {
       activeYearId = String(active.id);
     }
@@ -184,7 +184,7 @@ const isLessonsLoading = $derived(
 );
 
 const isLoading = $derived(
-  $cyclesQuery.isLoading ||
+  $periodsQuery.isLoading ||
     $classesQuery.isLoading ||
     $subjectsQuery.isLoading ||
     $usersQuery.isLoading ||
@@ -193,7 +193,7 @@ const isLoading = $derived(
 );
 
 const error = $derived(
-  $cyclesQuery.error ||
+  $periodsQuery.error ||
     $classesQuery.error ||
     $subjectsQuery.error ||
     $usersQuery.error ||

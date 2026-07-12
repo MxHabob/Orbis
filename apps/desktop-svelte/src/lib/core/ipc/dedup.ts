@@ -2,7 +2,7 @@
  * IPC Request Deduplication.
  *
  * When multiple components request the same data simultaneously
- * (e.g., TitleBar + SearchModal both calling getCycles), this ensures
+ * (e.g., TitleBar + SearchModal both calling getPeriods), this ensures
  * only ONE IPC call is made and the result is shared.
  *
  * @example

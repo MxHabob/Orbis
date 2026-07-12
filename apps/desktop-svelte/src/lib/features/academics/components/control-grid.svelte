@@ -34,7 +34,7 @@ interface Props {
   isSaving: boolean;
   isDirty: boolean;
   canEnterGrades: boolean;
-  selectedCycleId: string;
+  selectedPeriodId: string;
   onRefresh: () => void;
   onSaveAll: () => void;
   onCellEdit: (e: any) => void;
@@ -52,7 +52,7 @@ let {
   isSaving,
   isDirty,
   canEnterGrades,
-  selectedCycleId,
+  selectedPeriodId,
   onRefresh,
   onSaveAll,
   onCellEdit,
@@ -102,7 +102,7 @@ let {
   <div class="flex items-center gap-3 flex-wrap">
     <!-- Class Selector -->
     <Select type="single" value={selectedClassId} onValueChange={(v) => { if (v) selectedClassId = v; }}>
-      <SelectTrigger class="min-w-[180px] text-xs h-9" disabled={!selectedCycleId}>
+      <SelectTrigger class="min-w-[180px] text-xs h-9" disabled={!selectedPeriodId}>
         <div class="flex items-center gap-2">
           <GraduationCap size={12} class="text-muted-foreground shrink-0" />
           <span class="truncate">{classes.find((c) => String(c.id) === selectedClassId)?.name_ar || classes.find((c) => String(c.id) === selectedClassId)?.name || m.control_select_class()}</span>
@@ -153,7 +153,7 @@ let {
         oncelledit={onCellEdit}
       />
     </div>
-  {:else if selectedCycleId && selectedClassId && selectedSubjectId && !isMatrixLoading}
+  {:else if selectedPeriodId && selectedClassId && selectedSubjectId && !isMatrixLoading}
     <div class="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
       <Info size={32} class="opacity-40" />
       <p class="text-xs">{m.control_no_data()}</p>

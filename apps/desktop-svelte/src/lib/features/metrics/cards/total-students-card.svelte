@@ -30,7 +30,7 @@ async function loadData() {
   try {
     const params: any = {};
     if (selectedClass !== "all") params.class_id = selectedClass;
-    if (selectedTerm !== "all") params.cycle_id = selectedTerm;
+    if (selectedTerm !== "all") params.period_id = selectedTerm;
 
     const enrollments = await commands.academic.listEnrollments(orgId, params);
     

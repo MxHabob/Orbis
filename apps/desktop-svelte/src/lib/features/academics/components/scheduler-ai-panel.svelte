@@ -27,7 +27,7 @@ import * as m from "$lib/paraglide/messages";
 
 let {
   orgId,
-  cycleId,
+  periodId,
   selectedClassId,
   selectedTeacherId,
   viewMode,
@@ -37,7 +37,7 @@ let {
   onApply,
 }: {
   orgId: string;
-  cycleId: string;
+  periodId: string;
   selectedClassId: string;
   selectedTeacherId: string;
   viewMode: "class" | "teacher";
@@ -70,9 +70,9 @@ let pollingInterval = $state<any>(null);
 let timeElapsed = $state(0);
 let elapsedTimer = $state<any>(null);
 
-// Reactively reload class subjects when cycle or class changes
+// Reactively reload class subjects when period or class changes
 $effect(() => {
-  if (selectedClassId && cycleId) {
+  if (selectedClassId && periodId) {
     loadClassSubjects();
     loadSolveJobs();
   }
@@ -86,11 +86,11 @@ $effect(() => {
 });
 
 async function loadClassSubjects() {
-  if (!selectedClassId || !cycleId) return;
+  if (!selectedClassId || !periodId) return;
   try {
     const list = await commands.academic.listClassSubjects(
       selectedClassId,
-      cycleId,
+      periodId,
     );
     classSubjects = list;
   } catch (e) {
@@ -127,9 +127,9 @@ async function adjustSubjectHours(csId: string, delta: number) {
 }
 
 async function loadSolveJobs() {
-  if (!cycleId) return;
+  if (!periodId) return;
   try {
-    const list = await commands.scheduling.listSolveJobs(orgId, cycleId);
+    const list = await commands.scheduling.listSolveJobs(orgId, periodId);
     solveJobs = list;
 
     // Auto-resume polling if any job is running in background
@@ -147,7 +147,7 @@ async function loadSolveJobs() {
 }
 
 async function triggerSolving() {
-  if (!cycleId) return;
+  if (!periodId) return;
   isSolving = true;
   solveError = null;
   activeJob = null;
@@ -156,7 +156,7 @@ async function triggerSolving() {
   try {
     const userId = authStore.userId || "desktop_user";
     const req = {
-      cycle_id: cycleId,
+      period_id: periodId,
       mode: solverMode,
     };
     const job = await commands.scheduling.startSolve(orgId, userId, req);

@@ -18,7 +18,7 @@ import * as m from "$lib/paraglide/messages";
 let {
   open = $bindable(false),
   orgId,
-  cycleId,
+  periodId,
   classId,
   dayOfWeek,
   timeSlotId,
@@ -28,7 +28,7 @@ let {
 }: {
   open: boolean;
   orgId: string;
-  cycleId: string;
+  periodId: string;
   classId: string;
   dayOfWeek: number;
   timeSlotId: string;
@@ -50,7 +50,7 @@ const weekdays = $derived([
 	<SheetContent class="flex flex-col h-full sm:max-w-md overflow-hidden p-0 gap-0">
 		<LessonForm 
 			{orgId} 
-			{cycleId} 
+			{periodId} 
 			{classId} 
 			{dayOfWeek} 
 			{timeSlotId} 

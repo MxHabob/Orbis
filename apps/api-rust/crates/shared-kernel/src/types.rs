@@ -66,8 +66,8 @@ define_id!(
 );
 
 define_id!(
-    /// Academic cycle identifier.
-    CycleId
+    /// Academic period identifier.
+    PeriodId
 );
 
 define_id!(

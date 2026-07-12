@@ -1,6 +1,6 @@
 //! Academic period operations — CRUD + lock/unlock + enrollment/grade entry windows.
 //!
-//! Replaces the old `cycle.rs` that operated on `academic_cycles`.
+//! Replaces the old `period.rs` that operated on `academic_periods`.
 //! All operations now work on `academic_periods` with explicit year scoping via ctx.year_id.
 
 use chrono::Utc;
@@ -15,7 +15,7 @@ use crate::entities::academic_period;
 
 /// List all periods for the current year.
 pub async fn list(ctx: &ServiceContext) -> Result<Vec<academic_period::Model>, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::CycleRead).await?;
+    ctx.permissions.check(&ctx.actor, Permission::PeriodRead).await?;
     Ok(academic_period::Entity::find()
         .filter(academic_period::Column::OrgId.eq(&ctx.org_id))
         .filter(academic_period::Column::YearId.eq(&ctx.year_id))
@@ -25,7 +25,7 @@ pub async fn list(ctx: &ServiceContext) -> Result<Vec<academic_period::Model>, A
 
 /// List periods for a specific year (cross-year queries).
 pub async fn list_by_year(ctx: &ServiceContext, year_id: &str) -> Result<Vec<academic_period::Model>, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::CycleRead).await?;
+    ctx.permissions.check(&ctx.actor, Permission::PeriodRead).await?;
     Ok(academic_period::Entity::find()
         .filter(academic_period::Column::OrgId.eq(&ctx.org_id))
         .filter(academic_period::Column::YearId.eq(year_id))
@@ -35,10 +35,22 @@ pub async fn list_by_year(ctx: &ServiceContext, year_id: &str) -> Result<Vec<aca
 
 /// Get a single period by ID.
 pub async fn get(ctx: &ServiceContext, period_id: &str) -> Result<academic_period::Model, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::CycleRead).await?;
+    ctx.permissions.check(&ctx.actor, Permission::PeriodRead).await?;
     academic_period::Entity::find_by_id(period_id.to_string())
         .one(&ctx.db).await?
         .ok_or_else(|| AppError::not_found("academic_period", period_id))
+}
+
+/// Get the current (active) period for the current year.
+pub async fn get_current(ctx: &ServiceContext) -> Result<academic_period::Model, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::PeriodRead).await?;
+    
+    academic_period::Entity::find()
+        .filter(academic_period::Column::OrgId.eq(&ctx.org_id))
+        .filter(academic_period::Column::YearId.eq(&ctx.year_id))
+        .order_by_asc(academic_period::Column::SortOrder)
+        .one(&ctx.db).await?
+        .ok_or_else(|| AppError::not_found("academic_period", "current"))
 }
 
 #[derive(serde::Deserialize)]
@@ -67,7 +79,7 @@ pub async fn create(
     ctx: &ServiceContext,
     data: serde_json::Value,
 ) -> Result<academic_period::Model, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::CycleWrite).await?;
+    ctx.permissions.check(&ctx.actor, Permission::PeriodWrite).await?;
 
     let req: CreatePeriodPayload = serde_json::from_value(data)
         .map_err(|e| AppError::validation(format!("Invalid create period payload: {e}")))?;
@@ -123,7 +135,7 @@ pub async fn create(
 }
 
 pub async fn lock(ctx: &ServiceContext, period_id: &str) -> Result<academic_period::Model, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::CycleLock).await?;
+    ctx.permissions.check(&ctx.actor, Permission::PeriodLock).await?;
 
     let existing = get(ctx, period_id).await?;
     let mut active = existing.into_active_model();
@@ -136,7 +148,7 @@ pub async fn lock(ctx: &ServiceContext, period_id: &str) -> Result<academic_peri
 }
 
 pub async fn unlock(ctx: &ServiceContext, period_id: &str) -> Result<academic_period::Model, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::CycleLock).await?;
+    ctx.permissions.check(&ctx.actor, Permission::PeriodLock).await?;
 
     let existing = get(ctx, period_id).await?;
     let mut active = existing.into_active_model();
@@ -153,7 +165,7 @@ pub async fn toggle_enrollment(
     period_id: &str,
     open: bool,
 ) -> Result<academic_period::Model, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::CycleWrite).await?;
+    ctx.permissions.check(&ctx.actor, Permission::PeriodWrite).await?;
 
     let existing = get(ctx, period_id).await?;
     let mut active = existing.into_active_model();
@@ -168,7 +180,7 @@ pub async fn toggle_grade_entry(
     period_id: &str,
     open: bool,
 ) -> Result<academic_period::Model, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::CycleWrite).await?;
+    ctx.permissions.check(&ctx.actor, Permission::PeriodWrite).await?;
 
     let existing = get(ctx, period_id).await?;
     let mut active = existing.into_active_model();

@@ -15,7 +15,7 @@ use svc_scheduling::entities::room;
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct CreateExamSessionRequest {
-    pub cycle_id: String,
+    pub period_id: String,
     pub name: String,
     pub name_ar: Option<String>,
     pub code: Option<String>,
@@ -117,10 +117,10 @@ impl ExamSessionService {
     pub async fn get_exam_sessions(
         &self,
         org_id: &str,
-        cycle_id: Option<&str>,
+        period_id: Option<&str>,
     ) -> Result<Vec<exam_session::Model>, AppError> {
         let params = ExamSessionParams {
-            cycle_id: cycle_id.map(String::from),
+            period_id: period_id.map(String::from),
             status: None,
         };
         Ok(self.query.get_exam_sessions(org_id, params).await?)
@@ -163,7 +163,7 @@ impl ExamSessionService {
         let model = exam_session::Model {
             id: Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
-            cycle_id: req.cycle_id,
+            period_id: req.period_id,
             name: req.name,
             name_ar: req.name_ar,
             code: req.code,

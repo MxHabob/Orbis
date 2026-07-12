@@ -15,7 +15,7 @@ use svc_academic::entities::class_subject;
 
 #[derive(Serialize, Deserialize, utoipa::ToSchema, Clone, Debug)]
 pub struct CreateTimeSlotRequest {
-    pub cycle_id: String,
+    pub period_id: String,
     pub slot_number: i32,
     pub name: Option<String>,
     pub name_ar: Option<String>,
@@ -44,7 +44,7 @@ pub struct UpdateTimeSlotRequest {
 
 #[derive(Serialize, Deserialize, utoipa::ToSchema, Clone, Debug)]
 pub struct CreateLessonRequest {
-    pub cycle_id: String,
+    pub period_id: String,
     pub class_id: String,
     pub class_subject_id: Option<String>,
     pub subject_id: String,
@@ -84,7 +84,7 @@ pub struct ScheduleConflict {
 pub struct ScheduledLessonView {
     pub id: String,
     pub org_id: String,
-    pub cycle_id: String,
+    pub period_id: String,
     pub class_id: String,
     pub class_subject_id: String,
     pub subject_id: String,
@@ -110,7 +110,7 @@ impl ScheduledLessonView {
         Self {
             id: lesson.id,
             org_id: lesson.org_id,
-            cycle_id: lesson.cycle_id,
+            period_id: lesson.period_id,
             class_id: lesson.class_id,
             class_subject_id: lesson.class_subject_id,
             subject_id: lesson.subject_id,
@@ -135,7 +135,7 @@ impl ScheduledLessonView {
 
 #[derive(Clone, Debug)]
 pub struct LessonPlacement {
-    pub cycle_id: String,
+    pub period_id: String,
     pub class_id: String,
     pub class_subject_id: String,
     pub subject_id: String,
@@ -152,7 +152,7 @@ pub struct LessonPlacement {
 impl LessonPlacement {
     pub fn from_create_request(req: CreateLessonRequest, class_subject_id: String) -> Self {
         Self {
-            cycle_id: req.cycle_id,
+            period_id: req.period_id,
             class_id: req.class_id,
             class_subject_id,
             subject_id: req.subject_id,
@@ -212,9 +212,9 @@ impl ScheduleService {
     pub async fn get_time_slots(
         &self,
         org_id: &str,
-        cycle_id: &str,
+        period_id: &str,
     ) -> Result<Vec<time_slot::Model>, AppError> {
-        Ok(self.query.get_time_slots(org_id, cycle_id).await?)
+        Ok(self.query.get_time_slots(org_id, period_id).await?)
     }
 
     pub async fn create_time_slot(
@@ -226,7 +226,7 @@ impl ScheduleService {
         let slot = time_slot::Model {
             id: Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
-            cycle_id: req.cycle_id,
+            period_id: req.period_id,
             slot_number: req.slot_number,
             name: req.name,
             name_ar: req.name_ar,
@@ -288,11 +288,11 @@ impl ScheduleService {
     pub async fn get_class_schedule(
         &self,
         org_id: &str,
-        cycle_id: &str,
+        period_id: &str,
         class_id: &str,
     ) -> Result<Vec<ScheduledLessonView>, AppError> {
         let params = ScheduleParams {
-            cycle_id: Some(cycle_id.to_string()),
+            period_id: Some(period_id.to_string()),
             class_id: Some(class_id.to_string()),
             teacher_id: None,
         };
@@ -303,11 +303,11 @@ impl ScheduleService {
     pub async fn get_teacher_schedule(
         &self,
         org_id: &str,
-        cycle_id: &str,
+        period_id: &str,
         teacher_id: &str,
     ) -> Result<Vec<ScheduledLessonView>, AppError> {
         let params = ScheduleParams {
-            cycle_id: Some(cycle_id.to_string()),
+            period_id: Some(period_id.to_string()),
             class_id: None,
             teacher_id: Some(teacher_id.to_string()),
         };
@@ -324,7 +324,7 @@ impl ScheduleService {
     pub async fn check_schedule_conflicts(
         &self,
         org_id: &str,
-        cycle_id: &str,
+        period_id: &str,
         time_slot_id: &str,
         day_of_week: i32,
         exclude_id: Option<&str>,
@@ -333,7 +333,7 @@ impl ScheduleService {
         room_id: Option<&str>,
     ) -> Result<Vec<ScheduleConflict>, AppError> {
         let conflicts = self.query.find_lesson_conflicts(
-            org_id, cycle_id, time_slot_id, day_of_week, exclude_id,
+            org_id, period_id, time_slot_id, day_of_week, exclude_id,
             teacher_id, class_id, room_id,
         ).await?;
 
@@ -366,7 +366,7 @@ impl ScheduleService {
                 let cs = class_subject::Entity::find()
                     .filter(class_subject::Column::ClassId.eq(&req.class_id))
                     .filter(class_subject::Column::SubjectId.eq(&req.subject_id))
-                    .filter(class_subject::Column::CycleId.eq(&req.cycle_id))
+                    .filter(class_subject::Column::PeriodId.eq(&req.period_id))
                     .one(&self.query.db)
                     .await?
                     .ok_or_else(|| AppError::not_found("class_subject", "combination"))?;
@@ -396,7 +396,7 @@ impl ScheduleService {
         let room_id = req.room_id.as_ref().or(lesson.room_id.as_ref());
 
         let conflicts = self.check_schedule_conflicts(
-            org_id, &lesson.cycle_id, time_slot_id, day_of_week, Some(id),
+            org_id, &lesson.period_id, time_slot_id, day_of_week, Some(id),
             teacher_id, &lesson.class_id, room_id.map(|s| s.as_str()),
         ).await?;
         if !conflicts.is_empty() {
@@ -449,7 +449,7 @@ impl ScheduleService {
     ) -> Result<scheduled_lesson::Model, AppError> {
         let conflicts = self.check_schedule_conflicts(
             org_id,
-            &placement.cycle_id,
+            &placement.period_id,
             &placement.time_slot_id,
             placement.day_of_week,
             exclude_id,
@@ -473,7 +473,7 @@ impl ScheduleService {
         let lesson = scheduled_lesson::Model {
             id: Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
-            cycle_id: placement.cycle_id,
+            period_id: placement.period_id,
             class_id: placement.class_id,
             class_subject_id: placement.class_subject_id,
             subject_id: placement.subject_id,

@@ -17,7 +17,7 @@ pub struct AssignStudentFeePayload {
     pub amount: f64,
     pub due_date: String,
     pub notes: Option<String>,
-    pub cycle_id: String,
+    pub period_id: String,
 }
 
 pub async fn list_by_enrollment(
@@ -47,7 +47,7 @@ pub async fn assign(
     let model = student_fee::Model {
         id: id.clone(),
         org_id: ctx.org_id.clone(),
-        cycle_id: req.cycle_id,
+        period_id: req.period_id,
         enrollment_id: req.enrollment_id,
         fee_template_id: req.fee_template_id,
         original_amount: req.amount,

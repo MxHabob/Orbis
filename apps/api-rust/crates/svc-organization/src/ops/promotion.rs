@@ -67,8 +67,8 @@ pub async fn create_job(
 }
 
 fn build_service(ctx: &ServiceContext) -> PromotionService {
-    let query_repo = crate::repository::LifecycleQueryRepo::new(ctx.db.clone());
-    let cmd_repo = crate::repository::LifecycleCommandRepo::new(ctx.db.clone());
+    let query_repo = crate::repository::LifeperiodQueryRepo::new(ctx.db.clone());
+    let cmd_repo = crate::repository::LifeperiodCommandRepo::new(ctx.db.clone());
     PromotionService::new(Arc::new(cmd_repo), Arc::new(query_repo))
 }
 

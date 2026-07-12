@@ -19,13 +19,13 @@ impl ClassService {
         Self { cmd, query }
     }
 
-    /// List classes in a cycle.
-    pub async fn list_by_cycle(
+    /// List classes in a period.
+    pub async fn list_by_period(
         &self,
         org_id: &str,
-        cycle_id: &str,
+        period_id: &str,
     ) -> Result<Vec<class::Model>, AppError> {
-        Ok(self.query.list_classes_by_cycle(org_id, cycle_id).await?)
+        Ok(self.query.list_classes_by_period(org_id, period_id).await?)
     }
 
     /// Get a class by ID.
@@ -39,7 +39,7 @@ impl ClassService {
         &self,
         org_id: &str,
         unit_id: &str,
-        cycle_id: &str,
+        period_id: &str,
         name: &str,
         level: &str,
         capacity: Option<i32>,
@@ -49,7 +49,7 @@ impl ClassService {
             id: Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
             unit_id: unit_id.to_string(),
-            cycle_id: cycle_id.to_string(),
+            period_id: period_id.to_string(),
             name: name.to_string(),
             name_ar: None,
             level: level.to_string(),

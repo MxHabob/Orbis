@@ -23,15 +23,15 @@ use docforge_orbis::{
     template_service::TemplateService,
 };
 
-//// ── Periods (was Cycles) ────────────────────────────────────────────
+//// ── Periods (was Periods) ────────────────────────────────────────────
 
 #[tauri::command]
-pub async fn list_cycles(
+pub async fn list_periods(
     state: State<'_, Arc<AppState>>,
     org_id: String,
 ) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let result = org_ops::cycle::list(&ctx).await.map_err(CommandError::from)?;
+    let result = org_ops::academic_period::list(&ctx).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -42,62 +42,62 @@ pub async fn list_periods_by_year(
     year_id: String,
 ) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let result = org_ops::cycle::list_by_year(&ctx, &year_id).await.map_err(CommandError::from)?;
+    let result = org_ops::academic_period::list_by_year(&ctx, &year_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn get_cycle(
+pub async fn get_period(
     state: State<'_, Arc<AppState>>,
     org_id: String,
-    cycle_id: String,
+    period_id: String,
 ) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let result = org_ops::cycle::get(&ctx, &cycle_id).await.map_err(CommandError::from)?;
+    let result = org_ops::academic_period::get(&ctx, &period_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn create_cycle(
+pub async fn create_period(
     state: State<'_, Arc<AppState>>,
     org_id: String,
     data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let result = org_ops::cycle::create(&ctx, data).await.map_err(CommandError::from)?;
+    let result = org_ops::academic_period::create(&ctx, data).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn update_cycle(
+pub async fn update_period(
     _state: State<'_, Arc<AppState>>,
     _org_id: String,
-    _cycle_id: String,
+    _period_id: String,
     _data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
     // Note: update is not implemented yet in the new period ops
     // Will be added when needed.
-    Err(CommandError::new("Period update not yet implemented via ops::cycle. Use Tauri Period API."))
+    Err(CommandError::new("Period update not yet implemented via ops::period. Use Tauri Period API."))
 }
 
 #[tauri::command]
-pub async fn set_current_cycle(
+pub async fn set_current_period(
     _state: State<'_, Arc<AppState>>,
-    _cycle_id: String,
+    _period_id: String,
 ) -> CmdResult<()> {
-    // set_current cycle is deprecated.
+    // set_current period is deprecated.
     // Current year is now set via organizations.current_year_id.
     Err(CommandError::new("Deprecated: set active year via switch_academic_year command."))
 }
 
 #[tauri::command]
-pub async fn lock_cycle(
+pub async fn lock_period(
     state: State<'_, Arc<AppState>>,
     org_id: String,
-    cycle_id: String,
+    period_id: String,
 ) -> CmdResult<()> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    org_ops::cycle::lock(&ctx, &cycle_id).await.map(|_| ()).map_err(CommandError::from)
+    org_ops::academic_period::lock(&ctx, &period_id).await.map(|_| ()).map_err(CommandError::from)
 }
 
 #[tauri::command]
@@ -107,7 +107,7 @@ pub async fn unlock_period(
     period_id: String,
 ) -> CmdResult<()> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    org_ops::cycle::unlock(&ctx, &period_id).await.map(|_| ()).map_err(CommandError::from)
+    org_ops::academic_period::unlock(&ctx, &period_id).await.map(|_| ()).map_err(CommandError::from)
 }
 
 #[tauri::command]
@@ -118,7 +118,7 @@ pub async fn toggle_period_enrollment(
     open: bool,
 ) -> CmdResult<()> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    org_ops::cycle::toggle_enrollment(&ctx, &period_id, open).await.map(|_| ()).map_err(CommandError::from)
+    org_ops::academic_period::toggle_enrollment(&ctx, &period_id, open).await.map(|_| ()).map_err(CommandError::from)
 }
 
 #[tauri::command]
@@ -129,7 +129,7 @@ pub async fn toggle_period_grade_entry(
     open: bool,
 ) -> CmdResult<()> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    org_ops::cycle::toggle_grade_entry(&ctx, &period_id, open).await.map(|_| ()).map_err(CommandError::from)
+    org_ops::academic_period::toggle_grade_entry(&ctx, &period_id, open).await.map(|_| ()).map_err(CommandError::from)
 }
 
 // ── Classes ─────────────────────────────────────────────────────────
@@ -344,10 +344,10 @@ pub async fn list_class_subjects(
     state: State<'_, Arc<AppState>>,
     org_id: String,
     class_id: String,
-    cycle_id: Option<String>,
+    period_id: Option<String>,
 ) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let result = ops::class_subject::list(&ctx, &class_id, cycle_id.as_deref()).await.map_err(CommandError::from)?;
+    let result = ops::class_subject::list(&ctx, &class_id, period_id.as_deref()).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -539,72 +539,58 @@ pub async fn assign_teacher(
 pub async fn list_teacher_subjects(
     state: State<'_, Arc<AppState>>,
     teacher_id: String,
-    cycle_id: Option<String>,
+    period_id: Option<String>,
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
     let db = state.active_db().await;
-    let org_id = if let Some(ref cid) = cycle_id {
-        let cycle = svc_organization::entities::academic_cycle::Entity::find_by_id(cid.clone())
+    let org_id = if let Some(ref cid) = period_id {
+        let period = svc_organization::entities::academic_period::Entity::find_by_id(cid.clone())
             .one(&db).await.map_err(CommandError::from)?
-            .ok_or_else(|| CommandError::not_found("Cycle not found"))?;
-        cycle.org_id
+            .ok_or_else(|| CommandError::not_found("Period not found"))?;
+        period.org_id
     } else {
         // Fallback to active year's default org_id via session helper
         resolve_org_id(&db).await?
     };
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
     
-    let resolved_cycle_id = match cycle_id {
+    let resolved_period_id = match period_id {
         Some(cid) => cid,
         None => {
-            let current = org_ops::cycle::get_current(&ctx).await.map_err(CommandError::from)?;
+            let current = org_ops::academic_period::get_current(&ctx).await.map_err(CommandError::from)?;
             current.id
         }
     };
     
-    let result = ops::class_subject::list_by_teacher(&ctx, &teacher_id, &resolved_cycle_id).await.map_err(CommandError::from)?;
+    let result = ops::class_subject::list_by_teacher(&ctx, &teacher_id, &resolved_period_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn get_current_cycle(
+pub async fn get_current_period(
     state: State<'_, Arc<AppState>>,
     org_id: String,
 ) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let result = org_ops::cycle::get_current(&ctx).await.map_err(CommandError::from)?;
+    let result = org_ops::academic_period::get_current(&ctx).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
-}
-
-#[tauri::command]
-pub async fn unlock_cycle(
-    state: State<'_, Arc<AppState>>,
-    cycle_id: String,
-) -> CmdResult<()> {
-    use sea_orm::EntityTrait;
-    let db = state.active_db().await;
-    let cycle = svc_organization::entities::academic_cycle::Entity::find_by_id(cycle_id.clone())
-        .one(&db).await.map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::not_found("Cycle not found"))?;
-    let ctx = state.build_context(&cycle.org_id).await.map_err(CommandError::from)?;
-    org_ops::cycle::unlock(&ctx, &cycle_id).await.map(|_| ()).map_err(CommandError::from)
 }
 
 #[tauri::command]
 pub async fn toggle_grade_entry(
     state: State<'_, Arc<AppState>>,
-    cycle_id: String,
+    period_id: String,
     open: bool,
-    start: Option<String>,
-    end: Option<String>,
+    _start: Option<String>,
+    _end: Option<String>,
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
     let db = state.active_db().await;
-    let cycle = svc_organization::entities::academic_cycle::Entity::find_by_id(cycle_id.clone())
+    let period = svc_organization::entities::academic_period::Entity::find_by_id(period_id.clone())
         .one(&db).await.map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::not_found("Cycle not found"))?;
-    let ctx = state.build_context(&cycle.org_id).await.map_err(CommandError::from)?;
-    let result = org_ops::cycle::toggle_grade_entry(&ctx, &cycle_id, open, start, end).await.map_err(CommandError::from)?;
+        .ok_or_else(|| CommandError::not_found("Period not found"))?;
+    let ctx = state.build_context(&period.org_id).await.map_err(CommandError::from)?;
+    let result = org_ops::academic_period::toggle_grade_entry(&ctx, &period_id, open).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 

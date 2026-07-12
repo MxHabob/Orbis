@@ -81,8 +81,8 @@ impl FinanceQueryRepo {
         if let Some(ref enroll_id) = params.enrollment_id {
             query = query.filter(student_fee::Column::EnrollmentId.eq(enroll_id));
         }
-        if let Some(ref cycle_id) = params.cycle_id {
-            query = query.filter(student_fee::Column::CycleId.eq(cycle_id));
+        if let Some(ref period_id) = params.period_id {
+            query = query.filter(student_fee::Column::PeriodId.eq(period_id));
         }
         if let Some(ref status) = params.status {
             query = query.filter(student_fee::Column::Status.eq(status));

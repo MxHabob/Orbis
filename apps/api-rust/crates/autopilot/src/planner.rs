@@ -17,7 +17,7 @@ use crate::config::ResolvedConfig;
 use crate::entities::autopilot_task;
 use crate::academic_evaluator::SystemSnapshot;
 
-/// Result of a planning cycle.
+/// Result of a planning period.
 #[derive(Debug, Clone, Default)]
 pub struct PlanResult {
     /// Tasks created for active events.
@@ -62,10 +62,10 @@ impl Planner {
                 "enrollment_close" => (None, Some(r#"{"action":"enrollment_closed"}"#.to_string()), Some(r#"["enrollment_open"]"#.to_string())),
                 "grade_entry_open" => (None, Some(r#"{"action":"grade_entry_opened"}"#.to_string()), None),
                 "grade_entry_close" => (None, Some(r#"{"action":"grade_entry_closed"}"#.to_string()), Some(r#"["grade_entry_open"]"#.to_string())),
-                "cycle_lock" => (None, Some(r#"{"action":"cycle_locked"}"#.to_string()), Some(r#"["grade_entry_close"]"#.to_string())),
-                "report_generation" => (None, Some(r#"{"action":"reports_generated"}"#.to_string()), Some(r#"["cycle_lock"]"#.to_string())),
+                "period_lock" => (None, Some(r#"{"action":"period_locked"}"#.to_string()), Some(r#"["grade_entry_close"]"#.to_string())),
+                "report_generation" => (None, Some(r#"{"action":"reports_generated"}"#.to_string()), Some(r#"["period_lock"]"#.to_string())),
                 "backup" => (Some("automatic"), Some(r#"{"action":"backup_created"}"#.to_string()), None),
-                "promotion_dry_run" => (None, Some(r#"{"action":"promotion_dry_run_complete"}"#.to_string()), Some(r#"["cycle_lock"]"#.to_string())),
+                "promotion_dry_run" => (None, Some(r#"{"action":"promotion_dry_run_complete"}"#.to_string()), Some(r#"["period_lock"]"#.to_string())),
                 _ => (None, None, None),
             };
 

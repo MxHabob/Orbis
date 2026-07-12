@@ -1,4 +1,4 @@
-//! Lifecycle command repository — write operations.
+//! Lifeperiod command repository — write operations.
 
 use crate::entities::{
     organization, academic_period,
@@ -6,9 +6,9 @@ use crate::entities::{
     promotion_job, promotion_detail, student_registry_entry,
 };
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, DbErr, EntityTrait, ColumnTrait, QueryFilter};
-use super::LifecycleCommandRepo;
+use super::LifeperiodCommandRepo;
 
-impl LifecycleCommandRepo {
+impl LifeperiodCommandRepo {
     // ── Organization Commands ───────────────────────────────────
 
     pub async fn create_organization(&self, o: organization::Model) -> Result<organization::Model, DbErr> {

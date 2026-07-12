@@ -51,7 +51,7 @@ const userHat = $derived.by(() => {
   return "none";
 });
 
-function cycleHat() {
+function periodHat() {
   const hatList = ["none", "crown", "graduation", "firefighter"] as const;
   const currentIndex = hatList.indexOf(userHat);
   manualHat = hatList[(currentIndex + 1) % hatList.length];
@@ -209,7 +209,7 @@ function handleMouseLeave() {
 			type="button"
 			class="cursor-pointer focus:outline-none transition-all duration-150 ease-out -translate-y-1 hover:-translate-y-2 active:translate-y-0 shrink-0"
 			onclick={() => {
-				cycleHat();
+				periodHat();
 				const rand = Math.random();
 				if (rand < 0.33) {
 					avatarController.happy();

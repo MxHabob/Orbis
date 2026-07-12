@@ -6,16 +6,16 @@ use chrono::Utc;
 
 use shared_kernel::errors::AppError;
 use crate::entities::organization;
-use crate::repository::{LifecycleCommandRepo, LifecycleQueryRepo};
+use crate::repository::{LifeperiodCommandRepo, LifeperiodQueryRepo};
 
 /// Organization service.
 pub struct OrganizationService {
-    pub cmd: Arc<LifecycleCommandRepo>,
-    pub query: Arc<LifecycleQueryRepo>,
+    pub cmd: Arc<LifeperiodCommandRepo>,
+    pub query: Arc<LifeperiodQueryRepo>,
 }
 
 impl OrganizationService {
-    pub fn new(cmd: Arc<LifecycleCommandRepo>, query: Arc<LifecycleQueryRepo>) -> Self {
+    pub fn new(cmd: Arc<LifeperiodCommandRepo>, query: Arc<LifeperiodQueryRepo>) -> Self {
         Self { cmd, query }
     }
 

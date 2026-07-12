@@ -6,14 +6,14 @@ use crate::commands::error::{CmdResult, CommandError};
 use svc_exam::ops;
 
 #[tauri::command]
-pub async fn list_exam_sessions(state: State<'_, Arc<AppState>>, cycle_id: String) -> CmdResult<serde_json::Value> {
+pub async fn list_exam_sessions(state: State<'_, Arc<AppState>>, period_id: String) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
     let db = state.active_db().await;
-    let cycle = svc_organization::entities::academic_cycle::Entity::find_by_id(cycle_id.clone())
+    let period = svc_organization::entities::academic_period::Entity::find_by_id(period_id.clone())
         .one(&db).await.map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::not_found("Cycle not found"))?;
-    let ctx = state.build_context(&cycle.org_id).await.map_err(CommandError::from)?;
-    let r = ops::session::list(&ctx, &cycle_id).await.map_err(CommandError::from)?;
+        .ok_or_else(|| CommandError::not_found("Period not found"))?;
+    let ctx = state.build_context(&period.org_id).await.map_err(CommandError::from)?;
+    let r = ops::session::list(&ctx, &period_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 

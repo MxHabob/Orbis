@@ -18,7 +18,7 @@ let { orgId }: { orgId: string } = $props();
 
 // Phase-aware actions — show different actions based on the current academic phase
 const ACTIONS = $derived.by(() => {
-  const phase = academicContext.cyclePhase;
+  const phase = academicContext.periodPhase;
   const ro = academicContext.isReadOnly;
   const role = authStore.user?.role ?? "viewer";
   const isAdmin = ["admin", "super_admin", "principal"].includes(role);

@@ -29,11 +29,11 @@ let isLoading = $state(true);
 async function loadData() {
   isLoading = true;
   try {
-    const cycleId = selectedTerm !== "all" ? selectedTerm : "";
+    const periodId = selectedTerm !== "all" ? selectedTerm : "";
     const classId = selectedClass !== "all" ? selectedClass : undefined;
-    const effectiveCycleId = cycleId || academicContext.effectiveCycleId || "";
+    const effectivePeriodId = periodId || academicContext.effectivePeriodId || "";
 
-    if (!effectiveCycleId) {
+    if (!effectivePeriodId) {
       data = [];
       overallRate = 0;
       return;
@@ -41,7 +41,7 @@ async function loadData() {
 
     const records = await commands.assessment.listAttendance(
       orgId,
-      effectiveCycleId,
+      effectivePeriodId,
       classId,
     );
 

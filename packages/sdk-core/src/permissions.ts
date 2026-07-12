@@ -62,9 +62,9 @@ export const Permissions = {
   RoleWrite: "role.write",
 
   // Organization
-  CycleRead: "cycle.read",
-  CycleWrite: "cycle.write",
-  CycleLock: "cycle.lock",
+  PeriodRead: "period.read",
+  PeriodWrite: "period.write",
+  PeriodLock: "period.lock",
   PromotionRead: "promotion.read",
   PromotionWrite: "promotion.write",
   PromotionExecute: "promotion.execute",

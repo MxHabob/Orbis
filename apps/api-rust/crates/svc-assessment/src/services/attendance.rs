@@ -107,7 +107,7 @@ impl AttendanceService {
         let record = attendance::Model {
             id: Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
-            cycle_id: enrollment.cycle_id,
+            period_id: enrollment.period_id,
             enrollment_id: req.enrollment_id,
             class_id: req.class_id,
             date: req.date,

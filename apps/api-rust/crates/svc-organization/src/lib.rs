@@ -1,8 +1,8 @@
-//! Orbis Lifecycle Domain — Organization & Academic Year Management.
+//! Orbis Lifeperiod Domain — Organization & Academic Year Management.
 //!
 //! This crate owns:
 //! - **Organization**: Tenant configuration, branding, limits
-//! - **Academic Cycles**: Years, semesters, quarters (hierarchical)
+//! - **Academic Periods**: Years, semesters, quarters (hierarchical)
 //! - **Calendar Events**: Academic milestones with execution modes
 //! - **Policies**: Academic grading defaults, promotion rules, overrides
 //!

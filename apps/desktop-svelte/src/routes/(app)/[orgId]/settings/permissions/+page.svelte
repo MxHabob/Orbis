@@ -112,7 +112,7 @@ let newRuleLevel = $state(0);
 let newRuleOnlyIfCreator = $state(false);
 let newRuleActions = $state<string[]>([]);
 
-// Lifecycle
+// Lifeperiod
 onMount(async () => {
   await loadPermissions();
   await loadUsers();

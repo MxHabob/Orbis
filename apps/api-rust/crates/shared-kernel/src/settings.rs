@@ -138,7 +138,7 @@ pub struct GradingSettings {
     #[serde(default = "default_max_grade")]
     pub max_grade: f64,
 
-    /// Whether grade entry is allowed after cycle lock.
+    /// Whether grade entry is allowed after period lock.
     #[serde(default)]
     pub allow_grade_entry_after_lock: bool,
 

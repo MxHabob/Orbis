@@ -24,7 +24,7 @@ export interface FinanceCommands {
 
   // ── Student Fees ────────────────────────────────────────────
   listStudentFees(enrollmentId: string): Promise<StudentFee[]>;
-  assignStudentFee(data: { enrollment_id: string; fee_template_id: string; amount: number; due_date: string; cycle_id: string; notes?: string }): Promise<StudentFee>;
+  assignStudentFee(data: { enrollment_id: string; fee_template_id: string; amount: number; due_date: string; period_id: string; notes?: string }): Promise<StudentFee>;
 
   // ── Payments ────────────────────────────────────────────────
   listPayments(enrollmentId?: string, feeId?: string): Promise<Payment[]>;

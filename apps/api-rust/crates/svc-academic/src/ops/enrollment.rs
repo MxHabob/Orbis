@@ -16,7 +16,7 @@ use crate::entities::{enrollment, class};
 
 // ── Queries ─────────────────────────────────────────────────────
 
-/// List enrollments, optionally filtered by class and/or cycle.
+/// List enrollments, optionally filtered by class and/or period.
 pub async fn list(
     ctx: &ServiceContext,
 ) -> Result<Vec<enrollment::Model>, AppError> {
@@ -44,13 +44,13 @@ pub async fn get(ctx: &ServiceContext, id: &str) -> Result<enrollment::Model, Ap
 /// Enroll a student in a class.
 ///
 /// Business rules enforced:
-/// - No duplicate enrollment in the same cycle
+/// - No duplicate enrollment in the same period
 /// - Class capacity check
 /// - Mandatory fee assignment (via FeeAssigner trait)
 #[derive(serde::Deserialize)]
 pub struct CreateEnrollmentPayload {
     pub org_id: Option<String>,
-    pub cycle_id: String,
+    pub period_id: String,
     pub student_id: String,
     pub class_id: String,
     pub student_number: String,
@@ -67,16 +67,16 @@ pub async fn create(
 
     let org_id = req.org_id.unwrap_or_else(|| ctx.org_id.clone());
 
-    // Business rule: no duplicate enrollment in the same cycle
+    // Business rule: no duplicate enrollment in the same period
     let existing = enrollment::Entity::find()
         .filter(enrollment::Column::StudentId.eq(&req.student_id))
-        .filter(enrollment::Column::CycleId.eq(&req.cycle_id))
+        .filter(enrollment::Column::PeriodId.eq(&req.period_id))
         .filter(enrollment::Column::Status.ne("withdrawn"))
         .one(&ctx.db)
         .await?;
 
     if existing.is_some() {
-        return Err(AppError::conflict("Student is already enrolled in this cycle"));
+        return Err(AppError::conflict("Student is already enrolled in this period"));
     }
 
     // Business rule: class capacity check
@@ -88,7 +88,7 @@ pub async fn create(
     if let Some(cap) = target_class.capacity {
         let current = enrollment::Entity::find()
             .filter(enrollment::Column::ClassId.eq(&req.class_id))
-            .filter(enrollment::Column::CycleId.eq(&req.cycle_id))
+            .filter(enrollment::Column::PeriodId.eq(&req.period_id))
             .filter(enrollment::Column::Status.ne("withdrawn"))
             .count(&ctx.db)
             .await?;
@@ -105,7 +105,7 @@ pub async fn create(
     let model = enrollment::Model {
         id: id.clone(),
         org_id: org_id.clone(),
-        cycle_id: req.cycle_id,
+        period_id: req.period_id,
         student_id: req.student_id,
         class_id: req.class_id.clone(),
         student_number: req.student_number,

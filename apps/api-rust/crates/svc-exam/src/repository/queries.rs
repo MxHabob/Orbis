@@ -35,21 +35,21 @@ impl ExamQueryRepo {
     pub async fn get_enrollments_for_ordering(
         &self,
         org_id: &str,
-        cycle_id: &str,
+        period_id: &str,
     ) -> Result<Vec<EnrollmentOrderingRow>, DbErr> {
         let mut list = enrollment::Entity::find()
             .filter(enrollment::Column::OrgId.eq(org_id))
-            .filter(enrollment::Column::CycleId.eq(cycle_id))
+            .filter(enrollment::Column::PeriodId.eq(period_id))
             .filter(enrollment::Column::Status.eq("active"))
             .all(&self.db)
             .await?;
 
         if list.is_empty() {
-            if let Some(cycle) = academic_period::Entity::find_by_id(cycle_id.to_string()).one(&self.db).await? {
-                if let Some(parent_id) = cycle.parent_id {
+            if let Some(period) = academic_period::Entity::find_by_id(period_id.to_string()).one(&self.db).await? {
+                if let Some(parent_id) = period.parent_id {
                     if let Ok(parent_list) = enrollment::Entity::find()
                         .filter(enrollment::Column::OrgId.eq(org_id))
-                        .filter(enrollment::Column::CycleId.eq(parent_id))
+                        .filter(enrollment::Column::PeriodId.eq(parent_id))
                         .filter(enrollment::Column::Status.eq("active"))
                         .all(&self.db)
                         .await
@@ -87,10 +87,10 @@ impl ExamQueryRepo {
 
     // ── Student Ordering ──
 
-    pub async fn get_student_ordering(&self, org_id: &str, cycle_id: &str, class_id: Option<&str>) -> Result<Vec<student_ordering::Model>, DbErr> {
+    pub async fn get_student_ordering(&self, org_id: &str, period_id: &str, class_id: Option<&str>) -> Result<Vec<student_ordering::Model>, DbErr> {
         let mut query = student_ordering::Entity::find()
             .filter(student_ordering::Column::OrgId.eq(org_id))
-            .filter(student_ordering::Column::CycleId.eq(cycle_id));
+            .filter(student_ordering::Column::PeriodId.eq(period_id));
 
         if let Some(cid) = class_id {
             query = query.filter(student_ordering::Column::ClassId.eq(cid));
@@ -112,8 +112,8 @@ impl ExamQueryRepo {
         let mut query = exam_session::Entity::find()
             .filter(exam_session::Column::OrgId.eq(org_id));
 
-        if let Some(ref cid) = params.cycle_id {
-            query = query.filter(exam_session::Column::CycleId.eq(cid));
+        if let Some(ref cid) = params.period_id {
+            query = query.filter(exam_session::Column::PeriodId.eq(cid));
         }
         if let Some(ref status) = params.status {
             query = query.filter(exam_session::Column::Status.eq(status));

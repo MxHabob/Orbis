@@ -9,7 +9,7 @@ pub struct FeeTemplateParams {
 #[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]
 pub struct StudentFeeParams {
     pub enrollment_id: Option<String>,
-    pub cycle_id: Option<String>,
+    pub period_id: Option<String>,
     pub status: Option<String>,
 }
 

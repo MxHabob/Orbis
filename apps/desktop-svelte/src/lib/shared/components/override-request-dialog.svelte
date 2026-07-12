@@ -113,8 +113,8 @@ const typeLabel = $derived.by(() => {
         : "Attendance Correction";
     case "fee_waiver":
       return m.override_type_fee ? m.override_type_fee() : "Fee Waiver";
-    case "cycle_unlock":
-      return m.override_type_unlock ? m.override_type_unlock() : "Cycle Unlock";
+    case "period_unlock":
+      return m.override_type_unlock ? m.override_type_unlock() : "Period Unlock";
     case "deadline_extension":
       return m.override_type_deadline
         ? m.override_type_deadline()

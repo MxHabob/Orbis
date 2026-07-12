@@ -1,6 +1,6 @@
 <!--
   @component ClassSubjectForm
-  Form for assigning a subject to a teacher for a specific class and academic cycle.
+  Form for assigning a subject to a teacher for a specific class and academic period.
   Used in both create and edit modes via a Sheet panel.
 -->
 <script lang="ts">
@@ -17,7 +17,7 @@ import { commands, extractErrorMessage } from "$lib/core/ipc";
 import type { ClassSubject, JsonRecord } from "@orbis/sdk-core";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
-import { createCyclesQuery, createClassesQuery, createSubjectsQuery } from "$lib/features/academics/queries";
+import { createPeriodsQuery, createClassesQuery, createSubjectsQuery } from "$lib/features/academics/queries";
 import { createUsersQuery } from "$lib/features/settings/queries";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 
@@ -41,7 +41,7 @@ let subjectId = $state("");
 let teacherId = $state("");
 let assistantTeacherId = $state("");
 let weeklyHours = $state(4);
-let cycleId = $state("");
+let periodId = $state("");
 
 $effect(() => {
   classId = editData ? String(editData.class_id ?? "") : "";
@@ -51,16 +51,16 @@ $effect(() => {
     ? String(editData.assistant_teacher_id ?? "")
     : "";
   weeklyHours = editData ? Number(editData.weekly_hours ?? 4) : 4;
-  cycleId = editData ? String(editData.cycle_id ?? "") : "";
+  periodId = editData ? String(editData.period_id ?? "") : "";
 });
 
 // TanStack Queries
-const cyclesQuery = createCyclesQuery(orgId);
+const periodsQuery = createPeriodsQuery(orgId);
 const classesQuery = createClassesQuery(orgId);
 const subjectsQuery = createSubjectsQuery(orgId);
 const usersQuery = createUsersQuery(orgId);
 
-const cycles = $derived(($cyclesQuery.data as JsonRecord[]) ?? []);
+const periods = $derived(($periodsQuery.data as JsonRecord[]) ?? []);
 const classes = $derived(($classesQuery.data as JsonRecord[]) ?? []);
 const subjects = $derived(($subjectsQuery.data as JsonRecord[]) ?? []);
 const teachers = $derived(
@@ -70,7 +70,7 @@ const teachers = $derived(
 );
 
 const isLoading = $derived(
-  $cyclesQuery.isLoading ||
+  $periodsQuery.isLoading ||
     $classesQuery.isLoading ||
     $subjectsQuery.isLoading ||
     $usersQuery.isLoading,
@@ -88,10 +88,10 @@ const selectedTeacher = $derived(
 const selectedAssistant = $derived(
   teachers.find((t) => String(t.id) === assistantTeacherId),
 );
-const selectedCycle = $derived(cycles.find((c) => String(c.id) === cycleId));
+const selectedPeriod = $derived(periods.find((c) => String(c.id) === periodId));
 
 async function handleSubmit() {
-  if (!classId || !subjectId || !teacherId || !cycleId) {
+  if (!classId || !subjectId || !teacherId || !periodId) {
     toast.error("يرجى ملء الحقول المطلوبة");
     return;
   }
@@ -101,7 +101,7 @@ async function handleSubmit() {
     const request: JsonRecord = {
       class_id: classId,
       subject_id: subjectId,
-      cycle_id: cycleId,
+      period_id: periodId,
       primary_teacher_id: teacherId,
       assistant_teacher_id: assistantTeacherId || null,
       weekly_hours: weeklyHours,
@@ -145,17 +145,17 @@ async function handleSubmit() {
       </div>
     </div>
   {:else}
-    <!-- Cycle -->
+    <!-- Period -->
     <div class="flex flex-col gap-1.5">
-      <Label class="text-xs font-semibold text-muted-foreground">{m.cs_form_cycle()} *</Label>
-      <Select type="single" value={cycleId} onValueChange={(v) => (cycleId = v ?? "")}>
+      <Label class="text-xs font-semibold text-muted-foreground">{m.cs_form_period()} *</Label>
+      <Select type="single" value={periodId} onValueChange={(v) => (periodId = v ?? "")}>
         <SelectTrigger class="h-9 text-sm">
-          {selectedCycle
-            ? String(selectedCycle.name ?? selectedCycle.name_ar ?? "")
-            : m.cs_form_select_cycle()}
+          {selectedPeriod
+            ? String(selectedPeriod.name ?? selectedPeriod.name_ar ?? "")
+            : m.cs_form_select_period()}
         </SelectTrigger>
         <SelectContent>
-          {#each cycles as cyc (cyc.id)}
+          {#each periods as cyc (cyc.id)}
             <SelectItem value={String(cyc.id)}>
               {String(cyc.name ?? cyc.name_ar ?? cyc.id)}
             </SelectItem>
@@ -267,7 +267,7 @@ async function handleSubmit() {
       <Button
         type="submit"
         class="flex-1 h-9 text-sm"
-        disabled={isSaving || isLoading || !classId || !subjectId || !teacherId || !cycleId}
+        disabled={isSaving || isLoading || !classId || !subjectId || !teacherId || !periodId}
       >
         {isSaving ? m.cs_form_saving() : m.cs_form_save()}
       </Button>

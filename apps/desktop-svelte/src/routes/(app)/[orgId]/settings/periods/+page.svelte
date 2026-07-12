@@ -39,7 +39,7 @@ async function loadPeriods() {
   isLoading = true;
   error = null;
   try {
-    const list = await commands.academic.listCycles(data.orgId);
+    const list = await commands.academic.listPeriods(data.orgId);
     periods = list;
   } catch (e: unknown) {
     error = extractErrorMessage(e);
@@ -74,7 +74,7 @@ function openEditSheet(period: any) {
 
 async function handleActivate(periodId: string) {
   try {
-    await commands.academic.lockCycle(data.orgId, periodId);
+    await commands.academic.lockPeriod(data.orgId, periodId);
     toast.success(m.settings_periods_activate_success());
     loadPeriods();
   } catch (e: unknown) {
@@ -85,7 +85,7 @@ async function handleActivate(periodId: string) {
 async function handleLock(periodId: string) {
   if (!confirm(m.settings_periods_lock_confirm())) return;
   try {
-    await commands.academic.lockCycle(data.orgId, periodId);
+    await commands.academic.lockPeriod(data.orgId, periodId);
     toast.success(m.settings_periods_lock_success());
     loadPeriods();
   } catch (e: unknown) {

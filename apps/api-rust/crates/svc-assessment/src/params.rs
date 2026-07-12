@@ -14,7 +14,7 @@ pub struct BehaviorParams {
 pub struct GradeParams {
     pub enrollment_id: Option<String>,
     pub class_id: Option<String>,
-    pub cycle_id: Option<String>,
+    pub period_id: Option<String>,
     pub subject_name: Option<String>,
     pub exam_type: Option<String>,
     pub semester: Option<String>,
@@ -29,7 +29,7 @@ pub struct GradeParams {
 pub struct AttendanceParams {
     pub enrollment_id: Option<String>,
     pub class_id: Option<String>,
-    pub cycle_id: Option<String>,
+    pub period_id: Option<String>,
     pub date: Option<String>,
     pub date_from: Option<String>,
     pub date_to: Option<String>,
@@ -40,7 +40,7 @@ pub struct AttendanceParams {
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default, utoipa::ToSchema)]
 pub struct GradeMatrixParams {
-    pub cycle_id: String,
+    pub period_id: String,
     pub class_id: String,
     pub subject_id: String,
 }
@@ -49,6 +49,6 @@ pub struct GradeMatrixParams {
 pub struct AssessmentParams {
     pub class_id: String,
     pub subject_id: String,
-    pub cycle_id: String,
+    pub period_id: String,
 }
 

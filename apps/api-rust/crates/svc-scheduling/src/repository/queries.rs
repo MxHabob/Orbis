@@ -11,11 +11,11 @@ impl SchedulingQueryRepo {
     pub async fn get_time_slots(
         &self,
         org_id: &str,
-        cycle_id: &str,
+        period_id: &str,
     ) -> Result<Vec<time_slot::Model>, DbErr> {
         time_slot::Entity::find()
             .filter(time_slot::Column::OrgId.eq(org_id))
-            .filter(time_slot::Column::CycleId.eq(cycle_id))
+            .filter(time_slot::Column::PeriodId.eq(period_id))
             .filter(time_slot::Column::IsActive.eq(1))
             .order_by_asc(time_slot::Column::SortOrder)
             .order_by_asc(time_slot::Column::SlotNumber)
@@ -38,8 +38,8 @@ impl SchedulingQueryRepo {
             .filter(scheduled_lesson::Column::OrgId.eq(org_id))
             .filter(scheduled_lesson::Column::Status.ne("cancelled"));
 
-        if let Some(ref cycle_id) = params.cycle_id {
-            query = query.filter(scheduled_lesson::Column::CycleId.eq(cycle_id));
+        if let Some(ref period_id) = params.period_id {
+            query = query.filter(scheduled_lesson::Column::PeriodId.eq(period_id));
         }
         if let Some(ref class_id) = params.class_id {
             query = query.filter(scheduled_lesson::Column::ClassId.eq(class_id));
@@ -62,7 +62,7 @@ impl SchedulingQueryRepo {
     pub async fn find_lesson_conflicts(
         &self,
         org_id: &str,
-        cycle_id: &str,
+        period_id: &str,
         time_slot_id: &str,
         day_of_week: i32,
         exclude_id: Option<&str>,
@@ -72,7 +72,7 @@ impl SchedulingQueryRepo {
     ) -> Result<Vec<scheduled_lesson::Model>, DbErr> {
         let mut query = scheduled_lesson::Entity::find()
             .filter(scheduled_lesson::Column::OrgId.eq(org_id))
-            .filter(scheduled_lesson::Column::CycleId.eq(cycle_id))
+            .filter(scheduled_lesson::Column::PeriodId.eq(period_id))
             .filter(scheduled_lesson::Column::TimeSlotId.eq(time_slot_id))
             .filter(scheduled_lesson::Column::DayOfWeek.eq(day_of_week))
             .filter(scheduled_lesson::Column::Status.ne("cancelled"));
@@ -103,14 +103,14 @@ impl SchedulingQueryRepo {
         Ok(conflicts)
     }
 
-    pub async fn get_all_scheduled_lessons_for_cycle(
+    pub async fn get_all_scheduled_lessons_for_period(
         &self,
         org_id: &str,
-        cycle_id: &str,
+        period_id: &str,
     ) -> Result<Vec<scheduled_lesson::Model>, DbErr> {
         scheduled_lesson::Entity::find()
             .filter(scheduled_lesson::Column::OrgId.eq(org_id))
-            .filter(scheduled_lesson::Column::CycleId.eq(cycle_id))
+            .filter(scheduled_lesson::Column::PeriodId.eq(period_id))
             .filter(scheduled_lesson::Column::Status.ne("cancelled"))
             .order_by_asc(scheduled_lesson::Column::DayOfWeek)
             .order_by_asc(scheduled_lesson::Column::TimeSlotId)
@@ -146,11 +146,11 @@ impl SchedulingQueryRepo {
     pub async fn get_teacher_unavailability(
         &self,
         org_id: &str,
-        cycle_id: &str,
+        period_id: &str,
     ) -> Result<Vec<teacher_availability::Model>, DbErr> {
         teacher_availability::Entity::find()
             .filter(teacher_availability::Column::OrgId.eq(org_id))
-            .filter(teacher_availability::Column::CycleId.eq(cycle_id))
+            .filter(teacher_availability::Column::PeriodId.eq(period_id))
             .filter(teacher_availability::Column::IsAvailable.eq(0))
             .all(&self.db)
             .await

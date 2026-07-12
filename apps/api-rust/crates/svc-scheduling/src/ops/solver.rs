@@ -11,7 +11,7 @@ use shared_kernel::traits::{AuditEntry, Permission};
 use crate::entities::solve_job;
 
 pub async fn start(
-    ctx: &ServiceContext, cycle_id: &str,
+    ctx: &ServiceContext, period_id: &str,
 ) -> Result<solve_job::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleWrite).await?;
 
@@ -20,7 +20,7 @@ pub async fn start(
 
     let model = solve_job::Model {
         id: id.clone(), org_id: ctx.org_id.clone(),
-        job_type: "schedule".into(), target_id: cycle_id.to_string(),
+        job_type: "schedule".into(), target_id: period_id.to_string(),
         mode: None, status: "pending".into(),
         problem_snapshot: None, best_solution: None, score: None,
         items_created: 0, error_message: None,
@@ -50,12 +50,12 @@ pub async fn get_job(ctx: &ServiceContext, job_id: &str) -> Result<solve_job::Mo
         .ok_or_else(|| AppError::not_found("solve_job", job_id))
 }
 
-pub async fn list_jobs(ctx: &ServiceContext, cycle_id: &str) -> Result<Vec<solve_job::Model>, AppError> {
+pub async fn list_jobs(ctx: &ServiceContext, period_id: &str) -> Result<Vec<solve_job::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleRead).await?;
     Ok(solve_job::Entity::find()
         .filter(solve_job::Column::OrgId.eq(&ctx.org_id))
         .filter(solve_job::Column::JobType.eq("schedule"))
-        .filter(solve_job::Column::TargetId.eq(cycle_id))
+        .filter(solve_job::Column::TargetId.eq(period_id))
         .order_by_desc(solve_job::Column::CreatedAt)
         .all(&ctx.db).await?)
 }

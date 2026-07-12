@@ -8,7 +8,7 @@ pub struct Model {
     pub id: String,
     pub class_id: String,
     pub subject_id: String,
-    pub cycle_id: String,
+    pub period_id: String,
     pub primary_teacher_id: String,
     pub assistant_teacher_id: Option<String>,
     pub substitute_teacher_id: Option<String>,

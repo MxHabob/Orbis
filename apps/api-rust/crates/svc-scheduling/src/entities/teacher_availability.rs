@@ -8,7 +8,7 @@ pub struct Model {
     pub id: String,
     pub org_id: String,
     pub teacher_id: String,
-    pub cycle_id: String,
+    pub period_id: String,
     pub day_of_week: i32,
     pub time_slot_id: String,
     pub is_available: i32,

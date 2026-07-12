@@ -24,14 +24,14 @@ impl EnrollmentService {
     pub async fn enroll(
         &self,
         org_id: &str,
-        cycle_id: &str,
+        period_id: &str,
         student_id: &str,
         class_id: &str,
         student_number: &str,
     ) -> Result<enrollment::Model, AppError> {
         // Check for duplicate enrollment
-        if let Some(_existing) = self.query.get_enrollment_by_student(student_id, cycle_id).await? {
-            return Err(AppError::conflict("Student is already enrolled in this cycle"));
+        if let Some(_existing) = self.query.get_enrollment_by_student(student_id, period_id).await? {
+            return Err(AppError::conflict("Student is already enrolled in this period"));
         }
 
         // Check class capacity
@@ -39,7 +39,7 @@ impl EnrollmentService {
             .ok_or_else(|| AppError::not_found("class", class_id))?;
 
         if let Some(cap) = class.capacity {
-            let current = self.query.count_enrollments_by_class(class_id, cycle_id).await?;
+            let current = self.query.count_enrollments_by_class(class_id, period_id).await?;
             if current as i32 >= cap {
                 return Err(AppError::conflict(format!("Class '{}' is at capacity ({}/{})", class.name, current, cap)));
             }
@@ -49,7 +49,7 @@ impl EnrollmentService {
         let enrollment = enrollment::Model {
             id: Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
-            cycle_id: cycle_id.to_string(),
+            period_id: period_id.to_string(),
             student_id: student_id.to_string(),
             class_id: class_id.to_string(),
             student_number: student_number.to_string(),

@@ -18,7 +18,7 @@ impl PromptTemplates {
         );
         templates.insert(
             "autopilot_decision_making".to_string(),
-            "Given the academic calendar event '{event_type}' and cycle context, determine if this event can be automatically executed or requires human approval. Context:\n{context}",
+            "Given the academic calendar event '{event_type}' and period context, determine if this event can be automatically executed or requires human approval. Context:\n{context}",
         );
         templates.insert(
             "data_quality_anomalies".to_string(),

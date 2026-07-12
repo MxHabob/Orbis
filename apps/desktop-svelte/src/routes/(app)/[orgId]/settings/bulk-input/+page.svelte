@@ -113,7 +113,7 @@ const isRtl = getLocale() === "ar";
                 {m.bulk_card_grades_tag_smart()}
               </Badge>
               <Badge variant="secondary" class="text-[10px]">
-                {m.bulk_card_grades_tag_cycle()}
+                {m.bulk_card_grades_tag_period()}
               </Badge>
             </div>
           </CardContent>

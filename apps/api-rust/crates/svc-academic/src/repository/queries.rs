@@ -13,14 +13,14 @@ impl AcademicQueryRepo {
             .await
     }
 
-    pub async fn list_classes_by_cycle(
+    pub async fn list_classes_by_period(
         &self,
         org_id: &str,
-        cycle_id: &str,
+        period_id: &str,
     ) -> Result<Vec<class::Model>, DbErr> {
         class::Entity::find()
             .filter(class::Column::OrgId.eq(org_id))
-            .filter(class::Column::CycleId.eq(cycle_id))
+            .filter(class::Column::PeriodId.eq(period_id))
             .filter(class::Column::IsDeleted.eq(0))
             .order_by_asc(class::Column::Level)
             .order_by_asc(class::Column::Name)
@@ -44,11 +44,11 @@ impl AcademicQueryRepo {
     pub async fn list_class_subjects(
         &self,
         class_id: &str,
-        cycle_id: &str,
+        period_id: &str,
     ) -> Result<Vec<class_subject::Model>, DbErr> {
         class_subject::Entity::find()
             .filter(class_subject::Column::ClassId.eq(class_id))
-            .filter(class_subject::Column::CycleId.eq(cycle_id))
+            .filter(class_subject::Column::PeriodId.eq(period_id))
             .filter(class_subject::Column::IsActive.eq(1))
             .all(&self.db)
             .await
@@ -57,11 +57,11 @@ impl AcademicQueryRepo {
     pub async fn list_teacher_class_subjects(
         &self,
         teacher_id: &str,
-        cycle_id: &str,
+        period_id: &str,
     ) -> Result<Vec<class_subject::Model>, DbErr> {
         class_subject::Entity::find()
             .filter(class_subject::Column::PrimaryTeacherId.eq(teacher_id))
-            .filter(class_subject::Column::CycleId.eq(cycle_id))
+            .filter(class_subject::Column::PeriodId.eq(period_id))
             .filter(class_subject::Column::IsActive.eq(1))
             .all(&self.db)
             .await
@@ -72,11 +72,11 @@ impl AcademicQueryRepo {
     pub async fn list_enrollments_by_class(
         &self,
         class_id: &str,
-        cycle_id: &str,
+        period_id: &str,
     ) -> Result<Vec<enrollment::Model>, DbErr> {
         enrollment::Entity::find()
             .filter(enrollment::Column::ClassId.eq(class_id))
-            .filter(enrollment::Column::CycleId.eq(cycle_id))
+            .filter(enrollment::Column::PeriodId.eq(period_id))
             .filter(enrollment::Column::Status.ne("withdrawn"))
             .order_by_asc(enrollment::Column::StudentNumber)
             .all(&self.db)
@@ -86,11 +86,11 @@ impl AcademicQueryRepo {
     pub async fn get_enrollment_by_student(
         &self,
         student_id: &str,
-        cycle_id: &str,
+        period_id: &str,
     ) -> Result<Option<enrollment::Model>, DbErr> {
         enrollment::Entity::find()
             .filter(enrollment::Column::StudentId.eq(student_id))
-            .filter(enrollment::Column::CycleId.eq(cycle_id))
+            .filter(enrollment::Column::PeriodId.eq(period_id))
             .one(&self.db)
             .await
     }
@@ -98,11 +98,11 @@ impl AcademicQueryRepo {
     pub async fn count_enrollments_by_class(
         &self,
         class_id: &str,
-        cycle_id: &str,
+        period_id: &str,
     ) -> Result<u64, DbErr> {
         enrollment::Entity::find()
             .filter(enrollment::Column::ClassId.eq(class_id))
-            .filter(enrollment::Column::CycleId.eq(cycle_id))
+            .filter(enrollment::Column::PeriodId.eq(period_id))
             .filter(enrollment::Column::Status.ne("withdrawn"))
             .count(&self.db)
             .await

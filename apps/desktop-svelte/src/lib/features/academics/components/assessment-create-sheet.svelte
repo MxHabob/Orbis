@@ -19,14 +19,14 @@ let {
   open = $bindable(false),
   classId,
   subjectId,
-  cycleId,
+  periodId,
   month,
   onSuccess,
 }: {
   open: boolean;
   classId: string;
   subjectId: string;
-  cycleId: string;
+  periodId: string;
   month?: number;
   onSuccess: () => void;
 } = $props();
@@ -37,7 +37,7 @@ let {
 		<AssessmentForm 
 			{classId} 
 			{subjectId} 
-			{cycleId} 
+			{periodId} 
 			defaultMonth={month}
 			onSuccess={() => {
 				open = false;

@@ -23,7 +23,7 @@ import type { CellEditEvent } from "@orbis/svelte-grid";
 
 let { data } = $props();
 const orgId = $derived(data?.orgId || "");
-let cycles = $derived(academicContext.allCycles);
+let periods = $derived(academicContext.allPeriods);
 let classes = $state<any[]>([]);
 let subjects = $state<any[]>([]);
 let selectedPeriodId = $state<string>("");
@@ -57,7 +57,7 @@ $effect(() => {
 });
 
 let selectedPeriod = $derived(
-  cycles.find((c) => String(c.id) === selectedPeriodId),
+  periods.find((c) => String(c.id) === selectedPeriodId),
 );
 let isPeriodLocked = $derived(
   selectedPeriod?.is_locked === true || selectedPeriod?.is_locked === 1,
@@ -264,7 +264,7 @@ onMount(() => {
     </div>
   {:else}
     <!-- Warnings -->
-    {#if selectedCycle && isCycleLocked}
+    {#if selectedPeriod && isPeriodLocked}
       <div
         class="bg-destructive/5 border border-destructive/20 rounded-xl p-4 flex items-center gap-3"
         in:slide={{ duration: 200 }}
@@ -273,11 +273,11 @@ onMount(() => {
           <Lock size={16} class="text-destructive" />
         </div>
         <div class="text-start">
-          <p class="text-xs font-bold text-destructive">{m.control_cycle_locked_title()}</p>
-          <p class="text-[10px] text-destructive/80 mt-0.5">{m.control_cycle_locked_desc()}</p>
+          <p class="text-xs font-bold text-destructive">{m.control_period_locked_title()}</p>
+          <p class="text-[10px] text-destructive/80 mt-0.5">{m.control_period_locked_desc()}</p>
         </div>
       </div>
-    {:else if selectedCycle && !isGradeEntryOpen}
+    {:else if selectedPeriod && !isGradeEntryOpen}
       <div
         class="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 flex items-center gap-3"
         in:slide={{ duration: 200 }}

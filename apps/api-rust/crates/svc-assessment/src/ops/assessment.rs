@@ -14,17 +14,17 @@ use crate::entities::assessment;
 
 // ── Queries ─────────────────────────────────────────────────────
 
-/// List assessments for a cycle, optionally filtered by class_subject.
+/// List assessments for a period, optionally filtered by class_subject.
 pub async fn list(
     ctx: &ServiceContext,
-    cycle_id: &str,
+    period_id: &str,
     class_subject_id: Option<&str>,
 ) -> Result<Vec<assessment::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AssessmentRead).await?;
 
     let mut query = assessment::Entity::find()
         .filter(assessment::Column::OrgId.eq(&ctx.org_id))
-        .filter(assessment::Column::CycleId.eq(cycle_id));
+        .filter(assessment::Column::PeriodId.eq(period_id));
 
     if let Some(csid) = class_subject_id {
         query = query.filter(assessment::Column::ClassSubjectId.eq(csid));
@@ -41,7 +41,7 @@ pub async fn list(
 /// Create a new assessment definition.
 #[derive(serde::Deserialize)]
 pub struct CreateAssessmentRequest {
-    pub cycle_id: String,
+    pub period_id: String,
     pub class_subject_id: String,
     pub title: String,
     pub title_ar: Option<String>,
@@ -69,7 +69,7 @@ pub async fn create(
     let model = assessment::Model {
         id: id.clone(),
         org_id: ctx.org_id.clone(),
-        cycle_id: req.cycle_id,
+        period_id: req.period_id,
         class_subject_id: req.class_subject_id,
         title: req.title,
         title_ar: req.title_ar,

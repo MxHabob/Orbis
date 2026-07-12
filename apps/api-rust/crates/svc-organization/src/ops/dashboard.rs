@@ -13,11 +13,11 @@ pub async fn get_stats(
 
     // Get current year name
     let org = organization::Entity::find_by_id(&ctx.org_id).one(&ctx.db).await?;
-    let mut current_cycle = "N/A".to_string();
+    let mut current_period = "N/A".to_string();
     if let Some(org) = org {
         if let Some(year_id) = org.current_year_id {
             if let Some(year) = academic_year::Entity::find_by_id(year_id).one(&ctx.db).await? {
-                current_cycle = year.name;
+                current_period = year.name;
             }
         }
     }
@@ -46,6 +46,6 @@ pub async fn get_stats(
         "students_count": students_count,
         "classes_count": classes_count,
         "teachers_count": teachers_count,
-        "active_cycle": current_cycle
+        "active_period": current_period
     }))
 }

@@ -1,6 +1,6 @@
 <!--
 @component AcademicCalendarPage
-Displays and manages academic calendar events for the selected cycle.
+Displays and manages academic calendar events for the selected period.
 Uses TanStack Query for data, supports CRUD operations, and shows
 phase progress as a badge stepper.
 -->
@@ -73,11 +73,11 @@ import {
 
 let { data }: { data: { orgId: string } } = $props();
 const orgId = $derived(data?.orgId ?? "");
-const cycleId = $derived(academicContext.effectiveCycleId ?? "");
+const periodId = $derived(academicContext.effectivePeriodId ?? "");
 
 // TanStack Query
 const queryClient = useQueryClient();
-const eventsQuery = createCalendarEventsQuery(orgId, cycleId);
+const eventsQuery = createCalendarEventsQuery(orgId, periodId);
 const events = $derived(($eventsQuery.data ?? []) as CalendarEvent[]);
 
 // Phase progress — derived from events
@@ -263,7 +263,7 @@ async function createEvent() {
   isSubmitting = true;
   try {
     await commands.platform.createCalendarEvent(orgId, {
-      cycle_id: cycleId,
+      period_id: periodId,
       ...newEvent,
     });
     toast.success(
@@ -272,7 +272,7 @@ async function createEvent() {
     showCreateDialog = false;
     resetForm();
     queryClient.invalidateQueries({
-      queryKey: ["calendar-events", orgId, cycleId],
+      queryKey: ["calendar-events", orgId, periodId],
     });
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
@@ -297,7 +297,7 @@ async function executeEvent(eventId: string) {
       toast.info(result.message ?? "Event processed");
     }
     queryClient.invalidateQueries({
-      queryKey: ["calendar-events", orgId, cycleId],
+      queryKey: ["calendar-events", orgId, periodId],
     });
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
@@ -313,7 +313,7 @@ async function deleteEvent(eventId: string) {
       m.calendar_event_deleted ? m.calendar_event_deleted() : "Event deleted",
     );
     queryClient.invalidateQueries({
-      queryKey: ["calendar-events", orgId, cycleId],
+      queryKey: ["calendar-events", orgId, periodId],
     });
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
@@ -323,14 +323,14 @@ async function deleteEvent(eventId: string) {
 async function generateDefaults() {
   isSubmitting = true;
   try {
-    await commands.platform.generateDefaultCalendar(orgId, cycleId);
+    await commands.platform.generateDefaultCalendar(orgId, periodId);
     toast.success(
       m.calendar_defaults_generated
         ? m.calendar_defaults_generated()
         : "Default events generated",
     );
     queryClient.invalidateQueries({
-      queryKey: ["calendar-events", orgId, cycleId],
+      queryKey: ["calendar-events", orgId, periodId],
     });
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
@@ -441,7 +441,7 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
           <div class="flex flex-col items-center justify-center py-16 text-center gap-3">
             <CalendarClock class="size-10 text-muted-foreground/40" />
             <p class="text-sm text-muted-foreground">
-              {m.calendar_empty ? m.calendar_empty() : "No calendar events for this cycle"}
+              {m.calendar_empty ? m.calendar_empty() : "No calendar events for this period"}
             </p>
             {#if !academicContext.isReadOnly}
               <Button variant="outline" size="sm" class="text-xs border-border" onclick={generateDefaults}>

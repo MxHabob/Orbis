@@ -11,7 +11,7 @@ import type {
   GradeLevel,
   TimeSlot,
   Subject,
-  CycleEntry,
+  PeriodEntry,
   ClassEntry,
   SubjectEntry,
   OnboardingPayload,
@@ -740,15 +740,15 @@ class OnboardingState {
     return true;
   }
 
-  // ── Cycle Generation Helpers ───────────────────────────────────
+  // ── Period Generation Helpers ───────────────────────────────────
 
   private generateMonthsForSemester(
-    parentCycleId: string,
+    parentPeriodId: string,
     namePrefix: string,
     namePrefixAr: string,
     startStr: string,
     endStr: string,
-  ): CycleEntry[] {
+  ): PeriodEntry[] {
     const start = new Date(startStr);
     const end = new Date(endStr);
     const totalDays = Math.ceil(
@@ -756,7 +756,7 @@ class OnboardingState {
     );
     const daysPerMonth = Math.floor(totalDays / 4);
 
-    const months: CycleEntry[] = [];
+    const months: PeriodEntry[] = [];
     const monthNamesAr = ["الأول", "الثاني", "الثالث", "الرابع (النهائي)"];
     const monthNamesEn = ["Month 1", "Month 2", "Month 3", "Month 4 (Final)"];
 
@@ -771,13 +771,13 @@ class OnboardingState {
       }
 
       months.push({
-        id: `${parentCycleId}-m${i + 1}`,
-        parent_id: parentCycleId,
+        id: `${parentPeriodId}-m${i + 1}`,
+        parent_id: parentPeriodId,
         name: `${namePrefix} - ${monthNamesEn[i]}`,
         name_ar: `${namePrefixAr} - الشهر ${monthNamesAr[i]}`,
         start_date: mStart.toISOString().split("T")[0],
         end_date: mEnd.toISOString().split("T")[0],
-        cycle_type: "month",
+        period_type: "month",
         weight: i === 3 ? 30 : 20,
       });
 
@@ -790,48 +790,48 @@ class OnboardingState {
   // ── Build Final Payload ────────────────────────────────────────
 
   buildPayload(orgId: string): OnboardingPayload {
-    const cycleYearId = `cycle-1447-${orgId}`;
+    const periodYearId = `period-1447-${orgId}`;
 
-    const cycles: CycleEntry[] = [
+    const periods: PeriodEntry[] = [
       {
-        id: cycleYearId,
+        id: periodYearId,
         parent_id: null,
         name: this.academicYearName,
         name_ar: this.academicYearNameAr,
         start_date: this.startDate,
         end_date: this.endDate,
-        cycle_type: "year",
+        period_type: "year",
         weight: null,
       },
       {
-        id: `${cycleYearId}-s1`,
-        parent_id: cycleYearId,
+        id: `${periodYearId}-s1`,
+        parent_id: periodYearId,
         name: this.semester1Name,
         name_ar: this.semester1NameAr,
         start_date: this.semester1Start,
         end_date: this.semester1End,
-        cycle_type: "term",
+        period_type: "term",
         weight: 50,
       },
       {
-        id: `${cycleYearId}-s2`,
-        parent_id: cycleYearId,
+        id: `${periodYearId}-s2`,
+        parent_id: periodYearId,
         name: this.semester2Name,
         name_ar: this.semester2NameAr,
         start_date: this.semester2Start,
         end_date: this.semester2End,
-        cycle_type: "term",
+        period_type: "term",
         weight: 50,
       },
       ...this.generateMonthsForSemester(
-        `${cycleYearId}-s1`,
+        `${periodYearId}-s1`,
         this.semester1Name,
         this.semester1NameAr,
         this.semester1Start,
         this.semester1End,
       ),
       ...this.generateMonthsForSemester(
-        `${cycleYearId}-s2`,
+        `${periodYearId}-s2`,
         this.semester2Name,
         this.semester2NameAr,
         this.semester2Start,
@@ -875,7 +875,7 @@ class OnboardingState {
       root_unit_id: `unit-${orgId}`,
       root_unit_name: this.rootUnitName,
       root_unit_name_ar: this.rootUnitNameAr,
-      cycles,
+      periods,
       time_slots: this.timeSlots,
       rooms: this.rooms.map((r) => ({
         ...r,

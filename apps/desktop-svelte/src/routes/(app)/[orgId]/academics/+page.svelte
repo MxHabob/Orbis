@@ -30,7 +30,7 @@ import * as m from "$lib/paraglide/messages";
 import {
   createClassesQuery,
   createSubjectsQuery,
-  createCyclesQuery,
+  createPeriodsQuery,
 } from "$lib/features/academics";
 import {
   createCurrentYearQuery,
@@ -43,7 +43,7 @@ let { data }: { data: { orgId: string } } = $props();
 // TanStack Queries
 const classesQuery = createClassesQuery(data.orgId);
 const subjectsQuery = createSubjectsQuery(data.orgId);
-const cyclesQuery = createCyclesQuery(data.orgId);
+const periodsQuery = createPeriodsQuery(data.orgId);
 const currentYearQuery = createCurrentYearQuery();
 const promotionJobsQuery = createPromotionJobsQuery(data.orgId);
 const examSessionsQuery = createExamSessionsQuery(data.orgId);
@@ -51,7 +51,7 @@ const examSessionsQuery = createExamSessionsQuery(data.orgId);
 // Derived Data
 const classes = $derived($classesQuery.data ?? []);
 const subjects = $derived($subjectsQuery.data ?? []);
-const cycles = $derived($cyclesQuery.data ?? []);
+const periods = $derived($periodsQuery.data ?? []);
 const currentYear = $derived($currentYearQuery.data ?? null);
 const promotionJobs = $derived($promotionJobsQuery.data ?? []);
 const examSessions = $derived($examSessionsQuery.data ?? []);
@@ -59,7 +59,7 @@ const examSessions = $derived($examSessionsQuery.data ?? []);
 const isLoading = $derived(
   $classesQuery.isLoading ||
     $subjectsQuery.isLoading ||
-    $cyclesQuery.isLoading ||
+    $periodsQuery.isLoading ||
     $currentYearQuery.isLoading ||
     $promotionJobsQuery.isLoading ||
     $examSessionsQuery.isLoading,
@@ -68,7 +68,7 @@ const isLoading = $derived(
 const error = $derived(
   $classesQuery.error ||
     $subjectsQuery.error ||
-    $cyclesQuery.error ||
+    $periodsQuery.error ||
     $currentYearQuery.error ||
     $promotionJobsQuery.error ||
     $examSessionsQuery.error,
@@ -77,7 +77,7 @@ const error = $derived(
 function refetchAll() {
   $classesQuery.refetch();
   $subjectsQuery.refetch();
-  $cyclesQuery.refetch();
+  $periodsQuery.refetch();
   $currentYearQuery.refetch();
   $promotionJobsQuery.refetch();
   $examSessionsQuery.refetch();
@@ -88,20 +88,20 @@ const activeYearName = $derived(
   currentYear ? currentYear.name_ar || currentYear.name : null,
 );
 
-// Find active cycle / term
-const activeCycle = $derived(
-  cycles.find((c) => c.is_current === 1 || c.is_current === true) || cycles[0],
+// Find active period / term
+const activePeriod = $derived(
+  periods.find((c) => c.is_current === 1 || c.is_current === true) || periods[0],
 );
 
-const activeCycleName = $derived(
-  activeCycle ? activeCycle.name_ar || activeCycle.name : null,
+const activePeriodName = $derived(
+  activePeriod ? activePeriod.name_ar || activePeriod.name : null,
 );
 
-// Grade entry status (based on active cycle/term)
+// Grade entry status (based on active period/term)
 const isGradeEntryOpen = $derived(
-  activeCycle
-    ? activeCycle.grade_entry_status === "open" ||
-        activeCycle.is_grade_entry_open === 1
+  activePeriod
+    ? activePeriod.grade_entry_status === "open" ||
+        activePeriod.is_grade_entry_open === 1
     : false,
 );
 
@@ -169,11 +169,11 @@ const advisorInsights = $derived.by(() => {
   const insights = [];
 
   // 1. Grade Entry Insight
-  if (activeCycleName) {
+  if (activePeriodName) {
     insights.push({
       id: "grade-entry",
       text: isGradeEntryOpen
-        ? m.academics_overview_insight_grades_open({ cycle: activeCycleName })
+        ? m.academics_overview_insight_grades_open({ period: activePeriodName })
         : m.academics_overview_insight_grades_closed(),
       variant: isGradeEntryOpen ? ("warning" as const) : ("neutral" as const),
       icon: ShieldCheck,
@@ -270,10 +270,10 @@ const advisorInsights = $derived.by(() => {
         </Badge>
       {/if}
       
-      {#if activeCycleName}
+      {#if activePeriodName}
         <Badge variant="outline" class="text-[9px] px-2 py-0.5 font-bold flex items-center gap-1.5 border-border/60 bg-card/60">
           <span class="h-1.5 w-1.5 rounded-full {isGradeEntryOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}"></span>
-          <span>{activeCycleName}</span>
+          <span>{activePeriodName}</span>
         </Badge>
       {/if}
     </div>

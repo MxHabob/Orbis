@@ -10,7 +10,7 @@ impl AcademicCommandRepo {
     pub async fn create_class(&self, c: class::Model) -> Result<class::Model, DbErr> {
         let active = class::ActiveModel {
             id: Set(c.id), org_id: Set(c.org_id), unit_id: Set(c.unit_id),
-            cycle_id: Set(c.cycle_id), name: Set(c.name), name_ar: Set(c.name_ar),
+            period_id: Set(c.period_id), name: Set(c.name), name_ar: Set(c.name_ar),
             level: Set(c.level), division: Set(c.division),
             homeroom_teacher_id: Set(c.homeroom_teacher_id),
             capacity: Set(c.capacity), current_students: Set(c.current_students),
@@ -51,7 +51,7 @@ impl AcademicCommandRepo {
 
     pub async fn create_enrollment(&self, e: enrollment::Model) -> Result<enrollment::Model, DbErr> {
         let active = enrollment::ActiveModel {
-            id: Set(e.id), org_id: Set(e.org_id), cycle_id: Set(e.cycle_id),
+            id: Set(e.id), org_id: Set(e.org_id), period_id: Set(e.period_id),
             student_id: Set(e.student_id), class_id: Set(e.class_id),
             student_number: Set(e.student_number), status: Set(e.status),
             enrollment_date: Set(e.enrollment_date), enrollment_type: Set(e.enrollment_type),
@@ -74,7 +74,7 @@ impl AcademicCommandRepo {
     pub async fn assign_subject_to_class(&self, cs: class_subject::Model) -> Result<class_subject::Model, DbErr> {
         let active = class_subject::ActiveModel {
             id: Set(cs.id), class_id: Set(cs.class_id), subject_id: Set(cs.subject_id),
-            cycle_id: Set(cs.cycle_id), primary_teacher_id: Set(cs.primary_teacher_id),
+            period_id: Set(cs.period_id), primary_teacher_id: Set(cs.primary_teacher_id),
             assistant_teacher_id: Set(cs.assistant_teacher_id),
             substitute_teacher_id: Set(cs.substitute_teacher_id),
             grade_groups: Set(cs.grade_groups), weekly_hours: Set(cs.weekly_hours),

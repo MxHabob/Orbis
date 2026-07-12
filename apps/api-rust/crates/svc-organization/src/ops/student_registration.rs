@@ -199,7 +199,7 @@ pub async fn register_student(
     let new_enrollment = enrollment::ActiveModel {
         id: sea_orm::ActiveValue::Set(enrollment_id.clone()),
         org_id: sea_orm::ActiveValue::Set(ctx.org_id.clone()),
-        cycle_id: sea_orm::ActiveValue::Set(String::new()),
+        period_id: sea_orm::ActiveValue::Set(String::new()),
         student_id: sea_orm::ActiveValue::Set(student_user_id.clone()),
         class_id: sea_orm::ActiveValue::Set(class_id.clone()),
         student_number: sea_orm::ActiveValue::Set(student_number.clone()),

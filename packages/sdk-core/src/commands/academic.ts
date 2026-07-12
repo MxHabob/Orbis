@@ -1,8 +1,8 @@
 /**
- * Academic command interfaces — mirrors svc-academic/ops + svc-organization/ops/cycle.
+ * Academic command interfaces — mirrors svc-academic/ops + svc-organization/ops/period.
  * Platform adapters (Desktop/Web) implement these interfaces.
  *
- * Migrated: cycles → periods, cycleId → periodId/yearId.
+ * Migrated: periods → periods, periodId → periodId/yearId.
  */
 import type { Class, Enrollment, Subject, OrgUnit, ClassSubject, AcademicPeriod, StudentGuardian, Document, Notification } from "../types";
 
@@ -43,12 +43,12 @@ export interface AcademicCommands {
   updateClassSubject(id: string, data: { primary_teacher_id?: string; weekly_hours?: number }): Promise<ClassSubject>;
   deleteClassSubject(id: string): Promise<void>;
 
-  // ── Periods (was Cycles) ────────────────────────────────────
-  listCycles(orgId: string): Promise<AcademicPeriod[]>;
+  // ── Periods (was Periods) ────────────────────────────────────
+  listPeriods(orgId: string): Promise<AcademicPeriod[]>;
   listPeriodsByYear(orgId: string, yearId: string): Promise<AcademicPeriod[]>;
-  getCycle(periodId: string): Promise<AcademicPeriod>;
-  createCycle(data: { name: string; name_ar?: string; period_type: string; parent_id?: string; start_date: string; end_date: string; grading_system?: string }): Promise<AcademicPeriod>;
-  lockCycle(orgId: string, periodId: string): Promise<void>;
+  getPeriod(periodId: string): Promise<AcademicPeriod>;
+  createPeriod(data: { name: string; name_ar?: string; period_type: string; parent_id?: string; start_date: string; end_date: string; grading_system?: string }): Promise<AcademicPeriod>;
+  lockPeriod(orgId: string, periodId: string): Promise<void>;
   unlockPeriod(orgId: string, periodId: string): Promise<void>;
   togglePeriodEnrollment(orgId: string, periodId: string, open: boolean): Promise<void>;
   togglePeriodGradeEntry(orgId: string, periodId: string, open: boolean): Promise<void>;

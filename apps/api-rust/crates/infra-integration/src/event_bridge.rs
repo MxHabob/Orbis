@@ -22,7 +22,7 @@ use crate::traits::{IntegrationEvent, IntegrationProvider, AdapterStatus};
 pub struct EventBridgeConfig {
     /// How often to poll adapters that don't push events (seconds).
     pub poll_interval_secs: u64,
-    /// Maximum events to process per poll cycle.
+    /// Maximum events to process per poll period.
     pub max_events_per_poll: usize,
     /// Whether to persist integration events for replay.
     pub persist_events: bool,
@@ -92,7 +92,7 @@ impl EventBridge {
     }
 
     /// Poll all adapters for new events and publish to EventBus.
-    pub async fn poll_cycle(&self) {
+    pub async fn poll_period(&self) {
         let adapters = self.adapters.read().await;
         let mut total_events = 0;
 
@@ -120,7 +120,7 @@ impl EventBridge {
         }
 
         if total_events > 0 {
-            debug!(events = total_events, "Poll cycle completed");
+            debug!(events = total_events, "Poll period completed");
         }
     }
 
@@ -153,7 +153,7 @@ impl EventBridge {
 
             loop {
                 ticker.tick().await;
-                self.poll_cycle().await;
+                self.poll_period().await;
             }
         });
     }

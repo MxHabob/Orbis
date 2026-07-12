@@ -30,7 +30,7 @@ const MAX_POLL_ATTEMPTS: u32 = 300;
 
 #[derive(serde::Serialize, serde::Deserialize, utoipa::ToSchema, Clone, Debug)]
 pub struct StartSolveRequest {
-    pub cycle_id: String,
+    pub period_id: String,
     #[serde(default)]
     pub mode: SolveMode,
 }
@@ -39,7 +39,7 @@ pub struct StartSolveRequest {
 pub struct SolveJobResponse {
     pub id: String,
     pub org_id: String,
-    pub cycle_id: String,
+    pub period_id: String,
     pub mode: String,
     pub status: String,
     pub score: Option<String>,
@@ -55,7 +55,7 @@ impl From<solve_job::Model> for SolveJobResponse {
         Self {
             id: j.id,
             org_id: j.org_id,
-            cycle_id: j.target_id,
+            period_id: j.target_id,
             mode: j.mode.unwrap_or_default(),
             status: j.status,
             score: j.score,
@@ -127,7 +127,7 @@ impl TimetableSolverService {
         let mode = req.mode.clone();
         let job_id = Uuid::new_v4().to_string();
 
-        let mut problem = self.build_timetable_problem(org_id, &req.cycle_id, mode.clone()).await?;
+        let mut problem = self.build_timetable_problem(org_id, &req.period_id, mode.clone()).await?;
         problem.job_id = job_id.clone();
 
         if problem.assignments.is_empty() && problem.pinned_lessons.is_empty() {
@@ -143,7 +143,7 @@ impl TimetableSolverService {
             id: job_id.clone(),
             org_id: org_id.to_string(),
             job_type: "timetable".to_string(),
-            target_id: req.cycle_id.clone(),
+            target_id: req.period_id.clone(),
             mode: Some(solve_mode_label(&mode).to_string()),
             status: "pending".to_string(),
             problem_snapshot: Some(snapshot),
@@ -192,9 +192,9 @@ impl TimetableSolverService {
     pub async fn list_schedule_solve_jobs(
         &self,
         org_id: &str,
-        cycle_id: Option<&str>,
+        period_id: Option<&str>,
     ) -> Result<Vec<SolveJobResponse>, AppError> {
-        let jobs = self.query.get_solve_jobs(org_id, "timetable", cycle_id).await?;
+        let jobs = self.query.get_solve_jobs(org_id, "timetable", period_id).await?;
         Ok(jobs.into_iter().map(Into::into).collect())
     }
 
@@ -245,7 +245,7 @@ impl TimetableSolverService {
             .map_err(|e| AppError::validation(format!("Invalid solution: {e}")))?;
 
         if job.mode.as_deref() == Some("full") {
-            self.cmd.cancel_lessons_for_cycle(org_id, &job.target_id).await?;
+            self.cmd.cancel_lessons_for_period(org_id, &job.target_id).await?;
         }
 
         let mut created = 0i32;
@@ -260,7 +260,7 @@ impl TimetableSolverService {
             };
 
             let placement = LessonPlacement {
-                cycle_id: job.target_id.clone(),
+                period_id: job.target_id.clone(),
                 class_id: assignment.class_id.clone(),
                 class_subject_id: assignment.class_subject_id.clone(),
                 subject_id: assignment.subject_id.clone(),
@@ -311,12 +311,12 @@ impl TimetableSolverService {
     async fn build_timetable_problem(
         &self,
         org_id: &str,
-        cycle_id: &str,
+        period_id: &str,
         mode: SolveMode,
     ) -> Result<TimetableProblem, AppError> {
-        let slots = self.query.get_time_slots(org_id, cycle_id).await?;
+        let slots = self.query.get_time_slots(org_id, period_id).await?;
         if slots.is_empty() {
-            return Err(AppError::validation("No time slots configured for this cycle"));
+            return Err(AppError::validation("No time slots configured for this period"));
         }
 
         let time_slots: Vec<TimeSlotDto> = slots.iter().map(|s| TimeSlotDto {
@@ -340,7 +340,7 @@ impl TimetableSolverService {
             room_type: r.room_type.clone(),
         }).collect();
 
-        let unavailability_list = self.query.get_teacher_unavailability(org_id, cycle_id).await?;
+        let unavailability_list = self.query.get_teacher_unavailability(org_id, period_id).await?;
         let unavailable_slots: Vec<TeacherUnavailableDto> = unavailability_list.into_iter().map(|r| TeacherUnavailableDto {
             teacher_id: r.teacher_id,
             day_of_week: r.day_of_week,
@@ -349,24 +349,24 @@ impl TimetableSolverService {
 
         let classes = class::Entity::find()
             .filter(class::Column::OrgId.eq(org_id))
-            .filter(class::Column::CycleId.eq(cycle_id))
+            .filter(class::Column::PeriodId.eq(period_id))
             .filter(class::Column::IsActive.eq(1))
             .all(&self.query.db)
             .await?;
 
         let class_ids: Vec<String> = classes.iter().map(|c| c.id.clone()).collect();
         if class_ids.is_empty() {
-            return Err(AppError::validation("No classes found for this cycle"));
+            return Err(AppError::validation("No classes found for this period"));
         }
 
         let class_subjects = class_subject::Entity::find()
-            .filter(class_subject::Column::CycleId.eq(cycle_id))
+            .filter(class_subject::Column::PeriodId.eq(period_id))
             .filter(class_subject::Column::IsActive.eq(1))
             .filter(class_subject::Column::ClassId.is_in(class_ids))
             .all(&self.query.db)
             .await?;
 
-        let existing = self.query.get_all_scheduled_lessons_for_cycle(org_id, cycle_id).await?;
+        let existing = self.query.get_all_scheduled_lessons_for_period(org_id, period_id).await?;
 
         let mut lessons_per_subject: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
         for lesson in &existing {
@@ -417,7 +417,7 @@ impl TimetableSolverService {
         Ok(TimetableProblem {
             job_id: String::new(),
             org_id: org_id.to_string(),
-            cycle_id: cycle_id.to_string(),
+            period_id: period_id.to_string(),
             mode,
             time_slots,
             rooms,

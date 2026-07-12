@@ -39,7 +39,7 @@ pub async fn delete_time_slot(state: State<'_, Arc<AppState>>, org_id: String, s
 #[tauri::command]
 pub async fn get_class_schedule(
     state: State<'_, Arc<AppState>>,
-    cycle_id: String,
+    period_id: String,
     class_id: String,
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
@@ -48,23 +48,23 @@ pub async fn get_class_schedule(
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Class not found"))?;
     let ctx = state.build_context(&class.org_id).await.map_err(CommandError::from)?;
-    let r = ops::lesson::list_by_class(&ctx, &cycle_id, &class_id).await.map_err(CommandError::from)?;
+    let r = ops::lesson::list_by_class(&ctx, &period_id, &class_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
 #[tauri::command]
 pub async fn get_teacher_schedule(
     state: State<'_, Arc<AppState>>,
-    cycle_id: String,
+    period_id: String,
     teacher_id: String,
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
     let db = state.active_db().await;
-    let cycle = svc_organization::entities::academic_cycle::Entity::find_by_id(cycle_id.clone())
+    let period = svc_organization::entities::academic_period::Entity::find_by_id(period_id.clone())
         .one(&db).await.map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::not_found("Cycle not found"))?;
-    let ctx = state.build_context(&cycle.org_id).await.map_err(CommandError::from)?;
-    let r = ops::lesson::list_by_teacher(&ctx, &cycle_id, &teacher_id).await.map_err(CommandError::from)?;
+        .ok_or_else(|| CommandError::not_found("Period not found"))?;
+    let ctx = state.build_context(&period.org_id).await.map_err(CommandError::from)?;
+    let r = ops::lesson::list_by_teacher(&ctx, &period_id, &teacher_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
@@ -135,20 +135,20 @@ pub async fn delete_room(state: State<'_, Arc<AppState>>, org_id: String, room_i
 // ── Solver ──────────────────────────────────────────────────────────
 
 #[tauri::command]
-pub async fn start_solver(state: State<'_, Arc<AppState>>, cycle_id: String) -> CmdResult<serde_json::Value> {
+pub async fn start_solver(state: State<'_, Arc<AppState>>, period_id: String) -> CmdResult<serde_json::Value> {
     let db = state.active_db().await;
     let org_id = resolve_org_id(&db).await?;
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::solver::start(&ctx, &cycle_id).await.map_err(CommandError::from)?;
+    let r = ops::solver::start(&ctx, &period_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
 #[tauri::command]
-pub async fn list_solver_jobs(state: State<'_, Arc<AppState>>, cycle_id: String) -> CmdResult<serde_json::Value> {
+pub async fn list_solver_jobs(state: State<'_, Arc<AppState>>, period_id: String) -> CmdResult<serde_json::Value> {
     let db = state.active_db().await;
     let org_id = resolve_org_id(&db).await?;
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::solver::list_jobs(&ctx, &cycle_id).await.map_err(CommandError::from)?;
+    let r = ops::solver::list_jobs(&ctx, &period_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
@@ -189,7 +189,7 @@ pub async fn delete_solver_job(state: State<'_, Arc<AppState>>, job_id: String) 
 #[tauri::command]
 pub async fn check_schedule_conflicts(
     state: State<'_, Arc<AppState>>,
-    cycle_id: String,
+    period_id: String,
     teacher_id: String,
     time_slot_id: String,
     day_of_week: i32,
@@ -198,18 +198,18 @@ pub async fn check_schedule_conflicts(
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
     let db = state.active_db().await;
-    let cycle = svc_organization::entities::academic_cycle::Entity::find_by_id(cycle_id.clone())
+    let period = svc_organization::entities::academic_period::Entity::find_by_id(period_id.clone())
         .one(&db).await.map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::not_found("Cycle not found"))?;
-    let ctx = state.build_context(&cycle.org_id).await.map_err(CommandError::from)?;
+        .ok_or_else(|| CommandError::not_found("Period not found"))?;
+    let ctx = state.build_context(&period.org_id).await.map_err(CommandError::from)?;
 
     let query_repo = std::sync::Arc::new(svc_scheduling::repository::SchedulingQueryRepo::new(ctx.db.clone()));
     let cmd_repo = std::sync::Arc::new(svc_scheduling::repository::SchedulingCommandRepo::new(ctx.db.clone()));
     let service = svc_scheduling::services::schedule::ScheduleService::new(cmd_repo, query_repo);
 
     let r = service.check_schedule_conflicts(
-        &cycle.org_id,
-        &cycle_id,
+        &period.org_id,
+        &period_id,
         &time_slot_id,
         day_of_week,
         exclude_id.as_deref(),

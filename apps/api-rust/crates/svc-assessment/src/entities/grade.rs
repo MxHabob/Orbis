@@ -8,7 +8,7 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: String,
     pub org_id: String,
-    pub cycle_id: String,
+    pub period_id: String,
     pub enrollment_id: String,
     pub assessment_id: Option<String>,
     pub class_subject_id: Option<String>,

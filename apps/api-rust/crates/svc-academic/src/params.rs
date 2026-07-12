@@ -17,7 +17,7 @@ pub struct OrgUnitParams {
 #[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]
 pub struct EnrollmentParams {
     pub class_id: Option<String>,
-    pub cycle_id: Option<String>,
+    pub period_id: Option<String>,
     pub student_id: Option<String>,
     pub status: Option<String>,
     pub q: Option<String>,
@@ -40,7 +40,7 @@ pub struct GuardianParams {
 #[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]
 pub struct ClassSubjectParams {
     pub class_id: Option<String>,
-    pub cycle_id: Option<String>,
+    pub period_id: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]

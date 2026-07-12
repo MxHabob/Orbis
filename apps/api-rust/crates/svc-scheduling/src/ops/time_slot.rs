@@ -21,7 +21,7 @@ pub async fn list(ctx: &ServiceContext) -> Result<Vec<time_slot::Model>, AppErro
 
 #[derive(serde::Deserialize)]
 pub struct CreateTimeSlotPayload {
-    pub cycle_id: String,
+    pub period_id: String,
     pub slot_number: i32,
     pub name: Option<String>,
     pub name_ar: Option<String>,
@@ -46,7 +46,7 @@ pub async fn create(
     let id = Uuid::new_v4().to_string();
 
     let model = time_slot::Model {
-        id: id.clone(), org_id: ctx.org_id.clone(), cycle_id: req.cycle_id,
+        id: id.clone(), org_id: ctx.org_id.clone(), period_id: req.period_id,
         slot_number: req.slot_number, name: req.name, name_ar: req.name_ar,
         start_time: req.start_time, end_time: req.end_time, duration_minutes: req.duration_minutes,
         is_break: if req.is_break { 1 } else { 0 }, break_type: req.break_type,

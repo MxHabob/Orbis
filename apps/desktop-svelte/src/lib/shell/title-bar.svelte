@@ -32,23 +32,23 @@ let isMaximized = $state(false);
 let isMac = $state(false);
 let isOnline = $state(true);
 
-// Academic cycle — reads from unified academicContext (populated by bootstrap)
-const cycles = $derived(academicContext.allCycles);
-const currentCycleName = $derived.by(() => {
-  const active = cycles.find(
-    (c) => String(c.id) === academicContext.effectiveCycleId,
+// Academic period — reads from unified academicContext (populated by bootstrap)
+const periods = $derived(academicContext.allPeriods);
+const currentPeriodName = $derived.by(() => {
+  const active = periods.find(
+    (c) => String(c.id) === academicContext.effectivePeriodId,
   );
   if (active) {
     return active.name_ar && getLocale() === "ar"
       ? active.name_ar
       : active.name;
   }
-  return m.titlebar_cycle();
+  return m.titlebar_period();
 });
 
 // Phase label for the phase badge
 const phaseLabel = $derived.by(() => {
-  const phase = academicContext.cyclePhase;
+  const phase = academicContext.periodPhase;
   if (!phase) return "";
   switch (phase) {
     case "pre_start":
@@ -67,7 +67,7 @@ const phaseLabel = $derived.by(() => {
 });
 
 const phaseBadgeVariant = $derived.by(() => {
-  const phase = academicContext.cyclePhase;
+  const phase = academicContext.periodPhase;
   switch (phase) {
     case "active":
       return "success" as const;
@@ -136,18 +136,18 @@ onMount(() => {
   };
 });
 
-// No $effect for loading cycles — academicContext is populated by bootstrap.
-// Cycles are reactive via $derived above.
-// No selectCycle function — the title bar is now a read-only display.
-// Cycle switching is done via the sidebar YearSwitcher for year-level,
-// and inside academic pages (e.g. Control) for cycle-level.
+// No $effect for loading periods — academicContext is populated by bootstrap.
+// Periods are reactive via $derived above.
+// No selectPeriod function — the title bar is now a read-only display.
+// Period switching is done via the sidebar YearSwitcher for year-level,
+// and inside academic pages (e.g. Control) for period-level.
 </script>
 
 <div 
   class="h-13 w-full bg-card border-b border-border/60  select-none flex items-center justify-between px-3.5 text-xs z-50 shrink-0"
   data-tauri-drag-region
 >
-  <!-- Start Side: Spacing for Mac traffic lights OR Logo + Cycle Switcher + Breadcrumb -->
+  <!-- Start Side: Spacing for Mac traffic lights OR Logo + Period Switcher + Breadcrumb -->
   <div class="flex items-center gap-2.5 min-w-0 max-w-[55%]" class:ps-[76px]={isMac} data-tauri-drag-region>
     {#if !isMac}
       <!-- App Logo -->

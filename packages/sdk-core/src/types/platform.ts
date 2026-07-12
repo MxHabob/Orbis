@@ -2,7 +2,7 @@
  * Platform command interfaces — Desktop-specific operations.
  * Year management, promotion, periods, overrides, AI, document templates.
  *
- * Migrated: cycles → periods, AcademicCycleContext → AcademicPeriod.
+ * Migrated: periods → periods, AcademicPeriodContext → AcademicPeriod.
  */
 import type { AcademicPeriod } from "./academic";
 
@@ -40,11 +40,11 @@ export interface AcademicContextResponse {
 }
 
 /** @deprecated Use AcademicContextResponse instead */
-export type AcademicCycleContext = AcademicPeriod;
+export type AcademicPeriodContext = AcademicPeriod;
 /** @deprecated Use AcademicPeriod instead */
-export type AcademicCycleSummary = AcademicPeriod;
+export type AcademicPeriodSummary = AcademicPeriod;
 /** @deprecated Use period status instead */
-export type CyclePhase = "planned" | "active" | "grading" | "exam" | "locked" | "closed";
+export type PeriodPhase = "planned" | "active" | "grading" | "exam" | "locked" | "closed";
 
 export interface PromotionJob {
   id: string;
@@ -141,7 +141,7 @@ export interface AcademicPolicy {
 export interface CalendarEvent {
   id: string;
   org_id: string;
-  cycle_id: string;
+  period_id: string;
   title: string;
   title_ar?: string | null;
   event_type: string;

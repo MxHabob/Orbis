@@ -49,8 +49,8 @@ function getTaskTypeLabel(type: string): string {
       return m.autopilot_task_grade_entry_open();
     case "grade_entry_close":
       return m.autopilot_task_grade_entry_close();
-    case "cycle_lock":
-      return m.autopilot_task_cycle_lock();
+    case "period_lock":
+      return m.autopilot_task_period_lock();
     case "report_generation":
       return m.autopilot_task_report_generation();
     case "backup":
@@ -95,7 +95,7 @@ async function handleRunTick() {
   }
 }
 
-const phaseLabel = $derived(getPhaseLabel(academicContext.cyclePhase));
+const phaseLabel = $derived(getPhaseLabel(academicContext.periodPhase));
 </script>
 
 <Popover>

@@ -103,7 +103,7 @@ impl FinanceCommandRepo {
         let active = student_fee::ActiveModel {
             id: Set(sf.id),
             org_id: Set(sf.org_id),
-            cycle_id: Set(sf.cycle_id),
+            period_id: Set(sf.period_id),
             enrollment_id: Set(sf.enrollment_id),
             fee_template_id: Set(sf.fee_template_id),
             original_amount: Set(sf.original_amount),

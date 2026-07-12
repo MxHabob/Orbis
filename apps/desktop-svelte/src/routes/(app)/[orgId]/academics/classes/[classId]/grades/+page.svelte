@@ -30,12 +30,12 @@ const classId = $derived(page.params.classId);
 let students = $state<any[]>([]);
 let assessments = $state<any[]>([]);
 let subjects = $state<any[]>([]);
-let cycles = $state<any[]>([]);
+let periods = $state<any[]>([]);
 let isLoading = $state(true);
 
 // Filters
 let selectedSubjectId = $state<string>("");
-let activeCycleId = $state<string>("");
+let activePeriodId = $state<string>("");
 let semesters = $state<any[]>([]);
 let selectedSemesterId = $state<string>("");
 
@@ -45,28 +45,28 @@ let gradeEntries = $state<Record<string, string>>({});
 async function loadData() {
   isLoading = true;
   try {
-    const [enrollments, subjectList, cycleList] = await Promise.all([
+    const [enrollments, subjectList, periodList] = await Promise.all([
       commands.academic.listEnrollments(orgId ?? ""),
       commands.academic.listSubjects(orgId ?? ""),
-      commands.academic.listCycles(orgId ?? ""),
+      commands.academic.listPeriods(orgId ?? ""),
     ]);
 
     // Filter students for this class
     students = enrollments.filter((s) => String(s.class_id) === classId);
     subjects = subjectList;
-    cycles = cycleList;
+    periods = periodList;
 
     const activeYear =
-      cycleList.find(
+      periodList.find(
         (c) =>
           c.type === "year" && (c.is_current === 1 || c.is_current === true),
       ) ||
-      cycleList.find((c) => c.type === "year") ||
-      cycleList[0];
+      periodList.find((c) => c.type === "year") ||
+      periodList[0];
 
     if (activeYear) {
-      activeCycleId = String(activeYear.id);
-      semesters = cycleList.filter(
+      activePeriodId = String(activeYear.id);
+      semesters = periodList.filter(
         (c) => c.parent_id === activeYear.id && c.type === "term",
       );
       if (semesters.length > 0) {
@@ -92,7 +92,7 @@ async function loadAssessments() {
     const list = await commands.assessment.listAssessments({
       classId,
       subjectId: selectedSubjectId || undefined,
-      termId: selectedSemesterId || activeCycleId || "",
+      termId: selectedSemesterId || activePeriodId || "",
     });
     assessments = list;
 
@@ -110,7 +110,7 @@ async function loadAssessments() {
       const existingGrades = await commands.grades
         .getAll(orgId ?? "", {
           class_id: classId,
-          cycle_id: selectedSemesterId || activeCycleId || undefined,
+          period_id: selectedSemesterId || activePeriodId || undefined,
         })
         .catch(() => []);
 
@@ -291,7 +291,7 @@ async function handleCellEdit(event: any) {
 
       const request = {
         enrollment_id: student.id,
-        cycle_id: selectedSemesterId || activeCycleId,
+        period_id: selectedSemesterId || activePeriodId,
         assessment_id: assessmentId,
         subject_name: selectedSubject?.name || "Subject",
         subject_name_ar: selectedSubject?.name_ar || null,

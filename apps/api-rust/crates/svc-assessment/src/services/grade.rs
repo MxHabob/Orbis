@@ -45,7 +45,7 @@ pub struct UpdateGradeRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct BulkSubjectGradeEntry {
-    pub cycle_id: String,
+    pub period_id: String,
     pub class_id: String,
     pub subject_id: String,
     pub subject_name: String,
@@ -78,7 +78,7 @@ pub struct BulkSubjectGradeResult {
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct GradeMatrixResponse {
-    pub cycle_id: String,
+    pub period_id: String,
     pub class_subject_id: String,
     pub students: Vec<StudentGradeRow>,
     pub assessment_types: Vec<String>,
@@ -111,7 +111,7 @@ pub struct GradeReportCard {
     pub enrollment_id: String,
     pub student_id: String,
     pub student_name: String,
-    pub cycle_name: String,
+    pub period_name: String,
     pub subjects: Vec<SubjectGradeSummary>,
     pub overall_percentage: f64,
     pub overall_gpa: f64,
@@ -136,7 +136,7 @@ pub struct SubjectGradeSummary {
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct UpsertCellRequest {
     pub enrollment_id: String,
-    pub cycle_id: String,
+    pub period_id: String,
     pub assessment_id: String,
     pub subject_name: String,
     pub subject_name_ar: Option<String>,
@@ -207,21 +207,21 @@ impl GradeService {
         }
     }
 
-    pub async fn check_cycle_open_for_grading(&self, cycle_id: &str) -> Result<(), AppError> {
-        let cycle = academic_period::Entity::find_by_id(cycle_id.to_string())
+    pub async fn check_period_open_for_grading(&self, period_id: &str) -> Result<(), AppError> {
+        let period = academic_period::Entity::find_by_id(period_id.to_string())
             .one(&self.query.db)
             .await?
-            .ok_or_else(|| AppError::not_found("academic_period", cycle_id))?;
+            .ok_or_else(|| AppError::not_found("academic_period", period_id))?;
 
-        if cycle.is_locked == 1 {
-            return Err(AppError::unauthorized("Academic cycle is locked"));
+        if period.is_locked == 1 {
+            return Err(AppError::unauthorized("Academic period is locked"));
         }
 
-        if cycle.is_grade_entry_open == 0 {
+        if period.is_grade_entry_open == 0 {
             return Err(AppError::unauthorized("Grade entry window is closed"));
         }
 
-        if let (Some(ref start), Some(ref end)) = (&cycle.grade_entry_start, &cycle.grade_entry_end) {
+        if let (Some(ref start), Some(ref end)) = (&period.grade_entry_start, &period.grade_entry_end) {
             let now = Utc::now().to_rfc3339();
             if now < *start {
                 return Err(AppError::unauthorized(format!("Grade entry has not started yet. Starts: {}", start)));
@@ -271,7 +271,7 @@ impl GradeService {
             .await?
             .ok_or_else(|| AppError::not_found("enrollment", &req.enrollment_id))?;
 
-        self.check_cycle_open_for_grading(&enrollment.cycle_id).await?;
+        self.check_period_open_for_grading(&enrollment.period_id).await?;
 
         if req.score < 0.0 || req.score > req.max_score {
             return Err(AppError::validation(format!("Score must be between 0 and {}", req.max_score)));
@@ -284,7 +284,7 @@ impl GradeService {
         let g = grade::Model {
             id: Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
-            cycle_id: enrollment.cycle_id,
+            period_id: enrollment.period_id,
             enrollment_id: req.enrollment_id,
             assessment_id: req.assessment_id,
             class_subject_id: req.class_subject_id,
@@ -328,7 +328,7 @@ impl GradeService {
         graded_by: &str,
         req: BulkSubjectGradeEntry,
     ) -> Result<BulkSubjectGradeResult, AppError> {
-        self.check_cycle_open_for_grading(&req.cycle_id).await?;
+        self.check_period_open_for_grading(&req.period_id).await?;
 
         let mut result = BulkSubjectGradeResult {
             created: 0,
@@ -385,7 +385,7 @@ impl GradeService {
                     let g = grade::Model {
                         id: Uuid::new_v4().to_string(),
                         org_id: org_id.to_string(),
-                        cycle_id: req.cycle_id.clone(),
+                        period_id: req.period_id.clone(),
                         enrollment_id: student.enrollment_id.clone(),
                         assessment_id: req.assessment_id.clone(),
                         class_subject_id: req.class_subject_id.clone(),
@@ -440,7 +440,7 @@ impl GradeService {
         let existing = self.query.get_grade_by_id(id).await?
             .ok_or_else(|| AppError::not_found("grade", id))?;
 
-        self.check_cycle_open_for_grading(&existing.cycle_id).await?;
+        self.check_period_open_for_grading(&existing.period_id).await?;
         self.save_grade_history(&existing, graded_by, req.change_reason, "update").await?;
 
         let percentage = (req.score / req.max_score) * 100.0;
@@ -468,7 +468,7 @@ impl GradeService {
             return Err(AppError::validation(format!("Score must be between 0 and {}", req.max_score)));
         }
 
-        self.check_cycle_open_for_grading(&req.cycle_id).await?;
+        self.check_period_open_for_grading(&req.period_id).await?;
 
         let percentage = (req.score / req.max_score) * 100.0;
         let grade_letter = Self::score_to_grade_letter(percentage);
@@ -515,7 +515,7 @@ impl GradeService {
         &self,
         org_id: &str,
         _graded_by: &str,
-        cycle_id: &str,
+        period_id: &str,
         class_id: &str,
         semester: &str,
     ) -> Result<Vec<grade::Model>, AppError> {
@@ -523,7 +523,7 @@ impl GradeService {
         
         let class_subjects = svc_academic::entities::class_subject::Entity::find()
             .filter(svc_academic::entities::class_subject::Column::ClassId.eq(class_id))
-            .filter(svc_academic::entities::class_subject::Column::CycleId.eq(cycle_id))
+            .filter(svc_academic::entities::class_subject::Column::PeriodId.eq(period_id))
             .all(&self.query.db)
             .await?;
 
@@ -535,7 +535,7 @@ impl GradeService {
 
         let grades = grade::Entity::find()
             .filter(grade::Column::OrgId.eq(org_id))
-            .filter(grade::Column::CycleId.eq(cycle_id))
+            .filter(grade::Column::PeriodId.eq(period_id))
             .filter(grade::Column::Semester.eq(semester))
             .filter(grade::Column::ClassSubjectId.is_in(cs_ids))
             .all(&self.query.db)
@@ -556,7 +556,7 @@ impl GradeService {
     pub async fn get_report_card(
         &self,
         enrollment_id: &str,
-        cycle_id: &str,
+        period_id: &str,
     ) -> Result<GradeReportCard, AppError> {
         let enrollment = enrollment::Entity::find_by_id(enrollment_id.to_string())
             .one(&self.query.db)
@@ -568,17 +568,17 @@ impl GradeService {
             .await?
             .ok_or_else(|| AppError::not_found("student", &enrollment.student_id))?;
 
-        let cycle = academic_period::Entity::find_by_id(cycle_id.to_string())
+        let period = academic_period::Entity::find_by_id(period_id.to_string())
             .one(&self.query.db)
             .await?
-            .ok_or_else(|| AppError::not_found("academic_period", cycle_id))?;
+            .ok_or_else(|| AppError::not_found("academic_period", period_id))?;
 
         let passing_grade = 50.0;
 
         use sea_orm::{QueryFilter, ColumnTrait};
         let grades = grade::Entity::find()
             .filter(grade::Column::EnrollmentId.eq(enrollment_id))
-            .filter(grade::Column::CycleId.eq(cycle_id))
+            .filter(grade::Column::PeriodId.eq(period_id))
             .all(&self.query.db)
             .await?;
 
@@ -635,7 +635,7 @@ impl GradeService {
             enrollment_id: enrollment_id.to_string(),
             student_id: student.id,
             student_name: student.full_name,
-            cycle_name: cycle.name,
+            period_name: period.name,
             subjects,
             overall_percentage: (overall_percentage * 100.0).round() / 100.0,
             overall_gpa: (overall_gpa * 100.0).round() / 100.0,
@@ -648,12 +648,12 @@ impl GradeService {
 
     pub async fn get_analytics(
         &self,
-        cycle_id: &str,
+        period_id: &str,
         class_subject_id: &str,
     ) -> Result<GradeAnalytics, AppError> {
         use sea_orm::{QueryFilter, ColumnTrait};
         let grades = grade::Entity::find()
-            .filter(grade::Column::CycleId.eq(cycle_id))
+            .filter(grade::Column::PeriodId.eq(period_id))
             .filter(grade::Column::ClassSubjectId.eq(class_subject_id))
             .all(&self.query.db)
             .await?;
@@ -733,7 +733,7 @@ impl GradeService {
 
     pub async fn get_grade_matrix(
         &self,
-        cycle_id: &str,
+        period_id: &str,
         class_subject_id: &str,
     ) -> Result<GradeMatrixResponse, AppError> {
         use sea_orm::{QueryFilter, ColumnTrait, EntityTrait};
@@ -745,12 +745,12 @@ impl GradeService {
 
         let enrollments = svc_academic::entities::enrollment::Entity::find()
             .filter(svc_academic::entities::enrollment::Column::ClassId.eq(&class_subject.class_id))
-            .filter(svc_academic::entities::enrollment::Column::CycleId.eq(cycle_id))
+            .filter(svc_academic::entities::enrollment::Column::PeriodId.eq(period_id))
             .all(&self.query.db)
             .await?;
 
         let grades = grade::Entity::find()
-            .filter(grade::Column::CycleId.eq(cycle_id))
+            .filter(grade::Column::PeriodId.eq(period_id))
             .filter(grade::Column::ClassSubjectId.eq(class_subject_id))
             .all(&self.query.db)
             .await?;
@@ -809,7 +809,7 @@ impl GradeService {
         }
 
         Ok(GradeMatrixResponse {
-            cycle_id: cycle_id.to_string(),
+            period_id: period_id.to_string(),
             class_subject_id: class_subject_id.to_string(),
             students,
             assessment_types,

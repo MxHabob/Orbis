@@ -1,7 +1,7 @@
 <!--
 @component SessionCreateSheet
 Sheet for creating/editing exam sessions.
-Includes choosing the academic cycle.
+Includes choosing the academic period.
 -->
 <script lang="ts">
 import {
@@ -39,8 +39,8 @@ let nameAr = $state(session?.name_ar || "");
 let sessionType = $state(session?.session_type || "final");
 let startDate = $state(session?.start_date || "");
 let endDate = $state(session?.end_date || "");
-let cycleId = $state(session?.cycle_id || "");
-let cyclesList = $state<any[]>([]);
+let periodId = $state(session?.period_id || "");
+let periodsList = $state<any[]>([]);
 
 let isSaving = $state(false);
 
@@ -51,22 +51,22 @@ $effect(() => {
   sessionType = session?.session_type || "final";
   startDate = session?.start_date || "";
   endDate = session?.end_date || "";
-  cycleId = session?.cycle_id || "";
+  periodId = session?.period_id || "";
 });
 
-// Load academic cycles on open
+// Load academic periods on open
 $effect(() => {
   if (open && orgId) {
     commands.academics
-      .getCycles(orgId)
+      .getPeriods(orgId)
       .then((res) => {
-        cyclesList = res || [];
-        if (!cycleId && cyclesList.length > 0) {
-          cycleId = cyclesList[0].id;
+        periodsList = res || [];
+        if (!periodId && periodsList.length > 0) {
+          periodId = periodsList[0].id;
         }
       })
       .catch((e) => {
-        console.error("Failed to load cycles:", e);
+        console.error("Failed to load periods:", e);
       });
   }
 });
@@ -80,7 +80,7 @@ async function handleSubmit() {
     toast.error("تاريخ البداية والنهاية مطلوبان");
     return;
   }
-  if (!cycleId) {
+  if (!periodId) {
     toast.error("الدورة الأكاديمية مطلوبة");
     return;
   }
@@ -95,7 +95,7 @@ async function handleSubmit() {
         type: sessionType,
         start_date: startDate,
         end_date: endDate,
-        cycle_id: cycleId,
+        period_id: periodId,
       });
     } else {
       await examsStore.createSession(orgId, userId, {
@@ -104,7 +104,7 @@ async function handleSubmit() {
         session_type: sessionType,
         start_date: startDate,
         end_date: endDate,
-        cycle_id: cycleId,
+        period_id: periodId,
       });
     }
     toast.success(m.exams_create_success());
@@ -113,7 +113,7 @@ async function handleSubmit() {
     nameAr = "";
     startDate = "";
     endDate = "";
-    cycleId = "";
+    periodId = "";
     open = false;
     onSuccess();
   } catch (e: any) {
@@ -137,18 +137,18 @@ async function handleSubmit() {
 
     <div class="flex-1 overflow-y-auto py-4 flex flex-col gap-4 px-1">
       
-      <!-- Academic Cycle Selector -->
+      <!-- Academic Period Selector -->
       <div class="flex flex-col gap-1.5">
-        <label for="session-cycle" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
+        <label for="session-period" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
           الدورة الأكاديمية
         </label>
         <select
-          id="session-cycle"
-          bind:value={cycleId}
+          id="session-period"
+          bind:value={periodId}
           class="h-9 px-3 text-xs rounded-lg border border-border bg-background text-foreground focus:ring-1 focus:ring-primary w-full"
         >
           <option value="" disabled>اختر الدورة الأكاديمية...</option>
-          {#each cyclesList as c}
+          {#each periodsList as c}
             <option value={c.id}>{c.name_ar || c.name}</option>
           {/each}
         </select>

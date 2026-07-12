@@ -2,7 +2,7 @@
  * Academic domain queries — periods, classes, subjects, schedules.
  * Wraps IPC commands with TanStack Query for automatic caching.
  *
- * Migrated: cycles → periods, cycleId → periodId/yearId.
+ * Migrated: periods → periods, periodId → periodId/yearId.
  */
 import { createQuery } from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
@@ -11,7 +11,7 @@ import { commands } from "$lib/core/ipc";
 export function createPeriodsQuery(orgId: string) {
   return createQuery({
     queryKey: ["periods", orgId],
-    queryFn: () => commands.academic.listCycles(orgId),
+    queryFn: () => commands.academic.listPeriods(orgId),
     enabled: !!orgId,
     staleTime: 10 * 60 * 1000,
   });
@@ -28,7 +28,7 @@ export function createPeriodsByYearQuery(orgId: string, yearId: string) {
 }
 
 // Backward compat alias
-export const createCyclesQuery = createPeriodsQuery;
+export const createPeriodsQuery = createPeriodsQuery;
 
 /** Classes for an organization. */
 export function createClassesQuery(orgId: string) {

@@ -11,24 +11,24 @@ use shared_kernel::traits::{AuditEntry, Permission};
 use crate::entities::scheduled_lesson;
 
 pub async fn list_by_class(
-    ctx: &ServiceContext, cycle_id: &str, class_id: &str,
+    ctx: &ServiceContext, period_id: &str, class_id: &str,
 ) -> Result<Vec<scheduled_lesson::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleRead).await?;
     Ok(scheduled_lesson::Entity::find()
         .filter(scheduled_lesson::Column::OrgId.eq(&ctx.org_id))
-        .filter(scheduled_lesson::Column::CycleId.eq(cycle_id))
+        .filter(scheduled_lesson::Column::PeriodId.eq(period_id))
         .filter(scheduled_lesson::Column::ClassId.eq(class_id))
         .order_by_asc(scheduled_lesson::Column::DayOfWeek)
         .all(&ctx.db).await?)
 }
 
 pub async fn list_by_teacher(
-    ctx: &ServiceContext, cycle_id: &str, teacher_id: &str,
+    ctx: &ServiceContext, period_id: &str, teacher_id: &str,
 ) -> Result<Vec<scheduled_lesson::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleRead).await?;
     Ok(scheduled_lesson::Entity::find()
         .filter(scheduled_lesson::Column::OrgId.eq(&ctx.org_id))
-        .filter(scheduled_lesson::Column::CycleId.eq(cycle_id))
+        .filter(scheduled_lesson::Column::PeriodId.eq(period_id))
         .filter(scheduled_lesson::Column::TeacherId.eq(teacher_id))
         .order_by_asc(scheduled_lesson::Column::DayOfWeek)
         .all(&ctx.db).await?)
@@ -43,7 +43,7 @@ pub async fn get(ctx: &ServiceContext, lesson_id: &str) -> Result<scheduled_less
 
 #[derive(serde::Deserialize)]
 pub struct CreateLessonRequest {
-    pub cycle_id: String,
+    pub period_id: String,
     pub class_id: String,
     pub class_subject_id: String,
     pub subject_id: String,
@@ -66,7 +66,7 @@ pub async fn create(
     let id = Uuid::new_v4().to_string();
 
     let model = scheduled_lesson::Model {
-        id: id.clone(), org_id: ctx.org_id.clone(), cycle_id: req.cycle_id,
+        id: id.clone(), org_id: ctx.org_id.clone(), period_id: req.period_id,
         class_id: req.class_id, class_subject_id: req.class_subject_id,
         subject_id: req.subject_id, teacher_id: req.teacher_id,
         substitute_teacher_id: None, time_slot_id: req.time_slot_id, day_of_week: req.day_of_week,
@@ -132,7 +132,7 @@ pub async fn delete(ctx: &ServiceContext, lesson_id: &str) -> Result<(), AppErro
 
 /// Check for scheduling conflicts (same teacher or room at same time/day).
 pub async fn check_conflicts(
-    ctx: &ServiceContext, cycle_id: &str, teacher_id: &str,
+    ctx: &ServiceContext, period_id: &str, teacher_id: &str,
     time_slot_id: &str, day_of_week: i32, room_id: Option<String>,
 ) -> Result<Vec<scheduled_lesson::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleRead).await?;
@@ -146,7 +146,7 @@ pub async fn check_conflicts(
 
     Ok(scheduled_lesson::Entity::find()
         .filter(scheduled_lesson::Column::OrgId.eq(&ctx.org_id))
-        .filter(scheduled_lesson::Column::CycleId.eq(cycle_id))
+        .filter(scheduled_lesson::Column::PeriodId.eq(period_id))
         .filter(scheduled_lesson::Column::TimeSlotId.eq(time_slot_id))
         .filter(scheduled_lesson::Column::DayOfWeek.eq(day_of_week))
         .filter(condition)

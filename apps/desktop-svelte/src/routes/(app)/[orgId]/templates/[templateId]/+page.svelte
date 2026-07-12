@@ -266,7 +266,7 @@ function goBack() {
   goto(`/${orgId}/templates`);
 }
 
-// ── Lifecycle ────────────────────────────────────────────────
+// ── Lifeperiod ────────────────────────────────────────────────
 
 onMount(() => {
   initEditor();

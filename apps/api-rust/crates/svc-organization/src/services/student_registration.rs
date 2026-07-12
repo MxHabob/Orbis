@@ -223,7 +223,7 @@ impl StudentRegistrationService {
         let new_enrollment = enrollment::Model {
             id: enrollment_id.clone(),
             org_id: org_id.to_string(),
-            cycle_id: String::new(),
+            period_id: String::new(),
             student_id: student_user_id.clone(),
             class_id: class_id.clone(),
             student_number: student_number.clone(),

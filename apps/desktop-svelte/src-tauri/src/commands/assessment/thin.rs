@@ -6,9 +6,9 @@ use crate::commands::error::{CmdResult, CommandError};
 use svc_assessment::ops;
 
 #[tauri::command]
-pub async fn list_assessments(state: State<'_, Arc<AppState>>, org_id: String, cycle_id: String, class_subject_id: Option<String>) -> CmdResult<serde_json::Value> {
+pub async fn list_assessments(state: State<'_, Arc<AppState>>, org_id: String, period_id: String, class_subject_id: Option<String>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::assessment::list(&ctx, &cycle_id, class_subject_id.as_deref()).await.map_err(CommandError::from)?;
+    let r = ops::assessment::list(&ctx, &period_id, class_subject_id.as_deref()).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
@@ -71,7 +71,7 @@ pub async fn record_bulk_attendance(state: State<'_, Arc<AppState>>, org_id: Str
 pub async fn list_attendance(
     state: State<'_, Arc<AppState>>,
     org_id: String,
-    cycle_id: Option<String>,
+    period_id: Option<String>,
     class_id: Option<String>,
     date: Option<String>,
     enrollment_id: Option<String>,
@@ -82,9 +82,9 @@ pub async fn list_attendance(
     let mut query = svc_assessment::entities::attendance::Entity::find()
         .filter(svc_assessment::entities::attendance::Column::OrgId.eq(&org_id));
 
-    if let Some(c_id) = cycle_id {
+    if let Some(c_id) = period_id {
         if !c_id.trim().is_empty() {
-            query = query.filter(svc_assessment::entities::attendance::Column::CycleId.eq(c_id));
+            query = query.filter(svc_assessment::entities::attendance::Column::PeriodId.eq(c_id));
         }
     }
     if let Some(cl_id) = class_id {
@@ -122,16 +122,16 @@ pub async fn list_behavior(state: State<'_, Arc<AppState>>, org_id: String, stud
 }
 
 #[tauri::command]
-pub async fn get_report_card(state: State<'_, Arc<AppState>>, org_id: String, enrollment_id: String, cycle_id: String) -> CmdResult<serde_json::Value> {
+pub async fn get_report_card(state: State<'_, Arc<AppState>>, org_id: String, enrollment_id: String, period_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::grade::report_card(&ctx, &enrollment_id, &cycle_id).await.map_err(CommandError::from)?;
+    let r = ops::grade::report_card(&ctx, &enrollment_id, &period_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
 #[tauri::command]
-pub async fn get_grade_analytics(state: State<'_, Arc<AppState>>, org_id: String, class_id: String, cycle_id: String) -> CmdResult<serde_json::Value> {
+pub async fn get_grade_analytics(state: State<'_, Arc<AppState>>, org_id: String, class_id: String, period_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::grade::analytics(&ctx, &class_id, &cycle_id).await.map_err(CommandError::from)?;
+    let r = ops::grade::analytics(&ctx, &class_id, &period_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
@@ -150,16 +150,16 @@ pub async fn upsert_grade_cell(state: State<'_, Arc<AppState>>, org_id: String, 
 }
 
 #[tauri::command]
-pub async fn compile_semester_grades(state: State<'_, Arc<AppState>>, org_id: String, cycle_id: String, class_id: String) -> CmdResult<serde_json::Value> {
+pub async fn compile_semester_grades(state: State<'_, Arc<AppState>>, org_id: String, period_id: String, class_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::grade::compile_semester(&ctx, &cycle_id, &class_id).await.map_err(CommandError::from)?;
+    let r = ops::grade::compile_semester(&ctx, &period_id, &class_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
 #[tauri::command]
-pub async fn get_grade_matrix(state: State<'_, Arc<AppState>>, org_id: String, class_id: String, cycle_id: String) -> CmdResult<serde_json::Value> {
+pub async fn get_grade_matrix(state: State<'_, Arc<AppState>>, org_id: String, class_id: String, period_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::grade::matrix(&ctx, &class_id, &cycle_id).await.map_err(CommandError::from)?;
+    let r = ops::grade::matrix(&ctx, &class_id, &period_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 

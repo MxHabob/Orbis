@@ -31,7 +31,7 @@ pub async fn list(
 
 #[derive(serde::Deserialize)]
 pub struct SubmitAIBehaviorRequest {
-    pub cycle_id: String,
+    pub period_id: String,
     pub enrollment_id: String,
     pub behavior_type: String,
     pub severity: String,
@@ -59,7 +59,7 @@ pub async fn submit_ai(
     let model = behavior_record::Model {
         id: id.clone(),
         org_id: ctx.org_id.clone(),
-        cycle_id: req.cycle_id,
+        period_id: req.period_id,
         enrollment_id: req.enrollment_id,
         behavior_type: req.behavior_type,
         severity: req.severity,

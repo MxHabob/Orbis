@@ -44,14 +44,14 @@ export interface OnboardingStep {
   icon: any;
 }
 
-export interface CycleEntry {
+export interface PeriodEntry {
   id: string;
   parent_id: string | null;
   name: string;
   name_ar: string;
   start_date: string;
   end_date: string;
-  cycle_type: string;
+  period_type: string;
   weight: number | null;
 }
 
@@ -83,7 +83,7 @@ export interface OnboardingPayload {
   root_unit_id: string;
   root_unit_name: string;
   root_unit_name_ar: string;
-  cycles: CycleEntry[];
+  periods: PeriodEntry[];
   time_slots: TimeSlot[];
   rooms: Room[];
   subjects: SubjectEntry[];

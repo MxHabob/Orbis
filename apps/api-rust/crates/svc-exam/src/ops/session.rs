@@ -12,11 +12,11 @@ use shared_kernel::traits::{AuditEntry, Permission};
 use crate::contracts::events::event_types;
 use crate::entities::exam_session;
 
-pub async fn list(ctx: &ServiceContext, cycle_id: &str) -> Result<Vec<exam_session::Model>, AppError> {
+pub async fn list(ctx: &ServiceContext, period_id: &str) -> Result<Vec<exam_session::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ExamSessionRead).await?;
     Ok(exam_session::Entity::find()
         .filter(exam_session::Column::OrgId.eq(&ctx.org_id))
-        .filter(exam_session::Column::CycleId.eq(cycle_id))
+        .filter(exam_session::Column::PeriodId.eq(period_id))
         .order_by_desc(exam_session::Column::StartDate)
         .all(&ctx.db).await?)
 }
@@ -30,7 +30,7 @@ pub async fn get(ctx: &ServiceContext, session_id: &str) -> Result<exam_session:
 
 #[derive(serde::Deserialize)]
 pub struct CreateExamSessionRequest {
-    pub cycle_id: String,
+    pub period_id: String,
     pub name: String,
     pub name_ar: Option<String>,
     pub session_type: String,
@@ -51,7 +51,7 @@ pub async fn create(
     let id = Uuid::new_v4().to_string();
 
     let model = exam_session::Model {
-        id: id.clone(), org_id: ctx.org_id.clone(), cycle_id: req.cycle_id,
+        id: id.clone(), org_id: ctx.org_id.clone(), period_id: req.period_id,
         name: req.name, name_ar: req.name_ar, code: None, session_type: req.session_type,
         status: "draft".into(), start_date: req.start_date, end_date: req.end_date,
         hijri_start_date: None, hijri_end_date: None,

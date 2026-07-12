@@ -30,13 +30,13 @@ pub async fn list_secret_numbers(
         .all(&ctx.db).await?)
 }
 
-/// List student ordering for a cycle.
+/// List student ordering for a period.
 pub async fn list_ordering(
-    ctx: &ServiceContext, cycle_id: &str,
+    ctx: &ServiceContext, period_id: &str,
 ) -> Result<Vec<student_ordering::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ExamSessionRead).await?;
     Ok(student_ordering::Entity::find()
-        .filter(student_ordering::Column::CycleId.eq(cycle_id))
+        .filter(student_ordering::Column::PeriodId.eq(period_id))
         .order_by_asc(student_ordering::Column::OrderInClass)
         .all(&ctx.db).await?)
 }

@@ -1,4 +1,4 @@
-//! Lifecycle query repository — read operations.
+//! Lifeperiod query repository — read operations.
 
 use crate::entities::{
     organization, academic_year, academic_period,
@@ -6,9 +6,9 @@ use crate::entities::{
     promotion_job, promotion_detail, student_registry_entry,
 };
 use sea_orm::{entity::prelude::*, QueryFilter, QueryOrder, EntityTrait, ColumnTrait};
-use super::LifecycleQueryRepo;
+use super::LifeperiodQueryRepo;
 
-impl LifecycleQueryRepo {
+impl LifeperiodQueryRepo {
     // ── Organization Queries ────────────────────────────────────
 
     pub async fn get_organization_by_id(&self, id: &str) -> Result<Option<organization::Model>, DbErr> {

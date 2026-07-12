@@ -17,10 +17,10 @@ import * as m from "$lib/paraglide/messages";
 import { formatNumber } from "$lib/core/i18n";
 
 interface Props {
-  selectedCycle: any;
-  isCycleLocked: boolean;
+  selectedPeriod: any;
+  isPeriodLocked: boolean;
   isGradeEntryOpen: boolean;
-  isCycleActionLoading: boolean;
+  isPeriodActionLoading: boolean;
   isCompileLoading: boolean;
   stats: {
     avg: number;
@@ -36,22 +36,22 @@ interface Props {
     weak: number;
     fail: number;
   } | null;
-  onLockCycle: () => void;
-  onUnlockCycle: () => void;
+  onLockPeriod: () => void;
+  onUnlockPeriod: () => void;
   onOpenGradeEntry: () => void;
   onCloseGradeEntry: () => void;
   onCompileGrades: () => void;
 }
 
 let {
-  selectedCycle,
-  isCycleLocked,
+  selectedPeriod,
+  isPeriodLocked,
   isGradeEntryOpen,
-  isCycleActionLoading,
+  isPeriodActionLoading,
   isCompileLoading,
   stats,
-  onLockCycle,
-  onUnlockCycle,
+  onLockPeriod,
+  onUnlockPeriod,
   onOpenGradeEntry,
   onCloseGradeEntry,
   onCompileGrades,
@@ -59,18 +59,18 @@ let {
 </script>
 
 <div class="h-full flex flex-col gap-6 p-6 overflow-y-auto scrollbar-hide border-e border-border/60 bg-muted/10 select-none">
-  {#if selectedCycle}
-    <!-- Cycle Status Card -->
+  {#if selectedPeriod}
+    <!-- Period Status Card -->
     <div class="bg-background/50 border border-border rounded-lg p-4 flex flex-col gap-3">
-      <h3 class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.control_cycle_status()}</h3>
+      <h3 class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.control_period_status()}</h3>
       <div class="flex flex-col gap-2 text-xs">
         <div class="flex items-center justify-between">
-          <span class="text-muted-foreground">{m.control_cycle_lock()}</span>
-          <span class="flex items-center gap-1 font-semibold {isCycleLocked ? 'text-destructive' : 'text-emerald-500'}">
-            {#if isCycleLocked}
-              <Lock size={12} /> {m.control_cycle_locked()}
+          <span class="text-muted-foreground">{m.control_period_lock()}</span>
+          <span class="flex items-center gap-1 font-semibold {isPeriodLocked ? 'text-destructive' : 'text-emerald-500'}">
+            {#if isPeriodLocked}
+              <Lock size={12} /> {m.control_period_locked()}
             {:else}
-              <Unlock size={12} /> {m.control_cycle_unlocked()}
+              <Unlock size={12} /> {m.control_period_unlocked()}
             {/if}
           </span>
         </div>
@@ -84,22 +84,22 @@ let {
             {/if}
           </span>
         </div>
-        {#if selectedCycle.grade_entry_start}
+        {#if selectedPeriod.grade_entry_start}
           <div class="flex items-center justify-between">
             <span class="text-muted-foreground">{m.control_grade_entry_start()}</span>
-            <span class="font-mono text-[10px]">{new Date(selectedCycle.grade_entry_start).toLocaleDateString(getLocale())}</span>
+            <span class="font-mono text-[10px]">{new Date(selectedPeriod.grade_entry_start).toLocaleDateString(getLocale())}</span>
           </div>
         {/if}
-        {#if selectedCycle.grade_entry_end}
+        {#if selectedPeriod.grade_entry_end}
           <div class="flex items-center justify-between">
             <span class="text-muted-foreground">{m.control_grade_entry_end()}</span>
-            <span class="font-mono text-[10px]">{new Date(selectedCycle.grade_entry_end).toLocaleDateString(getLocale())}</span>
+            <span class="font-mono text-[10px]">{new Date(selectedPeriod.grade_entry_end).toLocaleDateString(getLocale())}</span>
           </div>
         {/if}
-        {#if selectedCycle.locked_by}
+        {#if selectedPeriod.locked_by}
           <div class="flex items-center justify-between">
             <span class="text-muted-foreground">{m.control_locked_by()}</span>
-            <span class="text-[10px]">{selectedCycle.locked_by}</span>
+            <span class="text-[10px]">{selectedPeriod.locked_by}</span>
           </div>
         {/if}
       </div>
@@ -109,33 +109,33 @@ let {
     <div class="bg-background/50 border border-border rounded-lg p-4 flex flex-col gap-3">
       <h3 class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.control_actions()}</h3>
       <div class="flex flex-col gap-2">
-        {#if isCycleLocked}
+        {#if isPeriodLocked}
           <Button
             variant="outline"
             class="w-full justify-start gap-2 text-xs h-9 cursor-pointer border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10"
-            onclick={onUnlockCycle}
-            disabled={isCycleActionLoading}
+            onclick={onUnlockPeriod}
+            disabled={isPeriodActionLoading}
           >
-            {#if isCycleActionLoading}
+            {#if isPeriodActionLoading}
               <Loader2 size={14} class="animate-spin" />
             {:else}
               <Unlock size={14} />
             {/if}
-            {m.control_unlock_cycle()}
+            {m.control_unlock_period()}
           </Button>
         {:else}
           <Button
             variant="outline"
             class="w-full justify-start gap-2 text-xs h-9 cursor-pointer border-destructive/30 text-destructive hover:bg-destructive/10"
-            onclick={onLockCycle}
-            disabled={isCycleActionLoading}
+            onclick={onLockPeriod}
+            disabled={isPeriodActionLoading}
           >
-            {#if isCycleActionLoading}
+            {#if isPeriodActionLoading}
               <Loader2 size={14} class="animate-spin" />
             {:else}
               <Lock size={14} />
             {/if}
-            {m.control_lock_cycle()}
+            {m.control_lock_period()}
           </Button>
 
           {#if isGradeEntryOpen}
@@ -143,9 +143,9 @@ let {
               variant="outline"
               class="w-full justify-start gap-2 text-xs h-9 cursor-pointer border-amber-500/30 text-amber-600 hover:bg-amber-500/10"
               onclick={onCloseGradeEntry}
-              disabled={isCycleActionLoading}
+              disabled={isPeriodActionLoading}
             >
-              {#if isCycleActionLoading}
+              {#if isPeriodActionLoading}
                 <Loader2 size={14} class="animate-spin" />
               {:else}
                 <CalendarOff size={14} />
@@ -157,9 +157,9 @@ let {
               variant="outline"
               class="w-full justify-start gap-2 text-xs h-9 cursor-pointer border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10"
               onclick={onOpenGradeEntry}
-              disabled={isCycleActionLoading}
+              disabled={isPeriodActionLoading}
             >
-              {#if isCycleActionLoading}
+              {#if isPeriodActionLoading}
                 <Loader2 size={14} class="animate-spin" />
               {:else}
                 <CalendarClock size={14} />

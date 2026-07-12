@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use crate::repository::LifecycleQueryRepo;
+use crate::repository::LifeperiodQueryRepo;
 use shared_kernel::errors::AppError;
 use serde::{Deserialize, Serialize};
 
@@ -26,11 +26,11 @@ fn default_required_fields() -> Vec<String> {
 }
 
 pub struct OrganizationSettingsService {
-    pub query: Arc<LifecycleQueryRepo>,
+    pub query: Arc<LifeperiodQueryRepo>,
 }
 
 impl OrganizationSettingsService {
-    pub fn new(query: Arc<LifecycleQueryRepo>) -> Self {
+    pub fn new(query: Arc<LifeperiodQueryRepo>) -> Self {
         Self { query }
     }
 

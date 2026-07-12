@@ -1,6 +1,6 @@
 /**
  * Academic Calendar & Policy queries.
- * Migrated: calendar events → periods, cycleId → yearId.
+ * Migrated: calendar events → periods, periodId → yearId.
  */
 import { createQuery } from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";

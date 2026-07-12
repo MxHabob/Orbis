@@ -98,7 +98,7 @@ impl ExamLogisticsService {
             return Err(AppError::validation("no exam halls found for this session"));
         }
 
-        let students = self.ordering_service.get_ordered_students(org_id, &session.cycle_id, None).await?;
+        let students = self.ordering_service.get_ordered_students(org_id, &session.period_id, None).await?;
         if students.is_empty() {
             return Err(AppError::validation("no students found. Please rebuild student ordering first."));
         }

@@ -9,13 +9,13 @@ pub async fn students(
 ) -> Result<serde_json::Value, AppError> {
     use crate::services::student_registration::{StudentRegistrationService, RegisterStudentRequest};
     use crate::services::settings::OrganizationSettingsService;
-    use crate::repository::LifecycleQueryRepo;
+    use crate::repository::LifeperiodQueryRepo;
     
     let students_list = data.get("students")
         .and_then(|v| v.as_array())
         .ok_or_else(|| AppError::validation("Missing 'students' array in import payload"))?;
 
-    let settings_repo = std::sync::Arc::new(LifecycleQueryRepo::new(ctx.db.clone()));
+    let settings_repo = std::sync::Arc::new(LifeperiodQueryRepo::new(ctx.db.clone()));
     let settings_svc = std::sync::Arc::new(OrganizationSettingsService::new(settings_repo));
     let reg_svc = StudentRegistrationService::new(settings_svc);
 

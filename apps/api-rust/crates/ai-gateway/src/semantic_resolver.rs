@@ -223,23 +223,23 @@ impl SemanticResolver {
             actions: vec!["finance.fee.list".into()],
         });
 
-        // ── Lifecycle ────────────────────────────────────────────
-        entities.insert("academic_cycles".into(), EntitySchema {
-            name: "academic_cycles".into(),
-            description: "Academic year/semester cycles in the registry".into(),
+        // ── Lifeperiod ────────────────────────────────────────────
+        entities.insert("academic_periods".into(), EntitySchema {
+            name: "academic_periods".into(),
+            description: "Academic year/semester periods in the registry".into(),
             description_ar: Some("الدورات الأكاديمية (سنوات/فصول) في السجل".into()),
             pii_fields: vec![],
             relations: vec![
                 EntityRelation {
                     relation_type: RelationType::HasMany,
                     target_entity: "academic_calendar_events".into(),
-                    foreign_key: "cycle_id".into(),
-                    description: "Calendar events in this cycle".into(),
+                    foreign_key: "period_id".into(),
+                    description: "Calendar events in this period".into(),
                 },
             ],
             domain: "lifecycle".into(),
             is_student_data: false,
-            actions: vec!["lifecycle.cycle.list".into(), "lifecycle.cycle.lock".into()],
+            actions: vec!["lifecycle.period.list".into(), "lifecycle.period.lock".into()],
         });
 
         info!(

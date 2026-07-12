@@ -4,7 +4,7 @@
 //!   1. Finds calendar events that should have been executed but weren't
 //!   2. Logs missed events as insights (never auto-executes past events)
 //!   3. Creates tasks for events currently in their active window
-//!   4. Syncs cycle state with reality (dates vs actual flags)
+//!   4. Syncs period state with reality (dates vs actual flags)
 
 use sea_orm::DatabaseConnection;
 use serde::Serialize;

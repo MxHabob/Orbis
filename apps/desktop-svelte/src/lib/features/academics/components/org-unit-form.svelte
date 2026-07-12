@@ -64,7 +64,7 @@ async function loadReferenceData() {
       commands.iam.listUsers(orgId),
     ]);
 
-    // Filter units: exclude current unit if editing to prevent cycle
+    // Filter units: exclude current unit if editing to prevent period
     unitsList = allUnits.filter(
       (u: any) => !isEdit || String(u.id) !== String(unit.id),
     );

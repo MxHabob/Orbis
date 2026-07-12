@@ -265,7 +265,7 @@ pub async fn check_setup(ctx: &ServiceContext) -> Result<serde_json::Value, AppE
     use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, PaginatorTrait};
     
     // Check if there are any academic years
-    let cycles_count = academic_year::Entity::find()
+    let periods_count = academic_year::Entity::find()
         .filter(academic_year::Column::OrgId.eq(&ctx.org_id))
         .count(&ctx.db)
         .await?;
@@ -276,7 +276,7 @@ pub async fn check_setup(ctx: &ServiceContext) -> Result<serde_json::Value, AppE
         .count(&ctx.db)
         .await?;
 
-    let is_complete = cycles_count > 0 && classes_count > 0;
+    let is_complete = periods_count > 0 && classes_count > 0;
 
     Ok(serde_json::json!({
         "setup_completed": is_complete,

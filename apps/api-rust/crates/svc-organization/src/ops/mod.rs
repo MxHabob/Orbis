@@ -4,7 +4,7 @@ pub mod organization;
 pub mod settings;
 pub mod policy;
 pub mod student_registration;
-pub mod cycle;
+pub mod academic_period;
 pub mod promotion;
 pub mod dashboard;
 pub mod bulk_import;

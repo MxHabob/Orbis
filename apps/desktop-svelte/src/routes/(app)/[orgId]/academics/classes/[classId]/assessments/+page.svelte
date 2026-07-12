@@ -34,10 +34,10 @@ const classId = $derived(page.params.classId);
 
 // State
 let subjects = $state<any[]>([]);
-let cycles = $state<any[]>([]);
-let activeCycleId = $state<string>("");
+let periods = $state<any[]>([]);
+let activePeriodId = $state<string>("");
 
-// Semester & Month sub-cycles
+// Semester & Month sub-periods
 let semesters = $state<any[]>([]);
 let selectedSemesterId = $state<string>("");
 let months = $state<any[]>([]);
@@ -55,7 +55,7 @@ let isModalOpen = $state(false);
 
 // Get 1-based chronological month index
 function getMonthNumber(monthId: string): number | undefined {
-  const sortedMonths = cycles
+  const sortedMonths = periods
     .filter((c) => c.type === "month")
     .sort((a, b) => (a.start_date || "").localeCompare(b.start_date || ""));
   const idx = sortedMonths.findIndex((m) => m.id === monthId);
@@ -65,7 +65,7 @@ function getMonthNumber(monthId: string): number | undefined {
 // Reactively load child months of the selected semester
 $effect(() => {
   if (selectedSemesterId) {
-    months = cycles.filter(
+    months = periods.filter(
       (c) => c.parent_id === selectedSemesterId && c.type === "month",
     );
     selectedMonthId = "all";
@@ -75,29 +75,29 @@ $effect(() => {
   }
 });
 
-// Load filters (subjects, cycles — class is already from URL)
+// Load filters (subjects, periods — class is already from URL)
 async function loadFilters() {
   isLoading = true;
   error = null;
   try {
-    const [subjectList, cycleList] = await Promise.all([
+    const [subjectList, periodList] = await Promise.all([
       commands.academic.listSubjects(orgId),
-      commands.academic.listCycles(orgId),
+      commands.academic.listPeriods(orgId),
     ]);
     subjects = subjectList;
-    cycles = cycleList;
+    periods = periodList;
 
     const activeYear =
-      cycleList.find(
+      periodList.find(
         (c) =>
           c.type === "year" && (c.is_current === 1 || c.is_current === true),
       ) ||
-      cycleList.find((c) => c.type === "year") ||
-      cycleList[0];
+      periodList.find((c) => c.type === "year") ||
+      periodList[0];
 
     if (activeYear) {
-      activeCycleId = String(activeYear.id);
-      semesters = cycleList.filter(
+      activePeriodId = String(activeYear.id);
+      semesters = periodList.filter(
         (c) => c.parent_id === activeYear.id && c.type === "term",
       );
       if (semesters.length > 0) {
@@ -123,7 +123,7 @@ async function loadAssessments() {
     const list = await commands.assessment.listAssessments({
       classId,
       subjectId: selectedSubjectId || undefined,
-      termId: selectedSemesterId || activeCycleId || "",
+      termId: selectedSemesterId || activePeriodId || "",
       month:
         selectedMonthId !== "all" ? getMonthNumber(selectedMonthId) : undefined,
     });

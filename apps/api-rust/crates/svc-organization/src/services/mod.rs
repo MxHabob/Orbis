@@ -1,4 +1,4 @@
-//! Lifecycle domain services.
+//! Lifeperiod domain services.
 
 pub mod organization;
 pub mod promotion;

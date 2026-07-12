@@ -1,7 +1,7 @@
 //! Grade operations — submission, bulk entry, report cards, analytics.
 //!
 //! Business rules:
-//! - Cycle must be unlocked and grade entry window open
+//! - Period must be unlocked and grade entry window open
 //! - Grade history is saved on every update
 //! - Grade letter/GPA calculated from org grading settings
 
@@ -23,20 +23,20 @@ use svc_organization::entities::academic_period;
 
 // ── Helpers ─────────────────────────────────────────────────────
 
-/// Check if cycle is open for grade entry.
-async fn check_cycle_open(ctx: &ServiceContext, cycle_id: &str) -> Result<(), AppError> {
-    let cycle = academic_period::Entity::find_by_id(cycle_id.to_string())
+/// Check if period is open for grade entry.
+async fn check_period_open(ctx: &ServiceContext, period_id: &str) -> Result<(), AppError> {
+    let period = academic_period::Entity::find_by_id(period_id.to_string())
         .one(&ctx.db)
         .await?
-        .ok_or_else(|| AppError::not_found("academic_period", cycle_id))?;
+        .ok_or_else(|| AppError::not_found("academic_period", period_id))?;
 
-    if cycle.is_locked == 1 {
-        return Err(AppError::unauthorized("Academic cycle is locked"));
+    if period.is_locked == 1 {
+        return Err(AppError::unauthorized("Academic period is locked"));
     }
-    if cycle.is_grade_entry_open == 0 {
+    if period.is_grade_entry_open == 0 {
         return Err(AppError::unauthorized("Grade entry window is closed"));
     }
-    if let (Some(ref start), Some(ref end)) = (&cycle.grade_entry_start, &cycle.grade_entry_end) {
+    if let (Some(ref start), Some(ref end)) = (&period.grade_entry_start, &period.grade_entry_end) {
         let now = Utc::now().to_rfc3339();
         if now < *start {
             return Err(AppError::unauthorized(format!("Grade entry has not started yet. Starts: {}", start)));
@@ -96,7 +96,7 @@ pub async fn list(
 pub async fn report_card(
     ctx: &ServiceContext,
     enrollment_id: &str,
-    cycle_id: &str,
+    period_id: &str,
 ) -> Result<GradeReportCard, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::GradeReport).await?;
 
@@ -107,13 +107,13 @@ pub async fn report_card(
         std::sync::Arc::new(cmd_repo),
         std::sync::Arc::new(query_repo),
     );
-    svc.get_report_card(enrollment_id, cycle_id).await
+    svc.get_report_card(enrollment_id, period_id).await
 }
 
 /// Get grade analytics for a class-subject.
 pub async fn analytics(
     ctx: &ServiceContext,
-    cycle_id: &str,
+    period_id: &str,
     class_subject_id: &str,
 ) -> Result<GradeAnalytics, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::GradeAnalytics).await?;
@@ -124,13 +124,13 @@ pub async fn analytics(
         std::sync::Arc::new(cmd_repo),
         std::sync::Arc::new(query_repo),
     );
-    svc.get_analytics(cycle_id, class_subject_id).await
+    svc.get_analytics(period_id, class_subject_id).await
 }
 
 /// Get the grade matrix for a class-subject (grid view).
 pub async fn matrix(
     ctx: &ServiceContext,
-    cycle_id: &str,
+    period_id: &str,
     class_subject_id: &str,
 ) -> Result<GradeMatrixResponse, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::GradeRead).await?;
@@ -141,14 +141,14 @@ pub async fn matrix(
         std::sync::Arc::new(cmd_repo),
         std::sync::Arc::new(query_repo),
     );
-    svc.get_grade_matrix(cycle_id, class_subject_id).await
+    svc.get_grade_matrix(period_id, class_subject_id).await
 }
 
 // ── Commands ────────────────────────────────────────────────────
 
 #[derive(serde::Deserialize)]
 pub struct CreateGradePayload {
-    pub cycle_id: String,
+    pub period_id: String,
     pub enrollment_id: String,
     pub subject_name: String,
     pub subject_name_ar: Option<String>,
@@ -165,7 +165,7 @@ pub struct CreateGradePayload {
 
 #[derive(serde::Deserialize)]
 pub struct SubmitBulkPayload {
-    pub cycle_id: String,
+    pub period_id: String,
     pub grades: Vec<CreateGradePayload>,
 }
 
@@ -179,7 +179,7 @@ pub async fn submit(
     let req: CreateGradePayload = serde_json::from_value(data)
         .map_err(|e| AppError::validation(format!("Invalid grade payload: {e}")))?;
 
-    check_cycle_open(ctx, &req.cycle_id).await?;
+    check_period_open(ctx, &req.period_id).await?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
@@ -188,7 +188,7 @@ pub async fn submit(
     let model = grade::Model {
         id: id.clone(),
         org_id: ctx.org_id.clone(),
-        cycle_id: req.cycle_id,
+        period_id: req.period_id,
         enrollment_id: req.enrollment_id,
         assessment_id: req.assessment_id,
         class_subject_id: req.class_subject_id,
@@ -242,7 +242,7 @@ pub async fn submit_bulk(
 
     let mut results = Vec::with_capacity(grades.len());
     for req in grades {
-        check_cycle_open(ctx, &req.cycle_id).await?;
+        check_period_open(ctx, &req.period_id).await?;
 
         let now = Utc::now().to_rfc3339();
         let id = Uuid::new_v4().to_string();
@@ -251,7 +251,7 @@ pub async fn submit_bulk(
         let model = grade::Model {
             id: id.clone(),
             org_id: ctx.org_id.clone(),
-            cycle_id: req.cycle_id,
+            period_id: req.period_id,
             enrollment_id: req.enrollment_id,
             assessment_id: req.assessment_id,
             class_subject_id: req.class_subject_id,
@@ -292,7 +292,7 @@ pub async fn update(
         .await?
         .ok_or_else(|| AppError::not_found("grade", grade_id))?;
 
-    check_cycle_open(ctx, &existing.cycle_id).await?;
+    check_period_open(ctx, &existing.period_id).await?;
 
     // Save history before update
     save_grade_history(ctx, &existing, ctx.actor.as_str(), req.change_reason.clone(), "update").await?;
@@ -332,7 +332,7 @@ pub async fn bulk_subject_entry(
     entry: BulkSubjectGradeEntry,
 ) -> Result<BulkSubjectGradeResult, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::GradeWrite).await?;
-    check_cycle_open(ctx, &entry.cycle_id).await?;
+    check_period_open(ctx, &entry.period_id).await?;
 
     // Delegate to existing service logic which handles upsert logic
     let query_repo = crate::repository::AssessmentQueryRepo::new(ctx.db.clone());
@@ -371,7 +371,7 @@ pub async fn upsert_cell(
     let req: UpsertCellRequest = serde_json::from_value(data)
         .map_err(|e| AppError::validation(format!("Invalid upsert payload: {e}")))?;
 
-    check_cycle_open(ctx, &req.cycle_id).await?;
+    check_period_open(ctx, &req.period_id).await?;
 
     let query_repo = crate::repository::AssessmentQueryRepo::new(ctx.db.clone());
     let cmd_repo = crate::repository::AssessmentCommandRepo::new(ctx.db.clone());
@@ -385,7 +385,7 @@ pub async fn upsert_cell(
 /// Compile semester grades (aggregate all grades into final scores).
 pub async fn compile_semester(
     ctx: &ServiceContext,
-    cycle_id: &str,
+    period_id: &str,
     class_id: &str,
 ) -> Result<Vec<grade::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::GradeWrite).await?;
@@ -396,5 +396,5 @@ pub async fn compile_semester(
         std::sync::Arc::new(cmd_repo),
         std::sync::Arc::new(query_repo),
     );
-    svc.compile_semester_grades(&ctx.org_id, ctx.actor.as_str(), cycle_id, class_id, "semester_1").await
+    svc.compile_semester_grades(&ctx.org_id, ctx.actor.as_str(), period_id, class_id, "semester_1").await
 }

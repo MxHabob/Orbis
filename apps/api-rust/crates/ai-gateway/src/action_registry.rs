@@ -353,8 +353,8 @@ fn register_assessment_actions(reg: &mut ActionRegistry) {
 
 fn register_lifecycle_actions(reg: &mut ActionRegistry) {
     for (code, name, name_ar, desc, risk, tags) in [
-        ("lifecycle.cycle.list", "List Cycles", "عرض الدورات", "List academic cycles", RiskLevel::Low, vec!["read", "cycles"]),
-        ("lifecycle.cycle.lock", "Lock Cycle", "قفل الدورة", "Lock an academic cycle (irreversible)", RiskLevel::Critical, vec!["write", "cycles"]),
+        ("lifecycle.period.list", "List Periods", "عرض الدورات", "List academic periods", RiskLevel::Low, vec!["read", "periods"]),
+        ("lifecycle.period.lock", "Lock Period", "قفل الدورة", "Lock an academic period (irreversible)", RiskLevel::Critical, vec!["write", "periods"]),
         ("lifecycle.calendar.list", "List Calendar Events", "عرض التقويم", "List calendar events", RiskLevel::Low, vec!["read", "calendar"]),
         ("lifecycle.promotion.run", "Run Promotion", "تنفيذ الترفيع", "Execute student promotion to next year", RiskLevel::Critical, vec!["write", "promotion"]),
     ] {

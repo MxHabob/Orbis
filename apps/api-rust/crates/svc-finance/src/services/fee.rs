@@ -161,7 +161,7 @@ impl FeeService {
 
     // ── Student Fees ──
     pub async fn get_student_fees(&self, org_id: &str, enrollment_id: Option<&str>) -> Result<Vec<student_fee::Model>, AppError> {
-        let params = StudentFeeParams { enrollment_id: enrollment_id.map(String::from), cycle_id: None, status: None };
+        let params = StudentFeeParams { enrollment_id: enrollment_id.map(String::from), period_id: None, status: None };
         Ok(self.query.get_student_fees(org_id, params).await?)
     }
 
@@ -186,7 +186,7 @@ impl FeeService {
         let sf = student_fee::Model {
             id: fee_id.clone(),
             org_id: org_id.to_string(),
-            cycle_id: enrollment.cycle_id.clone(),
+            period_id: enrollment.period_id.clone(),
             enrollment_id: req.enrollment_id.clone(),
             fee_template_id: req.fee_template_id.clone(),
             original_amount: req.amount,
@@ -213,7 +213,7 @@ impl FeeService {
             org_id: org_id.to_string(),
             transaction_ref: format!("INV-{}", &fee_id[..8].to_uppercase()),
             accounting_date: Utc::now().format("%Y-%m-%d").to_string(),
-            fiscal_period_id: enrollment.cycle_id,
+            fiscal_period_id: enrollment.period_id,
             amount: req.amount,
             debit_account_id: student_account.id.clone(),
             credit_account_id: template.revenue_account_id.clone(),

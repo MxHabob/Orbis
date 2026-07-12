@@ -1,7 +1,7 @@
 /**
  * Scheduling command interfaces — mirrors svc-scheduling/ops.
  *
- * Migrated: cycleId → yearId for scheduling scope.
+ * Migrated: periodId → yearId for scheduling scope.
  */
 import type { TimeSlot, ScheduledLesson, Room, SolveJob } from "../types";
 

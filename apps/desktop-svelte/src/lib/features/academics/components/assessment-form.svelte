@@ -17,14 +17,14 @@ import * as m from "$lib/paraglide/messages";
 let {
   classId,
   subjectId,
-  cycleId,
+  periodId,
   defaultMonth,
   onSuccess,
   onCancel,
 }: {
   classId: string;
   subjectId: string;
-  cycleId: string;
+  periodId: string;
   defaultMonth?: number;
   onSuccess: () => void;
   onCancel: () => void;
@@ -51,9 +51,9 @@ async function handleSubmit(e: SubmitEvent) {
     toast.error(m.assessment_toast_error_name());
     return;
   }
-  if (!classId || !subjectId || !cycleId) {
+  if (!classId || !subjectId || !periodId) {
     toast.error(
-      "Please select a class, subject, and cycle before creating an assessment.",
+      "Please select a class, subject, and period before creating an assessment.",
     );
     return;
   }
@@ -62,7 +62,7 @@ async function handleSubmit(e: SubmitEvent) {
     const request = {
       class_id: classId,
       subject_id: subjectId,
-      term_id: cycleId,
+      term_id: periodId,
       month: defaultMonth,
       title: name || nameAr,
       title_ar: nameAr || name,

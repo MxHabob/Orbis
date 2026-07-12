@@ -62,11 +62,11 @@ export const commands: OrbisCommands = {
     updateClassSubject: (id, data) => cmd("update_class_subject", { id, data }),
     deleteClassSubject: (id) => cmd("delete_class_subject", { id }),
 
-    listCycles: (orgId) => cmd("list_cycles", { orgId }),
+    listPeriods: (orgId) => cmd("list_periods", { orgId }),
     listPeriodsByYear: (orgId, yearId) => cmd("list_periods_by_year", { orgId, yearId }),
-    getCycle: (periodId) => cmd("get_cycle", { cycleId: periodId }),
-    createCycle: (data) => cmd("create_cycle", { data }),
-    lockCycle: (orgId, periodId) => cmd("lock_cycle", { orgId, cycleId: periodId }),
+    getPeriod: (periodId) => cmd("get_period", { periodId: periodId }),
+    createPeriod: (data) => cmd("create_period", { data }),
+    lockPeriod: (orgId, periodId) => cmd("lock_period", { orgId, periodId: periodId }),
     unlockPeriod: (orgId, periodId) => cmd("unlock_period", { orgId, periodId }),
     togglePeriodEnrollment: (orgId, periodId, open) => cmd("toggle_period_enrollment", { orgId, periodId, open }),
     togglePeriodGradeEntry: (orgId, periodId, open) => cmd("toggle_period_grade_entry", { orgId, periodId, open }),
@@ -448,7 +448,7 @@ export const commands: OrbisCommands = {
   },
   bulkImport: {
     createStudents: (orgId, userId, data) => commands.platform.importStudents(orgId, { students: data }),
-    createGrades: (orgId, userId, cycleId, data) => commands.platform.importGrades(orgId, { grades: data }),
+    createGrades: (orgId, userId, periodId, data) => commands.platform.importGrades(orgId, { grades: data }),
   },
   auditLogs: {
     getAll: (orgId) => commands.platform.listAuditLogs(orgId),

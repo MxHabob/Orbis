@@ -90,9 +90,9 @@ impl AssessmentQueryRepo {
             }
         }
 
-        if let Some(ref cycle_id) = params.cycle_id {
-            if !cycle_id.trim().is_empty() {
-                query = query.filter(grade::Column::CycleId.eq(cycle_id));
+        if let Some(ref period_id) = params.period_id {
+            if !period_id.trim().is_empty() {
+                query = query.filter(grade::Column::PeriodId.eq(period_id));
             }
         }
 
@@ -183,11 +183,11 @@ impl AssessmentQueryRepo {
     pub async fn get_grade_matrix(
         &self,
         class_subject_id: &str,
-        cycle_id: &str,
+        period_id: &str,
     ) -> Result<Vec<grade::Model>, DbErr> {
         grade::Entity::find()
             .filter(grade::Column::ClassSubjectId.eq(class_subject_id))
-            .filter(grade::Column::CycleId.eq(cycle_id))
+            .filter(grade::Column::PeriodId.eq(period_id))
             .order_by_asc(grade::Column::EnrollmentId)
             .order_by_asc(grade::Column::ExamType)
             .all(&self.db)
@@ -211,11 +211,11 @@ impl AssessmentQueryRepo {
     pub async fn get_assessments(
         &self,
         class_subject_id: &str,
-        cycle_id: &str,
+        period_id: &str,
     ) -> Result<Vec<assessment::Model>, DbErr> {
         assessment::Entity::find()
             .filter(assessment::Column::ClassSubjectId.eq(class_subject_id))
-            .filter(assessment::Column::CycleId.eq(cycle_id))
+            .filter(assessment::Column::PeriodId.eq(period_id))
             .all(&self.db)
             .await
     }
@@ -246,9 +246,9 @@ impl AssessmentQueryRepo {
             }
         }
 
-        if let Some(ref cycle_id) = params.cycle_id {
-            if !cycle_id.trim().is_empty() {
-                query = query.filter(attendance::Column::CycleId.eq(cycle_id));
+        if let Some(ref period_id) = params.period_id {
+            if !period_id.trim().is_empty() {
+                query = query.filter(attendance::Column::PeriodId.eq(period_id));
             }
         }
 

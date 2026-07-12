@@ -17,7 +17,7 @@ import * as m from "$lib/paraglide/messages";
 
 let {
   orgId,
-  cycleId,
+  periodId,
   classId,
   dayOfWeek,
   timeSlotId,
@@ -27,7 +27,7 @@ let {
   onCancel,
 }: {
   orgId: string;
-  cycleId: string;
+  periodId: string;
   classId: string;
   dayOfWeek: number;
   timeSlotId: string;
@@ -69,7 +69,7 @@ async function checkScheduleConflict() {
   try {
     const conflicts = await commands.scheduling.checkConflicts({
       orgId,
-      cycleId,
+      periodId,
       timeSlotId,
       dayOfWeek,
       teacherId: formTeacherId || "no_teacher",
@@ -98,7 +98,7 @@ async function handleSubmit(e: SubmitEvent) {
   isSubmitting = true;
   try {
     const request = {
-      cycle_id: cycleId,
+      period_id: periodId,
       class_id: classId,
       subject_id: formSubjectId,
       teacher_id: formTeacherId || undefined,

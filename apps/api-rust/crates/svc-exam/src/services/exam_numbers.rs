@@ -100,7 +100,7 @@ impl ExamNumbersService {
         self.cmd.deactivate_seating_numbers(exam_session_id).await?;
 
         // Get ordered students
-        let ordered = self.ordering_service.get_ordered_students(org_id, &session.cycle_id, None).await?;
+        let ordered = self.ordering_service.get_ordered_students(org_id, &session.period_id, None).await?;
         if ordered.is_empty() {
             return Err(AppError::validation("No students found. Please rebuild student ordering first."));
         }
@@ -204,7 +204,7 @@ impl ExamNumbersService {
         self.cmd.deactivate_secret_numbers(exam_session_id).await?;
 
         // Get ordered students
-        let ordered = self.ordering_service.get_ordered_students(org_id, &session.cycle_id, None).await?;
+        let ordered = self.ordering_service.get_ordered_students(org_id, &session.period_id, None).await?;
         if ordered.is_empty() {
             return Err(AppError::validation("No students found. Please rebuild student ordering first."));
         }

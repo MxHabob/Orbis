@@ -1,7 +1,7 @@
 /**
  * Academic Context Store — centralized academic state for the entire app.
  *
- * Migrated from cycle-based to unified year+period model.
+ * Migrated from period-based to unified year+period model.
  */
 import type {
   AcademicYear,
@@ -34,9 +34,9 @@ class AcademicContextStore {
   get selectedSubjectId(): string { return this._selectedSubjectId; }
   set selectedSubjectId(val: string) { this._selectedSubjectId = val; localStorage.setItem("orbis_academic_subject_id", val); }
 
-  // Keep backward compat — selectedCycleId maps to selectedPeriodId
-  get selectedCycleId(): string { return this._selectedPeriodId; }
-  set selectedCycleId(val: string) { this.selectedPeriodId = val; }
+  // Keep backward compat — selectedPeriodId maps to selectedPeriodId
+  get selectedPeriodId(): string { return this._selectedPeriodId; }
+  set selectedPeriodId(val: string) { this.selectedPeriodId = val; }
 
   isReadOnly = $derived(this._isReadOnly || this.currentYear?.status === "archived");
   hasYears = $derived(this.allYears.length > 0);
@@ -48,7 +48,7 @@ class AcademicContextStore {
   statusBadge = $derived<"planning" | "active" | "closing" | "archived">(this.yearStatus);
   effectivePeriodId = $derived(this._selectedPeriodId || this.activePeriod?.id || "");
   // backward compat
-  effectiveCycleId = $derived(this.effectivePeriodId);
+  effectivePeriodId = $derived(this.effectivePeriodId);
 
   /** First active period or first period in list */
   get activePeriod(): AcademicPeriod | null {

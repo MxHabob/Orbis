@@ -8,7 +8,7 @@ use tracing::info;
 
 use shared_kernel::errors::AppError;
 use crate::entities::{promotion_job, promotion_detail, student_registry_entry};
-use crate::repository::{LifecycleCommandRepo, LifecycleQueryRepo};
+use crate::repository::{LifeperiodCommandRepo, LifeperiodQueryRepo};
 
 use svc_academic::entities::{class, enrollment};
 
@@ -103,12 +103,12 @@ pub struct EnrollmentData {
 }
 
 pub struct PromotionService {
-    pub cmd: Arc<LifecycleCommandRepo>,
-    pub query: Arc<LifecycleQueryRepo>,
+    pub cmd: Arc<LifeperiodCommandRepo>,
+    pub query: Arc<LifeperiodQueryRepo>,
 }
 
 impl PromotionService {
-    pub fn new(cmd: Arc<LifecycleCommandRepo>, query: Arc<LifecycleQueryRepo>) -> Self {
+    pub fn new(cmd: Arc<LifeperiodCommandRepo>, query: Arc<LifeperiodQueryRepo>) -> Self {
         Self { cmd, query }
     }
 
@@ -675,7 +675,7 @@ impl PromotionService {
                     id: sea_orm::Set(uuid::Uuid::new_v4().to_string()),
                     org_id: sea_orm::Set(reference.map(|r| r.org_id.clone()).unwrap_or_default()),
                     unit_id: sea_orm::Set(reference.map(|r| r.unit_id.clone()).unwrap_or_default()),
-                    cycle_id: sea_orm::Set(reference.map(|r| r.cycle_id.clone()).unwrap_or_default()),
+                    period_id: sea_orm::Set(reference.map(|r| r.period_id.clone()).unwrap_or_default()),
                     name: sea_orm::Set(class_name.clone()),
                     name_ar: sea_orm::Set(None),
                     level: sea_orm::Set(mapping.target_level.clone()),
@@ -733,7 +733,7 @@ impl PromotionService {
             let enr = enrollment::ActiveModel {
                 id: sea_orm::Set(uuid::Uuid::new_v4().to_string()),
                 org_id: sea_orm::Set(target_class.org_id.clone()),
-                cycle_id: sea_orm::Set(target_class.cycle_id.clone()),
+                period_id: sea_orm::Set(target_class.period_id.clone()),
                 student_id: sea_orm::Set(detail.student_id.clone()),
                 class_id: sea_orm::Set(target_class.id.clone()),
                 student_number: sea_orm::Set(detail.student_number.clone().unwrap_or_default()),

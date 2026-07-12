@@ -11,7 +11,7 @@ impl AssessmentCommandRepo {
         let active = behavior_record::ActiveModel {
             id: Set(b.id),
             org_id: Set(b.org_id),
-            cycle_id: Set(b.cycle_id),
+            period_id: Set(b.period_id),
             enrollment_id: Set(b.enrollment_id),
             behavior_type: Set(b.behavior_type),
             severity: Set(b.severity),
@@ -59,7 +59,7 @@ impl AssessmentCommandRepo {
         let active = grade::ActiveModel {
             id: Set(g.id),
             org_id: Set(g.org_id),
-            cycle_id: Set(g.cycle_id),
+            period_id: Set(g.period_id),
             enrollment_id: Set(g.enrollment_id),
             assessment_id: Set(g.assessment_id),
             class_subject_id: Set(g.class_subject_id),
@@ -111,7 +111,7 @@ impl AssessmentCommandRepo {
         let active = assessment::ActiveModel {
             id: Set(a.id),
             org_id: Set(a.org_id),
-            cycle_id: Set(a.cycle_id),
+            period_id: Set(a.period_id),
             class_subject_id: Set(a.class_subject_id),
             title: Set(a.title),
             title_ar: Set(a.title_ar),
@@ -152,7 +152,7 @@ impl AssessmentCommandRepo {
         let active = attendance::ActiveModel {
             id: Set(att.id),
             org_id: Set(att.org_id),
-            cycle_id: Set(att.cycle_id),
+            period_id: Set(att.period_id),
             enrollment_id: Set(att.enrollment_id),
             class_id: Set(att.class_id),
             date: Set(att.date),
@@ -179,7 +179,7 @@ impl AssessmentCommandRepo {
         let active = attendance_daily::ActiveModel {
             id: Set(ad.id),
             org_id: Set(ad.org_id),
-            cycle_id: Set(ad.cycle_id),
+            period_id: Set(ad.period_id),
             enrollment_id: Set(ad.enrollment_id),
             date: Set(ad.date),
             status: Set(ad.status),
@@ -217,7 +217,7 @@ impl AssessmentCommandRepo {
         let active = attendance_summary::ActiveModel {
             id: Set(s.id),
             enrollment_id: Set(s.enrollment_id),
-            cycle_id: Set(s.cycle_id),
+            period_id: Set(s.period_id),
             total_lessons: Set(s.total_lessons),
             present_lessons: Set(s.present_lessons),
             absent_lessons: Set(s.absent_lessons),

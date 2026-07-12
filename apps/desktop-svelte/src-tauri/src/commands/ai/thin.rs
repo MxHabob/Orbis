@@ -6,39 +6,24 @@ use crate::commands::error::{CmdResult, CommandError};
 
 #[tauri::command]
 pub async fn autopilot_get_status(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
-    use sea_orm::{EntityTrait, ColumnTrait, QueryFilter, ActiveModelTrait, ActiveValue::Set};
-    use autopilot::entities::autopilot_config;
+    use sea_orm::{EntityTrait, ColumnTrait, QueryFilter};
+    use svc_organization::entities::academic_policy;
     let db = state.active_db().await;
-    let config = autopilot_config::Entity::find()
-        .filter(autopilot_config::Column::OrgId.eq(&org_id))
+    let config = academic_policy::Entity::find()
+        .filter(academic_policy::Column::OrgId.eq(&org_id))
         .one(&db)
         .await
         .map_err(CommandError::from)?;
-    let config = match config {
-        Some(c) => c,
+    
+    match config {
+        Some(c) => Ok(serde_json::to_value(c).unwrap()),
         None => {
-            let now = chrono::Utc::now().to_rfc3339();
-            let c = autopilot_config::ActiveModel {
-                id: Set(uuid::Uuid::new_v4().to_string()),
-                org_id: Set(org_id.clone()),
-                is_enabled: Set(1),
-                mode: Set("suggested".to_string()),
-                check_interval_minutes: Set(60),
-                timezone: Set("Asia/Riyadh".to_string()),
-                require_backup_before_critical: Set(1),
-                max_auto_retries: Set(3),
-                pause_on_error: Set(1),
-                last_tick_at: Set(None),
-                last_tick_result: Set(None),
-                paused_at: Set(None),
-                pause_reason: Set(None),
-                created_at: Set(now.clone()),
-                updated_at: Set(now),
-            };
-            c.insert(&db).await.map_err(CommandError::from)?
+            Ok(serde_json::json!({
+                "autopilot_enabled": 0,
+                "autopilot_mode": "suggested"
+            }))
         }
-    };
-    Ok(serde_json::to_value(config).unwrap())
+    }
 }
 
 #[tauri::command]
@@ -72,44 +57,22 @@ pub async fn autopilot_configure(
     mode: String,
 ) -> CmdResult<()> {
     use sea_orm::{EntityTrait, ColumnTrait, QueryFilter, ActiveModelTrait, ActiveValue::Set};
-    use autopilot::entities::autopilot_config;
+    use svc_organization::entities::academic_policy;
     let db = state.active_db().await;
-    let config = autopilot_config::Entity::find()
-        .filter(autopilot_config::Column::OrgId.eq(&org_id))
+    let config = academic_policy::Entity::find()
+        .filter(academic_policy::Column::OrgId.eq(&org_id))
         .one(&db)
         .await
         .map_err(CommandError::from)?;
 
     let now = chrono::Utc::now().to_rfc3339();
-    let active = match config {
-        Some(c) => {
-            let mut a: autopilot_config::ActiveModel = c.into();
-            a.is_enabled = Set(if is_enabled { 1 } else { 0 });
-            a.mode = Set(mode);
-            a.paused_at = Set(if paused { Some(now.clone()) } else { None });
-            a.updated_at = Set(now);
-            a
-        }
-        None => autopilot_config::ActiveModel {
-            id: Set(uuid::Uuid::new_v4().to_string()),
-            org_id: Set(org_id.clone()),
-            is_enabled: Set(if is_enabled { 1 } else { 0 }),
-            mode: Set(mode),
-            check_interval_minutes: Set(60),
-            timezone: Set("Asia/Riyadh".to_string()),
-            require_backup_before_critical: Set(1),
-            max_auto_retries: Set(3),
-            pause_on_error: Set(1),
-            last_tick_at: Set(None),
-            last_tick_result: Set(None),
-            paused_at: Set(if paused { Some(now.clone()) } else { None }),
-            pause_reason: Set(None),
-            created_at: Set(now.clone()),
-            updated_at: Set(now),
-        },
-    };
-
-    active.save(&db).await.map_err(CommandError::from)?;
+    if let Some(c) = config {
+        let mut active: academic_policy::ActiveModel = c.into();
+        active.autopilot_enabled = Set(if is_enabled && !paused { 1 } else { 0 });
+        active.autopilot_mode = Set(mode);
+        active.updated_at = Set(now);
+        active.save(&db).await.map_err(CommandError::from)?;
+    }
     Ok(())
 }
 
@@ -121,7 +84,7 @@ pub async fn autopilot_run_tick(
     use autopilot::engine::AutopilotEngine;
     let db = state.active_db().await;
     let engine = AutopilotEngine::new(state.platform.event_bus.clone());
-    engine.tick(&db, &db, &org_id).await;
+    engine.tick(&db, &org_id).await;
     Ok(())
 }
 

@@ -63,11 +63,11 @@ impl StudentOrderingService {
         Self { cmd, query }
     }
 
-    /// Rebuild student ordering for an entire cycle using the specified strategy.
+    /// Rebuild student ordering for an entire period using the specified strategy.
     pub async fn rebuild_ordering(
         &self,
         org_id: &str,
-        cycle_id: &str,
+        period_id: &str,
         strategy: &str,
     ) -> Result<RebuildOrderingResult, AppError> {
         let valid_strategies = [
@@ -85,7 +85,7 @@ impl StudentOrderingService {
         }
 
         // 1. Fetch active enrollments
-        let enrollments = self.query.get_enrollments_for_ordering(org_id, cycle_id).await?;
+        let enrollments = self.query.get_enrollments_for_ordering(org_id, period_id).await?;
 
         if enrollments.is_empty() {
             return Ok(RebuildOrderingResult {
@@ -98,7 +98,7 @@ impl StudentOrderingService {
         }
 
         // 2. Get existing frozen records
-        let existing = self.query.get_student_ordering(org_id, cycle_id, None).await?;
+        let existing = self.query.get_student_ordering(org_id, period_id, None).await?;
 
         let frozen_ids: std::collections::HashSet<String> = existing
             .iter()
@@ -109,7 +109,7 @@ impl StudentOrderingService {
         let frozen_skipped = frozen_ids.len();
 
         // 3. Delete non-frozen ordering records
-        self.cmd.delete_student_ordering_for_cycle(org_id, cycle_id).await?;
+        self.cmd.delete_student_ordering_for_period(org_id, period_id).await?;
 
         // 4. Build sort keys and sort
         let mut sortable: Vec<(String, String, String, String, Option<String>, Option<String>, Option<String>, Option<String>)> =
@@ -166,7 +166,7 @@ impl StudentOrderingService {
             let model = student_ordering::Model {
                 id: Uuid::new_v4().to_string(),
                 org_id: org_id.to_string(),
-                cycle_id: cycle_id.to_string(),
+                period_id: period_id.to_string(),
                 enrollment_id: enrollment_id.clone(),
                 student_id: student_id.clone(),
                 class_id: class_id.clone(),
@@ -206,10 +206,10 @@ impl StudentOrderingService {
     pub async fn get_ordered_students(
         &self,
         org_id: &str,
-        cycle_id: &str,
+        period_id: &str,
         class_id: Option<&str>,
     ) -> Result<Vec<OrderedStudent>, AppError> {
-        let records = self.query.get_student_ordering(org_id, cycle_id, class_id).await?;
+        let records = self.query.get_student_ordering(org_id, period_id, class_id).await?;
         Ok(records.into_iter().map(OrderedStudent::from).collect())
     }
 
@@ -217,10 +217,10 @@ impl StudentOrderingService {
     pub async fn freeze_ordering(
         &self,
         org_id: &str,
-        cycle_id: &str,
+        period_id: &str,
         frozen_by: &str,
     ) -> Result<u64, AppError> {
-        Ok(self.cmd.freeze_student_ordering(org_id, cycle_id, frozen_by).await?)
+        Ok(self.cmd.freeze_student_ordering(org_id, period_id, frozen_by).await?)
     }
 }
 

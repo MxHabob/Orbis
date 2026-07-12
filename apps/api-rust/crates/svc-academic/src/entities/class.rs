@@ -9,7 +9,7 @@ pub struct Model {
     pub id: String,
     pub org_id: String,
     pub unit_id: String,
-    pub cycle_id: String,
+    pub period_id: String,
     pub name: String,
     pub name_ar: Option<String>,
     pub level: String,

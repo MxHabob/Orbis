@@ -12,35 +12,35 @@ use crate::entities::class_subject;
 
 // ── Queries ─────────────────────────────────────────────────────
 
-/// List subjects assigned to a class in a cycle.
+/// List subjects assigned to a class in a period.
 pub async fn list(
     ctx: &ServiceContext,
     class_id: &str,
-    cycle_id: Option<&str>,
+    period_id: Option<&str>,
 ) -> Result<Vec<class_subject::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ClassRead).await?;
 
-    let cid = cycle_id.unwrap_or("default");
+    let cid = period_id.unwrap_or("default");
 
     Ok(class_subject::Entity::find()
         .filter(class_subject::Column::ClassId.eq(class_id))
-        .filter(class_subject::Column::CycleId.eq(cid))
+        .filter(class_subject::Column::PeriodId.eq(cid))
         .filter(class_subject::Column::IsActive.eq(1))
         .all(&ctx.db)
         .await?)
 }
 
-/// List subjects assigned to a teacher in a cycle.
+/// List subjects assigned to a teacher in a period.
 pub async fn list_by_teacher(
     ctx: &ServiceContext,
     teacher_id: &str,
-    cycle_id: &str,
+    period_id: &str,
 ) -> Result<Vec<class_subject::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ClassRead).await?;
 
     Ok(class_subject::Entity::find()
         .filter(class_subject::Column::PrimaryTeacherId.eq(teacher_id))
-        .filter(class_subject::Column::CycleId.eq(cycle_id))
+        .filter(class_subject::Column::PeriodId.eq(period_id))
         .filter(class_subject::Column::IsActive.eq(1))
         .all(&ctx.db)
         .await?)
@@ -52,7 +52,7 @@ pub async fn list_by_teacher(
 pub struct CreateClassSubjectPayload {
     pub class_id: String,
     pub subject_id: String,
-    pub cycle_id: String,
+    pub period_id: String,
     pub primary_teacher_id: Option<String>,
     pub weekly_hours: Option<i32>,
 }
@@ -74,7 +74,7 @@ pub async fn create(
         id: id.clone(),
         class_id: req.class_id,
         subject_id: req.subject_id,
-        cycle_id: req.cycle_id,
+        period_id: req.period_id,
         primary_teacher_id: req.primary_teacher_id.unwrap_or_default(),
         assistant_teacher_id: None,
         substitute_teacher_id: None,

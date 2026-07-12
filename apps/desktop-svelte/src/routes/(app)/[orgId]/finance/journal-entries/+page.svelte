@@ -269,7 +269,7 @@ async function handlePostEntries() {
       const newEntry = await commands.finance.createJournalEntry(data.orgId, {
         transaction_ref: randomRef,
         accounting_date: entryDate,
-        fiscal_period_id: "2026-cycle",
+        fiscal_period_id: "2026-period",
         amount: row.amount!,
         debit_account_id: row.debitAccountId,
         credit_account_id: row.creditAccountId,

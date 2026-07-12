@@ -1,4 +1,4 @@
-/// Thin Tauri command wrappers for Platform/Lifecycle operations.
+/// Thin Tauri command wrappers for Platform/Lifeperiod operations.
 use std::sync::Arc;
 use tauri::State;
 use crate::state::AppState;

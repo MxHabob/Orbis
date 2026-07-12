@@ -32,7 +32,7 @@ async function fetchStats() {
   guardiansList = [];
   isLoading = true;
   try {
-    const cycleId = academicContext.effectiveCycleId || student.cycle_id || "";
+    const periodId = academicContext.effectivePeriodId || student.period_id || "";
 
     // Fetch finances
     const [fees, payments] = await Promise.all([
@@ -49,8 +49,8 @@ async function fetchStats() {
     balanceDue = diff <= 0 ? m.loading_no_dues() : formatCurrency(diff);
 
     // Fetch grades report card summary
-    if (cycleId) {
-      const report = await commands.assessment.getReportCard(studentId, cycleId).catch(() => null);
+    if (periodId) {
+      const report = await commands.assessment.getReportCard(studentId, periodId).catch(() => null);
       if (report && Array.isArray(report.grades)) {
         const avg =
           report.grades.reduce(

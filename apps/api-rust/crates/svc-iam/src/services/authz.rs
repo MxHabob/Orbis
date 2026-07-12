@@ -18,8 +18,8 @@ pub enum Permission {
     OrganizationRead, OrganizationWrite,
     // Users
     UserRead, UserWrite, UserDelete, UserRoleWrite, UserPasswordWrite,
-    // Academic Cycle
-    CycleRead, CycleWrite, CycleActivate, CycleLock, CycleUnlock, GradeEntryManage,
+    // Academic Period
+    PeriodRead, PeriodWrite, PeriodActivate, PeriodLock, PeriodUnlock, GradeEntryManage,
     // Org Units
     OrgUnitRead, OrgUnitWrite, OrgUnitDelete,
     // Classes
@@ -77,11 +77,11 @@ impl Permission {
             Self::UserDelete => ("User", "delete"),
             Self::UserRoleWrite => ("User", "role_write"),
             Self::UserPasswordWrite => ("User", "password_write"),
-            Self::CycleRead => ("Cycle", "read"),
-            Self::CycleWrite => ("Cycle", "write"),
-            Self::CycleActivate => ("Cycle", "activate"),
-            Self::CycleLock => ("Cycle", "lock"),
-            Self::CycleUnlock => ("Cycle", "unlock"),
+            Self::PeriodRead => ("Period", "read"),
+            Self::PeriodWrite => ("Period", "write"),
+            Self::PeriodActivate => ("Period", "activate"),
+            Self::PeriodLock => ("Period", "lock"),
+            Self::PeriodUnlock => ("Period", "unlock"),
             Self::GradeEntryManage => ("GradeEntry", "manage"),
             Self::OrgUnitRead => ("OrgUnit", "read"),
             Self::OrgUnitWrite => ("OrgUnit", "write"),

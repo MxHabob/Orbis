@@ -1,7 +1,7 @@
 /**
  * Assessment command interfaces — mirrors svc-assessment/ops.
  *
- * Migrated: cycleId → periodId.
+ * Migrated: periodId → periodId.
  */
 import type { Grade, Attendance, BehaviorRecord, Assessment, GradeReportCard, AttendanceReport, GradeAnalytics } from "../types";
 

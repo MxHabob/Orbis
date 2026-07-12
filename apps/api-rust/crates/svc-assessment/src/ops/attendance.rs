@@ -36,7 +36,7 @@ pub async fn list(
 /// Get attendance report for a student.
 pub async fn get_report(
     ctx: &ServiceContext,
-    _cycle_id: &str,
+    _period_id: &str,
     enrollment_id: &str,
 ) -> Result<AttendanceReport, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AttendanceReport).await?;
@@ -53,7 +53,7 @@ pub async fn get_report(
 /// Get attendance analytics for a class.
 pub async fn get_analytics(
     ctx: &ServiceContext,
-    cycle_id: &str,
+    period_id: &str,
     class_id: &str,
 ) -> Result<AttendanceAnalytics, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AttendanceAnalytics).await?;
@@ -65,7 +65,7 @@ pub async fn get_analytics(
         std::sync::Arc::new(query_repo),
     );
     let params = AttendanceParams {
-        cycle_id: Some(cycle_id.to_string()),
+        period_id: Some(period_id.to_string()),
         class_id: Some(class_id.to_string()),
         ..Default::default()
     };
@@ -76,7 +76,7 @@ pub async fn get_analytics(
 
 #[derive(serde::Deserialize)]
 pub struct CreateAttendancePayload {
-    pub cycle_id: String,
+    pub period_id: String,
     pub enrollment_id: String,
     pub class_id: String,
     pub date: String,
@@ -92,7 +92,7 @@ pub struct CreateAttendancePayload {
 
 #[derive(serde::Deserialize)]
 pub struct BulkAttendancePayload {
-    pub cycle_id: String,
+    pub period_id: String,
     pub class_id: String,
     pub date: String,
     pub period: Option<String>,
@@ -131,7 +131,7 @@ pub async fn record(
     let model = attendance::Model {
         id: id.clone(),
         org_id: ctx.org_id.clone(),
-        cycle_id: req.cycle_id,
+        period_id: req.period_id,
         enrollment_id: req.enrollment_id,
         class_id: req.class_id,
         date: req.date,
@@ -178,7 +178,7 @@ pub async fn record_bulk(
     let mut results = Vec::with_capacity(req.records.len());
     for item in req.records {
         let attendance_req = CreateAttendancePayload {
-            cycle_id: req.cycle_id.clone(),
+            period_id: req.period_id.clone(),
             enrollment_id: item.enrollment_id,
             class_id: req.class_id.clone(),
             date: req.date.clone(),
@@ -220,7 +220,7 @@ async fn record_single_no_check(
     let model = attendance::Model {
         id: id.clone(),
         org_id: ctx.org_id.clone(),
-        cycle_id: req.cycle_id,
+        period_id: req.period_id,
         enrollment_id: req.enrollment_id,
         class_id: req.class_id,
         date: req.date,

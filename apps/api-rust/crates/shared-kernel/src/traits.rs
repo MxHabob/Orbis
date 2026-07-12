@@ -37,8 +37,8 @@ pub enum Permission {
     OrganizationRead, OrganizationWrite,
     // Users
     UserRead, UserWrite, UserDelete, UserRoleWrite, UserPasswordWrite,
-    // Academic Cycle
-    CycleRead, CycleWrite, CycleActivate, CycleLock, CycleUnlock, GradeEntryManage,
+    // Academic Period
+    PeriodRead, PeriodWrite, PeriodActivate, PeriodLock, PeriodUnlock, GradeEntryManage,
     // Org Units
     OrgUnitRead, OrgUnitWrite, OrgUnitDelete,
     // Classes
@@ -92,8 +92,8 @@ pub enum Permission {
 pub struct AuthzContext {
     /// Restrict check to a specific class.
     pub class_id: Option<String>,
-    /// Restrict check to a specific cycle.
-    pub cycle_id: Option<String>,
+    /// Restrict check to a specific period.
+    pub period_id: Option<String>,
     /// Restrict check to a specific org unit.
     pub org_unit_id: Option<String>,
 }

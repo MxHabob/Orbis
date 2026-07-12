@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateClassCmd {
     pub org_id: String,
-    pub cycle_id: String,
+    pub period_id: String,
     pub org_unit_id: String,
     pub name: String,
     pub name_ar: Option<String>,

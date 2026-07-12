@@ -127,7 +127,7 @@ impl PaymentService {
             org_id: org_id.to_string(),
             transaction_ref: receipt_number,
             accounting_date: Utc::now().format("%Y-%m-%d").to_string(),
-            fiscal_period_id: fee.cycle_id.clone(),
+            fiscal_period_id: fee.period_id.clone(),
             amount: req.amount,
             debit_account_id: treasury.ledger_account_id.clone(),
             credit_account_id: student_account.id.clone(),

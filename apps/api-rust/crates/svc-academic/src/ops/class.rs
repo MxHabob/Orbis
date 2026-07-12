@@ -47,7 +47,7 @@ pub async fn get(ctx: &ServiceContext, id: &str) -> Result<class::Model, AppErro
 #[derive(serde::Deserialize)]
 pub struct CreateClassPayload {
     pub org_unit_id: String,
-    pub cycle_id: String,
+    pub period_id: String,
     pub name: String,
     pub name_ar: Option<String>,
     pub grade_level: String,
@@ -71,7 +71,7 @@ pub async fn create(
         id: id.clone(),
         org_id: ctx.org_id.clone(),
         unit_id: req.org_unit_id,
-        cycle_id: req.cycle_id,
+        period_id: req.period_id,
         name: req.name.clone(),
         name_ar: req.name_ar,
         level: req.grade_level,

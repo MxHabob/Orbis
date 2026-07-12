@@ -11,7 +11,7 @@ impl SchedulingCommandRepo {
         let active = time_slot::ActiveModel {
             id: Set(slot.id),
             org_id: Set(slot.org_id),
-            cycle_id: Set(slot.cycle_id),
+            period_id: Set(slot.period_id),
             slot_number: Set(slot.slot_number),
             name: Set(slot.name),
             name_ar: Set(slot.name_ar),
@@ -35,7 +35,7 @@ impl SchedulingCommandRepo {
         let active = scheduled_lesson::ActiveModel {
             id: Set(lesson.id),
             org_id: Set(lesson.org_id),
-            cycle_id: Set(lesson.cycle_id),
+            period_id: Set(lesson.period_id),
             class_id: Set(lesson.class_id),
             class_subject_id: Set(lesson.class_subject_id),
             subject_id: Set(lesson.subject_id),
@@ -139,10 +139,10 @@ impl SchedulingCommandRepo {
         active.update(&self.db).await
     }
 
-    pub async fn cancel_lessons_for_cycle(
+    pub async fn cancel_lessons_for_period(
         &self,
         org_id: &str,
-        cycle_id: &str,
+        period_id: &str,
     ) -> Result<u64, DbErr> {
         use sea_orm::{ColumnTrait, QueryFilter, sea_query::Expr};
         let now = chrono::Utc::now().to_rfc3339();
@@ -150,7 +150,7 @@ impl SchedulingCommandRepo {
             .col_expr(scheduled_lesson::Column::Status, Expr::value("cancelled"))
             .col_expr(scheduled_lesson::Column::UpdatedAt, Expr::value(now))
             .filter(scheduled_lesson::Column::OrgId.eq(org_id))
-            .filter(scheduled_lesson::Column::CycleId.eq(cycle_id))
+            .filter(scheduled_lesson::Column::PeriodId.eq(period_id))
             .filter(scheduled_lesson::Column::Status.ne("cancelled"))
             .exec(&self.db)
             .await?;

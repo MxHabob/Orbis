@@ -183,7 +183,7 @@ impl Executor {
         // For now, we implement known task types directly.
         match task.task_type.as_str() {
             "enrollment_open" => {
-                // → domain-lifecycle: open enrollment for cycle
+                // → domain-lifecycle: open enrollment for period
                 info!(task_type = "enrollment_open", "Opening enrollment period");
                 Ok(r#"{"action":"enrollment_opened"}"#.to_string())
             }
@@ -199,9 +199,9 @@ impl Executor {
                 info!(task_type = "grade_entry_close", "Closing grade entry window");
                 Ok(r#"{"action":"grade_entry_closed"}"#.to_string())
             }
-            "cycle_lock" => {
-                info!(task_type = "cycle_lock", "Locking academic cycle");
-                Ok(r#"{"action":"cycle_locked"}"#.to_string())
+            "period_lock" => {
+                info!(task_type = "period_lock", "Locking academic period");
+                Ok(r#"{"action":"period_locked"}"#.to_string())
             }
             "report_generation" => {
                 info!(task_type = "report_generation", "Generating reports");

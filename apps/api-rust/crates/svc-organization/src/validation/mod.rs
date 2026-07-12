@@ -1,4 +1,4 @@
-//! Lifecycle validation  - business rule enforcement.
+//! Lifeperiod validation  - business rule enforcement.
 //!
 //! Validates commands before execution in ops.
 

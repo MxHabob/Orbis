@@ -34,7 +34,7 @@ let years = $state<any[]>([]);
 let name = $state(period?.name || "");
 let nameAr = $state(period?.name_ar || "");
 let code = $state(period?.code || "");
-let periodType = $state(period?.period_type || period?.cycle_type || "year");
+let periodType = $state(period?.period_type || period?.period_type || "year");
 let parentId = $state(period?.parent_id || period?.year_id || "");
 let startDate = $state(period?.start_date || "");
 let endDate = $state(period?.end_date || "");
@@ -97,7 +97,7 @@ async function handleSubmit(e: SubmitEvent) {
       passing_grade: passingGrade ? Number(passingGrade) : 50,
       max_grade: maxGrade ? Number(maxGrade) : 100,
     };
-    await commands.academic.createCycle(request);
+    await commands.academic.createPeriod(request);
     toast.success(m.period_form_success());
     onSuccess();
   } catch (e: unknown) {

@@ -22,7 +22,7 @@ pub enum JobStatus {
 pub struct TimetableProblem {
     pub job_id: String,
     pub org_id: String,
-    pub cycle_id: String,
+    pub period_id: String,
     pub mode: SolveMode,
     pub time_slots: Vec<TimeSlotDto>,
     pub rooms: Vec<RoomDto>,

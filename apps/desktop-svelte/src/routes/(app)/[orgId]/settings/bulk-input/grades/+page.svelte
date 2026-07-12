@@ -1,6 +1,6 @@
 <!--
 @component BulkGradeImport
-Bulk grade entry page with smart student matching and active cycle display.
+Bulk grade entry page with smart student matching and active period display.
 -->
 <script lang="ts">
 import { goto } from "$app/navigation";
@@ -40,7 +40,7 @@ let rows = $state<Record<string, unknown>[]>([]);
 let isSubmitting = $state(false);
 let submitProgress = $state(0);
 let identifierType = $state("auto");
-let activeCycleName = $state("");
+let activePeriodName = $state("");
 
 // Validation
 let validationResults = $state<ReturnType<typeof validateGradeRows>>([]);
@@ -120,14 +120,14 @@ async function handleSubmit() {
     const result = (await commands.bulkImport.createGrades(
       data.orgId,
       authStore.user?.id ?? "system",
-      null, // auto-detect active cycle
+      null, // auto-detect active period
       dataRows,
     )) as any;
 
     submitProgress = 100;
 
-    if (result.active_cycle_name) {
-      activeCycleName = result.active_cycle_name;
+    if (result.active_period_name) {
+      activePeriodName = result.active_period_name;
     }
 
     if (result.created > 0) {

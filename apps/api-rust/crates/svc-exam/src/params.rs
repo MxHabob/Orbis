@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]
 pub struct ExamSessionParams {
-    pub cycle_id: Option<String>,
+    pub period_id: Option<String>,
     pub status: Option<String>,
 }
 
@@ -42,7 +42,7 @@ pub struct ExamProctorParams {
 
 #[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]
 pub struct StudentOrderingParams {
-    pub cycle_id: Option<String>,
+    pub period_id: Option<String>,
     pub class_id: Option<String>,
     pub strategy: Option<String>,
 }

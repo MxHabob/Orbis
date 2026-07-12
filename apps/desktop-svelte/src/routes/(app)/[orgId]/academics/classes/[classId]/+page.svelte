@@ -47,7 +47,7 @@ import { academicContext } from "$lib/stores";
 
 const orgId = $derived(page.params.orgId);
 const classId = $derived(page.params.classId);
-const cycleId = $derived(academicContext.effectiveCycleId);
+const periodId = $derived(academicContext.effectivePeriodId);
 const rtl = $derived(getLocale() === "ar");
 
 // ── TanStack Queries ──────────────────────────────────────────────────────────
@@ -66,17 +66,17 @@ const classSubjectsQuery = createQuery({
 });
 
 const assessmentsQuery = createQuery({
-  queryKey: ["assessments", classId, cycleId],
-  queryFn: () => commands.assessment.listAssessments(orgId, cycleId || "").catch(() => []),
-  enabled: !!classId && !!cycleId && !!orgId,
+  queryKey: ["assessments", classId, periodId],
+  queryFn: () => commands.assessment.listAssessments(orgId, periodId || "").catch(() => []),
+  enabled: !!classId && !!periodId && !!orgId,
   staleTime: 5 * 60 * 1000,
 });
 
 // Dynamic class attendance analytics
 const attendanceQuery = createQuery({
-  queryKey: ["attendance-analytics", orgId, classId, cycleId],
-  queryFn: () => commands.assessment.listAttendance(orgId, cycleId || "", classId).catch(() => []),
-  enabled: !!orgId && !!classId && !!cycleId,
+  queryKey: ["attendance-analytics", orgId, classId, periodId],
+  queryFn: () => commands.assessment.listAttendance(orgId, periodId || "", classId).catch(() => []),
+  enabled: !!orgId && !!classId && !!periodId,
   staleTime: 5 * 60 * 1000,
 });
 
@@ -156,10 +156,10 @@ $effect(() => {
 
 
 const gradeMatrixQuery = createQuery({
-  queryKey: ["grade-matrix", orgId, cycleId, classId, selectedSubjectId],
+  queryKey: ["grade-matrix", orgId, periodId, classId, selectedSubjectId],
   queryFn: () =>
-    commands.grades.getGradeMatrix(orgId, cycleId, classId, selectedSubjectId),
-  enabled: !!orgId && !!cycleId && !!classId && !!selectedSubjectId,
+    commands.grades.getGradeMatrix(orgId, periodId, classId, selectedSubjectId),
+  enabled: !!orgId && !!periodId && !!classId && !!selectedSubjectId,
   staleTime: 2 * 60 * 1000,
 });
 

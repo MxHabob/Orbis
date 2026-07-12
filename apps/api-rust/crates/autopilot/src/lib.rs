@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-// Orbis Autopilot — Automated Academic Lifecycle Engine
+// Orbis Autopilot — Automated Academic Lifeperiod Engine
 //
 // Orchestrates automated school operations through 3 modes:
 //   automatic  — execute tasks without human approval

@@ -41,11 +41,11 @@ impl BehaviorService {
     }
 
     /// Submit a behavior record detected by AI.
-    /// Expects the caller to have resolved the student's org, cycle and enrollment.
+    /// Expects the caller to have resolved the student's org, period and enrollment.
     pub async fn submit_ai_behavior(
         &self,
         org_id: &str,
-        cycle_id: &str,
+        period_id: &str,
         enrollment_id: &str,
         req: AIBehaviorSubmission,
     ) -> Result<behavior_record::Model, AppError> {
@@ -85,7 +85,7 @@ impl BehaviorService {
         let record = behavior_record::Model {
             id: Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
-            cycle_id: cycle_id.to_string(),
+            period_id: period_id.to_string(),
             enrollment_id: enrollment_id.to_string(),
             behavior_type: req.behavior_type.clone(),
             severity,

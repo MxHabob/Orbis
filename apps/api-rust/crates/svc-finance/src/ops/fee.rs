@@ -117,7 +117,7 @@ pub async fn assign_student_fee(
     ctx: &ServiceContext,
     enrollment_id: String, fee_template_id: String,
     amount: f64, due_date: String, notes: Option<String>,
-    cycle_id: String,
+    period_id: String,
 ) -> Result<student_fee::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceWrite).await?;
 
@@ -125,7 +125,7 @@ pub async fn assign_student_fee(
     let id = Uuid::new_v4().to_string();
 
     let model = student_fee::Model {
-        id: id.clone(), org_id: ctx.org_id.clone(), cycle_id,
+        id: id.clone(), org_id: ctx.org_id.clone(), period_id,
         enrollment_id, fee_template_id, original_amount: amount,
         discount_amount: 0.0, net_amount: amount,
         status: "pending".into(), due_date,

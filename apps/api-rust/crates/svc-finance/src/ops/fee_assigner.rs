@@ -60,7 +60,7 @@ impl FeeAssigner for FinanceFeeAssigner {
             let new_fee = student_fee::ActiveModel {
                 id: Set(fee_id.clone()),
                 org_id: Set(org_id.to_string()),
-                cycle_id: Set(String::new()), // Will be set by caller
+                period_id: Set(String::new()), // Will be set by caller
                 enrollment_id: Set(enrollment_id.to_string()),
                 fee_template_id: Set(template.id.clone()),
                 original_amount: Set(template.default_amount),

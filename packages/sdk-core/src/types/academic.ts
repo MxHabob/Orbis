@@ -1,10 +1,10 @@
 /**
  * Academic domain types — mirrors Rust entities in svc-academic + svc-organization.
  *
- * Migrated: AcademicCycle → AcademicPeriod, cycle_id → period_id/year_id.
+ * Migrated: AcademicPeriod → AcademicPeriod, period_id → period_id/year_id.
  */
 
-/** Academic Period (replaces AcademicCycle) */
+/** Academic Period (replaces AcademicPeriod) */
 export interface AcademicPeriod {
   id: string;
   org_id: string;
@@ -40,7 +40,7 @@ export interface AcademicPeriod {
 }
 
 /** @deprecated Use AcademicPeriod instead */
-export type AcademicCycle = AcademicPeriod;
+export type AcademicPeriod = AcademicPeriod;
 
 export interface Class {
   id: string;

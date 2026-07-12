@@ -21,7 +21,7 @@ impl ExamCommandRepo {
         let active = student_ordering::ActiveModel {
             id: Set(model.id),
             org_id: Set(model.org_id),
-            cycle_id: Set(model.cycle_id),
+            period_id: Set(model.period_id),
             enrollment_id: Set(model.enrollment_id),
             student_id: Set(model.student_id),
             class_id: Set(model.class_id),
@@ -51,21 +51,21 @@ impl ExamCommandRepo {
         }
     }
 
-    pub async fn delete_student_ordering_for_cycle(&self, org_id: &str, cycle_id: &str) -> Result<u64, DbErr> {
+    pub async fn delete_student_ordering_for_period(&self, org_id: &str, period_id: &str) -> Result<u64, DbErr> {
         let result = student_ordering::Entity::delete_many()
             .filter(student_ordering::Column::OrgId.eq(org_id))
-            .filter(student_ordering::Column::CycleId.eq(cycle_id))
+            .filter(student_ordering::Column::PeriodId.eq(period_id))
             .filter(student_ordering::Column::IsFrozen.eq(0))
             .exec(&self.db)
             .await?;
         Ok(result.rows_affected)
     }
 
-    pub async fn freeze_student_ordering(&self, org_id: &str, cycle_id: &str, frozen_by: &str) -> Result<u64, DbErr> {
+    pub async fn freeze_student_ordering(&self, org_id: &str, period_id: &str, frozen_by: &str) -> Result<u64, DbErr> {
         let now = chrono::Utc::now().to_rfc3339();
         let result = student_ordering::Entity::update_many()
             .filter(student_ordering::Column::OrgId.eq(org_id))
-            .filter(student_ordering::Column::CycleId.eq(cycle_id))
+            .filter(student_ordering::Column::PeriodId.eq(period_id))
             .col_expr(student_ordering::Column::IsFrozen, Expr::value(1))
             .col_expr(student_ordering::Column::FrozenAt, Expr::value(now.clone()))
             .col_expr(student_ordering::Column::FrozenBy, Expr::value(frozen_by))
@@ -81,7 +81,7 @@ impl ExamCommandRepo {
         let active = exam_session::ActiveModel {
             id: Set(model.id),
             org_id: Set(model.org_id),
-            cycle_id: Set(model.cycle_id),
+            period_id: Set(model.period_id),
             name: Set(model.name),
             name_ar: Set(model.name_ar),
             code: Set(model.code),
@@ -110,7 +110,7 @@ impl ExamCommandRepo {
         let active = exam_session::ActiveModel {
             id: Set(model.id),
             org_id: Set(model.org_id),
-            cycle_id: Set(model.cycle_id),
+            period_id: Set(model.period_id),
             name: Set(model.name),
             name_ar: Set(model.name_ar),
             code: Set(model.code),

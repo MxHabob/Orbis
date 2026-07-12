@@ -51,7 +51,7 @@ impl PolicyEngine for OrgPolicyEngine {
             // Late enrollment
             "enrollment.create_late" => policy.late_enrollment_approval == 1,
 
-            // Grade modification after cycle close
+            // Grade modification after period close
             "grade.modify_after_close" => policy.grade_edit_approval == 1,
 
             // Generic — check the settings JSON for custom approval rules (Removed in restructuring)

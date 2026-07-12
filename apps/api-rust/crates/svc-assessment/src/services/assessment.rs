@@ -17,7 +17,7 @@ use svc_organization::entities::academic_period;
 pub struct CreateAssessmentRequest {
     pub class_id: String,
     pub subject_id: String,
-    pub cycle_id: String,
+    pub period_id: String,
     pub title: String,
     pub title_ar: Option<String>,
     pub item_type: String,
@@ -57,7 +57,7 @@ impl AssessmentService {
         &self,
         class_id: &str,
         subject_id: &str,
-        cycle_id: &str,
+        period_id: &str,
     ) -> Result<Vec<assessment::Model>, AppError> {
         let cs = class_subject::Entity::find()
             .filter(class_subject::Column::ClassId.eq(class_id))
@@ -67,7 +67,7 @@ impl AssessmentService {
             .await?;
 
         match cs {
-            Some(c) => Ok(self.query.get_assessments(&c.id, cycle_id).await?),
+            Some(c) => Ok(self.query.get_assessments(&c.id, period_id).await?),
             None => Ok(vec![]),
         }
     }
@@ -85,13 +85,13 @@ impl AssessmentService {
         user_id: &str,
         req: CreateAssessmentRequest,
     ) -> Result<assessment::Model, AppError> {
-        let cycle = academic_period::Entity::find_by_id(req.cycle_id.clone())
+        let period = academic_period::Entity::find_by_id(req.period_id.clone())
             .one(&self.query.db)
             .await?
-            .ok_or_else(|| AppError::not_found("academic_period", &req.cycle_id))?;
+            .ok_or_else(|| AppError::not_found("academic_period", &req.period_id))?;
 
-        if cycle.is_locked == 1 {
-            return Err(AppError::unauthorized("Cycle is locked"));
+        if period.is_locked == 1 {
+            return Err(AppError::unauthorized("Period is locked"));
         }
 
         let class_subject_id = match class_subject::Entity::find()
@@ -108,7 +108,7 @@ impl AssessmentService {
                     id: Set(Uuid::new_v4().to_string()),
                     class_id: Set(req.class_id),
                     subject_id: Set(req.subject_id),
-                    cycle_id: Set(req.cycle_id.clone()),
+                    period_id: Set(req.period_id.clone()),
                     primary_teacher_id: Set(user_id.to_string()),
                     assistant_teacher_id: Set(None),
                     substitute_teacher_id: Set(None),
@@ -130,7 +130,7 @@ impl AssessmentService {
         let a = assessment::Model {
             id: Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
-            cycle_id: req.cycle_id,
+            period_id: req.period_id,
             class_subject_id,
             title: req.title,
             title_ar: req.title_ar,
@@ -170,13 +170,13 @@ impl AssessmentService {
     ) -> Result<assessment::Model, AppError> {
         let assess = self.get_assessment(id).await?;
 
-        let cycle = academic_period::Entity::find_by_id(assess.cycle_id.clone())
+        let period = academic_period::Entity::find_by_id(assess.period_id.clone())
             .one(&self.query.db)
             .await?
-            .ok_or_else(|| AppError::not_found("academic_period", &assess.cycle_id))?;
+            .ok_or_else(|| AppError::not_found("academic_period", &assess.period_id))?;
 
-        if cycle.is_locked == 1 {
-            return Err(AppError::unauthorized("Cycle is locked"));
+        if period.is_locked == 1 {
+            return Err(AppError::unauthorized("Period is locked"));
         }
 
         let mut active: assessment::ActiveModel = assess.into();
@@ -199,13 +199,13 @@ impl AssessmentService {
     pub async fn delete_assessment(&self, id: &str) -> Result<(), AppError> {
         let assess = self.get_assessment(id).await?;
 
-        let cycle = academic_period::Entity::find_by_id(assess.cycle_id.clone())
+        let period = academic_period::Entity::find_by_id(assess.period_id.clone())
             .one(&self.query.db)
             .await?
-            .ok_or_else(|| AppError::not_found("academic_period", &assess.cycle_id))?;
+            .ok_or_else(|| AppError::not_found("academic_period", &assess.period_id))?;
 
-        if cycle.is_locked == 1 {
-            return Err(AppError::unauthorized("Cycle is locked"));
+        if period.is_locked == 1 {
+            return Err(AppError::unauthorized("Period is locked"));
         }
 
         assessment::Entity::delete_by_id(assess.id)

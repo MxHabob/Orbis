@@ -1,7 +1,7 @@
 /**
  * Exam command interfaces — mirrors svc-exam/ops.
  *
- * Migrated: cycleId → periodId.
+ * Migrated: periodId → periodId.
  */
 import type { ExamSession, ExamSubject, ExamSchedule, ExamHall, SeatingNumber } from "../types";
 

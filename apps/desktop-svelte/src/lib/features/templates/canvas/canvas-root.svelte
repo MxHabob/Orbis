@@ -54,7 +54,7 @@ const offsetY = $derived(
   Math.max(0, (containerHeight - pageHeightPx) / 2) + vp.panY,
 );
 
-// ── Lifecycle ────────────────────────────────────────────────
+// ── Lifeperiod ────────────────────────────────────────────────
 
 onMount(() => {
   if (containerEl) {

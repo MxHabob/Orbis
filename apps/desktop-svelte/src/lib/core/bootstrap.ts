@@ -3,7 +3,7 @@
  *
  * Called once from AppChrome.onMount (client-side only, after auth).
  * Performs non-blocking initialization:
- * 1. Resolves the academic context (year, cycle, phase)
+ * 1. Resolves the academic context (year, period, phase)
  * 2. Loads workflow inbox counts (pending approvals + suggestions)
  * 3. Registers Tauri event listeners for startup automation
  *
@@ -27,7 +27,7 @@ export function bootstrapApp(orgId: string): void {
   if (bootstrapped || !orgId) return;
   bootstrapped = true;
 
-  // 1. Resolve academic context (year, active cycle, phase, read-only status)
+  // 1. Resolve academic context (year, active period, phase, read-only status)
   academicContext.resolveContext(orgId);
 
   // 2. Load workflow inbox counts (pending approvals + calendar suggestions)

@@ -299,7 +299,7 @@ async function handleSave(e: Event) {
                 <span class="text-xs font-semibold text-foreground">
                   {m.policy_field_allow_late ? m.policy_field_allow_late() : "Allow Late Enrollment"}
                 </span>
-                <span class="text-[10px] text-muted-foreground">Permit registrations after active cycle enrollment closed.</span>
+                <span class="text-[10px] text-muted-foreground">Permit registrations after active period enrollment closed.</span>
               </div>
               <Switch bind:checked={form.allow_late_enrollment} disabled={isSaving} />
             </div>
