@@ -83,8 +83,8 @@ CREATE TABLE IF NOT EXISTS users (
   status TEXT NOT NULL DEFAULT 'active',
   last_login_at TEXT,
   last_login_ip TEXT,
-  login_count INTEGER DEFAULT 0,
-  failed_logins INTEGER DEFAULT 0,
+  login_count INTEGER,
+  failed_logins INTEGER,
   locked_until TEXT,
   prefs TEXT NOT NULL DEFAULT '{}',
   meta TEXT NOT NULL DEFAULT '{}',
@@ -252,7 +252,7 @@ CREATE TABLE IF NOT EXISTS period_templates (
 CREATE TABLE IF NOT EXISTS classes (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
-  year_id TEXT NOT NULL,
+  period_id TEXT NOT NULL,
   unit_id TEXT NOT NULL,
   name TEXT NOT NULL,
   name_ar TEXT,
@@ -267,16 +267,16 @@ CREATE TABLE IF NOT EXISTS classes (
   is_deleted INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
-  FOREIGN KEY (year_id) REFERENCES academic_years(id),
+  FOREIGN KEY (period_id) REFERENCES academic_periods(id),
   FOREIGN KEY (org_id) REFERENCES organizations(id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_classes_org_year ON classes(org_id, year_id);
+CREATE INDEX IF NOT EXISTS idx_classes_org_period ON classes(org_id, period_id);
 
 CREATE TABLE IF NOT EXISTS enrollments (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
-  year_id TEXT NOT NULL,
+  period_id TEXT NOT NULL,
   student_id TEXT NOT NULL,
   class_id TEXT NOT NULL,
   student_number TEXT,
@@ -291,20 +291,19 @@ CREATE TABLE IF NOT EXISTS enrollments (
   is_promoted INTEGER,
   promotion_decision TEXT,
   notes TEXT,
-  is_deleted INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
-  FOREIGN KEY (year_id) REFERENCES academic_years(id),
+  FOREIGN KEY (period_id) REFERENCES academic_periods(id),
   FOREIGN KEY (student_id) REFERENCES users(id),
   FOREIGN KEY (class_id) REFERENCES classes(id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_enr_org_year ON enrollments(org_id, year_id);
+CREATE INDEX IF NOT EXISTS idx_enr_org_period ON enrollments(org_id, period_id);
 CREATE INDEX IF NOT EXISTS idx_enr_student ON enrollments(student_id);
 CREATE INDEX IF NOT EXISTS idx_enr_class ON enrollments(class_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_enr_unique_active
-  ON enrollments(student_id, year_id)
-  WHERE status != 'withdrawn' AND is_deleted = 0;
+  ON enrollments(student_id, period_id)
+  WHERE status != 'withdrawn';
 
 -- ── Promotion Jobs ──
 CREATE TABLE IF NOT EXISTS promotion_jobs (
@@ -451,13 +450,22 @@ CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_log(entity_type, entity_id)
 CREATE TABLE IF NOT EXISTS user_sessions (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
-  org_id TEXT NOT NULL,
+  token TEXT NOT NULL UNIQUE,
+  refresh_token TEXT UNIQUE,
+  device_id TEXT,
+  device_type TEXT,
+  device_name TEXT,
+  os TEXT,
+  browser TEXT,
   ip_address TEXT,
   user_agent TEXT,
-  is_active INTEGER NOT NULL DEFAULT 1,
-  expires_at TEXT,
+  is_current INTEGER NOT NULL DEFAULT 0,
+  is_trusted INTEGER NOT NULL DEFAULT 0,
+  mfa_verified INTEGER NOT NULL DEFAULT 0,
+  expires_at TEXT NOT NULL,
+  refresh_expires_at TEXT,
+  last_active_at TEXT,
   created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
