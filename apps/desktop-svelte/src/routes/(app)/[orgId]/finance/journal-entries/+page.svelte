@@ -114,7 +114,7 @@ async function loadData() {
       dedup(`journal_entries:${data.orgId}`, () =>
         commands.finance.getJournalEntries(data.orgId),
       ),
-      dedup(`ledger_accounts:${data.orgId}`, () =>
+      dedup(`accounts:${data.orgId}`, () =>
         commands.finance.getTransactionAccounts(data.orgId),
       ),
     ]);

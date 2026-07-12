@@ -10,8 +10,7 @@ use shared_kernel::errors::AppError;
 use shared_kernel::traits::{AuditEntry, Permission};
 
 use crate::entities::promotion_job;
-use crate::services::promotion::{PromotionConfig, PromotionPreview, PromotionResult, PromotionService};
-
+use crate::ops::promotion_core::{PromotionConfig, PromotionPreview, PromotionResult, PromotionService};
 pub async fn list_jobs(ctx: &ServiceContext) -> Result<Vec<promotion_job::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::PromotionRead).await?;
     Ok(promotion_job::Entity::find()
@@ -67,8 +66,8 @@ pub async fn create_job(
 }
 
 fn build_service(ctx: &ServiceContext) -> PromotionService {
-    let query_repo = crate::repository::LifeperiodQueryRepo::new(ctx.db.clone());
-    let cmd_repo = crate::repository::LifeperiodCommandRepo::new(ctx.db.clone());
+    let query_repo = crate::repository::OrganizationQueryRepo::new(ctx.db.clone());
+    let cmd_repo = crate::repository::OrganizationCommandRepo::new(ctx.db.clone());
     PromotionService::new(Arc::new(cmd_repo), Arc::new(query_repo))
 }
 
@@ -89,11 +88,10 @@ pub async fn start_dry_run(
     svc.dry_run(&ctx.db, &ctx.org_id, ctx.actor.as_str(), config).await
 }
 
-/// execute(&self, source_db, job_id, app_data_dir) → PromotionResult
+/// execute(&self, source_db, job_id) → PromotionResult
 pub async fn execute(
     ctx: &ServiceContext,
     job_id: &str,
-    app_data_dir: &std::path::Path,
 ) -> Result<PromotionResult, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::PromotionExecute).await?;
 
@@ -103,7 +101,7 @@ pub async fn execute(
     }
 
     let svc = build_service(ctx);
-    let result = svc.execute(&ctx.db, job_id, app_data_dir).await?;
+    let result = svc.execute(&ctx.db, job_id).await?;
 
     ctx.audit.log(AuditEntry {
         org_id: ctx.org_id.clone(), actor: ctx.actor.clone(),
@@ -116,11 +114,10 @@ pub async fn execute(
     Ok(result)
 }
 
-/// rollback(&self, job_id, user_id, app_data_dir) → ()
+/// rollback(&self, job_id, user_id) → ()
 pub async fn rollback(
     ctx: &ServiceContext,
     job_id: &str,
-    app_data_dir: &std::path::Path,
 ) -> Result<(), AppError> {
     ctx.permissions.check(&ctx.actor, Permission::PromotionExecute).await?;
 
@@ -130,7 +127,7 @@ pub async fn rollback(
     }
 
     let svc = build_service(ctx);
-    svc.rollback(job_id, ctx.actor.as_str(), app_data_dir).await?;
+    svc.rollback(&ctx.db, job_id, ctx.actor.as_str()).await?;
 
     ctx.audit.log(AuditEntry {
         org_id: ctx.org_id.clone(), actor: ctx.actor.clone(),
@@ -141,3 +138,4 @@ pub async fn rollback(
 
     Ok(())
 }
+

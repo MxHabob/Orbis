@@ -170,7 +170,7 @@ pub async fn update_grade(
     data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let grade = svc_assessment::entities::grade::Entity::find_by_id(grade_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Grade not found"))?;
@@ -195,7 +195,7 @@ pub async fn update_behavior(
     data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let record = svc_assessment::entities::behavior_record::Entity::find_by_id(record_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Behavior record not found"))?;
@@ -212,10 +212,11 @@ pub async fn delete_behavior(
     record_id: String,
 ) -> CmdResult<()> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let record = svc_assessment::entities::behavior_record::Entity::find_by_id(record_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Behavior record not found"))?;
     let ctx = state.build_context(&record.org_id).await.map_err(CommandError::from)?;
     ops::behavior::delete(&ctx, &record_id).await.map_err(CommandError::from)
 }
+

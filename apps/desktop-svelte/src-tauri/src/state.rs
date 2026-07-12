@@ -154,7 +154,7 @@ impl AppState {
         let config = Arc::new(Config::load());
         
         // Initialize platform services with the active database
-        let db = provider.active_db().await;
+        let db = provider.db();
         let event_bus = Arc::new(EventBus::new());
         let platform = Arc::new(PlatformServices::new(db, event_bus));
         
@@ -164,9 +164,9 @@ impl AppState {
         Ok(Self { provider, config, platform })
     }
 
-    /// Accessor for the active year's database connection.
-    pub async fn active_db(&self) -> DatabaseConnection {
-        self.provider.active_db().await
+    /// Accessor for the database connection.
+    pub fn db(&self) -> DatabaseConnection {
+        self.provider.db()
     }
 
     /// Build a ServiceContext for the current session.
@@ -174,7 +174,7 @@ impl AppState {
     /// Resolves the active user from the latest session and creates
     /// a fully-wired context for domain operations.
     pub async fn build_context(&self, org_id: &str) -> Result<ServiceContext, shared_kernel::errors::AppError> {
-        let db = self.active_db().await;
+        let db = self.db();
         
         // Resolve current actor from the latest session
         use sea_orm::{EntityTrait, QueryOrder};
@@ -192,7 +192,7 @@ impl AppState {
 
     /// Build a system-level ServiceContext (for background tasks, events).
     pub async fn build_system_context(&self, org_id: &str) -> ServiceContext {
-        let db = self.active_db().await;
+        let db = self.db();
         let mut ctx = self.platform.context_for(db, org_id, Actor::System);
         ctx.ensure_correlation_id();
         ctx

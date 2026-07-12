@@ -1,6 +1,6 @@
 //! Finance query repository — read operations.
 
-use crate::entities::{ledger_account, treasury, student_fee, payment, fee_template, journal_entry, discount_template, currency};
+use crate::entities::{account, treasury, student_fee, payment, fee_template, journal_entry, discount_template, currency};
 use crate::params::{FeeTemplateParams, StudentFeeParams, PaymentParams, TreasuryParams, LedgerAccountParams};
 use sea_orm::{entity::prelude::*, QueryFilter, QueryOrder, EntityTrait, ColumnTrait};
 use super::FinanceQueryRepo;
@@ -8,45 +8,45 @@ use super::FinanceQueryRepo;
 impl FinanceQueryRepo {
     // ── Ledger Accounts ──
 
-    pub async fn get_ledger_accounts(&self, org_id: &str, params: LedgerAccountParams) -> Result<Vec<ledger_account::Model>, DbErr> {
-        let mut query = ledger_account::Entity::find()
-            .filter(ledger_account::Column::OrgId.eq(org_id));
+    pub async fn get_accounts(&self, org_id: &str, params: LedgerAccountParams) -> Result<Vec<account::Model>, DbErr> {
+        let mut query = account::Entity::find()
+            .filter(account::Column::OrgId.eq(org_id));
 
         if let Some(ref itype) = params.item_type {
-            query = query.filter(ledger_account::Column::ItemType.eq(itype));
+            query = query.filter(account::Column::ItemType.eq(itype));
         }
         if let Some(active) = params.is_active {
-            query = query.filter(ledger_account::Column::IsActive.eq(active));
+            query = query.filter(account::Column::IsActive.eq(active));
         }
 
-        query.order_by_asc(ledger_account::Column::Code).all(&self.db).await
+        query.order_by_asc(account::Column::Code).all(&self.db).await
     }
 
-    pub async fn get_ledger_account_by_id(&self, id: &str) -> Result<Option<ledger_account::Model>, DbErr> {
-        ledger_account::Entity::find_by_id(id.to_string()).one(&self.db).await
+    pub async fn get_account_by_id(&self, id: &str) -> Result<Option<account::Model>, DbErr> {
+        account::Entity::find_by_id(id.to_string()).one(&self.db).await
     }
 
-    pub async fn get_ledger_account_by_entity(&self, org_id: &str, entity_type: &str, entity_id: &str) -> Result<Option<ledger_account::Model>, DbErr> {
-        ledger_account::Entity::find()
-            .filter(ledger_account::Column::OrgId.eq(org_id))
-            .filter(ledger_account::Column::EntityType.eq(Some(entity_type.to_string())))
-            .filter(ledger_account::Column::EntityId.eq(Some(entity_id.to_string())))
+    pub async fn get_account_by_entity(&self, org_id: &str, entity_type: &str, entity_id: &str) -> Result<Option<account::Model>, DbErr> {
+        account::Entity::find()
+            .filter(account::Column::OrgId.eq(org_id))
+            .filter(account::Column::EntityType.eq(Some(entity_type.to_string())))
+            .filter(account::Column::EntityId.eq(Some(entity_id.to_string())))
             .one(&self.db)
             .await
     }
 
-    pub async fn get_control_account_by_sub_type(&self, org_id: &str, sub_type: &str) -> Result<Option<ledger_account::Model>, DbErr> {
-        ledger_account::Entity::find()
-            .filter(ledger_account::Column::OrgId.eq(org_id))
-            .filter(ledger_account::Column::IsControlAccount.eq(1))
-            .filter(ledger_account::Column::SubType.eq(Some(sub_type.to_string())))
+    pub async fn get_control_account_by_sub_type(&self, org_id: &str, sub_type: &str) -> Result<Option<account::Model>, DbErr> {
+        account::Entity::find()
+            .filter(account::Column::OrgId.eq(org_id))
+            .filter(account::Column::IsControlAccount.eq(1))
+            .filter(account::Column::SubType.eq(Some(sub_type.to_string())))
             .one(&self.db)
             .await
     }
 
     pub async fn is_leaf_account(&self, account_id: &str) -> Result<bool, DbErr> {
-        let child_count = ledger_account::Entity::find()
-            .filter(ledger_account::Column::ParentId.eq(Some(account_id.to_string())))
+        let child_count = account::Entity::find()
+            .filter(account::Column::ParentId.eq(Some(account_id.to_string())))
             .count(&self.db)
             .await?;
         Ok(child_count == 0)

@@ -223,7 +223,7 @@ impl SemanticResolver {
             actions: vec!["finance.fee.list".into()],
         });
 
-        // ── Lifeperiod ────────────────────────────────────────────
+        // ── Organization ────────────────────────────────────────────
         entities.insert("academic_periods".into(), EntitySchema {
             name: "academic_periods".into(),
             description: "Academic year/semester periods in the registry".into(),
@@ -292,4 +292,5 @@ impl SemanticResolver {
             .unwrap_or_default()
     }
 }
+
 

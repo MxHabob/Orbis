@@ -1,4 +1,4 @@
-//! Orbis Lifeperiod Domain — Organization & Academic Year Management.
+//! Orbis Organization Domain — Organization & Academic Year Management.
 //!
 //! This crate owns:
 //! - **Organization**: Tenant configuration, branding, limits
@@ -14,9 +14,10 @@
 
 pub mod entities;
 pub mod repository;
-pub mod services;
+pub mod validation;
 pub mod params;
 
 // ── Phase 1: New Microservice Modules ──────────────────────────
 pub mod contracts;
 pub mod ops;
+

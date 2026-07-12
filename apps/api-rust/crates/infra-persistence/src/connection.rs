@@ -15,9 +15,10 @@
 use std::time::Duration;
 use sea_orm::{ConnectOptions, ConnectionTrait, Database, DatabaseConnection, DbErr};
 use tracing::info;
+use std::path::Path;
 
-/// Standard SQLite pragmas for read-write year databases.
-const YEAR_DB_PRAGMAS: &str = "\
+/// Standard SQLite pragmas for read-write databases.
+const DB_PRAGMAS: &str = "\
     PRAGMA journal_mode=WAL; \
     PRAGMA synchronous=NORMAL; \
     PRAGMA foreign_keys=ON; \
@@ -25,20 +26,6 @@ const YEAR_DB_PRAGMAS: &str = "\
     PRAGMA busy_timeout=5000; \
     PRAGMA mmap_size=268435456; \
     PRAGMA temp_store=MEMORY;";
-
-/// Lighter pragmas for the registry database (small, low traffic).
-const REGISTRY_DB_PRAGMAS: &str = "\
-    PRAGMA journal_mode=WAL; \
-    PRAGMA synchronous=NORMAL; \
-    PRAGMA foreign_keys=ON; \
-    PRAGMA cache_size=-32000; \
-    PRAGMA busy_timeout=5000;";
-
-/// Pragmas for read-only archived databases.
-const ARCHIVED_DB_PRAGMAS: &str = "\
-    PRAGMA foreign_keys=ON; \
-    PRAGMA cache_size=-16000; \
-    PRAGMA query_only=ON;";
 
 /// Connection pool presets.
 pub struct PoolConfig {
@@ -50,8 +37,7 @@ pub struct PoolConfig {
 }
 
 impl PoolConfig {
-    /// Active year database — high concurrency.
-    pub fn year() -> Self {
+    pub fn default() -> Self {
         Self {
             max_connections: 10,
             min_connections: 2,
@@ -60,28 +46,11 @@ impl PoolConfig {
             max_lifetime_secs: 1800,
         }
     }
+}
 
-    /// Registry database — low concurrency.
-    pub fn registry() -> Self {
-        Self {
-            max_connections: 5,
-            min_connections: 1,
-            connect_timeout_secs: 5,
-            idle_timeout_secs: 60,
-            max_lifetime_secs: 3600,
-        }
-    }
-
-    /// Archived year — read-only, minimal connections.
-    pub fn archived() -> Self {
-        Self {
-            max_connections: 3,
-            min_connections: 1,
-            connect_timeout_secs: 5,
-            idle_timeout_secs: 30,
-            max_lifetime_secs: 1800,
-        }
-    }
+/// Format the SQLite connection string correctly for SeaORM, with read/write/create mode.
+pub fn sqlite_url_rwc(db_path: &Path) -> String {
+    format!("sqlite://{}?mode=rwc", db_path.display())
 }
 
 /// Connect to a SQLite database with the given URL, pool config, and pragmas.
@@ -106,24 +75,10 @@ async fn connect_with(
     Ok(db)
 }
 
-/// Connect to a year database with full read-write access and optimized pragmas.
-pub async fn connect_year(url: &str) -> Result<DatabaseConnection, DbErr> {
-    let db = connect_with(url, &PoolConfig::year(), YEAR_DB_PRAGMAS).await?;
-    info!("✅ Year database connected with optimized pragmas");
-    Ok(db)
-}
-
-/// Connect to the registry database.
-pub async fn connect_registry_db(url: &str) -> Result<DatabaseConnection, DbErr> {
-    let db = connect_with(url, &PoolConfig::registry(), REGISTRY_DB_PRAGMAS).await?;
-    info!("✅ Registry database connected");
-    Ok(db)
-}
-
-/// Connect to an archived year database in read-only mode.
-pub async fn connect_archived(url: &str) -> Result<DatabaseConnection, DbErr> {
-    let db = connect_with(url, &PoolConfig::archived(), ARCHIVED_DB_PRAGMAS).await?;
-    info!("📚 Archived database connected (read-only)");
+/// Connect to a database with full read-write access and optimized pragmas.
+pub async fn connect_db(url: &str) -> Result<DatabaseConnection, DbErr> {
+    let db = connect_with(url, &PoolConfig::default(), DB_PRAGMAS).await?;
+    info!("✅ Database connected with optimized pragmas");
     Ok(db)
 }
 

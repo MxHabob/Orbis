@@ -7,24 +7,18 @@ pub async fn students(
     ctx: &ServiceContext,
     data: serde_json::Value,
 ) -> Result<serde_json::Value, AppError> {
-    use crate::services::student_registration::{StudentRegistrationService, RegisterStudentRequest};
-    use crate::services::settings::OrganizationSettingsService;
-    use crate::repository::LifeperiodQueryRepo;
+    use crate::ops::student_registration::{register_student, RegisterStudentRequest};
     
     let students_list = data.get("students")
         .and_then(|v| v.as_array())
         .ok_or_else(|| AppError::validation("Missing 'students' array in import payload"))?;
-
-    let settings_repo = std::sync::Arc::new(LifeperiodQueryRepo::new(ctx.db.clone()));
-    let settings_svc = std::sync::Arc::new(OrganizationSettingsService::new(settings_repo));
-    let reg_svc = StudentRegistrationService::new(settings_svc);
 
     let mut imported_count = 0;
     for student_val in students_list {
         let req: RegisterStudentRequest = serde_json::from_value(student_val.clone())
             .map_err(|e| AppError::validation(format!("Invalid student record: {}", e)))?;
             
-        reg_svc.register_student(&ctx.db, &ctx.org_id, req, Some(ctx.actor.as_str())).await?;
+        register_student(ctx, req).await?;
         imported_count += 1;
     }
 

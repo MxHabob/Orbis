@@ -1,14 +1,14 @@
 //! Finance command repository — write operations.
 
-use crate::entities::{ledger_account, treasury, student_fee, payment, fee_template, journal_entry, discount_template, treasury_transaction};
+use crate::entities::{account, treasury, student_fee, payment, fee_template, journal_entry, discount_template, treasury_transaction};
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, DbErr, EntityTrait, ColumnTrait, QueryFilter};
 use super::FinanceCommandRepo;
 
 impl FinanceCommandRepo {
     // ── Ledger Accounts ──
 
-    pub async fn create_ledger_account(&self, la: ledger_account::Model) -> Result<ledger_account::Model, DbErr> {
-        let active = ledger_account::ActiveModel {
+    pub async fn create_account(&self, la: account::Model) -> Result<account::Model, DbErr> {
+        let active = account::ActiveModel {
             id: Set(la.id),
             org_id: Set(la.org_id),
             code: Set(la.code),
@@ -20,8 +20,7 @@ impl FinanceCommandRepo {
             path: Set(la.path),
             depth: Set(la.depth),
             currency: Set(la.currency),
-            opening_balance: Set(la.opening_balance),
-            current_balance: Set(la.current_balance),
+            balances: Set(la.balances),
             entity_type: Set(la.entity_type),
             entity_id: Set(la.entity_id),
             is_control_account: Set(la.is_control_account),
@@ -33,16 +32,18 @@ impl FinanceCommandRepo {
         active.insert(&self.db).await
     }
 
-    pub async fn update_ledger_account_balance(&self, account_id: &str, amount: f64) -> Result<(), DbErr> {
+    pub async fn update_account_balance(&self, account_id: &str, currency: &str, amount: f64) -> Result<(), DbErr> {
         let mut current_id = Some(account_id.to_string());
         while let Some(id) = current_id {
-            let account = ledger_account::Entity::find_by_id(id)
+            let account = account::Entity::find_by_id(id)
                 .one(&self.db)
                 .await?;
             if let Some(account) = account {
-                let current = account.current_balance.unwrap_or(0.0);
-                let mut active: ledger_account::ActiveModel = account.into();
-                active.current_balance = Set(Some(current + amount));
+                let mut cb: shared_kernel::currency::CurrencyBalance = serde_json::from_value(account.balances.clone()).unwrap_or_default();
+                cb.add(currency, amount);
+
+                let mut active: account::ActiveModel = account.into();
+                active.balances = Set(serde_json::to_value(&cb).unwrap());
                 active.updated_at = Set(chrono::Utc::now().to_rfc3339());
                 let updated = active.update(&self.db).await?;
                 current_id = updated.parent_id;
@@ -64,7 +65,7 @@ impl FinanceCommandRepo {
             name_ar: Set(t.name_ar),
             code: Set(t.code),
             item_type: Set(t.item_type),
-            ledger_account_id: Set(t.ledger_account_id),
+            account_id: Set(t.account_id),
             bank_name: Set(t.bank_name),
             bank_branch: Set(t.bank_branch),
             account_number: Set(t.account_number),

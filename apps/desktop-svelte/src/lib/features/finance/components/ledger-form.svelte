@@ -64,7 +64,7 @@ async function loadFormData() {
   try {
     isLoading = true;
     const [ledgerList, currencyList] = await Promise.all([
-      commands.finance.getLedgerAccounts(orgId),
+      commands.finance.getAccounts(orgId),
       commands.finance.getCurrencies(orgId),
     ]);
     ledgers = ledgerList;
@@ -154,7 +154,7 @@ async function handleSubmit(e: SubmitEvent) {
         sub_type: undefined,
       };
 
-      await commands.finance.createLedgerAccount(orgId, request);
+      await commands.finance.createAccount(orgId, request);
       toast.success(m.ledger_toast_success());
 
       // Reset
@@ -177,7 +177,7 @@ async function handleSubmit(e: SubmitEvent) {
         bank_name: trType === "bank" ? trBankName.trim() || null : null,
         account_number:
           trType === "bank" ? trAccountNumber.trim() || null : null,
-        ledger_account_id: undefined,
+        account_id: undefined,
       };
 
       await commands.finance.createTreasury(orgId, request);
@@ -206,7 +206,7 @@ async function handleSubmit(e: SubmitEvent) {
         sub_type: enType,
       };
 
-      await commands.finance.createLedgerAccount(orgId, request);
+      await commands.finance.createAccount(orgId, request);
       toast.success("تم إنشاء الحساب المساعد للكيان بنجاح");
 
       // Reset

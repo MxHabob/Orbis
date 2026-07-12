@@ -11,10 +11,10 @@ import type {
 
 export interface PlatformCommands {
   // ── Academic Years ────────────────────────────────────────────
-  getCurrentYear(): Promise<AcademicYear>;
+  getCurrentYear(orgId: string): Promise<AcademicYear>;
   listYears(orgId: string): Promise<AcademicYearInfo[]>;
   switchYear(yearId: string): Promise<void>;
-  isYearArchived(): Promise<boolean>;
+  isYearArchived(yearId: string): Promise<boolean>;
   getAcademicContext(orgId: string): Promise<AcademicContextResponse>;
   getSetupStatus(orgId: string): Promise<boolean>;
 
@@ -67,14 +67,19 @@ export interface PlatformCommands {
   login(identifier: string, password: string): Promise<{ user: any; access_token: string }>;
   logout(token: string): Promise<void>;
 
-  // ── Import/Export ─────────────────────────────────────────────
-  importStudents(orgId: string, data: any): Promise<any>;
-  importGrades(orgId: string, data: any): Promise<any>;
-  exportStudents(orgId: string): Promise<any>;
-  exportGrades(orgId: string): Promise<any>;
-
   // ── Audit ─────────────────────────────────────────────────────
   listAuditLogs(orgId: string): Promise<any[]>;
+  getAllAuditLogs(orgId: string): Promise<any[]>;
+
+  // ── Bulk Import ─────────────────────────────────────────────
+  importStudents(orgId: string, data: any): Promise<any>;
+  importGrades(orgId: string, data: any): Promise<any>;
+  createBulkStudents(orgId: string, userId: string, data: any): Promise<any>;
+  createBulkGrades(orgId: string, userId: string, periodId: string | null, data: any): Promise<any>;
+
+  // ── Export ──────────────────────────────────────────────────
+  exportStudents(orgId: string): Promise<any>;
+  exportGrades(orgId: string): Promise<any>;
 
   // ── Enrollment (extended) ─────────────────────────────────────
   transitionEnrollmentStatus(orgId: string, enrollmentId: string, status: string): Promise<void>;

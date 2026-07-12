@@ -8,7 +8,7 @@ use crate::commands::error::{CmdResult, CommandError};
 pub async fn autopilot_get_status(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
     use sea_orm::{EntityTrait, ColumnTrait, QueryFilter};
     use svc_organization::entities::academic_policy;
-    let db = state.active_db().await;
+    let db = state.db();
     let config = academic_policy::Entity::find()
         .filter(academic_policy::Column::OrgId.eq(&org_id))
         .one(&db)
@@ -30,7 +30,7 @@ pub async fn autopilot_get_status(state: State<'_, Arc<AppState>>, org_id: Strin
 pub async fn autopilot_get_tasks(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
     use sea_orm::{EntityTrait, ColumnTrait, QueryFilter};
     use autopilot::entities::autopilot_task;
-    let db = state.active_db().await;
+    let db = state.db();
     let tasks = autopilot_task::Entity::find()
         .filter(autopilot_task::Column::OrgId.eq(&org_id))
         .all(&db)
@@ -41,7 +41,7 @@ pub async fn autopilot_get_tasks(state: State<'_, Arc<AppState>>, org_id: String
 
 #[tauri::command]
 pub async fn autopilot_get_diagnostics(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
-    let db = state.active_db().await;
+    let db = state.db();
     let report = autopilot::diagnostics::Diagnostics::health_check(&db, &org_id)
         .await
         .map_err(CommandError::from)?;
@@ -58,7 +58,7 @@ pub async fn autopilot_configure(
 ) -> CmdResult<()> {
     use sea_orm::{EntityTrait, ColumnTrait, QueryFilter, ActiveModelTrait, ActiveValue::Set};
     use svc_organization::entities::academic_policy;
-    let db = state.active_db().await;
+    let db = state.db();
     let config = academic_policy::Entity::find()
         .filter(academic_policy::Column::OrgId.eq(&org_id))
         .one(&db)
@@ -82,7 +82,7 @@ pub async fn autopilot_run_tick(
     org_id: String,
 ) -> CmdResult<()> {
     use autopilot::engine::AutopilotEngine;
-    let db = state.active_db().await;
+    let db = state.db();
     let engine = AutopilotEngine::new(state.platform.event_bus.clone());
     engine.tick(&db, &org_id).await;
     Ok(())
@@ -93,7 +93,7 @@ pub async fn agent_get_sessions(
     state: State<'_, Arc<AppState>>,
     org_id: String,
 ) -> CmdResult<serde_json::Value> {
-    let db = state.active_db().await;
+    let db = state.db();
     let sessions = ai_gateway::agent::AgentSessionManager::list_active_sessions(&db, &org_id)
         .await
         .map_err(CommandError::from)?;
@@ -108,7 +108,7 @@ pub async fn agent_get_session_logs(
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::{EntityTrait, ColumnTrait, QueryFilter, QueryOrder};
     use ai_gateway::entities::ai_action_log;
-    let db = state.active_db().await;
+    let db = state.db();
     let logs = ai_action_log::Entity::find()
         .filter(ai_action_log::Column::OrgId.eq(&org_id))
         .filter(ai_action_log::Column::SessionId.eq(&session_id))
@@ -128,7 +128,7 @@ pub async fn agent_approve_action(
 ) -> CmdResult<()> {
     use sea_orm::{EntityTrait, ActiveModelTrait, ActiveValue::Set};
     use ai_gateway::entities::ai_action_log;
-    let db = state.active_db().await;
+    let db = state.db();
     let log = ai_action_log::Entity::find_by_id(action_log_id.clone())
         .one(&db)
         .await
@@ -154,7 +154,7 @@ pub async fn agent_reject_action(
 ) -> CmdResult<()> {
     use sea_orm::{EntityTrait, ActiveModelTrait, ActiveValue::Set};
     use ai_gateway::entities::ai_action_log;
-    let db = state.active_db().await;
+    let db = state.db();
     let log = ai_action_log::Entity::find_by_id(action_log_id.clone())
         .one(&db)
         .await
@@ -167,3 +167,4 @@ pub async fn agent_reject_action(
     active.update(&db).await.map_err(CommandError::from)?;
     Ok(())
 }
+

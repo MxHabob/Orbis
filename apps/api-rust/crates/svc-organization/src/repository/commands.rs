@@ -1,14 +1,14 @@
-//! Lifeperiod command repository — write operations.
+//! Organization command repository — write operations.
 
 use crate::entities::{
     organization, academic_period,
     academic_policy,
-    promotion_job, promotion_detail, student_registry_entry,
+    promotion_job, promotion_detail,
 };
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, DbErr, EntityTrait, ColumnTrait, QueryFilter};
-use super::LifeperiodCommandRepo;
+use super::OrganizationCommandRepo;
 
-impl LifeperiodCommandRepo {
+impl OrganizationCommandRepo {
     // ── Organization Commands ───────────────────────────────────
 
     pub async fn create_organization(&self, o: organization::Model) -> Result<organization::Model, DbErr> {
@@ -58,6 +58,13 @@ impl LifeperiodCommandRepo {
 
     pub async fn update_year(&self, model: crate::entities::academic_year::ActiveModel) -> Result<crate::entities::academic_year::Model, DbErr> {
         model.update(&self.db).await
+    }
+
+    pub async fn delete_year(&self, year_id: &str) -> Result<(), DbErr> {
+        crate::entities::academic_year::Entity::delete_by_id(year_id.to_string())
+            .exec(&self.db)
+            .await?;
+        Ok(())
     }
 
     // ── Period Commands ──────────────────────────────────────────
@@ -177,42 +184,6 @@ impl LifeperiodCommandRepo {
         active.update(&self.db).await
     }
 
-    // ── Student Registry Commands ──
 
-    pub async fn upsert_student_registry(&self, entry: student_registry_entry::Model) -> Result<student_registry_entry::Model, DbErr> {
-        let existing = student_registry_entry::Entity::find()
-            .filter(student_registry_entry::Column::UserId.eq(&entry.user_id))
-            .one(&self.db)
-            .await?;
-
-        if let Some(existing) = existing {
-            let mut active: student_registry_entry::ActiveModel = existing.into();
-            active.status = Set(entry.status);
-            active.current_year_id = Set(entry.current_year_id);
-            active.current_level = Set(entry.current_level);
-            active.current_class_name = Set(entry.current_class_name);
-            active.years_enrolled = Set(entry.years_enrolled);
-            active.full_name = Set(entry.full_name);
-            active.name_ar = Set(entry.name_ar);
-            active.updated_at = Set(chrono::Utc::now().to_rfc3339());
-            active.update(&self.db).await
-        } else {
-            let active: student_registry_entry::ActiveModel = entry.into();
-            active.insert(&self.db).await
-        }
-    }
-
-    pub async fn update_student_registry_status(&self, user_id: &str, status: &str) -> Result<(), DbErr> {
-        let entry = student_registry_entry::Entity::find()
-            .filter(student_registry_entry::Column::UserId.eq(user_id))
-            .one(&self.db)
-            .await?
-            .ok_or(DbErr::RecordNotFound("student registry entry not found".into()))?;
-
-        let mut active: student_registry_entry::ActiveModel = entry.into();
-        active.status = Set(status.to_string());
-        active.updated_at = Set(chrono::Utc::now().to_rfc3339());
-        active.update(&self.db).await?;
-        Ok(())
-    }
 }
+

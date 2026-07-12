@@ -274,7 +274,7 @@ async function saveStudentDetails(e: Event) {
   isSaving = true;
   try {
     // 1. Verify parent control account '110301' exists in chart of accounts
-    const accounts = await commands.finance.listLedgerAccounts(orgId);
+    const accounts = await commands.finance.listAccounts(orgId);
     const hasControlAccount = accounts.some((acc: any) => acc.code === "110301");
     if (!hasControlAccount) {
       toast.error(m.form_error_control_account_missing());

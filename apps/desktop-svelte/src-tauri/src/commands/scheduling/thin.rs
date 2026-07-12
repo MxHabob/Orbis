@@ -43,7 +43,7 @@ pub async fn get_class_schedule(
     class_id: String,
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let class = svc_academic::entities::class::Entity::find_by_id(class_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Class not found"))?;
@@ -59,7 +59,7 @@ pub async fn get_teacher_schedule(
     teacher_id: String,
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let period = svc_organization::entities::academic_period::Entity::find_by_id(period_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Period not found"))?;
@@ -74,7 +74,7 @@ pub async fn get_lesson_by_id(
     lesson_id: String,
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let lesson = svc_scheduling::entities::scheduled_lesson::Entity::find_by_id(lesson_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Lesson not found"))?;
@@ -136,7 +136,7 @@ pub async fn delete_room(state: State<'_, Arc<AppState>>, org_id: String, room_i
 
 #[tauri::command]
 pub async fn start_solver(state: State<'_, Arc<AppState>>, period_id: String) -> CmdResult<serde_json::Value> {
-    let db = state.active_db().await;
+    let db = state.db();
     let org_id = resolve_org_id(&db).await?;
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
     let r = ops::solver::start(&ctx, &period_id).await.map_err(CommandError::from)?;
@@ -145,7 +145,7 @@ pub async fn start_solver(state: State<'_, Arc<AppState>>, period_id: String) ->
 
 #[tauri::command]
 pub async fn list_solver_jobs(state: State<'_, Arc<AppState>>, period_id: String) -> CmdResult<serde_json::Value> {
-    let db = state.active_db().await;
+    let db = state.db();
     let org_id = resolve_org_id(&db).await?;
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
     let r = ops::solver::list_jobs(&ctx, &period_id).await.map_err(CommandError::from)?;
@@ -154,7 +154,7 @@ pub async fn list_solver_jobs(state: State<'_, Arc<AppState>>, period_id: String
 
 #[tauri::command]
 pub async fn get_solver_job(state: State<'_, Arc<AppState>>, job_id: String) -> CmdResult<serde_json::Value> {
-    let db = state.active_db().await;
+    let db = state.db();
     let org_id = resolve_org_id(&db).await?;
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
     let r = ops::solver::get_job(&ctx, &job_id).await.map_err(CommandError::from)?;
@@ -163,7 +163,7 @@ pub async fn get_solver_job(state: State<'_, Arc<AppState>>, job_id: String) -> 
 
 #[tauri::command]
 pub async fn cancel_solver(state: State<'_, Arc<AppState>>, job_id: String) -> CmdResult<serde_json::Value> {
-    let db = state.active_db().await;
+    let db = state.db();
     let org_id = resolve_org_id(&db).await?;
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
     let r = ops::solver::cancel(&ctx, &job_id).await.map_err(CommandError::from)?;
@@ -172,7 +172,7 @@ pub async fn cancel_solver(state: State<'_, Arc<AppState>>, job_id: String) -> C
 
 #[tauri::command]
 pub async fn apply_solver(state: State<'_, Arc<AppState>>, job_id: String) -> CmdResult<()> {
-    let db = state.active_db().await;
+    let db = state.db();
     let org_id = resolve_org_id(&db).await?;
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
     ops::solver::apply(&ctx, &job_id).await.map(|_| ()).map_err(CommandError::from)
@@ -180,7 +180,7 @@ pub async fn apply_solver(state: State<'_, Arc<AppState>>, job_id: String) -> Cm
 
 #[tauri::command]
 pub async fn delete_solver_job(state: State<'_, Arc<AppState>>, job_id: String) -> CmdResult<()> {
-    let db = state.active_db().await;
+    let db = state.db();
     let org_id = resolve_org_id(&db).await?;
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
     ops::solver::delete_job(&ctx, &job_id).await.map_err(CommandError::from)
@@ -197,7 +197,7 @@ pub async fn check_schedule_conflicts(
     exclude_id: Option<String>,
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let period = svc_organization::entities::academic_period::Entity::find_by_id(period_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Period not found"))?;
@@ -236,3 +236,4 @@ async fn resolve_org_id(db: &sea_orm::DatabaseConnection) -> Result<String, Comm
         .ok_or_else(|| CommandError::unauthorized("Active user not found"))?;
     Ok(user.org_id)
 }
+

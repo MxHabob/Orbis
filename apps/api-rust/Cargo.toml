@@ -17,7 +17,6 @@ members = [
     "crates/docforge-engine",
     "crates/docforge-orbis",
     "crates/api-gateway",
-    "../cli",
 ]
 
 [workspace.dependencies]

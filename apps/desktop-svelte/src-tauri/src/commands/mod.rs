@@ -1,6 +1,6 @@
 pub mod error;
 pub mod iam;
-pub mod lifecycle;
+pub mod organization;
 pub mod academic;
 pub mod assessment;
 pub mod scheduling;

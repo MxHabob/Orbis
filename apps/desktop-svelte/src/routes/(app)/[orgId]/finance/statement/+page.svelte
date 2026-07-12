@@ -45,7 +45,7 @@ import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
 import * as m from "$lib/paraglide/messages";
 import {
-  createLedgerAccountsQuery,
+  createAccountsQuery,
   createAccountStatementQuery,
 } from "$lib/features/finance";
 
@@ -103,7 +103,7 @@ interface AccountStatement {
   }>;
 }
 
-interface LedgerAccountResponse {
+interface AccountResponse {
   id: string;
   org_id: string;
   code: string;
@@ -128,8 +128,8 @@ interface LedgerAccountResponse {
 }
 
 // Queries
-const ledgersQuery = createLedgerAccountsQuery(orgId);
-const ledgers = $derived(($ledgersQuery.data || []) as LedgerAccountResponse[]);
+const ledgersQuery = createAccountsQuery(orgId);
+const ledgers = $derived(($ledgersQuery.data || []) as AccountResponse[]);
 const isLoadingLedgers = $derived($ledgersQuery.isLoading);
 
 // Query for detailed statement

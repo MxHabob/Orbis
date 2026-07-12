@@ -3,11 +3,19 @@
  */
 import type { User, UserRole, UserSession } from "../types";
 
-export interface IAMCommands {
-  // ── Auth ────────────────────────────────────────────────────
-  login(identifier: string, passwordHash: string, ip?: string): Promise<{ user: User; session: UserSession }>;
+export interface PermissionRule {
+  role: string;
+  document_type: string;
+  level: number;
+  only_if_creator: boolean;
+  actions: string[];
+}
+
+export interface IamCommands {
+  // ── Authentication ────────────────────────────────────────────
+  login(identifier: string, passwordHash?: string, ip?: string): Promise<UserSession>;
   logout(sessionId: string): Promise<void>;
-  changePassword(userId: string, data: { new_password: string } | string): Promise<void>;
+  changePassword(userId: string, data: any): Promise<void>;
   listSessions(userId: string): Promise<UserSession[]>;
 
   // ── Users ───────────────────────────────────────────────────
@@ -18,10 +26,14 @@ export interface IAMCommands {
   updateUser(userId: string, data: any): Promise<User>;
   deleteUser(userId: string, role?: string): Promise<void>;
 
-  // ── Roles ───────────────────────────────────────────────────
+  // ── Roles & Permissions ─────────────────────────────────────
   listUserRoles(userId: string): Promise<UserRole[]>;
-  assignRole(data: { user_id: string; role: string; scope_type: string; scope_id?: string }): Promise<UserRole>;
+  assignRole(data: { user_id: string; role: string; org_id: string; scope_type: string; scope_id?: string }): Promise<UserRole>;
   revokeRole(roleId: string): Promise<void>;
-  changeRole(userId: string, data: { role: string }): Promise<void>;
+  changeRole(userId: string, data: { current_role: string; new_role: string; document_type: string }): Promise<void>;
   saveUserRoles(userId: string, roles: string[]): Promise<void>;
+
+  // ── Rule Engine ─────────────────────────────────────────────
+  getRolePermissions(): Promise<PermissionRule[]>;
+  saveRolePermissions(role: string, rules: PermissionRule[]): Promise<void>;
 }

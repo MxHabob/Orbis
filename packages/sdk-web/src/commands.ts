@@ -94,9 +94,9 @@ export const commands: OrbisCommands = {
   // FINANCE
   // ═══════════════════════════════════════════════════════════════
   finance: {
-    listLedgerAccounts: () => http.get("/api/ledger-accounts"),
+    listAccounts: () => http.get("/api/ledger-accounts"),
     listTransactionAccounts: () => http.get("/api/ledger-accounts?type=transaction"),
-    createLedgerAccount: (data) => http.post("/api/ledger-accounts", data),
+    createAccount: (data) => http.post("/api/ledger-accounts", data),
     getAccountStatement: (accountId, startDate?, endDate?) =>
       http.get(`/api/ledger-accounts/${accountId}/statement?start=${startDate ?? ""}&end=${endDate ?? ""}`),
 
@@ -104,7 +104,6 @@ export const commands: OrbisCommands = {
     createTreasury: (data) => http.post("/api/treasuries", data),
 
     listFeeTemplates: (_orgId) => http.get("/api/fee-templates"),
-    getFeeTemplates: (_orgId) => http.get("/api/fee-templates"),
     listActiveFeeTemplates: (_orgId) => http.get("/api/fee-templates?active=true"),
     createFeeTemplate: (data) => http.post("/api/fee-templates", data),
     updateFeeTemplate: (templateId, data) => http.put(`/api/fee-templates/${templateId}`, data),
@@ -117,11 +116,9 @@ export const commands: OrbisCommands = {
     recordPayment: (data) => http.post("/api/payments", data),
 
     listDiscountTemplates: (_orgId) => http.get("/api/discount-templates"),
-    getDiscountTemplates: (_orgId) => http.get("/api/discount-templates"),
     createDiscountTemplate: (data) => http.post("/api/discount-templates", data),
 
     listCurrencies: () => http.get("/api/currencies"),
-    getCurrencies: (_orgId) => http.get("/api/currencies"),
     createCurrency: (data) => http.post("/api/currencies", data),
     updateCurrency: (_orgId, code, data) => http.put(`/api/currencies/${code}`, data),
     deleteCurrency: (_orgId, code) => http.del(`/api/currencies/${code}`),
@@ -203,6 +200,9 @@ export const commands: OrbisCommands = {
     listUserRoles: (userId) => http.get(`/api/users/${userId}/roles`),
     assignRole: (data) => http.post("/api/roles/assign", data),
     revokeRole: (roleId) => http.del(`/api/roles/${roleId}`),
+
+    getRolePermissions: () => http.get("/api/permissions/roles"),
+    saveRolePermissions: (role, rules) => http.post(`/api/permissions/roles/${role}`, rules),
   },
 
   // ═══════════════════════════════════════════════════════════════
@@ -220,10 +220,10 @@ export const commands: OrbisCommands = {
   // PLATFORM (Web — subset, no desktop-specific features)
   // ═══════════════════════════════════════════════════════════════
   platform: {
-    getCurrentYear: () => http.get("/api/academic-years/current"),
+    getCurrentYear: (orgId) => http.get(`/api/academic-years/current?orgId=${orgId}`),
     listYears: (_orgId) => http.get("/api/academic-years"),
     switchYear: (yearId) => http.post(`/api/academic-years/${yearId}/switch`),
-    isYearArchived: () => http.get("/api/academic-years/archived-status"),
+    isYearArchived: (yearId) => http.get(`/api/academic-years/${yearId}/archived-status`),
     getAcademicContext: (_orgId) => http.get("/api/academic-context"),
     getSetupStatus: (_orgId) => http.get("/api/setup-status"),
 
@@ -265,10 +265,13 @@ export const commands: OrbisCommands = {
 
     importStudents: (_orgId, data) => http.post("/api/import/students", data),
     importGrades: (_orgId, data) => http.post("/api/import/grades", data),
+    createBulkStudents: (orgId, userId, data) => http.post("/api/import/students", { students: data }),
+    createBulkGrades: (orgId, userId, periodId, data) => http.post("/api/import/grades", { grades: data }),
     exportStudents: (_orgId) => http.get("/api/export/students"),
     exportGrades: (_orgId) => http.get("/api/export/grades"),
 
     listAuditLogs: (_orgId) => http.get("/api/audit-logs"),
+    getAllAuditLogs: (orgId) => http.get(`/api/audit-logs?orgId=${orgId}`),
 
     transitionEnrollmentStatus: (_orgId, enrollmentId, status) => http.post(`/api/enrollments/${enrollmentId}/status`, { status }),
 
@@ -279,16 +282,5 @@ export const commands: OrbisCommands = {
   },
   docforge: {
     previewDocumentTemplate: (templateJson, contextJson) => http.post("/api/docforge/preview", { templateJson, contextJson }),
-  },
-  permissions: {
-    getRolePermissions: () => http.get("/api/permissions/roles"),
-    saveRolePermissions: (role, rules) => http.post(`/api/permissions/roles/${role}`, rules),
-  },
-  bulkImport: {
-    createStudents: (orgId, userId, data) => http.post("/api/import/students", { students: data }),
-    createGrades: (orgId, userId, periodId, data) => http.post("/api/import/grades", { grades: data }),
-  },
-  auditLogs: {
-    getAll: (orgId) => http.get(`/api/audit-logs?orgId=${orgId}`),
   }
 };

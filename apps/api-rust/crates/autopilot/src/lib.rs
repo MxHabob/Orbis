@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-// Orbis Autopilot — Automated Academic Lifeperiod Engine
+// Orbis Autopilot — Automated Academic Organization Engine
 //
 // Orchestrates automated school operations through 3 modes:
 //   automatic  — execute tasks without human approval
@@ -26,3 +26,4 @@ pub mod engine;
 pub mod diagnostics;
 pub mod academic_evaluator;
 pub mod academic_executor;
+

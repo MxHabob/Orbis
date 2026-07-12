@@ -15,19 +15,21 @@ pub async fn list_fee_templates(state: State<'_, Arc<AppState>>, org_id: String)
 #[tauri::command]
 pub async fn create_fee_template(state: State<'_, Arc<AppState>>, org_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::fee_template::create(&ctx, data).await.map_err(CommandError::from)?;
+    let cmd: svc_finance::contracts::commands::CreateFeeTemplateCmd = serde_json::from_value(data).map_err(|e| CommandError::with_code(e.to_string(), "VALIDATION_ERROR"))?;
+    let r = ops::fee_template::create(&ctx, cmd).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
 #[tauri::command]
 pub async fn update_fee_template(state: State<'_, Arc<AppState>>, template_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let template = svc_finance::entities::fee_template::Entity::find_by_id(template_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Fee template not found"))?;
     let ctx = state.build_context(&template.org_id).await.map_err(CommandError::from)?;
-    let r = ops::fee_template::update(&ctx, &template_id, data).await.map_err(CommandError::from)?;
+    let cmd: svc_finance::contracts::commands::UpdateFeeTemplateCmd = serde_json::from_value(data).map_err(|e| CommandError::with_code(e.to_string(), "VALIDATION_ERROR"))?;
+    let r = ops::fee_template::update(&ctx, &template_id, cmd).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
@@ -41,14 +43,15 @@ pub async fn list_discount_templates(state: State<'_, Arc<AppState>>, org_id: St
 #[tauri::command]
 pub async fn assign_fee(state: State<'_, Arc<AppState>>, org_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::student_fee::assign(&ctx, data).await.map_err(CommandError::from)?;
+    let cmd: svc_finance::contracts::commands::AssignFeeCmd = serde_json::from_value(data).map_err(|e| CommandError::with_code(e.to_string(), "VALIDATION_ERROR"))?;
+    let r = ops::student_fee::assign(&ctx, cmd).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
 #[tauri::command]
 pub async fn list_student_fees(state: State<'_, Arc<AppState>>, enrollment_id: String) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let enrollment = svc_academic::entities::enrollment::Entity::find_by_id(enrollment_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Enrollment not found"))?;
@@ -60,7 +63,8 @@ pub async fn list_student_fees(state: State<'_, Arc<AppState>>, enrollment_id: S
 #[tauri::command]
 pub async fn record_payment(state: State<'_, Arc<AppState>>, org_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::payment::record(&ctx, data).await.map_err(CommandError::from)?;
+    let cmd: svc_finance::contracts::commands::RecordPaymentCmd = serde_json::from_value(data).map_err(|e| CommandError::with_code(e.to_string(), "VALIDATION_ERROR"))?;
+    let r = ops::payment::record(&ctx, cmd).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
@@ -80,15 +84,8 @@ pub async fn list_ledger_accounts(state: State<'_, Arc<AppState>>, org_id: Strin
 
 #[tauri::command]
 pub async fn list_journal_entries(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
-    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, QueryOrder};
-    use svc_finance::entities::journal_entry;
-    let db = state.active_db().await;
-    let entries = journal_entry::Entity::find()
-        .filter(journal_entry::Column::OrgId.eq(&org_id))
-        .order_by_desc(journal_entry::Column::AccountingDate)
-        .all(&db)
-        .await
-        .map_err(CommandError::from)?;
+    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let entries = ops::ledger::get_journal_entries(&ctx).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(entries).unwrap())
 }
 
@@ -102,7 +99,8 @@ pub async fn list_treasuries(state: State<'_, Arc<AppState>>, org_id: String) ->
 #[tauri::command]
 pub async fn create_treasury(state: State<'_, Arc<AppState>>, org_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::treasury::create(&ctx, data).await.map_err(CommandError::from)?;
+    let cmd: svc_finance::contracts::commands::CreateTreasuryCmd = serde_json::from_value(data).map_err(|e| CommandError::with_code(e.to_string(), "VALIDATION_ERROR"))?;
+    let r = ops::treasury::create(&ctx, cmd).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
@@ -121,19 +119,21 @@ pub async fn get_account_statement(
     end_date: Option<String>,
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
-    let account = svc_finance::entities::ledger_account::Entity::find_by_id(account_id.clone())
+    let db = state.db();
+    let account = svc_finance::entities::account::Entity::find_by_id(account_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Ledger account not found"))?;
     let ctx = state.build_context(&account.org_id).await.map_err(CommandError::from)?;
-    let r = ops::ledger::get_statement(&ctx, &account_id, start_date, end_date).await.map_err(CommandError::from)?;
+    let sd = start_date.unwrap_or_else(|| "2000-01-01".to_string());
+    let ed = end_date.unwrap_or_else(|| "2100-01-01".to_string());
+    let r = ops::ledger::get_account_statement(&ctx, &account_id, &sd, &ed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
 #[tauri::command]
 pub async fn list_active_fee_templates(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     use sea_orm::{EntityTrait, ColumnTrait, QueryFilter, QueryOrder};
-    let db = state.active_db().await;
+    let db = state.db();
     let org_id = resolve_org_id(&db).await?;
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
     ctx.permissions.check(&ctx.actor, shared_kernel::traits::Permission::FinanceRead).await.map_err(CommandError::from)?;
@@ -153,7 +153,7 @@ pub async fn delete_fee_template(
     template_id: String,
 ) -> CmdResult<()> {
     use sea_orm::{EntityTrait, ModelTrait};
-    let db = state.active_db().await;
+    let db = state.db();
     let template = svc_finance::entities::fee_template::Entity::find_by_id(template_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Fee template not found"))?;
@@ -177,3 +177,4 @@ async fn resolve_org_id(db: &sea_orm::DatabaseConnection) -> Result<String, Comm
         .ok_or_else(|| CommandError::unauthorized("Active user not found"))?;
     Ok(user.org_id)
 }
+

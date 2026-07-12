@@ -12,7 +12,7 @@ import type {
   Grade, Attendance, BehaviorRecord, Assessment,
   GradeReportCard, AttendanceReport, GradeAnalytics,
   Payment, StudentFee, FeeTemplate, Treasury, DiscountTemplate,
-  LedgerAccount, JournalEntry, Currency,
+  Account, JournalEntry, Currency,
   TimeSlot, ScheduledLesson, Room, SolveJob,
   ExamSession, ExamSubject, ExamSchedule, ExamHall, SeatingNumber,
   User, UserRole, UserSession,
@@ -113,16 +113,15 @@ export const commands: OrbisCommands = {
   // FINANCE
   // ═══════════════════════════════════════════════════════════════
   finance: {
-    listLedgerAccounts: (orgId) => cmd("list_ledger_accounts", { orgId }),
+    listAccounts: (orgId) => cmd("list_ledger_accounts", { orgId }),
     listTransactionAccounts: () => cmd("list_transaction_accounts"),
-    createLedgerAccount: (data) => cmd("create_ledger_account", { data }),
+    createAccount: (data) => cmd("create_ledger_account", { data }),
     getAccountStatement: (accountId, startDate?, endDate?) => cmd("get_account_statement", { accountId, startDate, endDate }),
 
     listTreasuries: () => cmd("list_treasuries"),
     createTreasury: (data) => cmd("create_treasury", { data }),
 
     listFeeTemplates: (orgId) => cmd("list_fee_templates", { orgId }),
-    getFeeTemplates: (orgId) => cmd("list_fee_templates", { orgId }),
     listActiveFeeTemplates: (orgId) => cmd("list_active_fee_templates", { orgId }),
     createFeeTemplate: (data) => cmd("create_fee_template", { data }),
     updateFeeTemplate: (templateId, data) => cmd("update_fee_template", { templateId, data }),
@@ -132,14 +131,10 @@ export const commands: OrbisCommands = {
     assignStudentFee: (data) => cmd("assign_student_fee", { data }),
 
     listPayments: (enrollmentId?, feeId?) => cmd("list_payments", { enrollmentId, feeId }),
-    getPayments: (orgId, studentId?) => cmd("list_payments", { orgId, enrollmentId: studentId }),
     recordPayment: (data) => cmd("record_payment", { data }),
 
     listDiscountTemplates: (orgId) => cmd("list_discount_templates", { orgId }),
-    getDiscountTemplates: (orgId) => cmd("list_discount_templates", { orgId }),
     createDiscountTemplate: (data) => cmd("create_discount_template", { data }),
-
-    getCurrencies: (orgId) => commands.finance.listCurrencies(),
     listCurrencies: async () => {
       const stored = typeof window !== "undefined" ? window.localStorage.getItem("orbis_currencies") : null;
       if (stored) {
@@ -324,6 +319,30 @@ export const commands: OrbisCommands = {
     revokeRole: (roleId) => cmd("revoke_role", { roleId }),
     changeRole: (userId, data) => cmd("change_role", { userId, data }),
     saveUserRoles: (userId, roles) => cmd("save_user_roles", { userId, roles }),
+
+    getRolePermissions: async () => {
+      const stored = typeof window !== "undefined" ? window.localStorage.getItem("orbis_role_permissions") : null;
+      if (stored) {
+        try { return JSON.parse(stored); } catch {}
+      }
+      return [
+        { role: "super_admin", document_type: "*", level: 3, only_if_creator: false, actions: ["*"] },
+        { role: "admin", document_type: "*", level: 2, only_if_creator: false, actions: ["read", "write"] },
+        { role: "teacher", document_type: "student", level: 1, only_if_creator: false, actions: ["read"] },
+        { role: "teacher", document_type: "grades", level: 1, only_if_creator: false, actions: ["read", "write"] },
+        { role: "accountant", document_type: "finance", level: 2, only_if_creator: false, actions: ["*"] }
+      ];
+    },
+    saveRolePermissions: async (role, rules) => {
+      if (typeof window === "undefined") return;
+      const stored = window.localStorage.getItem("orbis_role_permissions");
+      let allRules: any[] = [];
+      if (stored) {
+        try { allRules = JSON.parse(stored); } catch {}
+      }
+      allRules = allRules.filter(r => r.role !== role).concat(rules);
+      window.localStorage.setItem("orbis_role_permissions", JSON.stringify(allRules));
+    }
   },
 
   // ═══════════════════════════════════════════════════════════════
@@ -342,10 +361,10 @@ export const commands: OrbisCommands = {
   // ═══════════════════════════════════════════════════════════════
   platform: {
     // Academic Years
-    getCurrentYear: () => cmd("get_current_academic_year"),
+    getCurrentYear: (orgId) => cmd("get_current_academic_year", { orgId }),
     listYears: (orgId) => cmd("list_academic_years", { orgId }),
     switchYear: (yearId) => cmd("switch_academic_year", { yearId }),
-    isYearArchived: () => cmd("is_year_archived"),
+    isYearArchived: (yearId) => cmd("is_year_archived", { yearId }),
     getAcademicContext: (orgId) => cmd("get_academic_context", { orgId }),
     getSetupStatus: (orgId) => cmd("get_setup_status", { orgId }),
 
@@ -401,11 +420,14 @@ export const commands: OrbisCommands = {
     // Import/Export
     importStudents: (orgId, data) => cmd("import_students", { orgId, data }),
     importGrades: (orgId, data) => cmd("import_grades", { orgId, data }),
+    createBulkStudents: (orgId, userId, data) => cmd("import_students", { orgId, data: { students: data } }),
+    createBulkGrades: (orgId, userId, periodId, data) => cmd("import_grades", { orgId, data: { grades: data } }),
     exportStudents: (orgId) => cmd("export_students", { orgId }),
     exportGrades: (orgId) => cmd("export_grades", { orgId }),
 
     // Audit
     listAuditLogs: (orgId) => cmd("list_audit_logs", { orgId }),
+    getAllAuditLogs: (orgId) => cmd("list_audit_logs", { orgId }),
 
     // Enrollment (extended)
     transitionEnrollmentStatus: (orgId, enrollmentId, status) => cmd("transition_enrollment_status", { orgId, enrollmentId, status }),
@@ -420,37 +442,5 @@ export const commands: OrbisCommands = {
   },
   docforge: {
     previewDocumentTemplate: (templateJson, contextJson) => cmd("preview_document_template", { templateJson, contextJson }),
-  },
-  permissions: {
-    getRolePermissions: async () => {
-      const stored = typeof window !== "undefined" ? window.localStorage.getItem("orbis_role_permissions") : null;
-      if (stored) {
-        try { return JSON.parse(stored); } catch {}
-      }
-      return [
-        { role: "super_admin", document_type: "*", level: 3, only_if_creator: false, actions: ["*"] },
-        { role: "admin", document_type: "*", level: 2, only_if_creator: false, actions: ["read", "write"] },
-        { role: "teacher", document_type: "student", level: 1, only_if_creator: false, actions: ["read"] },
-        { role: "teacher", document_type: "grades", level: 1, only_if_creator: false, actions: ["read", "write"] },
-        { role: "accountant", document_type: "finance", level: 2, only_if_creator: false, actions: ["*"] }
-      ];
-    },
-    saveRolePermissions: async (role, rules) => {
-      if (typeof window === "undefined") return;
-      const stored = window.localStorage.getItem("orbis_role_permissions");
-      let allRules: any[] = [];
-      if (stored) {
-        try { allRules = JSON.parse(stored); } catch {}
-      }
-      allRules = allRules.filter(r => r.role !== role).concat(rules);
-      window.localStorage.setItem("orbis_role_permissions", JSON.stringify(allRules));
-    }
-  },
-  bulkImport: {
-    createStudents: (orgId, userId, data) => commands.platform.importStudents(orgId, { students: data }),
-    createGrades: (orgId, userId, periodId, data) => commands.platform.importGrades(orgId, { grades: data }),
-  },
-  auditLogs: {
-    getAll: (orgId) => commands.platform.listAuditLogs(orgId),
   }
 };

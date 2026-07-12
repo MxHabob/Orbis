@@ -187,7 +187,7 @@ const rtl = $derived(getLocale() === "ar");
               <span>{m.finance_ledger_chart_title()}</span>
             </h3>
             <span class="text-[8px] text-muted-foreground mt-0.5">
-              {m.finance_ledger_accounts_count({ count: ledgers.length })}
+              {m.finance_accounts_count({ count: ledgers.length })}
             </span>
           </div>
           <Button variant="outline" class="text-[10px] h-7 px-2" onclick={() => { activeTabType = "gl"; isAddDialogOpen = true; }}>

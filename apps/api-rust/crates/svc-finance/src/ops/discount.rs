@@ -6,8 +6,11 @@ use uuid::Uuid;
 
 use shared_kernel::context::ServiceContext;
 use shared_kernel::errors::AppError;
+use shared_kernel::event_bus::EventEnvelope;
 use shared_kernel::traits::{AuditEntry, Permission};
 
+use crate::contracts::commands::CreateDiscountTemplateCmd;
+use crate::contracts::events::event_types;
 use crate::entities::discount_template;
 
 pub async fn list(ctx: &ServiceContext) -> Result<Vec<discount_template::Model>, AppError> {
@@ -28,19 +31,20 @@ pub async fn list_active(ctx: &ServiceContext) -> Result<Vec<discount_template::
 
 pub async fn create(
     ctx: &ServiceContext,
-    name: String, item_type: String, calculation_method: String,
-    value: i32, requires_approval: bool,
+    cmd: CreateDiscountTemplateCmd,
 ) -> Result<discount_template::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceWrite).await?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
 
+    let calculation_method = if cmd.is_percentage { "percentage".to_string() } else { "fixed".to_string() };
+
     let model = discount_template::Model {
-        id: id.clone(), org_id: ctx.org_id.clone(), name, code: None,
-        item_type, calculation_method, value,
+        id: id.clone(), org_id: ctx.org_id.clone(), name: cmd.name, code: None,
+        item_type: "manual".to_string(), calculation_method, value: cmd.amount as i32,
         eligibility_rules: None, limits: None,
-        requires_approval: if requires_approval { 1 } else { 0 },
+        requires_approval: 0,
         approver_roles: None, is_auto_apply: 0, is_stackable: 0,
         priority: None, is_active: 1,
         created_at: now.clone(), updated_at: now,
@@ -48,6 +52,15 @@ pub async fn create(
 
     let active: discount_template::ActiveModel = model.into();
     let created = active.insert(&ctx.db).await?;
+
+    ctx.event_bus.publish(EventEnvelope {
+        event_type: event_types::DISCOUNT_TEMPLATE_CREATED.into(),
+        entity_type: "discount_template".into(), entity_id: id.clone(),
+        org_id: ctx.org_id.clone(), actor: ctx.actor.as_str().into(),
+        actor_type: ctx.actor.actor_type().into(), correlation_id: ctx.correlation_id.clone(),
+        payload: serde_json::to_value(&created).unwrap_or_default(),
+        chain_depth: 0,
+    });
 
     ctx.audit.log(AuditEntry {
         org_id: ctx.org_id.clone(), actor: ctx.actor.clone(),

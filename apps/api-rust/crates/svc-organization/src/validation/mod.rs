@@ -1,4 +1,4 @@
-//! Lifeperiod validation  - business rule enforcement.
+//! Organization validation  - business rule enforcement.
 //!
 //! Validates commands before execution in ops.
 
@@ -31,3 +31,4 @@ pub fn validate_update_organization(cmd: &UpdateOrganizationCmd) -> Result<(), A
     }
     Ok(())
 }
+

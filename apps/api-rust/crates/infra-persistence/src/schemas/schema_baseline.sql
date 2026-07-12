@@ -817,6 +817,35 @@ CREATE TABLE IF NOT EXISTS attendance_summary (
   updated_at TEXT NOT NULL
 );
 
+-- ── Fiscal Years & Periods ──
+CREATE TABLE IF NOT EXISTS fiscal_years (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  start_date TEXT NOT NULL,
+  end_date TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open'
+    CHECK (status IN ('open','closed','archived')),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (org_id) REFERENCES organizations(id)
+);
+
+CREATE TABLE IF NOT EXISTS fiscal_periods (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  fiscal_year_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  start_date TEXT NOT NULL,
+  end_date TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open'
+    CHECK (status IN ('open','closed','archived')),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (org_id) REFERENCES organizations(id),
+  FOREIGN KEY (fiscal_year_id) REFERENCES fiscal_years(id)
+);
+
 -- ── Currencies ──
 CREATE TABLE IF NOT EXISTS currencies (
   code TEXT NOT NULL,
@@ -833,21 +862,22 @@ CREATE TABLE IF NOT EXISTS currencies (
   PRIMARY KEY (code, org_id)
 );
 
--- ── Ledger Accounts (Chart of Accounts with sub-accounts for students/employees) ──
-CREATE TABLE IF NOT EXISTS ledger_accounts (
+-- ── Accounts (Chart of Accounts) ──
+CREATE TABLE IF NOT EXISTS accounts (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
   code TEXT NOT NULL,
   name TEXT NOT NULL,
   name_ar TEXT,
-  "type" TEXT NOT NULL,
+  "type" TEXT NOT NULL
+    CHECK ("type" IN ('asset','liability','equity','revenue','expense')),
   sub_type TEXT,
   parent_id TEXT,
   path TEXT NOT NULL,
   depth INTEGER NOT NULL,
   currency TEXT NOT NULL,
-  opening_balance REAL DEFAULT 0,
-  current_balance REAL DEFAULT 0,
+  -- We store CurrencyBalance as a JSON string: {"USD": 100.0, "SAR": 375.0}
+  balances JSON NOT NULL DEFAULT '{}',
   entity_type TEXT,
   entity_id TEXT,
   is_control_account INTEGER NOT NULL DEFAULT 0,
@@ -856,9 +886,9 @@ CREATE TABLE IF NOT EXISTS ledger_accounts (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
-CREATE INDEX IF NOT EXISTS idx_ledger_entity ON ledger_accounts(entity_type, entity_id);
-CREATE INDEX IF NOT EXISTS idx_ledger_parent ON ledger_accounts(parent_id);
-CREATE INDEX IF NOT EXISTS idx_ledger_org_code ON ledger_accounts(org_id, code);
+CREATE INDEX IF NOT EXISTS idx_accounts_entity ON accounts(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_accounts_parent ON accounts(parent_id);
+CREATE INDEX IF NOT EXISTS idx_accounts_org_code ON accounts(org_id, code);
 
 -- ── Journal Entries (Source of Truth for all financial movements) ──
 CREATE TABLE IF NOT EXISTS journal_entries (

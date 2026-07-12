@@ -2,7 +2,7 @@
 name = "svc-organization"
 version = "2.0.0"
 edition = "2021"
-description = "Orbis Lifeperiod domain — organizations, academic periods, calendar, policies, promotions"
+description = "Orbis Organization domain — organizations, academic periods, calendar, policies, promotions"
 
 [dependencies]
 shared-kernel = { workspace = true }
@@ -19,3 +19,4 @@ chrono = { workspace = true }
 tracing = { workspace = true }
 tokio = { workspace = true }
 utoipa = { version = "4.2.3", features = ["axum_extras"] }
+

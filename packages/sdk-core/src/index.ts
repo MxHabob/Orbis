@@ -28,7 +28,7 @@ export {
 
 export {
   type Payment, type StudentFee, type FeeTemplate, type Treasury,
-  type DiscountTemplate, type LedgerAccount, type JournalEntry, type Currency,
+  type DiscountTemplate, type Account, type JournalEntry, type Currency,
 } from "./types/finance";
 
 export {
@@ -51,12 +51,9 @@ export { type AssessmentCommands } from "./commands/assessment";
 export { type FinanceCommands } from "./commands/finance";
 export { type SchedulingCommands } from "./commands/scheduling";
 export { type ExamCommands } from "./commands/exam";
-export { type IAMCommands } from "./commands/iam";
+export { type IamCommands, type PermissionRule } from "./commands/iam";
 export { type OrganizationCommands } from "./commands/organization";
 export { type DocforgeCommands } from "./commands/docforge";
-export { type PermissionsCommands, type PermissionRule } from "./commands/permissions";
-export { type BulkImportCommands } from "./commands/bulkImport";
-export { type AuditLogsCommands } from "./commands/auditLogs";
 
 // ── Errors ──────────────────────────────────────────────────────
 export { OrbisError, extractErrorMessage } from "./errors";

@@ -140,7 +140,7 @@ async function loadData() {
   error = null;
   try {
     const [ledgerList, paymentList, feeList, treasuryList] = await Promise.all([
-      commands.finance.getLedgerAccounts(data.orgId),
+      commands.finance.getAccounts(data.orgId),
       commands.finance.getPayments(data.orgId),
       commands.finance.getStudentFees(data.orgId),
       commands.finance.getTreasuries(data.orgId),
@@ -513,7 +513,7 @@ const ledgerTransactions = $derived.by(() => {
       });
     } else {
       // Check if this is the treasury ledger account
-      const treasury = treasuries.find((t) => t.ledger_account_id === acc.id);
+      const treasury = treasuries.find((t) => t.account_id === acc.id);
       if (treasury && pay.treasury_id === treasury.id) {
         // Debit Treasury
         list.push({

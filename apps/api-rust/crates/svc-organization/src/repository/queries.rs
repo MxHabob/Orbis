@@ -1,14 +1,14 @@
-//! Lifeperiod query repository — read operations.
+//! Organization query repository — read operations.
 
 use crate::entities::{
     organization, academic_year, academic_period,
     academic_policy,
-    promotion_job, promotion_detail, student_registry_entry,
+    promotion_job, promotion_detail,
 };
 use sea_orm::{entity::prelude::*, QueryFilter, QueryOrder, EntityTrait, ColumnTrait};
-use super::LifeperiodQueryRepo;
+use super::OrganizationQueryRepo;
 
-impl LifeperiodQueryRepo {
+impl OrganizationQueryRepo {
     // ── Organization Queries ────────────────────────────────────
 
     pub async fn get_organization_by_id(&self, id: &str) -> Result<Option<organization::Model>, DbErr> {
@@ -97,20 +97,5 @@ impl LifeperiodQueryRepo {
             .await
     }
 
-    // ── Student Registry Queries ──
-
-    pub async fn get_student_registry(&self, org_id: &str) -> Result<Vec<student_registry_entry::Model>, DbErr> {
-        student_registry_entry::Entity::find()
-            .filter(student_registry_entry::Column::OrgId.eq(org_id))
-            .order_by_asc(student_registry_entry::Column::FullName)
-            .all(&self.db)
-            .await
-    }
-
-    pub async fn get_student_registry_entry(&self, user_id: &str) -> Result<Option<student_registry_entry::Model>, DbErr> {
-        student_registry_entry::Entity::find()
-            .filter(student_registry_entry::Column::UserId.eq(user_id))
-            .one(&self.db)
-            .await
-    }
 }
+

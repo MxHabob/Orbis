@@ -85,7 +85,7 @@ pub struct AppState {
 impl AppState {
     pub async fn init() -> Result<Self, Box<dyn std::error::Error>> {
         let config = Arc::new(shared_kernel::config::Config::load());
-        let db = infra_persistence::connection::connect_year(&config.database_url).await?;
+        let db = infra_persistence::connection::connect_db(&config.database_url).await?;
         let event_bus = Arc::new(EventBus::new());
         let platform = Arc::new(PlatformServices::new(db.clone(), event_bus));
 

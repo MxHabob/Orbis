@@ -546,7 +546,7 @@ export class StudentFormState {
 
     try {
       // Verify control account
-      const accounts = await commands.finance.listLedgerAccounts();
+      const accounts = await commands.finance.listAccounts();
       const hasControlAccount = accounts.some((acc) => acc.code === "110301");
       if (!hasControlAccount) {
         toast.error(m.form_error_control_account_missing());

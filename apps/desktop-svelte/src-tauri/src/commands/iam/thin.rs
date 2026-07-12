@@ -7,14 +7,14 @@ use svc_iam::ops;
 
 #[tauri::command]
 pub async fn login(state: State<'_, Arc<AppState>>, identifier: String, password_hash: String) -> CmdResult<serde_json::Value> {
-    let db = state.active_db().await;
+    let db = state.db();
     let r = ops::auth::login(&db, &identifier, &password_hash).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
 #[tauri::command]
 pub async fn logout_session(state: State<'_, Arc<AppState>>, session_id: String) -> CmdResult<()> {
-    let db = state.active_db().await;
+    let db = state.db();
     ops::auth::logout(&db, &session_id).await.map_err(CommandError::from)
 }
 
@@ -28,7 +28,7 @@ pub async fn list_users(state: State<'_, Arc<AppState>>, org_id: String) -> CmdR
 #[tauri::command]
 pub async fn get_user(state: State<'_, Arc<AppState>>, user_id: String) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let u = svc_iam::entities::user::Entity::find_by_id(user_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("User not found"))?;
@@ -47,7 +47,7 @@ pub async fn create_user(state: State<'_, Arc<AppState>>, org_id: String, data: 
 #[tauri::command]
 pub async fn update_user(state: State<'_, Arc<AppState>>, user_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let u = svc_iam::entities::user::Entity::find_by_id(user_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("User not found"))?;
@@ -59,7 +59,7 @@ pub async fn update_user(state: State<'_, Arc<AppState>>, user_id: String, data:
 #[tauri::command]
 pub async fn delete_user(state: State<'_, Arc<AppState>>, user_id: String) -> CmdResult<()> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let u = svc_iam::entities::user::Entity::find_by_id(user_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("User not found"))?;
@@ -70,7 +70,7 @@ pub async fn delete_user(state: State<'_, Arc<AppState>>, user_id: String) -> Cm
 #[tauri::command]
 pub async fn change_password(state: State<'_, Arc<AppState>>, user_id: String, data: serde_json::Value) -> CmdResult<()> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let u = svc_iam::entities::user::Entity::find_by_id(user_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("User not found"))?;
@@ -81,7 +81,7 @@ pub async fn change_password(state: State<'_, Arc<AppState>>, user_id: String, d
 #[tauri::command]
 pub async fn change_role(state: State<'_, Arc<AppState>>, user_id: String, data: serde_json::Value) -> CmdResult<()> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let u = svc_iam::entities::user::Entity::find_by_id(user_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("User not found"))?;
@@ -92,7 +92,7 @@ pub async fn change_role(state: State<'_, Arc<AppState>>, user_id: String, data:
 #[tauri::command]
 pub async fn list_user_sessions(state: State<'_, Arc<AppState>>, user_id: String) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let u = svc_iam::entities::user::Entity::find_by_id(user_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("User not found"))?;
@@ -104,7 +104,7 @@ pub async fn list_user_sessions(state: State<'_, Arc<AppState>>, user_id: String
 #[tauri::command]
 pub async fn list_user_roles(state: State<'_, Arc<AppState>>, user_id: String) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let user = svc_iam::entities::user::Entity::find_by_id(user_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("User not found"))?;
@@ -115,7 +115,7 @@ pub async fn list_user_roles(state: State<'_, Arc<AppState>>, user_id: String) -
 
 #[tauri::command]
 pub async fn save_user_roles(state: State<'_, Arc<AppState>>, user_id: String, roles: Vec<String>) -> CmdResult<()> {
-    let db = state.active_db().await;
+    let db = state.db();
     ops::role::save_for_user(&db, &user_id, roles).await.map_err(CommandError::from)
 }
 
@@ -128,7 +128,7 @@ pub async fn assign_role(state: State<'_, Arc<AppState>>, org_id: String, data: 
 
 #[tauri::command]
 pub async fn revoke_role(state: State<'_, Arc<AppState>>, role_id: String) -> CmdResult<()> {
-    let db = state.active_db().await;
+    let db = state.db();
     ops::role::revoke(&db, &role_id).await.map_err(CommandError::from)
 }
 
@@ -149,3 +149,4 @@ pub async fn search_users(
     let result = ops::user::search(&ctx, &query).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
+

@@ -2,7 +2,7 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize, utoipa::ToSchema)]
-#[sea_orm(table_name = "ledger_accounts")]
+#[sea_orm(table_name = "accounts")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: String,
@@ -17,8 +17,7 @@ pub struct Model {
     pub path: String,
     pub depth: i32,
     pub currency: String,
-    pub opening_balance: Option<f64>,
-    pub current_balance: Option<f64>,
+    pub balances: serde_json::Value,
     pub entity_type: Option<String>,
     pub entity_id: Option<String>,
     pub is_control_account: i32,

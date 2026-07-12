@@ -13,7 +13,7 @@ pub struct Model {
     pub code: Option<String>,
     #[sea_orm(column_name = "type")]
     pub item_type: String,
-    pub ledger_account_id: String,
+    pub account_id: String,
     pub bank_name: Option<String>,
     pub bank_branch: Option<String>,
     pub account_number: Option<String>,

@@ -1,14 +1,13 @@
 //! Promotion Engine — orchestrates the multi-phase academic promotion workflow.
 
-use std::path::Path;
 use std::sync::Arc;
 use sea_orm::{DatabaseConnection, ConnectionTrait, ColumnTrait, EntityTrait, QueryFilter, ActiveModelTrait};
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
 use shared_kernel::errors::AppError;
-use crate::entities::{promotion_job, promotion_detail, student_registry_entry};
-use crate::repository::{LifeperiodCommandRepo, LifeperiodQueryRepo};
+use crate::entities::{promotion_job, promotion_detail};
+use crate::repository::{OrganizationCommandRepo, OrganizationQueryRepo};
 
 use svc_academic::entities::{class, enrollment};
 
@@ -103,12 +102,12 @@ pub struct EnrollmentData {
 }
 
 pub struct PromotionService {
-    pub cmd: Arc<LifeperiodCommandRepo>,
-    pub query: Arc<LifeperiodQueryRepo>,
+    pub cmd: Arc<OrganizationCommandRepo>,
+    pub query: Arc<OrganizationQueryRepo>,
 }
 
 impl PromotionService {
-    pub fn new(cmd: Arc<LifeperiodCommandRepo>, query: Arc<LifeperiodQueryRepo>) -> Self {
+    pub fn new(cmd: Arc<OrganizationCommandRepo>, query: Arc<OrganizationQueryRepo>) -> Self {
         Self { cmd, query }
     }
 
@@ -269,12 +268,11 @@ impl PromotionService {
         })
     }
 
-    /// Phase 3: Execute — create target year DB, copy data, create enrollments.
+    /// Phase 3: Execute — create target year and copy classes/enrollments.
     pub async fn execute(
         &self,
-        source_db: &DatabaseConnection,
+        db: &DatabaseConnection,
         job_id: &str,
-        app_data_dir: &Path,
     ) -> Result<PromotionResult, AppError> {
         let mut job = self.query.get_promotion_job_by_id(job_id).await?
             .ok_or_else(|| AppError::not_found("promotion_job", job_id))?;
@@ -291,45 +289,7 @@ impl PromotionService {
         job.updated_at = chrono::Utc::now().to_rfc3339();
         self.cmd.update_promotion_job(job.clone()).await?;
 
-        // 3. Backup the source year database
-        let source_year = self.query.get_year_by_id(&config.source_year_id).await?
-            .ok_or_else(|| AppError::not_found("academic_year", &config.source_year_id))?;
-
-        let source_db_filename = infra_persistence::registry::year_db_filename(&source_year.name);
-        let source_db_path = infra_persistence::registry::year_db_path(app_data_dir, &source_db_filename);
-
-        let backup_filename = infra_persistence::registry::backup_filename(&source_year.name);
-        let backup_path = infra_persistence::registry::backups_dir(app_data_dir).join(&backup_filename);
-
-        infra_persistence::registry::backup_database(&source_db_path, &backup_path).await
-            .map_err(|e| AppError::internal(e))?;
-        info!("💾 Backup created: {:?}", backup_path);
-
-        // 4. Create target year database with schema
-        let target_db_filename = infra_persistence::registry::year_db_filename(&config.target_year_name);
-        let target_db_path = infra_persistence::registry::year_db_path(app_data_dir, &target_db_filename);
-        let target_url = infra_persistence::registry::sqlite_url_rwc(&target_db_path);
-        let target_db = infra_persistence::connection::connect_year(&target_url).await
-            .map_err(|e| AppError::Database(e.to_string()))?;
-
-        // 5. Copy reference data
-        Self::copy_reference_data(source_db, &target_db, &config).await?;
-        info!("📋 Reference data copied to target year");
-
-        // 6. Create classes in target DB
-        Self::create_target_classes(&target_db, source_db, &config).await?;
-        info!("🏫 Target classes created");
-
-        // 7. Create enrollments
-        let details = self.query.get_promotion_details(job_id).await?;
-        let promoted_details: Vec<_> = details.iter()
-            .filter(|d| d.decision == "promoted")
-            .collect();
-
-        Self::create_target_enrollments(&target_db, &promoted_details, &config).await?;
-        info!("📝 {} enrollments created in target year", promoted_details.len());
-
-        // 8. Register target year in registry
+        // 1. Create target year
         let now = chrono::Utc::now().to_rfc3339();
         let target_year = crate::entities::academic_year::Model {
             id: uuid::Uuid::new_v4().to_string(),
@@ -353,11 +313,21 @@ impl PromotionService {
         };
 
         let target_year = self.cmd.create_year(target_year).await?;
+        
+        // 2. Create target classes
+        Self::create_target_classes(db, db, &config).await?;
+        info!("🏫 Target classes created");
 
-        // 9. Update student registry entries
-        self.update_student_registry(&details, &target_year.id).await?;
+        // 3. Create target enrollments
+        let details = self.query.get_promotion_details(job_id).await?;
+        let promoted_details: Vec<_> = details.iter()
+            .filter(|d| d.decision == "promoted")
+            .collect();
 
-        // 10. Save execution stats
+        Self::create_target_enrollments(db, &promoted_details, &config).await?;
+        info!("📝 {} enrollments created in target year", promoted_details.len());
+
+        // 4. Save execution stats
         let total = details.len() as i32;
         let promoted_count = details.iter().filter(|d| d.decision == "promoted").count() as i32;
         let retained_count = details.iter().filter(|d| d.decision == "retained").count() as i32;
@@ -373,7 +343,7 @@ impl PromotionService {
         final_job.graduated_count = Some(graduated_count);
         final_job.excluded_count = Some(excluded_count);
         final_job.target_year_id = Some(target_year.id.clone());
-        final_job.backup_path = Some(backup_path.to_string_lossy().to_string());
+        final_job.backup_path = None;
         final_job.updated_at = chrono::Utc::now().to_rfc3339();
 
         self.cmd.update_promotion_job(final_job).await?;
@@ -390,16 +360,16 @@ impl PromotionService {
             retained: retained_count,
             graduated: graduated_count,
             excluded: excluded_count,
-            backup_path: backup_path.to_string_lossy().to_string(),
+            backup_path: "".to_string(),
         })
     }
 
     /// Rollback a completed promotion.
     pub async fn rollback(
         &self,
+        db: &DatabaseConnection,
         job_id: &str,
         user_id: &str,
-        app_data_dir: &Path,
     ) -> Result<(), AppError> {
         let mut job = self.query.get_promotion_job_by_id(job_id).await?
             .ok_or_else(|| AppError::not_found("promotion_job", job_id))?;
@@ -412,16 +382,17 @@ impl PromotionService {
         }
 
         if let Some(target_year_id) = &job.target_year_id {
-            if let Some(year) = self.query.get_year_by_id(target_year_id).await? {
-                let target_db_filename = infra_persistence::registry::year_db_filename(&year.name);
-                let target_path = infra_persistence::registry::year_db_path(app_data_dir, &target_db_filename);
-                if target_path.exists() {
-                    std::fs::remove_file(&target_path)
-                        .map_err(|e| AppError::internal(format!("Failed to delete target DB: {}", e)))?;
-                }
-                let _ = std::fs::remove_file(target_path.with_extension("db-wal"));
-                let _ = std::fs::remove_file(target_path.with_extension("db-shm"));
-            }
+            // In a single DB, we delete the enrollments, classes, periods, and the academic year itself.
+            let _ = db.execute(
+                sea_orm::Statement::from_sql_and_values(
+                    sea_orm::DatabaseBackend::Sqlite,
+                    "DELETE FROM enrollments WHERE enrollment_type = 'promotion' AND org_id = ?",
+                    vec![job.org_id.clone().into()],
+                )
+            ).await;
+            
+            // Delete the academic year
+            self.cmd.delete_year(target_year_id).await?;
         }
 
         job.status = "rolled_back".to_string();
@@ -536,124 +507,6 @@ impl PromotionService {
         }
     }
 
-    async fn copy_reference_data(
-        source_db: &DatabaseConnection,
-        target_db: &DatabaseConnection,
-        config: &PromotionConfig,
-    ) -> Result<(), AppError> {
-        let tables = vec![
-            "organizations",
-            "org_units",
-            "subjects",
-            "rooms",
-            "currencies",
-            "ledger_accounts",
-            "fee_templates",
-            "discount_templates",
-            "permissions",
-            "role_permissions",
-            "document_templates",
-        ];
-
-        for table in &tables {
-            Self::copy_table_data(source_db, target_db, table).await?;
-        }
-
-        Self::copy_table_data_where(
-            source_db, target_db, "users", "WHERE is_deleted = 0"
-        ).await?;
-
-        Self::copy_table_data(source_db, target_db, "user_roles").await?;
-        Self::copy_table_data(source_db, target_db, "user_permissions").await?;
-
-        if config.carry_over_guardians {
-            Self::copy_table_data(source_db, target_db, "student_guardians").await?;
-        }
-
-        Self::copy_table_data(source_db, target_db, "academic_years").await?;
-        Self::copy_table_data(source_db, target_db, "academic_periods").await?;
-
-        let _ = Self::copy_table_data(source_db, target_db, "academic_policies").await;
-
-        Ok(())
-    }
-
-    async fn copy_table_data(
-        source_db: &DatabaseConnection,
-        target_db: &DatabaseConnection,
-        table: &str,
-    ) -> Result<(), AppError> {
-        Self::copy_table_data_where(source_db, target_db, table, "").await
-    }
-
-    async fn copy_table_data_where(
-        source_db: &DatabaseConnection,
-        target_db: &DatabaseConnection,
-        table: &str,
-        where_clause: &str,
-    ) -> Result<(), AppError> {
-        let pragma_sql = format!("PRAGMA table_info({})", table);
-        let columns_result = source_db.query_all(
-            sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Sqlite, pragma_sql)
-        ).await.map_err(|e| AppError::Database(e.to_string()))?;
-
-        if columns_result.is_empty() {
-            return Ok(());
-        }
-
-        let column_names: Vec<String> = columns_result.iter()
-            .filter_map(|row| row.try_get::<String>("", "name").ok())
-            .collect();
-
-        if column_names.is_empty() {
-            return Ok(());
-        }
-
-        let cols_csv = column_names.join(", ");
-        let placeholders: Vec<String> = (1..=column_names.len())
-            .map(|i| format!("?{}", i))
-            .collect();
-        let placeholders_csv = placeholders.join(", ");
-
-        let select_sql = format!("SELECT {} FROM {} {}", cols_csv, table, where_clause);
-        let source_rows = source_db.query_all(
-            sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Sqlite, select_sql)
-        ).await.map_err(|e| AppError::Database(e.to_string()))?;
-
-        if source_rows.is_empty() {
-            return Ok(());
-        }
-
-        let insert_prefix = format!(
-            "INSERT OR IGNORE INTO {} ({}) VALUES ({})",
-            table, cols_csv, placeholders_csv
-        );
-
-        for row in &source_rows {
-            let mut values: Vec<sea_orm::Value> = Vec::new();
-            for col in &column_names {
-                if let Ok(v) = row.try_get::<Option<String>>("", col.as_str()) {
-                    values.push(v.into());
-                } else if let Ok(v) = row.try_get::<Option<i64>>("", col.as_str()) {
-                    values.push(v.into());
-                } else if let Ok(v) = row.try_get::<Option<f64>>("", col.as_str()) {
-                    values.push(v.into());
-                } else {
-                    values.push(sea_orm::Value::String(None));
-                }
-            }
-
-            let _ = target_db.execute(
-                sea_orm::Statement::from_sql_and_values(
-                    sea_orm::DatabaseBackend::Sqlite,
-                    &insert_prefix,
-                    values,
-                )
-            ).await;
-        }
-
-        Ok(())
-    }
 
     async fn create_target_classes(
         target_db: &DatabaseConnection,
@@ -759,41 +612,6 @@ impl PromotionService {
         Ok(())
     }
 
-    async fn update_student_registry(
-        &self,
-        details: &[promotion_detail::Model],
-        target_year_id: &str,
-    ) -> Result<(), AppError> {
-        for detail in details {
-            let now = chrono::Utc::now().to_rfc3339();
-            let status = match detail.decision.as_str() {
-                "promoted" => "active",
-                "graduated" => "graduated",
-                "excluded" => "withdrawn",
-                _ => "active",
-            };
 
-            let entry = student_registry_entry::Model {
-                id: uuid::Uuid::new_v4().to_string(),
-                org_id: String::new(),
-                user_id: detail.student_id.clone(),
-                student_number: detail.student_number.clone().unwrap_or_default(),
-                full_name: detail.student_name.clone(),
-                name_ar: detail.student_name_ar.clone(),
-                national_id: None,
-                status: status.to_string(),
-                first_enrollment_year_id: None,
-                current_year_id: if detail.decision == "promoted" { Some(target_year_id.to_string()) } else { None },
-                current_level: detail.target_level.clone(),
-                current_class_name: detail.target_class_name.clone(),
-                years_enrolled: 1,
-                created_at: now.clone(),
-                updated_at: now,
-            };
-
-            self.cmd.upsert_student_registry(entry).await?;
-        }
-
-        Ok(())
-    }
 }
+

@@ -75,7 +75,7 @@ export interface DiscountTemplate {
   updated_at: string;
 }
 
-export interface LedgerAccount {
+export interface Account {
   id: string;
   org_id: string;
   code: string;

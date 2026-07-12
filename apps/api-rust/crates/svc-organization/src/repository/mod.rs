@@ -1,4 +1,4 @@
-//! Lifeperiod domain repository — CQRS split.
+//! Organization domain repository — CQRS split.
 
 pub mod commands;
 pub mod queries;
@@ -11,24 +11,25 @@ use sea_orm::DatabaseConnection;
 
 /// Write repository for lifecycle entities.
 #[derive(Clone)]
-pub struct LifeperiodCommandRepo {
+pub struct OrganizationCommandRepo {
     pub db: DatabaseConnection,
 }
 
 /// Read repository for lifecycle entities.
 #[derive(Clone)]
-pub struct LifeperiodQueryRepo {
+pub struct OrganizationQueryRepo {
     pub db: DatabaseConnection,
 }
 
-impl LifeperiodCommandRepo {
+impl OrganizationCommandRepo {
     pub fn new(db: DatabaseConnection) -> Self {
         Self { db }
     }
 }
 
-impl LifeperiodQueryRepo {
+impl OrganizationQueryRepo {
     pub fn new(db: DatabaseConnection) -> Self {
         Self { db }
     }
 }
+

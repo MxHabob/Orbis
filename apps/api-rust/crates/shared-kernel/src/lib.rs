@@ -3,6 +3,7 @@ pub mod errors;
 pub mod config;
 pub mod traits;
 pub mod event_bus;
+pub mod currency;
 
 // ── Phase 0: New Platform Modules ───────────────────────────────
 pub mod settings;

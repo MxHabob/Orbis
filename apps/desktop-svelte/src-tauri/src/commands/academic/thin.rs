@@ -150,7 +150,7 @@ pub async fn get_class(
     class_id: String,
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let class = svc_academic::entities::class::Entity::find_by_id(class_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Class not found"))?;
@@ -177,7 +177,7 @@ pub async fn update_class(
     data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let class = svc_academic::entities::class::Entity::find_by_id(class_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Class not found"))?;
@@ -192,7 +192,7 @@ pub async fn delete_class(
     class_id: String,
 ) -> CmdResult<()> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let class = svc_academic::entities::class::Entity::find_by_id(class_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Class not found"))?;
@@ -229,7 +229,7 @@ pub async fn get_subject(
     subject_id: String,
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let subject = svc_academic::entities::subject::Entity::find_by_id(subject_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Subject not found"))?;
@@ -245,7 +245,7 @@ pub async fn update_subject(
     data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let subject = svc_academic::entities::subject::Entity::find_by_id(subject_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Subject not found"))?;
@@ -260,7 +260,7 @@ pub async fn delete_subject(
     subject_id: String,
 ) -> CmdResult<()> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let subject = svc_academic::entities::subject::Entity::find_by_id(subject_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Subject not found"))?;
@@ -527,7 +527,7 @@ pub async fn assign_teacher(
     teacher_id: String,
 ) -> CmdResult<()> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let class = svc_academic::entities::class::Entity::find_by_id(class_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Class not found"))?;
@@ -542,7 +542,7 @@ pub async fn list_teacher_subjects(
     period_id: Option<String>,
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let org_id = if let Some(ref cid) = period_id {
         let period = svc_organization::entities::academic_period::Entity::find_by_id(cid.clone())
             .one(&db).await.map_err(CommandError::from)?
@@ -585,7 +585,7 @@ pub async fn toggle_grade_entry(
     _end: Option<String>,
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let period = svc_organization::entities::academic_period::Entity::find_by_id(period_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Period not found"))?;
@@ -601,7 +601,7 @@ pub async fn update_org_unit(
     data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let unit = svc_academic::entities::org_unit::Entity::find_by_id(unit_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Org unit not found"))?;
@@ -616,7 +616,7 @@ pub async fn delete_org_unit(
     unit_id: String,
 ) -> CmdResult<()> {
     use sea_orm::EntityTrait;
-    let db = state.active_db().await;
+    let db = state.db();
     let unit = svc_academic::entities::org_unit::Entity::find_by_id(unit_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Org unit not found"))?;
@@ -684,7 +684,7 @@ pub async fn render_document(
     template_id: String,
     entity_id: String,
 ) -> CmdResult<Vec<u8>> {
-    let db = state.active_db().await;
+    let db = state.db();
 
     // 1. Fetch template record from DB
     let template = TemplateService::get_by_id(&db, &org_id, &template_id)
@@ -761,7 +761,7 @@ pub async fn start_batch_print(
     let job = batch_manager.create_job(job_id, entity_ids.len(), output_dir.clone());
     
     // Spawn the background print orchestrator
-    let db = state.active_db().await;
+    let db = state.db();
     let job_clone = job.clone();
     
     let app_handle_clone = app_handle.clone();
@@ -851,7 +851,7 @@ pub async fn preview_multi_up(
     entity_ids: Vec<String>,
     config_json: String,
 ) -> CmdResult<Vec<u8>> {
-    let db = state.active_db().await;
+    let db = state.db();
 
     let config: docforge_engine::layout::multi_up::MultiUpConfig =
         serde_json::from_str(&config_json)
@@ -908,7 +908,7 @@ pub async fn start_multi_up_batch_print(
     });
 
     // Spawn the background orchestrator
-    let db = state.active_db().await;
+    let db = state.db();
     let job_clone = job.clone();
 
     tokio::spawn(async move {
@@ -923,3 +923,4 @@ pub async fn start_multi_up_batch_print(
     let status = job.status.lock().unwrap().clone();
     Ok(status)
 }
+

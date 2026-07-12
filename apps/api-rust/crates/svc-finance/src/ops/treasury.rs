@@ -6,9 +6,13 @@ use uuid::Uuid;
 
 use shared_kernel::context::ServiceContext;
 use shared_kernel::errors::AppError;
+use shared_kernel::event_bus::EventEnvelope;
 use shared_kernel::traits::{AuditEntry, Permission};
 
+use crate::contracts::commands::CreateTreasuryCmd;
+use crate::contracts::events::event_types;
 use crate::entities::treasury;
+use crate::ops::ledger;
 
 pub async fn list(ctx: &ServiceContext) -> Result<Vec<treasury::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceRead).await?;
@@ -19,44 +23,55 @@ pub async fn list(ctx: &ServiceContext) -> Result<Vec<treasury::Model>, AppError
         .all(&ctx.db).await?)
 }
 
-#[derive(serde::Deserialize)]
-pub struct CreateTreasuryPayload {
-    pub name: String,
-    pub name_ar: Option<String>,
-    pub item_type: String,
-    pub ledger_account_id: String,
-    pub currency: String,
-}
-
 pub async fn create(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    cmd: CreateTreasuryCmd,
 ) -> Result<treasury::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceWrite).await?;
 
-    let req: CreateTreasuryPayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid create treasury payload: {e}")))?;
+    let treasury_id = Uuid::new_v4().to_string();
+    let entity_type = if cmd.treasury_type.to_lowercase() == "bank" {
+        "treasury_bank"
+    } else {
+        "treasury_cash"
+    };
+
+    let sub_account = ledger::get_or_create_sub_account(
+        ctx,
+        entity_type,
+        &treasury_id,
+        Some(&cmd.name),
+        cmd.name_ar.as_deref(),
+    ).await?;
 
     let now = Utc::now().to_rfc3339();
-    let id = Uuid::new_v4().to_string();
 
     let model = treasury::Model {
-        id: id.clone(), org_id: ctx.org_id.clone(), unit_id: None,
-        name: req.name, name_ar: req.name_ar, code: None, item_type: req.item_type, ledger_account_id: req.ledger_account_id,
+        id: treasury_id.clone(), org_id: ctx.org_id.clone(), unit_id: None,
+        name: cmd.name, name_ar: cmd.name_ar, code: Some(cmd.code), item_type: cmd.treasury_type, account_id: sub_account.id,
         bank_name: None, bank_branch: None, account_number: None,
         account_name: None, iban: None, swift_code: None,
         opening_balance: Some(0.0), current_balance: Some(0.0),
-        currency: req.currency, authorized_users: None, is_default: 0, is_active: 1,
+        currency: sub_account.currency, authorized_users: None, is_default: 0, is_active: 1,
         created_at: now.clone(), updated_at: now,
     };
 
     let active: treasury::ActiveModel = model.into();
     let created = active.insert(&ctx.db).await?;
 
+    ctx.event_bus.publish(EventEnvelope {
+        event_type: event_types::TREASURY_CREATED.into(),
+        entity_type: "treasury".into(), entity_id: treasury_id.clone(),
+        org_id: ctx.org_id.clone(), actor: ctx.actor.as_str().into(),
+        actor_type: ctx.actor.actor_type().into(), correlation_id: ctx.correlation_id.clone(),
+        payload: serde_json::to_value(&created).unwrap_or_default(),
+        chain_depth: 0,
+    });
+
     ctx.audit.log(AuditEntry {
         org_id: ctx.org_id.clone(), actor: ctx.actor.clone(),
         action: "treasury.create".into(), entity_type: "treasury".into(),
-        entity_id: id, old_data: None,
+        entity_id: treasury_id, old_data: None,
         new_data: Some(serde_json::to_value(&created).unwrap_or_default()),
         correlation_id: ctx.correlation_id.clone(),
     }).await?;

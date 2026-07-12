@@ -24,10 +24,10 @@ export function createPaymentsQuery(enrollmentId?: string, feeId?: string) {
 }
 
 /** Ledger accounts query. */
-export function createLedgerAccountsQuery() {
+export function createAccountsQuery() {
   return createQuery({
     queryKey: ["ledger-accounts"],
-    queryFn: () => commands.finance.listLedgerAccounts(),
+    queryFn: () => commands.finance.listAccounts(),
     staleTime: 5 * 60 * 1000,
   });
 }

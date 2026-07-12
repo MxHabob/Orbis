@@ -1,13 +1,13 @@
 /**
  * Finance command interfaces — mirrors svc-finance/ops.
  */
-import type { Payment, StudentFee, FeeTemplate, Treasury, DiscountTemplate, LedgerAccount, JournalEntry, Currency } from "../types";
+import type { Payment, StudentFee, FeeTemplate, Treasury, DiscountTemplate, Account, JournalEntry, Currency } from "../types";
 
 export interface FinanceCommands {
   // ── Ledger ──────────────────────────────────────────────────
-  listLedgerAccounts(orgId: string): Promise<LedgerAccount[]>;
-  listTransactionAccounts(): Promise<LedgerAccount[]>;
-  createLedgerAccount(data: { name: string; name_ar?: string; code: string; item_type: string; currency: string; parent_id?: string }): Promise<LedgerAccount>;
+  listAccounts(orgId: string): Promise<Account[]>;
+  listTransactionAccounts(): Promise<Account[]>;
+  createAccount(data: { name: string; name_ar?: string; code: string; item_type: string; currency: string; parent_id?: string }): Promise<Account>;
   getAccountStatement(accountId: string, startDate?: string, endDate?: string): Promise<JournalEntry[]>;
 
   // ── Treasury ────────────────────────────────────────────────
@@ -16,7 +16,6 @@ export interface FinanceCommands {
 
   // ── Fee Templates ───────────────────────────────────────────
   listFeeTemplates(orgId: string): Promise<FeeTemplate[]>;
-  getFeeTemplates(orgId: string): Promise<FeeTemplate[]>;
   listActiveFeeTemplates(orgId: string): Promise<FeeTemplate[]>;
   createFeeTemplate(data: { name: string; name_ar?: string; category: string; default_amount: number; revenue_account_id: string; receivable_account_id: string; frequency: string; is_mandatory: boolean }): Promise<FeeTemplate>;
   updateFeeTemplate(templateId: string, data: { name?: string; default_amount?: number; is_active?: boolean }): Promise<FeeTemplate>;
@@ -28,17 +27,14 @@ export interface FinanceCommands {
 
   // ── Payments ────────────────────────────────────────────────
   listPayments(enrollmentId?: string, feeId?: string): Promise<Payment[]>;
-  getPayments(orgId: string, studentId?: string): Promise<Payment[]>;
   recordPayment(data: { fee_id?: string; enrollment_id?: string; account_id: string; amount: number; currency: string; exchange_rate: number; method: string; treasury_id?: string; payer_name?: string; notes?: string }): Promise<Payment>;
 
   // ── Discounts ───────────────────────────────────────────────
   listDiscountTemplates(orgId: string): Promise<DiscountTemplate[]>;
-  getDiscountTemplates(orgId: string): Promise<DiscountTemplate[]>;
   createDiscountTemplate(data: { name: string; item_type: string; calculation_method: string; value: number; requires_approval: boolean }): Promise<DiscountTemplate>;
 
   // ── Currencies ──────────────────────────────────────────────
   listCurrencies(): Promise<Currency[]>;
-  getCurrencies(orgId: string): Promise<Currency[]>;
   createCurrency(data: { code: string; name: string; symbol: string; symbol_position: string; decimal_places: number; exchange_rate: number; is_base: boolean | number }): Promise<Currency>;
   updateCurrency(orgId: string, code: string, data: { exchange_rate: number }): Promise<Currency>;
   deleteCurrency(orgId: string, code: string): Promise<void>;
