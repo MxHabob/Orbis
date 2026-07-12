@@ -451,23 +451,14 @@ CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_log(entity_type, entity_id)
 CREATE TABLE IF NOT EXISTS user_sessions (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
-  token TEXT UNIQUE NOT NULL,
-  refresh_token TEXT UNIQUE,
-  device_id TEXT,
-  device_type TEXT,
-  device_name TEXT,
-  os TEXT,
-  browser TEXT,
+  org_id TEXT NOT NULL,
   ip_address TEXT,
   user_agent TEXT,
-  is_current INTEGER NOT NULL DEFAULT 1,
-  is_trusted INTEGER NOT NULL DEFAULT 0,
-  mfa_verified INTEGER NOT NULL DEFAULT 0,
-  expires_at TEXT NOT NULL,
-  refresh_expires_at TEXT,
-  last_active_at TEXT,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  expires_at TEXT,
   created_at TEXT NOT NULL,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 -- ══════════════════════════════════════════════════════════════════════════════
