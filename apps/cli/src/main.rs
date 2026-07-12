@@ -179,7 +179,8 @@ async fn main() -> Result<()> {
                     "1. Initialize System (Required)",
                     "2. Run Diagnostics (Doctor)",
                     "3. Start System (Skipped Init)",
-                    "4. Exit",
+                    "4. Reset Database (Wipe All Data)",
+                    "5. Exit",
                 ]
             };
 
