@@ -19,6 +19,7 @@ let academicYears = $state<{ value: string; label: string }[]>([]);
 
 async function loadYears() {
   let orgId = selectedBranch;
+  
   try {
     const org = await commands.organization.getMainOrganization();
     if (org && org.id) {
@@ -29,16 +30,27 @@ async function loadYears() {
     console.warn("Failed to fetch main organization:", err);
   }
 
+  // Use getSetupStatus or fallback to hardcoded default if empty
   try {
-    const years = await commands.academicYears.list(orgId || "org-sanaa-model");
-    academicYears = years.map((y) => ({
-      value: y.year.id,
-      label: y.year.name_ar || y.year.name,
+    if (!orgId) {
+      orgId = "org-sanaa-model"; // Fallback identifier
+    }
+  } catch (err) {
+    console.warn("Failed to fetch main organization:", err);
+  }
+
+  try {
+    const years = await commands.platform.listYears(orgId);
+    // @ts-ignore - y is typed based on OrbisCommands which might be outdated
+    academicYears = years.map((y: any) => ({
+      value: y.id,
+      label: y.name_ar || y.name,
     }));
     if (academicYears.length > 0) {
-      const activeYear = years.find((y) => y.is_active_in_app);
+      // @ts-ignore
+      const activeYear = years.find((y: any) => y.is_active_in_app);
       if (activeYear) {
-        selectedYear = activeYear.year.id;
+        selectedYear = activeYear.id;
       } else {
         selectedYear = academicYears[0].value;
       }

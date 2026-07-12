@@ -375,6 +375,7 @@ export const commands: OrbisCommands = {
   // ORGANIZATION
   // ═══════════════════════════════════════════════════════════════
   organization: {
+    getMainOrganization: () => cmd("get_main_organization"),
     getOrganization: (orgId) => cmd("get_organization", { orgId }),
     updateOrganization: (orgId, data) => cmd("update_organization", { orgId, data }),
     getSettings: (orgId) => cmd("get_settings", { orgId }),

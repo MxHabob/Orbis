@@ -123,7 +123,7 @@ pub async fn execute() -> Result<()> {
     let hashed_password = hash(&admin_password, DEFAULT_COST).unwrap_or_default();
     db.execute(Statement::from_sql_and_values(
         DatabaseBackend::Sqlite,
-        "INSERT INTO users (id, org_id, username, full_name, password_hash, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?)",
+        "INSERT INTO users (id, org_id, email, full_name, password_hash, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'active', ?, ?)",
         vec![user_id.into(), org_id.into(), admin_username.into(), admin_name.into(), hashed_password.into(), now.clone().into(), now.into()]
     )).await?;
 

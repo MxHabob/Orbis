@@ -9,7 +9,7 @@ import * as m from "$lib/paraglide/messages";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { toast } from "svelte-sonner";
 
-import { commands } from "$lib/core/ipc";
+import { commands, extractErrorMessage } from "$lib/core/ipc";
 
 // No props needed
 
@@ -34,7 +34,7 @@ async function handleSubmit(e: SubmitEvent) {
     await authStore.login(email, password);
     goto(localizeHref(`/${authStore.orgId}`));
   } catch (err) {
-    error = err instanceof Error ? err.message : m.login_failed();
+    error = extractErrorMessage(err) || m.login_failed();
   } finally {
     isLoading = false;
   }

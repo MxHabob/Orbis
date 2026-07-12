@@ -4,6 +4,7 @@
 import type { Organization } from "../types";
 
 export interface OrganizationCommands {
+  getMainOrganization(): Promise<Organization>;
   getOrganization(orgId: string): Promise<Organization>;
   updateOrganization(orgId: string, data: Partial<Organization>): Promise<Organization>;
   getSettings(orgId: string): Promise<Record<string, unknown>>;

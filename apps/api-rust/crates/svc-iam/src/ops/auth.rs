@@ -36,20 +36,22 @@ pub async fn login(
     }
 
     // Verify password
-    match &found.password_hash {
-        Some(hash) if hash == password_hash => {},
-        _ => {
-            // Increment failed logins
-            let mut active: user::ActiveModel = found.clone().into();
-            active.failed_logins = Set(Some(found.failed_logins.unwrap_or(0) + 1));
-            if found.failed_logins.unwrap_or(0) >= 4 {
-                active.locked_until = Set(Some(
-                    (Utc::now() + chrono::Duration::minutes(15)).to_rfc3339()
-                ));
-            }
-            active.update(db).await?;
-            return Err(AppError::unauthorized("Invalid credentials"));
+    let valid_password = match &found.password_hash {
+        Some(hash) => bcrypt::verify(password_hash, hash).unwrap_or(false),
+        None => false,
+    };
+
+    if !valid_password {
+        // Increment failed logins
+        let mut active: user::ActiveModel = found.clone().into();
+        active.failed_logins = Set(Some(found.failed_logins.unwrap_or(0) + 1));
+        if found.failed_logins.unwrap_or(0) >= 4 {
+            active.locked_until = Set(Some(
+                (Utc::now() + chrono::Duration::minutes(15)).to_rfc3339()
+            ));
         }
+        active.update(db).await?;
+        return Err(AppError::unauthorized("Invalid credentials"));
     }
 
     // Update login stats
