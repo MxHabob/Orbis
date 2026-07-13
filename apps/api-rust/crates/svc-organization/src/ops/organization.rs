@@ -264,8 +264,13 @@ pub async fn get_main(db: &sea_orm::DatabaseConnection) -> Result<organization::
 
 pub async fn update(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    mut data: serde_json::Value,
 ) -> Result<OrganizationResponse, AppError> {
+    if let Some(obj) = data.as_object_mut() {
+        if !obj.contains_key("org_id") {
+            obj.insert("org_id".to_string(), serde_json::Value::String(ctx.org_id.clone()));
+        }
+    }
     let cmd: UpdateOrganizationCmd = serde_json::from_value(data)
         .map_err(|e| AppError::validation(format!("Invalid update organization payload: {e}")))?;
     update_organization(ctx, cmd).await
@@ -385,7 +390,15 @@ pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::
                     term_period_id = id.to_string();
                 }
                 let mapped_ptype = if ptype == "term" { "semester" } else { "custom" };
-                let parent_val = if let Some(pid) = parent_id { format!("'{}'", pid.replace("'", "''")) } else { "NULL".to_string() };
+                let parent_val = if let Some(pid) = parent_id {
+                    if pid == period_id_val {
+                        "NULL".to_string()
+                    } else {
+                        format!("'{}'", pid.replace("'", "''"))
+                    }
+                } else {
+                    "NULL".to_string()
+                };
                 txn.execute(Statement::from_string(
                     DatabaseBackend::Sqlite,
                     format!(
@@ -398,7 +411,19 @@ pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::
     }
 
     // 4. Insert classes
-    let class_period_id = if term_period_id.is_empty() { &period_id_val } else { &term_period_id };
+    let class_period_id = if term_period_id.is_empty() {
+        let default_term_id = format!("{}-term", period_id_val);
+        txn.execute(Statement::from_string(
+            DatabaseBackend::Sqlite,
+            format!(
+                "INSERT INTO academic_periods (id, org_id, period_id, parent_id, name, name_ar, period_type, start_date, end_date, status, created_at, updated_at) VALUES ('{}', '{}', '{}', NULL, 'Full Year', 'عام كامل', 'semester', '2026-01-01', '2026-12-31', 'active', '{}', '{}') ON CONFLICT DO NOTHING;",
+                default_term_id.replace("'", "''"), ctx.org_id.replace("'", "''"), period_id_val.replace("'", "''"), now, now
+            )
+        )).await?;
+        default_term_id
+    } else {
+        term_period_id.clone()
+    };
     if let Some(classes) = payload.get("classes").and_then(|v| v.as_array()) {
         for c in classes {
             let id = c.get("id").and_then(|v| v.as_str()).unwrap_or("");
@@ -445,7 +470,7 @@ pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::
                 DatabaseBackend::Sqlite,
                 format!(
                     "INSERT INTO time_slots (id, org_id, period_id, slot_number, name, name_ar, start_time, end_time, duration_minutes, is_break, is_active, created_at, updated_at) VALUES ('{}', '{}', '{}', {}, '{}', '{}', '{}', '{}', 45, 0, 1, '{}', '{}') ON CONFLICT DO NOTHING;",
-                    id.replace("'", "''"), ctx.org_id.replace("'", "''"), period_id_val.replace("'", "''"), i+1, name.replace("'", "''"), name_ar.replace("'", "''"), start.replace("'", "''"), end.replace("'", "''"), now, now
+                    id.replace("'", "''"), ctx.org_id.replace("'", "''"), class_period_id.replace("'", "''"), i+1, name.replace("'", "''"), name_ar.replace("'", "''"), start.replace("'", "''"), end.replace("'", "''"), now, now
                 )
             )).await?;
         }
