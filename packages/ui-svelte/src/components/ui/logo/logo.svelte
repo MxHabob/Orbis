@@ -7,7 +7,9 @@ let {
   class: className,
   dotClass,
   ...restProps
-}: WithElementRef<SVGAttributes<SVGSVGElement>> & {
+}: SVGAttributes<SVGSVGElement> & {
+  ref?: SVGSVGElement | null;
+  class?: string;
   dotClass?: string;
 } = $props();
 </script>

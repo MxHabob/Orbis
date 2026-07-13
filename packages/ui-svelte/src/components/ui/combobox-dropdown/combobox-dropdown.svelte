@@ -53,14 +53,14 @@ function handleSelect(item: ComboboxItem) {
 </script>
 
 <Popover bind:open={isOpen}>
-  <PopoverTrigger asChild>
+  <PopoverTrigger>
     {#snippet child({ props })}
       <Button
         {...props}
         variant="outline"
         role="combobox"
         aria-expanded={isOpen}
-        class={cn("w-full justify-between text-xs h-9 font-normal px-3 cursor-pointer", className, props.class)}
+        class={cn("w-full justify-between text-xs h-9 font-normal px-3 cursor-pointer", className, props.class as string)}
       >
         <span class="truncate">
           {selectedItem ? selectedItem.label : placeholder}

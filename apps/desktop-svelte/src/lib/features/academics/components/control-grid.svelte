@@ -146,10 +146,6 @@ let {
         height="calc(100vh - 420px)"
         rtl={getLocale() === "ar"}
         readonly={!canEnterGrades}
-        theme="compact"
-        range={true}
-        clipboard={true}
-        rowSize={42}
         oncelledit={onCellEdit}
       />
     </div>

@@ -4,7 +4,7 @@
  * Runs in real-time as users edit cells or paste data.
  */
 
-import type { BulkInputType } from "./bulk-input-config";
+import type { BulkInputType } from "./config";
 
 export interface RowValidationResult {
   rowIndex: number;

@@ -31,7 +31,7 @@ async function loadData() {
     const cycleId =
       selectedTerm !== "all"
         ? selectedTerm
-        : academicContext.effectiveCycleId || "";
+        : academicContext.effectivePeriodId || "";
 
     if (!classId || !cycleId) {
       stats = null;
@@ -45,8 +45,8 @@ async function loadData() {
     );
     if (
       res &&
-      res.grade_distribution &&
-      Object.values(res.grade_distribution).some((v) => Number(v) > 0)
+      (res as any).grade_distribution &&
+      Object.values((res as any).grade_distribution).some((v) => Number(v) > 0)
     ) {
       stats = res;
     } else {
@@ -160,6 +160,7 @@ function handleMouseLeave() {
 
     <!-- Main Content Area: Full Width HTML Chart -->
     <div 
+      role="presentation"
       class="flex-grow relative w-full h-[160px] select-none mt-2 flex flex-col justify-between" 
       onmouseleave={handleMouseLeave}
     >
@@ -178,6 +179,7 @@ function handleMouseLeave() {
 
       <!-- Columns Container -->
       <div 
+        role="presentation"
         class="absolute inset-0 flex items-end justify-between pl-8 pr-2 pb-8 pt-4 {stats ? 'cursor-crosshair' : ''}"
         onmousemove={handleMouseMove}
       >

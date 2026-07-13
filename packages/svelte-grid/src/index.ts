@@ -5,4 +5,5 @@ export type {
   CellEditEvent,
   GridActionEvent,
   ActionItem,
+  CellValidation,
 } from "./types";

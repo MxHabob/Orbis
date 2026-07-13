@@ -33,6 +33,9 @@ export interface OrbisColumnDef {
   pin?: string;
   cellProperties?: (row: any) => Record<string, any>;
   sortable?: boolean;
+  resize?: boolean;
+  options?: any[];
+  editorConfig?: Record<string, any>;
 }
 
 export interface CellEditEvent {

@@ -62,7 +62,7 @@ async function loadData() {
       const lastYearMap = Array(12).fill(0);
 
       for (const p of payments) {
-        const dateStr = (p.payment_date || p.created_at || "") as string;
+        const dateStr = ((p as any).payment_date || p.created_at || "") as string;
         if (!dateStr) continue;
         const dateObj = new Date(dateStr);
         if (isNaN(dateObj.getTime())) continue;
@@ -219,6 +219,7 @@ function formatTooltipVal(val: number) {
 
     <!-- Main Chart Area -->
     <div 
+      role="presentation"
       class="flex-grow relative w-full h-[225px] select-none mt-2 flex flex-col justify-between" 
       onmouseleave={handleMouseLeave}
     >
@@ -236,6 +237,7 @@ function formatTooltipVal(val: number) {
 
       <!-- Columns Container -->
       <div 
+        role="presentation"
         class="absolute inset-0 flex items-end justify-between ps-10 pe-2 pb-8 pt-4 cursor-crosshair"
         onmousemove={handleMouseMove}
       >

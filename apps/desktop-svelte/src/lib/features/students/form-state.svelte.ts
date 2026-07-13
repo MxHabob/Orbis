@@ -128,8 +128,8 @@ export class StudentFormState {
     try {
       // 1. Fetch active fee templates and discount templates
       const [feeTpls, discountTpls] = await Promise.all([
-        commands.finance.listFeeTemplates(),
-        commands.finance.listDiscountTemplates(),
+        commands.finance.listFeeTemplates(this.orgId),
+        commands.finance.listDiscountTemplates(this.orgId),
       ]);
       this.feeTemplates = feeTpls || [];
       this.discountTemplates = discountTpls || [];
@@ -288,12 +288,12 @@ export class StudentFormState {
                     email: String(u.email || ""),
                     national_id: String(u.national_id || ""),
                     relationship: String(link.relationship || ""),
-                    relationship_ar: String(link.relationship_ar || ""),
+                    relationship_ar: String((link as any).relationship_ar || ""),
                     is_primary: link.is_primary === 1,
-                    is_emergency_contact: link.is_emergency_contact === 1,
-                    is_payer: link.is_payer === 1,
+                    is_emergency_contact: (link as any).is_emergency_contact === 1,
+                    is_payer: (link as any).is_payer === 1,
                     payment_share_percent:
-                      Number(link.payment_share_percent) || 0,
+                      Number((link as any).payment_share_percent) || 0,
                     occupation: String(link.occupation || ""),
                   });
                 }

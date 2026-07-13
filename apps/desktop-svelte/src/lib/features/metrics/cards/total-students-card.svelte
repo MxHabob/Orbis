@@ -235,6 +235,7 @@ function handleMouseLeave() {
         </div>
       {:else}
         <svg
+          role="img"
           viewBox={`0 0 ${width} ${height}`}
           preserveAspectRatio="none"
           class="w-full h-full text-foreground select-none overflow-visible cursor-crosshair"

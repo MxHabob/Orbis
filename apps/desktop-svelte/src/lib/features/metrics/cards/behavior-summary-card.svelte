@@ -35,11 +35,11 @@ async function loadData() {
     if (
       res &&
       res.behavior_summary &&
-      (res.behavior_summary.critical_count ||
-        res.behavior_summary.major_count ||
-        res.behavior_summary.minor_count)
+      ((res.behavior_summary as any).critical_count ||
+        (res.behavior_summary as any).major_count ||
+        (res.behavior_summary as any).minor_count)
     ) {
-      summary = res.behavior_summary;
+      summary = res.behavior_summary as any;
     } else {
       summary = null;
     }
@@ -145,9 +145,10 @@ const displayItems = $derived(
     </div>
 
     <!-- Main Content Area: Sentry-style horizontal ratios listing or Blurred Empty State -->
-    <div class="flex flex-col gap-4 mt-2 flex-grow justify-center w-full px-2 min-h-[140px] relative">
+    <div class="flex flex-col gap-4 mt-2 grow justify-center w-full px-2 min-h-[140px] relative">
       {#each displayItems as item, idx}
         <div
+          role="presentation"
           class="flex items-center gap-4 text-[10px] w-full group/row cursor-pointer transition-opacity duration-200 hover:bg-foreground/5 p-1 rounded-md"
           style="opacity: {hoveredIndex === null || hoveredIndex === idx ? 1 : 0.45}"
           onmouseenter={() => { if (summary) hoveredIndex = idx; }}
@@ -159,7 +160,7 @@ const displayItems = $derived(
           </span>
 
           <!-- Progress Bar Bar (Tactile Sunken Track) -->
-          <div class="flex-grow h-2.5 bg-muted/40 border border-border/40 rounded-md overflow-hidden relative select-none shadow-[inset_0_1px_2.5px_rgba(0,0,0,0.08)] dark:shadow-[inset_0_1px_3px_rgba(0,0,0,0.35)]">
+          <div class="grow h-2.5 bg-muted/40 border border-border/40 rounded-md overflow-hidden relative select-none shadow-[inset_0_1px_2.5px_rgba(0,0,0,0.08)] dark:shadow-[inset_0_1px_3px_rgba(0,0,0,0.35)]">
             <!-- Progress Fill (Rendered ONLY when summary is loaded) -->
             {#if summary}
               <div

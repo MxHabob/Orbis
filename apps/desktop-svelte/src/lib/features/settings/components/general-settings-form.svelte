@@ -20,16 +20,31 @@ let { org, isSaving, onsave, onsaveavatar, onremove, onlanguagechange } =
   }>();
 
 // Form state initialized once with props
-let name = $state(org.name || "");
-let slug = $state(org.slug || "");
-let id = $state(org.id || "");
-let logo = $state(org.logo || "");
-let primaryColor = $state(org.primary_color || "#84cc16");
-let currency = $state(org.currency || "YER");
-let timezone = $state(org.timezone || "Asia/Aden");
-let locale = $state(org.locale || "ar");
-let dateFormat = $state(org.date_format || "YYYY-MM-DD");
-let hijriEnabled = $state(org.hijri_enabled === 1);
+let name = $state("");
+let slug = $state("");
+let id = $state("");
+let logo = $state("");
+let primaryColor = $state("#84cc16");
+let currency = $state("YER");
+let timezone = $state("Asia/Aden");
+let locale = $state("ar");
+let dateFormat = $state("YYYY-MM-DD");
+let hijriEnabled = $state(false);
+
+$effect(() => {
+  if (org) {
+    name = org.name || "";
+    slug = org.slug || "";
+    id = org.id || "";
+    logo = org.logo || "";
+    primaryColor = org.primary_color || "#84cc16";
+    currency = org.currency || "YER";
+    timezone = org.timezone || "Asia/Aden";
+    locale = org.locale || "ar";
+    dateFormat = org.date_format || "YYYY-MM-DD";
+    hijriEnabled = org.hijri_enabled === 1;
+  }
+});
 
 function handleSubmit(e: Event) {
   e.preventDefault();

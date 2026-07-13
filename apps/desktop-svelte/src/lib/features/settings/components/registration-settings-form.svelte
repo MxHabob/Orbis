@@ -34,31 +34,37 @@ let { org, isSaving, onsave } = $props<{
 }>();
 
 // Parse initial config
-const regConfig = org.settings
-  ? (() => {
-      try {
-        return JSON.parse(org.settings).registration_config || {};
-      } catch {
-        return {};
-      }
-    })()
-  : {};
+let regConfig: any = {};
+if (org?.settings) {
+  try {
+    regConfig = JSON.parse(org.settings).registration_config || {};
+  } catch {
+    regConfig = {};
+  }
+}
 
 // Form state initialized once with props
-let institutionType = $state(regConfig.institution_type || "school");
-let studentNumberPattern = $state(
-  regConfig.student_number_pattern || "STU-{YEAR}-{SEQ}",
-);
-let rawStages = $state<string[]>(
-  regConfig.stages || ["primary", "middle", "high"],
-);
+let institutionType = $state("school");
+let studentNumberPattern = $state("STU-{YEAR}-{SEQ}");
+let rawStages = $state<string[]>(["primary", "middle", "high"]);
 let stageInput = $state("");
-let requiredDocuments = $state<string[]>(
-  regConfig.required_documents || [
-    "Birth Certificate",
-    "National ID or Passport",
-  ],
-);
+let requiredDocuments = $state<string[]>([
+  "Birth Certificate",
+  "National ID or Passport",
+]);
+
+$effect(() => {
+  if (org?.settings) {
+    let conf: any = {};
+    try {
+      conf = JSON.parse(org.settings).registration_config || {};
+    } catch {}
+    institutionType = conf.institution_type || "school";
+    studentNumberPattern = conf.student_number_pattern || "STU-{YEAR}-{SEQ}";
+    rawStages = conf.stages || ["primary", "middle", "high"];
+    requiredDocuments = conf.required_documents || ["Birth Certificate", "National ID or Passport"];
+  }
+});
 let documentInput = $state("");
 
 // Field configurations

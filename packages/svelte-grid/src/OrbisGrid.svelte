@@ -252,6 +252,7 @@ export function getSource() {
 </script>
 
 <div
+  role="none"
   class="orbis-grid-table-wrapper w-full h-full overflow-hidden {rtl ? 'grid-rtl' : ''}"
   style="height: {height};"
   ondblclick={handleDblClick}
@@ -267,8 +268,6 @@ export function getSource() {
             init={handleInit}
             cellStyle={effectiveCellStyle}
             split={splitProp}
-            rowHeight={40}
-            headerHeight={40}
           />
         </HeaderMenu>
       </WillowDark>
@@ -281,8 +280,6 @@ export function getSource() {
             init={handleInit}
             cellStyle={effectiveCellStyle}
             split={splitProp}
-            rowHeight={40}
-            headerHeight={40}
           />
         </HeaderMenu>
       </Willow>

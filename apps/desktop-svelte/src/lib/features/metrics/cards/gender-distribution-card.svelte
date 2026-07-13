@@ -130,6 +130,7 @@ function handleMouseLeave() {
 
     <!-- Chart -->
     <div 
+      role="presentation"
       class="flex-grow relative w-full h-[155px] select-none mt-4 flex flex-col justify-between" 
       onmouseleave={handleMouseLeave}
     >
@@ -147,6 +148,7 @@ function handleMouseLeave() {
 
       <!-- Columns Container -->
       <div 
+        role="presentation"
         class="absolute inset-0 flex items-end justify-around pl-8 pr-2 pb-6 pt-2 cursor-crosshair"
         onmousemove={handleMouseMove}
       >

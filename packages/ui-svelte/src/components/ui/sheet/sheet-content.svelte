@@ -42,9 +42,9 @@ export type Side = "top" | "right" | "bottom" | "left";
 	>
 		{@render children?.()}
 		{#if showCloseButton}
-			<SheetPrimitive.Close data-slot="sheet-close" asChild>
+			<SheetPrimitive.Close data-slot="sheet-close">
 				{#snippet child({ props })}
-					<Button variant="ghost" {...props} class={cn("absolute top-3 end-3", props.class)} size="icon-sm">
+					<Button variant="ghost" {...props} class={cn("absolute top-3 end-3", props.class as string)} size="icon-sm">
 						<XIcon  />
 						<span class="sr-only">Close</span>
 					</Button>

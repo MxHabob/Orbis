@@ -316,13 +316,7 @@ function toggleColumnVisibility(colId: string) {
         {readonly}
         {rtl}
         {height}
-        {rowSize}
-        {theme}
-        {range}
-        {clipboard}
-        {autoSize}
         {oncelledit}
-        {onbeforeedit}
         {onaction}
       />
     {:else if showEmpty}

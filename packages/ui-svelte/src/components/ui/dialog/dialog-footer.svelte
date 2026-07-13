@@ -23,7 +23,7 @@ let {
 >
 	{@render children?.()}
 	{#if showCloseButton}
-		<DialogPrimitive.Close asChild>
+		<DialogPrimitive.Close>
 			{#snippet child({ props })}
 				<Button variant="outline" {...props}>Close</Button>
 			{/snippet}
