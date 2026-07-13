@@ -13,7 +13,7 @@ import {
   CardTitle,
   CardContent,
 } from "@orbis/ui-svelte/card";
-import LocaleSettings from "$lib/shared/components/locale-m.settings_svelte";
+import LocaleSettings from "$lib/shared/components/locale-settings.svelte";
 
 interface Props {
   selectedTheme: "light" | "dark" | "system";

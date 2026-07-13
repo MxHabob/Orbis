@@ -9,8 +9,8 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import TimezoneSettings from "$lib/shared/components/timezone-m.settings_svelte";
-import LocaleSettings from "$lib/shared/components/locale-m.settings_svelte";
+import TimezoneSettings from "$lib/shared/components/timezone-settings.svelte";
+import LocaleSettings from "$lib/shared/components/locale-settings.svelte";
 
 interface Props {
   currency: string;

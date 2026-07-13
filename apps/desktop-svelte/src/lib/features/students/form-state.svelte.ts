@@ -68,7 +68,7 @@ export class StudentFormState {
         if (org.settings) {
           try {
             const settings = JSON.parse(org.settings as string);
-            const regConfig = m.settings_registration_config || {};
+            const regConfig = settings.registration_config || {};
 
             this.document.setRequiredDocuments(regConfig.required_documents || []);
 

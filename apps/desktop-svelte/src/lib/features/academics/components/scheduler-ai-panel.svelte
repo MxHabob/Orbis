@@ -22,7 +22,7 @@ import {
   History,
   Trash2,
 } from "lucide-svelte";
-import { authStore } from "$lib/stores/m.auth_svelte";
+import { authStore } from "$lib/stores/auth.svelte";
 import Resizer from "$lib/shell/resizer.svelte";
 
 let {
