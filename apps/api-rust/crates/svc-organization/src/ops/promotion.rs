@@ -45,7 +45,7 @@ pub async fn create_job(
         total_students: None, promoted_count: None,
         retained_count: None, graduated_count: None,
         withdrawn_count: None, excluded_count: None,
-        backup_path: None, error_log: None, rollback_available: 0,
+        error_log: None, rollback_available: 0,
         started_at: None, completed_at: None,
         rolled_back_at: None, rolled_back_by: None,
         created_at: now.clone(), updated_at: now,

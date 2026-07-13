@@ -31,7 +31,6 @@ pub struct Model {
     pub excluded_count: Option<i32>,
 
     // Safety & recovery
-    pub backup_path: Option<String>,
     pub error_log: Option<String>,
     pub rollback_available: i32,
 

@@ -22,6 +22,7 @@ class AcademicContextStore {
   isSwitching = $state(false);
   isLoading = $state(false);
   isInitialized = $state(false);
+  orgId = $state<string>("");
 
   private _selectedPeriodId = $state<string>(
     localStorage.getItem("orbis_academic_period_id") ?? "",
@@ -85,6 +86,7 @@ class AcademicContextStore {
   }
 
   async resolveContext(orgId: string) {
+    this.orgId = orgId;
     this.isLoading = true;
     try {
       const ctx: AcademicContextResponse =
@@ -108,9 +110,11 @@ class AcademicContextStore {
     }
   }
 
-  async loadCurrentYear() {
+  async loadCurrentYear(orgId?: string) {
     try {
-      this.currentYear = await commands.platform.getCurrentYear();
+      const id = orgId || this.orgId;
+      if (!id) return;
+      this.currentYear = await commands.platform.getCurrentYear(id);
     } catch (e: unknown) {
       console.warn("Failed to load current year:", extractErrorMessage(e));
     }

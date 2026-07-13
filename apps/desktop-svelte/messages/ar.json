@@ -778,7 +778,7 @@
   "academics_overview_kpi_total_students": "الطلاب المقيدون",
   "academics_overview_advisor_title": "أوربيس",
   "academics_overview_advisor_desc": "تشخيصات النظام، التحليلات، ونقاط المتابعة العاجلة للفترة الحالية.",
-  "academics_overview_insight_grades_open": "فترة رصد الدرجات لـ {cycle} مفتوحة حالياً (تغلق قريباً).",
+  "academics_overview_insight_grades_open": "فترة رصد الدرجات لـ {period} مفتوحة حالياً (تغلق قريباً).",
   "academics_overview_insight_grades_closed": "تم قفل واعتماد جميع درجات الفترة الحالية بالكامل.",
   "academics_overview_insight_schedule_ok": "تم تسوية جدول الحصص الأسبوعي بالكامل دون وجود أي تعارضات.",
   "academics_overview_insight_schedule_warn": "لم يتم تسجيل أي فصول بعد. يرجى تعريف الفصول والمواد لبناء جدول الحصص.",

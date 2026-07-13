@@ -82,7 +82,6 @@ pub struct PromotionResult {
     pub retained: i32,
     pub graduated: i32,
     pub excluded: i32,
-    pub backup_path: String,
 }
 
 #[derive(Debug)]
@@ -140,7 +139,6 @@ impl PromotionService {
             graduated_count: None,
             withdrawn_count: None,
             excluded_count: None,
-            backup_path: None,
             error_log: None,
             rollback_available: 1,
             started_at: None,
@@ -343,7 +341,6 @@ impl PromotionService {
         final_job.graduated_count = Some(graduated_count);
         final_job.excluded_count = Some(excluded_count);
         final_job.target_year_id = Some(target_year.id.clone());
-        final_job.backup_path = None;
         final_job.updated_at = chrono::Utc::now().to_rfc3339();
 
         self.cmd.update_promotion_job(final_job).await?;
@@ -360,7 +357,6 @@ impl PromotionService {
             retained: retained_count,
             graduated: graduated_count,
             excluded: excluded_count,
-            backup_path: "".to_string(),
         })
     }
 

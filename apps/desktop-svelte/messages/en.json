@@ -779,7 +779,7 @@
   "academics_overview_kpi_total_students": "Enrolled Students",
   "academics_overview_advisor_title": "Orbis",
   "academics_overview_advisor_desc": "System diagnostics, insights, and action points for this term.",
-  "academics_overview_insight_grades_open": "Grade entry window for {cycle} is open. Closes soon.",
+  "academics_overview_insight_grades_open": "Grade entry window for {period} is open. Closes soon.",
   "academics_overview_insight_grades_closed": "All academic grades for this cycle are locked and finalized.",
   "academics_overview_insight_schedule_ok": "Weekly timetable is fully resolved with zero conflicts.",
   "academics_overview_insight_schedule_warn": "No classes registered yet. Define classes and subjects to build timetables.",

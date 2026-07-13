@@ -19,6 +19,10 @@ export interface AcademicYear {
   lock_reason?: string | null;
   archived_at?: string | null;
   archived_by?: string | null;
+  class_count?: number;
+  subject_count?: number;
+  teacher_count?: number;
+  student_count?: number;
   created_at: string;
   updated_at: string;
 }

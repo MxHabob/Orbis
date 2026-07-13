@@ -14,11 +14,14 @@ export interface ExamSession {
   created_by: string;
   created_at: string;
   updated_at: string;
+  subjects_count?: number;
+  students_count?: number;
+  [key: string]: unknown;
 }
 
 export interface ExamSubject {
   id: string;
-  session_id: string;
+  exam_session_id: string;
   subject_id: string;
   subject_name: string;
   exam_date: string;
@@ -28,6 +31,9 @@ export interface ExamSubject {
   status: string;
   created_at: string;
   updated_at: string;
+  duration_minutes?: number;
+  exam_type?: string;
+  [key: string]: unknown;
 }
 
 export interface ExamSchedule {

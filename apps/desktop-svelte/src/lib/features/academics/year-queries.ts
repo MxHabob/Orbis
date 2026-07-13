@@ -9,18 +9,20 @@ import {
 import { commands } from "$lib/core/ipc";
 import type { PromotionConfig } from "@orbis/sdk-core";
 
-export function createCurrentYearQuery() {
+export function createCurrentYearQuery(orgId: string) {
   return createQuery({
-    queryKey: ["academicYears", "current"],
-    queryFn: () => commands.platform.getCurrentYear(),
+    queryKey: ["academicYears", "current", orgId],
+    queryFn: () => commands.platform.getCurrentYear(orgId),
+    enabled: !!orgId,
     staleTime: 30 * 60 * 1000,
   });
 }
 
-export function createIsArchivedQuery() {
+export function createIsArchivedQuery(yearId: string) {
   return createQuery({
-    queryKey: ["academicYears", "isArchived"],
-    queryFn: () => commands.platform.isYearArchived(),
+    queryKey: ["academicYears", "isArchived", yearId],
+    queryFn: () => commands.platform.isYearArchived(yearId),
+    enabled: !!yearId,
     staleTime: 30 * 60 * 1000,
   });
 }

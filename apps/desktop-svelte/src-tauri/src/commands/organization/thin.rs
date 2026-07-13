@@ -75,8 +75,7 @@ pub async fn get_current_academic_year(state: State<'_, Arc<AppState>>, org_id: 
         .filter(svc_organization::entities::academic_year::Column::Status.eq("active"))
         .one(&db)
         .await
-        .map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::not_found("Current academic year not found"))?;
+        .map_err(CommandError::from)?;
         
     Ok(serde_json::to_value(r).unwrap())
 }

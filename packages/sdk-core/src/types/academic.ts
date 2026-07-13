@@ -24,6 +24,7 @@ export interface AcademicPeriod {
   grade_entry_start?: string | null;
   grade_entry_end?: string | null;
   is_grade_entry_open: number;
+  grade_entry_status?: string | null;
   exam_start?: string | null;
   exam_end?: string | null;
   grading_system: string;
@@ -39,8 +40,6 @@ export interface AcademicPeriod {
   updated_at: string;
 }
 
-/** @deprecated Use AcademicPeriod instead */
-export type AcademicPeriod = AcademicPeriod;
 
 export interface Class {
   id: string;

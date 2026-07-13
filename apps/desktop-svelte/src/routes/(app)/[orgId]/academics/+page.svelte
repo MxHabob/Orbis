@@ -24,9 +24,7 @@ import {
   Info,
 } from "lucide-svelte";
 import { localizeHref } from "$lib/paraglide/runtime";
-import { fade } from "svelte/transition";
 import * as m from "$lib/paraglide/messages";
-
 import {
   createClassesQuery,
   createSubjectsQuery,
@@ -37,6 +35,7 @@ import {
   createPromotionJobsQuery,
 } from "$lib/features/academics/year-queries";
 import { createExamSessionsQuery } from "$lib/features/exams/queries";
+    import { extractErrorMessage } from "$lib/core/ipc/error";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -44,7 +43,7 @@ let { data }: { data: { orgId: string } } = $props();
 const classesQuery = createClassesQuery(data.orgId);
 const subjectsQuery = createSubjectsQuery(data.orgId);
 const periodsQuery = createPeriodsQuery(data.orgId);
-const currentYearQuery = createCurrentYearQuery();
+const currentYearQuery = createCurrentYearQuery(data.orgId);
 const promotionJobsQuery = createPromotionJobsQuery(data.orgId);
 const examSessionsQuery = createExamSessionsQuery(data.orgId);
 
@@ -90,7 +89,7 @@ const activeYearName = $derived(
 
 // Find active period / term
 const activePeriod = $derived(
-  periods.find((c) => c.is_current === 1 || c.is_current === true) ||
+  periods.find((c) => c.status === "active") ||
     periods[0],
 );
 
@@ -326,12 +325,12 @@ const advisorInsights = $derived.by(() => {
     <div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2">
       <AlertCircle size={24} />
       <h3 class="font-semibold text-xs">{m.error_load_overview()}</h3>
-      <p class="text-[10px] text-muted-foreground">{error instanceof Error ? error.message : String(error)}</p>
+      <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
       <Button variant="outline" onclick={refetchAll} class="text-[10px] mt-2 h-8">{m.error_retry()}</Button>
     </div>
   {:else}
     <!-- Main Content Split Layout -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full" in:fade={{ duration: 150 }}>
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
       
       <!-- 1. LEFT COLUMN: Directory Index List (Notion Database style) -->
       <div class="lg:col-span-7 xl:col-span-8 flex flex-col">
