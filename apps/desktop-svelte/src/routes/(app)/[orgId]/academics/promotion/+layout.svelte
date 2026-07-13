@@ -4,10 +4,10 @@ Horizontal SecondaryMenu tab layout for Academic Promotion.
 Wraps wizard and history sub-routes.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import { TrendingUp, History } from "lucide-svelte";
 import type { Snippet } from "svelte";
-import * as common from "$lib/paraglide/messages/common";
 
 let { data, children }: { data: { orgId: string }; children: Snippet } =
   $props();
@@ -17,12 +17,12 @@ const basePath = $derived(`/${data.orgId}/academics/promotion`);
 const menuItems = $derived([
   {
     path: "",
-    label: common.promo_wizard_title ? common.promo_wizard_title() : "معالج الترفيع",
+    label: m.common_promo_wizard_title ? m.common_promo_wizard_title() : "معالج الترفيع",
     icon: TrendingUp,
   },
   {
     path: "history",
-    label: common.promo_history ? common.promo_history() : "سجل الترفيع",
+    label: m.common_promo_history ? m.common_promo_history() : "سجل الترفيع",
     icon: History,
   },
 ]);

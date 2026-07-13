@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Label } from "@orbis/ui-svelte/label";
 import { Input } from "@orbis/ui-svelte/input";
 import { Button } from "@orbis/ui-svelte/button";
@@ -10,7 +11,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import * as common from "$lib/paraglide/messages/common";
+
 import type { StudentFormState } from "../student-form-state.svelte";
 
 let { state }: { state: StudentFormState } = $props();
@@ -20,10 +21,10 @@ let { state }: { state: StudentFormState } = $props();
   <!-- Section Title & Add Button -->
   <div class="flex justify-between items-center px-2">
     <div class="flex flex-col text-start gap-0.5">
-      <span class="text-xs font-semibold text-muted-foreground">{common.form_guardian_desc()}</span>
+      <span class="text-xs font-semibold text-muted-foreground">{m.common_form_guardian_desc()}</span>
     </div>
     <Button type="button" variant="outline" size="sm" onclick={() => state.guardian.addGuardianField()} class="h-8 text-xs">
-      {common.form_guardian_add()}
+      {m.common_form_guardian_add()}
     </Button>
   </div>
 
@@ -32,7 +33,7 @@ let { state }: { state: StudentFormState } = $props();
       <!-- Guardian Block Header -->
       <div class="bg-muted/50 px-6 py-3 border-b border-border flex justify-between items-center select-none">
         <span class="text-[11px] font-bold text-foreground uppercase tracking-wider">
-          {common.form_guardian_number()} {index + 1}
+          {m.common_form_guardian_number()} {index + 1}
         </span>
         {#if index > 0}
           <Button 
@@ -41,7 +42,7 @@ let { state }: { state: StudentFormState } = $props();
             class="text-destructive hover:bg-destructive/10 h-7 px-2.5 text-xs font-semibold" 
             onclick={() => state.guardian.removeGuardianField(index)}
           >
-            {common.form_guardian_remove()}
+            {m.common_form_guardian_remove()}
           </Button>
         {/if}
       </div>
@@ -50,8 +51,8 @@ let { state }: { state: StudentFormState } = $props();
         <!-- Autocomplete Search -->
         <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
           <div class="flex flex-col gap-1 text-start">
-            <Label class="text-xs font-semibold text-foreground">{common.form_guardian_search_label()}</Label>
-            <span class="text-[11px] text-muted-foreground leading-relaxed">{common.form_guardian_search_placeholder()}</span>
+            <Label class="text-xs font-semibold text-foreground">{m.common_form_guardian_search_label()}</Label>
+            <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_search_placeholder()}</span>
           </div>
           <div class="w-full md:w-[480px] shrink-0 relative">
             <Input 
@@ -81,7 +82,7 @@ let { state }: { state: StudentFormState } = $props();
         <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
           <div class="flex flex-col gap-1 text-start">
             <Label class="text-xs font-semibold text-foreground flex items-center gap-1">
-              {common.form_guardian_name_label()}
+              {m.common_word_fullname()}
               <span class="text-destructive">*</span>
             </Label>
             <span class="text-[11px] text-muted-foreground leading-relaxed">الاسم الرباعي الكامل لولي الأمر</span>
@@ -95,7 +96,7 @@ let { state }: { state: StudentFormState } = $props();
         <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
           <div class="flex flex-col gap-1 text-start">
             <Label class="text-xs font-semibold text-foreground flex items-center gap-1">
-              {common.form_guardian_phone_label()}
+              {m.common_word_phone()}
               <span class="text-destructive">*</span>
             </Label>
             <span class="text-[11px] text-muted-foreground leading-relaxed">رقم هاتف المحمول الفعّال لولي الأمر للتواصل الطارئ</span>
@@ -108,7 +109,7 @@ let { state }: { state: StudentFormState } = $props();
         <!-- Relationship -->
         <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
           <div class="flex flex-col gap-1 text-start">
-            <Label class="text-xs font-semibold text-foreground">{common.form_guardian_relationship_label()}</Label>
+            <Label class="text-xs font-semibold text-foreground">{m.common_bulk_col_guardian_rel()}</Label>
             <span class="text-[11px] text-muted-foreground leading-relaxed">صلة القرابة بين ولي الأمر والطالب</span>
           </div>
           <div class="w-full md:w-[480px] shrink-0">
@@ -129,7 +130,7 @@ let { state }: { state: StudentFormState } = $props();
         <!-- National ID -->
         <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
           <div class="flex flex-col gap-1 text-start">
-            <Label class="text-xs font-semibold text-foreground">{common.form_guardian_national_id_label()}</Label>
+            <Label class="text-xs font-semibold text-foreground">{m.common_form_guardian_national_id_label()}</Label>
             <span class="text-[11px] text-muted-foreground leading-relaxed">رقم الهوية الوطنية أو البطاقة الشخصية لولي الأمر</span>
           </div>
           <div class="w-full md:w-[480px] shrink-0">
@@ -158,23 +159,23 @@ let { state }: { state: StudentFormState } = $props();
             <div class="grid grid-cols-3 gap-3">
               <div class="flex items-center gap-2">
                 <Checkbox id={`primary_${index}`} checked={guardian.is_primary} onCheckedChange={(val) => guardian.is_primary = !!val} />
-                <Label for={`primary_${index}`} class="text-xs cursor-pointer">{common.form_guardian_role_primary()}</Label>
+                <Label for={`primary_${index}`} class="text-xs cursor-pointer">{m.common_form_guardian_role_primary()}</Label>
               </div>
 
               <div class="flex items-center gap-2">
                 <Checkbox id={`emergency_${index}`} checked={guardian.is_emergency_contact} onCheckedChange={(val) => guardian.is_emergency_contact = !!val} />
-                <Label for={`emergency_${index}`} class="text-xs cursor-pointer">{common.form_guardian_role_emergency()}</Label>
+                <Label for={`emergency_${index}`} class="text-xs cursor-pointer">{m.common_form_guardian_role_emergency()}</Label>
               </div>
 
               <div class="flex items-center gap-2">
                 <Checkbox id={`payer_${index}`} checked={guardian.is_payer} onCheckedChange={(val) => guardian.is_payer = !!val} />
-                <Label for={`payer_${index}`} class="text-xs cursor-pointer">{common.form_guardian_role_payer()}</Label>
+                <Label for={`payer_${index}`} class="text-xs cursor-pointer">{m.common_form_guardian_role_payer()}</Label>
               </div>
             </div>
 
             {#if guardian.is_payer}
               <div class="flex items-center justify-start gap-2 pt-2 border-t border-border/50">
-                <Label class="text-xs text-muted-foreground">{common.form_guardian_payment_share()}</Label>
+                <Label class="text-xs text-muted-foreground">{m.common_form_guardian_payment_share()}</Label>
                 <div class="flex items-center gap-1">
                   <Input type="number" min="0" max="100" class="h-8 w-16 text-center font-bold px-1 bg-background" bind:value={guardian.payment_share_percent} />
                   <span class="text-xs text-muted-foreground">%</span>

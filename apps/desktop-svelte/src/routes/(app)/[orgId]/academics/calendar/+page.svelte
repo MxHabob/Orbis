@@ -5,7 +5,8 @@ Uses TanStack Query for data, supports CRUD operations, and shows
 phase progress as a badge stepper.
 -->
 <script lang="ts">
-import * as common from "$lib/paraglide/messages/common";
+import * as m from "$lib/paraglide/messages";
+
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { academicContext, authStore } from "$lib/stores";
 import { toast } from "svelte-sonner";
@@ -267,7 +268,7 @@ async function createEvent() {
       ...newEvent,
     });
     toast.success(
-      common.calendar_event_created ? common.calendar_event_created() : "Event created",
+      m.common_calendar_event_created ? m.common_calendar_event_created() : "Event created",
     );
     showCreateDialog = false;
     resetForm();
@@ -290,8 +291,8 @@ async function executeEvent(eventId: string) {
     );
     if (result.outcome === "executed") {
       toast.success(
-        common.calendar_event_executed
-          ? common.calendar_event_executed()
+        m.common_calendar_event_executed
+          ? m.common_calendar_event_executed()
           : "Event executed",
       );
     } else if (result.outcome === "blocked") {
@@ -313,7 +314,7 @@ async function deleteEvent(eventId: string) {
   try {
     await commands.platform.deleteCalendarEvent(eventId);
     toast.success(
-      common.calendar_event_deleted ? common.calendar_event_deleted() : "Event deleted",
+      m.common_calendar_event_deleted ? m.common_calendar_event_deleted() : "Event deleted",
     );
     queryClient.invalidateQueries({
       queryKey: ["calendar-events", orgId, periodId],
@@ -328,8 +329,8 @@ async function generateDefaults() {
   try {
     await commands.platform.generateDefaultCalendar(orgId, periodId);
     toast.success(
-      common.calendar_defaults_generated
-        ? common.calendar_defaults_generated()
+      m.common_calendar_defaults_generated
+        ? m.common_calendar_defaults_generated()
         : "Default events generated",
     );
     queryClient.invalidateQueries({
@@ -372,7 +373,7 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
 </script>
 
 <svelte:head>
-  <title>{common.calendar_title ? common.calendar_title() : "Academic Calendar"}</title>
+  <title>{m.common_calendar_title ? m.common_calendar_title() : "Academic Calendar"}</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide">
@@ -383,7 +384,7 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
       <Card class="w-full">
         <CardHeader class="bg-muted/50 px-6 py-3 border-b border-border">
           <CardTitle class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-            {common.calendar_phase_progress()}
+            {m.common_calendar_phase_progress()}
           </CardTitle>
         </CardHeader>
         <CardContent class="p-6">
@@ -414,7 +415,7 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
     <Card class="w-full">
       <CardHeader class="bg-muted/50 px-6 py-3 border-b border-border flex flex-row items-center justify-between">
         <CardTitle class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none flex items-center gap-2">
-          <span>{common.calendar_events_title ? common.calendar_events_title() : "Events"}</span>
+          <span>{m.common_calendar_events_title ? m.common_calendar_events_title() : "Events"}</span>
           {#if events.length > 0}
             <Badge variant="secondary" class="text-[10px] py-0.5 px-1.5 font-sans">{events.length}</Badge>
           {/if}
@@ -423,12 +424,12 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
           <div class="flex items-center gap-2 flex-nowrap shrink-0">
             {#if events.length === 0}
               <Button variant="outline" size="sm" onclick={generateDefaults} disabled={isSubmitting} class="h-8 border-border text-xs flex-nowrap shrink-0">
-                {common.calendar_generate_defaults ? common.calendar_generate_defaults() : "Generate Defaults"}
+                {m.common_calendar_generate_defaults ? m.common_calendar_generate_defaults() : "Generate Defaults"}
               </Button>
             {/if}
             <Button variant="lime" size="sm" onclick={() => { showCreateDialog = true; syncHijriFromGregorian(); }} class="h-8 text-xs font-bold flex-nowrap shrink-0">
               <Plus size={14} class="me-1.5" />
-              {common.calendar_add_event ? common.calendar_add_event() : "Add Event"}
+              {m.common_calendar_add_event ? m.common_calendar_add_event() : "Add Event"}
             </Button>
           </div>
         {/if}
@@ -444,11 +445,11 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
           <div class="flex flex-col items-center justify-center py-16 text-center gap-3">
             <CalendarClock class="size-10 text-muted-foreground/40" />
             <p class="text-sm text-muted-foreground">
-              {common.calendar_empty ? common.calendar_empty() : "No calendar events for this period"}
+              {m.common_calendar_empty ? m.common_calendar_empty() : "No calendar events for this period"}
             </p>
             {#if !academicContext.isReadOnly}
               <Button variant="outline" size="sm" class="text-xs border-border" onclick={generateDefaults}>
-                {common.calendar_generate_defaults ? common.calendar_generate_defaults() : "Generate Defaults"}
+                {m.common_calendar_generate_defaults ? m.common_calendar_generate_defaults() : "Generate Defaults"}
               </Button>
             {/if}
           </div>
@@ -458,13 +459,13 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
               <TableHeader>
                 <TableRow>
                   <TableHead class="w-12 text-start"></TableHead>
-                  <TableHead class="text-start">{common.calendar_col_type ? common.calendar_col_type() : "Type"}</TableHead>
-                  <TableHead class="text-start">{common.calendar_col_title ? common.calendar_col_title() : "Title"}</TableHead>
-                  <TableHead class="text-start">{common.calendar_col_dates ? common.calendar_col_dates() : "Dates"}</TableHead>
-                  <TableHead class="text-start">{common.calendar_col_mode ? common.calendar_col_mode() : "Mode"}</TableHead>
-                  <TableHead class="text-start">{common.calendar_col_status ? common.calendar_col_status() : "Status"}</TableHead>
+                  <TableHead class="text-start">{m.common_word_type ? m.common_word_type() : "Type"}</TableHead>
+                  <TableHead class="text-start">{m.common_word_address ? m.common_word_address() : "Title"}</TableHead>
+                  <TableHead class="text-start">{m.common_calendar_col_dates ? m.common_calendar_col_dates() : "Dates"}</TableHead>
+                  <TableHead class="text-start">{m.common_calendar_col_mode ? m.common_calendar_col_mode() : "Mode"}</TableHead>
+                  <TableHead class="text-start">{m.common_word_status ? m.common_word_status() : "Status"}</TableHead>
                   {#if !academicContext.isReadOnly}
-                    <TableHead class="text-end px-6">{common.calendar_col_actions ? common.calendar_col_actions() : "Actions"}</TableHead>
+                    <TableHead class="text-end px-6">{m.common_je_col_actions ? m.common_je_col_actions() : "Actions"}</TableHead>
                   {/if}
                 </TableRow>
               </TableHeader>
@@ -497,11 +498,11 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
                     <TableCell class="text-start">
                       {#if event.executed_at}
                         <span class="text-[10px] text-primary font-medium font-sans">
-                          {common.calendar_status_done ? common.calendar_status_done() : "Done"}
+                          {m.common_calendar_status_done ? m.common_calendar_status_done() : "Done"}
                         </span>
                       {:else}
                         <span class="text-[10px] text-muted-foreground font-sans">
-                          {common.calendar_status_pending ? common.calendar_status_pending() : "Pending"}
+                          {m.common_calendar_status_pending ? m.common_calendar_status_pending() : "Pending"}
                         </span>
                       {/if}
                     </TableCell>
@@ -513,7 +514,7 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
                               variant="ghost" size="icon-xs"
                               onclick={() => executeEvent(event.id)}
                               disabled={executingId === event.id}
-                              title={common.calendar_execute ? common.calendar_execute() : "Execute"}
+                              title={m.common_calendar_execute ? m.common_calendar_execute() : "Execute"}
                             >
                               {#if executingId === event.id}
                                 <Loader2 class="size-3.5 animate-spin" />
@@ -525,7 +526,7 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
                           <Button
                             variant="ghost" size="icon-xs"
                             onclick={() => deleteEvent(event.id)}
-                            title={common.calendar_delete()}
+                            title={m.common_action_delete()}
                             class="text-destructive hover:text-destructive hover:bg-destructive/5"
                           >
                             <Trash2 class="size-3.5" />
@@ -544,25 +545,24 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
   </div>
 </div>
 
-
 <!-- Create Event Dialog -->
 <Dialog bind:open={showCreateDialog}>
   <DialogContent class="sm:max-w-md">
     <DialogHeader>
-      <DialogTitle>{common.calendar_add_event ? common.calendar_add_event() : "Add Event"}</DialogTitle>
+      <DialogTitle>{m.common_calendar_add_event ? m.common_calendar_add_event() : "Add Event"}</DialogTitle>
       <DialogDescription>
-        {common.calendar_add_event_desc ? common.calendar_add_event_desc() : "Create a new academic calendar event."}
+        {m.common_calendar_add_event_desc ? m.common_calendar_add_event_desc() : "Create a new academic calendar event."}
       </DialogDescription>
     </DialogHeader>
 
     <div class="flex flex-col gap-4 py-2">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="flex flex-col gap-2">
-          <Label>{common.calendar_field_title ? common.calendar_field_title() : "Title"}</Label>
+          <Label>{m.common_word_address ? m.common_word_address() : "Title"}</Label>
           <Input bind:value={newEvent.title} placeholder="Event title" />
         </div>
         <div class="flex flex-col gap-2">
-          <Label>{common.calendar_field_title_ar ? common.calendar_field_title_ar() : "Title (AR)"}</Label>
+          <Label>{m.common_calendar_field_title_ar ? m.common_calendar_field_title_ar() : "Title (AR)"}</Label>
           <Input bind:value={newEvent.title_ar} placeholder="العنوان" dir="rtl" />
         </div>
       </div>
@@ -572,10 +572,10 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
         <Checkbox id="use_hijri" checked={useHijri} onCheckedChange={(val) => { useHijri = !!val; }} />
         <div class="grid gap-0.5">
           <Label for="use_hijri" class="text-xs font-semibold cursor-pointer">
-            {common.calendar_use_hijri ? common.calendar_use_hijri() : "Use Hijri Date"}
+            {m.common_calendar_use_hijri ? m.common_calendar_use_hijri() : "Use Hijri Date"}
           </Label>
           <span class="text-[10px] text-muted-foreground leading-relaxed">
-            {common.calendar_use_hijri_desc ? common.calendar_use_hijri_desc() : "Convert Hijri months and days to calendar dates"}
+            {m.common_calendar_use_hijri_desc ? m.common_calendar_use_hijri_desc() : "Convert Hijri months and days to calendar dates"}
           </span>
         </div>
       </div>
@@ -583,20 +583,20 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
       {#if !useHijri}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-start">
           <div class="flex flex-col gap-2">
-            <Label>{common.calendar_field_start ? common.calendar_field_start() : "Start Date"}</Label>
+            <Label>{m.common_year_start_date ? m.common_year_start_date() : "Start Date"}</Label>
             <Input type="date" bind:value={newEvent.start_date} oninput={syncHijriFromGregorian} onchange={syncHijriFromGregorian} />
             {#if computedHijriStart}
               <p class="text-[10px] text-primary font-medium">
-                {common.calendar_hijri_equivalent ? common.calendar_hijri_equivalent() : "Equivalent Hijri"}: {computedHijriStart}
+                {m.common_calendar_hijri_equivalent ? m.common_calendar_hijri_equivalent() : "Equivalent Hijri"}: {computedHijriStart}
               </p>
             {/if}
           </div>
           <div class="flex flex-col gap-2">
-            <Label>{common.calendar_field_end ? common.calendar_field_end() : "End Date"}</Label>
+            <Label>{m.common_year_end_date ? m.common_year_end_date() : "End Date"}</Label>
             <Input type="date" bind:value={newEvent.end_date} oninput={syncHijriFromGregorian} onchange={syncHijriFromGregorian} />
             {#if computedHijriEnd}
               <p class="text-[10px] text-primary font-medium">
-                {common.calendar_hijri_equivalent ? common.calendar_hijri_equivalent() : "Equivalent Hijri"}: {computedHijriEnd}
+                {m.common_calendar_hijri_equivalent ? m.common_calendar_hijri_equivalent() : "Equivalent Hijri"}: {computedHijriEnd}
               </p>
             {/if}
           </div>
@@ -607,11 +607,11 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
           <!-- Hijri Start -->
           <div class="flex flex-col gap-2">
             <Label class="text-xs font-bold text-foreground">
-              {common.calendar_field_start ? common.calendar_field_start() : "Start Date"} ({common.calendar_use_hijri ? common.calendar_use_hijri() : "Hijri"})
+              {m.common_year_start_date ? m.common_year_start_date() : "Start Date"} ({m.common_calendar_use_hijri ? m.common_calendar_use_hijri() : "Hijri"})
             </Label>
             <div class="grid grid-cols-3 gap-2">
               <div class="flex flex-col gap-1">
-                <span class="text-[10px] text-muted-foreground">{common.calendar_hijri_day ? common.calendar_hijri_day() : "Day"}</span>
+                <span class="text-[10px] text-muted-foreground">{m.common_calendar_hijri_day ? m.common_calendar_hijri_day() : "Day"}</span>
                 <Select type="single" value={String(hijriStartDay)} onValueChange={(v) => { if (v) { hijriStartDay = parseInt(v, 10); handleHijriStartChange(); } }}>
                   <SelectTrigger class="h-9 text-xs">{hijriStartDay}</SelectTrigger>
                   <SelectContent>
@@ -622,7 +622,7 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
                 </Select>
               </div>
               <div class="flex flex-col gap-1">
-                <span class="text-[10px] text-muted-foreground">{common.calendar_hijri_month ? common.calendar_hijri_month() : "Month"}</span>
+                <span class="text-[10px] text-muted-foreground">{m.common_calendar_hijri_month ? m.common_calendar_hijri_month() : "Month"}</span>
                 <Select type="single" value={String(hijriStartMonth)} onValueChange={(v) => { if (v) { hijriStartMonth = parseInt(v, 10); handleHijriStartChange(); } }}>
                   <SelectTrigger class="h-9 text-xs">
                     {(getLocale() === "ar" ? HIJRI_MONTHS_AR : HIJRI_MONTHS_EN)[hijriStartMonth - 1]}
@@ -635,7 +635,7 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
                 </Select>
               </div>
               <div class="flex flex-col gap-1">
-                <span class="text-[10px] text-muted-foreground">{common.calendar_hijri_year ? common.calendar_hijri_year() : "Year"}</span>
+                <span class="text-[10px] text-muted-foreground">{m.common_calendar_hijri_year ? m.common_calendar_hijri_year() : "Year"}</span>
                 <Input type="number" bind:value={hijriStartYear} oninput={handleHijriStartChange} class="h-9 font-mono" />
               </div>
             </div>
@@ -644,11 +644,11 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
           <!-- Hijri End -->
           <div class="flex flex-col gap-2">
             <Label class="text-xs font-bold text-foreground">
-              {common.calendar_field_end ? common.calendar_field_end() : "End Date"} ({common.calendar_use_hijri ? common.calendar_use_hijri() : "Hijri"})
+              {m.common_year_end_date ? m.common_year_end_date() : "End Date"} ({m.common_calendar_use_hijri ? m.common_calendar_use_hijri() : "Hijri"})
             </Label>
             <div class="grid grid-cols-3 gap-2">
               <div class="flex flex-col gap-1">
-                <span class="text-[10px] text-muted-foreground">{common.calendar_hijri_day ? common.calendar_hijri_day() : "Day"}</span>
+                <span class="text-[10px] text-muted-foreground">{m.common_calendar_hijri_day ? m.common_calendar_hijri_day() : "Day"}</span>
                 <Select type="single" value={String(hijriEndDay)} onValueChange={(v) => { if (v) { hijriEndDay = parseInt(v, 10); handleHijriEndChange(); } }}>
                   <SelectTrigger class="h-9 text-xs">{hijriEndDay}</SelectTrigger>
                   <SelectContent>
@@ -659,7 +659,7 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
                 </Select>
               </div>
               <div class="flex flex-col gap-1">
-                <span class="text-[10px] text-muted-foreground">{common.calendar_hijri_month ? common.calendar_hijri_month() : "Month"}</span>
+                <span class="text-[10px] text-muted-foreground">{m.common_calendar_hijri_month ? m.common_calendar_hijri_month() : "Month"}</span>
                 <Select type="single" value={String(hijriEndMonth)} onValueChange={(v) => { if (v) { hijriEndMonth = parseInt(v, 10); handleHijriEndChange(); } }}>
                   <SelectTrigger class="h-9 text-xs">
                     {(getLocale() === "ar" ? HIJRI_MONTHS_AR : HIJRI_MONTHS_EN)[hijriEndMonth - 1]}
@@ -672,7 +672,7 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
                 </Select>
               </div>
               <div class="flex flex-col gap-1">
-                <span class="text-[10px] text-muted-foreground">{common.calendar_hijri_year ? common.calendar_hijri_year() : "Year"}</span>
+                <span class="text-[10px] text-muted-foreground">{m.common_calendar_hijri_year ? m.common_calendar_hijri_year() : "Year"}</span>
                 <Input type="number" bind:value={hijriEndYear} oninput={handleHijriEndChange} class="h-9 font-mono" />
               </div>
             </div>
@@ -680,7 +680,7 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
 
           <!-- Gregorian Equivalent Preview -->
           <div class="bg-primary/5 border border-primary/20 rounded-lg p-2.5 flex items-center justify-between text-xs font-sans">
-            <span class="text-muted-foreground">{common.calendar_gregorian_preview()}:</span>
+            <span class="text-muted-foreground">{m.common_calendar_gregorian_preview()}:</span>
             <span class="font-bold text-primary font-mono">{newEvent.start_date || "—"} → {newEvent.end_date || "—"}</span>
           </div>
         </div>
@@ -688,7 +688,7 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="flex flex-col gap-2">
-          <Label>{common.calendar_field_type ? common.calendar_field_type() : "Event Type"}</Label>
+          <Label>{m.common_calendar_field_type ? m.common_calendar_field_type() : "Event Type"}</Label>
           <Select type="single" value={newEvent.event_type} onValueChange={(v) => { if (v) newEvent.event_type = v as CalendarEventType; }}>
             <SelectTrigger class="text-xs">{newEvent.event_type.replace(/_/g, " ")}</SelectTrigger>
             <SelectContent>
@@ -699,7 +699,7 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
           </Select>
         </div>
         <div class="flex flex-col gap-2">
-          <Label>{common.calendar_field_mode ? common.calendar_field_mode() : "Execution Mode"}</Label>
+          <Label>{m.common_calendar_field_mode ? m.common_calendar_field_mode() : "Execution Mode"}</Label>
           <Select type="single" value={newEvent.execution_mode} onValueChange={(v) => { if (v) newEvent.execution_mode = v as CalendarExecutionMode; }}>
             <SelectTrigger class="text-xs capitalize">{newEvent.execution_mode}</SelectTrigger>
             <SelectContent>
@@ -712,20 +712,20 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
       </div>
 
       <div class="flex flex-col gap-2">
-        <Label>{common.calendar_field_description ? common.calendar_field_description() : "Description"}</Label>
+        <Label>{m.common_calendar_field_description ? m.common_calendar_field_description() : "Description"}</Label>
         <Textarea bind:value={newEvent.description} rows={2} />
       </div>
     </div>
 
     <DialogFooter class="flex-nowrap shrink-0">
       <Button variant="outline" onclick={() => { showCreateDialog = false; resetForm(); }} disabled={isSubmitting}>
-        {common.action_cancel()}
+        {m.common_action_cancel()}
       </Button>
       <Button onclick={createEvent} disabled={isSubmitting}>
         {#if isSubmitting}
           <Loader2 class="size-4 animate-spin me-2" />
         {/if}
-        {common.calendar_create ? common.calendar_create() : "Create"}
+        {m.common_form_btn_create ? m.common_form_btn_create() : "Create"}
       </Button>
     </DialogFooter>
   </DialogContent>

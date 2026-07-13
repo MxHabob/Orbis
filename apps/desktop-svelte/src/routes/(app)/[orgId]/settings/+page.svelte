@@ -1,8 +1,9 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { toast } from "svelte-sonner";
-import * as settings from "$lib/paraglide/messages/settings";
+
 import { getLocale, setLocale } from "$lib/paraglide/runtime";
 import {
   createOrganizationQuery,
@@ -50,11 +51,11 @@ async function handleSaveAvatar(logo: string | null) {
     },
     {
       onSuccess: () => {
-        toast.success(settings.general_save_success());
+        toast.success(m.settings_general_save_success());
       },
       onError: (e: unknown) => {
         toast.error(
-          settings.general_save_error({ error: extractErrorMessage(e) }),
+          m.settings_general_save_error({ error: extractErrorMessage(e) }),
         );
       },
     },
@@ -62,7 +63,7 @@ async function handleSaveAvatar(logo: string | null) {
 }
 
 function handleRemoveOrganization() {
-  toast.error(settings.general_desktop_disabled());
+  toast.error(m.settings_general_desktop_disabled());
 }
 
 async function handleSave(request: any) {
@@ -75,11 +76,11 @@ async function handleSave(request: any) {
     },
     {
       onSuccess: () => {
-        toast.success(settings.general_save_success());
+        toast.success(m.settings_general_save_success());
       },
       onError: (e: unknown) => {
         toast.error(
-          settings.general_save_error({ error: extractErrorMessage(e) }),
+          m.settings_general_save_error({ error: extractErrorMessage(e) }),
         );
       },
     },
@@ -88,7 +89,7 @@ async function handleSave(request: any) {
 </script>
 
 <svelte:head>
-  <title>{settings.general_window_title()} | Orbis</title>
+  <title>{m.settings_general_window_title()} | Orbis</title>
 </svelte:head>
 
 {#if isLoading}

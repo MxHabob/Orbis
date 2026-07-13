@@ -1,9 +1,9 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Card } from "@orbis/ui-svelte";
 import { Landmark, Wallet } from "lucide-svelte";
 import { formatCurrency } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
-import * as finance from "$lib/paraglide/messages/finance";
 
 let {
   treasuries,
@@ -18,14 +18,14 @@ let {
   <div class="flex items-center justify-between w-full select-none text-[9px] font-bold text-muted-foreground/80 mb-3.5">
     <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
       <span class="h-1.5 w-1.5 rounded-full bg-brand-lime animate-pulse"></span>
-      {finance.overview_treasuries_list ? finance.overview_treasuries_list() : "أرصدة الخزائن والبنوك"}
+      {m.finance_overview_treasuries_list ? m.finance_overview_treasuries_list() : "أرصدة الخزائن والبنوك"}
     </div>
   </div>
 
   <div class="flex flex-col gap-2 mt-2 w-full flex-grow">
     {#if treasuries.length === 0}
       <div class="py-8 text-center text-muted-foreground text-xs select-none">
-        {finance.overview_no_treasuries()}
+        {m.finance_overview_no_treasuries()}
       </div>
     {:else}
       {#each treasuries.slice(0, 3) as t (t.id)}
@@ -54,7 +54,7 @@ let {
   <div class="flex flex-col gap-2 pt-2 border-t border-border/40 w-full mt-2 text-[10px]">
     <a href={localizeHref(`/${orgId}/finance/treasuries`)} class="flex items-center gap-2 hover:underline text-primary font-bold">
       <Wallet size={12} />
-      <span>{finance.overview_btn_manage_treasuries ? finance.overview_btn_manage_treasuries() : "إدارة الحسابات البنكية والخزائن"}</span>
+      <span>{m.finance_overview_btn_manage_treasuries ? m.finance_overview_btn_manage_treasuries() : "إدارة الحسابات البنكية والخزائن"}</span>
     </a>
   </div>
 </Card>

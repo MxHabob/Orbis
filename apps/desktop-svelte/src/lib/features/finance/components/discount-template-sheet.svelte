@@ -3,6 +3,7 @@
   Side panel for creating/editing a discount template.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import * as Sheet from "@orbis/ui-svelte/sheet";
 import DiscountTemplateForm from "./discount-template-form.svelte";
 

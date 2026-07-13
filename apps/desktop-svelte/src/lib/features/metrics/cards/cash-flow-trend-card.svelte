@@ -1,9 +1,10 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui-svelte";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import DragIndicator from "../components/drag-indicator.svelte";
-import * as finance from "$lib/paraglide/messages/finance";
+
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/core/i18n";
 import { ArrowRight } from "lucide-svelte";
@@ -190,7 +191,7 @@ function formatVal(val: number) {
     <div class="flex items-start justify-between w-full select-none mb-3">
       <div class="flex flex-col text-start">
         <span class="text-sm font-semibold text-foreground/90">
-          {finance.overview_collection_trend ? finance.overview_collection_trend() : "Cash Flow Trend"}
+          {m.finance_overview_collection_trend ? m.finance_overview_collection_trend() : "Cash Flow Trend"}
         </span>
       </div>
       <div class="flex items-center gap-2">
@@ -203,11 +204,11 @@ function formatVal(val: number) {
       <div class="flex items-center gap-4 text-[10px] text-muted-foreground font-semibold">
         <div class="flex items-center gap-1.5">
           <span class="h-2.5 w-2.5 rounded-sm bg-muted-foreground/30 inline-block"></span>
-          <span>{finance.overview_trend_invoiced ? finance.overview_trend_invoiced() : "الرسوم المقررة"}</span>
+          <span>{m.finance_overview_trend_invoiced ? m.finance_overview_trend_invoiced() : "الرسوم المقررة"}</span>
         </div>
         <div class="flex items-center gap-1.5">
           <span class="h-2.5 w-2.5 rounded-sm bg-foreground inline-block"></span>
-          <span>{finance.overview_trend_collected ? finance.overview_trend_collected() : "المدفوعات"}</span>
+          <span>{m.finance_overview_trend_collected ? m.finance_overview_trend_collected() : "المدفوعات"}</span>
         </div>
       </div>
     </div>
@@ -279,11 +280,11 @@ function formatVal(val: number) {
           <span class="text-muted-foreground font-bold border-b border-border/40 pb-0.5 mb-1">{activeBar.label}</span>
           <div class="flex flex-col gap-0.5">
             <div class="flex items-center justify-between gap-4">
-              <span class="text-muted-foreground">{finance.overview_trend_invoiced ? finance.overview_trend_invoiced() : "الرسوم المقررة"}:</span>
+              <span class="text-muted-foreground">{m.finance_overview_trend_invoiced ? m.finance_overview_trend_invoiced() : "الرسوم المقررة"}:</span>
               <span class="font-bold font-mono text-foreground">{formatCurrency(activeBar.invoiced)}</span>
             </div>
             <div class="flex items-center justify-between gap-4">
-              <span class="text-muted-foreground">{finance.overview_trend_collected ? finance.overview_trend_collected() : "المدفوعات"}:</span>
+              <span class="text-muted-foreground">{m.finance_overview_trend_collected ? m.finance_overview_trend_collected() : "المدفوعات"}:</span>
               <span class="font-bold font-mono text-foreground">{formatCurrency(activeBar.collected)}</span>
             </div>
           </div>
@@ -293,9 +294,9 @@ function formatVal(val: number) {
       <!-- Backdrop Blur Overlay -->
       {#if data.length === 0}
         <div class="absolute inset-0 flex flex-col items-center justify-center text-center select-none p-4 gap-1.5 backdrop-blur-[3.5px] bg-background/35 z-10 transition-all duration-300 rounded-xl">
-          <span class="font-bold text-xs text-foreground/90">{finance.overview_empty_records()}</span>
+          <span class="font-bold text-xs text-foreground/90">{m.finance_overview_empty_records()}</span>
           <span class="text-[9px] text-muted-foreground max-w-[340px] leading-relaxed">
-            {finance.overview_empty_records_desc()}
+            {m.finance_overview_empty_records_desc()}
           </span>
         </div>
       {/if}
@@ -305,7 +306,7 @@ function formatVal(val: number) {
     <div class="border-t border-border/40 pt-2 flex items-center justify-between w-full select-none text-[9px] font-bold mt-2">
       <div class="flex items-center gap-4">
         <a href={localizeHref(`/${orgId}/finance/statement`)} class="text-primary hover:underline flex items-center gap-1 group/statement">
-          <span>{finance.overview_btn_statement ? finance.overview_btn_statement() : "كشف الحساب التفصيلي"}</span>
+          <span>{m.finance_overview_btn_statement ? m.finance_overview_btn_statement() : "كشف الحساب التفصيلي"}</span>
           <ArrowRight size={10} class="transition-transform group-hover/statement:translate-x-0.5 rtl:rotate-180" />
         </a>
       </div>

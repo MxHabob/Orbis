@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
 import { Badge } from "@orbis/ui-svelte/badge";
 import {
@@ -18,7 +19,7 @@ import {
   RefreshCw,
   CheckCircle,
 } from "lucide-svelte";
-import * as settings from "$lib/paraglide/messages/settings";
+
 import { l } from "$lib/core/i18n";
 
 interface Props {
@@ -60,12 +61,12 @@ let {
       <FileText size={32} />
     </div>
     <div class="flex flex-col gap-1">
-      <h3 class="text-sm font-semibold text-foreground">{settings.templates_empty()}</h3>
-      <p class="text-xs text-muted-foreground">{settings.templates_empty_desc()}</p>
+      <h3 class="text-sm font-semibold text-foreground">{m.settings_templates_empty()}</h3>
+      <p class="text-xs text-muted-foreground">{m.settings_templates_empty_desc()}</p>
     </div>
     <Button variant="outline" size="sm" onclick={oncreatenew}>
       <Plus size={14} class="me-1" />
-      {settings.templates_create_btn()}
+      {m.settings_templates_create_btn()}
     </Button>
   </div>
 {:else}
@@ -75,7 +76,7 @@ let {
         <CardHeader class="pb-3">
           <div class="flex items-start justify-between gap-2">
             <Badge variant={template.status === 'published' ? 'success' : (template.status === 'archived' ? 'outline' : 'secondary')}>
-              {template.status === 'published' ? settings.templates_status_active() : (template.status === 'archived' ? settings.templates_status_archived() : settings.templates_status_draft())}
+              {template.status === 'published' ? m.common_status_active() : (template.status === 'archived' ? m.settings_templates_status_archived() : m.common_status_draft())}
             </Badge>
             <div class="text-[10px] text-muted-foreground">v{template.version}</div>
           </div>
@@ -83,21 +84,21 @@ let {
             {l(template.name_ar, template.name)}
           </CardTitle>
           <CardDescription class="text-xs text-muted-foreground line-clamp-2 mt-1">
-            {template.description || settings.templates_no_description()}
+            {template.description || m.settings_templates_no_description()}
           </CardDescription>
         </CardHeader>
         
         <CardContent class="flex-grow pb-4 flex flex-col gap-2">
           <div class="flex items-center justify-between text-xs text-muted-foreground border-t border-border/40 pt-3">
-            <span>{settings.templates_label_doc_type()}</span>
+            <span>{m.settings_templates_label_doc_type()}</span>
             <span class="font-medium text-foreground">{template.document_type}</span>
           </div>
           <div class="flex items-center justify-between text-xs text-muted-foreground">
-            <span>{settings.templates_label_entity_type()}</span>
+            <span>{m.settings_templates_label_entity_type()}</span>
             <span class="font-medium text-foreground">{template.entity_type}</span>
           </div>
           <div class="flex items-center justify-between text-xs text-muted-foreground">
-            <span>{settings.templates_label_size()}</span>
+            <span>{m.settings_templates_label_size()}</span>
             <span class="font-medium text-foreground">{template.page_size} ({template.orientation})</span>
           </div>
         </CardContent>
@@ -122,7 +123,7 @@ let {
               href={`/${orgId}/templates/${template.id}`}
             >
               <Edit size={13} class="me-1" />
-              {settings.templates_action_edit()}
+              {m.settings_templates_action_edit()}
             </Button>
 
             {#if template.status === 'published'}
@@ -133,7 +134,7 @@ let {
                 onclick={() => onarchive(template.id)}
               >
                 <Archive size={13} class="me-1" />
-                {settings.templates_action_archive()}
+                {m.settings_templates_action_archive()}
               </Button>
             {:else}
               {#if template.status === 'archived'}
@@ -144,7 +145,7 @@ let {
                   onclick={() => onrestore(template.id)}
                 >
                   <RefreshCw size={13} class="me-1" />
-                  {settings.templates_action_restore()}
+                  {m.common_titlebar_restore()}
                 </Button>
               {:else}
                 <Button
@@ -154,7 +155,7 @@ let {
                   onclick={() => onpublish(template.id)}
                 >
                   <CheckCircle size={13} class="me-1" />
-                  {settings.templates_action_publish()}
+                  {m.settings_templates_action_publish()}
                 </Button>
               {/if}
             {/if}

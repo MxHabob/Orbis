@@ -1,6 +1,7 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
-import * as settings from "$lib/paraglide/messages/settings";
+
 import {
   InfoSettingsCard,
   BrandingSettingsCard,
@@ -111,7 +112,7 @@ function handleSaveAvatar(e: Event) {
           class="px-6 font-semibold h-9 text-xs"
           disabled={isSaving}
         >
-          {isSaving ? settings.general_saving() : settings.general_save()}
+          {isSaving ? m.common_state_saving() : m.settings_action_save_changes()}
         </Button>
       </div>
     </form>

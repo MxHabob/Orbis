@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 /**
  * Settings domain queries and mutations.
  * Wraps IPC commands with TanStack Query for automatic caching and state updates.

@@ -4,6 +4,7 @@ A slide-over Sheet component for recording a student payment.
 Uses the shared @orbis/ui-svelte/sheet component.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import {
   Sheet,
   SheetContent,
@@ -13,7 +14,6 @@ import {
 } from "@orbis/ui-svelte/sheet";
 import { CreditCard } from "lucide-svelte";
 import PaymentRecordForm from "./payment-record-form.svelte";
-import * as common from "$lib/paraglide/messages/common";
 
 let {
   open = $bindable(false),
@@ -31,10 +31,10 @@ let {
 		<SheetHeader class="text-start select-none">
 			<SheetTitle class="text-xl font-bold text-foreground flex items-center gap-2">
 				<CreditCard size={18} class="text-primary" />
-				<span>{common.payment_sheet_title()}</span>
+				<span>{m.common_payment_sheet_title()}</span>
 			</SheetTitle>
 			<SheetDescription class="text-sm text-muted-foreground mt-1">
-				{common.payment_sheet_subtitle()}
+				{m.common_payment_sheet_subtitle()}
 			</SheetDescription>
 		</SheetHeader>
 

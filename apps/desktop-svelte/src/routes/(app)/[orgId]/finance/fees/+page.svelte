@@ -5,6 +5,7 @@ due dates, ledger accounts, status indicators, and total amounts.
 Allows triggering FeeAssignSheet to bill a student.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
@@ -20,7 +21,6 @@ import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
 import FeeAssignSheet from "$lib/features/finance/components/fee-assign-sheet.svelte";
-import * as finance from "$lib/paraglide/messages/finance";
 
 import { DataTable } from "$lib/tables";
 import { fees as feesDef, withIndex } from "$lib/tables/definitions";
@@ -101,9 +101,9 @@ const stats = $derived.by(() => {
 
 function getStatusLabel(statusStr: string) {
   const s = String(statusStr).toLowerCase();
-  if (s === "paid") return finance.fees_status_paid();
-  if (s === "partially_paid") return finance.fees_status_partially_paid();
-  return finance.fees_status_unpaid();
+  if (s === "paid") return m.finance_fees_status_paid();
+  if (s === "partially_paid") return m.finance_fees_status_partially_paid();
+  return m.finance_fees_status_unpaid();
 }
 
 // Grid Source
@@ -113,7 +113,7 @@ const gridSource = $derived(
       ...f,
       student_name: f.student_name || f.enrollment_id || "—",
       student_avatar: f.student_avatar || f.avatar || null,
-      template_name: f.description || finance.fees_default_description(),
+      template_name: f.description || m.common_ft_category_tuition(),
       total_amount: formatCurrency(Number(f.amount || 0), f.currency || "YER"),
       paid_amount: formatCurrency(
         Number(f.paid_amount || 0),
@@ -132,12 +132,12 @@ const gridSource = $derived(
 const columns = $derived(
   feesDef.columns({
     idx: "#",
-    student: finance.fees_col_student(),
-    template: finance.fees_col_description(),
-    total: finance.fees_col_amount(),
-    paid: finance.fees_total_collected(),
-    balance: finance.fees_total_due(),
-    status: finance.fees_col_status(),
+    student: m.common_word_student(),
+    template: m.finance_fees_col_description(),
+    total: m.finance_fees_col_amount(),
+    paid: m.finance_fees_total_collected(),
+    balance: m.finance_fees_total_due(),
+    status: m.finance_fees_col_status(),
   }),
 );
 
@@ -149,10 +149,10 @@ const rtl = $derived(getLocale() === "ar");
   <div class="flex items-center justify-between gap-4 shrink-0 select-none">
     <div class="text-start">
       <h2 class="text-sm font-bold text-foreground uppercase tracking-wider">
-        {finance.fees_page_title()}
+        {m.finance_fees_page_title()}
       </h2>
       <p class="text-[10px] text-muted-foreground mt-0.5">
-        {finance.fees_page_subtitle()}
+        {m.finance_fees_page_subtitle()}
       </p>
     </div>
 
@@ -162,7 +162,7 @@ const rtl = $derived(getLocale() === "ar");
       onclick={() => isSheetOpen = true}
     >
       <Plus size={14} class="me-1.5" />
-      {finance.fees_assign_button()}
+      {m.finance_fees_assign_button()}
     </Button>
   </div>
 
@@ -173,7 +173,7 @@ const rtl = $derived(getLocale() === "ar");
       <div class="bg-card border border-border rounded-xl flex items-center justify-between p-4 h-20 select-none">
         <div class="flex flex-col gap-1 text-start">
           <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
-            {finance.fees_total_invoiced()}
+            {m.finance_fees_total_invoiced()}
           </span>
           <span class="text-base font-bold text-foreground font-mono">{formatCurrency(stats.invoiced, "YER")}</span>
         </div>
@@ -186,7 +186,7 @@ const rtl = $derived(getLocale() === "ar");
       <div class="bg-card border border-border rounded-xl flex items-center justify-between p-4 h-20 select-none">
         <div class="flex flex-col gap-1 text-start">
           <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
-            {finance.fees_total_collected()}
+            {m.finance_fees_total_collected()}
           </span>
           <span class="text-base font-bold text-emerald-500 font-mono">{formatCurrency(stats.collected, "YER")}</span>
         </div>
@@ -199,7 +199,7 @@ const rtl = $derived(getLocale() === "ar");
       <div class="bg-card border border-border rounded-xl flex items-center justify-between p-4 h-20 select-none">
         <div class="flex flex-col gap-1 text-start">
           <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
-            {finance.fees_total_due()}
+            {m.finance_fees_total_due()}
           </span>
           <span class="text-base font-bold text-rose-500 font-mono">{formatCurrency(stats.due, "YER")}</span>
         </div>
@@ -217,11 +217,11 @@ const rtl = $derived(getLocale() === "ar");
       source={gridSource}
       loading={isLoading}
       searchable
-      searchPlaceholder={finance.fees_search_placeholder()}
+      searchPlaceholder={m.finance_fees_search_placeholder()}
       bind:searchValue={searchQuery}
       emptyIcon={Wallet}
-      emptyTitle={finance.fees_empty_title()}
-      emptyDescription={finance.fees_empty_desc()}
+      emptyTitle={m.finance_fees_empty_title()}
+      emptyDescription={m.finance_fees_empty_desc()}
       {rtl}
       refreshable
       onRefresh={loadFees}
@@ -229,26 +229,26 @@ const rtl = $derived(getLocale() === "ar");
       {#snippet actions()}
         <div class="flex items-center gap-2 text-start select-none me-2">
           <span class="text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-            {finance.fees_filter_status()}
+            {m.finance_fees_filter_status()}
           </span>
           <div class="w-36">
             <Select type="single" value={statusFilter} onValueChange={(v) => (statusFilter = v ?? "all")}>
               <SelectTrigger class="h-8 w-full text-xs bg-card border-border/60">
                 {#if statusFilter === "all"}
-                  {finance.fees_filter_status_all()}
+                  {m.finance_fees_filter_status_all()}
                 {:else if statusFilter === "unpaid"}
-                  {finance.fees_status_unpaid()}
+                  {m.finance_fees_status_unpaid()}
                 {:else if statusFilter === "partially_paid"}
-                  {finance.fees_status_partially_paid()}
+                  {m.finance_fees_status_partially_paid()}
                 {:else if statusFilter === "paid"}
-                  {finance.fees_status_paid()}
+                  {m.finance_fees_status_paid()}
                 {/if}
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{finance.fees_filter_status_all()}</SelectItem>
-                <SelectItem value="unpaid">{finance.fees_status_unpaid()}</SelectItem>
-                <SelectItem value="partially_paid">{finance.fees_status_partially_paid()}</SelectItem>
-                <SelectItem value="paid">{finance.fees_status_paid()}</SelectItem>
+                <SelectItem value="all">{m.finance_fees_filter_status_all()}</SelectItem>
+                <SelectItem value="unpaid">{m.finance_fees_status_unpaid()}</SelectItem>
+                <SelectItem value="partially_paid">{m.finance_fees_status_partially_paid()}</SelectItem>
+                <SelectItem value="paid">{m.finance_fees_status_paid()}</SelectItem>
               </SelectContent>
             </Select>
           </div>

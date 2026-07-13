@@ -4,17 +4,16 @@
   add new currencies, edit currency configurations, and delete unused currencies.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { Button } from "@orbis/ui-svelte/button";
-import * as settings from "$lib/paraglide/messages/settings";
-
 
 let orgId = $derived((page.params.orgId as string) || "");
 
 </script>
 
 <svelte:head>
-  <title>{settings.nav_currencies()} | Orbis</title>
+  <title>{m.settings_nav_currencies()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto flex flex-col gap-6 scrollbar-hide">

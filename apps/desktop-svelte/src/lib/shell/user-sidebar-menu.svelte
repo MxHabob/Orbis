@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
 import {
   DropdownMenu,
@@ -18,7 +19,6 @@ import {
 import { goto } from "$app/navigation";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { authStore } from "$lib/stores";
-import * as common from "$lib/paraglide/messages/common";
 
 let {
   orgId,
@@ -57,7 +57,7 @@ async function handleLogout() {
             type="button"
             class="w-8 h-8 rounded-[10px] bg-[#b02a87] outline-none select-none cursor-pointer btn-tactile p-0 border-none flex items-center justify-center relative"
             style="--btn-shadow: #4a0438;"
-            aria-label={common.nav_account()}
+            aria-label={m.common_nav_account()}
           >
             <Avatar class="h-full w-full rounded-[10px] bg-transparent">
               <AvatarImage src={authStore.user?.avatar ? String(authStore.user.avatar) : undefined} alt={authStore.user?.full_name ?? 'User'} class="object-cover" />
@@ -68,7 +68,7 @@ async function handleLogout() {
           </button>
         </TooltipTrigger>
         <TooltipContent side="right" sideOffset={10}>
-          {authStore.user?.full_name ?? common.nav_account()}
+          {authStore.user?.full_name ?? m.common_nav_account()}
         </TooltipContent>
       </Tooltip>
     </div>
@@ -92,10 +92,10 @@ async function handleLogout() {
       <!-- Items -->
       <div class="py-1">
         <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs text-foreground hover:bg-accent rounded" onclick={() => handleNavigate(`/${orgId}/account`)}>
-          {common.account_settings_title ? common.account_settings_title() : 'User Settings'}
+          {m.common_account_settings_title ? m.common_account_settings_title() : 'User Settings'}
         </DropdownMenuItem>
         <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs text-foreground hover:bg-accent rounded" onclick={handleLogout}>
-          {common.sign_out()}
+          {m.common_sign_out()}
         </DropdownMenuItem>
       </div>
     </DropdownMenuContent>

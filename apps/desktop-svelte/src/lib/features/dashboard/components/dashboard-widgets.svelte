@@ -1,10 +1,11 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/core/ipc";
 import WelcomeSection from "./welcome-section.svelte";
 import QuickActions from "./quick-actions.svelte";
 import WidgetCards from "./widget-cards.svelte";
 import DesktopBanner from "./desktop-banner.svelte";
-import * as common from "$lib/paraglide/messages/common";
+
 import { DashboardSkeleton } from "$lib/shared/components/skeletons";
 import ErrorState from "$lib/shared/components/error-state.svelte";
 
@@ -40,7 +41,7 @@ $effect(() => {
 		<DashboardSkeleton />
 	{:else if error}
 		<ErrorState 
-			title={common.error_load_overview()} 
+			title={m.common_error_load_overview()} 
 			message={error} 
 			onRetry={fetchStats} 
 		/>

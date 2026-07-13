@@ -1,7 +1,7 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Label } from "@orbis/ui-svelte/label";
 import { Input } from "@orbis/ui-svelte/input";
-import * as settings from "$lib/paraglide/messages/settings";
 
 interface Props {
   slug: string;
@@ -16,7 +16,7 @@ let { slug, name = $bindable(), id, isSaving = false }: Props = $props();
 <div class="border border-border rounded-md overflow-hidden flex flex-col">
   <!-- Card Header -->
   <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-    {settings.general_section_info()}
+    {m.settings_general_section_info()}
   </div>
 
   <!-- Card Body / Rows -->
@@ -25,9 +25,9 @@ let { slug, name = $bindable(), id, isSaving = false }: Props = $props();
     <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
       <div class="flex flex-col gap-1 text-start">
         <Label for="org_slug" class="text-xs font-semibold text-foreground flex items-center gap-1">
-          {settings.general_slug()}
+          {m.settings_general_slug()}
         </Label>
-        <span class="text-[11px] text-muted-foreground leading-relaxed">{settings.general_slug_desc()}</span>
+        <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_slug_desc()}</span>
       </div>
       <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
         <Input
@@ -44,17 +44,17 @@ let { slug, name = $bindable(), id, isSaving = false }: Props = $props();
     <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
       <div class="flex flex-col gap-1 text-start">
         <Label for="org_name" class="text-xs font-semibold text-foreground flex items-center gap-1">
-          {settings.general_display_name()}
+          {m.settings_general_display_name()}
           <span class="text-destructive">*</span>
         </Label>
-        <span class="text-[11px] text-muted-foreground leading-relaxed">{settings.general_display_name_desc()}</span>
+        <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_name_desc()}</span>
       </div>
       <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
         <Input
           id="org_name"
           type="text"
           bind:value={name}
-          placeholder={settings.general_name_placeholder()}
+          placeholder={m.settings_general_name_placeholder()}
           required
           disabled={isSaving}
           class="h-9 w-full bg-background"
@@ -66,9 +66,9 @@ let { slug, name = $bindable(), id, isSaving = false }: Props = $props();
     <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
       <div class="flex flex-col gap-1 text-start">
         <Label for="org_id" class="text-xs font-semibold text-foreground">
-          {settings.general_id()}
+          {m.settings_general_id()}
         </Label>
-        <span class="text-[11px] text-muted-foreground leading-relaxed">{settings.general_id_desc()}</span>
+        <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_id_desc()}</span>
       </div>
       <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
         <Input

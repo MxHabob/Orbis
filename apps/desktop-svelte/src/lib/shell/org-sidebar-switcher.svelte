@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
 import {
   DropdownMenu,
@@ -21,7 +22,7 @@ import {
 } from "@orbis/ui-svelte";
 import { goto } from "$app/navigation";
 import { localizeHref } from "$lib/paraglide/runtime";
-import * as common from "$lib/paraglide/messages/common";
+
 import { onMount } from "svelte";
 
 let {
@@ -139,26 +140,26 @@ function handleSelect(id: string) {
       </Avatar>
       <div class="flex flex-col min-w-0 leading-tight">
         <span class="text-xs font-bold uppercase tracking-wider text-foreground truncate">{orgNameDisplay}</span>
-        <span class="text-[9px] text-muted-foreground uppercase font-semibold">{projects.length} {projects.length === 1 ? common.header_org_branch() : common.header_org_branches()}</span>
+        <span class="text-[9px] text-muted-foreground uppercase font-semibold">{projects.length} {projects.length === 1 ? m.common_header_org_branch() : m.common_header_org_branches()}</span>
       </div>
     </div>
 
     <!-- Items -->
     <div class="py-1">
       <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/settings`)}>
-        {common.header_org_settings()}
+        {m.common_header_org_settings()}
       </DropdownMenuItem>
       <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/settings/branches`)}>
-        {common.header_org_branches()}
+        {m.common_header_org_branches()}
       </DropdownMenuItem>
       <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/settings/users`)}>
-        {common.header_org_members()}
+        {m.common_header_org_members()}
       </DropdownMenuItem>
       <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/reports`)}>
-        {common.nav_reports()}
+        {m.common_nav_reports()}
       </DropdownMenuItem>
       <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/billing`)}>
-        {common.header_org_billing()}
+        {m.common_header_org_billing()}
       </DropdownMenuItem>
     </div>
 
@@ -168,7 +169,7 @@ function handleSelect(id: string) {
     <div class="py-1">
       <DropdownMenuSub>
         <DropdownMenuSubTrigger class="cursor-pointer px-3 py-1.5 text-xs rounded">
-          {common.header_switch_org()}
+          {m.common_header_switch_org()}
         </DropdownMenuSubTrigger>
         <DropdownMenuPortal>
           <DropdownMenuSubContent class="w-48 p-1 z-50 shadow-md rounded-md">
@@ -188,7 +189,7 @@ function handleSelect(id: string) {
             {/each}
             <DropdownMenuSeparator class="bg-border/50" />
             <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded font-medium" >
-              {common.header_org_create()}
+              {m.common_header_org_create()}
             </DropdownMenuItem>
           </DropdownMenuSubContent>
         </DropdownMenuPortal>

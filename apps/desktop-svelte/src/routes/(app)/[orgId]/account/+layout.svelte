@@ -1,8 +1,9 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import type { Snippet } from "svelte";
-import * as common from "$lib/paraglide/messages/common";
+
 import { getLocale } from "$lib/paraglide/runtime";
 
 let { children }: { children: Snippet } = $props();
@@ -13,11 +14,11 @@ const basePath = $derived(`/${orgId}/account`);
 const menuItems = $derived([
   {
     path: "",
-    label: common.account_menu_information(),
+    label: m.common_account_menu_information(),
   },
   {
     path: "security",
-    label: common.account_menu_security(),
+    label: m.common_nav_security(),
   },
 ]);
 </script>

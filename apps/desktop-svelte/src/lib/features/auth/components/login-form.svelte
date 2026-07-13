@@ -1,11 +1,12 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
 import { authStore } from "$lib/stores";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
 import { Eye, EyeOff, Loader2 } from "lucide-svelte";
-import * as auth from "$lib/paraglide/messages/auth";
+
 import { localizeHref } from "$lib/paraglide/runtime";
 import { toast } from "svelte-sonner";
 
@@ -22,7 +23,7 @@ let isLoading = $state(false);
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   if (!email || !password) {
-    error = auth.login_fill_all_fields();
+    error = m.auth_login_fill_all_fields();
     return;
   }
 
@@ -33,14 +34,14 @@ async function handleSubmit(e: SubmitEvent) {
     await authStore.login(email, password);
     goto(localizeHref(`/${authStore.orgId}`));
   } catch (err) {
-    error = extractErrorMessage(err) || auth.login_failed();
+    error = extractErrorMessage(err) || m.auth_login_failed();
   } finally {
     isLoading = false;
   }
 }
 
 function handleForgotPassword() {
-  toast.info(auth.login_forgot_password_toast());
+  toast.info(m.auth_login_forgot_password_toast());
 }
 </script>
 
@@ -54,13 +55,13 @@ function handleForgotPassword() {
 	<!-- Account Field -->
 	<div class="flex flex-col gap-2 text-start">
 		<Label for="email" class="text-xs font-semibold text-foreground select-none flex items-center gap-1.5 uppercase tracking-wider">
-			<span>{auth.login_account_label()}</span>
-			<span class="text-[9px] text-muted-foreground/60 font-semibold">{auth.login_required_tag()}</span>
+			<span>{m.common_nav_account()}</span>
+			<span class="text-[9px] text-muted-foreground/60 font-semibold">{m.auth_login_required_tag()}</span>
 		</Label>
 		<Input
 			id="email"
 			type="email"
-			placeholder={auth.login_account_placeholder()}
+			placeholder={m.auth_login_account_placeholder()}
 			bind:value={email}
 			required
 			autocomplete="email"
@@ -72,14 +73,14 @@ function handleForgotPassword() {
 	<!-- Password Field -->
 	<div class="flex flex-col gap-2 text-start">
 		<Label for="password" class="text-xs font-semibold text-foreground select-none flex items-center gap-1.5 uppercase tracking-wider">
-			<span>{auth.login_password_label()}</span>
-			<span class="text-[9px] text-muted-foreground/60 font-semibold">{auth.login_required_tag()}</span>
+			<span>{m.common_user_form_password()}</span>
+			<span class="text-[9px] text-muted-foreground/60 font-semibold">{m.auth_login_required_tag()}</span>
 		</Label>
 		<div class="flex items-center gap-2">
 			<Input
 				id="password"
 				type={showPassword ? 'text' : 'password'}
-				placeholder={auth.login_password_placeholder_sentry()}
+				placeholder={m.common_user_form_password()}
 				bind:value={password}
 				required
 				autocomplete="current-password"
@@ -92,7 +93,7 @@ function handleForgotPassword() {
 				size="icon"
 				class="h-10 w-10 shrink-0 text-muted-foreground hover:text-foreground cursor-pointer rounded-md bg-background/50 border-input"
 				onclick={() => (showPassword = !showPassword)}
-				aria-label={showPassword ? auth.login_hide_password() : auth.login_show_password()}
+				aria-label={showPassword ? m.auth_login_hide_password() : m.auth_login_show_password()}
 			>
 				{#if showPassword}
 					<EyeOff size={15} strokeWidth={2} />
@@ -113,9 +114,9 @@ function handleForgotPassword() {
 		>
 			{#if isLoading}
 				<Loader2 size={13} strokeWidth={2} class="mr-1.5 animate-spin" />
-				{auth.login_submitting()}
+				{m.auth_login_submitting()}
 			{:else}
-				{auth.login_continue()}
+				{m.auth_login_continue()}
 			{/if}
 		</Button>
 
@@ -125,7 +126,7 @@ function handleForgotPassword() {
 			class="text-xs text-muted-foreground hover:text-foreground px-0 h-auto cursor-pointer font-normal underline underline-offset-4 hover:no-underline"
 			onclick={handleForgotPassword}
 		>
-			{auth.login_forgot_password()}
+			{m.auth_login_forgot_password()}
 		</Button>
 	</div>
 </form>

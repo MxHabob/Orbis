@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
 import {
   Select,
@@ -7,7 +8,6 @@ import {
   SelectItem,
 } from "@orbis/ui-svelte/select";
 import { getLocale } from "$lib/paraglide/runtime";
-import * as common from "$lib/paraglide/messages/common";
 
 interface Props {
   viewMode: "class" | "teacher";
@@ -29,7 +29,7 @@ let {
 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-card/25 p-4 rounded-xl border border-border/80 shrink-0 select-none">
   <div class="flex items-center gap-3">
     <span class="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-      {common.schedule_page_view_by()}
+      {m.common_schedule_page_view_by()}
     </span>
     <div class="flex p-0.5 rounded-lg bg-muted border border-border/60">
       <Button
@@ -37,14 +37,14 @@ let {
         class="text-[10px] font-bold px-3 py-1.5 h-8 rounded-md transition-all duration-150 cursor-pointer {viewMode === 'class' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:bg-transparent'}"
         onclick={() => viewMode = 'class'}
       >
-        {common.schedule_page_class()}
+        {m.common_word_semester()}
       </Button>
       <Button
         variant="ghost"
         class="text-[10px] font-bold px-3 py-1.5 h-8 rounded-md transition-all duration-150 cursor-pointer {viewMode === 'teacher' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:bg-transparent'}"
         onclick={() => viewMode = 'teacher'}
       >
-        {common.schedule_page_teacher()}
+        {m.common_schedule_page_teacher()}
       </Button>
     </div>
   </div>
@@ -52,10 +52,10 @@ let {
   <!-- Selector Box using Orbis Select to follow agent rules -->
   <div class="flex items-center gap-3">
     {#if viewMode === 'class'}
-      <span class="text-xs text-muted-foreground">{common.schedule_page_sel_class()}</span>
+      <span class="text-xs text-muted-foreground">{m.common_schedule_page_sel_class()}</span>
       <Select type="single" value={selectedClassId} onValueChange={(v) => { if (v) selectedClassId = v; }}>
         <SelectTrigger class="w-[180px] h-8 text-xs bg-background">
-          {classes.find(c => String(c.id) === selectedClassId)?.name_ar || classes.find(c => String(c.id) === selectedClassId)?.name || common.control_select_class()}
+          {classes.find(c => String(c.id) === selectedClassId)?.name_ar || classes.find(c => String(c.id) === selectedClassId)?.name || m.common_control_select_class()}
         </SelectTrigger>
         <SelectContent>
           {#each classes as cls (cls.id)}
@@ -64,12 +64,12 @@ let {
         </SelectContent>
       </Select>
     {:else}
-      <span class="text-xs text-muted-foreground">{common.schedule_page_sel_teacher()}</span>
+      <span class="text-xs text-muted-foreground">{m.common_schedule_page_sel_teacher()}</span>
       <Select type="single" value={selectedTeacherId} onValueChange={(v) => { if (v) selectedTeacherId = v; }}>
         <SelectTrigger class="w-[180px] h-8 text-xs bg-background">
           {(() => {
             const teach = teachers.find(t => String(t.id) === selectedTeacherId);
-            return teach ? (getLocale() === "ar" ? (teach.name_ar || teach.full_name) : teach.full_name) : common.schedule_page_no_teacher();
+            return teach ? (getLocale() === "ar" ? (teach.name_ar || teach.full_name) : teach.full_name) : m.common_schedule_page_no_teacher();
           })()}
         </SelectTrigger>
         <SelectContent>

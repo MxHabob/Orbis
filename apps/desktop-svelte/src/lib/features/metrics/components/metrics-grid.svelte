@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import type { Snippet } from "svelte";
 import type { ChartLayoutItem, ColSpan, ChartId } from "../utils/types";
 

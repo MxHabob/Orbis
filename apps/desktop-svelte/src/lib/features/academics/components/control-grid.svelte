@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Badge } from "@orbis/ui-svelte/badge";
@@ -19,7 +20,6 @@ import {
   BarChart3,
 } from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
-import * as common from "$lib/paraglide/messages/common";
 
 import { OrbisGrid } from "@orbis/svelte-grid";
 
@@ -64,7 +64,7 @@ let {
   <div class="flex items-center justify-between">
     <h2 class="text-xs font-bold text-foreground flex items-center gap-2">
       <Users size={14} class="text-primary" />
-      {common.control_bulk_entry_title()}
+      {m.common_bulk_grades_title()}
     </h2>
     {#if matrixData && canEnterGrades}
       <div class="flex items-center gap-2 flex-nowrap shrink-0">
@@ -79,7 +79,7 @@ let {
           disabled={isMatrixLoading}
         >
           <RefreshCw size={11} class={isMatrixLoading ? "animate-spin" : ""} />
-          {common.control_refresh()}
+          {m.common_control_refresh()}
         </Button>
         <Button
           variant="lime"
@@ -93,7 +93,7 @@ let {
           {:else}
             <Save size={11} />
           {/if}
-          {common.action_save()}
+          {m.common_action_save()}
         </Button>
       </div>
     {/if}
@@ -106,7 +106,7 @@ let {
       <SelectTrigger class="min-w-[180px] text-xs h-9" disabled={!selectedPeriodId}>
         <div class="flex items-center gap-2">
           <GraduationCap size={12} class="text-muted-foreground shrink-0" />
-          <span class="truncate">{classes.find((c) => String(c.id) === selectedClassId)?.name_ar || classes.find((c) => String(c.id) === selectedClassId)?.name || common.control_select_class()}</span>
+          <span class="truncate">{classes.find((c) => String(c.id) === selectedClassId)?.name_ar || classes.find((c) => String(c.id) === selectedClassId)?.name || m.common_control_select_class()}</span>
         </div>
       </SelectTrigger>
       <SelectContent>
@@ -121,7 +121,7 @@ let {
       <SelectTrigger class="min-w-[180px] text-xs h-9" disabled={!selectedClassId || subjects.length === 0}>
         <div class="flex items-center gap-2">
           <BookOpen size={12} class="text-muted-foreground shrink-0" />
-          <span class="truncate">{subjects.find((s) => String(s.id) === selectedSubjectId)?.name_ar || subjects.find((s) => String(s.id) === selectedSubjectId)?.name || common.control_select_subject()}</span>
+          <span class="truncate">{subjects.find((s) => String(s.id) === selectedSubjectId)?.name_ar || subjects.find((s) => String(s.id) === selectedSubjectId)?.name || m.common_control_select_subject()}</span>
         </div>
       </SelectTrigger>
       <SelectContent>
@@ -153,13 +153,13 @@ let {
   {:else if selectedPeriodId && selectedClassId && selectedSubjectId && !isMatrixLoading}
     <div class="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
       <Info size={32} class="opacity-40" />
-      <p class="text-xs">{common.control_no_data()}</p>
-      <p class="text-[10px]">{common.control_no_data_hint()}</p>
+      <p class="text-xs">{m.common_control_no_data()}</p>
+      <p class="text-[10px]">{m.common_control_no_data_hint()}</p>
     </div>
   {:else}
     <div class="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
       <BarChart3 size={32} class="opacity-40" />
-      <p class="text-xs">{common.control_select_filters()}</p>
+      <p class="text-xs">{m.common_control_select_filters()}</p>
     </div>
   {/if}
 </div>

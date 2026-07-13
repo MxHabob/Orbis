@@ -4,6 +4,7 @@ Manages teacher-subject assignments for the current class (classId from URL).
 Shows assignments for this class.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { onMount } from "svelte";
 import { toast } from "svelte-sonner";
@@ -12,7 +13,7 @@ import { Plus, BookUser } from "lucide-svelte";
 import { commands } from "$lib/core/ipc";
 import type { ClassSubject, JsonRecord } from "@orbis/sdk-core";
 import ClassSubjectSheet from "$lib/features/academics/components/class-subject-sheet.svelte";
-import * as common from "$lib/paraglide/messages/common";
+
 import { getLocale } from "$lib/paraglide/runtime";
 
 import { DataTable } from "$lib/tables";
@@ -105,8 +106,8 @@ const gridSource = $derived(
 const columns = $derived(
   ctDef.columns({
     idx: "#",
-    teacher: common.cs_col_teacher?.() || "Teacher",
-    subject: common.cs_col_subject?.() || "Subject",
+    teacher: m.common_cs_col_teacher?.() || "Teacher",
+    subject: m.common_word_subject?.() || "Subject",
     role: "Role",
     phone: "Phone",
     email: "Email",
@@ -125,16 +126,16 @@ const rtl = $derived(getLocale() === "ar");
       </div>
       <div>
         <h2 class="text-sm font-bold text-foreground">
-          {common.cs_title ? common.cs_title() : "ربط المعلمين بالمواد"}
+          {m.common_cs_title ? m.common_cs_title() : "ربط المعلمين بالمواد"}
         </h2>
         <p class="text-[10px] text-muted-foreground">
-          {common.cs_desc ? common.cs_desc() : "إدارة المعلمين والمواد المرتبطة بهذا الفصل"}
+          {m.common_cs_desc ? m.common_cs_desc() : "إدارة المعلمين والمواد المرتبطة بهذا الفصل"}
         </p>
       </div>
     </div>
     <Button onclick={openCreate} size="sm" class="h-8 gap-1.5 text-xs font-semibold">
       <Plus size={13} />
-      {common.cs_add ? common.cs_add() : "ربط معلم"}
+      {m.common_cs_add ? m.common_cs_add() : "ربط معلم"}
     </Button>
   </div>
 
@@ -145,7 +146,7 @@ const rtl = $derived(getLocale() === "ar");
       source={gridSource}
       loading={isLoading}
       emptyIcon={BookUser}
-      emptyTitle={common.cs_empty ? common.cs_empty() : "لا يوجد ربط معلمين لهذا الفصل"}
+      emptyTitle={m.common_cs_empty ? m.common_cs_empty() : "لا يوجد ربط معلمين لهذا الفصل"}
       {rtl}
       refreshable
       onRefresh={loadData}

@@ -1,7 +1,7 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
 import { Avatar } from "@orbis/avatar-engine";
-import * as common from "$lib/paraglide/messages/common";
 
 let {
   suggestions = [],
@@ -20,7 +20,7 @@ let {
 
   <!-- Subtitle -->
   <p class="text-[13px] text-foreground/90 text-center font-medium max-w-[280px] leading-relaxed mb-6 select-none">
-    {common.agent_subtitle()}
+    {m.common_agent_subtitle()}
   </p>
 
   <!-- Suggestion Buttons -->

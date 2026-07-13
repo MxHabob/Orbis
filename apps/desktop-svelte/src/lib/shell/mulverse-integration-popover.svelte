@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
 import {
   Popover,
@@ -7,7 +8,7 @@ import {
 } from "@orbis/ui-svelte/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@orbis/ui-svelte";
 import { GitBranch } from "lucide-svelte";
-import * as common from "$lib/paraglide/messages/common";
+
 </script>
 
 <Popover>
@@ -20,14 +21,14 @@ import * as common from "$lib/paraglide/messages/common";
 						variant="outline" 
 						size="icon-sm" 
 						class="relative cursor-pointer rounded-[10px]"
-						aria-label={common.sidebar_mulverse_connect_title()}
+						aria-label={m.common_sidebar_mulverse_connect_title()}
 					>
 						<GitBranch size={16} strokeWidth={1.8} class="text-foreground" />
 						<span class="absolute -top-0.5 -inset-e-0.5 w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
 					</Button>
 				</TooltipTrigger>
 				<TooltipContent side="right" sideOffset={12}>
-					{common.sidebar_mulverse_connect_title()}
+					{m.common_sidebar_mulverse_connect_title()}
 				</TooltipContent>
 			</Tooltip>
 		{/snippet}
@@ -35,10 +36,10 @@ import * as common from "$lib/paraglide/messages/common";
 	<PopoverContent side="right" sideOffset={12} class="w-64 p-4 rounded-xl space-y-3">
 		<div class="space-y-1">
 			<h4 class="text-xs font-bold text-foreground">
-				{common.sidebar_mulverse_connect_title()}
+				{m.common_sidebar_mulverse_connect_title()}
 			</h4>
 			<p class="text-[10px] text-muted-foreground leading-normal">
-				{common.sidebar_mulverse_connect_desc()}
+				{m.common_sidebar_mulverse_connect_desc()}
 			</p>
 		</div>
 
@@ -47,7 +48,7 @@ import * as common from "$lib/paraglide/messages/common";
 			class="w-full text-[10px] h-8 rounded-lg font-semibold"
 			onclick={() => window.open('https://github.com/apps/orbis-seer', '_blank')}
 		>
-			{common.sidebar_mulverse_configure()}
+			{m.common_sidebar_mulverse_configure()}
 		</Button>
 	</PopoverContent>
 </Popover>

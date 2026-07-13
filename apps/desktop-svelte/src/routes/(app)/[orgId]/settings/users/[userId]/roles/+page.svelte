@@ -4,6 +4,7 @@ Roles tab for user detail — checklist of available roles with search and bulk 
 Extracted from the original monolith TabsContent "roles".
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
@@ -13,7 +14,7 @@ import { Checkbox } from "@orbis/ui-svelte/checkbox";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
-import * as settings from "$lib/paraglide/messages/settings";
+
 import SearchField from "$lib/shared/components/search-field.svelte";
 
 const userId = $derived(page.params.userId);
@@ -79,7 +80,7 @@ async function saveRoles() {
   isSaving = true;
   try {
     await commands.iam.saveUserRoles(userId, checkedRoles);
-    toast.success(settings.user_detail_saved());
+    toast.success(m.settings_user_detail_saved());
   } catch (e: unknown) {
     toast.error((e as any)?.message || "Save failed");
   } finally {
@@ -104,7 +105,7 @@ async function saveRoles() {
     >
       <div class="w-full sm:max-w-xs">
         <SearchField
-          placeholder={settings.user_detail_search_roles()}
+          placeholder={m.settings_user_detail_search_roles()}
           bind:value={roleSearchQuery}
           class="sm:max-w-xs"
         />
@@ -116,7 +117,7 @@ async function saveRoles() {
           class="text-xs"
           onclick={selectAllRoles}
         >
-          {settings.user_detail_select_all()}
+          {m.common_td_ctx_select_all()}
         </Button>
         <Button
           variant="outline"
@@ -124,7 +125,7 @@ async function saveRoles() {
           class="text-xs"
           onclick={unselectAllRoles}
         >
-          {settings.user_detail_unselect_all()}
+          {m.settings_user_detail_unselect_all()}
         </Button>
       </div>
     </div>
@@ -149,7 +150,7 @@ async function saveRoles() {
         onclick={saveRoles}
         disabled={isSaving}
       >
-        {isSaving ? "..." : settings.user_detail_save()}
+        {isSaving ? "..." : m.settings_action_save_changes()}
       </Button>
     </div>
   </div>

@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 /**
  * Workflow Inbox Store — lightweight UI state for pending actions.
  */

@@ -1,5 +1,6 @@
+import * as m from "$lib/paraglide/messages";
 // ── Core Stores (loaded eagerly — used on every page) ─────────────
-export { authStore } from "./auth.svelte";
+export { authStore } from "./m.auth_svelte";
 export { themeStore } from "./theme.svelte";
 export { uiStore } from "./ui.svelte";
 

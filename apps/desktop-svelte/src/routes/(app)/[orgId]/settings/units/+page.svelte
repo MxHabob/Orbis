@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
@@ -33,8 +34,6 @@ import {
   FolderTree,
 } from "lucide-svelte";
 import OrgUnitSheet from "$lib/features/academics/components/org-unit-sheet.svelte";
-import * as common from "$lib/paraglide/messages/common";
-import * as settings from "$lib/paraglide/messages/settings";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -348,7 +347,7 @@ function escapeHtml(text: string): string {
 </script>
 
 <svelte:head>
-  <title>{settings.units_window_title()} | Orbis</title>
+  <title>{m.settings_nav_units()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto scrollbar-hide">
@@ -358,7 +357,7 @@ function escapeHtml(text: string): string {
     <div class="flex flex-1 flex-col sm:flex-row gap-3 items-center w-full">
       <!-- Search Field -->
       <SearchField
-        placeholder={settings.units_search_placeholder()}
+        placeholder={m.settings_units_search_placeholder()}
         bind:value={searchQuery}
         class="flex-1 bg-background/50"
       />
@@ -373,7 +372,7 @@ function escapeHtml(text: string): string {
             onclick={() => viewMode = "tree"}
           >
             <FolderTree size={12} />
-            <span>{settings.units_hierarchy()}</span>
+            <span>{m.settings_units_hierarchy()}</span>
           </Button>
           <Button
             variant={viewMode === "flat" ? "secondary" : "ghost"}
@@ -382,7 +381,7 @@ function escapeHtml(text: string): string {
             onclick={() => viewMode = "flat"}
           >
             <List size={12} />
-            <span>{settings.units_flat_list()}</span>
+            <span>{m.settings_units_flat_list()}</span>
           </Button>
         </div>
 
@@ -395,7 +394,7 @@ function escapeHtml(text: string): string {
               class="text-[10px] h-7 px-2"
               onclick={() => toggleExpandAll(true)}
             >
-              {settings.units_expand_all()}
+              {m.settings_units_expand_all()}
             </Button>
             <Button
               variant="outline"
@@ -403,7 +402,7 @@ function escapeHtml(text: string): string {
               class="text-[10px] h-7 px-2"
               onclick={() => toggleExpandAll(false)}
             >
-              {settings.units_collapse_all()}
+              {m.settings_units_collapse_all()}
             </Button>
           </div>
         {/if}
@@ -413,7 +412,7 @@ function escapeHtml(text: string): string {
     <!-- Add button -->
     <Button variant="lime" class="text-xs h-9 px-4 font-semibold shrink-0 animate-in fade-in zoom-in-95 duration-150" onclick={openCreateSheet}>
       <Plus size={14} class="me-1.5" />
-      {settings.units_add()}
+      {m.settings_units_add()}
     </Button>
   </div>
 
@@ -427,7 +426,7 @@ function escapeHtml(text: string): string {
     <div class="flex flex-col items-center justify-center p-8 border border-destructive/20 bg-destructive/5 rounded-xl text-center gap-3">
       <p class="text-xs text-destructive font-semibold">Failed to load organizational units</p>
       <p class="text-xs text-muted-foreground">{error}</p>
-      <Button variant="outline" class="text-xs" onclick={loadUnits}>{common.action_retry()}</Button>
+      <Button variant="outline" class="text-xs" onclick={loadUnits}>{m.common_retry()}</Button>
     </div>
   {:else if units.length === 0}
     <div class="flex flex-col items-center justify-center py-16 text-muted-foreground border border-border border-dashed rounded-xl gap-4 bg-card/10">

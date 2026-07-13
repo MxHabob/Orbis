@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 /**
  * Academic Context Store — centralized academic state for the entire app.
  *

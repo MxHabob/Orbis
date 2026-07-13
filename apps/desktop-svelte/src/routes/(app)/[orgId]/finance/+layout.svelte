@@ -4,6 +4,7 @@ Wraps all Finance routes inside a resizable double-sidebar layout
 using <MainViewport>. Uses the shared SidebarNav component.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { commands } from "$lib/core/ipc";
 import { onMount } from "svelte";
@@ -20,7 +21,6 @@ import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import ArchivedBanner from "$lib/features/academics/archived-banner.svelte";
 import type { Snippet } from "svelte";
-import * as finance from "$lib/paraglide/messages/finance";
 
 let { data, children }: { data: { orgId: string }; children: Snippet } =
   $props();
@@ -54,44 +54,44 @@ const basePath = $derived(`/${data.orgId}/finance`);
 const navItems = $derived([
   {
     path: "",
-    label: finance.layout_nav_overview(),
+    label: m.common_word_overview(),
     icon: Compass,
   },
   {
     path: "fees",
-    label: finance.layout_nav_fees(),
+    label: m.finance_layout_nav_fees(),
     icon: Wallet,
     badge: unpaidFeesCount > 0 ? unpaidFeesCount : null,
   },
   {
     path: "payments",
-    label: finance.layout_nav_payments(),
+    label: m.finance_layout_nav_payments(),
     icon: CreditCard,
   },
 
   {
     path: "treasuries",
-    label: finance.layout_nav_treasuries(),
+    label: m.finance_layout_nav_treasuries(),
     icon: Landmark,
     badge: treasuriesCount > 0 ? treasuriesCount : null,
   },
   {
     path: "journal-entries",
-    label: finance.layout_nav_journal
-      ? finance.layout_nav_journal()
+    label: m.common_je_title
+      ? m.common_je_title()
       : "القيود اليومية",
     icon: BookOpen,
   },
   {
     path: "statement",
-    label: finance.layout_nav_ledger
-      ? finance.layout_nav_ledger()
+    label: m.finance_layout_nav_ledger
+      ? m.finance_layout_nav_ledger()
       : "كشف الحساب",
     icon: ClipboardList,
   },
   {
     path: "reports",
-    label: finance.layout_nav_reports(),
+    label: m.finance_layout_nav_reports(),
     icon: BarChart3,
   },
 ]);
@@ -103,7 +103,7 @@ const navItems = $derived([
       <SidebarNav
         items={navItems}
         {basePath}
-        title={finance.layout_panel_title()}
+        title={m.finance_layout_panel_title()}
       />
     {/snippet}
 

@@ -4,6 +4,7 @@ Renders and manages the real official documents and certificates for a student.
 Excludes any hardcoded fake/placeholder data.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { commands } from "$lib/core/ipc";
 import {
@@ -34,8 +35,7 @@ import {
 import { onMount } from "svelte";
 import { toast } from "svelte-sonner";
 import { createEnrollmentsQuery } from "$lib/features/students";
-import * as common from "$lib/paraglide/messages/common";
-import * as academics from "$lib/paraglide/messages/academics";
+
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatDate } from "$lib/core/i18n";
 
@@ -119,7 +119,7 @@ async function handleAddDocument() {
     };
 
     await commands.academic.createDocument(request);
-    toast.success(common.docs_create_success());
+    toast.success(m.common_docs_create_success());
     showAddModal = false;
 
     // Reset fields
@@ -147,7 +147,7 @@ async function handleDelete(docId: string) {
 
   try {
     await commands.academic.deleteDocument(orgId, docId);
-    toast.success(common.docs_delete_success());
+    toast.success(m.common_docs_delete_success());
     await loadDocuments();
   } catch (e: any) {
     toast.error(e.message || String(e));
@@ -200,7 +200,7 @@ async function handleUploadFile() {
     };
 
     await commands.academic.createDocument(request);
-    toast.success(common.docs_upload_success());
+    toast.success(m.common_docs_upload_success());
     showUploadModal = false;
     await loadDocuments();
   } catch (e: any) {
@@ -213,8 +213,8 @@ async function handleUploadFile() {
   <!-- Summary Header -->
   <div class="flex items-center justify-between">
     <div>
-      <h2 class="text-sm font-bold">{common.docs_title()}</h2>
-      <p class="text-[10px] text-muted-foreground">{common.docs_subtitle()}</p>
+      <h2 class="text-sm font-bold">{m.common_docs_title()}</h2>
+      <p class="text-[10px] text-muted-foreground">{m.common_docs_subtitle()}</p>
     </div>
     <div class="flex items-center gap-2">
       <Button 
@@ -222,7 +222,7 @@ async function handleUploadFile() {
         size="icon-sm"
         class="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
         onclick={loadDocuments}
-        title={academics.grades_refresh()}
+        title={m.academics_grades_refresh()}
       >
         <RefreshCcw size={13} class={isLoading ? 'animate-spin' : ''} />
       </Button>
@@ -232,7 +232,7 @@ async function handleUploadFile() {
         onclick={() => showAddModal = true}
       >
         <Plus size={13} />
-        {common.docs_add_btn()}
+        {m.common_docs_add_btn()}
       </Button>
     </div>
   </div>
@@ -245,17 +245,17 @@ async function handleUploadFile() {
     </div>
   {:else if error}
     <div class="flex flex-col items-center justify-center p-8 border border-destructive/20 bg-destructive/5 rounded-xl text-destructive text-center gap-2">
-      <h3 class="font-semibold text-xs">{common.loading_error()}</h3>
+      <h3 class="font-semibold text-xs">{m.common_loading_error()}</h3>
       <p class="text-[10px] text-muted-foreground">{error}</p>
-      <Button variant="link" onclick={loadDocuments} class="text-[10px] underline cursor-pointer mt-2 hover:text-foreground">{common.action_retry()}</Button>
+      <Button variant="link" onclick={loadDocuments} class="text-[10px] underline cursor-pointer mt-2 hover:text-foreground">{m.common_retry()}</Button>
     </div>
   {:else if documents.length === 0}
     <!-- Real DB empty state - NO mock fake data fallback here -->
     <div class="flex flex-col items-center justify-center p-12 text-center text-muted-foreground border border-dashed border-border rounded-xl bg-card/10 gap-3">
       <FileText size={28} class="text-muted-foreground/30 animate-pulse" />
       <div class="flex flex-col gap-0.5">
-        <p class="text-xs font-semibold">{common.docs_empty()}</p>
-        <p class="text-[10px] text-muted-foreground/80">{common.docs_empty_hint()}</p>
+        <p class="text-xs font-semibold">{m.common_docs_empty()}</p>
+        <p class="text-[10px] text-muted-foreground/80">{m.common_docs_empty_hint()}</p>
       </div>
       <Button 
         variant="outline" 
@@ -263,7 +263,7 @@ async function handleUploadFile() {
         onclick={() => showAddModal = true}
       >
         <Plus size={12} class="me-1.5" />
-        {common.docs_add_btn()}
+        {m.common_docs_add_btn()}
       </Button>
     </div>
   {:else}
@@ -272,10 +272,10 @@ async function handleUploadFile() {
       <Table>
         <TableHeader>
           <TableRow class="hover:bg-transparent">
-            <TableHead class="text-start">{common.docs_col_name()}</TableHead>
-            <TableHead class="text-start">{common.docs_col_type()}</TableHead>
-            <TableHead class="text-start">{common.docs_col_status()}</TableHead>
-            <TableHead class="text-start">{common.docs_col_date()}</TableHead>
+            <TableHead class="text-start">{m.common_docs_col_name()}</TableHead>
+            <TableHead class="text-start">{m.common_word_type()}</TableHead>
+            <TableHead class="text-start">{m.common_word_status()}</TableHead>
+            <TableHead class="text-start">{m.common_docs_col_date()}</TableHead>
             <TableHead class="text-end px-6"></TableHead>
           </TableRow>
         </TableHeader>
@@ -309,12 +309,12 @@ async function handleUploadFile() {
                 {#if isUploaded}
                   <span class="badge-brand-success py-0.5 px-2 text-[9px] flex items-center w-fit gap-1 font-semibold">
                     <CheckCircle2 size={10} />
-                    {common.docs_status_uploaded()}
+                    {m.common_docs_status_uploaded()}
                   </span>
                 {:else}
                   <span class="badge-brand-destructive py-0.5 px-2 text-[9px] flex items-center w-fit gap-1 font-semibold">
                     <AlertCircle size={10} />
-                    {common.docs_status_pending()}
+                    {m.common_docs_status_pending()}
                   </span>
                 {/if}
               </TableCell>
@@ -343,7 +343,7 @@ async function handleUploadFile() {
                       onclick={() => openUploadModal(doc)}
                     >
                       <Upload size={11} />
-                      {common.docs_btn_upload()}
+                      {m.common_docs_btn_upload()}
                     </Button>
                   {/if}
                   <Button 
@@ -351,7 +351,7 @@ async function handleUploadFile() {
                     size="icon-xs"
                     class="h-7 w-7 text-destructive hover:bg-destructive/5 hover:text-destructive cursor-pointer"
                     onclick={() => handleDelete(doc.id)}
-                    title={common.docs_btn_delete()}
+                    title={m.common_action_delete()}
                   >
                     <Trash2 size={12} />
                   </Button>
@@ -372,7 +372,7 @@ async function handleUploadFile() {
       <div class="flex items-center justify-between border-b border-border/80 pb-3">
         <h3 class="font-bold text-sm text-foreground flex items-center gap-2">
           <Paperclip size={15} class="text-primary" />
-          {common.docs_add_btn()}
+          {m.common_docs_add_btn()}
         </h3>
         <Button 
           variant="ghost" 
@@ -433,7 +433,7 @@ async function handleUploadFile() {
           class="text-xs h-8 px-4 cursor-pointer" 
           onclick={() => showAddModal = false}
         >
-          {common.action_cancel()}
+          {m.common_action_cancel()}
         </Button>
         <Button 
           variant="lime" 
@@ -454,7 +454,7 @@ async function handleUploadFile() {
       <div class="flex items-center justify-between border-b border-border/80 pb-3">
         <h3 class="font-bold text-sm text-foreground flex items-center gap-2">
           <Upload size={15} class="text-primary" />
-          {common.docs_upload_dialog_title()}
+          {m.common_docs_upload_dialog_title()}
         </h3>
         <Button 
           variant="ghost" 
@@ -477,7 +477,7 @@ async function handleUploadFile() {
 
       <div class="space-y-4 py-2">
         <div class="flex flex-col gap-1.5">
-          <Label class="text-[10px] font-semibold text-muted-foreground">{common.docs_upload_dialog_url()} *</Label>
+          <Label class="text-[10px] font-semibold text-muted-foreground">{m.common_docs_upload_dialog_url()} *</Label>
           <Input 
             type="text" 
             placeholder={getLocale() === 'ar' ? 'أدخل مسار الملف المحلي أو رابط الويب للمستند' : 'Enter local file path or web URL for the document'} 
@@ -514,14 +514,14 @@ async function handleUploadFile() {
           class="text-xs h-8 px-4 cursor-pointer" 
           onclick={() => showUploadModal = false}
         >
-          {common.action_cancel()}
+          {m.common_action_cancel()}
         </Button>
         <Button 
           variant="lime" 
           class="text-xs h-8 px-5 cursor-pointer font-semibold"
           onclick={handleUploadFile}
         >
-          {common.docs_btn_upload()}
+          {m.common_docs_btn_upload()}
         </Button>
       </div>
     </div>

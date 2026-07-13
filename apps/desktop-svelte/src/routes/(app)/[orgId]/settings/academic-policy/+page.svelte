@@ -4,6 +4,7 @@ Manages organization-wide academic, grading, enrollment, and automation policies
 Uses TanStack Query to load current policy and updates it via Rust backend command.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { useQueryClient } from "@tanstack/svelte-query";
 import { createOrgAcademicPolicyQuery } from "$lib/features/academics/queries-policy";
@@ -27,8 +28,7 @@ import {
 } from "@orbis/ui-svelte/card";
 import { Separator } from "@orbis/ui-svelte/separator";
 import { toast } from "svelte-sonner";
-import * as settings from "$lib/paraglide/messages/settings";
-import * as common from "$lib/paraglide/messages/common";
+
 import { getLocale } from "$lib/paraglide/runtime";
 import {
   Settings,
@@ -113,8 +113,8 @@ async function handleSave(e: Event) {
     await commands.platform.updateOrgPolicy(orgId, payload);
 
     toast.success(
-      settings.general_save_success
-        ? settings.general_save_success()
+      m.settings_general_save_success
+        ? m.settings_general_save_success()
         : "Settings saved successfully",
     );
     queryClient.invalidateQueries({ queryKey: ["org-academic-policy", orgId] });
@@ -128,7 +128,7 @@ async function handleSave(e: Event) {
 
 <svelte:head>
   <title>
-    {settings.academic_policy_title ? settings.academic_policy_title() : "Academic Policy & Automation"} | Orbis
+    {m.settings_academic_policy_title ? m.settings_academic_policy_title() : "Academic Policy & Automation"} | Orbis
   </title>
 </svelte:head>
 
@@ -139,7 +139,7 @@ async function handleSave(e: Event) {
     </div>
   {:else if $policyQuery.error}
     <div class="max-w-4xl mx-auto p-6 text-center text-destructive">
-      <p>{settings.policy_load_error ? settings.policy_load_error() : "Failed to load academic policies"}</p>
+      <p>{m.settings_policy_load_error ? m.settings_policy_load_error() : "Failed to load academic policies"}</p>
       <Button variant="outline" class="mt-4" onclick={() => $policyQuery.refetch()}>
         Retry
       </Button>
@@ -154,10 +154,10 @@ async function handleSave(e: Event) {
           </div>
           <div>
             <h1 class="text-lg font-bold text-foreground">
-              {settings.academic_policy_title ? settings.academic_policy_title() : "Academic Policy & Automation"}
+              {m.settings_academic_policy_title ? m.settings_academic_policy_title() : "Academic Policy & Automation"}
             </h1>
             <p class="text-xs text-muted-foreground">
-              {settings.academic_policy_desc ? settings.academic_policy_desc() : "Configure organization-wide rules for calendar automation, enrollment, and grading."}
+              {m.settings_academic_policy_desc ? m.settings_academic_policy_desc() : "Configure organization-wide rules for calendar automation, enrollment, and grading."}
             </p>
           </div>
         </div>
@@ -171,7 +171,7 @@ async function handleSave(e: Event) {
             <Loader2 class="size-3.5 animate-spin me-1.5" />
           {/if}
           <Save class="size-3.5 me-1.5" />
-          {settings.general_save ? settings.general_save() : "Save Settings"}
+          {m.settings_action_save_changes ? m.settings_action_save_changes() : "Save Settings"}
         </Button>
       </div>
 
@@ -182,7 +182,7 @@ async function handleSave(e: Event) {
             <div class="flex items-center gap-2">
               <Cpu class="size-4.5 text-primary" />
               <CardTitle class="text-sm">
-                {common.autopilot_popover_config_title ? common.autopilot_popover_config_title() : "AutoPilot Configuration"}
+                {m.common_autopilot_popover_config_title ? m.common_autopilot_popover_config_title() : "AutoPilot Configuration"}
               </CardTitle>
             </div>
             <CardDescription class="text-[11px]">
@@ -205,7 +205,7 @@ async function handleSave(e: Event) {
             {#if form.autopilot_enabled}
               <div class="flex flex-col gap-2 py-2 border-b border-border/40">
                 <Label class="text-xs text-muted-foreground">
-                  {common.policy_field_exec_mode ? common.policy_field_exec_mode() : "Execution Mode"}
+                  {m.common_policy_field_exec_mode ? m.common_policy_field_exec_mode() : "Execution Mode"}
                 </Label>
                 <Select
                   type="single"
@@ -214,24 +214,22 @@ async function handleSave(e: Event) {
                 >
                   <SelectTrigger class="text-xs capitalize h-9">
                     {form.autopilot_mode === 'automatic' 
-                      ? (common.autopilot_popover_mode_auto ? common.autopilot_popover_mode_auto() : "Automatic") 
+                      ? (m.common_theme_system ? m.common_theme_system() : "Automatic") 
                       : form.autopilot_mode === 'suggested' 
-                        ? (common.autopilot_popover_mode_suggested ? common.autopilot_popover_mode_suggested() : "Suggested") 
-                        : (common.autopilot_popover_mode_manual ? common.autopilot_popover_mode_manual() : "Manual")}
+                        ? (m.common_calendar_field_mode_suggested ? m.common_calendar_field_mode_suggested() : "Suggested") 
+                        : (m.common_dt_type_manual ? m.common_dt_type_manual() : "Manual")}
                   </SelectTrigger>
                   <SelectContent class="text-start text-xs">
-                    <SelectItem value="automatic">{common.autopilot_popover_mode_auto()}</SelectItem>
-                    <SelectItem value="suggested">{common.autopilot_popover_mode_suggested()}</SelectItem>
-                    <SelectItem value="manual">{common.autopilot_popover_mode_manual()}</SelectItem>
+                    <SelectItem value="automatic">{m.common_theme_system()}</SelectItem>
+                    <SelectItem value="suggested">{m.common_calendar_field_mode_suggested()}</SelectItem>
+                    <SelectItem value="manual">{m.common_dt_type_manual()}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-
             {/if}
           </CardContent>
         </Card>
-
 
         <!-- Enrollment Policies Card -->
         <Card>
@@ -239,11 +237,11 @@ async function handleSave(e: Event) {
             <div class="flex items-center gap-2">
               <ShieldAlert class="size-4.5 text-primary" />
               <CardTitle class="text-sm">
-                {common.policy_card_enrollment ? common.policy_card_enrollment() : "Enrollment Rules"}
+                {m.common_policy_card_enrollment ? m.common_policy_card_enrollment() : "Enrollment Rules"}
               </CardTitle>
             </div>
             <CardDescription class="text-[11px]">
-              {common.policy_card_enrollment_desc ? common.policy_card_enrollment_desc() : "Establish controls for student registrations."}
+              {m.common_policy_card_enrollment_desc ? m.common_policy_card_enrollment_desc() : "Establish controls for student registrations."}
             </CardDescription>
           </CardHeader>
           <CardContent class="flex flex-col gap-4">
@@ -251,7 +249,7 @@ async function handleSave(e: Event) {
             <div class="flex items-center justify-between py-2 border-b border-border/40">
               <div class="flex flex-col text-start gap-0.5">
                 <span class="text-xs font-semibold text-foreground">
-                  {common.policy_field_allow_late ? common.policy_field_allow_late() : "Allow Late Enrollment"}
+                  {m.common_policy_field_allow_late ? m.common_policy_field_allow_late() : "Allow Late Enrollment"}
                 </span>
                 <span class="text-[10px] text-muted-foreground">Permit registrations after active period enrollment closed.</span>
               </div>
@@ -262,7 +260,7 @@ async function handleSave(e: Event) {
             <div class="flex items-center justify-between py-2 border-b border-border/40">
               <div class="flex flex-col text-start gap-0.5">
                 <span class="text-xs font-semibold text-foreground">
-                  {common.policy_field_late_approval ? common.policy_field_late_approval() : "Late Enrollment Requires Approval"}
+                  {m.common_policy_field_late_approval ? m.common_policy_field_late_approval() : "Late Enrollment Requires Approval"}
                 </span>
                 <span class="text-[10px] text-muted-foreground">Route late enrollment requests to approval inbox.</span>
               </div>
@@ -273,7 +271,7 @@ async function handleSave(e: Event) {
             <div class="flex items-center justify-between py-2">
               <div class="flex flex-col text-start gap-0.5">
                 <span class="text-xs font-semibold text-foreground">
-                  {common.policy_field_auto_close_capacity ? common.policy_field_auto_close_capacity() : "Auto Close on Capacity"}
+                  {m.common_policy_field_auto_close_capacity ? m.common_policy_field_auto_close_capacity() : "Auto Close on Capacity"}
                 </span>
                 <span class="text-[10px] text-muted-foreground">Automatically lock sections when max capacity is reached.</span>
               </div>
@@ -288,18 +286,18 @@ async function handleSave(e: Event) {
             <div class="flex items-center gap-2">
               <Award class="size-4.5 text-primary" />
               <CardTitle class="text-sm">
-                {common.policy_card_grading ? common.policy_card_grading() : "Assessment & Grading"}
+                {m.common_policy_card_grading ? m.common_policy_card_grading() : "Assessment & Grading"}
               </CardTitle>
             </div>
             <CardDescription class="text-[11px]">
-              {common.policy_card_grading_desc ? common.policy_card_grading_desc() : "Define passing thresholds and modification behaviors."}
+              {m.common_policy_card_grading_desc ? m.common_policy_card_grading_desc() : "Define passing thresholds and modification behaviors."}
             </CardDescription>
           </CardHeader>
           <CardContent class="flex flex-col gap-5">
             <!-- Grading System -->
             <div class="flex flex-col gap-2">
               <Label class="text-xs text-muted-foreground">
-                {common.policy_field_grading_system ? common.policy_field_grading_system() : "Default Grading System"}
+                {m.common_policy_field_grading_system ? m.common_policy_field_grading_system() : "Default Grading System"}
               </Label>
               <Select
                 type="single"
@@ -320,7 +318,7 @@ async function handleSave(e: Event) {
               <!-- Default Passing Grade -->
               <div class="flex flex-col gap-2">
                 <Label class="text-xs text-muted-foreground">
-                  {common.policy_field_passing_grade ? common.policy_field_passing_grade() : "Passing Score"}
+                  {m.common_cycle_form_passing_grade ? m.common_cycle_form_passing_grade() : "Passing Score"}
                 </Label>
                 <Input type="number" min="0" max={form.default_max_grade} bind:value={form.default_passing_grade} disabled={isSaving} />
               </div>
@@ -328,7 +326,7 @@ async function handleSave(e: Event) {
               <!-- Default Max Grade -->
               <div class="flex flex-col gap-2">
                 <Label class="text-xs text-muted-foreground">
-                  {common.policy_field_max_grade ? common.policy_field_max_grade() : "Max Score"}
+                  {m.common_exams_subjects_score ? m.common_exams_subjects_score() : "Max Score"}
                 </Label>
                 <Input type="number" min={form.default_passing_grade} bind:value={form.default_max_grade} disabled={isSaving} />
               </div>
@@ -340,7 +338,7 @@ async function handleSave(e: Event) {
             <div class="flex items-center justify-between py-2 border-b border-border/40">
               <div class="flex flex-col text-start gap-0.5">
                 <span class="text-xs font-semibold text-foreground">
-                  {common.policy_field_close_deadline ? common.policy_field_close_deadline() : "Auto Close on Deadline"}
+                  {m.common_policy_field_close_deadline ? m.common_policy_field_close_deadline() : "Auto Close on Deadline"}
                 </span>
                 <span class="text-[10px] text-muted-foreground">Disable teacher grade modification once deadline passes.</span>
               </div>
@@ -351,7 +349,7 @@ async function handleSave(e: Event) {
             <div class="flex items-center justify-between py-2 border-b border-border/40">
               <div class="flex flex-col text-start gap-0.5">
                 <span class="text-xs font-semibold text-foreground">
-                  {common.policy_field_allow_mod_after_close ? common.policy_field_allow_mod_after_close() : "Allow Modifications After Close"}
+                  {m.common_policy_field_allow_mod_after_close ? m.common_policy_field_allow_mod_after_close() : "Allow Modifications After Close"}
                 </span>
                 <span class="text-[10px] text-muted-foreground">Permit changes to grade sheets after period has closed.</span>
               </div>
@@ -362,7 +360,7 @@ async function handleSave(e: Event) {
             <div class="flex items-center justify-between py-2">
               <div class="flex flex-col text-start gap-0.5">
                 <span class="text-xs font-semibold text-foreground">
-                  {common.policy_field_mod_approval ? common.policy_field_mod_approval() : "Modifications Require Approval"}
+                  {m.common_policy_field_mod_approval ? m.common_policy_field_mod_approval() : "Modifications Require Approval"}
                 </span>
                 <span class="text-[10px] text-muted-foreground">Force all grade modifications to pass through approvals.</span>
               </div>

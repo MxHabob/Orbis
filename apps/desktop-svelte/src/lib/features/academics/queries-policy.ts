@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 /**
  * Policy queries — TanStack Query wrappers for promotion/org policy.
  */

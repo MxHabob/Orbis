@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 export { default as InfoSettingsCard } from "./components/info-settings-card.svelte";
 export { default as BrandingSettingsCard } from "./components/branding-settings-card.svelte";
 export { default as RegionalSettingsCard } from "./components/regional-settings-card.svelte";

@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { getContext } from "svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import * as Icons from "lucide-svelte";

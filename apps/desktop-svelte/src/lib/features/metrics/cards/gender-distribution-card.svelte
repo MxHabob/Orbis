@@ -1,9 +1,9 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui-svelte";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import DragIndicator from "../components/drag-indicator.svelte";
-import * as reports from "$lib/paraglide/messages/reports";
 
 let {
   orgId,
@@ -106,24 +106,24 @@ function handleMouseLeave() {
     <!-- Header -->
     <div class="flex flex-col w-full text-start select-none">
       <div class="flex items-center justify-between w-full h-5">
-        <span class="text-xs text-muted-foreground">{reports.gender_dist_title()}</span>
+        <span class="text-xs text-muted-foreground">{m.common_gender_dist_title()}</span>
         {#if isEditing}
           <DragIndicator />
         {/if}
       </div>
       <div class="text-4xl font-light tracking-tight mt-1 text-foreground">
-        {reports.gender_dist_total_students({ count: String(totalCount) })}
+        {m.reports_gender_dist_total_students({ count: String(totalCount) })}
       </div>
       
       <!-- Subtitle legend matching exactly: Female (white dot) and Male (gray dot) -->
       <div class="flex items-center gap-4 text-[10px] text-muted-foreground mt-2 font-medium">
         <div class="flex items-center gap-1.5">
           <span class="h-2 w-2 rounded-full bg-foreground inline-block"></span>
-          <span>{reports.gender_dist_female()}</span>
+          <span>{m.reports_gender_dist_female()}</span>
         </div>
         <div class="flex items-center gap-1.5">
           <span class="h-2 w-2 rounded-full bg-muted-foreground/40 inline-block"></span>
-          <span>{reports.gender_dist_male()}</span>
+          <span>{m.reports_gender_dist_male()}</span>
         </div>
       </div>
     </div>
@@ -165,7 +165,7 @@ function handleMouseLeave() {
           ></div>
           <!-- Label -->
           <div class="absolute bottom-[-18px] text-[8px] font-bold text-muted-foreground/80 font-mono select-none">
-            {reports.gender_dist_female()}
+            {m.reports_gender_dist_female()}
           </div>
         </div>
 
@@ -182,7 +182,7 @@ function handleMouseLeave() {
           ></div>
           <!-- Label -->
           <div class="absolute bottom-[-18px] text-[8px] font-bold text-muted-foreground/80 font-mono select-none">
-            {reports.gender_dist_male()}
+            {m.reports_gender_dist_male()}
           </div>
         </div>
       </div>
@@ -194,7 +194,7 @@ function handleMouseLeave() {
           class="absolute z-30 p-2 text-[10px] font-sans border bg-card border-border text-foreground rounded-lg shadow-xl pointer-events-none flex flex-col gap-0.5 min-w-[95px] text-start"
           style="left: {tooltipPos.x + 15}px; top: {tooltipPos.y - 45}px;"
         >
-          <span class="text-foreground font-semibold">{isFemale ? reports.gender_dist_female() : reports.gender_dist_male()}</span>
+          <span class="text-foreground font-semibold">{isFemale ? m.reports_gender_dist_female() : m.reports_gender_dist_male()}</span>
           <span class="text-muted-foreground font-mono">count: {isFemale ? femaleCount : maleCount}</span>
         </div>
       {/if}

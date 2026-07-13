@@ -4,6 +4,7 @@ Dashboard overview page for Examination Management.
 Shows stats cards and navigation cards.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import {
@@ -18,7 +19,7 @@ import {
 } from "lucide-svelte";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
-import * as common from "$lib/paraglide/messages/common";
+
 import { ExamsSkeleton } from "$lib/shared/components/skeletons";
 
 let { data }: { data: { orgId: string } } = $props();
@@ -52,25 +53,25 @@ onMount(() => {
 
 const stats = $derived([
   {
-    label: common.exams_stat_sessions(),
+    label: m.common_exams_stat_sessions(),
     value: sessionsCount,
     icon: ClipboardList,
     color: "text-blue-500 bg-blue-500/10",
   },
   {
-    label: common.exams_stat_students(),
+    label: m.common_word_students(),
     value: studentsCount,
     icon: Users,
     color: "text-emerald-500 bg-emerald-500/10",
   },
   {
-    label: common.exams_stat_halls(),
+    label: m.common_exams_stat_halls(),
     value: hallsCount,
     icon: Building2,
     color: "text-purple-500 bg-purple-500/10",
   },
   {
-    label: common.exams_stat_proctors(),
+    label: m.common_exams_stat_proctors(),
     value: proctorsCount,
     icon: UserCheck,
     color: "text-amber-500 bg-amber-500/10",
@@ -80,22 +81,22 @@ const stats = $derived([
 const cards = $derived([
   {
     path: "sessions",
-    title: common.exams_card_sessions_title(),
-    desc: common.exams_card_sessions_desc(),
+    title: m.common_exams_sessions_title(),
+    desc: m.common_exams_card_sessions_desc(),
     icon: ClipboardList,
     color: "bg-blue-500/10 text-blue-500 border-blue-500/20",
   },
   {
     path: "sessions",
-    title: common.exams_card_schedule_title(),
-    desc: common.exams_card_schedule_desc(),
+    title: m.common_exams_card_schedule_title(),
+    desc: m.common_exams_card_schedule_desc(),
     icon: Calendar,
     color: "bg-purple-500/10 text-purple-500 border-purple-500/20",
   },
   {
     path: "reports",
-    title: common.exams_card_reports_title(),
-    desc: common.exams_card_reports_desc(),
+    title: m.common_exams_reports_title(),
+    desc: m.common_exams_card_reports_desc(),
     icon: FileText,
     color: "bg-amber-500/10 text-amber-500 border-amber-500/20",
   },
@@ -117,10 +118,10 @@ const cards = $derived([
         </div>
         <div class="flex flex-col">
           <h2 class="text-sm font-bold text-foreground uppercase tracking-wider">
-            {common.exams_overview_title()}
+            {m.common_exams_overview_title()}
           </h2>
           <p class="text-[10px] text-muted-foreground mt-0.5 max-w-lg">
-            {common.exams_overview_subtitle()}
+            {m.common_exams_overview_subtitle()}
           </p>
         </div>
       </div>
@@ -166,7 +167,7 @@ const cards = $derived([
               variant="ghost"
               class="text-[10px] font-bold text-primary group-hover:underline h-7.5 px-3 flex items-center gap-1 cursor-pointer"
             >
-              <span>{common.exams_open_section()}</span>
+              <span>{m.common_exams_open_section()}</span>
               <ArrowRight size={11} class="transition-transform group-hover:translate-x-1" />
             </Button>
           </div>

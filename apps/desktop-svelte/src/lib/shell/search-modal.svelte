@@ -1,5 +1,5 @@
-import * as m from "$lib/paraglide/messages";
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
 import { page } from "$app/state";
@@ -7,10 +7,7 @@ import { Dialog, DialogContent } from "@orbis/ui-svelte/dialog";
 import { uiStore, authStore } from "$lib/stores";
 import { commands } from "$lib/core/ipc";
 import { queryClient } from "$lib/core/query/client";
-import * as common from "$lib/paraglide/messages/common";
-import * as academics from "$lib/paraglide/messages/academics";
-import * as finance from "$lib/paraglide/messages/finance";
-import * as settings from "$lib/paraglide/messages/settings";
+
 import { matchStudent } from "$lib/shared/utils/search";
 import {
   Search,
@@ -108,16 +105,16 @@ const shortcuts = $derived([
     title: m.students_create ? m.students_create() : "إضافة طالب جديد",
     icon: Plus,
     action: () => goto(`/${currentOrgId}/students`),
-    group: common.search_group_shortcuts ? common.search_group_shortcuts() : "Shortcuts",
+    group: m.common_search_group_shortcuts ? m.common_search_group_shortcuts() : "Shortcuts",
   },
   {
     id: "sc-view-templates",
-    title: settings.nav_templates
-      ? settings.nav_templates()
+    title: m.settings_nav_templates
+      ? m.settings_nav_templates()
       : "قوالب المستندات",
     icon: FileText,
     action: () => goto(`/${currentOrgId}/templates`),
-    group: common.search_group_shortcuts ? common.search_group_shortcuts() : "Shortcuts",
+    group: m.common_search_group_shortcuts ? m.common_search_group_shortcuts() : "Shortcuts",
   },
   {
     id: "sc-view-reports",
@@ -126,14 +123,14 @@ const shortcuts = $derived([
       : "استخراج التقارير",
     icon: BarChart3,
     action: () => goto(`/${currentOrgId}/reports`),
-    group: common.search_group_shortcuts ? common.search_group_shortcuts() : "Shortcuts",
+    group: m.common_search_group_shortcuts ? m.common_search_group_shortcuts() : "Shortcuts",
   },
   {
     id: "sc-view-settings",
-    title: common.breadcrumb_settings ? common.breadcrumb_settings() : "الإعدادات العامة",
+    title: m.common_word_settings ? m.common_word_settings() : "الإعدادات العامة",
     icon: Settings,
     action: () => goto(`/${currentOrgId}/settings`),
-    group: common.search_group_shortcuts ? common.search_group_shortcuts() : "Shortcuts",
+    group: m.common_search_group_shortcuts ? m.common_search_group_shortcuts() : "Shortcuts",
   },
 ]);
 
@@ -141,148 +138,148 @@ const shortcuts = $derived([
 const systemPages = $derived([
   // Finance
   {
-    title: finance.layout_nav_fees
-      ? finance.layout_nav_fees()
+    title: m.finance_layout_nav_fees
+      ? m.finance_layout_nav_fees()
       : "Student Fees",
     path: `/${currentOrgId}/finance/fees`,
     icon: FileText,
   },
   {
-    title: finance.layout_nav_payments
-      ? finance.layout_nav_payments()
+    title: m.finance_layout_nav_payments
+      ? m.finance_layout_nav_payments()
       : "Receipts",
     path: `/${currentOrgId}/finance/payments`,
     icon: Wallet,
   },
   {
-    title: finance.layout_nav_treasuries
-      ? finance.layout_nav_treasuries()
+    title: m.finance_layout_nav_treasuries
+      ? m.finance_layout_nav_treasuries()
       : "Disbursals",
     path: `/${currentOrgId}/finance/treasuries`,
     icon: Wallet,
   },
   {
-    title: finance.layout_nav_journal
-      ? finance.layout_nav_journal()
+    title: m.common_je_title
+      ? m.common_je_title()
       : "Journal Entries",
     path: `/${currentOrgId}/finance/journal-entries`,
     icon: FileText,
   },
   {
-    title: finance.layout_nav_ledger
-      ? finance.layout_nav_ledger()
+    title: m.finance_layout_nav_ledger
+      ? m.finance_layout_nav_ledger()
       : "Ledger",
     path: `/${currentOrgId}/finance/statement`,
     icon: FileText,
   },
   {
-    title: finance.layout_nav_reports
-      ? finance.layout_nav_reports()
+    title: m.finance_layout_nav_reports
+      ? m.finance_layout_nav_reports()
       : "Financial Reports",
     path: `/${currentOrgId}/finance/reports`,
     icon: BarChart3,
   },
   // Academics
   {
-    title: academics.layout_nav_classes
-      ? academics.layout_nav_classes()
+    title: m.academics_layout_nav_classes
+      ? m.academics_layout_nav_classes()
       : "Classes",
     path: `/${currentOrgId}/academics/classes`,
     icon: GraduationCap,
   },
   {
-    title: academics.layout_nav_schedule
-      ? academics.layout_nav_schedule()
+    title: m.academics_layout_nav_schedule
+      ? m.academics_layout_nav_schedule()
       : "Schedule",
     path: `/${currentOrgId}/academics/schedule`,
     icon: Calendar,
   },
   {
-    title: common.nav_exams ? common.nav_exams() : "Exams",
+    title: m.common_nav_exams ? m.common_nav_exams() : "Exams",
     path: `/${currentOrgId}/academics/exams`,
     icon: FileText,
   },
   {
-    title: academics.control_label
-      ? academics.control_label()
+    title: m.common_control_label
+      ? m.common_control_label()
       : "Control Board",
     path: `/${currentOrgId}/academics/control`,
     icon: Shield,
   },
   // Settings
   {
-    title: settings.nav_notifications
-      ? settings.nav_notifications()
+    title: m.common_nav_notifications
+      ? m.common_nav_notifications()
       : "Notifications",
     path: `/${currentOrgId}/settings/notifications`,
     icon: Settings,
   },
   {
-    title: settings.nav_security ? settings.nav_security() : "Security",
+    title: m.common_nav_security ? m.common_nav_security() : "Security",
     path: `/${currentOrgId}/settings/security`,
     icon: Settings,
   },
   {
-    title: settings.nav_users ? settings.nav_users() : "Users & Staff",
+    title: m.settings_nav_users ? m.settings_nav_users() : "Users & Staff",
     path: `/${currentOrgId}/settings/users`,
     icon: Users,
   },
   {
-    title: settings.nav_permissions
-      ? settings.nav_permissions()
+    title: m.settings_nav_permissions
+      ? m.settings_nav_permissions()
       : "Permissions",
     path: `/${currentOrgId}/settings/permissions`,
     icon: Shield,
   },
   {
-    title: settings.nav_periods
-      ? settings.nav_periods()
+    title: m.settings_nav_cycles
+      ? m.settings_nav_cycles()
       : "Academic Periods",
     path: `/${currentOrgId}/settings/periods`,
     icon: Calendar,
   },
   {
-    title: settings.nav_units
-      ? settings.nav_units()
+    title: m.settings_nav_units
+      ? m.settings_nav_units()
       : "Organizational Units",
     path: `/${currentOrgId}/settings/units`,
     icon: Settings,
   },
   {
-    title: settings.nav_rooms ? settings.nav_rooms() : "Rooms & Halls",
+    title: m.common_nav_rooms ? m.common_nav_rooms() : "Rooms & Halls",
     path: `/${currentOrgId}/settings/rooms`,
     icon: Settings,
   },
   {
-    title: settings.nav_subjects ? settings.nav_subjects() : "Subjects",
+    title: m.common_word_subjects ? m.common_word_subjects() : "Subjects",
     path: `/${currentOrgId}/settings/subjects`,
     icon: BookOpen,
   },
   {
-    title: settings.nav_currencies
-      ? settings.nav_currencies()
+    title: m.settings_nav_currencies
+      ? m.settings_nav_currencies()
       : "Currencies",
     path: `/${currentOrgId}/settings/currencies`,
     icon: ArrowRightLeft,
   },
   {
-    title: settings.nav_fee_templates
-      ? settings.nav_fee_templates()
+    title: m.common_breadcrumb_fees
+      ? m.common_breadcrumb_fees()
       : "Fee Templates",
     path: `/${currentOrgId}/settings/fee-templates`,
     icon: FileText,
   },
   {
-    title: settings.nav_discount_templates
-      ? settings.nav_discount_templates()
+    title: m.settings_nav_discount_templates
+      ? m.settings_nav_discount_templates()
       : "Discount Templates",
     path: `/${currentOrgId}/settings/discount-templates`,
     icon: FileText,
   },
   // User Account
   {
-    title: common.account_settings_title
-      ? common.account_settings_title()
+    title: m.common_account_settings_title
+      ? m.common_account_settings_title()
       : "Account Settings",
     path: `/${currentOrgId}/account`,
     icon: Settings,
@@ -309,8 +306,8 @@ const filteredItems = $derived.by(() => {
         title: p.title,
         icon: p.icon,
         action: () => goto(p.path),
-        group: common.search_group_system_pages
-          ? common.search_group_system_pages()
+        group: m.common_search_group_system_pages
+          ? m.common_search_group_system_pages()
           : "System Pages",
       }));
     list.push(...matchedPages);
@@ -326,7 +323,7 @@ const filteredItems = $derived.by(() => {
         subtitle: s.student_number || "",
         icon: Users,
         action: () => goto(`/${currentOrgId}/students/${s.id}/grades`),
-        group: common.search_group_students ? common.search_group_students() : "Students",
+        group: m.common_word_students ? m.common_word_students() : "Students",
       }));
     list.push(...matchedStudents.slice(0, 10)); // limit to 10
   }
@@ -344,7 +341,7 @@ const filteredItems = $derived.by(() => {
         title: c.name || "Class",
         icon: GraduationCap,
         action: () => goto(`/${currentOrgId}/academics/classes`),
-        group: common.search_group_classes ? common.search_group_classes() : "Classes",
+        group: m.common_search_group_classes ? m.common_search_group_classes() : "Classes",
       }));
     list.push(...matchedClasses);
   }
@@ -362,7 +359,7 @@ const filteredItems = $derived.by(() => {
         title: s.name || "Subject",
         icon: BookOpen,
         action: () => goto(`/${currentOrgId}/settings/subjects`),
-        group: common.search_group_subjects ? common.search_group_subjects() : "Subjects",
+        group: m.common_word_subjects ? m.common_word_subjects() : "Subjects",
       }));
     list.push(...matchedSubjects);
   }
@@ -439,15 +436,15 @@ function handleKeydown(e: KeyboardEvent) {
       <div class="flex items-center gap-3 font-medium">
         <div class="flex items-center gap-1">
           <kbd class="border border-border bg-background px-1.5 py-0.5 rounded text-[9px] font-mono text-muted-foreground shadow-[inset_0_2px_4px_rgba(0,0,0,0.06),_inset_0_1px_2px_rgba(0,0,0,0.04)]">↑↓</kbd>
-          <span>{common.search_footer_navigate ? common.search_footer_navigate() : "Navigate"}</span>
+          <span>{m.common_search_footer_navigate ? m.common_search_footer_navigate() : "Navigate"}</span>
         </div>
         <div class="flex items-center gap-1">
           <kbd class="border border-border bg-background px-1.5 py-0.5 rounded text-[9px] font-mono text-muted-foreground shadow-[inset_0_2px_4px_rgba(0,0,0,0.06),_inset_0_1px_2px_rgba(0,0,0,0.04)]">Enter</kbd>
-          <span>{common.search_footer_select ? common.search_footer_select() : "Select"}</span>
+          <span>{m.common_search_footer_select ? m.common_search_footer_select() : "Select"}</span>
         </div>
         <div class="flex items-center gap-1">
           <kbd class="border border-border bg-background px-1.5 py-0.5 rounded text-[9px] font-mono text-muted-foreground shadow-[inset_0_2px_4px_rgba(0,0,0,0.06),_inset_0_1px_2px_rgba(0,0,0,0.04)]">Esc</kbd>
-          <span>{common.search_footer_close ? common.search_footer_close() : "Close"}</span>
+          <span>{m.common_titlebar_close ? m.common_titlebar_close() : "Close"}</span>
         </div>
       </div>
     </div>

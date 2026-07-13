@@ -3,6 +3,7 @@
 Bulk grade entry page with smart student matching and active period display.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui-svelte/button";
 import {
@@ -13,7 +14,7 @@ import {
 } from "@orbis/ui-svelte/select";
 import { ArrowLeft, Upload, Trash2 } from "lucide-svelte";
 import { toast } from "svelte-sonner";
-import * as common from "$lib/paraglide/messages/common";
+
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { commands } from "$lib/core/ipc";
 import { authStore } from "$lib/stores";
@@ -57,13 +58,13 @@ function runValidation() {
 
 // Column labels
 const labels: Record<string, string> = {
-  student_id: common.bulk_col_student_identifier(),
-  subject: common.bulk_col_subject(),
-  score: common.bulk_col_score(),
-  max_score: common.bulk_col_max_score(),
-  exam_type: common.bulk_col_exam_type(),
-  semester: common.bulk_col_semester(),
-  notes: common.bulk_col_notes(),
+  student_id: m.common_bulk_col_student_identifier(),
+  subject: m.common_word_subject(),
+  score: m.common_promo_score(),
+  max_score: m.common_bulk_col_max_score(),
+  exam_type: m.common_bulk_col_exam_type(),
+  semester: m.common_word_semester(),
+  notes: m.common_year_notes(),
 };
 
 let columns = $derived(buildGradeColumns(labels));
@@ -75,18 +76,18 @@ function handleRowsChange(_: Record<string, unknown>[]) {
 
 function handleClearAll() {
   if (summary.totalFilled > 0) {
-    if (!confirm(common.bulk_input_confirm_clear())) return;
+    if (!confirm(m.common_bulk_input_confirm_clear())) return;
   }
   rows = [];
 }
 
 async function handleSubmit() {
   if (summary.totalFilled === 0) {
-    toast.warning(common.bulk_input_no_data());
+    toast.warning(m.common_bulk_input_no_data());
     return;
   }
   if (summary.errorCount > 0) {
-    toast.error(common.bulk_input_fix_errors());
+    toast.error(m.common_bulk_input_fix_errors());
     return;
   }
 
@@ -131,10 +132,10 @@ async function handleSubmit() {
     }
 
     if (result.created > 0) {
-      toast.success(common.bulk_input_success_grades({ count: result.created }));
+      toast.success(m.common_bulk_input_success_grades({ count: result.created }));
     }
     if (result.failed > 0) {
-      toast.error(common.bulk_input_failed_rows({ count: result.failed }));
+      toast.error(m.common_bulk_input_failed_rows({ count: result.failed }));
     }
   } catch (e: unknown) {
     const msg = (e as any)?.message || "Unknown error";
@@ -166,21 +167,21 @@ async function handleSubmit() {
         <Select type="single" value={identifierType} onValueChange={(v) => (identifierType = v)}>
           <SelectTrigger class="w-44 h-8 text-xs">
             {identifierType === "auto"
-              ? common.bulk_id_auto()
+              ? m.common_bulk_id_auto()
               : identifierType === "email"
-                ? common.bulk_col_email()
+                ? m.common_word_email()
                 : identifierType === "student_number"
-                  ? common.bulk_id_student_number()
+                  ? m.common_table_student_number()
                   : identifierType === "national_id"
-                    ? common.bulk_col_national_id()
-                    : common.bulk_id_name()}
+                    ? m.common_bulk_col_national_id()
+                    : m.common_word_fullname()}
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="auto">{common.bulk_id_auto()}</SelectItem>
-            <SelectItem value="email">{common.bulk_col_email()}</SelectItem>
-            <SelectItem value="student_number">{common.bulk_id_student_number()}</SelectItem>
-            <SelectItem value="national_id">{common.bulk_col_national_id()}</SelectItem>
-            <SelectItem value="name">{common.bulk_id_name()}</SelectItem>
+            <SelectItem value="auto">{m.common_bulk_id_auto()}</SelectItem>
+            <SelectItem value="email">{m.common_word_email()}</SelectItem>
+            <SelectItem value="student_number">{m.common_table_student_number()}</SelectItem>
+            <SelectItem value="national_id">{m.common_bulk_col_national_id()}</SelectItem>
+            <SelectItem value="name">{m.common_word_fullname()}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -194,7 +195,7 @@ async function handleSubmit() {
           onclick={handleClearAll}
         >
           <Trash2 size={13} class="me-1.5" />
-          {common.bulk_input_clear()}
+          {m.common_bulk_input_clear()}
         </Button>
 
         <Button
@@ -205,7 +206,7 @@ async function handleSubmit() {
           onclick={handleSubmit}
         >
           <Upload size={13} class="me-1.5" />
-          {common.bulk_input_submit()} ({summary.valid})
+          {m.common_bulk_input_submit()} ({summary.valid})
         </Button>
       </div>
     </div>

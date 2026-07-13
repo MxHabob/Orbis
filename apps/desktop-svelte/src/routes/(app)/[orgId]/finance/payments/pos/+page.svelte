@@ -4,6 +4,7 @@ A dedicated, keyboard-optimized screen for school cashiers to record student pay
 Provides barcode/ID lookup, outstanding fee checklist, and payment history.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import { authStore } from "$lib/stores";
@@ -30,8 +31,6 @@ import { getLocale } from "$lib/paraglide/runtime";
 import { matchStudent } from "$lib/shared/utils/search";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
-import * as common from "$lib/paraglide/messages/common";
-import * as finance from "$lib/paraglide/messages/finance";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -174,23 +173,23 @@ function selectFeeItem(fee: any) {
 async function handlePaymentSubmit(e: SubmitEvent) {
   e.preventDefault();
   if (!selectedStudent) {
-    toast.error(common.payment_toast_error_student());
+    toast.error(m.common_fee_toast_error_student());
     return;
   }
   if (!selectedFeeId) {
-    toast.error(common.payment_toast_error_fee());
+    toast.error(m.common_payment_toast_error_fee());
     return;
   }
   if (!selectedTreasuryId) {
-    toast.error(common.payment_toast_error_treasury());
+    toast.error(m.common_payment_toast_error_treasury());
     return;
   }
   if (!amount || amount <= 0) {
-    toast.error(common.payment_toast_error_amount());
+    toast.error(m.common_fee_toast_error_amount());
     return;
   }
   if (!currency || currency.trim().length !== 3) {
-    toast.error(common.payment_toast_error_currency());
+    toast.error(m.common_ledger_toast_error_currency());
     return;
   }
 
@@ -217,7 +216,7 @@ async function handlePaymentSubmit(e: SubmitEvent) {
       exchange_rate: 1,
       account_id: "", // Let backend resolve if needed via fee_id
     } as any);
-    toast.success(common.payment_toast_success());
+    toast.success(m.common_payment_toast_success());
 
     // Clean form elements
     amount = null;
@@ -239,7 +238,7 @@ async function handlePaymentSubmit(e: SubmitEvent) {
     }
   } catch (e) {
     const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(common.payment_toast_error_submit({ error: errorMsg }));
+    toast.error(m.common_payment_toast_error_submit({ error: errorMsg }));
   } finally {
     isSubmitting = false;
   }
@@ -505,7 +504,7 @@ onMount(() => {
                 >
                   <div class="flex flex-col gap-0.5 max-w-[65%]">
                     <span class="text-xs font-bold text-foreground truncate">
-                      {fee.description || finance.fees_default_description()}
+                      {fee.description || m.common_ft_category_tuition()}
                     </span>
                     <span class="text-[9px] text-muted-foreground font-mono flex items-center gap-1">
                       <Calendar size={10} />
@@ -609,7 +608,7 @@ onMount(() => {
           <div class="bg-accent/40 border border-border p-3.5 rounded-xl text-xs flex flex-col gap-1.5 select-none">
             <div class="flex justify-between">
               <span class="text-muted-foreground">{getLocale() === "ar" ? "البند المحدد:" : "Active Item:"}</span>
-              <span class="font-bold text-foreground max-w-[200px] truncate">{selectedFee.description || finance.fees_default_description()}</span>
+              <span class="font-bold text-foreground max-w-[200px] truncate">{selectedFee.description || m.common_ft_category_tuition()}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-muted-foreground">{getLocale() === "ar" ? "المبلغ الأصلي:" : "Total Invoice:"}</span>
@@ -624,7 +623,7 @@ onMount(() => {
           <!-- Treasury Select -->
           <div class="flex flex-col gap-2">
             <label for="pos_treasury" class="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              {common.payment_label_treasury()}
+              {m.common_payment_label_treasury()}
             </label>
             <select 
               id="pos_treasury"
@@ -641,7 +640,7 @@ onMount(() => {
           <!-- Payment Method -->
           <div class="flex flex-col gap-2">
             <span class="text-xs font-bold text-muted-foreground uppercase tracking-wider select-none">
-              {common.payment_label_method()}
+              {m.common_payment_label_method()}
             </span>
             <div class="grid grid-cols-3 gap-3.5">
               {#each ['Cash', 'Bank Transfer', 'Card'] as method}
@@ -664,7 +663,7 @@ onMount(() => {
           <!-- Currency Section -->
           <div class="flex flex-col gap-2">
             <label for="pos_currency" class="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              {common.payment_label_currency()}
+              {m.common_payment_label_currency()}
             </label>
             <div class="flex gap-3">
               <Input 
@@ -695,7 +694,7 @@ onMount(() => {
           <!-- Amount -->
           <div class="flex flex-col gap-2">
             <label for="pos_amount" class="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              {common.payment_label_amount()} ({currency})
+              {m.common_payment_label_amount()} ({currency})
             </label>
             <div class="relative">
               <Input 
@@ -728,7 +727,7 @@ onMount(() => {
             <!-- Receipt Number -->
             <div class="flex flex-col gap-2">
               <label for="pos_receipt" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                {common.payment_label_receipt()}
+                {m.common_payment_label_receipt()}
               </label>
               <Input 
                 id="pos_receipt"
@@ -743,7 +742,7 @@ onMount(() => {
             <!-- Reference Number -->
             <div class="flex flex-col gap-2">
               <label for="pos_ref" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                {common.payment_label_ref()}
+                {m.common_payment_label_ref()}
               </label>
               <Input 
                 id="pos_ref"
@@ -759,13 +758,13 @@ onMount(() => {
           <!-- Notes -->
           <div class="flex flex-col gap-2">
             <label for="pos_notes" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-              {common.payment_label_notes()}
+              {m.common_payment_label_notes()}
             </label>
             <Input 
               id="pos_notes"
               type="text" 
               bind:value={notes}
-              placeholder={common.payment_placeholder_notes()}
+              placeholder={m.common_payment_placeholder_notes()}
               class="h-10 text-xs"
               disabled={isSubmitting}
             />
@@ -789,7 +788,7 @@ onMount(() => {
               disabled={isSubmitting}
             >
               {#if isSubmitting}
-                {common.loading()}
+                {m.common_loading()}
               {:else}
                 <span class="flex items-center justify-center gap-1.5">
                   <CreditCard size={15} />

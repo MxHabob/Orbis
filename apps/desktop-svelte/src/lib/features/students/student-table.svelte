@@ -4,10 +4,10 @@ Renders the list of students using the DataTable infrastructure.
 Matches the column layout and styling of the React dashboard precisely.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { DataTable } from "$lib/tables";
 import type { Enrollment } from "$lib/core/ipc";
-import * as students from "$lib/paraglide/messages/students";
-import * as common from "$lib/paraglide/messages/common";
+
 import { formatDate } from "$lib/core/i18n";
 import { createInitials } from "$lib/tables";
 import type { OrbisColumnDef, GridActionEvent } from "@orbis/svelte-grid";
@@ -38,7 +38,7 @@ function getClassName(classId: string): string {
   const cls = classes.find((c) => c.id === classId);
   return cls
     ? String(cls.name || cls.name_ar || classId)
-    : common.table_not_enrolled();
+    : m.common_status_not_enrolled();
 }
 
 // ── Column Definitions ─────────────────────────────────────────────
@@ -51,8 +51,8 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
   {
     id: "full_name",
     prop: "full_name",
-    header: students.table_student(),
-    name: students.table_student(),
+    header: m.common_word_student(),
+    name: m.common_word_student(),
     width: 320,
     size: 320,
     pin: "colPinStart",
@@ -61,8 +61,8 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
   {
     id: "student_number",
     prop: "student_number",
-    header: students.table_student_number(),
-    name: students.table_student_number(),
+    header: m.common_table_student_number(),
+    name: m.common_table_student_number(),
     width: 150,
     size: 150,
     cellClass:
@@ -71,16 +71,16 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
   {
     id: "class_name",
     prop: "class_name",
-    header: common.table_class(),
-    name: common.table_class(),
+    header: m.common_table_class(),
+    name: m.common_table_class(),
     width: 150,
     size: 150,
   },
   {
     id: "status",
     prop: "status",
-    header: common.table_status(),
-    name: common.table_status(),
+    header: m.common_word_status(),
+    name: m.common_word_status(),
     width: 120,
     size: 120,
     cell: BadgeCell,
@@ -88,16 +88,16 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
   {
     id: "sex_display",
     prop: "sex_display",
-    header: common.form_sex(),
-    name: common.form_sex(),
+    header: m.common_form_sex(),
+    name: m.common_form_sex(),
     width: 100,
     size: 100,
   },
   {
     id: "enrollment_date_display",
     prop: "enrollment_date_display",
-    header: common.table_enrolled_at(),
-    name: common.table_enrolled_at(),
+    header: m.common_table_enrolled_at(),
+    name: m.common_table_enrolled_at(),
     width: 150,
     size: 150,
     cellClass: "text-xs text-muted-foreground",
@@ -111,9 +111,9 @@ let gridSource = $derived(
     class_name: getClassName(String(student.class_id)),
     sex_display:
       student.sex === "male"
-        ? common.form_male()
+        ? m.common_form_male()
         : student.sex === "female"
-          ? common.form_female()
+          ? m.common_form_female()
           : "-",
     enrollment_date_display: student.enrollment_date
       ? formatDate(student.enrollment_date)
@@ -165,6 +165,6 @@ function handleGridAction(event: GridActionEvent) {
   rtl={getLocale() === "ar"}
   onaction={handleGridAction}
   emptyIcon={GraduationCap}
-  emptyTitle={common.table_no_students()}
-  emptyDescription={common.table_no_students_hint()}
+  emptyTitle={m.common_table_no_students()}
+  emptyDescription={m.common_table_no_students_hint()}
 />

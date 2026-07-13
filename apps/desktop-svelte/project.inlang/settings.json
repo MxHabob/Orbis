@@ -9,15 +9,7 @@
 		"https://cdn.jsdelivr.net/npm/@inlang/message-lint-rule-without-source@1/dist/index.js"
 	],
 	"plugin.inlang.messageFormat": {
-		"pathPattern": {
-			"common": "./messages/common/{locale}.json",
-			"auth": "./messages/auth/{locale}.json",
-			"academics": "./messages/academics/{locale}.json",
-			"students": "./messages/students/{locale}.json",
-			"finance": "./messages/finance/{locale}.json",
-			"settings": "./messages/settings/{locale}.json",
-			"reports": "./messages/reports/{locale}.json"
-		}
+		"pathPattern": "./messages/{locale}.json"
 	},
 	"baseLocale": "ar",
 	"locales": [

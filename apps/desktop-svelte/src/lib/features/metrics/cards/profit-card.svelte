@@ -1,9 +1,10 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui-svelte";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import DragIndicator from "../components/drag-indicator.svelte";
-import * as reports from "$lib/paraglide/messages/reports";
+
 import { localizeHref } from "$lib/paraglide/runtime";
 import { TrendingUp, ArrowRight } from "lucide-svelte";
 
@@ -85,7 +86,7 @@ $effect(() => {
       <div class="flex items-center justify-between w-full h-5">
         <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
           <TrendingUp size={14} class="text-muted-foreground/80" />
-          <span>{reports.profit_title()}</span>
+          <span>{m.reports_profit_title()}</span>
         </div>
         {#if isEditing}
           <DragIndicator />
@@ -126,7 +127,7 @@ $effect(() => {
         href={localizeHref(`/${orgId}/finance/ledger`)}
         class="text-muted-foreground hover:text-foreground hover:underline flex items-center gap-1 group/link"
       >
-        <span>{reports.profit_detailed_graph()}</span>
+        <span>{m.reports_profit_detailed_graph()}</span>
         <ArrowRight size={10} class="transition-transform group-hover/link:translate-x-0.5 rtl:rotate-180" />
       </a>
     </div>

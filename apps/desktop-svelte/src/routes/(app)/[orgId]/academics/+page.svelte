@@ -6,6 +6,7 @@ Left side: Notion-style interactive database directory list.
 Right side: Linear-style diagnostics panel with Orbis Advisor insights.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Badge } from "@orbis/ui-svelte/badge";
@@ -24,8 +25,7 @@ import {
   Info,
 } from "lucide-svelte";
 import { localizeHref } from "$lib/paraglide/runtime";
-import * as common from "$lib/paraglide/messages/common";
-import * as academics from "$lib/paraglide/messages/academics";
+
 import {
   createClassesQuery,
   createSubjectsQuery,
@@ -109,19 +109,19 @@ const isGradeEntryOpen = $derived(
 // Dynamic counters for KPIs
 const kpiStats = $derived([
   {
-    label: academics.overview_kpi_total_classes(),
+    label: m.common_card_active_classes(),
     value: currentYear?.class_count ?? classes.length,
   },
   {
-    label: academics.overview_kpi_total_subjects(),
+    label: m.academics_overview_kpi_total_subjects(),
     value: currentYear?.subject_count ?? subjects.length,
   },
   {
-    label: academics.overview_kpi_total_teachers(),
+    label: m.academics_overview_kpi_total_teachers(),
     value: currentYear?.teacher_count ?? 0,
   },
   {
-    label: academics.overview_kpi_total_students(),
+    label: m.academics_overview_kpi_total_students(),
     value: currentYear?.student_count ?? 0,
   },
 ]);
@@ -130,38 +130,38 @@ const kpiStats = $derived([
 const directoryItems = $derived([
   {
     path: `/${data.orgId}/academics/classes`,
-    title: academics.overview_card_classes_title(),
-    desc: academics.overview_card_classes_desc(),
+    title: m.academics_layout_nav_classes(),
+    desc: m.academics_overview_card_classes_desc(),
     icon: GraduationCap,
-    badge: academics.overview_card_classes_badge({ count: classes.length }),
+    badge: m.academics_overview_card_classes_badge({ count: classes.length }),
   },
   {
     path: `/${data.orgId}/academics/schedule`,
-    title: academics.overview_card_schedule_title(),
-    desc: academics.overview_card_schedule_desc(),
+    title: m.academics_layout_nav_schedule(),
+    desc: m.academics_overview_card_schedule_desc(),
     icon: Calendar,
-    badge: academics.overview_card_schedule_badge(),
+    badge: m.academics_overview_card_schedule_badge(),
   },
   {
     path: `/${data.orgId}/academics/calendar`,
-    title: academics.overview_card_calendar_title(),
-    desc: academics.overview_card_calendar_desc(),
+    title: m.academics_overview_card_calendar_title(),
+    desc: m.academics_overview_card_calendar_desc(),
     icon: CalendarClock,
-    badge: academics.overview_card_calendar_badge(),
+    badge: m.academics_overview_card_calendar_badge(),
   },
   {
     path: `/${data.orgId}/academics/promotion`,
-    title: academics.overview_card_promotion_title(),
-    desc: academics.overview_card_promotion_desc(),
+    title: m.academics_overview_card_promotion_title(),
+    desc: m.academics_overview_card_promotion_desc(),
     icon: TrendingUp,
-    badge: academics.overview_card_promotion_badge(),
+    badge: m.common_promo_wizard_title(),
   },
   {
     path: `/${data.orgId}/academics/exams`, // Moved under academics
-    title: academics.overview_card_exams_title(),
-    desc: academics.overview_card_exams_desc(),
+    title: m.academics_overview_card_exams_title(),
+    desc: m.academics_overview_card_exams_desc(),
     icon: ClipboardList,
-    badge: academics.overview_card_exams_badge(),
+    badge: m.academics_overview_card_exams_badge(),
   },
 ]);
 
@@ -174,8 +174,8 @@ const advisorInsights = $derived.by(() => {
     insights.push({
       id: "grade-entry",
       text: isGradeEntryOpen
-        ? academics.overview_insight_grades_open({ period: activePeriodName })
-        : academics.overview_insight_grades_closed(),
+        ? m.academics_overview_insight_grades_open({ period: activePeriodName })
+        : m.academics_overview_insight_grades_closed(),
       variant: isGradeEntryOpen ? ("warning" as const) : ("neutral" as const),
       icon: ShieldCheck,
     });
@@ -186,8 +186,8 @@ const advisorInsights = $derived.by(() => {
     id: "schedule",
     text:
       classes.length > 0
-        ? academics.overview_insight_schedule_ok()
-        : academics.overview_insight_schedule_warn(),
+        ? m.academics_overview_insight_schedule_ok()
+        : m.academics_overview_insight_schedule_warn(),
     variant: classes.length > 0 ? ("success" as const) : ("warning" as const),
     icon: Calendar,
   });
@@ -203,14 +203,14 @@ const advisorInsights = $derived.by(() => {
     if (activePromoJob.status === "promoting") {
       insights.push({
         id: "promotion",
-        text: academics.overview_insight_promo_running(),
+        text: m.academics_overview_insight_promo_running(),
         variant: "warning" as const,
         icon: TrendingUp,
       });
     } else {
       insights.push({
         id: "promotion",
-        text: academics.overview_insight_promo_ready({
+        text: m.academics_overview_insight_promo_ready({
           promoted: activePromoJob.promoted_count ?? 0,
           retained: activePromoJob.retained_count ?? 0,
         }),
@@ -221,7 +221,7 @@ const advisorInsights = $derived.by(() => {
   } else {
     insights.push({
       id: "promotion",
-      text: academics.overview_insight_promo_none(),
+      text: m.academics_overview_insight_promo_none(),
       variant: "neutral" as const,
       icon: TrendingUp,
     });
@@ -234,7 +234,7 @@ const advisorInsights = $derived.by(() => {
   if (activeExamSession) {
     insights.push({
       id: "exams-active",
-      text: academics.overview_insight_exams_active({
+      text: m.academics_overview_insight_exams_active({
         session: activeExamSession.name_ar || activeExamSession.name,
       }),
       variant: "success" as const,
@@ -243,7 +243,7 @@ const advisorInsights = $derived.by(() => {
   } else {
     insights.push({
       id: "exams-none",
-      text: academics.overview_insight_exams_none(),
+      text: m.academics_overview_insight_exams_none(),
       variant: "neutral" as const,
       icon: ClipboardList,
     });
@@ -267,7 +267,7 @@ const advisorInsights = $derived.by(() => {
         </Badge>
       {:else}
         <Badge variant="outline" class="text-[9px] px-2 py-0.5 text-muted-foreground border-dashed">
-          {academics.overview_no_active_year()}
+          {m.academics_overview_no_active_year()}
         </Badge>
       {/if}
       
@@ -325,9 +325,9 @@ const advisorInsights = $derived.by(() => {
   {:else if error}
     <div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2">
       <AlertCircle size={24} />
-      <h3 class="font-semibold text-xs">{common.error_load_overview()}</h3>
+      <h3 class="font-semibold text-xs">{m.common_error_load_overview()}</h3>
       <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
-      <Button variant="outline" onclick={refetchAll} class="text-[10px] mt-2 h-8">{common.action_retry()}</Button>
+      <Button variant="outline" onclick={refetchAll} class="text-[10px] mt-2 h-8">{m.common_retry()}</Button>
     </div>
   {:else}
     <!-- Main Content Split Layout -->
@@ -336,7 +336,7 @@ const advisorInsights = $derived.by(() => {
       <!-- 1. LEFT COLUMN: Directory Index List (Notion Database style) -->
       <div class="lg:col-span-7 xl:col-span-8 flex flex-col">
         <h3 class="text-[10px] font-bold text-muted-foreground/80 tracking-wider uppercase mb-3 text-start">
-          {academics.overview_sections_title()}
+          {m.academics_overview_sections_title()}
         </h3>
         
         <div class="flex flex-col">
@@ -382,7 +382,7 @@ const advisorInsights = $derived.by(() => {
         <!-- Sidebar Section: KPI Summary -->
         <div>
           <h4 class="text-[9.5px] font-bold text-muted-foreground/80 tracking-wider uppercase border-b border-border/30 pb-2 mb-3">
-            {academics.overview_sidebar_title()}
+            {m.academics_overview_sidebar_title()}
           </h4>
           
           <div class="grid grid-cols-2 gap-4 pb-4 border-b border-border/30">
@@ -399,7 +399,7 @@ const advisorInsights = $derived.by(() => {
         <div class="flex flex-col gap-3">
           <div class="flex items-center gap-2 text-foreground font-semibold text-[11px] pb-1">
             <Sparkles size={13} class="text-primary animate-pulse" />
-            <span>{academics.overview_advisor_title()}</span>
+            <span>{m.academics_overview_advisor_title()}</span>
           </div>
           
           <div class="flex flex-col gap-2.5">

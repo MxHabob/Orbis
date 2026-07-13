@@ -1,10 +1,10 @@
-import * as m from "$lib/paraglide/messages";
 <!--
   @component ClassSubjectForm
   Form for assigning a subject to a teacher for a specific class and academic period.
   Used in both create and edit modes via a Sheet panel.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
@@ -17,7 +17,7 @@ import {
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import type { ClassSubject, JsonRecord } from "@orbis/sdk-core";
 import { toast } from "svelte-sonner";
-import * as common from "$lib/paraglide/messages/common";
+
 import {
   createPeriodsQuery,
   createClassesQuery,
@@ -106,10 +106,10 @@ async function handleSubmit() {
 
     if (isEditMode && editData?.id) {
       await commands.academic.updateClassSubject(String(editData.id), request as any);
-      toast.success(common.cs_update_success());
+      toast.success(m.common_cs_update_success());
     } else {
       await commands.academic.createClassSubject(request as any);
-      toast.success(common.cs_create_success());
+      toast.success(m.common_cs_create_success());
     }
 
     onSuccess?.();
@@ -163,12 +163,12 @@ async function handleSubmit() {
 
     <!-- Class -->
     <div class="flex flex-col gap-1.5">
-      <Label class="text-xs font-semibold text-muted-foreground">{common.cs_form_class()} *</Label>
+      <Label class="text-xs font-semibold text-muted-foreground">{m.common_word_semester()} *</Label>
       <Select type="single" value={classId} onValueChange={(v) => (classId = v ?? "")}>
         <SelectTrigger class="h-9 text-sm">
           {selectedClass
             ? String(selectedClass.name ?? selectedClass.name_ar ?? "")
-            : common.cs_form_select_class()}
+            : m.common_cs_form_select_class()}
         </SelectTrigger>
         <SelectContent>
           {#each classes as cls (cls.id)}
@@ -182,12 +182,12 @@ async function handleSubmit() {
 
     <!-- Subject -->
     <div class="flex flex-col gap-1.5">
-      <Label class="text-xs font-semibold text-muted-foreground">{common.cs_form_subject()} *</Label>
+      <Label class="text-xs font-semibold text-muted-foreground">{m.common_word_subject()} *</Label>
       <Select type="single" value={subjectId} onValueChange={(v) => (subjectId = v ?? "")}>
         <SelectTrigger class="h-9 text-sm">
           {selectedSubject
             ? String(selectedSubject.name ?? selectedSubject.name_ar ?? "")
-            : common.cs_form_select_subject()}
+            : m.common_cs_form_select_subject()}
         </SelectTrigger>
         <SelectContent>
           {#each subjects as subj (subj.id)}
@@ -201,12 +201,12 @@ async function handleSubmit() {
 
     <!-- Primary Teacher -->
     <div class="flex flex-col gap-1.5">
-      <Label class="text-xs font-semibold text-muted-foreground">{common.cs_form_teacher()} *</Label>
+      <Label class="text-xs font-semibold text-muted-foreground">{m.common_cs_col_teacher()} *</Label>
       <Select type="single" value={teacherId} onValueChange={(v) => (teacherId = v ?? "")}>
         <SelectTrigger class="h-9 text-sm">
           {selectedTeacher
             ? String(selectedTeacher.full_name ?? selectedTeacher.email ?? "")
-            : common.cs_form_select_teacher()}
+            : m.common_cs_form_select_teacher()}
         </SelectTrigger>
         <SelectContent>
           {#each teachers as t (t.id)}
@@ -218,11 +218,9 @@ async function handleSubmit() {
       </Select>
     </div>
 
-
-
     <!-- Weekly Hours -->
     <div class="flex flex-col gap-1.5">
-      <Label class="text-xs font-semibold text-muted-foreground">{common.cs_form_hours()}</Label>
+      <Label class="text-xs font-semibold text-muted-foreground">{m.common_cs_col_hours()}</Label>
       <Input
         type="number"
         min="1"
@@ -241,14 +239,14 @@ async function handleSubmit() {
         class="flex-1 h-9 text-sm"
         onclick={onCancel}
       >
-        {common.action_cancel()}
+        {m.common_action_cancel()}
       </Button>
       <Button
         type="submit"
         class="flex-1 h-9 text-sm"
         disabled={isSaving || isLoading || !classId || !subjectId || !teacherId || !periodId}
       >
-        {isSaving ? common.cs_form_saving() : common.action_save()}
+        {isSaving ? m.common_state_saving() : m.common_action_save()}
       </Button>
     </div>
   {/if}

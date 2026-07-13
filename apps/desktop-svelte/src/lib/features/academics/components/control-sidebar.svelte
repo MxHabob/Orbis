@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
 import {
   Lock,
@@ -13,7 +14,6 @@ import {
   Users,
 } from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
-import * as common from "$lib/paraglide/messages/common";
 
 import { formatNumber } from "$lib/core/i18n";
 
@@ -63,43 +63,43 @@ let {
   {#if selectedPeriod}
     <!-- Period Status Card -->
     <div class="bg-background/50 border border-border rounded-lg p-4 flex flex-col gap-3">
-      <h3 class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{common.control_period_status()}</h3>
+      <h3 class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.common_control_period_status()}</h3>
       <div class="flex flex-col gap-2 text-xs">
         <div class="flex items-center justify-between">
-          <span class="text-muted-foreground">{common.control_period_lock()}</span>
+          <span class="text-muted-foreground">{m.common_control_cycle_lock()}</span>
           <span class="flex items-center gap-1 font-semibold {isPeriodLocked ? 'text-destructive' : 'text-emerald-500'}">
             {#if isPeriodLocked}
-              <Lock size={12} /> {common.control_period_locked()}
+              <Lock size={12} /> {m.common_status_locked()}
             {:else}
-              <Unlock size={12} /> {common.control_period_unlocked()}
+              <Unlock size={12} /> {m.common_control_cycle_unlocked()}
             {/if}
           </span>
         </div>
         <div class="flex items-center justify-between">
-          <span class="text-muted-foreground">{common.control_grade_entry()}</span>
+          <span class="text-muted-foreground">{m.common_control_grade_entry()}</span>
           <span class="flex items-center gap-1 font-semibold {isGradeEntryOpen ? 'text-emerald-500' : 'text-amber-500'}">
             {#if isGradeEntryOpen}
-              <CheckCircle2 size={12} /> {common.control_grade_entry_open()}
+              <CheckCircle2 size={12} /> {m.common_control_grade_entry_open()}
             {:else}
-              <XCircle size={12} /> {common.control_grade_entry_closed()}
+              <XCircle size={12} /> {m.common_phase_locked()}
             {/if}
           </span>
         </div>
         {#if selectedPeriod.grade_entry_start}
           <div class="flex items-center justify-between">
-            <span class="text-muted-foreground">{common.control_grade_entry_start()}</span>
+            <span class="text-muted-foreground">{m.common_control_grade_entry_start()}</span>
             <span class="font-mono text-[10px]">{new Date(selectedPeriod.grade_entry_start).toLocaleDateString(getLocale())}</span>
           </div>
         {/if}
         {#if selectedPeriod.grade_entry_end}
           <div class="flex items-center justify-between">
-            <span class="text-muted-foreground">{common.control_grade_entry_end()}</span>
+            <span class="text-muted-foreground">{m.common_control_grade_entry_end()}</span>
             <span class="font-mono text-[10px]">{new Date(selectedPeriod.grade_entry_end).toLocaleDateString(getLocale())}</span>
           </div>
         {/if}
         {#if selectedPeriod.locked_by}
           <div class="flex items-center justify-between">
-            <span class="text-muted-foreground">{common.control_locked_by()}</span>
+            <span class="text-muted-foreground">{m.common_control_locked_by()}</span>
             <span class="text-[10px]">{selectedPeriod.locked_by}</span>
           </div>
         {/if}
@@ -108,7 +108,7 @@ let {
 
     <!-- Action Buttons Card -->
     <div class="bg-background/50 border border-border rounded-lg p-4 flex flex-col gap-3">
-      <h3 class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{common.control_actions()}</h3>
+      <h3 class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.common_je_col_actions()}</h3>
       <div class="flex flex-col gap-2">
         {#if isPeriodLocked}
           <Button
@@ -122,7 +122,7 @@ let {
             {:else}
               <Unlock size={14} />
             {/if}
-            {common.control_unlock_period()}
+            {m.common_control_unlock_period()}
           </Button>
         {:else}
           <Button
@@ -136,7 +136,7 @@ let {
             {:else}
               <Lock size={14} />
             {/if}
-            {common.control_lock_period()}
+            {m.common_control_lock_period()}
           </Button>
 
           {#if isGradeEntryOpen}
@@ -151,7 +151,7 @@ let {
               {:else}
                 <CalendarOff size={14} />
               {/if}
-              {common.control_close_entry()}
+              {m.common_control_close_entry()}
             </Button>
           {:else}
             <Button
@@ -165,7 +165,7 @@ let {
               {:else}
                 <CalendarClock size={14} />
               {/if}
-              {common.control_open_entry()}
+              {m.common_control_open_entry()}
             </Button>
           {/if}
         {/if}
@@ -183,7 +183,7 @@ let {
           {:else}
             <RefreshCw size={14} />
           {/if}
-          {common.control_compile_grades()}
+          {m.common_control_compile_grades()}
         </Button>
       </div>
     </div>
@@ -194,27 +194,27 @@ let {
     <div class="bg-background/50 border border-border rounded-lg p-4 flex flex-col gap-3">
       <h3 class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
         <BarChart3 size={12} />
-        {common.control_stats()}
+        {m.common_control_stats()}
       </h3>
       <div class="flex flex-col gap-2 text-xs">
         <div class="flex items-center justify-between">
-          <span class="text-muted-foreground flex items-center gap-1"><Users size={12} /> {common.control_total_students()}</span>
+          <span class="text-muted-foreground flex items-center gap-1"><Users size={12} /> {m.common_word_students()}</span>
           <span class="font-bold">{formatNumber(stats.total)}</span>
         </div>
         <div class="flex items-center justify-between">
-          <span class="text-muted-foreground">{common.control_average()}</span>
+          <span class="text-muted-foreground">{m.common_detail_gpa()}</span>
           <span class="font-bold text-indigo-600">{formatNumber(Math.round(stats.avg))}%</span>
         </div>
         <div class="flex items-center justify-between">
-          <span class="text-muted-foreground">{common.control_pass_rate()}</span>
+          <span class="text-muted-foreground">{m.common_control_pass_rate()}</span>
           <span class="font-bold {stats.passRate >= 75 ? 'text-emerald-600' : 'text-amber-600'}">{formatNumber(Math.round(stats.passRate))}%</span>
         </div>
         <div class="flex items-center justify-between">
-          <span class="text-muted-foreground">{common.control_highest()}</span>
+          <span class="text-muted-foreground">{m.common_control_highest()}</span>
           <span class="font-semibold">{formatNumber(stats.max)}%</span>
         </div>
         <div class="flex items-center justify-between">
-          <span class="text-muted-foreground">{common.control_lowest()}</span>
+          <span class="text-muted-foreground">{m.common_control_lowest()}</span>
           <span class="font-semibold">{formatNumber(stats.min)}%</span>
         </div>
 
@@ -222,7 +222,7 @@ let {
 
         <!-- Grade breakdown distribution -->
         <div class="flex flex-col gap-1.5 mt-1">
-          <span class="text-[9px] font-bold text-muted-foreground uppercase">{common.control_grade_distribution()}</span>
+          <span class="text-[9px] font-bold text-muted-foreground uppercase">{m.common_control_grade_distribution()}</span>
           {@render StatBar("A (>= 90%)", stats.excellent, stats.total, "bg-emerald-500")}
           {@render StatBar("B (80-89%)", stats.veryGood, stats.total, "bg-indigo-500")}
           {@render StatBar("C (70-79%)", stats.good, stats.total, "bg-blue-500")}

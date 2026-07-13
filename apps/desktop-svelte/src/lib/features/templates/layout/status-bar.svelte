@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 /**
  * StatusBar — Bottom bar with zoom slider, page info, cursor position.
  * Replaces the inline status bar in CanvasRoot.

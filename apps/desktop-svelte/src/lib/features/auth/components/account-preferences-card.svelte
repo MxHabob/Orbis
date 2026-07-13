@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Label } from "@orbis/ui-svelte/label";
 import {
   Select,
@@ -12,9 +13,7 @@ import {
   CardTitle,
   CardContent,
 } from "@orbis/ui-svelte/card";
-import LocaleSettings from "$lib/shared/components/locale-settings.svelte";
-import * as settings from "$lib/paraglide/messages/settings";
-import * as common from "$lib/paraglide/messages/common";
+import LocaleSettings from "$lib/shared/components/locale-m.settings_svelte";
 
 interface Props {
   selectedTheme: "light" | "dark" | "system";
@@ -34,9 +33,9 @@ let {
 }: Props & Record<string, any> = $props();
 
 const themes = [
-  { value: "light", label: settings.appearance_theme_light() },
-  { value: "dark", label: settings.appearance_theme_dark() },
-  { value: "system", label: settings.appearance_theme_system() },
+  { value: "light", label: m.settings_theme_light() },
+  { value: "dark", label: m.settings_theme_dark() },
+  { value: "system", label: m.settings_appearance_theme_system() },
 ];
 </script>
 
@@ -44,7 +43,7 @@ const themes = [
   <!-- Card Header -->
   <CardHeader class="bg-muted/50 px-6 py-3 border-b border-border">
     <CardTitle class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-      {common.account_preferences_section ? common.account_preferences_section() : 'PREFERENCES'}
+      {m.common_account_preferences_section ? m.common_account_preferences_section() : 'PREFERENCES'}
     </CardTitle>
   </CardHeader>
 
@@ -55,10 +54,10 @@ const themes = [
       <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
         <div class="flex flex-col gap-1 text-start">
           <Label class="text-xs font-semibold text-foreground">
-            {settings.appearance_theme ? settings.appearance_theme() : 'Theme'}
+            {m.settings_appearance_theme ? m.settings_appearance_theme() : 'Theme'}
           </Label>
           <span class="text-[11px] text-muted-foreground leading-relaxed">
-            {common.account_preferences_theme_desc ? common.account_preferences_theme_desc() : "Select your theme preference. It can be synced to your system's theme, always light mode, or always dark mode."}
+            {m.common_account_preferences_theme_desc ? m.common_account_preferences_theme_desc() : "Select your theme preference. It can be synced to your system's theme, always light mode, or always dark mode."}
           </span>
         </div>
         <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
@@ -82,8 +81,8 @@ const themes = [
 
       <!-- Language -->
       <LocaleSettings
-        title={settings.appearance_language ? settings.appearance_language() : 'Language'}
-        description={common.account_preferences_lang_desc ? common.account_preferences_lang_desc() : 'Select your preferred application language.'}
+        title={m.settings_appearance_language ? m.settings_appearance_language() : 'Language'}
+        description={m.common_account_preferences_lang_desc ? m.common_account_preferences_lang_desc() : 'Select your preferred application language.'}
         bind:currentLocale={selectedLanguage}
         onchange={onLanguageChange}
       />

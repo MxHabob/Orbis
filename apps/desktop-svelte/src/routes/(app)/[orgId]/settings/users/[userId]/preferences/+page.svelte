@@ -4,6 +4,7 @@ Preferences tab for user detail — theme, language, and notification settings.
 Extracted from the original monolith TabsContent "settings".
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
 import { Label } from "@orbis/ui-svelte/label";
 import { Switch } from "@orbis/ui-svelte/switch";
@@ -16,7 +17,6 @@ import {
 import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
 import { Layout, Globe } from "lucide-svelte";
-import * as settings from "$lib/paraglide/messages/settings";
 
 let prefTheme = $state("dark");
 let prefLanguage = $state("ar");
@@ -32,7 +32,7 @@ let notifyPush = $state(true);
         class="text-xs font-medium text-muted-foreground flex items-center gap-1.5"
       >
         <Layout size={13} />
-        {settings.user_detail_pref_theme()}
+        {m.settings_user_detail_pref_theme()}
       </Label>
       <Select
         type="single"
@@ -41,22 +41,22 @@ let notifyPush = $state(true);
       >
         <SelectTrigger class="h-9 w-full">
           {#if prefTheme === "system"}
-            {settings.user_detail_theme_system()}
+            {m.settings_user_detail_theme_system()}
           {:else}
             {prefTheme === "light"
-              ? settings.user_detail_theme_light()
-              : settings.user_detail_theme_dark()}
+              ? m.settings_user_detail_theme_light()
+              : m.settings_user_detail_theme_dark()}
           {/if}
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="system"
-            >{settings.user_detail_theme_system()}</SelectItem
+            >{m.settings_user_detail_theme_system()}</SelectItem
           >
           <SelectItem value="light"
-            >{settings.user_detail_theme_light()}</SelectItem
+            >{m.settings_user_detail_theme_light()}</SelectItem
           >
           <SelectItem value="dark"
-            >{settings.user_detail_theme_dark()}</SelectItem
+            >{m.settings_user_detail_theme_dark()}</SelectItem
           >
         </SelectContent>
       </Select>
@@ -68,7 +68,7 @@ let notifyPush = $state(true);
         class="text-xs font-medium text-muted-foreground flex items-center gap-1.5"
       >
         <Globe size={13} />
-        {settings.user_detail_pref_lang()}
+        {m.settings_general_locale()}
       </Label>
       <Select
         type="single"
@@ -77,15 +77,15 @@ let notifyPush = $state(true);
       >
         <SelectTrigger class="h-9 w-full">
           {prefLanguage === "ar"
-            ? settings.user_detail_lang_ar()
-            : settings.user_detail_lang_en()}
+            ? m.settings_user_detail_lang_ar()
+            : m.settings_user_detail_lang_en()}
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="ar"
-            >{settings.user_detail_lang_ar()}</SelectItem
+            >{m.settings_user_detail_lang_ar()}</SelectItem
           >
           <SelectItem value="en"
-            >{settings.user_detail_lang_en()}</SelectItem
+            >{m.settings_user_detail_lang_en()}</SelectItem
           >
         </SelectContent>
       </Select>
@@ -95,18 +95,18 @@ let notifyPush = $state(true);
   <!-- Notifications -->
   <div class="flex flex-col gap-4 border-t border-border/40 pt-4 mt-2">
     <span class="text-xs font-semibold text-muted-foreground">
-      {settings.user_detail_pref_notifications()}
+      {m.settings_user_detail_pref_notifications()}
     </span>
     <div class="flex flex-col gap-3">
       <div class="flex items-center justify-between">
         <Label class="text-xs text-muted-foreground cursor-pointer select-none">
-          {settings.user_detail_notify_email()}
+          {m.settings_user_detail_notify_email()}
         </Label>
         <Switch bind:checked={notifyEmail} />
       </div>
       <div class="flex items-center justify-between">
         <Label class="text-xs text-muted-foreground cursor-pointer select-none">
-          {settings.user_detail_notify_push()}
+          {m.settings_user_detail_notify_push()}
         </Label>
         <Switch bind:checked={notifyPush} />
       </div>
@@ -119,9 +119,9 @@ let notifyPush = $state(true);
       size="sm"
       class="font-bold"
       onclick={() =>
-        toast.success(settings.user_detail_settings_saved())}
+        toast.success(m.settings_user_detail_settings_saved())}
     >
-      {settings.user_detail_save()}
+      {m.settings_action_save_changes()}
     </Button>
   </div>
 </div>

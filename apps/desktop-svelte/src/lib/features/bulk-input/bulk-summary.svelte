@@ -3,6 +3,7 @@
 Validation summary bar with counts and collapsible error details.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Progress } from "@orbis/ui-svelte/progress";
 import {
@@ -12,7 +13,6 @@ import {
   AccordionTrigger,
 } from "@orbis/ui-svelte/accordion";
 import { CircleCheck, CircleX, Hash, AlertTriangle } from "lucide-svelte";
-import * as common from "$lib/paraglide/messages/common";
 
 interface Props {
   totalFilled: number;
@@ -42,7 +42,7 @@ let progressPercent = $derived(
   {#if isSubmitting}
     <div class="flex flex-col gap-1.5">
       <div class="flex items-center justify-between">
-        <span class="text-xs font-medium text-foreground">{common.bulk_input_submitting()}</span>
+        <span class="text-xs font-medium text-foreground">{m.common_state_saving()}</span>
         <span class="text-xs text-muted-foreground">{submitProgress}%</span>
       </div>
       <Progress value={submitProgress} class="h-1.5" />
@@ -53,20 +53,20 @@ let progressPercent = $derived(
   <div class="flex items-center gap-4 flex-wrap">
     <div class="flex items-center gap-1.5">
       <Hash size={13} class="text-muted-foreground" />
-      <span class="text-xs font-medium text-muted-foreground">{common.bulk_input_total()}:</span>
+      <span class="text-xs font-medium text-muted-foreground">{m.common_behavior_total()}:</span>
       <Badge variant="secondary" class="text-xs px-2 py-0.5">{totalFilled}</Badge>
     </div>
 
     <div class="flex items-center gap-1.5">
       <CircleCheck size={13} class="text-primary" />
-      <span class="text-xs font-medium text-muted-foreground">{common.bulk_input_valid()}:</span>
+      <span class="text-xs font-medium text-muted-foreground">{m.common_bulk_input_valid()}:</span>
       <Badge variant="success" class="text-xs px-2 py-0.5">{valid}</Badge>
     </div>
 
     {#if errorCount > 0}
       <div class="flex items-center gap-1.5">
         <CircleX size={13} class="text-destructive" />
-        <span class="text-xs font-medium text-muted-foreground">{common.bulk_input_errors()}:</span>
+        <span class="text-xs font-medium text-muted-foreground">{m.common_bulk_input_errors()}:</span>
         <Badge variant="destructive" class="text-xs px-2 py-0.5">{errorCount}</Badge>
       </div>
     {/if}
@@ -94,7 +94,7 @@ let progressPercent = $derived(
         <AccordionTrigger class="px-4 py-2 text-xs font-medium text-destructive hover:no-underline">
           <div class="flex items-center gap-1.5">
             <AlertTriangle size={13} />
-            {common.bulk_input_error_details()} ({errorDetails.length})
+            {m.common_bulk_input_error_details()} ({errorDetails.length})
           </div>
         </AccordionTrigger>
         <AccordionContent class="px-4 pb-3">
@@ -102,7 +102,7 @@ let progressPercent = $derived(
             {#each errorDetails.slice(0, 50) as error}
               <div class="flex items-start gap-2 text-xs">
                 <Badge variant="destructive" class="text-[10px] px-1.5 py-0 shrink-0 font-mono">
-                  {common.bulk_input_row()} {error.rowIndex}
+                  {m.common_bulk_input_row()} {error.rowIndex}
                 </Badge>
                 <span class="text-destructive/80">
                   <span class="font-semibold">{error.field}:</span> {error.message}

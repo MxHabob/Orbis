@@ -4,8 +4,9 @@ Displays a prominent banner when viewing an archived (read-only) year.
 Place at the top of the main content area.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Lock } from "lucide-svelte";
-import * as common from "$lib/paraglide/messages/common";
+
 import { academicContext } from "$lib/stores";
 </script>
 
@@ -30,10 +31,10 @@ import { academicContext } from "$lib/stores";
       </div>
       <div class="flex flex-col text-start">
         <h3 class="text-xs font-semibold tracking-wide text-foreground">
-          {common.year_status_archived()}
+          {m.common_year_status_archived()}
         </h3>
         <p class="text-[10px] text-muted-foreground leading-normal">
-          {common.year_archived_banner()}
+          {m.common_year_archived_banner()}
         </p>
       </div>
     </div>

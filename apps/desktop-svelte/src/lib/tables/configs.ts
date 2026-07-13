@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 // ── Desktop Table Config ────────────────────────────────────────────
 // Central registry of table configurations for the school management system.
 // Inspired by: apps/dashboard/src/utils/table-configs.ts

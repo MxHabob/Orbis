@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
@@ -24,7 +25,7 @@ import {
   TabsContent,
 } from "@orbis/ui-svelte/tabs";
 import { Save, Plus, Trash2 } from "lucide-svelte";
-import * as settings from "$lib/paraglide/messages/settings";
+
 import { getLocale } from "$lib/paraglide/runtime";
 
 let { org, isSaving, onsave } = $props<{
@@ -140,19 +141,19 @@ function handleSubmit(e: Event) {
             value="general" 
             class="text-xs font-semibold py-2 px-1 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none shadow-none text-muted-foreground data-[state=active]:text-foreground bg-transparent transition-all duration-150 cursor-pointer"
           >
-            {settings.registration_tab_general()}
+            {m.settings_registration_tab_general()}
           </TabsTrigger>
           <TabsTrigger 
             value="stages_docs" 
             class="text-xs font-semibold py-2 px-1 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none shadow-none text-muted-foreground data-[state=active]:text-foreground bg-transparent transition-all duration-150 cursor-pointer"
           >
-            {settings.registration_tab_stages_docs()}
+            {m.settings_registration_tab_stages_docs()}
           </TabsTrigger>
           <TabsTrigger 
             value="fields" 
             class="text-xs font-semibold py-2 px-1 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none shadow-none text-muted-foreground data-[state=active]:text-foreground bg-transparent transition-all duration-150 cursor-pointer"
           >
-            {settings.registration_tab_fields()}
+            {m.settings_registration_tab_fields()}
           </TabsTrigger>
         </TabsList>
 
@@ -160,7 +161,7 @@ function handleSubmit(e: Event) {
         <TabsContent value="general" class="mt-0">
           <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
             <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-              {settings.registration_type_and_numbering()}
+              {m.settings_registration_type_and_numbering()}
             </div>
 
             <div class="flex flex-col">
@@ -168,27 +169,27 @@ function handleSubmit(e: Event) {
               <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
                 <div class="flex flex-col gap-1 text-start">
                   <Label for="inst_type" class="text-xs font-semibold text-foreground">
-                    {settings.registration_inst_type()}
+                    {m.common_registration_inst_type()}
                   </Label>
                   <span class="text-[11px] text-muted-foreground leading-relaxed">
-                    {settings.registration_inst_desc()}
+                    {m.settings_registration_inst_desc()}
                   </span>
                 </div>
                 <div class="w-full md:w-[320px] shrink-0">
                   <Select bind:value={institutionType} type="single">
                     <SelectTrigger id="inst_type" class="h-9 text-xs flex justify-between items-center border border-input bg-background w-full">
                       <span>
-                        {institutionType === "school" ? settings.registration_school() : 
-                         institutionType === "university" ? settings.registration_university() :
-                         institutionType === "institute" ? settings.registration_institute() :
-                         settings.registration_training_center()}
+                        {institutionType === "school" ? m.settings_registration_school() : 
+                         institutionType === "university" ? m.settings_registration_university() :
+                         institutionType === "institute" ? m.settings_registration_institute() :
+                         m.settings_registration_training_center()}
                       </span>
                     </SelectTrigger>
                     <SelectContent class="text-start">
-                      <SelectItem value="school">{settings.registration_school()}</SelectItem>
-                      <SelectItem value="university">{settings.registration_university()}</SelectItem>
-                      <SelectItem value="institute">{settings.registration_institute()}</SelectItem>
-                      <SelectItem value="training_center">{settings.registration_training_center()}</SelectItem>
+                      <SelectItem value="school">{m.settings_registration_school()}</SelectItem>
+                      <SelectItem value="university">{m.settings_registration_university()}</SelectItem>
+                      <SelectItem value="institute">{m.settings_registration_institute()}</SelectItem>
+                      <SelectItem value="training_center">{m.settings_registration_training_center()}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -198,10 +199,10 @@ function handleSubmit(e: Event) {
               <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b-0 gap-4">
                 <div class="flex flex-col gap-1 text-start">
                   <Label for="num_pattern" class="text-xs font-semibold text-foreground">
-                    {settings.registration_num_pattern()}
+                    {m.settings_registration_num_pattern()}
                   </Label>
                   <span class="text-[11px] text-muted-foreground leading-relaxed">
-                    {settings.registration_pattern_desc()}
+                    {m.settings_registration_pattern_desc()}
                   </span>
                 </div>
                 <div class="w-full md:w-[320px] shrink-0">
@@ -217,29 +218,29 @@ function handleSubmit(e: Event) {
           <!-- Academic Stages -->
           <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
             <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-              {settings.registration_stages_title()}
+              {m.settings_registration_stages_title()}
             </div>
 
             <div class="flex flex-col px-6 py-4 gap-4">
               <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex flex-col gap-1 text-start">
                   <Label class="text-xs font-semibold text-foreground">
-                    {settings.registration_add_stage_title()}
+                    {m.settings_registration_add_stage_title()}
                   </Label>
                   <span class="text-[11px] text-muted-foreground leading-relaxed">
-                    {settings.registration_add_stage_desc()}
+                    {m.settings_registration_add_stage_desc()}
                   </span>
                 </div>
                 <div class="w-full md:w-[320px] shrink-0 flex gap-2">
                   <Input 
-                    placeholder={settings.registration_add_stage_placeholder()} 
+                    placeholder={m.settings_registration_add_stage_placeholder()} 
                     bind:value={stageInput} 
                     class="h-9 text-xs flex-1 border border-input bg-background"
                     onkeydown={(e) => e.key === "Enter" && (e.preventDefault(), addStage())}
                   />
                   <Button type="button" variant="outline" size="sm" class="cursor-pointer font-semibold shrink-0" onclick={addStage}>
                     <Plus size={14} class="me-1.5" />
-                    {settings.registration_add()}
+                    {m.common_onboarding_add()}
                   </Button>
                 </div>
               </div>
@@ -261,7 +262,7 @@ function handleSubmit(e: Event) {
                 {/each}
                 {#if rawStages.length === 0}
                   <p class="text-xs text-muted-foreground py-1">
-                    {settings.registration_no_stages()}
+                    {m.settings_registration_no_stages()}
                   </p>
                 {/if}
               </div>
@@ -271,29 +272,29 @@ function handleSubmit(e: Event) {
           <!-- Required Documents Checklist -->
           <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
             <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-              {settings.registration_docs_title()}
+              {m.settings_registration_docs_title()}
             </div>
 
             <div class="flex flex-col px-6 py-4 gap-4">
               <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex flex-col gap-1 text-start">
                   <Label class="text-xs font-semibold text-foreground">
-                    {settings.registration_add_doc_title()}
+                    {m.settings_registration_add_doc_title()}
                   </Label>
                   <span class="text-[11px] text-muted-foreground leading-relaxed">
-                    {settings.registration_add_doc_desc()}
+                    {m.settings_registration_add_doc_desc()}
                   </span>
                 </div>
                 <div class="w-full md:w-[320px] shrink-0 flex gap-2">
                   <Input 
-                    placeholder={settings.registration_add_doc_placeholder()} 
+                    placeholder={m.settings_registration_add_doc_placeholder()} 
                     bind:value={documentInput} 
                     class="h-9 text-xs flex-1 border border-input bg-background"
                     onkeydown={(e) => e.key === "Enter" && (e.preventDefault(), addDocument())}
                   />
                   <Button type="button" variant="outline" size="sm" class="cursor-pointer font-semibold shrink-0" onclick={addDocument}>
                     <Plus size={14} class="me-1.5" />
-                    {settings.registration_add()}
+                    {m.common_onboarding_add()}
                   </Button>
                 </div>
               </div>
@@ -315,7 +316,7 @@ function handleSubmit(e: Event) {
                 {/each}
                 {#if requiredDocuments.length === 0}
                   <p class="text-xs text-muted-foreground py-1">
-                    {settings.registration_no_docs()}
+                    {m.settings_registration_no_docs()}
                   </p>
                 {/if}
               </div>
@@ -327,32 +328,32 @@ function handleSubmit(e: Event) {
         <TabsContent value="fields" class="mt-0">
           <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
             <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-              {settings.registration_custom_fields_title()}
+              {m.settings_registration_custom_fields_title()}
             </div>
 
             <div class="p-6 overflow-x-auto">
               <Table class="w-full text-xs text-start">
                 <TableHeader>
                   <TableRow class="border-b border-border/60 hover:bg-transparent">
-                    <TableHead class="py-2 text-start font-semibold text-muted-foreground">{settings.registration_table_field()}</TableHead>
-                    <TableHead class="py-2 text-center font-semibold text-muted-foreground">{settings.registration_table_active()}</TableHead>
-                    <TableHead class="py-2 text-center font-semibold text-muted-foreground">{settings.registration_table_required()}</TableHead>
-                    <TableHead class="py-2 text-center font-semibold text-muted-foreground">{settings.registration_table_duplicate()}</TableHead>
+                    <TableHead class="py-2 text-start font-semibold text-muted-foreground">{m.settings_registration_table_field()}</TableHead>
+                    <TableHead class="py-2 text-center font-semibold text-muted-foreground">{m.settings_registration_table_active()}</TableHead>
+                    <TableHead class="py-2 text-center font-semibold text-muted-foreground">{m.settings_registration_table_required()}</TableHead>
+                    <TableHead class="py-2 text-center font-semibold text-muted-foreground">{m.settings_registration_table_duplicate()}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {#each Object.keys(activeFields) as fieldKey}
                     <TableRow class="border-b border-border/40 hover:bg-muted/5">
                       <TableCell class="py-3 font-semibold text-foreground text-start">
-                        {fieldKey === "national_id" ? settings.registration_field_national_id() :
-                         fieldKey === "email" ? settings.registration_field_email() :
-                         fieldKey === "phone" ? settings.registration_field_phone() :
-                         fieldKey === "birth_date" ? settings.registration_field_birth_date() :
-                         fieldKey === "sex" ? settings.registration_field_sex() :
-                         fieldKey === "address" ? settings.registration_field_address() :
-                         fieldKey === "mother_name" ? settings.registration_field_mother_name() :
-                         fieldKey === "previous_school" ? settings.registration_field_previous_school() :
-                         settings.registration_field_documents()}
+                        {fieldKey === "national_id" ? m.settings_registration_field_national_id() :
+                         fieldKey === "email" ? m.common_word_email() :
+                         fieldKey === "phone" ? m.common_word_phone() :
+                         fieldKey === "birth_date" ? m.common_bulk_col_dob() :
+                         fieldKey === "sex" ? m.common_form_sex() :
+                         fieldKey === "address" ? m.common_word_address() :
+                         fieldKey === "mother_name" ? m.common_form_mother_name() :
+                         fieldKey === "previous_school" ? m.settings_registration_field_previous_school() :
+                         m.settings_registration_field_documents()}
                       </TableCell>
                       <TableCell class="py-3 text-center">
                         <Checkbox 
@@ -408,7 +409,7 @@ function handleSubmit(e: Event) {
           disabled={isSaving}
         >
           <Save size={14} class="me-1.5" />
-          {isSaving ? settings.registration_saving() : settings.registration_save()}
+          {isSaving ? m.common_state_saving() : m.settings_registration_save()}
         </Button>
       </div>
 

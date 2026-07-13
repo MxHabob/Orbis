@@ -1,9 +1,10 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui-svelte";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import DragIndicator from "../components/drag-indicator.svelte";
-import * as reports from "$lib/paraglide/messages/reports";
+
 import { getLocale } from "$lib/paraglide/runtime";
 
 let {
@@ -205,7 +206,7 @@ function handleMouseLeave() {
     <!-- Header -->
     <div class="flex flex-col w-full text-start select-none">
       <div class="flex items-center justify-between w-full h-5">
-        <span class="text-xs text-muted-foreground">{reports.total_students_title()}</span>
+        <span class="text-xs text-muted-foreground">{m.common_promo_total()}</span>
         {#if isEditing}
           <DragIndicator />
         {/if}
@@ -218,11 +219,11 @@ function handleMouseLeave() {
       <div class="flex items-center gap-4 text-[10px] text-muted-foreground mt-2 font-medium">
         <div class="flex items-center gap-1.5">
           <span class="h-2 w-2 rounded-full bg-foreground inline-block"></span>
-          <span>{reports.total_students_monthly_enrollment()}</span>
+          <span>{m.reports_total_students_monthly_enrollment()}</span>
         </div>
         <div class="flex items-center gap-1.5">
           <span class="font-mono text-muted-foreground/60 select-none">--</span>
-          <span>{reports.total_students_average()}</span>
+          <span>{m.reports_revenue_trend_average()}</span>
         </div>
       </div>
     </div>
@@ -231,7 +232,7 @@ function handleMouseLeave() {
     <div class="flex-grow relative w-full h-full min-h-[165px] select-none mt-4 flex items-center justify-center">
       {#if data.length === 0}
         <div class="w-full h-full border border-dashed border-border/60 rounded-xl flex items-center justify-center bg-muted/5">
-          <span class="text-xs text-muted-foreground">{reports.no_grades()}</span>
+          <span class="text-xs text-muted-foreground">{m.reports_no_grades()}</span>
         </div>
       {:else}
         <svg

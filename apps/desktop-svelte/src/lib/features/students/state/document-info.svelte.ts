@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/core/ipc";
 
 export class DocumentInfoState {

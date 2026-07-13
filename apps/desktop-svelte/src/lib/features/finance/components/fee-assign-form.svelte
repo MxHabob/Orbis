@@ -1,9 +1,9 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { toast } from "svelte-sonner";
-import * as common from "$lib/paraglide/messages/common";
 
 let {
   orgId,
@@ -73,15 +73,15 @@ $effect(() => {
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   if (!selectedEnrollmentId) {
-    toast.error(common.fee_toast_error_student());
+    toast.error(m.common_fee_toast_error_student());
     return;
   }
   if (!selectedFeeTemplateId) {
-    toast.error(common.fee_toast_error_ledger());
+    toast.error(m.common_fee_toast_error_ledger());
     return;
   }
   if (!amount || amount <= 0) {
-    toast.error(common.fee_toast_error_amount());
+    toast.error(m.common_fee_toast_error_amount());
     return;
   }
 
@@ -95,7 +95,7 @@ async function handleSubmit(e: SubmitEvent) {
       due_date: dueDate,
     };
     await commands.finance.assignStudentFee(orgId, request);
-    toast.success(common.fee_toast_success());
+    toast.success(m.common_fee_toast_success());
 
     // Reset form
     amount = null;
@@ -105,7 +105,7 @@ async function handleSubmit(e: SubmitEvent) {
     onSuccess();
   } catch (e) {
     const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(common.fee_toast_error_submit({ error: errorMsg }));
+    toast.error(m.common_fee_toast_error_submit({ error: errorMsg }));
   } finally {
     isSubmitting = false;
   }
@@ -116,7 +116,7 @@ async function handleSubmit(e: SubmitEvent) {
 	<!-- Student Select -->
 	<div class="flex flex-col gap-2 text-start">
 		<label for="fee_student" class="text-sm font-medium text-foreground">
-			{common.fee_label_student()}
+			{m.common_fee_label_student()}
 		</label>
 		<select 
 			id="fee_student"
@@ -125,7 +125,7 @@ async function handleSubmit(e: SubmitEvent) {
 			disabled={isLoadingDropdowns || isSubmitting}
 		>
 			{#if isLoadingDropdowns}
-				<option>{common.fee_dropdown_loading_students()}</option>
+				<option>{m.common_fee_dropdown_loading_students()}</option>
 			{:else}
 				{#each students as s (s.id)}
 					<option value={String(s.id)}>{s.full_name || s.student_number || s.id}</option>
@@ -137,7 +137,7 @@ async function handleSubmit(e: SubmitEvent) {
 	<!-- Fee Template Select -->
 	<div class="flex flex-col gap-2 text-start">
 		<label for="fee_ledger" class="text-sm font-medium text-foreground">
-			{common.fee_label_ledger()}
+			{m.common_fee_label_ledger()}
 		</label>
 		<select 
 			id="fee_ledger"
@@ -146,7 +146,7 @@ async function handleSubmit(e: SubmitEvent) {
 			disabled={isLoadingDropdowns || isSubmitting}
 		>
 			{#if isLoadingDropdowns}
-				<option>{common.fee_dropdown_loading_ledgers()}</option>
+				<option>{m.common_fee_dropdown_loading_ledgers()}</option>
 			{:else}
 				{#each templates as t (t.id)}
 					<option value={String(t.id)}>{t.name_ar || t.name || t.code}</option>
@@ -158,7 +158,7 @@ async function handleSubmit(e: SubmitEvent) {
 	<!-- Fee Amount -->
 	<div class="flex flex-col gap-2 text-start">
 		<label for="fee_amount" class="text-sm font-medium text-foreground">
-			{common.fee_label_amount()}
+			{m.common_fee_label_amount()}
 		</label>
 		<Input 
 			id="fee_amount"
@@ -175,7 +175,7 @@ async function handleSubmit(e: SubmitEvent) {
 	<!-- Due Date -->
 	<div class="flex flex-col gap-2 text-start">
 		<label for="fee_due" class="text-sm font-medium text-foreground">
-			{common.fee_label_due()}
+			{m.common_fee_label_due()}
 		</label>
 		<Input 
 			id="fee_due"
@@ -188,13 +188,13 @@ async function handleSubmit(e: SubmitEvent) {
 	<!-- Description -->
 	<div class="flex flex-col gap-2 text-start">
 		<label for="fee_desc" class="text-sm font-medium text-foreground">
-			{common.fee_label_desc()}
+			{m.common_fee_label_desc()}
 		</label>
 		<Input 
 			id="fee_desc"
 			type="text" 
 			bind:value={description}
-			placeholder={common.fee_placeholder_desc()}
+			placeholder={m.common_fee_placeholder_desc()}
 			disabled={isSubmitting}
 		/>
 	</div>
@@ -207,7 +207,7 @@ async function handleSubmit(e: SubmitEvent) {
 			onclick={onCancel}
 			disabled={isSubmitting}
 		>
-			{common.action_cancel()}
+			{m.common_action_cancel()}
 		</Button>
 		<Button 
 			type="submit" 
@@ -215,7 +215,7 @@ async function handleSubmit(e: SubmitEvent) {
 			class="font-semibold"
 			disabled={isSubmitting || isLoadingDropdowns}
 		>
-			{isSubmitting ? common.fee_toast_assigning() : common.fee_button_assign()}
+			{isSubmitting ? m.common_fee_toast_assigning() : m.common_fee_button_assign()}
 		</Button>
 	</div>
 </form>

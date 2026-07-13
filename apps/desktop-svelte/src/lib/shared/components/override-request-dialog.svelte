@@ -1,4 +1,3 @@
-import * as m from "$lib/paraglide/messages";
 <!--
 @component OverrideRequestDialog
 Shared dialog for creating override/approval requests.
@@ -19,7 +18,8 @@ Usage:
   />
 -->
 <script lang="ts">
-import * as common from "$lib/paraglide/messages/common";
+import * as m from "$lib/paraglide/messages";
+
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { authStore } from "$lib/stores";
 import { toast } from "svelte-sonner";
@@ -86,13 +86,13 @@ const riskBadgeVariant = $derived.by(() => {
 const riskLabel = $derived.by(() => {
   switch (riskLevel) {
     case "low":
-      return common.override_risk_low ? common.override_risk_low() : "Low";
+      return m.common_override_risk_low ? m.common_override_risk_low() : "Low";
     case "medium":
-      return common.override_risk_medium ? common.override_risk_medium() : "Medium";
+      return m.common_override_risk_medium ? m.common_override_risk_medium() : "Medium";
     case "high":
-      return common.override_risk_high ? common.override_risk_high() : "High";
+      return m.common_override_risk_high ? m.common_override_risk_high() : "High";
     case "critical":
-      return common.override_risk_critical ? common.override_risk_critical() : "Critical";
+      return m.common_override_risk_critical ? m.common_override_risk_critical() : "Critical";
     default:
       return riskLevel;
   }
@@ -101,30 +101,30 @@ const riskLabel = $derived.by(() => {
 const typeLabel = $derived.by(() => {
   switch (overrideType) {
     case "grade_modification":
-      return common.override_type_grade
-        ? common.override_type_grade()
+      return m.common_override_type_grade
+        ? m.common_override_type_grade()
         : "Grade Modification";
     case "late_enrollment":
-      return common.override_type_enrollment
-        ? common.override_type_enrollment()
+      return m.common_override_type_enrollment
+        ? m.common_override_type_enrollment()
         : "Late Enrollment";
     case "attendance_correction":
-      return common.override_type_attendance
-        ? common.override_type_attendance()
+      return m.common_override_type_attendance
+        ? m.common_override_type_attendance()
         : "Attendance Correction";
     case "fee_waiver":
-      return common.override_type_fee ? common.override_type_fee() : "Fee Waiver";
+      return m.common_override_type_fee ? m.common_override_type_fee() : "Fee Waiver";
     case "period_unlock":
-      return common.override_type_unlock
-        ? common.override_type_unlock()
+      return m.common_override_type_unlock
+        ? m.common_override_type_unlock()
         : "Period Unlock";
     case "deadline_extension":
-      return common.override_type_deadline
-        ? common.override_type_deadline()
+      return m.common_override_type_deadline
+        ? m.common_override_type_deadline()
         : "Deadline Extension";
     case "promotion_override":
-      return common.override_type_promotion
-        ? common.override_type_promotion()
+      return m.common_override_type_promotion
+        ? m.common_override_type_promotion()
         : "Promotion Override";
     default:
       return overrideType;
@@ -134,18 +134,18 @@ const typeLabel = $derived.by(() => {
 const approvalChainPreview = $derived.by(() => {
   switch (riskLevel) {
     case "low":
-      return common.override_chain_auto ? common.override_chain_auto() : "Auto-approved";
+      return m.common_override_chain_auto ? m.common_override_chain_auto() : "Auto-approved";
     case "medium":
-      return common.override_chain_manager
-        ? common.override_chain_manager()
+      return m.common_override_chain_manager
+        ? m.common_override_chain_manager()
         : "Manager approval required";
     case "high":
-      return common.override_chain_admin
-        ? common.override_chain_admin()
+      return m.common_override_chain_admin
+        ? m.common_override_chain_admin()
         : "Manager + Admin approval required";
     case "critical":
-      return common.override_chain_full
-        ? common.override_chain_full()
+      return m.common_override_chain_full
+        ? m.common_override_chain_full()
         : "Full approval chain required";
     default:
       return "";
@@ -155,8 +155,8 @@ const approvalChainPreview = $derived.by(() => {
 async function submit() {
   if (!reason.trim()) {
     toast.error(
-      common.override_reason_required
-        ? common.override_reason_required()
+      m.common_override_reason_required
+        ? m.common_override_reason_required()
         : "Please provide a reason",
     );
     return;
@@ -176,8 +176,8 @@ async function submit() {
       requested_by_name: authStore.user?.full_name ?? null,
     });
     toast.success(
-      common.override_submitted
-        ? common.override_submitted()
+      m.common_override_submitted
+        ? m.common_override_submitted()
         : "Override request submitted",
     );
     reason = "";
@@ -196,10 +196,10 @@ async function submit() {
     <DialogHeader>
       <DialogTitle class="flex items-center gap-2">
         <Shield class="size-5 text-primary" />
-        {common.override_request_title ? common.override_request_title() : "Override Request"}
+        {m.common_override_request_title ? m.common_override_request_title() : "Override Request"}
       </DialogTitle>
       <DialogDescription>
-        {common.override_request_desc ? common.override_request_desc() : "This action requires approval. Submit a request with justification."}
+        {m.common_override_request_desc ? m.common_override_request_desc() : "This action requires approval. Submit a request with justification."}
       </DialogDescription>
     </DialogHeader>
 
@@ -208,7 +208,7 @@ async function submit() {
       <div class="flex items-center justify-between bg-muted/50 rounded-lg p-3">
         <div class="flex flex-col gap-1">
           <span class="text-xs text-muted-foreground">
-            {common.override_type_label ? common.override_type_label() : "Type"}
+            {m.common_word_type ? m.common_word_type() : "Type"}
           </span>
           <span class="text-sm font-medium">{typeLabel}</span>
         </div>
@@ -239,12 +239,12 @@ async function submit() {
       <!-- Reason -->
       <div class="flex flex-col gap-2">
         <Label for="override-reason">
-          {common.override_reason_label ? common.override_reason_label() : "Reason"} *
+          {m.common_promo_reason ? m.common_promo_reason() : "Reason"} *
         </Label>
         <Textarea
           id="override-reason"
           bind:value={reason}
-          placeholder={common.override_reason_placeholder ? common.override_reason_placeholder() : "Explain why this override is needed..."}
+          placeholder={m.common_override_reason_placeholder ? m.common_override_reason_placeholder() : "Explain why this override is needed..."}
           rows={3}
         />
       </div>
@@ -264,7 +264,7 @@ async function submit() {
         {#if isSubmitting}
           <Loader2 class="size-4 animate-spin me-2" />
         {/if}
-        {common.override_submit ? common.override_submit() : "Submit Request"}
+        {m.common_override_submit ? m.common_override_submit() : "Submit Request"}
       </Button>
     </DialogFooter>
   </DialogContent>

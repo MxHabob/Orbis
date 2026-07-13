@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
 import { Badge } from "@orbis/ui-svelte/badge";
 import {
@@ -10,9 +11,7 @@ import {
   CalendarClock,
   ClipboardCheck,
 } from "lucide-svelte";
-import * as common from "$lib/paraglide/messages/common";
-import * as academics from "$lib/paraglide/messages/academics";
-import * as settings from "$lib/paraglide/messages/settings";
+
 import { localizeHref } from "$lib/paraglide/runtime";
 import { academicContext, workflowInbox, authStore } from "$lib/stores";
 
@@ -34,48 +33,48 @@ const ACTIONS = $derived.by(() => {
   }> = [
     // Always visible — core navigation
     {
-      label: common.action_enroll_student(),
+      label: m.common_action_enroll_student(),
       icon: UserPlus,
       href: `/${orgId}/students/new`,
       show: !ro && (phase === "active" || phase === "pre_start"),
     },
     {
-      label: common.action_record_payment(),
+      label: m.common_action_record_payment(),
       icon: Wallet,
       href: `/${orgId}/finance/payments`,
       show: !ro,
     },
     {
-      label: common.action_manage_classes(),
+      label: m.common_action_manage_classes(),
       icon: BookOpen,
       href: `/${orgId}/academics`,
       show: true,
     },
     // Phase-specific actions
     {
-      label: academics.control_label
-        ? academics.control_label()
+      label: m.common_control_label
+        ? m.common_control_label()
         : "Control",
       icon: ShieldCheck,
       href: `/${orgId}/academics/control`,
       show: phase === "grade_entry" || phase === "exams",
     },
     {
-      label: common.calendar_title ? common.calendar_title() : "Calendar",
+      label: m.common_calendar_title ? m.common_calendar_title() : "Calendar",
       icon: CalendarClock,
       href: `/${orgId}/academics/calendar`,
       show: isAdmin,
     },
     {
-      label: common.action_view_reports(),
+      label: m.common_action_view_reports(),
       icon: BarChart3,
       href: `/${orgId}/reports`,
       show: true,
     },
     // Pending approvals shortcut (only when there are pending items)
     {
-      label: settings.nav_approvals
-        ? settings.nav_approvals()
+      label: m.settings_nav_approvals
+        ? m.settings_nav_approvals()
         : "Approvals",
       icon: ClipboardCheck,
       href: `/${orgId}/settings/approvals`,

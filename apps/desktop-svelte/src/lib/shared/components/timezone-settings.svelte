@@ -3,6 +3,7 @@
 A reusable timezone selection component using `@orbis/location` and `ComboboxDropdown`.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Label } from "@orbis/ui-svelte/label";
 import { getTimezones } from "@orbis/location/timezones";
 import { ComboboxDropdown } from "@orbis/ui-svelte/combobox-dropdown";

@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import { extractErrorMessage } from "$lib/core/ipc";
@@ -19,7 +20,6 @@ import {
   Award,
 } from "lucide-svelte";
 import PeriodCreateSheet from "$lib/features/academics/components/period-create-sheet.svelte";
-import * as settings from "$lib/paraglide/messages/settings";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -75,7 +75,7 @@ function openEditSheet(period: any) {
 async function handleActivate(periodId: string) {
   try {
     await commands.academic.lockPeriod(data.orgId, periodId);
-    toast.success(settings.periods_activate_success());
+    toast.success(m.settings_periods_activate_success());
     loadPeriods();
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
@@ -83,10 +83,10 @@ async function handleActivate(periodId: string) {
 }
 
 async function handleLock(periodId: string) {
-  if (!confirm(settings.periods_lock_confirm())) return;
+  if (!confirm(m.settings_periods_lock_confirm())) return;
   try {
     await commands.academic.lockPeriod(data.orgId, periodId);
-    toast.success(settings.periods_lock_success());
+    toast.success(m.settings_periods_lock_success());
     loadPeriods();
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
@@ -99,7 +99,7 @@ function toggleCollapse(periodId: string) {
 </script>
 
 <svelte:head>
-  <title>{settings.periods_window_title()} | Orbis</title>
+  <title>{m.settings_nav_cycles()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
@@ -108,7 +108,7 @@ function toggleCollapse(periodId: string) {
     <div class="flex items-center gap-2">
       {#if !isLoading}
         <span class="text-[10px] px-2 py-0.5 rounded bg-muted font-mono text-muted-foreground font-bold">
-          {settings.periods_count({ count: periods.length })}
+          {m.settings_periods_count({ count: periods.length })}
         </span>
       {/if}
     </div>
@@ -116,7 +116,7 @@ function toggleCollapse(periodId: string) {
     <div class="flex items-center gap-2 shrink-0 flex-nowrap">
       <Button variant="lime" class="text-xs h-9 px-4 font-semibold" onclick={openCreateSheet}>
         <Plus size={14} class="me-1.5" />
-        {settings.periods_add()}
+        {m.settings_periods_add()}
       </Button>
     </div>
   </div>
@@ -159,11 +159,11 @@ function toggleCollapse(periodId: string) {
                     <!-- Status Badges -->
                     {#if year.is_current === 1}
                       <Badge variant="lime" class="text-[9px] px-2 py-0 h-4.5 rounded-full font-bold">
-                        {settings.periods_status_active()}
+                        {m.common_status_active_f()}
                       </Badge>
                     {:else}
                       <Badge variant="secondary" class="text-[9px] px-2 py-0 h-4.5 rounded-full font-bold">
-                        {year.is_locked === 1 ? settings.periods_status_locked() : settings.periods_status_inactive()}
+                        {year.is_locked === 1 ? m.common_status_locked() : m.settings_cycles_status_inactive()}
                       </Badge>
                     {/if}
                     
@@ -189,7 +189,7 @@ function toggleCollapse(periodId: string) {
                     onclick={() => handleActivate(year.id)}
                   >
                     <CheckCircle2 size={12} class="me-1" />
-                    {settings.periods_activate()}
+                    {m.common_cycles_activate()}
                   </Button>
                 {/if}
 
@@ -200,7 +200,7 @@ function toggleCollapse(periodId: string) {
                     onclick={() => handleLock(year.id)}
                   >
                     <LockIcon size={12} class="me-1" />
-                    {settings.periods_lock()}
+                    {m.common_td_ctx_lock()}
                   </Button>
                 {/if}
 
@@ -210,7 +210,7 @@ function toggleCollapse(periodId: string) {
                   onclick={() => openEditSheet(year)}
                 >
                   <Pencil size={12} class="me-1" />
-                  {settings.templates_action_edit()}
+                  {m.settings_templates_action_edit()}
                 </Button>
               </div>
             </div>
@@ -220,7 +220,7 @@ function toggleCollapse(periodId: string) {
               <div class="ps-8 pe-4 py-2 flex flex-col gap-2 transition-all duration-200">
                 {#if childTerms.length === 0}
                   <div class="text-[10px] text-muted-foreground/60 py-3 text-start select-none">
-                    {settings.periods_no_terms()}
+                    {m.settings_periods_no_terms()}
                   </div>
                 {:else}
                   {#each childTerms as term (term.id)}
@@ -233,11 +233,11 @@ function toggleCollapse(periodId: string) {
                           
                           {#if term.is_current === 1}
                             <Badge variant="lime" class="text-[8px] px-1.5 py-0 h-4 rounded font-bold">
-                              {settings.periods_status_active()}
+                              {m.common_status_active_f()}
                             </Badge>
                           {:else if term.is_locked === 1}
                             <Badge variant="destructive" class="text-[8px] px-1.5 py-0 h-4 rounded font-bold">
-                              {settings.periods_status_locked()}
+                              {m.common_status_locked()}
                             </Badge>
                           {/if}
 
@@ -259,7 +259,7 @@ function toggleCollapse(periodId: string) {
                             class="text-[9px] h-6 px-2 text-emerald-500 hover:bg-emerald-500/5"
                             onclick={() => handleActivate(term.id)}
                           >
-                            {settings.periods_activate()}
+                            {m.common_cycles_activate()}
                           </Button>
                         {/if}
                         {#if term.is_current === 1 && term.is_locked !== 1}
@@ -268,7 +268,7 @@ function toggleCollapse(periodId: string) {
                             class="text-[9px] h-6 px-2 text-rose-500 hover:bg-rose-500/5"
                             onclick={() => handleLock(term.id)}
                           >
-                            {settings.periods_lock()}
+                            {m.common_td_ctx_lock()}
                           </Button>
                         {/if}
                         
@@ -277,7 +277,7 @@ function toggleCollapse(periodId: string) {
                           class="text-[9px] h-6 px-2"
                           onclick={() => openEditSheet(term)}
                         >
-                          {settings.templates_action_edit()}
+                          {m.settings_templates_action_edit()}
                         </Button>
                       </div>
                     </div>

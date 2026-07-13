@@ -4,6 +4,7 @@ A professional accounting report dashboard for Orbis ERP.
 Shows real-time Trial Balance, Income Statement, and Balance Sheet, loaded from the backend ledger.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import { Landmark, FileSpreadsheet, Scale, BarChart3 } from "lucide-svelte";
@@ -25,7 +26,6 @@ import {
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import FeeCollectionCard from "$lib/features/metrics/cards/fee-collection-card.svelte";
 import { formatCurrency } from "$lib/core/i18n";
-import * as reports from "$lib/paraglide/messages/reports";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -176,7 +176,7 @@ const totalEquity = $derived.by(() => {
   <div class="text-start select-none flex items-center justify-between">
     <div>
       <h2 class="text-lg font-extrabold text-foreground tracking-tight">
-        {reports.finance_title ? reports.finance_title() : "التقارير المالية والتحليلية"}
+        {m.reports_finance_title ? m.reports_finance_title() : "التقارير المالية والتحليلية"}
       </h2>
       <p class="text-xs text-muted-foreground mt-0.5">
         عرض ومطابقة ميزان المراجعة، قائمة الدخل، والميزانية العمومية للكيان التعليمي
@@ -222,7 +222,7 @@ const totalEquity = $derived.by(() => {
             <div class="flex items-center justify-between w-full select-none text-[9px] font-bold text-muted-foreground/80 mb-1">
               <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
                 <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                {reports.finance_audit_title ? reports.finance_audit_title() : "التدقيق المالي التلقائي"}
+                {m.reports_finance_audit_title ? m.reports_finance_audit_title() : "التدقيق المالي التلقائي"}
               </div>
             </div>
             <p class="text-xs text-muted-foreground leading-relaxed">

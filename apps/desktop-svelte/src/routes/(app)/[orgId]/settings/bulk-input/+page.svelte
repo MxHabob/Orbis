@@ -4,6 +4,7 @@ Hub page linking to specific bulk import sub-pages (students, grades).
 Premium card-based layout matching the Orbis design system.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui-svelte/button";
 import {
@@ -15,7 +16,7 @@ import {
 } from "@orbis/ui-svelte/card";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { ArrowLeft, Users, GraduationCap, ArrowRight } from "lucide-svelte";
-import * as common from "$lib/paraglide/messages/common";
+
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 
 let { data } = $props();
@@ -38,7 +39,7 @@ const isRtl = getLocale() === "ar";
       </Button>
       <div class="flex flex-col gap-0.5">
         <h1 class="text-xl font-bold tracking-tight text-foreground">
-          {common.bulk_hub_title()}
+          {m.common_bulk_hub_title()}
         </h1>
       </div>
     </div>
@@ -62,22 +63,22 @@ const isRtl = getLocale() === "ar";
               />
             </div>
             <CardTitle class="text-sm font-semibold mt-3">
-              {common.bulk_card_students_title()}
+              {m.common_bulk_card_students_title()}
             </CardTitle>
             <CardDescription class="text-xs">
-              {common.bulk_card_students_desc()}
+              {m.common_bulk_card_students_desc()}
             </CardDescription>
           </CardHeader>
           <CardContent class="pt-0">
             <div class="flex items-center gap-2 flex-wrap">
               <Badge variant="secondary" class="text-[10px]">
-                {common.bulk_card_students_tag_personal()}
+                {m.common_bulk_card_students_tag_personal()}
               </Badge>
               <Badge variant="secondary" class="text-[10px]">
-                {common.bulk_card_students_tag_enrollment()}
+                {m.common_bulk_card_students_tag_enrollment()}
               </Badge>
               <Badge variant="secondary" class="text-[10px]">
-                {common.bulk_card_students_tag_guardian()}
+                {m.common_guardians_tab()}
               </Badge>
             </div>
           </CardContent>
@@ -101,19 +102,19 @@ const isRtl = getLocale() === "ar";
               />
             </div>
             <CardTitle class="text-sm font-semibold mt-3">
-              {common.bulk_card_grades_title()}
+              {m.common_phase_grade_entry()}
             </CardTitle>
             <CardDescription class="text-xs">
-              {common.bulk_card_grades_desc()}
+              {m.common_bulk_card_grades_desc()}
             </CardDescription>
           </CardHeader>
           <CardContent class="pt-0">
             <div class="flex items-center gap-2 flex-wrap">
               <Badge variant="secondary" class="text-[10px]">
-                {common.bulk_card_grades_tag_smart()}
+                {m.common_bulk_card_grades_tag_smart()}
               </Badge>
               <Badge variant="secondary" class="text-[10px]">
-                {common.bulk_card_grades_tag_period()}
+                {m.common_metrics_period()}
               </Badge>
             </div>
           </CardContent>

@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
@@ -11,7 +12,6 @@ import {
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import { extractErrorMessage } from "$lib/core/ipc";
-import * as common from "$lib/paraglide/messages/common";
 
 let {
   orgId,
@@ -43,14 +43,14 @@ let passingGrade = $state<number>(period?.passing_grade || 50);
 let maxGrade = $state<number>(period?.max_grade || 100);
 
 const periodTypeLabels = $derived({
-  year: common.period_form_type_year(),
-  term: common.period_form_type_term(),
+  year: m.common_cycle_form_type_year(),
+  term: m.common_period_form_type_term(),
 });
 
 const gradingLabels = $derived({
-  percentage: common.period_form_grading_percentage(),
-  letter: common.period_form_grading_letter(),
-  gpa: common.period_form_grading_gpa(),
+  percentage: m.common_cycle_form_grading_percentage(),
+  letter: m.common_cycle_form_grading_letter(),
+  gpa: m.common_period_form_grading_gpa(),
 });
 
 async function loadParentYears() {
@@ -98,7 +98,7 @@ async function handleSubmit(e: SubmitEvent) {
       max_grade: maxGrade ? Number(maxGrade) : 100,
     };
     await commands.academic.createPeriod(request);
-    toast.success(common.period_form_success());
+    toast.success(m.common_period_form_success());
     onSuccess();
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
@@ -111,7 +111,7 @@ async function handleSubmit(e: SubmitEvent) {
 <form onsubmit={handleSubmit} class="flex flex-col h-full overflow-hidden gap-0">
   <SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
     <SheetTitle class="text-xl font-bold text-foreground">
-      {isEdit ? common.action_edit() : common.period_form_title_create()}
+      {isEdit ? m.common_action_edit() : m.common_period_form_title_create()}
     </SheetTitle>
   </SheetHeader>
 
@@ -120,26 +120,26 @@ async function handleSubmit(e: SubmitEvent) {
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="flex flex-col gap-2">
         <label for="per_name_ar" class="text-xs font-semibold text-foreground">
-          {common.period_form_name()}
+          {m.common_bulk_col_name_ar()}
         </label>
         <Input
           id="per_name_ar"
           type="text"
           bind:value={nameAr}
-          placeholder={common.period_form_name_placeholder()}
+          placeholder={m.common_period_form_name_placeholder()}
           disabled={isSubmitting}
         />
       </div>
 
       <div class="flex flex-col gap-2">
         <label for="per_name_en" class="text-xs font-semibold text-foreground">
-          {common.period_form_name_en()} <span class="text-destructive">*</span>
+          {m.common_ft_form_name_en()} <span class="text-destructive">*</span>
         </label>
         <Input
           id="per_name_en"
           type="text"
           bind:value={name}
-          placeholder={common.period_form_name_en_placeholder()}
+          placeholder={m.common_period_form_name_en_placeholder()}
           required
           disabled={isSubmitting}
         />
@@ -150,15 +150,15 @@ async function handleSubmit(e: SubmitEvent) {
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="flex flex-col gap-2">
         <label for="per_type" class="text-xs font-semibold text-foreground">
-          {common.period_form_type()}
+          {m.common_word_type()}
         </label>
         <Select type="single" value={periodType} onValueChange={(v) => (periodType = v ?? "year")} disabled={isEdit}>
           <SelectTrigger class="h-9 text-sm w-full">
             {periodTypeLabels[periodType as keyof typeof periodTypeLabels] || periodType}
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="year">{common.period_form_type_year()}</SelectItem>
-            <SelectItem value="term">{common.period_form_type_term()}</SelectItem>
+            <SelectItem value="year">{m.common_cycle_form_type_year()}</SelectItem>
+            <SelectItem value="term">{m.common_period_form_type_term()}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -166,14 +166,14 @@ async function handleSubmit(e: SubmitEvent) {
       {#if periodType === "term"}
         <div class="flex flex-col gap-2">
           <label for="per_parent" class="text-xs font-semibold text-foreground">
-            {common.period_form_parent()}
+            {m.common_period_form_parent()}
           </label>
           <Select type="single" value={parentId} onValueChange={(v) => (parentId = v ?? "")} disabled={isEdit}>
             <SelectTrigger class="h-9 text-sm w-full">
-              {years.find(y => String(y.id) === parentId) ? (years.find(y => String(y.id) === parentId).name_ar || years.find(y => String(y.id) === parentId).name) : common.period_form_parent_none()}
+              {years.find(y => String(y.id) === parentId) ? (years.find(y => String(y.id) === parentId).name_ar || years.find(y => String(y.id) === parentId).name) : m.common_period_form_parent_none()}
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">{common.period_form_parent_none()}</SelectItem>
+              <SelectItem value="">{m.common_period_form_parent_none()}</SelectItem>
               {#each years as y}
                 <SelectItem value={String(y.id)}>{y.name_ar || y.name}</SelectItem>
               {/each}
@@ -200,7 +200,7 @@ async function handleSubmit(e: SubmitEvent) {
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="flex flex-col gap-2">
         <label for="per_start" class="text-xs font-semibold text-foreground">
-          {common.period_form_start_date()} <span class="text-destructive">*</span>
+          {m.common_year_start_date()} <span class="text-destructive">*</span>
         </label>
         <Input
           id="per_start"
@@ -213,7 +213,7 @@ async function handleSubmit(e: SubmitEvent) {
 
       <div class="flex flex-col gap-2">
         <label for="per_end" class="text-xs font-semibold text-foreground">
-          {common.period_form_end_date()} <span class="text-destructive">*</span>
+          {m.common_year_end_date()} <span class="text-destructive">*</span>
         </label>
         <Input
           id="per_end"
@@ -229,16 +229,16 @@ async function handleSubmit(e: SubmitEvent) {
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div class="flex flex-col gap-2">
         <label for="per_grading" class="text-xs font-semibold text-foreground">
-          {common.period_form_grading()}
+          {m.common_period_form_grading()}
         </label>
         <Select type="single" value={gradingSystem} onValueChange={(v) => (gradingSystem = v ?? "percentage")}>
           <SelectTrigger class="h-9 text-sm w-full">
             {gradingLabels[gradingSystem as keyof typeof gradingLabels] || gradingSystem}
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="percentage">{common.period_form_grading_percentage()}</SelectItem>
-            <SelectItem value="letter">{common.period_form_grading_letter()}</SelectItem>
-            <SelectItem value="gpa">{common.period_form_grading_gpa()}</SelectItem>
+            <SelectItem value="percentage">{m.common_cycle_form_grading_percentage()}</SelectItem>
+            <SelectItem value="letter">{m.common_cycle_form_grading_letter()}</SelectItem>
+            <SelectItem value="gpa">{m.common_period_form_grading_gpa()}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -258,7 +258,7 @@ async function handleSubmit(e: SubmitEvent) {
 
       <div class="flex flex-col gap-2">
         <label for="per_passing" class="text-xs font-semibold text-foreground">
-          {common.period_form_passing_grade()}
+          {m.common_cycle_form_passing_grade()}
         </label>
         <Input
           id="per_passing"
@@ -280,7 +280,7 @@ async function handleSubmit(e: SubmitEvent) {
       onclick={onCancel}
       disabled={isSubmitting}
     >
-      {common.action_cancel()}
+      {m.common_action_cancel()}
     </Button>
     <Button
       type="submit"
@@ -288,7 +288,7 @@ async function handleSubmit(e: SubmitEvent) {
       class="font-semibold px-6"
       disabled={isSubmitting}
     >
-      {isSubmitting ? common.period_form_saving() : common.action_save()}
+      {isSubmitting ? m.common_period_form_saving() : m.common_action_save()}
     </Button>
   </div>
 </form>

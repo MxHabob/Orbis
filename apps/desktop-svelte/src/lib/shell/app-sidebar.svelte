@@ -5,6 +5,7 @@ Follows GitButler's AppSidebar pattern: icons-only, top nav + bottom actions,
 and an animated active indicator bar.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { Button } from "@orbis/ui-svelte/button";
 import {
@@ -30,8 +31,7 @@ import UpgradeButton from "./upgrade-button.svelte";
 import GitIntegrationPopover from "./mulverse-integration-popover.svelte";
 import AutomationStatusPopover from "./orbis-autopilot-popover.svelte";
 import MoreActionsDropdown from "./more-actions-dropdown.svelte";
-import * as common from "$lib/paraglide/messages/common";
-import * as settings from "$lib/paraglide/messages/settings";
+
 import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
 import { onboardingState } from "$lib/features/onboarding/state.svelte";
 import { createOrganizationQuery } from "$lib/features/settings/queries";
@@ -68,39 +68,39 @@ const navItems = $derived([
   {
     href: `/${orgId}`,
     icon: LayoutDashboard,
-    label: common.nav_overview(),
+    label: m.common_nav_overview(),
     match: "exact",
   },
   {
     href: `/${orgId}/students`,
     icon: Users,
-    label: common.nav_students(),
+    label: m.common_word_students(),
     match: "prefix",
   },
   {
     href: `/${orgId}/academics`,
     icon: BookOpen,
-    label: common.nav_academics(),
+    label: m.common_nav_academics(),
     match: "prefix",
   },
   {
     href: `/${orgId}/finance`,
     icon: Wallet,
-    label: common.nav_finance(),
+    label: m.common_nav_finance(),
     match: "prefix",
   },
   {
     href: `/${orgId}/templates`,
     icon: FileText,
-    label: settings.nav_templates
-      ? settings.nav_templates()
+    label: m.settings_nav_templates
+      ? m.settings_nav_templates()
       : "قوالب المستندات",
     match: "prefix",
   },
   {
     href: `/${orgId}/settings`,
     icon: Settings,
-    label: common.nav_settings(),
+    label: m.common_word_settings(),
     match: "prefix",
   },
 ] as const);

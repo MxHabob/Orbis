@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
@@ -7,8 +8,6 @@ import { l } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
 import { Plus, DoorOpen } from "lucide-svelte";
 import RoomCreateSheet from "$lib/features/academics/components/room-create-sheet.svelte";
-import * as common from "$lib/paraglide/messages/common";
-import * as settings from "$lib/paraglide/messages/settings";
 
 import { DataTable } from "$lib/tables";
 import { rooms as roomsDef, withIndex } from "$lib/tables/definitions";
@@ -73,10 +72,10 @@ const gridSource = $derived(
 const columns = $derived(
   roomsDef.columns({
     idx: "#",
-    name: common.rooms_col_name(),
-    type: common.rooms_col_type(),
-    capacity: common.rooms_col_capacity(),
-    building: common.rooms_col_location(),
+    name: m.common_rooms_col_name(),
+    type: m.common_word_type(),
+    capacity: m.common_rooms_col_capacity(),
+    building: m.common_rooms_col_location(),
     status: "Status",
   }),
 );
@@ -90,15 +89,15 @@ function openCreateSheet() {
 </script>
 
 <svelte:head>
-  <title>{settings.rooms_window_title()} | Orbis</title>
+  <title>{m.common_nav_rooms()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-4 scrollbar-hide">
   <div class="flex items-center justify-between gap-4 flex-nowrap shrink-0">
-    <h1 class="text-lg font-bold text-foreground truncate">{settings.rooms_window_title()}</h1>
+    <h1 class="text-lg font-bold text-foreground truncate">{m.common_nav_rooms()}</h1>
     <Button variant="lime" class="text-xs h-8 px-4 font-semibold shrink-0" onclick={openCreateSheet}>
       <Plus size={14} class="me-1.5" />
-      {common.rooms_add()}
+      {m.common_rooms_add()}
     </Button>
   </div>
 
@@ -108,11 +107,11 @@ function openCreateSheet() {
       source={gridSource}
       loading={isLoading}
       searchable
-      searchPlaceholder={settings.rooms_search_placeholder()}
+      searchPlaceholder={m.settings_rooms_search_placeholder()}
       bind:searchValue={searchQuery}
       emptyIcon={DoorOpen}
-      emptyTitle={common.rooms_empty()}
-      emptyDescription={common.rooms_empty_desc()}
+      emptyTitle={m.common_rooms_empty()}
+      emptyDescription={m.common_rooms_empty_desc()}
       rtl={getLocale() === "ar"}
       refreshable
       onRefresh={loadRooms}

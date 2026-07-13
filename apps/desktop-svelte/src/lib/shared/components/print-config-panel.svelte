@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 /**
  * PrintConfigPanel — Print settings panel for Multi-Up configuration.
  * Controls sheet size, orientation, gaps, cut lines, fill order, and margins.
@@ -19,7 +20,7 @@ import {
   AccordionTrigger,
 } from "@orbis/ui-svelte/accordion";
 import { Separator } from "@orbis/ui-svelte/separator";
-import * as common from "$lib/paraglide/messages/common";
+
 import { getLocale } from "$lib/paraglide/runtime";
 
 import type { MultiUpConfig, SheetSize } from "@docforge/core";
@@ -55,7 +56,7 @@ function onFillOrderChange(val: string) {
   <!-- Sheet Size -->
   <div class="flex flex-col gap-1.5">
     <Label class="text-xs font-semibold text-muted-foreground">
-      {common.print_multi_up_sheet_size()}
+      {m.common_print_multi_up_sheet_size()}
     </Label>
     <Select type="single" value={config.sheetSize} onValueChange={onSheetSizeChange}>
       <SelectTrigger class="h-8 text-xs">
@@ -72,15 +73,15 @@ function onFillOrderChange(val: string) {
   <!-- Orientation -->
   <div class="flex flex-col gap-1.5">
     <Label class="text-xs font-semibold text-muted-foreground">
-      {common.print_multi_up_orientation()}
+      {m.common_print_multi_up_orientation()}
     </Label>
     <Select type="single" value={config.sheetOrientation} onValueChange={onOrientationChange}>
       <SelectTrigger class="h-8 text-xs">
-        {config.sheetOrientation === "portrait" ? common.print_multi_up_portrait() : common.print_multi_up_landscape()}
+        {config.sheetOrientation === "portrait" ? m.common_print_multi_up_portrait() : m.common_print_multi_up_landscape()}
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="portrait">{common.print_multi_up_portrait()}</SelectItem>
-        <SelectItem value="landscape">{common.print_multi_up_landscape()}</SelectItem>
+        <SelectItem value="portrait">{m.common_print_multi_up_portrait()}</SelectItem>
+        <SelectItem value="landscape">{m.common_print_multi_up_landscape()}</SelectItem>
       </SelectContent>
     </Select>
   </div>
@@ -90,7 +91,7 @@ function onFillOrderChange(val: string) {
   <!-- Gap Settings -->
   <div class="grid grid-cols-2 gap-3">
     <div class="flex flex-col gap-1.5">
-      <Label class="text-[10px] text-muted-foreground">{common.print_multi_up_gap_horizontal()}</Label>
+      <Label class="text-[10px] text-muted-foreground">{m.common_print_multi_up_gap_horizontal()}</Label>
       <Input
         type="number"
         class="h-7 text-xs"
@@ -101,7 +102,7 @@ function onFillOrderChange(val: string) {
       />
     </div>
     <div class="flex flex-col gap-1.5">
-      <Label class="text-[10px] text-muted-foreground">{common.print_multi_up_gap_vertical()}</Label>
+      <Label class="text-[10px] text-muted-foreground">{m.common_print_multi_up_gap_vertical()}</Label>
       <Input
         type="number"
         class="h-7 text-xs"
@@ -117,10 +118,10 @@ function onFillOrderChange(val: string) {
   <div class="flex items-center justify-between gap-2">
     <div class="flex flex-col gap-0.5">
       <Label class="text-xs font-semibold text-muted-foreground">
-        {common.print_multi_up_cut_lines()}
+        {m.common_print_multi_up_cut_lines()}
       </Label>
       <span class="text-[9px] text-muted-foreground/70">
-        {common.print_multi_up_cut_lines_desc()}
+        {m.common_print_multi_up_cut_lines_desc()}
       </span>
     </div>
     <Switch
@@ -135,20 +136,20 @@ function onFillOrderChange(val: string) {
   <Accordion type="single" collapsible>
     <AccordionItem value="advanced">
       <AccordionTrigger class="text-xs font-medium text-muted-foreground py-2">
-        {common.print_multi_up_advanced()}
+        {m.common_print_multi_up_advanced()}
       </AccordionTrigger>
       <AccordionContent>
         <div class="flex flex-col gap-3 pt-2">
           <!-- Fill Order -->
           <div class="flex flex-col gap-1.5">
-            <Label class="text-[10px] text-muted-foreground">{common.print_multi_up_fill_order()}</Label>
+            <Label class="text-[10px] text-muted-foreground">{m.common_print_multi_up_fill_order()}</Label>
             <Select type="single" value={config.fillOrder} onValueChange={onFillOrderChange}>
               <SelectTrigger class="h-7 text-xs">
-                {config.fillOrder === "rtl-ttb" ? common.print_multi_up_fill_rtl() : common.print_multi_up_fill_ltr()}
+                {config.fillOrder === "rtl-ttb" ? m.common_print_multi_up_fill_rtl() : m.common_print_multi_up_fill_ltr()}
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="rtl-ttb">{common.print_multi_up_fill_rtl()}</SelectItem>
-                <SelectItem value="ltr-ttb">{common.print_multi_up_fill_ltr()}</SelectItem>
+                <SelectItem value="rtl-ttb">{m.common_print_multi_up_fill_rtl()}</SelectItem>
+                <SelectItem value="ltr-ttb">{m.common_print_multi_up_fill_ltr()}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -156,29 +157,29 @@ function onFillOrderChange(val: string) {
           <!-- Center on sheet -->
           <div class="flex items-center justify-between gap-2">
             <Label class="text-[10px] text-muted-foreground">
-              {common.print_multi_up_center_on_sheet()}
+              {m.common_print_multi_up_center_on_sheet()}
             </Label>
             <Switch bind:checked={config.centerOnSheet} />
           </div>
 
           <!-- Margins -->
           <div class="flex flex-col gap-1.5">
-            <Label class="text-[10px] text-muted-foreground">{common.print_multi_up_margins()}</Label>
+            <Label class="text-[10px] text-muted-foreground">{m.common_print_multi_up_margins()}</Label>
             <div class="grid grid-cols-2 gap-2">
               <div class="flex flex-col gap-0.5">
-                <span class="text-[8px] text-muted-foreground/70">{common.print_multi_up_margin_top()}</span>
+                <span class="text-[8px] text-muted-foreground/70">{m.common_print_multi_up_margin_top()}</span>
                 <Input type="number" class="h-6 text-[10px]" min={0} max={50} step={1} bind:value={config.sheetMargins.top} />
               </div>
               <div class="flex flex-col gap-0.5">
-                <span class="text-[8px] text-muted-foreground/70">{common.print_multi_up_margin_bottom()}</span>
+                <span class="text-[8px] text-muted-foreground/70">{m.common_print_multi_up_margin_bottom()}</span>
                 <Input type="number" class="h-6 text-[10px]" min={0} max={50} step={1} bind:value={config.sheetMargins.bottom} />
               </div>
               <div class="flex flex-col gap-0.5">
-                <span class="text-[8px] text-muted-foreground/70">{common.print_multi_up_margin_left()}</span>
+                <span class="text-[8px] text-muted-foreground/70">{m.common_print_multi_up_margin_left()}</span>
                 <Input type="number" class="h-6 text-[10px]" min={0} max={50} step={1} bind:value={config.sheetMargins.left} />
               </div>
               <div class="flex flex-col gap-0.5">
-                <span class="text-[8px] text-muted-foreground/70">{common.print_multi_up_margin_right()}</span>
+                <span class="text-[8px] text-muted-foreground/70">{m.common_print_multi_up_margin_right()}</span>
                 <Input type="number" class="h-6 text-[10px]" min={0} max={50} step={1} bind:value={config.sheetMargins.right} />
               </div>
             </div>

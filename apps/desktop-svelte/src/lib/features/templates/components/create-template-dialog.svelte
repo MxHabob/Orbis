@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
@@ -16,8 +17,6 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import * as common from "$lib/paraglide/messages/common";
-import * as settings from "$lib/paraglide/messages/settings";
 
 interface Props {
   open: boolean;
@@ -47,7 +46,7 @@ let {
 <Dialog bind:open={open}>
   <DialogContent class="sm:max-w-[480px] text-start">
     <DialogHeader>
-      <DialogTitle>{settings.templates_create_btn()}</DialogTitle>
+      <DialogTitle>{m.settings_templates_create_btn()}</DialogTitle>
       <DialogDescription>
         أدخل تفاصيل قالب المستندات الجديد لبدء تصميمه في المحرر.
       </DialogDescription>
@@ -135,8 +134,8 @@ let {
     </div>
 
     <DialogFooter class="gap-2">
-      <Button variant="outline" size="sm" onclick={() => (open = false)}>{common.action_cancel()}</Button>
-      <Button variant="lime" size="sm" onclick={onsubmit}>{common.form_btn_create()}</Button>
+      <Button variant="outline" size="sm" onclick={() => (open = false)}>{m.common_action_cancel()}</Button>
+      <Button variant="lime" size="sm" onclick={onsubmit}>{m.common_form_btn_create()}</Button>
     </DialogFooter>
   </DialogContent>
 </Dialog>

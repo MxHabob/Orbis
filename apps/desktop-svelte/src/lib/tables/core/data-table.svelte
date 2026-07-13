@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 /**
  * DataTable — Universal table shell component
  *

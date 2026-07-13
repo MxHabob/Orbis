@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Badge } from "@orbis/ui-svelte/badge";
 import {
   Card,
@@ -6,7 +7,6 @@ import {
   CardTitle,
   CardContent,
 } from "@orbis/ui-svelte/card";
-import * as settings from "$lib/paraglide/messages/settings";
 
 interface Props {
   activeSessions: any[];
@@ -18,13 +18,13 @@ let { activeSessions, ...restProps }: Props & Record<string, any> = $props();
 <Card {...restProps}>
   <CardHeader class="bg-muted/50 px-6 py-3 border-b border-border">
     <CardTitle class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-      {settings.security_sessions()}
+      {m.settings_security_sessions()}
     </CardTitle>
   </CardHeader>
   <CardContent>
     <div class="flex flex-col">
       <div class="px-6 py-3 bg-muted/20 border-b border-border text-[11px] text-muted-foreground text-start select-none">
-        {settings.security_sessions_desc()}
+        {m.settings_security_sessions_desc()}
       </div>
 
       <div class="flex flex-col">

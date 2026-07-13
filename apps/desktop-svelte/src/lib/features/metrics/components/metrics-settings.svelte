@@ -1,8 +1,8 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
 import { Settings, Check } from "lucide-svelte";
 import MetricsFilter from "./metrics-filter.svelte";
-import * as reports from "$lib/paraglide/messages/reports";
 
 let {
   orgId,
@@ -28,10 +28,10 @@ let {
 		>
 			{#if isEditing}
 				<Check size={14} class="text-emerald-500" />
-				<span>{reports.metrics_done()}</span>
+				<span>{m.reports_metrics_done()}</span>
 			{:else}
 				<Settings size={14} class="text-muted-foreground" />
-				<span>{reports.metrics_customize()}</span>
+				<span>{m.reports_metrics_customize()}</span>
 			{/if}
 		</Button>
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import {
   Popover,
   PopoverTrigger,
@@ -13,7 +14,6 @@ import { onboardingState } from "$lib/features/onboarding/state.svelte";
 import { authStore } from "$lib/stores";
 import { goto } from "$app/navigation";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
-import * as common from "$lib/paraglide/messages/common";
 
 function handleChecklistItemClick(stepIndex: number) {
   onboardingState.goToStep(stepIndex + 1);
@@ -38,47 +38,47 @@ const activeIndex = $derived(
 
 const tasksList = $derived([
   {
-    label: common.onboarding_popover_task_institution_type_label(),
-    desc: common.onboarding_popover_task_institution_type_desc(),
+    label: m.common_registration_inst_type(),
+    desc: m.common_onboarding_popover_task_institution_type_desc(),
   },
   {
-    label: common.onboarding_popover_task_calendar_label({
-      calendar: onboardingState.calendarLabel || common.onboarding_review_calendar(),
+    label: m.common_onboarding_popover_task_calendar_label({
+      calendar: onboardingState.calendarLabel || m.common_onboarding_review_calendar(),
     }),
-    desc: common.onboarding_popover_task_calendar_desc(),
+    desc: m.common_onboarding_popover_task_calendar_desc(),
   },
   {
-    label: common.onboarding_popover_task_classroom_label({
+    label: m.common_onboarding_popover_task_classroom_label({
       classroom:
-        onboardingState.classroomLabel || common.onboarding_term_classroom(),
+        onboardingState.classroomLabel || m.common_onboarding_term_classroom(),
     }),
-    desc: common.onboarding_popover_task_classroom_desc(),
+    desc: m.common_onboarding_popover_task_classroom_desc(),
   },
   {
-    label: common.onboarding_popover_task_stage_label({
-      stage: onboardingState.stageLabel || common.onboarding_term_stage(),
+    label: m.common_onboarding_popover_task_stage_label({
+      stage: onboardingState.stageLabel || m.common_class_label_grade(),
     }),
-    desc: common.onboarding_popover_task_stage_desc({
-      division: onboardingState.divisionLabel || common.onboarding_term_division(),
+    desc: m.common_onboarding_popover_task_stage_desc({
+      division: onboardingState.divisionLabel || m.common_onboarding_term_division(),
     }),
   },
   {
-    label: common.onboarding_popover_task_schedule_label(),
-    desc: common.onboarding_popover_task_schedule_desc(),
+    label: m.common_onboarding_popover_task_schedule_label(),
+    desc: m.common_onboarding_popover_task_schedule_desc(),
   },
   {
-    label: common.onboarding_popover_task_subject_label({
-      subject: onboardingState.subjectLabel || common.onboarding_term_subject(),
+    label: m.common_onboarding_configure_subject({
+      subject: onboardingState.subjectLabel || m.common_onboarding_term_subject(),
     }),
-    desc: common.onboarding_popover_task_subject_desc(),
+    desc: m.common_onboarding_popover_task_subject_desc(),
   },
   {
-    label: common.onboarding_popover_task_fees_label(),
-    desc: common.onboarding_popover_task_fees_desc(),
+    label: m.common_onboarding_popover_task_fees_label(),
+    desc: m.common_onboarding_popover_task_fees_desc(),
   },
   {
-    label: common.onboarding_popover_task_review_label(),
-    desc: common.onboarding_popover_task_review_desc(),
+    label: m.common_onboarding_popover_task_review_label(),
+    desc: m.common_onboarding_popover_task_review_desc(),
   },
 ]);
 </script>
@@ -138,7 +138,7 @@ const tasksList = $derived([
           {/snippet}
         </TooltipTrigger>
         <TooltipContent side="right" sideOffset={12}>
-          {common.onboarding_progress_label() || 'Getting Started'}
+          {m.common_onboarding_progress_label() || 'Getting Started'}
         </TooltipContent>
       </Tooltip>
     {/snippet}
@@ -162,10 +162,10 @@ const tasksList = $derived([
       </svg>
       <div class="flex flex-col">
         <h4 class="font-bold text-sm text-foreground leading-tight">
-          {common.onboarding_progress_label() || 'Getting Started'}
+          {m.common_onboarding_progress_label() || 'Getting Started'}
         </h4>
         <p class="text-[11px] text-muted-foreground font-semibold mt-0.5 font-sans">
-          {common.onboarding_popover_tasks_completed({ completed: completedTasks, total: totalTasks })}
+          {m.common_onboarding_popover_tasks_completed({ completed: completedTasks, total: totalTasks })}
         </p>
       </div>
     </div>

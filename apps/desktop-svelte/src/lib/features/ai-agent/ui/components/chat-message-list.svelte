@@ -1,6 +1,6 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import * as common from "$lib/paraglide/messages/common";
 
 interface Message {
   id: string;
@@ -127,23 +127,23 @@ function parseMessageParts(text: string) {
           {:else}
             <p>
               {#if orgName}
-                {common.agent_response_greeting_with_org({
+                {m.common_agent_response_greeting_with_org({
                   user: userName,
                   org: orgName,
                 })}
               {:else}
-                {common.agent_response_greeting_without_org({
+                {m.common_agent_response_greeting_without_org({
                   user: userName,
                 })}
               {/if}
             </p>
             <p class="mt-1">
-              {common.agent_response_question()}
+              {m.common_agent_response_question()}
             </p>
             <ul class="list-disc ps-5 flex flex-col gap-2 mt-1">
-              <li>{common.agent_response_bullet_1()}</li>
-              <li>{common.agent_response_bullet_2()}</li>
-              <li>{common.agent_response_bullet_3()}</li>
+              <li>{m.common_agent_response_bullet_1()}</li>
+              <li>{m.common_agent_response_bullet_2()}</li>
+              <li>{m.common_agent_response_bullet_3()}</li>
             </ul>
           {/if}
         </div>

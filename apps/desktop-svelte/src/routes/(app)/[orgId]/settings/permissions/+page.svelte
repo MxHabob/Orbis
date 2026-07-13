@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { fade, slide } from "svelte/transition";
 import { Button } from "@orbis/ui-svelte/button";
@@ -30,7 +31,7 @@ import {
 } from "@orbis/ui-svelte/table";
 import { toast } from "svelte-sonner";
 import { l, isAr } from "$lib/core/i18n";
-import * as settings from "$lib/paraglide/messages/settings";
+
 import { commands } from "$lib/core/ipc";
 import { goto } from "$app/navigation";
 import SearchField from "$lib/shared/components/search-field.svelte";
@@ -147,7 +148,7 @@ async function loadPermissions() {
     hasUnsavedChanges = false;
   } catch (e) {
     console.error("Failed to load permissions", e);
-    toast.error(settings.permissions_load_error());
+    toast.error(m.settings_permissions_load_error());
   } finally {
     isLoading = false;
   }
@@ -185,11 +186,11 @@ async function saveChanges() {
       await commands.iam.saveRolePermissions(r, roleRules);
     }
 
-    toast.success(settings.permissions_save_success());
+    toast.success(m.settings_permissions_save_success());
     await loadPermissions();
   } catch (e) {
     console.error("Failed to save permissions", e);
-    toast.error(settings.permissions_save_error());
+    toast.error(m.settings_permissions_save_error());
   } finally {
     isLoading = false;
   }
@@ -197,7 +198,7 @@ async function saveChanges() {
 
 function discardChanges() {
   loadPermissions();
-  toast.info(settings.permissions_discarded());
+  toast.info(m.settings_permissions_discarded());
 }
 
 // Filtered Rules
@@ -265,11 +266,11 @@ function capitalizeFirstLetter(str: string): string {
 // Manage Rules
 function addRule() {
   if (!newRuleDocType.trim()) {
-    toast.error(settings.permissions_input_doctype_error());
+    toast.error(m.settings_permissions_input_doctype_error());
     return;
   }
   if (!newRuleRole.trim()) {
-    toast.error(settings.permissions_input_role_error());
+    toast.error(m.settings_permissions_input_role_error());
     return;
   }
 
@@ -280,7 +281,7 @@ function addRule() {
       r.document_type.toLowerCase() === newRuleDocType.toLowerCase(),
   );
   if (exists) {
-    toast.error(settings.permissions_rule_exists_error());
+    toast.error(m.settings_permissions_rule_exists_error());
     return;
   }
 
@@ -302,7 +303,7 @@ function addRule() {
   newRuleDocType = "";
   newRuleOnlyIfCreator = false;
   newRuleActions = [];
-  toast.success(settings.permissions_rule_added_success());
+  toast.success(m.settings_permissions_rule_added_success());
 }
 
 function deleteRule(index: number) {
@@ -312,7 +313,7 @@ function deleteRule(index: number) {
       !(r.role === deleted.role && r.document_type === deleted.document_type),
   );
   hasUnsavedChanges = true;
-  toast.success(settings.permissions_rule_deleted_success());
+  toast.success(m.settings_permissions_rule_deleted_success());
 }
 
 function toggleAction(ruleIndex: number, action: string) {
@@ -328,7 +329,7 @@ function toggleAction(ruleIndex: number, action: string) {
 
 <svelte:head>
   <title>
-    {settings.permissions_window_title()} | Orbis
+    {m.settings_permissions_window_title()} | Orbis
   </title>
 </svelte:head>
 
@@ -340,7 +341,7 @@ function toggleAction(ruleIndex: number, action: string) {
         <div class="flex flex-1 flex-col sm:flex-row gap-3 items-center w-full">
           <!-- Document Type Search -->
           <SearchField
-            placeholder={settings.permissions_search_doc_type()}
+            placeholder={m.settings_permissions_search_doc_type()}
             bind:value={docTypeFilter}
             class="flex-1 bg-background/50 max-w-sm"
           />
@@ -349,10 +350,10 @@ function toggleAction(ruleIndex: number, action: string) {
           <div class="w-full sm:w-48 text-start">
             <Select type="single" value={roleFilter} onValueChange={(v) => (roleFilter = v ?? "")}>
               <SelectTrigger class="h-9 w-full text-xs bg-background/50">
-                {roleFilter ? settings.permissions_filter_role({ role: roleFilter }) : settings.permissions_filter_role_all()}
+                {roleFilter ? m.settings_permissions_filter_role({ role: roleFilter }) : m.settings_users_filter_role_all()}
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{settings.permissions_filter_role_all()}</SelectItem>
+                <SelectItem value="">{m.settings_users_filter_role_all()}</SelectItem>
                 {#each standardRoles as role}
                   <SelectItem value={role}>{role}</SelectItem>
                 {/each}
@@ -369,7 +370,7 @@ function toggleAction(ruleIndex: number, action: string) {
             onclick={() => showSetUserPermissionsModal = true}
           >
             <UserCheck size={14} class="me-1.5" />
-            {settings.permissions_btn_set_user()}
+            {m.settings_permissions_btn_set_user()}
           </Button>
 
           <Button
@@ -379,7 +380,7 @@ function toggleAction(ruleIndex: number, action: string) {
             onclick={() => showAddRuleModal = true}
           >
             <Plus size={14} class="me-1.5" />
-            {settings.permissions_btn_add_rule()}
+            {m.settings_permissions_btn_add_rule()}
           </Button>
         </div>
       </div>
@@ -390,10 +391,10 @@ function toggleAction(ruleIndex: number, action: string) {
       <Table>
         <TableHeader class="bg-muted/40 select-none">
           <TableRow>
-            <TableHead class="text-start font-bold text-xs w-[20%]">{settings.permissions_col_doc_type()}</TableHead>
-            <TableHead class="text-start font-bold text-xs w-[20%]">{settings.permissions_col_role()}</TableHead>
-            <TableHead class="text-start font-bold text-xs w-[10%]">{settings.permissions_col_level()}</TableHead>
-            <TableHead class="text-start font-bold text-xs w-[45%]">{settings.permissions_col_permissions()}</TableHead>
+            <TableHead class="text-start font-bold text-xs w-[20%]">{m.settings_permissions_col_doc_type()}</TableHead>
+            <TableHead class="text-start font-bold text-xs w-[20%]">{m.common_user_form_role()}</TableHead>
+            <TableHead class="text-start font-bold text-xs w-[10%]">{m.settings_permissions_col_level()}</TableHead>
+            <TableHead class="text-start font-bold text-xs w-[45%]">{m.settings_permissions_col_permissions()}</TableHead>
             <TableHead class="text-center w-[5%]"></TableHead>
           </TableRow>
         </TableHeader>
@@ -401,13 +402,13 @@ function toggleAction(ruleIndex: number, action: string) {
           {#if isLoading}
             <TableRow>
               <TableCell colspan={5} class="py-12 text-center text-xs text-muted-foreground">
-                {settings.permissions_loading()}
+                {m.settings_permissions_loading()}
               </TableCell>
             </TableRow>
           {:else if filteredRules.length === 0}
             <TableRow>
               <TableCell colspan={5} class="py-12 text-center text-xs text-muted-foreground">
-                {settings.permissions_empty_rules()}
+                {m.settings_permissions_empty_rules()}
               </TableCell>
             </TableRow>
           {:else}
@@ -430,7 +431,7 @@ function toggleAction(ruleIndex: number, action: string) {
                       }}
                     />
                     <span class="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors">
-                      {settings.permissions_only_creator()}
+                      {m.settings_permissions_only_creator()}
                     </span>
                   </label>
                 </TableCell>
@@ -461,7 +462,7 @@ function toggleAction(ruleIndex: number, action: string) {
                     variant="ghost"
                     size="icon"
                     onclick={() => deleteRule(idx)}
-                    title={settings.permissions_delete_rule_title()}
+                    title={m.settings_permissions_delete_rule_title()}
                   >
                     <Trash2 size={14} class="text-muted-foreground hover:text-destructive" />
                   </Button>
@@ -489,20 +490,20 @@ function toggleAction(ruleIndex: number, action: string) {
         </div>
         <div class="flex flex-col">
           <span class="text-xs font-bold text-foreground">
-            {settings.permissions_unsaved_title()}
+            {m.settings_permissions_unsaved_title()}
           </span>
           <span class="text-[10px] text-muted-foreground mt-0.5">
-            {settings.permissions_unsaved_desc()}
+            {m.settings_permissions_unsaved_desc()}
           </span>
         </div>
       </div>
 
       <div class="flex items-center gap-2">
         <Button variant="ghost" size="sm" class="text-xs" onclick={discardChanges} disabled={isLoading}>
-          {settings.permissions_discard()}
+          {m.common_td_undo()}
         </Button>
         <Button variant="lime" size="sm" class="text-xs font-bold" onclick={saveChanges} disabled={isLoading}>
-          {isLoading ? settings.permissions_saving_btn() : settings.permissions_save_btn()}
+          {isLoading ? m.common_state_saving() : m.settings_action_save_changes()}
         </Button>
       </div>
     </div>
@@ -513,14 +514,14 @@ function toggleAction(ruleIndex: number, action: string) {
 <Dialog bind:open={showAddRuleModal}>
   <DialogContent class="max-w-lg text-start">
     <DialogHeader>
-      <DialogTitle>{settings.permissions_dialog_add_title()}</DialogTitle>
+      <DialogTitle>{m.settings_permissions_dialog_add_title()}</DialogTitle>
     </DialogHeader>
 
     <div class="flex flex-col gap-4 py-2">
       <!-- Document Type Selector -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label for="rule_doc_type" class="text-xs font-medium text-muted-foreground">
-          {settings.permissions_label_doctype()}
+          {m.settings_permissions_col_doc_type()}
         </Label>
         <Select type="single" value={newRuleDocType} onValueChange={(v) => (newRuleDocType = v ?? "")}>
           <SelectTrigger class="h-9 w-full text-xs">
@@ -537,7 +538,7 @@ function toggleAction(ruleIndex: number, action: string) {
       <!-- Role Selector -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label for="rule_role" class="text-xs font-medium text-muted-foreground">
-          {settings.permissions_label_role()}
+          {m.settings_permissions_label_role()}
         </Label>
         <Select type="single" value={newRuleRole} onValueChange={(v) => (newRuleRole = v ?? "Academics User")}>
           <SelectTrigger class="h-9 w-full text-xs">
@@ -555,7 +556,7 @@ function toggleAction(ruleIndex: number, action: string) {
         <!-- Level -->
         <div class="flex flex-col gap-1.5 text-start">
           <Label for="rule_level" class="text-xs font-medium text-muted-foreground">
-            {settings.permissions_label_level()}
+            {m.settings_permissions_col_level()}
           </Label>
           <Input
             id="rule_level"
@@ -573,7 +574,7 @@ function toggleAction(ruleIndex: number, action: string) {
               onCheckedChange={(checked) => (newRuleOnlyIfCreator = Boolean(checked))}
             />
             <span class="text-xs text-muted-foreground">
-              {settings.permissions_only_creator()}
+              {m.settings_permissions_only_creator()}
             </span>
           </label>
         </div>
@@ -582,7 +583,7 @@ function toggleAction(ruleIndex: number, action: string) {
       <!-- Actions Selector Checklist -->
       <div class="flex flex-col gap-2 border-t border-border/40 pt-4 mt-2 text-start">
         <span class="text-xs font-semibold text-muted-foreground mb-1">
-          {settings.permissions_label_allowed_actions()}
+          {m.settings_permissions_label_allowed_actions()}
         </span>
         <div class="grid grid-cols-3 gap-2.5 max-h-40 overflow-y-auto pr-1">
           {#each getActionsForDocType(newRuleDocType || "Default") as action}
@@ -606,10 +607,10 @@ function toggleAction(ruleIndex: number, action: string) {
 
     <DialogFooter class="border-t border-border pt-4 mt-2">
       <Button variant="ghost" size="sm" onclick={() => showAddRuleModal = false}>
-        {settings.permissions_btn_cancel()}
+        {m.common_action_cancel()}
       </Button>
       <Button variant="lime" size="sm" class="font-bold" onclick={addRule}>
-        {settings.permissions_btn_add()}
+        {m.settings_permissions_btn_add()}
       </Button>
     </DialogFooter>
   </DialogContent>
@@ -619,15 +620,15 @@ function toggleAction(ruleIndex: number, action: string) {
 <Dialog bind:open={showSetUserPermissionsModal}>
   <DialogContent class="max-w-md text-start">
     <DialogHeader>
-      <DialogTitle>{settings.permissions_dialog_user_title()}</DialogTitle>
+      <DialogTitle>{m.settings_permissions_dialog_user_title()}</DialogTitle>
       <DialogDescription>
-        {settings.permissions_dialog_user_desc()}
+        {m.settings_permissions_dialog_user_desc()}
       </DialogDescription>
     </DialogHeader>
 
     <div class="my-2">
       <SearchField
-        placeholder={settings.permissions_search_user_placeholder()}
+        placeholder={m.settings_permissions_search_user_placeholder()}
         bind:value={userSearchQuery}
         class="max-w-none w-full"
       />
@@ -637,7 +638,7 @@ function toggleAction(ruleIndex: number, action: string) {
     <div class="flex flex-col gap-1.5 max-h-60 overflow-y-auto pr-1">
       {#if filteredUsers.length === 0}
         <span class="text-xs text-muted-foreground text-center py-6">
-          {settings.permissions_no_users()}
+          {m.settings_users_empty()}
         </span>
       {:else}
         {#each filteredUsers as u}
@@ -665,7 +666,7 @@ function toggleAction(ruleIndex: number, action: string) {
 
     <DialogFooter class="border-t border-border pt-4">
       <Button variant="ghost" size="sm" onclick={() => showSetUserPermissionsModal = false}>
-        {settings.permissions_btn_close()}
+        {m.common_titlebar_close()}
       </Button>
     </DialogFooter>
   </DialogContent>

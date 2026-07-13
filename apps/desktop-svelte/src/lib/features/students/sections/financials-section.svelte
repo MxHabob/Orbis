@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Label } from "@orbis/ui-svelte/label";
 import { Input } from "@orbis/ui-svelte/input";
 import { Button } from "@orbis/ui-svelte/button";
@@ -11,7 +12,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import * as common from "$lib/paraglide/messages/common";
+
 import type { StudentFormState } from "../student-form-state.svelte";
 import { formatCurrency } from "$lib/core/i18n";
 
@@ -26,11 +27,11 @@ let { state }: { state: StudentFormState } = $props();
     <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
       <div class="bg-muted/50 px-6 py-3 border-b border-border flex justify-between items-center select-none">
         <span class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase">
-          {common.form_discount_section()}
+          {m.common_form_discount_section()}
         </span>
         <div class="flex items-center gap-2">
           <Label class="text-[10px] font-semibold text-muted-foreground cursor-pointer" for="applyDiscountSwitch">
-            {common.form_apply_discount()}
+            {m.common_form_apply_discount()}
           </Label>
           <Switch id="applyDiscountSwitch" bind:checked={state.financial.applyDiscount} />
         </div>
@@ -42,10 +43,10 @@ let { state }: { state: StudentFormState } = $props();
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
               <Label class="text-xs font-semibold text-foreground">
-                {common.form_discount_type_label ? common.form_discount_type_label() : "Discount Type"}
+                {m.common_dt_form_type ? m.common_dt_form_type() : "Discount Type"}
               </Label>
               <span class="text-[11px] text-muted-foreground leading-relaxed">
-                {common.form_discount_type_desc ? common.form_discount_type_desc() : "Apply discount from a pre-configured template or specify a custom amount"}
+                {m.common_form_discount_type_desc ? m.common_form_discount_type_desc() : "Apply discount from a pre-configured template or specify a custom amount"}
               </span>
             </div>
             <div class="w-full md:w-[480px] shrink-0 flex gap-2">
@@ -55,7 +56,7 @@ let { state }: { state: StudentFormState } = $props();
                 class="flex-1 border rounded-lg text-xs h-9 cursor-pointer transition-all duration-150 {state.financial.discountType === 'template' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground hover:bg-muted/30'}"
                 onclick={() => state.financial.discountType = 'template'}
               >
-                <span>{common.form_discount_type_template()}</span>
+                <span>{m.common_form_discount_type_template()}</span>
               </Button>
               <Button 
                 variant="ghost"
@@ -63,7 +64,7 @@ let { state }: { state: StudentFormState } = $props();
                 class="flex-1 border rounded-lg text-xs h-9 cursor-pointer transition-all duration-150 {state.financial.discountType === 'custom' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground hover:bg-muted/30'}"
                 onclick={() => state.financial.discountType = 'custom'}
               >
-                <span>{common.form_discount_type_custom()}</span>
+                <span>{m.common_form_discount_type_custom()}</span>
               </Button>
             </div>
           </div>
@@ -73,17 +74,17 @@ let { state }: { state: StudentFormState } = $props();
             <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
               <div class="flex flex-col gap-1 text-start">
                 <Label class="text-xs font-semibold text-foreground">
-                  {common.form_discount_template_label ? common.form_discount_template_label() : "Discount Template"}
+                  {m.common_form_discount_template_label ? m.common_form_discount_template_label() : "Discount Template"}
                 </Label>
                 <span class="text-[11px] text-muted-foreground leading-relaxed">
-                  {common.form_discount_template_desc ? common.form_discount_template_desc() : "Select one of the approved discount templates in the system"}
+                  {m.common_form_discount_template_desc ? m.common_form_discount_template_desc() : "Select one of the approved discount templates in the system"}
                 </span>
               </div>
               <div class="w-full md:w-[480px] shrink-0">
                 <Select bind:value={state.financial.selectedDiscountTemplateId} type="single">
                   <SelectTrigger class="w-full h-9 text-xs text-start flex items-center justify-between bg-background">
                     <span class="truncate">
-                      {state.financial.discountTemplates.find(d => d.id === state.financial.selectedDiscountTemplateId)?.name || (common.form_discount_template_placeholder ? common.form_discount_template_placeholder() : "Select template...")}
+                      {state.financial.discountTemplates.find(d => d.id === state.financial.selectedDiscountTemplateId)?.name || (m.common_form_discount_template_placeholder ? m.common_form_discount_template_placeholder() : "Select template...")}
                     </span>
                   </SelectTrigger>
                   <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
@@ -99,9 +100,9 @@ let { state }: { state: StudentFormState } = $props();
           {:else}
             <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
               <div class="flex flex-col gap-1 text-start">
-                <Label for="customDiscount" class="text-xs font-semibold text-foreground">{common.form_discount_custom_amount()}</Label>
+                <Label for="customDiscount" class="text-xs font-semibold text-foreground">{m.common_form_discount_custom_amount()}</Label>
                 <span class="text-[11px] text-muted-foreground leading-relaxed">
-                  {common.form_discount_custom_desc ? common.form_discount_custom_desc() : "Enter direct discount amount"}
+                  {m.common_form_discount_custom_desc ? m.common_form_discount_custom_desc() : "Enter direct discount amount"}
                 </span>
               </div>
               <div class="w-full md:w-[480px] shrink-0">
@@ -109,7 +110,7 @@ let { state }: { state: StudentFormState } = $props();
                   id="customDiscount"
                   type="number"
                   min="0"
-                  placeholder={common.form_discount_custom_placeholder ? common.form_discount_custom_placeholder() : "e.g. 50000"}
+                  placeholder={m.common_form_discount_custom_placeholder ? m.common_form_discount_custom_placeholder() : "e.g. 50000"}
                   class="h-9 w-full bg-background font-mono"
                   bind:value={state.financial.customDiscountAmount}
                 />
@@ -123,13 +124,13 @@ let { state }: { state: StudentFormState } = $props();
     <!-- Optional Fees Container -->
     <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
       <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-        {common.form_optional_fees_section()}
+        {m.common_form_optional_fees_section()}
       </div>
 
       <div class="p-6">
         {#if state.optionalFeesList.length === 0}
           <p class="text-xs text-muted-foreground text-center py-4">
-            {common.form_no_optional_fees ? common.form_no_optional_fees() : "No optional fees registered in the system currently."}
+            {m.common_form_no_optional_fees ? m.common_form_no_optional_fees() : "No optional fees registered in the system currently."}
           </p>
         {:else}
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -162,7 +163,7 @@ let { state }: { state: StudentFormState } = $props();
                     bind:value={state.financial.selectedOptionalFees[fTpl.id].amount}
                   />
                   <span class="text-[10px] text-muted-foreground">
-                    {common.form_currency_symbol ? common.form_currency_symbol() : "YER"}
+                    {m.common_form_currency_symbol ? m.common_form_currency_symbol() : "YER"}
                   </span>
                 </div>
               </div>
@@ -178,25 +179,25 @@ let { state }: { state: StudentFormState } = $props();
   <div class="flex flex-col gap-6">
     <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/20 sticky top-6">
       <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-        {common.form_summary_section()}
+        {m.common_form_summary_section()}
       </div>
 
       <div class="p-6 flex flex-col gap-4 text-start">
         <!-- Mandatory Fees -->
         <div class="flex justify-between items-center text-xs">
-          <span class="text-muted-foreground">{common.form_summary_mandatory()}:</span>
+          <span class="text-muted-foreground">{m.common_form_summary_mandatory()}:</span>
           <span class="font-bold text-foreground font-mono">{formatCurrency(state.mandatoryTotal)}</span>
         </div>
 
         <!-- Optional Fees -->
         <div class="flex justify-between items-center text-xs">
-          <span class="text-muted-foreground">{common.form_summary_optional()}:</span>
+          <span class="text-muted-foreground">{m.common_form_summary_optional()}:</span>
           <span class="font-bold text-foreground font-mono">+{formatCurrency(state.optionalTotal)}</span>
         </div>
 
         <!-- Discount Total -->
         <div class="flex justify-between items-center text-xs">
-          <span class="text-muted-foreground">{common.form_summary_discount()}:</span>
+          <span class="text-muted-foreground">{m.common_form_summary_discount()}:</span>
           <span class="font-bold text-destructive font-mono">-{formatCurrency(state.discountTotal)}</span>
         </div>
 
@@ -204,7 +205,7 @@ let { state }: { state: StudentFormState } = $props();
 
         <!-- Net Total -->
         <div class="flex justify-between items-center">
-          <span class="text-xs font-bold text-foreground">{common.form_summary_net()}:</span>
+          <span class="text-xs font-bold text-foreground">{m.common_form_summary_net()}:</span>
           <span class="text-sm font-extrabold text-primary font-mono">{formatCurrency(state.netTotal)}</span>
         </div>
 
@@ -212,7 +213,7 @@ let { state }: { state: StudentFormState } = $props();
         {#if state.mandatoryFeesList.length > 0}
           <div class="mt-4 p-3 rounded-lg bg-muted/20 border border-border space-y-2 select-none">
             <span class="text-[10px] font-bold text-muted-foreground block border-b border-border/40 pb-1">
-              {common.form_summary_mandatory_breakdown ? common.form_summary_mandatory_breakdown() : "Approved basic fees details for class:"}
+              {m.common_form_summary_mandatory_breakdown ? m.common_form_summary_mandatory_breakdown() : "Approved basic fees details for class:"}
             </span>
             {#each state.mandatoryFeesList as feeTpl}
               <div class="flex justify-between items-center text-[10px]">

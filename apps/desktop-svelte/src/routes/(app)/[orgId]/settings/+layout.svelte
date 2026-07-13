@@ -5,6 +5,7 @@ using <MainViewport>. Uses the shared SidebarNav component.
 Now includes rooms and subjects (moved from academics).
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import {
   Settings,
   Bell,
@@ -28,7 +29,7 @@ import {
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import type { Snippet } from "svelte";
-import * as settings from "$lib/paraglide/messages/settings";
+
 import { getLocale } from "$lib/paraglide/runtime";
 
 let { data, children }: { data: { orgId: string }; children: Snippet } =
@@ -39,91 +40,91 @@ const basePath = $derived(`/${data.orgId}/settings`);
 const navItems = $derived([
   {
     path: "",
-    label: settings.nav_general(),
+    label: m.settings_nav_general(),
     icon: Settings,
   },
 
   {
     path: "notifications",
-    label: settings.nav_notifications(),
+    label: m.common_nav_notifications(),
     icon: Bell,
   },
   {
     path: "users",
-    label: settings.nav_users(),
+    label: m.settings_nav_users(),
     icon: Users,
   },
   {
     path: "permissions",
-    label: settings.nav_permissions(),
+    label: m.settings_nav_permissions(),
     icon: Shield,
   },
   {
     path: "periods",
-    label: settings.nav_periods
-      ? settings.nav_periods()
+    label: m.settings_nav_cycles
+      ? m.settings_nav_cycles()
       : "Academic Periods",
     icon: Calendar,
   },
   {
     path: "units",
-    label: settings.nav_units(),
+    label: m.settings_nav_units(),
     icon: Network,
   },
   {
     path: "rooms",
-    label: settings.nav_rooms(),
+    label: m.common_nav_rooms(),
     icon: MapPin,
   },
   {
     path: "subjects",
-    label: settings.nav_subjects(),
+    label: m.common_word_subjects(),
     icon: BookOpen,
   },
   {
     path: "audit",
-    label: settings.nav_audit(),
+    label: m.common_nav_audit(),
     icon: History,
   },
   {
     path: "bulk-input",
-    label: settings.nav_import_export(),
+    label: m.settings_nav_import_export(),
     icon: FileDown,
   },
   {
     path: "currencies",
-    label: settings.nav_currencies(),
+    label: m.settings_nav_currencies(),
     icon: Coins,
   },
   {
     path: "ordering",
-    label: settings.nav_ordering(),
+    label: m.common_nav_ordering(),
     icon: ListOrdered,
   },
   {
     path: "registration",
-    label: settings.nav_registration(),
+    label: m.settings_nav_registration(),
     icon: FileText,
   },
 
   {
     path: "fee-templates",
-    label: settings.nav_fee_templates(),
+    label: m.common_breadcrumb_fees(),
     icon: Receipt,
   },
   {
     path: "discount-templates",
-    label: settings.nav_discount_templates(),
+    label: m.settings_nav_discount_templates(),
     icon: Percent,
   },
   {
     path: "academic-policy",
-    label: settings.nav_academic_policy(),
+    label: m.common_nav_academic_policy(),
     icon: Sliders,
   },
   {
     path: "approvals",
-    label: settings.nav_approvals(),
+    label: m.settings_nav_approvals(),
     icon: CheckSquare,
   },
 ]);
@@ -138,7 +139,7 @@ const navItems = $derived([
       <SidebarNav
         items={navItems}
         {basePath}
-        title={settings.layout_title()}
+        title={m.common_word_settings()}
       />
     {/snippet}
 

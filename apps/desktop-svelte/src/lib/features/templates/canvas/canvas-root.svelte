@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 /**
  * CanvasRoot — The main SVG viewport for the template designer.
  * Renders the document page at real mm dimensions with zoom/pan support.

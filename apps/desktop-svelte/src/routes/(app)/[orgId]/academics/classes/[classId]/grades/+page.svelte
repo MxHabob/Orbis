@@ -5,6 +5,7 @@ Displays a table of enrolled students with inline grade entry fields.
 Merges the concepts of "students list" and "grade entry" into one view.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
@@ -18,7 +19,7 @@ import {
 } from "@orbis/ui-svelte/select";
 import { Users, ClipboardList, Download, RefreshCcw } from "lucide-svelte";
 import { toast } from "svelte-sonner";
-import * as academics from "$lib/paraglide/messages/academics";
+
 import { getLocale } from "$lib/paraglide/runtime";
 import { DataTable, AvatarCell } from "$lib/tables";
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
@@ -79,7 +80,7 @@ async function loadData() {
     }
   } catch (e) {
     console.error("Error loading grades data:", e);
-    toast.error(academics.grades_error_load());
+    toast.error(m.academics_grades_error_load());
   } finally {
     isLoading = false;
   }
@@ -163,8 +164,8 @@ const gridColumns = $derived.by(() => {
     {
       id: "student_name",
       prop: "student_name",
-      header: academics.grades_col_student(),
-      name: academics.grades_col_student(),
+      header: m.common_word_student(),
+      name: m.common_word_student(),
       width: 180,
       size: 180,
       minSize: 140,
@@ -198,7 +199,7 @@ const gridColumns = $derived.by(() => {
   if (assessments.length > 0) {
     cols.push({
       prop: "__total",
-      name: `${academics.grades_col_total()} (/${maxTotal})`,
+      name: `${m.common_grades_col_total()} (/${maxTotal})`,
       size: 100,
       pin: "colPinEnd",
       readonly: true,
@@ -303,11 +304,11 @@ async function handleCellEdit(event: any) {
       };
 
       await commands.grades.upsertGradeCell(orgId ?? "", "admin", request);
-      toast.success(academics.grades_saved());
+      toast.success(m.academics_grades_saved());
     } catch (e: unknown) {
       // Revert in-memory value if backend save fails
       gradeEntries[key] = oldVal;
-      toast.error((e as any)?.message || academics.grades_error_save());
+      toast.error((e as any)?.message || m.academics_grades_error_save());
     }
   }
 }
@@ -320,7 +321,7 @@ async function handleCellEdit(event: any) {
       <!-- Subject Filter -->
       <div class="flex items-center gap-2">
         <span class="text-xs text-muted-foreground font-medium">
-          {academics.grades_filter_subject()}:
+          {m.common_word_subject()}:
         </span>
         <Select
           type="single"
@@ -336,7 +337,7 @@ async function handleCellEdit(event: any) {
                       ?.name ??
                     selectedSubjectId,
                 )
-              : academics.grades_select_subject()}
+              : m.academics_grades_select_subject()}
           </SelectTrigger>
           <SelectContent>
             {#each subjects as subj (subj.id)}
@@ -352,7 +353,7 @@ async function handleCellEdit(event: any) {
       {#if semesters.length > 0}
         <div class="flex items-center gap-2">
           <span class="text-xs text-muted-foreground font-medium">
-            {academics.grades_filter_semester()}:
+            {m.common_word_semester()}:
           </span>
           <Select
             type="single"
@@ -369,7 +370,7 @@ async function handleCellEdit(event: any) {
                       )?.name ??
                       selectedSemesterId,
                   )
-                : academics.grades_select_semester()}
+                : m.academics_grades_select_semester()}
             </SelectTrigger>
             <SelectContent>
               {#each semesters as sem (sem.id)}
@@ -386,7 +387,7 @@ async function handleCellEdit(event: any) {
       <Badge variant="secondary" class="text-[10px] h-6 shrink-0">
         <Users size={10} class="me-1" />
         {students.length}
-        {academics.grades_enrolled_students()}
+        {m.common_word_student_single()}
       </Badge>
     </div>
 
@@ -410,7 +411,7 @@ async function handleCellEdit(event: any) {
     >
       <ClipboardList size={16} class="shrink-0" />
       <span>
-        {academics.grades_no_assessments_banner()}
+        {m.academics_grades_no_assessments_banner()}
       </span>
     </div>
   {/if}
@@ -422,7 +423,7 @@ async function handleCellEdit(event: any) {
       source={gridSource}
       loading={isLoading}
       emptyIcon={Users}
-      emptyTitle={academics.grades_no_students()}
+      emptyTitle={m.academics_grades_no_students()}
       {rtl}
       height="100%"
       readonly={false}

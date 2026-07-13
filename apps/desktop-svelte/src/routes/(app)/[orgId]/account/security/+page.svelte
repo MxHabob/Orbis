@@ -1,10 +1,11 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { authStore } from "$lib/stores";
 import { commands } from "$lib/core/ipc";
 import type { UserSession } from "$lib/core/ipc";
 import { toast } from "svelte-sonner";
-import * as settings from "$lib/paraglide/messages/settings";
+
 import { AccountPasswordCard, AccountSessionsCard } from "$lib/features/auth";
 import { Smartphone, Monitor } from "lucide-svelte";
 
@@ -17,7 +18,7 @@ async function handleUpdatePassword(e: Event) {
   e.preventDefault();
 
   if (newPassword !== confirmPassword) {
-    toast.error(settings.security_password_mismatch());
+    toast.error(m.settings_security_password_mismatch());
     return;
   }
 
@@ -31,7 +32,7 @@ async function handleUpdatePassword(e: Event) {
     await commands.iam.changePassword(authStore.userId, {
       new_password: newPassword,
     });
-    toast.success(settings.security_password_success());
+    toast.success(m.settings_security_password_success());
     currentPassword = "";
     newPassword = "";
     confirmPassword = "";
@@ -66,8 +67,8 @@ async function loadSessions() {
 
       const isCurrentDevice = s.token === authStore.token;
       const location = isCurrentDevice
-        ? settings.user_session_current_device()
-        : settings.user_session_active_device();
+        ? m.settings_user_session_current_device()
+        : m.settings_user_session_active_device();
 
       return {
         id: s.id,
@@ -89,7 +90,7 @@ onMount(() => {
 </script>
 
 <svelte:head>
-  <title>{settings.security_window_title()} | Orbis</title>
+  <title>{m.common_nav_security()} | Orbis</title>
 </svelte:head>
 
 <div class="flex flex-col gap-6">

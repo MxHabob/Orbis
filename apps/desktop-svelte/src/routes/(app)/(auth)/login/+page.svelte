@@ -4,9 +4,10 @@
   Refactored into clean sub-components for modularity and maintainability.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Card } from "@orbis/ui-svelte/card";
 import { Logo } from "@orbis/ui-svelte/logo";
-import * as auth from "$lib/paraglide/messages/auth";
+
 import { getLocale } from "$lib/paraglide/runtime";
 
 import AnnouncementBanner from "$lib/features/auth/components/announcement-banner.svelte";
@@ -19,7 +20,7 @@ let selectedYear = $state("");
 </script>
 
 <svelte:head>
-	<title>{auth.login_title()}</title>
+	<title>{m.common_login_title()}</title>
 </svelte:head>
 
 <div class="h-full w-full bg-background flex flex-col items-center justify-center relative overflow-hidden" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
@@ -43,7 +44,7 @@ let selectedYear = $state("");
 					<!-- Sentry-like Header: Sign in to continue -->
 					<div class="flex flex-col text-start mb-4 select-none">
 						<h2 class="text-xl md:text-2xl font-bold tracking-tight text-foreground">
-							{auth.login_sign_in_to_continue()}
+							{m.auth_login_sign_in_to_continue()}
 						</h2>
 					</div>
 
@@ -53,7 +54,7 @@ let selectedYear = $state("");
 							<span 
 								class="border-b-2 border-primary text-foreground rounded-none px-1 py-1.5 font-semibold text-xs bg-transparent uppercase tracking-wider select-none"
 							>
-								{auth.login_submit()}
+								{m.auth_login_submit()}
 							</span>
 						</div>
 					</div>
@@ -78,23 +79,23 @@ let selectedYear = $state("");
 				<!-- Footer Policy Terms -->
 				<div class="text-center pt-8 border-t border-border/40 mt-8 select-none">
 					<p class="font-sans text-[10px] text-muted-foreground/80 leading-normal">
-						{auth.login_terms_prefix()}{' '}
+						{m.auth_login_terms_prefix()}{' '}
 						<a
 							href="https://mulverse.com/?route=terms"
 							class="text-muted-foreground hover:text-primary transition-colors underline font-medium"
 							target="_blank"
 							rel="noreferrer"
 						>
-							{auth.login_terms_of_service()}
+							{m.common_sidebar_help_terms()}
 						</a>{' '}
-						{auth.login_and()}{' '}
+						{m.auth_login_and()}{' '}
 						<a
 							href="https://mulverse.com/?route=policy"
 							class="text-muted-foreground hover:text-primary transition-colors underline font-medium"
 							target="_blank"
 							rel="noreferrer"
 						>
-							{auth.login_privacy_policy()}
+							{m.common_login_privacy_policy()}
 						</a>
 					</p>
 				</div>

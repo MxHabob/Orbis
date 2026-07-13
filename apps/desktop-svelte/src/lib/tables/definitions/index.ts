@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 /**
  * @orbis/desktop — Table Definitions
  *
@@ -6,7 +7,7 @@
  *
  * Usage:
  *   import { students } from "$lib/tables/definitions";
- *   const cols = students.columns("ar");
+ *   const cols = m.students_columns("ar");
  */
 
 import type { OrbisColumnDef, ActionItem } from "@orbis/svelte-grid";

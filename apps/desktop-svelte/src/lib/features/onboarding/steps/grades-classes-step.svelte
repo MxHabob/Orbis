@@ -3,19 +3,18 @@
   Enabling grades, adding/removing sections (divisions).
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Label } from "@orbis/ui-svelte/label";
 import { Checkbox } from "@orbis/ui-svelte/checkbox";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Input } from "@orbis/ui-svelte/input";
 import { Button } from "@orbis/ui-svelte/button";
 import { Plus } from "lucide-svelte";
-import * as common from "$lib/paraglide/messages/common";
+
 import { onboardingState } from "../state.svelte";
 </script>
 
-
 <div class="w-full space-y-6">
-
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     {#each onboardingState.academics.gradeLevels as gl (gl.level)}
@@ -36,7 +35,7 @@ import { onboardingState } from "../state.svelte";
 
           <div class="flex items-center gap-2">
             <Label for="enable-{gl.level}" class="text-xs text-muted-foreground cursor-pointer">
-              {common.onboarding_stage_enable()}
+              {m.common_onboarding_stage_enable()}
             </Label>
             <Checkbox id="enable-{gl.level}" bind:checked={gl.enabled} />
           </div>
@@ -46,7 +45,7 @@ import { onboardingState } from "../state.svelte";
         {#if gl.enabled}
           <div class="space-y-3 pt-3 border-t border-border/60">
             <Label class="text-xs text-muted-foreground flex justify-start">
-              {common.onboarding_associated_divisions({ division: onboardingState.divisionLabel })}
+              {m.common_onboarding_associated_divisions({ division: onboardingState.divisionLabel })}
             </Label>
 
             <div class="flex flex-wrap gap-1.5 min-h-[32px] p-2 bg-muted/20 rounded-lg border border-border/60">
@@ -66,7 +65,7 @@ import { onboardingState } from "../state.svelte";
 
               {#if gl.divisions.length === 0}
                 <span class="text-xs text-muted-foreground/80 self-center">
-                  {common.onboarding_no_divisions({ division: onboardingState.divisionLabel })}
+                  {m.common_onboarding_no_divisions({ division: onboardingState.divisionLabel })}
                 </span>
               {/if}
             </div>
@@ -74,7 +73,7 @@ import { onboardingState } from "../state.svelte";
             <!-- Quick Add Division Form -->
             <div class="flex gap-2">
               <Input
-                placeholder={common.onboarding_add_division_placeholder({ division: onboardingState.divisionLabel })}
+                placeholder={m.common_onboarding_add_division_placeholder({ division: onboardingState.divisionLabel })}
                 bind:value={onboardingState.academics.divisionInput[gl.level]}
                 class="text-xs h-8"
               />

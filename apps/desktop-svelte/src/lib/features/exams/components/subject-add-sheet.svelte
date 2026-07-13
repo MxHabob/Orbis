@@ -4,6 +4,7 @@ Sheet for adding an exam subject to a session.
 Allows selecting an existing subject or creating a new one on-the-fly.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import {
   Sheet,
   SheetContent,
@@ -19,7 +20,6 @@ import {
   SelectItem,
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
-import * as common from "$lib/paraglide/messages/common";
 
 import { commands } from "$lib/core/ipc";
 
@@ -145,7 +145,7 @@ async function handleSubmit() {
     >
       <SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
         <SheetTitle class="text-lg font-bold text-foreground">
-          {common.exams_subjects_add()}
+          {m.common_exams_subjects_add()}
         </SheetTitle>
       </SheetHeader>
 
@@ -218,7 +218,7 @@ async function handleSubmit() {
         <!-- Max Score -->
         <div class="flex flex-col gap-1.5">
           <label for="max-score" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
-            {common.exams_subjects_score()}
+            {m.common_exams_subjects_score()}
           </label>
           <Input id="max-score" type="number" bind:value={maxScore} class="text-xs h-9 font-mono" />
         </div>
@@ -226,7 +226,7 @@ async function handleSubmit() {
         <!-- Duration -->
         <div class="flex flex-col gap-1.5">
           <label for="duration" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
-            {common.exams_subjects_duration()}
+            {m.common_exams_subjects_duration()}
           </label>
           <Input id="duration" type="number" bind:value={durationMinutes} class="text-xs h-9 font-mono" />
         </div>
@@ -234,7 +234,7 @@ async function handleSubmit() {
         <!-- Exam Type -->
         <div class="flex flex-col gap-1.5">
           <label for="exam-type" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
-            {common.exams_subjects_type()}
+            {m.common_bulk_col_exam_type()}
           </label>
           <Select type="single" value={examType} onValueChange={(v) => (examType = v ?? "written")}>
             <SelectTrigger class="h-9 text-xs w-full">
@@ -259,7 +259,7 @@ async function handleSubmit() {
           {#if isSaving}
             جاري الحفظ...
           {:else}
-            {common.exams_subjects_add()}
+            {m.common_exams_subjects_add()}
           {/if}
         </Button>
       </div>

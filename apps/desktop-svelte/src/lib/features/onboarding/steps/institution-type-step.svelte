@@ -3,10 +3,11 @@
   Initial selection that populates defaults for the wizard.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Card } from "@orbis/ui-svelte/card";
 import { Label } from "@orbis/ui-svelte/label";
 import { Input } from "@orbis/ui-svelte/input";
-import * as common from "$lib/paraglide/messages/common";
+
 import { onboardingState } from "../state.svelte";
 import { INSTITUTION_PROFILES } from "../templates";
 import {
@@ -32,7 +33,6 @@ function selectProfile(type: string) {
 </script>
 
 <div class="w-full space-y-6">
-
 
   <!-- Profiles Grid -->
   <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -71,23 +71,23 @@ function selectProfile(type: string) {
     <div class="p-4 border border-border/60 rounded-xl bg-muted/10 space-y-3 text-start">
       <h4 class="text-xs font-bold text-foreground flex items-center gap-2 font-serif">
         <span class="w-1 h-2.5 rounded-full bg-primary"></span>
-        {common.onboarding_profile_terminology_title()}
+        {m.common_onboarding_profile_terminology_title()}
       </h4>
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-sans">
         <div class="space-y-1">
-          <span class="text-[10px] text-muted-foreground block">{common.onboarding_term_stage()}</span>
+          <span class="text-[10px] text-muted-foreground block">{m.common_class_label_grade()}</span>
           <span class="font-semibold text-foreground">{onboardingState.stageLabel}</span>
         </div>
         <div class="space-y-1">
-          <span class="text-[10px] text-muted-foreground block">{common.onboarding_term_classroom()}</span>
+          <span class="text-[10px] text-muted-foreground block">{m.common_onboarding_term_classroom()}</span>
           <span class="font-semibold text-foreground">{onboardingState.classroomLabel}</span>
         </div>
         <div class="space-y-1">
-          <span class="text-[10px] text-muted-foreground block">{common.onboarding_term_division()}</span>
+          <span class="text-[10px] text-muted-foreground block">{m.common_onboarding_term_division()}</span>
           <span class="font-semibold text-foreground">{onboardingState.divisionLabel}</span>
         </div>
         <div class="space-y-1">
-          <span class="text-[10px] text-muted-foreground block">{common.onboarding_term_subject()}</span>
+          <span class="text-[10px] text-muted-foreground block">{m.common_onboarding_term_subject()}</span>
           <span class="font-semibold text-foreground">{onboardingState.subjectLabel}</span>
         </div>
       </div>
@@ -98,10 +98,10 @@ function selectProfile(type: string) {
   <div class="p-4 border border-border/60 rounded-xl bg-card space-y-3 text-start">
     <div class="flex flex-col gap-1">
       <Label for="numbering_pattern" class="text-xs font-bold text-foreground">
-        {common.onboarding_profile_numbering_title()}
+        {m.common_onboarding_profile_numbering_title()}
       </Label>
       <p class="text-[10px] text-muted-foreground">
-        {common.onboarding_profile_numbering_desc()}
+        {m.common_onboarding_profile_numbering_desc()}
       </p>
     </div>
     <Input 

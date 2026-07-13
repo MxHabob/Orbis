@@ -1,8 +1,9 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import type { ChartId, ChartLayoutItem, ColSpan } from "./utils/types";
 import { DEFAULT_CHART_LAYOUT } from "./utils/types";
-import MetricsSettings from "./components/metrics-settings.svelte";
+import MetricsSettings from "./components/metrics-m.settings_svelte";
 import MetricsGrid from "./components/metrics-grid.svelte";
 import DraggableChartCard from "./components/draggable-chart-card.svelte";
 

@@ -1,4 +1,3 @@
-import * as m from "$lib/paraglide/messages";
 <!--
   @page PaymentsListingPage
   Redesigned to match the professional double-entry ledger statement page aesthetics.
@@ -6,6 +5,7 @@ import * as m from "$lib/paraglide/messages";
   with zero space waste and school-focused inputs (Student, Fee, Amount, Box, Method, Date, Notes).
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import {
@@ -46,7 +46,7 @@ import {
 } from "lucide-svelte";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
-import * as finance from "$lib/paraglide/messages/finance";
+
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 
 let { data }: { data: { orgId: string } } = $props();
@@ -218,8 +218,6 @@ async function loadCurrencies() {
     console.error("Failed to load currencies:", e);
   }
 }
-
-
 
 onMount(() => {
   if (data.orgId) {
@@ -722,7 +720,7 @@ const filteredPayments = $derived.by(() => {
             <div>اسم الحساب (الطالب) / الملاحظات</div>
             <div>الرسوم المستحقة والمدفوعة</div>
             <div class="text-center">إجمالي المدفوع</div>
-            <div class="text-center">{finance.je_col_actions()}</div>
+            <div class="text-center">{m.common_je_col_actions()}</div>
           </div>
 
           <!-- Input Rows -->

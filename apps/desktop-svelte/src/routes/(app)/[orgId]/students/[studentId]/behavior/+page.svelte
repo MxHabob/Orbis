@@ -3,6 +3,7 @@
 Behavior records + AI summary using OrbisGrid.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
@@ -16,7 +17,7 @@ import {
 import { onMount } from "svelte";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
-import * as academics from "$lib/paraglide/messages/academics";
+
 import { formatDate } from "$lib/core/i18n";
 
 import { DataTable } from "$lib/tables";
@@ -59,13 +60,13 @@ async function handleAISummarize() {
           ? "الطالب يظهر انضباطاً ممتازاً وتفاعلاً إيجابياً في الحصص الدراسية."
           : "The student shows excellent discipline and positive engagement in classes."),
     );
-    toast.success(academics.behavior_ai_success());
+    toast.success(m.academics_behavior_ai_success());
   } catch {
     aiSummary =
       getLocale() === "ar"
         ? "الطالب يظهر سلوكاً منضبطاً جداً بشكل عام. مشاركته في الأنشطة المدرسية متميزة."
         : "The student generally shows very disciplined behavior.";
-    toast.success(academics.behavior_ai_success());
+    toast.success(m.academics_behavior_ai_success());
   } finally {
     isGeneratingAI = false;
   }
@@ -96,10 +97,10 @@ const gridSource = $derived(
 const columns = $derived(
   sbDef.columns({
     idx: "#",
-    date: academics.behavior_col_date(),
-    type: academics.behavior_col_type(),
-    description: academics.behavior_col_details(),
-    status: academics.behavior_col_reporter(),
+    date: m.common_overview_date(),
+    type: m.academics_behavior_col_type(),
+    description: m.academics_behavior_col_details(),
+    status: m.academics_behavior_col_reporter(),
   }),
 );
 
@@ -112,27 +113,27 @@ const rtl = $derived(getLocale() === "ar");
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
         <BrainCircuit size={16} class="text-primary animate-pulse" />
-        <span class="font-bold text-foreground">{academics.behavior_ai_title()}</span>
+        <span class="font-bold text-foreground">{m.academics_behavior_ai_title()}</span>
       </div>
       <Button variant="lime" class="text-[10px] h-7 px-2.5" onclick={handleAISummarize} disabled={isGeneratingAI}>
         <Sparkles size={11} class="me-1.5" />
-        {isGeneratingAI ? academics.behavior_ai_generating() : academics.behavior_ai_generate()}
+        {isGeneratingAI ? m.common_promo_running() : m.academics_behavior_ai_generate()}
       </Button>
     </div>
     {#if aiSummary}
       <div class="p-3 bg-card border border-border/60 rounded-lg text-foreground leading-relaxed">{aiSummary}</div>
     {:else}
-      <p class="text-[10px] text-muted-foreground">{academics.behavior_ai_hint()}</p>
+      <p class="text-[10px] text-muted-foreground">{m.academics_behavior_ai_hint()}</p>
     {/if}
   </div>
 
   <!-- Records Grid -->
   <div class="flex flex-col gap-2">
     <div class="flex items-center justify-between px-1">
-      <span class="font-bold text-[10px] text-muted-foreground uppercase tracking-wider">{academics.behavior_records_title()}</span>
-      <Button variant="outline" class="text-[10px] h-7 px-2" onclick={() => toast.info(academics.behavior_add_record_coming_soon())}>
+      <span class="font-bold text-[10px] text-muted-foreground uppercase tracking-wider">{m.academics_behavior_records_title()}</span>
+      <Button variant="outline" class="text-[10px] h-7 px-2" onclick={() => toast.info(m.academics_behavior_add_record_coming_soon())}>
         <Plus size={12} class="me-1" />
-        {academics.behavior_add_record()}
+        {m.academics_behavior_add_record()}
       </Button>
     </div>
 

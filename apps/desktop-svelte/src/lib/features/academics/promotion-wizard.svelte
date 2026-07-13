@@ -1,11 +1,11 @@
-import * as m from "$lib/paraglide/messages";
 <!--
 @component PromotionWizard
 Multi-step wizard for the academic promotion workflow.
 Steps: Configuration → Class Mapping → Preview → Execute.
 -->
 <script lang="ts">
-import * as common from "$lib/paraglide/messages/common";
+import * as m from "$lib/paraglide/messages";
+
 import { commands } from "$lib/core/ipc";
 import { extractErrorMessage } from "$lib/core/ipc";
 import { toast } from "svelte-sonner";
@@ -72,10 +72,10 @@ let { orgId }: { orgId: string } = $props();
 
 let currentStep = $state(0);
 const steps = [
-  { key: "config", label: common.promo_step_config },
-  { key: "mapping", label: common.promo_step_mapping },
-  { key: "preview", label: common.promo_step_preview },
-  { key: "execute", label: common.promo_step_execute },
+  { key: "config", label: m.common_word_settings },
+  { key: "mapping", label: m.common_promo_step_mapping },
+  { key: "preview", label: m.common_action_preview },
+  { key: "execute", label: m.common_calendar_execute },
 ];
 
 const progressValue = $derived(((currentStep + 1) / steps.length) * 100);
@@ -196,7 +196,7 @@ async function executePromotion() {
   isExecuting = true;
   try {
     executionResult = await commands.platform.executePromotion(previewJob.id);
-    toast.success(common.promo_complete());
+    toast.success(m.common_promo_complete());
     currentStep = 3; // Move to results
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
@@ -223,13 +223,13 @@ function decisionVariant(d: string) {
 function decisionLabel(d: string) {
   switch (d) {
     case "promoted":
-      return common.promo_promoted();
+      return m.common_promo_promoted();
     case "retained":
-      return common.promo_retained();
+      return m.common_promo_retained();
     case "graduated":
-      return common.promo_graduated();
+      return m.common_promo_graduated();
     case "excluded":
-      return common.promo_excluded();
+      return m.common_promo_excluded();
     default:
       return d;
   }
@@ -241,7 +241,7 @@ function decisionLabel(d: string) {
     <div class="w-full max-w-md mx-auto mb-8 px-4 flex flex-col gap-2 items-center select-none">
       <Progress value={progressValue} class="h-1" />
       <span class="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-        {common.onboarding_progress_label ? common.onboarding_progress_label() : "الخطوة"} {currentStep + 1} / {steps.length}: {steps[currentStep].label()}
+        {m.common_onboarding_progress_label ? m.common_onboarding_progress_label() : "الخطوة"} {currentStep + 1} / {steps.length}: {steps[currentStep].label()}
       </span>
     </div>
 
@@ -252,7 +252,7 @@ function decisionLabel(d: string) {
         <Card class="w-full">
           <CardHeader class="bg-muted/50 px-6 py-3 border-b border-border">
             <CardTitle class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-              {common.promo_step_config()}
+              {m.common_word_settings()}
             </CardTitle>
           </CardHeader>
           <CardContent class="p-0">
@@ -260,19 +260,19 @@ function decisionLabel(d: string) {
               <!-- Target Year -->
               <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex flex-col gap-1 text-start">
-                  <Label for="target_year_name" class="text-xs font-semibold text-foreground">{common.promo_target_year()}</Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">{common.promo_desc_target_year()}</span>
+                  <Label for="target_year_name" class="text-xs font-semibold text-foreground">{m.common_promo_target_year()}</Label>
+                  <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_target_year()}</span>
                 </div>
                 <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
-                  <Input id="target_year_name" bind:value={config.target_year_name} placeholder={common.year_name_placeholder()} class="h-9 w-full bg-background" />
+                  <Input id="target_year_name" bind:value={config.target_year_name} placeholder={m.common_year_name_placeholder()} class="h-9 w-full bg-background" />
                 </div>
               </div>
 
               <!-- Target Year Arabic -->
               <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex flex-col gap-1 text-start">
-                  <Label for="target_year_name_ar" class="text-xs font-semibold text-foreground">{common.year_name_ar()}</Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">{common.promo_desc_target_year_ar()}</span>
+                  <Label for="target_year_name_ar" class="text-xs font-semibold text-foreground">{m.common_year_name_ar()}</Label>
+                  <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_target_year_ar()}</span>
                 </div>
                 <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
                   <Input id="target_year_name_ar" bind:value={config.target_year_name_ar} dir="rtl" class="h-9 w-full bg-background" />
@@ -282,8 +282,8 @@ function decisionLabel(d: string) {
               <!-- Start Date -->
               <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex flex-col gap-1 text-start">
-                  <Label for="target_start_date" class="text-xs font-semibold text-foreground">{common.promo_target_start()}</Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">{common.promo_desc_target_start()}</span>
+                  <Label for="target_start_date" class="text-xs font-semibold text-foreground">{m.common_promo_target_start()}</Label>
+                  <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_target_start()}</span>
                 </div>
                 <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
                   <Input id="target_start_date" type="date" bind:value={config.target_start_date} class="h-9 w-full bg-background" />
@@ -293,8 +293,8 @@ function decisionLabel(d: string) {
               <!-- End Date -->
               <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex flex-col gap-1 text-start">
-                  <Label for="target_end_date" class="text-xs font-semibold text-foreground">{common.promo_target_end()}</Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">{common.promo_desc_target_end()}</span>
+                  <Label for="target_end_date" class="text-xs font-semibold text-foreground">{m.common_promo_target_end()}</Label>
+                  <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_target_end()}</span>
                 </div>
                 <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
                   <Input id="target_end_date" type="date" bind:value={config.target_end_date} class="h-9 w-full bg-background" />
@@ -304,8 +304,8 @@ function decisionLabel(d: string) {
               <!-- Passing Score -->
               <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex flex-col gap-1 text-start">
-                  <Label for="passing_score" class="text-xs font-semibold text-foreground">{common.promo_passing_score()}</Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">{common.promo_desc_passing_score()}</span>
+                  <Label for="passing_score" class="text-xs font-semibold text-foreground">{m.common_promo_passing_score()}</Label>
+                  <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_passing_score()}</span>
                 </div>
                 <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
                   <Input id="passing_score" type="number" bind:value={config.passing_score} min={0} max={100} class="h-9 w-full bg-background" />
@@ -315,8 +315,8 @@ function decisionLabel(d: string) {
               <!-- Min Attendance Rate -->
               <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex flex-col gap-1 text-start">
-                  <Label for="min_attendance_rate" class="text-xs font-semibold text-foreground">{common.promo_min_attendance()}</Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">{common.promo_desc_min_attendance()}</span>
+                  <Label for="min_attendance_rate" class="text-xs font-semibold text-foreground">{m.common_promo_min_attendance()}</Label>
+                  <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_min_attendance()}</span>
                 </div>
                 <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
                   <Input id="min_attendance_rate" type="number" bind:value={config.min_attendance_rate} min={0} max={100} class="h-9 w-full bg-background" />
@@ -330,7 +330,7 @@ function decisionLabel(d: string) {
         <Card class="w-full">
           <CardHeader class="bg-muted/50 px-6 py-3 border-b border-border">
             <CardTitle class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none font-serif">
-              {common.promo_desc_policies_title()}
+              {m.common_promo_desc_policies_title()}
             </CardTitle>
           </CardHeader>
 
@@ -340,9 +340,9 @@ function decisionLabel(d: string) {
               <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex flex-col gap-1 text-start">
                   <Label for="auto_graduate" class="text-xs font-semibold text-foreground">
-                    {common.promo_auto_graduate()}
+                    {m.common_promo_auto_graduate()}
                   </Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">{common.promo_desc_auto_graduate()}</span>
+                  <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_auto_graduate()}</span>
                 </div>
                 <div class="shrink-0">
                   <Switch id="auto_graduate" bind:checked={config.auto_graduate_final_level} />
@@ -353,9 +353,9 @@ function decisionLabel(d: string) {
                 <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-muted/5">
                   <div class="flex flex-col gap-1 text-start">
                     <Label for="final_level" class="text-xs font-semibold text-foreground">
-                      {common.promo_final_level()}
+                      {m.common_promo_final_level()}
                     </Label>
-                    <span class="text-[11px] text-muted-foreground leading-relaxed">{common.promo_desc_final_level()}</span>
+                    <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_final_level()}</span>
                   </div>
                   <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
                     <Input id="final_level" bind:value={config.final_level} placeholder="e.g. Grade 12" class="h-9 w-full bg-background" />
@@ -367,9 +367,9 @@ function decisionLabel(d: string) {
               <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex flex-col gap-1 text-start">
                   <Label for="exclude_withdrawn" class="text-xs font-semibold text-foreground">
-                    {common.promo_exclude_withdrawn()}
+                    {m.common_promo_exclude_withdrawn()}
                   </Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">{common.promo_desc_exclude_withdrawn()}</span>
+                  <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_exclude_withdrawn()}</span>
                 </div>
                 <div class="shrink-0">
                   <Switch id="exclude_withdrawn" bind:checked={config.exclude_withdrawn} />
@@ -380,9 +380,9 @@ function decisionLabel(d: string) {
               <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex flex-col gap-1 text-start">
                   <Label for="carry_fees" class="text-xs font-semibold text-foreground">
-                    {common.promo_carry_fees()}
+                    {m.common_promo_carry_fees()}
                   </Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed font-sans">{common.promo_desc_carry_fees()}</span>
+                  <span class="text-[11px] text-muted-foreground leading-relaxed font-sans">{m.common_promo_desc_carry_fees()}</span>
                 </div>
                 <div class="shrink-0">
                   <Switch id="carry_fees" bind:checked={config.carry_over_outstanding_fees} />
@@ -393,9 +393,9 @@ function decisionLabel(d: string) {
               <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex flex-col gap-1 text-start">
                   <Label for="carry_guardians" class="text-xs font-semibold text-foreground">
-                    {common.promo_carry_guardians()}
+                    {m.common_promo_carry_guardians()}
                   </Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed font-sans">{common.promo_desc_carry_guardians()}</span>
+                  <span class="text-[11px] text-muted-foreground leading-relaxed font-sans">{m.common_promo_desc_carry_guardians()}</span>
                 </div>
                 <div class="shrink-0">
                   <Switch id="carry_guardians" bind:checked={config.carry_over_guardians} />
@@ -412,13 +412,13 @@ function decisionLabel(d: string) {
         <div class="flex justify-end gap-4">
           <Button variant="outline" size="sm" onclick={addMapping} class="border-border">
             <Plus class="size-4 me-2" />
-            {common.promo_add_mapping()}
+            {m.common_promo_add_mapping()}
           </Button>
         </div>
 
         {#if config.class_mapping.length === 0}
           <div class="text-center py-12 text-muted-foreground border border-dashed border-border rounded-xl bg-card">
-            <p>{common.promo_add_mapping()}</p>
+            <p>{m.common_promo_add_mapping()}</p>
           </div>
         {:else}
           <div class="space-y-6">
@@ -426,7 +426,7 @@ function decisionLabel(d: string) {
               <Card class="w-full">
                 <CardHeader class="bg-muted/50 px-6 py-3 border-b border-border flex flex-row items-center justify-between">
                   <CardTitle class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase select-none">
-                    {common.promo_source_level()} &rarr; {common.promo_target_level()}
+                    {m.common_promo_source_level()} &rarr; {m.common_promo_target_level()}
                   </CardTitle>
                   <Button variant="ghost" size="icon-xs" onclick={() => removeMapping(i)} class="text-destructive hover:text-destructive hover:bg-destructive/5 shrink-0">
                     <Trash2 class="size-3.5" />
@@ -437,8 +437,8 @@ function decisionLabel(d: string) {
                     <!-- Source Level -->
                     <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div class="flex flex-col gap-1 text-start">
-                        <Label class="text-xs font-semibold text-foreground">{common.promo_source_level()}</Label>
-                        <span class="text-[11px] text-muted-foreground">{common.promo_desc_source_level()}</span>
+                        <Label class="text-xs font-semibold text-foreground">{m.common_promo_source_level()}</Label>
+                        <span class="text-[11px] text-muted-foreground">{m.common_promo_desc_source_level()}</span>
                       </div>
                       <div class="w-full md:w-[480px] shrink-0">
                         <Input bind:value={mapping.source_level} placeholder="e.g. Grade 5" class="h-9 w-full bg-background" />
@@ -448,8 +448,8 @@ function decisionLabel(d: string) {
                     <!-- Target Level -->
                     <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div class="flex flex-col gap-1 text-start">
-                        <Label class="text-xs font-semibold text-foreground">{common.promo_target_level()}</Label>
-                        <span class="text-[11px] text-muted-foreground">{common.promo_desc_target_level()}</span>
+                        <Label class="text-xs font-semibold text-foreground">{m.common_promo_target_level()}</Label>
+                        <span class="text-[11px] text-muted-foreground">{m.common_promo_desc_target_level()}</span>
                       </div>
                       <div class="w-full md:w-[480px] shrink-0">
                         <Input bind:value={mapping.target_level} placeholder="e.g. Grade 6" class="h-9 w-full bg-background" />
@@ -459,8 +459,8 @@ function decisionLabel(d: string) {
                     <!-- Target Classes -->
                     <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div class="flex flex-col gap-1 text-start">
-                        <Label class="text-xs font-semibold text-foreground">{common.promo_target_classes()}</Label>
-                        <span class="text-[11px] text-muted-foreground">{common.promo_desc_target_classes()}</span>
+                        <Label class="text-xs font-semibold text-foreground">{m.common_promo_target_classes()}</Label>
+                        <span class="text-[11px] text-muted-foreground">{m.common_promo_desc_target_classes()}</span>
                       </div>
                       <div class="w-full md:w-[480px] shrink-0">
                         <Input
@@ -491,7 +491,7 @@ function decisionLabel(d: string) {
             <Users class="size-5 mx-auto text-muted-foreground" />
             <div>
               <div class="text-2xl font-bold text-foreground">{previewStats.total}</div>
-              <div class="text-[10px] text-muted-foreground font-semibold uppercase">{common.promo_total()}</div>
+              <div class="text-[10px] text-muted-foreground font-semibold uppercase">{m.common_promo_total()}</div>
             </div>
           </div>
           <!-- Promoted -->
@@ -499,7 +499,7 @@ function decisionLabel(d: string) {
             <UserCheck class="size-5 mx-auto text-primary" />
             <div>
               <div class="text-2xl font-bold text-primary">{previewStats.promoted}</div>
-              <div class="text-[10px] text-muted-foreground font-semibold uppercase">{common.promo_promoted()}</div>
+              <div class="text-[10px] text-muted-foreground font-semibold uppercase">{m.common_promo_promoted()}</div>
             </div>
           </div>
           <!-- Retained -->
@@ -507,7 +507,7 @@ function decisionLabel(d: string) {
             <UserX class="size-5 mx-auto text-destructive" />
             <div>
               <div class="text-2xl font-bold text-destructive">{previewStats.retained}</div>
-              <div class="text-[10px] text-muted-foreground font-semibold uppercase">{common.promo_retained()}</div>
+              <div class="text-[10px] text-muted-foreground font-semibold uppercase">{m.common_promo_retained()}</div>
             </div>
           </div>
           <!-- Graduated -->
@@ -515,7 +515,7 @@ function decisionLabel(d: string) {
             <GraduationCap class="size-5 mx-auto text-foreground" />
             <div>
               <div class="text-2xl font-bold text-foreground">{previewStats.graduated}</div>
-              <div class="text-[10px] text-muted-foreground font-semibold uppercase">{common.promo_graduated()}</div>
+              <div class="text-[10px] text-muted-foreground font-semibold uppercase">{m.common_promo_graduated()}</div>
             </div>
           </div>
           <!-- Excluded -->
@@ -523,7 +523,7 @@ function decisionLabel(d: string) {
             <Ban class="size-5 mx-auto text-muted-foreground" />
             <div>
               <div class="text-2xl font-bold text-foreground">{previewStats.excluded}</div>
-              <div class="text-[10px] text-muted-foreground font-semibold uppercase">{common.promo_excluded()}</div>
+              <div class="text-[10px] text-muted-foreground font-semibold uppercase">{m.common_promo_excluded()}</div>
             </div>
           </div>
         </div>
@@ -532,7 +532,7 @@ function decisionLabel(d: string) {
         <Card class="w-full">
           <CardHeader class="bg-muted/50 px-6 py-3 border-b border-border">
             <CardTitle class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-              {common.promo_student()} {common.promo_decision()}
+              {m.common_word_student()} {m.common_promo_decision()}
             </CardTitle>
           </CardHeader>
           <CardContent class="p-0">
@@ -540,8 +540,8 @@ function decisionLabel(d: string) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead class="text-start">{common.promo_student()}</TableHead>
-                    <TableHead class="text-start">{common.promo_decision()}</TableHead>
+                    <TableHead class="text-start">{m.common_word_student()}</TableHead>
+                    <TableHead class="text-start">{m.common_promo_decision()}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -579,32 +579,32 @@ function decisionLabel(d: string) {
         {#if isExecuting}
           <div class="border border-border rounded-xl bg-card flex flex-col items-center justify-center py-16 text-center select-none">
             <Loader2 class="size-12 text-primary animate-spin mb-4" />
-            <h3 class="text-lg font-semibold text-foreground font-serif">{common.promo_executing()}</h3>
-            <p class="text-sm text-muted-foreground mt-1">{common.promo_execute_confirm()}</p>
+            <h3 class="text-lg font-semibold text-foreground font-serif">{m.common_promo_executing()}</h3>
+            <p class="text-sm text-muted-foreground mt-1">{m.common_promo_execute_confirm()}</p>
           </div>
         {:else if executionResult}
           <div class="border border-primary/20 rounded-xl bg-card flex flex-col items-center justify-center py-12 text-center">
             <div class="size-16 rounded-full bg-primary/10 flex items-center justify-center mb-6 select-none">
               <Check class="size-8 text-primary" />
             </div>
-            <h3 class="text-xl font-bold text-foreground font-serif select-none">{common.promo_complete()}</h3>
+            <h3 class="text-xl font-bold text-foreground font-serif select-none">{m.common_promo_complete()}</h3>
             
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mt-8 w-full max-w-md px-6 select-none">
               <div class="text-center p-3 rounded-lg border border-border/50">
                 <div class="text-2xl font-bold text-primary font-sans">{executionResult.promoted_count ?? 0}</div>
-                <div class="text-xs text-muted-foreground mt-1">{common.promo_promoted()}</div>
+                <div class="text-xs text-muted-foreground mt-1">{m.common_promo_promoted()}</div>
               </div>
               <div class="text-center p-3 rounded-lg border border-border/50">
                 <div class="text-2xl font-bold text-destructive font-sans">{executionResult.retained_count ?? 0}</div>
-                <div class="text-xs text-muted-foreground mt-1">{common.promo_retained()}</div>
+                <div class="text-xs text-muted-foreground mt-1">{m.common_promo_retained()}</div>
               </div>
               <div class="text-center p-3 rounded-lg border border-border/50">
                 <div class="text-2xl font-bold text-foreground font-sans">{executionResult.graduated_count ?? 0}</div>
-                <div class="text-xs text-muted-foreground mt-1">{common.promo_graduated()}</div>
+                <div class="text-xs text-muted-foreground mt-1">{m.common_promo_graduated()}</div>
               </div>
               <div class="text-center p-3 rounded-lg border border-border/50">
                 <div class="text-2xl font-bold text-muted-foreground font-sans">{executionResult.excluded_count ?? 0}</div>
-                <div class="text-xs text-muted-foreground mt-1">{common.promo_excluded()}</div>
+                <div class="text-xs text-muted-foreground mt-1">{m.common_promo_excluded()}</div>
               </div>
             </div>
           </div>
@@ -624,7 +624,7 @@ function decisionLabel(d: string) {
             class="border-border text-muted-foreground hover:text-foreground hover:bg-muted flex gap-2 items-center select-none"
           >
             <ArrowRight class="w-4 h-4 rtl:rotate-180" />
-            <span>{common.onboarding_prev_btn ? common.onboarding_prev_btn() : "السابق"}</span>
+            <span>{m.common_onboarding_prev_btn ? m.common_onboarding_prev_btn() : "السابق"}</span>
           </Button>
 
           <!-- Next / Action Button -->
@@ -635,7 +635,7 @@ function decisionLabel(d: string) {
               onclick={() => currentStep = 1}
               class="flex gap-2 items-center font-bold select-none"
             >
-              <span>{common.promo_step_mapping()}</span>
+              <span>{m.common_promo_step_mapping()}</span>
               <ArrowLeft class="w-4 h-4 rtl:rotate-180" />
             </Button>
           {:else if currentStep === 1}
@@ -647,10 +647,10 @@ function decisionLabel(d: string) {
             >
               {#if isAnalyzing}
                 <Loader2 class="size-4 animate-spin" />
-                <span>{common.promo_running()}</span>
+                <span>{m.common_promo_running()}</span>
               {:else}
                 <Play class="size-4" />
-                <span>{common.promo_dry_run()}</span>
+                <span>{m.common_promo_dry_run()}</span>
               {/if}
             </Button>
           {:else if currentStep === 2}
@@ -660,7 +660,7 @@ function decisionLabel(d: string) {
               onclick={() => showExecuteConfirm = true}
               class="flex gap-2 items-center font-bold select-none"
             >
-              <span>{common.promo_execute()}</span>
+              <span>{m.common_promo_execute()}</span>
               <ArrowLeft class="w-4 h-4 rtl:rotate-180" />
             </Button>
           {/if}
@@ -674,12 +674,12 @@ function decisionLabel(d: string) {
 <AlertDialog bind:open={showExecuteConfirm}>
   <AlertDialogContent>
     <AlertDialogHeader>
-      <AlertDialogTitle>{common.promo_execute()}</AlertDialogTitle>
-      <AlertDialogDescription>{common.promo_execute_confirm()}</AlertDialogDescription>
+      <AlertDialogTitle>{m.common_promo_execute()}</AlertDialogTitle>
+      <AlertDialogDescription>{m.common_promo_execute_confirm()}</AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter>
       <AlertDialogCancel>{m.common_cancel?.() ?? "Cancel"}</AlertDialogCancel>
-      <AlertDialogAction onclick={executePromotion}>{common.promo_execute()}</AlertDialogAction>
+      <AlertDialogAction onclick={executePromotion}>{m.common_promo_execute()}</AlertDialogAction>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

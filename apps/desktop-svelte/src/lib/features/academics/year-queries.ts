@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 /**
  * Academic Year & Promotion queries — TanStack Query hooks.
  */

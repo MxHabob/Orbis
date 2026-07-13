@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 /**
  * Template Designer — Main Editor Page (v3.0 — Canva-Inspired)
  *
@@ -20,7 +21,7 @@ import { goto } from "$app/navigation";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { toast } from "svelte-sonner";
-import * as common from "$lib/paraglide/messages/common";
+
 import { l } from "$lib/core/i18n";
 import { RefreshCw } from "lucide-svelte";
 
@@ -135,7 +136,7 @@ async function saveTemplate() {
     );
 
     store.markSaved();
-    toast.success(common.td_saved_success?.() || "Template saved successfully");
+    toast.success(m.common_td_saved_success?.() || "Template saved successfully");
   } catch (e: unknown) {
     const msg = (e as any)?.message || "Failed to save template";
     toast.error(msg);
@@ -291,7 +292,7 @@ onMount(() => {
   {:else if error}
     <div class="h-full w-full flex items-center justify-center bg-card">
       <ErrorState 
-        title={common.action_edit()} 
+        title={m.common_action_edit()} 
         message={error} 
         onRetry={initEditor} 
       />

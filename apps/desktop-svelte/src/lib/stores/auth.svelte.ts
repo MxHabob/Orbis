@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 // ── Auth Store ───────────────────────────────────────────────────────
 // Svelte 5 Runes-based authentication state.
 

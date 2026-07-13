@@ -1,8 +1,9 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Badge } from "@orbis/ui-svelte/badge";
-import * as common from "$lib/paraglide/messages/common";
+
 import {
   createAgentSessionLogsQuery,
   useApproveAgentAction,
@@ -39,9 +40,9 @@ async function handleApprove(actionId: string) {
         approvedBy: "Admin",
       }),
       {
-        loading: common.agent_toast_rejecting(),
-        success: common.agent_toast_reject_success(),
-        error: (e) => extractErrorMessage(e) || common.agent_toast_reject_failed(),
+        loading: m.common_agent_toast_rejecting(),
+        success: m.common_agent_toast_reject_success(),
+        error: (e) => extractErrorMessage(e) || m.common_agent_toast_reject_failed(),
       },
     );
   } catch (e: unknown) {
@@ -58,9 +59,9 @@ async function handleReject(actionId: string) {
         rejectedBy: "Admin",
       }),
       {
-        loading: common.agent_toast_rejecting(),
-        success: common.agent_toast_reject_success(),
-        error: (e) => extractErrorMessage(e) || common.agent_toast_reject_failed(),
+        loading: m.common_agent_toast_rejecting(),
+        success: m.common_agent_toast_reject_success(),
+        error: (e) => extractErrorMessage(e) || m.common_agent_toast_reject_failed(),
       },
     );
   } catch (e: unknown) {
@@ -76,7 +77,7 @@ async function handleReject(actionId: string) {
     class="text-[10px] h-7 font-semibold cursor-pointer"
     onclick={onBack}
   >
-    ← {common.action_back()}
+    ← {m.common_action_back()}
   </Button>
   <span class="text-xs font-mono font-bold text-primary flex items-center gap-1">
     #{sessionId.substring(0, 8)}
@@ -95,12 +96,12 @@ async function handleReject(actionId: string) {
   {:else if $logsQuery.isError}
     <div class="border border-destructive/20 bg-destructive/5 rounded-lg p-4 text-center space-y-2">
       <p class="text-xs font-semibold text-destructive">
-        {common.agent_session_logs_load_failed()}
+        {m.common_agent_session_logs_load_failed()}
       </p>
     </div>
   {:else if logs.length === 0}
     <div class="text-center py-8 text-xs text-muted-foreground">
-      {common.agent_session_logs_empty()}
+      {m.common_agent_session_logs_empty()}
     </div>
   {:else}
     <div class="space-y-3 text-start">
@@ -117,15 +118,15 @@ async function handleReject(actionId: string) {
               </Badge>
               {#if log.status === "pending"}
                 <Badge variant="secondary" class="text-[8px] px-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-none">
-                  {common.approvals_tab_pending()}
+                  {m.common_approvals_tab_pending()}
                 </Badge>
               {:else if log.status === "approved" || log.status === "executed"}
                 <Badge variant="lime" class="text-[8px] px-1">
-                  {common.approval_approved()}
+                  {m.common_approval_approved()}
                 </Badge>
               {:else if log.status === "rejected"}
                 <Badge variant="outline" class="text-[8px] px-1 text-destructive border-destructive/20">
-                  {common.approval_rejected()}
+                  {m.common_approval_rejected()}
                 </Badge>
               {:else}
                 <Badge variant="outline" class="text-[8px] px-1 text-muted-foreground">{log.status}</Badge>
@@ -134,7 +135,7 @@ async function handleReject(actionId: string) {
           </div>
 
           <p class="text-[10px] text-muted-foreground leading-normal">
-            <strong class="text-foreground">{common.agent_log_reasoning()}</strong> {log.reasoning}
+            <strong class="text-foreground">{m.common_agent_log_reasoning()}</strong> {log.reasoning}
           </p>
 
           {#if log.input_data}
@@ -151,7 +152,7 @@ async function handleReject(actionId: string) {
                 class="flex-1 text-[10px] h-7 cursor-pointer"
                 onclick={() => handleApprove(log.id)}
               >
-                {common.agent_log_action_approve()}
+                {m.common_agent_log_action_approve()}
               </Button>
               <Button
                 variant="destructive"
@@ -159,12 +160,12 @@ async function handleReject(actionId: string) {
                 class="flex-1 text-[10px] h-7 cursor-pointer"
                 onclick={() => handleReject(log.id)}
               >
-                {common.agent_log_action_reject()}
+                {m.common_approval_reject()}
               </Button>
             </div>
           {:else if log.status === "rejected" && log.rejection_reason}
             <div class="text-[9px] text-destructive bg-destructive/5 p-1.5 rounded border border-destructive/10">
-              <strong>{common.agent_log_rejection_reason()}</strong> {log.rejection_reason}
+              <strong>{m.common_agent_log_rejection_reason()}</strong> {log.rejection_reason}
             </div>
           {/if}
         </div>

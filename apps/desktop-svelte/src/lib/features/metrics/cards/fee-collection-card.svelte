@@ -1,9 +1,10 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui-svelte";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import DragIndicator from "../components/drag-indicator.svelte";
-import * as reports from "$lib/paraglide/messages/reports";
+
 import { getLocale } from "$lib/paraglide/runtime";
 
 let {
@@ -196,7 +197,7 @@ function formatTooltipVal(val: number) {
     <!-- Top Row Header + Legend -->
     <div class="flex items-start justify-between w-full select-none mb-3">
       <div class="flex flex-col text-start">
-        <span class="text-sm font-semibold text-foreground/90">{reports.revenue_trend_title()}</span>
+        <span class="text-sm font-semibold text-foreground/90">{m.reports_revenue_trend_title()}</span>
       </div>
       <div class="flex items-center gap-2">
         {#if isEditing}
@@ -208,11 +209,11 @@ function formatTooltipVal(val: number) {
       <div class="flex items-center gap-4 text-[10px] text-muted-foreground font-semibold">
         <div class="flex items-center gap-1.5">
           <span class="h-2.5 w-2.5 rounded-sm bg-muted-foreground/30 inline-block"></span>
-          <span>{reports.revenue_trend_last_year()}</span>
+          <span>{m.reports_revenue_trend_last_year()}</span>
         </div>
         <div class="flex items-center gap-1.5">
           <span class="h-2.5 w-2.5 rounded-sm bg-foreground inline-block"></span>
-          <span>{reports.revenue_trend_this_year()}</span>
+          <span>{m.common_year_current()}</span>
         </div>
       </div>
     </div>
@@ -283,11 +284,11 @@ function formatTooltipVal(val: number) {
           <span class="text-muted-foreground font-bold border-b border-border/40 pb-0.5 mb-1">{activeBar.month}</span>
           <div class="flex flex-col gap-0.5">
             <div class="flex items-center justify-between gap-4">
-              <span class="text-muted-foreground">{reports.revenue_trend_this_year()}:</span>
+              <span class="text-muted-foreground">{m.common_year_current()}:</span>
               <span class="font-bold font-mono text-foreground">{formatTooltipVal(activeBar.amount)}</span>
             </div>
             <div class="flex items-center justify-between gap-4">
-              <span class="text-muted-foreground">{reports.revenue_trend_last_year()}:</span>
+              <span class="text-muted-foreground">{m.reports_revenue_trend_last_year()}:</span>
               <span class="font-bold font-mono text-foreground">{formatTooltipVal(activeBar.lastYearAmount)}</span>
             </div>
           </div>

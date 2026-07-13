@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 /**
  * ContextToolbar — Contextual top toolbar that changes based on selection.
  *

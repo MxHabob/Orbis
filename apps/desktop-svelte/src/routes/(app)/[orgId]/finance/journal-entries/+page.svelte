@@ -4,6 +4,7 @@
   Fully uses @orbis/ui-svelte components and Paraglide-JS localization. No page title.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { commands, dedup, extractErrorMessage } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
@@ -48,8 +49,6 @@ import {
 } from "lucide-svelte";
 import { formatDate } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
-import * as common from "$lib/paraglide/messages/common";
-import * as finance from "$lib/paraglide/messages/finance";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -260,8 +259,6 @@ const filteredEntries = $derived.by(() => {
 <div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide text-start font-sans">
   <div class="max-w-7xl mx-auto p-4 md:p-6 flex flex-col gap-6 print:hidden">
 
-
-
     <!-- Entries Log Card -->
     <Card class="border border-border/60 shadow-sm overflow-hidden flex flex-col bg-card">
       <!-- Card Sub-Bar / Filtering & Actions Header -->
@@ -334,11 +331,11 @@ const filteredEntries = $derived.by(() => {
             <div class="min-w-[120px]">
               <Select type="single" bind:value={filterMode}>
                 <SelectTrigger class="h-8 text-xs bg-background/50 border-border cursor-pointer">
-                  {filterMode === "day" ? finance.je_filter_day() : finance.je_filter_all()}
+                  {filterMode === "day" ? m.common_form_day() : m.finance_je_filter_all()}
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="day">{finance.je_filter_day()}</SelectItem>
-                  <SelectItem value="all">{finance.je_filter_all()}</SelectItem>
+                  <SelectItem value="day">{m.common_form_day()}</SelectItem>
+                  <SelectItem value="all">{m.finance_je_filter_all()}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -370,7 +367,7 @@ const filteredEntries = $derived.by(() => {
                 onclick={jumpToToday}
                 class="h-8 px-3 font-semibold text-xs border-border cursor-pointer hover:bg-muted text-foreground"
               >
-                {finance.je_date_nav_today()}
+                {m.common_form_day()}
               </Button>
             {/if}
 
@@ -475,7 +472,7 @@ const filteredEntries = $derived.by(() => {
                       </TableCell>
                       <TableCell class="text-center">
                         <Badge variant={je.status === 'posted' ? 'lime' : 'secondary'} class="text-[10px] font-bold py-0.5 px-2">
-                          {je.status === 'posted' ? common.je_status_posted() : common.je_status_draft()}
+                          {je.status === 'posted' ? m.common_je_status_posted() : m.common_status_draft()}
                         </Badge>
                       </TableCell>
                     </TableRow>

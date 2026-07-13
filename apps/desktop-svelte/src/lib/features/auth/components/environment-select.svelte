@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Label } from "@orbis/ui-svelte/label";
 import {
   Select,
@@ -8,7 +9,6 @@ import {
 } from "@orbis/ui-svelte/select";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
-import * as auth from "$lib/paraglide/messages/auth";
 
 let { selectedBranch = $bindable(""), selectedYear = $bindable("") } = $props<{
   selectedBranch?: string;
@@ -69,7 +69,7 @@ onMount(() => {
 
 <div class="flex flex-col gap-1 text-start">
 	<h3 class="text-sm font-semibold text-foreground select-none">
-		{auth.login_env_title()}
+		{m.auth_login_env_title()}
 	</h3>
 </div>
 

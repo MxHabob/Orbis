@@ -4,6 +4,7 @@ A slide-over Sheet component for scheduling a lesson.
 Uses the shared @orbis/ui-svelte/sheet component and integrates real-time conflict checking.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import {
   Sheet,
   SheetContent,
@@ -13,7 +14,6 @@ import {
 } from "@orbis/ui-svelte/sheet";
 import { Calendar } from "lucide-svelte";
 import LessonForm from "./lesson-form.svelte";
-import * as common from "$lib/paraglide/messages/common";
 
 let {
   open = $bindable(false),
@@ -38,11 +38,11 @@ let {
 } = $props();
 
 const weekdays = $derived([
-  { value: 1, label: common.schedule_page_day_sun() },
-  { value: 2, label: common.schedule_page_day_mon() },
-  { value: 3, label: common.schedule_page_day_tue() },
-  { value: 4, label: common.schedule_page_day_wed() },
-  { value: 5, label: common.schedule_page_day_thu() },
+  { value: 1, label: m.common_schedule_page_day_sun() },
+  { value: 2, label: m.common_schedule_page_day_mon() },
+  { value: 3, label: m.common_schedule_page_day_tue() },
+  { value: 4, label: m.common_schedule_page_day_wed() },
+  { value: 5, label: m.common_schedule_page_day_thu() },
 ]);
 </script>
 

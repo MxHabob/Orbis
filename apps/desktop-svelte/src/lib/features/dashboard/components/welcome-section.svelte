@@ -1,9 +1,10 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { authStore } from "$lib/stores";
 import { onMount, onDestroy } from "svelte";
 import { fly } from "svelte/transition";
 import { quadOut } from "svelte/easing";
-import * as common from "$lib/paraglide/messages/common";
+
 import { localizeHref } from "$lib/paraglide/runtime";
 import { Avatar, AvatarController } from "@orbis/avatar-engine";
 
@@ -32,9 +33,9 @@ onDestroy(() => {
 });
 
 const greeting = $derived.by(() => {
-  if (hourState >= 5 && hourState < 12) return common.greeting_morning();
-  if (hourState >= 12 && hourState < 17) return common.greeting_afternoon();
-  return common.greeting_evening();
+  if (hourState >= 5 && hourState < 12) return m.common_greeting_morning();
+  if (hourState >= 12 && hourState < 17) return m.common_greeting_evening();
+  return m.common_greeting_evening();
 });
 
 const firstName = $derived(authStore.user?.full_name?.split(" ")[0]);
@@ -81,12 +82,12 @@ type Insight = {
 const insights = $derived.by<Insight[]>(() => {
   if (!stats) return [];
 
-  const studentLink = common.insight_students_link({ count: stats.total_students });
+  const studentLink = m.common_insight_students_link({ count: stats.total_students });
   const studentParts = m
     .insight_students({ link: "||LINK||" })
     .split("||LINK||");
 
-  const attendanceLink = common.insight_attendance_link({
+  const attendanceLink = m.common_insight_attendance_link({
     rate: stats.attendance_overview?.present_rate ?? 0,
   });
   const attendanceParts = m
@@ -96,7 +97,7 @@ const insights = $derived.by<Insight[]>(() => {
     })
     .split("||LINK||");
 
-  const classLink = common.insight_classes_link({ count: stats.total_classes });
+  const classLink = m.common_insight_classes_link({ count: stats.total_classes });
   const classParts = m
     .insight_classes({
       link: "||LINK||",
@@ -104,7 +105,7 @@ const insights = $derived.by<Insight[]>(() => {
     })
     .split("||LINK||");
 
-  const behaviorLink = common.insight_behavior_link({
+  const behaviorLink = m.common_insight_behavior_link({
     count: stats.behavior_summary?.total_records ?? 0,
   });
   const behaviorParts = m
@@ -114,8 +115,8 @@ const insights = $derived.by<Insight[]>(() => {
     })
     .split("||LINK||");
 
-  const staffLink = common.insight_staff_link({ count: stats.total_staff });
-  const staffParts = common.insight_staff({ link: "||LINK||" }).split("||LINK||");
+  const staffLink = m.common_insight_staff_link({ count: stats.total_staff });
+  const staffParts = m.common_insight_staff({ link: "||LINK||" }).split("||LINK||");
 
   return [
     {
@@ -269,7 +270,7 @@ function handleMouseLeave() {
 					<button
 						type="button"
 						class="group/bar relative cursor-pointer py-2 -my-2 focus:outline-none"
-						aria-label={common.insight_show_number({ number: i + 1 })}
+						aria-label={m.common_insight_show_number({ number: i + 1 })}
 						onclick={() => goTo(i)}
 						onmouseenter={() => goTo(i)}
 					>

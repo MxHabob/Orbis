@@ -1,12 +1,12 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { authStore } from "$lib/stores";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { X, ExternalLink, CreditCard, Award } from "lucide-svelte";
-import * as students from "$lib/paraglide/messages/students";
-import * as common from "$lib/paraglide/messages/common";
+
 import { localizeHref } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate, formatPercent } from "$lib/core/i18n";
 import { academicContext } from "$lib/stores";
@@ -18,15 +18,15 @@ let { student, onClose }: { student: any; onClose: () => void } = $props();
 const studentId = $derived(student?.id || "");
 const orgId = $derived(student?.org_id || authStore.orgId || "");
 
-let balanceDue = $state<string>(common.loading());
-let gradeSummary = $state<string>(common.loading());
+let balanceDue = $state<string>(m.common_loading());
+let gradeSummary = $state<string>(m.common_loading());
 let guardiansList = $state<any[]>([]);
 let isLoading = $state(true);
 
 async function fetchStats() {
   if (!orgId || !studentId) return;
-  balanceDue = common.loading();
-  gradeSummary = common.loading();
+  balanceDue = m.common_loading();
+  gradeSummary = m.common_loading();
   guardiansList = [];
   isLoading = true;
   try {
@@ -48,7 +48,7 @@ async function fetchStats() {
       0,
     );
     const diff = totalFees - totalPaid;
-    balanceDue = diff <= 0 ? common.loading_no_dues() : formatCurrency(diff);
+    balanceDue = diff <= 0 ? m.common_loading_no_dues() : formatCurrency(diff);
 
     // Fetch grades report card summary
     if (periodId) {
@@ -63,10 +63,10 @@ async function fetchStats() {
           ) / (report.grades.length || 1);
         gradeSummary = formatPercent(avg);
       } else {
-        gradeSummary = common.loading_no_grades();
+        gradeSummary = m.common_loading_no_grades();
       }
     } else {
-      gradeSummary = common.loading_no_grades();
+      gradeSummary = m.common_loading_no_grades();
     }
 
     // Fetch guardians list
@@ -95,8 +95,8 @@ async function fetchStats() {
       guardiansList = resolved;
     }
   } catch (e) {
-    balanceDue = common.loading_error();
-    gradeSummary = common.loading_no_grades();
+    balanceDue = m.common_loading_error();
+    gradeSummary = m.common_loading_no_grades();
   } finally {
     isLoading = false;
   }
@@ -118,7 +118,7 @@ $effect(() => {
           href={localizeHref(`/${orgId}/students/${studentId}`)}
           variant="ghost"
           class="text-muted-foreground hover:text-foreground h-8 px-2 cursor-pointer"
-          title={students.inspector_view_full()}
+          title={m.students_inspector_view_full()}
         >
           <ExternalLink size={14} />
         </Button>
@@ -146,11 +146,11 @@ $effect(() => {
           <h3 class="text-sm font-bold text-foreground">{student.full_name || student.name_ar || ''}</h3>
           <div class="flex justify-center">
             <Badge variant={student.status === 'active' ? 'lime' : student.status === 'draft' ? 'outline' : 'secondary'} class="text-[9px] scale-95 font-semibold px-2 py-0.5">
-              {student.status === 'active' ? common.form_status_active() : 
-               student.status === 'draft' ? common.form_status_draft() :
-               student.status === 'pending_review' ? common.form_status_pending_review() :
-               student.status === 'withdrawn' ? common.form_status_withdrawn() :
-               student.status === 'graduated' ? common.form_status_graduated() :
+              {student.status === 'active' ? m.common_status_active() : 
+               student.status === 'draft' ? m.common_status_draft() :
+               student.status === 'pending_review' ? m.common_form_status_pending_review() :
+               student.status === 'withdrawn' ? m.common_status_withdrawn() :
+               student.status === 'graduated' ? m.common_form_status_graduated() :
                student.status}
             </Badge>
           </div>
@@ -160,12 +160,12 @@ $effect(() => {
       <div class="grid grid-cols-2 gap-2 text-center">
         <div class="flex flex-col items-center justify-center p-2 rounded-xl bg-muted/20 border border-border/40 hover:bg-muted/30 transition-colors">
           <Award size={14} class="text-primary mb-1" />
-          <span class="text-[9px] text-muted-foreground">{students.inspector_grade_avg()}</span>
+          <span class="text-[9px] text-muted-foreground">{m.students_inspector_grade_avg()}</span>
           <span class="font-bold text-foreground mt-0.5">{gradeSummary}</span>
         </div>
         <div class="flex flex-col items-center justify-center p-2 rounded-xl bg-muted/20 border border-border/40 hover:bg-muted/30 transition-colors">
           <CreditCard size={14} class="text-emerald-500 mb-1" />
-          <span class="text-[9px] text-muted-foreground">{students.inspector_balance_due()}</span>
+          <span class="text-[9px] text-muted-foreground">{m.students_inspector_balance_due()}</span>
           <span class="font-bold text-foreground mt-0.5">{balanceDue}</span>
         </div>
       </div>
@@ -232,7 +232,7 @@ $effect(() => {
       {#if guardiansList.length > 0}
         <div class="flex flex-col gap-2 border-t border-border/40 pt-4 w-full text-start">
           <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
-            {students.inspector_guardians_title()}
+            {m.students_inspector_guardians_title()}
           </span>
           <div class="flex flex-col gap-2 pt-1">
             {#each guardiansList as g}
@@ -242,7 +242,7 @@ $effect(() => {
                   <span class="text-[10px] text-muted-foreground font-mono">{g.phone || 'بلا هاتف'}</span>
                 </div>
                 {#if g.is_primary}
-                  <Badge variant="lime" class="text-[8px] scale-90 px-1.5 py-0.5 shrink-0 font-semibold uppercase">{common.form_guardian_role_primary()}</Badge>
+                  <Badge variant="lime" class="text-[8px] scale-90 px-1.5 py-0.5 shrink-0 font-semibold uppercase">{m.common_form_guardian_role_primary()}</Badge>
                 {/if}
               </div>
             {/each}

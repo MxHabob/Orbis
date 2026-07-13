@@ -1,11 +1,11 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { SheetHeader, SheetTitle } from "@orbis/ui-svelte/sheet";
 import InputColor from "$lib/shared/components/input-color.svelte";
 import { toast } from "svelte-sonner";
-import * as academics from "$lib/paraglide/messages/academics";
 
 let {
   orgId,
@@ -29,7 +29,7 @@ let color = $state("");
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   if (!nameAr && !name) {
-    toast.error(academics.class_toast_error_name());
+    toast.error(m.academics_class_toast_error_name());
     return;
   }
   isSubmitting = true;
@@ -43,7 +43,7 @@ async function handleSubmit(e: SubmitEvent) {
       color: color || undefined,
     };
     await commands.academic.createClass(orgId, request);
-    toast.success(academics.class_toast_success());
+    toast.success(m.academics_class_toast_success());
 
     // Reset fields
     name = "";
@@ -56,7 +56,7 @@ async function handleSubmit(e: SubmitEvent) {
     onSuccess();
   } catch (e) {
     const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(academics.class_toast_error_submit({ error: errorMsg }));
+    toast.error(m.academics_class_toast_error_submit({ error: errorMsg }));
   } finally {
     isSubmitting = false;
   }
@@ -66,7 +66,7 @@ async function handleSubmit(e: SubmitEvent) {
 <form onsubmit={handleSubmit} class="flex flex-col h-full overflow-hidden gap-0">
 	<SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
 		<SheetTitle class="text-xl font-bold text-foreground">
-			{academics.class_sheet_title()}
+			{m.academics_class_sheet_title()}
 		</SheetTitle>
 	</SheetHeader>
 
@@ -74,10 +74,10 @@ async function handleSubmit(e: SubmitEvent) {
 		<!-- Name (Arabic) -->
 		<div class="flex flex-col gap-2 text-start">
 			<label for="name_ar" class="text-sm font-medium text-foreground">
-				{academics.class_label_name_ar()}
+				{m.academics_class_label_name_ar()}
 			</label>
 			<InputColor
-				placeholder={academics.class_placeholder_name_ar()}
+				placeholder={m.academics_class_placeholder_name_ar()}
 				bind:value={nameAr}
 				bind:color={color}
 				required
@@ -87,7 +87,7 @@ async function handleSubmit(e: SubmitEvent) {
 		<!-- Name (English) -->
 		<div class="flex flex-col gap-2 text-start">
 			<label for="name_en" class="text-sm font-medium text-foreground">
-				{academics.class_label_name_en()}
+				{m.academics_class_label_name_en()}
 			</label>
 			<Input 
 				id="name_en"
@@ -102,7 +102,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Class Code -->
 			<div class="flex flex-col gap-2 text-start">
 				<label for="code" class="text-sm font-medium text-foreground">
-					{academics.class_label_code()}
+					{m.academics_class_label_code()}
 				</label>
 				<Input 
 					id="code"
@@ -115,7 +115,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Grade Level -->
 			<div class="flex flex-col gap-2 text-start">
 				<label for="grade" class="text-sm font-medium text-foreground">
-					{academics.class_label_grade()}
+					{m.common_class_label_grade()}
 				</label>
 				<Input 
 					id="grade"
@@ -129,7 +129,7 @@ async function handleSubmit(e: SubmitEvent) {
 		<!-- Capacity -->
 		<div class="flex flex-col gap-2 text-start">
 			<label for="capacity" class="text-sm font-medium text-foreground">
-				{academics.class_label_capacity()}
+				{m.academics_class_label_capacity()}
 			</label>
 			<Input 
 				id="capacity"
@@ -149,7 +149,7 @@ async function handleSubmit(e: SubmitEvent) {
 			onclick={onCancel}
 			disabled={isSubmitting}
 		>
-			{academics.class_button_cancel()}
+			{m.common_action_cancel()}
 		</Button>
 		<Button 
 			type="submit" 
@@ -157,7 +157,7 @@ async function handleSubmit(e: SubmitEvent) {
 			class="font-semibold"
 			disabled={isSubmitting}
 		>
-			{isSubmitting ? academics.class_toast_saving() : academics.class_button_save()}
+			{isSubmitting ? m.common_state_saving() : m.academics_class_button_save()}
 		</Button>
 	</div>
 </form>

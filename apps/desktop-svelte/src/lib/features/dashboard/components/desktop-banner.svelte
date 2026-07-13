@@ -1,8 +1,8 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { X } from "lucide-svelte";
 import { onMount } from "svelte";
 import { fly } from "svelte/transition";
-import * as common from "$lib/paraglide/messages/common";
 
 let dismissed = $state(true); // Default to true to prevent hydration mismatch/flash
 let mounted = $state(false);
@@ -77,10 +77,10 @@ function handleDismiss(e: MouseEvent) {
 
 			<div class="block p-4 select-none">
 				<h3 class="text-xs font-semibold mb-1 tracking-wide">
-					{common.banner_title()}
+					{m.common_banner_title()}
 				</h3>
 				<p class="text-[10px] text-muted-foreground leading-normal">
-					{common.banner_description()}
+					{m.common_banner_description()}
 				</p>
 			</div>
 		</div>

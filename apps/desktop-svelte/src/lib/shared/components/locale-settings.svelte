@@ -3,6 +3,7 @@
 A reusable locale/language selection card using `@orbis/location` and `ComboboxDropdown`.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Label } from "@orbis/ui-svelte/label";
 import { countries } from "@orbis/location/countries-intl";
 import { ComboboxDropdown } from "@orbis/ui-svelte/combobox-dropdown";

@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 /**
  * Academic Calendar & Policy queries.
  * Migrated: calendar events → periods, periodId → periodId.

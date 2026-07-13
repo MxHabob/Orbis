@@ -1,9 +1,9 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui-svelte";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import DragIndicator from "../components/drag-indicator.svelte";
-import * as reports from "$lib/paraglide/messages/reports";
 
 import { academicContext } from "$lib/stores";
 
@@ -154,7 +154,7 @@ function handleMouseLeave() {
       </div>
       <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
         <span class="h-1.5 w-1.5 rounded-full bg-primary {stats ? 'animate-pulse' : ''}"></span>
-        {reports.grade_distribution_title()} {#if stats}• Average: <span class="text-foreground font-mono">{stats?.class_average ?? 0}%</span> (Pass: {stats?.pass_rate ?? 0}%){/if}
+        {m.reports_grade_distribution_title()} {#if stats}• Average: <span class="text-foreground font-mono">{stats?.class_average ?? 0}%</span> (Pass: {stats?.pass_rate ?? 0}%){/if}
       </div>
     </div>
 
@@ -222,17 +222,17 @@ function handleMouseLeave() {
           class="absolute z-30 p-2 text-[10px] font-sans border bg-card border-border text-foreground rounded-lg shadow-xl pointer-events-none transition-all duration-100 flex flex-col gap-0.5 min-w-[100px] text-start"
           style="left: {tooltipPos.x + 12}px; top: {tooltipPos.y - 50}px;"
         >
-          <span class="text-muted-foreground font-bold border-b border-border/40 pb-0.5 mb-1">{reports.grade_label({ grade: activeBar.name })}</span>
-          <span class="font-bold text-foreground font-mono">{reports.students_count({ count: String(activeBar.value) })}</span>
+          <span class="text-muted-foreground font-bold border-b border-border/40 pb-0.5 mb-1">{m.reports_grade_label({ grade: activeBar.name })}</span>
+          <span class="font-bold text-foreground font-mono">{m.reports_students_count({ count: String(activeBar.value) })}</span>
         </div>
       {/if}
 
       <!-- Backdrop Blur Overlay -->
       {#if !stats}
         <div class="absolute inset-0 flex flex-col items-center justify-center text-center select-none p-4 gap-1.5 backdrop-blur-[3.5px] bg-background/35 z-10 transition-all duration-300 rounded-xl">
-          <span class="font-bold text-xs text-foreground/90">{reports.grades_empty_title()}</span>
+          <span class="font-bold text-xs text-foreground/90">{m.reports_grades_empty_title()}</span>
           <span class="text-[10px] text-muted-foreground max-w-[280px] leading-relaxed">
-            {reports.grades_empty_desc()}
+            {m.reports_grades_empty_desc()}
           </span>
         </div>
       {/if}

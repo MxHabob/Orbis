@@ -1,5 +1,5 @@
-import * as m from "$lib/paraglide/messages";
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { isDesktopApp } from "$lib/core/ipc";
 import {
@@ -23,7 +23,7 @@ import {
   Bell,
 } from "lucide-svelte";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
-import * as common from "$lib/paraglide/messages/common";
+
 import WhatsNewPopover from "./whats-new-popover.svelte";
 import TitleBreadcrumbs from "./title-breadcrumbs.svelte";
 
@@ -53,15 +53,15 @@ const phaseLabel = $derived.by(() => {
   if (!phase) return "";
   switch (phase) {
     case "pre_start":
-      return common.phase_pre_start ? common.phase_pre_start() : "Pre-Start";
+      return m.common_phase_pre_start ? m.common_phase_pre_start() : "Pre-Start";
     case "active":
-      return common.phase_active ? common.phase_active() : "Active";
+      return m.common_phase_active ? m.common_phase_active() : "Active";
     case "exams":
-      return common.phase_exams ? common.phase_exams() : "Exams";
+      return m.common_phase_exams ? m.common_phase_exams() : "Exams";
     case "grade_entry":
-      return common.phase_grade_entry ? common.phase_grade_entry() : "Grade Entry";
+      return m.common_phase_grade_entry ? m.common_phase_grade_entry() : "Grade Entry";
     case "closed":
-      return common.phase_closed ? common.phase_closed() : "Closed";
+      return m.common_phase_closed ? m.common_phase_closed() : "Closed";
     default:
       return "";
   }
@@ -175,12 +175,12 @@ onMount(() => {
         size="sm"
         onclick={() => uiStore.setSearch(true)}
         class="font-semibold text-xs text-foreground rounded-[8px] px-3 gap-2 shrink-0"
-        title={common.header_search_title()}
+        title={m.common_header_search_title()}
         aria-label="Search"
       >
         <Search size={14} class="text-muted-foreground stroke-[2px]" />
-        <span class="whitespace-nowrap">{common.header_search()}</span>
-        <kbd class="ml-1 rounded px-1 py-0.5 font-mono text-[9px] font-medium text-zinc-400">{common.header_search_shortcut()}</kbd>
+        <span class="whitespace-nowrap">{m.common_header_search()}</span>
+        <kbd class="ml-1 rounded px-1 py-0.5 font-mono text-[9px] font-medium text-zinc-400">{m.common_header_search_shortcut()}</kbd>
       </Button>
 
       <!-- Ask Orbis Button (Original Header Design) -->
@@ -206,7 +206,7 @@ onMount(() => {
           variant="ghost"
           size="icon-sm"
           class="relative rounded-[8px] shrink-0"
-          title={common.titlebar_inbox ? common.titlebar_inbox() : "Inbox"}
+          title={m.common_titlebar_inbox ? m.common_titlebar_inbox() : "Inbox"}
           onclick={() => {
             const orgId = authStore.orgId;
             if (orgId) window.location.href = localizeHref(`/${orgId}/settings/approvals`);
@@ -222,7 +222,7 @@ onMount(() => {
           variant="ghost"
           size="icon-sm"
           class="rounded-[8px] shrink-0"
-          title={common.titlebar_inbox ? common.titlebar_inbox() : "Inbox"}
+          title={m.common_titlebar_inbox ? m.common_titlebar_inbox() : "Inbox"}
           onclick={() => {
             const orgId = authStore.orgId;
             if (orgId) window.location.href = localizeHref(`/${orgId}/settings/approvals`);
@@ -236,15 +236,13 @@ onMount(() => {
       <WhatsNewPopover />
     {/if}
 
-
-
     <!-- Theme Toggle -->
     <Button 
       variant="outline"
       size="icon-sm"
       onclick={() => themeStore.toggle()} 
       class="rounded-[8px] shrink-0"
-      title={common.titlebar_theme_toggle()}
+      title={m.common_titlebar_theme_toggle()}
     >
       {#if themeStore.resolved === "dark"}
         <Sun size={14} class="stroke-[2px]" />
@@ -259,9 +257,9 @@ onMount(() => {
       size="sm"
       onclick={() => uiStore.toggleFocusMode()} 
       class="font-semibold text-xs rounded-[8px] px-3 gap-2 shrink-0 {uiStore.focusMode ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/95 hover:text-primary-foreground' : 'bg-muted/40 text-foreground border-border/60 hover:bg-muted/70'}"
-      title={common.titlebar_focus_mode_tooltip()}
+      title={m.common_titlebar_focus_mode_tooltip()}
     >
-      <span class="hidden sm:inline">{common.titlebar_focus_mode()}</span>
+      <span class="hidden sm:inline">{m.common_titlebar_focus_mode()}</span>
     </Button>
 
     <!-- Windows Window Controls (Min, Max, Close) -->
@@ -273,7 +271,7 @@ onMount(() => {
           size="icon-sm"
           onclick={() => appWindow.minimize()} 
           class="text-muted-foreground hover:text-foreground hover:bg-muted"
-          title={common.titlebar_minimize()}
+          title={m.common_titlebar_minimize()}
         >
           <Minimize2 size={12} />
         </Button>
@@ -284,7 +282,7 @@ onMount(() => {
           size="icon-sm"
           onclick={() => appWindow.toggleMaximize()} 
           class="text-muted-foreground hover:text-foreground hover:bg-muted"
-          title={isMaximized ? common.titlebar_restore() : common.titlebar_maximize()}
+          title={isMaximized ? m.common_titlebar_restore() : m.common_titlebar_maximize()}
         >
           {#if isMaximized}
             <Copy size={11} class="rotate-180" />
@@ -299,7 +297,7 @@ onMount(() => {
           size="icon-sm"
           onclick={() => appWindow.close()} 
           class="text-muted-foreground hover:bg-destructive hover:text-destructive-foreground"
-          title={common.titlebar_close()}
+          title={m.common_titlebar_close()}
         >
           <X size={12} />
         </Button>
@@ -307,5 +305,4 @@ onMount(() => {
     {/if}
   </div>
 </div>
-
 

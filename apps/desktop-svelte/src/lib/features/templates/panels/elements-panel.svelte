@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 /**
  * ElementsPanel — Shapes and elements library with drag-and-drop.
  * Provides quick access to all draggable element types.

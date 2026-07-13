@@ -1,7 +1,7 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
 import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
-import * as settings from "$lib/paraglide/messages/settings";
 
 interface Props {
   logo: string;
@@ -16,7 +16,7 @@ let { logo = $bindable(), name, isSaving = false, onsave }: Props = $props();
 <div class="border border-border rounded-md overflow-hidden flex flex-col">
   <!-- Card Header -->
   <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-    {settings.general_section_avatar()}
+    {m.settings_general_section_avatar()}
   </div>
 
   <!-- Card Body -->
@@ -31,7 +31,7 @@ let { logo = $bindable(), name, isSaving = false, onsave }: Props = $props();
   <!-- Card Footer -->
   <div class="bg-muted/10 px-6 py-3 border-t border-border flex justify-start">
     <Button type="button" class="font-semibold text-xs h-8 px-4" onclick={onsave} disabled={isSaving}>
-      {isSaving ? settings.general_saving() : settings.general_avatar_save()}
+      {isSaving ? m.common_state_saving() : m.settings_general_avatar_save()}
     </Button>
   </div>
 </div>

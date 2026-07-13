@@ -4,6 +4,7 @@ Highly-customizable, resizable sidebar panel for managing AI Timetable optimizat
 Includes constraints tuning, direct weekly subjects hours management, polling, and draft preview mode.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Checkbox } from "@orbis/ui-svelte/checkbox";
@@ -21,9 +22,8 @@ import {
   History,
   Trash2,
 } from "lucide-svelte";
-import { authStore } from "$lib/stores/auth.svelte";
+import { authStore } from "$lib/stores/m.auth_svelte";
 import Resizer from "$lib/shell/resizer.svelte";
-import * as common from "$lib/paraglide/messages/common";
 
 let {
   orgId,
@@ -100,7 +100,7 @@ async function loadClassSubjects() {
 
 function getSubjectName(subjectId: string) {
   const sub = subjects.find((s) => String(s.id) === String(subjectId));
-  return sub ? sub.name_ar || sub.name : common.schedule_page_unknown_subject();
+  return sub ? sub.name_ar || sub.name : m.common_schedule_page_unknown_subject();
 }
 
 async function adjustSubjectHours(csId: string, delta: number) {
@@ -116,7 +116,7 @@ async function adjustSubjectHours(csId: string, delta: number) {
     });
     await loadClassSubjects();
     onApply(); // Notify parent to refresh schedule grid
-    toast.success(common.schedule_ai_weekly_hours_updated());
+    toast.success(m.common_schedule_ai_weekly_hours_updated());
   } catch (e) {
     toast.error(extractErrorMessage(e));
   } finally {
@@ -159,7 +159,7 @@ async function triggerSolving() {
     };
     const job = await commands.scheduling.startSolve(orgId, userId, req);
     activeJob = job;
-    toast.success(common.schedule_ai_optimization_started());
+    toast.success(m.common_schedule_ai_optimization_started());
     startPollingJob(String(job.id));
   } catch (e) {
     isSolving = false;
@@ -192,12 +192,12 @@ async function startPollingJob(jobId: string) {
         isSolving = false;
         await loadSolveJobs();
         if (job.status === "completed") {
-          toast.success(common.schedule_ai_optimization_completed());
+          toast.success(m.common_schedule_ai_optimization_completed());
           previewDraft = true;
         } else if (job.status === "failed") {
           solveError =
             (job.error_message as string) ||
-            common.schedule_ai_optimization_failed();
+            m.common_schedule_ai_optimization_failed();
           toast.error(solveError);
         }
       }
@@ -225,7 +225,7 @@ async function cancelSolving() {
     activeJob = job;
     stopPolling();
     isSolving = false;
-    toast.info(common.action_cancel());
+    toast.info(m.common_action_cancel());
     await loadSolveJobs();
   } catch (e) {
     toast.error(extractErrorMessage(e));
@@ -235,12 +235,12 @@ async function cancelSolving() {
 async function applySolving() {
   if (!activeJob) return;
   try {
-    toast.loading(common.schedule_ai_applying_timetable());
+    toast.loading(m.common_schedule_ai_applying_timetable());
     await commands.scheduling.applySolve(orgId, activeJob.id);
     activeJob = null;
     previewDraft = false;
     toast.dismiss();
-    toast.success(common.schedule_ai_timetable_applied());
+    toast.success(m.common_schedule_ai_timetable_applied());
     onApply();
     await loadSolveJobs();
   } catch (e) {
@@ -252,7 +252,7 @@ async function applySolving() {
 function discardDraft() {
   activeJob = null;
   previewDraft = false;
-  toast.info(common.schedule_ai_draft_discarded());
+  toast.info(m.common_schedule_ai_draft_discarded());
 }
 
 function formatTime(seconds: number): string {
@@ -264,7 +264,7 @@ function formatTime(seconds: number): string {
 async function deleteSolveJob(jobId: string) {
   try {
     await commands.scheduling.deleteSolveJob(orgId, jobId);
-    toast.success(common.schedule_ai_record_deleted());
+    toast.success(m.common_schedule_ai_record_deleted());
 
     // Clear state if deleting currently active job
     if (activeJob && String(activeJob.id) === String(jobId)) {
@@ -309,7 +309,7 @@ async function deleteSolveJob(jobId: string) {
 				size="icon"
 				class="mb-4 text-muted-foreground hover:text-foreground"
 				onclick={() => preferredWidth = defaultValue}
-				title={common.schedule_ai_expand_panel()}
+				title={m.common_schedule_ai_expand_panel()}
 			>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<rect width="18" height="18" x="3" y="3" rx="2" />
@@ -318,7 +318,7 @@ async function deleteSolveJob(jobId: string) {
 			</Button>
 
 			<span class="vertical-text text-[10px] font-bold text-muted-foreground tracking-wider uppercase whitespace-nowrap">
-				{common.schedule_ai_auto_scheduler()}
+				{m.common_schedule_ai_auto_scheduler()}
 			</span>
 		</div>
 	{:else}
@@ -326,7 +326,7 @@ async function deleteSolveJob(jobId: string) {
 		<div class="flex items-center justify-between pb-3 border-b border-border/80">
 			<div class="flex items-center gap-2">
 				<span class="text-xs font-bold text-foreground tracking-wide">
-					{common.schedule_ai_auto_scheduler()}
+					{m.common_schedule_ai_auto_scheduler()}
 				</span>
 			</div>
 			<Badge variant="brand" class="text-[9px] uppercase tracking-wider">
@@ -338,7 +338,7 @@ async function deleteSolveJob(jobId: string) {
 		{#if classSubjects.length > 0}
 			<div class="flex flex-col gap-2.5 pb-2.5" in:fade={{ duration: 150 }}>
 				<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-					<span>{common.schedule_ai_weekly_subject_hours()}</span>
+					<span>{m.common_schedule_ai_weekly_subject_hours()}</span>
 				</span>
 				<div class="flex flex-col gap-1.5 max-h-[160px] overflow-y-auto pr-1 scrollbar-hide">
 					{#each classSubjects as cs (cs.id)}
@@ -381,7 +381,7 @@ async function deleteSolveJob(jobId: string) {
 				<!-- Solver Mode -->
 				<div class="flex flex-col gap-1.5">
 					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-						{common.schedule_ai_opt_mode()}
+						{m.common_schedule_ai_opt_mode()}
 					</span>
 					<div class="grid grid-cols-2 p-0.5 rounded-lg bg-muted border border-border/60">
 						<Button 
@@ -389,41 +389,41 @@ async function deleteSolveJob(jobId: string) {
 							class="text-[10px] font-bold py-1 rounded-md h-7 transition-all duration-150 cursor-pointer"
 							onclick={() => solverMode = 'incremental'}
 						>
-							{common.schedule_ai_mode_incremental()}
+							{m.common_schedule_ai_mode_incremental()}
 						</Button>
 						<Button 
 							variant={solverMode === 'full' ? 'secondary' : 'ghost'} 
 							class="text-[10px] font-bold py-1 rounded-md h-7 transition-all duration-150 cursor-pointer"
 							onclick={() => solverMode = 'full'}
 						>
-							{common.schedule_ai_mode_full()}
+							{m.common_schedule_ai_mode_full()}
 						</Button>
 					</div>
 					<p class="text-[9px] text-muted-foreground leading-normal mt-0.5">
-						{solverMode === 'incremental' ? common.schedule_ai_desc_incremental() : common.schedule_ai_desc_full()}
+						{solverMode === 'incremental' ? m.common_schedule_ai_desc_incremental() : m.common_schedule_ai_desc_full()}
 					</p>
 				</div>
 
 				<!-- AI Constraints Config -->
 				<div class="flex flex-col gap-2.5 bg-muted/40 p-2.5 rounded-lg border border-border/60">
 					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-						{common.schedule_ai_constraints_config()}
+						{m.common_schedule_ai_constraints_config()}
 					</span>
 					<div class="flex items-center justify-between py-0.5">
 						<Label class="text-[9px] font-semibold text-foreground cursor-pointer" for="min-student-gaps">
-							{common.schedule_ai_min_student_gaps()}
+							{m.common_schedule_ai_min_student_gaps()}
 						</Label>
 						<Checkbox id="min-student-gaps" checked={minimizeStudentGaps} onCheckedChange={(v) => minimizeStudentGaps = Boolean(v)} />
 					</div>
 					<div class="flex items-center justify-between py-0.5">
 						<Label class="text-[9px] font-semibold text-foreground cursor-pointer" for="min-teacher-gaps">
-							{common.schedule_ai_min_teacher_gaps()}
+							{m.common_schedule_ai_min_teacher_gaps()}
 						</Label>
 						<Checkbox id="min-teacher-gaps" checked={minimizeTeacherGaps} onCheckedChange={(v) => minimizeTeacherGaps = Boolean(v)} />
 					</div>
 					<div class="flex items-center justify-between py-0.5">
 						<Label class="text-[9px] font-semibold text-foreground cursor-pointer" for="strict-capacity">
-							{common.schedule_ai_strict_room_capacity()}
+							{m.common_schedule_ai_strict_room_capacity()}
 						</Label>
 						<Checkbox id="strict-capacity" checked={strictRoomCapacity} onCheckedChange={(v) => strictRoomCapacity = Boolean(v)} />
 					</div>
@@ -435,7 +435,7 @@ async function deleteSolveJob(jobId: string) {
 					disabled={isSolving}
 				>
 					<Cpu size={13} />
-					<span>{common.schedule_ai_run_optimizer()}</span>
+					<span>{m.common_schedule_ai_run_optimizer()}</span>
 				</Button>
 			</div>
 		{/if}
@@ -445,10 +445,10 @@ async function deleteSolveJob(jobId: string) {
 			<div class="bg-muted/40 border border-border/80 rounded-lg p-3.5 flex flex-col gap-3" in:fade={{ duration: 150 }}>
 				<div class="flex items-center justify-between">
 					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-						{common.schedule_ai_optimizer_status()}
+						{m.common_schedule_ai_optimizer_status()}
 					</span>
 					<Badge variant="secondary" class="text-[9px] font-mono font-bold uppercase tracking-wider animate-pulse">
-						{common.schedule_ai_solving()}
+						{m.common_schedule_ai_solving()}
 					</Badge>
 				</div>
 
@@ -460,7 +460,7 @@ async function deleteSolveJob(jobId: string) {
 
 				<!-- Score progression -->
 				<div class="flex flex-col gap-1">
-					<span class="text-[9px] text-muted-foreground">{common.schedule_ai_current_score()}</span>
+					<span class="text-[9px] text-muted-foreground">{m.common_schedule_ai_current_score()}</span>
 					<div class="bg-background border border-border/60 rounded p-2 font-mono text-[10px] flex justify-between">
 						<span class="text-destructive font-semibold">
 							{activeJob.score ? activeJob.score.split('hard/')[0] : '0'} Hard
@@ -477,7 +477,7 @@ async function deleteSolveJob(jobId: string) {
 					onclick={cancelSolving}
 				>
 					<Square size={10} />
-					<span>{common.action_cancel()}</span>
+					<span>{m.common_action_cancel()}</span>
 				</Button>
 			</div>
 		{/if}
@@ -487,16 +487,16 @@ async function deleteSolveJob(jobId: string) {
 			<div class="bg-purple-500/5 border border-purple-500/20 rounded-lg p-3.5 flex flex-col gap-3" in:fade={{ duration: 150 }}>
 				<div class="flex items-center justify-between">
 					<span class="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">
-						{common.schedule_ai_proposed_solution()}
+						{m.common_schedule_ai_proposed_solution()}
 					</span>
 					<Badge variant="brand" class="text-[9px] font-mono font-bold uppercase tracking-wider">
-						{common.schedule_ai_ready()}
+						{m.common_schedule_ai_ready()}
 					</Badge>
 				</div>
 
 				<!-- Final Score -->
 				<div class="flex flex-col gap-1.5">
-					<span class="text-[9px] text-muted-foreground">{common.schedule_ai_score_summary()}</span>
+					<span class="text-[9px] text-muted-foreground">{m.common_schedule_ai_score_summary()}</span>
 					<div class="bg-background border border-border/60 rounded p-2.5 font-mono text-[10px] flex justify-between">
 						<span class="text-destructive font-bold">
 							{activeJob.score ? activeJob.score.split('hard/')[0] : '0'} Hard
@@ -510,7 +510,7 @@ async function deleteSolveJob(jobId: string) {
 				<!-- Toggle preview -->
 				<div class="flex items-center justify-between p-2 rounded bg-background border border-border/60">
 					<Label class="text-[10px] font-bold text-foreground cursor-pointer" for="preview-draft">
-						{common.schedule_ai_preview_draft()}
+						{m.common_schedule_ai_preview_draft()}
 					</Label>
 					<Checkbox id="preview-draft" checked={previewDraft} onCheckedChange={(v) => previewDraft = Boolean(v)} />
 				</div>
@@ -523,14 +523,14 @@ async function deleteSolveJob(jobId: string) {
 						onclick={applySolving}
 					>
 						<CheckCircle2 size={11} />
-						<span>{common.schedule_ai_apply_table()}</span>
+						<span>{m.common_schedule_ai_apply_table()}</span>
 					</Button>
 					<Button 
 						variant="outline" 
 						class="flex-1 text-xs font-semibold py-1.5 h-8 text-muted-foreground hover:bg-muted"
 						onclick={discardDraft}
 					>
-						<span>{common.schedule_ai_discard()}</span>
+						<span>{m.common_schedule_ai_discard()}</span>
 					</Button>
 				</div>
 			</div>
@@ -541,7 +541,7 @@ async function deleteSolveJob(jobId: string) {
 			<div class="bg-destructive/5 border border-destructive/20 rounded-lg p-3 flex items-start gap-2 text-destructive text-[10px]" in:fade={{ duration: 150 }}>
 				<AlertCircle size={14} class="shrink-0 mt-0.5" />
 				<div class="flex flex-col gap-1">
-					<span class="font-bold">{common.schedule_ai_optimizer_error()}</span>
+					<span class="font-bold">{m.common_schedule_ai_optimizer_error()}</span>
 					<span class="leading-normal">{solveError}</span>
 				</div>
 			</div>
@@ -553,14 +553,14 @@ async function deleteSolveJob(jobId: string) {
 				<div class="flex items-center gap-1.5 pb-1 border-b border-border/60">
 					<History size={12} class="text-muted-foreground" />
 					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-						{common.schedule_ai_optimization_history()}
+						{m.common_schedule_ai_optimization_history()}
 					</span>
 				</div>
 				<div class="flex flex-col gap-1.5 max-h-[140px] overflow-y-auto pr-1 scrollbar-hide">
 					{#each solveJobs.slice(0, 5) as job (job.id)}
 						<div class="flex flex-col p-2 bg-muted/30 border border-border/50 rounded-lg text-[9px] leading-tight select-text">
 							<div class="flex items-center justify-between font-bold text-foreground">
-								<span class="capitalize">{job.mode === 'full' ? common.schedule_ai_mode_full() : common.schedule_ai_mode_incremental()}</span>
+								<span class="capitalize">{job.mode === 'full' ? m.common_schedule_ai_mode_full() : m.common_schedule_ai_mode_incremental()}</span>
 								<div class="flex items-center gap-1.5 select-none font-normal">
 									<span class="text-[8px] font-mono opacity-85">{new Date(job.created_at).toLocaleTimeString(getLocale(), { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
 									<Button 
@@ -575,12 +575,12 @@ async function deleteSolveJob(jobId: string) {
 								</div>
 							</div>
 							<div class="flex items-center justify-between text-muted-foreground mt-1">
-								<span>{common.schedule_ai_score()} <strong class="font-mono text-foreground">{job.score || 'N/A'}</strong></span>
+								<span>{m.common_schedule_ai_score()} <strong class="font-mono text-foreground">{job.score || 'N/A'}</strong></span>
 								<Badge 
 									variant={job.status === 'completed' ? 'lime' : job.status === 'failed' ? 'destructive' : 'secondary'} 
 									class="uppercase tracking-wider text-[8px] px-1 py-0.5"
 								>
-									{job.status === 'completed' ? common.schedule_ai_status_done() : job.status === 'failed' ? common.schedule_ai_status_fail() : job.status}
+									{job.status === 'completed' ? m.common_schedule_ai_status_done() : job.status === 'failed' ? m.common_calendar_status_failed() : job.status}
 								</Badge>
 							</div>
 						</div>

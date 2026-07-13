@@ -1,9 +1,10 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui-svelte";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import DragIndicator from "../components/drag-indicator.svelte";
-import * as reports from "$lib/paraglide/messages/reports";
+
 import { getLocale } from "$lib/paraglide/runtime";
 
 import { academicContext } from "$lib/stores";
@@ -177,7 +178,7 @@ function handleMouseLeave() {
     <!-- Top Row layout matching exactly screenshots -->
     <div class="flex flex-col w-full text-start select-none">
       <div class="flex items-center justify-between w-full h-5">
-        <span class="text-xs text-muted-foreground">{reports.attendance_rate_title()}</span>
+        <span class="text-xs text-muted-foreground">{m.reports_attendance_rate_title()}</span>
         {#if isEditing}
           <DragIndicator />
         {/if}
@@ -190,11 +191,11 @@ function handleMouseLeave() {
       <div class="flex items-center gap-4 text-[10px] text-muted-foreground mt-2 font-medium">
         <div class="flex items-center gap-1.5">
           <span class="h-2 w-2 rounded-full bg-foreground inline-block"></span>
-          <span>{reports.attendance_rate_daily_avg()}</span>
+          <span>{m.reports_attendance_rate_daily_avg()}</span>
         </div>
         <div class="flex items-center gap-1.5">
           <span class="font-mono text-muted-foreground/60 select-none">--</span>
-          <span>{reports.attendance_rate_target_rate()}</span>
+          <span>{m.reports_attendance_rate_target_rate()}</span>
         </div>
       </div>
     </div>
@@ -205,9 +206,9 @@ function handleMouseLeave() {
         <!-- Dotted rectangle outline placeholder matching screenshot 4 left -->
         <div class="w-full h-full border border-dashed border-border/60 rounded-xl flex items-center justify-center bg-muted/5 transition-colors">
           <div class="flex flex-col items-center gap-1 px-4 text-center">
-            <span class="text-xs font-semibold text-foreground/80">{reports.attendance_empty_title()}</span>
+            <span class="text-xs font-semibold text-foreground/80">{m.reports_attendance_empty_title()}</span>
             <span class="text-[9px] text-muted-foreground max-w-[260px] leading-relaxed">
-              {reports.attendance_empty_desc()}
+              {m.reports_attendance_empty_desc()}
             </span>
           </div>
         </div>
@@ -297,7 +298,7 @@ function handleMouseLeave() {
             style="left: {tooltipPos.x + 15}px; top: {tooltipPos.y - 25}px;"
           >
             <span class="text-muted-foreground font-bold border-b border-border/40 pb-0.5 mb-1">{activePt.item.rawDate}</span>
-            <span class="font-bold text-foreground font-mono">{reports.attendance_rate_tooltip({ rate: String(activePt.item.rate) })}</span>
+            <span class="font-bold text-foreground font-mono">{m.reports_attendance_rate_tooltip({ rate: String(activePt.item.rate) })}</span>
           </div>
         {/if}
       {/if}

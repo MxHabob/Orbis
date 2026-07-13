@@ -4,6 +4,7 @@ Vertical sidebar navigation with support for groups, custom actions, active indi
 and collapsibility.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { Button } from "@orbis/ui-svelte/button";
 import { deLocalizeUrl, localizeHref, getLocale } from "$lib/paraglide/runtime";

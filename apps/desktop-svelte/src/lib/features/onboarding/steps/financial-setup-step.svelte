@@ -1,6 +1,6 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Input } from "@orbis/ui-svelte/input";
-import * as common from "$lib/paraglide/messages/common";
 
 import { getLocale } from "$lib/paraglide/runtime";
 import { onboardingState } from "../state.svelte";
@@ -17,9 +17,9 @@ const enabledGradeLevels = $derived(
     <div class="min-w-[640px] divide-y divide-border/60">
       <!-- Header Row -->
       <div class="grid grid-cols-[50px_2.5fr_1.5fr] gap-4 p-4 bg-muted/20 text-xs font-semibold text-muted-foreground select-none text-start items-center">
-        <span>{common.onboarding_subjects_table_color()}</span>
+        <span>{m.common_td_text_color()}</span>
         <span>{onboardingState.stageLabel}</span>
-        <span class="text-end">{common.onboarding_fees_label({ currency: onboardingState.profile.currency })}</span>
+        <span class="text-end">{m.common_onboarding_fees_label({ currency: onboardingState.profile.currency })}</span>
       </div>
 
       {#each enabledGradeLevels as gl (gl.level)}
@@ -56,7 +56,7 @@ const enabledGradeLevels = $derived(
 
       {#if enabledGradeLevels.length === 0}
         <div class="text-center py-12 text-muted-foreground text-sm font-sans">
-          {common.onboarding_fees_no_stages({ stage: onboardingState.stageLabel })}
+          {m.common_onboarding_fees_no_stages({ stage: onboardingState.stageLabel })}
         </div>
       {/if}
     </div>

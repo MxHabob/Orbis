@@ -4,6 +4,7 @@ Main workspace for students. Integrates Left sidebar filters, middle data table,
 and right detailed student inspector.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
@@ -26,8 +27,7 @@ import StudentTable from "$lib/features/students/student-table.svelte";
 import StudentInspector from "$lib/features/students/student-inspector.svelte";
 import { toast } from "svelte-sonner";
 import { goto } from "$app/navigation";
-import * as common from "$lib/paraglide/messages/common";
-import * as students from "$lib/paraglide/messages/students";
+
 import { localizeHref } from "$lib/paraglide/runtime";
 import { formatNumber } from "$lib/core/i18n";
 import { extractErrorMessage } from "$lib/core/ipc";
@@ -95,7 +95,7 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 </script>
 
 <svelte:head>
-	<title>{common.page_title_students()}</title>
+	<title>{m.common_page_title_students()}</title>
 </svelte:head>
 
 <div class="h-full w-full flex flex-col overflow-hidden bg-background">
@@ -108,25 +108,25 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 		<!-- Left Panel: Sidebar Filters -->
 		{#snippet left()}
 			<SidebarNav
-				title={students.filter_panel()}
+				title={m.students_filter_panel()}
 				groups={[
 					{
-						title: common.filter_academic_status(),
+						title: m.common_filter_academic_status(),
 						items: [
 							{
-								label: common.filter_all(),
+								label: m.common_filter_all(),
 								badge: formatNumber(getCountByStatus('all')),
 								isActive: studentsStore.statusFilter === 'all',
 								onclick: () => studentsStore.statusFilter = 'all'
 							},
 							{
-								label: common.filter_active(),
+								label: m.common_filter_active(),
 								badge: formatNumber(getCountByStatus('active')),
 								isActive: studentsStore.statusFilter === 'active',
 								onclick: () => studentsStore.statusFilter = 'active'
 							},
 							{
-								label: common.filter_withdrawn(),
+								label: m.common_filter_withdrawn(),
 								badge: formatNumber(getCountByStatus('withdrawn')),
 								isActive: studentsStore.statusFilter === 'withdrawn',
 								onclick: () => studentsStore.statusFilter = 'withdrawn'
@@ -134,10 +134,10 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 						]
 					},
 					{
-						title: common.filter_classes(),
+						title: m.common_filter_classes(),
 						items: [
 							{
-								label: common.filter_all_classes(),
+								label: m.common_filter_all_classes(),
 								isActive: studentsStore.selectedClassId === null,
 								onclick: () => studentsStore.selectedClassId = null
 							},
@@ -161,7 +161,7 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 							size="icon-xs" 
 							class="h-5 w-5 text-muted-foreground hover:text-foreground cursor-pointer" 
 							onclick={clearFilters}
-							title={students.clear_filters()}
+							title={m.students_clear_filters()}
 						>
 							<FilterX size={12} />
 						</Button>
@@ -178,7 +178,7 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 					<Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
 					<Input
 					type="text"
-					placeholder={students.search_placeholder()}
+					placeholder={m.students_search_placeholder()}
 					class="input-sunken ps-9 text-xs py-2"
 					bind:value={localSearch}
 					oninput={() => updateSearch(localSearch)}
@@ -193,7 +193,7 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 								onclick={() => printDialogOpen = true}
 							>
 								<Printer size={13} class="me-1.5" />
-								<span>{common.print_templates()} ({selectedStudentIds.size})</span>
+								<span>{m.common_print_templates()} ({selectedStudentIds.size})</span>
 							</Button>
 						{/if}
 						<Button
@@ -202,15 +202,15 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 							onclick={() => goto(localizeHref(`/${data.orgId}/settings/bulk-input`))}
 						>
 							<Upload size={13} class="me-1.5" />
-							{common.nav_bulk_input()}
+							{m.common_bulk_hub_title()}
 						</Button>
 						<Button
 							variant="outline"
 							class="text-xs h-9 px-3"
-							onclick={() => toast.info(students.export_coming_soon())}
+							onclick={() => toast.info(m.students_export_coming_soon())}
 						>
 							<Download size={13} class="me-1.5" />
-							{students.export()}
+							{m.common_export()}
 						</Button>
 						{#if canCreateStudent}
 							<Button 
@@ -219,7 +219,7 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 								onclick={() => goto(localizeHref(`/${data.orgId}/students/new`))}
 							>
 								<Plus size={14} class="me-1.5" />
-								{students.new()}
+								{m.common_new()}
 							</Button>
 						{:else if canRequestLateEnrollment}
 							<Button 
@@ -228,7 +228,7 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 								onclick={() => { showOverrideDialog = true; }}
 							>
 								<ShieldAlert size={14} class="me-1.5" />
-								{students.request_late_enrollment ? students.request_late_enrollment() : "Request Late Enrollment"}
+								{m.students_request_late_enrollment ? m.students_request_late_enrollment() : "Request Late Enrollment"}
 							</Button>
 						{/if}
 					</div>
@@ -240,8 +240,8 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 						<StudentsTableSkeleton />
 					{:else if error}
 						<div class="h-full w-full flex flex-col items-center justify-center p-6 text-center gap-3 bg-card border border-border rounded-lg">
-							<p class="text-xs text-destructive font-semibold">{students.load_error({ error: extractErrorMessage(error) })}</p>
-							<Button variant="outline" class="text-xs" onclick={() => { $enrollmentsQuery.refetch(); $classesQuery.refetch(); }}>{students.retry()}</Button>
+							<p class="text-xs text-destructive font-semibold">{m.students_load_error({ error: extractErrorMessage(error) })}</p>
+							<Button variant="outline" class="text-xs" onclick={() => { $enrollmentsQuery.refetch(); $classesQuery.refetch(); }}>{m.common_retry()}</Button>
 						</div>
 					{:else}
 						<StudentTable

@@ -4,6 +4,7 @@ Pattern A: DetailPageHeader + MainViewport (Avatar sidebar + SecondaryMenu + con
 Decomposed from the original 699-line monolith into a layout + 4 sub-pages.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
@@ -29,7 +30,7 @@ import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
 import type { Snippet } from "svelte";
-import * as settings from "$lib/paraglide/messages/settings";
+
 import { localizeHref } from "$lib/paraglide/runtime";
 
 let { children }: { children: Snippet } = $props();
@@ -66,7 +67,7 @@ async function loadUser() {
     avatarUrl = fetched.avatar_url || fetched.avatar || null;
   } catch (e) {
     console.error("Failed to load user:", e);
-    toast.error(settings.user_detail_load_error());
+    toast.error(m.settings_user_detail_load_error());
   } finally {
     isLoading = false;
   }
@@ -77,7 +78,7 @@ onMount(loadUser);
 async function handleResetPassword(e: Event) {
   e.preventDefault();
   if (newPassword !== confirmPassword) {
-    toast.error(settings.user_detail_reset_mismatch());
+    toast.error(m.settings_user_detail_reset_mismatch());
     return;
   }
   if (!userId) return;
@@ -86,7 +87,7 @@ async function handleResetPassword(e: Event) {
     await commands.iam.changePassword(userId as string, {
       new_password: newPassword,
     });
-    toast.success(settings.user_detail_reset_success());
+    toast.success(m.settings_user_detail_reset_success());
     showResetModal = false;
     newPassword = "";
     confirmPassword = "";
@@ -99,10 +100,10 @@ async function handleResetPassword(e: Event) {
 
 async function handleDeleteUser() {
   if (!userId) return;
-  if (!confirm(settings.user_detail_delete_confirm())) return;
+  if (!confirm(m.settings_user_detail_delete_confirm())) return;
   try {
     await commands.iam.deleteUser(userId as string, "admin");
-    toast.success(settings.user_detail_deleted());
+    toast.success(m.settings_user_detail_deleted());
     await goto(localizeHref(`/${orgId}/settings/users`));
   } catch (e: unknown) {
     toast.error((e as any)?.message || "Failed");
@@ -114,25 +115,25 @@ const basePath = $derived(`/${orgId}/settings/users/${userId}`);
 const menuItems = $derived([
   {
     path: "profile",
-    label: settings.user_detail_tab_profile(),
+    label: m.settings_user_detail_tab_profile(),
   },
   {
     path: "roles",
-    label: settings.user_detail_tab_roles(),
+    label: m.settings_nav_permissions(),
   },
   {
     path: "sessions",
-    label: settings.user_detail_tab_sessions(),
+    label: m.settings_user_detail_tab_sessions(),
   },
   {
     path: "preferences",
-    label: settings.user_detail_tab_settings(),
+    label: m.settings_user_detail_tab_settings(),
   },
 ]);
 </script>
 
 <svelte:head>
-  <title>{fullName || settings.user_detail_title()} | Orbis</title>
+  <title>{fullName || m.settings_user_detail_title()} | Orbis</title>
 </svelte:head>
 
 <div
@@ -141,7 +142,7 @@ const menuItems = $derived([
   <!-- Header -->
   <DetailPageHeader
     backHref={`/${orgId}/settings/users`}
-    backLabel={settings.nav_users()}
+    backLabel={m.settings_nav_users()}
   >
     {#if isLoading}
       <Skeleton class="h-6 w-32" />
@@ -149,21 +150,21 @@ const menuItems = $derived([
       <h1
         class="text-lg font-bold tracking-tight text-foreground truncate shrink min-w-0"
       >
-        {fullName || settings.user_detail_title()}
+        {fullName || m.settings_user_detail_title()}
       </h1>
       {#if isActiveState}
         <Badge
           variant="success"
           class="text-[9px] py-0 px-1.5 h-4.5 rounded shrink-0"
         >
-          {settings.user_detail_badge_active()}
+          {m.common_status_active()}
         </Badge>
       {:else}
         <Badge
           variant="destructive"
           class="text-[9px] py-0 px-1.5 h-4.5 rounded shrink-0"
         >
-          {settings.user_detail_badge_inactive()}
+          {m.common_status_disabled()}
         </Badge>
       {/if}
     {/if}
@@ -174,7 +175,7 @@ const menuItems = $derived([
         size="sm"
         onclick={() => (showResetModal = true)}
       >
-        {settings.user_detail_btn_reset_pass()}
+        {m.settings_user_detail_btn_reset_pass()}
       </Button>
       <Button
         variant="outline"
@@ -183,7 +184,7 @@ const menuItems = $derived([
         onclick={handleDeleteUser}
       >
         <Trash2 size={13} class="me-1" />
-        {settings.user_detail_btn_delete()}
+        {m.settings_user_detail_btn_delete()}
       </Button>
     {/snippet}
   </DetailPageHeader>
@@ -248,9 +249,9 @@ const menuItems = $derived([
   <DialogContent class="max-w-md text-start">
     <form onsubmit={handleResetPassword} class="flex flex-col gap-4">
       <DialogHeader>
-        <DialogTitle>{settings.user_detail_reset_pass_title()}</DialogTitle>
+        <DialogTitle>{m.settings_user_detail_reset_pass_title()}</DialogTitle>
         <DialogDescription>
-          {settings.user_detail_reset_pass_desc({
+          {m.settings_user_detail_reset_pass_desc({
             name: fullName || "User",
           })}
         </DialogDescription>
@@ -261,7 +262,7 @@ const menuItems = $derived([
           for="new_password"
           class="text-xs font-medium text-muted-foreground"
         >
-          {settings.user_detail_new_password()}
+          {m.settings_security_new_password()}
         </Label>
         <Input
           id="new_password"
@@ -279,7 +280,7 @@ const menuItems = $derived([
           for="confirm_password"
           class="text-xs font-medium text-muted-foreground"
         >
-          {settings.user_detail_confirm_password()}
+          {m.settings_security_confirm_password()}
         </Label>
         <Input
           id="confirm_password"
@@ -303,7 +304,7 @@ const menuItems = $derived([
           }}
           disabled={isResettingPassword}
         >
-          {settings.user_detail_cancel()}
+          {m.common_action_cancel()}
         </Button>
         <Button
           type="submit"
@@ -314,7 +315,7 @@ const menuItems = $derived([
         >
           {isResettingPassword
             ? "..."
-            : settings.user_detail_btn_reset_pass()}
+            : m.settings_user_detail_btn_reset_pass()}
         </Button>
       </DialogFooter>
     </form>

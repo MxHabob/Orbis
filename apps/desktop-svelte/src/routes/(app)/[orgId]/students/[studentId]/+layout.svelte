@@ -4,6 +4,7 @@ Streamlined layout for deep-dive student pages.
 Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { Button } from "@orbis/ui-svelte/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte/avatar";
@@ -36,9 +37,7 @@ import { createEnrollmentsQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
 import type { Snippet } from "svelte";
 import { toast } from "svelte-sonner";
-import * as common from "$lib/paraglide/messages/common";
-import * as students from "$lib/paraglide/messages/students";
-import * as academics from "$lib/paraglide/messages/academics";
+
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import AskOrbisButton from "$lib/shared/components/ask-orbis-button.svelte";
 
@@ -65,37 +64,37 @@ const basePath = $derived(`/${orgId}/students/${studentId}`);
 const menuItems = $derived([
   {
     path: "",
-    label: common.form_tab_profile(),
+    label: m.common_form_tab_profile(),
     icon: User,
   },
   {
     path: "grades",
-    label: students.detail_tab_grades(),
+    label: m.students_detail_tab_grades(),
     icon: GraduationCap,
   },
   {
     path: "fees",
-    label: students.detail_tab_fees(),
+    label: m.students_detail_tab_fees(),
     icon: Wallet,
   },
   {
     path: "attendance",
-    label: students.detail_tab_attendance(),
+    label: m.common_detail_tab_attendance(),
     icon: UserCheck,
   },
   {
     path: "behavior",
-    label: students.detail_tab_behavior(),
+    label: m.common_detail_tab_behavior(),
     icon: ShieldAlert,
   },
   {
     path: "guardians",
-    label: common.guardians_tab(),
+    label: m.common_guardians_tab(),
     icon: Users2,
   },
   {
     path: "documents",
-    label: students.detail_tab_documents(),
+    label: m.students_detail_tab_documents(),
     icon: FileText,
   },
 ]);
@@ -108,7 +107,7 @@ const menuItems = $derived([
   <!-- Header using shared DetailPageHeader -->
   <DetailPageHeader
     backHref={`/${orgId}/students`}
-    backLabel={students.detail_back_to_directory()}
+    backLabel={m.students_detail_back_to_directory()}
   >
     {#if student}
       <h1
@@ -122,7 +121,7 @@ const menuItems = $derived([
       >
         {currentClass
           ? String(currentClass.name || currentClass.name_ar || "")
-          : students.detail_not_enrolled()}
+          : m.common_status_not_enrolled()}
       </Badge>
     {:else}
       <Skeleton class="h-6 w-32" />
@@ -132,8 +131,8 @@ const menuItems = $derived([
     {#snippet actions()}
       {#if student}
         <AskOrbisButton
-          query={academics.student_evaluation_ai_ask_orbis_query({ name: student.full_name || student.name_ar || "" })}
-          label={academics.student_evaluation_ask_orbis_btn({ name: student.full_name || student.name_ar || "" })}
+          query={m.academics_student_evaluation_ai_ask_orbis_query({ name: student.full_name || student.name_ar || "" })}
+          label={m.academics_student_evaluation_ask_orbis_btn({ name: student.full_name || student.name_ar || "" })}
           variant="outline"
           size="sm"
           class="h-8 text-[11px]"
@@ -145,16 +144,16 @@ const menuItems = $derived([
           class="h-8 text-[11px] gap-1.5 font-semibold"
           onclick={() =>
             toast.info(
-              students.detail_call_guardian_toast({
+              m.students_detail_call_guardian_toast({
                 phone:
                   student.phone_number ||
                   student.phone ||
-                  students.detail_phone_unavailable(),
+                  m.students_detail_phone_unavailable(),
               }),
             )}
         >
           <PhoneCall size={12} />
-          {students.detail_call_guardian()}
+          {m.students_detail_call_guardian()}
         </Button>
 
         <DropdownMenu>
@@ -173,20 +172,20 @@ const menuItems = $derived([
           <DropdownMenuContent align="end" class="w-48 p-1 z-50 bg-popover border border-border shadow-md rounded-md select-none">
             <DropdownMenuItem
               class="flex items-center gap-2 px-2.5 py-2 text-[11px] font-semibold cursor-pointer text-foreground hover:bg-accent rounded-sm text-start"
-              onclick={() => toast.info(common.student_layout_transfer_coming_soon())}
+              onclick={() => toast.info(m.common_student_layout_transfer_coming_soon())}
             >
               <Users size={12} class="text-muted-foreground shrink-0" />
-              <span>{common.student_layout_transfer_class()}</span>
+              <span>{m.common_student_layout_transfer_class()}</span>
             </DropdownMenuItem>
 
             <DropdownMenuSeparator class="bg-border/60 my-1" />
 
             <DropdownMenuItem
               class="flex items-center gap-2 px-2.5 py-2 text-[11px] font-semibold cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/5 hover:bg-destructive/5 rounded-sm text-start"
-              onclick={() => toast.info(common.student_layout_withdraw_coming_soon())}
+              onclick={() => toast.info(m.common_student_layout_withdraw_coming_soon())}
             >
               <ShieldAlert size={12} class="text-destructive shrink-0" />
-              <span>{common.student_layout_withdraw_student()}</span>
+              <span>{m.common_inspector_withdraw()}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -236,8 +235,8 @@ const menuItems = $derived([
                   <span
                     class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
                   >
-                    {common.form_student_number
-                      ? common.form_student_number()
+                    {m.common_form_student_number
+                      ? m.common_form_student_number()
                       : "الرقم الأكاديمي"}
                   </span>
                   <span class="text-xs font-mono font-bold text-foreground">

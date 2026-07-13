@@ -1,7 +1,8 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { toast } from "svelte-sonner";
-import * as settings from "$lib/paraglide/messages/settings";
+
 import { extractErrorMessage } from "$lib/core/ipc";
 import {
   createOrganizationQuery,
@@ -50,11 +51,11 @@ async function handleSave(registrationConfig: any) {
     { orgId, request },
     {
       onSuccess: () => {
-        toast.success(settings.registration_save_success());
+        toast.success(m.settings_registration_save_success());
       },
       onError: (e: unknown) => {
         toast.error(
-          settings.registration_save_error({ error: extractErrorMessage(e) }),
+          m.settings_registration_save_error({ error: extractErrorMessage(e) }),
         );
       },
     },
@@ -63,7 +64,7 @@ async function handleSave(registrationConfig: any) {
 </script>
 
 <svelte:head>
-  <title>{settings.registration_window_title()} | Orbis</title>
+  <title>{m.settings_nav_registration()} | Orbis</title>
 </svelte:head>
 
 {#if isLoading}

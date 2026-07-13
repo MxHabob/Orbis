@@ -1,9 +1,10 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
 import { page } from "$app/state";
 import { Button } from "@orbis/ui-svelte/button";
 import { Sparkles } from "lucide-svelte";
-import * as academics from "$lib/paraglide/messages/academics";
+
 import {
   Tooltip,
   TooltipTrigger,
@@ -63,7 +64,7 @@ function askOrbis() {
           onclick={askOrbis}
         >
           <Sparkles size={12} class="text-primary animate-pulse" />
-          <span>{academics.student_evaluation_ask_orbis_btn_short()}</span>
+          <span>{m.academics_student_evaluation_ask_orbis_btn_short()}</span>
         </Button>
       {/snippet}
     </TooltipTrigger>

@@ -4,6 +4,7 @@
   Supports creating a new parent user inline if they do not exist.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
@@ -20,7 +21,7 @@ import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { authStore } from "$lib/stores";
 import type { GuardianLink, JsonRecord } from "@orbis/sdk-core";
 import { toast } from "svelte-sonner";
-import * as common from "$lib/paraglide/messages/common";
+
 import { createUsersQuery } from "$lib/features/settings/queries";
 import { createEnrollmentsQuery } from "$lib/features/students/queries";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
@@ -128,12 +129,12 @@ const isLoading = $derived(
 let isSaving = $state(false);
 
 const relations = $derived([
-  { value: "father", label: common.guardians_relation_father() },
-  { value: "mother", label: common.guardians_relation_mother() },
-  { value: "sibling", label: common.guardians_relation_sibling() },
-  { value: "grandparent", label: common.guardians_relation_grandparent() },
-  { value: "uncle", label: common.guardians_relation_uncle() },
-  { value: "other", label: common.guardians_relation_other() },
+  { value: "father", label: m.common_relationship_father() },
+  { value: "mother", label: m.common_relationship_mother() },
+  { value: "sibling", label: m.common_guardians_relation_sibling() },
+  { value: "grandparent", label: m.common_guardians_relation_grandparent() },
+  { value: "uncle", label: m.common_guardians_relation_uncle() },
+  { value: "other", label: m.common_ft_category_other() },
 ]);
 
 const studentLastName = $derived.by(() => {
@@ -309,7 +310,7 @@ async function handleSubmit() {
 
     if (isEditMode && editData?.id) {
       await commands.platform.updateGuardianLink(String(editData.id), request);
-      toast.success(common.guardians_update_success());
+      toast.success(m.common_guardians_update_success());
     } else {
       // Create link requires guardian_id. Let's make sure it is sent correctly.
       const requestWithGuardian = {
@@ -317,7 +318,7 @@ async function handleSubmit() {
         guardian_id: finalGuardianUserId,
       };
       await commands.platform.createGuardianLink(requestWithGuardian);
-      toast.success(common.guardians_create_success());
+      toast.success(m.common_guardians_create_success());
     }
 
     onSuccess?.();
@@ -338,7 +339,7 @@ async function handleSubmit() {
 >
   <Sheet.Header class="px-6 py-4 border-b border-border/40 shrink-0 text-start">
     <Sheet.Title class="text-base font-bold text-foreground">
-      {isEditMode ? common.action_edit() : common.guardians_sheet_create_title()}
+      {isEditMode ? m.common_action_edit() : m.common_guardians_add()}
     </Sheet.Title>
   </Sheet.Header>
 
@@ -366,10 +367,10 @@ async function handleSubmit() {
       <!-- User Search + Select (only show in create mode) -->
       {#if !isEditMode}
         <div class="flex flex-col gap-1.5">
-          <Label class="text-xs font-semibold text-muted-foreground">{common.form_guardian_search_label()}</Label>
+          <Label class="text-xs font-semibold text-muted-foreground">{m.common_form_guardian_search_label()}</Label>
           <Input
             type="text"
-            placeholder={common.form_guardian_search_placeholder()}
+            placeholder={m.common_form_guardian_search_placeholder()}
             bind:value={localSearch}
             oninput={() => updateSearch(localSearch)}
             class="h-8 text-xs mb-1"
@@ -379,7 +380,7 @@ async function handleSubmit() {
             <div class="rounded-lg border border-border/40 bg-card/50 overflow-hidden">
               {#if searchQuery.trim().length === 0}
                 {#if filteredUsers.length === 0}
-                  <div class="p-3 text-xs text-muted-foreground text-center">{common.guardians_sheet_no_results()}</div>
+                  <div class="p-3 text-xs text-muted-foreground text-center">{m.common_switcher_no_results()}</div>
                 {:else}
                   {#each filteredUsers.slice(0, 3) as u (u.id)}
                     <button
@@ -399,7 +400,7 @@ async function handleSubmit() {
                 <!-- Search query active - show scrollable list -->
                 <div class="max-h-40 overflow-y-auto">
                   {#if filteredUsers.length === 0}
-                    <div class="p-3 text-xs text-muted-foreground text-center">{common.guardians_sheet_no_results()}</div>
+                    <div class="p-3 text-xs text-muted-foreground text-center">{m.common_switcher_no_results()}</div>
                   {:else}
                     {#each filteredUsers.slice(0, 20) as u (u.id)}
                       <button
@@ -423,7 +424,7 @@ async function handleSubmit() {
           {#if guardianUserId}
             <div class="flex items-center justify-between p-2 rounded bg-primary/10 border border-primary/20 text-xs mt-1">
               <span class="text-primary font-medium">
-                ✓ {common.guardians_sheet_selected_label({ name: fullName })}
+                ✓ {m.common_guardians_sheet_selected_label({ name: fullName })}
               </span>
               <Button
                 type="button"
@@ -431,7 +432,7 @@ async function handleSubmit() {
                 class="h-5 px-1.5 text-[10px] text-destructive hover:bg-destructive/10"
                 onclick={clearSelectedUser}
               >
-                {common.guardians_sheet_clear_selection()}
+                {m.common_guardians_sheet_clear_selection()}
               </Button>
             </div>
           {/if}
@@ -440,7 +441,7 @@ async function handleSubmit() {
 
       <!-- Full Name -->
       <div class="flex flex-col gap-1.5">
-        <Label class="text-xs font-semibold text-muted-foreground">{common.form_guardian_name_label()} *</Label>
+        <Label class="text-xs font-semibold text-muted-foreground">{m.common_word_fullname()} *</Label>
         <Input
           type="text"
           bind:value={fullName}
@@ -451,7 +452,7 @@ async function handleSubmit() {
 
       <!-- Phone -->
       <div class="flex flex-col gap-1.5">
-        <Label class="text-xs font-semibold text-muted-foreground">{common.form_guardian_phone_label()} *</Label>
+        <Label class="text-xs font-semibold text-muted-foreground">{m.common_word_phone()} *</Label>
         <Input
           type="text"
           bind:value={phone}
@@ -475,7 +476,7 @@ async function handleSubmit() {
 
       <!-- National ID -->
       <div class="flex flex-col gap-1.5">
-        <Label class="text-xs font-semibold text-muted-foreground">{common.form_guardian_national_id_label()}</Label>
+        <Label class="text-xs font-semibold text-muted-foreground">{m.common_form_guardian_national_id_label()}</Label>
         <Input
           type="text"
           bind:value={nationalId}
@@ -486,7 +487,7 @@ async function handleSubmit() {
 
       <!-- Relation -->
       <div class="flex flex-col gap-1.5">
-        <Label class="text-xs font-semibold text-muted-foreground">{common.guardians_form_relation()} *</Label>
+        <Label class="text-xs font-semibold text-muted-foreground">{m.common_bulk_col_guardian_rel()} *</Label>
         <Select type="single" value={relation} onValueChange={(v) => (relation = v ?? "father")}>
           <SelectTrigger class="h-9 text-sm">
             {selectedRelation?.label ?? relation}
@@ -501,7 +502,7 @@ async function handleSubmit() {
 
       <!-- Job -->
       <div class="flex flex-col gap-1.5">
-        <Label class="text-xs font-semibold text-muted-foreground">{common.guardians_form_job()}</Label>
+        <Label class="text-xs font-semibold text-muted-foreground">{m.common_guardians_form_job()}</Label>
         <Input
           type="text"
           bind:value={job}
@@ -517,23 +518,23 @@ async function handleSubmit() {
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div class="flex items-center gap-2">
             <Checkbox id="primary_chk" checked={isPrimary} onCheckedChange={(val) => isPrimary = !!val} />
-            <Label for="primary_chk" class="text-xs cursor-pointer">{common.form_guardian_role_primary()}</Label>
+            <Label for="primary_chk" class="text-xs cursor-pointer">{m.common_form_guardian_role_primary()}</Label>
           </div>
 
           <div class="flex items-center gap-2">
             <Checkbox id="emergency_chk" checked={isEmergencyContact} onCheckedChange={(val) => isEmergencyContact = !!val} />
-            <Label for="emergency_chk" class="text-xs cursor-pointer">{common.form_guardian_role_emergency()}</Label>
+            <Label for="emergency_chk" class="text-xs cursor-pointer">{m.common_form_guardian_role_emergency()}</Label>
           </div>
 
           <div class="flex items-center gap-2">
             <Checkbox id="payer_chk" checked={isPayer} onCheckedChange={(val) => isPayer = !!val} />
-            <Label for="payer_chk" class="text-xs cursor-pointer">{common.form_guardian_role_payer()}</Label>
+            <Label for="payer_chk" class="text-xs cursor-pointer">{m.common_form_guardian_role_payer()}</Label>
           </div>
         </div>
 
         {#if isPayer}
           <div class="flex items-center justify-start gap-2 pt-2 border-t border-border/40">
-            <Label class="text-xs text-muted-foreground">{common.form_guardian_payment_share()}</Label>
+            <Label class="text-xs text-muted-foreground">{m.common_form_guardian_payment_share()}</Label>
             <div class="flex items-center gap-1">
               <Input type="number" min="0" max="100" class="h-8 w-16 text-center font-bold px-1 bg-background" bind:value={paymentSharePercent} />
               <span class="text-xs text-muted-foreground">%</span>
@@ -552,14 +553,14 @@ async function handleSubmit() {
       class="flex-1 h-9 text-sm"
       onclick={onCancel}
     >
-      {common.action_cancel()}
+      {m.common_action_cancel()}
     </Button>
     <Button
       type="submit"
       class="flex-1 h-9 text-sm font-semibold"
       disabled={isSaving || isLoading || !fullName || !phone || !relation}
     >
-      {isSaving ? common.guardians_form_saving() : common.action_save()}
+      {isSaving ? m.common_state_saving() : m.common_action_save()}
     </Button>
   </div>
 </form>

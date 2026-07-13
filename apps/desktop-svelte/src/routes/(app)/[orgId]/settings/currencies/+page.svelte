@@ -4,6 +4,7 @@
   add new currencies, edit currency configurations, and delete unused currencies.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
@@ -40,7 +41,7 @@ import {
   Info,
 } from "lucide-svelte";
 import { fade, slide } from "svelte/transition";
-import * as settings from "$lib/paraglide/messages/settings";
+
 import { l, isAr } from "$lib/core/i18n";
 
 let orgId = $derived((page.params.orgId as string) || "");
@@ -89,7 +90,7 @@ async function loadCurrencies() {
     currencies = await commands.finance.listCurrencies(orgId);
   } catch (e) {
     console.error("Error loading currencies:", e);
-    toast.error(settings.currencies_load_error());
+    toast.error(m.settings_currencies_load_error());
   } finally {
     isLoading = false;
   }
@@ -120,18 +121,18 @@ async function handleAddCurrency(e: Event) {
 
   const code = addCode.trim().toUpperCase();
   if (!code || code.length < 2) {
-    toast.error(settings.currencies_invalid_code());
+    toast.error(m.settings_currencies_invalid_code());
     return;
   }
 
   // Check if code already exists
   if (currencies.some((c) => c.code === code)) {
-    toast.error(settings.currencies_already_exists());
+    toast.error(m.settings_currencies_already_exists());
     return;
   }
 
   if (addExchangeRate <= 0) {
-    toast.error(settings.currencies_invalid_rate());
+    toast.error(m.settings_currencies_invalid_rate());
     return;
   }
 
@@ -152,13 +153,13 @@ async function handleAddCurrency(e: Event) {
     };
 
     await commands.finance.createCurrency(orgId, newCurrency);
-    toast.success(settings.currencies_added_success());
+    toast.success(m.settings_currencies_added_success());
     showAddDialog = false;
     await loadCurrencies();
   } catch (e) {
     console.error("Error creating currency:", e);
     const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(settings.currencies_add_error({ error: errorMsg }));
+    toast.error(m.settings_currencies_add_error({ error: errorMsg }));
   } finally {
     isSubmitting = false;
   }
@@ -182,7 +183,7 @@ async function handleEditCurrency(e: Event) {
   if (isSubmitting) return;
 
   if (editExchangeRate <= 0) {
-    toast.error(settings.currencies_invalid_rate());
+    toast.error(m.settings_currencies_invalid_rate());
     return;
   }
 
@@ -199,13 +200,13 @@ async function handleEditCurrency(e: Event) {
     };
 
     await commands.finance.updateCurrency(orgId, editCode, updates);
-    toast.success(settings.currencies_updated_success());
+    toast.success(m.settings_currencies_updated_success());
     showEditDialog = false;
     await loadCurrencies();
   } catch (e) {
     console.error("Error updating currency:", e);
     const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(settings.currencies_update_error({ error: errorMsg }));
+    toast.error(m.settings_currencies_update_error({ error: errorMsg }));
   } finally {
     isSubmitting = false;
   }
@@ -213,7 +214,7 @@ async function handleEditCurrency(e: Event) {
 
 async function confirmDeleteCurrency(c: any) {
   if (c.is_base === 1) {
-    toast.error(settings.currencies_delete_base_error());
+    toast.error(m.settings_currencies_delete_base_error());
     return;
   }
   currencyToDelete = c;
@@ -224,30 +225,30 @@ async function handleDeleteCurrency() {
   try {
     await commands.finance.deleteCurrency(orgId, currencyToDelete.code);
     toast.success(
-      settings.currencies_deleted_success({ code: currencyToDelete.code }),
+      m.settings_currencies_deleted_success({ code: currencyToDelete.code }),
     );
     currencyToDelete = null;
     await loadCurrencies();
   } catch (e) {
     console.error("Error deleting currency:", e);
     const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(settings.currencies_delete_error({ error: errorMsg }));
+    toast.error(m.settings_currencies_delete_error({ error: errorMsg }));
   }
 }
 
 async function seedFinancials() {
-  const confirmed = confirm(settings.currencies_seed_confirm());
+  const confirmed = confirm(m.settings_currencies_seed_confirm());
   if (!confirmed) return;
 
   isSeeding = true;
   try {
     await commands.finance.seedDefaultFinancials(orgId);
-    toast.success(settings.currencies_seeded_success());
+    toast.success(m.settings_currencies_seeded_success());
     await loadCurrencies();
   } catch (e) {
     console.error("Error seeding financials:", e);
     const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(settings.currencies_seed_error({ error: errorMsg }));
+    toast.error(m.settings_currencies_seed_error({ error: errorMsg }));
   } finally {
     isSeeding = false;
   }
@@ -265,20 +266,20 @@ function cancelEditingRate() {
 
 async function saveRateValue(code: string) {
   if (editRateValue <= 0) {
-    toast.error(settings.currencies_invalid_rate());
+    toast.error(m.settings_currencies_invalid_rate());
     return;
   }
   try {
     await commands.finance.updateCurrency(orgId, code, {
       exchange_rate: editRateValue,
     });
-    toast.success(settings.currencies_rate_updated_success());
+    toast.success(m.settings_currencies_rate_updated_success());
     editingRateCode = null;
     await loadCurrencies();
   } catch (e) {
     console.error("Error updating exchange rate:", e);
     const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(settings.currencies_rate_update_error({ error: errorMsg }));
+    toast.error(m.settings_currencies_rate_update_error({ error: errorMsg }));
   }
 }
 
@@ -289,7 +290,7 @@ let baseCurrencyCode = $derived(
 </script>
 
 <svelte:head>
-  <title>{settings.nav_currencies()} | Orbis</title>
+  <title>{m.settings_nav_currencies()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto bg-background p-6 flex flex-col gap-6 scrollbar-hide">
@@ -298,7 +299,7 @@ let baseCurrencyCode = $derived(
     <div class="flex items-center gap-2">
       {#if !isLoading}
         <span class="text-[10px] px-2 py-0.5 rounded bg-muted font-mono text-muted-foreground font-bold">
-          {settings.currencies_count_label({ count: currencies.length })}
+          {m.settings_currencies_count_label({ count: currencies.length })}
         </span>
       {/if}
     </div>
@@ -313,7 +314,7 @@ let baseCurrencyCode = $derived(
         class="h-9 text-xs flex items-center gap-1.5 cursor-pointer border-primary/30 hover:bg-primary/5 text-primary font-semibold"
       >
         <Sparkles size={13} class={isSeeding ? "animate-spin" : ""} />
-        <span>{isSeeding ? settings.currencies_seeding() : settings.currencies_seed_btn()}</span>
+        <span>{isSeeding ? m.settings_currencies_seeding() : m.settings_currencies_seed_btn()}</span>
       </Button>
       
       <Button
@@ -321,7 +322,7 @@ let baseCurrencyCode = $derived(
         size="sm"
         onclick={loadCurrencies}
         class="h-9 w-9 p-0 flex items-center justify-center cursor-pointer"
-        title={settings.currencies_refresh_tooltip()}
+        title={m.common_control_refresh()}
       >
         <RefreshCw size={13} />
       </Button>
@@ -333,7 +334,7 @@ let baseCurrencyCode = $derived(
         class="h-9 text-xs flex items-center gap-1.5 font-bold cursor-pointer"
       >
         <Plus size={14} />
-        <span>{settings.currencies_add_btn()}</span>
+        <span>{m.settings_currencies_add_btn()}</span>
       </Button>
     </div>
   </div>
@@ -342,9 +343,9 @@ let baseCurrencyCode = $derived(
   <div class="border border-border/60 bg-muted/10 rounded-xl p-4 flex gap-3 text-start text-xs select-none hover:border-primary/25 transition-all duration-200">
     <Info class="text-primary shrink-0 animate-pulse" size={16} />
     <div class="flex flex-col gap-1 text-muted-foreground leading-relaxed">
-      <span class="font-bold text-foreground text-xs">{settings.currencies_how_it_works_title()}</span>
+      <span class="font-bold text-foreground text-xs">{m.settings_currencies_how_it_works_title()}</span>
       <span>
-        {settings.currencies_how_it_works_desc({ baseCurrencyCode })}
+        {m.settings_currencies_how_it_works_desc({ baseCurrencyCode })}
       </span>
     </div>
   </div>
@@ -363,12 +364,12 @@ let baseCurrencyCode = $derived(
         <div class="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-2">
           <Globe size={28} />
         </div>
-        <h3 class="text-sm font-bold text-foreground">{settings.currencies_no_currencies_title()}</h3>
+        <h3 class="text-sm font-bold text-foreground">{m.settings_currencies_no_currencies_title()}</h3>
         <p class="text-xs text-muted-foreground max-w-xs">
-          {settings.currencies_seed_hint()}
+          {m.settings_currencies_seed_hint()}
         </p>
         <Button variant="default" size="sm" onclick={seedFinancials} class="mt-2 cursor-pointer font-bold">
-          {settings.currencies_seed_now_btn()}
+          {m.settings_currencies_seed_now_btn()}
         </Button>
       </div>
     {:else}
@@ -376,14 +377,14 @@ let baseCurrencyCode = $derived(
         <Table>
           <TableHeader class="bg-muted/40 select-none">
             <TableRow>
-              <TableHead class="text-start font-bold text-xs">{settings.currencies_col_code()}</TableHead>
-              <TableHead class="text-start font-bold text-xs">{settings.currencies_col_name_ar()}</TableHead>
-              <TableHead class="text-start font-bold text-xs">{settings.currencies_col_name_en()}</TableHead>
-              <TableHead class="text-start font-bold text-xs">{settings.currencies_col_symbol()}</TableHead>
-              <TableHead class="text-start font-bold text-xs">{settings.currencies_col_type()}</TableHead>
-              <TableHead class="text-start font-bold text-xs">{settings.currencies_col_status()}</TableHead>
-              <TableHead class="text-end font-bold text-xs">{settings.currencies_col_rate()}</TableHead>
-              <TableHead class="text-end font-bold text-xs w-[140px]">{settings.currencies_col_actions()}</TableHead>
+              <TableHead class="text-start font-bold text-xs">{m.settings_currencies_col_code()}</TableHead>
+              <TableHead class="text-start font-bold text-xs">{m.common_cycle_form_name()}</TableHead>
+              <TableHead class="text-start font-bold text-xs">{m.common_user_form_name_en()}</TableHead>
+              <TableHead class="text-start font-bold text-xs">{m.settings_currencies_col_symbol()}</TableHead>
+              <TableHead class="text-start font-bold text-xs">{m.common_word_type()}</TableHead>
+              <TableHead class="text-start font-bold text-xs">{m.common_word_status()}</TableHead>
+              <TableHead class="text-end font-bold text-xs">{m.settings_currencies_col_rate()}</TableHead>
+              <TableHead class="text-end font-bold text-xs w-[140px]">{m.common_word_actions()}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -397,28 +398,28 @@ let baseCurrencyCode = $derived(
                     {c.symbol}
                   </span>
                   <span class="text-[10px] text-muted-foreground ml-1">
-                    ({c.symbol_position === 'before' ? settings.currencies_symbol_position_before() : settings.currencies_symbol_position_after()})
+                    ({c.symbol_position === 'before' ? m.settings_currencies_symbol_position_before() : m.settings_currencies_symbol_position_after()})
                   </span>
                 </TableCell>
                 <TableCell class="text-start text-xs">
                   {#if c.is_base === 1}
                     <Badge variant="success" class="text-[9px] font-bold">
-                      {settings.currencies_type_base()}
+                      {m.settings_currencies_type_base()}
                     </Badge>
                   {:else}
                     <Badge variant="secondary" class="text-[9px] font-semibold">
-                      {settings.currencies_type_sub()}
+                      {m.settings_currencies_type_sub()}
                     </Badge>
                   {/if}
                 </TableCell>
                 <TableCell class="text-start text-xs">
                   {#if c.is_active === 1}
                     <Badge variant="success" class="text-[9px] font-bold">
-                      {settings.currencies_status_active()}
+                      {m.common_status_active()}
                     </Badge>
                   {:else}
                     <Badge variant="secondary" class="text-[9px] font-semibold">
-                      {settings.currencies_status_inactive()}
+                      {m.settings_currencies_status_inactive()}
                     </Badge>
                   {/if}
                 </TableCell>
@@ -455,7 +456,7 @@ let baseCurrencyCode = $derived(
                     <button
                       onclick={() => startEditingRate(c)}
                       class="text-foreground hover:text-primary hover:underline cursor-pointer transition-colors duration-150 py-1 px-2 hover:bg-primary/5 rounded font-mono font-bold"
-                      title={settings.currencies_edit_rate_tooltip()}
+                      title={m.settings_currencies_edit_rate_tooltip()}
                     >
                       {c.exchange_rate.toFixed(4)}
                     </button>
@@ -469,7 +470,7 @@ let baseCurrencyCode = $derived(
                       size="icon"
                       onclick={() => openEditDialog(c)}
                       class="h-7 w-7 cursor-pointer hover:text-primary hover:bg-primary/5"
-                      title={settings.currencies_edit_title()}
+                      title={m.settings_currencies_edit_title()}
                     >
                       <Edit2 size={12} />
                     </Button>
@@ -480,13 +481,13 @@ let baseCurrencyCode = $derived(
                         size="icon"
                         onclick={() => confirmDeleteCurrency(c)}
                         class="h-7 w-7 cursor-pointer text-destructive hover:bg-destructive/10 border-destructive/20"
-                        title={settings.currencies_delete_title()}
+                        title={m.settings_currencies_delete_title()}
                       >
                         <Trash2 size={12} />
                       </Button>
                     {:else}
                       <span class="text-[9px] text-muted-foreground/60 italic px-1 select-none">
-                        {settings.currencies_type_base()}
+                        {m.settings_currencies_type_base()}
                       </span>
                     {/if}
                   </div>
@@ -514,10 +515,10 @@ let baseCurrencyCode = $derived(
       <div class="flex flex-col gap-1 border-b border-border/40 pb-3">
         <h2 class="text-sm font-bold text-foreground flex items-center gap-1.5">
           <Plus size={16} class="text-primary" />
-          <span>{settings.currencies_add_dialog_title()}</span>
+          <span>{m.settings_currencies_add_dialog_title()}</span>
         </h2>
         <p class="text-[10px] text-muted-foreground">
-          {settings.currencies_add_dialog_desc()}
+          {m.settings_currencies_add_dialog_desc()}
         </p>
       </div>
 
@@ -525,7 +526,7 @@ let baseCurrencyCode = $derived(
         <!-- Currency Code -->
         <div class="flex flex-col gap-1.5">
           <label for="add_code" class="text-xs font-semibold text-muted-foreground">
-            {settings.currencies_label_code_example()}
+            {m.settings_currencies_label_code_example()}
           </label>
           <Input
             id="add_code"
@@ -541,7 +542,7 @@ let baseCurrencyCode = $derived(
         <!-- Symbol -->
         <div class="flex flex-col gap-1.5">
           <label for="add_symbol" class="text-xs font-semibold text-muted-foreground">
-            {settings.currencies_label_symbol_example()}
+            {m.settings_currencies_label_symbol_example()}
           </label>
           <Input
             id="add_symbol"
@@ -556,7 +557,7 @@ let baseCurrencyCode = $derived(
         <!-- Arabic Name -->
         <div class="flex flex-col gap-1.5">
           <label for="add_name_ar" class="text-xs font-semibold text-muted-foreground">
-            {settings.currencies_label_name_ar()}
+            {m.common_cycle_form_name()}
           </label>
           <Input
             id="add_name_ar"
@@ -569,7 +570,7 @@ let baseCurrencyCode = $derived(
         <!-- English Name -->
         <div class="flex flex-col gap-1.5">
           <label for="add_name" class="text-xs font-semibold text-muted-foreground">
-            {settings.currencies_label_name_en()}
+            {m.settings_currencies_label_name_en()}
           </label>
           <Input
             id="add_name"
@@ -583,15 +584,15 @@ let baseCurrencyCode = $derived(
         <!-- Symbol Position -->
         <div class="flex flex-col gap-1.5">
           <label for="add_position" class="text-xs font-semibold text-muted-foreground">
-            {settings.currencies_label_position()}
+            {m.settings_currencies_label_position()}
           </label>
           <Select type="single" value={addSymbolPosition} onValueChange={(v) => (addSymbolPosition = v ?? "before")}>
             <SelectTrigger class="h-9 w-full text-xs">
-              {addSymbolPosition === "before" ? settings.currencies_position_before() : settings.currencies_position_after()}
+              {addSymbolPosition === "before" ? m.settings_currencies_position_before() : m.settings_currencies_position_after()}
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="before">{settings.currencies_position_before()}</SelectItem>
-              <SelectItem value="after">{settings.currencies_position_after()}</SelectItem>
+              <SelectItem value="before">{m.settings_currencies_position_before()}</SelectItem>
+              <SelectItem value="after">{m.settings_currencies_position_after()}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -599,7 +600,7 @@ let baseCurrencyCode = $derived(
         <!-- Decimal Places -->
         <div class="flex flex-col gap-1.5">
           <label for="add_decimals" class="text-xs font-semibold text-muted-foreground">
-            {settings.currencies_label_decimals()}
+            {m.settings_currencies_label_decimals()}
           </label>
           <Input
             id="add_decimals"
@@ -614,7 +615,7 @@ let baseCurrencyCode = $derived(
         <!-- Exchange Rate -->
         <div class="flex flex-col gap-1.5 md:col-span-2">
           <label for="add_rate" class="text-xs font-semibold text-muted-foreground flex justify-between">
-            <span>{settings.currencies_label_rate_with_base()}</span>
+            <span>{m.settings_currencies_label_rate_with_base()}</span>
             <span class="text-xs font-bold text-primary">1 {addCode || 'CUR'} = {addExchangeRate} {baseCurrencyCode}</span>
           </label>
           <Input
@@ -633,9 +634,9 @@ let baseCurrencyCode = $derived(
       <div class="flex flex-col gap-3 border-t border-border/40 pt-4 mt-2">
         <div class="flex items-center justify-between">
           <div class="flex flex-col gap-0.5">
-            <span class="text-xs font-semibold text-foreground">{settings.currencies_base_currency()}</span>
+            <span class="text-xs font-semibold text-foreground">{m.settings_currencies_base_currency()}</span>
             <span class="text-[9px] text-muted-foreground">
-              {settings.currencies_base_currency_desc()}
+              {m.settings_currencies_base_currency_desc()}
             </span>
           </div>
           <Switch bind:checked={addIsBase} />
@@ -643,9 +644,9 @@ let baseCurrencyCode = $derived(
 
         <div class="flex items-center justify-between border-t border-border/20 pt-3">
           <div class="flex flex-col gap-0.5">
-            <span class="text-xs font-semibold text-foreground">{settings.currencies_active()}</span>
+            <span class="text-xs font-semibold text-foreground">{m.settings_currencies_active()}</span>
             <span class="text-[9px] text-muted-foreground">
-              {settings.currencies_active_desc()}
+              {m.settings_currencies_active_desc()}
             </span>
           </div>
           <Switch bind:checked={addIsActive} />
@@ -654,10 +655,10 @@ let baseCurrencyCode = $derived(
 
       <div class="flex items-center justify-end gap-2 border-t border-border/40 pt-4 mt-2">
         <Button variant="ghost" class="text-xs h-8 cursor-pointer" onclick={() => showAddDialog = false} type="button">
-          {settings.currencies_btn_cancel()}
+          {m.common_action_cancel()}
         </Button>
         <Button variant="lime" class="text-xs h-8 font-bold cursor-pointer" type="submit" disabled={isSubmitting}>
-          {isSubmitting ? settings.currencies_btn_adding() : settings.currencies_btn_add()}
+          {isSubmitting ? m.settings_currencies_btn_adding() : m.settings_currencies_btn_add()}
         </Button>
       </div>
     </form>
@@ -678,10 +679,10 @@ let baseCurrencyCode = $derived(
       <div class="flex flex-col gap-1 border-b border-border/40 pb-3">
         <h2 class="text-sm font-bold text-foreground flex items-center gap-1.5">
           <Edit2 size={16} class="text-primary" />
-          <span>{settings.currencies_edit_dialog_title({ code: editCode })}</span>
+          <span>{m.settings_currencies_edit_dialog_title({ code: editCode })}</span>
         </h2>
         <p class="text-[10px] text-muted-foreground">
-          {settings.currencies_edit_dialog_desc()}
+          {m.settings_currencies_edit_dialog_desc()}
         </p>
       </div>
 
@@ -689,7 +690,7 @@ let baseCurrencyCode = $derived(
         <!-- Currency Code (Read Only) -->
         <div class="flex flex-col gap-1.5">
           <label for="edit_code" class="text-xs font-semibold text-muted-foreground">
-            {settings.currencies_label_code()}
+            {m.settings_currencies_col_code()}
           </label>
           <Input
             id="edit_code"
@@ -703,7 +704,7 @@ let baseCurrencyCode = $derived(
         <!-- Symbol -->
         <div class="flex flex-col gap-1.5">
           <label for="edit_symbol" class="text-xs font-semibold text-muted-foreground">
-            {settings.currencies_label_symbol()}
+            {m.settings_currencies_label_symbol()}
           </label>
           <Input
             id="edit_symbol"
@@ -718,7 +719,7 @@ let baseCurrencyCode = $derived(
         <!-- Arabic Name -->
         <div class="flex flex-col gap-1.5">
           <label for="edit_name_ar" class="text-xs font-semibold text-muted-foreground">
-            {settings.currencies_label_name_ar()}
+            {m.common_cycle_form_name()}
           </label>
           <Input
             id="edit_name_ar"
@@ -731,7 +732,7 @@ let baseCurrencyCode = $derived(
         <!-- English Name -->
         <div class="flex flex-col gap-1.5">
           <label for="edit_name" class="text-xs font-semibold text-muted-foreground">
-            {settings.currencies_label_name_en()}
+            {m.settings_currencies_label_name_en()}
           </label>
           <Input
             id="edit_name"
@@ -745,15 +746,15 @@ let baseCurrencyCode = $derived(
         <!-- Symbol Position -->
         <div class="flex flex-col gap-1.5">
           <label for="edit_position" class="text-xs font-semibold text-muted-foreground">
-            {settings.currencies_label_position()}
+            {m.settings_currencies_label_position()}
           </label>
           <Select type="single" value={editSymbolPosition} onValueChange={(v) => (editSymbolPosition = v ?? "before")}>
             <SelectTrigger class="h-9 w-full text-xs">
-              {editSymbolPosition === "before" ? settings.currencies_position_before() : settings.currencies_position_after()}
+              {editSymbolPosition === "before" ? m.settings_currencies_position_before() : m.settings_currencies_position_after()}
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="before">{settings.currencies_position_before()}</SelectItem>
-              <SelectItem value="after">{settings.currencies_position_after()}</SelectItem>
+              <SelectItem value="before">{m.settings_currencies_position_before()}</SelectItem>
+              <SelectItem value="after">{m.settings_currencies_position_after()}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -761,7 +762,7 @@ let baseCurrencyCode = $derived(
         <!-- Decimal Places -->
         <div class="flex flex-col gap-1.5">
           <label for="edit_decimals" class="text-xs font-semibold text-muted-foreground">
-            {settings.currencies_label_decimals()}
+            {m.settings_currencies_label_decimals()}
           </label>
           <Input
             id="edit_decimals"
@@ -776,7 +777,7 @@ let baseCurrencyCode = $derived(
         <!-- Exchange Rate -->
         <div class="flex flex-col gap-1.5 md:col-span-2">
           <label for="edit_rate" class="text-xs font-semibold text-muted-foreground flex justify-between">
-            <span>{settings.currencies_label_rate_with_base()}</span>
+            <span>{m.settings_currencies_label_rate_with_base()}</span>
             {#if !editIsBase}
               <span class="text-xs font-bold text-primary">1 {editCode} = {editExchangeRate} {baseCurrencyCode}</span>
             {/if}
@@ -798,9 +799,9 @@ let baseCurrencyCode = $derived(
       <div class="flex flex-col gap-3 border-t border-border/40 pt-4 mt-2">
         <div class="flex items-center justify-between">
           <div class="flex flex-col gap-0.5">
-            <span class="text-xs font-semibold text-foreground">{settings.currencies_base_currency()}</span>
+            <span class="text-xs font-semibold text-foreground">{m.settings_currencies_base_currency()}</span>
             <span class="text-[9px] text-muted-foreground">
-              {settings.currencies_base_currency_desc()}
+              {m.settings_currencies_base_currency_desc()}
             </span>
           </div>
           <Switch bind:checked={editIsBase} disabled={editIsBase && editCode === 'YER' /* prevent changing seed base YER directly */} />
@@ -808,9 +809,9 @@ let baseCurrencyCode = $derived(
 
         <div class="flex items-center justify-between border-t border-border/20 pt-3">
           <div class="flex flex-col gap-0.5">
-            <span class="text-xs font-semibold text-foreground">{settings.currencies_active()}</span>
+            <span class="text-xs font-semibold text-foreground">{m.settings_currencies_active()}</span>
             <span class="text-[9px] text-muted-foreground">
-              {settings.currencies_active_desc()}
+              {m.settings_currencies_active_desc()}
             </span>
           </div>
           <Switch bind:checked={editIsActive} disabled={editIsBase /* Base currency must be active */} />
@@ -819,10 +820,10 @@ let baseCurrencyCode = $derived(
 
       <div class="flex items-center justify-end gap-2 border-t border-border/40 pt-4 mt-2">
         <Button variant="ghost" class="text-xs h-8 cursor-pointer" onclick={() => showEditDialog = false} type="button">
-          {settings.currencies_btn_cancel()}
+          {m.common_action_cancel()}
         </Button>
         <Button variant="lime" class="text-xs h-8 font-bold cursor-pointer" type="submit" disabled={isSubmitting}>
-          {isSubmitting ? settings.currencies_btn_editing() : settings.currencies_btn_edit()}
+          {isSubmitting ? m.settings_security_updating() : m.settings_action_save_changes()}
         </Button>
       </div>
     </form>
@@ -842,22 +843,22 @@ let baseCurrencyCode = $derived(
       <div class="flex flex-col gap-1">
         <h3 class="text-sm font-bold text-destructive flex items-center gap-1.5">
           <Trash2 size={16} />
-          <span>{settings.currencies_delete_dialog_title()}</span>
+          <span>{m.settings_currencies_delete_dialog_title()}</span>
         </h3>
         <p class="text-xs text-foreground mt-2 font-semibold">
-          {settings.currencies_delete_dialog_confirm({ code: currencyToDelete.code, name: l(currencyToDelete.name_ar, currencyToDelete.name) })}
+          {m.settings_currencies_delete_dialog_confirm({ code: currencyToDelete.code, name: l(currencyToDelete.name_ar, currencyToDelete.name) })}
         </p>
         <p class="text-[10px] text-muted-foreground leading-relaxed mt-1">
-          {settings.currencies_delete_dialog_warning()}
+          {m.settings_currencies_delete_dialog_warning()}
         </p>
       </div>
 
       <div class="flex items-center justify-end gap-2 border-t border-border/40 pt-4 mt-2">
         <Button variant="ghost" class="text-xs h-8 cursor-pointer" onclick={() => currencyToDelete = null}>
-          {settings.currencies_btn_discard()}
+          {m.common_td_undo()}
         </Button>
         <Button variant="destructive" class="text-xs h-8 font-bold cursor-pointer" onclick={handleDeleteCurrency}>
-          {settings.currencies_btn_delete_confirm()}
+          {m.settings_currencies_btn_delete_confirm()}
         </Button>
       </div>
     </div>

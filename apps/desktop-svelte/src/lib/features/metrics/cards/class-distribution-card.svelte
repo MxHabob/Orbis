@@ -1,9 +1,9 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui-svelte";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import DragIndicator from "../components/drag-indicator.svelte";
-import * as reports from "$lib/paraglide/messages/reports";
 
 let {
   orgId,
@@ -83,20 +83,20 @@ const maxVal = $derived(Math.max(...data.map((d) => d.count), 1));
     <!-- Header -->
     <div class="flex flex-col w-full text-start select-none">
       <div class="flex items-center justify-between w-full h-5">
-        <span class="text-xs text-muted-foreground">{reports.class_dist_title()}</span>
+        <span class="text-xs text-muted-foreground">{m.reports_class_dist_title()}</span>
         {#if isEditing}
           <DragIndicator />
         {/if}
       </div>
       <div class="text-4xl font-light tracking-tight mt-1 text-foreground">
-        {reports.class_dist_active_classes({ count: String(activeClassesCount) })}
+        {m.reports_class_dist_active_classes({ count: String(activeClassesCount) })}
       </div>
       
       <!-- Subtitle legend matching exactly: Student Population -->
       <div class="flex items-center gap-4 text-[10px] text-muted-foreground mt-2 font-medium">
         <div class="flex items-center gap-1.5">
           <span class="h-2 w-2 rounded-full bg-foreground inline-block"></span>
-          <span>{reports.class_dist_student_population()}</span>
+          <span>{m.common_class_overview_students_count()}</span>
         </div>
       </div>
     </div>

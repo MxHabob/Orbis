@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 /**
  * @module student-columns
  * Column definitions for bulk student import grid.
@@ -6,8 +7,6 @@
 
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
 import { indexColumn } from "$lib/tables";
-import * as students from "$lib/paraglide/messages/students";
-import * as common from "$lib/paraglide/messages/common";
 
 /** All data property keys in column order (for paste mapping) */
 export const STUDENT_DATA_PROPS = [
@@ -158,8 +157,8 @@ export function buildStudentColumns(
       size: 110,
       editor: "combo",
       options: [
-        { id: "active", label: students.status_active() },
-        { id: "withdrawn", label: students.status_withdrawn() },
+        { id: "active", label: m.common_status_active() },
+        { id: "withdrawn", label: m.common_status_withdrawn() },
       ],
     });
   }
@@ -226,9 +225,9 @@ export function buildStudentColumns(
       size: 120,
       editor: "combo",
       options: [
-        { id: "father", label: common.relationship_father?.() || "Father" },
-        { id: "mother", label: common.relationship_mother?.() || "Mother" },
-        { id: "other", label: common.relationship_other?.() || "Other" },
+        { id: "father", label: m.common_relationship_father?.() || "Father" },
+        { id: "mother", label: m.common_relationship_mother?.() || "Mother" },
+        { id: "other", label: m.common_ft_category_other?.() || "Other" },
       ],
     });
   }

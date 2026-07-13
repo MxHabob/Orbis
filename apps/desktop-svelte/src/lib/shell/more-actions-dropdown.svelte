@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
 import {
   DropdownMenu,
@@ -28,7 +29,6 @@ import {
   Github,
   Lock,
 } from "lucide-svelte";
-import * as common from "$lib/paraglide/messages/common";
 
 function openUrl(url: string) {
   window.open(url, "_blank");
@@ -51,13 +51,13 @@ const iconClass = "text-muted-foreground shrink-0";
             variant="outline" 
             size="icon-sm" 
             class="relative cursor-pointer rounded-[10px]"
-            aria-label={common.sidebar_more_actions?.() ?? "More Options"}
+            aria-label={m.common_sidebar_more_actions?.() ?? "More Options"}
           >
             <MoreHorizontal size={16} strokeWidth={1.8} class="text-foreground" />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="right" sideOffset={12}>
-          {common.sidebar_more_actions?.() ?? "More Options"}
+          {m.common_sidebar_more_actions?.() ?? "More Options"}
         </TooltipContent>
       </Tooltip>
     {/snippet}
@@ -69,30 +69,30 @@ const iconClass = "text-muted-foreground shrink-0";
       <DropdownMenuSubTrigger class={subTriggerClass}>
         <div class="flex items-center gap-2.5">
           <HelpCircle size={14} class={iconClass} />
-          <span>{common.sidebar_help_resources?.() ?? "Resources"}</span>
+          <span>{m.common_sidebar_help_resources?.() ?? "Resources"}</span>
         </div>
       </DropdownMenuSubTrigger>
       <DropdownMenuPortal>
         <DropdownMenuSubContent sideOffset={4} class="w-48 text-start">
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://orbis.edu/welcome')}>
             <Compass size={13} class={iconClass} />
-            <span>{common.sidebar_help_welcome_page?.() ?? "Welcome Page"}</span>
+            <span>{m.common_sidebar_help_welcome_page?.() ?? "Welcome Page"}</span>
           </DropdownMenuItem>
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://docs.orbis.edu')}>
             <FileText size={13} class={iconClass} />
-            <span>{common.sidebar_help_documentation?.() ?? "Documentation"}</span>
+            <span>{m.common_sidebar_help_documentation?.() ?? "Documentation"}</span>
           </DropdownMenuItem>
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://docs.orbis.edu/api')}>
             <SquareCode size={13} class={iconClass} />
-            <span>{common.sidebar_help_api_docs?.() ?? "API Docs"}</span>
+            <span>{m.common_sidebar_help_api_docs?.() ?? "API Docs"}</span>
           </DropdownMenuItem>
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://help.orbis.edu')}>
             <HelpCircle size={13} class={iconClass} />
-            <span>{common.sidebar_help_help_center?.() ?? "Help Center"}</span>
+            <span>{m.common_sidebar_help_help_center?.() ?? "Help Center"}</span>
           </DropdownMenuItem>
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://orbis.edu/support')}>
             <Headphones size={13} class={iconClass} />
-            <span>{common.sidebar_help_contact_support?.() ?? "Contact Support"}</span>
+            <span>{m.common_sidebar_help_contact_support?.() ?? "Contact Support"}</span>
           </DropdownMenuItem>
         </DropdownMenuSubContent>
       </DropdownMenuPortal>
@@ -103,22 +103,22 @@ const iconClass = "text-muted-foreground shrink-0";
       <DropdownMenuSubTrigger class={subTriggerClass}>
         <div class="flex items-center gap-2.5">
           <Users size={14} class={iconClass} />
-          <span>{common.sidebar_help_community?.() ?? "Community"}</span>
+          <span>{m.common_sidebar_help_community?.() ?? "Community"}</span>
         </div>
       </DropdownMenuSubTrigger>
       <DropdownMenuPortal>
         <DropdownMenuSubContent sideOffset={4} class="w-48 text-start">
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://discord.gg/orbis')}>
             <MessageSquare size={13} class={iconClass} />
-            <span>{common.sidebar_help_discord?.() ?? "Discord"}</span>
+            <span>{m.common_sidebar_help_discord?.() ?? "Discord"}</span>
           </DropdownMenuItem>
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://x.com/orbis')}>
             <Twitter size={13} class={iconClass} />
-            <span>{common.sidebar_help_twitter?.() ?? "Twitter / X"}</span>
+            <span>{m.common_sidebar_help_twitter?.() ?? "Twitter / X"}</span>
           </DropdownMenuItem>
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://github.com/orbis')}>
             <Github size={13} class={iconClass} />
-            <span>{common.sidebar_help_github?.() ?? "GitHub"}</span>
+            <span>{m.common_sidebar_help_github?.() ?? "GitHub"}</span>
           </DropdownMenuItem>
         </DropdownMenuSubContent>
       </DropdownMenuPortal>
@@ -129,18 +129,18 @@ const iconClass = "text-muted-foreground shrink-0";
       <DropdownMenuSubTrigger class={subTriggerClass}>
         <div class="flex items-center gap-2.5">
           <Scale size={14} class={iconClass} />
-          <span>{common.sidebar_help_legal?.() ?? "Legal"}</span>
+          <span>{m.common_sidebar_help_legal?.() ?? "Legal"}</span>
         </div>
       </DropdownMenuSubTrigger>
       <DropdownMenuPortal>
         <DropdownMenuSubContent sideOffset={4} class="w-48 text-start">
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://orbis.edu/terms')}>
             <FileText size={13} class={iconClass} />
-            <span>{common.sidebar_help_terms?.() ?? "Terms of Service"}</span>
+            <span>{m.common_sidebar_help_terms?.() ?? "Terms of Service"}</span>
           </DropdownMenuItem>
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://orbis.edu/privacy')}>
             <Lock size={13} class={iconClass} />
-            <span>{common.sidebar_help_privacy?.() ?? "Privacy Policy"}</span>
+            <span>{m.common_login_privacy_policy?.() ?? "Privacy Policy"}</span>
           </DropdownMenuItem>
         </DropdownMenuSubContent>
       </DropdownMenuPortal>
@@ -151,13 +151,13 @@ const iconClass = "text-muted-foreground shrink-0";
     <!-- Give Feedback -->
     <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('mailto:feedback@orbis.edu')}>
       <Megaphone size={14} class={iconClass} />
-      <span>{common.action_back?.() ?? "Give feedback"}</span>
+      <span>{m.common_action_back?.() ?? "Give feedback"}</span>
     </DropdownMenuItem>
 
     <!-- Tour Navigation -->
     <DropdownMenuItem class={menuItemClass} onclick={() => alert('Tour is coming soon!')}>
       <Globe size={14} class={iconClass} />
-      <span>{common.sidebar_help_tour?.() ?? "Tour the new navigation"}</span>
+      <span>{m.common_sidebar_help_tour?.() ?? "Tour the new navigation"}</span>
     </DropdownMenuItem>
   </DropdownMenuContent>
   </DropdownMenuPortal>

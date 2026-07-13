@@ -1,9 +1,10 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { Switch } from "@orbis/ui-svelte/switch";
 import { Button } from "@orbis/ui-svelte/button";
 import { toast } from "svelte-sonner";
-import * as settings from "$lib/paraglide/messages/settings";
+
 import { Bell, Mail } from "lucide-svelte";
 
 let isSaving = $state(false);
@@ -47,13 +48,13 @@ async function handleSave(e: Event) {
   await new Promise((resolve) => setTimeout(resolve, 600));
 
   localStorage.setItem("orbis_notification_preferences", JSON.stringify(prefs));
-  toast.success(settings.general_save_success());
+  toast.success(m.settings_general_save_success());
   isSaving = false;
 }
 </script>
 
 <svelte:head>
-  <title>{settings.notifications_window_title()} | Orbis</title>
+  <title>{m.common_nav_notifications()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
@@ -66,7 +67,7 @@ async function handleSave(e: Event) {
           class="px-6 font-semibold h-9 text-xs"
           disabled={isSaving}
         >
-          {isSaving ? settings.general_saving() : settings.general_save()}
+          {isSaving ? m.common_state_saving() : m.settings_action_save_changes()}
         </Button>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -74,14 +75,14 @@ async function handleSave(e: Event) {
         <div class="flex flex-col gap-6 text-start">
           <div class="border-b border-border/60 pb-3 flex items-center gap-2">
             <Bell size={16} class="text-primary" />
-            <h2 class="text-sm font-semibold text-foreground">{settings.notifications_in_app()}</h2>
+            <h2 class="text-sm font-semibold text-foreground">{m.settings_notifications_in_app()}</h2>
           </div>
 
           <div class="flex flex-col gap-4">
             <!-- Enrollment -->
             <div class="flex items-center justify-between py-2 border-b border-border/20">
               <div class="flex flex-col text-start">
-                <span class="text-xs font-semibold text-foreground">{settings.notifications_enrollment()}</span>
+                <span class="text-xs font-semibold text-foreground">{m.settings_notifications_enrollment()}</span>
                 <span class="text-[10px] text-muted-foreground">Receive updates when students register</span>
               </div>
               <Switch bind:checked={prefs.inApp.enrollment} disabled={isSaving} />
@@ -90,7 +91,7 @@ async function handleSave(e: Event) {
             <!-- Grades -->
             <div class="flex items-center justify-between py-2 border-b border-border/20">
               <div class="flex flex-col text-start">
-                <span class="text-xs font-semibold text-foreground">{settings.notifications_grades()}</span>
+                <span class="text-xs font-semibold text-foreground">{m.settings_notifications_grades()}</span>
                 <span class="text-[10px] text-muted-foreground">Receive updates on examinations and grading sheets</span>
               </div>
               <Switch bind:checked={prefs.inApp.grades} disabled={isSaving} />
@@ -99,7 +100,7 @@ async function handleSave(e: Event) {
             <!-- Attendance -->
             <div class="flex items-center justify-between py-2 border-b border-border/20">
               <div class="flex flex-col text-start">
-                <span class="text-xs font-semibold text-foreground">{settings.notifications_attendance()}</span>
+                <span class="text-xs font-semibold text-foreground">{m.common_detail_tab_attendance()}</span>
                 <span class="text-[10px] text-muted-foreground">Receive logs on student absence or tardiness</span>
               </div>
               <Switch bind:checked={prefs.inApp.attendance} disabled={isSaving} />
@@ -108,7 +109,7 @@ async function handleSave(e: Event) {
             <!-- Finance -->
             <div class="flex items-center justify-between py-2 border-b border-border/20">
               <div class="flex flex-col text-start">
-                <span class="text-xs font-semibold text-foreground">{settings.notifications_finance()}</span>
+                <span class="text-xs font-semibold text-foreground">{m.settings_notifications_finance()}</span>
                 <span class="text-[10px] text-muted-foreground">Receive invoices and payment confirmations</span>
               </div>
               <Switch bind:checked={prefs.inApp.finance} disabled={isSaving} />
@@ -117,7 +118,7 @@ async function handleSave(e: Event) {
             <!-- Behavior -->
             <div class="flex items-center justify-between py-2 border-b border-border/20">
               <div class="flex flex-col text-start">
-                <span class="text-xs font-semibold text-foreground">{settings.notifications_behavior()}</span>
+                <span class="text-xs font-semibold text-foreground">{m.common_breadcrumb_behavior()}</span>
                 <span class="text-[10px] text-muted-foreground">Receive behavior points or infraction warnings</span>
               </div>
               <Switch bind:checked={prefs.inApp.behavior} disabled={isSaving} />
@@ -126,7 +127,7 @@ async function handleSave(e: Event) {
             <!-- System -->
             <div class="flex items-center justify-between py-2">
               <div class="flex flex-col text-start">
-                <span class="text-xs font-semibold text-foreground">{settings.notifications_system()}</span>
+                <span class="text-xs font-semibold text-foreground">{m.settings_notifications_system()}</span>
                 <span class="text-[10px] text-muted-foreground">Receive platform notifications & logs</span>
               </div>
               <Switch bind:checked={prefs.inApp.system} disabled={isSaving} />
@@ -138,14 +139,14 @@ async function handleSave(e: Event) {
         <div class="flex flex-col gap-6 text-start">
           <div class="border-b border-border/60 pb-3 flex items-center gap-2">
             <Mail size={16} class="text-primary" />
-            <h2 class="text-sm font-semibold text-foreground">{settings.notifications_email()}</h2>
+            <h2 class="text-sm font-semibold text-foreground">{m.settings_notifications_email()}</h2>
           </div>
 
           <div class="flex flex-col gap-4">
             <!-- Enrollment -->
             <div class="flex items-center justify-between py-2 border-b border-border/20">
               <div class="flex flex-col text-start">
-                <span class="text-xs font-semibold text-foreground">{settings.notifications_enrollment()}</span>
+                <span class="text-xs font-semibold text-foreground">{m.settings_notifications_enrollment()}</span>
                 <span class="text-[10px] text-muted-foreground">Receive updates when students register</span>
               </div>
               <Switch bind:checked={prefs.email.enrollment} disabled={isSaving} />
@@ -154,7 +155,7 @@ async function handleSave(e: Event) {
             <!-- Grades -->
             <div class="flex items-center justify-between py-2 border-b border-border/20">
               <div class="flex flex-col text-start">
-                <span class="text-xs font-semibold text-foreground">{settings.notifications_grades()}</span>
+                <span class="text-xs font-semibold text-foreground">{m.settings_notifications_grades()}</span>
                 <span class="text-[10px] text-muted-foreground">Receive updates on examinations and grading sheets</span>
               </div>
               <Switch bind:checked={prefs.email.grades} disabled={isSaving} />
@@ -163,7 +164,7 @@ async function handleSave(e: Event) {
             <!-- Attendance -->
             <div class="flex items-center justify-between py-2 border-b border-border/20">
               <div class="flex flex-col text-start">
-                <span class="text-xs font-semibold text-foreground">{settings.notifications_attendance()}</span>
+                <span class="text-xs font-semibold text-foreground">{m.common_detail_tab_attendance()}</span>
                 <span class="text-[10px] text-muted-foreground">Receive logs on student absence or tardiness</span>
               </div>
               <Switch bind:checked={prefs.email.attendance} disabled={isSaving} />
@@ -172,7 +173,7 @@ async function handleSave(e: Event) {
             <!-- Finance -->
             <div class="flex items-center justify-between py-2 border-b border-border/20">
               <div class="flex flex-col text-start">
-                <span class="text-xs font-semibold text-foreground">{settings.notifications_finance()}</span>
+                <span class="text-xs font-semibold text-foreground">{m.settings_notifications_finance()}</span>
                 <span class="text-[10px] text-muted-foreground">Receive invoices and payment confirmations</span>
               </div>
               <Switch bind:checked={prefs.email.finance} disabled={isSaving} />
@@ -181,7 +182,7 @@ async function handleSave(e: Event) {
             <!-- Behavior -->
             <div class="flex items-center justify-between py-2 border-b border-border/20">
               <div class="flex flex-col text-start">
-                <span class="text-xs font-semibold text-foreground">{settings.notifications_behavior()}</span>
+                <span class="text-xs font-semibold text-foreground">{m.common_breadcrumb_behavior()}</span>
                 <span class="text-[10px] text-muted-foreground">Receive behavior points or infraction warnings</span>
               </div>
               <Switch bind:checked={prefs.email.behavior} disabled={isSaving} />
@@ -190,7 +191,7 @@ async function handleSave(e: Event) {
             <!-- System -->
             <div class="flex items-center justify-between py-2">
               <div class="flex flex-col text-start">
-                <span class="text-xs font-semibold text-foreground">{settings.notifications_system()}</span>
+                <span class="text-xs font-semibold text-foreground">{m.settings_notifications_system()}</span>
                 <span class="text-[10px] text-muted-foreground">Receive platform notifications & logs</span>
               </div>
               <Switch bind:checked={prefs.email.system} disabled={isSaving} />

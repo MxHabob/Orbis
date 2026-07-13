@@ -1,11 +1,11 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Card } from "@orbis/ui-svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Avatar, AvatarFallback } from "@orbis/ui-svelte/avatar";
 import { formatCurrency } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
-import * as finance from "$lib/paraglide/messages/finance";
 
 let {
   lateStudents,
@@ -20,17 +20,17 @@ let {
   <div class="flex items-center justify-between w-full select-none text-[9px] font-bold text-muted-foreground/80 mb-3">
     <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
       <span class="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse"></span>
-      {finance.overview_late_students ? finance.overview_late_students() : "الطلاب المتأخرين عن السداد"}
+      {m.finance_overview_late_students ? m.finance_overview_late_students() : "الطلاب المتأخرين عن السداد"}
     </div>
     <div class="flex items-center gap-2">
       <a href={localizeHref(`/${orgId}/finance/fees`)}>
         <Button variant="outline" size="xs" class="h-6 text-[9px] font-bold cursor-pointer">
-          {finance.overview_btn_assign_fee ? finance.overview_btn_assign_fee() : "فرض رسوم"}
+          {m.finance_overview_btn_assign_fee ? m.finance_overview_btn_assign_fee() : "فرض رسوم"}
         </Button>
       </a>
       <a href={localizeHref(`/${orgId}/finance/fees`)}>
         <Button variant="outline" size="xs" class="h-6 text-[9px] font-bold cursor-pointer">
-          {finance.overview_view_all ? finance.overview_view_all() : "عرض الكل"}
+          {m.common_overview_view_all ? m.common_overview_view_all() : "عرض الكل"}
         </Button>
       </a>
     </div>
@@ -39,7 +39,7 @@ let {
   <div class="flex flex-col gap-2 mt-2 flex-grow justify-center">
     {#if lateStudents.length === 0}
       <div class="py-8 text-center text-muted-foreground text-xs select-none">
-        {finance.overview_no_late_students()}
+        {m.finance_overview_no_late_students()}
       </div>
     {:else}
       {#each lateStudents.slice(0, 3) as item (item.feeId)}
@@ -65,7 +65,7 @@ let {
               <span class="font-bold font-mono text-foreground text-[10px]">{formatCurrency(item.remaining, "YER")}</span>
               {#if item.daysLate > 0}
                 <span class="text-[7px] font-mono text-destructive select-none font-bold mt-0.5">
-                  {finance.overview_days_overdue ? finance.overview_days_overdue({ days: item.daysLate }) : `متأخر ${item.daysLate} يوم`}
+                  {m.finance_overview_days_overdue ? m.finance_overview_days_overdue({ days: item.daysLate }) : `متأخر ${item.daysLate} يوم`}
                 </span>
               {:else}
                 <span class="text-[7px] text-muted-foreground select-none font-semibold mt-0.5">

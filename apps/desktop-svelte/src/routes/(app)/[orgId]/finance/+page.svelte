@@ -7,9 +7,10 @@ recent transactions, and treasury balances. Inline action buttons are placed
 directly inside the cards' headers.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { AlertCircle } from "lucide-svelte";
-import * as finance from "$lib/paraglide/messages/finance";
+
 import { extractErrorMessage } from "$lib/core/ipc";
 
 import {
@@ -196,7 +197,7 @@ const recentPayments = $derived.by(() => {
     <FinanceSkeleton />
   {:else if error}
     <ErrorState 
-      title={finance.overview_error()} 
+      title={m.finance_overview_error()} 
       message={extractErrorMessage(error)} 
       onRetry={refetchAll} 
     />

@@ -3,6 +3,7 @@
   Lists all discount/scholarship templates with OrbisGrid, CRUD via DiscountTemplateSheet.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
@@ -11,7 +12,7 @@ import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/core/i18n";
 import { toast } from "svelte-sonner";
 import DiscountTemplateSheet from "$lib/features/finance/components/discount-template-sheet.svelte";
-import * as common from "$lib/paraglide/messages/common";
+
 import { DataTable } from "$lib/tables";
 import { discountTemplates as dtDef, withIndex } from "$lib/tables/definitions";
 import type { GridActionEvent } from "@orbis/svelte-grid";
@@ -46,8 +47,8 @@ onMount(() => {
 function getMethodLabel(method: string): string {
   const mLow = String(method).toLowerCase();
   if (mLow === "percentage")
-    return common.dt_method_percentage?.() || "Percentage (%)";
-  return common.dt_method_fixed?.() || "Fixed Amount";
+    return m.common_dt_method_percentage?.() || "Percentage (%)";
+  return m.common_dt_method_fixed?.() || "Fixed Amount";
 }
 
 function getFormattedValue(tpl: any): string {
@@ -82,10 +83,10 @@ const gridSource = $derived(
 const columns = $derived(
   dtDef.columns({
     idx: "#",
-    name: common.dt_col_name?.() || "Template",
-    type: common.dt_col_type?.() || "Type",
-    value: common.dt_col_value?.() || "Value",
-    status: common.dt_col_status?.() || "Status",
+    name: m.common_ft_col_name?.() || "Template",
+    type: m.common_word_type?.() || "Type",
+    value: m.common_dt_col_value?.() || "Value",
+    status: m.common_word_status?.() || "Status",
   }),
 );
 
@@ -107,15 +108,15 @@ function handleGridAction(event: GridActionEvent) {
     <div class="flex flex-col gap-0.5 text-start">
       <h1 class="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
         <Percent class="text-primary" size={18} />
-        <span>{common.dt_title?.() || "Discount Templates"}</span>
+        <span>{m.common_dt_title?.() || "Discount Templates"}</span>
       </h1>
       <p class="text-xs text-muted-foreground">
-        {common.dt_desc?.() || "Manage discount and scholarship templates"}
+        {m.common_dt_desc?.() || "Manage discount and scholarship templates"}
       </p>
     </div>
     <Button size="sm" onclick={handleCreate} class="text-xs font-bold shrink-0">
       <Plus size={14} class="me-1" />
-      {common.dt_add?.() || "Add Template"}
+      {m.common_dt_add?.() || "Add Template"}
     </Button>
   </div>
 
@@ -125,8 +126,8 @@ function handleGridAction(event: GridActionEvent) {
       source={gridSource}
       loading={isLoading}
       emptyIcon={Percent}
-      emptyTitle={common.dt_empty?.() || "No discount templates"}
-      emptyDescription={common.dt_empty_desc?.() || "Create discount templates for student fees"}
+      emptyTitle={m.common_dt_empty?.() || "No discount templates"}
+      emptyDescription={m.common_dt_empty_desc?.() || "Create discount templates for student fees"}
       rtl={getLocale() === "ar"}
       refreshable
       onRefresh={loadTemplates}
