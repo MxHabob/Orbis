@@ -14,7 +14,7 @@ import { onboardingState } from "../state.svelte";
 </script>
 
 
-<div class="max-w-4xl space-y-6">
+<div class="w-full space-y-6">
 
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -25,7 +25,7 @@ async function handleLanguageChange(newLocale: string) {
 }
 </script>
 
-<div class="max-w-3xl space-y-6">
+<div class="w-full space-y-6">
 
 
   <!-- Regional Settings Section -->

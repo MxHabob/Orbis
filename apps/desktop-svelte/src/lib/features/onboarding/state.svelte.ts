@@ -87,8 +87,8 @@ class OnboardingState {
   activeStep = $state(0);
   isLoading = $state(false);
   errorMessage = $state<string | null>(null);
-  totalSteps = 8;
-  completedSteps = $state([false, false, false, false, false, false, false, false]);
+  totalSteps = 9;
+  completedSteps = $state([false, false, false, false, false, false, false, false, false]);
 
   // Central Configuration Defaults
   institutionType = $state("school");
@@ -258,16 +258,6 @@ class OnboardingState {
   );
   enabledSubjects = $derived(this.subjects.filter((s) => s.enabled).length);
   totalSlots = $derived(this.timeSlots.length);
-  bld1Rooms = $derived(
-    this.rooms.filter(
-      (r) => r.building === (getLocale() === "ar" ? "المبنى 1" : "Building 1"),
-    ).length,
-  );
-  bld2Rooms = $derived(
-    this.rooms.filter(
-      (r) => r.building === (getLocale() === "ar" ? "المبنى 2" : "Building 2"),
-    ).length,
-  );
   tasksCompletedCount = $derived(this.completedSteps.filter(Boolean).length);
 
   // ── Persistence ────────────────────────────────────────────────
@@ -403,14 +393,15 @@ class OnboardingState {
     return true;
   }
 
-  resetRoomsToDefault() {
-    const list: Room[] = [];
-    const bldName = this.buildings.length > 0 ? this.buildings[0] : getDefaultBuildings()[0];
+  addDefaultRoomsToBuilding(bldName: string) {
+    const otherRooms = this.rooms.filter((r) => r.building !== bldName);
     const terminology = INSTITUTION_PROFILES[this.institutionType]?.terminology || INSTITUTION_PROFILES.school.terminology;
+    const defaultList: Room[] = [];
+    const tsSuffix = Date.now();
 
     for (let i = 1; i <= 10; i++) {
-      list.push({
-        id: `room-b1-f1-${i}`,
+      defaultList.push({
+        id: `room-${bldName}-${i}-${tsSuffix}`,
         name: `${terminology.classroom} 1-0${i}`,
         name_ar: `${terminology.classroom_ar} 1-0${i}`,
         capacity: 30,
@@ -420,8 +411,8 @@ class OnboardingState {
       });
     }
     for (let i = 11; i <= 20; i++) {
-      list.push({
-        id: `room-b1-f2-${i}`,
+      defaultList.push({
+        id: `room-${bldName}-${i}-${tsSuffix}`,
         name: `${terminology.classroom} 1-${i}`,
         name_ar: `${terminology.classroom_ar} 1-${i}`,
         capacity: 30,
@@ -431,8 +422,8 @@ class OnboardingState {
       });
     }
     for (let i = 1; i <= 3; i++) {
-      list.push({
-        id: `room-b1-lab-comp-${i}`,
+      defaultList.push({
+        id: `room-${bldName}-lab-comp-${i}-${tsSuffix}`,
         name: `Computer Lab 1-${i}`,
         name_ar: `مختبر الحاسوب 1-${i}`,
         capacity: 25,
@@ -443,8 +434,8 @@ class OnboardingState {
     }
     // Chemistry labs
     for (let i = 1; i <= 2; i++) {
-      list.push({
-        id: `room-b1-lab-chem-${i}`,
+      defaultList.push({
+        id: `room-${bldName}-lab-chem-${i}-${tsSuffix}`,
         name: `Chemistry Lab 1-${i}`,
         name_ar: `مختبر الكيمياء 1-${i}`,
         capacity: 25,
@@ -453,7 +444,7 @@ class OnboardingState {
         floor: 1,
       });
     }
-    this.rooms = list;
+    this.rooms = [...otherRooms, ...defaultList];
     this.activeBuildingTab = bldName;
     this.save();
   }
@@ -786,11 +777,11 @@ class OnboardingState {
             frequency: "once",
             installment_config: null,
             late_fee_rules: null,
-            is_mandatory: 1,
-            is_active: 1,
+            is_mandatory: true,
+            is_active: true,
           };
           try {
-            await commands.finance.createFeeTemplate(orgId, req);
+            await commands.finance.createFeeTemplate(req as any);
           } catch (feeErr) {
             console.error(
               `Failed to create fee template for ${gl.level}:`,

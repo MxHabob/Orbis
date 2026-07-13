@@ -31,7 +31,7 @@ function selectProfile(type: string) {
 }
 </script>
 
-<div class="max-w-3xl space-y-6">
+<div class="w-full space-y-6">
 
 
   <!-- Profiles Grid -->

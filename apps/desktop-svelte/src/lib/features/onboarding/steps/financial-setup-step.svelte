@@ -1,8 +1,7 @@
 <script lang="ts">
-import { Label } from "@orbis/ui-svelte/label";
 import { Input } from "@orbis/ui-svelte/input";
-import { Coins } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
+import { getLocale } from "$lib/paraglide/runtime";
 import { onboardingState } from "../state.svelte";
 
 const enabledGradeLevels = $derived(
@@ -10,52 +9,55 @@ const enabledGradeLevels = $derived(
 );
 </script>
 
-<div class="max-w-4xl space-y-6">
+<div class="w-full space-y-6">
 
+  <!-- Registration Fees List (Clean, borderless list of rows) -->
+  <div class="w-full overflow-x-auto scrollbar-hide border border-border/60 rounded-2xl bg-card shadow-sm">
+    <div class="min-w-[640px] divide-y divide-border/60">
+      <!-- Header Row -->
+      <div class="grid grid-cols-[50px_2.5fr_1.5fr] gap-4 p-4 bg-muted/20 text-xs font-semibold text-muted-foreground select-none text-start items-center">
+        <span>{m.onboarding_subjects_table_color()}</span>
+        <span>{onboardingState.stageLabel}</span>
+        <span class="text-end">{m.onboarding_fees_label({ currency: onboardingState.currency })}</span>
+      </div>
 
-  <!-- Registration Fees Grid -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    {#each enabledGradeLevels as gl (gl.level)}
-      <div class="bg-card border border-border rounded-xl p-4 flex items-center justify-between gap-4">
-        <div class="flex gap-3 items-center text-start flex-1 min-w-0">
-          <!-- Color indicator -->
-          <div
-            class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-            style="background-color: {gl.color}20; border: 1px solid {gl.color}40;"
-          >
-            <Coins class="w-5 h-5 animate-pulse" style="color: {gl.color};" />
+      {#each enabledGradeLevels as gl (gl.level)}
+        <div class="grid grid-cols-[50px_2.5fr_1.5fr] gap-4 px-4 py-3 items-center hover:bg-muted/10 transition-colors text-start">
+          <!-- Color Dot -->
+          <div class="flex justify-center items-center">
+            <div class="w-3 h-3 rounded-full shrink-0" style="background-color: {gl.color};"></div>
           </div>
-          <div class="truncate text-start">
-            <h4 class="font-bold text-foreground text-sm font-serif">
-              {gl.name_ar}
-            </h4>
-            <p class="text-xs text-muted-foreground font-mono mt-0.5">{gl.name}</p>
-          </div>
-        </div>
 
-        <div class="w-[180px] space-y-1.5 text-start shrink-0">
-          <Label class="text-[11px] font-semibold text-muted-foreground">
-            {m.onboarding_fees_label({ currency: onboardingState.currency })}
-          </Label>
-          <div class="relative">
-            <Input
-              type="number"
-              min="0"
-              placeholder="0.00"
-              bind:value={onboardingState.registrationFees[gl.level]}
-              class="h-9 pr-12 text-sm text-end font-bold font-mono"
-            />
-            <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-[10px] font-bold text-muted-foreground uppercase">
-              {onboardingState.currency}
+          <!-- Grade Level Name -->
+          <div class="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4">
+            <span class="font-bold text-foreground text-sm font-sans">{gl.name_ar}</span>
+            <span class="text-xs text-muted-foreground font-mono">{gl.name}</span>
+          </div>
+
+          <!-- Fee Input -->
+          <div class="flex justify-end items-center">
+            <div class="relative w-[180px]">
+              <Input
+                type="number"
+                min="0"
+                placeholder="0"
+                bind:value={onboardingState.registrationFees[gl.level]}
+                onchange={() => onboardingState.save()}
+                class="h-8 ps-12 text-end text-sm font-bold font-mono bg-background/50 border-border/60 focus:border-primary"
+              />
+              <div class="absolute inset-y-0 start-3 flex items-center pointer-events-none text-[10px] font-bold text-muted-foreground uppercase font-sans">
+                {onboardingState.currency}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    {/each}
-    {#if enabledGradeLevels.length === 0}
-      <div class="col-span-2 text-center py-10 text-muted-foreground border border-dashed rounded-xl">
-        {m.onboarding_fees_no_stages({ stage: onboardingState.stageLabel })}
-      </div>
-    {/if}
+      {/each}
+
+      {#if enabledGradeLevels.length === 0}
+        <div class="text-center py-12 text-muted-foreground text-sm font-sans">
+          {m.onboarding_fees_no_stages({ stage: onboardingState.stageLabel })}
+        </div>
+      {/if}
+    </div>
   </div>
 </div>

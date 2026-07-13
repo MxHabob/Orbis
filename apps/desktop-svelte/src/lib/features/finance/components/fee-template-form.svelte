@@ -232,14 +232,14 @@ async function handleSubmit() {
     };
 
     if (template) {
-      await commands.finance.updateFeeTemplate(orgId, template.id, request);
+      await commands.finance.updateFeeTemplate(template.id, request as any);
       toast.success(
         m.ft_update_success
           ? m.ft_update_success()
           : "Fee template updated successfully",
       );
     } else {
-      await commands.finance.createFeeTemplate(orgId, request);
+      await commands.finance.createFeeTemplate(request as any);
       toast.success(
         m.ft_create_success
           ? m.ft_create_success()

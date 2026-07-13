@@ -35,7 +35,6 @@ import {
 } from "@orbis/ui-svelte/alert-dialog";
 import { Plus, Trash } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
-import { getLocale } from "$lib/paraglide/runtime";
 import { onboardingState } from "../state.svelte";
 
 let newRoomName = $state("");
@@ -90,7 +89,7 @@ function confirmRemoveBuilding() {
 }
 </script>
 
-<div class="max-w-5xl space-y-6">
+<div class="w-full space-y-6">
 
 
   <Tabs
@@ -118,39 +117,44 @@ function confirmRemoveBuilding() {
 
     {#each onboardingState.buildings as bld}
       <TabsContent value={bld} class="space-y-6 pt-4">
-        {#if onboardingState.buildings.length > 1}
-          <div class="flex justify-end">
-            <Button variant="destructive" size="sm" class="gap-1 h-8 text-xs" onclick={() => handleRemoveBuilding(bld)}>
-              <Trash size={14} />
-              {m.onboarding_delete_building()}
-            </Button>
-          </div>
-        {/if}
         <!-- Rooms List for the Active Building -->
         <div class="space-y-3">
-          <h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-start">
-            {m.onboarding_room_approved({ building: bld })}
-          </h4>
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-start">
+              {m.onboarding_room_approved({ building: bld })}
+            </h4>
+            {#if onboardingState.buildings.length > 1}
+              <Button
+                variant="ghost"
+                size="sm"
+                class="text-muted-foreground hover:text-destructive h-8 px-3 text-xs flex gap-1.5 items-center rounded-lg"
+                onclick={() => handleRemoveBuilding(bld)}
+              >
+                <Trash size={12} />
+                <span>{m.onboarding_delete_building ? m.onboarding_delete_building() : "Delete Building"}</span>
+              </Button>
+            {/if}
+          </div>
 
           <div class="w-full overflow-x-auto scrollbar-hide border border-border/60 rounded-2xl bg-card shadow-sm">
             <div class="min-w-[800px] divide-y divide-border/60">
               <!-- Header Row -->
               <div class="grid grid-cols-[1.5fr_1.5fr_1.2fr_1fr_1fr_auto] gap-4 p-4 bg-muted/20 text-xs font-semibold text-muted-foreground select-none text-start">
-                <span>{getLocale() === "ar" ? "اسم القاعة (عربي)" : "Room Name (Ar)"}</span>
-                <span>{getLocale() === "ar" ? "اسم القاعة (إنجليزي)" : "Room Name (En)"}</span>
-                <span>{getLocale() === "ar" ? "النوع" : "Type"}</span>
-                <span>{getLocale() === "ar" ? "الطابق" : "Floor"}</span>
-                <span>{getLocale() === "ar" ? "السعة" : "Capacity"}</span>
+                <span>{m.onboarding_rooms_table_name_ar()}</span>
+                <span>{m.onboarding_rooms_table_name_en()}</span>
+                <span>{m.onboarding_rooms_table_type()}</span>
+                <span>{m.onboarding_rooms_table_floor()}</span>
+                <span>{m.onboarding_rooms_table_capacity()}</span>
                 <span class="w-8"></span>
               </div>
 
               <!-- Inline Add New Room Row -->
               <div class="grid grid-cols-[1.5fr_1.5fr_1.2fr_1fr_1fr_auto] gap-4 px-4 py-2.5 items-center bg-muted/5 transition-colors">
                 <!-- Arabic Name -->
-                <Input bind:value={newRoomNameAr} placeholder={getLocale() === "ar" ? "مثال: فصل 1-05" : "e.g. Room 1-05"} class="h-8 text-xs font-bold font-sans bg-background/50 border-dashed border-border/80" />
+                <Input bind:value={newRoomNameAr} placeholder={m.onboarding_rooms_placeholder_ar()} class="h-8 text-xs font-bold font-sans bg-background/50 border-dashed border-border/80" />
                 
                 <!-- English Name -->
-                <Input bind:value={newRoomName} placeholder={getLocale() === "ar" ? "مثال: Classroom 1-05" : "e.g. Classroom 1-05"} class="h-8 text-xs font-mono text-left font-sans bg-background/50 border-dashed border-border/80" style="direction: ltr;" />
+                <Input bind:value={newRoomName} placeholder={m.onboarding_rooms_placeholder_en()} class="h-8 text-xs font-mono text-left font-sans bg-background/50 border-dashed border-border/80" style="direction: ltr;" />
                 
                 <!-- Room Type Select -->
                 <Select type="single" value={newRoomType} onValueChange={(v) => (newRoomType = v ?? "classroom")}>
@@ -248,7 +252,7 @@ function confirmRemoveBuilding() {
           <div class="flex justify-end pt-2">
             <Button
               variant="ghost"
-              onclick={() => onboardingState.resetRoomsToDefault()}
+              onclick={() => onboardingState.addDefaultRoomsToBuilding(bld)}
               class="text-muted-foreground hover:text-foreground text-xs"
             >
               {m.onboarding_room_reset_defaults()}

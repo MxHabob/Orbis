@@ -19,6 +19,7 @@ import TimeSlotsStep from "./steps/time-slots-step.svelte";
 import SubjectsStep from "./steps/subjects-step.svelte";
 import FinancialSetupStep from "./steps/financial-setup-step.svelte";
 import ReviewStep from "./steps/review-step.svelte";
+import LaunchStep from "./steps/launch-step.svelte";
 </script>
 
 <div class="h-screen w-screen bg-background text-foreground flex flex-col overflow-hidden font-sans antialiased">
@@ -30,17 +31,7 @@ import ReviewStep from "./steps/review-step.svelte";
   </div>
 
   <!-- Step Content Area -->
-  <div class="flex-1 max-w-4xl w-full mx-auto px-6 py-6 overflow-y-auto scrollbar-none min-h-0">
-    {#if onboardingState.errorMessage}
-      <div class="p-4 rounded-xl border border-destructive/20 bg-destructive/5 text-destructive text-sm flex gap-3 items-start max-w-3xl mb-6">
-        <div class="w-5 h-5 rounded-full bg-destructive/10 flex items-center justify-center shrink-0 mt-0.5 text-destructive font-bold font-sans">!</div>
-        <div class="space-y-1">
-          <h4 class="font-semibold text-destructive">{m.onboarding_toast_error()}</h4>
-          <p>{onboardingState.errorMessage}</p>
-        </div>
-      </div>
-    {/if}
-
+  <div class="flex-1 max-w-5xl w-full mx-auto px-6 py-6 overflow-y-auto scrollbar-none min-h-0">
     {#if onboardingState.activeStep === 0}
       <WelcomeStep />
     {:else if onboardingState.activeStep === 1}
@@ -59,6 +50,8 @@ import ReviewStep from "./steps/review-step.svelte";
       <FinancialSetupStep />
     {:else if onboardingState.activeStep === 8}
       <ReviewStep />
+    {:else if onboardingState.activeStep === 9}
+      <LaunchStep />
     {/if}
   </div>
 
