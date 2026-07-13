@@ -124,7 +124,7 @@ const draftSchedulesInGrid = $derived.by(() => {
         applicable_class_ids: a.class_id,
         start_time: period === "morning" ? "08:00" : "13:00",
         end_time: (() => {
-          const exam_subject = subjects.find((s) => s.id === a.exam_subject_id);
+          const exam_subject = subjects.find((s: any) => s.id === a.exam_subject_id);
           const duration = exam_subject ? exam_subject.duration_minutes : 90;
           const start_time = period === "morning" ? "08:00" : "13:00";
           return addMinutes(start_time, duration);
@@ -147,7 +147,7 @@ const sessionDates = $derived(
 );
 
 function getSubjectName(subjectId: string) {
-  const sub = schoolSubjects.find((s) => String(s.id) === String(subjectId));
+  const sub = schoolSubjects.find((s: any) => String(s.id) === String(subjectId));
   return sub ? sub.name_ar || sub.name : subjectId;
 }
 
@@ -157,7 +157,7 @@ function getClassName(classId: string) {
 }
 
 function getSubjectColor(subjectId: string) {
-  const sub = schoolSubjects.find((s) => String(s.id) === String(subjectId));
+  const sub = schoolSubjects.find((s: any) => String(s.id) === String(subjectId));
   return sub ? sub.color : "#3b82f6";
 }
 
@@ -180,7 +180,7 @@ function formatDateWithDay(dateStr: string): string {
 
 function getExamsInCell(date: string, period: string) {
   return activeSchedules.filter(
-    (s) =>
+    (s: any) =>
       String(s.exam_date) === String(date) &&
       String(s.period) === String(period),
   );
@@ -249,7 +249,7 @@ async function loadSession() {
   if (!data.orgId || !sessionId) return;
   isLoading = true;
   try {
-    session = await commands.exam.getSession(data.orgId, sessionId as string);
+    session = await commands.exam.getSession(sessionId as string);
 
     // Load subjects
     try {
@@ -331,7 +331,7 @@ async function handleGenerateSeating() {
   toast.promise(promise, {
     loading: "جاري توليد أرقام الجلوس...",
     success: "تم توليد أرقام الجلوس بنجاح!",
-    error: (err) => err?.message || "فشل توليد أرقام الجلوس",
+    error: (err) => (err as any)?.message || "فشل توليد أرقام الجلوس",
   });
   try {
     await promise;
@@ -347,7 +347,7 @@ async function handleGenerateSecrets() {
   toast.promise(promise, {
     loading: "جاري توليد الأرقام السرية...",
     success: "تم توليد الأرقام السرية بنجاح!",
-    error: (err) => err?.message || "فشل توليد الأرقام السرية",
+    error: (err) => (err as any)?.message || "فشل توليد الأرقام السرية",
   });
   try {
     await promise;
@@ -426,8 +426,8 @@ async function handleAutoSchedule() {
     startPollingJob(String(job.id));
   } catch (e: any) {
     isSolving = false;
-    solveError = e?.message || String(e);
-    toast.error(solveError);
+    solveError = (e as any)?.message || String(e);
+    toast.error(solveError || "Error");
   }
 }
 
@@ -466,7 +466,7 @@ async function startPollingJob(jobId: string) {
             (getLocale() === "ar"
               ? "فشلت عملية الجدولة"
               : "Optimization job failed");
-          toast.error(solveError);
+          toast.error(solveError || "Error");
         }
       }
     } catch (e) {
@@ -500,7 +500,7 @@ async function handleCancelSolve() {
     );
     await loadSolveJobs();
   } catch (err: any) {
-    toast.error(err?.message || "Failed to cancel");
+    toast.error((err as any)?.message || "Failed to cancel");
   }
 }
 
@@ -516,7 +516,7 @@ async function handleApplySolve() {
       getLocale() === "ar"
         ? "تم تطبيق الجدول بنجاح!"
         : "Applied schedule successfully!",
-    error: (err: any) => err?.message || "Failed to apply",
+    error: (err: any) => (err as any)?.message || "Failed to apply",
   });
   try {
     await promise;
@@ -547,7 +547,7 @@ async function handleDeleteSchedule(scheduleId: string) {
       getLocale() === "ar"
         ? "تم حذف الامتحان بنجاح!"
         : "Deleted exam successfully!",
-    error: (err: any) => err?.message || "Failed to delete",
+    error: (err: any) => (err as any)?.message || "Failed to delete",
   });
   try {
     await promise;
@@ -584,7 +584,7 @@ async function handleToggleScheduleStatus(sched: any) {
   toast.promise(promise, {
     loading: label,
     success: labelSuccess,
-    error: (err: any) => err?.message || "Failed to update status",
+    error: (err: any) => (err as any)?.message || "Failed to update status",
   });
   try {
     await promise;
@@ -604,7 +604,7 @@ async function handleAllocateHalls() {
   toast.promise(promise, {
     loading: "جاري توزيع الطلاب على القاعات...",
     success: "تم توزيع الطلاب على القاعات بنجاح!",
-    error: (err: any) => err?.message || "فشل توزيع الطلاب",
+    error: (err: any) => (err as any)?.message || "فشل توزيع الطلاب",
   });
 
   try {
@@ -624,7 +624,7 @@ async function handleActivate() {
   toast.promise(promise, {
     loading: "جاري تفعيل دورة الامتحانات...",
     success: "تم تفعيل دورة الامتحانات بنجاح!",
-    error: (err) => err?.message || "فشل تفعيل دورة الامتحانات",
+    error: (err) => (err as any)?.message || "فشل تفعيل دورة الامتحانات",
   });
 
   try {
@@ -646,7 +646,7 @@ async function handleToggleHall(room: any) {
   toast.promise(promise, {
     loading: `جاري تفعيل القاعة ${room.room_number || room.name}...`,
     success: "تم تفعيل القاعة كـ لجنة اختبار بنجاح!",
-    error: (err) => err?.message || "فشل تفعيل القاعة",
+    error: (err) => (err as any)?.message || "فشل تفعيل القاعة",
   });
 
   try {
@@ -679,7 +679,7 @@ async function handleAssignProctors() {
     );
     await loadSession();
   } catch (err: any) {
-    toast.error(err?.message || "فشل تعيين المراقبين");
+    toast.error((err as any)?.message || "فشل تعيين المراقبين");
   } finally {
     isLoading = false;
   }

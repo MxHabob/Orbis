@@ -463,7 +463,7 @@ export class StudentFormState {
       }
     } catch (e: any) {
       console.error("Failed to download registration form:", e);
-      toast.error(`خطأ أثناء تحميل الاستمارة: ${e?.message || String(e)}`);
+      toast.error(`خطأ أثناء تحميل الاستمارة: ${(e as any)?.message || String(e)}`);
     } finally {
       this.isDownloadingForm = false;
     }

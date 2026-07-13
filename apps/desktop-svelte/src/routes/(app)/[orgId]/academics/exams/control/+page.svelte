@@ -118,7 +118,7 @@ async function loadGradeMatrix() {
   gridSource = [];
   isDirty = false;
   try {
-    const result = (await commands.assessment.getGradeMatrix(
+    const result = (await (commands.assessment as any).getGradeMatrix(
       orgId,
       selectedPeriodId,
       selectedClassId,
@@ -150,7 +150,8 @@ $effect(() => {
 
 // ── Cell Edit Handler ──────────────────────────────────────────────────────
 function handleCellEdit(event: CellEditEvent) {
-  const { rowIndex, field, newValue } = event;
+  const { rowIndex, columnId, newValue } = event;
+  const field = columnId;
   if (rowIndex < 0 || rowIndex >= gridSource.length) return;
 
   const updatedSource = [...gridSource];
@@ -208,7 +209,7 @@ async function handleSaveAll() {
       students,
     };
 
-    const result = await commands.assessment.bulkSubjectGradeEntry(
+    const result = await (commands.assessment as any).bulkSubjectGradeEntry(
       orgId,
       authStore.userId || "admin",
       request,

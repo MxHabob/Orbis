@@ -101,7 +101,7 @@ async function handleSubmit() {
       // Refresh local list
       subjectsList = [...subjectsList, newSub];
     } catch (e: any) {
-      toast.error(e?.message || "فشل إنشاء مادة جديدة في النظام");
+      toast.error((e as any)?.message || "فشل إنشاء مادة جديدة في النظام");
       isSaving = false;
       return;
     }
@@ -127,7 +127,7 @@ async function handleSubmit() {
     open = false;
     onSuccess();
   } catch (e: any) {
-    toast.error(e?.message || "فشل إضافة المادة للدورة");
+    toast.error((e as any)?.message || "فشل إضافة المادة للدورة");
   } finally {
     isSaving = false;
   }

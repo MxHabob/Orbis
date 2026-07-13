@@ -90,26 +90,26 @@ const gradesQuery = createQuery({
 });
 
 const filteredStudents = $derived(
-  (enrollmentsQuery.data || []).filter((s) => String(s.class_id) === classId),
+  ($enrollmentsQuery.data || []).filter((s) => String(s.class_id) === classId),
 );
 
 const studentsCount = $derived(filteredStudents.length);
 const subjectsCount = $derived(
-  new Set((classSubjectsQuery.data || []).map((cs) => String(cs.subject_id)))
+  new Set(($classSubjectsQuery.data || []).map((cs) => String(cs.subject_id)))
     .size,
 );
 
 const assessmentsCount = $derived.by(() => {
-  const allAssessments = assessmentsQuery.data || [];
+  const allAssessments = $assessmentsQuery.data || [];
   const classSubjectIds = new Set(
-    (classSubjectsQuery.data || []).map((cs) => cs.id),
+    ($classSubjectsQuery.data || []).map((cs) => cs.id),
   );
   return allAssessments.filter((a) => classSubjectIds.has(a.class_subject_id))
     .length;
 });
 
 const attendanceRate = $derived.by(() => {
-  const list = attendanceQuery.data || [];
+  const list = $attendanceQuery.data || [];
   if (list.length === 0) return 100;
   const presentCount = list.filter(
     (r) =>
@@ -122,7 +122,7 @@ const attendanceRate = $derived.by(() => {
 });
 
 const avgGradeScore = $derived.by(() => {
-  const list = gradesQuery.data || [];
+  const list = $gradesQuery.data || [];
   const studentIds = new Set(filteredStudents.map((s) => s.id));
   const classGrades = list.filter((g) => studentIds.has(g.enrollment_id));
   if (classGrades.length === 0) return 0;
@@ -135,29 +135,29 @@ const classHealthIndex = $derived(
 );
 
 const isLoading = $derived(
-  enrollmentsQuery.isLoading ||
-    classSubjectsQuery.isLoading ||
-    assessmentsQuery.isLoading ||
-    gradesQuery.isLoading ||
-    attendanceQuery.isLoading,
+  $enrollmentsQuery.isLoading ||
+    $classSubjectsQuery.isLoading ||
+    $assessmentsQuery.isLoading ||
+    $gradesQuery.isLoading ||
+    $attendanceQuery.isLoading,
 );
 
 const error = $derived(
-  enrollmentsQuery.error ||
-    classSubjectsQuery.error ||
-    assessmentsQuery.error ||
-    gradesQuery.error ||
-    attendanceQuery.error,
+  $enrollmentsQuery.error ||
+    $classSubjectsQuery.error ||
+    $assessmentsQuery.error ||
+    $gradesQuery.error ||
+    $attendanceQuery.error,
 );
 
 function refetchAll() {
-  enrollmentsQuery.refetch();
-  classSubjectsQuery.refetch();
-  assessmentsQuery.refetch();
-  gradesQuery.refetch();
-  attendanceQuery.refetch();
+  $enrollmentsQuery.refetch();
+  $classSubjectsQuery.refetch();
+  $assessmentsQuery.refetch();
+  $gradesQuery.refetch();
+  $attendanceQuery.refetch();
   if (selectedSubjectId) {
-    gradeMatrixQuery.refetch();
+    $gradeMatrixQuery.refetch();
   }
 }
 
@@ -165,7 +165,7 @@ function refetchAll() {
 let selectedSubjectId = $state<string>("");
 
 $effect(() => {
-  const subjects = classSubjectsQuery.data || [];
+  const subjects = $classSubjectsQuery.data || [];
   if (subjects.length > 0 && !selectedSubjectId) {
     selectedSubjectId = String(subjects[0].subject_id || subjects[0].id);
   }
@@ -174,22 +174,22 @@ $effect(() => {
 const gradeMatrixQuery = createQuery({
   queryKey: ["grade-matrix", orgId, periodId, classId, selectedSubjectId],
   queryFn: () =>
-    commands.grades.getGradeMatrix(orgId, periodId, classId, selectedSubjectId),
+    (commands.assessment as any).getGradeMatrix(orgId, periodId, classId, selectedSubjectId),
   enabled: !!orgId && !!periodId && !!classId && !!selectedSubjectId,
   staleTime: 2 * 60 * 1000,
 });
 
 const gridColumns = $derived.by(() => {
-  if (!gradeMatrixQuery.data) return [];
-  return buildGradeColumns(gradeMatrixQuery.data as any, {
+  if (!$gradeMatrixQuery.data) return [];
+  return buildGradeColumns($gradeMatrixQuery.data as any, {
     readonly: true,
     locale: getLocale(),
   });
 });
 
 const gridSource = $derived.by(() => {
-  if (!gradeMatrixQuery.data) return [];
-  return transformMatrixToSource(gradeMatrixQuery.data as any, getLocale());
+  if (!$gradeMatrixQuery.data) return [];
+  return transformMatrixToSource($gradeMatrixQuery.data as any, getLocale());
 });
 
 async function handleCellEdit(event: any) {
@@ -215,7 +215,7 @@ const diagnosticIssues = $derived.by(() => {
 
   if (
     studentsCount > 0 &&
-    (!gradesQuery.data || gradesQuery.data.length === 0)
+    (!$gradesQuery.data || $gradesQuery.data.length === 0)
   ) {
     issues.push({
       id: "no-grades",
@@ -227,7 +227,7 @@ const diagnosticIssues = $derived.by(() => {
     });
   }
 
-  const failingRecords = (gradesQuery.data || []).filter(
+  const failingRecords = ($gradesQuery.data || []).filter(
     (g) => g.score !== null && g.score < 50,
   );
   if (failingRecords.length > 0) {
@@ -329,15 +329,15 @@ function handleTriggerAction(issue: any) {
                       <BookOpen size={11} class="text-muted-foreground shrink-0" />
                       <span class="truncate">
                         {
-                          (classSubjectsQuery.data || []).find((s) => String(s.subject_id || s.id) === selectedSubjectId)?.subject_name_ar || 
-                          (classSubjectsQuery.data || []).find((s) => String(s.subject_id || s.id) === selectedSubjectId)?.subject_name || 
+                          ($classSubjectsQuery.data || []).find((s) => String(s.subject_id || s.id) === selectedSubjectId)?.subject_name_ar || 
+                          ($classSubjectsQuery.data || []).find((s) => String(s.subject_id || s.id) === selectedSubjectId)?.subject_name || 
                           (m.common_control_select_subject ? m.common_control_select_subject() : "Select Subject")
                         }
                       </span>
                     </div>
                   </SelectTrigger>
                   <SelectContent>
-                    {#each (classSubjectsQuery.data || []) as sub}
+                    {#each ($classSubjectsQuery.data || []) as sub}
                       <SelectItem value={String(sub.subject_id || sub.id)}>{sub.subject_name_ar || sub.subject_name}</SelectItem>
                     {/each}
                   </SelectContent>
@@ -345,7 +345,7 @@ function handleTriggerAction(issue: any) {
               </div>
 
               <div class="border border-border/60 rounded-xl overflow-hidden h-[260px]">
-                {#if gradeMatrixQuery.isLoading}
+                {#if $gradeMatrixQuery.isLoading}
                   <div class="h-full flex flex-col gap-2 p-2">
                     {#each Array(5) as _}
                       <Skeleton class="h-8 w-full rounded-lg animate-pulse" />

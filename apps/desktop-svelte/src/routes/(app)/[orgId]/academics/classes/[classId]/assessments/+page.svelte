@@ -90,15 +90,15 @@ async function loadFilters() {
     const activeYear =
       periodList.find(
         (c) =>
-          c.type === "year" && (c.is_current === 1 || c.is_current === true),
+          c.period_type === "year" && (c.status === "active" || c.status === "active"),
       ) ||
-      periodList.find((c) => c.type === "year") ||
+      periodList.find((c) => c.period_type === "year") ||
       periodList[0];
 
     if (activeYear) {
       activePeriodId = String(activeYear.id);
       semesters = periodList.filter(
-        (c) => c.parent_id === activeYear.id && c.type === "term",
+        (c) => c.parent_id === activeYear.id && c.period_type === "term",
       );
       if (semesters.length > 0) {
         selectedSemesterId = semesters[0].id;

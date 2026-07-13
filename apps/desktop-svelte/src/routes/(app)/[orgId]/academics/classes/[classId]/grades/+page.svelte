@@ -60,15 +60,15 @@ async function loadData() {
     const activeYear =
       periodList.find(
         (c) =>
-          c.type === "year" && (c.is_current === 1 || c.is_current === true),
+          c.period_type === "year" && (c.status === "active" || c.status === "active"),
       ) ||
-      periodList.find((c) => c.type === "year") ||
+      periodList.find((c) => c.period_type === "year") ||
       periodList[0];
 
     if (activeYear) {
       activePeriodId = String(activeYear.id);
       semesters = periodList.filter(
-        (c) => c.parent_id === activeYear.id && c.type === "term",
+        (c) => c.parent_id === activeYear.id && c.period_type === "term",
       );
       if (semesters.length > 0) {
         selectedSemesterId = String(semesters[0].id);
@@ -90,11 +90,10 @@ async function loadData() {
 async function loadAssessments() {
   if (!classId || !selectedSubjectId) return;
   try {
-    const list = await commands.assessment.listAssessments({
-      classId,
-      subjectId: selectedSubjectId || undefined,
-      termId: selectedSemesterId || activePeriodId || "",
-    });
+    const list = await commands.assessment.listAssessments(
+      selectedSemesterId || activePeriodId || "",
+      selectedSubjectId || undefined,
+    );
     assessments = list;
 
     // Initialize grade entries (try to load existing grades)
@@ -108,11 +107,9 @@ async function loadAssessments() {
 
     // Load existing grades if API supports it
     try {
-      const existingGrades = await commands.grades
-        .getAll(orgId ?? "", {
-          class_id: classId,
-          period_id: selectedSemesterId || activePeriodId || undefined,
-        })
+      const period = selectedSemesterId || activePeriodId || "";
+      const existingGrades = await commands.assessment
+        .listGrades(period)
         .catch(() => []);
 
       for (const grade of existingGrades) {
@@ -168,7 +165,7 @@ const gridColumns = $derived.by(() => {
       name: m.common_word_student(),
       width: 180,
       size: 180,
-      minSize: 140,
+      
       pin: "colPinStart",
       readonly: true,
       sort: true,
@@ -181,11 +178,11 @@ const gridColumns = $derived.by(() => {
       prop: `score_${assessment.id}`,
       name: `${assessment.title_ar || assessment.title || assessment.item_type || "التقييم"} (/${assessment.max_score})`,
       size: 110,
-      minSize: 85,
+      
       readonly: false,
       sortable: false,
       align: "center",
-      cellType: "number",
+      
       editor: "number",
       cellProperties: () => ({ class: "cell-number-input" }),
       editorConfig: {
@@ -292,18 +289,14 @@ async function handleCellEdit(event: any) {
 
       const request = {
         enrollment_id: student.id,
-        period_id: selectedSemesterId || activePeriodId,
-        assessment_id: assessmentId,
         subject_name: selectedSubject?.name || "Subject",
-        subject_name_ar: selectedSubject?.name_ar || null,
-        exam_type: assessment.item_type || assessment.type || "exam",
-        semester: semesterObj?.name || "Semester",
         score: val === "" ? 0 : Number(val),
         max_score: Number(assessment.max_score),
-        class_subject_id: assessment.class_subject_id || null,
+        exam_type: assessment.item_type || assessment.type || "exam",
+        semester: semesterObj?.name || "Semester",
       };
 
-      await commands.grades.upsertGradeCell(orgId ?? "", "admin", request);
+      await commands.assessment.submitGrade(selectedSemesterId || activePeriodId || "", request);
       toast.success(m.academics_grades_saved());
     } catch (e: unknown) {
       // Revert in-memory value if backend save fails

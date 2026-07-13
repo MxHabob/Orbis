@@ -157,7 +157,7 @@ function toggleCollapse(periodId: string) {
                     </h3>
                     
                     <!-- Status Badges -->
-                    {#if year.is_current === 1}
+                    {#if year.status === "active"}
                       <Badge variant="lime" class="text-[9px] px-2 py-0 h-4.5 rounded-full font-bold">
                         {m.common_status_active_f()}
                       </Badge>
@@ -182,7 +182,7 @@ function toggleCollapse(periodId: string) {
 
               <!-- Right Actions -->
               <div class="flex items-center gap-2 sm:justify-end">
-                {#if year.is_current !== 1 && year.is_locked !== 1}
+                {#if year.status !== "active" && year.is_locked !== 1}
                   <Button
                     variant="outline"
                     class="text-[10px] h-7 px-2.5 font-semibold text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/5 border-emerald-500/20"
@@ -193,7 +193,7 @@ function toggleCollapse(periodId: string) {
                   </Button>
                 {/if}
 
-                {#if year.is_current === 1 && year.is_locked !== 1}
+                {#if year.status === "active" && year.is_locked !== 1}
                   <Button
                     variant="outline"
                     class="text-[10px] h-7 px-2.5 font-semibold text-rose-500 hover:text-rose-600 hover:bg-rose-500/5 border-rose-500/20"
@@ -231,7 +231,7 @@ function toggleCollapse(periodId: string) {
                             {l(term.name_ar, term.name)}
                           </span>
                           
-                          {#if term.is_current === 1}
+                          {#if term.status === "active"}
                             <Badge variant="lime" class="text-[8px] px-1.5 py-0 h-4 rounded font-bold">
                               {m.common_status_active_f()}
                             </Badge>
@@ -253,7 +253,7 @@ function toggleCollapse(periodId: string) {
                       </div>
 
                       <div class="flex items-center gap-2">
-                        {#if term.is_current !== 1 && term.is_locked !== 1}
+                        {#if term.status !== "active" && term.is_locked !== 1}
                           <Button
                             variant="ghost"
                             class="text-[9px] h-6 px-2 text-emerald-500 hover:bg-emerald-500/5"
@@ -262,7 +262,7 @@ function toggleCollapse(periodId: string) {
                             {m.common_cycles_activate()}
                           </Button>
                         {/if}
-                        {#if term.is_current === 1 && term.is_locked !== 1}
+                        {#if term.status === "active" && term.is_locked !== 1}
                           <Button
                             variant="ghost"
                             class="text-[9px] h-6 px-2 text-rose-500 hover:bg-rose-500/5"

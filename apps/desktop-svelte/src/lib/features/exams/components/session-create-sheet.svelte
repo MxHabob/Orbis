@@ -117,7 +117,7 @@ async function handleSubmit() {
     open = false;
     onSuccess();
   } catch (e: any) {
-    toast.error(e?.message || "Failed to save session");
+    toast.error((e as any)?.message || "Failed to save session");
   } finally {
     isSaving = false;
   }

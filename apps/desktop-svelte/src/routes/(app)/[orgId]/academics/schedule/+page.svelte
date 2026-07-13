@@ -110,7 +110,7 @@ const teachers = $derived(
 $effect(() => {
   if (periods.length > 0 && !activePeriodId) {
     const active =
-      periods.find((c: any) => c.is_current === 1 || c.is_current === true) ||
+      periods.find((c: any) => c.status === "active" || c.status === "active") ||
       periods[0];
     if (active) {
       activePeriodId = String(active.id);
@@ -311,7 +311,7 @@ async function handleMoveLesson(
     refetchLessons();
   } catch (e: any) {
     toast.dismiss();
-    toast.error(e?.message || "Failed to move lesson");
+    toast.error((e as any)?.message || "Failed to move lesson");
   }
 }
 

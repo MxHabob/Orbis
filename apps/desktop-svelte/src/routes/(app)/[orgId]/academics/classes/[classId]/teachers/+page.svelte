@@ -63,7 +63,7 @@ async function loadData() {
   isLoading = true;
   try {
     const [asgn, subj, usr] = await Promise.all([
-      commands.academic.listClassSubjects(orgId, classId),
+      commands.academic.listClassSubjects(orgId || "", classId || ""),
       commands.academic.listSubjects(orgId),
       commands.iam.listUsers(orgId, { role: "teacher" }),
     ]);
@@ -93,11 +93,11 @@ const gridSource = $derived(
   withIndex(
     displayed.map((a) => ({
       ...a,
-      teacher_name: getTeacherName(a.teacher_id),
+      teacher_name: getTeacherName(a.primary_teacher_id),
       subject_name: getSubjectName(a.subject_id),
       role: "Teacher",
-      phone: getTeacherPhone(a.teacher_id),
-      email: getTeacherEmail(a.teacher_id),
+      phone: getTeacherPhone(a.primary_teacher_id),
+      email: getTeacherEmail(a.primary_teacher_id),
     })),
   ),
 );
@@ -157,7 +157,7 @@ const rtl = $derived(getLocale() === "ar");
 <!-- Class-Subject Sheet (Create/Edit) -->
 <ClassSubjectSheet
   bind:open={sheetOpen}
-  {orgId}
+  
   preselectedClassId={classId}
   editData={editTarget}
   onSuccess={onSheetSuccess}
