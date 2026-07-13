@@ -99,7 +99,7 @@ export function addExamSubjectMutation() {
     mutationFn: (variables: {
       sessionId: string;
       data: {
-        exam_session_id: string;
+        session_id: string;
         subject_id: string;
         subject_name: string;
         exam_date: string;
