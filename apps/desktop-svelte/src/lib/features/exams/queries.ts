@@ -12,12 +12,12 @@ import { commands } from "$lib/core/ipc";
 import type { ExamSession, ExamSubject } from "@orbis/sdk-core";
 
 /** Get all exam sessions for a period. */
-export function createExamSessionsQuery(orgId: () => string) {
+export function createExamSessionsQuery(periodId: () => string | undefined) {
   return createQuery({
-    get queryKey() { return ["exam-sessions", orgId()]; },
+    get queryKey() { return ["exam-sessions", periodId()]; },
     queryFn: () =>
-      commands.exam.listSessions(orgId()) as Promise<ExamSession[]>,
-    get enabled() { return !!orgId(); },
+      commands.exam.listSessions(periodId()!) as Promise<ExamSession[]>,
+    get enabled() { return !!periodId(); },
     staleTime: 5 * 60 * 1000,
   });
 }

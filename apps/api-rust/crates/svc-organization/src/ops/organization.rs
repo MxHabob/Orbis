@@ -451,12 +451,14 @@ pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::
             txn.execute(Statement::from_string(
                 DatabaseBackend::Sqlite,
                 format!(
-                    "INSERT INTO subjects (id, org_id, unit_id, code, name, name_ar, is_core, is_elective, requires_lab, requires_practical, is_active, created_at, updated_at) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', 1, 0, 0, 0, 1, '{}', '{}') ON CONFLICT DO NOTHING;",
-                    id.replace("'", "''"), ctx.org_id.replace("'", "''"), root_unit_id.replace("'", "''"), code.replace("'", "''"), name.replace("'", "''"), name_ar.replace("'", "''"), now, now
+                    "INSERT INTO subjects (id, org_id, period_id, name, name_ar, code, status, created_at, updated_at) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', 'active', '{}', '{}') ON CONFLICT DO NOTHING;",
+                    id.replace("'", "''"), ctx.org_id.replace("'", "''"), period_id_val.replace("'", "''"), name.replace("'", "''"), name_ar.replace("'", "''"), code.replace("'", "''"), now, now
                 )
             )).await?;
         }
     }
+
+
 
     // 6. Insert time_slots
     if let Some(slots) = payload.get("time_slots").and_then(|v| v.as_array()) {
@@ -524,6 +526,15 @@ pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::
         )).await?;
     }
 
+
+    // Set current_period_id on organization
+    txn.execute(Statement::from_string(
+        DatabaseBackend::Sqlite,
+        format!(
+            "UPDATE organizations SET current_period_id = '{}' WHERE id = '{}';",
+            period_id_val.replace("'", "''"), ctx.org_id.replace("'", "''")
+        )
+    )).await?;
 
     txn.commit().await?;
     
