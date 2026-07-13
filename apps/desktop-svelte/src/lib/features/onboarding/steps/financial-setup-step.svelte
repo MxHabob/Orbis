@@ -5,7 +5,7 @@ import { getLocale } from "$lib/paraglide/runtime";
 import { onboardingState } from "../state.svelte";
 
 const enabledGradeLevels = $derived(
-  onboardingState.gradeLevels.filter((gl) => gl.enabled),
+  onboardingState.academics.gradeLevels.filter((gl) => gl.enabled),
 );
 </script>
 
@@ -18,7 +18,7 @@ const enabledGradeLevels = $derived(
       <div class="grid grid-cols-[50px_2.5fr_1.5fr] gap-4 p-4 bg-muted/20 text-xs font-semibold text-muted-foreground select-none text-start items-center">
         <span>{m.onboarding_subjects_table_color()}</span>
         <span>{onboardingState.stageLabel}</span>
-        <span class="text-end">{m.onboarding_fees_label({ currency: onboardingState.currency })}</span>
+        <span class="text-end">{m.onboarding_fees_label({ currency: onboardingState.profile.currency })}</span>
       </div>
 
       {#each enabledGradeLevels as gl (gl.level)}
@@ -41,12 +41,12 @@ const enabledGradeLevels = $derived(
                 type="number"
                 min="0"
                 placeholder="0"
-                bind:value={onboardingState.registrationFees[gl.level]}
+                bind:value={onboardingState.finance.registrationFees[gl.level]}
                 onchange={() => onboardingState.save()}
                 class="h-8 ps-12 text-end text-sm font-bold font-mono bg-background/50 border-border/60 focus:border-primary"
               />
               <div class="absolute inset-y-0 start-3 flex items-center pointer-events-none text-[10px] font-bold text-muted-foreground uppercase font-sans">
-                {onboardingState.currency}
+                {onboardingState.profile.currency}
               </div>
             </div>
           </div>

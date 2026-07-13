@@ -40,14 +40,14 @@ function selectProfile(type: string) {
       {@const data = onboardingState.localizedProfile(prof.id)}
       <button
         type="button"
-        class="text-start relative group rounded-xl border bg-card p-4 cursor-pointer transition-all duration-200 flex flex-col justify-between gap-4 h-40 {onboardingState.institutionType === prof.id ? 'border-primary bg-primary/5 text-primary' : 'border-border/60 hover:bg-muted/30 hover:border-muted-foreground/30'}"
+        class="text-start relative group rounded-xl border bg-card p-4 cursor-pointer transition-all duration-200 flex flex-col justify-between gap-4 h-40 {onboardingState.profile.institutionType === prof.id ? 'border-primary bg-primary/5 text-primary' : 'border-border/60 hover:bg-muted/30 hover:border-muted-foreground/30'}"
         onclick={() => selectProfile(prof.id)}
       >
         <div class="flex items-start justify-between w-full">
-          <div class="p-2 rounded-lg {onboardingState.institutionType === prof.id ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'} transition-all duration-200">
+          <div class="p-2 rounded-lg {onboardingState.profile.institutionType === prof.id ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'} transition-all duration-200">
             <prof.icon size={20} />
           </div>
-          {#if onboardingState.institutionType === prof.id}
+          {#if onboardingState.profile.institutionType === prof.id}
             <div class="text-primary">
               <CheckCircle2 size={16} />
             </div>
@@ -67,7 +67,7 @@ function selectProfile(type: string) {
   </div>
 
   <!-- Terminology Information / Preview -->
-  {#if onboardingState.institutionType}
+  {#if onboardingState.profile.institutionType}
     <div class="p-4 border border-border/60 rounded-xl bg-muted/10 space-y-3 text-start">
       <h4 class="text-xs font-bold text-foreground flex items-center gap-2 font-serif">
         <span class="w-1 h-2.5 rounded-full bg-primary"></span>
@@ -106,7 +106,7 @@ function selectProfile(type: string) {
     </div>
     <Input 
       id="numbering_pattern" 
-      bind:value={onboardingState.studentNumberPattern} 
+      bind:value={onboardingState.profile.studentNumberPattern} 
       class="h-9 text-xs border border-input max-w-md font-mono" 
     />
   </div>

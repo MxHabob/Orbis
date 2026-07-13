@@ -32,11 +32,11 @@ let { state }: { state: StudentFormState } = $props();
           <Label class="text-[10px] font-semibold text-muted-foreground cursor-pointer" for="applyDiscountSwitch">
             {m.form_apply_discount()}
           </Label>
-          <Switch id="applyDiscountSwitch" bind:checked={state.applyDiscount} />
+          <Switch id="applyDiscountSwitch" bind:checked={state.financial.applyDiscount} />
         </div>
       </div>
 
-      {#if state.applyDiscount}
+      {#if state.financial.applyDiscount}
         <div class="flex flex-col">
           <!-- Discount Type -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
@@ -52,16 +52,16 @@ let { state }: { state: StudentFormState } = $props();
               <Button
                 variant="ghost"
                 type="button"
-                class="flex-1 border rounded-lg text-xs h-9 cursor-pointer transition-all duration-150 {state.discountType === 'template' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground hover:bg-muted/30'}"
-                onclick={() => state.discountType = 'template'}
+                class="flex-1 border rounded-lg text-xs h-9 cursor-pointer transition-all duration-150 {state.financial.discountType === 'template' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground hover:bg-muted/30'}"
+                onclick={() => state.financial.discountType = 'template'}
               >
                 <span>{m.form_discount_type_template()}</span>
               </Button>
               <Button 
                 variant="ghost"
                 type="button"
-                class="flex-1 border rounded-lg text-xs h-9 cursor-pointer transition-all duration-150 {state.discountType === 'custom' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground hover:bg-muted/30'}"
-                onclick={() => state.discountType = 'custom'}
+                class="flex-1 border rounded-lg text-xs h-9 cursor-pointer transition-all duration-150 {state.financial.discountType === 'custom' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground hover:bg-muted/30'}"
+                onclick={() => state.financial.discountType = 'custom'}
               >
                 <span>{m.form_discount_type_custom()}</span>
               </Button>
@@ -69,7 +69,7 @@ let { state }: { state: StudentFormState } = $props();
           </div>
 
           <!-- Discount Selection / Input -->
-          {#if state.discountType === 'template'}
+          {#if state.financial.discountType === 'template'}
             <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
               <div class="flex flex-col gap-1 text-start">
                 <Label class="text-xs font-semibold text-foreground">
@@ -80,14 +80,14 @@ let { state }: { state: StudentFormState } = $props();
                 </span>
               </div>
               <div class="w-full md:w-[480px] shrink-0">
-                <Select bind:value={state.selectedDiscountTemplateId} type="single">
+                <Select bind:value={state.financial.selectedDiscountTemplateId} type="single">
                   <SelectTrigger class="w-full h-9 text-xs text-start flex items-center justify-between bg-background">
                     <span class="truncate">
-                      {state.discountTemplates.find(d => d.id === state.selectedDiscountTemplateId)?.name || (m.form_discount_template_placeholder ? m.form_discount_template_placeholder() : "Select template...")}
+                      {state.financial.discountTemplates.find(d => d.id === state.financial.selectedDiscountTemplateId)?.name || (m.form_discount_template_placeholder ? m.form_discount_template_placeholder() : "Select template...")}
                     </span>
                   </SelectTrigger>
                   <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
-                    {#each state.discountTemplates as tpl}
+                    {#each state.financial.discountTemplates as tpl}
                       <SelectItem value={tpl.id} class="text-xs text-start cursor-pointer justify-start">
                         {tpl.name} ({tpl.calculation_method === 'percentage' ? `${tpl.value}%` : formatCurrency(Number(tpl.value))})
                       </SelectItem>
@@ -111,7 +111,7 @@ let { state }: { state: StudentFormState } = $props();
                   min="0"
                   placeholder={m.form_discount_custom_placeholder ? m.form_discount_custom_placeholder() : "e.g. 50000"}
                   class="h-9 w-full bg-background font-mono"
-                  bind:value={state.customDiscountAmount}
+                  bind:value={state.financial.customDiscountAmount}
                 />
               </div>
             </div>
@@ -134,14 +134,14 @@ let { state }: { state: StudentFormState } = $props();
         {:else}
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {#each state.optionalFeesList as fTpl}
-              {@const isChecked = state.selectedOptionalFees[fTpl.id]?.checked || false}
+              {@const isChecked = state.financial.selectedOptionalFees[fTpl.id]?.checked || false}
               <div class="flex items-center justify-between p-3 border border-border rounded-lg bg-background hover:bg-accent/10 transition-all duration-150 gap-4 text-start">
                 <div class="flex items-start gap-2.5">
                   <Checkbox 
                     id={`fee_${fTpl.id}`} 
                     checked={isChecked}
                     onCheckedChange={(checked) => {
-                      state.selectedOptionalFees[fTpl.id].checked = !!checked;
+                      state.financial.selectedOptionalFees[fTpl.id].checked = !!checked;
                     }}
                   />
                   <div class="flex flex-col gap-0.5 select-none">
@@ -159,7 +159,7 @@ let { state }: { state: StudentFormState } = $props();
                     type="number"
                     disabled={!isChecked}
                     class="text-xs h-8 text-center font-bold px-1 bg-background font-mono"
-                    bind:value={state.selectedOptionalFees[fTpl.id].amount}
+                    bind:value={state.financial.selectedOptionalFees[fTpl.id].amount}
                   />
                   <span class="text-[10px] text-muted-foreground">
                     {m.form_currency_symbol ? m.form_currency_symbol() : "YER"}

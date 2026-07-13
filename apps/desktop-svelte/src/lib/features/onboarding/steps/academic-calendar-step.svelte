@@ -39,14 +39,14 @@ async function handleLanguageChange(newLocale: string) {
       <TimezoneSettings
         title={m.settings_general_timezone()}
         description={m.settings_general_timezone_desc()}
-        bind:currentTimezone={onboardingState.timezone}
+        bind:currentTimezone={onboardingState.profile.timezone}
       />
 
       <!-- Language -->
       <LocaleSettings
         title={m.settings_general_locale()}
         description={m.settings_general_locale_desc()}
-        bind:currentLocale={onboardingState.locale}
+        bind:currentLocale={onboardingState.profile.locale}
         onchange={handleLanguageChange}
       />
 
@@ -59,16 +59,16 @@ async function handleLanguageChange(newLocale: string) {
           <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_currency_desc()}</span>
         </div>
         <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
-          <Select type="single" bind:value={onboardingState.currency}>
+          <Select type="single" bind:value={onboardingState.profile.currency}>
             <SelectTrigger id="onboarding_currency" class="h-9 text-xs uppercase font-mono bg-background text-end" style="direction: ltr;">
-              {#if onboardingState.currency === "YER"}ريال يمني (YER)
-              {:else if onboardingState.currency === "SAR"}ريال سعودي (SAR)
-              {:else if onboardingState.currency === "AED"}درهم إماراتي (AED)
-              {:else if onboardingState.currency === "EGP"}جنيه مصري (EGP)
-              {:else if onboardingState.currency === "USD"}دولار أمريكي (USD)
-              {:else if onboardingState.currency === "EUR"}يورو (EUR)
-              {:else if onboardingState.currency === "GBP"}جنيه إسترليني (GBP)
-              {:else}{onboardingState.currency || m.settings_general_currency_placeholder()}
+              {#if onboardingState.profile.currency === "YER"}ريال يمني (YER)
+              {:else if onboardingState.profile.currency === "SAR"}ريال سعودي (SAR)
+              {:else if onboardingState.profile.currency === "AED"}درهم إماراتي (AED)
+              {:else if onboardingState.profile.currency === "EGP"}جنيه مصري (EGP)
+              {:else if onboardingState.profile.currency === "USD"}دولار أمريكي (USD)
+              {:else if onboardingState.profile.currency === "EUR"}يورو (EUR)
+              {:else if onboardingState.profile.currency === "GBP"}جنيه إسترليني (GBP)
+              {:else}{onboardingState.profile.currency || m.settings_general_currency_placeholder()}
               {/if}
             </SelectTrigger>
             <SelectContent>
@@ -96,22 +96,22 @@ async function handleLanguageChange(newLocale: string) {
 
     <div class="space-y-2 text-start">
       <Label for="academicYearNameAr">{m.onboarding_academic_year_name_ar()}</Label>
-      <Input id="academicYearNameAr" bind:value={onboardingState.academicYearNameAr} placeholder="العام الدراسي 1447 هـ" />
+      <Input id="academicYearNameAr" bind:value={onboardingState.calendar.academicYearNameAr} placeholder="العام الدراسي 1447 هـ" />
     </div>
 
     <div class="space-y-2 text-start">
       <Label for="academicYearName">{m.onboarding_academic_year_name_en()}</Label>
-      <Input id="academicYearName" bind:value={onboardingState.academicYearName} placeholder="Academic Year 1447 Hijri" class="text-left font-sans" style="direction: ltr;" />
+      <Input id="academicYearName" bind:value={onboardingState.calendar.academicYearName} placeholder="Academic Year 1447 Hijri" class="text-left font-sans" style="direction: ltr;" />
     </div>
 
     <div class="space-y-2 text-start">
       <Label for="startDate">{m.onboarding_start_date()}</Label>
-      <Input id="startDate" type="date" bind:value={onboardingState.startDate} />
+      <Input id="startDate" type="date" bind:value={onboardingState.calendar.startDate} />
     </div>
 
     <div class="space-y-2 text-start">
       <Label for="endDate">{m.onboarding_end_date()}</Label>
-      <Input id="endDate" type="date" bind:value={onboardingState.endDate} />
+      <Input id="endDate" type="date" bind:value={onboardingState.calendar.endDate} />
     </div>
   </div>
 
@@ -130,10 +130,10 @@ async function handleLanguageChange(newLocale: string) {
     <div class="md:col-span-2 space-y-4">
       <div class="space-y-2 text-start">
         <Label class="text-xs font-semibold">{m.onboarding_template_label()}</Label>
-        <Select type="single" bind:value={onboardingState.selectedTemplateId}>
+        <Select type="single" bind:value={onboardingState.calendar.selectedTemplateId}>
           <SelectTrigger class="w-full h-9 text-xs font-sans">
-            {#if onboardingState.selectedTemplateId}
-              {@const selectedTpl = onboardingState.periodTemplates.find(t => t.id === onboardingState.selectedTemplateId)}
+            {#if onboardingState.calendar.selectedTemplateId}
+              {@const selectedTpl = onboardingState.calendar.periodTemplates.find(t => t.id === onboardingState.calendar.selectedTemplateId)}
               {#if selectedTpl}
                 {getLocale() === "ar" ? selectedTpl.name_ar : selectedTpl.name}
               {:else}
@@ -144,7 +144,7 @@ async function handleLanguageChange(newLocale: string) {
             {/if}
           </SelectTrigger>
           <SelectContent>
-            {#each onboardingState.periodTemplates as tpl}
+            {#each onboardingState.calendar.periodTemplates as tpl}
               <SelectItem value={tpl.id}>{getLocale() === "ar" ? tpl.name_ar : tpl.name}</SelectItem>
             {/each}
           </SelectContent>

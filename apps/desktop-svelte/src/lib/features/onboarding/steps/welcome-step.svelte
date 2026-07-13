@@ -5,7 +5,7 @@ import { onboardingState } from "../state.svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 
 let orgName = $derived(
-  getLocale() === "ar" ? onboardingState.orgNameAr : onboardingState.orgName
+  getLocale() === "ar" ? onboardingState.profile.orgNameAr : onboardingState.profile.orgName
 );
 </script>
 

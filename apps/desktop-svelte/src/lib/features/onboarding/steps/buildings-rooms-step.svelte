@@ -93,19 +93,19 @@ function confirmRemoveBuilding() {
 
 
   <Tabs
-    value={onboardingState.activeBuildingTab}
-    onValueChange={(v) => (onboardingState.activeBuildingTab = v ?? onboardingState.buildings[0])}
+    value={onboardingState.facilities.activeBuildingTab}
+    onValueChange={(v) => (onboardingState.facilities.activeBuildingTab = v ?? onboardingState.facilities.buildings[0])}
     class="w-full"
   >
     <TabsList class="w-full justify-start bg-transparent border-b border-border/60 rounded-none p-0 h-auto gap-2 overflow-x-auto flex-nowrap scrollbar-hide">
-      {#each onboardingState.buildings as bld}
+      {#each onboardingState.facilities.buildings as bld}
         <TabsTrigger
           value={bld}
           class="px-5 py-3 font-semibold text-sm rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground text-muted-foreground hover:text-foreground shrink-0"
         >
           {bld}
           <Badge variant="secondary" class="mr-2 ml-2 text-[10px]">
-            {onboardingState.rooms.filter((r) => r.building === bld).length} {m.onboarding_rooms_count_suffix()}
+            {onboardingState.facilities.rooms.filter((r) => r.building === bld).length} {m.onboarding_rooms_count_suffix()}
           </Badge>
         </TabsTrigger>
       {/each}
@@ -115,7 +115,7 @@ function confirmRemoveBuilding() {
       </Button>
     </TabsList>
 
-    {#each onboardingState.buildings as bld}
+    {#each onboardingState.facilities.buildings as bld}
       <TabsContent value={bld} class="space-y-6 pt-4">
         <!-- Rooms List for the Active Building -->
         <div class="space-y-3">
@@ -123,7 +123,7 @@ function confirmRemoveBuilding() {
             <h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-start">
               {m.onboarding_room_approved({ building: bld })}
             </h4>
-            {#if onboardingState.buildings.length > 1}
+            {#if onboardingState.facilities.buildings.length > 1}
               <Button
                 variant="ghost"
                 size="sm"
@@ -197,7 +197,7 @@ function confirmRemoveBuilding() {
                 </Button>
               </div>
 
-              {#each onboardingState.rooms.filter((r) => r.building === bld) as rm (rm.id)}
+              {#each onboardingState.facilities.rooms.filter((r) => r.building === bld) as rm (rm.id)}
                 <div class="grid grid-cols-[1.5fr_1.5fr_1.2fr_1fr_1fr_auto] gap-4 px-4 py-3 items-center hover:bg-muted/10 transition-colors">
                   <!-- Arabic Name -->
                   <Input bind:value={rm.name_ar} class="h-8 text-xs font-bold font-sans" onchange={() => onboardingState.save()} />

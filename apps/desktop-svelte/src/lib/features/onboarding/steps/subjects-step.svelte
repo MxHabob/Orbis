@@ -69,7 +69,7 @@ function handleAddSubject() {
       </div>
 
       <!-- Subject Rows -->
-      {#each onboardingState.subjects as sub (sub.code)}
+      {#each onboardingState.academics.subjects as sub (sub.code)}
         <div class="grid grid-cols-[50px_1.8fr_1fr_2fr_auto] gap-4 px-4 py-3 items-center hover:bg-muted/10 transition-colors text-start {sub.enabled ? '' : 'opacity-50'}">
           <!-- Color Dot -->
           <div class="flex justify-center items-center">

@@ -28,7 +28,7 @@ onMount(async () => {
 
   // Redirect to the correct localized URL based on onboardingState.locale
   const currentUrlLocale = getLocale();
-  const stateLang = onboardingState.locale.split("-")[0]?.toLowerCase() || "ar";
+  const stateLang = onboardingState.profile.locale.split("-")[0]?.toLowerCase() || "ar";
   const targetLang = stateLang === "ar" ? "ar" : "en";
   if (currentUrlLocale !== targetLang) {
     const localizedUrl = localizeHref(page.url.pathname, {

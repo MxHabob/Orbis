@@ -8,8 +8,8 @@ import type { StudentFormState } from "../student-form-state.svelte";
 let { state }: { state: StudentFormState } = $props();
 
 const docTypes = $derived.by(() => {
-  if (state.orgRequiredDocuments.length > 0) {
-    return state.orgRequiredDocuments.map((name) => ({
+  if (state.document.orgRequiredDocuments.length > 0) {
+    return state.document.orgRequiredDocuments.map((name) => ({
       id: name,
       label: name,
     }));
@@ -34,7 +34,7 @@ const docTypes = $derived.by(() => {
   <div class="p-6">
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {#each docTypes as doc (doc.id)}
-        {@const isChecked = state.submittedDocs.includes(doc.id)}
+        {@const isChecked = state.document.submittedDocs.includes(doc.id)}
         <div 
           class="flex items-center justify-between p-3.5 border border-border rounded-lg bg-background hover:bg-accent/10 transition-all duration-150 gap-4 text-start select-none"
         >
@@ -42,7 +42,7 @@ const docTypes = $derived.by(() => {
             <Checkbox 
               id={`doc_${doc.id}`} 
               checked={isChecked}
-              onCheckedChange={() => state.toggleDoc(doc.id)}
+              onCheckedChange={() => state.document.toggleDoc(doc.id)}
             />
             <Label for={`doc_${doc.id}`} class="text-xs font-semibold text-foreground cursor-pointer">
               {doc.label}

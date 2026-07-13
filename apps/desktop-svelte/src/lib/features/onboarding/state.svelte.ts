@@ -1,86 +1,15 @@
-// ── Onboarding State Store ───────────────────────────────────────────
-// Svelte 5 Runes-based state management for the onboarding wizard.
-// Follows the same class-based pattern as auth.svelte.ts.
-
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
 import { INSTITUTION_PROFILES } from "./templates";
-import type {
-  Room,
-  GradeLevel,
-  TimeSlot,
-  Subject,
-  PeriodEntry,
-  ClassEntry,
-  SubjectEntry,
-  OnboardingPayload,
-  PeriodTemplateDef,
-  TemplateNode,
-} from "./types";
+import type { OnboardingPayload, PeriodTemplateDef, TemplateNode, PeriodEntry, ClassEntry, SubjectEntry } from "./types";
+import { getDefaultBuildings } from "./utils";
 
-function detectTimezone(): string {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Aden";
-  } catch {
-    return "Asia/Aden";
-  }
-}
-
-function detectLocale(): string {
-  try {
-    const lang =
-      navigator.language ||
-      (navigator.languages && navigator.languages[0]) ||
-      "ar";
-    const cleanLang = lang.split("-")[0]?.toLowerCase();
-    return cleanLang === "en" || cleanLang === "ar" ? cleanLang : "ar";
-  } catch {
-    return "ar";
-  }
-}
-
-function detectCurrency(timezone: string): string {
-  if (timezone.includes("Riyadh") || timezone.includes("Saudi")) return "SAR";
-  if (timezone.includes("Dubai") || timezone.includes("Uae")) return "AED";
-  if (timezone.includes("Cairo") || timezone.includes("Egypt")) return "EGP";
-  if (timezone.includes("Aden") || timezone.includes("Yemen")) return "YER";
-  return detectLocale() === "en" ? "USD" : "SAR"; // Smarter fallback based on locale
-}
-
-function getDefaultBuildings(): string[] {
-  return detectLocale() === "ar" ? ["المبنى الرئيسي"] : ["Main Building"];
-}
-
-// ── Default Data ─────────────────────────────────────────────────────
-
-const DEFAULT_GRADE_LEVELS: GradeLevel[] = INSTITUTION_PROFILES.school.stages.map((s) => ({
-  level: s.level,
-  name: s.name,
-  name_ar: s.name_ar,
-  color: s.color,
-  enabled: true,
-  divisions: [...s.divisions],
-}));
-
-const DEFAULT_TIME_SLOTS: TimeSlot[] = INSTITUTION_PROFILES.school.timeSlots.map((t) => ({
-  name: t.name,
-  name_ar: t.name_ar,
-  start_time: t.start_time,
-  end_time: t.end_time,
-}));
-
-const DEFAULT_SUBJECTS: Subject[] = INSTITUTION_PROFILES.school.subjects.map((s) => ({
-  code: s.code,
-  name: s.name,
-  name_ar: s.name_ar,
-  color: s.color,
-  icon: s.icon,
-  sort_order: s.sort_order,
-  enabled: true,
-}));
-
-// ── Store Class ──────────────────────────────────────────────────────
+import { ProfileInfoState } from "./state/profile-info.svelte";
+import { CalendarInfoState } from "./state/calendar-info.svelte";
+import { FacilitiesInfoState } from "./state/facilities-info.svelte";
+import { AcademicsInfoState } from "./state/academics-info.svelte";
+import { FinanceInfoState } from "./state/finance-info.svelte";
 
 class OnboardingState {
   // Wizard navigation
@@ -90,106 +19,40 @@ class OnboardingState {
   totalSteps = 9;
   completedSteps = $state([false, false, false, false, false, false, false, false, false]);
 
-  // Central Configuration Defaults
-  institutionType = $state("school");
-  studentNumberPattern = $state("STU-{YEAR}-{SEQ}");
-  activeFields = $state<Record<string, boolean>>({});
-  requiredFields = $state<Record<string, boolean>>({});
-  preventDuplicates = $state<Record<string, boolean>>({});
-  requiredDocumentsList = $state<string[]>([]);
-
-  // Step 8: Registration Fees Setup
-  registrationFees = $state<Record<string, number>>({});
-
-  // School General Info (pre-populated by CLI / loadExistingOrg)
-  orgName = $state("Sanaa Model School");
-  orgNameAr = $state("مدرسة صنعاء النموذجية");
-  rootUnitName = $state("Sanaa Model School");
-  rootUnitNameAr = $state("مدرسة صنعاء النموذجية");
-  timezone = $state(detectTimezone());
-  locale = $state(detectLocale());
-  currency = $state(detectCurrency(detectTimezone()));
-
-  // Step 2: Academic Calendar
-  academicYearName = $state("Academic Year 1447 Hijri");
-  academicYearNameAr = $state("العام الدراسي 1447 هـ");
-  startDate = $state("2026-06-21");
-  endDate = $state("2027-02-21");
-  selectedTemplateId = $state("");
-  periodTemplates = $state<PeriodTemplateDef[]>([]);
-
-  // Step 3: Buildings & Rooms
-  rooms = $state<Room[]>([]);
-  activeBuildingTab = $state(getDefaultBuildings()[0]);
-  buildings = $state<string[]>(getDefaultBuildings());
-
-  // Step 4: Grade Levels & Classes
-  gradeLevels = $state<GradeLevel[]>(structuredClone(DEFAULT_GRADE_LEVELS));
-  divisionInput = $state<Record<string, string>>({});
-
-  // Step 5: Time Slots
-  timeSlots = $state<TimeSlot[]>(structuredClone(DEFAULT_TIME_SLOTS));
-
-  // Step 6: Subjects
-  subjects = $state<Subject[]>(structuredClone(DEFAULT_SUBJECTS));
+  // Sub-states
+  profile = new ProfileInfoState();
+  calendar = new CalendarInfoState();
+  facilities = new FacilitiesInfoState();
+  academics = new AcademicsInfoState();
+  finance = new FinanceInfoState();
 
   // ── Centralized Terminology Mappings ──────────────────────────────
   terminology = $derived(
-    INSTITUTION_PROFILES[this.institutionType]?.terminology ||
+    INSTITUTION_PROFILES[this.profile.institutionType]?.terminology ||
       INSTITUTION_PROFILES.school.terminology,
   );
 
-  stageLabel = $derived(
-    getLocale() === "ar" ? this.terminology.stage_ar : this.terminology.stage,
-  );
-  classroomLabel = $derived(
-    getLocale() === "ar"
-      ? this.terminology.classroom_ar
-      : this.terminology.classroom,
-  );
-  divisionLabel = $derived(
-    getLocale() === "ar"
-      ? this.terminology.division_ar
-      : this.terminology.division,
-  );
-  subjectLabel = $derived(
-    getLocale() === "ar"
-      ? this.terminology.subject_ar
-      : this.terminology.subject,
-  );
-  calendarLabel = $derived(
-    getLocale() === "ar"
-      ? this.terminology.calendar_ar
-      : this.terminology.calendar,
-  );
-  localizedLanguageName = $derived(
-    this.locale.startsWith("ar")
-      ? m.onboarding_lang_ar()
-      : m.onboarding_lang_en(),
-  );
-  classroomsLabelPlural = $derived(
-    getLocale() === "ar"
-      ? this.terminology.classroom_ar
-      : this.terminology.classroom + "s",
-  );
-  stagesLabelPlural = $derived(
-    getLocale() === "ar"
-      ? this.terminology.stage_ar
-      : this.terminology.stage + "s",
-  );
+  stageLabel = $derived(getLocale() === "ar" ? this.terminology.stage_ar : this.terminology.stage);
+  classroomLabel = $derived(getLocale() === "ar" ? this.terminology.classroom_ar : this.terminology.classroom);
+  divisionLabel = $derived(getLocale() === "ar" ? this.terminology.division_ar : this.terminology.division);
+  subjectLabel = $derived(getLocale() === "ar" ? this.terminology.subject_ar : this.terminology.subject);
+  calendarLabel = $derived(getLocale() === "ar" ? this.terminology.calendar_ar : this.terminology.calendar);
+  localizedLanguageName = $derived(this.profile.locale.startsWith("ar") ? m.onboarding_lang_ar() : m.onboarding_lang_en());
+  classroomsLabelPlural = $derived(getLocale() === "ar" ? this.terminology.classroom_ar : this.terminology.classroom + "s");
+  stagesLabelPlural = $derived(getLocale() === "ar" ? this.terminology.stage_ar : this.terminology.stage + "s");
 
   selectInstitutionType(type: string) {
-    this.institutionType = type;
+    this.profile.institutionType = type;
     const profile = INSTITUTION_PROFILES[type];
     if (profile) {
-      this.studentNumberPattern = profile.numberingPattern;
-      this.activeFields = { ...profile.activeFields };
-      this.requiredFields = { ...profile.requiredFields };
-      this.preventDuplicates = { ...profile.preventDuplicates };
-      this.requiredDocumentsList = [...profile.requiredDocuments];
+      this.profile.studentNumberPattern = profile.numberingPattern;
+      this.profile.activeFields = { ...profile.activeFields };
+      this.profile.requiredFields = { ...profile.requiredFields };
+      this.profile.preventDuplicates = { ...profile.preventDuplicates };
+      this.profile.requiredDocumentsList = [...profile.requiredDocuments];
 
       // Default academic stages
-      this.gradeLevels = profile.stages.map((s) => ({
+      this.academics.gradeLevels = profile.stages.map((s) => ({
         level: s.level,
         name: s.name,
         name_ar: s.name_ar,
@@ -199,7 +62,7 @@ class OnboardingState {
       }));
 
       // Default time slots
-      this.timeSlots = profile.timeSlots.map((t) => ({
+      this.academics.timeSlots = profile.timeSlots.map((t) => ({
         name: t.name,
         name_ar: t.name_ar,
         start_time: t.start_time,
@@ -207,7 +70,7 @@ class OnboardingState {
       }));
 
       // Default subjects
-      this.subjects = profile.subjects.map((s) => ({
+      this.academics.subjects = profile.subjects.map((s) => ({
         code: s.code,
         name: s.name,
         name_ar: s.name_ar,
@@ -222,11 +85,11 @@ class OnboardingState {
       profile.stages.forEach((s) => {
         fees[s.level] = 0;
       });
-      this.registrationFees = fees;
+      this.finance.registrationFees = fees;
 
       // Dynamic room list prefix mapping
-      const roomsList: Room[] = [];
-      const bldName = this.buildings.length > 0 ? this.buildings[0] : getDefaultBuildings()[0];
+      const roomsList = [];
+      const bldName = this.facilities.buildings.length > 0 ? this.facilities.buildings[0] : getDefaultBuildings()[0];
       
       profile.stages.slice(0, 5).forEach((stg, sIdx) => {
         roomsList.push({
@@ -239,25 +102,15 @@ class OnboardingState {
           floor: 1,
         });
       });
-      this.rooms = roomsList;
-      this.activeBuildingTab = bldName;
+      this.facilities.rooms = roomsList;
+      this.facilities.activeBuildingTab = bldName;
 
       this.save();
     }
   }
 
   // ── Derived Values ───────────────────────────────────────────────
-
   progressValue = $derived(this.activeStep === 0 ? 0 : (this.activeStep / this.totalSteps) * 100);
-  totalCapacity = $derived(this.rooms.reduce((acc, r) => acc + r.capacity, 0));
-  enabledStages = $derived(this.gradeLevels.filter((l) => l.enabled).length);
-  totalDivisions = $derived(
-    this.gradeLevels
-      .filter((l) => l.enabled)
-      .reduce((acc, l) => acc + l.divisions.length, 0),
-  );
-  enabledSubjects = $derived(this.subjects.filter((s) => s.enabled).length);
-  totalSlots = $derived(this.timeSlots.length);
   tasksCompletedCount = $derived(this.completedSteps.filter(Boolean).length);
 
   // ── Persistence ────────────────────────────────────────────────
@@ -266,21 +119,11 @@ class OnboardingState {
       const data = {
         completedSteps: this.completedSteps,
         activeStep: this.activeStep,
-        registrationFees: this.registrationFees,
-        academicYearName: this.academicYearName,
-        academicYearNameAr: this.academicYearNameAr,
-        startDate: this.startDate,
-        endDate: this.endDate,
-        timeSlots: this.timeSlots,
-        subjects: this.subjects,
-        rooms: this.rooms,
-        institutionType: this.institutionType,
-        studentNumberPattern: this.studentNumberPattern,
-        activeFields: this.activeFields,
-        requiredFields: this.requiredFields,
-        preventDuplicates: this.preventDuplicates,
-        requiredDocumentsList: this.requiredDocumentsList,
-        gradeLevels: this.gradeLevels,
+        profile: this.profile.serialize(),
+        calendar: this.calendar.serialize(),
+        facilities: this.facilities.serialize(),
+        academics: this.academics.serialize(),
+        finance: this.finance.serialize(),
       };
       localStorage.setItem("orbis_onboarding_state", JSON.stringify(data));
     } catch (e) {
@@ -295,27 +138,22 @@ class OnboardingState {
         const data = JSON.parse(saved);
         if (data.completedSteps) this.completedSteps = data.completedSteps;
         if (data.activeStep) this.activeStep = data.activeStep;
-        if (data.registrationFees)
-          this.registrationFees = data.registrationFees;
-        if (data.academicYearName)
-          this.academicYearName = data.academicYearName;
-        if (data.academicYearNameAr)
-          this.academicYearNameAr = data.academicYearNameAr;
-        if (data.startDate) this.startDate = data.startDate;
-        if (data.endDate) this.endDate = data.endDate;
-        if (data.timeSlots) this.timeSlots = data.timeSlots;
-        if (data.subjects) this.subjects = data.subjects;
-        if (data.rooms) this.rooms = data.rooms;
-        if (data.institutionType) this.institutionType = data.institutionType;
-        if (data.studentNumberPattern)
-          this.studentNumberPattern = data.studentNumberPattern;
-        if (data.activeFields) this.activeFields = data.activeFields;
-        if (data.requiredFields) this.requiredFields = data.requiredFields;
-        if (data.preventDuplicates)
-          this.preventDuplicates = data.preventDuplicates;
-        if (data.requiredDocumentsList)
-          this.requiredDocumentsList = data.requiredDocumentsList;
-        if (data.gradeLevels) this.gradeLevels = data.gradeLevels;
+        
+        // Handle migration from flat state to structured state
+        if (data.profile) {
+          this.profile.deserialize(data.profile);
+          this.calendar.deserialize(data.calendar);
+          this.facilities.deserialize(data.facilities);
+          this.academics.deserialize(data.academics);
+          this.finance.deserialize(data.finance);
+        } else {
+          // Fallback for old state format
+          this.profile.deserialize(data);
+          this.calendar.deserialize(data);
+          this.facilities.deserialize(data);
+          this.academics.deserialize(data);
+          this.finance.deserialize(data);
+        }
       }
     } catch (e) {
       console.error("Failed to load onboarding state:", e);
@@ -327,13 +165,13 @@ class OnboardingState {
       const { commands } = await import("$lib/core/ipc");
       const org = await commands.organization.getOrganization(orgId);
       if (org) {
-        this.orgName = org.name;
-        this.orgNameAr = org.name_ar || org.name;
-        this.rootUnitName = org.name;
-        this.rootUnitNameAr = org.name_ar || org.name;
-        this.timezone = org.timezone || detectTimezone();
-        this.locale = org.locale || detectLocale();
-        this.currency = org.currency || detectCurrency(this.timezone);
+        this.profile.orgName = org.name;
+        this.profile.orgNameAr = org.name_ar || org.name;
+        this.profile.rootUnitName = org.name;
+        this.profile.rootUnitNameAr = org.name_ar || org.name;
+        this.profile.timezone = org.timezone || this.profile.timezone;
+        this.profile.locale = org.locale || this.profile.locale;
+        this.profile.currency = org.currency || this.profile.currency;
         await this.loadTemplates(orgId);
         this.save();
       }
@@ -343,12 +181,9 @@ class OnboardingState {
   }
 
   // ── Navigation ─────────────────────────────────────────────────
-
   goNext() {
     if (this.activeStep < this.totalSteps) {
-      if (this.activeStep > 0) {
-        this.completedSteps[this.activeStep - 1] = true;
-      }
+      if (this.activeStep > 0) this.completedSteps[this.activeStep - 1] = true;
       this.activeStep += 1;
       this.save();
     }
@@ -369,34 +204,33 @@ class OnboardingState {
   }
 
   // ── Step 3: Room & Building Management ────────────────────────────────────
-
   addBuilding(name: string): boolean {
     const trimmed = name.trim();
-    if (!trimmed || this.buildings.includes(trimmed)) return false;
-    this.buildings.push(trimmed);
-    this.activeBuildingTab = trimmed;
+    if (!trimmed || this.facilities.buildings.includes(trimmed)) return false;
+    this.facilities.buildings.push(trimmed);
+    this.facilities.activeBuildingTab = trimmed;
     this.save();
     return true;
   }
 
   removeBuilding(name: string): boolean {
-    if (this.buildings.length <= 1) return false; // Must have at least one building
-    const idx = this.buildings.indexOf(name);
+    if (this.facilities.buildings.length <= 1) return false;
+    const idx = this.facilities.buildings.indexOf(name);
     if (idx === -1) return false;
     
-    this.buildings.splice(idx, 1);
-    this.rooms = this.rooms.filter((r) => r.building !== name);
-    if (this.activeBuildingTab === name) {
-      this.activeBuildingTab = this.buildings[0];
+    this.facilities.buildings.splice(idx, 1);
+    this.facilities.rooms = this.facilities.rooms.filter((r) => r.building !== name);
+    if (this.facilities.activeBuildingTab === name) {
+      this.facilities.activeBuildingTab = this.facilities.buildings[0];
     }
     this.save();
     return true;
   }
 
   addDefaultRoomsToBuilding(bldName: string) {
-    const otherRooms = this.rooms.filter((r) => r.building !== bldName);
-    const terminology = INSTITUTION_PROFILES[this.institutionType]?.terminology || INSTITUTION_PROFILES.school.terminology;
-    const defaultList: Room[] = [];
+    const otherRooms = this.facilities.rooms.filter((r) => r.building !== bldName);
+    const terminology = INSTITUTION_PROFILES[this.profile.institutionType]?.terminology || INSTITUTION_PROFILES.school.terminology;
+    const defaultList = [];
     const tsSuffix = Date.now();
 
     for (let i = 1; i <= 10; i++) {
@@ -432,7 +266,6 @@ class OnboardingState {
         floor: 2,
       });
     }
-    // Chemistry labs
     for (let i = 1; i <= 2; i++) {
       defaultList.push({
         id: `room-${bldName}-lab-chem-${i}-${tsSuffix}`,
@@ -444,73 +277,65 @@ class OnboardingState {
         floor: 1,
       });
     }
-    this.rooms = [...otherRooms, ...defaultList];
-    this.activeBuildingTab = bldName;
+    this.facilities.rooms = [...otherRooms, ...defaultList];
+    this.facilities.activeBuildingTab = bldName;
     this.save();
   }
 
-  addRoom(
-    name: string,
-    nameAr: string,
-    capacity: number,
-    roomType: string,
-    floor: number,
-  ) {
+  addRoom(name: string, nameAr: string, capacity: number, roomType: string, floor: number) {
     if (!name || !nameAr) {
       toast.error(m.onboarding_toast_fill_room_fields());
       return false;
     }
     const id = `room-${Date.now()}`;
-    this.rooms.push({
+    this.facilities.rooms.push({
       id,
       name,
       name_ar: nameAr,
       capacity,
       room_type: roomType,
-      building: this.activeBuildingTab,
+      building: this.facilities.activeBuildingTab,
       floor,
     });
-    this.rooms = [...this.rooms];
+    this.facilities.rooms = [...this.facilities.rooms];
     toast.success(m.onboarding_toast_room_added());
     return true;
   }
 
   removeRoom(id: string) {
-    this.rooms = this.rooms.filter((r) => r.id !== id);
+    this.facilities.rooms = this.facilities.rooms.filter((r) => r.id !== id);
     toast.success(m.onboarding_toast_room_deleted());
   }
 
   // ── Step 4: Grade/Division Management ──────────────────────────
-
   addDivision(level: string) {
-    const text = this.divisionInput[level]?.trim();
+    const text = this.academics.divisionInput[level]?.trim();
     if (!text) return;
-    const gl = this.gradeLevels.find((g) => g.level === level);
+    const gl = this.academics.gradeLevels.find((g) => g.level === level);
     if (gl && !gl.divisions.includes(text)) {
       gl.divisions.push(text);
-      this.gradeLevels = [...this.gradeLevels];
-      this.divisionInput[level] = "";
+      this.academics.gradeLevels = [...this.academics.gradeLevels];
+      this.academics.divisionInput[level] = "";
       toast.success(m.onboarding_toast_division_added());
     }
   }
 
   removeDivision(level: string, div: string) {
-    const gl = this.gradeLevels.find((g) => g.level === level);
+    const gl = this.academics.gradeLevels.find((g) => g.level === level);
     if (gl) {
       gl.divisions = gl.divisions.filter((d) => d !== div);
-      this.gradeLevels = [...this.gradeLevels];
+      this.academics.gradeLevels = [...this.academics.gradeLevels];
       toast.success(m.onboarding_toast_division_deleted());
     }
   }
 
   // ── Step 5: Time Slot Management ───────────────────────────────
-
   async loadTemplates(orgId: string) {
     try {
       const { commands } = await import("$lib/core/ipc");
-      this.periodTemplates = await commands.platform.getPeriodTemplates(orgId);
-      if (this.periodTemplates.length > 0 && !this.selectedTemplateId) {
-        this.selectedTemplateId = this.periodTemplates[0].id;
+      this.calendar.periodTemplates = await commands.platform.getPeriodTemplates(orgId);
+      if (this.calendar.periodTemplates.length > 0 && !this.calendar.selectedTemplateId) {
+        this.calendar.selectedTemplateId = this.calendar.periodTemplates[0].id;
       }
     } catch (e) {
       console.error("Failed to load period templates:", e);
@@ -568,96 +393,76 @@ class OnboardingState {
         currentChildStartMs += childDurationDays * 24 * 60 * 60 * 1000;
       });
     }
-
     return allEntries;
   }
 
-  addTimeSlot(
-    name: string,
-    nameAr: string,
-    startTime: string,
-    endTime: string,
-  ) {
+  addTimeSlot(name: string, nameAr: string, startTime: string, endTime: string) {
     if (!name || !nameAr) {
       toast.error(m.onboarding_toast_fill_period_name());
       return false;
     }
-    this.timeSlots.push({
+    this.academics.timeSlots.push({
       name,
       name_ar: nameAr,
       start_time: startTime,
       end_time: endTime,
     });
-    this.timeSlots = [...this.timeSlots];
+    this.academics.timeSlots = [...this.academics.timeSlots];
     toast.success(m.onboarding_toast_period_added());
     return true;
   }
 
   removeTimeSlot(idx: number) {
-    this.timeSlots = this.timeSlots.filter((_, i) => i !== idx);
+    this.academics.timeSlots = this.academics.timeSlots.filter((_, i) => i !== idx);
     toast.success(m.onboarding_toast_period_deleted());
   }
 
   // ── Step 6: Subject Management ─────────────────────────────────
-
   addSubject(code: string, name: string, nameAr: string, color: string) {
     if (!code || !name || !nameAr) {
       toast.error(m.onboarding_toast_fill_subject_fields());
       return false;
     }
-    this.subjects.push({
+    this.academics.subjects.push({
       code: code.toUpperCase(),
       name,
       name_ar: nameAr,
       color,
       icon: "book",
-      sort_order: this.subjects.length + 1,
+      sort_order: this.academics.subjects.length + 1,
       enabled: true,
     });
-    this.subjects = [...this.subjects];
+    this.academics.subjects = [...this.academics.subjects];
     toast.success(m.onboarding_toast_subject_added());
     return true;
   }
 
-
   // ── Build Final Payload ────────────────────────────────────────
-
   buildPayload(orgId: string): OnboardingPayload {
     const periodPeriodId = `period-1447-${orgId}`;
-
-    const startMs = new Date(this.startDate).getTime();
-    const endMs = new Date(this.endDate).getTime();
+    const startMs = new Date(this.calendar.startDate).getTime();
+    const endMs = new Date(this.calendar.endDate).getTime();
     const totalDays = Math.ceil((endMs - startMs) / (1000 * 60 * 60 * 24));
 
-    let periods: PeriodEntry[] = [
-      {
-        id: periodPeriodId,
-        parent_id: null,
-        name: this.academicYearName,
-        name_ar: this.academicYearNameAr,
-        start_date: this.startDate,
-        end_date: this.endDate,
-        period_type: "year",
-        weight: null,
-      }
-    ];
+    let periods: PeriodEntry[] = [{
+      id: periodPeriodId,
+      parent_id: null,
+      name: this.calendar.academicYearName,
+      name_ar: this.calendar.academicYearNameAr,
+      start_date: this.calendar.startDate,
+      end_date: this.calendar.endDate,
+      period_type: "year",
+      weight: null,
+    }];
 
-    const template = this.periodTemplates.find((t) => t.id === this.selectedTemplateId);
+    const template = this.calendar.periodTemplates.find((t) => t.id === this.calendar.selectedTemplateId);
     
     if (template && template.structure) {
       let currentTermStartMs = startMs;
       template.structure.forEach((term, idx) => {
         const termDurationDays = Math.round((term.weight / 100) * totalDays);
         const termEntries = this.generatePeriodsFromTemplate(
-          term,
-          periodPeriodId,
-          orgId,
-          startMs,
-          totalDays,
-          currentTermStartMs,
-          totalDays,
-          1,
-          idx + 1
+          term, periodPeriodId, orgId, startMs, totalDays, currentTermStartMs, totalDays, 1, idx + 1
         );
         periods = periods.concat(termEntries);
         currentTermStartMs += termDurationDays * 24 * 60 * 60 * 1000;
@@ -665,7 +470,7 @@ class OnboardingState {
     }
 
     const classes: ClassEntry[] = [];
-    for (const gl of this.gradeLevels) {
+    for (const gl of this.academics.gradeLevels) {
       if (!gl.enabled) continue;
       for (const div of gl.divisions) {
         classes.push({
@@ -679,7 +484,7 @@ class OnboardingState {
       }
     }
 
-    const activeSubjects: SubjectEntry[] = this.subjects
+    const activeSubjects: SubjectEntry[] = this.academics.subjects
       .filter((s) => s.enabled)
       .map((s, idx) => ({
         id: `subject-${s.code.toLowerCase()}-${orgId}`,
@@ -692,55 +497,49 @@ class OnboardingState {
       }));
 
     return {
-      org_name: this.orgName,
-      org_name_ar: this.orgNameAr,
-      timezone: this.timezone,
-      locale: this.locale,
-      currency: this.currency,
+      org_name: this.profile.orgName,
+      org_name_ar: this.profile.orgNameAr,
+      timezone: this.profile.timezone,
+      locale: this.profile.locale,
+      currency: this.profile.currency,
       root_unit_id: `unit-${orgId}`,
-      root_unit_name: this.rootUnitName,
-      root_unit_name_ar: this.rootUnitNameAr,
+      root_unit_name: this.profile.rootUnitName,
+      root_unit_name_ar: this.profile.rootUnitNameAr,
       periods,
-      time_slots: this.timeSlots,
-      rooms: this.rooms.map((r) => ({
+      time_slots: this.academics.timeSlots,
+      rooms: this.facilities.rooms.map((r) => ({
         ...r,
         id: `room-${r.id}-${orgId}`,
       })),
       subjects: activeSubjects,
       classes,
-      registration_fees: $state.snapshot(this.registrationFees),
+      registration_fees: $state.snapshot(this.finance.registrationFees),
     };
   }
 
   // ── Complete Setup ─────────────────────────────────────────────
-
   async completeSetup(orgId: string): Promise<boolean> {
     this.isLoading = true;
     this.errorMessage = null;
 
     try {
-      if (!orgId) {
-        throw new Error(m.onboarding_err_active_org());
-      }
+      if (!orgId) throw new Error(m.onboarding_err_active_org());
 
       const payload = this.buildPayload(orgId);
-      console.log("Submitting Onboarding Setup Payload:", payload);
-
       const { commands } = await import("$lib/core/ipc");
       await commands.platform.initializeSchoolSetup(orgId, payload);
 
-      // Save registration configuration to organization settings
       const settingsObj = {
         registration_config: {
-          institution_type: this.institutionType,
-          student_number_pattern: this.studentNumberPattern,
-          academic_stages: this.gradeLevels
+          institution_type: this.profile.institutionType,
+          student_number_pattern: this.profile.studentNumberPattern,
+          academic_stages: this.academics.gradeLevels
             .filter((gl) => gl.enabled)
             .map((gl) => gl.level),
-          required_fields: this.requiredFields,
-          active_fields: this.activeFields,
-          prevent_duplicates: this.preventDuplicates,
-          required_documents: this.requiredDocumentsList,
+          required_fields: this.profile.requiredFields,
+          active_fields: this.profile.activeFields,
+          prevent_duplicates: this.profile.preventDuplicates,
+          required_documents: this.profile.requiredDocumentsList,
         },
       };
 
@@ -750,9 +549,9 @@ class OnboardingState {
           name: org.name,
           logo: org.logo || null,
           primary_color: org.primary_color,
-          currency: this.currency,
-          timezone: this.timezone,
-          locale: this.locale,
+          currency: this.profile.currency,
+          timezone: this.profile.timezone,
+          locale: this.profile.locale,
           date_format: org.date_format,
           hijri_enabled: org.hijri_enabled,
           settings: JSON.stringify(settingsObj),
@@ -760,10 +559,9 @@ class OnboardingState {
         await commands.organization.updateOrganization(orgId, updateRequest);
       }
 
-      // Create fee templates for the specified registration fees
-      for (const gl of this.gradeLevels) {
+      for (const gl of this.academics.gradeLevels) {
         if (!gl.enabled) continue;
-        const amount = this.registrationFees[gl.level] || 0;
+        const amount = this.finance.registrationFees[gl.level] || 0;
         if (amount > 0) {
           const req = {
             name: `${gl.name} Registration Fee`,
@@ -783,22 +581,17 @@ class OnboardingState {
           try {
             await commands.finance.createFeeTemplate(req as any);
           } catch (feeErr) {
-            console.error(
-              `Failed to create fee template for ${gl.level}:`,
-              feeErr,
-            );
+            console.error(`Failed to create fee template for ${gl.level}:`, feeErr);
           }
         }
       }
 
-      // Mark setup as complete in localStorage
       localStorage.removeItem("orbis_onboarding_state");
       toast.success(m.onboarding_toast_success());
       return true;
     } catch (err: any) {
       console.error("Setup initialization failed:", err);
-      this.errorMessage =
-        err?.message || String(err) || m.onboarding_err_unexpected();
+      this.errorMessage = err?.message || String(err) || m.onboarding_err_unexpected();
       toast.error(m.onboarding_toast_error());
       return false;
     } finally {
@@ -812,8 +605,7 @@ class OnboardingState {
     const locale = getLocale();
     return {
       name: locale === "ar" ? profile.name_ar : profile.name,
-      description:
-        locale === "ar" ? profile.description_ar : profile.description,
+      description: locale === "ar" ? profile.description_ar : profile.description,
     };
   }
 }

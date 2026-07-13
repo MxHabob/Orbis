@@ -131,6 +131,7 @@ export interface OverrideRequest {
   override_type?: string;
   resolution_notes?: string | null;
   requested_by_name?: string | null;
+  risk_level?: string | null;
 }
 
 /** Unified academic policy (replaces CalendarEvent + OrgPolicy) */

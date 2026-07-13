@@ -141,7 +141,7 @@ async function handleAddCurrency(e: Event) {
       code,
       org_id: orgId,
       name: addName.trim() || code,
-      name_ar: addNameAr.trim() || null,
+      name_ar: addNameAr.trim() ? addNameAr.trim() : undefined,
       symbol: addSymbol.trim() || code,
       symbol_position: addSymbolPosition,
       decimal_places: addDecimalPlaces,

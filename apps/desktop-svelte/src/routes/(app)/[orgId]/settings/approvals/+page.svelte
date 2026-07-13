@@ -359,7 +359,7 @@ function parseApprovalChain(
                   <div class="flex items-start justify-between">
                     <div class="flex items-center gap-2">
                       <Badge variant="outline" class="text-[10px] capitalize">
-                        {request.override_type.replace(/_/g, " ")}
+                        {request.override_type?.replace(/_/g, " ") ?? "Unknown"}
                       </Badge>
                       <Badge variant={statusBadgeVariant(request.status)} class="text-[10px] capitalize">
                         {request.status}

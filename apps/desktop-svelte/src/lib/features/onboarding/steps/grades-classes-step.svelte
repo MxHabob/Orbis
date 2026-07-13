@@ -18,7 +18,7 @@ import { onboardingState } from "../state.svelte";
 
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    {#each onboardingState.gradeLevels as gl (gl.level)}
+    {#each onboardingState.academics.gradeLevels as gl (gl.level)}
       <div
         class="bg-card border rounded-xl p-4 space-y-3 transition-colors
           {gl.enabled ? 'border-border/60' : 'border-border/30 opacity-40'}"
@@ -75,7 +75,7 @@ import { onboardingState } from "../state.svelte";
             <div class="flex gap-2">
               <Input
                 placeholder={m.onboarding_add_division_placeholder({ division: onboardingState.divisionLabel })}
-                bind:value={onboardingState.divisionInput[gl.level]}
+                bind:value={onboardingState.academics.divisionInput[gl.level]}
                 class="text-xs h-8"
               />
               <Button

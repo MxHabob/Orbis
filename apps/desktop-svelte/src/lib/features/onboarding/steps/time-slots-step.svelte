@@ -73,7 +73,7 @@ function handleAddTimeSlot() {
       </div>
 
       <!-- Slot Rows -->
-      {#each onboardingState.timeSlots as slot, idx}
+      {#each onboardingState.academics.timeSlots as slot, idx}
         {@const startParts = slot.start_time.split(":").map(Number)}
         {@const endParts = slot.end_time.split(":").map(Number)}
         {@const dur = (endParts[0] * 60 + endParts[1]) - (startParts[0] * 60 + startParts[1])}

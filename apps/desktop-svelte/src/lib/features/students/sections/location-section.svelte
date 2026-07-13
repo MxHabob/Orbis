@@ -26,7 +26,7 @@ let { state }: { state: StudentFormState } = $props();
             type="text" 
             placeholder="اسم المدرسة السابقة..." 
             class="h-9 w-full bg-background" 
-            bind:value={state.previousSchool}
+            bind:value={state.personal.previousSchool}
           />
         </div>
       </div>
@@ -44,7 +44,7 @@ let { state }: { state: StudentFormState } = $props();
           type="text" 
           placeholder="مثال: صنعاء، عدن..." 
           class="h-9 w-full bg-background" 
-          bind:value={state.governorate}
+          bind:value={state.personal.governorate}
         />
       </div>
     </div>
@@ -61,7 +61,7 @@ let { state }: { state: StudentFormState } = $props();
           type="text" 
           placeholder="مثال: مديرية السبعين..." 
           class="h-9 w-full bg-background" 
-          bind:value={state.district}
+          bind:value={state.personal.district}
         />
       </div>
     </div>
@@ -82,7 +82,7 @@ let { state }: { state: StudentFormState } = $props();
             type="text" 
             placeholder="الشارع، الحي، المعلم القريب..." 
             class="h-9 w-full bg-background" 
-            bind:value={state.address}
+            bind:value={state.personal.address}
           />
         </div>
       </div>

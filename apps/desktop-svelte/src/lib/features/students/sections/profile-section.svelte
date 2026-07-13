@@ -54,7 +54,7 @@ const monthsList = $derived([
           type="text" 
           placeholder={m.form_full_name_ar_placeholder()} 
           class="h-9 w-full bg-background" 
-          bind:value={state.nameAr}
+          bind:value={state.personal.nameAr}
           autocomplete="off"
         />
       </div>
@@ -75,7 +75,7 @@ const monthsList = $derived([
           placeholder={m.form_full_name_en_placeholder()} 
           class="h-9 w-full bg-background font-mono text-left" 
           dir="ltr"
-          bind:value={state.nameEn}
+          bind:value={state.personal.nameEn}
           autocomplete="off"
         />
       </div>
@@ -97,8 +97,8 @@ const monthsList = $derived([
             type="text" 
             placeholder="1000234900" 
             class="h-9 w-full bg-background font-mono" 
-            bind:value={state.nationalId}
-            onblur={() => state.triggerDuplicateCheck("national_id", state.nationalId)}
+            bind:value={state.personal.nationalId}
+            onblur={() => state.triggerDuplicateCheck("national_id", state.personal.nationalId)}
           />
           {#if state.duplicateWarnings.national_id}
             <span class="text-[10px] text-destructive font-semibold text-start">
@@ -121,9 +121,9 @@ const monthsList = $derived([
         </div>
         <div class="w-full md:w-[480px] shrink-0 grid grid-cols-3 gap-2" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
           <!-- Day -->
-          <Select bind:value={state.birthDay} type="single">
+          <Select bind:value={state.personal.birthDay} type="single">
             <SelectTrigger class="w-full h-9 text-xs text-start flex items-center justify-between bg-background px-2" id="birthDaySelect">
-              <span class="truncate">{state.birthDay || m.form_day()}</span>
+              <span class="truncate">{state.personal.birthDay || m.form_day()}</span>
             </SelectTrigger>
             <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
               {#each daysList as dy}
@@ -135,9 +135,9 @@ const monthsList = $derived([
           </Select>
 
           <!-- Month -->
-          <Select bind:value={state.birthMonth} type="single">
+          <Select bind:value={state.personal.birthMonth} type="single">
             <SelectTrigger class="w-full h-9 text-xs text-start flex items-center justify-between bg-background px-2" id="birthMonthSelect">
-              <span class="truncate">{monthsList.find(m => m.value === state.birthMonth)?.label || m.form_month()}</span>
+              <span class="truncate">{monthsList.find(m => m.value === state.personal.birthMonth)?.label || m.form_month()}</span>
             </SelectTrigger>
             <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
               {#each monthsList as mo}
@@ -149,9 +149,9 @@ const monthsList = $derived([
           </Select>
 
           <!-- Year -->
-          <Select bind:value={state.birthYear} type="single">
+          <Select bind:value={state.personal.birthYear} type="single">
             <SelectTrigger class="w-full h-9 text-xs text-start flex items-center justify-between bg-background px-2" id="birthYearSelect">
-              <span class="truncate">{state.birthYear || m.form_year()}</span>
+              <span class="truncate">{state.personal.birthYear || m.form_year()}</span>
             </SelectTrigger>
             <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
               {#each yearsList as yr}
@@ -179,16 +179,16 @@ const monthsList = $derived([
           <Button
             variant="ghost"
             type="button"
-            class="flex-1 flex items-center justify-center gap-2 border rounded-lg text-xs h-9 cursor-pointer transition-all duration-150 {state.sex === 'male' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground hover:bg-muted/30'}"
-            onclick={() => state.sex = 'male'}
+            class="flex-1 flex items-center justify-center gap-2 border rounded-lg text-xs h-9 cursor-pointer transition-all duration-150 {state.personal.sex === 'male' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground hover:bg-muted/30'}"
+            onclick={() => state.personal.sex = 'male'}
           >
             <span>{m.form_male()}</span>
           </Button>
           <Button 
             variant="ghost"
             type="button"
-            class="flex-1 flex items-center justify-center gap-2 border rounded-lg text-xs h-9 cursor-pointer transition-all duration-150 {state.sex === 'female' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground hover:bg-muted/30'}"
-            onclick={() => state.sex = 'female'}
+            class="flex-1 flex items-center justify-center gap-2 border rounded-lg text-xs h-9 cursor-pointer transition-all duration-150 {state.personal.sex === 'female' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground hover:bg-muted/30'}"
+            onclick={() => state.personal.sex = 'female'}
           >
             <span>{m.form_female()}</span>
           </Button>
@@ -206,7 +206,7 @@ const monthsList = $derived([
         <span class="text-[11px] text-muted-foreground leading-relaxed">الصف أو المستوى الدراسي الذي سيتم تسجيل الطالب فيه</span>
       </div>
       <div class="w-full md:w-[480px] shrink-0">
-        <Select bind:value={state.classId} type="single">
+        <Select bind:value={state.personal.classId} type="single">
           <SelectTrigger class="w-full h-9 text-xs text-start flex items-center justify-between bg-background" id="classSelect">
             <span>{state.selectedClassName}</span>
           </SelectTrigger>
@@ -236,7 +236,7 @@ const monthsList = $derived([
           placeholder={m.form_student_number_placeholder()} 
           class="h-9 w-full bg-background" 
           disabled={!state.isEditMode}
-          bind:value={state.studentNumber}
+          bind:value={state.personal.studentNumber}
         />
       </div>
     </div>
@@ -258,8 +258,8 @@ const monthsList = $derived([
             placeholder={m.form_student_phone_placeholder()} 
             class="h-9 w-full bg-background font-mono text-left" 
             dir="ltr"
-            bind:value={state.phone}
-            onblur={() => state.triggerDuplicateCheck("phone", state.phone)}
+            bind:value={state.personal.phone}
+            onblur={() => state.triggerDuplicateCheck("phone", state.personal.phone)}
           />
           {#if state.duplicateWarnings.phone}
             <span class="text-[10px] text-destructive font-semibold text-start">
@@ -287,8 +287,8 @@ const monthsList = $derived([
             placeholder="student@example.com" 
             class="h-9 w-full bg-background font-mono text-left" 
             dir="ltr"
-            bind:value={state.email}
-            onblur={() => state.triggerDuplicateCheck("email", state.email)}
+            bind:value={state.personal.email}
+            onblur={() => state.triggerDuplicateCheck("email", state.personal.email)}
           />
           {#if state.duplicateWarnings.email}
             <span class="text-[10px] text-destructive font-semibold text-start">

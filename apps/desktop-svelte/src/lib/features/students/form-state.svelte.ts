@@ -5,6 +5,11 @@ import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { localizeHref } from "$lib/paraglide/runtime";
 
+import { PersonalInfoState } from "./state/personal-info.svelte";
+import { GuardianState } from "./state/guardian-info.svelte";
+import { FinancialInfoState } from "./state/financial-info.svelte";
+import { DocumentInfoState } from "./state/document-info.svelte";
+
 export class StudentFormState {
   orgId: string;
   studentId?: string;
@@ -12,17 +17,11 @@ export class StudentFormState {
   classes = $state<any[]>([]);
   originalStudent = $state<any>(null);
 
-  // Student details
-  nameAr = $state("");
-  nameEn = $state("");
-  nationalId = $state("");
-  sex = $state("male");
-  classId = $state("");
-  studentNumber = $state("");
-  email = $state("");
-  phone = $state("");
-  address = $state("");
-  status = $state("active");
+  // Sub-states
+  personal: PersonalInfoState;
+  guardian: GuardianState;
+  financial: FinancialInfoState;
+  document: DocumentInfoState;
 
   // Dynamic config fields
   requiredFields = $state<Record<string, boolean>>({});
@@ -37,112 +36,31 @@ export class StudentFormState {
     phone?: string;
   }>({});
 
-  // Date picker components
-  birthDay = $state("");
-  birthMonth = $state("");
-  birthYear = $state("");
-
-  get birthDate() {
-    if (this.birthDay && this.birthMonth && this.birthYear) {
-      return `${this.birthYear}-${this.birthMonth.padStart(2, "0")}-${this.birthDay.padStart(2, "0")}`;
-    }
-    return "";
-  }
-
-  // Guardians
-  linkedGuardians = $state<
-    Array<{
-      id?: string;
-      user_id?: string;
-      full_name: string;
-      phone: string;
-      email: string;
-      national_id: string;
-      relationship: string;
-      relationship_ar: string;
-      is_primary: boolean;
-    }>
-  >([
-    {
-      full_name: "",
-      phone: "",
-      email: "",
-      national_id: "",
-      relationship: "father",
-      relationship_ar: "الأب",
-      is_primary: true,
-      is_emergency_contact: true,
-      is_payer: true,
-      payment_share_percent: 100,
-      occupation: "",
-    },
-  ]);
-
-  parentSearchResults = $state<any[]>([]);
-  activeSearchIndex = $state<number | null>(null);
-
-  // Address and previous school
-  motherName = $state("");
-  motherPhone = $state("");
-  motherJob = $state("");
-  previousSchool = $state("");
-  district = $state("");
-  governorate = $state("");
-
-  // Documents
-  orgRequiredDocuments = $state<string[]>([]);
-  submittedDocs = $state<string[]>([]);
-
   // Page level indicators
   isSaving = $state(false);
   orgName = $state("");
+  isDownloadingForm = $state(false);
 
   // Printing templates
   availableTemplates = $state<any[]>([]);
   selectedTemplateId = $state("");
 
-  // Finance details
-  discountTemplates = $state<any[]>([]);
-  feeTemplates = $state<any[]>([]);
-  applyDiscount = $state(false);
-  discountType = $state("template"); // template | custom
-  selectedDiscountTemplateId = $state("");
-  customDiscountAmount = $state<number | null>(null);
-  selectedOptionalFees = $state<
-    Record<string, { checked: boolean; amount: number }>
-  >({});
-
-  isDownloadingForm = $state(false);
-
   constructor(orgId: string, studentId?: string) {
     this.orgId = orgId;
     this.studentId = studentId;
     this.isEditMode = !!studentId;
+
+    this.personal = new PersonalInfoState();
+    this.guardian = new GuardianState(orgId, studentId);
+    this.financial = new FinancialInfoState(orgId, studentId);
+    this.document = new DocumentInfoState(orgId, studentId);
   }
 
   async init() {
     try {
-      // 1. Fetch active fee templates and discount templates
-      const [feeTpls, discountTpls] = await Promise.all([
-        commands.finance.listFeeTemplates(this.orgId),
-        commands.finance.listDiscountTemplates(this.orgId),
-      ]);
-      this.feeTemplates = feeTpls || [];
-      this.discountTemplates = discountTpls || [];
+      await this.financial.init();
 
-      // 3. Pre-populate optional fees mapping so they can be bound in UI
-      const feeMap: Record<string, { checked: boolean; amount: number }> = {};
-      for (const fTpl of this.feeTemplates) {
-        if (fTpl.is_mandatory === 0) {
-          feeMap[String(fTpl.id)] = {
-            checked: false,
-            amount: Number(fTpl.default_amount) || 0,
-          };
-        }
-      }
-      this.selectedOptionalFees = feeMap;
-
-      // 4. Load organization settings
+      // Load organization settings
       const org = await commands.organization.getOrganization(this.orgId);
       if (org) {
         this.orgName = String(org.name || org.name_ar || "");
@@ -151,25 +69,16 @@ export class StudentFormState {
             const settings = JSON.parse(org.settings as string);
             const regConfig = settings.registration_config || {};
 
-            this.orgRequiredDocuments = regConfig.required_documents || [];
+            this.document.setRequiredDocuments(regConfig.required_documents || []);
 
             if (regConfig.required_fields) {
-              this.requiredFields = {
-                ...this.requiredFields,
-                ...regConfig.required_fields,
-              };
+              this.requiredFields = { ...this.requiredFields, ...regConfig.required_fields };
             }
             if (regConfig.active_fields) {
-              this.activeFields = {
-                ...this.activeFields,
-                ...regConfig.active_fields,
-              };
+              this.activeFields = { ...this.activeFields, ...regConfig.active_fields };
             }
             if (regConfig.prevent_duplicates) {
-              this.preventDuplicates = {
-                ...this.preventDuplicates,
-                ...regConfig.prevent_duplicates,
-              };
+              this.preventDuplicates = { ...this.preventDuplicates, ...regConfig.prevent_duplicates };
             }
           } catch (err) {
             console.error("Failed to parse settings JSON:", err);
@@ -177,15 +86,12 @@ export class StudentFormState {
         }
       }
 
-      // 5. Load document templates for printing
+      // Load document templates for printing
       try {
-        const templatesList = await commands.platform.listDocumentTemplates(
-          this.orgId,
-          {
-            entity_type: "student",
-            status: "published",
-          },
-        );
+        const templatesList = await commands.platform.listDocumentTemplates(this.orgId, {
+          entity_type: "student",
+          status: "published",
+        });
         this.availableTemplates = templatesList || [];
         if (this.availableTemplates.length > 0) {
           this.selectedTemplateId = this.availableTemplates[0].id;
@@ -194,140 +100,22 @@ export class StudentFormState {
         console.error("Failed to load document templates:", err);
       }
 
-      // 6. In edit mode, load student profile, guardians, documents, and fees
+      // In edit mode, load student profile
       if (this.isEditMode && this.studentId) {
         let originalStudent: any = null;
         try {
-          originalStudent = await commands.academic.getEnrollment(
-            this.orgId,
-            this.studentId,
-          );
+          originalStudent = await commands.academic.getEnrollment(this.orgId, this.studentId);
         } catch (err) {
           console.error("Failed to load student by ID from backend:", err);
         }
         this.originalStudent = originalStudent;
+
         if (originalStudent) {
-          this.nameAr =
-            originalStudent.full_name || originalStudent.name_ar || "";
-          this.nameEn = originalStudent.name_en || "";
-          this.nationalId = originalStudent.national_id || "";
-
-          const birth = originalStudent.birth_date
-            ? String(originalStudent.birth_date).slice(0, 10)
-            : "";
-          if (birth) {
-            const parts = birth.split("-");
-            if (parts.length === 3) {
-              this.birthYear = parts[0];
-              this.birthMonth = String(parseInt(parts[1], 10));
-              this.birthDay = String(parseInt(parts[2], 10));
-            }
-          }
-
-          this.sex = originalStudent.sex || "male";
-          this.classId = String(originalStudent.class_id || "");
-          this.studentNumber = originalStudent.student_number || "";
-          this.email = originalStudent.email || "";
-          this.phone =
-            originalStudent.phone_number || originalStudent.phone || "";
-          this.address = originalStudent.address || "";
           this.registrationStatus = originalStudent.status || "active";
-
-          // Discount details
-          if (originalStudent.discount_template_id) {
-            this.selectedDiscountTemplateId = String(
-              originalStudent.discount_template_id,
-            );
-            this.discountType = "template";
-            this.applyDiscount = true;
-          } else if (originalStudent.custom_discount_amount) {
-            this.customDiscountAmount =
-              Number(originalStudent.custom_discount_amount) || null;
-            this.discountType = "custom";
-            this.applyDiscount = true;
-          }
-
-          // Fetch student fees to check which optional fees are assigned
-          try {
-            const studentFees = await commands.finance.listStudentFees(
-              this.studentId!,
-            );
-            for (const fee of studentFees as any[]) {
-              const feeTemplateId = fee.fee_template_id as string;
-              if (feeTemplateId && this.selectedOptionalFees[feeTemplateId]) {
-                this.selectedOptionalFees[feeTemplateId].checked = true;
-                this.selectedOptionalFees[feeTemplateId].amount =
-                  Number(fee.amount) || 0;
-              }
-            }
-          } catch (feeErr) {
-            console.error("Failed to load student assigned fees:", feeErr);
-          }
-
-          // Fetch guardians
-          try {
-            const guardiansList =
-              await commands.academic.listGuardiansByStudent(
-                this.orgId,
-                originalStudent.student_id,
-              );
-            const populatedGuardians = [];
-            for (const link of guardiansList) {
-              try {
-                const u = await commands.iam.getUser(String(link.guardian_id));
-                if (u) {
-                  populatedGuardians.push({
-                    id: String(link.id),
-                    user_id: String(link.guardian_id),
-                    full_name: String(u.full_name || u.name_ar || ""),
-                    phone: String(u.phone || ""),
-                    email: String(u.email || ""),
-                    national_id: String(u.national_id || ""),
-                    relationship: String(link.relationship || ""),
-                    relationship_ar: String((link as any).relationship_ar || ""),
-                    is_primary: link.is_primary === 1,
-                  });
-                }
-              } catch (err) {
-                console.error("Failed to load guardian user details:", err);
-              }
-            }
-            if (populatedGuardians.length > 0) {
-              this.linkedGuardians = populatedGuardians;
-            }
-          } catch (guardErr) {
-            console.error("Failed to load student guardians:", guardErr);
-          }
-
-          // Fetch documents
-          try {
-            const studentDocs = await commands.platform.listDocumentsByOwner(
-              this.orgId,
-              originalStudent.student_id,
-            );
-            const submitted = [];
-            const requiredDocNames =
-              this.orgRequiredDocuments.length > 0
-                ? this.orgRequiredDocuments
-                : ["birth_certificate", "national_id", "previous_record"];
-            for (const rDoc of requiredDocNames) {
-              const hasDoc = studentDocs.some((d: any) => {
-                const title = String(d.title || d.name || "").toLowerCase();
-                const rName = rDoc.toLowerCase();
-                return (
-                  title === rName ||
-                  title.includes(rName) ||
-                  rName.includes(title)
-                );
-              });
-              if (hasDoc) {
-                submitted.push(rDoc);
-              }
-            }
-            this.submittedDocs = submitted;
-          } catch (docErr) {
-            console.error("Failed to load student documents:", docErr);
-          }
+          this.personal.populate(originalStudent);
+          await this.financial.populate(originalStudent);
+          await this.guardian.populate();
+          await this.document.populate(originalStudent);
         }
       }
     } catch (e: any) {
@@ -337,19 +125,10 @@ export class StudentFormState {
   }
 
   // Live duplicate check triggers
-  async triggerDuplicateCheck(
-    field: "national_id" | "email" | "phone",
-    value: string,
-  ) {
+  async triggerDuplicateCheck(field: "national_id" | "email" | "phone", value: string) {
     if (!value.trim() || !this.preventDuplicates[field]) return;
     try {
-      const params = {
-        nationalId: field === "national_id" ? value : undefined,
-        email: field === "email" ? value : undefined,
-        phone: field === "phone" ? value : undefined,
-      };
-      const duplicates =
-        await commands.iam.searchUsers(value);
+      const duplicates = await commands.iam.searchUsers(value);
       if (duplicates && duplicates.length > 0) {
         const match = duplicates[0];
         this.duplicateWarnings = {
@@ -367,71 +146,15 @@ export class StudentFormState {
     }
   }
 
-  // Guardian management
-  async searchParent(query: string, index: number) {
-    if (query.trim().length < 3) {
-      this.parentSearchResults = [];
-      return;
-    }
-    this.activeSearchIndex = index;
-    try {
-      this.parentSearchResults = await commands.academic.searchGuardians(this.orgId, query);
-    } catch (err) {
-      console.error("Guardian search error:", err);
-    }
-  }
-
-  selectExistingParent(parent: any, index: number) {
-    this.linkedGuardians[index].user_id = parent.id;
-    this.linkedGuardians[index].full_name = parent.full_name;
-    this.linkedGuardians[index].phone = parent.phone || "";
-    this.linkedGuardians[index].email = parent.email || "";
-    this.linkedGuardians[index].national_id = parent.national_id || "";
-    this.parentSearchResults = [];
-    this.activeSearchIndex = null;
-    toast.success(m.form_guardian_select_existing_success());
-  }
-
-  addGuardianField() {
-    this.linkedGuardians = [
-      ...this.linkedGuardians,
-      {
-        full_name: "",
-        phone: "",
-        email: "",
-        national_id: "",
-        relationship: "mother",
-        relationship_ar: "أم",
-        is_primary: false,
-        is_emergency_contact: false,
-        is_payer: false,
-        payment_share_percent: 0,
-        occupation: "",
-      },
-    ];
-  }
-
-  removeGuardianField(index: number) {
-    this.linkedGuardians = this.linkedGuardians.filter((_, i) => i !== index);
-  }
-
-  toggleDoc(docId: string) {
-    if (this.submittedDocs.includes(docId)) {
-      this.submittedDocs = this.submittedDocs.filter((d) => d !== docId);
-    } else {
-      this.submittedDocs = [...this.submittedDocs, docId];
-    }
-  }
-
-  // Financial Live Calculations (Svelte 5 class getters refer to active states)
+  // Financial Computations proxy
   get classLevel() {
-    return this.classes.find((c) => String(c.id) === this.classId)?.level || "";
+    return this.classes.find((c) => String(c.id) === this.personal.classId)?.level || "";
   }
 
   get selectedClassName() {
     return (
-      this.classes.find((c) => String(c.id) === this.classId)?.name ||
-      this.classes.find((c) => String(c.id) === this.classId)?.name_ar ||
+      this.classes.find((c) => String(c.id) === this.personal.classId)?.name ||
+      this.classes.find((c) => String(c.id) === this.personal.classId)?.name_ar ||
       m.form_select_class()
     );
   }
@@ -439,16 +162,13 @@ export class StudentFormState {
   get mandatoryFeesList() {
     const level = this.classLevel;
     if (!level) return [];
-    return this.feeTemplates.filter((t) => {
+    return this.financial.feeTemplates.filter((t) => {
       if (t.is_mandatory === 0 && t.is_active === 1) {
         if (t.applicable_levels) {
           try {
             const rules = JSON.parse(t.applicable_levels);
-            if (rules.levels && Array.isArray(rules.levels)) {
-              return rules.levels.includes(level);
-            } else if (rules.level) {
-              return rules.level === level;
-            }
+            if (rules.levels && Array.isArray(rules.levels)) return rules.levels.includes(level);
+            else if (rules.level) return rules.level === level;
           } catch {
             return false;
           }
@@ -464,11 +184,9 @@ export class StudentFormState {
   }
 
   get discountTotal() {
-    if (!this.applyDiscount) return 0;
-    if (this.discountType === "template" && this.selectedDiscountTemplateId) {
-      const tpl = this.discountTemplates.find(
-        (t) => t.id === this.selectedDiscountTemplateId,
-      );
+    if (!this.financial.applyDiscount) return 0;
+    if (this.financial.discountType === "template" && this.financial.selectedDiscountTemplateId) {
+      const tpl = this.financial.discountTemplates.find(t => t.id === this.financial.selectedDiscountTemplateId);
       if (tpl) {
         const val = (tpl.value as number) || 0;
         if (String(tpl.calculation_method).toLowerCase() === "percentage") {
@@ -477,60 +195,46 @@ export class StudentFormState {
           return val;
         }
       }
-    } else if (this.discountType === "custom" && this.customDiscountAmount) {
-      return this.customDiscountAmount;
+    } else if (this.financial.discountType === "custom" && this.financial.customDiscountAmount) {
+      return this.financial.customDiscountAmount;
     }
     return 0;
   }
 
   get optionalFeesList() {
-    return this.feeTemplates.filter(
-      (t) => t.is_mandatory === 0 && t.is_active === 1,
-    );
+    return this.financial.feeTemplates.filter(t => t.is_mandatory === 0 && t.is_active === 1);
   }
 
   get optionalTotal() {
     let sum = 0;
-    for (const key in this.selectedOptionalFees) {
-      if (this.selectedOptionalFees[key].checked) {
-        sum += this.selectedOptionalFees[key].amount || 0;
+    for (const key in this.financial.selectedOptionalFees) {
+      if (this.financial.selectedOptionalFees[key].checked) {
+        sum += this.financial.selectedOptionalFees[key].amount || 0;
       }
     }
     return sum;
   }
 
   get netTotal() {
-    return Math.max(
-      0,
-      this.mandatoryTotal + this.optionalTotal - this.discountTotal,
-    );
+    return Math.max(0, this.mandatoryTotal + this.optionalTotal - this.discountTotal);
   }
 
   // Save operation
   async handleSave(queryClient?: any) {
-    if (!this.nameAr.trim()) {
+    if (!this.personal.nameAr.trim()) {
       toast.error(m.form_error_name_required());
       return;
     }
-    if (!this.classId) {
+    if (!this.personal.classId) {
       toast.error(m.form_error_class_required());
       return;
     }
-    if (this.requiredFields.national_id && !this.nationalId.trim()) {
+    if (this.requiredFields.national_id && !this.personal.nationalId.trim()) {
       toast.error(m.form_error_national_id_required());
-      return;
-    }
-    if (this.requiredFields.phone && !this.phone.trim()) {
-      toast.error(m.form_error_phone_required());
-      return;
-    }
-    if (this.requiredFields.email && !this.email.trim()) {
-      toast.error(m.form_error_email_required());
       return;
     }
 
     this.isSaving = true;
-    const createdBy = authStore.user?.id || "";
     let targetStudentId = "";
     let targetEnrollmentId = this.studentId || "";
 
@@ -545,57 +249,45 @@ export class StudentFormState {
       }
 
       const studentUserData = {
-        full_name: this.nameAr.trim(),
-        name_ar: this.nameAr.trim(),
-        name_en: this.nameEn.trim() || null,
-        email: this.email.trim() || null,
-        phone: this.phone.trim() || null,
-        sex: this.sex,
-        date_of_birth: this.birthDate || null,
-        national_id: this.nationalId.trim() || null,
-        address: this.address.trim() || null,
+        full_name: this.personal.nameAr.trim(),
+        name_ar: this.personal.nameAr.trim(),
+        name_en: this.personal.nameEn.trim() || null,
+        email: this.personal.email.trim() || null,
+        phone: this.personal.phone.trim() || null,
+        sex: this.personal.sex,
+        date_of_birth: this.personal.birthDate || null,
+        national_id: this.personal.nationalId.trim() || null,
+        address: this.personal.address.trim() || null,
         status: "active",
       };
 
       if (this.isEditMode) {
         const originalStudent = this.originalStudent;
-        if (!originalStudent) {
-          throw new Error(m.form_error_enrollment_not_found());
-        }
+        if (!originalStudent) throw new Error(m.form_error_enrollment_not_found());
+
         targetStudentId = String(originalStudent.student_id);
         await commands.iam.updateUser(targetStudentId, studentUserData);
 
-        if (originalStudent.class_id !== this.classId) {
-          await commands.academic.transferEnrollment(
-            this.orgId,
-            this.studentId!,
-            this.classId,
-          );
+        if (originalStudent.class_id !== this.personal.classId) {
+          await commands.academic.transferEnrollment(this.orgId, this.studentId!, this.personal.classId);
         }
 
-        // Update registration status transition
         if (originalStudent.status !== this.registrationStatus) {
-          await commands.platform.transitionEnrollmentStatus(
-            this.orgId,
-            this.studentId!,
-            this.registrationStatus,
-          );
+          await commands.platform.transitionEnrollmentStatus(this.orgId, this.studentId!, this.registrationStatus);
         }
-
         toast.success(m.form_success_update());
       } else {
-        // Use backend orchestration endpoint for new registrations
-        const firstGuardian = this.linkedGuardians[0];
+        const firstGuardian = this.guardian.linkedGuardians[0];
         
         const res = await commands.organization.registerStudent(this.orgId, {
-          name: this.nameAr.trim(),
-          email: this.email.trim() || null,
-          phone: this.phone.trim() || null,
-          gender: this.sex,
-          birth_date: this.birthDate || null,
-          national_id: this.nationalId.trim() || null,
-          address: this.address.trim() || null,
-          class_id: this.classId,
+          name: this.personal.nameAr.trim(),
+          email: this.personal.email.trim() || null,
+          phone: this.personal.phone.trim() || null,
+          gender: this.personal.sex,
+          birth_date: this.personal.birthDate || null,
+          national_id: this.personal.nationalId.trim() || null,
+          address: this.personal.address.trim() || null,
+          class_id: this.personal.classId,
           guardian_name: firstGuardian ? firstGuardian.full_name.trim() : null,
           guardian_phone: firstGuardian ? firstGuardian.phone.trim() : null,
           guardian_relationship: firstGuardian ? firstGuardian.relationship : null,
@@ -607,9 +299,9 @@ export class StudentFormState {
       }
 
       // Save multi-guardian links
-      let guardiansToProcess = this.linkedGuardians;
-      if (!this.isEditMode && this.linkedGuardians.length > 0) {
-        guardiansToProcess = this.linkedGuardians.slice(1);
+      let guardiansToProcess = this.guardian.linkedGuardians;
+      if (!this.isEditMode && this.guardian.linkedGuardians.length > 0) {
+        guardiansToProcess = this.guardian.linkedGuardians.slice(1);
       }
 
       for (const guardian of guardiansToProcess) {
@@ -617,17 +309,11 @@ export class StudentFormState {
         let guardianUserId = guardian.user_id;
 
         if (!guardianUserId) {
-          // Search if already exists
-          const checkExisting = await commands.academic.searchGuardians(
-            this.orgId,
-            guardian.phone,
-          );
+          const checkExisting = await commands.academic.searchGuardians(this.orgId, guardian.phone);
           if (checkExisting && checkExisting.length > 0) {
             guardianUserId = checkExisting[0].id;
           } else {
-            // Create new parent user
-            const guardEmail =
-              guardian.email.trim() || `parent.${Date.now()}@orbis.local`;
+            const guardEmail = guardian.email.trim() || `parent.${Date.now()}@orbis.local`;
             const guardUser = await commands.iam.createUser(this.orgId, {
               email: guardEmail,
               password: "Orbis123456",
@@ -642,7 +328,6 @@ export class StudentFormState {
             guardianUserId = guardUser.id;
           }
         } else {
-          // Update existing parent user
           await commands.iam.updateUser(guardianUserId!, {
             full_name: guardian.full_name.trim(),
             name_ar: guardian.full_name.trim(),
@@ -651,14 +336,8 @@ export class StudentFormState {
           });
         }
 
-        // Check if link exists
-        const existingLinks = await commands.academic.listGuardiansByStudent(
-          this.orgId,
-          targetStudentId,
-        );
-        const matchedLink = existingLinks.find(
-          (l) => l.guardian_id === guardianUserId,
-        );
+        const existingLinks = await commands.academic.listGuardiansByStudent(this.orgId, targetStudentId);
+        const matchedLink = existingLinks.find((l) => l.guardian_id === guardianUserId);
 
         const linkRequest = {
           student_id: targetStudentId,
@@ -668,7 +347,7 @@ export class StudentFormState {
           is_primary: !!guardian.is_primary,
           is_emergency_contact: !!guardian.is_emergency_contact,
           is_authorized_pickup: false,
-          occupation: guardian.occupation.trim() || null,
+          occupation: guardian.occupation?.trim() || null,
           is_payer: !!guardian.is_payer,
           payment_share_percent: guardian.payment_share_percent,
           can_view_grades: true,
@@ -680,28 +359,22 @@ export class StudentFormState {
         };
 
         if (matchedLink) {
-          await commands.platform.updateGuardianLink(
-            String(matchedLink.id),
-            linkRequest,
-          );
+          await commands.platform.updateGuardianLink(String(matchedLink.id), linkRequest);
         } else {
           await commands.platform.createGuardianLink(linkRequest);
         }
       }
 
       // Assign optional/custom fees (only if status is active/approved)
-      if (
-        this.registrationStatus === "active" ||
-        this.registrationStatus === "approved"
-      ) {
+      if (this.registrationStatus === "active" || this.registrationStatus === "approved") {
         const today = new Date().toISOString().slice(0, 10);
-        for (const key in this.selectedOptionalFees) {
-          if (this.selectedOptionalFees[key].checked) {
+        for (const key in this.financial.selectedOptionalFees) {
+          if (this.financial.selectedOptionalFees[key].checked) {
             try {
               await commands.finance.assignStudentFee({
                 enrollment_id: targetEnrollmentId,
                 fee_template_id: key,
-                amount: this.selectedOptionalFees[key].amount,
+                amount: this.financial.selectedOptionalFees[key].amount,
                 due_date: today,
                 notes: "رسوم إضافية مضافة عند التسجيل",
               } as any);
@@ -736,32 +409,27 @@ export class StudentFormState {
     }
     this.isDownloadingForm = true;
     try {
-      const templateRecord = await commands.platform.getDocumentTemplate(
-        this.orgId,
-        this.selectedTemplateId,
-      );
+      const templateRecord = await commands.platform.getDocumentTemplate(this.orgId, this.selectedTemplateId);
       if (!templateRecord) {
-        toast.error(
-          `القالب '${this.selectedTemplateId}' غير موجود في قاعدة البيانات`,
-        );
+        toast.error(`القالب '${this.selectedTemplateId}' غير موجود في قاعدة البيانات`);
         return;
       }
       const documentModel = JSON.parse(templateRecord.document_json as string);
 
       const printVariables = {
         orgName: this.orgName,
-        student_name: this.nameAr,
-        name_ar: this.nameAr,
-        name_en: this.nameEn,
-        birth_date: this.birthDate,
-        sex: this.sex === "male" ? "ذكر" : "أنثى",
-        sex_en: this.sex,
+        student_name: this.personal.nameAr,
+        name_ar: this.personal.nameAr,
+        name_en: this.personal.nameEn,
+        birth_date: this.personal.birthDate,
+        sex: this.personal.sex === "male" ? "ذكر" : "أنثى",
+        sex_en: this.personal.sex,
         class_name: this.selectedClassName,
-        student_number: this.studentNumber,
-        email: this.email,
-        phone: this.phone,
-        address: this.address,
-        documents: this.submittedDocs.join(", "),
+        student_number: this.personal.studentNumber,
+        email: this.personal.email,
+        phone: this.personal.phone,
+        address: this.personal.address,
+        documents: this.document.submittedDocs.join(", "),
         current_date: new Date().toLocaleDateString("ar-YE"),
         mandatory_fees: this.mandatoryTotal.toString(),
         optional_fees: this.optionalTotal.toString(),
@@ -777,15 +445,13 @@ export class StudentFormState {
       if (pdfBytes && pdfBytes.length > 0) {
         let binary = "";
         const len = pdfBytes.length;
-        for (let i = 0; i < len; i++) {
-          binary += String.fromCharCode(pdfBytes[i]);
-        }
+        for (let i = 0; i < len; i++) binary += String.fromCharCode(pdfBytes[i]);
         const base64 = window.btoa(binary);
         const pdfUrl = `data:application/pdf;base64,${base64}`;
 
         const link = document.createElement("a");
         link.href = pdfUrl;
-        link.download = `استمارة_${this.nameAr || "طالب"}.pdf`;
+        link.download = `استمارة_${this.personal.nameAr || "طالب"}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -796,8 +462,7 @@ export class StudentFormState {
       }
     } catch (e: any) {
       console.error("Failed to download registration form:", e);
-      const msg = e?.message || String(e);
-      toast.error(`خطأ أثناء تحميل الاستمارة: ${msg}`);
+      toast.error(`خطأ أثناء تحميل الاستمارة: ${e?.message || String(e)}`);
     } finally {
       this.isDownloadingForm = false;
     }

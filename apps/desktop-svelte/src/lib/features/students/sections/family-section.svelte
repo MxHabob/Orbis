@@ -22,12 +22,12 @@ let { state }: { state: StudentFormState } = $props();
     <div class="flex flex-col text-start gap-0.5">
       <span class="text-xs font-semibold text-muted-foreground">{m.form_guardian_desc()}</span>
     </div>
-    <Button type="button" variant="outline" size="sm" onclick={() => state.addGuardianField()} class="h-8 text-xs">
+    <Button type="button" variant="outline" size="sm" onclick={() => state.guardian.addGuardianField()} class="h-8 text-xs">
       {m.form_guardian_add()}
     </Button>
   </div>
 
-  {#each state.linkedGuardians as guardian, index}
+  {#each state.guardian.linkedGuardians as guardian, index}
     <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
       <!-- Guardian Block Header -->
       <div class="bg-muted/50 px-6 py-3 border-b border-border flex justify-between items-center select-none">
@@ -39,7 +39,7 @@ let { state }: { state: StudentFormState } = $props();
             type="button" 
             variant="ghost" 
             class="text-destructive hover:bg-destructive/10 h-7 px-2.5 text-xs font-semibold" 
-            onclick={() => state.removeGuardianField(index)}
+            onclick={() => state.guardian.removeGuardianField(index)}
           >
             {m.form_guardian_remove()}
           </Button>
@@ -57,16 +57,16 @@ let { state }: { state: StudentFormState } = $props();
             <Input 
               placeholder="ابحث بالاسم أو رقم الهاتف..." 
               class="h-9 w-full bg-background"
-              oninput={(e) => state.searchParent((e.target as HTMLInputElement).value, index)}
+              oninput={(e) => state.guardian.searchParent((e.target as HTMLInputElement).value, index)}
             />
             <!-- Search Results Dropdown -->
-            {#if state.activeSearchIndex === index && state.parentSearchResults.length > 0}
+            {#if state.guardian.activeSearchIndex === index && state.guardian.parentSearchResults.length > 0}
               <div class="absolute top-full left-0 right-0 z-50 mt-1 bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto p-1 text-start">
-                {#each state.parentSearchResults as parent}
+                {#each state.guardian.parentSearchResults as parent}
                   <button 
                     type="button"
                     class="w-full text-start p-2 hover:bg-accent/40 rounded text-xs flex justify-between items-center text-foreground font-medium cursor-pointer"
-                    onclick={() => state.selectExistingParent(parent, index)}
+                    onclick={() => state.guardian.selectExistingParent(parent, index)}
                   >
                     <span>{parent.full_name} ({parent.phone || 'بلا هاتف'})</span>
                     <Badge variant="secondary" class="text-[9px]">ولي أمر مسجل</Badge>
