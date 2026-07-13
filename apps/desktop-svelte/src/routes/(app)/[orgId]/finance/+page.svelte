@@ -24,7 +24,9 @@ import LateStudentsCard from "$lib/features/finance/components/late-students-car
 import CollectionRateCard from "$lib/features/finance/components/collection-rate-card.svelte";
 import RecentPaymentsCard from "$lib/features/finance/components/recent-payments-card.svelte";
 import TreasuryBalancesCard from "$lib/features/finance/components/treasury-balances-card.svelte";
-    import { Button } from "@orbis/ui-svelte";
+import { Button } from "@orbis/ui-svelte";
+import { FinanceSkeleton } from "$lib/shared/components/skeletons";
+import ErrorState from "$lib/shared/components/error-state.svelte";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -191,23 +193,13 @@ const recentPayments = $derived.by(() => {
 <div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide p-6 flex flex-col gap-6 font-sans">
   
   {#if isLoading}
-    <!-- Loading skeleton matching layout exactly -->
-    <Skeleton class="h-72 w-full rounded-xl animate-pulse" />
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <Skeleton class="h-64 lg:col-span-2 rounded-xl" />
-      <Skeleton class="h-64 rounded-xl" />
-    </div>
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <Skeleton class="h-64 lg:col-span-2 rounded-xl" />
-      <Skeleton class="h-64 rounded-xl" />
-    </div>
+    <FinanceSkeleton />
   {:else if error}
-    <div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2">
-      <AlertCircle size={24} />
-      <h3 class="font-semibold text-xs">{m.finance_overview_error()}</h3>
-      <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
-      <Button variant="outline" onclick={refetchAll} class="text-[10px] mt-2 h-8">{m.error_retry()}</Button>
-    </div>
+    <ErrorState 
+      title={m.finance_overview_error()} 
+      message={extractErrorMessage(error)} 
+      onRetry={refetchAll} 
+    />
   {:else}
     <!-- Main Content Grid -->
     <div class="flex flex-col gap-6" in:fade={{ duration: 150 }}>

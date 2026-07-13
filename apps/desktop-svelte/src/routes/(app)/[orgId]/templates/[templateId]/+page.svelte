@@ -40,6 +40,8 @@ import FlyoutPanel from "$lib/features/templates/layout/flyout-panel.svelte";
 import ContextToolbar from "$lib/features/templates/layout/context-toolbar.svelte";
 import FloatingActionBar from "$lib/features/templates/layout/floating-action-bar.svelte";
 import StatusBar from "$lib/features/templates/layout/status-bar.svelte";
+import { TemplateEditorSkeleton } from "$lib/shared/components/skeletons";
+import ErrorState from "$lib/shared/components/error-state.svelte";
 
 // ── Router ───────────────────────────────────────────────────
 
@@ -49,7 +51,6 @@ const templateId = $derived(page.params.templateId);
 // ── State ────────────────────────────────────────────────────
 
 let templateRecord = $state<any>(null);
-let isLoading = $state(true);
 let isSaving = $state(false);
 let isPreviewLoading = $state(false);
 let previewPdfUrl = $state<string | null>(null);
@@ -78,10 +79,14 @@ let store = createEditorStore({
   pages: [{ type: "Page", id: "page-root", children: [] }],
 });
 
+let isLoading = $state(true);
+let error = $state<string | null>(null);
+
 // ── Initialize ───────────────────────────────────────────────
 
 async function initEditor() {
   isLoading = true;
+  error = null;
   try {
     templateRecord = await commands.platform.getDocumentTemplate(
       orgId || "",
@@ -94,6 +99,7 @@ async function initEditor() {
   } catch (e: unknown) {
     const msg = (e as any)?.message || "Failed to initialize editor";
     toast.error(msg);
+    error = msg;
     isLoading = false;
   }
 }
@@ -281,10 +287,14 @@ onMount(() => {
 <div class="editor-root" role="application" oncontextmenu={handleContextMenu}>
 
   {#if isLoading}
-    <!-- Loading State -->
-    <div class="grow flex flex-col items-center justify-center gap-3 bg-background/40">
-      <RefreshCw size={24} class="animate-spin text-primary" />
-      <p class="text-xs text-muted-foreground">جاري تحميل المحرر...</p>
+    <TemplateEditorSkeleton />
+  {:else if error}
+    <div class="h-full w-full flex items-center justify-center bg-card">
+      <ErrorState 
+        title="فشل تحميل المحرر" 
+        message={error} 
+        onRetry={initEditor} 
+      />
     </div>
   {:else}
     <!-- ═══ Context Toolbar ═══ -->

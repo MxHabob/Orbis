@@ -6,20 +6,21 @@ import { createQuery } from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
 
 /** Treasuries for an organization. */
-export function createTreasuriesQuery(orgId: string) {
+export function createTreasuriesQuery(orgId: () => string) {
   return createQuery({
-    queryKey: ["treasuries", orgId],
-    queryFn: () => commands.finance.listTreasuries(orgId),
+    get queryKey() { return ["treasuries", orgId()]; },
+    get queryFn() { return () => commands.finance.listTreasuries(orgId()); },
+    get enabled() { return !!orgId(); },
     staleTime: 5 * 60 * 1000,
   });
 }
 
 /** Payments list. */
-export function createPaymentsQuery(orgId: string) {
+export function createPaymentsQuery(orgId: () => string) {
   return createQuery({
-    queryKey: ["payments", orgId],
-    queryFn: () => commands.finance.listPayments(orgId),
-    enabled: !!orgId,
+    get queryKey() { return ["payments", orgId()]; },
+    get queryFn() { return () => commands.finance.listPayments(orgId()); },
+    get enabled() { return !!orgId(); },
     staleTime: 2 * 60 * 1000,
   });
 }
@@ -69,16 +70,17 @@ export function createFeeTemplatesQuery(orgId: string) {
 
 /** Student fees. Pass orgId to get all fees for org, or enrollmentId to get fees for specific enrollment. */
 export function createStudentFeesQuery(
-  orgOrEnrollmentId: string,
+  orgOrEnrollmentId: () => string,
   isOrgId: boolean = true,
 ) {
   return createQuery({
-    queryKey: ["student-fees", orgOrEnrollmentId],
-    queryFn: () =>
+    get queryKey() { return ["student-fees", orgOrEnrollmentId()]; },
+    get queryFn() { return () =>
       isOrgId
-        ? commands.finance.listAllStudentFees(orgOrEnrollmentId)
-        : commands.finance.listStudentFees(orgOrEnrollmentId),
-    enabled: !!orgOrEnrollmentId,
+        ? commands.finance.listAllStudentFees(orgOrEnrollmentId())
+        : commands.finance.listStudentFees(orgOrEnrollmentId());
+    },
+    get enabled() { return !!orgOrEnrollmentId(); },
     staleTime: 2 * 60 * 1000,
   });
 }

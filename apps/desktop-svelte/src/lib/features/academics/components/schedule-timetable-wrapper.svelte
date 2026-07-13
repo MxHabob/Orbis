@@ -5,6 +5,7 @@ import { Timetable } from "@orbis/ui-svelte/timetable";
 import { getLocale } from "$lib/paraglide/runtime";
 import { Clock } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
+import ErrorState from "$lib/shared/components/error-state.svelte";
 
 interface Props {
   isLoading: boolean;
@@ -46,17 +47,16 @@ let {
 </script>
 
 {#if isLoading}
-  <div class="flex-1 w-full p-4 flex flex-col gap-3 bg-card border border-border rounded-lg">
-    <Skeleton class="h-10 w-full" />
-    <Skeleton class="h-20 w-full" />
-    <Skeleton class="h-20 w-full" />
+  <div class="flex-1 w-full flex flex-col bg-card border border-border rounded-lg overflow-hidden">
+    <Skeleton class="h-10 w-full rounded-none" />
+    <Skeleton class="flex-1 w-full rounded-none" />
   </div>
 {:else if error}
-  <div class="flex flex-col items-center justify-center p-8 border border-destructive/20 bg-destructive/5 rounded-xl text-center gap-3">
-    <p class="text-xs text-destructive font-semibold">{m.schedule_page_error()}</p>
-    <p class="text-xs text-muted-foreground">{error}</p>
-    <Button variant="outline" class="text-xs" onclick={onRetry}>{m.error_retry()}</Button>
-  </div>
+  <ErrorState 
+    title={m.schedule_page_error()} 
+    message={error} 
+    onRetry={onRetry} 
+  />
 {:else if !timeSlots || timeSlots.length === 0}
   <div class="flex-1 flex flex-col items-center justify-center p-12 border border-border/60 bg-card rounded-2xl text-center gap-4 max-w-lg mx-auto my-8">
     <div class="p-3 bg-primary/10 rounded-full text-primary">

@@ -4,8 +4,9 @@ import WelcomeSection from "./welcome-section.svelte";
 import QuickActions from "./quick-actions.svelte";
 import WidgetCards from "./widget-cards.svelte";
 import DesktopBanner from "./desktop-banner.svelte";
-import OverviewSkeleton from "./overview-skeleton.svelte";
 import * as m from "$lib/paraglide/messages";
+import { DashboardSkeleton } from "$lib/shared/components/skeletons";
+import ErrorState from "$lib/shared/components/error-state.svelte";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -36,20 +37,13 @@ $effect(() => {
 
 <div class="flex flex-col justify-center min-h-[calc(100vh-120px)] max-w-3xl mx-auto w-full select-none">
 	{#if isLoading}
-		<div class="flex flex-col items-center text-center pt-6 pb-10 w-full">
-			<WelcomeSection type="greeting" {orgId} />
-			<div class="mt-0 w-full">
-				<OverviewSkeleton type="summary"/>
-			</div>
-		</div>
-		<QuickActions {orgId} />
-		<OverviewSkeleton type="cards" />
+		<DashboardSkeleton />
 	{:else if error}
-		<div class="flex flex-col items-center justify-center p-8 border border-destructive/20 bg-destructive/5 rounded-xl text-destructive text-center gap-2">
-			<h3 class="font-semibold text-sm">{m.error_load_overview()}</h3>
-			<p class="text-xs text-muted-foreground">{error}</p>
-			<button onclick={fetchStats} class="text-xs underline cursor-pointer mt-2 hover:text-foreground">{m.error_retry()}</button>
-		</div>
+		<ErrorState 
+			title={m.error_load_overview()} 
+			message={error} 
+			onRetry={fetchStats} 
+		/>
 	{:else}
 		<div class="flex flex-col items-center text-center pt-6 pb-10 w-full">
 			<WelcomeSection type="both" {stats} {orgId} />
@@ -59,4 +53,3 @@ $effect(() => {
 		<DesktopBanner />
 	{/if}
 </div>
-
