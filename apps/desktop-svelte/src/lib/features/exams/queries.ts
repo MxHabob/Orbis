@@ -12,14 +12,14 @@ import { commands } from "$lib/core/ipc";
 import type { ExamSession, ExamSubject } from "@orbis/sdk-core";
 
 /** Get all exam sessions for a period. */
-export function createExamSessionsQuery(periodId?: string) {
-  return createQuery({
-    queryKey: ["exam-sessions", periodId || "all"],
+export function createExamSessionsQuery(orgId: () => string) {
+  return createQuery(() => ({
+    queryKey: ["exam-sessions", orgId()],
     queryFn: () =>
-      commands.exam.listSessions(periodId!) as Promise<ExamSession[]>,
-    enabled: !!periodId,
+      commands.exam.listSessions(orgId()) as Promise<ExamSession[]>,
+    enabled: !!orgId(),
     staleTime: 5 * 60 * 1000,
-  });
+  }));
 }
 
 /** Get a single exam session. */
@@ -70,6 +70,7 @@ export function updateSessionMutation() {
   const queryClient = useQueryClient();
   return createMutation({
     mutationFn: (variables: {
+      orgId: string;
       sessionId: string;
       updates: {
         name?: string;
@@ -79,6 +80,7 @@ export function updateSessionMutation() {
       };
     }) =>
       commands.exam.updateSession(
+        variables.orgId,
         variables.sessionId,
         variables.updates,
       ) as Promise<ExamSession>,

@@ -405,8 +405,16 @@ export const commands: OrbisCommands = {
       cmd("get_calendar_events", { orgId, periodId }),
     listPendingCalendarEvents: (orgId) =>
       cmd("get_pending_calendar_events", { orgId }),
+    createCalendarEvent: (orgId, data) => cmd("create_calendar_event", { orgId, ...data }),
+    executeCalendarEvent: (orgId, eventId) => cmd("execute_calendar_event", { orgId, eventId }),
+    deleteCalendarEvent: (orgId, eventId) => cmd("delete_calendar_event", { orgId, eventId }),
+    generateDefaultCalendar: (orgId, periodId) => cmd("generate_default_calendar", { orgId, periodId }),
     getOrgPolicy: (orgId) => cmd("get_org_policy", { orgId }),
-
+    updateOrgPolicy: (orgId, policy) => cmd("update_org_policy", { orgId, policy }),
+    listAgentSessions: (orgId) => cmd("list_agent_sessions", { orgId }),
+    getAgentSessionLogs: (orgId, sessionId) => cmd("get_agent_session_logs", { orgId, sessionId }),
+    approveAgentAction: (orgId, actionLogId, approvedBy) => cmd("approve_agent_action", { orgId, actionLogId, approvedBy }),
+    rejectAgentAction: (orgId, actionLogId, rejectedBy, reason) => cmd("reject_agent_action", { orgId, actionLogId, rejectedBy, reason }),
     // Overrides
     listOverrideRequests: (orgId, params?) =>
       cmd("list_override_requests", { orgId, params }),

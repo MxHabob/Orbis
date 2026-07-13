@@ -62,14 +62,14 @@ let {
 
 const node = $derived(store.selectedNode);
 const nodeType = $derived(node?.type ?? null);
-const props = $derived(
+const nodeProps = $derived(
   node && "props" in node ? (node as any).props || {} : {},
 );
 const hasSelection = $derived(store.selectedIds.length > 0);
 const isMultiSelect = $derived(store.selectedIds.length > 1);
 
 function updateProp(key: string, value: unknown) {
-  store.updateSelectedProps({ props: { ...props, [key]: value } } as any);
+  store.updateSelectedProps({ props: { ...nodeProps, [key]: value } } as any);
 }
 </script>
 
@@ -102,22 +102,22 @@ function updateProp(key: string, value: unknown) {
       <div class="ctx-group">
         <Input
           type="text"
-          value={props.fontFamily || "Rubik"}
+          value={nodeProps.fontFamily || "Rubik"}
           oninput={(e) => updateProp("fontFamily", e.currentTarget.value)}
           class="h-6 w-[90px] text-[10px] font-medium"
         />
         <div class="ctx-number-input">
-          <button type="button" class="ctx-num-btn" onclick={() => updateProp("fontSize", Math.max(6, (props.fontSize || 14) - 1))}>
+          <button type="button" class="ctx-num-btn" onclick={() => updateProp("fontSize", Math.max(6, (nodeProps.fontSize || 14) - 1))}>
             <Minus size={10} />
           </button>
           <Input
             type="number"
-            value={props.fontSize || 14}
+            value={nodeProps.fontSize || 14}
             oninput={(e) => updateProp("fontSize", parseInt(e.currentTarget.value) || 14)}
             class="h-6 w-[40px] text-[10px] text-center"
             min="6" max="200"
           />
-          <button type="button" class="ctx-num-btn" onclick={() => updateProp("fontSize", Math.min(200, (props.fontSize || 14) + 1))}>
+          <button type="button" class="ctx-num-btn" onclick={() => updateProp("fontSize", Math.min(200, (nodeProps.fontSize || 14) + 1))}>
             <Plus size={10} />
           </button>
         </div>
@@ -126,13 +126,13 @@ function updateProp(key: string, value: unknown) {
       <Separator orientation="vertical" class="h-5 mx-1" />
 
       <div class="ctx-group">
-        <button type="button" class="ctx-format-btn" class:active={props.fontWeight === "700" || props.fontWeight === "bold"} onclick={() => updateProp("fontWeight", props.fontWeight === "700" ? "400" : "700")}>
+        <button type="button" class="ctx-format-btn" class:active={nodeProps.fontWeight === "700" || nodeProps.fontWeight === "bold"} onclick={() => updateProp("fontWeight", nodeProps.fontWeight === "700" ? "400" : "700")}>
           <Bold size={13} />
         </button>
-        <button type="button" class="ctx-format-btn" class:active={props.fontStyle === "italic"} onclick={() => updateProp("fontStyle", props.fontStyle === "italic" ? "normal" : "italic")}>
+        <button type="button" class="ctx-format-btn" class:active={nodeProps.fontStyle === "italic"} onclick={() => updateProp("fontStyle", nodeProps.fontStyle === "italic" ? "normal" : "italic")}>
           <Italic size={13} />
         </button>
-        <button type="button" class="ctx-format-btn" class:active={props.textDecoration === "underline"} onclick={() => updateProp("textDecoration", props.textDecoration === "underline" ? "none" : "underline")}>
+        <button type="button" class="ctx-format-btn" class:active={nodeProps.textDecoration === "underline"} onclick={() => updateProp("textDecoration", nodeProps.textDecoration === "underline" ? "none" : "underline")}>
           <Underline size={13} />
         </button>
       </div>
@@ -142,7 +142,7 @@ function updateProp(key: string, value: unknown) {
       <div class="ctx-group">
         <input
           type="color"
-          value={props.color || "#000000"}
+          value={nodeProps.color || "#000000"}
           oninput={(e) => updateProp("color", e.currentTarget.value)}
           class="ctx-color-swatch"
         />
@@ -151,13 +151,13 @@ function updateProp(key: string, value: unknown) {
       <Separator orientation="vertical" class="h-5 mx-1" />
 
       <div class="ctx-group">
-        <button type="button" class="ctx-format-btn" class:active={props.textAlign === "start" || !props.textAlign} onclick={() => updateProp("textAlign", "start")}>
+        <button type="button" class="ctx-format-btn" class:active={nodeProps.textAlign === "start" || !nodeProps.textAlign} onclick={() => updateProp("textAlign", "start")}>
           <AlignRight size={13} />
         </button>
-        <button type="button" class="ctx-format-btn" class:active={props.textAlign === "center"} onclick={() => updateProp("textAlign", "center")}>
+        <button type="button" class="ctx-format-btn" class:active={nodeProps.textAlign === "center"} onclick={() => updateProp("textAlign", "center")}>
           <AlignCenter size={13} />
         </button>
-        <button type="button" class="ctx-format-btn" class:active={props.textAlign === "end"} onclick={() => updateProp("textAlign", "end")}>
+        <button type="button" class="ctx-format-btn" class:active={nodeProps.textAlign === "end"} onclick={() => updateProp("textAlign", "end")}>
           <AlignLeft size={13} />
         </button>
       </div>
@@ -168,20 +168,20 @@ function updateProp(key: string, value: unknown) {
         <span class="ctx-label">تعبئة</span>
         <input
           type="color"
-          value={props.fillColor || "#e2e8f0"}
+          value={nodeProps.fillColor || "#e2e8f0"}
           oninput={(e) => updateProp("fillColor", e.currentTarget.value)}
           class="ctx-color-swatch"
         />
         <span class="ctx-label">حدود</span>
         <input
           type="color"
-          value={props.strokeColor || "#94a3b8"}
+          value={nodeProps.strokeColor || "#94a3b8"}
           oninput={(e) => updateProp("strokeColor", e.currentTarget.value)}
           class="ctx-color-swatch"
         />
         <Input
           type="number"
-          value={props.strokeWidth ?? 1}
+          value={nodeProps.strokeWidth ?? 1}
           oninput={(e) => updateProp("strokeWidth", parseFloat(e.currentTarget.value) || 1)}
           class="h-6 w-[40px] text-[10px]"
           min="0" max="20" step="0.5"
@@ -189,7 +189,7 @@ function updateProp(key: string, value: unknown) {
         <span class="ctx-label">زوايا</span>
         <Input
           type="number"
-          value={props.borderRadius ?? 0}
+          value={nodeProps.borderRadius ?? 0}
           oninput={(e) => updateProp("borderRadius", parseFloat(e.currentTarget.value) || 0)}
           class="h-6 w-[40px] text-[10px]"
           min="0" max="50"
@@ -201,7 +201,7 @@ function updateProp(key: string, value: unknown) {
       <div class="ctx-group">
         <span class="ctx-label">ملاءمة</span>
         <select
-          value={props.fit || "contain"}
+          value={nodeProps.fit || "contain"}
           onchange={(e) => updateProp("fit", e.currentTarget.value)}
           class="ctx-select"
         >
@@ -213,7 +213,7 @@ function updateProp(key: string, value: unknown) {
         <span class="ctx-label">شفافية</span>
         <Input
           type="number"
-          value={Math.round((props.opacity ?? 1) * 100)}
+          value={Math.round((nodeProps.opacity ?? 1) * 100)}
           oninput={(e) => updateProp("opacity", (parseInt(e.currentTarget.value) || 100) / 100)}
           class="h-6 w-[45px] text-[10px]"
           min="0" max="100"
@@ -227,14 +227,14 @@ function updateProp(key: string, value: unknown) {
         <span class="ctx-label">البيانات</span>
         <Input
           type="text"
-          value={props.data || ""}
+          value={nodeProps.data || ""}
           oninput={(e) => updateProp("data", e.currentTarget.value)}
           class="h-6 w-[160px] text-[10px] font-mono"
         />
         {#if nodeType === "Barcode"}
           <span class="ctx-label">الصيغة</span>
           <select
-            value={props.format || "Code128"}
+            value={nodeProps.format || "Code128"}
             onchange={(e) => updateProp("format", e.currentTarget.value)}
             class="ctx-select"
           >

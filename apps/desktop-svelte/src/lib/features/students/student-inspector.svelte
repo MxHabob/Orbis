@@ -50,23 +50,23 @@ async function fetchStats() {
     const diff = totalFees - totalPaid;
     balanceDue = diff <= 0 ? m.common_loading_no_dues() : formatCurrency(diff);
 
-    // Fetch grades report card summary
+    // Fetch term_grades report card summary
     if (periodId) {
       const report = await commands.assessment
         .getReportCard(studentId, periodId)
         .catch(() => null);
-      if (report && Array.isArray(report.grades)) {
+      if (report && Array.isArray(report.term_grades)) {
         const avg =
-          report.grades.reduce(
+          report.term_grades.reduce(
             (sum: number, g: any) => sum + Number(g.score || 0),
             0,
-          ) / (report.grades.length || 1);
+          ) / (report.term_grades.length || 1);
         gradeSummary = formatPercent(avg);
       } else {
-        gradeSummary = m.common_loading_no_grades();
+        gradeSummary = m.common_loading_no_data();
       }
     } else {
-      gradeSummary = m.common_loading_no_grades();
+      gradeSummary = m.common_loading_no_data();
     }
 
     // Fetch guardians list
@@ -84,7 +84,7 @@ async function fetchStats() {
               name: user.full_name,
               phone: user.phone || "",
               relationship:
-                link.relationship_ar || link.relationship || "ولي أمر",
+                link.relationship || link.relationship || "ولي أمر",
               is_primary: link.is_primary === 1,
             });
           }
@@ -96,7 +96,7 @@ async function fetchStats() {
     }
   } catch (e) {
     balanceDue = m.common_loading_error();
-    gradeSummary = m.common_loading_no_grades();
+    gradeSummary = m.common_loading_no_data();
   } finally {
     isLoading = false;
   }

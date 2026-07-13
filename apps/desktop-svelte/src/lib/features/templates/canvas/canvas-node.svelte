@@ -93,9 +93,9 @@ function handleDoubleClick(e: MouseEvent) {
 function commitEdit() {
   if (!isEditing || !editEl) return;
   const newContent = editEl.innerText || "";
-  if (newContent !== props.content) {
+  if (newContent !== nodeProps.content) {
     store.updateSelectedProps({
-      props: { ...props, content: newContent },
+      props: { ...nodeProps, content: newContent },
     } as any);
   }
   isEditing = false;
@@ -111,7 +111,7 @@ function handleEditKeydown(e: KeyboardEvent) {
 }
 
 // Props shorthand
-const props = $derived("props" in node ? (node as any).props || {} : {});
+const nodeProps = $derived("props" in node ? (node as any).props || {} : {});
 
 // Parse text content into segments: literal text and variable expressions
 type ContentSegment =
@@ -139,8 +139,8 @@ function parseContentSegments(content: string): ContentSegment[] {
 }
 
 const textSegments = $derived(
-  node.type === "Text" && props.content
-    ? parseContentSegments(props.content)
+  node.type === "Text" && nodeProps.content
+    ? parseContentSegments(nodeProps.content)
     : [],
 );
 </script>
@@ -173,15 +173,15 @@ const textSegments = $derived(
             style="
               width: {w}px;
               min-height: {h}px;
-              font-size: {mmToPx((props.fontSize ?? 12) * 0.352778, vp.dpi, vp.zoom)}px;
-              font-family: {props.fontFamily || 'Rubik'}, sans-serif;
-              font-weight: {props.fontWeight || '400'};
-              font-style: {props.fontStyle || 'normal'};
-              text-decoration: {props.textDecoration || 'none'};
-              color: {props.color || '#000000'};
-              text-align: {props.textAlign || 'start'};
-              direction: {props.direction || 'rtl'};
-              line-height: {props.lineHeight || 1.4};
+              font-size: {mmToPx((nodeProps.fontSize ?? 12) * 0.352778, vp.dpi, vp.zoom)}px;
+              font-family: {nodeProps.fontFamily || 'Rubik'}, sans-serif;
+              font-weight: {nodeProps.fontWeight || '400'};
+              font-style: {nodeProps.fontStyle || 'normal'};
+              text-decoration: {nodeProps.textDecoration || 'none'};
+              color: {nodeProps.color || '#000000'};
+              text-align: {nodeProps.textAlign || 'start'};
+              direction: {nodeProps.direction || 'rtl'};
+              line-height: {nodeProps.lineHeight || 1.4};
               overflow: visible;
               word-wrap: break-word;
               padding: 2px;
@@ -192,7 +192,7 @@ const textSegments = $derived(
               background: rgba(255,255,255,0.95);
               cursor: text;
             "
-          >{props.content || ""}</div>
+          >{nodeProps.content || ""}</div>
         {:else}
           <!-- Display mode -->
           <div
@@ -200,36 +200,36 @@ const textSegments = $derived(
             style="
               width: {w}px;
               height: {h}px;
-              font-size: {mmToPx((props.fontSize ?? 12) * 0.352778, vp.dpi, vp.zoom)}px;
-              font-family: {props.fontFamily || 'Rubik'}, sans-serif;
-              font-weight: {props.fontWeight || '400'};
-              font-style: {props.fontStyle || 'normal'};
-              text-decoration: {props.textDecoration || 'none'};
-              color: {props.color || '#000000'};
-              text-align: {props.textAlign || 'start'};
-              direction: {props.direction || 'rtl'};
-              line-height: {props.lineHeight || 1.4};
+              font-size: {mmToPx((nodeProps.fontSize ?? 12) * 0.352778, vp.dpi, vp.zoom)}px;
+              font-family: {nodeProps.fontFamily || 'Rubik'}, sans-serif;
+              font-weight: {nodeProps.fontWeight || '400'};
+              font-style: {nodeProps.fontStyle || 'normal'};
+              text-decoration: {nodeProps.textDecoration || 'none'};
+              color: {nodeProps.color || '#000000'};
+              text-align: {nodeProps.textAlign || 'start'};
+              direction: {nodeProps.direction || 'rtl'};
+              line-height: {nodeProps.lineHeight || 1.4};
               display: flex;
-              align-items: {props.verticalAlign === 'center' ? 'center' : props.verticalAlign === 'bottom' ? 'flex-end' : 'flex-start'};
+              align-items: {nodeProps.verticalAlign === 'center' ? 'center' : nodeProps.verticalAlign === 'bottom' ? 'flex-end' : 'flex-start'};
               overflow: hidden;
               word-wrap: break-word;
               padding: 0;
               margin: 0;
             "
           >
-            <span style="display: inline;">{#each textSegments as seg}{#if seg.type === "variable"}<span style="background: #dbeafe; color: #1d4ed8; border-radius: 3px; padding: 0 3px; font-size: 0.85em; font-weight: 600; white-space: nowrap;">{`{{${seg.key}}}`}</span>{:else}{seg.value}{/if}{/each}{#if textSegments.length === 0}{props.content || ""}{/if}</span>
+            <span style="display: inline;">{#each textSegments as seg}{#if seg.type === "variable"}<span style="background: #dbeafe; color: #1d4ed8; border-radius: 3px; padding: 0 3px; font-size: 0.85em; font-weight: 600; white-space: nowrap;">{`{{${seg.key}}}`}</span>{:else}{seg.value}{/if}{/each}{#if textSegments.length === 0}{nodeProps.content || ""}{/if}</span>
           </div>
         {/if}
       </foreignObject>
 
     {:else if node.type === "Image"}
       <!-- Image Node -->
-      {#if props.src}
+      {#if nodeProps.src}
         <image
-          href={props.src}
+          href={nodeProps.src}
           width={w}
           height={h}
-          preserveAspectRatio={props.fit === "cover" ? "xMidYMid slice" : props.fit === "fill" ? "none" : "xMidYMid meet"}
+          preserveAspectRatio={nodeProps.fit === "cover" ? "xMidYMid slice" : nodeProps.fit === "fill" ? "none" : "xMidYMid meet"}
         />
       {:else}
         <!-- Image placeholder -->
@@ -239,33 +239,33 @@ const textSegments = $derived(
 
     {:else if node.type === "Shape"}
       <!-- Shape Node -->
-      {#if props.shape === "circle" || props.shape === "ellipse"}
+      {#if nodeProps.shape === "circle" || nodeProps.shape === "ellipse"}
         <ellipse
           cx={w / 2}
           cy={h / 2}
           rx={w / 2}
           ry={h / 2}
-          fill={props.fillColor || "transparent"}
-          stroke={props.strokeColor || "#000"}
-          stroke-width={props.strokeWidth || 1}
+          fill={nodeProps.fillColor || "transparent"}
+          stroke={nodeProps.strokeColor || "#000"}
+          stroke-width={nodeProps.strokeWidth || 1}
         />
       {:else}
         <rect
           width={w}
           height={h}
-          rx={mmToPx(props.borderRadius ?? 0, vp.dpi, vp.zoom)}
-          fill={props.fillColor || "transparent"}
-          stroke={props.strokeColor || "#000"}
-          stroke-width={props.strokeWidth || 1}
+          rx={mmToPx(nodeProps.borderRadius ?? 0, vp.dpi, vp.zoom)}
+          fill={nodeProps.fillColor || "transparent"}
+          stroke={nodeProps.strokeColor || "#000"}
+          stroke-width={nodeProps.strokeWidth || 1}
         />
       {/if}
 
     {:else if node.type === "Separator"}
       <!-- Separator -->
-      {#if props.direction === "vertical"}
-        <line x1={w / 2} y1="0" x2={w / 2} y2={h} stroke={props.color || "#d1d5db"} stroke-width={props.thickness || 0.5} />
+      {#if nodeProps.direction === "vertical"}
+        <line x1={w / 2} y1="0" x2={w / 2} y2={h} stroke={nodeProps.color || "#d1d5db"} stroke-width={nodeProps.thickness || 0.5} />
       {:else}
-        <line x1="0" y1={h / 2} x2={w} y2={h / 2} stroke={props.color || "#d1d5db"} stroke-width={props.thickness || 0.5} />
+        <line x1="0" y1={h / 2} x2={w} y2={h / 2} stroke={nodeProps.color || "#d1d5db"} stroke-width={nodeProps.thickness || 0.5} />
       {/if}
 
     {:else if node.type === "Spacer"}
@@ -281,7 +281,7 @@ const textSegments = $derived(
         {/each}
       </g>
       <text x={w / 2} y={h - 2} text-anchor="middle" fill="#374151" font-size="7" font-family="monospace">
-        {props.data || "BARCODE"}
+        {nodeProps.data || "BARCODE"}
       </text>
 
     {:else if node.type === "QRCode"}
@@ -295,8 +295,8 @@ const textSegments = $derived(
     {:else if node.type === "Table"}
       <!-- Table -->
       <rect width={w} height={h} fill="white" stroke="#d1d5db" stroke-width="1" />
-      {#if props.columns}
-        {@const cols = props.columns as any[]}
+      {#if nodeProps.columns}
+        {@const cols = nodeProps.columns as any[]}
         {@const colW = w / Math.max(cols.length, 1)}
         {@const headerH = Math.min(h * 0.3, mmToPx(8, vp.dpi, vp.zoom))}
         <!-- Header row -->
@@ -313,14 +313,14 @@ const textSegments = $derived(
 
     {:else if node.type === "Frame" || node.type === "Grid"}
       <!-- Container: render border then children -->
-      {#if props.backgroundColor || props.borderColor}
+      {#if nodeProps.backgroundColor || nodeProps.borderColor}
         <rect
           width={w}
           height={h}
-          rx={mmToPx(props.borderRadius ?? 0, vp.dpi, vp.zoom)}
-          fill={props.backgroundColor || "transparent"}
-          stroke={props.borderColor || "transparent"}
-          stroke-width={props.borderWidth || 0}
+          rx={mmToPx(nodeProps.borderRadius ?? 0, vp.dpi, vp.zoom)}
+          fill={nodeProps.backgroundColor || "transparent"}
+          stroke={nodeProps.borderColor || "transparent"}
+          stroke-width={nodeProps.borderWidth || 0}
         />
       {:else if isSelected}
         <rect width={w} height={h} fill="transparent" stroke="#3b82f6" stroke-width="1" stroke-dasharray="4,2" opacity="0.4" />

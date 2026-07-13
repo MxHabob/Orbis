@@ -126,12 +126,16 @@ export interface OverrideRequest {
   requested_by: string;
   status: string;
   approved_by?: string | null;
+  rejection_reason?: string | null;
+  reasoning?: string;
+  risk_level?: string;
+  action_code?: string;
+  input_data?: any;
   created_at: string;
   updated_at: string;
   override_type?: string;
   resolution_notes?: string | null;
   requested_by_name?: string | null;
-  risk_level?: string | null;
   approval_chain?: string | null;
 }
 
@@ -175,6 +179,9 @@ export interface AcademicPolicy {
 
 /** @deprecated Use AcademicPolicy instead */
 export interface CalendarEvent {
+  executed_at?: string;
+  start_date?: string;
+  execution_mode?: string;
   id: string;
   org_id: string;
   period_id: string;

@@ -47,7 +47,7 @@ let { totalFilledRows, validCount, errorCount, errorDetails }: Props = $props();
 
   <!-- Collapsible Error Details -->
   {#if errorCount > 0}
-    <Accordion type="single" collapsible class="w-full">
+    <Accordion type="single" class="w-full">
       <AccordionItem value="errors" class="border border-destructive/20 rounded-lg bg-destructive/5">
         <AccordionTrigger class="px-4 py-2 text-xs font-medium text-destructive hover:no-underline">
           {m.common_bulk_input_error_details()} ({errorDetails.length})

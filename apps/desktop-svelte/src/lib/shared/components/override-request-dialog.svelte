@@ -4,7 +4,7 @@ Shared dialog for creating override/approval requests.
 
 Used when a user attempts an action that is currently blocked
 (e.g., editing grades after grade_entry_close, late enrollment).
-Calls `commands.platform.createOverrideRequest()` and shows success/error feedback.
+Calls `commands.platform.getOverrideRequest()` and shows success/error feedback.
 
 Usage:
   <OverrideRequestDialog
@@ -163,7 +163,7 @@ async function submit() {
   }
   isSubmitting = true;
   try {
-    await commands.platform.createOverrideRequest(orgId, {
+    await commands.platform.getOverrideRequest(orgId, {
       override_type: overrideType,
       risk_level: riskLevel,
       entity_type: entityType,

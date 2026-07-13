@@ -12,7 +12,7 @@ import {
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 
-import { onMount } from "svelte";
+import { onMount, untrack } from "svelte";
 
 let {
   orgId,
@@ -30,23 +30,26 @@ let {
 
 const isEdit = $derived(!!unit);
 
+const initUnit = untrack(() => unit);
+const initParentId = untrack(() => defaultParentId);
+
 // Form state
 let isSubmitting = $state(false);
 let unitsList = $state<any[]>([]);
 let staffList = $state<any[]>([]);
 
-let name = $state(unit?.name || "");
-let nameAr = $state(unit?.name_ar || "");
-let code = $state(unit?.code || "");
-let unitType = $state(unit?.unit_type || "classroom");
-let parentId = $state(unit?.parent_id || defaultParentId || "");
+let name = $state(initUnit?.name || "");
+let nameAr = $state(initUnit?.name_ar || "");
+let code = $state(initUnit?.code || "");
+let unitType = $state(initUnit?.unit_type || "classroom");
+let parentId = $state(initUnit?.parent_id || initParentId || "");
 let capacity = $state<number | null>(
-  unit?.capacity ? Number(unit.capacity) : null,
+  initUnit?.capacity ? Number(initUnit.capacity) : null,
 );
-let roomNumber = $state(unit?.room_number || "");
-let floor = $state<number | null>(unit?.floor ? Number(unit.floor) : null);
-let building = $state(unit?.building || "");
-let headId = $state(unit?.head_id || "");
+let roomNumber = $state(initUnit?.room_number || "");
+let floor = $state<number | null>(initUnit?.floor ? Number(initUnit.floor) : null);
+let building = $state(initUnit?.building || "");
+let headId = $state(initUnit?.head_id || "");
 
 const unitTypeLabels = {
   branch: "Branch / Site",
@@ -61,7 +64,7 @@ async function loadReferenceData() {
   if (!orgId) return;
   try {
     const [allUnits, allUsers] = await Promise.all([
-      commands.orgUnits.getAll(orgId),
+      commands.academic.listOrgUnits(orgId),
       commands.iam.listUsers(orgId),
     ]);
 
@@ -109,13 +112,10 @@ async function handleSubmit(e: SubmitEvent) {
     };
 
     if (isEdit && unit) {
-      await commands.orgUnits.update(unit.id, {
-        ...request,
-        is_active: unit.is_active,
-      });
+      await commands.academic.updateOrgUnit(unit.id, { name: request.name, name_ar: request.name_ar });
       toast.success(m.settings_users_update_success());
     } else {
-      await commands.orgUnits.create(orgId, request);
+      await commands.academic.createOrgUnit({ name: request.name, name_ar: request.name_ar, parent_id: request.parent_id });
       toast.success("Organizational unit created successfully");
     }
 

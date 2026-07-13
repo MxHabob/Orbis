@@ -43,42 +43,41 @@ import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 
 import { academicContext } from "$lib/stores";
 
-const orgId = $derived(page.params.orgId);
-const classId = $derived(page.params.classId);
+const orgId = $derived(page.params.orgId ?? "");
+const classId = $derived(page.params.classId ?? "");
 const periodId = $derived(academicContext.effectivePeriodId);
 const rtl = $derived(getLocale() === "ar");
 
 // ── TanStack Queries ──────────────────────────────────────────────────────────
 const enrollmentsQuery = createQuery({
-  queryKey: ["enrollments", orgId],
+  get queryKey() { return ["enrollments", orgId]; },
   queryFn: () => commands.academic.listEnrollments(orgId),
-  enabled: !!orgId,
+  get enabled() { return !!orgId; },
   staleTime: 5 * 60 * 1000,
 });
 
 const classSubjectsQuery = createQuery({
-  queryKey: ["class-subjects", classId, orgId],
-  queryFn: () => commands.academic.listClassSubjects(orgId, classId),
-  enabled: !!classId && !!orgId,
+  get queryKey() { return ["class-subjects", classId, orgId]; },
+  queryFn: () => commands.academic.listClassSubjects(classId, orgId),
+  get enabled() { return !!classId && !!orgId; },
   staleTime: 5 * 60 * 1000,
 });
 
 const assessmentsQuery = createQuery({
-  queryKey: ["assessments", classId, periodId],
-  queryFn: () =>
-    commands.assessment.listAssessments(orgId, periodId || "").catch(() => []),
-  enabled: !!classId && !!periodId && !!orgId,
+  get queryKey() { return ["assessments", classId, periodId]; },
+  queryFn: () => commands.assessment.listAssessments(periodId || "").catch(() => []),
+  get enabled() { return !!classId && !!periodId && !!orgId; },
   staleTime: 5 * 60 * 1000,
 });
 
 // Dynamic class attendance analytics
 const attendanceQuery = createQuery({
-  queryKey: ["attendance-analytics", orgId, classId, periodId],
+  get queryKey() { return ["attendance-analytics", orgId, classId, periodId]; },
   queryFn: () =>
     commands.assessment
       .listAttendance(orgId, periodId || "", classId)
       .catch(() => []),
-  enabled: !!orgId && !!classId && !!periodId,
+  get enabled() { return !!orgId && !!classId && !!periodId; },
   staleTime: 5 * 60 * 1000,
 });
 
@@ -90,29 +89,29 @@ const gradesQuery = createQuery({
 });
 
 const filteredStudents = $derived(
-  ($enrollmentsQuery.data || []).filter((s) => String(s.class_id) === classId),
+  (($enrollmentsQuery.data || []) as any[]).filter((s: any) => String(s.class_id) === classId),
 );
 
 const studentsCount = $derived(filteredStudents.length);
 const subjectsCount = $derived(
-  new Set(($classSubjectsQuery.data || []).map((cs) => String(cs.subject_id)))
+  new Set((($classSubjectsQuery.data || []) as any[]).map((cs: any) => String(cs.subject_id)))
     .size,
 );
 
 const assessmentsCount = $derived.by(() => {
-  const allAssessments = $assessmentsQuery.data || [];
+  const allAssessments = ($assessmentsQuery.data || []) as any[];
   const classSubjectIds = new Set(
-    ($classSubjectsQuery.data || []).map((cs) => cs.id),
+    (($classSubjectsQuery.data || []) as any[]).map((cs: any) => cs.id),
   );
-  return allAssessments.filter((a) => classSubjectIds.has(a.class_subject_id))
+  return allAssessments.filter((a: any) => classSubjectIds.has(a.class_subject_id))
     .length;
 });
 
 const attendanceRate = $derived.by(() => {
-  const list = $attendanceQuery.data || [];
+  const list = ($attendanceQuery.data || []) as any[];
   if (list.length === 0) return 100;
   const presentCount = list.filter(
-    (r) =>
+    (r: any) =>
       r.status === "present" ||
       r.status === "late" ||
       String(r.status).toLowerCase().includes("present") ||
@@ -123,7 +122,7 @@ const attendanceRate = $derived.by(() => {
 
 const avgGradeScore = $derived.by(() => {
   const list = $gradesQuery.data || [];
-  const studentIds = new Set(filteredStudents.map((s) => s.id));
+  const studentIds = new Set(filteredStudents.map((s: any) => s.id));
   const classGrades = list.filter((g) => studentIds.has(g.enrollment_id));
   if (classGrades.length === 0) return 0;
   const sum = classGrades.reduce((acc, curr) => acc + (curr.score || 0), 0);
@@ -165,17 +164,17 @@ function refetchAll() {
 let selectedSubjectId = $state<string>("");
 
 $effect(() => {
-  const subjects = $classSubjectsQuery.data || [];
+  const subjects = ($classSubjectsQuery.data || []) as any[];
   if (subjects.length > 0 && !selectedSubjectId) {
     selectedSubjectId = String(subjects[0].subject_id || subjects[0].id);
   }
 });
 
 const gradeMatrixQuery = createQuery({
-  queryKey: ["grade-matrix", orgId, periodId, classId, selectedSubjectId],
+  get queryKey() { return ["grade-matrix", orgId, periodId, classId, selectedSubjectId]; },
   queryFn: () =>
     (commands.assessment as any).getGradeMatrix(orgId, periodId, classId, selectedSubjectId),
-  enabled: !!orgId && !!periodId && !!classId && !!selectedSubjectId,
+  get enabled() { return !!orgId && !!periodId && !!classId && !!selectedSubjectId; },
   staleTime: 2 * 60 * 1000,
 });
 
@@ -329,15 +328,15 @@ function handleTriggerAction(issue: any) {
                       <BookOpen size={11} class="text-muted-foreground shrink-0" />
                       <span class="truncate">
                         {
-                          ($classSubjectsQuery.data || []).find((s) => String(s.subject_id || s.id) === selectedSubjectId)?.subject_name_ar || 
-                          ($classSubjectsQuery.data || []).find((s) => String(s.subject_id || s.id) === selectedSubjectId)?.subject_name || 
+                          (($classSubjectsQuery.data || []) as any[]).find((s: any) => String(s.subject_id || s.id) === selectedSubjectId)?.subject_name_ar || 
+                          (($classSubjectsQuery.data || []) as any[]).find((s: any) => String(s.subject_id || s.id) === selectedSubjectId)?.subject_name || 
                           (m.common_control_select_subject ? m.common_control_select_subject() : "Select Subject")
                         }
                       </span>
                     </div>
                   </SelectTrigger>
                   <SelectContent>
-                    {#each ($classSubjectsQuery.data || []) as sub}
+                    {#each (($classSubjectsQuery.data || []) as any[]) as sub}
                       <SelectItem value={String(sub.subject_id || sub.id)}>{sub.subject_name_ar || sub.subject_name}</SelectItem>
                     {/each}
                   </SelectContent>
@@ -358,10 +357,6 @@ function handleTriggerAction(issue: any) {
                     height="100%"
                     rtl={rtl}
                     readonly={true}
-                    theme="compact"
-                    range={true}
-                    clipboard={true}
-                    rowSize={42}
                   />
                 {:else}
                   <div class="h-full flex items-center justify-center text-xs text-muted-foreground font-sans">
@@ -382,7 +377,7 @@ function handleTriggerAction(issue: any) {
             </div>
 
             <div class="flex flex-col gap-3">
-              {#each diagnosticIssues.filter(i => !i.resolved) as issue (issue.id)}
+              {#each diagnosticIssues as issue (issue.id)}
                 <div class="flex items-center justify-between p-3 rounded-lg border border-border/40 bg-card/40 hover:bg-card/70 transition-colors gap-4">
                   <div class="flex items-start gap-2.5 min-w-0">
                     <div class="h-5 w-5 rounded bg-destructive/10 border border-destructive/20 text-destructive flex items-center justify-center shrink-0 mt-0.5 select-none">

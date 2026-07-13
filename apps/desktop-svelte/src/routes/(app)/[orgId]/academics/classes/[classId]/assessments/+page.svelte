@@ -29,8 +29,8 @@ import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
 import AssessmentCreateSheet from "$lib/features/academics/components/assessment-create-sheet.svelte";
 
-const orgId = $derived(page.params.orgId);
-const classId = $derived(page.params.classId);
+const orgId = String(page.params.orgId || "");
+const classId = String(page.params.classId || "");
 
 // State
 let subjects = $state<any[]>([]);
@@ -120,13 +120,7 @@ async function loadAssessments() {
   if (!classId) return;
   isAssessmentsLoading = true;
   try {
-    const list = await commands.assessment.listAssessments({
-      classId,
-      subjectId: selectedSubjectId || undefined,
-      termId: selectedSemesterId || activePeriodId || "",
-      month:
-        selectedMonthId !== "all" ? getMonthNumber(selectedMonthId) : undefined,
-    });
+    const list = await commands.assessment.listAssessments(selectedSemesterId || activePeriodId || "", selectedSubjectId || undefined);
     assessments = list;
   } catch (e) {
     console.error("Error loading assessments:", e);
@@ -150,9 +144,7 @@ $effect(() => {
 async function handleDelete(id: string) {
   if (
     !confirm(
-      m.assessments_delete_confirm
-        ? m.assessments_delete_confirm()
-        : "هل تريد حذف هذا التقييم؟",
+      m.assessments_delete_confirm(),
     )
   )
     return;
@@ -160,9 +152,7 @@ async function handleDelete(id: string) {
     await commands.assessment.deleteAssessment(id);
     assessments = assessments.filter((a) => String(a.id) !== id);
     toast.success(
-      m.assessments_delete_success
-        ? m.assessments_delete_success()
-        : "تم الحذف",
+      m.assessments_delete_success(),
     );
   } catch (e: unknown) {
     toast.error((e as any)?.message || "فشل الحذف");
@@ -181,7 +171,7 @@ const totalWeight = $derived(
     <!-- Subject Filter -->
     <div class="flex items-center gap-2">
       <span class="text-xs text-muted-foreground font-medium">
-        {m.assessments_subject_filter ? m.assessments_subject_filter() : "المادة"}:
+        {m.assessments_subject_filter()}:
       </span>
       <Select
         type="single"
@@ -213,7 +203,7 @@ const totalWeight = $derived(
     {#if semesters.length > 0}
       <div class="flex items-center gap-2">
         <span class="text-xs text-muted-foreground font-medium">
-          {m.assessments_semester_filter ? m.assessments_semester_filter() : "الفصل الدراسي"}:
+          {m.assessments_semester_filter()}:
         </span>
         <Select
           type="single"
@@ -250,7 +240,7 @@ const totalWeight = $derived(
       onclick={() => (isModalOpen = true)}
     >
       <Plus size={13} />
-      {m.assessments_add ? m.assessments_add() : "إضافة تقييم"}
+      {m.assessments_add()}
     </Button>
   </div>
 
@@ -262,9 +252,7 @@ const totalWeight = $derived(
     >
       <Percent size={12} />
       <span>
-        {m.assessments_total_weight
-          ? m.assessments_total_weight()
-          : "إجمالي الأوزان"}: <strong
+        {m.assessments_total_weight()}: <strong
           class={totalWeight === 100
             ? "text-primary"
             : "text-destructive"}>{totalWeight}%</strong
@@ -337,7 +325,8 @@ const totalWeight = $derived(
 <!-- Assessment Creation Sheet -->
 <AssessmentCreateSheet
   bind:open={isModalOpen}
-  orgId={orgId}
-  preselectedClassId={classId}
+  classId={classId}
+  subjectId={selectedSubjectId || ""}
+  periodId={selectedSemesterId || activePeriodId || ""}
   onSuccess={loadAssessments}
 />

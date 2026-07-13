@@ -89,7 +89,8 @@ export interface FinanceCommands {
 
   // ── Discounts ───────────────────────────────────────────────
   listDiscountTemplates(orgId: string): Promise<DiscountTemplate[]>;
-  createDiscountTemplate(data: {
+  updateDiscountTemplate(orgId: string, id: string, data: any): Promise<DiscountTemplate>;
+  createDiscountTemplate(orgId: string, data: {
     name: string;
     item_type: string;
     calculation_method: string;

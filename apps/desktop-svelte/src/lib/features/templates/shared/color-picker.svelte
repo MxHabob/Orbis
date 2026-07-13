@@ -171,7 +171,7 @@ const swatchSize = $derived(size === "sm" ? 20 : 24);
             type="range"
             min="0"
             max="100"
-            value={Math.round(opacity * 100)}
+            value={Math.round(opacity * 100).toString()}
             oninput={handleOpacityInput}
             class="opacity-slider"
           />

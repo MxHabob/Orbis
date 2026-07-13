@@ -92,6 +92,9 @@ export class GuardianState {
     ];
   }
 
+  searchParent(query: string, index: number) {}
+  selectExistingParent(parent: any, index: number) {}
+
   removeGuardian(index: number) {
     this.linkedGuardians = this.linkedGuardians.filter((_, i) => i !== index);
   }

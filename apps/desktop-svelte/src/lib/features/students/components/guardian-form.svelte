@@ -1,6 +1,6 @@
 <!--
   @component GuardianForm
-  Form for linking a user as a guardian to a student with relation, contact permissions, and payer status.
+  Form for linking a user as a guardian to a student with relationship, contact permissions, and payer status.
   Supports creating a new parent user inline if they do not exist.
 -->
 <script lang="ts">
@@ -49,7 +49,7 @@ let fullName = $state("");
 let phone = $state("");
 let email = $state("");
 let nationalId = $state("");
-let relation = $state("father");
+let relationship = $state("father");
 let job = $state("");
 let isPrimary = $state(false);
 let isEmergencyContact = $state(false);
@@ -58,8 +58,8 @@ let paymentSharePercent = $state(0);
 
 $effect(() => {
   guardianUserId = editData ? String(editData.guardian_id ?? "") : "";
-  relation = editData
-    ? String(editData.relationship ?? editData.relation ?? "father")
+  relationship = editData
+    ? String(editData.relationship ?? editData.relationship ?? "father")
     : "father";
   job = editData
     ? String(
@@ -73,15 +73,15 @@ $effect(() => {
     : false;
   isEmergencyContact = editData
     ? Boolean(
-        editData.is_emergency_contact === 1 ||
-          editData.is_emergency_contact === true,
+        editData.is_primary === 1 ||
+          editData.is_primary === true,
       )
     : false;
   isPayer = editData
-    ? Boolean(editData.is_payer === 1 || editData.is_payer === true)
+    ? Boolean(editData.is_primary === 1 || editData.is_primary === true)
     : false;
   paymentSharePercent = editData
-    ? Number(editData.payment_share_percent ?? 0)
+    ? Number(editData.is_primary ?? 0)
     : 0;
 
   if (editData && editData.guardian_id) {
@@ -128,12 +128,12 @@ const isLoading = $derived(
 );
 let isSaving = $state(false);
 
-const relations = $derived([
-  { value: "father", label: m.common_relationship_father() },
-  { value: "mother", label: m.common_relationship_mother() },
-  { value: "sibling", label: m.common_guardians_relation_sibling() },
-  { value: "grandparent", label: m.common_guardians_relation_grandparent() },
-  { value: "uncle", label: m.common_guardians_relation_uncle() },
+const relationships = $derived([
+  { value: "father", label: m.common_guardians_relationship_father() },
+  { value: "mother", label: m.common_guardians_relationship_mother() },
+  { value: "sibling", label: m.common_guardians_relationship_other() },
+  { value: "grandparent", label: m.common_guardians_relationship_other() },
+  { value: "uncle", label: m.common_guardians_relationship_other() },
   { value: "other", label: m.common_ft_category_other() },
 ]);
 
@@ -178,7 +178,7 @@ const filteredUsers = $derived(
     }),
 );
 
-const selectedRelation = $derived(relations.find((r) => r.value === relation));
+const selectedRelation = $derived(relationships.find((r) => r.value === relationship));
 
 function selectUser(u: JsonRecord) {
   guardianUserId = String(u.id);
@@ -207,7 +207,7 @@ async function handleSubmit() {
     toast.error("يرجى إدخال رقم الهاتف لولي الأمر");
     return;
   }
-  if (!relation) {
+  if (!relationship) {
     toast.error("يرجى تحديد صلة القرابة");
     return;
   }
@@ -280,25 +280,25 @@ async function handleSubmit() {
       });
     }
 
-    const relationAr =
-      relation === "father"
+    const relationshipAr =
+      relationship === "father"
         ? "أب"
-        : relation === "mother"
+        : relationship === "mother"
           ? "أم"
-          : relation === "uncle"
+          : relationship === "uncle"
             ? "عم"
             : "آخر/قريب";
 
     // Construct request conforming exactly to CreateGuardianLinkRequest / UpdateGuardianLinkRequest
     const request: JsonRecord = {
       student_id: studentId,
-      relationship: relation,
-      relationship_ar: relationAr,
+      relationship: relationship,
+      relationship_ar: relationshipAr,
       is_primary: isPrimary,
-      is_emergency_contact: isEmergencyContact,
+      is_primary: isEmergencyContact,
       is_authorized_pickup: false,
-      is_payer: isPayer,
-      payment_share_percent: isPayer ? paymentSharePercent : 0,
+      is_primary: isPayer,
+      is_primary: isPayer ? paymentSharePercent : 0,
       occupation: job.trim() || null,
       can_view_grades: true,
       can_view_attendance: true,
@@ -488,12 +488,12 @@ async function handleSubmit() {
       <!-- Relation -->
       <div class="flex flex-col gap-1.5">
         <Label class="text-xs font-semibold text-muted-foreground">{m.common_bulk_col_guardian_rel()} *</Label>
-        <Select type="single" value={relation} onValueChange={(v) => (relation = v ?? "father")}>
+        <Select type="single" value={relationship} onValueChange={(v) => (relationship = v ?? "father")}>
           <SelectTrigger class="h-9 text-sm">
-            {selectedRelation?.label ?? relation}
+            {selectedRelation?.label ?? relationship}
           </SelectTrigger>
           <SelectContent>
-            {#each relations as r (r.value)}
+            {#each relationships as r (r.value)}
               <SelectItem value={r.value}>{r.label}</SelectItem>
             {/each}
           </SelectContent>
@@ -558,7 +558,7 @@ async function handleSubmit() {
     <Button
       type="submit"
       class="flex-1 h-9 text-sm font-semibold"
-      disabled={isSaving || isLoading || !fullName || !phone || !relation}
+      disabled={isSaving || isLoading || !fullName || !phone || !relationship}
     >
       {isSaving ? m.common_state_saving() : m.common_action_save()}
     </Button>

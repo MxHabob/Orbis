@@ -32,7 +32,7 @@ let {
 
 const node = $derived(store.selectedNode);
 const nodeType = $derived(node?.type ?? null);
-const props = $derived(
+const nodeProps = $derived(
   node && "props" in node ? (node as any).props || {} : {},
 );
 const position = $derived(
@@ -40,7 +40,7 @@ const position = $derived(
 );
 
 function updateProp(key: string, value: unknown) {
-  store.updateSelectedProps({ props: { ...props, [key]: value } } as any);
+  store.updateSelectedProps({ props: { ...nodeProps, [key]: value } } as any);
 }
 
 function updatePosition(key: string, value: number) {
@@ -208,7 +208,7 @@ function updatePosition(key: string, value: number) {
                 <div class="flex flex-col gap-1">
                   <Label class="text-[9px] text-muted-foreground">المحتوى</Label>
                   <Textarea
-                    value={props.content || ""}
+                    value={nodeProps.content || ""}
                     oninput={(e) => updateProp("content", e.currentTarget.value)}
                     class="text-xs min-h-[50px]"
                   />
@@ -217,12 +217,12 @@ function updatePosition(key: string, value: number) {
                 <div class="grid grid-cols-2 gap-2">
                   <div class="flex flex-col gap-0.5">
                     <span class="text-[8px] text-muted-foreground">حجم الخط</span>
-                    <Input type="number" step="1" value={props.fontSize ?? 12} oninput={(e) => updateProp("fontSize", parseFloat(e.currentTarget.value))} class="h-6 text-[10px]" />
+                    <Input type="number" step="1" value={nodeProps.fontSize ?? 12} oninput={(e) => updateProp("fontSize", parseFloat(e.currentTarget.value))} class="h-6 text-[10px]" />
                   </div>
                   <div class="flex flex-col gap-0.5">
                     <span class="text-[8px] text-muted-foreground">الوزن</span>
-                    <Select type="single" value={props.fontWeight || "400"} onValueChange={(v) => { if (v) updateProp("fontWeight", v); }}>
-                      <SelectTrigger class="h-6 text-[10px]">{props.fontWeight || "400"}</SelectTrigger>
+                    <Select type="single" value={nodeProps.fontWeight || "400"} onValueChange={(v) => { if (v) updateProp("fontWeight", v); }}>
+                      <SelectTrigger class="h-6 text-[10px]">{nodeProps.fontWeight || "400"}</SelectTrigger>
                       <SelectContent>
                         <SelectItem value="300">Light</SelectItem>
                         <SelectItem value="400">Regular</SelectItem>
@@ -236,8 +236,8 @@ function updatePosition(key: string, value: number) {
                 <div class="grid grid-cols-2 gap-2">
                   <div class="flex flex-col gap-0.5">
                     <span class="text-[8px] text-muted-foreground">الخط</span>
-                    <Select type="single" value={props.fontFamily || "Rubik"} onValueChange={(v) => { if (v) updateProp("fontFamily", v); }}>
-                      <SelectTrigger class="h-6 text-[10px]">{props.fontFamily || "Rubik"}</SelectTrigger>
+                    <Select type="single" value={nodeProps.fontFamily || "Rubik"} onValueChange={(v) => { if (v) updateProp("fontFamily", v); }}>
+                      <SelectTrigger class="h-6 text-[10px]">{nodeProps.fontFamily || "Rubik"}</SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Rubik">Rubik</SelectItem>
                         <SelectItem value="Tahoma">Tahoma</SelectItem>
@@ -247,8 +247,8 @@ function updatePosition(key: string, value: number) {
                   </div>
                   <div class="flex flex-col gap-0.5">
                     <span class="text-[8px] text-muted-foreground">المحاذاة</span>
-                    <Select type="single" value={props.textAlign || "start"} onValueChange={(v) => { if (v) updateProp("textAlign", v); }}>
-                      <SelectTrigger class="h-6 text-[10px]">{props.textAlign || "start"}</SelectTrigger>
+                    <Select type="single" value={nodeProps.textAlign || "start"} onValueChange={(v) => { if (v) updateProp("textAlign", v); }}>
+                      <SelectTrigger class="h-6 text-[10px]">{nodeProps.textAlign || "start"}</SelectTrigger>
                       <SelectContent>
                         <SelectItem value="start">Start</SelectItem>
                         <SelectItem value="center">Center</SelectItem>
@@ -261,8 +261,8 @@ function updatePosition(key: string, value: number) {
                 <div class="flex flex-col gap-0.5">
                   <span class="text-[8px] text-muted-foreground">اللون</span>
                   <div class="flex items-center gap-2">
-                    <input type="color" value={props.color || "#000000"} oninput={(e) => updateProp("color", e.currentTarget.value)} class="w-7 h-6 rounded border border-border cursor-pointer" />
-                    <Input type="text" value={props.color || "#000000"} oninput={(e) => updateProp("color", e.currentTarget.value)} class="h-6 text-[10px] font-mono flex-grow" />
+                    <input type="color" value={nodeProps.color || "#000000"} oninput={(e) => updateProp("color", e.currentTarget.value)} class="w-7 h-6 rounded border border-border cursor-pointer" />
+                    <Input type="text" value={nodeProps.color || "#000000"} oninput={(e) => updateProp("color", e.currentTarget.value)} class="h-6 text-[10px] font-mono flex-grow" />
                   </div>
                 </div>
 
@@ -270,8 +270,8 @@ function updatePosition(key: string, value: number) {
                 <!-- Shape properties -->
                 <div class="flex flex-col gap-0.5">
                   <span class="text-[8px] text-muted-foreground">الشكل</span>
-                  <Select type="single" value={props.shape || "rectangle"} onValueChange={(v) => { if (v) updateProp("shape", v); }}>
-                    <SelectTrigger class="h-6 text-[10px]">{props.shape || "rectangle"}</SelectTrigger>
+                  <Select type="single" value={nodeProps.shape || "rectangle"} onValueChange={(v) => { if (v) updateProp("shape", v); }}>
+                    <SelectTrigger class="h-6 text-[10px]">{nodeProps.shape || "rectangle"}</SelectTrigger>
                     <SelectContent>
                       <SelectItem value="rectangle">Rectangle</SelectItem>
                       <SelectItem value="circle">Circle</SelectItem>
@@ -283,28 +283,28 @@ function updatePosition(key: string, value: number) {
                 <div class="flex flex-col gap-0.5">
                   <span class="text-[8px] text-muted-foreground">لون التعبئة</span>
                   <div class="flex items-center gap-2">
-                    <input type="color" value={props.fillColor || "#e2e8f0"} oninput={(e) => updateProp("fillColor", e.currentTarget.value)} class="w-7 h-6 rounded border border-border cursor-pointer" />
-                    <Input type="text" value={props.fillColor || "#e2e8f0"} oninput={(e) => updateProp("fillColor", e.currentTarget.value)} class="h-6 text-[10px] font-mono flex-grow" />
+                    <input type="color" value={nodeProps.fillColor || "#e2e8f0"} oninput={(e) => updateProp("fillColor", e.currentTarget.value)} class="w-7 h-6 rounded border border-border cursor-pointer" />
+                    <Input type="text" value={nodeProps.fillColor || "#e2e8f0"} oninput={(e) => updateProp("fillColor", e.currentTarget.value)} class="h-6 text-[10px] font-mono flex-grow" />
                   </div>
                 </div>
 
                 <div class="flex flex-col gap-0.5">
                   <span class="text-[8px] text-muted-foreground">لون الإطار</span>
                   <div class="flex items-center gap-2">
-                    <input type="color" value={props.strokeColor || "#94a3b8"} oninput={(e) => updateProp("strokeColor", e.currentTarget.value)} class="w-7 h-6 rounded border border-border cursor-pointer" />
-                    <Input type="text" value={props.strokeColor || "#94a3b8"} oninput={(e) => updateProp("strokeColor", e.currentTarget.value)} class="h-6 text-[10px] font-mono flex-grow" />
+                    <input type="color" value={nodeProps.strokeColor || "#94a3b8"} oninput={(e) => updateProp("strokeColor", e.currentTarget.value)} class="w-7 h-6 rounded border border-border cursor-pointer" />
+                    <Input type="text" value={nodeProps.strokeColor || "#94a3b8"} oninput={(e) => updateProp("strokeColor", e.currentTarget.value)} class="h-6 text-[10px] font-mono flex-grow" />
                   </div>
                 </div>
 
               {:else if nodeType === "Barcode"}
                 <div class="flex flex-col gap-1">
                   <Label class="text-[9px] text-muted-foreground">البيانات</Label>
-                  <Input type="text" value={props.data || ""} oninput={(e) => updateProp("data", e.currentTarget.value)} class="h-7 text-xs font-mono" />
+                  <Input type="text" value={nodeProps.data || ""} oninput={(e) => updateProp("data", e.currentTarget.value)} class="h-7 text-xs font-mono" />
                 </div>
                 <div class="flex flex-col gap-0.5">
                   <span class="text-[8px] text-muted-foreground">الصيغة</span>
-                  <Select type="single" value={props.format || "Code128"} onValueChange={(v) => { if (v) updateProp("format", v); }}>
-                    <SelectTrigger class="h-6 text-[10px]">{props.format || "Code128"}</SelectTrigger>
+                  <Select type="single" value={nodeProps.format || "Code128"} onValueChange={(v) => { if (v) updateProp("format", v); }}>
+                    <SelectTrigger class="h-6 text-[10px]">{nodeProps.format || "Code128"}</SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Code128">Code128</SelectItem>
                       <SelectItem value="EAN8">EAN8</SelectItem>
@@ -317,7 +317,7 @@ function updatePosition(key: string, value: number) {
               {:else if nodeType === "QRCode"}
                 <div class="flex flex-col gap-1">
                   <Label class="text-[9px] text-muted-foreground">البيانات</Label>
-                  <Input type="text" value={props.data || ""} oninput={(e) => updateProp("data", e.currentTarget.value)} class="h-7 text-xs font-mono" />
+                  <Input type="text" value={nodeProps.data || ""} oninput={(e) => updateProp("data", e.currentTarget.value)} class="h-7 text-xs font-mono" />
                 </div>
 
               {:else}

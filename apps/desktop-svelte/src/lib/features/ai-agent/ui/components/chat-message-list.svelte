@@ -26,14 +26,7 @@ let {
 
 function parseMessageParts(text: string) {
   const regex = /\[([^\]]+)\]\(([^)]+)\)|\[نتيجة الأداة ([^:]+):\s*([^\]]+)\]/g;
-  const parts: {
-    type: "text" | "link" | "tool";
-    content?: string;
-    label?: string;
-    href?: string;
-    toolName?: string;
-    result?: string;
-  }[] = [];
+  const parts: any[] = [];
   let lastIndex = 0;
   let match;
 

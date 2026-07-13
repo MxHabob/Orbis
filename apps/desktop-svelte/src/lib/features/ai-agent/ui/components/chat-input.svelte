@@ -112,6 +112,7 @@ function handleCommandSelect(agentType: string) {
   ondragover={handleDragOver}
   ondragleave={handleDragLeave}
   ondrop={handleDrop}
+  role="presentation"
 >
   <!-- Drop overlay -->
   {#if isDragging}
@@ -147,7 +148,7 @@ function handleCommandSelect(agentType: string) {
         {#each attachments as file, i}
           <div class="flex items-center gap-1.5 bg-muted/60 px-2.5 py-1.5 rounded-md border border-border/50 text-[11px] font-medium text-foreground">
             <span class="truncate max-w-[120px]">{file.name}</span>
-            <button type="button" class="text-muted-foreground hover:text-destructive cursor-pointer" onclick={() => removeAttachment(i)}>
+            <button type="button" aria-label="Remove attachment" class="text-muted-foreground hover:text-destructive cursor-pointer" onclick={() => removeAttachment(i)}>
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
           </div>
@@ -175,7 +176,7 @@ function handleCommandSelect(agentType: string) {
           size="icon"
           class="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60"
           title={m.agent_chat_new()}
-          onclick={handleNewChat}
+          onclick={() => handleNewChat()}
         >
           <Plus class="h-4 w-4" />
         </Button>
@@ -190,6 +191,7 @@ function handleCommandSelect(agentType: string) {
 
         <Button
           type="submit"
+          aria-label="Send message"
           disabled={!value.trim() || isThinking}
           class="h-8 w-8 rounded-full shadow-sm bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 disabled:bg-muted transition-all duration-200"
           size="icon"

@@ -18,7 +18,7 @@ const handleLearnMore = async () => {
   const url = "https://mulverse.com";
   if (isDesktopApp()) {
     try {
-      const { open: openUrl } = await import("@tauri-apps/plugin-opener");
+      const { openUrl } = await import("@tauri-apps/plugin-opener");
       await openUrl(url);
     } catch (e) {
       window.open(url, "_blank");

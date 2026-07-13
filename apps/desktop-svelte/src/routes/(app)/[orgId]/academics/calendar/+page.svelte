@@ -61,10 +61,11 @@ import {
   Pencil,
 } from "lucide-svelte";
 import type {
-  CalendarEvent,
-  CalendarExecutionMode,
-  CalendarEventType,
+  CalendarEvent
 } from "@orbis/sdk-core";
+
+type CalendarExecutionMode = "manual" | "auto" | string;
+type CalendarEventType = "enrollment_open" | "enrollment_close" | "exam_period" | "holiday" | "custom" | string;
 import {
   gregorianToHijri,
   hijriToGregorian,
@@ -78,7 +79,7 @@ const periodId = $derived(academicContext.effectivePeriodId ?? "");
 
 // TanStack Query
 const queryClient = useQueryClient();
-const eventsQuery = createCalendarEventsQuery(orgId, periodId);
+const eventsQuery = createCalendarEventsQuery(() => orgId, () => periodId);
 const events = $derived(($eventsQuery.data ?? []) as CalendarEvent[]);
 
 // Phase progress — derived from events
@@ -312,7 +313,7 @@ async function executeEvent(eventId: string) {
 
 async function deleteEvent(eventId: string) {
   try {
-    await commands.platform.deleteCalendarEvent(eventId);
+    await commands.platform.deleteCalendarEvent(orgId, eventId);
     toast.success(
       m.common_calendar_event_deleted ? m.common_calendar_event_deleted() : "Event deleted",
     );
@@ -346,17 +347,17 @@ async function generateDefaults() {
 function statusIcon(event: CalendarEvent) {
   if (event.executed_at) return CheckCircle2;
   const today = new Date().toISOString().split("T")[0]!;
-  if (event.start_date <= today && event.end_date >= today) return Clock;
-  if (event.start_date > today) return AlertCircle;
+  if ((event.start_date || '') <= today && (event.end_date || '') >= today) return Clock;
+  if ((event.start_date || '') > today) return AlertCircle;
   return XCircle;
 }
 
 function statusColor(event: CalendarEvent): string {
   if (event.executed_at) return "text-primary";
   const today = new Date().toISOString().split("T")[0]!;
-  if (event.start_date <= today && event.end_date >= today)
+  if ((event.start_date || '') <= today && (event.end_date || '') >= today)
     return "text-yellow-500";
-  if (event.start_date > today) return "text-muted-foreground";
+  if ((event.start_date || '') > today) return "text-muted-foreground";
   return "text-destructive";
 }
 
@@ -486,8 +487,8 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
                     </TableCell>
                     <TableCell class="text-xs text-muted-foreground text-start flex flex-col gap-0.5 font-sans">
                       <span class="font-mono">{event.start_date} → {event.end_date}</span>
-                      {#if getHijriRangeString(event.start_date, event.end_date)}
-                        <span class="text-[10px] text-primary/80 font-medium">{getHijriRangeString(event.start_date, event.end_date)}</span>
+                      {#if getHijriRangeString(event.start_date || '', event.end_date || '')}
+                        <span class="text-[10px] text-primary/80 font-medium">{getHijriRangeString(event.start_date || '', event.end_date || '')}</span>
                       {/if}
                     </TableCell>
                     <TableCell class="text-start">

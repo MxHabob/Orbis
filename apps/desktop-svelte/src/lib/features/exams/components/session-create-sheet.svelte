@@ -57,9 +57,9 @@ $effect(() => {
 // Load academic periods on open
 $effect(() => {
   if (open && orgId) {
-    commands.academics
-      .getPeriods(orgId)
-      .then((res) => {
+    commands.academic
+      .listPeriods(orgId)
+      .then((res: any) => {
         periodsList = res || [];
         if (!periodId && periodsList.length > 0) {
           periodId = periodsList[0].id;
@@ -89,18 +89,16 @@ async function handleSubmit() {
   try {
     const userId = authStore.userId || authStore.user?.id || "desktop_user";
     if (isEdit && session) {
-      await examsStore.updateSession(orgId, session.id, {
+      await commands.exam.updateSession(orgId, session.id, {
         name,
-        name_ar: nameAr,
-        type: sessionType,
+        
         start_date: startDate,
         end_date: endDate,
-        period_id: periodId,
       });
     } else {
-      await examsStore.createSession(orgId, userId, {
+      await commands.exam.createSession({
         name,
-        name_ar: nameAr,
+        
         session_type: sessionType,
         start_date: startDate,
         end_date: endDate,
@@ -122,6 +120,7 @@ async function handleSubmit() {
     isSaving = false;
   }
 }
+
 </script>
 
 <Sheet bind:open>

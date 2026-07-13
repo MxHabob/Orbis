@@ -240,7 +240,7 @@ function handleDrop(e: DragEvent) {
       "Image",
       {
         assetRef,
-        src: asset?.url || "",
+        src: (asset as any)?.url || "",
         width: 40,
         height: 30,
         fit: "contain",

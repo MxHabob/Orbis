@@ -44,8 +44,8 @@ const assetEntries = $derived(
       const q = searchQuery.toLowerCase();
       return (
         key.toLowerCase().includes(q) ||
-        (asset.name?.toLowerCase().includes(q) ?? false) ||
-        (asset.type?.toLowerCase().includes(q) ?? false)
+        ((asset as any).name?.toLowerCase().includes(q) ?? false) ||
+        ((asset as any).type?.toLowerCase().includes(q) ?? false)
       );
     })
     .sort((a, b) => a[0].localeCompare(b[0])),
@@ -71,8 +71,8 @@ function getAssetIcon(type: string) {
 function handleAssetDragStart(e: DragEvent, assetRef: string) {
   e.dataTransfer?.setData("application/x-docforge-asset", assetRef);
   const asset = assets[assetRef];
-  if (asset?.url) {
-    e.dataTransfer?.setData("text/uri-list", asset.url);
+  if ((asset as any)?.url) {
+    e.dataTransfer?.setData("text/uri-list", (asset as any).url);
   }
   if (e.dataTransfer) e.dataTransfer.effectAllowed = "copy";
 }
@@ -84,7 +84,7 @@ function insertAssetAsImage(assetRef: string) {
   if (!asset) return;
   store.addElement("Image", {
     assetRef,
-    src: asset.url || "",
+    src: (asset as any).url || "",
     width: 40,
     height: 30,
     fit: "contain",
@@ -121,7 +121,7 @@ function addAssetManually() {
       url: newAssetUrl.trim(),
       type: newAssetType,
       mimeType: "image/png",
-    },
+    } as any,
   };
   store.executeCommand({
     type: "add-asset",
@@ -225,10 +225,10 @@ function addAssetManually() {
           >
             <!-- Thumbnail -->
             <div class="aspect-[4/3] bg-muted/20 flex items-center justify-center overflow-hidden">
-              {#if asset.url}
+              {#if (asset as any).url}
                 <img
-                  src={asset.url}
-                  alt={asset.name || key}
+                  src={(asset as any).url}
+                  alt={(asset as any).name || key}
                   class="w-full h-full object-contain"
                   loading="lazy"
                 />
@@ -240,7 +240,7 @@ function addAssetManually() {
             <!-- Info -->
             <div class="px-1.5 py-1 flex items-center justify-between">
               <div class="flex flex-col min-w-0">
-                <span class="text-[8px] font-medium text-foreground truncate">{asset.name || key}</span>
+                <span class="text-[8px] font-medium text-foreground truncate">{(asset as any).name || key}</span>
                 <span class="text-[7px] text-muted-foreground capitalize">{asset.type || "image"}</span>
               </div>
             </div>

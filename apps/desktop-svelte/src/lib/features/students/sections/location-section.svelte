@@ -3,7 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { Label } from "@orbis/ui-svelte/label";
 import { Input } from "@orbis/ui-svelte/input";
 
-import type { StudentFormState } from "../student-form-state.svelte";
+import type { StudentFormState } from "../form-state.svelte";
 
 let { state }: { state: StudentFormState } = $props();
 </script>

@@ -19,8 +19,8 @@ import { getLocale } from "$lib/paraglide/runtime";
 import { DataTable } from "$lib/tables";
 import { classTeachers as ctDef, withIndex } from "$lib/tables/definitions";
 
-const orgId = $derived(page.params.orgId);
-const classId = $derived(page.params.classId);
+const orgId = String(page.params.orgId || "");
+const classId = String(page.params.classId || "");
 
 // Data state
 let allAssignments = $state<ClassSubject[]>([]);
@@ -158,7 +158,7 @@ const rtl = $derived(getLocale() === "ar");
 <ClassSubjectSheet
   bind:open={sheetOpen}
   
-  preselectedClassId={classId}
+  orgId={orgId}
   editData={editTarget}
   onSuccess={onSheetSuccess}
 />

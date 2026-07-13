@@ -1,6 +1,5 @@
 use std::sync::Arc;
 use serde_json::Value;
-use uuid::Uuid;
 use infra_integration::traits::{LlmProvider, ChatMessage, MessageRole, InferenceConfig, ToolDef};
 use shared_kernel::errors::AppError;
 use crate::action_registry::ActionRegistry;
@@ -71,7 +70,7 @@ impl LlmGateway {
         let config = InferenceConfig::default();
 
         // 5. Call the external AI provider
-        let mut response = self
+        let response = self
             .provider
             .chat(&messages, Some(&tools), &config)
             .await

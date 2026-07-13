@@ -122,7 +122,7 @@ pub async fn agent_query(
     session_id: String,
     text: String,
     context: Option<serde_json::Value>,
-    on_chunk: Option<tauri::ipc::Channel<String>>,
+    on_chunk: tauri::ipc::Channel<String>,
 ) -> CmdResult<String> {
     let db = state.db();
     let event_bus = state.platform.event_bus.clone();
@@ -130,18 +130,16 @@ pub async fn agent_query(
         .await
         .map_err(CommandError::from)?;
 
-    if let Some(channel) = on_chunk {
-        // Simulate streaming for the frontend
-        let chunks: Vec<&str> = response.split_whitespace().collect();
-        let mut current = String::new();
-        for chunk in chunks {
-            if !current.is_empty() {
-                current.push(' ');
-            }
-            current.push_str(chunk);
-            let _ = channel.send(current.clone());
-            tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+    // Simulate streaming for the frontend
+    let chunks: Vec<&str> = response.split_whitespace().collect();
+    let mut current = String::new();
+    for chunk in chunks {
+        if !current.is_empty() {
+            current.push(' ');
         }
+        current.push_str(chunk);
+        let _ = on_chunk.send(current.clone());
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
     }
 
     Ok(response)

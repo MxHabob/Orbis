@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use std::env;
 use tracing::{error, info, warn};
 
 use crate::traits::{

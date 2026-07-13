@@ -13,7 +13,7 @@ import {
   SelectItem,
 } from "@orbis/ui-svelte/select";
 
-import type { StudentFormState } from "../student-form-state.svelte";
+import type { StudentFormState } from "../form-state.svelte";
 import { formatCurrency } from "$lib/core/i18n";
 
 let { state }: { state: StudentFormState } = $props();

@@ -229,7 +229,7 @@ const advisorInsights = $derived.by(() => {
 
   // 4. Exams Insight
   const activeExamSession = examSessions.find(
-    (s) => s.status === "active" || s.status === "running",
+    (s: any) => s.status === "active" || s.status === "running",
   );
   if (activeExamSession) {
     insights.push({

@@ -30,12 +30,13 @@ let searchQuery = $state("");
 let isSheetOpen = $state(false);
 
 // Reactive state from TanStack Query
-const sessionsQuery = createExamSessionsQuery(data.orgId);
-const sessions = $derived($sessionsQuery.data || []);
+const orgId = $derived(data.orgId);
+const sessionsQuery = createExamSessionsQuery(() => orgId);
+const sessions = $derived(($sessionsQuery.data || []) as any[]);
 const isLoading = $derived($sessionsQuery.isLoading);
 
 const filtered = $derived(
-  sessions.filter((s) => {
+  sessions.filter((s: any) => {
     const q = searchQuery.toLowerCase();
     return (
       (s.name || "").toLowerCase().includes(q) ||

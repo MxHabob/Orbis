@@ -11,7 +11,7 @@ import {
 } from "@orbis/ui-svelte/select";
 
 import { getLocale } from "$lib/paraglide/runtime";
-import type { StudentFormState } from "../student-form-state.svelte";
+import type { StudentFormState } from "../form-state.svelte";
 
 let { state }: { state: StudentFormState } = $props();
 

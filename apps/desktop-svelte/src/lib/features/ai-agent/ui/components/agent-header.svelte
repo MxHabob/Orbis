@@ -14,6 +14,8 @@ let {
   onOpenStandalone,
   onSelectSession,
   onNewChat,
+  viewMode = 'chat',
+  onToggleView,
 }: {
   isStandalone: boolean;
   userHat: string;

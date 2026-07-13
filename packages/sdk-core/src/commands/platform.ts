@@ -44,6 +44,10 @@ export interface PlatformCommands {
   // ── Calendar / Periods ──────────────────────────────────────
   listCalendarEvents(orgId: string, periodId: string): Promise<any[]>;
   listPendingCalendarEvents(orgId: string): Promise<any[]>;
+  createCalendarEvent(orgId: string, data: any): Promise<any>;
+  executeCalendarEvent(orgId: string, eventId: string): Promise<any>;
+  deleteCalendarEvent(orgId: string, eventId: string): Promise<any>;
+  generateDefaultCalendar(orgId: string, periodId: string): Promise<any>;
   getOrgPolicy(orgId: string): Promise<AcademicPolicy | null>;
   updateOrgPolicy(orgId: string, policy: Partial<AcademicPolicy>): Promise<void>;
 

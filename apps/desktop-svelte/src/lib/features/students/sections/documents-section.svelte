@@ -4,7 +4,7 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Checkbox } from "@orbis/ui-svelte/checkbox";
 import { Label } from "@orbis/ui-svelte/label";
 
-import type { StudentFormState } from "../student-form-state.svelte";
+import type { StudentFormState } from "../form-state.svelte";
 
 let { state }: { state: StudentFormState } = $props();
 

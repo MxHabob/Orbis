@@ -166,7 +166,7 @@ $effect(() => {
     placeholder={placeholder}
     {value}
     oninput={handleInput}
-    {autoFocus}
+    autofocus={autoFocus}
     {required}
     class="pl-9 w-full"
     autocomplete="off"

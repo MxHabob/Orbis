@@ -11,6 +11,7 @@ import {
   SelectItem,
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
+import { untrack } from "svelte";
 
 let {
   orgId,
@@ -26,16 +27,18 @@ let {
 
 const isEdit = $derived(!!room);
 
+const initRoom = untrack(() => room);
+
 // Form state
 let isSubmitting = $state(false);
-let name = $state(room?.name || "");
-let nameAr = $state(room?.name_ar || "");
+let name = $state(initRoom?.name || "");
+let nameAr = $state(initRoom?.name_ar || "");
 let capacity = $state<number | null>(
-  room?.capacity ? Number(room.capacity) : null,
+  initRoom?.capacity ? Number(initRoom.capacity) : null,
 );
-let roomType = $state(room?.room_type || "classroom");
-let building = $state(room?.building || "");
-let floor = $state<number | null>(room?.floor ? Number(room.floor) : null);
+let roomType = $state(initRoom?.room_type || "classroom");
+let building = $state(initRoom?.building || "");
+let floor = $state<number | null>(initRoom?.floor ? Number(initRoom.floor) : null);
 
 const roomTypeLabels = {
   classroom: "Classroom",

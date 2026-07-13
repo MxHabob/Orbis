@@ -96,7 +96,7 @@ const filteredSessions = $derived(
             </div>
             <div class="text-[9px] text-muted-foreground leading-normal flex justify-between items-center w-full mt-0.5">
               <span>{session.agent_type}</span>
-              <span>{formatDate(session.started_at)}</span>
+              <span>{formatDate(session.created_at)}</span>
             </div>
           </button>
         {/each}
