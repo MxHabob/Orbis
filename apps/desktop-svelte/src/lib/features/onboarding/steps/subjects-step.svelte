@@ -7,7 +7,8 @@ import { Input } from "@orbis/ui-svelte/input";
 import { Checkbox } from "@orbis/ui-svelte/checkbox";
 import { Button } from "@orbis/ui-svelte/button";
 import { Plus } from "lucide-svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
+
 import { onboardingState } from "../state.svelte";
 
 let newSubCode = $state("");
@@ -37,11 +38,11 @@ function handleAddSubject() {
     <div class="min-w-[768px] divide-y divide-border/60">
       <!-- Header Row -->
       <div class="grid grid-cols-[50px_1.8fr_1fr_2fr_auto] gap-4 p-4 bg-muted/20 text-xs font-semibold text-muted-foreground select-none text-start items-center">
-        <span>{m.onboarding_subjects_table_color()}</span>
-        <span>{m.onboarding_subjects_table_name_ar()}</span>
-        <span>{m.onboarding_subjects_table_code()}</span>
-        <span>{m.onboarding_subjects_table_name_en()}</span>
-        <span class="w-12 text-center">{m.onboarding_subjects_table_status()}</span>
+        <span>{common.onboarding_subjects_table_color()}</span>
+        <span>{common.onboarding_subjects_table_name_ar()}</span>
+        <span>{common.onboarding_subjects_table_code()}</span>
+        <span>{common.onboarding_subjects_table_name_en()}</span>
+        <span class="w-12 text-center">{common.onboarding_subjects_table_status()}</span>
       </div>
 
       <!-- Inline Add Subject Row -->
@@ -52,13 +53,13 @@ function handleAddSubject() {
         </div>
 
         <!-- Name Arabic -->
-        <Input bind:value={newSubNameAr} placeholder={m.onboarding_subjects_placeholder_ar()} class="h-8 text-xs font-bold font-sans bg-background/50 border-dashed border-border/80" />
+        <Input bind:value={newSubNameAr} placeholder={common.onboarding_subjects_placeholder_ar()} class="h-8 text-xs font-bold font-sans bg-background/50 border-dashed border-border/80" />
 
         <!-- Code -->
         <Input bind:value={newSubCode} placeholder="CHM" class="h-8 text-xs font-mono uppercase bg-background/50 border-dashed border-border/80 text-center" />
 
         <!-- Name English -->
-        <Input bind:value={newSubName} placeholder={m.onboarding_subjects_placeholder_en()} class="h-8 text-xs font-sans bg-background/50 border-dashed border-border/80 text-left" style="direction: ltr;" />
+        <Input bind:value={newSubName} placeholder={common.onboarding_subjects_placeholder_en()} class="h-8 text-xs font-sans bg-background/50 border-dashed border-border/80 text-left" style="direction: ltr;" />
 
         <!-- Add Button -->
         <div class="flex justify-center items-center">

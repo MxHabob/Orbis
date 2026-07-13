@@ -2,7 +2,7 @@
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { AlertCircle } from "lucide-svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 import { formatDate } from "$lib/core/i18n";
 
 let {
@@ -22,7 +22,7 @@ const sortedTasks = $derived([...tasks].sort((a, b) => a.scheduled_at.localeComp
 
 <div class="p-4 border-b border-border flex flex-col gap-3">
   <h4 class="text-xs font-bold text-foreground leading-normal text-start">
-    {m.autopilot_popover_tasks_section()}
+    {common.autopilot_popover_tasks_section()}
   </h4>
 
   {#if isLoading}
@@ -33,7 +33,7 @@ const sortedTasks = $derived([...tasks].sort((a, b) => a.scheduled_at.localeComp
   {:else}
     {#if sortedTasks.length === 0}
       <p class="text-[10px] text-muted-foreground text-start">
-        {m.autopilot_popover_no_tasks()}
+        {common.autopilot_popover_no_tasks()}
       </p>
     {:else}
       <div class="max-h-[220px] overflow-y-auto scrollbar-hide mt-1 relative ps-4 border-s border-border space-y-4 text-start">
@@ -67,15 +67,15 @@ const sortedTasks = $derived([...tasks].sort((a, b) => a.scheduled_at.localeComp
                 class="text-[8px] h-3 px-1 shrink-0"
               >
                 {#if isCompleted}
-                  {m.autopilot_popover_task_status_completed()}
+                  {common.autopilot_popover_task_status_completed()}
                 {:else if isFailed}
-                  {m.autopilot_popover_task_status_failed()}
+                  {common.autopilot_popover_task_status_failed()}
                 {:else if isExecuting}
-                  {m.autopilot_popover_task_status_executing()}
+                  {common.autopilot_popover_task_status_executing()}
                 {:else if isSuggested}
-                  {m.autopilot_popover_task_status_suggested()}
+                  {common.autopilot_popover_task_status_suggested()}
                 {:else}
-                  {m.autopilot_popover_task_status_pending()}
+                  {common.autopilot_popover_task_status_pending()}
                 {/if}
               </Badge>
             </div>
@@ -95,7 +95,7 @@ const sortedTasks = $derived([...tasks].sort((a, b) => a.scheduled_at.localeComp
               <!-- Show attempt count if > 0 -->
               {#if task.attempts > 0}
                 <span class="text-muted-foreground/80">
-                  {m.autopilot_popover_attempts_count({ attempts: task.attempts, max: config?.max_auto_retries ?? 3 })}
+                  {common.autopilot_popover_attempts_count({ attempts: task.attempts, max: config?.max_auto_retries ?? 3 })}
                 </span>
               {/if}
             </div>

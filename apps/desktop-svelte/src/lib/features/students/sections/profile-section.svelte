@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 <script lang="ts">
 import { Label } from "@orbis/ui-svelte/label";
 import { Input } from "@orbis/ui-svelte/input";
@@ -8,7 +9,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 import { getLocale } from "$lib/paraglide/runtime";
 import type { StudentFormState } from "../student-form-state.svelte";
 
@@ -18,24 +19,24 @@ const currentYear = new Date().getFullYear();
 const yearsList = Array.from({ length: 47 }, (_, i) => currentYear - i);
 const daysList = Array.from({ length: 31 }, (_, i) => String(i + 1));
 const monthsList = $derived([
-  { value: "1", label: m.form_month_1() },
-  { value: "2", label: m.form_month_2() },
-  { value: "3", label: m.form_month_3() },
-  { value: "4", label: m.form_month_4() },
-  { value: "5", label: m.form_month_5() },
-  { value: "6", label: m.form_month_6() },
-  { value: "7", label: m.form_month_7() },
-  { value: "8", label: m.form_month_8() },
-  { value: "9", label: m.form_month_9() },
-  { value: "10", label: m.form_month_10() },
-  { value: "11", label: m.form_month_11() },
-  { value: "12", label: m.form_month_12() },
+  { value: "1", label: common.form_month_1() },
+  { value: "2", label: common.form_month_2() },
+  { value: "3", label: common.form_month_3() },
+  { value: "4", label: common.form_month_4() },
+  { value: "5", label: common.form_month_5() },
+  { value: "6", label: common.form_month_6() },
+  { value: "7", label: common.form_month_7() },
+  { value: "8", label: common.form_month_8() },
+  { value: "9", label: common.form_month_9() },
+  { value: "10", label: common.form_month_10() },
+  { value: "11", label: common.form_month_11() },
+  { value: "12", label: common.form_month_12() },
 ]);
 </script>
 
 <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
   <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-    {m.form_student_info()}
+    {common.form_student_info()}
   </div>
 
   <div class="flex flex-col">
@@ -43,7 +44,7 @@ const monthsList = $derived([
     <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
       <div class="flex flex-col gap-1 text-start">
         <Label for="nameAr" class="text-xs font-semibold text-foreground flex items-center gap-1">
-          {m.form_full_name_ar()}
+          {common.form_full_name_ar()}
           <span class="text-destructive">*</span>
         </Label>
         <span class="text-[11px] text-muted-foreground leading-relaxed">الاسم الكامل للطالب باللغة العربية كما هو وارد في الوثائق الرسمية</span>
@@ -52,7 +53,7 @@ const monthsList = $derived([
         <Input 
           id="nameAr"
           type="text" 
-          placeholder={m.form_full_name_ar_placeholder()} 
+          placeholder={common.form_full_name_ar_placeholder()} 
           class="h-9 w-full bg-background" 
           bind:value={state.personal.nameAr}
           autocomplete="off"
@@ -64,7 +65,7 @@ const monthsList = $derived([
     <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
       <div class="flex flex-col gap-1 text-start">
         <Label for="nameEn" class="text-xs font-semibold text-foreground">
-          {m.form_full_name_en()}
+          {common.form_full_name_en()}
         </Label>
         <span class="text-[11px] text-muted-foreground leading-relaxed">الاسم الكامل للطالب باللغة الإنجليزية</span>
       </div>
@@ -72,7 +73,7 @@ const monthsList = $derived([
         <Input 
           id="nameEn"
           type="text" 
-          placeholder={m.form_full_name_en_placeholder()} 
+          placeholder={common.form_full_name_en_placeholder()} 
           class="h-9 w-full bg-background font-mono text-left" 
           dir="ltr"
           bind:value={state.personal.nameEn}
@@ -114,7 +115,7 @@ const monthsList = $derived([
       <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
         <div class="flex flex-col gap-1 text-start">
           <Label class="text-xs font-semibold text-foreground">
-            {m.form_birth_date()}
+            {common.form_birth_date()}
             {#if state.requiredFields.birth_date}<span class="text-destructive">*</span>{/if}
           </Label>
           <span class="text-[11px] text-muted-foreground leading-relaxed">تاريخ الميلاد الرسمي للطالب (اليوم / الشهر / السنة)</span>
@@ -123,7 +124,7 @@ const monthsList = $derived([
           <!-- Day -->
           <Select bind:value={state.personal.birthDay} type="single">
             <SelectTrigger class="w-full h-9 text-xs text-start flex items-center justify-between bg-background px-2" id="birthDaySelect">
-              <span class="truncate">{state.personal.birthDay || m.form_day()}</span>
+              <span class="truncate">{state.personal.birthDay || common.form_day()}</span>
             </SelectTrigger>
             <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
               {#each daysList as dy}
@@ -137,7 +138,7 @@ const monthsList = $derived([
           <!-- Month -->
           <Select bind:value={state.personal.birthMonth} type="single">
             <SelectTrigger class="w-full h-9 text-xs text-start flex items-center justify-between bg-background px-2" id="birthMonthSelect">
-              <span class="truncate">{monthsList.find(m => m.value === state.personal.birthMonth)?.label || m.form_month()}</span>
+              <span class="truncate">{monthsList.find(m => m.value === state.personal.birthMonth)?.label || common.form_month()}</span>
             </SelectTrigger>
             <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
               {#each monthsList as mo}
@@ -151,7 +152,7 @@ const monthsList = $derived([
           <!-- Year -->
           <Select bind:value={state.personal.birthYear} type="single">
             <SelectTrigger class="w-full h-9 text-xs text-start flex items-center justify-between bg-background px-2" id="birthYearSelect">
-              <span class="truncate">{state.personal.birthYear || m.form_year()}</span>
+              <span class="truncate">{state.personal.birthYear || common.form_year()}</span>
             </SelectTrigger>
             <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
               {#each yearsList as yr}
@@ -170,7 +171,7 @@ const monthsList = $derived([
       <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
         <div class="flex flex-col gap-1 text-start">
           <Label class="text-xs font-semibold text-foreground">
-            {m.form_sex()}
+            {common.form_sex()}
             {#if state.requiredFields.sex}<span class="text-destructive">*</span>{/if}
           </Label>
           <span class="text-[11px] text-muted-foreground leading-relaxed">تحديد جنس الطالب</span>
@@ -182,7 +183,7 @@ const monthsList = $derived([
             class="flex-1 flex items-center justify-center gap-2 border rounded-lg text-xs h-9 cursor-pointer transition-all duration-150 {state.personal.sex === 'male' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground hover:bg-muted/30'}"
             onclick={() => state.personal.sex = 'male'}
           >
-            <span>{m.form_male()}</span>
+            <span>{common.form_male()}</span>
           </Button>
           <Button 
             variant="ghost"
@@ -190,7 +191,7 @@ const monthsList = $derived([
             class="flex-1 flex items-center justify-center gap-2 border rounded-lg text-xs h-9 cursor-pointer transition-all duration-150 {state.personal.sex === 'female' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground hover:bg-muted/30'}"
             onclick={() => state.personal.sex = 'female'}
           >
-            <span>{m.form_female()}</span>
+            <span>{common.form_female()}</span>
           </Button>
         </div>
       </div>
@@ -200,7 +201,7 @@ const monthsList = $derived([
     <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
       <div class="flex flex-col gap-1 text-start">
         <Label for="classSelect" class="text-xs font-semibold text-foreground flex items-center gap-1">
-          {m.form_target_class()}
+          {common.form_target_class()}
           <span class="text-destructive">*</span>
         </Label>
         <span class="text-[11px] text-muted-foreground leading-relaxed">الصف أو المستوى الدراسي الذي سيتم تسجيل الطالب فيه</span>
@@ -225,7 +226,7 @@ const monthsList = $derived([
     <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
       <div class="flex flex-col gap-1 text-start">
         <Label for="studentNumber" class="text-xs font-semibold text-foreground">
-          {m.form_student_number()}
+          {common.form_student_number()}
         </Label>
         <span class="text-[11px] text-muted-foreground leading-relaxed">الرقم الأكاديمي المميز للطالب (متاح فقط في وضع التعديل)</span>
       </div>
@@ -233,7 +234,7 @@ const monthsList = $derived([
         <Input 
           id="studentNumber"
           type="text" 
-          placeholder={m.form_student_number_placeholder()} 
+          placeholder={common.form_student_number_placeholder()} 
           class="h-9 w-full bg-background" 
           disabled={!state.isEditMode}
           bind:value={state.personal.studentNumber}
@@ -246,7 +247,7 @@ const monthsList = $derived([
       <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
         <div class="flex flex-col gap-1 text-start">
           <Label for="phone" class="text-xs font-semibold text-foreground">
-            {m.form_student_phone()}
+            {common.form_student_phone()}
             {#if state.requiredFields.phone}<span class="text-destructive">*</span>{/if}
           </Label>
           <span class="text-[11px] text-muted-foreground leading-relaxed">رقم هاتف الطالب للتواصل المباشر</span>
@@ -255,7 +256,7 @@ const monthsList = $derived([
           <Input 
             id="phone"
             type="tel" 
-            placeholder={m.form_student_phone_placeholder()} 
+            placeholder={common.form_student_phone_placeholder()} 
             class="h-9 w-full bg-background font-mono text-left" 
             dir="ltr"
             bind:value={state.personal.phone}
@@ -275,7 +276,7 @@ const monthsList = $derived([
       <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
         <div class="flex flex-col gap-1 text-start">
           <Label for="email" class="text-xs font-semibold text-foreground">
-            {m.form_student_email()}
+            {common.form_student_email()}
             {#if state.requiredFields.email}<span class="text-destructive">*</span>{/if}
           </Label>
           <span class="text-[11px] text-muted-foreground leading-relaxed">البريد الإلكتروني الأساسي للطالب المستخدم لتسجيل الدخول والتنبيهات</span>

@@ -7,7 +7,7 @@
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Button } from "@orbis/ui-svelte/button";
 import { ChevronLeft, ChevronRight } from "lucide-svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 import { getLocale } from "$lib/paraglide/runtime";
 
 import type { MultiUpLayout, SlotPosition } from "@docforge/core";
@@ -103,7 +103,7 @@ function nextPage() {
         <ChevronLeft size={14} class={getLocale() === "ar" ? "rtl:rotate-180" : ""} />
       </Button>
       <span class="text-[10px] text-muted-foreground font-medium min-w-[80px] text-center">
-        {m.print_multi_up_page_of({ current: String(currentPage), total: String(totalPages) })}
+        {common.print_multi_up_page_of({ current: String(currentPage), total: String(totalPages) })}
       </span>
       <Button
         variant="ghost"
@@ -119,10 +119,10 @@ function nextPage() {
   <!-- Layout Stats -->
   <div class="flex items-center gap-2 flex-wrap justify-center">
     <Badge variant="secondary" class="text-[10px]">
-      {layout.columns}×{layout.rows} = {layout.itemsPerSheet} / {m.print_multi_up_items_per_sheet()}
+      {layout.columns}×{layout.rows} = {layout.itemsPerSheet} / {common.print_multi_up_items_per_sheet()}
     </Badge>
     <Badge variant="outline" class="text-[10px]">
-      {totalPages} {m.print_multi_up_sheets_needed()}
+      {totalPages} {common.print_multi_up_sheets_needed()}
     </Badge>
   </div>
 </div>

@@ -13,7 +13,7 @@ import { localizeHref } from "$lib/paraglide/runtime";
 import { getLocale } from "$lib/paraglide/runtime";
 import { l, isAr } from "$lib/core/i18n";
 import { Plus, Users } from "lucide-svelte";
-import * as m from "$lib/paraglide/messages";
+import * as settings from "$lib/paraglide/messages/settings";
 import type { User } from "$lib/core/ipc";
 import { authStore } from "$lib/stores";
 
@@ -94,12 +94,12 @@ const columns = $derived(
   usersDef.columns(
     {
       idx: "#",
-      name: m.settings_users_col_name(),
-      email: m.settings_users_col_email(),
-      phone: m.settings_users_col_phone(),
-      role: m.settings_users_col_role(),
-      status: m.settings_users_col_status?.() || "Status",
-      actions: m.settings_users_col_actions?.() || "Actions",
+      name: settings.users_col_name(),
+      email: settings.users_col_email(),
+      phone: settings.users_col_phone(),
+      role: settings.users_col_role(),
+      status: settings.users_col_status?.() || "Status",
+      actions: settings.users_col_actions?.() || "Actions",
     },
     userActions,
   ),
@@ -128,38 +128,38 @@ async function handleAction(event: GridActionEvent) {
 </script>
 
 <svelte:head>
-  <title>{m.settings_users_window_title()} | Orbis</title>
+  <title>{settings.users_window_title()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-4 scrollbar-hide">
   <!-- Header: Filters + Add Button -->
   <div class="flex items-center justify-between gap-4 flex-nowrap shrink-0">
-    <h1 class="text-lg font-bold text-foreground truncate">{m.settings_users_title()}</h1>
+    <h1 class="text-lg font-bold text-foreground truncate">{settings.users_title()}</h1>
     <div class="flex items-center gap-2 flex-nowrap shrink-0">
       <!-- Role Filter -->
       <div class="w-40 text-start">
         <Select type="single" value={selectedRole} onValueChange={(v) => (selectedRole = v ?? "all")}>
           <SelectTrigger class="h-8 w-full text-xs bg-card border-border/60">
             {#if selectedRole === "all"}
-              {m.settings_users_filter_all()}
+              {settings.users_filter_all()}
             {:else if selectedRole === "admin"}
-              {m.settings_users_filter_admin()}
+              {settings.users_filter_admin()}
             {:else if selectedRole === "teacher"}
-              {m.settings_users_filter_teacher()}
+              {settings.users_filter_teacher()}
             {:else if selectedRole === "parent"}
-              {m.settings_users_filter_guardian()}
+              {settings.users_filter_guardian()}
             {:else if selectedRole === "student"}
-              {m.settings_users_filter_student()}
+              {settings.users_filter_student()}
             {:else}
-              {m.settings_users_filter_role_staff()}
+              {settings.users_filter_role_staff()}
             {/if}
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{m.settings_users_filter_all()}</SelectItem>
-            <SelectItem value="admin">{m.settings_users_filter_admin()}</SelectItem>
-            <SelectItem value="teacher">{m.settings_users_filter_teacher()}</SelectItem>
-            <SelectItem value="parent">{m.settings_users_filter_guardian()}</SelectItem>
-            <SelectItem value="student">{m.settings_users_filter_student()}</SelectItem>
+            <SelectItem value="all">{settings.users_filter_all()}</SelectItem>
+            <SelectItem value="admin">{settings.users_filter_admin()}</SelectItem>
+            <SelectItem value="teacher">{settings.users_filter_teacher()}</SelectItem>
+            <SelectItem value="parent">{settings.users_filter_guardian()}</SelectItem>
+            <SelectItem value="student">{settings.users_filter_student()}</SelectItem>
             <SelectItem value="staff">Staff</SelectItem>
           </SelectContent>
         </Select>
@@ -167,7 +167,7 @@ async function handleAction(event: GridActionEvent) {
 
       <Button variant="lime" class="text-xs h-8 px-4 font-semibold" href={localizeHref(`/${data.orgId}/settings/users/new`)}>
         <Plus size={14} class="me-1.5" />
-        {m.settings_users_add()}
+        {settings.users_add()}
       </Button>
     </div>
   </div>
@@ -179,11 +179,11 @@ async function handleAction(event: GridActionEvent) {
       source={gridSource}
       loading={isLoading}
       searchable
-      searchPlaceholder={m.settings_users_search_placeholder()}
+      searchPlaceholder={settings.users_search_placeholder()}
       bind:searchValue={searchQuery}
       emptyIcon={Users}
-      emptyTitle={m.settings_users_empty()}
-      emptyDescription={m.settings_users_empty_desc()}
+      emptyTitle={settings.users_empty()}
+      emptyDescription={settings.users_empty_desc()}
       rtl={getLocale() === "ar"}
       refreshable
       onRefresh={loadUsers}

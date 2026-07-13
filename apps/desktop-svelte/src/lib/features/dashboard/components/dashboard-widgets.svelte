@@ -4,7 +4,7 @@ import WelcomeSection from "./welcome-section.svelte";
 import QuickActions from "./quick-actions.svelte";
 import WidgetCards from "./widget-cards.svelte";
 import DesktopBanner from "./desktop-banner.svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 import { DashboardSkeleton } from "$lib/shared/components/skeletons";
 import ErrorState from "$lib/shared/components/error-state.svelte";
 
@@ -40,7 +40,7 @@ $effect(() => {
 		<DashboardSkeleton />
 	{:else if error}
 		<ErrorState 
-			title={m.error_load_overview()} 
+			title={common.error_load_overview()} 
 			message={error} 
 			onRetry={fetchStats} 
 		/>

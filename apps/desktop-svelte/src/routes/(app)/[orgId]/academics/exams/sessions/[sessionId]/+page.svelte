@@ -36,7 +36,7 @@ import {
   XCircle,
   Printer,
 } from "lucide-svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
 import SubjectAddSheet from "$lib/features/exams/components/subject-add-sheet.svelte";
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";
@@ -199,31 +199,31 @@ function addMinutes(timeStr: string, minutes: number): string {
 const tabs = $derived([
   {
     id: "subjects",
-    label: m.exams_detail_subjects(),
+    label: common.exams_detail_subjects(),
     icon: BookOpen,
     count: subjects.length,
   },
   {
     id: "schedule",
-    label: m.exams_detail_schedule(),
+    label: common.exams_detail_schedule(),
     icon: Calendar,
     count: activeSchedules.length,
   },
   {
     id: "seating",
-    label: m.exams_detail_seating(),
+    label: common.exams_detail_seating(),
     icon: Hash,
     count: seatingNumbers.length,
   },
   {
     id: "halls",
-    label: m.exams_detail_halls(),
+    label: common.exams_detail_halls(),
     icon: Building2,
     count: halls.length,
   },
   {
     id: "proctors",
-    label: m.exams_detail_proctors(),
+    label: common.exams_detail_proctors(),
     icon: UserCheck,
     count: proctors.length,
   },
@@ -699,7 +699,7 @@ async function handleAssignProctors() {
 				class="w-fit h-7 px-2 text-[10px] text-muted-foreground flex items-center gap-1 cursor-pointer"
 			>
 				<ArrowLeft size={12} />
-				<span>{m.exams_detail_back()}</span>
+				<span>{common.action_back()}</span>
 			</Button>
 
 			<!-- Session Info Banner -->
@@ -730,7 +730,7 @@ async function handleAssignProctors() {
 						onclick={() => toast.info("Edit sheet coming soon")}
 					>
 						<Pencil size={10} />
-						{m.exams_detail_edit()}
+						{common.action_edit()}
 					</Button>
 					<Button
 						variant="default"
@@ -738,7 +738,7 @@ async function handleAssignProctors() {
 						onclick={handleActivate}
 					>
 						<Play size={10} />
-						{m.exams_detail_activate()}
+						{common.exams_detail_activate()}
 					</Button>
 				</div>
 			</div>
@@ -775,7 +775,7 @@ async function handleAssignProctors() {
 							<p class="text-xs text-muted-foreground">لم يتم إضافة مواد بعد</p>
 							<Button variant="outline" class="h-7 px-3 text-[10px] cursor-pointer" onclick={() => isSubjectSheetOpen = true}>
 								<Plus size={12} class="me-1" />
-								{m.exams_subjects_add()}
+								{common.exams_subjects_add()}
 							</Button>
 						</div>
 					{:else}
@@ -784,10 +784,10 @@ async function handleAssignProctors() {
 								<TableHeader>
 									<TableRow class="text-[10px]">
 										<TableHead class="w-10">#</TableHead>
-										<TableHead>{m.exams_subjects_name()}</TableHead>
-										<TableHead class="w-20">{m.exams_subjects_score()}</TableHead>
-										<TableHead class="w-24">{m.exams_subjects_duration()}</TableHead>
-										<TableHead class="w-24">{m.exams_subjects_type()}</TableHead>
+										<TableHead>{common.exams_subjects_name()}</TableHead>
+										<TableHead class="w-20">{common.exams_subjects_score()}</TableHead>
+										<TableHead class="w-24">{common.exams_subjects_duration()}</TableHead>
+										<TableHead class="w-24">{common.exams_subjects_type()}</TableHead>
 									</TableRow>
 								</TableHeader>
 								<TableBody>
@@ -809,7 +809,7 @@ async function handleAssignProctors() {
 						</div>
 						<Button variant="outline" class="w-fit h-7 px-3 text-[10px] cursor-pointer" onclick={() => isSubjectSheetOpen = true}>
 							<Plus size={12} class="me-1" />
-							{m.exams_subjects_add()}
+							{common.exams_subjects_add()}
 						</Button>
 					{/if}
 				</div>
@@ -823,7 +823,7 @@ async function handleAssignProctors() {
 							<p class="text-xs text-muted-foreground">لم يتم جدولة امتحانات بعد</p>
 							<Button variant="outline" class="h-7 px-3 text-[10px] cursor-pointer" onclick={handleAutoSchedule}>
 								<Zap size={12} class="me-1" />
-								{m.exams_actions_auto_schedule()}
+								{common.exams_actions_auto_schedule()}
 							</Button>
 						</div>
 					{:else}
@@ -977,7 +977,7 @@ async function handleAssignProctors() {
 							<p class="text-xs text-muted-foreground">لم يتم إصدار أرقام الجلوس بعد</p>
 							<Button variant="default" class="h-7 px-3 text-[10px] cursor-pointer" onclick={handleGenerateSeating}>
 								<Hash size={12} class="me-1" />
-								{m.exams_actions_generate_seating()}
+								{common.exams_actions_generate_seating()}
 							</Button>
 						</div>
 					{:else}
@@ -1113,7 +1113,7 @@ async function handleAssignProctors() {
 							<p class="text-xs text-muted-foreground">لم يتم تعيين مراقبين بعد</p>
 							<Button variant="outline" class="h-7 px-3 text-[10px] cursor-pointer" onclick={() => { activeConfigTab = "proctors"; isConfigModalOpen = true; }}>
 								<UserCheck size={12} class="me-1" />
-								{m.exams_actions_assign_proctors()}
+								{common.exams_actions_assign_proctors()}
 							</Button>
 						</div>
 					{:else}

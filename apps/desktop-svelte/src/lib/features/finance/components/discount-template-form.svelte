@@ -12,7 +12,8 @@ import {
 } from "@orbis/ui-svelte/select";
 import * as Sheet from "@orbis/ui-svelte/sheet";
 import { toast } from "svelte-sonner";
-import * as m from "$lib/paraglide/messages";
+import * as academics from "$lib/paraglide/messages/academics";
+import * as common from "$lib/paraglide/messages/common";
 
 let {
   orgId,
@@ -42,14 +43,14 @@ let isActive = $state(true);
 
 // Options for Type
 const itemTypes = $derived([
-  { value: "manual", label: m.dt_type_manual ? m.dt_type_manual() : "يدوي" },
+  { value: "manual", label: common.dt_type_manual ? common.dt_type_manual() : "يدوي" },
   {
     value: "scholarship",
-    label: m.dt_type_scholarship ? m.dt_type_scholarship() : "منحة دراسية",
+    label: common.dt_type_scholarship ? common.dt_type_scholarship() : "منحة دراسية",
   },
   {
     value: "system",
-    label: m.dt_type_system ? m.dt_type_system() : "تلقائي بالنظام",
+    label: common.dt_type_system ? common.dt_type_system() : "تلقائي بالنظام",
   },
 ]);
 const itemTypeLabels = $derived(
@@ -64,11 +65,11 @@ const selectedItemTypeLabel = $derived(itemTypeLabels[itemType] ?? itemType);
 const calculationMethods = $derived([
   {
     value: "percentage",
-    label: m.dt_method_percentage ? m.dt_method_percentage() : "نسبة مئوية (%)",
+    label: common.dt_method_percentage ? common.dt_method_percentage() : "نسبة مئوية (%)",
   },
   {
     value: "fixed",
-    label: m.dt_method_fixed ? m.dt_method_fixed() : "مبلغ ثابت",
+    label: common.dt_method_fixed ? common.dt_method_fixed() : "مبلغ ثابت",
   },
 ]);
 const calculationMethodLabels = $derived(
@@ -100,7 +101,7 @@ $effect(() => {
 async function handleSubmit() {
   if (!name.trim()) {
     toast.error(
-      m.attendance_status_unknown() === "غير محدد"
+      academics.attendance_status_unknown() === "غير محدد"
         ? "الاسم مطلوب"
         : "Name is required",
     );
@@ -108,7 +109,7 @@ async function handleSubmit() {
   }
   if (value < 0) {
     toast.error(
-      m.attendance_status_unknown() === "غير محدد"
+      academics.attendance_status_unknown() === "غير محدد"
         ? "يجب أن تكون القيمة رقمًا موجبًا"
         : "Value must be a positive number",
     );
@@ -140,15 +141,15 @@ async function handleSubmit() {
         request,
       );
       toast.success(
-        m.dt_update_success
-          ? m.dt_update_success()
+        common.dt_update_success
+          ? common.dt_update_success()
           : "Discount template updated successfully",
       );
     } else {
       await commands.finance.createDiscountTemplate(orgId, request);
       toast.success(
-        m.dt_create_success
-          ? m.dt_create_success()
+        common.dt_create_success
+          ? common.dt_create_success()
           : "Discount template created successfully",
       );
     }
@@ -172,8 +173,8 @@ async function handleSubmit() {
   <Sheet.Header class="px-6 py-4 border-b border-border/40 shrink-0 text-start">
     <Sheet.Title class="text-base font-bold text-foreground">
       {template 
-        ? (m.dt_sheet_edit_title ? m.dt_sheet_edit_title() : "تعديل قالب الخصم") 
-        : (m.dt_sheet_create_title ? m.dt_sheet_create_title() : "إنشاء قالب خصم")}
+        ? (common.action_edit ? common.action_edit() : "تعديل قالب الخصم") 
+        : (common.dt_sheet_create_title ? common.dt_sheet_create_title() : "إنشاء قالب خصم")}
     </Sheet.Title>
   </Sheet.Header>
 
@@ -181,7 +182,7 @@ async function handleSubmit() {
     <!-- Name -->
     <div class="flex flex-col gap-1.5 text-start">
       <Label for="dt_form_name" class="text-xs font-semibold text-muted-foreground">
-        {m.dt_form_name ? m.dt_form_name() : "اسم الخصم / المنحة"} *
+        {common.dt_form_name ? common.dt_form_name() : "اسم الخصم / المنحة"} *
       </Label>
       <Input 
         id="dt_form_name"
@@ -196,7 +197,7 @@ async function handleSubmit() {
     <!-- Code/Symbol -->
     <div class="flex flex-col gap-1.5 text-start">
       <Label for="dt_form_code" class="text-xs font-semibold text-muted-foreground">
-        {m.dt_form_code ? m.dt_form_code() : "الكود / الرمز"}
+        {common.dt_form_code ? common.dt_form_code() : "الكود / الرمز"}
       </Label>
       <Input 
         id="dt_form_code"
@@ -212,7 +213,7 @@ async function handleSubmit() {
       <!-- Type -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label class="text-xs font-semibold text-muted-foreground">
-          {m.dt_form_type ? m.dt_form_type() : "نوع الخصم"} *
+          {common.dt_form_type ? common.dt_form_type() : "نوع الخصم"} *
         </Label>
         <Select type="single" value={itemType} onValueChange={(v) => (itemType = v ?? "manual")} disabled={isSubmitting}>
           <SelectTrigger class="h-9 text-sm">
@@ -229,7 +230,7 @@ async function handleSubmit() {
       <!-- Calculation Method -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label class="text-xs font-semibold text-muted-foreground">
-          {m.dt_form_method ? m.dt_form_method() : "طريقة الحساب"} *
+          {common.dt_form_method ? common.dt_form_method() : "طريقة الحساب"} *
         </Label>
         <Select type="single" value={calculationMethod} onValueChange={(v) => (calculationMethod = v ?? "percentage")} disabled={isSubmitting}>
           <SelectTrigger class="h-9 text-sm">
@@ -247,7 +248,7 @@ async function handleSubmit() {
     <!-- Value -->
     <div class="flex flex-col gap-1.5 text-start">
       <Label for="dt_form_value" class="text-xs font-semibold text-muted-foreground">
-        {m.dt_form_value ? m.dt_form_value() : "القيمة"} *
+        {common.dt_form_value ? common.dt_form_value() : "القيمة"} *
       </Label>
       <Input 
         id="dt_form_value"
@@ -263,14 +264,14 @@ async function handleSubmit() {
     <!-- Priority (optional) -->
     <div class="flex flex-col gap-1.5 text-start">
       <Label for="dt_form_priority" class="text-xs font-semibold text-muted-foreground">
-        {m.dt_form_priority ? m.dt_form_priority() : "الأولوية"}
+        {common.dt_form_priority ? common.dt_form_priority() : "الأولوية"}
       </Label>
       <Input 
         id="dt_form_priority"
         type="number" 
         min="1"
         bind:value={priority}
-        placeholder={m.dt_form_priority_placeholder ? m.dt_form_priority_placeholder() : "e.g., 1 (highest)"}
+        placeholder={common.dt_form_priority_placeholder ? common.dt_form_priority_placeholder() : "e.g., 1 (highest)"}
         disabled={isSubmitting}
       />
     </div>
@@ -286,7 +287,7 @@ async function handleSubmit() {
           disabled={isSubmitting}
         />
         <Label for="dt_auto_apply_chk" class="text-xs cursor-pointer select-none">
-          {m.dt_form_auto_apply ? m.dt_form_auto_apply() : "تطبيق تلقائي"}
+          {common.dt_form_auto_apply ? common.dt_form_auto_apply() : "تطبيق تلقائي"}
         </Label>
       </div>
 
@@ -299,7 +300,7 @@ async function handleSubmit() {
           disabled={isSubmitting}
         />
         <Label for="dt_stackable_chk" class="text-xs cursor-pointer select-none">
-          {m.dt_form_stackable ? m.dt_form_stackable() : "قابل للدمج / التداخل"}
+          {common.dt_form_stackable ? common.dt_form_stackable() : "قابل للدمج / التداخل"}
         </Label>
       </div>
 
@@ -312,7 +313,7 @@ async function handleSubmit() {
           disabled={isSubmitting}
         />
         <Label for="dt_requires_approval_chk" class="text-xs cursor-pointer select-none">
-          {m.dt_form_requires_approval ? m.dt_form_requires_approval() : "يتطلب موافقة الإدارة"}
+          {common.dt_form_requires_approval ? common.dt_form_requires_approval() : "يتطلب موافقة الإدارة"}
         </Label>
       </div>
 
@@ -325,7 +326,7 @@ async function handleSubmit() {
           disabled={isSubmitting}
         />
         <Label for="dt_active_chk" class="text-xs cursor-pointer select-none">
-          {m.dt_form_is_active ? m.dt_form_is_active() : "نشط"}
+          {common.dt_form_is_active ? common.dt_form_is_active() : "نشط"}
         </Label>
       </div>
     </div>
@@ -340,7 +341,7 @@ async function handleSubmit() {
       disabled={isSubmitting}
       class="flex-1 h-9 text-sm"
     >
-      {m.dt_form_cancel ? m.dt_form_cancel() : "إلغاء"}
+      {common.action_cancel ? common.action_cancel() : "إلغاء"}
     </Button>
     <Button 
       type="submit" 
@@ -348,9 +349,9 @@ async function handleSubmit() {
       class="flex-1 h-9 text-sm font-semibold"
     >
       {#if isSubmitting}
-        {m.dt_form_saving ? m.dt_form_saving() : "جاري الحفظ..."}
+        {common.dt_form_saving ? common.dt_form_saving() : "جاري الحفظ..."}
       {:else}
-        {m.dt_form_save ? m.dt_form_save() : "حفظ قالب الخصم"}
+        {common.action_save ? common.action_save() : "حفظ قالب الخصم"}
       {/if}
     </Button>
   </div>

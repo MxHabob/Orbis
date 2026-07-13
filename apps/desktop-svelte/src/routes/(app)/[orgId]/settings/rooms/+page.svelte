@@ -7,7 +7,8 @@ import { l } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
 import { Plus, DoorOpen } from "lucide-svelte";
 import RoomCreateSheet from "$lib/features/academics/components/room-create-sheet.svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
+import * as settings from "$lib/paraglide/messages/settings";
 
 import { DataTable } from "$lib/tables";
 import { rooms as roomsDef, withIndex } from "$lib/tables/definitions";
@@ -72,10 +73,10 @@ const gridSource = $derived(
 const columns = $derived(
   roomsDef.columns({
     idx: "#",
-    name: m.rooms_col_name(),
-    type: m.rooms_col_type(),
-    capacity: m.rooms_col_capacity(),
-    building: m.rooms_col_location(),
+    name: common.rooms_col_name(),
+    type: common.rooms_col_type(),
+    capacity: common.rooms_col_capacity(),
+    building: common.rooms_col_location(),
     status: "Status",
   }),
 );
@@ -89,15 +90,15 @@ function openCreateSheet() {
 </script>
 
 <svelte:head>
-  <title>{m.settings_rooms_window_title()} | Orbis</title>
+  <title>{settings.rooms_window_title()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-4 scrollbar-hide">
   <div class="flex items-center justify-between gap-4 flex-nowrap shrink-0">
-    <h1 class="text-lg font-bold text-foreground truncate">{m.settings_rooms_window_title()}</h1>
+    <h1 class="text-lg font-bold text-foreground truncate">{settings.rooms_window_title()}</h1>
     <Button variant="lime" class="text-xs h-8 px-4 font-semibold shrink-0" onclick={openCreateSheet}>
       <Plus size={14} class="me-1.5" />
-      {m.rooms_add()}
+      {common.rooms_add()}
     </Button>
   </div>
 
@@ -107,11 +108,11 @@ function openCreateSheet() {
       source={gridSource}
       loading={isLoading}
       searchable
-      searchPlaceholder={m.settings_rooms_search_placeholder()}
+      searchPlaceholder={settings.rooms_search_placeholder()}
       bind:searchValue={searchQuery}
       emptyIcon={DoorOpen}
-      emptyTitle={m.rooms_empty()}
-      emptyDescription={m.rooms_empty_desc()}
+      emptyTitle={common.rooms_empty()}
+      emptyDescription={common.rooms_empty_desc()}
       rtl={getLocale() === "ar"}
       refreshable
       onRefresh={loadRooms}

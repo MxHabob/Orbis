@@ -16,7 +16,7 @@ import {
 import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
 import { Layout, Globe } from "lucide-svelte";
-import * as m from "$lib/paraglide/messages";
+import * as settings from "$lib/paraglide/messages/settings";
 
 let prefTheme = $state("dark");
 let prefLanguage = $state("ar");
@@ -32,7 +32,7 @@ let notifyPush = $state(true);
         class="text-xs font-medium text-muted-foreground flex items-center gap-1.5"
       >
         <Layout size={13} />
-        {m.settings_user_detail_pref_theme()}
+        {settings.user_detail_pref_theme()}
       </Label>
       <Select
         type="single"
@@ -41,22 +41,22 @@ let notifyPush = $state(true);
       >
         <SelectTrigger class="h-9 w-full">
           {#if prefTheme === "system"}
-            {m.settings_user_detail_theme_system()}
+            {settings.user_detail_theme_system()}
           {:else}
             {prefTheme === "light"
-              ? m.settings_user_detail_theme_light()
-              : m.settings_user_detail_theme_dark()}
+              ? settings.user_detail_theme_light()
+              : settings.user_detail_theme_dark()}
           {/if}
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="system"
-            >{m.settings_user_detail_theme_system()}</SelectItem
+            >{settings.user_detail_theme_system()}</SelectItem
           >
           <SelectItem value="light"
-            >{m.settings_user_detail_theme_light()}</SelectItem
+            >{settings.user_detail_theme_light()}</SelectItem
           >
           <SelectItem value="dark"
-            >{m.settings_user_detail_theme_dark()}</SelectItem
+            >{settings.user_detail_theme_dark()}</SelectItem
           >
         </SelectContent>
       </Select>
@@ -68,7 +68,7 @@ let notifyPush = $state(true);
         class="text-xs font-medium text-muted-foreground flex items-center gap-1.5"
       >
         <Globe size={13} />
-        {m.settings_user_detail_pref_lang()}
+        {settings.user_detail_pref_lang()}
       </Label>
       <Select
         type="single"
@@ -77,15 +77,15 @@ let notifyPush = $state(true);
       >
         <SelectTrigger class="h-9 w-full">
           {prefLanguage === "ar"
-            ? m.settings_user_detail_lang_ar()
-            : m.settings_user_detail_lang_en()}
+            ? settings.user_detail_lang_ar()
+            : settings.user_detail_lang_en()}
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="ar"
-            >{m.settings_user_detail_lang_ar()}</SelectItem
+            >{settings.user_detail_lang_ar()}</SelectItem
           >
           <SelectItem value="en"
-            >{m.settings_user_detail_lang_en()}</SelectItem
+            >{settings.user_detail_lang_en()}</SelectItem
           >
         </SelectContent>
       </Select>
@@ -95,18 +95,18 @@ let notifyPush = $state(true);
   <!-- Notifications -->
   <div class="flex flex-col gap-4 border-t border-border/40 pt-4 mt-2">
     <span class="text-xs font-semibold text-muted-foreground">
-      {m.settings_user_detail_pref_notifications()}
+      {settings.user_detail_pref_notifications()}
     </span>
     <div class="flex flex-col gap-3">
       <div class="flex items-center justify-between">
         <Label class="text-xs text-muted-foreground cursor-pointer select-none">
-          {m.settings_user_detail_notify_email()}
+          {settings.user_detail_notify_email()}
         </Label>
         <Switch bind:checked={notifyEmail} />
       </div>
       <div class="flex items-center justify-between">
         <Label class="text-xs text-muted-foreground cursor-pointer select-none">
-          {m.settings_user_detail_notify_push()}
+          {settings.user_detail_notify_push()}
         </Label>
         <Switch bind:checked={notifyPush} />
       </div>
@@ -119,9 +119,9 @@ let notifyPush = $state(true);
       size="sm"
       class="font-bold"
       onclick={() =>
-        toast.success(m.settings_user_detail_settings_saved())}
+        toast.success(settings.user_detail_settings_saved())}
     >
-      {m.settings_user_detail_save()}
+      {settings.user_detail_save()}
     </Button>
   </div>
 </div>

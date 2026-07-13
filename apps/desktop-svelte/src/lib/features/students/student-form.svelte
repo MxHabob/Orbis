@@ -15,7 +15,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@orbis/ui-svelte/dropdown-menu";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { StudentFormState } from "./form-state.svelte";
 import { createClassesQuery } from "$lib/features/academics";
@@ -81,7 +81,7 @@ onMount(async () => {
               <span class="text-xs px-3 py-1 text-foreground font-medium truncate max-w-40">
                 {state.availableTemplates.find(t => t.id === state.selectedTemplateId)?.name_ar || 
                  state.availableTemplates.find(t => t.id === state.selectedTemplateId)?.name || 
-                 m.form_select_template()}
+                 common.form_select_template()}
               </span>
               <div class="h-8 w-8 flex items-center justify-center text-muted-foreground">
                 <MoreHorizontal class="h-4 w-4" />
@@ -104,7 +104,7 @@ onMount(async () => {
             {/if}
             <div class="border-t border-border/40 my-1"></div>
             <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5 text-destructive hover:text-destructive" onclick={() => goto(localizeHref(`/${orgId}/students`))}>
-              {m.form_cancel_return()}
+              {common.action_cancel()}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -118,31 +118,31 @@ onMount(async () => {
           value="profile" 
           class="text-xs font-semibold py-2 px-1 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none shadow-none text-muted-foreground data-[state=active]:text-foreground bg-transparent transition-all duration-150 cursor-pointer"
         >
-          {m.form_tab_profile()}
+          {common.form_tab_profile()}
         </TabsTrigger>
         <TabsTrigger 
           value="family" 
           class="text-xs font-semibold py-2 px-1 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none shadow-none text-muted-foreground data-[state=active]:text-foreground bg-transparent transition-all duration-150 cursor-pointer"
         >
-          {m.form_tab_family()}
+          {common.form_tab_family()}
         </TabsTrigger>
         <TabsTrigger 
           value="location" 
           class="text-xs font-semibold py-2 px-1 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none shadow-none text-muted-foreground data-[state=active]:text-foreground bg-transparent transition-all duration-150 cursor-pointer"
         >
-          {m.form_tab_location()}
+          {common.form_tab_location()}
         </TabsTrigger>
         <TabsTrigger 
           value="financials" 
           class="text-xs font-semibold py-2 px-1 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none shadow-none text-muted-foreground data-[state=active]:text-foreground bg-transparent transition-all duration-150 cursor-pointer"
         >
-          {m.form_tab_financials()}
+          {common.form_tab_financials()}
         </TabsTrigger>
         <TabsTrigger 
           value="documents" 
           class="text-xs font-semibold py-2 px-1 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none shadow-none text-muted-foreground data-[state=active]:text-foreground bg-transparent transition-all duration-150 cursor-pointer"
         >
-          {m.form_tab_documents()}
+          {common.form_tab_documents()}
         </TabsTrigger>
       </TabsList>
 
@@ -180,7 +180,7 @@ onMount(async () => {
         onclick={() => goto(localizeHref(`/${orgId}/students`))}
         disabled={state.isSaving}
       >
-        {m.form_cancel()}
+        {common.action_cancel()}
       </Button>
 
       <!-- Separate dropdown button for changing status -->
@@ -197,33 +197,33 @@ onMount(async () => {
         <DropdownMenuContent class="p-1 min-w-[160px] text-start" align="end">
           {#if !state.isEditMode}
             <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => handleSave("draft")}>
-              {m.form_save_draft()}
+              {common.action_save()}
             </DropdownMenuItem>
             <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => handleSave("pending_review")}>
-              {m.form_submit_review()}
+              {common.form_submit_review()}
             </DropdownMenuItem>
             <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => handleSave("approved")}>
-              {m.form_direct_enroll()}
+              {common.form_direct_enroll()}
             </DropdownMenuItem>
           {:else}
             <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => handleSave("draft")}>
-              {m.form_status_draft()}
+              {common.form_status_draft()}
             </DropdownMenuItem>
             <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => handleSave("pending_review")}>
-              {m.form_status_pending_review()}
+              {common.form_status_pending_review()}
             </DropdownMenuItem>
             <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => handleSave("approved")}>
-              {m.form_status_approved()}
+              {common.form_status_approved()}
             </DropdownMenuItem>
             <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => handleSave("withdrawn")}>
-              {state.registrationStatus === "withdrawn" ? "تعديل كـ منسحب" : m.form_status_withdrawn()}
+              {state.registrationStatus === "withdrawn" ? "تعديل كـ منسحب" : common.form_status_withdrawn()}
             </DropdownMenuItem>
             <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => handleSave("graduated")}>
-              {state.registrationStatus === "graduated" ? "تعديل كـ خريج" : m.form_status_graduated()}
+              {state.registrationStatus === "graduated" ? "تعديل كـ خريج" : common.form_status_graduated()}
             </DropdownMenuItem>
           {/if}
           <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5 border-t border-border/40 mt-1" onclick={() => state.handleDownloadRegistrationForm()}>
-            {state.isDownloadingForm ? m.form_printing_registration_form() : m.form_download()}
+            {state.isDownloadingForm ? common.form_printing_registration_form() : common.form_download()}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

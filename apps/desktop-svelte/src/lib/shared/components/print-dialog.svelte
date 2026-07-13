@@ -31,7 +31,7 @@ import {
 import { Progress } from "@orbis/ui-svelte/progress";
 import { Separator } from "@orbis/ui-svelte/separator";
 import { toast } from "svelte-sonner";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 import { getLocale } from "$lib/paraglide/runtime";
 import {
   Printer,
@@ -218,19 +218,19 @@ async function generatePreview() {
 
 async function handlePrintAction() {
   if (!selectedTemplateId) {
-    toast.error(m.print_multi_up_no_templates());
+    toast.error(common.print_multi_up_no_templates());
     return;
   }
 
   if (entityIds.length <= multiUpLayout.itemsPerSheet) {
     // Single sheet — just generate preview
     await generatePreview();
-    toast.success(m.print_multi_up_complete());
+    toast.success(common.print_multi_up_complete());
   } else {
     // Batch multi-up processing
     isBatchProcessing = true;
     batchProgress = 0;
-    batchStatusText = m.print_multi_up_processing();
+    batchStatusText = common.print_multi_up_processing();
 
     try {
       const configJson = JSON.stringify(multiUpConfig);
@@ -242,9 +242,9 @@ async function handlePrintAction() {
         "", // output_dir — backend handles temp location
       );
       batchProgress = 100;
-      batchStatusText = m.print_multi_up_complete();
+      batchStatusText = common.print_multi_up_complete();
       toast.success(
-        m.print_multi_up_complete_detail({ count: String(entityIds.length) }),
+        common.print_multi_up_complete_detail({ count: String(entityIds.length) }),
       );
 
       setTimeout(() => {
@@ -282,10 +282,10 @@ function applySuggestion(suggestion: MultiUpLayout) {
     <DialogHeader class="shrink-0">
       <DialogTitle class="flex items-center gap-2">
         <LayoutGrid class="text-primary h-5 w-5" />
-        <span>{m.print_multi_up_title()}</span>
+        <span>{common.print_multi_up_title()}</span>
       </DialogTitle>
       <DialogDescription>
-        {m.print_multi_up_description()}
+        {common.print_multi_up_description()}
       </DialogDescription>
     </DialogHeader>
 
@@ -302,7 +302,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
         {#if batchProgress === 100}
           <div class="flex items-center gap-2 text-emerald-500 text-xs font-semibold animate-bounce mt-2">
             <CheckCircle2 size={16} />
-            <span>{m.print_multi_up_complete()}</span>
+            <span>{common.print_multi_up_complete()}</span>
           </div>
         {:else}
           <RefreshCw size={24} class="animate-spin text-primary mt-2" />
@@ -318,21 +318,21 @@ function applySuggestion(suggestion: MultiUpLayout) {
           <!-- Template Selection -->
           <div class="flex flex-col gap-1.5">
             <Label class="text-xs font-semibold text-muted-foreground">
-              {m.print_multi_up_template()}
+              {common.print_multi_up_template()}
             </Label>
             {#if loadingTemplates}
               <div class="h-8 bg-muted rounded animate-pulse"></div>
             {:else if templates.length === 0}
               <div class="text-[10px] text-destructive flex items-center gap-1">
                 <AlertCircle size={12} />
-                <span>{m.print_multi_up_no_templates()}</span>
+                <span>{common.print_multi_up_no_templates()}</span>
               </div>
             {:else}
               <Select type="single" bind:value={selectedTemplateId} onValueChange={(val) => { if (val) { selectedTemplateId = val; pdfUrl = null; } }}>
                 <SelectTrigger class="h-8 text-xs">
                   {(() => {
                     const selected = templates.find((t: any) => t.id === selectedTemplateId);
-                    return selected ? (isRtl && selected.name_ar ? selected.name_ar : selected.name) : m.print_multi_up_template_placeholder();
+                    return selected ? (isRtl && selected.name_ar ? selected.name_ar : selected.name) : common.print_multi_up_template_placeholder();
                   })()}
                 </SelectTrigger>
                 <SelectContent>
@@ -349,19 +349,19 @@ function applySuggestion(suggestion: MultiUpLayout) {
           <!-- Stats Card -->
           <div class="bg-card border border-border rounded-xl p-3 flex flex-col gap-2">
             <div class="flex items-center justify-between text-[10px] text-muted-foreground border-b border-border/40 pb-2">
-              <span>{m.print_multi_up_records_selected()}</span>
+              <span>{common.print_multi_up_records_selected()}</span>
               <Badge variant="secondary" class="text-[10px]">{entityIds.length}</Badge>
             </div>
             <div class="flex items-center justify-between text-[10px] text-muted-foreground border-b border-border/40 pb-2">
-              <span>{m.print_multi_up_items_per_sheet()}</span>
+              <span>{common.print_multi_up_items_per_sheet()}</span>
               <Badge variant="success" class="text-[10px]">{multiUpLayout.itemsPerSheet}</Badge>
             </div>
             <div class="flex items-center justify-between text-[10px] text-muted-foreground border-b border-border/40 pb-2">
-              <span>{m.print_multi_up_sheets_needed()}</span>
+              <span>{common.print_multi_up_sheets_needed()}</span>
               <Badge variant="outline" class="text-[10px]">{totalSheets}</Badge>
             </div>
             <div class="flex items-center justify-between text-[10px] text-muted-foreground">
-              <span>{m.print_multi_up_entity_type()}</span>
+              <span>{common.print_multi_up_entity_type()}</span>
               <Badge variant="ghost" class="text-[10px] capitalize">{entityType}</Badge>
             </div>
           </div>
@@ -377,7 +377,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
           <Tabs bind:value={activeTab} class="flex-grow flex flex-col overflow-hidden">
             <TabsList class="w-full shrink-0">
               <TabsTrigger value="preview" class="flex-1 text-xs">
-                {m.print_multi_up_preview()}
+                {common.print_multi_up_preview()}
               </TabsTrigger>
               <TabsTrigger value="pdf" class="flex-1 text-xs">
                 PDF
@@ -399,7 +399,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
               {#if generatingPdf}
                 <div class="absolute inset-0 bg-background/60 backdrop-blur-xs flex flex-col items-center justify-center gap-2 z-10">
                   <RefreshCw size={20} class="text-primary animate-spin" />
-                  <p class="text-[10px] font-semibold">{m.print_multi_up_preview_loading()}</p>
+                  <p class="text-[10px] font-semibold">{common.print_multi_up_preview_loading()}</p>
                 </div>
               {/if}
 
@@ -412,7 +412,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
               {:else}
                 <div class="text-muted-foreground flex flex-col items-center gap-2 text-[10px]">
                   <FileText size={28} />
-                  <p>{m.print_multi_up_preview_empty()}</p>
+                  <p>{common.print_multi_up_preview_empty()}</p>
                   <Button
                     variant="outline"
                     size="xs"
@@ -421,7 +421,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
                     class="mt-2 cursor-pointer"
                   >
                     <RefreshCw size={12} class="me-1" />
-                    {m.print_multi_up_refresh_preview()}
+                    {common.print_multi_up_refresh_preview()}
                   </Button>
                 </div>
               {/if}
@@ -432,7 +432,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
           {#if suggestions.length > 1}
             <div class="flex flex-col gap-1.5">
               <Label class="text-[10px] text-muted-foreground font-semibold">
-                {m.print_multi_up_suggested_layouts()}
+                {common.print_multi_up_suggested_layouts()}
               </Label>
               <div class="flex items-center gap-1.5 flex-wrap">
                 {#each suggestions.slice(0, 4) as suggestion (suggestion.itemsPerSheet)}
@@ -455,13 +455,13 @@ function applySuggestion(suggestion: MultiUpLayout) {
     <!-- ═══ Footer ═══ -->
     <DialogFooter class="shrink-0 border-t border-border/40 pt-3 gap-2 sm:gap-0">
       <Button variant="outline" size="sm" onclick={() => (open = false)}>
-        {m.print_multi_up_cancel()}
+        {common.action_cancel()}
       </Button>
 
       {#if pdfUrl && !isBatchProcessing}
         <Button variant="outline" size="sm" onclick={triggerDownload}>
           <Download size={14} class="me-1" />
-          {m.print_multi_up_download()}
+          {common.print_multi_up_download()}
         </Button>
       {/if}
 
@@ -473,8 +473,8 @@ function applySuggestion(suggestion: MultiUpLayout) {
       >
         <Printer size={14} class="me-1.5" />
         {entityIds.length > multiUpLayout.itemsPerSheet
-          ? m.print_multi_up_start_batch_count({ count: String(entityIds.length) })
-          : m.print_multi_up_start_batch()}
+          ? common.print_multi_up_start_batch_count({ count: String(entityIds.length) })
+          : common.print_multi_up_start_batch()}
       </Button>
     </DialogFooter>
   </DialogContent>

@@ -12,7 +12,7 @@ import {
   SelectItem,
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
-import * as m from "$lib/paraglide/messages";
+import * as settings from "$lib/paraglide/messages/settings";
 import { l, isAr } from "$lib/core/i18n";
 import SearchField from "$lib/shared/components/search-field.svelte";
 import { Plus, RefreshCw, FileText } from "lucide-svelte";
@@ -210,7 +210,7 @@ async function publishTemplate(id: string) {
   try {
     const userId = "current-user";
     await commands.platform.publishDocumentTemplate(orgId, id, userId);
-    toast.success(m.templates_publish_success());
+    toast.success(settings.templates_publish_success());
     loadTemplates();
   } catch (e: unknown) {
     console.error("Failed to publish template:", e);
@@ -223,7 +223,7 @@ async function publishTemplate(id: string) {
 async function archiveTemplate(id: string) {
   try {
     await commands.platform.archiveDocumentTemplate(orgId, id);
-    toast.success(m.templates_archive_success());
+    toast.success(settings.templates_archive_success());
     loadTemplates();
   } catch (e: unknown) {
     console.error("Failed to archive template:", e);
@@ -236,7 +236,7 @@ async function archiveTemplate(id: string) {
 async function restoreTemplate(id: string) {
   try {
     await commands.platform.restoreDocumentTemplate(orgId, id);
-    toast.success(m.templates_restore_success());
+    toast.success(settings.templates_restore_success());
     loadTemplates();
   } catch (e: unknown) {
     console.error("Failed to restore template:", e);
@@ -247,7 +247,7 @@ async function restoreTemplate(id: string) {
 </script>
 
 <svelte:head>
-  <title>{m.settings_nav_templates()} | Orbis</title>
+  <title>{settings.nav_templates()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide">
@@ -262,9 +262,9 @@ async function restoreTemplate(id: string) {
           <FileText size={22} />
         </div>
         <div>
-          <h1 class="text-sm font-bold text-foreground">{m.settings_nav_templates()}</h1>
+          <h1 class="text-sm font-bold text-foreground">{settings.nav_templates()}</h1>
           <p class="text-[10px] text-muted-foreground mt-0.5">
-            {m.templates_empty_desc()}
+            {settings.templates_empty_desc()}
           </p>
         </div>
       </div>
@@ -277,7 +277,7 @@ async function restoreTemplate(id: string) {
         <SearchField
           bind:value={searchQuery}
           oninput={loadTemplates}
-          placeholder={m.settings_templates_search_placeholder()}
+          placeholder={settings.templates_search_placeholder()}
         />
 
         <div class="flex items-center gap-2">
@@ -285,15 +285,15 @@ async function restoreTemplate(id: string) {
           <div class="min-w-[140px]">
             <Select type="single" bind:value={filterEntityType} onValueChange={loadTemplates}>
               <SelectTrigger class="h-9 text-xs bg-background/50">
-                {({ all: m.settings_templates_filter_entity_all(), enrollment: m.settings_templates_filter_entity_enrollment(), payment: m.settings_templates_filter_entity_payment(), exam: m.settings_templates_filter_entity_exam(), user: m.settings_templates_filter_entity_user(), organization: m.settings_templates_filter_entity_organization() } as any)[filterEntityType] || m.settings_templates_filter_entity_trigger()}
+                {({ all: settings.templates_filter_entity_all(), enrollment: settings.templates_filter_entity_enrollment(), payment: settings.templates_filter_entity_payment(), exam: settings.templates_filter_entity_exam(), user: settings.templates_filter_entity_user(), organization: settings.templates_filter_entity_organization() } as any)[filterEntityType] || settings.templates_filter_entity_trigger()}
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{m.settings_templates_filter_entity_all()}</SelectItem>
-                <SelectItem value="enrollment">{m.settings_templates_filter_entity_enrollment()}</SelectItem>
-                <SelectItem value="payment">{m.settings_templates_filter_entity_payment()}</SelectItem>
-                <SelectItem value="exam">{m.settings_templates_filter_entity_exam()}</SelectItem>
-                <SelectItem value="user">{m.settings_templates_filter_entity_user()}</SelectItem>
-                <SelectItem value="organization">{m.settings_templates_filter_entity_organization()}</SelectItem>
+                <SelectItem value="all">{settings.templates_filter_entity_all()}</SelectItem>
+                <SelectItem value="enrollment">{settings.templates_filter_entity_enrollment()}</SelectItem>
+                <SelectItem value="payment">{settings.templates_filter_entity_payment()}</SelectItem>
+                <SelectItem value="exam">{settings.templates_filter_entity_exam()}</SelectItem>
+                <SelectItem value="user">{settings.templates_filter_entity_user()}</SelectItem>
+                <SelectItem value="organization">{settings.templates_filter_entity_organization()}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -302,15 +302,15 @@ async function restoreTemplate(id: string) {
           <div class="min-w-[140px]">
             <Select type="single" bind:value={filterDocType} onValueChange={loadTemplates}>
               <SelectTrigger class="h-9 text-xs bg-background/50">
-                {({ all: m.settings_templates_filter_doc_all(), CERTIFICATE: m.settings_templates_filter_doc_certificate(), ID_CARD: m.settings_templates_filter_doc_id_card(), RECEIPT: m.settings_templates_filter_doc_receipt(), EXAM_CARD: m.settings_templates_filter_doc_exam_card(), REPORT: m.settings_templates_filter_doc_report() } as any)[filterDocType] || m.settings_templates_filter_doc_trigger()}
+                {({ all: settings.templates_filter_doc_all(), CERTIFICATE: settings.templates_filter_doc_certificate(), ID_CARD: settings.templates_filter_doc_id_card(), RECEIPT: settings.templates_filter_doc_receipt(), EXAM_CARD: settings.templates_filter_doc_exam_card(), REPORT: settings.templates_filter_doc_report() } as any)[filterDocType] || settings.templates_filter_doc_trigger()}
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{m.settings_templates_filter_doc_all()}</SelectItem>
-                <SelectItem value="CERTIFICATE">{m.settings_templates_filter_doc_certificate()}</SelectItem>
-                <SelectItem value="ID_CARD">{m.settings_templates_filter_doc_id_card()}</SelectItem>
-                <SelectItem value="RECEIPT">{m.settings_templates_filter_doc_receipt()}</SelectItem>
-                <SelectItem value="EXAM_CARD">{m.settings_templates_filter_doc_exam_card()}</SelectItem>
-                <SelectItem value="REPORT">{m.settings_templates_filter_doc_report()}</SelectItem>
+                <SelectItem value="all">{settings.templates_filter_doc_all()}</SelectItem>
+                <SelectItem value="CERTIFICATE">{settings.templates_filter_doc_certificate()}</SelectItem>
+                <SelectItem value="ID_CARD">{settings.templates_filter_doc_id_card()}</SelectItem>
+                <SelectItem value="RECEIPT">{settings.templates_filter_doc_receipt()}</SelectItem>
+                <SelectItem value="EXAM_CARD">{settings.templates_filter_doc_exam_card()}</SelectItem>
+                <SelectItem value="REPORT">{settings.templates_filter_doc_report()}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -320,7 +320,7 @@ async function restoreTemplate(id: string) {
       <div class="flex items-center gap-2 flex-nowrap shrink-0">
         <Button variant="lime" size="sm" class="h-9 text-xs font-semibold" onclick={() => (isCreateDialogOpen = true)}>
           <Plus size={16} class="me-1.5" />
-          {m.templates_create_btn()}
+          {settings.templates_create_btn()}
         </Button>
       </div>
     </div>

@@ -19,7 +19,9 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@orbis/ui-svelte/dialog";
-import * as m from "$lib/paraglide/messages";
+import * as finance from "$lib/paraglide/messages/finance";
+import * as common from "$lib/paraglide/messages/common";
+
 
 import { DataTable } from "$lib/tables";
 import {
@@ -72,16 +74,16 @@ const totalBalance = $derived(
 
 function getTreasuryTypeLabel(t: string) {
   const low = String(t).toLowerCase();
-  if (low === "bank") return m.treasury_type_bank();
-  return m.treasury_type_cash();
+  if (low === "bank") return common.treasury_type_bank();
+  return common.treasury_type_cash();
 }
 
 function getLedgerTypeLabel(t: string) {
   const low = String(t).toLowerCase();
-  if (low === "revenue") return m.finance_type_revenue();
-  if (low === "expense") return m.finance_type_expense();
-  if (low === "asset") return m.finance_type_asset();
-  if (low === "liability") return m.finance_type_liability();
+  if (low === "revenue") return finance.type_revenue();
+  if (low === "expense") return finance.type_expense();
+  if (low === "asset") return finance.type_asset();
+  if (low === "liability") return finance.type_liability();
   return t;
 }
 
@@ -113,9 +115,9 @@ const ledgerSource = $derived(
 const treasuryCols = $derived(
   tDef.columns({
     idx: "#",
-    name: m.finance_col_name(),
-    type: m.finance_col_category(),
-    balance: m.finance_col_balance(),
+    name: finance.col_name(),
+    type: finance.col_category(),
+    balance: finance.col_balance(),
     currency: "Currency",
   }),
 );
@@ -123,9 +125,9 @@ const treasuryCols = $derived(
 const ledgerCols = $derived(
   lDef.columns({
     idx: "#",
-    code: m.finance_col_code(),
-    name: m.finance_col_name(),
-    type: m.finance_col_type(),
+    code: finance.col_code(),
+    name: finance.col_name(),
+    type: finance.col_type(),
   }),
 );
 
@@ -136,10 +138,10 @@ const rtl = $derived(getLocale() === "ar");
   <!-- Header -->
   <div class="text-start select-none">
     <h2 class="text-sm font-bold text-foreground uppercase tracking-wider">
-      {m.finance_page_title()}
+      {finance.page_title()}
     </h2>
     <p class="text-[10px] text-muted-foreground mt-0.5">
-      {m.finance_page_subtitle()}
+      {finance.page_subtitle()}
     </p>
   </div>
 
@@ -156,15 +158,15 @@ const rtl = $derived(getLocale() === "ar");
           <div class="flex flex-col">
             <h3 class="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
               <Landmark size={13} class="text-primary" />
-              <span>{m.finance_vaults_title()}</span>
+              <span>{finance.vaults_title()}</span>
             </h3>
             <span class="text-[8px] text-muted-foreground mt-0.5">
-              {m.finance_total_cash_assets({ balance: formatCurrency(totalBalance, "YER") })}
+              {finance.total_cash_assets({ balance: formatCurrency(totalBalance, "YER") })}
             </span>
           </div>
           <Button variant="outline" class="text-[10px] h-7 px-2" onclick={() => { activeTabType = "treasury"; isAddDialogOpen = true; }}>
             <Plus size={12} class="me-1" />
-            {m.finance_new_treasury_button()}
+            {finance.new_treasury_button()}
           </Button>
         </div>
         <div class="flex-1 min-h-0" style="height: 300px">
@@ -172,7 +174,7 @@ const rtl = $derived(getLocale() === "ar");
             columns={treasuryCols}
             source={treasurySource}
             emptyIcon={Landmark}
-            emptyTitle={m.finance_no_treasuries()}
+            emptyTitle={finance.no_treasuries()}
             {rtl}
           />
         </div>
@@ -184,15 +186,15 @@ const rtl = $derived(getLocale() === "ar");
           <div class="flex flex-col">
             <h3 class="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
               <Layers size={13} class="text-primary" />
-              <span>{m.finance_ledger_chart_title()}</span>
+              <span>{finance.ledger_chart_title()}</span>
             </h3>
             <span class="text-[8px] text-muted-foreground mt-0.5">
-              {m.finance_ledger_accounts_count({ count: ledgers.length })}
+              {finance.ledger_accounts_count({ count: ledgers.length })}
             </span>
           </div>
           <Button variant="outline" class="text-[10px] h-7 px-2" onclick={() => { activeTabType = "gl"; isAddDialogOpen = true; }}>
             <Plus size={12} class="me-1" />
-            {m.finance_new_ledger_button()}
+            {finance.new_ledger_button()}
           </Button>
         </div>
         <div class="flex-1 min-h-0" style="height: 300px">
@@ -200,7 +202,7 @@ const rtl = $derived(getLocale() === "ar");
             columns={ledgerCols}
             source={ledgerSource}
             emptyIcon={Layers}
-            emptyTitle={m.finance_no_ledgers()}
+            emptyTitle={finance.no_ledgers()}
             {rtl}
           />
         </div>
@@ -213,10 +215,10 @@ const rtl = $derived(getLocale() === "ar");
   <DialogContent class="max-w-xl text-start select-none h-[80vh] flex flex-col p-6 bg-card border-border/80">
     <DialogHeader class="shrink-0 mb-4 text-start">
       <DialogTitle class="text-base font-extrabold text-foreground">
-        {m.ledger_dialog_add_title()}
+        {common.ledger_dialog_add_title()}
       </DialogTitle>
       <DialogDescription class="text-[11px] text-muted-foreground leading-relaxed">
-        {m.ledger_dialog_add_desc()}
+        {common.ledger_dialog_add_desc()}
       </DialogDescription>
     </DialogHeader>
     {#if isAddDialogOpen}

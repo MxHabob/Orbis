@@ -13,7 +13,7 @@ import { Plus, Users2, Edit2, Trash2 } from "lucide-svelte";
 import { commands } from "$lib/core/ipc";
 import type { GuardianLink, JsonRecord } from "@orbis/sdk-core";
 import GuardianLinkSheet from "$lib/features/students/components/guardian-link-sheet.svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 
 const orgId = $derived(page.params.orgId ?? "");
 const studentId = $derived(page.params.studentId ?? "");
@@ -82,11 +82,11 @@ function openEdit(link: GuardianLink) {
 }
 
 async function handleDelete(link: GuardianLink) {
-  if (!confirm(m.guardians_delete_confirm())) return;
+  if (!confirm(common.guardians_delete_confirm())) return;
   try {
     await commands.platform.deleteGuardianLink(String(link.id));
     guardians = guardians.filter((g) => g.id !== link.id);
-    toast.success(m.guardians_delete_success());
+    toast.success(common.guardians_delete_success());
   } catch (e: unknown) {
     toast.error(`فشل الحذف: ${e instanceof Error ? e.message : String(e)}`);
   }
@@ -94,19 +94,19 @@ async function handleDelete(link: GuardianLink) {
 </script>
 
 <svelte:head>
-  <title>{m.guardians_title()}</title>
+  <title>{common.guardians_title()}</title>
 </svelte:head>
 
 <div class="flex flex-col gap-4">
   <!-- Header -->
   <div class="flex items-center justify-between">
     <div>
-      <h2 class="text-sm font-bold text-foreground">{m.guardians_title()}</h2>
-      <p class="text-[11px] text-muted-foreground">{m.guardians_desc()}</p>
+      <h2 class="text-sm font-bold text-foreground">{common.guardians_title()}</h2>
+      <p class="text-[11px] text-muted-foreground">{common.guardians_desc()}</p>
     </div>
     <Button onclick={openCreate} size="sm" class="h-8 gap-1.5 text-xs">
       <Plus size={13} />
-      {m.guardians_add()}
+      {common.guardians_add()}
     </Button>
   </div>
 
@@ -124,12 +124,12 @@ async function handleDelete(link: GuardianLink) {
         <Users2 class="h-10 w-10 text-muted-foreground/40" />
       </div>
       <div class="space-y-1">
-        <p class="text-sm font-semibold text-foreground">{m.guardians_empty()}</p>
-        <p class="text-xs text-muted-foreground max-w-xs">{m.guardians_empty_desc()}</p>
+        <p class="text-sm font-semibold text-foreground">{common.guardians_empty()}</p>
+        <p class="text-xs text-muted-foreground max-w-xs">{common.guardians_empty_desc()}</p>
       </div>
       <Button onclick={openCreate} size="sm" class="mt-2 gap-1.5 text-xs">
         <Plus size={13} />
-        {m.guardians_add()}
+        {common.guardians_add()}
       </Button>
     </div>
   {:else}
@@ -141,7 +141,7 @@ async function handleDelete(link: GuardianLink) {
           <!-- Guardian Block Header -->
           <div class="bg-muted/50 px-6 py-3 border-b border-border flex justify-between items-center select-none">
             <span class="text-[11px] font-bold text-foreground uppercase tracking-wider">
-              {m.form_guardian_number()} {index + 1}
+              {common.form_guardian_number()} {index + 1}
             </span>
             <div class="flex items-center gap-1.5 flex-nowrap shrink-0">
               <Button
@@ -169,7 +169,7 @@ async function handleDelete(link: GuardianLink) {
             <!-- Guardian Full Name -->
             <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
               <div class="flex flex-col gap-1 text-start">
-                <span class="text-xs font-semibold text-foreground">{m.form_guardian_name_label()}</span>
+                <span class="text-xs font-semibold text-foreground">{common.form_guardian_name_label()}</span>
                 <span class="text-[11px] text-muted-foreground leading-relaxed">الاسم الكامل لولي الأمر</span>
               </div>
               <div class="w-full md:w-[480px] shrink-0 text-start font-medium text-sm text-foreground">
@@ -180,7 +180,7 @@ async function handleDelete(link: GuardianLink) {
             <!-- Phone Number -->
             <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
               <div class="flex flex-col gap-1 text-start">
-                <span class="text-xs font-semibold text-foreground">{m.form_guardian_phone_label()}</span>
+                <span class="text-xs font-semibold text-foreground">{common.form_guardian_phone_label()}</span>
                 <span class="text-[11px] text-muted-foreground leading-relaxed">رقم هاتف المحمول لولي الأمر</span>
               </div>
               <div class="w-full md:w-[480px] shrink-0 text-start font-mono text-sm text-foreground" dir="ltr">
@@ -204,7 +204,7 @@ async function handleDelete(link: GuardianLink) {
             <!-- Relationship -->
             <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
               <div class="flex flex-col gap-1 text-start">
-                <span class="text-xs font-semibold text-foreground">{m.form_guardian_relationship_label()}</span>
+                <span class="text-xs font-semibold text-foreground">{common.form_guardian_relationship_label()}</span>
                 <span class="text-[11px] text-muted-foreground leading-relaxed">صلة القرابة بين ولي الأمر والطالب</span>
               </div>
               <div class="w-full md:w-[480px] shrink-0 text-start font-medium text-sm text-foreground">
@@ -215,7 +215,7 @@ async function handleDelete(link: GuardianLink) {
             <!-- National ID -->
             <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
               <div class="flex flex-col gap-1 text-start">
-                <span class="text-xs font-semibold text-foreground">{m.form_guardian_national_id_label()}</span>
+                <span class="text-xs font-semibold text-foreground">{common.form_guardian_national_id_label()}</span>
                 <span class="text-[11px] text-muted-foreground leading-relaxed">رقم الهوية الوطنية أو البطاقة الشخصية لولي الأمر</span>
               </div>
               <div class="w-full md:w-[480px] shrink-0 text-start font-mono text-sm text-foreground">
@@ -233,7 +233,7 @@ async function handleDelete(link: GuardianLink) {
               <div class="w-full md:w-[480px] shrink-0 flex flex-col gap-3">
                 <div class="flex flex-wrap gap-2 justify-start">
                   {#if link.is_primary === 1 || (link as any).is_primary === true}
-                    <Badge variant="brand" class="text-[10px]">{m.form_guardian_role_primary()}</Badge>
+                    <Badge variant="brand" class="text-[10px]">{common.form_guardian_role_primary()}</Badge>
                   {/if}
                 </div>
               </div>

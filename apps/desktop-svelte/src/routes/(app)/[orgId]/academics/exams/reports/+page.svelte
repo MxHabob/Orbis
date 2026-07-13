@@ -18,7 +18,7 @@ import {
   Printer,
   Eye,
 } from "lucide-svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -29,43 +29,43 @@ let isGenerating = $state(false);
 const reportTypes = $derived([
   {
     id: "timetable",
-    title: m.exams_reports_timetable(),
+    title: common.exams_reports_timetable(),
     icon: Calendar,
     color: "bg-blue-500/10 text-blue-500 border-blue-500/20",
   },
   {
     id: "seating_list",
-    title: m.exams_reports_seating_list(),
+    title: common.exams_reports_seating_list(),
     icon: Hash,
     color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
   },
   {
     id: "hall_map",
-    title: m.exams_reports_hall_map(),
+    title: common.exams_reports_hall_map(),
     icon: Building2,
     color: "bg-purple-500/10 text-purple-500 border-purple-500/20",
   },
   {
     id: "proctor_sheet",
-    title: m.exams_reports_proctor_sheet(),
+    title: common.exams_reports_proctor_sheet(),
     icon: UserCheck,
     color: "bg-amber-500/10 text-amber-500 border-amber-500/20",
   },
   {
     id: "student_cards",
-    title: m.exams_reports_student_cards(),
+    title: common.exams_reports_student_cards(),
     icon: CreditCard,
     color: "bg-rose-500/10 text-rose-500 border-rose-500/20",
   },
   {
     id: "attendance",
-    title: m.exams_reports_attendance(),
+    title: common.exams_reports_attendance(),
     icon: ClipboardCheck,
     color: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20",
   },
   {
     id: "summary",
-    title: m.exams_reports_summary(),
+    title: common.exams_reports_summary(),
     icon: BarChart3,
     color: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
   },
@@ -99,7 +99,7 @@ function handlePrint() {
 			<FileText size={20} />
 		</div>
 		<div class="flex flex-col">
-			<h1 class="text-sm font-bold text-foreground">{m.exams_reports_title()}</h1>
+			<h1 class="text-sm font-bold text-foreground">{common.exams_reports_title()}</h1>
 			<p class="text-[10px] text-muted-foreground mt-0.5">
 				اختر نوع التقرير لمعاينته وطباعته
 			</p>
@@ -131,7 +131,7 @@ function handlePrint() {
 			<div class="flex items-center justify-between">
 				<h3 class="text-xs font-bold text-foreground flex items-center gap-2">
 					<Eye size={14} class="text-primary" />
-					{m.exams_reports_preview()}: {reportTypes.find(r => r.id === selectedReport)?.title}
+					{common.exams_reports_preview()}: {reportTypes.find(r => r.id === selectedReport)?.title}
 				</h3>
 				<Button
 					variant="default"
@@ -139,7 +139,7 @@ function handlePrint() {
 					onclick={handlePrint}
 				>
 					<Printer size={12} />
-					{m.exams_reports_print()}
+					{common.exams_reports_print()}
 				</Button>
 			</div>
 

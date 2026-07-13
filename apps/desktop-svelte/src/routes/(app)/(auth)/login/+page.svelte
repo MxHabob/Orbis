@@ -6,7 +6,7 @@
 <script lang="ts">
 import { Card } from "@orbis/ui-svelte/card";
 import { Logo } from "@orbis/ui-svelte/logo";
-import * as m from "$lib/paraglide/messages";
+import * as auth from "$lib/paraglide/messages/auth";
 import { getLocale } from "$lib/paraglide/runtime";
 
 import AnnouncementBanner from "$lib/features/auth/components/announcement-banner.svelte";
@@ -19,7 +19,7 @@ let selectedYear = $state("");
 </script>
 
 <svelte:head>
-	<title>{m.login_title()}</title>
+	<title>{auth.login_title()}</title>
 </svelte:head>
 
 <div class="h-full w-full bg-background flex flex-col items-center justify-center relative overflow-hidden" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
@@ -43,7 +43,7 @@ let selectedYear = $state("");
 					<!-- Sentry-like Header: Sign in to continue -->
 					<div class="flex flex-col text-start mb-4 select-none">
 						<h2 class="text-xl md:text-2xl font-bold tracking-tight text-foreground">
-							{m.login_sign_in_to_continue()}
+							{auth.login_sign_in_to_continue()}
 						</h2>
 					</div>
 
@@ -53,7 +53,7 @@ let selectedYear = $state("");
 							<span 
 								class="border-b-2 border-primary text-foreground rounded-none px-1 py-1.5 font-semibold text-xs bg-transparent uppercase tracking-wider select-none"
 							>
-								{m.login_submit()}
+								{auth.login_submit()}
 							</span>
 						</div>
 					</div>
@@ -78,23 +78,23 @@ let selectedYear = $state("");
 				<!-- Footer Policy Terms -->
 				<div class="text-center pt-8 border-t border-border/40 mt-8 select-none">
 					<p class="font-sans text-[10px] text-muted-foreground/80 leading-normal">
-						{m.login_terms_prefix()}{' '}
+						{auth.login_terms_prefix()}{' '}
 						<a
 							href="https://mulverse.com/?route=terms"
 							class="text-muted-foreground hover:text-primary transition-colors underline font-medium"
 							target="_blank"
 							rel="noreferrer"
 						>
-							{m.login_terms_of_service()}
+							{auth.login_terms_of_service()}
 						</a>{' '}
-						{m.login_and()}{' '}
+						{auth.login_and()}{' '}
 						<a
 							href="https://mulverse.com/?route=policy"
 							class="text-muted-foreground hover:text-primary transition-colors underline font-medium"
 							target="_blank"
 							rel="noreferrer"
 						>
-							{m.login_privacy_policy()}
+							{auth.login_privacy_policy()}
 						</a>
 					</p>
 				</div>

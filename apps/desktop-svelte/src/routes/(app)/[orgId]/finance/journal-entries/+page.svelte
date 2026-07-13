@@ -48,7 +48,8 @@ import {
 } from "lucide-svelte";
 import { formatDate } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
+import * as finance from "$lib/paraglide/messages/finance";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -333,11 +334,11 @@ const filteredEntries = $derived.by(() => {
             <div class="min-w-[120px]">
               <Select type="single" bind:value={filterMode}>
                 <SelectTrigger class="h-8 text-xs bg-background/50 border-border cursor-pointer">
-                  {filterMode === "day" ? m.finance_je_filter_day() : m.finance_je_filter_all()}
+                  {filterMode === "day" ? finance.je_filter_day() : finance.je_filter_all()}
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="day">{m.finance_je_filter_day()}</SelectItem>
-                  <SelectItem value="all">{m.finance_je_filter_all()}</SelectItem>
+                  <SelectItem value="day">{finance.je_filter_day()}</SelectItem>
+                  <SelectItem value="all">{finance.je_filter_all()}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -369,7 +370,7 @@ const filteredEntries = $derived.by(() => {
                 onclick={jumpToToday}
                 class="h-8 px-3 font-semibold text-xs border-border cursor-pointer hover:bg-muted text-foreground"
               >
-                {m.finance_je_date_nav_today()}
+                {finance.je_date_nav_today()}
               </Button>
             {/if}
 
@@ -474,7 +475,7 @@ const filteredEntries = $derived.by(() => {
                       </TableCell>
                       <TableCell class="text-center">
                         <Badge variant={je.status === 'posted' ? 'lime' : 'secondary'} class="text-[10px] font-bold py-0.5 px-2">
-                          {je.status === 'posted' ? m.je_status_posted() : m.je_status_draft()}
+                          {je.status === 'posted' ? common.je_status_posted() : common.je_status_draft()}
                         </Badge>
                       </TableCell>
                     </TableRow>

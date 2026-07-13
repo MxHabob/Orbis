@@ -7,7 +7,7 @@ import { getLocale } from "$lib/paraglide/runtime";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import LessonCreateSheet from "$lib/features/academics/components/lesson-create-sheet.svelte";
 import SchedulerAiPanel from "$lib/features/academics/components/scheduler-ai-panel.svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 
 // Component imports
 import {
@@ -35,11 +35,11 @@ let activeJob = $state<any>(null);
 let previewDraft = $state(false);
 
 const weekdays = $derived([
-  { value: 1, label: m.schedule_page_day_sun() },
-  { value: 2, label: m.schedule_page_day_mon() },
-  { value: 3, label: m.schedule_page_day_tue() },
-  { value: 4, label: m.schedule_page_day_wed() },
-  { value: 5, label: m.schedule_page_day_thu() },
+  { value: 1, label: common.schedule_page_day_sun() },
+  { value: 2, label: common.schedule_page_day_mon() },
+  { value: 3, label: common.schedule_page_day_tue() },
+  { value: 4, label: common.schedule_page_day_wed() },
+  { value: 5, label: common.schedule_page_day_thu() },
 ]);
 
 // Helper to convert Svelte 5 reactive getters into Svelte 4/5 Stores
@@ -316,13 +316,13 @@ async function handleMoveLesson(
 }
 
 async function handleDeleteLesson(lessonId: string) {
-  if (!confirm(m.schedule_page_confirm_delete())) return;
+  if (!confirm(common.schedule_page_confirm_delete())) return;
   try {
     await commands.scheduling.deleteLesson(lessonId);
-    toast.success(m.schedule_page_success_delete());
+    toast.success(common.schedule_page_success_delete());
     refetchLessons();
   } catch (e) {
-    toast.error(m.schedule_page_error_delete());
+    toast.error(common.schedule_page_error_delete());
   }
 }
 
@@ -337,7 +337,7 @@ function refetchLessons() {
 
 function getSubjectName(subjectId: string) {
   const sub = subjects.find((s) => String(s.id) === String(subjectId));
-  return sub ? sub.name_ar || sub.name : m.schedule_page_unknown_subject();
+  return sub ? sub.name_ar || sub.name : common.schedule_page_unknown_subject();
 }
 
 function getTeacherName(teacherId: string) {
@@ -346,12 +346,12 @@ function getTeacherName(teacherId: string) {
     ? getLocale() === "ar"
       ? teach.name_ar || teach.full_name
       : teach.full_name
-    : m.schedule_page_no_teacher();
+    : common.schedule_page_no_teacher();
 }
 
 function getClassName(classId: string) {
   const cls = classes.find((c) => String(c.id) === String(classId));
-  return cls ? cls.name_ar || cls.name : m.schedule_page_unknown_class();
+  return cls ? cls.name_ar || cls.name : common.schedule_page_unknown_class();
 }
 
 function getSubjectColor(subjectId: string) {
@@ -361,7 +361,7 @@ function getSubjectColor(subjectId: string) {
 
 function openScheduler(day: number, slotId: string) {
   if (viewMode !== "class") {
-    toast.error(m.schedule_page_error_class_only());
+    toast.error(common.schedule_page_error_class_only());
     return;
   }
   activeDay = day;

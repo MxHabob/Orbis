@@ -30,7 +30,8 @@ import UpgradeButton from "./upgrade-button.svelte";
 import GitIntegrationPopover from "./mulverse-integration-popover.svelte";
 import AutomationStatusPopover from "./orbis-autopilot-popover.svelte";
 import MoreActionsDropdown from "./more-actions-dropdown.svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
+import * as settings from "$lib/paraglide/messages/settings";
 import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
 import { onboardingState } from "$lib/features/onboarding/state.svelte";
 import { createOrganizationQuery } from "$lib/features/settings/queries";
@@ -67,39 +68,39 @@ const navItems = $derived([
   {
     href: `/${orgId}`,
     icon: LayoutDashboard,
-    label: m.nav_overview(),
+    label: common.nav_overview(),
     match: "exact",
   },
   {
     href: `/${orgId}/students`,
     icon: Users,
-    label: m.nav_students(),
+    label: common.nav_students(),
     match: "prefix",
   },
   {
     href: `/${orgId}/academics`,
     icon: BookOpen,
-    label: m.nav_academics(),
+    label: common.nav_academics(),
     match: "prefix",
   },
   {
     href: `/${orgId}/finance`,
     icon: Wallet,
-    label: m.nav_finance(),
+    label: common.nav_finance(),
     match: "prefix",
   },
   {
     href: `/${orgId}/templates`,
     icon: FileText,
-    label: m.settings_nav_templates
-      ? m.settings_nav_templates()
+    label: settings.nav_templates
+      ? settings.nav_templates()
       : "قوالب المستندات",
     match: "prefix",
   },
   {
     href: `/${orgId}/settings`,
     icon: Settings,
-    label: m.nav_settings(),
+    label: common.nav_settings(),
     match: "prefix",
   },
 ] as const);

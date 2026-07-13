@@ -6,7 +6,7 @@ Triggered by the Zap icon in the sidebar. Matches Sentry's upgrade layout.
 <script lang="ts">
 import { Dialog, DialogContent } from "@orbis/ui-svelte/dialog";
 import { Button } from "@orbis/ui-svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 import { Check } from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 
@@ -48,27 +48,27 @@ function handleClose() {
       <div class="flex flex-col gap-4">
         <!-- Badge -->
         <span class="text-[9.5px] font-bold tracking-widest text-primary uppercase">
-          {m.upgrade_next_stop()}
+          {common.upgrade_next_stop()}
         </span>
 
         <!-- Headline -->
         <h2 class="text-[23px] font-extrabold text-foreground leading-tight">
-          {m.upgrade_title()}
+          {common.upgrade_title()}
         </h2>
 
         <!-- Description Paragraphs -->
         <div class="flex flex-col gap-3.5 text-muted-foreground text-[11.5px] leading-relaxed pr-2">
           <p>
-            {m.upgrade_desc_1()}
+            {common.upgrade_desc_1()}
           </p>
           <p>
-            {m.upgrade_desc_2()}
+            {common.upgrade_desc_2()}
           </p>
           <p>
-            {m.upgrade_desc_3()}
+            {common.upgrade_desc_3()}
           </p>
           <p class="font-semibold text-foreground/90">
-            {m.upgrade_desc_4()}
+            {common.upgrade_desc_4()}
           </p>
         </div>
       </div>
@@ -79,14 +79,14 @@ function handleClose() {
           type="button"
           class="px-5 py-2.5 text-[11.5px] font-bold rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer transition-all duration-150 shadow-md border-0"
         >
-          {m.upgrade_btn_now()}
+          {common.upgrade_btn_now()}
         </Button>
         <Button
           variant="outline"
           onclick={handleClose}
           class="px-5 py-2.5 text-[11.5px] font-bold rounded-lg bg-muted border border-border hover:bg-muted/80 text-muted-foreground cursor-pointer transition-all duration-150"
         >
-          {m.upgrade_btn_later()}
+          {common.upgrade_btn_later()}
         </Button>
       </div>
     </div>
@@ -96,7 +96,7 @@ function handleClose() {
       <!-- Features List -->
       <div class="flex flex-col">
         <h3 class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4.5">
-          {m.upgrade_features_title()}
+          {common.upgrade_features_title()}
         </h3>
         
         <ul class="flex flex-col gap-3">
@@ -106,7 +106,7 @@ function handleClose() {
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
               </svg>
             </div>
-            <span>{m.upgrade_feature_1()}</span>
+            <span>{common.upgrade_feature_1()}</span>
           </li>
           
           <li class="flex items-center gap-2.5 text-[11px] font-semibold text-foreground">
@@ -115,7 +115,7 @@ function handleClose() {
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
               </svg>
             </div>
-            <span>{m.upgrade_feature_2()}</span>
+            <span>{common.upgrade_feature_2()}</span>
           </li>
 
           <li class="flex items-center gap-2.5 text-[11px] font-semibold text-foreground">
@@ -124,7 +124,7 @@ function handleClose() {
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
               </svg>
             </div>
-            <span>{m.upgrade_feature_3()}</span>
+            <span>{common.upgrade_feature_3()}</span>
           </li>
 
           <li class="flex items-center gap-2.5 text-[11px] font-semibold text-foreground">
@@ -133,7 +133,7 @@ function handleClose() {
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
               </svg>
             </div>
-            <span>{m.upgrade_feature_4()}</span>
+            <span>{common.upgrade_feature_4()}</span>
           </li>
 
           <li class="flex items-center gap-2.5 text-[11px] font-semibold text-foreground">
@@ -142,14 +142,14 @@ function handleClose() {
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
               </svg>
             </div>
-            <span>{m.upgrade_feature_5()}</span>
+            <span>{common.upgrade_feature_5()}</span>
           </li>
 
           <li class="flex items-center gap-2.5 text-[11.5px] text-muted-foreground italic font-medium">
             <div class="w-4 h-4 flex items-center justify-center text-muted-foreground shrink-0">
               <Check size={11} strokeWidth={3} />
             </div>
-            <span>{m.upgrade_feature_more()}</span>
+            <span>{common.upgrade_feature_more()}</span>
           </li>
         </ul>
       </div>
@@ -157,10 +157,10 @@ function handleClose() {
       <!-- Current Plan Status -->
       <div class="mt-8 flex flex-col gap-0.5 select-none">
         <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
-          {m.upgrade_current_plan()}
+          {common.upgrade_current_plan()}
         </span>
         <span class="text-[15px] font-extrabold text-foreground">
-          {m.upgrade_plan_dev()}
+          {common.upgrade_plan_dev()}
         </span>
         <a
           href="https://www.mulverse.com"
@@ -168,7 +168,7 @@ function handleClose() {
           rel="noopener noreferrer"
           class="text-[11px] font-semibold text-primary hover:underline mt-1.5 transition-colors"
         >
-          {m.upgrade_compare_plans()}
+          {common.upgrade_compare_plans()}
         </a>
       </div>
     </div>

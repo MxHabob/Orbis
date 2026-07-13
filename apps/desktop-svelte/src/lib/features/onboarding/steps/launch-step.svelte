@@ -7,7 +7,7 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Progress } from "@orbis/ui-svelte/progress";
 import { Sparkles } from "lucide-svelte";
 import { Avatar } from "@orbis/avatar-engine";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 import { onboardingState } from "../state.svelte";
 import { authStore } from "$lib/stores";
 import { goto } from "$app/navigation";
@@ -105,7 +105,7 @@ async function handleCompleteSetup() {
             class="px-8 py-6 text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl shadow-md flex gap-2 items-center justify-center transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] w-full sm:w-auto"
           >
             <Sparkles class="w-4 h-4 animate-pulse" />
-            <span>{m.onboarding_review_launch_btn()}</span>
+            <span>{common.onboarding_review_launch_btn()}</span>
           </Button>
         {:else}
           <div class="space-y-2.5">

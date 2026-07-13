@@ -10,7 +10,9 @@ import {
   CalendarClock,
   ClipboardCheck,
 } from "lucide-svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
+import * as academics from "$lib/paraglide/messages/academics";
+import * as settings from "$lib/paraglide/messages/settings";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { academicContext, workflowInbox, authStore } from "$lib/stores";
 
@@ -32,48 +34,48 @@ const ACTIONS = $derived.by(() => {
   }> = [
     // Always visible — core navigation
     {
-      label: m.action_enroll_student(),
+      label: common.action_enroll_student(),
       icon: UserPlus,
       href: `/${orgId}/students/new`,
       show: !ro && (phase === "active" || phase === "pre_start"),
     },
     {
-      label: m.action_record_payment(),
+      label: common.action_record_payment(),
       icon: Wallet,
       href: `/${orgId}/finance/payments`,
       show: !ro,
     },
     {
-      label: m.action_manage_classes(),
+      label: common.action_manage_classes(),
       icon: BookOpen,
       href: `/${orgId}/academics`,
       show: true,
     },
     // Phase-specific actions
     {
-      label: m.academics_control_label
-        ? m.academics_control_label()
+      label: academics.control_label
+        ? academics.control_label()
         : "Control",
       icon: ShieldCheck,
       href: `/${orgId}/academics/control`,
       show: phase === "grade_entry" || phase === "exams",
     },
     {
-      label: m.calendar_title ? m.calendar_title() : "Calendar",
+      label: common.calendar_title ? common.calendar_title() : "Calendar",
       icon: CalendarClock,
       href: `/${orgId}/academics/calendar`,
       show: isAdmin,
     },
     {
-      label: m.action_view_reports(),
+      label: common.action_view_reports(),
       icon: BarChart3,
       href: `/${orgId}/reports`,
       show: true,
     },
     // Pending approvals shortcut (only when there are pending items)
     {
-      label: m.settings_nav_approvals
-        ? m.settings_nav_approvals()
+      label: settings.nav_approvals
+        ? settings.nav_approvals()
         : "Approvals",
       icon: ClipboardCheck,
       href: `/${orgId}/settings/approvals`,

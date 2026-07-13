@@ -36,7 +36,9 @@ import { createEnrollmentsQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
 import type { Snippet } from "svelte";
 import { toast } from "svelte-sonner";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
+import * as students from "$lib/paraglide/messages/students";
+import * as academics from "$lib/paraglide/messages/academics";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import AskOrbisButton from "$lib/shared/components/ask-orbis-button.svelte";
 
@@ -63,37 +65,37 @@ const basePath = $derived(`/${orgId}/students/${studentId}`);
 const menuItems = $derived([
   {
     path: "",
-    label: m.form_tab_profile(),
+    label: common.form_tab_profile(),
     icon: User,
   },
   {
     path: "grades",
-    label: m.detail_tab_grades(),
+    label: students.detail_tab_grades(),
     icon: GraduationCap,
   },
   {
     path: "fees",
-    label: m.detail_tab_fees(),
+    label: students.detail_tab_fees(),
     icon: Wallet,
   },
   {
     path: "attendance",
-    label: m.detail_tab_attendance(),
+    label: students.detail_tab_attendance(),
     icon: UserCheck,
   },
   {
     path: "behavior",
-    label: m.detail_tab_behavior(),
+    label: students.detail_tab_behavior(),
     icon: ShieldAlert,
   },
   {
     path: "guardians",
-    label: m.guardians_tab(),
+    label: common.guardians_tab(),
     icon: Users2,
   },
   {
     path: "documents",
-    label: m.detail_tab_documents(),
+    label: students.detail_tab_documents(),
     icon: FileText,
   },
 ]);
@@ -106,7 +108,7 @@ const menuItems = $derived([
   <!-- Header using shared DetailPageHeader -->
   <DetailPageHeader
     backHref={`/${orgId}/students`}
-    backLabel={m.detail_back_to_directory()}
+    backLabel={students.detail_back_to_directory()}
   >
     {#if student}
       <h1
@@ -120,7 +122,7 @@ const menuItems = $derived([
       >
         {currentClass
           ? String(currentClass.name || currentClass.name_ar || "")
-          : m.detail_not_enrolled()}
+          : students.detail_not_enrolled()}
       </Badge>
     {:else}
       <Skeleton class="h-6 w-32" />
@@ -130,8 +132,8 @@ const menuItems = $derived([
     {#snippet actions()}
       {#if student}
         <AskOrbisButton
-          query={m.student_evaluation_ai_ask_orbis_query({ name: student.full_name || student.name_ar || "" })}
-          label={m.student_evaluation_ask_orbis_btn({ name: student.full_name || student.name_ar || "" })}
+          query={academics.student_evaluation_ai_ask_orbis_query({ name: student.full_name || student.name_ar || "" })}
+          label={academics.student_evaluation_ask_orbis_btn({ name: student.full_name || student.name_ar || "" })}
           variant="outline"
           size="sm"
           class="h-8 text-[11px]"
@@ -143,16 +145,16 @@ const menuItems = $derived([
           class="h-8 text-[11px] gap-1.5 font-semibold"
           onclick={() =>
             toast.info(
-              m.detail_call_guardian_toast({
+              students.detail_call_guardian_toast({
                 phone:
                   student.phone_number ||
                   student.phone ||
-                  m.detail_phone_unavailable(),
+                  students.detail_phone_unavailable(),
               }),
             )}
         >
           <PhoneCall size={12} />
-          {m.detail_call_guardian()}
+          {students.detail_call_guardian()}
         </Button>
 
         <DropdownMenu>
@@ -171,20 +173,20 @@ const menuItems = $derived([
           <DropdownMenuContent align="end" class="w-48 p-1 z-50 bg-popover border border-border shadow-md rounded-md select-none">
             <DropdownMenuItem
               class="flex items-center gap-2 px-2.5 py-2 text-[11px] font-semibold cursor-pointer text-foreground hover:bg-accent rounded-sm text-start"
-              onclick={() => toast.info(m.student_layout_transfer_coming_soon())}
+              onclick={() => toast.info(common.student_layout_transfer_coming_soon())}
             >
               <Users size={12} class="text-muted-foreground shrink-0" />
-              <span>{m.student_layout_transfer_class()}</span>
+              <span>{common.student_layout_transfer_class()}</span>
             </DropdownMenuItem>
 
             <DropdownMenuSeparator class="bg-border/60 my-1" />
 
             <DropdownMenuItem
               class="flex items-center gap-2 px-2.5 py-2 text-[11px] font-semibold cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/5 hover:bg-destructive/5 rounded-sm text-start"
-              onclick={() => toast.info(m.student_layout_withdraw_coming_soon())}
+              onclick={() => toast.info(common.student_layout_withdraw_coming_soon())}
             >
               <ShieldAlert size={12} class="text-destructive shrink-0" />
-              <span>{m.student_layout_withdraw_student()}</span>
+              <span>{common.student_layout_withdraw_student()}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -234,8 +236,8 @@ const menuItems = $derived([
                   <span
                     class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
                   >
-                    {m.form_student_number
-                      ? m.form_student_number()
+                    {common.form_student_number
+                      ? common.form_student_number()
                       : "الرقم الأكاديمي"}
                   </span>
                   <span class="text-xs font-mono font-bold text-foreground">

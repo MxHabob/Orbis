@@ -5,7 +5,8 @@ Three tabs: Pending (requires action), My Requests (submitted by me), Log (histo
 Uses TanStack Query for data, supports approve/reject/escalate actions.
 -->
 <script lang="ts">
-import * as m from "$lib/paraglide/messages";
+import * as settings from "$lib/paraglide/messages/settings";
+import * as common from "$lib/paraglide/messages/common";
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { authStore, workflowInbox } from "$lib/stores";
 import { toast } from "svelte-sonner";
@@ -87,15 +88,15 @@ async function processApproval(
 
     const actionLabel =
       action === "approve"
-        ? m.approval_approved
-          ? m.approval_approved()
+        ? common.approval_approved
+          ? common.approval_approved()
           : "Approved"
         : action === "reject"
-          ? m.approval_rejected
-            ? m.approval_rejected()
+          ? common.approval_rejected
+            ? common.approval_rejected()
             : "Rejected"
-          : m.approval_escalated
-            ? m.approval_escalated()
+          : common.approval_escalated
+            ? common.approval_escalated()
             : "Escalated";
 
     toast.success(actionLabel);
@@ -117,7 +118,7 @@ async function cancelRequest(requestId: string) {
   try {
     await commands.platform.cancelOverride(requestId, userId);
     toast.success(
-      m.approval_cancelled ? m.approval_cancelled() : "Request cancelled",
+      common.action_cancel ? common.action_cancel() : "Request cancelled",
     );
     queryClient.invalidateQueries({ queryKey: ["override-requests"] });
   } catch (e: unknown) {
@@ -170,7 +171,7 @@ function parseApprovalChain(
 </script>
 
 <svelte:head>
-  <title>{m.settings_nav_approvals ? m.settings_nav_approvals() : "Approvals"}</title>
+  <title>{settings.nav_approvals ? settings.nav_approvals() : "Approvals"}</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide">
@@ -182,10 +183,10 @@ function parseApprovalChain(
       </div>
       <div>
         <h1 class="text-lg font-bold text-foreground">
-          {m.settings_nav_approvals ? m.settings_nav_approvals() : "Approvals"}
+          {settings.nav_approvals ? settings.nav_approvals() : "Approvals"}
         </h1>
         <p class="text-xs text-muted-foreground">
-          {m.approvals_desc ? m.approvals_desc() : "Manage override requests and approval workflows"}
+          {common.approvals_desc ? common.approvals_desc() : "Manage override requests and approval workflows"}
         </p>
       </div>
     </div>
@@ -194,16 +195,16 @@ function parseApprovalChain(
     <Tabs value="pending">
       <TabsList>
         <TabsTrigger value="pending">
-          {m.approvals_tab_pending ? m.approvals_tab_pending() : "Pending"}
+          {common.approvals_tab_pending ? common.approvals_tab_pending() : "Pending"}
           {#if pendingItems.length > 0}
             <Badge variant="destructive" class="text-[10px] px-1.5 h-4 ms-1.5">{pendingItems.length}</Badge>
           {/if}
         </TabsTrigger>
         <TabsTrigger value="mine">
-          {m.approvals_tab_mine ? m.approvals_tab_mine() : "My Requests"}
+          {common.approvals_tab_mine ? common.approvals_tab_mine() : "My Requests"}
         </TabsTrigger>
         <TabsTrigger value="log">
-          {m.approvals_tab_log ? m.approvals_tab_log() : "Log"}
+          {common.approvals_tab_log ? common.approvals_tab_log() : "Log"}
         </TabsTrigger>
       </TabsList>
 
@@ -219,7 +220,7 @@ function parseApprovalChain(
           <div class="flex flex-col items-center justify-center py-16 text-center gap-3">
             <CheckCircle2 class="size-10 text-muted-foreground/40" />
             <p class="text-sm text-muted-foreground">
-              {m.approvals_empty_pending ? m.approvals_empty_pending() : "No pending approvals"}
+              {common.approvals_empty_pending ? common.approvals_empty_pending() : "No pending approvals"}
             </p>
           </div>
         {:else}
@@ -251,7 +252,7 @@ function parseApprovalChain(
                     <div class="text-sm">
                       <p class="font-medium">{request.reason}</p>
                       <p class="text-xs text-muted-foreground mt-1">
-                        {m.approvals_requested_by ? m.approvals_requested_by() : "Requested by"}: {request.requested_by_name ?? request.requested_by}
+                        {common.approvals_requested_by ? common.approvals_requested_by() : "Requested by"}: {request.requested_by_name ?? request.requested_by}
                       </p>
                       {#if request.old_value || request.new_value}
                         <div class="flex items-center gap-2 mt-2 text-xs bg-muted/30 rounded p-2">
@@ -296,7 +297,7 @@ function parseApprovalChain(
                     <div class="flex items-center gap-2 flex-nowrap shrink-0">
                       <Textarea
                         bind:value={actionNotes}
-                        placeholder={m.approvals_notes_placeholder ? m.approvals_notes_placeholder() : "Notes (optional)..."}
+                        placeholder={common.approvals_notes_placeholder ? common.approvals_notes_placeholder() : "Notes (optional)..."}
                         rows={1}
                         class="flex-1 text-xs"
                       />
@@ -310,7 +311,7 @@ function parseApprovalChain(
                         {:else}
                           <CheckCircle2 class="size-3.5 me-1" />
                         {/if}
-                        {m.approval_approve ? m.approval_approve() : "Approve"}
+                        {common.approval_approve ? common.approval_approve() : "Approve"}
                       </Button>
                       <Button
                         variant="destructive" size="sm"
@@ -318,7 +319,7 @@ function parseApprovalChain(
                         disabled={processingId === request.id}
                       >
                         <XCircle class="size-3.5 me-1" />
-                        {m.approval_reject ? m.approval_reject() : "Reject"}
+                        {common.approval_reject ? common.approval_reject() : "Reject"}
                       </Button>
                       <Button
                         variant="outline" size="sm"
@@ -326,7 +327,7 @@ function parseApprovalChain(
                         disabled={processingId === request.id}
                       >
                         <ArrowUpCircle class="size-3.5 me-1" />
-                        {m.approval_escalate ? m.approval_escalate() : "Escalate"}
+                        {common.approval_escalate ? common.approval_escalate() : "Escalate"}
                       </Button>
                     </div>
                   </div>
@@ -349,7 +350,7 @@ function parseApprovalChain(
           <div class="flex flex-col items-center justify-center py-16 text-center gap-3">
             <Shield class="size-10 text-muted-foreground/40" />
             <p class="text-sm text-muted-foreground">
-              {m.approvals_empty_mine ? m.approvals_empty_mine() : "You haven't submitted any override requests"}
+              {common.approvals_empty_mine ? common.approvals_empty_mine() : "You haven't submitted any override requests"}
             </p>
           </div>
         {:else}
@@ -407,7 +408,7 @@ function parseApprovalChain(
           <div class="flex flex-col items-center justify-center py-16 text-center gap-3">
             <Clock class="size-10 text-muted-foreground/40" />
             <p class="text-sm text-muted-foreground">
-              {m.approvals_empty_log ? m.approvals_empty_log() : "No approval history yet"}
+              {common.approvals_empty_log ? common.approvals_empty_log() : "No approval history yet"}
             </p>
           </div>
         {:else}

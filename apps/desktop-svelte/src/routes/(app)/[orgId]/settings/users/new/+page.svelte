@@ -10,7 +10,8 @@ import {
   SelectItem,
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
-import * as m from "$lib/paraglide/messages";
+import * as settings from "$lib/paraglide/messages/settings";
+import * as common from "$lib/paraglide/messages/common";
 import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
 import { authStore } from "$lib/stores";
 import { goto } from "$app/navigation";
@@ -37,15 +38,15 @@ let address = $state("");
 function getRoleLabel(roleStr: string): string {
   switch (roleStr) {
     case "admin":
-      return m.user_form_role_admin();
+      return common.user_form_role_admin();
     case "teacher":
-      return m.user_form_role_teacher();
+      return common.user_form_role_teacher();
     case "parent":
-      return m.user_form_role_guardian();
+      return common.user_form_role_guardian();
     case "student":
-      return m.user_form_role_student();
+      return common.user_form_role_student();
     case "staff":
-      return m.user_form_role_staff();
+      return common.user_form_role_staff();
     default:
       return roleStr;
   }
@@ -99,7 +100,7 @@ async function handleSubmit(e: SubmitEvent) {
       await commands.iam.updateUser(newUser.id, updateRequest);
     }
 
-    toast.success(m.settings_users_create_success());
+    toast.success(settings.users_create_success());
 
     // Navigate back to the users directory
     goto(localizeHref(`/${orgId}/settings/users`));
@@ -113,21 +114,21 @@ async function handleSubmit(e: SubmitEvent) {
 </script>
 
 <svelte:head>
-  <title>{m.user_form_title_create()} | Orbis</title>
+  <title>{common.user_form_title_create()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full flex flex-col overflow-hidden">
   <!-- Sticky Page Header -->
   <DetailPageHeader
     backHref={`/${orgId}/settings/users`}
-    backLabel={m.settings_nav_users()}
+    backLabel={settings.nav_users()}
   >
     <div class="flex flex-col text-start">
       <h1 class="text-sm font-bold tracking-tight text-foreground select-none">
-        {m.user_form_title_create()}
+        {common.user_form_title_create()}
       </h1>
       <p class="text-[10px] text-muted-foreground select-none">
-        {m.user_form_desc_create()}
+        {common.user_form_desc_create()}
       </p>
     </div>
   </DetailPageHeader>
@@ -140,20 +141,20 @@ async function handleSubmit(e: SubmitEvent) {
         <!-- Section 1: Personal Information -->
         <div class="bg-card border border-border rounded-xl p-6 flex flex-col gap-6">
           <div class="flex flex-col gap-1 text-start border-b border-border/60 pb-4">
-            <h2 class="text-sm font-semibold text-foreground">{m.user_form_personal_info()}</h2>
+            <h2 class="text-sm font-semibold text-foreground">{common.user_form_personal_info()}</h2>
           </div>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Name in Arabic -->
             <div class="flex flex-col gap-2 text-start">
               <Label for="usr_name_ar" class="text-xs font-medium text-muted-foreground">
-                {m.user_form_full_name()}
+                {common.user_form_full_name()}
               </Label>
               <Input
                 id="usr_name_ar"
                 type="text"
                 bind:value={nameAr}
-                placeholder={m.user_form_full_name_placeholder()}
+                placeholder={common.user_form_full_name_placeholder()}
                 disabled={isSubmitting}
                 class="bg-background/50 h-9 text-xs"
               />
@@ -162,13 +163,13 @@ async function handleSubmit(e: SubmitEvent) {
             <!-- Name in English -->
             <div class="flex flex-col gap-2 text-start">
               <Label for="usr_full_name" class="text-xs font-medium text-muted-foreground">
-                {m.user_form_name_en()} <span class="text-destructive">*</span>
+                {common.user_form_name_en()} <span class="text-destructive">*</span>
               </Label>
               <Input
                 id="usr_full_name"
                 type="text"
                 bind:value={fullName}
-                placeholder={m.user_form_name_en_placeholder()}
+                placeholder={common.user_form_name_en_placeholder()}
                 required
                 disabled={isSubmitting}
                 class="bg-background/50 h-9 text-xs font-mono"
@@ -179,7 +180,7 @@ async function handleSubmit(e: SubmitEvent) {
             <!-- Sex / Gender -->
             <div class="flex flex-col gap-2 text-start">
               <Label for="usr_sex" class="text-xs font-medium text-muted-foreground">
-                {m.user_form_sex()}
+                {common.user_form_sex()}
               </Label>
               <Select
                 type="single"
@@ -188,11 +189,11 @@ async function handleSubmit(e: SubmitEvent) {
                 disabled={isSubmitting}
               >
                 <SelectTrigger id="usr_sex" class="h-9 w-full text-xs bg-background/50">
-                  {sex === "male" ? m.user_form_sex_male() : m.user_form_sex_female()}
+                  {sex === "male" ? common.user_form_sex_male() : common.user_form_sex_female()}
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="male" class="text-xs">{m.user_form_sex_male()}</SelectItem>
-                  <SelectItem value="female" class="text-xs">{m.user_form_sex_female()}</SelectItem>
+                  <SelectItem value="male" class="text-xs">{common.user_form_sex_male()}</SelectItem>
+                  <SelectItem value="female" class="text-xs">{common.user_form_sex_female()}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -200,7 +201,7 @@ async function handleSubmit(e: SubmitEvent) {
             <!-- Date of Birth -->
             <div class="flex flex-col gap-2 text-start">
               <Label for="usr_dob" class="text-xs font-medium text-muted-foreground">
-                {m.user_form_dob()}
+                {common.user_form_dob()}
               </Label>
               <Input
                 id="usr_dob"
@@ -214,7 +215,7 @@ async function handleSubmit(e: SubmitEvent) {
             <!-- National ID -->
             <div class="flex flex-col gap-2 text-start md:col-span-2">
               <Label for="usr_nid" class="text-xs font-medium text-muted-foreground">
-                {m.user_form_national_id()}
+                {common.user_form_national_id()}
               </Label>
               <Input
                 id="usr_nid"
@@ -231,20 +232,20 @@ async function handleSubmit(e: SubmitEvent) {
         <!-- Section 2: Account & Role -->
         <div class="bg-card border border-border rounded-xl p-6 flex flex-col gap-6">
           <div class="flex flex-col gap-1 text-start border-b border-border/60 pb-4">
-            <h2 class="text-sm font-semibold text-foreground">{m.user_form_account_info()}</h2>
+            <h2 class="text-sm font-semibold text-foreground">{common.user_form_account_info()}</h2>
           </div>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Email -->
             <div class="flex flex-col gap-2 text-start">
               <Label for="usr_email" class="text-xs font-medium text-muted-foreground">
-                {m.user_form_email()} <span class="text-destructive">*</span>
+                {common.user_form_email()} <span class="text-destructive">*</span>
               </Label>
               <Input
                 id="usr_email"
                 type="email"
                 bind:value={email}
-                placeholder={m.user_form_email_placeholder()}
+                placeholder={common.user_form_email_placeholder()}
                 required
                 disabled={isSubmitting}
                 class="bg-background/50 h-9 text-xs font-mono"
@@ -255,13 +256,13 @@ async function handleSubmit(e: SubmitEvent) {
             <!-- Password -->
             <div class="flex flex-col gap-2 text-start">
               <Label for="usr_password" class="text-xs font-medium text-muted-foreground">
-                {m.user_form_password()} <span class="text-destructive">*</span>
+                {common.user_form_password()} <span class="text-destructive">*</span>
               </Label>
               <Input
                 id="usr_password"
                 type="password"
                 bind:value={password}
-                placeholder={m.user_form_password_placeholder()}
+                placeholder={common.user_form_password_placeholder()}
                 required
                 disabled={isSubmitting}
                 class="bg-background/50 h-9 text-xs"
@@ -271,7 +272,7 @@ async function handleSubmit(e: SubmitEvent) {
             <!-- Role Selection -->
             <div class="flex flex-col gap-2 text-start md:col-span-2">
               <Label for="usr_role" class="text-xs font-medium text-muted-foreground">
-                {m.user_form_role()}
+                {common.user_form_role()}
               </Label>
               <Select
                 type="single"
@@ -283,11 +284,11 @@ async function handleSubmit(e: SubmitEvent) {
                   {getRoleLabel(role)}
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin" class="text-xs">{m.user_form_role_admin()}</SelectItem>
-                  <SelectItem value="teacher" class="text-xs">{m.user_form_role_teacher()}</SelectItem>
-                  <SelectItem value="parent" class="text-xs">{m.user_form_role_guardian()}</SelectItem>
-                  <SelectItem value="student" class="text-xs">{m.user_form_role_student()}</SelectItem>
-                  <SelectItem value="staff" class="text-xs">{m.user_form_role_staff()}</SelectItem>
+                  <SelectItem value="admin" class="text-xs">{common.user_form_role_admin()}</SelectItem>
+                  <SelectItem value="teacher" class="text-xs">{common.user_form_role_teacher()}</SelectItem>
+                  <SelectItem value="parent" class="text-xs">{common.user_form_role_guardian()}</SelectItem>
+                  <SelectItem value="student" class="text-xs">{common.user_form_role_student()}</SelectItem>
+                  <SelectItem value="staff" class="text-xs">{common.user_form_role_staff()}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -297,14 +298,14 @@ async function handleSubmit(e: SubmitEvent) {
         <!-- Section 3: Contact Information -->
         <div class="bg-card border border-border rounded-xl p-6 flex flex-col gap-6">
           <div class="flex flex-col gap-1 text-start border-b border-border/60 pb-4">
-            <h2 class="text-sm font-semibold text-foreground">{m.user_form_contact_info()}</h2>
+            <h2 class="text-sm font-semibold text-foreground">{common.user_form_contact_info()}</h2>
           </div>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Phone Number -->
             <div class="flex flex-col gap-2 text-start">
               <Label for="usr_phone" class="text-xs font-medium text-muted-foreground">
-                {m.user_form_phone()}
+                {common.user_form_phone()}
               </Label>
               <Input
                 id="usr_phone"
@@ -320,13 +321,13 @@ async function handleSubmit(e: SubmitEvent) {
             <!-- Address -->
             <div class="flex flex-col gap-2 text-start">
               <Label for="usr_address" class="text-xs font-medium text-muted-foreground">
-                {m.user_form_address()}
+                {common.user_form_address()}
               </Label>
               <Input
                 id="usr_address"
                 type="text"
                 bind:value={address}
-                placeholder={m.user_form_address_placeholder()}
+                placeholder={common.user_form_address_placeholder()}
                 disabled={isSubmitting}
                 class="bg-background/50 h-9 text-xs"
               />
@@ -343,7 +344,7 @@ async function handleSubmit(e: SubmitEvent) {
             onclick={() => goto(localizeHref(`/${orgId}/settings/users`))}
             disabled={isSubmitting}
           >
-            {m.user_form_cancel()}
+            {common.action_cancel()}
           </Button>
           <Button
             type="submit"
@@ -352,7 +353,7 @@ async function handleSubmit(e: SubmitEvent) {
             disabled={isSubmitting}
           >
             <Save size={14} />
-            {isSubmitting ? m.user_form_saving() : m.user_form_save()}
+            {isSubmitting ? common.user_form_saving() : common.action_save()}
           </Button>
         </div>
       </form>

@@ -10,7 +10,7 @@ import {
   SelectItem,
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 
 let {
   orgId,
@@ -69,10 +69,10 @@ async function handleSubmit(e: SubmitEvent) {
         ...request,
         is_active: room.is_active,
       });
-      toast.success(m.rooms_update_success());
+      toast.success(common.rooms_update_success());
     } else {
       await commands.scheduling.createRoom(orgId, request);
-      toast.success(m.rooms_create_success());
+      toast.success(common.rooms_create_success());
     }
 
     onSuccess();
@@ -88,7 +88,7 @@ async function handleSubmit(e: SubmitEvent) {
 <form onsubmit={handleSubmit} class="flex flex-col h-full overflow-hidden gap-0">
   <SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
     <SheetTitle class="text-xl font-bold text-foreground">
-      {isEdit ? "Edit Room Details" : m.rooms_add()}
+      {isEdit ? "Edit Room Details" : common.rooms_add()}
     </SheetTitle>
   </SheetHeader>
 
@@ -149,7 +149,7 @@ async function handleSubmit(e: SubmitEvent) {
       <!-- Capacity -->
       <div class="flex flex-col gap-2">
         <label for="room_capacity" class="text-xs font-semibold text-foreground">
-          {m.rooms_col_capacity()}
+          {common.rooms_col_capacity()}
         </label>
         <Input
           id="room_capacity"
@@ -201,7 +201,7 @@ async function handleSubmit(e: SubmitEvent) {
       onclick={onCancel}
       disabled={isSubmitting}
     >
-      {m.user_form_cancel()}
+      {common.action_cancel()}
     </Button>
     <Button
       type="submit"
@@ -209,7 +209,7 @@ async function handleSubmit(e: SubmitEvent) {
       class="font-semibold px-6"
       disabled={isSubmitting}
     >
-      {isSubmitting ? m.user_form_saving() : m.user_form_save()}
+      {isSubmitting ? common.user_form_saving() : common.action_save()}
     </Button>
   </div>
 </form>

@@ -23,7 +23,7 @@ import { Checkbox } from "@orbis/ui-svelte/checkbox";
 import { Label } from "@orbis/ui-svelte/label";
 import { ArrowLeft, Upload, Columns3, Trash2, Info } from "lucide-svelte";
 import { toast } from "svelte-sonner";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { authStore } from "$lib/stores";
@@ -153,26 +153,26 @@ function handleTopClassChange(v: string) {
 
 // Column labels
 const labels: Record<string, string> = {
-  full_name: m.bulk_col_full_name(),
-  name_ar: m.bulk_col_name_ar(),
-  email: m.bulk_col_email(),
-  phone: m.bulk_col_phone(),
-  national_id: m.bulk_col_national_id(),
-  sex: m.bulk_col_sex(),
-  dob: m.bulk_col_dob(),
-  class: m.bulk_col_class(),
-  enrollment_status: m.bulk_col_enrollment_status(),
-  nationality: m.bulk_col_nationality(),
-  address: m.bulk_col_address(),
-  city: m.bulk_col_city(),
-  country: m.bulk_col_country(),
-  guardian_name: m.bulk_col_guardian_name(),
-  guardian_phone: m.bulk_col_guardian_phone(),
-  guardian_rel: m.bulk_col_guardian_rel(),
-  blood_type: m.bulk_col_blood_type(),
-  emergency: m.bulk_col_emergency(),
-  allergies: m.bulk_col_allergies(),
-  medical: m.bulk_col_medical(),
+  full_name: common.bulk_col_full_name(),
+  name_ar: common.bulk_col_name_ar(),
+  email: common.bulk_col_email(),
+  phone: common.bulk_col_phone(),
+  national_id: common.bulk_col_national_id(),
+  sex: common.bulk_col_sex(),
+  dob: common.bulk_col_dob(),
+  class: common.bulk_col_class(),
+  enrollment_status: common.bulk_col_enrollment_status(),
+  nationality: common.bulk_col_nationality(),
+  address: common.bulk_col_address(),
+  city: common.bulk_col_city(),
+  country: common.bulk_col_country(),
+  guardian_name: common.bulk_col_guardian_name(),
+  guardian_phone: common.bulk_col_guardian_phone(),
+  guardian_rel: common.bulk_col_guardian_rel(),
+  blood_type: common.bulk_col_blood_type(),
+  emergency: common.bulk_col_emergency(),
+  allergies: common.bulk_col_allergies(),
+  medical: common.bulk_col_medical(),
 };
 
 // Columns (reactive to extended column toggle)
@@ -195,7 +195,7 @@ function handleRowsChange(_: Record<string, unknown>[]) {
 
 function handleClearAll() {
   if (summary.totalFilled > 0) {
-    if (!confirm(m.bulk_input_confirm_clear())) return;
+    if (!confirm(common.bulk_input_confirm_clear())) return;
   }
   rows = [];
   validationResults = [];
@@ -203,11 +203,11 @@ function handleClearAll() {
 
 async function handleSubmit() {
   if (summary.totalFilled === 0) {
-    toast.warning(m.bulk_input_no_data());
+    toast.warning(common.bulk_input_no_data());
     return;
   }
   if (summary.errorCount > 0) {
-    toast.error(m.bulk_input_fix_errors());
+    toast.error(common.bulk_input_fix_errors());
     return;
   }
 
@@ -286,10 +286,10 @@ async function handleSubmit() {
     submitProgress = 100;
 
     if (result.created > 0) {
-      toast.success(m.bulk_input_success_students({ count: result.created }));
+      toast.success(common.bulk_input_success_students({ count: result.created }));
     }
     if (result.failed > 0) {
-      toast.error(m.bulk_input_failed_rows({ count: result.failed }));
+      toast.error(common.bulk_input_failed_rows({ count: result.failed }));
       console.error("Bulk Import failures:", result.errors);
       if (result.errors && Array.isArray(result.errors)) {
         for (const err of result.errors) {
@@ -335,11 +335,11 @@ async function handleSubmit() {
             {#if selectedClassId}
               {classes.find((c: any) => c.id === selectedClassId)?.name ?? selectedClassId}
             {:else}
-              {m.bulk_class_all()}
+              {common.bulk_class_all()}
             {/if}
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">{m.bulk_class_per_row()}</SelectItem>
+            <SelectItem value="">{common.bulk_class_per_row()}</SelectItem>
             {#each classes as cls}
               <SelectItem value={cls.id}>{cls.name}</SelectItem>
             {/each}
@@ -354,13 +354,13 @@ async function handleSubmit() {
           <PopoverTrigger>
             <Button variant="outline" size="sm" class="text-xs cursor-pointer">
               <Columns3 size={13} class="me-1.5" />
-              {m.bulk_extra_columns()}
+              {common.bulk_extra_columns()}
             </Button>
           </PopoverTrigger>
           <PopoverContent class="w-56 p-3" align="end">
             <div class="flex flex-col gap-2.5">
               <span class="text-xs font-semibold text-foreground mb-1">
-                {m.bulk_toggle_columns()}
+                {common.bulk_toggle_columns()}
               </span>
               {#each EXTENDED_PROPS as prop}
                 <div class="flex items-center gap-2">
@@ -383,7 +383,7 @@ async function handleSubmit() {
           onclick={handleClearAll}
         >
           <Trash2 size={13} class="me-1.5" />
-          {m.bulk_input_clear()}
+          {common.bulk_input_clear()}
         </Button>
 
         <Button
@@ -394,7 +394,7 @@ async function handleSubmit() {
           onclick={handleSubmit}
         >
           <Upload size={13} class="me-1.5" />
-          {m.bulk_input_submit()} ({summary.valid})
+          {common.bulk_input_submit()} ({summary.valid})
         </Button>
       </div>
     </div>

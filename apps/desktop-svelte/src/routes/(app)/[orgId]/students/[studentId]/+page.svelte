@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 <script lang="ts">
 import { page } from "$app/state";
 import { Button } from "@orbis/ui-svelte/button";
@@ -18,7 +19,10 @@ import { BrainCircuit } from "lucide-svelte";
 import { onMount } from "svelte";
 import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
+import * as students from "$lib/paraglide/messages/students";
+import * as academics from "$lib/paraglide/messages/academics";
+import * as settings from "$lib/paraglide/messages/settings";
 import { getLocale } from "$lib/paraglide/runtime";
 import { createEnrollmentsQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
@@ -57,7 +61,7 @@ let isActiveState = $state(true);
 const selectedClassName = $derived(
   classes.find((c) => String(c.id) === classId)?.name ||
     classes.find((c) => String(c.id) === classId)?.name_ar ||
-    m.form_select_class(),
+    common.form_select_class(),
 );
 
 // Date picker options and reactive values
@@ -65,18 +69,18 @@ const currentYear = new Date().getFullYear();
 const yearsList = Array.from({ length: 47 }, (_, i) => currentYear - i);
 const daysList = Array.from({ length: 31 }, (_, i) => String(i + 1));
 const monthsList = $derived([
-  { value: "1", label: m.form_month_1() },
-  { value: "2", label: m.form_month_2() },
-  { value: "3", label: m.form_month_3() },
-  { value: "4", label: m.form_month_4() },
-  { value: "5", label: m.form_month_5() },
-  { value: "6", label: m.form_month_6() },
-  { value: "7", label: m.form_month_7() },
-  { value: "8", label: m.form_month_8() },
-  { value: "9", label: m.form_month_9() },
-  { value: "10", label: m.form_month_10() },
-  { value: "11", label: m.form_month_11() },
-  { value: "12", label: m.form_month_12() },
+  { value: "1", label: common.form_month_1() },
+  { value: "2", label: common.form_month_2() },
+  { value: "3", label: common.form_month_3() },
+  { value: "4", label: common.form_month_4() },
+  { value: "5", label: common.form_month_5() },
+  { value: "6", label: common.form_month_6() },
+  { value: "7", label: common.form_month_7() },
+  { value: "8", label: common.form_month_8() },
+  { value: "9", label: common.form_month_9() },
+  { value: "10", label: common.form_month_10() },
+  { value: "11", label: common.form_month_11() },
+  { value: "12", label: common.form_month_12() },
 ]);
 
 let birthDay = $state("");
@@ -218,9 +222,9 @@ const decisionHelper = $derived.by(() => {
   if (hasNoData) {
     return {
       status: "no_data",
-      badge: m.student_evaluation_decision_title(),
+      badge: academics.student_evaluation_decision_title(),
       badgeVariant: "outline" as const,
-      rec: m.student_evaluation_no_data(),
+      rec: academics.student_evaluation_no_data(),
       colorClass: "text-muted-foreground bg-muted/25 border-border/60",
     };
   }
@@ -228,33 +232,33 @@ const decisionHelper = $derived.by(() => {
   if (acadAvg >= 85 && attRate >= 95 && negBeh === 0) {
     return {
       status: "excellent",
-      badge: m.student_evaluation_status_excellent(),
+      badge: academics.student_evaluation_status_excellent(),
       badgeVariant: "lime" as const,
-      rec: m.student_evaluation_rec_excellent(),
+      rec: academics.student_evaluation_rec_excellent(),
       colorClass: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
     };
   } else if (acadAvg <= 45 || attRate <= 70 || negBeh >= 4) {
     return {
       status: "critical",
-      badge: m.student_evaluation_status_critical(),
+      badge: academics.student_evaluation_status_critical(),
       badgeVariant: "destructive" as const,
-      rec: m.student_evaluation_rec_critical(),
+      rec: academics.student_evaluation_rec_critical(),
       colorClass: "text-destructive bg-destructive/10 border-destructive/20",
     };
   } else if (acadAvg < 60 || attRate < 85 || negBeh >= 2) {
     return {
       status: "warning",
-      badge: m.student_evaluation_status_warning(),
+      badge: academics.student_evaluation_status_warning(),
       badgeVariant: "secondary" as const,
-      rec: m.student_evaluation_rec_warning(),
+      rec: academics.student_evaluation_rec_warning(),
       colorClass: "text-amber-500 bg-amber-500/10 border-amber-500/20",
     };
   } else {
     return {
       status: "good",
-      badge: m.student_evaluation_status_good(),
+      badge: academics.student_evaluation_status_good(),
       badgeVariant: "default" as const,
-      rec: m.student_evaluation_rec_good(),
+      rec: academics.student_evaluation_rec_good(),
       colorClass: "text-primary bg-primary/10 border-primary/20",
     };
   }
@@ -264,15 +268,15 @@ async function saveStudentDetails(e: Event) {
   e.preventDefault();
   if (!student || !student.student_id) return;
   if (!nameAr.trim()) {
-    toast.error(m.form_error_name_required());
+    toast.error(common.form_error_name_required());
     return;
   }
   if (!classId) {
-    toast.error(m.form_error_class_required());
+    toast.error(common.form_error_class_required());
     return;
   }
   if (!birthDate) {
-    toast.error(m.form_error_birth_required());
+    toast.error(common.form_error_birth_required());
     return;
   }
 
@@ -284,7 +288,7 @@ async function saveStudentDetails(e: Event) {
       (acc: any) => acc.code === "110301",
     );
     if (!hasControlAccount) {
-      toast.error(m.form_error_control_account_missing());
+      toast.error(common.form_error_control_account_missing());
       isSaving = false;
       return;
     }
@@ -321,7 +325,7 @@ async function saveStudentDetails(e: Event) {
       );
     }
 
-    toast.success(m.form_success_update());
+    toast.success(common.form_success_update());
 
     // Invalidate query data to trigger reactive updates
     queryClient.invalidateQueries({ queryKey: ["enrollments", orgId] });
@@ -378,7 +382,7 @@ async function saveStudentDetails(e: Event) {
               <div class="flex items-center gap-3">
                 <BrainCircuit size={18} class="shrink-0" />
                 <div class="flex flex-col gap-0.5 text-start">
-                  <span class="text-xs font-bold text-foreground">{m.student_evaluation_recommendation_title()}</span>
+                  <span class="text-xs font-bold text-foreground">{academics.student_evaluation_recommendation_title()}</span>
                   <p class="text-[10px] leading-relaxed font-semibold">{decisionHelper.rec}</p>
                 </div>
               </div>
@@ -398,7 +402,7 @@ async function saveStudentDetails(e: Event) {
         
         <!-- Card Header -->
         <div class="bg-muted/30 px-6 py-4 border-b border-border flex items-center justify-between text-xs font-bold text-foreground text-start select-none">
-          <span>{m.form_student_info()}</span>
+          <span>{common.form_student_info()}</span>
         </div>
 
         <!-- Card Body with Clear Vertical Rows (Layout identical to settings_+page.svelte) -->
@@ -407,8 +411,8 @@ async function saveStudentDetails(e: Event) {
           <!-- Row 1: Student Active Status -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
-              <span class="text-xs font-bold text-foreground">{m.student_detail_row_status_title()}</span>
-              <span class="text-[10px] text-muted-foreground">{m.student_detail_row_status_desc()}</span>
+              <span class="text-xs font-bold text-foreground">{students.student_detail_row_status_title()}</span>
+              <span class="text-[10px] text-muted-foreground">{students.student_detail_row_status_desc()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0 flex items-center gap-2">
               <Switch
@@ -417,7 +421,7 @@ async function saveStudentDetails(e: Event) {
                 onCheckedChange={(checked) => isActiveState = checked}
               />
               <Label for="student_status_switch" class="text-xs text-muted-foreground select-none cursor-pointer">
-                {isActiveState ? m.form_active_status() : m.student_detail_row_status_inactive()}
+                {isActiveState ? common.form_active_status() : students.student_detail_row_status_inactive()}
               </Label>
             </div>
           </div>
@@ -425,8 +429,8 @@ async function saveStudentDetails(e: Event) {
           <!-- Row 2: Full Name (Arabic) -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
-              <span class="text-xs font-bold text-foreground">{m.form_full_name_ar()} *</span>
-              <span class="text-[10px] text-muted-foreground">{m.student_detail_row_name_ar_desc()}</span>
+              <span class="text-xs font-bold text-foreground">{common.form_full_name_ar()} *</span>
+              <span class="text-[10px] text-muted-foreground">{students.student_detail_row_name_ar_desc()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0">
               <Input type="text" class="text-xs font-semibold h-9" bind:value={nameAr} required />
@@ -436,8 +440,8 @@ async function saveStudentDetails(e: Event) {
           <!-- Row 3: Full Name (English) -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
-              <span class="text-xs font-bold text-foreground">{m.form_full_name_en()}</span>
-              <span class="text-[10px] text-muted-foreground">{m.student_detail_row_name_en_desc()}</span>
+              <span class="text-xs font-bold text-foreground">{common.form_full_name_en()}</span>
+              <span class="text-[10px] text-muted-foreground">{students.student_detail_row_name_en_desc()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0">
               <Input type="text" class="text-xs font-semibold h-9 font-mono text-left" dir="ltr" bind:value={nameEn} />
@@ -447,15 +451,15 @@ async function saveStudentDetails(e: Event) {
           <!-- Row 4: Birth Date -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
-              <span class="text-xs font-bold text-foreground">{m.form_birth_date()} *</span>
-              <span class="text-[10px] text-muted-foreground">{m.student_detail_row_birth_date_desc()}</span>
+              <span class="text-xs font-bold text-foreground">{common.form_birth_date()} *</span>
+              <span class="text-[10px] text-muted-foreground">{students.student_detail_row_birth_date_desc()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0 grid grid-cols-3 gap-2" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
               
               <!-- اليوم -->
               <Select bind:value={birthDay} type="single">
                 <SelectTrigger class="w-full h-9 text-xs text-start flex items-center justify-between border border-input px-2">
-                  <span class="truncate">{birthDay || m.form_day()}</span>
+                  <span class="truncate">{birthDay || common.form_day()}</span>
                 </SelectTrigger>
                 <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
                   {#each daysList as dy}
@@ -469,7 +473,7 @@ async function saveStudentDetails(e: Event) {
               <!-- الشهر -->
               <Select bind:value={birthMonth} type="single">
                 <SelectTrigger class="w-full h-9 text-xs text-start flex items-center justify-between border border-input px-2">
-                  <span class="truncate">{monthsList.find(m => m.value === birthMonth)?.label || m.form_month()}</span>
+                  <span class="truncate">{monthsList.find(m => m.value === birthMonth)?.label || common.form_month()}</span>
                 </SelectTrigger>
                 <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
                   {#each monthsList as mo}
@@ -483,7 +487,7 @@ async function saveStudentDetails(e: Event) {
               <!-- السنة -->
               <Select bind:value={birthYear} type="single">
                 <SelectTrigger class="w-full h-9 text-xs text-start flex items-center justify-between border border-input px-2">
-                  <span class="truncate">{birthYear || m.form_year()}</span>
+                  <span class="truncate">{birthYear || common.form_year()}</span>
                 </SelectTrigger>
                 <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
                   {#each yearsList as yr}
@@ -499,17 +503,17 @@ async function saveStudentDetails(e: Event) {
           <!-- Row 5: Gender -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
-              <span class="text-xs font-bold text-foreground">{m.form_sex()} *</span>
-              <span class="text-[10px] text-muted-foreground">{m.student_detail_row_sex_desc()}</span>
+              <span class="text-xs font-bold text-foreground">{common.form_sex()} *</span>
+              <span class="text-[10px] text-muted-foreground">{students.student_detail_row_sex_desc()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0">
               <Select type="single" value={sex} onValueChange={(v) => sex = v ?? "male"}>
                 <SelectTrigger class="h-9 w-full text-xs">
-                  {sex === "male" ? m.form_male() : m.form_female()}
+                  {sex === "male" ? common.form_male() : common.form_female()}
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="male" class="text-xs text-start cursor-pointer justify-start">{m.form_male()}</SelectItem>
-                  <SelectItem value="female" class="text-xs text-start cursor-pointer justify-start">{m.form_female()}</SelectItem>
+                  <SelectItem value="male" class="text-xs text-start cursor-pointer justify-start">{common.form_male()}</SelectItem>
+                  <SelectItem value="female" class="text-xs text-start cursor-pointer justify-start">{common.form_female()}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -518,8 +522,8 @@ async function saveStudentDetails(e: Event) {
           <!-- Row 6: Class/Grade -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
-              <span class="text-xs font-bold text-foreground">{m.form_target_class()} *</span>
-              <span class="text-[10px] text-muted-foreground">{m.student_detail_row_class_desc()}</span>
+              <span class="text-xs font-bold text-foreground">{common.form_target_class()} *</span>
+              <span class="text-[10px] text-muted-foreground">{students.student_detail_row_class_desc()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0">
               <Select bind:value={classId} type="single">
@@ -540,8 +544,8 @@ async function saveStudentDetails(e: Event) {
           <!-- Row 7: Academic ID -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
-              <span class="text-xs font-bold text-foreground">{m.form_student_number()}</span>
-              <span class="text-[10px] text-muted-foreground">{m.student_detail_row_student_number_desc()}</span>
+              <span class="text-xs font-bold text-foreground">{common.form_student_number()}</span>
+              <span class="text-[10px] text-muted-foreground">{students.student_detail_row_student_number_desc()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0">
               <Input type="text" class="text-xs h-9 bg-muted/30" bind:value={studentNumber} disabled />
@@ -551,8 +555,8 @@ async function saveStudentDetails(e: Event) {
           <!-- Row 8: Contact Phone -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
-              <span class="text-xs font-bold text-foreground">{m.form_student_phone()}</span>
-              <span class="text-[10px] text-muted-foreground">{m.student_detail_row_phone_desc()}</span>
+              <span class="text-xs font-bold text-foreground">{common.form_student_phone()}</span>
+              <span class="text-[10px] text-muted-foreground">{students.student_detail_row_phone_desc()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0">
               <Input type="text" class="text-xs h-9 font-mono text-left" dir="ltr" bind:value={phone} />
@@ -562,8 +566,8 @@ async function saveStudentDetails(e: Event) {
           <!-- Row 9: Email Address -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
-              <span class="text-xs font-bold text-foreground">{m.form_student_email()}</span>
-              <span class="text-[10px] text-muted-foreground">{m.student_detail_row_email_desc()}</span>
+              <span class="text-xs font-bold text-foreground">{common.form_student_email()}</span>
+              <span class="text-[10px] text-muted-foreground">{students.student_detail_row_email_desc()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0">
               <Input type="email" class="text-xs h-9 font-mono text-left" dir="ltr" bind:value={email} />
@@ -573,8 +577,8 @@ async function saveStudentDetails(e: Event) {
           <!-- Row 10: Address -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="flex flex-col gap-1 text-start">
-              <span class="text-xs font-bold text-foreground">{m.form_address()}</span>
-              <span class="text-[10px] text-muted-foreground">{m.student_detail_row_address_desc()}</span>
+              <span class="text-xs font-bold text-foreground">{common.form_address()}</span>
+              <span class="text-[10px] text-muted-foreground">{students.student_detail_row_address_desc()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0">
               <Input type="text" class="text-xs h-9" bind:value={address} />
@@ -586,7 +590,7 @@ async function saveStudentDetails(e: Event) {
         <!-- Card Footer Actions (Identical to settings page) -->
         <div class="flex justify-end gap-3 px-6 py-4 bg-muted/20 border-t border-border">
           <Button type="button" variant="ghost" size="sm" onclick={() => { initialized = false; }}>
-            {m.settings_user_detail_btn_reset()}
+            {settings.user_detail_btn_reset()}
           </Button>
           <Button
             type="submit"
@@ -595,7 +599,7 @@ async function saveStudentDetails(e: Event) {
             class="font-bold text-xs px-6"
             disabled={isSaving}
           >
-            {isSaving ? "..." : m.settings_user_detail_btn_save_details()}
+            {isSaving ? "..." : settings.user_detail_btn_save_details()}
           </Button>
         </div>
 

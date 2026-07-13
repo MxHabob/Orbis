@@ -13,7 +13,7 @@ import {
 } from "@orbis/ui-svelte/select";
 import { ArrowLeft, Upload, Trash2 } from "lucide-svelte";
 import { toast } from "svelte-sonner";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { commands } from "$lib/core/ipc";
 import { authStore } from "$lib/stores";
@@ -57,13 +57,13 @@ function runValidation() {
 
 // Column labels
 const labels: Record<string, string> = {
-  student_id: m.bulk_col_student_identifier(),
-  subject: m.bulk_col_subject(),
-  score: m.bulk_col_score(),
-  max_score: m.bulk_col_max_score(),
-  exam_type: m.bulk_col_exam_type(),
-  semester: m.bulk_col_semester(),
-  notes: m.bulk_col_notes(),
+  student_id: common.bulk_col_student_identifier(),
+  subject: common.bulk_col_subject(),
+  score: common.bulk_col_score(),
+  max_score: common.bulk_col_max_score(),
+  exam_type: common.bulk_col_exam_type(),
+  semester: common.bulk_col_semester(),
+  notes: common.bulk_col_notes(),
 };
 
 let columns = $derived(buildGradeColumns(labels));
@@ -75,18 +75,18 @@ function handleRowsChange(_: Record<string, unknown>[]) {
 
 function handleClearAll() {
   if (summary.totalFilled > 0) {
-    if (!confirm(m.bulk_input_confirm_clear())) return;
+    if (!confirm(common.bulk_input_confirm_clear())) return;
   }
   rows = [];
 }
 
 async function handleSubmit() {
   if (summary.totalFilled === 0) {
-    toast.warning(m.bulk_input_no_data());
+    toast.warning(common.bulk_input_no_data());
     return;
   }
   if (summary.errorCount > 0) {
-    toast.error(m.bulk_input_fix_errors());
+    toast.error(common.bulk_input_fix_errors());
     return;
   }
 
@@ -131,10 +131,10 @@ async function handleSubmit() {
     }
 
     if (result.created > 0) {
-      toast.success(m.bulk_input_success_grades({ count: result.created }));
+      toast.success(common.bulk_input_success_grades({ count: result.created }));
     }
     if (result.failed > 0) {
-      toast.error(m.bulk_input_failed_rows({ count: result.failed }));
+      toast.error(common.bulk_input_failed_rows({ count: result.failed }));
     }
   } catch (e: unknown) {
     const msg = (e as any)?.message || "Unknown error";
@@ -166,21 +166,21 @@ async function handleSubmit() {
         <Select type="single" value={identifierType} onValueChange={(v) => (identifierType = v)}>
           <SelectTrigger class="w-44 h-8 text-xs">
             {identifierType === "auto"
-              ? m.bulk_id_auto()
+              ? common.bulk_id_auto()
               : identifierType === "email"
-                ? m.bulk_col_email()
+                ? common.bulk_col_email()
                 : identifierType === "student_number"
-                  ? m.bulk_id_student_number()
+                  ? common.bulk_id_student_number()
                   : identifierType === "national_id"
-                    ? m.bulk_col_national_id()
-                    : m.bulk_id_name()}
+                    ? common.bulk_col_national_id()
+                    : common.bulk_id_name()}
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="auto">{m.bulk_id_auto()}</SelectItem>
-            <SelectItem value="email">{m.bulk_col_email()}</SelectItem>
-            <SelectItem value="student_number">{m.bulk_id_student_number()}</SelectItem>
-            <SelectItem value="national_id">{m.bulk_col_national_id()}</SelectItem>
-            <SelectItem value="name">{m.bulk_id_name()}</SelectItem>
+            <SelectItem value="auto">{common.bulk_id_auto()}</SelectItem>
+            <SelectItem value="email">{common.bulk_col_email()}</SelectItem>
+            <SelectItem value="student_number">{common.bulk_id_student_number()}</SelectItem>
+            <SelectItem value="national_id">{common.bulk_col_national_id()}</SelectItem>
+            <SelectItem value="name">{common.bulk_id_name()}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -194,7 +194,7 @@ async function handleSubmit() {
           onclick={handleClearAll}
         >
           <Trash2 size={13} class="me-1.5" />
-          {m.bulk_input_clear()}
+          {common.bulk_input_clear()}
         </Button>
 
         <Button
@@ -205,7 +205,7 @@ async function handleSubmit() {
           onclick={handleSubmit}
         >
           <Upload size={13} class="me-1.5" />
-          {m.bulk_input_submit()} ({summary.valid})
+          {common.bulk_input_submit()} ({summary.valid})
         </Button>
       </div>
     </div>

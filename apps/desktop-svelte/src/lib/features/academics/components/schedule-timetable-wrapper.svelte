@@ -4,7 +4,7 @@ import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Timetable } from "@orbis/ui-svelte/timetable";
 import { getLocale } from "$lib/paraglide/runtime";
 import { Clock } from "lucide-svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 import ErrorState from "$lib/shared/components/error-state.svelte";
 
 interface Props {
@@ -53,7 +53,7 @@ let {
   </div>
 {:else if error}
   <ErrorState 
-    title={m.schedule_page_error()} 
+    title={common.schedule_page_error()} 
     message={error} 
     onRetry={onRetry} 
   />
@@ -64,10 +64,10 @@ let {
     </div>
     <div class="flex flex-col gap-1">
       <h3 class="font-bold text-sm text-foreground">
-        {m.schedule_page_no_timeslots_title()}
+        {common.schedule_page_no_timeslots_title()}
       </h3>
       <p class="text-xs text-muted-foreground leading-relaxed">
-        {m.schedule_page_no_timeslots_desc()}
+        {common.schedule_page_no_timeslots_desc()}
       </p>
     </div>
   </div>

@@ -10,7 +10,8 @@ import {
   SelectItem,
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
-import * as m from "$lib/paraglide/messages";
+import * as settings from "$lib/paraglide/messages/settings";
+import * as common from "$lib/paraglide/messages/common";
 import { onMount } from "svelte";
 
 let {
@@ -112,7 +113,7 @@ async function handleSubmit(e: SubmitEvent) {
         ...request,
         is_active: unit.is_active,
       });
-      toast.success(m.settings_users_update_success());
+      toast.success(settings.users_update_success());
     } else {
       await commands.orgUnits.create(orgId, request);
       toast.success("Organizational unit created successfully");
@@ -322,7 +323,7 @@ async function handleSubmit(e: SubmitEvent) {
       class="font-semibold px-6"
       disabled={isSubmitting}
     >
-      {isSubmitting ? m.user_form_saving() : m.user_form_save()}
+      {isSubmitting ? common.user_form_saving() : common.action_save()}
     </Button>
   </div>
 </form>

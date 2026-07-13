@@ -4,7 +4,7 @@ import { Button } from "@orbis/ui-svelte/button";
 import { ArrowUpRight } from "lucide-svelte";
 import { formatCurrency } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
-import * as m from "$lib/paraglide/messages";
+import * as finance from "$lib/paraglide/messages/finance";
 
 let {
   recentPayments,
@@ -19,17 +19,17 @@ let {
   <div class="flex items-center justify-between w-full select-none text-[9px] font-bold text-muted-foreground/80 mb-3.5">
     <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
       <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-      {m.finance_overview_recent_payments ? m.finance_overview_recent_payments() : "آخر المدفوعات المستلمة"}
+      {finance.overview_recent_payments ? finance.overview_recent_payments() : "آخر المدفوعات المستلمة"}
     </div>
     <div class="flex items-center gap-2">
       <a href={localizeHref(`/${orgId}/finance/payments`)}>
         <Button variant="outline" size="xs" class="h-6 text-[9px] font-bold cursor-pointer">
-          {m.finance_overview_btn_new_payment ? m.finance_overview_btn_new_payment() : "سند جديد"}
+          {finance.overview_btn_new_payment ? finance.overview_btn_new_payment() : "سند جديد"}
         </Button>
       </a>
       <a href={localizeHref(`/${orgId}/finance/payments`)}>
         <Button variant="outline" size="xs" class="h-6 text-[9px] font-bold cursor-pointer">
-          {m.finance_overview_view_all ? m.finance_overview_view_all() : "عرض الكل"}
+          {finance.overview_view_all ? finance.overview_view_all() : "عرض الكل"}
         </Button>
       </a>
     </div>
@@ -38,7 +38,7 @@ let {
   <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 mt-2 flex-grow">
     {#if recentPayments.length === 0}
       <div class="col-span-2 py-8 text-center text-muted-foreground text-xs select-none">
-        {m.finance_overview_no_payments()}
+        {finance.overview_no_payments()}
       </div>
     {:else}
       {#each recentPayments as p (p.id)}

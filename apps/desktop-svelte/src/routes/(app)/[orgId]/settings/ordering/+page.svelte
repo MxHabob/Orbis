@@ -17,7 +17,8 @@ import {
 import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
 import { ListOrdered, RefreshCw, Lock, Search } from "lucide-svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
+import * as settings from "$lib/paraglide/messages/settings";
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { authStore } from "$lib/stores";
 import SearchField from "$lib/shared/components/search-field.svelte";
@@ -41,8 +42,8 @@ let isFrozen = $state(false);
 let currentPeriodId = $state("");
 
 const strategies = [
-  { value: "name_ar_asc", label: m.exams_ordering_strategy_name() },
-  { value: "hybrid", label: m.exams_ordering_strategy_hybrid() },
+  { value: "name_ar_asc", label: common.exams_ordering_strategy_name() },
+  { value: "hybrid", label: common.exams_ordering_strategy_hybrid() },
 ];
 
 async function loadOrdering() {
@@ -95,7 +96,7 @@ onMount(() => {
 
 async function handleRebuild() {
   if (!currentPeriodId) {
-    toast.error(m.exams_ordering_select_period());
+    toast.error(common.exams_ordering_select_period());
     return;
   }
   isRebuilding = true;
@@ -105,7 +106,7 @@ async function handleRebuild() {
       currentPeriodId,
       selectedStrategy,
     );
-    toast.success(m.exams_ordering_rebuild_success());
+    toast.success(common.exams_ordering_rebuild_success());
     await loadOrdering();
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
@@ -119,7 +120,7 @@ async function handleFreeze() {
   try {
     const userId = authStore.userId || authStore.user?.id || "desktop_user";
     await commands.exam.freezeOrdering(data.orgId, currentPeriodId, userId);
-    toast.success(m.exams_ordering_freeze_success());
+    toast.success(common.exams_ordering_freeze_success());
     isFrozen = true;
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
@@ -139,7 +140,7 @@ const filtered = $derived(
 </script>
 
 <svelte:head>
-  <title>{m.settings_ordering_window_title()} | Orbis</title>
+  <title>{settings.ordering_window_title()} | Orbis</title>
 </svelte:head>
 <div class="h-full w-full overflow-hidden flex flex-col font-sans text-start bg-background relative">
   <div class="flex-1 overflow-y-auto scrollbar-hide">
@@ -147,7 +148,7 @@ const filtered = $derived(
       <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 font-sans border-b border-border/40 pb-5 select-none">
         <div class="flex flex-col gap-1.5 flex-1">
         <span class="text-xs font-semibold text-muted-foreground">
-          {m.exams_ordering_strategy()}
+          {common.exams_ordering_strategy()}
         </span>
         <Select type="single" value={selectedStrategy} onValueChange={(v) => (selectedStrategy = v ?? "")}>
           <SelectTrigger class="h-9 text-xs w-48 md:w-56 border border-border/80 bg-background text-foreground text-start flex items-center justify-between px-3">
@@ -174,7 +175,7 @@ const filtered = $derived(
         onclick={handleRebuild}
       >
         <RefreshCw size={14} class={isRebuilding ? "animate-spin" : ""} />
-        {m.exams_ordering_rebuild()}
+        {common.exams_ordering_rebuild()}
       </Button>
 
       <Button
@@ -184,7 +185,7 @@ const filtered = $derived(
         onclick={handleFreeze}
       >
         <Lock size={14} />
-        {m.exams_ordering_freeze()}
+        {common.exams_ordering_freeze()}
       </Button>
     </div>
       </div>

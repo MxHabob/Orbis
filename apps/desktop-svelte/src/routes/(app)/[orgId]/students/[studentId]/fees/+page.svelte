@@ -9,7 +9,7 @@ import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { CreditCard, Wallet, CheckCircle2, AlertCircle } from "lucide-svelte";
 import { onMount } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";
-import * as m from "$lib/paraglide/messages";
+import * as finance from "$lib/paraglide/messages/finance";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
 
 import { DataTable } from "$lib/tables";
@@ -75,7 +75,7 @@ const feesSource = $derived(
 
       return {
         ...f,
-        fee_name: f.notes || m.fees_default_description(),
+        fee_name: f.notes || finance.fees_default_description(),
         total: formatCurrency(originalAmount),
         paid: formatCurrency(paidAmount),
         discount: formatCurrency(discountAmount),
@@ -89,9 +89,9 @@ const feesSource = $derived(
 const feesCols = $derived(
   sfDef.columns({
     idx: "#",
-    fee: m.fees_col_description(),
-    total: m.fees_col_amount(),
-    status: m.fees_col_date(),
+    fee: finance.fees_col_description(),
+    total: finance.fees_col_amount(),
+    status: finance.fees_col_date(),
   }),
 );
 
@@ -106,17 +106,17 @@ const paymentsCols: OrbisColumnDef[] = [
   },
   {
     prop: "receipt",
-    name: m.fees_col_receipt(),
+    name: finance.fees_col_receipt(),
     size: 120,
     readonly: true,
     pin: "colPinStart",
     cellProperties: () => ({ class: "orbis-cell-student" }),
   },
-  { prop: "method", name: m.fees_col_method(), size: 110, readonly: true },
-  { prop: "date", name: m.fees_col_pay_date(), size: 110, readonly: true },
+  { prop: "method", name: finance.fees_col_method(), size: 110, readonly: true },
+  { prop: "date", name: finance.fees_col_pay_date(), size: 110, readonly: true },
   {
     prop: "amount",
-    name: m.fees_col_paid_amount(),
+    name: finance.fees_col_paid_amount(),
     size: 110,
     readonly: true,
     cellProperties: () => ({ class: "orbis-cell-success orbis-cell-number" }),
@@ -128,7 +128,7 @@ const paymentsSource = $derived(
     payments.map((p) => ({
       ...p,
       receipt: `#${p.receipt_number || p.id?.slice(0, 8)}`,
-      method: p.method || m.fees_default_method(),
+      method: p.method || finance.fees_default_method(),
       date: formatDate(p.created_at) || "—",
       amount: formatCurrency(Number(p.amount || 0)),
     })),
@@ -143,21 +143,21 @@ const rtl = $derived(getLocale() === "ar");
   <div class="grid grid-cols-3 gap-3 shrink-0">
     <div class="border border-border bg-card/45 p-4 rounded-xl flex items-center justify-between shadow-sm">
       <div class="flex flex-col">
-        <span class="text-[9px] text-muted-foreground">{m.fees_total_fees()}</span>
+        <span class="text-[9px] text-muted-foreground">{finance.fees_total_fees()}</span>
         <span class="text-sm font-bold mt-0.5 text-foreground">{formatCurrency(totalFees)}</span>
       </div>
       <Wallet size={16} class="text-primary" />
     </div>
     <div class="border border-border bg-card/45 p-4 rounded-xl flex items-center justify-between shadow-sm">
       <div class="flex flex-col">
-        <span class="text-[9px] text-muted-foreground">{m.fees_total_paid()}</span>
+        <span class="text-[9px] text-muted-foreground">{finance.fees_total_paid()}</span>
         <span class="text-sm font-bold mt-0.5 text-emerald-500">{formatCurrency(totalPaid)}</span>
       </div>
       <CheckCircle2 size={16} class="text-emerald-500" />
     </div>
     <div class="border border-border bg-card/45 p-4 rounded-xl flex items-center justify-between shadow-sm">
       <div class="flex flex-col">
-        <span class="text-[9px] text-muted-foreground">{m.fees_balance_due()}</span>
+        <span class="text-[9px] text-muted-foreground">{finance.fees_balance_due()}</span>
         <span class="text-sm font-bold mt-0.5" class:text-destructive={balanceDue > 0} class:text-emerald-500={balanceDue <= 0}>
           {formatCurrency(balanceDue)}
         </span>
@@ -172,12 +172,12 @@ const rtl = $derived(getLocale() === "ar");
   {:else}
     <!-- Assigned Fees -->
     <div class="flex flex-col gap-2">
-      <span class="font-bold text-[10px] text-muted-foreground uppercase tracking-wider px-1">{m.fees_assigned_title()}</span>
+      <span class="font-bold text-[10px] text-muted-foreground uppercase tracking-wider px-1">{finance.fees_assigned_title()}</span>
       <DataTable
         columns={feesCols}
         source={feesSource}
         emptyIcon={Wallet}
-        emptyTitle={m.fees_no_fees()}
+        emptyTitle={finance.fees_no_fees()}
         {rtl}
         height="200px"
       />
@@ -185,12 +185,12 @@ const rtl = $derived(getLocale() === "ar");
 
     <!-- Payments History -->
     <div class="flex flex-col gap-2">
-      <span class="font-bold text-[10px] text-muted-foreground uppercase tracking-wider px-1">{m.fees_payments_title()}</span>
+      <span class="font-bold text-[10px] text-muted-foreground uppercase tracking-wider px-1">{finance.fees_payments_title()}</span>
       <DataTable
         columns={paymentsCols}
         source={paymentsSource}
         emptyIcon={CreditCard}
-        emptyTitle={m.fees_no_payments()}
+        emptyTitle={finance.fees_no_payments()}
         {rtl}
         height="200px"
       />

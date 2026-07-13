@@ -7,7 +7,8 @@ Wraps all Exams routes under academics.
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import { ClipboardList, FileText, BarChart3, ShieldCheck } from "lucide-svelte";
 import type { Snippet } from "svelte";
-import * as m from "$lib/paraglide/messages";
+import * as academics from "$lib/paraglide/messages/academics";
+import * as common from "$lib/paraglide/messages/common";
 
 let { data, children }: { data: { orgId: string }; children: Snippet } =
   $props();
@@ -17,29 +18,29 @@ const basePath = $derived(`/${data.orgId}/academics/exams`);
 const menuItems = $derived([
   {
     path: "",
-    label: m.exams_layout_nav_overview
-      ? m.exams_layout_nav_overview()
+    label: common.exams_layout_nav_overview
+      ? common.exams_layout_nav_overview()
       : "نظرة عامة",
     icon: BarChart3,
   },
   {
     path: "sessions",
-    label: m.exams_layout_nav_sessions
-      ? m.exams_layout_nav_sessions()
+    label: common.exams_layout_nav_sessions
+      ? common.exams_layout_nav_sessions()
       : "جلسات الاختبار",
     icon: ClipboardList,
   },
   {
     path: "control",
-    label: m.academics_control_label
-      ? m.academics_control_label()
+    label: academics.control_label
+      ? academics.control_label()
       : "الكنترول ورصد الدرجات",
     icon: ShieldCheck,
   },
   {
     path: "reports",
-    label: m.exams_layout_nav_reports
-      ? m.exams_layout_nav_reports()
+    label: common.exams_layout_nav_reports
+      ? common.exams_layout_nav_reports()
       : "التقارير",
     icon: FileText,
   },

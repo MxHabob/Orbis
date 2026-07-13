@@ -10,6 +10,7 @@
     "prepare": "svelte-kit sync || echo ''",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "i18n:lint": "npx @inlang/cli lint",
     "tauri": "tauri",
     "tauri:dev": "ORBIS_ENV=development tauri dev --config src-tauri/tauri.dev.conf.json",
     "tauri:staging": "ORBIS_ENV=staging tauri dev --config src-tauri/tauri.staging.conf.json",

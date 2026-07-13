@@ -9,7 +9,7 @@ directly inside the cards' headers.
 <script lang="ts">
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { AlertCircle } from "lucide-svelte";
-import * as m from "$lib/paraglide/messages";
+import * as finance from "$lib/paraglide/messages/finance";
 import { extractErrorMessage } from "$lib/core/ipc";
 
 import {
@@ -196,7 +196,7 @@ const recentPayments = $derived.by(() => {
     <FinanceSkeleton />
   {:else if error}
     <ErrorState 
-      title={m.finance_overview_error()} 
+      title={finance.overview_error()} 
       message={extractErrorMessage(error)} 
       onRetry={refetchAll} 
     />

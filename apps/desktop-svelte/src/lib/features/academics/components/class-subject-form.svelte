@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 <!--
   @component ClassSubjectForm
   Form for assigning a subject to a teacher for a specific class and academic period.
@@ -16,7 +17,7 @@ import {
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import type { ClassSubject, JsonRecord } from "@orbis/sdk-core";
 import { toast } from "svelte-sonner";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 import {
   createPeriodsQuery,
   createClassesQuery,
@@ -105,10 +106,10 @@ async function handleSubmit() {
 
     if (isEditMode && editData?.id) {
       await commands.academic.updateClassSubject(String(editData.id), request as any);
-      toast.success(m.cs_update_success());
+      toast.success(common.cs_update_success());
     } else {
       await commands.academic.createClassSubject(request as any);
-      toast.success(m.cs_create_success());
+      toast.success(common.cs_create_success());
     }
 
     onSuccess?.();
@@ -162,12 +163,12 @@ async function handleSubmit() {
 
     <!-- Class -->
     <div class="flex flex-col gap-1.5">
-      <Label class="text-xs font-semibold text-muted-foreground">{m.cs_form_class()} *</Label>
+      <Label class="text-xs font-semibold text-muted-foreground">{common.cs_form_class()} *</Label>
       <Select type="single" value={classId} onValueChange={(v) => (classId = v ?? "")}>
         <SelectTrigger class="h-9 text-sm">
           {selectedClass
             ? String(selectedClass.name ?? selectedClass.name_ar ?? "")
-            : m.cs_form_select_class()}
+            : common.cs_form_select_class()}
         </SelectTrigger>
         <SelectContent>
           {#each classes as cls (cls.id)}
@@ -181,12 +182,12 @@ async function handleSubmit() {
 
     <!-- Subject -->
     <div class="flex flex-col gap-1.5">
-      <Label class="text-xs font-semibold text-muted-foreground">{m.cs_form_subject()} *</Label>
+      <Label class="text-xs font-semibold text-muted-foreground">{common.cs_form_subject()} *</Label>
       <Select type="single" value={subjectId} onValueChange={(v) => (subjectId = v ?? "")}>
         <SelectTrigger class="h-9 text-sm">
           {selectedSubject
             ? String(selectedSubject.name ?? selectedSubject.name_ar ?? "")
-            : m.cs_form_select_subject()}
+            : common.cs_form_select_subject()}
         </SelectTrigger>
         <SelectContent>
           {#each subjects as subj (subj.id)}
@@ -200,12 +201,12 @@ async function handleSubmit() {
 
     <!-- Primary Teacher -->
     <div class="flex flex-col gap-1.5">
-      <Label class="text-xs font-semibold text-muted-foreground">{m.cs_form_teacher()} *</Label>
+      <Label class="text-xs font-semibold text-muted-foreground">{common.cs_form_teacher()} *</Label>
       <Select type="single" value={teacherId} onValueChange={(v) => (teacherId = v ?? "")}>
         <SelectTrigger class="h-9 text-sm">
           {selectedTeacher
             ? String(selectedTeacher.full_name ?? selectedTeacher.email ?? "")
-            : m.cs_form_select_teacher()}
+            : common.cs_form_select_teacher()}
         </SelectTrigger>
         <SelectContent>
           {#each teachers as t (t.id)}
@@ -221,7 +222,7 @@ async function handleSubmit() {
 
     <!-- Weekly Hours -->
     <div class="flex flex-col gap-1.5">
-      <Label class="text-xs font-semibold text-muted-foreground">{m.cs_form_hours()}</Label>
+      <Label class="text-xs font-semibold text-muted-foreground">{common.cs_form_hours()}</Label>
       <Input
         type="number"
         min="1"
@@ -240,14 +241,14 @@ async function handleSubmit() {
         class="flex-1 h-9 text-sm"
         onclick={onCancel}
       >
-        {m.cs_form_cancel()}
+        {common.action_cancel()}
       </Button>
       <Button
         type="submit"
         class="flex-1 h-9 text-sm"
         disabled={isSaving || isLoading || !classId || !subjectId || !teacherId || !periodId}
       >
-        {isSaving ? m.cs_form_saving() : m.cs_form_save()}
+        {isSaving ? common.cs_form_saving() : common.action_save()}
       </Button>
     </div>
   {/if}

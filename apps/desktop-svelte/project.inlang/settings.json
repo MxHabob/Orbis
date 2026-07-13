@@ -2,10 +2,22 @@
 	"$schema": "https://inlang.com/schema/project-settings",
 	"modules": [
 		"https://cdn.jsdelivr.net/npm/@inlang/plugin-message-format@4/dist/index.js",
-		"https://cdn.jsdelivr.net/npm/@inlang/plugin-m-function-matcher@2/dist/index.js"
+		"https://cdn.jsdelivr.net/npm/@inlang/plugin-m-function-matcher@2/dist/index.js",
+		"https://cdn.jsdelivr.net/npm/@inlang/message-lint-rule-empty-pattern@1/dist/index.js",
+		"https://cdn.jsdelivr.net/npm/@inlang/message-lint-rule-identical-pattern@1/dist/index.js",
+		"https://cdn.jsdelivr.net/npm/@inlang/message-lint-rule-missing-translation@1/dist/index.js",
+		"https://cdn.jsdelivr.net/npm/@inlang/message-lint-rule-without-source@1/dist/index.js"
 	],
 	"plugin.inlang.messageFormat": {
-		"pathPattern": "./messages/{locale}.json"
+		"pathPattern": {
+			"common": "./messages/common/{locale}.json",
+			"auth": "./messages/auth/{locale}.json",
+			"academics": "./messages/academics/{locale}.json",
+			"students": "./messages/students/{locale}.json",
+			"finance": "./messages/finance/{locale}.json",
+			"settings": "./messages/settings/{locale}.json",
+			"reports": "./messages/reports/{locale}.json"
+		}
 	},
 	"baseLocale": "ar",
 	"locales": [

@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 <!--
 @component ClassAssessmentsPage
 Manages assessments for the current class (classId from URL context).
@@ -27,7 +28,7 @@ import {
 import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
 import AssessmentCreateSheet from "$lib/features/academics/components/assessment-create-sheet.svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 
 const orgId = $derived(page.params.orgId);
 const classId = $derived(page.params.classId);
@@ -286,7 +287,7 @@ const totalWeight = $derived(
     >
       <Award size={40} class="text-muted-foreground/30" />
       <p class="text-xs font-semibold">
-        {m.assessments_empty ? m.assessments_empty() : "لا توجد تقييمات"}
+        {common.assessments_empty ? common.assessments_empty() : "لا توجد تقييمات"}
       </p>
     </div>
   {:else}
@@ -302,14 +303,14 @@ const totalWeight = $derived(
             <div class="flex items-center gap-3 text-[10px] text-muted-foreground">
               <span class="flex items-center gap-1">
                 <Percent size={10} />
-                {m.assessments_weight
-                  ? m.assessments_weight()
+                {common.assessments_weight
+                  ? common.assessments_weight()
                   : "الوزن"}: {assessment.weight}%
               </span>
               <span class="flex items-center gap-1">
                 <Award size={10} />
-                {m.assessments_max_score
-                  ? m.assessments_max_score()
+                {common.assessments_max_score
+                  ? common.assessments_max_score()
                   : "أقصى درجة"}: {assessment.max_score}
               </span>
               {#if assessment.date}

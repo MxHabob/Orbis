@@ -3,7 +3,8 @@ import { Skeleton } from "@orbis/ui-svelte";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import DragIndicator from "../components/drag-indicator.svelte";
-import * as m from "$lib/paraglide/messages";
+import * as reports from "$lib/paraglide/messages/reports";
+
 import { localizeHref } from "$lib/paraglide/runtime";
 import { ArrowRight } from "lucide-svelte";
 
@@ -67,21 +68,21 @@ const listItems = $derived.by(() => {
   return [
     {
       name: "critical",
-      label: m.reports_behavior_critical(),
+      label: reports.behavior_critical(),
       value: critical,
       percent: Math.round((critical / total) * 100),
       color: "bg-destructive",
     },
     {
       name: "major",
-      label: m.reports_behavior_major(),
+      label: reports.behavior_major(),
       value: major,
       percent: Math.round((major / total) * 100),
       color: "bg-orange-500",
     },
     {
       name: "minor",
-      label: m.reports_behavior_minor(),
+      label: reports.behavior_minor(),
       value: minor,
       percent: Math.round((minor / total) * 100),
       color: "bg-primary",
@@ -96,8 +97,8 @@ const displayItems = $derived(
     : [
         {
           name: "critical",
-          label: m.reports_behavior_critical
-            ? m.reports_behavior_critical()
+          label: reports.behavior_critical
+            ? reports.behavior_critical()
             : "حرجة",
           value: 0,
           percent: 0,
@@ -105,8 +106,8 @@ const displayItems = $derived(
         },
         {
           name: "major",
-          label: m.reports_behavior_major
-            ? m.reports_behavior_major()
+          label: reports.behavior_major
+            ? reports.behavior_major()
             : "متوسطة",
           value: 0,
           percent: 0,
@@ -114,8 +115,8 @@ const displayItems = $derived(
         },
         {
           name: "minor",
-          label: m.reports_behavior_minor
-            ? m.reports_behavior_minor()
+          label: reports.behavior_minor
+            ? reports.behavior_minor()
             : "طفيفة",
           value: 0,
           percent: 0,
@@ -140,7 +141,7 @@ const displayItems = $derived(
       </div>
       <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
         <span class="h-1.5 w-1.5 rounded-full bg-rose-500 {summary ? 'animate-pulse' : ''}"></span>
-        {m.reports_behavior_severity_title()} {#if summary}• Total: <span class="text-foreground font-mono">{summary.total_records}</span>{/if}
+        {reports.behavior_severity_title()} {#if summary}• Total: <span class="text-foreground font-mono">{summary.total_records}</span>{/if}
       </div>
     </div>
 
@@ -180,9 +181,9 @@ const displayItems = $derived(
       <!-- Backdrop Blur Overlay (No borders, no alert icons, frosted glass blur effect) -->
       {#if !summary}
         <div class="absolute inset-0 flex flex-col items-center justify-center text-center select-none p-4 gap-1.5 backdrop-blur-[3px] bg-background/35 z-10 transition-all duration-300 rounded-xl">
-          <span class="font-bold text-xs text-foreground/90">{m.reports_behavior_empty_title()}</span>
+          <span class="font-bold text-xs text-foreground/90">{reports.behavior_empty_title()}</span>
           <span class="text-[9px] text-muted-foreground max-w-[280px] leading-relaxed">
-            {m.reports_behavior_empty_desc()}
+            {reports.behavior_empty_desc()}
           </span>
         </div>
       {/if}
@@ -194,7 +195,7 @@ const displayItems = $derived(
         href={localizeHref(`/${orgId}/students`)}
         class="text-primary hover:underline flex items-center gap-1 group/link"
       >
-        <span>{m.reports_behavior_view_all ? m.reports_behavior_view_all() : "View all incidents"}</span>
+        <span>{reports.behavior_view_all ? reports.behavior_view_all() : "View all incidents"}</span>
         <ArrowRight size={10} class="transition-transform group-hover/link:translate-x-0.5 rtl:rotate-180" />
       </a>
     </div>

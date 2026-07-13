@@ -8,7 +8,7 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Megaphone } from "lucide-svelte";
 import { isDesktopApp } from "$lib/core/ipc";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 import { getLocale } from "$lib/paraglide/runtime";
 import orbisEcosystem from "$lib/assets/orbis-ecosystem.png";
 import mulverseOrbis from "$lib/assets/mulverse-orbis.png";
@@ -50,7 +50,7 @@ const handleLearnMore = async () => {
     <!-- Announcement Header -->
     <div class="px-4 py-3 border-b border-border bg-card/50 flex items-center justify-between select-none">
       <h4 class="font-bold text-xs text-foreground">
-        {m.whats_new_header_title()}
+        {common.whats_new_header_title()}
       </h4>
     </div>
 
@@ -61,21 +61,21 @@ const handleLearnMore = async () => {
       <div class="flex flex-col gap-2.5 text-start" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
         <div class="flex items-start justify-between gap-2">
           <h5 class="text-[12px] font-bold text-foreground leading-snug">
-            {m.whats_new_title_1()}
+            {common.whats_new_title_1()}
           </h5>
           <Badge variant="brand" class="text-[9px] px-1.5 py-0 shrink-0 font-semibold bg-primary/10 text-primary border-none">
-            {m.whats_new_badge_feature()}
+            {common.whats_new_badge_feature()}
           </Badge>
         </div>
         
         <p class="text-[11px] text-muted-foreground leading-relaxed font-light">
-          {m.whats_new_desc_1()}
+          {common.whats_new_desc_1()}
           <button 
             type="button" 
             onclick={handleLearnMore}
             class="text-primary hover:underline font-medium inline-block p-0 bg-transparent border-0 cursor-pointer text-[11px] ms-1"
           >
-            {m.whats_new_read_more()}
+            {common.whats_new_read_more()}
           </button>
         </p>
 
@@ -97,15 +97,15 @@ const handleLearnMore = async () => {
       <div class="flex flex-col gap-2.5 text-start pb-2" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
         <div class="flex items-start justify-between gap-2">
           <h5 class="text-[12px] font-bold text-foreground leading-snug">
-            {m.whats_new_title_2()}
+            {common.whats_new_title_2()}
           </h5>
           <Badge variant="brand" class="text-[9px] px-1.5 py-0 shrink-0 font-semibold bg-primary/10 text-primary border-none">
-            {m.whats_new_badge_integration()}
+            {common.whats_new_badge_integration()}
           </Badge>
         </div>
         
         <p class="text-[11px] text-muted-foreground leading-relaxed font-light">
-          {m.whats_new_desc_2()}
+          {common.whats_new_desc_2()}
         </p>
 
         <!-- Illustration Image 2 -->

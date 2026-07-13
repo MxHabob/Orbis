@@ -20,7 +20,8 @@ import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import ArchivedBanner from "$lib/features/academics/archived-banner.svelte";
 import type { Snippet } from "svelte";
-import * as m from "$lib/paraglide/messages";
+import * as academics from "$lib/paraglide/messages/academics";
+import * as common from "$lib/paraglide/messages/common";
 
 let { data, children }: { data: { orgId: string }; children: Snippet } =
   $props();
@@ -47,35 +48,35 @@ const basePath = $derived(`/${data.orgId}/academics`);
 const navItems = $derived([
   {
     path: "",
-    label: m.academics_layout_nav_overview(),
+    label: academics.layout_nav_overview(),
     icon: Compass,
   },
   {
     path: "classes",
-    label: m.academics_layout_nav_classes(),
+    label: academics.layout_nav_classes(),
     icon: GraduationCap,
     badge: classesCount > 0 ? classesCount : null,
   },
   {
     path: "schedule",
-    label: m.academics_layout_nav_schedule(),
+    label: academics.layout_nav_schedule(),
     icon: Calendar,
   },
   {
     path: "exams",
-    label: m.exams_layout_panel_title
-      ? m.exams_layout_panel_title()
+    label: common.exams_layout_panel_title
+      ? common.exams_layout_panel_title()
       : "الامتحانات",
     icon: ClipboardList,
   },
   {
     path: "calendar",
-    label: m.calendar_title ? m.calendar_title() : "Academic Calendar",
+    label: common.calendar_title ? common.calendar_title() : "Academic Calendar",
     icon: CalendarClock,
   },
   {
     path: "promotion",
-    label: m.promo_title(),
+    label: common.promo_title(),
     icon: TrendingUp,
   },
 ]);
@@ -89,7 +90,7 @@ const navItems = $derived([
           <SidebarNav
             items={navItems}
             {basePath}
-            title={m.academics_layout_panel_title()}
+            title={academics.layout_panel_title()}
           />
         </div>
       </div>

@@ -6,7 +6,8 @@
 
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
 import { indexColumn } from "$lib/tables";
-import * as m from "$lib/paraglide/messages";
+import * as students from "$lib/paraglide/messages/students";
+import * as common from "$lib/paraglide/messages/common";
 
 /** All data property keys in column order (for paste mapping) */
 export const STUDENT_DATA_PROPS = [
@@ -157,8 +158,8 @@ export function buildStudentColumns(
       size: 110,
       editor: "combo",
       options: [
-        { id: "active", label: m.status_active() },
-        { id: "withdrawn", label: m.status_withdrawn() },
+        { id: "active", label: students.status_active() },
+        { id: "withdrawn", label: students.status_withdrawn() },
       ],
     });
   }
@@ -225,9 +226,9 @@ export function buildStudentColumns(
       size: 120,
       editor: "combo",
       options: [
-        { id: "father", label: m.relationship_father?.() || "Father" },
-        { id: "mother", label: m.relationship_mother?.() || "Mother" },
-        { id: "other", label: m.relationship_other?.() || "Other" },
+        { id: "father", label: common.relationship_father?.() || "Father" },
+        { id: "mother", label: common.relationship_mother?.() || "Mother" },
+        { id: "other", label: common.relationship_other?.() || "Other" },
       ],
     });
   }

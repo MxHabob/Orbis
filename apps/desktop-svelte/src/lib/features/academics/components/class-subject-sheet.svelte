@@ -6,7 +6,7 @@
 import * as Sheet from "@orbis/ui-svelte/sheet";
 import ClassSubjectForm from "$lib/features/academics/components/class-subject-form.svelte";
 import type { ClassSubject } from "@orbis/sdk-core";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 
 let {
   open = $bindable(false),
@@ -32,10 +32,10 @@ function handleSuccess() {
   <Sheet.Content side="right" class="w-[420px] sm:w-[480px] flex flex-col gap-0 p-0">
     <Sheet.Header class="px-6 py-4 border-b border-border/40 shrink-0">
       <Sheet.Title class="text-base font-bold">
-        {isEdit ? m.cs_sheet_edit_title() : m.cs_sheet_create_title()}
+        {isEdit ? common.action_edit() : common.cs_sheet_create_title()}
       </Sheet.Title>
       <Sheet.Description class="text-xs text-muted-foreground">
-        {m.cs_desc()}
+        {common.cs_desc()}
       </Sheet.Description>
     </Sheet.Header>
 

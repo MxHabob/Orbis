@@ -18,7 +18,7 @@ import {
 } from "@orbis/ui-svelte/tabs";
 import { ComboboxDropdown } from "@orbis/ui-svelte/combobox-dropdown";
 import { toast } from "svelte-sonner";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 
 let {
   orgId,
@@ -155,7 +155,7 @@ async function handleSubmit(e: SubmitEvent) {
       };
 
       await commands.finance.createAccount(orgId, request);
-      toast.success(m.ledger_toast_success());
+      toast.success(common.ledger_toast_success());
 
       // Reset
       glParentId = "";
@@ -218,7 +218,7 @@ async function handleSubmit(e: SubmitEvent) {
     onSuccess();
   } catch (e) {
     const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(m.ledger_toast_error_submit({ error: errorMsg }));
+    toast.error(common.ledger_toast_error_submit({ error: errorMsg }));
   } finally {
     isSubmitting = false;
     loadFormData(); // Refresh lists
@@ -230,13 +230,13 @@ async function handleSubmit(e: SubmitEvent) {
   <Tabs defaultPreset={activeTab} class="w-full flex-1 flex flex-col overflow-hidden" onValueChange={(v) => handleTabChange(v as any)}>
     <TabsList class="grid w-full grid-cols-3 select-none shrink-0 mb-4 bg-muted/60 p-1 rounded-lg">
       <TabsTrigger value="gl" class="text-xs font-semibold py-1.5 cursor-pointer rounded-md transition-all">
-        {m.ledger_tab_gl()}
+        {common.ledger_tab_gl()}
       </TabsTrigger>
       <TabsTrigger value="treasury" class="text-xs font-semibold py-1.5 cursor-pointer rounded-md transition-all">
-        {m.ledger_tab_treasury()}
+        {common.ledger_tab_treasury()}
       </TabsTrigger>
       <TabsTrigger value="entity" class="text-xs font-semibold py-1.5 cursor-pointer rounded-md transition-all">
-        {m.ledger_tab_entity()}
+        {common.ledger_tab_entity()}
       </TabsTrigger>
     </TabsList>
 
@@ -246,10 +246,10 @@ async function handleSubmit(e: SubmitEvent) {
         <!-- Parent Account Select -->
         <div class="flex flex-col gap-1.5 text-start">
           <Label class="text-xs font-bold text-foreground">
-            {m.ledger_label_parent()}
+            {common.ledger_label_parent()}
           </Label>
           <ComboboxDropdown
-            placeholder={m.ledger_placeholder_parent()}
+            placeholder={common.ledger_placeholder_parent()}
             searchPlaceholder="ابحث عن الحساب الرئيسي..."
             selectedItem={selectedParentItem}
             items={parentItems}
@@ -263,7 +263,7 @@ async function handleSubmit(e: SubmitEvent) {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="flex flex-col gap-1.5 text-start">
             <Label for="gl_name_ar" class="text-xs font-bold text-foreground">
-              {m.ledger_label_name_ar()}
+              {common.ledger_label_name_ar()}
             </Label>
             <Input
               id="gl_name_ar"
@@ -276,7 +276,7 @@ async function handleSubmit(e: SubmitEvent) {
           </div>
           <div class="flex flex-col gap-1.5 text-start">
             <Label for="gl_name_en" class="text-xs font-bold text-foreground">
-              {m.ledger_label_name_en()}
+              {common.ledger_label_name_en()}
             </Label>
             <Input
               id="gl_name_en"
@@ -294,7 +294,7 @@ async function handleSubmit(e: SubmitEvent) {
           <div class="bg-muted/20 p-3 rounded-lg border border-border/50 animate-in fade-in duration-150">
             <div class="flex flex-col gap-1.5 text-start">
               <span class="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
-                {m.ledger_label_type()}
+                {common.ledger_label_type()}
               </span>
               <span class="text-xs font-semibold text-foreground capitalize">
                 {glAccountType}
@@ -306,7 +306,7 @@ async function handleSubmit(e: SubmitEvent) {
         <!-- Opening Balance -->
         <div class="flex flex-col gap-1.5 text-start">
           <Label for="gl_open_bal" class="text-xs font-bold text-foreground">
-            {m.ledger_label_opening_balance()}
+            {common.ledger_label_opening_balance()}
           </Label>
           <Input
             id="gl_open_bal"
@@ -354,17 +354,17 @@ async function handleSubmit(e: SubmitEvent) {
         <!-- Treasury Type -->
         <div class="flex flex-col gap-1.5 text-start">
           <Label class="text-xs font-bold text-foreground">
-            {m.ledger_label_treasury_type()}
+            {common.ledger_label_treasury_type()}
           </Label>
           <Select bind:value={trType} type="single">
             <SelectTrigger class="w-full text-xs text-start flex items-center justify-between bg-background">
               <span class="truncate">
-                {trType === "cash" ? m.ledger_type_cash() : m.ledger_type_bank()}
+                {trType === "cash" ? common.ledger_type_cash() : common.ledger_type_bank()}
               </span>
             </SelectTrigger>
             <SelectContent class="text-start">
-              <SelectItem value="cash" class="text-xs cursor-pointer">{m.ledger_type_cash()}</SelectItem>
-              <SelectItem value="bank" class="text-xs cursor-pointer">{m.ledger_type_bank()}</SelectItem>
+              <SelectItem value="cash" class="text-xs cursor-pointer">{common.ledger_type_cash()}</SelectItem>
+              <SelectItem value="bank" class="text-xs cursor-pointer">{common.ledger_type_bank()}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -374,26 +374,26 @@ async function handleSubmit(e: SubmitEvent) {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-150">
             <div class="flex flex-col gap-1.5 text-start">
               <Label for="tr_bank_name" class="text-xs font-bold text-foreground">
-                {m.ledger_label_bank_name()}
+                {common.ledger_label_bank_name()}
               </Label>
               <Input
                 id="tr_bank_name"
                 type="text"
                 bind:value={trBankName}
-                placeholder={m.ledger_placeholder_bank_name()}
+                placeholder={common.ledger_placeholder_bank_name()}
                 required
                 disabled={isSubmitting}
               />
             </div>
             <div class="flex flex-col gap-1.5 text-start">
               <Label for="tr_acc_num" class="text-xs font-bold text-foreground">
-                {m.ledger_label_account_number()}
+                {common.ledger_label_account_number()}
               </Label>
               <Input
                 id="tr_acc_num"
                 type="text"
                 bind:value={trAccountNumber}
-                placeholder={m.ledger_placeholder_account_number()}
+                placeholder={common.ledger_placeholder_account_number()}
                 required
                 disabled={isSubmitting}
               />
@@ -407,18 +407,18 @@ async function handleSubmit(e: SubmitEvent) {
         <!-- Entity Type Selection -->
         <div class="flex flex-col gap-1.5 text-start">
           <Label class="text-xs font-bold text-foreground">
-            {m.ledger_label_entity_type()}
+            {common.ledger_label_entity_type()}
           </Label>
           <Select bind:value={enType} type="single">
             <SelectTrigger class="w-full text-xs text-start flex items-center justify-between bg-background">
               <span class="truncate">
-                {enType === "vendor" ? m.ledger_entity_vendor() : enType === "partner" ? m.ledger_entity_partner() : m.ledger_entity_employee()}
+                {enType === "vendor" ? common.ledger_entity_vendor() : enType === "partner" ? common.ledger_entity_partner() : common.ledger_entity_employee()}
               </span>
             </SelectTrigger>
             <SelectContent class="text-start">
-              <SelectItem value="vendor" class="text-xs cursor-pointer">{m.ledger_entity_vendor()}</SelectItem>
-              <SelectItem value="partner" class="text-xs cursor-pointer">{m.ledger_entity_partner()}</SelectItem>
-              <SelectItem value="employee" class="text-xs cursor-pointer">{m.ledger_entity_employee()}</SelectItem>
+              <SelectItem value="vendor" class="text-xs cursor-pointer">{common.ledger_entity_vendor()}</SelectItem>
+              <SelectItem value="partner" class="text-xs cursor-pointer">{common.ledger_entity_partner()}</SelectItem>
+              <SelectItem value="employee" class="text-xs cursor-pointer">{common.ledger_entity_employee()}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -456,7 +456,7 @@ async function handleSubmit(e: SubmitEvent) {
         <!-- Opening Balance -->
         <div class="flex flex-col gap-1.5 text-start">
           <Label for="en_open_bal" class="text-xs font-bold text-foreground">
-            {m.ledger_label_opening_balance()}
+            {common.ledger_label_opening_balance()}
           </Label>
           <Input
             id="en_open_bal"
@@ -478,7 +478,7 @@ async function handleSubmit(e: SubmitEvent) {
           disabled={isSubmitting}
           class="text-xs h-9"
         >
-          {m.ledger_button_cancel()}
+          {common.action_cancel()}
         </Button>
         <Button
           type="submit"
@@ -486,7 +486,7 @@ async function handleSubmit(e: SubmitEvent) {
           class="font-bold text-xs h-9 px-5"
           disabled={isSubmitting || (activeTab === "gl" && !glParentId)}
         >
-          {isSubmitting ? m.loading() : m.ledger_btn_add_account()}
+          {isSubmitting ? common.loading() : common.ledger_btn_add_account()}
         </Button>
       </div>
     </form>

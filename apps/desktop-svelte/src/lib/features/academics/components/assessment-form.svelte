@@ -12,7 +12,7 @@ import {
 } from "@orbis/ui-svelte/select";
 import { Award } from "lucide-svelte";
 import { toast } from "svelte-sonner";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 
 let {
   classId,
@@ -40,16 +40,16 @@ let assessmentType = $state<"exam" | "quiz" | "homework" | "classwork">("exam");
 
 const typeLabels: Record<"exam" | "quiz" | "homework" | "classwork", string> =
   $derived({
-    exam: m.assessment_option_exam(),
-    quiz: m.assessment_option_quiz(),
-    homework: m.assessment_option_homework(),
-    classwork: m.assessment_option_classwork(),
+    exam: common.assessment_option_exam(),
+    quiz: common.assessment_option_quiz(),
+    homework: common.assessment_option_homework(),
+    classwork: common.assessment_option_classwork(),
   });
 
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   if (!nameAr && !name) {
-    toast.error(m.assessment_toast_error_name());
+    toast.error(common.assessment_toast_error_name());
     return;
   }
   if (!classId || !subjectId || !periodId) {
@@ -72,7 +72,7 @@ async function handleSubmit(e: SubmitEvent) {
       item_type: assessmentType,
     };
     await commands.assessment.createAssessment(request);
-    toast.success(m.assessment_toast_success());
+    toast.success(common.assessment_toast_success());
 
     // Reset fields
     name = "";
@@ -83,7 +83,7 @@ async function handleSubmit(e: SubmitEvent) {
 
     onSuccess();
   } catch (e) {
-    toast.error(m.assessment_toast_error_submit());
+    toast.error(common.assessment_toast_error_submit());
   } finally {
     isSubmitting = false;
   }
@@ -94,7 +94,7 @@ async function handleSubmit(e: SubmitEvent) {
 	<SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
 		<SheetTitle class="text-xl font-bold text-foreground flex items-center gap-2">
 			<Award size={18} class="text-primary" />
-			<span>{m.assessment_sheet_title()}</span>
+			<span>{common.assessment_sheet_title()}</span>
 		</SheetTitle>
 	</SheetHeader>
 
@@ -102,13 +102,13 @@ async function handleSubmit(e: SubmitEvent) {
 		<!-- Name (Arabic) -->
 		<div class="flex flex-col gap-2 text-start">
 			<Label for="ass_name_ar" class="text-sm font-medium text-foreground">
-				{m.assessment_label_name_ar()}
+				{common.assessment_label_name_ar()}
 			</Label>
 			<Input 
 				id="ass_name_ar"
 				type="text" 
 				bind:value={nameAr}
-				placeholder={m.assessment_placeholder_name_ar()}
+				placeholder={common.assessment_placeholder_name_ar()}
 				required
 			/>
 		</div>
@@ -116,30 +116,30 @@ async function handleSubmit(e: SubmitEvent) {
 		<!-- Name (English) -->
 		<div class="flex flex-col gap-2 text-start">
 			<Label for="ass_name_en" class="text-sm font-medium text-foreground">
-				{m.assessment_label_name_en()}
+				{common.assessment_label_name_en()}
 			</Label>
 			<Input 
 				id="ass_name_en"
 				type="text" 
 				bind:value={name}
-				placeholder={m.assessment_placeholder_name_en()}
+				placeholder={common.assessment_placeholder_name_en()}
 			/>
 		</div>
 
 		<!-- Assessment Type -->
 		<div class="flex flex-col gap-2 text-start">
 			<Label for="ass_type" class="text-sm font-medium text-foreground">
-				{m.assessment_label_type()}
+				{common.assessment_label_type()}
 			</Label>
 			<Select type="single" value={assessmentType} onValueChange={(v) => (assessmentType = (v as any) ?? "exam")}>
 				<SelectTrigger class="h-9 text-sm w-full">
 					{typeLabels[assessmentType] || assessmentType}
 				</SelectTrigger>
 				<SelectContent>
-					<SelectItem value="exam">{m.assessment_option_exam()}</SelectItem>
-					<SelectItem value="quiz">{m.assessment_option_quiz()}</SelectItem>
-					<SelectItem value="homework">{m.assessment_option_homework()}</SelectItem>
-					<SelectItem value="classwork">{m.assessment_option_classwork()}</SelectItem>
+					<SelectItem value="exam">{common.assessment_option_exam()}</SelectItem>
+					<SelectItem value="quiz">{common.assessment_option_quiz()}</SelectItem>
+					<SelectItem value="homework">{common.assessment_option_homework()}</SelectItem>
+					<SelectItem value="classwork">{common.assessment_option_classwork()}</SelectItem>
 				</SelectContent>
 			</Select>
 		</div>
@@ -149,7 +149,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Max Score -->
 			<div class="flex flex-col gap-2 text-start">
 				<Label for="ass_max" class="text-sm font-medium text-foreground">
-					{m.assessment_label_max()}
+					{common.assessment_label_max()}
 				</Label>
 				<Input 
 					id="ass_max"
@@ -163,7 +163,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Weight -->
 			<div class="flex flex-col gap-2 text-start">
 				<Label for="ass_weight" class="text-sm font-medium text-foreground">
-					{m.assessment_label_weight()}
+					{common.assessment_label_weight()}
 				</Label>
 				<Input 
 					id="ass_weight"
@@ -184,7 +184,7 @@ async function handleSubmit(e: SubmitEvent) {
 			onclick={onCancel}
 			disabled={isSubmitting}
 		>
-			{m.assessment_button_cancel()}
+			{common.action_cancel()}
 		</Button>
 		<Button 
 			type="submit" 
@@ -192,7 +192,7 @@ async function handleSubmit(e: SubmitEvent) {
 			class="font-semibold"
 			disabled={isSubmitting}
 		>
-			{isSubmitting ? m.assessment_toast_saving() : m.assessment_button_save()}
+			{isSubmitting ? common.assessment_toast_saving() : common.action_save()}
 		</Button>
 	</div>
 </form>

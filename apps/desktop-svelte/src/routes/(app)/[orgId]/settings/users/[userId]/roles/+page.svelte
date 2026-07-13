@@ -13,7 +13,7 @@ import { Checkbox } from "@orbis/ui-svelte/checkbox";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
-import * as m from "$lib/paraglide/messages";
+import * as settings from "$lib/paraglide/messages/settings";
 import SearchField from "$lib/shared/components/search-field.svelte";
 
 const userId = $derived(page.params.userId);
@@ -79,7 +79,7 @@ async function saveRoles() {
   isSaving = true;
   try {
     await commands.iam.saveUserRoles(userId, checkedRoles);
-    toast.success(m.settings_user_detail_saved());
+    toast.success(settings.user_detail_saved());
   } catch (e: unknown) {
     toast.error((e as any)?.message || "Save failed");
   } finally {
@@ -104,7 +104,7 @@ async function saveRoles() {
     >
       <div class="w-full sm:max-w-xs">
         <SearchField
-          placeholder={m.settings_user_detail_search_roles()}
+          placeholder={settings.user_detail_search_roles()}
           bind:value={roleSearchQuery}
           class="sm:max-w-xs"
         />
@@ -116,7 +116,7 @@ async function saveRoles() {
           class="text-xs"
           onclick={selectAllRoles}
         >
-          {m.settings_user_detail_select_all()}
+          {settings.user_detail_select_all()}
         </Button>
         <Button
           variant="outline"
@@ -124,7 +124,7 @@ async function saveRoles() {
           class="text-xs"
           onclick={unselectAllRoles}
         >
-          {m.settings_user_detail_unselect_all()}
+          {settings.user_detail_unselect_all()}
         </Button>
       </div>
     </div>
@@ -149,7 +149,7 @@ async function saveRoles() {
         onclick={saveRoles}
         disabled={isSaving}
       >
-        {isSaving ? "..." : m.settings_user_detail_save()}
+        {isSaving ? "..." : settings.user_detail_save()}
       </Button>
     </div>
   </div>

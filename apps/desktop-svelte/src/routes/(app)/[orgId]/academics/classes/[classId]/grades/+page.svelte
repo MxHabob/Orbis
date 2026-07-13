@@ -18,7 +18,7 @@ import {
 } from "@orbis/ui-svelte/select";
 import { Users, ClipboardList, Download, RefreshCcw } from "lucide-svelte";
 import { toast } from "svelte-sonner";
-import * as m from "$lib/paraglide/messages";
+import * as academics from "$lib/paraglide/messages/academics";
 import { getLocale } from "$lib/paraglide/runtime";
 import { DataTable, AvatarCell } from "$lib/tables";
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
@@ -79,7 +79,7 @@ async function loadData() {
     }
   } catch (e) {
     console.error("Error loading grades data:", e);
-    toast.error(m.grades_error_load());
+    toast.error(academics.grades_error_load());
   } finally {
     isLoading = false;
   }
@@ -163,8 +163,8 @@ const gridColumns = $derived.by(() => {
     {
       id: "student_name",
       prop: "student_name",
-      header: m.grades_col_student(),
-      name: m.grades_col_student(),
+      header: academics.grades_col_student(),
+      name: academics.grades_col_student(),
       width: 180,
       size: 180,
       minSize: 140,
@@ -198,7 +198,7 @@ const gridColumns = $derived.by(() => {
   if (assessments.length > 0) {
     cols.push({
       prop: "__total",
-      name: `${m.grades_col_total()} (/${maxTotal})`,
+      name: `${academics.grades_col_total()} (/${maxTotal})`,
       size: 100,
       pin: "colPinEnd",
       readonly: true,
@@ -303,11 +303,11 @@ async function handleCellEdit(event: any) {
       };
 
       await commands.grades.upsertGradeCell(orgId ?? "", "admin", request);
-      toast.success(m.grades_saved());
+      toast.success(academics.grades_saved());
     } catch (e: unknown) {
       // Revert in-memory value if backend save fails
       gradeEntries[key] = oldVal;
-      toast.error((e as any)?.message || m.grades_error_save());
+      toast.error((e as any)?.message || academics.grades_error_save());
     }
   }
 }
@@ -320,7 +320,7 @@ async function handleCellEdit(event: any) {
       <!-- Subject Filter -->
       <div class="flex items-center gap-2">
         <span class="text-xs text-muted-foreground font-medium">
-          {m.grades_filter_subject()}:
+          {academics.grades_filter_subject()}:
         </span>
         <Select
           type="single"
@@ -336,7 +336,7 @@ async function handleCellEdit(event: any) {
                       ?.name ??
                     selectedSubjectId,
                 )
-              : m.grades_select_subject()}
+              : academics.grades_select_subject()}
           </SelectTrigger>
           <SelectContent>
             {#each subjects as subj (subj.id)}
@@ -352,7 +352,7 @@ async function handleCellEdit(event: any) {
       {#if semesters.length > 0}
         <div class="flex items-center gap-2">
           <span class="text-xs text-muted-foreground font-medium">
-            {m.grades_filter_semester()}:
+            {academics.grades_filter_semester()}:
           </span>
           <Select
             type="single"
@@ -369,7 +369,7 @@ async function handleCellEdit(event: any) {
                       )?.name ??
                       selectedSemesterId,
                   )
-                : m.grades_select_semester()}
+                : academics.grades_select_semester()}
             </SelectTrigger>
             <SelectContent>
               {#each semesters as sem (sem.id)}
@@ -386,7 +386,7 @@ async function handleCellEdit(event: any) {
       <Badge variant="secondary" class="text-[10px] h-6 shrink-0">
         <Users size={10} class="me-1" />
         {students.length}
-        {m.grades_enrolled_students()}
+        {academics.grades_enrolled_students()}
       </Badge>
     </div>
 
@@ -410,7 +410,7 @@ async function handleCellEdit(event: any) {
     >
       <ClipboardList size={16} class="shrink-0" />
       <span>
-        {m.grades_no_assessments_banner()}
+        {academics.grades_no_assessments_banner()}
       </span>
     </div>
   {/if}
@@ -422,7 +422,7 @@ async function handleCellEdit(event: any) {
       source={gridSource}
       loading={isLoading}
       emptyIcon={Users}
-      emptyTitle={m.grades_no_students()}
+      emptyTitle={academics.grades_no_students()}
       {rtl}
       height="100%"
       readonly={false}

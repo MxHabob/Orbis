@@ -25,7 +25,8 @@ import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
 import SearchField from "$lib/shared/components/search-field.svelte";
 import SubjectCreateSheet from "$lib/features/academics/components/subject-create-sheet.svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
+import * as settings from "$lib/paraglide/messages/settings";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -47,7 +48,7 @@ async function loadData() {
     subjects = list;
   } catch (e) {
     error = e instanceof Error ? e.message : String(e);
-    toast.error(m.subjects_toast_load_error());
+    toast.error(common.subjects_toast_load_error());
   } finally {
     isLoading = false;
   }
@@ -154,7 +155,7 @@ function getSubjectTheme(nameStr: string) {
 	<div class="flex items-center justify-between gap-4 font-sans border-b border-border/40 pb-5 select-none">
 		<!-- Search -->
 		<SearchField
-			placeholder={m.settings_subjects_search_placeholder_custom()}
+			placeholder={settings.subjects_search_placeholder_custom()}
 			bind:value={searchQuery}
 			class="max-w-md bg-background/50"
 		/>
@@ -162,7 +163,7 @@ function getSubjectTheme(nameStr: string) {
 		<!-- Add button -->
 		<Button variant="lime" class="text-xs h-9 px-4 font-semibold shrink-0" onclick={() => isModalOpen = true}>
 			<Plus size={14} class="me-1.5" />
-			{m.subjects_add_subject()}
+			{common.subjects_add_subject()}
 		</Button>
 	</div>
 
@@ -176,22 +177,22 @@ function getSubjectTheme(nameStr: string) {
 		</div>
 	{:else if error}
 		<div class="flex flex-col items-center justify-center p-8 border border-destructive/20 bg-destructive/5 rounded-xl text-center gap-3">
-			<p class="text-xs text-destructive font-semibold">{m.subjects_load_error()}</p>
+			<p class="text-xs text-destructive font-semibold">{common.subjects_load_error()}</p>
 			<p class="text-xs text-muted-foreground">{error}</p>
-			<Button variant="outline" class="text-xs" onclick={loadData}>{m.error_retry()}</Button>
+			<Button variant="outline" class="text-xs" onclick={loadData}>{common.action_retry()}</Button>
 		</div>
 	{:else if filteredSubjects.length === 0}
 		<div class="flex flex-col items-center justify-center py-16 text-muted-foreground border border-border border-dashed rounded-xl gap-4">
 			<BookOpen size={48} class="text-muted-foreground/30" />
 			<div class="flex flex-col gap-1 text-center">
-				<p class="text-xs font-semibold">{m.subjects_empty_title()}</p>
+				<p class="text-xs font-semibold">{common.subjects_empty_title()}</p>
 				<p class="text-[10px] text-muted-foreground/80">
-					{searchQuery ? m.subjects_empty_desc_search() : m.subjects_empty_desc_general()}
+					{searchQuery ? common.subjects_empty_desc_search() : common.subjects_empty_desc_general()}
 				</p>
 			</div>
 			{#if !searchQuery}
 				<Button variant="lime" class="text-xs mt-2" onclick={() => isModalOpen = true}>
-					{m.subjects_add_subject()}
+					{common.subjects_add_subject()}
 				</Button>
 			{/if}
 		</div>
@@ -223,7 +224,7 @@ function getSubjectTheme(nameStr: string) {
 							</span>
 							<span class="flex items-center gap-1">
 								<Award size={9} />
-								<span>{m.subjects_periods_count({ count: sub.credit_hours || 3 })}</span>
+								<span>{common.subjects_periods_count({ count: sub.credit_hours || 3 })}</span>
 							</span>
 						</div>
 					</div>

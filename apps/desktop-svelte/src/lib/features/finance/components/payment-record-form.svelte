@@ -4,7 +4,8 @@ import { authStore } from "$lib/stores";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { toast } from "svelte-sonner";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
+import * as academics from "$lib/paraglide/messages/academics";
 import { slide } from "svelte/transition";
 
 let {
@@ -112,7 +113,7 @@ async function loadStudentFees(enrollId: string) {
       selectedFeeId = "";
       amount = null;
       toast.info(
-        m.attendance_status_unknown() === "غير محدد"
+        academics.attendance_status_unknown() === "غير محدد"
           ? "لا توجد رسوم مستحقة غير مدفوعة لهذا الطالب"
           : "No outstanding unpaid fees for this student",
       );
@@ -151,23 +152,23 @@ $effect(() => {
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   if (!selectedEnrollmentId) {
-    toast.error(m.payment_toast_error_student());
+    toast.error(common.payment_toast_error_student());
     return;
   }
   if (!selectedFeeId) {
-    toast.error(m.payment_toast_error_fee());
+    toast.error(common.payment_toast_error_fee());
     return;
   }
   if (!selectedTreasuryId) {
-    toast.error(m.payment_toast_error_treasury());
+    toast.error(common.payment_toast_error_treasury());
     return;
   }
   if (!amount || amount <= 0) {
-    toast.error(m.payment_toast_error_amount());
+    toast.error(common.payment_toast_error_amount());
     return;
   }
   if (!currency || currency.trim().length !== 3) {
-    toast.error(m.payment_toast_error_currency());
+    toast.error(common.payment_toast_error_currency());
     return;
   }
 
@@ -189,7 +190,7 @@ async function handleSubmit(e: SubmitEvent) {
       currency: currency.trim().toUpperCase(),
     };
     await commands.finance.recordPayment(orgId, createdBy, request);
-    toast.success(m.payment_toast_success());
+    toast.success(common.payment_toast_success());
 
     // Reset form
     amount = null;
@@ -200,7 +201,7 @@ async function handleSubmit(e: SubmitEvent) {
     onSuccess();
   } catch (e) {
     const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(m.payment_toast_error_submit({ error: errorMsg }));
+    toast.error(common.payment_toast_error_submit({ error: errorMsg }));
   } finally {
     isSubmitting = false;
   }
@@ -211,7 +212,7 @@ async function handleSubmit(e: SubmitEvent) {
 	<!-- Student Select -->
 	<div class="flex flex-col gap-2 text-start">
 		<label for="pay_student" class="text-sm font-medium text-foreground">
-			{m.payment_label_student()}
+			{common.payment_label_student()}
 		</label>
 		<select 
 			id="pay_student"
@@ -220,7 +221,7 @@ async function handleSubmit(e: SubmitEvent) {
 			disabled={isLoadingDropdowns || isSubmitting}
 		>
 			{#if isLoadingDropdowns}
-				<option>{m.attendance_status_unknown() === "غير محدد" ? "جاري تحميل قائمة الطلاب..." : "Loading students..."}</option>
+				<option>{academics.attendance_status_unknown() === "غير محدد" ? "جاري تحميل قائمة الطلاب..." : "Loading students..."}</option>
 			{:else}
 				{#each students as s (s.id)}
 					<option value={String(s.id)}>{s.full_name || s.student_number || s.id}</option>
@@ -232,7 +233,7 @@ async function handleSubmit(e: SubmitEvent) {
 	<!-- Student Fees Select -->
 	<div class="flex flex-col gap-2 text-start">
 		<label for="pay_fee" class="text-sm font-medium text-foreground">
-			{m.payment_label_fee()}
+			{common.payment_label_fee()}
 		</label>
 		<select 
 			id="pay_fee"
@@ -241,13 +242,13 @@ async function handleSubmit(e: SubmitEvent) {
 			disabled={isLoadingFees || isSubmitting}
 		>
 			{#if isLoadingFees}
-				<option>{m.attendance_status_unknown() === "غير محدد" ? "جاري تحميل الرسوم المستحقة..." : "Loading fees..."}</option>
+				<option>{academics.attendance_status_unknown() === "غير محدد" ? "جاري تحميل الرسوم المستحقة..." : "Loading fees..."}</option>
 			{:else if fees.length === 0}
-				<option value="">{m.attendance_status_unknown() === "غير محدد" ? "-- لا توجد رسوم مستحقة لهذا الطالب --" : "-- No outstanding fees for this student --"}</option>
+				<option value="">{academics.attendance_status_unknown() === "غير محدد" ? "-- لا توجد رسوم مستحقة لهذا الطالب --" : "-- No outstanding fees for this student --"}</option>
 			{:else}
 				{#each fees as f (f.id)}
 					<option value={String(f.id)}>
-						{f.notes || f.id.slice(0, 8)} ({m.attendance_status_unknown() === "غير محدد" ? 'المتبقي: ' : 'Balance: '}{f.balance})
+						{f.notes || f.id.slice(0, 8)} ({academics.attendance_status_unknown() === "غير محدد" ? 'المتبقي: ' : 'Balance: '}{f.balance})
 					</option>
 				{/each}
 			{/if}
@@ -257,7 +258,7 @@ async function handleSubmit(e: SubmitEvent) {
 	<!-- Treasury Account Select -->
 	<div class="flex flex-col gap-2 text-start">
 		<label for="pay_treasury" class="text-sm font-medium text-foreground">
-			{m.payment_label_treasury()}
+			{common.payment_label_treasury()}
 		</label>
 		<select 
 			id="pay_treasury"
@@ -266,7 +267,7 @@ async function handleSubmit(e: SubmitEvent) {
 			disabled={isLoadingDropdowns || isSubmitting}
 		>
 			{#if isLoadingDropdowns}
-				<option>{m.loading()}</option>
+				<option>{common.loading()}</option>
 			{:else}
 				{#each treasuries as t (t.id)}
 					<option value={String(t.id)}>{t.name_ar || t.name || t.code} ({t.currency})</option>
@@ -278,7 +279,7 @@ async function handleSubmit(e: SubmitEvent) {
 	<!-- Payment Method Select -->
 	<div class="flex flex-col gap-2 text-start">
 		<label for="pay_method" class="text-sm font-medium text-foreground">
-			{m.payment_label_method()}
+			{common.payment_label_method()}
 		</label>
 		<select 
 			id="pay_method"
@@ -286,16 +287,16 @@ async function handleSubmit(e: SubmitEvent) {
 			class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full"
 			disabled={isSubmitting}
 		>
-			<option value="Cash">{m.attendance_status_unknown() === "غير محدد" ? "نقدي (كاش)" : "Cash"}</option>
-			<option value="Bank Transfer">{m.attendance_status_unknown() === "غير محدد" ? "تحويل بنكي" : "Bank Transfer"}</option>
-			<option value="Card">{m.attendance_status_unknown() === "غير محدد" ? "بطاقة دفع / مدى" : "Card"}</option>
+			<option value="Cash">{academics.attendance_status_unknown() === "غير محدد" ? "نقدي (كاش)" : "Cash"}</option>
+			<option value="Bank Transfer">{academics.attendance_status_unknown() === "غير محدد" ? "تحويل بنكي" : "Bank Transfer"}</option>
+			<option value="Card">{academics.attendance_status_unknown() === "غير محدد" ? "بطاقة دفع / مدى" : "Card"}</option>
 		</select>
 	</div>
 
 	<!-- Currency Selection -->
 	<div class="flex flex-col gap-2 text-start">
 		<label for="pay_currency" class="text-sm font-medium text-foreground">
-			{m.payment_label_currency()}
+			{common.payment_label_currency()}
 		</label>
 		<div class="flex gap-3">
 			<Input 
@@ -326,7 +327,7 @@ async function handleSubmit(e: SubmitEvent) {
 	<!-- Fee Amount -->
 	<div class="flex flex-col gap-2 text-start">
 		<label for="pay_amount" class="text-sm font-medium text-foreground">
-			{m.payment_label_amount()}
+			{common.payment_label_amount()}
 		</label>
 		<Input 
 			id="pay_amount"
@@ -348,7 +349,7 @@ async function handleSubmit(e: SubmitEvent) {
 	<!-- Receipt ID -->
 	<div class="flex flex-col gap-2 text-start">
 		<label for="pay_receipt" class="text-sm font-medium text-foreground">
-			{m.payment_label_receipt()}
+			{common.payment_label_receipt()}
 		</label>
 		<Input 
 			id="pay_receipt"
@@ -362,7 +363,7 @@ async function handleSubmit(e: SubmitEvent) {
 	<!-- Reference Number (transaction ID) -->
 	<div class="flex flex-col gap-2 text-start">
 		<label for="pay_ref" class="text-sm font-medium text-foreground">
-			{m.payment_label_ref()}
+			{common.payment_label_ref()}
 		</label>
 		<Input 
 			id="pay_ref"
@@ -376,13 +377,13 @@ async function handleSubmit(e: SubmitEvent) {
 	<!-- Description -->
 	<div class="flex flex-col gap-2 text-start">
 		<label for="pay_notes" class="text-sm font-medium text-foreground">
-			{m.payment_label_notes()}
+			{common.payment_label_notes()}
 		</label>
 		<Input 
 			id="pay_notes"
 			type="text" 
 			bind:value={notes}
-			placeholder={m.payment_placeholder_notes()}
+			placeholder={common.payment_placeholder_notes()}
 			disabled={isSubmitting}
 		/>
 	</div>
@@ -395,7 +396,7 @@ async function handleSubmit(e: SubmitEvent) {
 			onclick={onCancel}
 			disabled={isSubmitting}
 		>
-			{m.payment_button_cancel()}
+			{common.action_cancel()}
 		</Button>
 		<Button 
 			type="submit" 
@@ -403,7 +404,7 @@ async function handleSubmit(e: SubmitEvent) {
 			class="font-semibold"
 			disabled={isSubmitting || isLoadingDropdowns || isLoadingFees || !selectedFeeId}
 		>
-			{isSubmitting ? m.loading() : m.payment_button_record()}
+			{isSubmitting ? common.loading() : common.payment_button_record()}
 		</Button>
 	</div>
 </form>

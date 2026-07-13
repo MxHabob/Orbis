@@ -7,7 +7,7 @@ import { toast } from "svelte-sonner";
 import { slide } from "svelte/transition";
 import { academicContext, authStore } from "$lib/stores";
 import { getLocale } from "$lib/paraglide/runtime";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 import { ControlGrid } from "$lib/features/academics";
 import {
   buildGradeColumns,
@@ -71,11 +71,11 @@ let gridColumns = $derived.by(() => {
     readonly: !canEnterGrades,
     locale: getLocale(),
     labels: {
-      rowIndex: m.control_col_index(),
-      studentName: m.control_col_student(),
-      total: m.control_col_total(),
-      percentage: m.control_col_percentage(),
-      gradeLetter: m.control_col_grade(),
+      rowIndex: common.control_col_index(),
+      studentName: common.control_col_student(),
+      total: common.control_col_total(),
+      percentage: common.control_col_percentage(),
+      gradeLetter: common.control_col_grade(),
     },
   });
 });
@@ -186,7 +186,7 @@ async function handleSaveAll() {
     }
 
     if (students.length === 0) {
-      toast.warning(m.control_no_grades_to_save());
+      toast.warning(common.action_save());
       isSaving = false;
       return;
     }
@@ -220,7 +220,7 @@ async function handleSaveAll() {
 
     if (failed > 0) {
       toast.warning(
-        m.control_save_partial({
+        common.action_save({
           success: String(total),
           failed: String(failed),
         }),
@@ -229,8 +229,8 @@ async function handleSaveAll() {
         },
       );
     } else {
-      toast.success(m.control_save_success({ total: String(total) }), {
-        description: m.control_save_detail({
+      toast.success(common.control_save_success({ total: String(total) }), {
+        description: common.action_save({
           created: String(created),
           updated: String(updated),
         }),
@@ -267,8 +267,8 @@ onMount(() => {
           <Lock size={16} class="text-destructive" />
         </div>
         <div class="text-start">
-          <p class="text-xs font-bold text-destructive">{m.control_period_locked_title()}</p>
-          <p class="text-[10px] text-destructive/80 mt-0.5">{m.control_period_locked_desc()}</p>
+          <p class="text-xs font-bold text-destructive">{common.control_period_locked_title()}</p>
+          <p class="text-[10px] text-destructive/80 mt-0.5">{common.control_period_locked_desc()}</p>
         </div>
       </div>
     {:else if selectedPeriod && !isGradeEntryOpen}
@@ -280,8 +280,8 @@ onMount(() => {
           <AlertTriangle size={16} class="text-amber-500" />
         </div>
         <div class="text-start">
-          <p class="text-xs font-bold text-amber-500">{m.control_entry_closed_title()}</p>
-          <p class="text-[10px] text-amber-400 mt-0.5">{m.control_entry_closed_desc()}</p>
+          <p class="text-xs font-bold text-amber-500">{common.control_entry_closed_title()}</p>
+          <p class="text-[10px] text-amber-400 mt-0.5">{common.control_entry_closed_desc()}</p>
         </div>
       </div>
     {/if}

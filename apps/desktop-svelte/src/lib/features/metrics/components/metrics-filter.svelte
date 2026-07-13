@@ -13,7 +13,7 @@ import {
 import { Filter, ChevronDown } from "lucide-svelte";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
-import * as m from "$lib/paraglide/messages";
+import * as reports from "$lib/paraglide/messages/reports";
 import { getLocale } from "$lib/paraglide/runtime";
 
 let {
@@ -61,29 +61,29 @@ onMount(() => {
 const periodLabel = $derived(() => {
   switch (period) {
     case "3-months":
-      return m.metrics_period_3months();
+      return reports.metrics_period_3months();
     case "6-months":
-      return m.metrics_period_6months();
+      return reports.metrics_period_6months();
     case "this-year":
-      return m.metrics_period_this_year();
+      return reports.metrics_period_this_year();
     default:
-      return m.metrics_period_all();
+      return reports.metrics_period_all();
   }
 });
 
 const termName = $derived(() => {
-  if (selectedTerm === "all") return m.metrics_all_terms();
+  if (selectedTerm === "all") return reports.metrics_all_terms();
   const term = terms.find((t) => t.id === selectedTerm);
-  if (!term) return m.metrics_all_terms();
+  if (!term) return reports.metrics_all_terms();
   return getLocale() === "ar" && term.name_ar
     ? term.name_ar
     : term.name || term.name_en || term.name_ar || "";
 });
 
 const className = $derived(() => {
-  if (selectedClass === "all") return m.metrics_all_classes();
+  if (selectedClass === "all") return reports.metrics_all_classes();
   const c = classes.find((i) => i.id === selectedClass);
-  if (!c) return m.metrics_all_classes();
+  if (!c) return reports.metrics_all_classes();
   return getLocale() === "ar" && c.name_ar
     ? c.name_ar
     : c.name || c.name_en || c.name_ar || "";
@@ -96,7 +96,7 @@ const className = $derived(() => {
 			{#snippet child({ props }: { props: any })}
 				<Button {...props} variant="outline" class="gap-2 px-2.5 h-8 text-xs font-medium bg-background border-border hover:bg-muted/40 cursor-pointer">
 					<Filter size={13} class="text-[#666]" />
-					<span>{m.metrics_filters()}</span>
+					<span>{reports.metrics_filters()}</span>
 					<ChevronDown size={12} class="text-[#666] opacity-60" />
 				</Button>
 			{/snippet}
@@ -105,13 +105,13 @@ const className = $derived(() => {
 			<!-- PERIOD Section -->
 			<DropdownMenuGroup>
 				<DropdownMenuLabel class="text-[9px] text-muted-foreground font-normal px-2.5 py-1 uppercase tracking-wider">
-					{m.metrics_period()}
+					{reports.metrics_period()}
 				</DropdownMenuLabel>
 				<DropdownMenuRadioGroup value={period} onValueChange={(val) => period = val}>
-					<DropdownMenuRadioItem value="3-months" class="text-xs cursor-pointer">{m.metrics_period_3months()}</DropdownMenuRadioItem>
-					<DropdownMenuRadioItem value="6-months" class="text-xs cursor-pointer">{m.metrics_period_6months()}</DropdownMenuRadioItem>
-					<DropdownMenuRadioItem value="this-year" class="text-xs cursor-pointer">{m.metrics_period_this_year()}</DropdownMenuRadioItem>
-					<DropdownMenuRadioItem value="all" class="text-xs cursor-pointer">{m.metrics_period_all()}</DropdownMenuRadioItem>
+					<DropdownMenuRadioItem value="3-months" class="text-xs cursor-pointer">{reports.metrics_period_3months()}</DropdownMenuRadioItem>
+					<DropdownMenuRadioItem value="6-months" class="text-xs cursor-pointer">{reports.metrics_period_6months()}</DropdownMenuRadioItem>
+					<DropdownMenuRadioItem value="this-year" class="text-xs cursor-pointer">{reports.metrics_period_this_year()}</DropdownMenuRadioItem>
+					<DropdownMenuRadioItem value="all" class="text-xs cursor-pointer">{reports.metrics_period_all()}</DropdownMenuRadioItem>
 				</DropdownMenuRadioGroup>
 			</DropdownMenuGroup>
 
@@ -119,10 +119,10 @@ const className = $derived(() => {
 				<DropdownMenuSeparator class="bg-border/60" />
 				<DropdownMenuGroup>
 					<DropdownMenuLabel class="text-[9px] text-muted-foreground font-normal px-2.5 py-1 uppercase tracking-wider">
-						{m.metrics_academic_term()}
+						{reports.metrics_academic_term()}
 					</DropdownMenuLabel>
 					<DropdownMenuRadioGroup value={selectedTerm} onValueChange={(val) => selectedTerm = val}>
-						<DropdownMenuRadioItem value="all" class="text-xs cursor-pointer">{m.metrics_all_terms()}</DropdownMenuRadioItem>
+						<DropdownMenuRadioItem value="all" class="text-xs cursor-pointer">{reports.metrics_all_terms()}</DropdownMenuRadioItem>
 						{#each terms as term (term.id)}
 							<DropdownMenuRadioItem value={term.id} class="text-xs cursor-pointer">
 								{getLocale() === "ar" && term.name_ar ? term.name_ar : (term.name || term.name_en || term.name_ar || '')}
@@ -136,10 +136,10 @@ const className = $derived(() => {
 				<DropdownMenuSeparator class="bg-border/60" />
 				<DropdownMenuGroup>
 					<DropdownMenuLabel class="text-[9px] text-muted-foreground font-normal px-2.5 py-1 uppercase tracking-wider">
-						{m.metrics_class_grade()}
+						{reports.metrics_class_grade()}
 					</DropdownMenuLabel>
 					<DropdownMenuRadioGroup value={selectedClass} onValueChange={(val) => selectedClass = val}>
-						<DropdownMenuRadioItem value="all" class="text-xs cursor-pointer">{m.metrics_all_classes()}</DropdownMenuRadioItem>
+						<DropdownMenuRadioItem value="all" class="text-xs cursor-pointer">{reports.metrics_all_classes()}</DropdownMenuRadioItem>
 						{#each classes as c (c.id)}
 							<DropdownMenuRadioItem value={c.id} class="text-xs cursor-pointer">
 								{getLocale() === "ar" && c.name_ar ? c.name_ar : (c.name || c.name_en || c.name_ar || '')}

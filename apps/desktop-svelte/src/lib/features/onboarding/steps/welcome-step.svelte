@@ -1,6 +1,6 @@
 <script lang="ts">
 import { Avatar } from "@orbis/avatar-engine";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 import { onboardingState } from "../state.svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 
@@ -14,7 +14,7 @@ let orgName = $derived(
   <!-- School Name Title (Google-style thin-to-normal weight typography) -->
   <div class="text-center">
     <h1 class="text-3xl sm:text-5xl font-light tracking-tight text-foreground font-sans leading-tight">
-      {m.onboarding_welcome_title({ orgName })}
+      {common.onboarding_welcome_title({ orgName })}
     </h1>
   </div>
 
@@ -29,7 +29,7 @@ let orgName = $derived(
     <!-- Description Text (Clear, friendly, readable) -->
     <div class="text-center sm:text-start self-center max-w-lg">
       <p class="text-base sm:text-lg text-foreground/90 leading-relaxed font-sans font-normal">
-        {m.onboarding_welcome_message()}
+        {common.onboarding_welcome_message()}
       </p>
     </div>
 

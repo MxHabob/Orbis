@@ -17,7 +17,7 @@ import { toast } from "svelte-sonner";
 import { examsStore } from "$lib/features/exams/store.svelte";
 import { authStore } from "$lib/stores";
 import { commands } from "$lib/core/ipc";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 
 let {
   open = $bindable(false),
@@ -107,7 +107,7 @@ async function handleSubmit() {
         period_id: periodId,
       });
     }
-    toast.success(m.exams_create_success());
+    toast.success(common.exams_create_success());
     // Reset form
     name = "";
     nameAr = "";
@@ -128,10 +128,10 @@ async function handleSubmit() {
   <SheetContent class="flex flex-col h-full sm:max-w-xl overflow-hidden">
     <SheetHeader class="text-start select-none border-b border-border/40 pb-4">
       <SheetTitle class="text-lg font-bold text-foreground">
-        {isEdit ? m.exams_detail_edit() : m.exams_create_title()}
+        {isEdit ? common.action_edit() : common.exams_create_title()}
       </SheetTitle>
       <SheetDescription class="text-xs text-muted-foreground mt-1">
-        {m.exams_card_sessions_desc()}
+        {common.exams_card_sessions_desc()}
       </SheetDescription>
     </SheetHeader>
 
@@ -157,7 +157,7 @@ async function handleSubmit() {
       <!-- Name Arabic -->
       <div class="flex flex-col gap-1.5">
         <label for="session-name-ar" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
-          {m.exams_create_name_ar()}
+          {common.exams_create_name_ar()}
         </label>
         <Input id="session-name-ar" bind:value={nameAr} placeholder="مثال: امتحانات نهاية الفصل الأول" class="text-xs h-9" />
       </div>
@@ -165,7 +165,7 @@ async function handleSubmit() {
       <!-- Name English -->
       <div class="flex flex-col gap-1.5">
         <label for="session-name" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
-          {m.exams_create_name()}
+          {common.exams_create_name()}
         </label>
         <Input id="session-name" bind:value={name} placeholder="e.g. Final Exams Semester 1" class="text-xs h-9" />
       </div>
@@ -173,7 +173,7 @@ async function handleSubmit() {
       <!-- Session Type -->
       <div class="flex flex-col gap-1.5">
         <label for="session-type" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
-          {m.exams_create_type()}
+          {common.exams_create_type()}
         </label>
         <select
           id="session-type"
@@ -191,13 +191,13 @@ async function handleSubmit() {
       <div class="grid grid-cols-2 gap-3">
         <div class="flex flex-col gap-1.5">
           <label for="start-date" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
-            {m.exams_create_start()}
+            {common.exams_create_start()}
           </label>
           <Input id="start-date" type="date" bind:value={startDate} class="text-xs h-9" />
         </div>
         <div class="flex flex-col gap-1.5">
           <label for="end-date" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
-            {m.exams_create_end()}
+            {common.exams_create_end()}
           </label>
           <Input id="end-date" type="date" bind:value={endDate} class="text-xs h-9" />
         </div>
@@ -213,7 +213,7 @@ async function handleSubmit() {
         {#if isSaving}
           جاري الحفظ...
         {:else}
-          {m.exams_create_submit()}
+          {common.exams_create_submit()}
         {/if}
       </Button>
     </div>

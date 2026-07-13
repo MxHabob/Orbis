@@ -6,7 +6,8 @@
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
 import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
-import * as m from "$lib/paraglide/messages";
+import * as settings from "$lib/paraglide/messages/settings";
+import * as common from "$lib/paraglide/messages/common";
 import { onboardingState } from "../state.svelte";
 import LocaleSettings from "$lib/shared/components/locale-settings.svelte";
 import TimezoneSettings from "$lib/shared/components/timezone-settings.svelte";
@@ -31,21 +32,21 @@ async function handleLanguageChange(newLocale: string) {
   <!-- Regional Settings Section -->
   <div class="border border-border rounded-xl overflow-hidden flex flex-col bg-card">
     <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none font-serif">
-      {m.settings_general_section_regional()}
+      {settings.general_section_regional()}
     </div>
 
     <div class="flex flex-col">
       <!-- Timezone -->
       <TimezoneSettings
-        title={m.settings_general_timezone()}
-        description={m.settings_general_timezone_desc()}
+        title={settings.general_timezone()}
+        description={settings.general_timezone_desc()}
         bind:currentTimezone={onboardingState.profile.timezone}
       />
 
       <!-- Language -->
       <LocaleSettings
-        title={m.settings_general_locale()}
-        description={m.settings_general_locale_desc()}
+        title={settings.general_locale()}
+        description={settings.general_locale_desc()}
         bind:currentLocale={onboardingState.profile.locale}
         onchange={handleLanguageChange}
       />
@@ -54,9 +55,9 @@ async function handleLanguageChange(newLocale: string) {
       <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 last:border-b-0">
         <div class="flex flex-col gap-1 text-start">
           <Label for="onboarding_currency" class="text-xs font-semibold text-foreground">
-            {m.settings_general_currency()}
+            {settings.general_currency()}
           </Label>
-          <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_currency_desc()}</span>
+          <span class="text-[11px] text-muted-foreground leading-relaxed">{settings.general_currency_desc()}</span>
         </div>
         <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
           <Select type="single" bind:value={onboardingState.profile.currency}>
@@ -68,7 +69,7 @@ async function handleLanguageChange(newLocale: string) {
               {:else if onboardingState.profile.currency === "USD"}دولار أمريكي (USD)
               {:else if onboardingState.profile.currency === "EUR"}يورو (EUR)
               {:else if onboardingState.profile.currency === "GBP"}جنيه إسترليني (GBP)
-              {:else}{onboardingState.profile.currency || m.settings_general_currency_placeholder()}
+              {:else}{onboardingState.profile.currency || settings.general_currency_placeholder()}
               {/if}
             </SelectTrigger>
             <SelectContent>
@@ -90,27 +91,27 @@ async function handleLanguageChange(newLocale: string) {
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-card border border-border p-6 rounded-xl">
     <div class="md:col-span-2 text-start">
       <h4 class="text-sm font-semibold text-primary border-b border-border pb-2 mb-4 font-serif">
-        {m.onboarding_academic_year_section()}
+        {common.onboarding_academic_year_section()}
       </h4>
     </div>
 
     <div class="space-y-2 text-start">
-      <Label for="academicYearNameAr">{m.onboarding_academic_year_name_ar()}</Label>
+      <Label for="academicYearNameAr">{common.onboarding_academic_year_name_ar()}</Label>
       <Input id="academicYearNameAr" bind:value={onboardingState.calendar.academicYearNameAr} placeholder="العام الدراسي 1447 هـ" />
     </div>
 
     <div class="space-y-2 text-start">
-      <Label for="academicYearName">{m.onboarding_academic_year_name_en()}</Label>
+      <Label for="academicYearName">{common.onboarding_academic_year_name_en()}</Label>
       <Input id="academicYearName" bind:value={onboardingState.calendar.academicYearName} placeholder="Academic Year 1447 Hijri" class="text-left font-sans" style="direction: ltr;" />
     </div>
 
     <div class="space-y-2 text-start">
-      <Label for="startDate">{m.onboarding_start_date()}</Label>
+      <Label for="startDate">{common.onboarding_start_date()}</Label>
       <Input id="startDate" type="date" bind:value={onboardingState.calendar.startDate} />
     </div>
 
     <div class="space-y-2 text-start">
-      <Label for="endDate">{m.onboarding_end_date()}</Label>
+      <Label for="endDate">{common.onboarding_end_date()}</Label>
       <Input id="endDate" type="date" bind:value={onboardingState.calendar.endDate} />
     </div>
   </div>
@@ -119,17 +120,17 @@ async function handleLanguageChange(newLocale: string) {
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-card border border-border p-6 rounded-xl">
     <div class="md:col-span-2 flex items-center justify-between border-b border-border pb-2 mb-4">
       <h4 class="text-sm font-semibold text-primary font-serif">
-        {m.onboarding_semester_split()}
+        {common.onboarding_semester_split()}
       </h4>
       <span class="text-xs text-muted-foreground font-mono">
-        {m.onboarding_semester_weight_hint()}
+        {common.onboarding_semester_weight_hint()}
       </span>
     </div>
 
     <!-- Template Selection -->
     <div class="md:col-span-2 space-y-4">
       <div class="space-y-2 text-start">
-        <Label class="text-xs font-semibold">{m.onboarding_template_label()}</Label>
+        <Label class="text-xs font-semibold">{common.onboarding_template_label()}</Label>
         <Select type="single" bind:value={onboardingState.calendar.selectedTemplateId}>
           <SelectTrigger class="w-full h-9 text-xs font-sans">
             {#if onboardingState.calendar.selectedTemplateId}
@@ -137,10 +138,10 @@ async function handleLanguageChange(newLocale: string) {
               {#if selectedTpl}
                 {getLocale() === "ar" ? selectedTpl.name_ar : selectedTpl.name}
               {:else}
-                {m.onboarding_template_placeholder()}
+                {common.onboarding_template_placeholder()}
               {/if}
             {:else}
-              {m.onboarding_template_placeholder()}
+              {common.onboarding_template_placeholder()}
             {/if}
           </SelectTrigger>
           <SelectContent>

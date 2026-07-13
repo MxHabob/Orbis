@@ -4,7 +4,7 @@ Colored status badge for exam session status.
 Usage: <ExamStatusBadge status="active" />
 -->
 <script lang="ts">
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 
 let { status, size = "sm" }: { status: string; size?: "xs" | "sm" } = $props();
 
@@ -12,32 +12,32 @@ const config = $derived(() => {
   switch (status) {
     case "draft":
       return {
-        label: m.exams_status_draft(),
+        label: common.exams_status_draft(),
         color: "bg-zinc-500/10 text-zinc-500 border-zinc-500/20",
       };
     case "scheduled":
       return {
-        label: m.exams_status_scheduled(),
+        label: common.exams_status_scheduled(),
         color: "bg-blue-500/10 text-blue-500 border-blue-500/20",
       };
     case "active":
       return {
-        label: m.exams_status_active(),
+        label: common.exams_status_active(),
         color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
       };
     case "grading":
       return {
-        label: m.exams_status_grading(),
+        label: common.exams_status_grading(),
         color: "bg-amber-500/10 text-amber-500 border-amber-500/20",
       };
     case "completed":
       return {
-        label: m.exams_status_completed(),
+        label: common.exams_status_completed(),
         color: "bg-purple-500/10 text-purple-500 border-purple-500/20",
       };
     case "archived":
       return {
-        label: m.exams_status_archived(),
+        label: common.exams_status_archived(),
         color: "bg-zinc-600/10 text-zinc-600 border-zinc-600/20",
       };
     default:

@@ -22,7 +22,7 @@ import {
 import { History, Info } from "lucide-svelte";
 import { l, isAr } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 
 import { DataTable } from "$lib/tables";
 import { auditLogs as auditDef, withIndex } from "$lib/tables/definitions";
@@ -119,10 +119,10 @@ const gridSource = $derived(
 const columns = $derived(
   auditDef.columns({
     idx: "#",
-    user: m.audit_col_member?.() || "Member",
-    action: m.audit_col_action?.() || "Action",
-    timestamp: m.audit_col_time?.() || "Time",
-    ip: m.audit_col_ip?.() || "IP",
+    user: common.audit_col_member?.() || "Member",
+    action: common.audit_col_action?.() || "Action",
+    timestamp: common.audit_col_time?.() || "Time",
+    ip: common.audit_col_ip?.() || "IP",
     details: "Details",
     entity: "Entity",
   }),
@@ -144,16 +144,16 @@ function openDetails(log: any) {
   <!-- Header -->
   <div class="flex items-center justify-between gap-4 flex-nowrap shrink-0">
     <h1 class="text-lg font-bold text-foreground truncate">
-      {m.audit_title?.() || "Audit Logs"}
+      {common.audit_title?.() || "Audit Logs"}
     </h1>
     <div class="flex items-center gap-2 flex-nowrap shrink-0">
       <div class="w-44 text-start">
         <Select type="single" value={actionFilter} onValueChange={(v) => (actionFilter = v ?? "all")}>
           <SelectTrigger class="h-8 w-full text-xs bg-card border-border/60">
-            {actionFilter === "all" ? (m.audit_filter_action?.() || "All Actions") : actionFilter}
+            {actionFilter === "all" ? (common.audit_filter_action?.() || "All Actions") : actionFilter}
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{m.audit_filter_action?.() || "All Actions"}</SelectItem>
+            <SelectItem value="all">{common.audit_filter_action?.() || "All Actions"}</SelectItem>
             {#each uniqueActions as act}
               <SelectItem value={act}>{act}</SelectItem>
             {/each}
@@ -170,8 +170,8 @@ function openDetails(log: any) {
       source={gridSource}
       loading={isLoading}
       emptyIcon={History}
-      emptyTitle={m.audit_empty?.() || "No audit logs found"}
-      emptyDescription={m.audit_empty_desc?.() || "No operations have been recorded yet."}
+      emptyTitle={common.audit_empty?.() || "No audit logs found"}
+      emptyDescription={common.audit_empty_desc?.() || "No operations have been recorded yet."}
       rtl={getLocale() === "ar"}
       refreshable
       onRefresh={loadData}
@@ -186,7 +186,7 @@ function openDetails(log: any) {
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2">
           <Info size={18} class="text-primary" />
-          <span>{m.audit_details_title?.() || "Audit Log Details"}</span>
+          <span>{common.audit_details_title?.() || "Audit Log Details"}</span>
         </DialogTitle>
         <DialogDescription>
           {formatDate(selectedLog.created_at)}

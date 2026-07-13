@@ -11,7 +11,7 @@ import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/core/i18n";
 import { toast } from "svelte-sonner";
 import DiscountTemplateSheet from "$lib/features/finance/components/discount-template-sheet.svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 import { DataTable } from "$lib/tables";
 import { discountTemplates as dtDef, withIndex } from "$lib/tables/definitions";
 import type { GridActionEvent } from "@orbis/svelte-grid";
@@ -46,8 +46,8 @@ onMount(() => {
 function getMethodLabel(method: string): string {
   const mLow = String(method).toLowerCase();
   if (mLow === "percentage")
-    return m.dt_method_percentage?.() || "Percentage (%)";
-  return m.dt_method_fixed?.() || "Fixed Amount";
+    return common.dt_method_percentage?.() || "Percentage (%)";
+  return common.dt_method_fixed?.() || "Fixed Amount";
 }
 
 function getFormattedValue(tpl: any): string {
@@ -82,10 +82,10 @@ const gridSource = $derived(
 const columns = $derived(
   dtDef.columns({
     idx: "#",
-    name: m.dt_col_name?.() || "Template",
-    type: m.dt_col_type?.() || "Type",
-    value: m.dt_col_value?.() || "Value",
-    status: m.dt_col_status?.() || "Status",
+    name: common.dt_col_name?.() || "Template",
+    type: common.dt_col_type?.() || "Type",
+    value: common.dt_col_value?.() || "Value",
+    status: common.dt_col_status?.() || "Status",
   }),
 );
 
@@ -107,15 +107,15 @@ function handleGridAction(event: GridActionEvent) {
     <div class="flex flex-col gap-0.5 text-start">
       <h1 class="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
         <Percent class="text-primary" size={18} />
-        <span>{m.dt_title?.() || "Discount Templates"}</span>
+        <span>{common.dt_title?.() || "Discount Templates"}</span>
       </h1>
       <p class="text-xs text-muted-foreground">
-        {m.dt_desc?.() || "Manage discount and scholarship templates"}
+        {common.dt_desc?.() || "Manage discount and scholarship templates"}
       </p>
     </div>
     <Button size="sm" onclick={handleCreate} class="text-xs font-bold shrink-0">
       <Plus size={14} class="me-1" />
-      {m.dt_add?.() || "Add Template"}
+      {common.dt_add?.() || "Add Template"}
     </Button>
   </div>
 
@@ -125,8 +125,8 @@ function handleGridAction(event: GridActionEvent) {
       source={gridSource}
       loading={isLoading}
       emptyIcon={Percent}
-      emptyTitle={m.dt_empty?.() || "No discount templates"}
-      emptyDescription={m.dt_empty_desc?.() || "Create discount templates for student fees"}
+      emptyTitle={common.dt_empty?.() || "No discount templates"}
+      emptyDescription={common.dt_empty_desc?.() || "Create discount templates for student fees"}
       rtl={getLocale() === "ar"}
       refreshable
       onRefresh={loadTemplates}

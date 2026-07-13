@@ -13,7 +13,7 @@ import {
 } from "@orbis/ui-svelte/sheet";
 import { Wallet } from "lucide-svelte";
 import FeeAssignForm from "./fee-assign-form.svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 
 let {
   open = $bindable(false),
@@ -31,10 +31,10 @@ let {
 		<SheetHeader class="text-start select-none">
 			<SheetTitle class="text-xl font-bold text-foreground flex items-center gap-2">
 				<Wallet size={18} class="text-primary" />
-				<span>{m.fee_sheet_title()}</span>
+				<span>{common.fee_sheet_title()}</span>
 			</SheetTitle>
 			<SheetDescription class="text-sm text-muted-foreground mt-1">
-				{m.fee_sheet_subtitle()}
+				{common.fee_sheet_subtitle()}
 			</SheetDescription>
 		</SheetHeader>
 

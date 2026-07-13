@@ -24,7 +24,8 @@ import {
   Info,
 } from "lucide-svelte";
 import { localizeHref } from "$lib/paraglide/runtime";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
+import * as academics from "$lib/paraglide/messages/academics";
 import {
   createClassesQuery,
   createSubjectsQuery,
@@ -108,19 +109,19 @@ const isGradeEntryOpen = $derived(
 // Dynamic counters for KPIs
 const kpiStats = $derived([
   {
-    label: m.academics_overview_kpi_total_classes(),
+    label: academics.overview_kpi_total_classes(),
     value: currentYear?.class_count ?? classes.length,
   },
   {
-    label: m.academics_overview_kpi_total_subjects(),
+    label: academics.overview_kpi_total_subjects(),
     value: currentYear?.subject_count ?? subjects.length,
   },
   {
-    label: m.academics_overview_kpi_total_teachers(),
+    label: academics.overview_kpi_total_teachers(),
     value: currentYear?.teacher_count ?? 0,
   },
   {
-    label: m.academics_overview_kpi_total_students(),
+    label: academics.overview_kpi_total_students(),
     value: currentYear?.student_count ?? 0,
   },
 ]);
@@ -129,38 +130,38 @@ const kpiStats = $derived([
 const directoryItems = $derived([
   {
     path: `/${data.orgId}/academics/classes`,
-    title: m.academics_overview_card_classes_title(),
-    desc: m.academics_overview_card_classes_desc(),
+    title: academics.overview_card_classes_title(),
+    desc: academics.overview_card_classes_desc(),
     icon: GraduationCap,
-    badge: m.academics_overview_card_classes_badge({ count: classes.length }),
+    badge: academics.overview_card_classes_badge({ count: classes.length }),
   },
   {
     path: `/${data.orgId}/academics/schedule`,
-    title: m.academics_overview_card_schedule_title(),
-    desc: m.academics_overview_card_schedule_desc(),
+    title: academics.overview_card_schedule_title(),
+    desc: academics.overview_card_schedule_desc(),
     icon: Calendar,
-    badge: m.academics_overview_card_schedule_badge(),
+    badge: academics.overview_card_schedule_badge(),
   },
   {
     path: `/${data.orgId}/academics/calendar`,
-    title: m.academics_overview_card_calendar_title(),
-    desc: m.academics_overview_card_calendar_desc(),
+    title: academics.overview_card_calendar_title(),
+    desc: academics.overview_card_calendar_desc(),
     icon: CalendarClock,
-    badge: m.academics_overview_card_calendar_badge(),
+    badge: academics.overview_card_calendar_badge(),
   },
   {
     path: `/${data.orgId}/academics/promotion`,
-    title: m.academics_overview_card_promotion_title(),
-    desc: m.academics_overview_card_promotion_desc(),
+    title: academics.overview_card_promotion_title(),
+    desc: academics.overview_card_promotion_desc(),
     icon: TrendingUp,
-    badge: m.academics_overview_card_promotion_badge(),
+    badge: academics.overview_card_promotion_badge(),
   },
   {
     path: `/${data.orgId}/academics/exams`, // Moved under academics
-    title: m.academics_overview_card_exams_title(),
-    desc: m.academics_overview_card_exams_desc(),
+    title: academics.overview_card_exams_title(),
+    desc: academics.overview_card_exams_desc(),
     icon: ClipboardList,
-    badge: m.academics_overview_card_exams_badge(),
+    badge: academics.overview_card_exams_badge(),
   },
 ]);
 
@@ -173,8 +174,8 @@ const advisorInsights = $derived.by(() => {
     insights.push({
       id: "grade-entry",
       text: isGradeEntryOpen
-        ? m.academics_overview_insight_grades_open({ period: activePeriodName })
-        : m.academics_overview_insight_grades_closed(),
+        ? academics.overview_insight_grades_open({ period: activePeriodName })
+        : academics.overview_insight_grades_closed(),
       variant: isGradeEntryOpen ? ("warning" as const) : ("neutral" as const),
       icon: ShieldCheck,
     });
@@ -185,8 +186,8 @@ const advisorInsights = $derived.by(() => {
     id: "schedule",
     text:
       classes.length > 0
-        ? m.academics_overview_insight_schedule_ok()
-        : m.academics_overview_insight_schedule_warn(),
+        ? academics.overview_insight_schedule_ok()
+        : academics.overview_insight_schedule_warn(),
     variant: classes.length > 0 ? ("success" as const) : ("warning" as const),
     icon: Calendar,
   });
@@ -202,14 +203,14 @@ const advisorInsights = $derived.by(() => {
     if (activePromoJob.status === "promoting") {
       insights.push({
         id: "promotion",
-        text: m.academics_overview_insight_promo_running(),
+        text: academics.overview_insight_promo_running(),
         variant: "warning" as const,
         icon: TrendingUp,
       });
     } else {
       insights.push({
         id: "promotion",
-        text: m.academics_overview_insight_promo_ready({
+        text: academics.overview_insight_promo_ready({
           promoted: activePromoJob.promoted_count ?? 0,
           retained: activePromoJob.retained_count ?? 0,
         }),
@@ -220,7 +221,7 @@ const advisorInsights = $derived.by(() => {
   } else {
     insights.push({
       id: "promotion",
-      text: m.academics_overview_insight_promo_none(),
+      text: academics.overview_insight_promo_none(),
       variant: "neutral" as const,
       icon: TrendingUp,
     });
@@ -233,7 +234,7 @@ const advisorInsights = $derived.by(() => {
   if (activeExamSession) {
     insights.push({
       id: "exams-active",
-      text: m.academics_overview_insight_exams_active({
+      text: academics.overview_insight_exams_active({
         session: activeExamSession.name_ar || activeExamSession.name,
       }),
       variant: "success" as const,
@@ -242,7 +243,7 @@ const advisorInsights = $derived.by(() => {
   } else {
     insights.push({
       id: "exams-none",
-      text: m.academics_overview_insight_exams_none(),
+      text: academics.overview_insight_exams_none(),
       variant: "neutral" as const,
       icon: ClipboardList,
     });
@@ -266,7 +267,7 @@ const advisorInsights = $derived.by(() => {
         </Badge>
       {:else}
         <Badge variant="outline" class="text-[9px] px-2 py-0.5 text-muted-foreground border-dashed">
-          {m.academics_overview_no_active_year()}
+          {academics.overview_no_active_year()}
         </Badge>
       {/if}
       
@@ -324,9 +325,9 @@ const advisorInsights = $derived.by(() => {
   {:else if error}
     <div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2">
       <AlertCircle size={24} />
-      <h3 class="font-semibold text-xs">{m.error_load_overview()}</h3>
+      <h3 class="font-semibold text-xs">{common.error_load_overview()}</h3>
       <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
-      <Button variant="outline" onclick={refetchAll} class="text-[10px] mt-2 h-8">{m.error_retry()}</Button>
+      <Button variant="outline" onclick={refetchAll} class="text-[10px] mt-2 h-8">{common.action_retry()}</Button>
     </div>
   {:else}
     <!-- Main Content Split Layout -->
@@ -335,7 +336,7 @@ const advisorInsights = $derived.by(() => {
       <!-- 1. LEFT COLUMN: Directory Index List (Notion Database style) -->
       <div class="lg:col-span-7 xl:col-span-8 flex flex-col">
         <h3 class="text-[10px] font-bold text-muted-foreground/80 tracking-wider uppercase mb-3 text-start">
-          {m.academics_overview_sections_title()}
+          {academics.overview_sections_title()}
         </h3>
         
         <div class="flex flex-col">
@@ -381,7 +382,7 @@ const advisorInsights = $derived.by(() => {
         <!-- Sidebar Section: KPI Summary -->
         <div>
           <h4 class="text-[9.5px] font-bold text-muted-foreground/80 tracking-wider uppercase border-b border-border/30 pb-2 mb-3">
-            {m.academics_overview_sidebar_title()}
+            {academics.overview_sidebar_title()}
           </h4>
           
           <div class="grid grid-cols-2 gap-4 pb-4 border-b border-border/30">
@@ -398,7 +399,7 @@ const advisorInsights = $derived.by(() => {
         <div class="flex flex-col gap-3">
           <div class="flex items-center gap-2 text-foreground font-semibold text-[11px] pb-1">
             <Sparkles size={13} class="text-primary animate-pulse" />
-            <span>{m.academics_overview_advisor_title()}</span>
+            <span>{academics.overview_advisor_title()}</span>
           </div>
           
           <div class="flex flex-col gap-2.5">

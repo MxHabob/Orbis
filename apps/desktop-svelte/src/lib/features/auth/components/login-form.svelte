@@ -5,7 +5,7 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
 import { Eye, EyeOff, Loader2 } from "lucide-svelte";
-import * as m from "$lib/paraglide/messages";
+import * as auth from "$lib/paraglide/messages/auth";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { toast } from "svelte-sonner";
 
@@ -22,7 +22,7 @@ let isLoading = $state(false);
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   if (!email || !password) {
-    error = m.login_fill_all_fields();
+    error = auth.login_fill_all_fields();
     return;
   }
 
@@ -33,14 +33,14 @@ async function handleSubmit(e: SubmitEvent) {
     await authStore.login(email, password);
     goto(localizeHref(`/${authStore.orgId}`));
   } catch (err) {
-    error = extractErrorMessage(err) || m.login_failed();
+    error = extractErrorMessage(err) || auth.login_failed();
   } finally {
     isLoading = false;
   }
 }
 
 function handleForgotPassword() {
-  toast.info(m.login_forgot_password_toast());
+  toast.info(auth.login_forgot_password_toast());
 }
 </script>
 
@@ -54,13 +54,13 @@ function handleForgotPassword() {
 	<!-- Account Field -->
 	<div class="flex flex-col gap-2 text-start">
 		<Label for="email" class="text-xs font-semibold text-foreground select-none flex items-center gap-1.5 uppercase tracking-wider">
-			<span>{m.login_account_label()}</span>
-			<span class="text-[9px] text-muted-foreground/60 font-semibold">{m.login_required_tag()}</span>
+			<span>{auth.login_account_label()}</span>
+			<span class="text-[9px] text-muted-foreground/60 font-semibold">{auth.login_required_tag()}</span>
 		</Label>
 		<Input
 			id="email"
 			type="email"
-			placeholder={m.login_account_placeholder()}
+			placeholder={auth.login_account_placeholder()}
 			bind:value={email}
 			required
 			autocomplete="email"
@@ -72,14 +72,14 @@ function handleForgotPassword() {
 	<!-- Password Field -->
 	<div class="flex flex-col gap-2 text-start">
 		<Label for="password" class="text-xs font-semibold text-foreground select-none flex items-center gap-1.5 uppercase tracking-wider">
-			<span>{m.login_password_label()}</span>
-			<span class="text-[9px] text-muted-foreground/60 font-semibold">{m.login_required_tag()}</span>
+			<span>{auth.login_password_label()}</span>
+			<span class="text-[9px] text-muted-foreground/60 font-semibold">{auth.login_required_tag()}</span>
 		</Label>
 		<div class="flex items-center gap-2">
 			<Input
 				id="password"
 				type={showPassword ? 'text' : 'password'}
-				placeholder={m.login_password_placeholder_sentry()}
+				placeholder={auth.login_password_placeholder_sentry()}
 				bind:value={password}
 				required
 				autocomplete="current-password"
@@ -92,7 +92,7 @@ function handleForgotPassword() {
 				size="icon"
 				class="h-10 w-10 shrink-0 text-muted-foreground hover:text-foreground cursor-pointer rounded-md bg-background/50 border-input"
 				onclick={() => (showPassword = !showPassword)}
-				aria-label={showPassword ? m.login_hide_password() : m.login_show_password()}
+				aria-label={showPassword ? auth.login_hide_password() : auth.login_show_password()}
 			>
 				{#if showPassword}
 					<EyeOff size={15} strokeWidth={2} />
@@ -113,9 +113,9 @@ function handleForgotPassword() {
 		>
 			{#if isLoading}
 				<Loader2 size={13} strokeWidth={2} class="mr-1.5 animate-spin" />
-				{m.login_submitting()}
+				{auth.login_submitting()}
 			{:else}
-				{m.login_continue()}
+				{auth.login_continue()}
 			{/if}
 		</Button>
 
@@ -125,7 +125,7 @@ function handleForgotPassword() {
 			class="text-xs text-muted-foreground hover:text-foreground px-0 h-auto cursor-pointer font-normal underline underline-offset-4 hover:no-underline"
 			onclick={handleForgotPassword}
 		>
-			{m.login_forgot_password()}
+			{auth.login_forgot_password()}
 		</Button>
 	</div>
 </form>

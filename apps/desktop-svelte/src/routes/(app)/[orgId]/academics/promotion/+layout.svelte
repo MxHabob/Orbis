@@ -7,7 +7,7 @@ Wraps wizard and history sub-routes.
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import { TrendingUp, History } from "lucide-svelte";
 import type { Snippet } from "svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 
 let { data, children }: { data: { orgId: string }; children: Snippet } =
   $props();
@@ -17,12 +17,12 @@ const basePath = $derived(`/${data.orgId}/academics/promotion`);
 const menuItems = $derived([
   {
     path: "",
-    label: m.promo_wizard_title ? m.promo_wizard_title() : "معالج الترفيع",
+    label: common.promo_wizard_title ? common.promo_wizard_title() : "معالج الترفيع",
     icon: TrendingUp,
   },
   {
     path: "history",
-    label: m.promo_history ? m.promo_history() : "سجل الترفيع",
+    label: common.promo_history ? common.promo_history() : "سجل الترفيع",
     icon: History,
   },
 ]);

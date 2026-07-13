@@ -41,7 +41,9 @@ import {
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
+import * as reports from "$lib/paraglide/messages/reports";
+import * as finance from "$lib/paraglide/messages/finance";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -1070,13 +1072,13 @@ function exitPage() {
             onclick={() => activeTab = "single"}
             class="px-5 py-1.5 rounded-md transition-all duration-150 {activeTab === 'single' ? 'bg-primary text-primary-foreground shadow-sm font-bold' : 'text-muted-foreground hover:text-foreground font-semibold'}"
           >
-            {m.ledger_tab_one()}
+            {common.ledger_tab_one()}
           </button>
           <button
             onclick={() => activeTab = "all"}
             class="px-5 py-1.5 rounded-md transition-all duration-150 {activeTab === 'all' ? 'bg-primary text-primary-foreground shadow-sm font-bold' : 'text-muted-foreground hover:text-foreground font-semibold'}"
           >
-            {m.ledger_tab_all()}
+            {common.ledger_tab_all()}
           </button>
         </div>
         
@@ -1159,7 +1161,7 @@ function exitPage() {
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <!-- Currency Selector -->
           <div class="flex flex-col gap-1 text-[9px] font-bold text-muted-foreground">
-            <span>{m.ledger_currency()}</span>
+            <span>{common.ledger_currency()}</span>
             <select
               bind:value={selectedCurrency}
               class="bg-background text-foreground border border-border rounded-md px-2.5 py-1 text-[11px] outline-none focus:ring-1 focus:ring-ring font-sans w-full"
@@ -1184,16 +1186,16 @@ function exitPage() {
           
           <!-- Period Selector -->
           <div class="flex flex-col gap-1 text-[9px] font-bold text-muted-foreground">
-            <span>{m.metrics_period()}</span>
+            <span>{reports.metrics_period()}</span>
             <select
               bind:value={periodFilter}
               class="bg-background text-foreground border border-border rounded-md px-2.5 py-1 text-[11px] outline-none focus:ring-1 focus:ring-ring font-sans w-full"
             >
-              <option value="all">{m.ledger_period_all()}</option>
-              <option value="day">{m.ledger_period()}</option>
-              <option value="week">{m.ledger_period_week()}</option>
-              <option value="month">{m.ledger_period_month()}</option>
-              <option value="year">{m.ledger_period_year()}</option>
+              <option value="all">{common.ledger_period_all()}</option>
+              <option value="day">{common.ledger_period()}</option>
+              <option value="week">{common.ledger_period_week()}</option>
+              <option value="month">{common.ledger_period_month()}</option>
+              <option value="year">{common.ledger_period_year()}</option>
             </select>
           </div>
         </div>
@@ -1210,7 +1212,7 @@ function exitPage() {
       onclick={exitPage}
     >
       <LogOut size={13} class={getLocale() === "ar" ? 'rotate-180' : ''} />
-      <span>{m.ledger_action_exit()}</span>
+      <span>{common.ledger_action_exit()}</span>
     </Button>
 
     <!-- Toolbar controls and Print actions -->
@@ -1222,7 +1224,7 @@ function exitPage() {
         onclick={() => isAddDialogOpen = true}
       >
         <FolderOpen size={13} />
-        <span>{m.ledger_btn_add_account()}</span>
+        <span>{common.ledger_btn_add_account()}</span>
       </Button>
 
       <!-- 1. Print Selected -->
@@ -1232,7 +1234,7 @@ function exitPage() {
         onclick={handlePrint}
       >
         <Printer size={13} />
-        <span>{m.ledger_action_print_selected()}</span>
+        <span>{common.ledger_action_print_selected()}</span>
       </Button>
 
       <!-- 2. Print -->
@@ -1242,7 +1244,7 @@ function exitPage() {
         onclick={handlePrint}
       >
         <Printer size={13} />
-        <span>{m.ledger_action_print()}</span>
+        <span>{common.ledger_action_print()}</span>
       </Button>
 
       <!-- 3. View / Show (Main Green Action) -->
@@ -1253,7 +1255,7 @@ function exitPage() {
         disabled={isLoading}
       >
         <RotateCw size={13} class={isLoading ? 'animate-spin' : ''} />
-        <span>{m.ledger_action_view()}</span>
+        <span>{common.ledger_action_view()}</span>
       </Button>
     </div>
   </div>
@@ -1266,11 +1268,11 @@ function exitPage() {
       
       <!-- Printable Page Header -->
       <div class="hidden print-only mb-6 text-center select-none" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
-        <h1 class="text-lg font-bold border-b border-black pb-2">{m.ledger_title()}</h1>
+        <h1 class="text-lg font-bold border-b border-black pb-2">{common.ledger_title()}</h1>
         <div class="flex justify-between text-xs mt-3">
           <span>التاريخ: {formatDate(new Date().toISOString())}</span>
-          <span>العملة المحددة: {selectedCurrency === 'all' ? m.ledger_all_currencies() : selectedCurrency}</span>
-          <span>الفترة: {periodFilter === 'all' ? m.ledger_period_all() : periodFilter}</span>
+          <span>العملة المحددة: {selectedCurrency === 'all' ? common.ledger_all_currencies() : selectedCurrency}</span>
+          <span>الفترة: {periodFilter === 'all' ? common.ledger_period_all() : periodFilter}</span>
         </div>
       </div>
 
@@ -1283,9 +1285,9 @@ function exitPage() {
         </div>
       {:else if error}
         <div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2">
-          <h3 class="font-semibold text-xs">{m.finance_error_loading()}</h3>
+          <h3 class="font-semibold text-xs">{finance.error_loading()}</h3>
           <p class="text-[10px] text-muted-foreground">{error}</p>
-          <Button variant="outline" onclick={loadData} class="text-[10px] mt-2">{m.error_retry()}</Button>
+          <Button variant="outline" onclick={loadData} class="text-[10px] mt-2">{common.action_retry()}</Button>
         </div>
       {:else}
         {#if activeTab === "all"}
@@ -1301,20 +1303,20 @@ function exitPage() {
                     <TableHead colspan={2} class="border-r border-border/60 text-center font-bold text-foreground bg-emerald-500/5">سعودي</TableHead>
                     <TableHead colspan={2} class="border-r border-border/60 text-center font-bold text-foreground bg-blue-500/5">دولار</TableHead>
                     <TableHead colspan={2} class="border-r border-border/60 text-center font-bold text-foreground bg-purple-500/5">درهم</TableHead>
-                    <TableHead rowspan={2} class="border-r border-border/60 text-start font-bold text-foreground">{m.ledger_col_name()}</TableHead>
-                    <TableHead rowspan={2} class="border-r border-border/60 text-center font-bold text-foreground w-28">{m.ledger_col_code()}</TableHead>
-                    <TableHead rowspan={2} class="text-start font-bold text-foreground w-64">{m.ledger_col_notes()}</TableHead>
+                    <TableHead rowspan={2} class="border-r border-border/60 text-start font-bold text-foreground">{common.ledger_col_name()}</TableHead>
+                    <TableHead rowspan={2} class="border-r border-border/60 text-center font-bold text-foreground w-28">{common.ledger_col_code()}</TableHead>
+                    <TableHead rowspan={2} class="text-start font-bold text-foreground w-64">{common.ledger_col_notes()}</TableHead>
                   </TableRow>
                   <!-- Sub-columns Debit / Credit -->
                   <TableRow class="hover:bg-transparent border-b border-border/80 text-[9px] font-bold">
-                    <TableHead class="text-center border-r border-border/40 w-24 text-red-500">{m.ledger_col_debit()}</TableHead>
-                    <TableHead class="text-center border-r border-border/60 w-24 text-emerald-500">{m.ledger_col_credit()}</TableHead>
-                    <TableHead class="text-center border-r border-border/40 w-24 text-red-500">{m.ledger_col_debit()}</TableHead>
-                    <TableHead class="text-center border-r border-border/60 w-24 text-emerald-500">{m.ledger_col_credit()}</TableHead>
-                    <TableHead class="text-center border-r border-border/40 w-24 text-red-500">{m.ledger_col_debit()}</TableHead>
-                    <TableHead class="text-center border-r border-border/60 w-24 text-emerald-500">{m.ledger_col_credit()}</TableHead>
-                    <TableHead class="text-center border-r border-border/40 w-24 text-red-500">{m.ledger_col_debit()}</TableHead>
-                    <TableHead class="text-center border-r border-border/60 w-24 text-emerald-500">{m.ledger_col_credit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/40 w-24 text-red-500">{common.ledger_col_debit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/60 w-24 text-emerald-500">{common.action_edit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/40 w-24 text-red-500">{common.ledger_col_debit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/60 w-24 text-emerald-500">{common.action_edit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/40 w-24 text-red-500">{common.ledger_col_debit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/60 w-24 text-emerald-500">{common.action_edit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/40 w-24 text-red-500">{common.ledger_col_debit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/60 w-24 text-emerald-500">{common.action_edit()}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1418,12 +1420,12 @@ function exitPage() {
                 <TableHeader class="bg-card">
                   <TableRow class="hover:bg-transparent border-b border-border/80 text-[10px] font-bold text-foreground">
                     <TableHead class="w-10 border-r border-border/60 text-center font-bold">*</TableHead>
-                    <TableHead class="text-center border-r border-border/60 w-28 text-red-500">{m.ledger_col_debit()}</TableHead>
-                    <TableHead class="text-center border-r border-border/60 w-28 text-emerald-500">{m.ledger_col_credit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/60 w-28 text-red-500">{common.ledger_col_debit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/60 w-28 text-emerald-500">{common.action_edit()}</TableHead>
                     <TableHead class="text-center border-r border-border/60 w-32 font-bold">{getLocale() === "ar" ? "الرصيد" : "Balance"}</TableHead>
-                    <TableHead class="text-start border-r border-border/60 font-bold">{m.ledger_col_name()}</TableHead>
-                    <TableHead class="text-center border-r border-border/60 w-28 font-bold">{m.ledger_col_code()}</TableHead>
-                    <TableHead class="text-start font-bold w-64">{m.ledger_col_notes()}</TableHead>
+                    <TableHead class="text-start border-r border-border/60 font-bold">{common.ledger_col_name()}</TableHead>
+                    <TableHead class="text-center border-r border-border/60 w-28 font-bold">{common.ledger_col_code()}</TableHead>
+                    <TableHead class="text-start font-bold w-64">{common.ledger_col_notes()}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1483,11 +1485,11 @@ function exitPage() {
                   </TableRow>
                   <TableRow class="hover:bg-transparent border-b border-border/80 text-[9px] font-bold">
                     <TableHead class="border-r border-border/60 text-center">-</TableHead>
-                    <TableHead class="text-center border-r border-border/45 text-red-500 w-24">{m.ledger_col_debit()}</TableHead>
-                    <TableHead class="text-center border-r border-border/60 text-emerald-500 w-24">{m.ledger_col_credit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/45 text-red-500 w-24">{common.ledger_col_debit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/60 text-emerald-500 w-24">{common.action_edit()}</TableHead>
                     <TableHead class="border-r border-border/60 text-center">-</TableHead>
-                    <TableHead class="text-center border-r border-border/45 text-red-500 w-28">{m.ledger_col_debit()}</TableHead>
-                    <TableHead class="text-center border-r border-border/60 text-emerald-500 w-28">{m.ledger_col_credit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/45 text-red-500 w-28">{common.ledger_col_debit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/60 text-emerald-500 w-28">{common.action_edit()}</TableHead>
                     <TableHead class="text-start">-</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -1564,8 +1566,8 @@ function exitPage() {
               <Table class="border-collapse w-full">
                 <TableHeader class="bg-card">
                   <TableRow class="hover:bg-transparent border-b border-border/80 text-[10px] font-bold text-foreground">
-                    <TableHead class="w-28 text-center text-red-500 border-r border-border/60">{m.ledger_col_debit()}</TableHead>
-                    <TableHead class="w-28 text-center text-emerald-500 border-r border-border/60">{m.ledger_col_credit()}</TableHead>
+                    <TableHead class="w-28 text-center text-red-500 border-r border-border/60">{common.ledger_col_debit()}</TableHead>
+                    <TableHead class="w-28 text-center text-emerald-500 border-r border-border/60">{common.action_edit()}</TableHead>
                     <TableHead class="w-36 text-center text-foreground border-r border-border/60">{getLocale() === "ar" ? "الرصيد" : "Balance"}</TableHead>
                     <TableHead class="w-20 text-center text-foreground border-r border-border/60">{getLocale() === "ar" ? "حالته" : "Status"}</TableHead>
                     <TableHead class="w-28 text-center text-foreground border-r border-border/60">{getLocale() === "ar" ? "التاريخ" : "Date"}</TableHead>
@@ -1641,10 +1643,10 @@ function exitPage() {
     <DialogContent class="max-w-xl text-start select-none h-[80vh] flex flex-col p-6 bg-card border-border/80">
       <DialogHeader class="shrink-0 mb-4 text-start">
         <DialogTitle class="text-base font-extrabold text-foreground">
-          {m.ledger_dialog_add_title()}
+          {common.ledger_dialog_add_title()}
         </DialogTitle>
         <DialogDescription class="text-[11px] text-muted-foreground leading-relaxed">
-          {m.ledger_dialog_add_desc()}
+          {common.ledger_dialog_add_desc()}
         </DialogDescription>
       </DialogHeader>
       {#if isAddDialogOpen}

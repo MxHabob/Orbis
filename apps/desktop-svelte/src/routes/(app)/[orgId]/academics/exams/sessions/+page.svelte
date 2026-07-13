@@ -18,7 +18,7 @@ import {
   ArrowRight,
   ClipboardList,
 } from "lucide-svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
 import SessionCreateSheet from "$lib/features/exams/components/session-create-sheet.svelte";
 import { createExamSessionsQuery } from "$lib/features/exams/queries";
@@ -59,7 +59,7 @@ function getTypeLabel(type: string): string {
 	<!-- Header -->
 	<div class="flex items-center justify-between" in:fade={{ duration: 150 }}>
 		<div class="flex flex-col">
-			<h1 class="text-sm font-bold text-foreground">{m.exams_sessions_title()}</h1>
+			<h1 class="text-sm font-bold text-foreground">{common.exams_sessions_title()}</h1>
 		</div>
 		<Button
 			variant="default"
@@ -67,7 +67,7 @@ function getTypeLabel(type: string): string {
 			onclick={() => isSheetOpen = true}
 		>
 			<Plus size={14} />
-			<span>{m.exams_sessions_create()}</span>
+			<span>{common.exams_sessions_create()}</span>
 		</Button>
 	</div>
 
@@ -75,7 +75,7 @@ function getTypeLabel(type: string): string {
 	<div class="relative">
 		<Search size={14} class="absolute inset-s-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
 		<Input
-			placeholder={m.exams_sessions_search()}
+			placeholder={common.exams_sessions_search()}
 			class="ps-9 h-9 text-xs"
 			bind:value={searchQuery}
 		/>
@@ -95,7 +95,7 @@ function getTypeLabel(type: string): string {
 				<ClipboardList size={28} class="text-muted-foreground" />
 			</div>
 			<p class="text-xs text-muted-foreground max-w-xs">
-				{m.exams_sessions_empty()}
+				{common.exams_sessions_empty()}
 			</p>
 			<Button
 				variant="outline"
@@ -103,7 +103,7 @@ function getTypeLabel(type: string): string {
 				onclick={() => isSheetOpen = true}
 			>
 				<Plus size={14} class="me-1.5" />
-				{m.exams_sessions_create()}
+				{common.exams_sessions_create()}
 			</Button>
 		</div>
 	{:else}
@@ -142,7 +142,7 @@ function getTypeLabel(type: string): string {
 						<div class="flex items-center gap-3 text-[9px] text-muted-foreground">
 							<div class="flex items-center gap-1">
 								<BookOpen size={10} />
-								<span>{session.subjects_count || 0} {m.exams_sessions_type()}</span>
+								<span>{session.subjects_count || 0} {common.exams_sessions_type()}</span>
 							</div>
 							<div class="flex items-center gap-1">
 								<Users size={10} />
@@ -154,7 +154,7 @@ function getTypeLabel(type: string): string {
 							variant="ghost"
 							class="text-[10px] font-bold text-primary h-7 px-2 flex items-center gap-1 cursor-pointer"
 						>
-							<span>{m.exams_open_section()}</span>
+							<span>{common.exams_open_section()}</span>
 							<ArrowRight size={10} class="transition-transform group-hover:translate-x-1" />
 						</Button>
 					</div>

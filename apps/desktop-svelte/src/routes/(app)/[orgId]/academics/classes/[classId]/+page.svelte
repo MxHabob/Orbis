@@ -39,7 +39,8 @@ import {
 } from "lucide-svelte";
 import { fade } from "svelte/transition";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
-import * as m from "$lib/paraglide/messages";
+import * as academics from "$lib/paraglide/messages/academics";
+import * as common from "$lib/paraglide/messages/common";
 import { academicContext } from "$lib/stores";
 
 const orgId = $derived(page.params.orgId);
@@ -205,10 +206,10 @@ const diagnosticIssues = $derived.by(() => {
     issues.push({
       id: "no-students",
       type: "attendance",
-      title: m.academics_class_overview_no_students_title(),
-      desc: m.academics_class_overview_no_students_desc(),
+      title: academics.class_overview_no_students_title(),
+      desc: academics.class_overview_no_students_desc(),
       priority: "critical",
-      actionText: m.academics_class_overview_view_students(),
+      actionText: academics.class_overview_view_students(),
     });
   }
 
@@ -219,10 +220,10 @@ const diagnosticIssues = $derived.by(() => {
     issues.push({
       id: "no-grades",
       type: "academic",
-      title: m.academics_class_overview_no_grades_title(),
-      desc: m.academics_class_overview_no_grades_desc(),
+      title: academics.class_overview_no_grades_title(),
+      desc: academics.class_overview_no_grades_desc(),
       priority: "medium",
-      actionText: m.academics_class_overview_record_grades(),
+      actionText: academics.class_overview_record_grades(),
     });
   }
 
@@ -233,12 +234,12 @@ const diagnosticIssues = $derived.by(() => {
     issues.push({
       id: "low-performance",
       type: "academic",
-      title: m.academics_class_overview_low_performance_title(),
-      desc: m.academics_class_overview_low_performance_desc({
+      title: academics.class_overview_low_performance_title(),
+      desc: academics.class_overview_low_performance_desc({
         count: String(failingRecords.length),
       }),
       priority: "high",
-      actionText: m.academics_class_overview_view_grades(),
+      actionText: academics.class_overview_view_grades(),
     });
   }
 
@@ -246,12 +247,12 @@ const diagnosticIssues = $derived.by(() => {
     issues.push({
       id: "low-attendance",
       type: "attendance",
-      title: m.academics_class_overview_low_attendance_title(),
-      desc: m.academics_class_overview_low_attendance_desc({
+      title: academics.class_overview_low_attendance_title(),
+      desc: academics.class_overview_low_attendance_desc({
         rate: String(Math.round(attendanceRate)),
       }),
       priority: "critical",
-      actionText: m.academics_class_overview_contact_parents(),
+      actionText: academics.class_overview_contact_parents(),
     });
   }
 
@@ -260,12 +261,12 @@ const diagnosticIssues = $derived.by(() => {
 
 function handleResolveIssue(id: string) {
   resolvedAlerts = { ...resolvedAlerts, [id]: true };
-  toast.success(m.academics_class_overview_alert_resolved_toast());
+  toast.success(academics.class_overview_alert_resolved_toast());
 }
 
 function handleTriggerAction(issue: any) {
   toast.info(
-    `${m.academics_class_overview_action_triggered()} ${issue.actionText}`,
+    `${academics.class_overview_action_triggered()} ${issue.actionText}`,
   );
 }
 </script>
@@ -281,9 +282,9 @@ function handleTriggerAction(issue: any) {
   {:else if error}
     <div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2 font-sans">
       <AlertCircle size={24} />
-      <h3 class="font-semibold text-xs">{m.academics_class_overview_load_failed()}</h3>
+      <h3 class="font-semibold text-xs">{academics.class_overview_load_failed()}</h3>
       <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
-      <Button variant="outline" onclick={refetchAll} class="text-[10px] mt-2 h-8">{m.academics_class_overview_retry()}</Button>
+      <Button variant="outline" onclick={refetchAll} class="text-[10px] mt-2 h-8">{academics.class_overview_retry()}</Button>
     </div>
   {:else}
     <div class="flex flex-col gap-5 animate-fade-in text-start" in:fade={{ duration: 150 }}>
@@ -314,17 +315,17 @@ function handleTriggerAction(issue: any) {
           <div class="border border-border bg-card/60 rounded-xl overflow-hidden shadow-sm text-start">
             <div class="flex items-center justify-between bg-muted/20 border-b border-border/40 p-3 select-none">
               <span class="font-mono text-xs font-bold text-foreground">
-                /academics/classes/{classId}/grades: {m.academics_class_overview_grade_matrix_sheet()}
+                /academics/classes/{classId}/grades: {academics.class_overview_grade_matrix_sheet()}
               </span>
               <span class="bg-primary/10 border border-primary/20 text-primary text-[8px] font-extrabold uppercase py-0.5 px-2.5 rounded font-sans">
-                {m.academics_class_overview_grade_matrix_preview()}
+                {academics.class_overview_grade_matrix_preview()}
               </span>
             </div>
 
             <!-- Subject Selector & Embedded Grade Matrix spreadsheet grid -->
             <div class="p-3 flex flex-col gap-3 font-sans">
               <div class="flex items-center gap-2 select-none">
-                <span class="text-[10px] text-muted-foreground font-bold">{m.academics_class_overview_subject()}:</span>
+                <span class="text-[10px] text-muted-foreground font-bold">{academics.class_overview_subject()}:</span>
                 <Select type="single" value={selectedSubjectId} onValueChange={(v) => { if (v) selectedSubjectId = v; }}>
                   <SelectTrigger class="w-[180px] text-xs h-7.5 bg-background">
                     <div class="flex items-center gap-1.5 min-w-0">
@@ -333,7 +334,7 @@ function handleTriggerAction(issue: any) {
                         {
                           (classSubjectsQuery.data || []).find((s) => String(s.subject_id || s.id) === selectedSubjectId)?.subject_name_ar || 
                           (classSubjectsQuery.data || []).find((s) => String(s.subject_id || s.id) === selectedSubjectId)?.subject_name || 
-                          (m.control_select_subject ? m.control_select_subject() : "Select Subject")
+                          (common.control_select_subject ? common.control_select_subject() : "Select Subject")
                         }
                       </span>
                     </div>
@@ -367,7 +368,7 @@ function handleTriggerAction(issue: any) {
                   />
                 {:else}
                   <div class="h-full flex items-center justify-center text-xs text-muted-foreground font-sans">
-                    {m.academics_class_overview_no_grades()}
+                    {academics.class_overview_no_grades()}
                   </div>
                 {/if}
               </div>
@@ -379,7 +380,7 @@ function handleTriggerAction(issue: any) {
             <div class="flex items-center justify-between w-full select-none text-[9px] font-bold text-muted-foreground/80 mb-3.5">
               <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
                 <span class="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse"></span>
-                {m.academics_class_overview_active_alerts()}
+                {academics.class_overview_active_alerts()}
               </div>
             </div>
 
@@ -404,7 +405,7 @@ function handleTriggerAction(issue: any) {
                       {issue.actionText}
                     </Button>
                     <button class="text-[8px] text-muted-foreground hover:text-foreground font-bold cursor-pointer" onclick={() => handleResolveIssue(issue.id)}>
-                      {m.academics_class_overview_resolve()}
+                      {academics.class_overview_resolve()}
                     </button>
                   </div>
                 </div>
@@ -423,10 +424,10 @@ function handleTriggerAction(issue: any) {
             <div class="select-none border-b border-primary/15 pb-2 mb-3">
               <h3 class="text-xs font-bold text-foreground flex items-center gap-1.5">
                 <Sparkles size={13} class="text-primary animate-pulse" />
-                {m.academics_class_overview_advisor_title()}
+                {academics.class_overview_advisor_title()}
               </h3>
               <p class="text-[9px] text-muted-foreground/80 mt-1 leading-normal">
-                {m.academics_class_overview_advisor_desc()}
+                {academics.class_overview_advisor_desc()}
               </p>
             </div>
 
@@ -434,29 +435,29 @@ function handleTriggerAction(issue: any) {
               <div class="flex gap-2 p-2 rounded-lg bg-background/50 border border-border/30">
                 <span class="text-primary font-bold">1.</span>
                 {#if avgGradeScore === 0}
-                  <span>{m.academics_class_overview_advisor_grades_none()}</span>
+                  <span>{academics.class_overview_advisor_grades_none()}</span>
                 {:else if avgGradeScore < 50}
-                  <span>{m.academics_class_overview_advisor_grades_critical({ average: String(avgGradeScore) })}</span>
+                  <span>{academics.class_overview_advisor_grades_critical({ average: String(avgGradeScore) })}</span>
                 {:else if avgGradeScore < 70}
-                  <span>{m.academics_class_overview_advisor_grades_low({ average: String(avgGradeScore) })}</span>
+                  <span>{academics.class_overview_advisor_grades_low({ average: String(avgGradeScore) })}</span>
                 {:else if avgGradeScore < 85}
-                  <span>{m.academics_class_overview_advisor_grades_medium({ average: String(avgGradeScore) })}</span>
+                  <span>{academics.class_overview_advisor_grades_medium({ average: String(avgGradeScore) })}</span>
                 {:else}
-                  <span>{m.academics_class_overview_advisor_grades_high({ average: String(avgGradeScore) })}</span>
+                  <span>{academics.class_overview_advisor_grades_high({ average: String(avgGradeScore) })}</span>
                 {/if}
               </div>
               <div class="flex gap-2 p-2 rounded-lg bg-background/50 border border-border/30">
                 <span class="text-primary font-bold">2.</span>
                 {#if attendanceRate === 0}
-                  <span>{m.academics_class_overview_advisor_attendance_none()}</span>
+                  <span>{academics.class_overview_advisor_attendance_none()}</span>
                 {:else if attendanceRate < 80}
-                  <span>{m.academics_class_overview_advisor_attendance_critical({ rate: String(Math.round(attendanceRate)) })}</span>
+                  <span>{academics.class_overview_advisor_attendance_critical({ rate: String(Math.round(attendanceRate)) })}</span>
                 {:else if attendanceRate < 93}
-                  <span>{m.academics_class_overview_advisor_attendance_low({ rate: String(Math.round(attendanceRate)) })}</span>
+                  <span>{academics.class_overview_advisor_attendance_low({ rate: String(Math.round(attendanceRate)) })}</span>
                 {:else if attendanceRate < 97}
-                  <span>{m.academics_class_overview_advisor_attendance_medium({ rate: String(Math.round(attendanceRate)) })}</span>
+                  <span>{academics.class_overview_advisor_attendance_medium({ rate: String(Math.round(attendanceRate)) })}</span>
                 {:else}
-                  <span>{m.academics_class_overview_advisor_attendance_high({ rate: String(Math.round(attendanceRate)) })}</span>
+                  <span>{academics.class_overview_advisor_attendance_high({ rate: String(Math.round(attendanceRate)) })}</span>
                 {/if}
               </div>
             </div>
@@ -465,10 +466,10 @@ function handleTriggerAction(issue: any) {
               variant="default"
               size="sm"
               class="w-full text-[10px] gap-1.5 h-8.5 font-bold cursor-pointer justify-center"
-              onclick={() => toast.success(m.academics_class_overview_optimizing_toast())}
+              onclick={() => toast.success(academics.class_overview_optimizing_toast())}
             >
               <Activity size={12} />
-              {m.academics_class_overview_diagnostic()}
+              {academics.class_overview_diagnostic()}
             </Button>
           </div>
 
@@ -477,17 +478,17 @@ function handleTriggerAction(issue: any) {
             <div class="flex items-center justify-between w-full select-none text-[9px] font-bold text-muted-foreground/80 mb-2">
               <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
                 <span class="h-1.5 w-1.5 rounded-full bg-brand-lime"></span>
-                {m.academics_class_overview_external_links()}
+                {academics.class_overview_external_links()}
               </div>
             </div>
             <div class="flex flex-col gap-2 mt-1 text-[10px] font-bold text-start">
               <a href={localizeHref(`/${orgId}/academics/schedule?classId=${classId}`)} class="flex items-center gap-1.5 text-primary hover:underline">
                 <Landmark size={12} />
-                <span>{m.academics_class_overview_weekly_timetable()}</span>
+                <span>{academics.class_overview_weekly_timetable()}</span>
               </a>
               <a href={localizeHref(`/${orgId}/reports`)} class="flex items-center gap-1.5 text-primary hover:underline">
                 <FileText size={12} />
-                <span>{m.academics_class_overview_perf_ledger()}</span>
+                <span>{academics.class_overview_perf_ledger()}</span>
               </a>
             </div>
           </Card>

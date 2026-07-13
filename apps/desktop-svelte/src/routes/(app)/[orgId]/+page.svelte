@@ -5,13 +5,13 @@
 <script lang="ts">
 import OverviewView from "$lib/features/dashboard/components/dashboard-widgets.svelte";
 import type { LayoutData } from "./$types";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 
 let { data }: { data: LayoutData } = $props();
 </script>
 
 <svelte:head>
-	<title>{m.page_title_dashboard()}</title>
+	<title>{common.page_title_dashboard()}</title>
 </svelte:head>
 
 <div class="h-full w-full ">

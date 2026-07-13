@@ -13,7 +13,7 @@ import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Monitor, Smartphone } from "lucide-svelte";
 import { fade } from "svelte/transition";
 import { formatDate } from "$lib/core/i18n";
-import * as m from "$lib/paraglide/messages";
+import * as settings from "$lib/paraglide/messages/settings";
 
 const userId = $derived(page.params.userId);
 
@@ -41,10 +41,10 @@ async function loadSessions() {
       }
 
       const location = s.is_current
-        ? m.settings_user_session_current_device()
-        : m.settings_user_session_active_device();
+        ? settings.user_session_current_device()
+        : settings.user_session_active_device();
       const time = s.is_current
-        ? m.settings_user_session_active_now()
+        ? settings.user_session_active_now()
         : s.last_active_at
           ? formatDate(s.last_active_at)
           : "";
@@ -87,7 +87,7 @@ onMount(loadSessions);
   >
     <Monitor size={40} class="text-muted-foreground/30" />
     <p class="text-xs font-semibold">
-      {m.settings_user_detail_no_sessions()}
+      {settings.user_detail_no_sessions()}
     </p>
   </div>
 {:else}
@@ -110,7 +110,7 @@ onMount(loadSessions);
                   variant="success"
                   class="text-[8px] font-semibold uppercase py-0 px-1.5 h-4.5 rounded"
                 >
-                  {m.settings_user_detail_session_active_now()}
+                  {settings.user_detail_session_active_now()}
                 </Badge>
               {/if}
             </span>

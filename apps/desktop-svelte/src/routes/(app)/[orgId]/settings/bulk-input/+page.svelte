@@ -15,7 +15,7 @@ import {
 } from "@orbis/ui-svelte/card";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { ArrowLeft, Users, GraduationCap, ArrowRight } from "lucide-svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 
 let { data } = $props();
@@ -38,7 +38,7 @@ const isRtl = getLocale() === "ar";
       </Button>
       <div class="flex flex-col gap-0.5">
         <h1 class="text-xl font-bold tracking-tight text-foreground">
-          {m.bulk_hub_title()}
+          {common.bulk_hub_title()}
         </h1>
       </div>
     </div>
@@ -62,22 +62,22 @@ const isRtl = getLocale() === "ar";
               />
             </div>
             <CardTitle class="text-sm font-semibold mt-3">
-              {m.bulk_card_students_title()}
+              {common.bulk_card_students_title()}
             </CardTitle>
             <CardDescription class="text-xs">
-              {m.bulk_card_students_desc()}
+              {common.bulk_card_students_desc()}
             </CardDescription>
           </CardHeader>
           <CardContent class="pt-0">
             <div class="flex items-center gap-2 flex-wrap">
               <Badge variant="secondary" class="text-[10px]">
-                {m.bulk_card_students_tag_personal()}
+                {common.bulk_card_students_tag_personal()}
               </Badge>
               <Badge variant="secondary" class="text-[10px]">
-                {m.bulk_card_students_tag_enrollment()}
+                {common.bulk_card_students_tag_enrollment()}
               </Badge>
               <Badge variant="secondary" class="text-[10px]">
-                {m.bulk_card_students_tag_guardian()}
+                {common.bulk_card_students_tag_guardian()}
               </Badge>
             </div>
           </CardContent>
@@ -101,19 +101,19 @@ const isRtl = getLocale() === "ar";
               />
             </div>
             <CardTitle class="text-sm font-semibold mt-3">
-              {m.bulk_card_grades_title()}
+              {common.bulk_card_grades_title()}
             </CardTitle>
             <CardDescription class="text-xs">
-              {m.bulk_card_grades_desc()}
+              {common.bulk_card_grades_desc()}
             </CardDescription>
           </CardHeader>
           <CardContent class="pt-0">
             <div class="flex items-center gap-2 flex-wrap">
               <Badge variant="secondary" class="text-[10px]">
-                {m.bulk_card_grades_tag_smart()}
+                {common.bulk_card_grades_tag_smart()}
               </Badge>
               <Badge variant="secondary" class="text-[10px]">
-                {m.bulk_card_grades_tag_period()}
+                {common.bulk_card_grades_tag_period()}
               </Badge>
             </div>
           </CardContent>

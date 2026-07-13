@@ -12,7 +12,7 @@ import { Plus, BookUser } from "lucide-svelte";
 import { commands } from "$lib/core/ipc";
 import type { ClassSubject, JsonRecord } from "@orbis/sdk-core";
 import ClassSubjectSheet from "$lib/features/academics/components/class-subject-sheet.svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 import { getLocale } from "$lib/paraglide/runtime";
 
 import { DataTable } from "$lib/tables";
@@ -105,8 +105,8 @@ const gridSource = $derived(
 const columns = $derived(
   ctDef.columns({
     idx: "#",
-    teacher: m.cs_col_teacher?.() || "Teacher",
-    subject: m.cs_col_subject?.() || "Subject",
+    teacher: common.cs_col_teacher?.() || "Teacher",
+    subject: common.cs_col_subject?.() || "Subject",
     role: "Role",
     phone: "Phone",
     email: "Email",
@@ -125,16 +125,16 @@ const rtl = $derived(getLocale() === "ar");
       </div>
       <div>
         <h2 class="text-sm font-bold text-foreground">
-          {m.cs_title ? m.cs_title() : "ربط المعلمين بالمواد"}
+          {common.cs_title ? common.cs_title() : "ربط المعلمين بالمواد"}
         </h2>
         <p class="text-[10px] text-muted-foreground">
-          {m.cs_desc ? m.cs_desc() : "إدارة المعلمين والمواد المرتبطة بهذا الفصل"}
+          {common.cs_desc ? common.cs_desc() : "إدارة المعلمين والمواد المرتبطة بهذا الفصل"}
         </p>
       </div>
     </div>
     <Button onclick={openCreate} size="sm" class="h-8 gap-1.5 text-xs font-semibold">
       <Plus size={13} />
-      {m.cs_add ? m.cs_add() : "ربط معلم"}
+      {common.cs_add ? common.cs_add() : "ربط معلم"}
     </Button>
   </div>
 
@@ -145,7 +145,7 @@ const rtl = $derived(getLocale() === "ar");
       source={gridSource}
       loading={isLoading}
       emptyIcon={BookUser}
-      emptyTitle={m.cs_empty ? m.cs_empty() : "لا يوجد ربط معلمين لهذا الفصل"}
+      emptyTitle={common.cs_empty ? common.cs_empty() : "لا يوجد ربط معلمين لهذا الفصل"}
       {rtl}
       refreshable
       onRefresh={loadData}

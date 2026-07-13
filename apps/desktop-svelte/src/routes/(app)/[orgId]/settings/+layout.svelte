@@ -28,7 +28,7 @@ import {
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import type { Snippet } from "svelte";
-import * as m from "$lib/paraglide/messages";
+import * as settings from "$lib/paraglide/messages/settings";
 import { getLocale } from "$lib/paraglide/runtime";
 
 let { data, children }: { data: { orgId: string }; children: Snippet } =
@@ -39,91 +39,91 @@ const basePath = $derived(`/${data.orgId}/settings`);
 const navItems = $derived([
   {
     path: "",
-    label: m.settings_nav_general(),
+    label: settings.nav_general(),
     icon: Settings,
   },
 
   {
     path: "notifications",
-    label: m.settings_nav_notifications(),
+    label: settings.nav_notifications(),
     icon: Bell,
   },
   {
     path: "users",
-    label: m.settings_nav_users(),
+    label: settings.nav_users(),
     icon: Users,
   },
   {
     path: "permissions",
-    label: m.settings_nav_permissions(),
+    label: settings.nav_permissions(),
     icon: Shield,
   },
   {
     path: "periods",
-    label: m.settings_nav_periods
-      ? m.settings_nav_periods()
+    label: settings.nav_periods
+      ? settings.nav_periods()
       : "Academic Periods",
     icon: Calendar,
   },
   {
     path: "units",
-    label: m.settings_nav_units(),
+    label: settings.nav_units(),
     icon: Network,
   },
   {
     path: "rooms",
-    label: m.settings_nav_rooms(),
+    label: settings.nav_rooms(),
     icon: MapPin,
   },
   {
     path: "subjects",
-    label: m.settings_nav_subjects(),
+    label: settings.nav_subjects(),
     icon: BookOpen,
   },
   {
     path: "audit",
-    label: m.settings_nav_audit(),
+    label: settings.nav_audit(),
     icon: History,
   },
   {
     path: "bulk-input",
-    label: m.settings_nav_import_export(),
+    label: settings.nav_import_export(),
     icon: FileDown,
   },
   {
     path: "currencies",
-    label: m.settings_nav_currencies(),
+    label: settings.nav_currencies(),
     icon: Coins,
   },
   {
     path: "ordering",
-    label: m.settings_nav_ordering(),
+    label: settings.nav_ordering(),
     icon: ListOrdered,
   },
   {
     path: "registration",
-    label: m.settings_nav_registration(),
+    label: settings.nav_registration(),
     icon: FileText,
   },
 
   {
     path: "fee-templates",
-    label: m.settings_nav_fee_templates(),
+    label: settings.nav_fee_templates(),
     icon: Receipt,
   },
   {
     path: "discount-templates",
-    label: m.settings_nav_discount_templates(),
+    label: settings.nav_discount_templates(),
     icon: Percent,
   },
   {
     path: "academic-policy",
-    label: m.settings_nav_academic_policy(),
+    label: settings.nav_academic_policy(),
     icon: Sliders,
   },
   {
     path: "approvals",
-    label: m.settings_nav_approvals(),
+    label: settings.nav_approvals(),
     icon: CheckSquare,
   },
 ]);
@@ -138,7 +138,7 @@ const navItems = $derived([
       <SidebarNav
         items={navItems}
         {basePath}
-        title={m.settings_layout_title()}
+        title={settings.layout_title()}
       />
     {/snippet}
 

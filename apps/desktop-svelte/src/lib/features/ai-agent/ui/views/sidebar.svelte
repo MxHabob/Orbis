@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 <!--
 @component AskOrbisSidebar
 A resizable right-hand sidebar overlay for Ask Orbis agent, mirroring the Seer design.
@@ -6,7 +7,7 @@ Allows users to ask questions, select prompt suggestions, and collapse/resize.
 <script lang="ts">
 import { uiStore, authStore, aiContext } from "$lib/stores";
 import { Button } from "@orbis/ui-svelte/button";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 import { fly } from "svelte/transition";
 import { getLocale } from "$lib/paraglide/runtime";
 import { isDesktopApp } from "$lib/core/ipc";
@@ -52,7 +53,7 @@ const maxWidth = $derived(pxToRem(650));
 const isRtl = $derived(getLocale() === "ar");
 
 const userName = $derived(
-  authStore.user?.full_name || m.agent_default_user_name(),
+  authStore.user?.full_name || common.agent_default_user_name(),
 );
 const orgName = $derived(
   (authStore.user as any)?.org_name ||
@@ -63,9 +64,9 @@ const orgName = $derived(
 
 let inputValue = $state(page.url.searchParams.get("ask_orbis") || "");
 const suggestions = $derived([
-  m.agent_suggest_1(),
-  m.agent_suggest_2(),
-  m.agent_suggest_3(),
+  common.agent_suggest_1(),
+  common.agent_suggest_2(),
+  common.agent_suggest_3(),
 ]);
 
 interface Message {
@@ -92,12 +93,12 @@ const userHat = $derived.by(() => {
 });
 
 const headerTitle = $derived.by(() => {
-  if (messages.length === 0) return m.agent_title();
+  if (messages.length === 0) return common.agent_title();
   if (currentSession) {
     const type = currentSession.agent_type;
     return type.charAt(0).toUpperCase() + type.slice(1);
   }
-  return m.agent_title();
+  return common.agent_title();
 });
 
 function scrollToBottom() {

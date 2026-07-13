@@ -3,7 +3,7 @@
 Shows a list of past promotion jobs with status, stats, and rollback option.
 -->
 <script lang="ts">
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 import { extractErrorMessage } from "$lib/core/ipc";
 import { toast } from "svelte-sonner";
 import {
@@ -48,7 +48,7 @@ async function handleRollback() {
       jobId: rollbackTarget.id,
       userId,
     });
-    toast.success(m.promo_rollback());
+    toast.success(common.action_back());
     rollbackTarget = null;
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
@@ -87,13 +87,13 @@ function statusVariant(status: string) {
 
 function statusLabel(status: string) {
   const map: Record<string, () => string> = {
-    validating: m.promo_job_status_validating,
-    dry_run: m.promo_job_status_dry_run,
-    confirmed: m.promo_job_status_confirmed,
-    executing: m.promo_job_status_executing,
-    completed: m.promo_job_status_completed,
-    failed: m.promo_job_status_failed,
-    rolled_back: m.promo_job_status_rolled_back,
+    validating: common.promo_job_status_validating,
+    dry_run: common.promo_job_status_dry_run,
+    confirmed: common.promo_job_status_confirmed,
+    executing: common.promo_job_status_executing,
+    completed: common.promo_job_status_completed,
+    failed: common.promo_job_status_failed,
+    rolled_back: common.action_back,
   };
   return (map[status] ?? (() => status))();
 }
@@ -103,10 +103,10 @@ function statusLabel(status: string) {
   <div class="space-y-2 text-start select-none">
     <h3 class="text-foreground font-bold text-xl font-serif flex items-center gap-2">
       <History class="size-5 text-muted-foreground" />
-      {m.promo_history()}
+      {common.promo_history()}
     </h3>
     <p class="text-muted-foreground text-xs font-sans">
-      {m.promo_desc_history_subtitle()}
+      {common.promo_desc_history_subtitle()}
     </p>
   </div>
 
@@ -128,8 +128,8 @@ function statusLabel(status: string) {
   {:else if ($jobsQuery.data ?? []).length === 0}
     <div class="border-2 border-dashed border-border rounded-xl bg-card p-12 text-center flex flex-col items-center justify-center">
       <History class="size-10 text-muted-foreground/40 mb-3" />
-      <h3 class="font-bold text-foreground font-serif">{m.promo_no_jobs()}</h3>
-      <p class="text-xs text-muted-foreground mt-1 font-sans">{m.promo_no_jobs_desc()}</p>
+      <h3 class="font-bold text-foreground font-serif">{common.promo_no_jobs()}</h3>
+      <p class="text-xs text-muted-foreground mt-1 font-sans">{common.promo_no_jobs_desc()}</p>
     </div>
   {:else}
     <div class="space-y-4">
@@ -154,7 +154,7 @@ function statusLabel(status: string) {
                 <div class="text-[11px] text-muted-foreground mt-1 font-sans">
                   {new Date(job.created_at).toLocaleDateString()}
                   {#if job.total_students}
-                    &middot; {job.total_students} {m.promo_total().toLowerCase()}
+                    &middot; {job.total_students} {common.promo_total().toLowerCase()}
                   {/if}
                 </div>
               </div>
@@ -195,14 +195,14 @@ function statusLabel(status: string) {
       <AlertDialogTitle>
         <div class="flex items-center gap-2">
           <AlertTriangle class="size-5 text-destructive" />
-          {m.promo_rollback()}
+          {common.action_back()}
         </div>
       </AlertDialogTitle>
-      <AlertDialogDescription>{m.promo_rollback_confirm()}</AlertDialogDescription>
+      <AlertDialogDescription>{common.action_back()}</AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter>
       <AlertDialogCancel onclick={() => rollbackTarget = null}>إلغاء</AlertDialogCancel>
-      <AlertDialogAction onclick={handleRollback}>{m.promo_rollback()}</AlertDialogAction>
+      <AlertDialogAction onclick={handleRollback}>{common.action_back()}</AlertDialogAction>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

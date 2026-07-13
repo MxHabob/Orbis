@@ -11,7 +11,7 @@ import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/core/i18n";
 import { toast } from "svelte-sonner";
 import FeeTemplateSheet from "$lib/features/finance/components/fee-template-sheet.svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 
 import { DataTable } from "$lib/tables";
 import { feeTemplates as ftDef, withIndex } from "$lib/tables/definitions";
@@ -45,20 +45,20 @@ onMount(() => {
 
 function getCategoryLabel(catStr: string) {
   const c = String(catStr).toLowerCase();
-  if (c === "tuition") return m.ft_category_tuition?.() || "Tuition";
-  if (c === "transport") return m.ft_category_transport?.() || "Transport";
-  if (c === "books") return m.ft_category_books?.() || "Books";
-  if (c === "uniform") return m.ft_category_uniform?.() || "Uniform";
-  if (c === "exam") return m.ft_category_exam?.() || "Exam";
-  return m.ft_category_other?.() || "Other";
+  if (c === "tuition") return common.ft_category_tuition?.() || "Tuition";
+  if (c === "transport") return common.ft_category_transport?.() || "Transport";
+  if (c === "books") return common.ft_category_books?.() || "Books";
+  if (c === "uniform") return common.ft_category_uniform?.() || "Uniform";
+  if (c === "exam") return common.ft_category_exam?.() || "Exam";
+  return common.ft_category_other?.() || "Other";
 }
 
 function getFrequencyLabel(freqStr: string) {
   const f = String(freqStr).toLowerCase();
-  if (f === "once") return m.ft_frequency_once?.() || "Once";
-  if (f === "monthly") return m.ft_frequency_monthly?.() || "Monthly";
-  if (f === "termly") return m.ft_frequency_termly?.() || "Termly";
-  if (f === "yearly") return m.ft_frequency_yearly?.() || "Yearly";
+  if (f === "once") return common.ft_frequency_once?.() || "Once";
+  if (f === "monthly") return common.ft_frequency_monthly?.() || "Monthly";
+  if (f === "termly") return common.ft_frequency_termly?.() || "Termly";
+  if (f === "yearly") return common.ft_frequency_yearly?.() || "Yearly";
   return freqStr;
 }
 
@@ -80,11 +80,11 @@ const gridSource = $derived(
 const columns = $derived(
   ftDef.columns({
     idx: "#",
-    name: m.ft_col_name?.() || "Template",
-    amount: m.ft_col_amount?.() || "Amount",
-    frequency: m.ft_col_frequency?.() || "Frequency",
-    status: m.ft_col_status?.() || "Status",
-    classes: m.ft_col_category?.() || "Category",
+    name: common.ft_col_name?.() || "Template",
+    amount: common.ft_col_amount?.() || "Amount",
+    frequency: common.ft_col_frequency?.() || "Frequency",
+    status: common.ft_col_status?.() || "Status",
+    classes: common.ft_col_category?.() || "Category",
   }),
 );
 
@@ -110,15 +110,15 @@ function handleGridAction(event: GridActionEvent) {
     <div class="flex flex-col gap-0.5 text-start">
       <h1 class="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
         <Receipt class="text-primary" size={18} />
-        <span>{m.ft_title?.() || "Fee Templates"}</span>
+        <span>{common.ft_title?.() || "Fee Templates"}</span>
       </h1>
       <p class="text-xs text-muted-foreground">
-        {m.ft_desc?.() || "Manage fee templates for student enrollment"}
+        {common.ft_desc?.() || "Manage fee templates for student enrollment"}
       </p>
     </div>
     <Button size="sm" onclick={handleCreate} class="text-xs font-bold shrink-0">
       <Plus size={14} class="me-1" />
-      {m.ft_add?.() || "Add Template"}
+      {common.ft_add?.() || "Add Template"}
     </Button>
   </div>
 
@@ -128,8 +128,8 @@ function handleGridAction(event: GridActionEvent) {
       source={gridSource}
       loading={isLoading}
       emptyIcon={Receipt}
-      emptyTitle={m.ft_empty?.() || "No fee templates"}
-      emptyDescription={m.ft_empty_desc?.() || "Create fee templates to auto-apply on enrollment"}
+      emptyTitle={common.ft_empty?.() || "No fee templates"}
+      emptyDescription={common.ft_empty_desc?.() || "Create fee templates to auto-apply on enrollment"}
       rtl={getLocale() === "ar"}
       refreshable
       onRefresh={loadTemplates}

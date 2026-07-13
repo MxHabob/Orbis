@@ -5,7 +5,7 @@
 <script lang="ts">
 import { Button } from "@orbis/ui-svelte/button";
 import { ArrowRight, ArrowLeft } from "lucide-svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 
 let {
   activeStep,
@@ -32,7 +32,7 @@ let {
       class="border-border text-muted-foreground hover:text-foreground hover:bg-muted flex gap-2 items-center"
     >
       <ArrowLeft class="w-4 h-4 rtl:rotate-180" />
-      <span>{m.onboarding_prev_btn()}</span>
+      <span>{common.onboarding_prev_btn()}</span>
     </Button>
 
     <!-- Next button -->
@@ -42,7 +42,7 @@ let {
         disabled={isLoading}
         class="bg-primary text-primary-foreground hover:bg-primary/90 flex gap-2 items-center"
       >
-        <span>{m.onboarding_next_btn()}</span>
+        <span>{common.onboarding_next_btn()}</span>
         <ArrowRight class="w-4 h-4 rtl:rotate-180" />
       </Button>
     {/if}

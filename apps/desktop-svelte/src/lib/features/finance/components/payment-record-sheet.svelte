@@ -13,7 +13,7 @@ import {
 } from "@orbis/ui-svelte/sheet";
 import { CreditCard } from "lucide-svelte";
 import PaymentRecordForm from "./payment-record-form.svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 
 let {
   open = $bindable(false),
@@ -31,10 +31,10 @@ let {
 		<SheetHeader class="text-start select-none">
 			<SheetTitle class="text-xl font-bold text-foreground flex items-center gap-2">
 				<CreditCard size={18} class="text-primary" />
-				<span>{m.payment_sheet_title()}</span>
+				<span>{common.payment_sheet_title()}</span>
 			</SheetTitle>
 			<SheetDescription class="text-sm text-muted-foreground mt-1">
-				{m.payment_sheet_subtitle()}
+				{common.payment_sheet_subtitle()}
 			</SheetDescription>
 		</SheetHeader>
 

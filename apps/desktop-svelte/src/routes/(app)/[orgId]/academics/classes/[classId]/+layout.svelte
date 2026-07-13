@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 <!--
 @component ClassDetailLayout
 Master-Detail layout for a single class.
@@ -34,7 +35,8 @@ import {
   MoreHorizontal,
 } from "lucide-svelte";
 import type { Snippet } from "svelte";
-import * as m from "$lib/paraglide/messages";
+import * as academics from "$lib/paraglide/messages/academics";
+import * as common from "$lib/paraglide/messages/common";
 import { getLocale } from "$lib/paraglide/runtime";
 
 let { children }: { children: Snippet } = $props();
@@ -74,29 +76,29 @@ const basePath = $derived(`/${orgId}/academics/classes/${classId}`);
 const menuItems = $derived([
   {
     path: "",
-    label: m.academics_class_detail_tab_overview
-      ? m.academics_class_detail_tab_overview()
+    label: academics.class_detail_tab_overview
+      ? academics.class_detail_tab_overview()
       : "نظرة عامة",
     icon: GraduationCap,
   },
   {
     path: "assessments",
-    label: m.academics_class_detail_tab_assessments
-      ? m.academics_class_detail_tab_assessments()
+    label: academics.class_detail_tab_assessments
+      ? academics.class_detail_tab_assessments()
       : "التقييمات",
     icon: Award,
   },
   {
     path: "teachers",
-    label: m.academics_class_detail_tab_teachers
-      ? m.academics_class_detail_tab_teachers()
+    label: academics.class_detail_tab_teachers
+      ? academics.class_detail_tab_teachers()
       : "المعلمون",
     icon: BookUser,
   },
   {
     path: "grades",
-    label: m.academics_class_detail_tab_grades
-      ? m.academics_class_detail_tab_grades()
+    label: academics.class_detail_tab_grades
+      ? academics.class_detail_tab_grades()
       : "الدرجات والطلاب",
     icon: ClipboardList,
   },
@@ -107,8 +109,8 @@ const menuItems = $derived([
   <div class="flex flex-wrap items-center gap-2 select-none">
     {#if classData}
       <AskOrbisButton
-        query={m.class_evaluation_ai_ask_orbis_query({ name: classData.name || classData.name_ar || "" })}
-        label={m.class_evaluation_ask_orbis_btn({ name: classData.name || classData.name_ar || "" })}
+        query={academics.class_evaluation_ai_ask_orbis_query({ name: classData.name || classData.name_ar || "" })}
+        label={academics.class_evaluation_ask_orbis_btn({ name: classData.name || classData.name_ar || "" })}
         variant="outline"
         size="sm"
         class="h-8 text-[11px]"
@@ -120,10 +122,10 @@ const menuItems = $derived([
       variant="outline"
       size="sm"
       class="h-8 text-[11px] gap-1.5 font-semibold shrink-0"
-      onclick={() => toast.success(m.academics_class_overview_notifs_enabled ? m.academics_class_overview_notifs_enabled() : "Notifications enabled for this class")}
+      onclick={() => toast.success(academics.class_overview_notifs_enabled ? academics.class_overview_notifs_enabled() : "Notifications enabled for this class")}
     >
       <Bell size={12} />
-      {m.header_notifications ? m.header_notifications() : "Notifications"}
+      {common.header_notifications ? common.header_notifications() : "Notifications"}
     </Button>
 
     <DropdownMenu>
@@ -142,20 +144,20 @@ const menuItems = $derived([
       <DropdownMenuContent align="end" class="w-48 p-1 z-50 bg-popover border border-border shadow-md rounded-md select-none">
         <DropdownMenuItem
           class="flex items-center gap-2 px-2.5 py-2 text-[11px] font-semibold cursor-pointer text-foreground hover:bg-accent rounded-sm text-start"
-          onclick={() => toast.success(m.academics_class_overview_link_copied ? m.academics_class_overview_link_copied() : "Diagnostics link copied to clipboard")}
+          onclick={() => toast.success(academics.class_overview_link_copied ? academics.class_overview_link_copied() : "Diagnostics link copied to clipboard")}
         >
           <Share2 size={12} class="text-muted-foreground shrink-0" />
-          <span>{m.class_layout_share_link()}</span>
+          <span>{academics.class_layout_share_link()}</span>
         </DropdownMenuItem>
 
         <DropdownMenuSeparator class="bg-border/60 my-1" />
 
         <DropdownMenuItem
           class="flex items-center gap-2 px-2.5 py-2 text-[11px] font-semibold cursor-pointer text-foreground hover:bg-accent rounded-sm text-start"
-          onclick={() => toast.info(m.academics_class_overview_more_opts ? m.academics_class_overview_more_opts() : "More diagnostic options")}
+          onclick={() => toast.info(academics.class_overview_more_opts ? academics.class_overview_more_opts() : "More diagnostic options")}
         >
           <MoreHorizontal size={12} class="text-muted-foreground shrink-0" />
-          <span>{m.class_layout_more_options()}</span>
+          <span>{academics.class_layout_more_options()}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -165,7 +167,7 @@ const menuItems = $derived([
 
     <!-- Priority Indicator -->
     <div class="flex items-center gap-1.5 font-sans">
-      <span class="text-[10px] text-muted-foreground">{m.academics_class_overview_priority ? m.academics_class_overview_priority() : "Priority:"}</span>
+      <span class="text-[10px] text-muted-foreground">{academics.class_overview_priority ? academics.class_overview_priority() : "Priority:"}</span>
       <Badge variant={selectedPriority === "critical" ? "destructive" : "secondary"} class="text-[9px] py-0.5 px-2 font-bold select-none cursor-pointer">
         {selectedPriority}
       </Badge>
@@ -180,8 +182,8 @@ const menuItems = $derived([
   <!-- Detail Page Header -->
   <DetailPageHeader
     backHref={`/${orgId}/academics/classes`}
-    backLabel={m.academics_layout_nav_classes
-      ? m.academics_layout_nav_classes()
+    backLabel={academics.layout_nav_classes
+      ? academics.layout_nav_classes()
       : "الفصول"}
     actions={headerActions}
   >

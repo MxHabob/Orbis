@@ -2,7 +2,7 @@ import { goto } from "$app/navigation";
 import { authStore } from "$lib/stores";
 import { commands } from "$lib/core/ipc";
 import { toast } from "svelte-sonner";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 import { localizeHref } from "$lib/paraglide/runtime";
 
 import { PersonalInfoState } from "./state/personal-info.svelte";
@@ -133,7 +133,7 @@ export class StudentFormState {
         const match = duplicates[0];
         this.duplicateWarnings = {
           ...this.duplicateWarnings,
-          [field]: m.form_guardian_duplicate_warning({ name: match.full_name }),
+          [field]: common.form_guardian_duplicate_warning({ name: match.full_name }),
         };
       } else {
         this.duplicateWarnings = {
@@ -155,7 +155,7 @@ export class StudentFormState {
     return (
       this.classes.find((c) => String(c.id) === this.personal.classId)?.name ||
       this.classes.find((c) => String(c.id) === this.personal.classId)?.name_ar ||
-      m.form_select_class()
+      common.form_select_class()
     );
   }
 
@@ -222,15 +222,15 @@ export class StudentFormState {
   // Save operation
   async handleSave(queryClient?: any) {
     if (!this.personal.nameAr.trim()) {
-      toast.error(m.form_error_name_required());
+      toast.error(common.form_error_name_required());
       return;
     }
     if (!this.personal.classId) {
-      toast.error(m.form_error_class_required());
+      toast.error(common.form_error_class_required());
       return;
     }
     if (this.requiredFields.national_id && !this.personal.nationalId.trim()) {
-      toast.error(m.form_error_national_id_required());
+      toast.error(common.form_error_national_id_required());
       return;
     }
 
@@ -243,7 +243,7 @@ export class StudentFormState {
       const accounts = await commands.finance.listAccounts(this.orgId);
       const hasControlAccount = accounts.some((acc) => acc.code === "110301");
       if (!hasControlAccount) {
-        toast.error(m.form_error_control_account_missing());
+        toast.error(common.form_error_control_account_missing());
         this.isSaving = false;
         return;
       }
@@ -263,7 +263,7 @@ export class StudentFormState {
 
       if (this.isEditMode) {
         const originalStudent = this.originalStudent;
-        if (!originalStudent) throw new Error(m.form_error_enrollment_not_found());
+        if (!originalStudent) throw new Error(common.form_error_enrollment_not_found());
 
         targetStudentId = String(originalStudent.student_id);
         await commands.iam.updateUser(targetStudentId, studentUserData);
@@ -275,7 +275,7 @@ export class StudentFormState {
         if (originalStudent.status !== this.registrationStatus) {
           await commands.platform.transitionEnrollmentStatus(this.orgId, this.studentId!, this.registrationStatus);
         }
-        toast.success(m.form_success_update());
+        toast.success(common.form_success_update());
       } else {
         const firstGuardian = this.guardian.linkedGuardians[0];
         
@@ -295,7 +295,7 @@ export class StudentFormState {
         targetStudentId = String(res.user_id);
         targetEnrollmentId = String(res.enrollment_id);
         
-        toast.success(m.form_success_create());
+        toast.success(common.form_success_create());
       }
 
       // Save multi-guardian links
@@ -395,7 +395,7 @@ export class StudentFormState {
         }
       }
       console.error("Save error:", e);
-      toast.error(m.form_error_save({ error: e.message || String(e) }));
+      toast.error(common.form_error_save({ error: e.message || String(e) }));
     } finally {
       this.isSaving = false;
     }

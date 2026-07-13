@@ -5,7 +5,8 @@ import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { themeStore, authStore } from "$lib/stores";
 import { toast } from "svelte-sonner";
-import * as m from "$lib/paraglide/messages";
+import * as settings from "$lib/paraglide/messages/settings";
+import * as common from "$lib/paraglide/messages/common";
 import { getLocale, setLocale } from "$lib/paraglide/runtime";
 
 // Component imports
@@ -117,16 +118,16 @@ async function handleSaveDetails(e: Event) {
     themeStore.set(selectedTheme);
 
     toast.success(
-      m.account_save_success
-        ? m.account_save_success()
+      common.account_save_success
+        ? common.account_save_success()
         : "تم حفظ تفاصيل الحساب بنجاح",
     );
   } catch (e) {
     console.error("Failed to update user details:", e);
     const msg = (e as any)?.message || String(e);
     toast.error(
-      m.account_save_error
-        ? m.account_save_error({ error: msg })
+      common.account_save_error
+        ? common.account_save_error({ error: msg })
         : `خطأ أثناء حفظ تفاصيل الحساب: ${msg}`,
     );
   } finally {
@@ -149,16 +150,16 @@ async function handleSaveAvatar(e: Event) {
     localStorage.setItem("orbis_user", JSON.stringify(updatedUser));
 
     toast.success(
-      m.account_save_success
-        ? m.account_save_success()
+      common.account_save_success
+        ? common.account_save_success()
         : "تم حفظ تفاصيل الحساب بنجاح",
     );
   } catch (e) {
     console.error("Failed to update avatar:", e);
     const msg = (e as any)?.message || String(e);
     toast.error(
-      m.account_save_error
-        ? m.account_save_error({ error: msg })
+      common.account_save_error
+        ? common.account_save_error({ error: msg })
         : `خطأ أثناء حفظ تفاصيل الحساب: ${msg}`,
     );
   } finally {
@@ -169,7 +170,7 @@ async function handleSaveAvatar(e: Event) {
 
 <svelte:head>
   <title>
-    {m.account_settings_title ? m.account_settings_title() : 'إعدادات الحساب'} | Orbis
+    {common.account_settings_title ? common.account_settings_title() : 'إعدادات الحساب'} | Orbis
   </title>
 </svelte:head>
 
@@ -208,7 +209,7 @@ async function handleSaveAvatar(e: Event) {
             class="px-6 font-semibold h-9 text-xs"
             disabled={isSavingDetails}
           >
-            {isSavingDetails ? m.settings_general_saving() : (m.account_save_changes_btn ? m.account_save_changes_btn() : 'Save Changes')}
+            {isSavingDetails ? settings.general_saving() : (common.action_save ? common.action_save() : 'Save Changes')}
           </Button>
         </div>
       </form>

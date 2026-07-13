@@ -10,7 +10,8 @@ import {
   CardFooter,
 } from "@orbis/ui-svelte/card";
 import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
-import * as m from "$lib/paraglide/messages";
+import * as settings from "$lib/paraglide/messages/settings";
+import * as common from "$lib/paraglide/messages/common";
 
 interface Props {
   avatarUrl: string | null;
@@ -34,7 +35,7 @@ let {
   <!-- Card Header -->
   <CardHeader class="bg-muted/50 px-6 py-3 border-b border-border">
     <CardTitle class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-      {m.account_avatar_section ? m.account_avatar_section() : 'AVATAR'}
+      {common.account_avatar_section ? common.account_avatar_section() : 'AVATAR'}
     </CardTitle>
   </CardHeader>
 
@@ -48,7 +49,7 @@ let {
           fallbackText={fullName}
         />
         {#if useGravatar}
-          <span class="text-xs font-semibold text-muted-foreground">{m.account_avatar_use_gravatar ? m.account_avatar_use_gravatar() : 'Use Gravatar'} (Active)</span>
+          <span class="text-xs font-semibold text-muted-foreground">{common.account_avatar_use_gravatar ? common.account_avatar_use_gravatar() : 'Use Gravatar'} (Active)</span>
         {/if}
       </div>
 
@@ -56,10 +57,10 @@ let {
         <Checkbox id="use_gravatar" bind:checked={useGravatar} />
         <div class="flex flex-col text-start leading-relaxed">
           <Label for="use_gravatar" class="text-xs font-semibold text-foreground cursor-pointer">
-            {m.account_avatar_use_gravatar ? m.account_avatar_use_gravatar() : 'Use Gravatar'}
+            {common.account_avatar_use_gravatar ? common.account_avatar_use_gravatar() : 'Use Gravatar'}
           </Label>
           <span class="text-[10px] text-muted-foreground leading-normal">
-            {m.account_avatar_gravatar_desc ? m.account_avatar_gravatar_desc() : 'Manage your Gravatar on gravatar.com.'}
+            {common.account_avatar_gravatar_desc ? common.account_avatar_gravatar_desc() : 'Manage your Gravatar on gravatar.com.'}
           </span>
         </div>
       </div>
@@ -74,7 +75,7 @@ let {
       onclick={onsave}
       disabled={isSavingAvatar}
     >
-      {isSavingAvatar ? m.settings_general_saving() : (m.account_avatar_save_btn ? m.account_avatar_save_btn() : 'Save Avatar')}
+      {isSavingAvatar ? settings.general_saving() : (common.action_save ? common.action_save() : 'Save Avatar')}
     </Button>
   </CardFooter>
 </Card>

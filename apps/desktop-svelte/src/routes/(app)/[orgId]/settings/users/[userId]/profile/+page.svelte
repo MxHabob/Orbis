@@ -21,7 +21,7 @@ import {
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
-import * as m from "$lib/paraglide/messages";
+import * as settings from "$lib/paraglide/messages/settings";
 
 const orgId = $derived(page.params.orgId);
 const userId = $derived(page.params.userId);
@@ -65,7 +65,7 @@ async function loadUser() {
       fetched.is_active !== undefined ? Boolean(fetched.is_active) : true;
   } catch (e) {
     console.error("Failed to load user:", e);
-    toast.error(m.settings_user_detail_load_error());
+    toast.error(settings.user_detail_load_error());
   } finally {
     isLoading = false;
   }
@@ -77,8 +77,8 @@ async function toggleAccountStatus() {
   if (!userId || !user) return;
   const nextState = !isActiveState;
   const confirmMsg = nextState
-    ? m.settings_user_detail_activate_confirm()
-    : m.settings_user_detail_deactivate_confirm();
+    ? settings.user_detail_activate_confirm()
+    : settings.user_detail_deactivate_confirm();
   if (!confirm(confirmMsg)) return;
 
   isSaving = true;
@@ -88,8 +88,8 @@ async function toggleAccountStatus() {
     isActiveState = nextState;
     toast.success(
       nextState
-        ? m.settings_user_detail_activate_success()
-        : m.settings_user_detail_deactivate_success(),
+        ? settings.user_detail_activate_success()
+        : settings.user_detail_deactivate_success(),
     );
   } catch (e: unknown) {
     toast.error((e as any)?.message || "Failed");
@@ -117,7 +117,7 @@ async function saveProfile() {
       await commands.iam.saveUserRoles(userId, [role]);
     }
 
-    toast.success(m.settings_user_detail_saved());
+    toast.success(settings.user_detail_saved());
     loadUser();
   } catch (e: unknown) {
     toast.error((e as any)?.message || "Save failed");
@@ -163,7 +163,7 @@ async function saveProfile() {
       <!-- Email -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label for="email" class="text-xs font-medium text-muted-foreground">
-          {m.settings_user_detail_label_email()} *
+          {settings.user_detail_label_email()} *
         </Label>
         <Input id="email" type="email" bind:value={email} required />
       </div>
@@ -174,7 +174,7 @@ async function saveProfile() {
           for="fullName"
           class="text-xs font-medium text-muted-foreground"
         >
-          {m.settings_user_detail_label_fullname()}
+          {settings.user_detail_label_fullname()}
         </Label>
         <Input id="fullName" type="text" bind:value={fullName} />
       </div>
@@ -182,7 +182,7 @@ async function saveProfile() {
       <!-- Primary Role -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label for="role" class="text-xs font-medium text-muted-foreground">
-          {m.settings_user_detail_label_primary_role()}
+          {settings.user_detail_label_primary_role()}
         </Label>
         <Select
           type="single"
@@ -203,7 +203,7 @@ async function saveProfile() {
       <!-- Arabic Name -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label for="nameAr" class="text-xs font-medium text-muted-foreground">
-          {m.settings_user_detail_label_fullname_ar()}
+          {settings.user_detail_label_fullname_ar()}
         </Label>
         <Input id="nameAr" type="text" bind:value={nameAr} />
       </div>
@@ -211,7 +211,7 @@ async function saveProfile() {
       <!-- English Name -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label for="nameEn" class="text-xs font-medium text-muted-foreground">
-          {m.settings_user_detail_label_fullname_en()}
+          {settings.user_detail_label_fullname_en()}
         </Label>
         <Input id="nameEn" type="text" bind:value={nameEn} />
       </div>
@@ -219,7 +219,7 @@ async function saveProfile() {
       <!-- Phone -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label for="phone" class="text-xs font-medium text-muted-foreground">
-          {m.settings_user_detail_label_phone()}
+          {settings.user_detail_label_phone()}
         </Label>
         <Input id="phone" type="text" bind:value={phone} />
       </div>
@@ -227,7 +227,7 @@ async function saveProfile() {
 
     <div class="flex justify-end gap-3 border-t border-border/20 pt-6 mt-4">
       <Button variant="ghost" size="sm" onclick={loadUser}>
-        {m.settings_user_detail_btn_reset()}
+        {settings.user_detail_btn_reset()}
       </Button>
       <Button
         variant="lime"
@@ -236,7 +236,7 @@ async function saveProfile() {
         onclick={saveProfile}
         disabled={isSaving}
       >
-        {isSaving ? "..." : m.settings_user_detail_btn_save_details()}
+        {isSaving ? "..." : settings.user_detail_btn_save_details()}
       </Button>
     </div>
   </div>

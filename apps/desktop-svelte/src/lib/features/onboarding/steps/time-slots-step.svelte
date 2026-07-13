@@ -6,7 +6,8 @@
 import { Input } from "@orbis/ui-svelte/input";
 import { Button } from "@orbis/ui-svelte/button";
 import { Plus, Trash } from "lucide-svelte";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
+
 import { onboardingState } from "../state.svelte";
 
 let newSlotName = $state("");
@@ -35,12 +36,12 @@ function handleAddTimeSlot() {
     <div class="min-w-[850px] divide-y divide-border/60">
       <!-- Header Row -->
       <div class="grid grid-cols-[60px_2fr_2fr_1.5fr_1.5fr_1.2fr_auto] gap-4 p-4 bg-muted/20 text-xs font-semibold text-muted-foreground select-none text-start items-center">
-        <span class="text-center">{m.onboarding_schedule_col_num()}</span>
-        <span>{m.onboarding_schedule_name_ar()}</span>
-        <span>{m.onboarding_schedule_name_en()}</span>
-        <span>{m.onboarding_schedule_col_start()}</span>
-        <span>{m.onboarding_schedule_col_end()}</span>
-        <span class="text-center">{m.onboarding_schedule_col_duration()}</span>
+        <span class="text-center">{common.onboarding_schedule_col_num()}</span>
+        <span>{common.onboarding_schedule_name_ar()}</span>
+        <span>{common.onboarding_schedule_name_en()}</span>
+        <span>{common.onboarding_schedule_col_start()}</span>
+        <span>{common.onboarding_schedule_col_end()}</span>
+        <span class="text-center">{common.onboarding_schedule_col_duration()}</span>
         <span class="w-8"></span>
       </div>
 
@@ -50,10 +51,10 @@ function handleAddTimeSlot() {
         <span class="text-center text-xs font-mono text-muted-foreground/60">+</span>
 
         <!-- Name Ar -->
-        <Input bind:value={newSlotNameAr} placeholder={m.onboarding_schedule_name_ar()} class="h-8 text-xs font-bold font-sans bg-background/50 border-dashed border-border/80" />
+        <Input bind:value={newSlotNameAr} placeholder={common.onboarding_schedule_name_ar()} class="h-8 text-xs font-bold font-sans bg-background/50 border-dashed border-border/80" />
 
         <!-- Name En -->
-        <Input bind:value={newSlotName} placeholder={m.onboarding_schedule_name_en()} class="h-8 text-xs font-mono text-left font-sans bg-background/50 border-dashed border-border/80" style="direction: ltr;" />
+        <Input bind:value={newSlotName} placeholder={common.onboarding_schedule_name_en()} class="h-8 text-xs font-mono text-left font-sans bg-background/50 border-dashed border-border/80" style="direction: ltr;" />
 
         <!-- Start Time -->
         <Input type="time" bind:value={newSlotStart} class="h-8 text-xs font-mono bg-background/50 border-dashed border-border/80" />
@@ -96,7 +97,7 @@ function handleAddTimeSlot() {
           <!-- Duration -->
           <div class="text-center">
             <span class="text-xs bg-muted text-muted-foreground border border-border px-2 py-0.5 rounded font-sans">
-              {m.onboarding_schedule_duration_value({ minutes: dur })}
+              {common.onboarding_schedule_duration_value({ minutes: dur })}
             </span>
           </div>
 

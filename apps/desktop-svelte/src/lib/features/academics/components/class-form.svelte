@@ -5,7 +5,7 @@ import { Input } from "@orbis/ui-svelte/input";
 import { SheetHeader, SheetTitle } from "@orbis/ui-svelte/sheet";
 import InputColor from "$lib/shared/components/input-color.svelte";
 import { toast } from "svelte-sonner";
-import * as m from "$lib/paraglide/messages";
+import * as academics from "$lib/paraglide/messages/academics";
 
 let {
   orgId,
@@ -29,7 +29,7 @@ let color = $state("");
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   if (!nameAr && !name) {
-    toast.error(m.class_toast_error_name());
+    toast.error(academics.class_toast_error_name());
     return;
   }
   isSubmitting = true;
@@ -43,7 +43,7 @@ async function handleSubmit(e: SubmitEvent) {
       color: color || undefined,
     };
     await commands.academic.createClass(orgId, request);
-    toast.success(m.class_toast_success());
+    toast.success(academics.class_toast_success());
 
     // Reset fields
     name = "";
@@ -56,7 +56,7 @@ async function handleSubmit(e: SubmitEvent) {
     onSuccess();
   } catch (e) {
     const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(m.class_toast_error_submit({ error: errorMsg }));
+    toast.error(academics.class_toast_error_submit({ error: errorMsg }));
   } finally {
     isSubmitting = false;
   }
@@ -66,7 +66,7 @@ async function handleSubmit(e: SubmitEvent) {
 <form onsubmit={handleSubmit} class="flex flex-col h-full overflow-hidden gap-0">
 	<SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
 		<SheetTitle class="text-xl font-bold text-foreground">
-			{m.class_sheet_title()}
+			{academics.class_sheet_title()}
 		</SheetTitle>
 	</SheetHeader>
 
@@ -74,10 +74,10 @@ async function handleSubmit(e: SubmitEvent) {
 		<!-- Name (Arabic) -->
 		<div class="flex flex-col gap-2 text-start">
 			<label for="name_ar" class="text-sm font-medium text-foreground">
-				{m.class_label_name_ar()}
+				{academics.class_label_name_ar()}
 			</label>
 			<InputColor
-				placeholder={m.class_placeholder_name_ar()}
+				placeholder={academics.class_placeholder_name_ar()}
 				bind:value={nameAr}
 				bind:color={color}
 				required
@@ -87,7 +87,7 @@ async function handleSubmit(e: SubmitEvent) {
 		<!-- Name (English) -->
 		<div class="flex flex-col gap-2 text-start">
 			<label for="name_en" class="text-sm font-medium text-foreground">
-				{m.class_label_name_en()}
+				{academics.class_label_name_en()}
 			</label>
 			<Input 
 				id="name_en"
@@ -102,7 +102,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Class Code -->
 			<div class="flex flex-col gap-2 text-start">
 				<label for="code" class="text-sm font-medium text-foreground">
-					{m.class_label_code()}
+					{academics.class_label_code()}
 				</label>
 				<Input 
 					id="code"
@@ -115,7 +115,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Grade Level -->
 			<div class="flex flex-col gap-2 text-start">
 				<label for="grade" class="text-sm font-medium text-foreground">
-					{m.class_label_grade()}
+					{academics.class_label_grade()}
 				</label>
 				<Input 
 					id="grade"
@@ -129,7 +129,7 @@ async function handleSubmit(e: SubmitEvent) {
 		<!-- Capacity -->
 		<div class="flex flex-col gap-2 text-start">
 			<label for="capacity" class="text-sm font-medium text-foreground">
-				{m.class_label_capacity()}
+				{academics.class_label_capacity()}
 			</label>
 			<Input 
 				id="capacity"
@@ -149,7 +149,7 @@ async function handleSubmit(e: SubmitEvent) {
 			onclick={onCancel}
 			disabled={isSubmitting}
 		>
-			{m.class_button_cancel()}
+			{academics.class_button_cancel()}
 		</Button>
 		<Button 
 			type="submit" 
@@ -157,7 +157,7 @@ async function handleSubmit(e: SubmitEvent) {
 			class="font-semibold"
 			disabled={isSubmitting}
 		>
-			{isSubmitting ? m.class_toast_saving() : m.class_button_save()}
+			{isSubmitting ? academics.class_toast_saving() : academics.class_button_save()}
 		</Button>
 	</div>
 </form>

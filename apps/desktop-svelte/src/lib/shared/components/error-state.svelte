@@ -1,11 +1,11 @@
 <script lang="ts">
   import { AlertCircle, RefreshCcw } from "lucide-svelte";
   import { Button } from "@orbis/ui-svelte/button";
-  import * as m from "$lib/paraglide/messages";
+  import * as common from "$lib/paraglide/messages/common";
 
   let {
-    title = m.error_state_title(),
-    message = m.error_state_message(),
+    title = common.error_state_title(),
+    message = common.error_state_message(),
     onRetry,
   }: {
     title?: string;
@@ -25,7 +25,7 @@
   {#if onRetry}
     <Button variant="outline" onclick={onRetry}>
       <RefreshCcw class="w-4 h-4 mr-2" />
-      {m.retry_button()}
+      {common.action_retry()}
     </Button>
   {/if}
 </div>

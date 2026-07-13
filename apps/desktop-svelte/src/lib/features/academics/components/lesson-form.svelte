@@ -13,7 +13,7 @@ import { ShieldAlert, Calendar } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 
 let {
   orgId,
@@ -48,11 +48,11 @@ let conflictError = $state<string | null>(null);
 let isCheckingConflict = $state(false);
 
 const weekdays = $derived([
-  { value: 1, label: m.schedule_page_day_sun() },
-  { value: 2, label: m.schedule_page_day_mon() },
-  { value: 3, label: m.schedule_page_day_tue() },
-  { value: 4, label: m.schedule_page_day_wed() },
-  { value: 5, label: m.schedule_page_day_thu() },
+  { value: 1, label: common.schedule_page_day_sun() },
+  { value: 2, label: common.schedule_page_day_mon() },
+  { value: 3, label: common.schedule_page_day_tue() },
+  { value: 4, label: common.schedule_page_day_wed() },
+  { value: 5, label: common.schedule_page_day_thu() },
 ]);
 
 // Check conflict when teacher, room or subject selection changes
@@ -78,7 +78,7 @@ async function checkScheduleConflict() {
     });
     if (conflicts && conflicts.length > 0) {
       const first = conflicts[0] as any;
-      conflictError = m.lesson_sheet_conflict_err({
+      conflictError = common.lesson_sheet_conflict_err({
         type: String(first.conflict_type || ""),
       });
     }
@@ -92,7 +92,7 @@ async function checkScheduleConflict() {
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   if (!formSubjectId) {
-    toast.error(m.lesson_toast_error_subject());
+    toast.error(common.lesson_toast_error_subject());
     return;
   }
   isSubmitting = true;
@@ -107,7 +107,7 @@ async function handleSubmit(e: SubmitEvent) {
       room: formRoom || undefined,
     };
     await commands.scheduling.createLesson(orgId, request);
-    toast.success(m.lesson_toast_success());
+    toast.success(common.lesson_toast_success());
 
     // Reset fields
     formSubjectId = "";
@@ -117,7 +117,7 @@ async function handleSubmit(e: SubmitEvent) {
 
     onSuccess();
   } catch (e) {
-    toast.error(m.lesson_toast_error());
+    toast.error(common.lesson_toast_error());
   } finally {
     isSubmitting = false;
   }
@@ -128,7 +128,7 @@ async function handleSubmit(e: SubmitEvent) {
 	<SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
 		<SheetTitle class="text-xl font-bold text-foreground flex items-center gap-2">
 			<Calendar size={18} class="text-primary" />
-			<span>{m.lesson_sheet_title()}</span>
+			<span>{common.lesson_sheet_title()}</span>
 		</SheetTitle>
 	</SheetHeader>
 
@@ -144,11 +144,11 @@ async function handleSubmit(e: SubmitEvent) {
 		<!-- Subject Selector -->
 		<div class="flex flex-col gap-2 text-start">
 			<label for="sched_sub" class="text-sm font-medium text-foreground">
-				{m.lesson_label_subject()}
+				{common.lesson_label_subject()}
 			</label>
 			<Select type="single" value={formSubjectId} onValueChange={(v) => (formSubjectId = v ?? "")}>
 				<SelectTrigger class="h-9 text-sm w-full">
-					{subjects.find(sub => String(sub.id) === formSubjectId)?.name_ar || subjects.find(sub => String(sub.id) === formSubjectId)?.name || m.lesson_option_select_subject()}
+					{subjects.find(sub => String(sub.id) === formSubjectId)?.name_ar || subjects.find(sub => String(sub.id) === formSubjectId)?.name || common.lesson_option_select_subject()}
 				</SelectTrigger>
 				<SelectContent>
 					{#each subjects as sub (sub.id)}
@@ -161,14 +161,14 @@ async function handleSubmit(e: SubmitEvent) {
 		<!-- Teacher Selector -->
 		<div class="flex flex-col gap-2 text-start">
 			<label for="sched_teach" class="text-sm font-medium text-foreground">
-				{m.lesson_label_teacher()}
+				{common.lesson_label_teacher()}
 			</label>
 			<Select type="single" value={formTeacherId} onValueChange={(v) => (formTeacherId = v ?? "")}>
 				<SelectTrigger class="h-9 text-sm w-full">
-					{teachers.find(teach => String(teach.id) === formTeacherId) ? (getLocale() === "ar" ? (teachers.find(teach => String(teach.id) === formTeacherId).name_ar || teachers.find(teach => String(teach.id) === formTeacherId).full_name) : teachers.find(teach => String(teach.id) === formTeacherId).full_name) : m.lesson_option_no_teacher()}
+					{teachers.find(teach => String(teach.id) === formTeacherId) ? (getLocale() === "ar" ? (teachers.find(teach => String(teach.id) === formTeacherId).name_ar || teachers.find(teach => String(teach.id) === formTeacherId).full_name) : teachers.find(teach => String(teach.id) === formTeacherId).full_name) : common.lesson_option_no_teacher()}
 				</SelectTrigger>
 				<SelectContent>
-					<SelectItem value="">{m.lesson_option_no_teacher()}</SelectItem>
+					<SelectItem value="">{common.lesson_option_no_teacher()}</SelectItem>
 					{#each teachers as teach (teach.id)}
 						<SelectItem value={String(teach.id)}>{getLocale() === "ar" ? (teach.name_ar || teach.full_name) : teach.full_name}</SelectItem>
 					{/each}
@@ -179,7 +179,7 @@ async function handleSubmit(e: SubmitEvent) {
 		<!-- Room Number -->
 		<div class="flex flex-col gap-2 text-start">
 			<label for="sched_room" class="text-sm font-medium text-foreground">
-				{m.lesson_label_room()}
+				{common.lesson_label_room()}
 			</label>
 			<Input 
 				id="sched_room"
@@ -198,7 +198,7 @@ async function handleSubmit(e: SubmitEvent) {
 			onclick={onCancel}
 			disabled={isSubmitting}
 		>
-			{m.lesson_button_cancel()}
+			{common.action_cancel()}
 		</Button>
 		<Button 
 			type="submit" 
@@ -206,7 +206,7 @@ async function handleSubmit(e: SubmitEvent) {
 			class="font-semibold"
 			disabled={isSubmitting || !!conflictError}
 		>
-			{isSubmitting ? m.lesson_toast_saving() : m.lesson_button_save()}
+			{isSubmitting ? common.lesson_toast_saving() : common.action_save()}
 		</Button>
 	</div>
 </form>

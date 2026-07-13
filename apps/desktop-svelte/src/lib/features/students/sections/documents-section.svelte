@@ -2,7 +2,7 @@
 import { Button } from "@orbis/ui-svelte/button";
 import { Checkbox } from "@orbis/ui-svelte/checkbox";
 import { Label } from "@orbis/ui-svelte/label";
-import * as m from "$lib/paraglide/messages";
+import * as common from "$lib/paraglide/messages/common";
 import type { StudentFormState } from "../student-form-state.svelte";
 
 let { state }: { state: StudentFormState } = $props();
@@ -16,11 +16,11 @@ const docTypes = $derived.by(() => {
   }
   // Fallback
   return [
-    { id: "birth_certificate", label: m.form_doc_birth_certificate() },
-    { id: "national_id", label: m.form_doc_national_id() },
+    { id: "birth_certificate", label: common.form_doc_birth_certificate() },
+    { id: "national_id", label: common.form_doc_national_id() },
     {
       id: "previous_record",
-      label: m.form_doc_previous_record(),
+      label: common.form_doc_previous_record(),
     },
   ];
 });
@@ -28,7 +28,7 @@ const docTypes = $derived.by(() => {
 
 <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
   <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-    {m.form_documents_title()}
+    {common.form_documents_title()}
   </div>
 
   <div class="p-6">
