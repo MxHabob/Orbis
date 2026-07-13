@@ -1,5 +1,4 @@
 <script lang="ts">
-import { onMount } from "svelte";
 import { readable } from "svelte/store";
 import { page } from "$app/state";
 import { commands } from "$lib/core/ipc";
@@ -278,16 +277,14 @@ async function handleMoveLesson(
         ? "جاري التحقق من وجود تضاربات..."
         : "Checking for conflicts...",
     );
-    const conflicts = await commands.scheduling.checkConflicts({
-      orgId: data.orgId,
-      periodId: activePeriodId,
-      timeSlotId: targetSlotId,
-      dayOfWeek: targetDay,
-      teacherId: lesson.teacher_id,
-      classId: lesson.class_id,
-      roomId: lesson.room_id || undefined,
-      excludeId: lesson.id,
-    });
+    const conflicts = await commands.scheduling.checkConflicts(
+      data.orgId,
+      activePeriodId,
+      lesson.teacher_id,
+      targetSlotId,
+      targetDay,
+      lesson.room_id || undefined
+    );
 
     toast.dismiss();
 
@@ -304,10 +301,10 @@ async function handleMoveLesson(
       return;
     }
 
-    await commands.scheduling.updateLesson(data.orgId, lesson.id, {
+    await commands.scheduling.updateLesson(lesson.id, {
       day_of_week: targetDay,
       time_slot_id: targetSlotId,
-    });
+    } as any);
     toast.success(
       getLocale() === "ar" ? "تم نقل الحصة بنجاح" : "Lesson moved successfully",
     );
@@ -358,7 +355,7 @@ function getClassName(classId: string) {
 }
 
 function getSubjectColor(subjectId: string) {
-  const sub = subjects.find((s) => String(s.id) === String(subjectId));
+  const sub = subjects.find((s) => String(s.id) === String(subjectId)) as any;
   return sub ? sub.color : "#9ca3af";
 }
 
@@ -388,7 +385,7 @@ function openScheduler(day: number, slotId: string) {
     <!-- Timetable Grid Content -->
     <ScheduleTimetableWrapper
       {isLoading}
-      {error}
+      error={error?.message || null}
       {timeSlots}
       {weekdays}
       {lessons}

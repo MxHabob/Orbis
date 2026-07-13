@@ -12,11 +12,15 @@ class OnboardingState {
   finance = new FinanceInfoState();
 
   reset() {
-    this.profile.reset();
-    this.calendar.reset();
-    this.facilities.reset();
-    this.academics.reset();
-    this.finance.reset();
+    this.profile = new ProfileInfoState();
+    this.calendar = new CalendarInfoState();
+    this.facilities = new FacilitiesInfoState();
+    this.academics = new AcademicsInfoState();
+    this.finance = new FinanceInfoState();
+  }
+
+  load() {
+    // Load state if needed
   }
 }
 

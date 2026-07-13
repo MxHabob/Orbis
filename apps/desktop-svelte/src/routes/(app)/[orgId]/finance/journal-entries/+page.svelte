@@ -106,7 +106,7 @@ async function loadData() {
       ),
     ]);
 
-    journalEntries = entriesList.map((je) => ({
+    journalEntries = (entriesList as any[]).map((je: any) => ({
       ...je,
       prints_count: je.prints_count || 0,
       user: je.user || "U78",

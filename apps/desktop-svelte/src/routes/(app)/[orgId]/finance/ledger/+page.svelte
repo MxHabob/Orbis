@@ -140,9 +140,9 @@ async function loadData() {
   try {
     const [ledgerList, paymentList, feeList, treasuryList] = await Promise.all([
       commands.finance.listAccounts(data.orgId),
-      commands.finance.listPayments(), // listPayments takes enrollmentId, feeId optionally
-      commands.finance.listStudentFees(""), // Wait, listStudentFees takes enrollmentId, maybe we don't need it? Let's check sdk-desktop commands.
-      commands.finance.listTreasuries(),
+      commands.finance.listPayments(data.orgId),
+      commands.finance.listAllStudentFees(data.orgId),
+      commands.finance.listTreasuries(data.orgId),
     ]);
 
     ledgers = ledgerList;

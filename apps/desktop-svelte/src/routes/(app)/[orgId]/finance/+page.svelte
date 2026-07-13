@@ -28,10 +28,12 @@ import TreasuryBalancesCard from "$lib/features/finance/components/treasury-bala
 
 let { data }: { data: { orgId: string } } = $props();
 
+import { fade } from "svelte/transition";
+
 // TanStack Queries
-const feesQuery = createStudentFeesQuery(data.orgId);
-const paymentsQuery = createPaymentsQuery(data.orgId);
-const treasuriesQuery = createTreasuriesQuery(data.orgId);
+const feesQuery = createStudentFeesQuery(() => data.orgId);
+const paymentsQuery = createPaymentsQuery(() => data.orgId);
+const treasuriesQuery = createTreasuriesQuery(() => data.orgId);
 const enrollmentsQuery = createEnrollmentsQuery(() => data.orgId);
 const classesQuery = createClassesQuery(() => data.orgId);
 
@@ -85,7 +87,7 @@ const collectionRate = $derived(
 
 const treasuryAssets = $derived(
   treasuries.reduce(
-    (sum, t) => sum + Number(t.balance || t.current_balance || 0),
+    (sum, t: any) => sum + Number(t.balance || t.current_balance || 0),
     0,
   ),
 );
@@ -158,13 +160,13 @@ const lateStudents = $derived.by(() => {
 
 // ── Recent Payments ──────────────────────────────────────────────────────
 const recentPayments = $derived.by(() => {
-  const sorted = [...payments].sort((a, b) => {
+  const sorted = [...payments].sort((a: any, b: any) => {
     const dateA = new Date(a.payment_date || a.created_at);
     const dateB = new Date(b.payment_date || b.created_at);
     return dateB.getTime() - dateA.getTime();
   });
 
-  return sorted.slice(0, 5).map((p) => {
+  return sorted.slice(0, 5).map((p: any) => {
     const enrollment = enrollments.find((e) => e.id === p.enrollment_id);
     const studentName =
       p.student_name ||
