@@ -37,6 +37,7 @@ dependencies = [
  "chrono",
  "infra-integration",
  "infra-persistence",
+ "reqwest",
  "sea-orm",
  "serde",
  "serde_json",

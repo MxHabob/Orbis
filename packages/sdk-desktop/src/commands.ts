@@ -4,7 +4,7 @@
  * Every method is a thin wrapper around `invoke("command_name", args)`.
  * NO business logic lives here — it all lives in the Rust ops:: layer.
  */
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, Channel } from "@tauri-apps/api/core";
 import type { OrbisCommands } from "@orbis/sdk-core";
 import type {
   Class,
@@ -482,7 +482,14 @@ export const commands: OrbisCommands = {
   agent: {
     listSessions: (orgId) => cmd("agent_get_sessions", { orgId }),
     createSession: (orgId, type) => cmd("agent_create_session", { orgId, type }),
-    query: (orgId, sessionId, text, context?) => cmd("agent_query", { orgId, sessionId, text, context }),
+    query: (orgId: string, sessionId: string, text: string, context?: any, onChunk?: (chunk: string) => void) => {
+      if (onChunk) {
+        const channel = new Channel<string>();
+        channel.onmessage = onChunk;
+        return cmd("agent_query", { orgId, sessionId, text, context, onChunk: channel });
+      }
+      return cmd("agent_query", { orgId, sessionId, text, context });
+    },
     openStandaloneWindow: (orgId) => cmd("agent_open_standalone", { orgId }),
   },
   docforge: {

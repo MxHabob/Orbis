@@ -8,8 +8,9 @@
 
 use chrono::Utc;
 use sea_orm::{DatabaseConnection, EntityTrait, ColumnTrait, QueryFilter, ActiveModelTrait, Set};
-use tracing::info;
 use uuid::Uuid;
+use std::sync::Arc;
+use tracing::info;
 
 use shared_kernel::errors::AppError;
 use shared_kernel::types::RiskLevel;
@@ -142,5 +143,46 @@ impl AgentSessionManager {
             .filter(ai_agent_session::Column::Status.eq(session_status::ACTIVE))
             .all(db)
             .await?)
+    }
+
+    /// Query the agent (simple placeholder for Agent Runtime).
+    pub async fn query(
+        db: &DatabaseConnection,
+        event_bus: Arc<shared_kernel::event_bus::EventBus>,
+        org_id: &str,
+        session_id: &str,
+        text: &str,
+        context: Option<serde_json::Value>,
+    ) -> Result<String, AppError> {
+        let session = Self::get_session(db, session_id).await?;
+        
+        info!(
+            session_id,
+            org_id,
+            text_len = text.len(),
+            "Processing AI query"
+        );
+
+        use crate::llm_gateway::LlmGateway;
+        use infra_integration::adapters::gemini::GeminiAdapter;
+        use crate::action_registry::ActionRegistry;
+        use std::sync::Arc;
+
+        let config = shared_kernel::config::Config::load();
+        let adapter = Box::new(GeminiAdapter::new(config.gemini_api_key));
+        let registry = Arc::new(ActionRegistry::build());
+        let executor = crate::action_executor::ActionExecutor::new(registry.clone(), event_bus, db.clone());
+        let gateway = LlmGateway::new(adapter, registry, executor);
+
+        let response = gateway.dispatch_agent_query(
+            &session,
+            text,
+            context
+        ).await?;
+
+        // Record that an action was "suggested" or "executed" based on the query.
+        Self::record_action(db, session_id, false).await?;
+
+        Ok(response)
     }
 }

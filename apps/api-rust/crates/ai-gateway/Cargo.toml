@@ -35,6 +35,9 @@ serde_json = { workspace = true }
 tokio = { workspace = true }
 async-trait = { workspace = true }
 
+# HTTP Client
+reqwest = { workspace = true }
+
 # Identifiers & Time
 uuid = { workspace = true }
 chrono = { workspace = true }

@@ -24,6 +24,7 @@ pub struct Config {
     pub llm_provider: String,
     pub ollama_url: String,
     pub ollama_model: String,
+    pub gemini_api_key: String,
 }
 
 impl Config {
@@ -62,6 +63,8 @@ impl Config {
                 .unwrap_or_else(|_| "http://127.0.0.1:11434".to_string()),
             ollama_model: env::var("OLLAMA_MODEL")
                 .unwrap_or_else(|_| "llama3.1:8b".to_string()),
+            gemini_api_key: env::var("GEMINI_API_KEY")
+                .unwrap_or_else(|_| "".to_string()),
         }
     }
 

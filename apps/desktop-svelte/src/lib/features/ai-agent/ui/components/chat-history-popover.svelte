@@ -24,7 +24,7 @@ let {
   onSelectSession?: (sessionId: string) => void;
 } = $props();
 
-const sessionsQuery = createAgentSessionsQuery(orgId);
+const sessionsQuery = createAgentSessionsQuery(() => orgId);
 const sessions = $derived($sessionsQuery.data ?? []);
 
 let searchQuery = $state("");

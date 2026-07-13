@@ -24,13 +24,15 @@ let {
   onLinkClick: (href: string) => void;
 } = $props();
 
-function parseMarkdownLinks(text: string) {
-  const regex = /\[([^\]]+)\]\(([^)]+)\)/g;
+function parseMessageParts(text: string) {
+  const regex = /\[([^\]]+)\]\(([^)]+)\)|\[نتيجة الأداة ([^:]+):\s*([^\]]+)\]/g;
   const parts: {
-    type: "text" | "link";
+    type: "text" | "link" | "tool";
     content?: string;
     label?: string;
     href?: string;
+    toolName?: string;
+    result?: string;
   }[] = [];
   let lastIndex = 0;
   let match;
@@ -42,9 +44,15 @@ function parseMarkdownLinks(text: string) {
         content: text.substring(lastIndex, match.index),
       });
     }
-    const fullLabel = match[1];
-    const href = match[2];
-    parts.push({ type: "link", label: fullLabel, href });
+    
+    if (match[1] && match[2]) {
+      // Link
+      parts.push({ type: "link", label: match[1], href: match[2] });
+    } else if (match[3] && match[4]) {
+      // Tool result
+      parts.push({ type: "tool", toolName: match[3].trim(), result: match[4].trim() });
+    }
+    
     lastIndex = regex.lastIndex;
   }
 
@@ -66,7 +74,7 @@ function parseMarkdownLinks(text: string) {
         <!-- User message bubble on the right -->
         <div class="flex justify-end w-full">
           <div class="max-w-[85%] bg-muted text-foreground px-4 py-2.5 rounded-2xl text-[12.5px] leading-relaxed break-words font-medium shadow-sm">
-            {#each parseMarkdownLinks(msg.content) as part}
+            {#each parseMessageParts(msg.content) as part}
               {#if part.type === 'link'}
                 <button
                   type="button"
@@ -75,6 +83,14 @@ function parseMarkdownLinks(text: string) {
                 >
                   {part.label}
                 </button>
+              {:else if part.type === 'tool'}
+                <div class="my-2 p-2 rounded-lg bg-foreground/5 border border-foreground/10 text-xs flex flex-col gap-1">
+                  <div class="font-bold text-primary flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                    {part.toolName}
+                  </div>
+                  <div class="text-foreground/80 font-mono text-[11px] whitespace-pre-wrap">{part.result}</div>
+                </div>
               {:else}
                 {part.content}
               {/if}
@@ -86,7 +102,7 @@ function parseMarkdownLinks(text: string) {
         <div class="flex flex-col gap-3 w-full text-start text-[13px] text-foreground/90 leading-relaxed font-normal">
           {#if msg.content}
             <div class="wrap-break-word">
-              {#each parseMarkdownLinks(msg.content) as part}
+              {#each parseMessageParts(msg.content) as part}
                 {#if part.type === 'link'}
                   <button
                     type="button"
@@ -95,6 +111,14 @@ function parseMarkdownLinks(text: string) {
                   >
                     {part.label}
                   </button>
+                {:else if part.type === 'tool'}
+                  <div class="my-2 p-2.5 rounded-lg bg-muted border border-border shadow-sm text-xs flex flex-col gap-1.5">
+                    <div class="font-bold text-primary flex items-center gap-1.5">
+                      <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                      إجراء النظام: {part.toolName}
+                    </div>
+                    <div class="text-foreground/80 font-mono text-[11px] whitespace-pre-wrap px-1">{part.result}</div>
+                  </div>
                 {:else}
                   {part.content}
                 {/if}

@@ -20,6 +20,8 @@ let {
   headerTitle: string;
   messagesLength: number;
   currentOrgId: string;
+  viewMode?: "chat" | "cockpit";
+  onToggleView?: () => void;
   onClose: () => void;
   onOpenStandalone: () => void;
   onSelectSession: (id: string) => void;
@@ -58,8 +60,9 @@ let {
     <Button
       variant="ghost"
       size="icon-xs"
-      class="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-      title="More options"
+      onclick={onToggleView}
+      class="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer {viewMode === 'cockpit' ? 'bg-muted text-foreground' : ''}"
+      title="Activity Logs"
     >
       <MoreHorizontal size={14} />
     </Button>

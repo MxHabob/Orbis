@@ -7,7 +7,7 @@ use svc_iam::ops;
 #[utoipa::path(get, path = "/api/users")]
 pub async fn get_users(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let ctx = state.build_context(&user.org_id, &user.id);
-    let r = ops::user::list(&ctx).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
+    let r = ops::user::list(&ctx, None).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(r)
 }
 

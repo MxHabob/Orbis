@@ -17,7 +17,7 @@ import {
 import type { GradeMatrixResponse } from "$lib/tables";
 import type { CellEditEvent } from "@orbis/svelte-grid";
 
-let { data } = $fields();
+let { data } = $props();
 const orgId = $derived(data?.orgId || "");
 let periods = $derived(academicContext.allPeriods);
 let classes = $state<any[]>([]);

@@ -20,12 +20,13 @@
 // ═══════════════════════════════════════════════════════════════
 
 pub mod entities;
-pub mod action_registry;
-pub mod action_executor;
 pub mod agent;
+pub mod action_executor;
+pub mod action_registry;
+pub mod llm_gateway;
+pub mod context;
 pub mod semantic_resolver;
 pub mod insight_engine;
 pub mod data_quality;
 pub mod explainability;
 pub mod integration;
-

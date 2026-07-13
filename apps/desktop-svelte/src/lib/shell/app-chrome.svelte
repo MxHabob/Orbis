@@ -67,7 +67,7 @@ function handleKeyDown(e: KeyboardEvent) {
 			</div>
 		</div>
 		{#if uiStore.showAskOrbis}
-			{#await import("./agent-sidebar/ask-orbis-sidebar.svelte") then { default: AskOrbisSidebar }}
+			{#await import("$lib/features/ai-agent/ui/views/sidebar.svelte") then { default: AskOrbisSidebar }}
 				{#key page.url.searchParams.get("ask_orbis")}
 					<AskOrbisSidebar />
 				{/key}

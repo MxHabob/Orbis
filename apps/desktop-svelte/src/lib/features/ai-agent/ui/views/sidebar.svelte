@@ -5,28 +5,23 @@ Allows users to ask questions, select prompt suggestions, and collapse/resize.
 -->
 <script lang="ts">
 import { uiStore, authStore, aiContext } from "$lib/stores";
-import Resizer from "../resizer.svelte";
 import { Button } from "@orbis/ui-svelte/button";
-import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import * as m from "$lib/paraglide/messages";
-import { X, MoreHorizontal, Columns, Plus } from "lucide-svelte";
 import { fly } from "svelte/transition";
 import { getLocale } from "$lib/paraglide/runtime";
 import { isDesktopApp } from "$lib/core/ipc";
 import { toast } from "svelte-sonner";
-import ChatHistoryPopover from "./chat-history-popover.svelte";
-import ChatInput from "./chat-input.svelte";
+import ChatHistoryPopover from "../components/chat-history-popover.svelte";
+import ChatInput from "../components/chat-input.svelte";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
-import { createQuery } from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
-import { Badge } from "@orbis/ui-svelte/badge";
 import { createAgentSessionsQuery } from "$lib/features/ai/queries";
-import { Avatar } from "@orbis/avatar-engine";
-import AgentHeader from "./agent-header.svelte";
-import AgentCockpit from "./agent-cockpit.svelte";
-import ChatMessageList from "./chat-message-list.svelte";
-import AgentEmptyState from "./agent-empty-state.svelte";
+import AgentHeader from "../components/agent-header.svelte";
+import AgentCockpit from "../components/agent-cockpit.svelte";
+import ChatMessageList from "../components/chat-message-list.svelte";
+import AgentEmptyState from "../components/agent-empty-state.svelte";
+    import Resizer from "$lib/shell/resizer.svelte";
 
 let { isStandalone = false }: { isStandalone?: boolean } = $props();
 
@@ -34,6 +29,7 @@ const currentOrgId = $derived(page.params.orgId || authStore.orgId || "");
 
 // Agent Session & Action Log Cockpit States
 let selectedSessionId = $state<string | null>(null);
+let viewMode = $state<"chat" | "cockpit">("chat");
 
 const sessionsQuery = createAgentSessionsQuery(() => currentOrgId);
 const sessions = $derived($sessionsQuery.data ?? []);
@@ -150,12 +146,12 @@ async function openStandaloneWindow() {
   }
 }
 
-async function handleNewChat() {
-  try {
-    const newSession = await commands.agent.createSession(
-      currentOrgId,
-      "greeting",
-    );
+  async function handleNewChat(agentType: string = "default") {
+    try {
+      const newSession = await commands.agent.createSession(
+        currentOrgId,
+        agentType,
+      );
     selectedSessionId = newSession.id;
     messages = [];
   } catch (e: unknown) {
@@ -188,16 +184,31 @@ async function submitMessage(queryText?: string) {
       selectedSessionId = newSession.id;
     }
 
+    const assistantMessageId = Math.random().toString();
+    messages = [
+      ...messages,
+      { id: assistantMessageId, role: "assistant", content: "" },
+    ];
+
     const response = await commands.agent.query(
       currentOrgId,
       effectiveSessionId || "",
       text,
       aiContext.context || undefined,
+      (chunk) => {
+        const msgIndex = messages.findIndex((m) => m.id === assistantMessageId);
+        if (msgIndex !== -1) {
+          messages[msgIndex].content = chunk;
+          scrollToBottom();
+        }
+      }
     );
-    messages = [
-      ...messages,
-      { id: Math.random().toString(), role: "assistant", content: response },
-    ];
+    
+    // Ensure final response is set in case streaming didn't fire properly or at the end
+    const finalMsgIndex = messages.findIndex((m) => m.id === assistantMessageId);
+    if (finalMsgIndex !== -1) {
+      messages[finalMsgIndex].content = response;
+    }
   } catch (e: unknown) {
     messages = [
       ...messages,
@@ -250,18 +261,20 @@ function handleLinkClick(e: MouseEvent | null, href: string) {
     headerTitle={headerTitle}
     messagesLength={messages.length}
     currentOrgId={currentOrgId}
+    viewMode={viewMode}
+    onToggleView={() => viewMode = viewMode === "chat" ? "cockpit" : "chat"}
     onClose={handleClose}
     onOpenStandalone={openStandaloneWindow}
-    onSelectSession={(id) => selectedSessionId = id}
-    onNewChat={handleNewChat}
+    onSelectSession={(id) => { selectedSessionId = id; viewMode = "cockpit"; }}
+    onNewChat={() => handleNewChat("default")}
   />
 
-  {#if effectiveSessionId}
+  {#if effectiveSessionId && viewMode === "cockpit"}
     <!-- Session Activity Cockpit View -->
     <AgentCockpit
       orgId={currentOrgId}
       sessionId={effectiveSessionId}
-      onBack={() => { selectedSessionId = null; }}
+      onBack={() => { viewMode = "chat"; }}
     />
   {:else}
     <!-- Content Section -->
