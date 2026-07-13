@@ -291,7 +291,7 @@ onMount(() => {
   {:else if error}
     <div class="h-full w-full flex items-center justify-center bg-card">
       <ErrorState 
-        title="فشل تحميل المحرر" 
+        title={m.error_load_template_editor()} 
         message={error} 
         onRetry={initEditor} 
       />

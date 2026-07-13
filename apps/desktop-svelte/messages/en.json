@@ -2967,5 +2967,11 @@
   "onboarding_rooms_placeholder_en": "e.g., Classroom 1-05",
   "onboarding_review_date_range": "{start} to {end}",
   "onboarding_review_avatar_message": "I will now intelligently analyze the customized infrastructure and organizational data to grasp your school's structural layout and construct the optimal workspace for you.",
-  "onboarding_review_finish_setup": "Finish Setup"
+  "onboarding_review_finish_setup": "Finish Setup",
+  "error_state_title": "An error occurred",
+  "error_state_message": "Looks like there was an unexpected problem. Please try again.",
+  "retry_button": "Retry",
+  "error_occurred": "Error occurred",
+  "unexpected_error_message": "An unexpected error occurred. Please try again.",
+  "error_load_template_editor": "Failed to load editor"
 }

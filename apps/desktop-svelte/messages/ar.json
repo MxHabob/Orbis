@@ -2971,5 +2971,11 @@
   "onboarding_rooms_placeholder_en": "مثال: Classroom 1-05",
   "onboarding_review_date_range": "{start} إلى {end}",
   "onboarding_review_avatar_message": "سأقوم الآن بتحليل البنية التحتية والبيانات التنظيمية التي قمت بتخصيصها بذكاء، لأفهم الهيكل الإداري والتعليمي لمدرستك وأهيئ لك بيئة عمل مثالية ومتكاملة.",
-  "onboarding_review_finish_setup": "إنهاء الإعداد"
+  "onboarding_review_finish_setup": "إنهاء الإعداد",
+  "error_state_title": "حدث خطأ",
+  "error_state_message": "يبدو أن هناك مشكلة غير متوقعة. يرجى المحاولة مرة أخرى.",
+  "retry_button": "إعادة المحاولة",
+  "error_occurred": "حدث خطأ",
+  "unexpected_error_message": "خطأ غير متوقع. يرجى المحاولة مرة أخرى.",
+  "error_load_template_editor": "فشل تحميل المحرر"
 }
