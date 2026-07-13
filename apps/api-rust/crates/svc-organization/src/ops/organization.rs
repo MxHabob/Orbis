@@ -358,6 +358,7 @@ pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::
     )).await?;
 
     let mut period_id_val = String::from("default-year");
+    let mut term_period_id = String::new();
 
     // 3. Insert periods
     if let Some(periods) = payload.get("periods").and_then(|v| v.as_array()) {
@@ -380,6 +381,9 @@ pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::
                     )
                 )).await?;
             } else {
+                if term_period_id.is_empty() {
+                    term_period_id = id.to_string();
+                }
                 let mapped_ptype = if ptype == "term" { "semester" } else { "custom" };
                 let parent_val = if let Some(pid) = parent_id { format!("'{}'", pid.replace("'", "''")) } else { "NULL".to_string() };
                 txn.execute(Statement::from_string(
@@ -394,9 +398,7 @@ pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::
     }
 
     // 4. Insert classes
-    // Note: Schema expects period_id, not period_id. Since we don't have exactly the term period ID here easily, we fallback to period_id if needed,
-    // wait, actually we can just pass period_id from the frontend payload or use period_id_val as a fallback if the column allows. 
-    // In schema_baseline.sql, classes has: period_id TEXT NOT NULL. So let's use period_id_val as period_id to ensure it inserts without error.
+    let class_period_id = if term_period_id.is_empty() { &period_id_val } else { &term_period_id };
     if let Some(classes) = payload.get("classes").and_then(|v| v.as_array()) {
         for c in classes {
             let id = c.get("id").and_then(|v| v.as_str()).unwrap_or("");
@@ -408,7 +410,7 @@ pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::
                 DatabaseBackend::Sqlite,
                 format!(
                     "INSERT INTO classes (id, org_id, period_id, unit_id, name, name_ar, level, division, capacity, is_active, created_at, updated_at) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', 30, 1, '{}', '{}') ON CONFLICT DO NOTHING;",
-                    id.replace("'", "''"), ctx.org_id.replace("'", "''"), period_id_val.replace("'", "''"), root_unit_id.replace("'", "''"), name.replace("'", "''"), name_ar.replace("'", "''"), level.replace("'", "''"), div.replace("'", "''"), now, now
+                    id.replace("'", "''"), ctx.org_id.replace("'", "''"), class_period_id.replace("'", "''"), root_unit_id.replace("'", "''"), name.replace("'", "''"), name_ar.replace("'", "''"), level.replace("'", "''"), div.replace("'", "''"), now, now
                 )
             )).await?;
         }

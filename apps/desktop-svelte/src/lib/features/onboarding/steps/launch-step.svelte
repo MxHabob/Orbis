@@ -116,6 +116,13 @@ async function handleCompleteSetup() {
             </div>
           </div>
         {/if}
+
+        {#if onboardingState.errorMessage}
+          <div class="mt-4 p-3 rounded-xl border border-destructive/20 bg-destructive/5 text-destructive text-xs text-start font-sans leading-relaxed animate-in fade-in duration-200">
+            <span class="font-bold">{onboardingState.locale.startsWith("ar") ? "حدث خطأ أثناء التأسيس:" : "Setup Error:"}</span>
+            <p class="font-mono mt-1 text-[10px] opacity-90 break-words">{onboardingState.errorMessage}</p>
+          </div>
+        {/if}
       </div>
     </div>
 
