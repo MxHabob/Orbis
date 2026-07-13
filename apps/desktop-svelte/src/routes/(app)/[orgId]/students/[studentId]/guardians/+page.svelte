@@ -208,7 +208,7 @@ async function handleDelete(link: GuardianLink) {
                 <span class="text-[11px] text-muted-foreground leading-relaxed">صلة القرابة بين ولي الأمر والطالب</span>
               </div>
               <div class="w-full md:w-[480px] shrink-0 text-start font-medium text-sm text-foreground">
-                {getRelationLabel(String(link.relationship || link.relation || ""))}
+                {getRelationLabel(String(link.relationship || ""))}
               </div>
             </div>
 
@@ -223,16 +223,6 @@ async function handleDelete(link: GuardianLink) {
               </div>
             </div>
 
-            <!-- Occupation -->
-            <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
-              <div class="flex flex-col gap-1 text-start">
-                <span class="text-xs font-semibold text-foreground">المهنة / الوظيفة</span>
-                <span class="text-[11px] text-muted-foreground leading-relaxed">مهنة ولي الأمر الحالية وجهة العمل</span>
-              </div>
-              <div class="w-full md:w-[480px] shrink-0 text-start font-medium text-sm text-foreground">
-                {link.occupation ?? (link as any).job ?? "—"}
-              </div>
-            </div>
 
             <!-- Permissions -->
             <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
@@ -242,21 +232,10 @@ async function handleDelete(link: GuardianLink) {
               </div>
               <div class="w-full md:w-[480px] shrink-0 flex flex-col gap-3">
                 <div class="flex flex-wrap gap-2 justify-start">
-                  {#if link.is_primary === 1 || link.is_primary === true}
+                  {#if link.is_primary === 1 || (link as any).is_primary === true}
                     <Badge variant="brand" class="text-[10px]">{m.form_guardian_role_primary()}</Badge>
                   {/if}
-                  {#if link.is_emergency_contact === 1 || link.is_emergency_contact === true}
-                    <Badge variant="secondary" class="text-[10px]">{m.form_guardian_role_emergency()}</Badge>
-                  {/if}
-                  {#if link.is_payer === 1 || link.is_payer === true}
-                    <Badge variant="lime" class="text-[10px]">{m.form_guardian_role_payer()}</Badge>
-                  {/if}
                 </div>
-                {#if link.is_payer === 1 || link.is_payer === true}
-                  <div class="text-xs text-muted-foreground text-start">
-                    {m.form_guardian_payment_share()} <span class="font-bold text-foreground">{link.payment_share_percent ?? 0}%</span>
-                  </div>
-                {/if}
               </div>
             </div>
           </div>

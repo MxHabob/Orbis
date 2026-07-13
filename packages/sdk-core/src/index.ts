@@ -14,6 +14,23 @@
  */
 
 // ── Types ───────────────────────────────────────────────────────
+export {
+  type AcademicYear,
+  type AcademicYearInfo,
+  type AcademicContextResponse,
+  type PromotionJob,
+  type PromotionDetail,
+  type PromotionConfig,
+  type ClassMapping,
+  type OverrideRequest,
+  type AcademicPolicy,
+  type DocumentTemplate,
+  type AutopilotStatus,
+  type AutopilotTask,
+  type AgentSession,
+  type AgentActionLog,
+} from "./types/platform";
+
 export type * from "./types/index";
 export {
   type AcademicPeriod,

@@ -363,6 +363,7 @@ export const commands: OrbisCommands = {
     updateSettings: (orgId, settings) =>
       cmd("update_settings", { orgId, settings }),
     getDashboardStats: (orgId) => cmd("get_dashboard_stats", { orgId }),
+    registerStudent: (orgId, data) => cmd("register_student", { orgId, data }),
   },
 
   // ═══════════════════════════════════════════════════════════════

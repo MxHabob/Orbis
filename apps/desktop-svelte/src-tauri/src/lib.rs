@@ -302,6 +302,7 @@ pub fn run() {
 
             // Lifeperiod commands
             commands::organization::thin::get_organization,
+            commands::organization::thin::register_student,
             commands::organization::thin::get_main_organization,
             commands::organization::thin::update_organization,
             commands::organization::thin::get_settings,

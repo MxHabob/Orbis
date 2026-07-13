@@ -69,6 +69,14 @@ export interface PromotionJob {
   promoted_count?: number | null;
   retained_count?: number | null;
   graduated_count?: number | null;
+  withdrawn_count?: number | null;
+  excluded_count?: number | null;
+  error_log?: string | null;
+  rollback_available: number;
+  started_at?: string | null;
+  completed_at?: string | null;
+  rolled_back_at?: string | null;
+  rolled_back_by?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -83,11 +91,27 @@ export interface PromotionDetail {
   override_by?: string | null;
 }
 
+export interface ClassMapping {
+  source_level: string;
+  target_level: string;
+  target_class_names: string[];
+  distribution_strategy: string;
+}
+
 export interface PromotionConfig {
-  passing_score: number;
-  min_attendance_rate: number;
-  carry_over_fees: boolean;
-  auto_create_target_year: boolean;
+  source_period_id: string;
+  target_year_name: string;
+  target_year_name_ar?: string | null;
+  target_start_date: string;
+  target_end_date: string;
+  passing_score?: number | null;
+  min_attendance_rate?: number | null;
+  auto_graduate_final_level: boolean;
+  final_level?: string | null;
+  exclude_withdrawn: boolean;
+  carry_over_outstanding_fees: boolean;
+  carry_over_guardians: boolean;
+  class_mapping: ClassMapping[];
 }
 
 export interface OverrideRequest {

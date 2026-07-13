@@ -4,22 +4,14 @@ Shows a list of past promotion jobs with status, stats, and rollback option.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { commands } from "$lib/core/ipc";
 import { extractErrorMessage } from "$lib/core/ipc";
 import { toast } from "svelte-sonner";
 import {
   createPromotionJobsQuery,
   createRollbackMutation,
 } from "$lib/features/academics/year-queries";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@orbis/ui-svelte/card";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Button } from "@orbis/ui-svelte/button";
-import { Separator } from "@orbis/ui-svelte/separator";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import {
   AlertDialog,
@@ -31,14 +23,6 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@orbis/ui-svelte/alert-dialog";
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-  TableCell,
-} from "@orbis/ui-svelte/table";
 import {
   History,
   Undo2,
@@ -187,7 +171,7 @@ function statusLabel(status: string) {
               {/if}
 
               <!-- Rollback -->
-              {#if job.status === "completed" && job.rollback_available === 1}
+              {#if job.status === "completed"}
                 <Button
                   variant="ghost"
                   size="icon-xs"
@@ -217,7 +201,7 @@ function statusLabel(status: string) {
       <AlertDialogDescription>{m.promo_rollback_confirm()}</AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter>
-      <AlertDialogCancel onclick={() => rollbackTarget = null}>{m.common_cancel?.() ?? "Cancel"}</AlertDialogCancel>
+      <AlertDialogCancel onclick={() => rollbackTarget = null}>إلغاء</AlertDialogCancel>
       <AlertDialogAction onclick={handleRollback}>{m.promo_rollback()}</AlertDialogAction>
     </AlertDialogFooter>
   </AlertDialogContent>

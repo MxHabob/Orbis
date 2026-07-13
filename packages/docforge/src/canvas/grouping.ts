@@ -42,13 +42,16 @@ export function groupNodes(
     id: groupId,
     name: "Group",
     children: [],
-    position: {
-      x: combinedBounds.x,
-      y: combinedBounds.y,
-      width: combinedBounds.width,
-      height: combinedBounds.height,
-    },
     positionMode: "absolute",
+    props: {
+      position: {
+        x: combinedBounds.x,
+        y: combinedBounds.y,
+        width: combinedBounds.width,
+        height: combinedBounds.height,
+      },
+      layout: "vertical",
+    },
   };
 
   // Process pages: find the parent containing all nodeIds and replace

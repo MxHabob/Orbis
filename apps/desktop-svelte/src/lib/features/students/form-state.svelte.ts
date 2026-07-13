@@ -61,10 +61,6 @@ export class StudentFormState {
       relationship: string;
       relationship_ar: string;
       is_primary: boolean;
-      is_emergency_contact: boolean;
-      is_payer: boolean;
-      payment_share_percent: number;
-      occupation: string;
     }>
   >([
     {
@@ -73,7 +69,7 @@ export class StudentFormState {
       email: "",
       national_id: "",
       relationship: "father",
-      relationship_ar: "أب",
+      relationship_ar: "الأب",
       is_primary: true,
       is_emergency_contact: true,
       is_payer: true,
@@ -290,11 +286,6 @@ export class StudentFormState {
                     relationship: String(link.relationship || ""),
                     relationship_ar: String((link as any).relationship_ar || ""),
                     is_primary: link.is_primary === 1,
-                    is_emergency_contact: (link as any).is_emergency_contact === 1,
-                    is_payer: (link as any).is_payer === 1,
-                    payment_share_percent:
-                      Number((link as any).payment_share_percent) || 0,
-                    occupation: String(link.occupation || ""),
                   });
                 }
               } catch (err) {
@@ -358,7 +349,7 @@ export class StudentFormState {
         phone: field === "phone" ? value : undefined,
       };
       const duplicates =
-        await commands.academic.checkDuplicateEnrollment(params);
+        await commands.iam.searchUsers(value);
       if (duplicates && duplicates.length > 0) {
         const match = duplicates[0];
         this.duplicateWarnings = {
@@ -384,7 +375,7 @@ export class StudentFormState {
     }
     this.activeSearchIndex = index;
     try {
-      this.parentSearchResults = await commands.academic.searchGuardians(query);
+      this.parentSearchResults = await commands.academic.searchGuardians(this.orgId, query);
     } catch (err) {
       console.error("Guardian search error:", err);
     }
@@ -449,7 +440,7 @@ export class StudentFormState {
     const level = this.classLevel;
     if (!level) return [];
     return this.feeTemplates.filter((t) => {
-      if (t.is_mandatory === 1 && t.is_active === 1) {
+      if (t.is_mandatory === 0 && t.is_active === 1) {
         if (t.applicable_levels) {
           try {
             const rules = JSON.parse(t.applicable_levels);
@@ -545,7 +536,7 @@ export class StudentFormState {
 
     try {
       // Verify control account
-      const accounts = await commands.finance.listAccounts();
+      const accounts = await commands.finance.listAccounts(this.orgId);
       const hasControlAccount = accounts.some((acc) => acc.code === "110301");
       if (!hasControlAccount) {
         toast.error(m.form_error_control_account_missing());
@@ -576,6 +567,7 @@ export class StudentFormState {
 
         if (originalStudent.class_id !== this.classId) {
           await commands.academic.transferEnrollment(
+            this.orgId,
             this.studentId!,
             this.classId,
           );
@@ -592,72 +584,42 @@ export class StudentFormState {
 
         toast.success(m.form_success_update());
       } else {
-        const tempEmail = this.email.trim() || `stu.${Date.now()}@orbis.local`;
-        const studentUser = await commands.iam.createUser({
-          email: tempEmail,
-          password: "Orbis123456",
-          full_name: this.nameAr.trim(),
-          name_ar: this.nameAr.trim(),
-          primary_role: "student",
-          sex: this.sex,
+        // Use backend orchestration endpoint for new registrations
+        const firstGuardian = this.linkedGuardians[0];
+        
+        const res = await commands.organization.registerStudent(this.orgId, {
+          name: this.nameAr.trim(),
+          email: this.email.trim() || null,
           phone: this.phone.trim() || null,
+          gender: this.sex,
+          birth_date: this.birthDate || null,
           national_id: this.nationalId.trim() || null,
-          date_of_birth: this.birthDate || null,
-        });
-        targetStudentId = studentUser.id;
-
-        await commands.iam.updateUser(studentUser.id, {
-          name_en: this.nameEn.trim() || null,
           address: this.address.trim() || null,
-        });
-
-        const enrollmentRequest = {
-          student_id: studentUser.id,
           class_id: this.classId,
-          enrollment_type: "regular",
-          discount_template_id:
-            this.applyDiscount && this.discountType === "template"
-              ? this.selectedDiscountTemplateId || null
-              : null,
-          custom_discount_amount:
-            this.applyDiscount && this.discountType === "custom"
-              ? this.customDiscountAmount || null
-              : null,
-          status: this.registrationStatus,
-        };
-
-        const res = await commands.academic.createEnrollment(enrollmentRequest);
-        targetEnrollmentId = String(res.id);
-
-        const mergedEnrollment = {
-          ...res,
-          student_id: studentUser.id,
-          full_name: studentUser.full_name,
-          name_ar: studentUser.name_ar,
-          name_en: studentUser.name_en,
-          email: studentUser.email,
-          phone_number: studentUser.phone,
-          avatar: studentUser.avatar,
-          birth_date: studentUser.date_of_birth,
-          address: studentUser.address,
-        };
-
-        if (queryClient) {
-          queryClient.invalidateQueries({
-            queryKey: ["enrollments", this.orgId],
-          });
-        }
+          guardian_name: firstGuardian ? firstGuardian.full_name.trim() : null,
+          guardian_phone: firstGuardian ? firstGuardian.phone.trim() : null,
+          guardian_relationship: firstGuardian ? firstGuardian.relationship : null,
+        });
+        targetStudentId = String(res.user_id);
+        targetEnrollmentId = String(res.enrollment_id);
+        
         toast.success(m.form_success_create());
       }
 
       // Save multi-guardian links
-      for (const guardian of this.linkedGuardians) {
+      let guardiansToProcess = this.linkedGuardians;
+      if (!this.isEditMode && this.linkedGuardians.length > 0) {
+        guardiansToProcess = this.linkedGuardians.slice(1);
+      }
+
+      for (const guardian of guardiansToProcess) {
         if (!guardian.full_name.trim()) continue;
         let guardianUserId = guardian.user_id;
 
         if (!guardianUserId) {
           // Search if already exists
           const checkExisting = await commands.academic.searchGuardians(
+            this.orgId,
             guardian.phone,
           );
           if (checkExisting && checkExisting.length > 0) {
@@ -666,7 +628,7 @@ export class StudentFormState {
             // Create new parent user
             const guardEmail =
               guardian.email.trim() || `parent.${Date.now()}@orbis.local`;
-            const guardUser = await commands.iam.createUser({
+            const guardUser = await commands.iam.createUser(this.orgId, {
               email: guardEmail,
               password: "Orbis123456",
               full_name: guardian.full_name.trim(),
@@ -702,7 +664,7 @@ export class StudentFormState {
           student_id: targetStudentId,
           guardian_id: guardianUserId,
           relationship: guardian.relationship,
-          relationship_ar: guardian.relationship_ar,
+          relationship_ar: guardian.relationship_ar || guardian.relationship,
           is_primary: !!guardian.is_primary,
           is_emergency_contact: !!guardian.is_emergency_contact,
           is_authorized_pickup: false,
@@ -736,13 +698,13 @@ export class StudentFormState {
         for (const key in this.selectedOptionalFees) {
           if (this.selectedOptionalFees[key].checked) {
             try {
-              await commands.finance.assignFee({
+              await commands.finance.assignStudentFee({
                 enrollment_id: targetEnrollmentId,
                 fee_template_id: key,
                 amount: this.selectedOptionalFees[key].amount,
                 due_date: today,
                 notes: "رسوم إضافية مضافة عند التسجيل",
-              });
+              } as any);
             } catch (feeErr) {
               console.error("Failed to assign optional fee:", key, feeErr);
             }

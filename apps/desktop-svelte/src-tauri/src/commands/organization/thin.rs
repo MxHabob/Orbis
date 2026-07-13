@@ -191,6 +191,17 @@ pub async fn get_promotion_jobs(state: State<'_, Arc<AppState>>, org_id: String)
 }
 
 #[tauri::command]
+pub async fn register_student(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    data: svc_organization::ops::student_registration::RegisterStudentRequest,
+) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let r = svc_organization::ops::student_registration::register_student(&ctx, data).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(r).unwrap())
+}
+
+#[tauri::command]
 pub async fn get_promotion_job(state: State<'_, Arc<AppState>>, org_id: String, job_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
     let r = ops::promotion::get_job(&ctx, &job_id).await.map_err(CommandError::from)?;
