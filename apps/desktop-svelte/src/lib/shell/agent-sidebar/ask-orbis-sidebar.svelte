@@ -4,7 +4,7 @@ A resizable right-hand sidebar overlay for Ask Orbis agent, mirroring the Seer d
 Allows users to ask questions, select prompt suggestions, and collapse/resize.
 -->
 <script lang="ts">
-import { uiStore, authStore } from "$lib/stores";
+import { uiStore, authStore, aiContext } from "$lib/stores";
 import Resizer from "../resizer.svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
@@ -32,32 +32,6 @@ let { isStandalone = false }: { isStandalone?: boolean } = $props();
 
 const currentOrgId = $derived(page.params.orgId || authStore.orgId || "");
 
-// TanStack query caching for autocomplete using reactive config closures
-const enrollmentsQuery = createQuery({
-  get queryKey() {
-    return ["enrollments", currentOrgId];
-  },
-  queryFn: () => commands.academic.listEnrollments(currentOrgId),
-  get enabled() {
-    return !!currentOrgId;
-  },
-  staleTime: 2 * 60 * 1000,
-});
-
-const usersQuery = createQuery({
-  get queryKey() {
-    return ["users", currentOrgId];
-  },
-  queryFn: () => commands.iam.listUsers(currentOrgId),
-  get enabled() {
-    return !!currentOrgId;
-  },
-  staleTime: 5 * 60 * 1000,
-});
-
-const students = $derived($enrollmentsQuery.data || []);
-const users = $derived($usersQuery.data || []);
-
 // Agent Session & Action Log Cockpit States
 let selectedSessionId = $state<string | null>(null);
 
@@ -67,47 +41,6 @@ const sessions = $derived($sessionsQuery.data ?? []);
 const effectiveSessionId = $derived(
   selectedSessionId || (sessions.length > 0 ? sessions[0].id : null),
 );
-
-const slashPages = [
-  { label: "الطلاب", path: "/students", cleanLabel: "الطلاب" },
-  {
-    label: "الصفوف الدراسية",
-    path: "/academics/classes",
-    cleanLabel: "الصفوف الدراسية",
-  },
-  {
-    label: "المواد الدراسية",
-    path: "/settings/subjects",
-    cleanLabel: "المواد الدراسية",
-  },
-  {
-    label: "الرسوم الدراسية",
-    path: "/finance/fees",
-    cleanLabel: "الرسوم الدراسية",
-  },
-  {
-    label: "المدفوعات والمقبوضات",
-    path: "/finance/payments",
-    cleanLabel: "المدفوعات والمقبوضات",
-  },
-  {
-    label: "الحسابات والصناديق",
-    path: "/finance/treasuries",
-    cleanLabel: "الحسابات والصناديق",
-  },
-  { label: "التقارير", path: "/reports", cleanLabel: "التقارير" },
-  { label: "القوالب", path: "/templates", cleanLabel: "القوالب" },
-  {
-    label: "الإعدادات العامة",
-    path: "/settings",
-    cleanLabel: "الإعدادات العامة",
-  },
-  {
-    label: "الجدول الدراسي",
-    path: "/academics/schedule",
-    cleanLabel: "الجدول الدراسي",
-  },
-];
 
 function pxToRem(px: number): number {
   if (typeof document === "undefined") return px / 16;
@@ -259,6 +192,7 @@ async function submitMessage(queryText?: string) {
       currentOrgId,
       effectiveSessionId || "",
       text,
+      aiContext.context || undefined,
     );
     messages = [
       ...messages,

@@ -2977,5 +2977,10 @@
   "retry_button": "إعادة المحاولة",
   "error_occurred": "حدث خطأ",
   "unexpected_error_message": "خطأ غير متوقع. يرجى المحاولة مرة أخرى.",
-  "error_load_template_editor": "فشل تحميل المحرر"
+  "error_load_template_editor": "فشل تحميل المحرر",
+  "assessments_empty": "لا توجد تقييمات",
+  "assessments_weight": "الوزن",
+  "assessments_max_score": "أقصى درجة",
+  "control_period_locked_title": "الفترة مغلقة",
+  "control_period_locked_desc": "لا يمكن إجراء تعديلات في هذه الفترة الأكاديمية لأنها مغلقة."
 }

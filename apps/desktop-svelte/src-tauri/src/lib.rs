@@ -362,6 +362,9 @@ pub fn run() {
             commands::ai::thin::agent_get_session_logs,
             commands::ai::thin::agent_approve_action,
             commands::ai::thin::agent_reject_action,
+            commands::ai::thin::agent_create_session,
+            commands::ai::thin::agent_query,
+            commands::ai::thin::agent_open_standalone,
 
             // Scheduling commands
             commands::scheduling::thin::list_time_slots,

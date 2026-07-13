@@ -2971,7 +2971,12 @@
   "error_state_title": "An error occurred",
   "error_state_message": "Looks like there was an unexpected problem. Please try again.",
   "retry_button": "Retry",
-  "error_occurred": "Error occurred",
+  "error_occurred": "An error occurred",
   "unexpected_error_message": "An unexpected error occurred. Please try again.",
-  "error_load_template_editor": "Failed to load editor"
+  "error_load_template_editor": "Failed to load the editor",
+  "assessments_empty": "No assessments found",
+  "assessments_weight": "Weight",
+  "assessments_max_score": "Max Score",
+  "control_period_locked_title": "Period Locked",
+  "control_period_locked_desc": "No modifications can be made in this academic period because it is locked."
 }

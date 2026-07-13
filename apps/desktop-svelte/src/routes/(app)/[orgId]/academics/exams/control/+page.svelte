@@ -17,7 +17,7 @@ import {
 import type { GradeMatrixResponse } from "$lib/tables";
 import type { CellEditEvent } from "@orbis/svelte-grid";
 
-let { data } = $props();
+let { data } = $fields();
 const orgId = $derived(data?.orgId || "");
 let periods = $derived(academicContext.allPeriods);
 let classes = $state<any[]>([]);
@@ -56,11 +56,10 @@ let selectedPeriod = $derived(
   periods.find((c) => String(c.id) === selectedPeriodId),
 );
 let isPeriodLocked = $derived(
-  selectedPeriod?.is_locked === true || selectedPeriod?.is_locked === 1,
+  Boolean(selectedPeriod?.is_locked),
 );
 let isGradeEntryOpen = $derived(
-  selectedPeriod?.is_grade_entry_open === true ||
-    selectedPeriod?.is_grade_entry_open === 1,
+  Boolean(selectedPeriod?.is_grade_entry_open),
 );
 let canEnterGrades = $derived(
   !isPeriodLocked && isGradeEntryOpen && !academicContext.isReadOnly,
@@ -118,7 +117,7 @@ async function loadGradeMatrix() {
   gridSource = [];
   isDirty = false;
   try {
-    const result = (await commands.grades.getGradeMatrix(
+    const result = (await commands.assessment.getGradeMatrix(
       orgId,
       selectedPeriodId,
       selectedClassId,
@@ -150,12 +149,12 @@ $effect(() => {
 
 // ── Cell Edit Handler ──────────────────────────────────────────────────────
 function handleCellEdit(event: CellEditEvent) {
-  const { rowIndex, prop, newValue } = event;
+  const { rowIndex, field, newValue } = event;
   if (rowIndex < 0 || rowIndex >= gridSource.length) return;
 
   const updatedSource = [...gridSource];
   const row = { ...updatedSource[rowIndex]! };
-  row[prop] = newValue;
+  row[field] = newValue;
 
   recalculateRowTotals(row, assessmentKeys);
 
@@ -208,7 +207,7 @@ async function handleSaveAll() {
       students,
     };
 
-    const result = await commands.grades.bulkSubjectGradeEntry(
+    const result = await commands.assessment.bulkSubjectGradeEntry(
       orgId,
       authStore.userId || "admin",
       request,

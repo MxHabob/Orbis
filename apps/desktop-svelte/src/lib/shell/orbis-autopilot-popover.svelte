@@ -178,6 +178,32 @@ const phaseLabel = $derived(getPhaseLabel(academicContext.periodPhase));
       </a>
     </div>
 
+    <!-- Status Details Panel -->
+    {#if config && config.is_enabled !== 0}
+      <div class="px-4 py-2 border-b border-border bg-background flex flex-col gap-1.5 text-[10px]">
+        <div class="flex items-center justify-between">
+          <span class="text-muted-foreground">الوضع:</span>
+          <span class="font-medium text-foreground">{config.mode === "strict" ? "صارم" : config.mode === "relaxed" ? "مرن" : "عادي"}</span>
+        </div>
+        {#if diagnostics?.last_run_at}
+          <div class="flex items-center justify-between">
+            <span class="text-muted-foreground">آخر فحص:</span>
+            <span class="font-medium text-foreground" dir="ltr">{formatDate(diagnostics.last_run_at, "datetime")}</span>
+          </div>
+        {/if}
+        {#if diagnostics?.next_run_at}
+          <div class="flex items-center justify-between">
+            <span class="text-muted-foreground">الفحص القادم:</span>
+            <span class="font-medium text-foreground" dir="ltr">{formatDate(diagnostics.next_run_at, "datetime")}</span>
+          </div>
+        {/if}
+        <div class="flex items-center justify-between">
+          <span class="text-muted-foreground">التكرار:</span>
+          <span class="font-medium text-foreground">كل {config.interval_minutes} دقيقة</span>
+        </div>
+      </div>
+    {/if}
+
     <!-- Diagnostics Panel (Stuck / Overdue Alerts) -->
     {#if diagnostics && (diagnostics.stuck_tasks.length > 0 || diagnostics.overdue_tasks.length > 0)}
       <div class="px-4 py-2.5 border-b border-border bg-destructive/5 text-[10px] text-destructive flex flex-col gap-1">

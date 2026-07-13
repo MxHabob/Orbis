@@ -446,15 +446,6 @@ export const commands: OrbisCommands = {
       cmd("autopilot_configure", { orgId, isEnabled, paused, mode }),
     runAutopilotTick: (orgId) => cmd("autopilot_run_tick", { orgId }),
 
-    // AI Agent
-    listAgentSessions: (orgId) => cmd("agent_get_sessions", { orgId }),
-    getAgentSessionLogs: (orgId, sessionId) =>
-      cmd("agent_get_session_logs", { orgId, sessionId }),
-    approveAgentAction: (orgId, actionLogId, approvedBy) =>
-      cmd("agent_approve_action", { orgId, actionLogId, approvedBy }),
-    rejectAgentAction: (orgId, actionLogId, rejectedBy, reason) =>
-      cmd("agent_reject_action", { orgId, actionLogId, rejectedBy, reason }),
-
     // Auth (desktop login flow)
     login: (identifier, password) =>
       cmd("login", { identifier, passwordHash: password }),
@@ -487,6 +478,12 @@ export const commands: OrbisCommands = {
     // Documents
     listDocumentsByOwner: (orgId, ownerId) =>
       cmd("list_documents", { orgId, ownerId }),
+  },
+  agent: {
+    listSessions: (orgId) => cmd("agent_get_sessions", { orgId }),
+    createSession: (orgId, type) => cmd("agent_create_session", { orgId, type }),
+    query: (orgId, sessionId, text, context?) => cmd("agent_query", { orgId, sessionId, text, context }),
+    openStandaloneWindow: (orgId) => cmd("agent_open_standalone", { orgId }),
   },
   docforge: {
     previewDocumentTemplate: (templateJson, contextJson) =>

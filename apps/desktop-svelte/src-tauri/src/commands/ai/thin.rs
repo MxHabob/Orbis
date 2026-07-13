@@ -168,3 +168,39 @@ pub async fn agent_reject_action(
     Ok(())
 }
 
+#[tauri::command]
+pub async fn agent_create_session(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    _session_type: String,
+) -> CmdResult<serde_json::Value> {
+    let db = state.db();
+    let session = ai_gateway::agent::AgentSessionManager::create_session(&db, &org_id, "default")
+        .await
+        .map_err(CommandError::from)?;
+    Ok(serde_json::to_value(session).unwrap())
+}
+
+#[tauri::command]
+pub async fn agent_query(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    session_id: String,
+    text: String,
+    context: Option<serde_json::Value>,
+) -> CmdResult<String> {
+    let db = state.db();
+    let response = ai_gateway::agent::AgentSessionManager::query(&db, &org_id, &session_id, &text, context)
+        .await
+        .map_err(CommandError::from)?;
+    Ok(response)
+}
+
+#[tauri::command]
+pub async fn agent_open_standalone(
+    _state: State<'_, Arc<AppState>>,
+    _org_id: String,
+) -> CmdResult<()> {
+    // Logic to open a new tauri window would go here
+    Ok(())
+}

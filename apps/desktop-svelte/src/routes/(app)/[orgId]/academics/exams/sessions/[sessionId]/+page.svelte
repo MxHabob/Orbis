@@ -41,7 +41,7 @@ import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte"
 import SubjectAddSheet from "$lib/features/exams/components/subject-add-sheet.svelte";
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import { commands } from "$lib/core/ipc";
-import { authStore } from "$lib/stores";
+import { authStore, aiContext } from "$lib/stores";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -229,11 +229,26 @@ const tabs = $derived([
   },
 ]);
 
+$effect(() => {
+  aiContext.setContext({
+    domain: "exam",
+    pageName: "Exam Session Details",
+    recordId: sessionId,
+    metadata: {
+      sessionName: session?.name || "",
+      status: session?.status || "",
+      subjectsCount: subjects.length,
+      schedulesCount: activeSchedules.length
+    }
+  });
+  return () => aiContext.clearContext();
+});
+
 async function loadSession() {
   if (!data.orgId || !sessionId) return;
   isLoading = true;
   try {
-    session = await commands.exam.getSession(data.orgId, sessionId);
+    session = await commands.exam.getSession(data.orgId, sessionId as string);
 
     // Load subjects
     try {
@@ -311,7 +326,7 @@ onMount(() => {
 // Quick actions
 async function handleGenerateSeating() {
   const userId = authStore.userId || authStore.user?.id || "desktop_user";
-  const promise = commands.exam.generateSeating(data.orgId, sessionId, userId);
+  const promise = commands.exam.generateSeating(data.orgId, sessionId as string, userId);
   toast.promise(promise, {
     loading: "جاري توليد أرقام الجلوس...",
     success: "تم توليد أرقام الجلوس بنجاح!",
@@ -327,7 +342,7 @@ async function handleGenerateSeating() {
 
 async function handleGenerateSecrets() {
   const userId = authStore.userId || authStore.user?.id || "desktop_user";
-  const promise = commands.exam.generateSecrets(data.orgId, sessionId, userId);
+  const promise = commands.exam.generateSecrets(data.orgId, sessionId as string, userId);
   toast.promise(promise, {
     loading: "جاري توليد الأرقام السرية...",
     success: "تم توليد الأرقام السرية بنجاح!",
@@ -579,7 +594,7 @@ async function handleToggleScheduleStatus(sched: any) {
 }
 
 async function handleAllocateHalls() {
-  const promise = commands.exam.allocateHalls(data.orgId, sessionId, {
+  const promise = commands.exam.allocateHalls(data.orgId, sessionId as string, {
     separate_divisions: separateDivisions,
     separate_genders: separateGenders,
     balance_halls: balanceHalls,
@@ -601,7 +616,7 @@ async function handleAllocateHalls() {
 
 async function handleActivate() {
   if (!session) return;
-  const promise = commands.exam.updateSession(data.orgId, sessionId, {
+  const promise = commands.exam.updateSession(data.orgId, sessionId as string, {
     status: "active",
   });
 
@@ -651,7 +666,7 @@ async function handleAssignProctors() {
   isLoading = true;
   try {
     for (const sched of schedules) {
-      await commands.exam.autoAssignProctors(data.orgId, sessionId, sched.id, {
+      await commands.exam.autoAssignProctors(data.orgId, sessionId as string, sched.id, {
         proctors_per_hall: proctorsPerHall,
         prevent_own_subject: preventOwnSubject,
         max_sessions_per_teacher: maxSessionsPerTeacher,
@@ -1392,7 +1407,7 @@ async function handleAssignProctors() {
 <SubjectAddSheet
 	bind:open={isSubjectSheetOpen}
 	orgId={data.orgId}
-	sessionId={sessionId}
+	sessionId={sessionId as string}
 	onSuccess={loadSession}
 />
 
