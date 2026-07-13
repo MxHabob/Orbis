@@ -26,6 +26,7 @@ export interface PlatformCommands {
   getAcademicContext(orgId: string): Promise<AcademicContextResponse>;
   getSetupStatus(orgId: string): Promise<boolean>;
   initializeSchoolSetup(orgId: string, payload: any): Promise<void>;
+  getPeriodTemplates(orgId: string): Promise<any[]>;
 
   // ── Promotion ─────────────────────────────────────────────────
   listPromotionJobs(orgId: string): Promise<PromotionJob[]>;

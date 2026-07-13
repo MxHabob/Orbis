@@ -694,7 +694,7 @@ class OnboardingState {
     }
   }
 
-  private generatePeriodsFromTemplate(
+  generatePeriodsFromTemplate(
     templateNode: TemplateNode,
     parentId: string,
     orgId: string,
