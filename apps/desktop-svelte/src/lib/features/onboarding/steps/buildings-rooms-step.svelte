@@ -35,6 +35,7 @@ import {
 } from "@orbis/ui-svelte/alert-dialog";
 import { Plus, Trash } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
+import { getLocale } from "$lib/paraglide/runtime";
 import { onboardingState } from "../state.svelte";
 
 let newRoomName = $state("");
@@ -90,21 +91,14 @@ function confirmRemoveBuilding() {
 </script>
 
 <div class="max-w-5xl space-y-6">
-  <div class="space-y-2 text-start">
-    <h3 class="text-foreground font-bold text-xl font-serif">
-      {m.onboarding_buildings_title()}
-    </h3>
-    <p class="text-muted-foreground text-sm">
-      {m.onboarding_buildings_desc()}
-    </p>
-  </div>
+
 
   <Tabs
     value={onboardingState.activeBuildingTab}
     onValueChange={(v) => (onboardingState.activeBuildingTab = v ?? onboardingState.buildings[0])}
     class="w-full"
   >
-    <TabsList class="w-full justify-start bg-muted/50 border-b border-border rounded-none p-0 h-auto gap-2 overflow-x-auto flex-nowrap scrollbar-hide">
+    <TabsList class="w-full justify-start bg-transparent border-b border-border/60 rounded-none p-0 h-auto gap-2 overflow-x-auto flex-nowrap scrollbar-hide">
       {#each onboardingState.buildings as bld}
         <TabsTrigger
           value={bld}
@@ -132,105 +126,123 @@ function confirmRemoveBuilding() {
             </Button>
           </div>
         {/if}
-        <!-- Add Room Form for current Building -->
-        <div class="p-6 bg-muted/40 rounded-xl border border-border grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-          <div class="space-y-2 md:col-span-2">
-            <Label class="text-xs font-semibold">
-              {m.onboarding_room_name_hint()}
-            </Label>
-            <div class="grid grid-cols-2 gap-2">
-              <Input bind:value={newRoomNameAr} placeholder="فصل 1-05" class="text-xs h-9" />
-              <Input bind:value={newRoomName} placeholder="Classroom 1-05" class="text-xs h-9 text-left font-sans" style="direction: ltr;" />
-            </div>
-          </div>
-
-          <div class="space-y-2 text-start">
-            <Label class="text-xs font-semibold">{m.onboarding_room_type()}</Label>
-            <Select type="single" value={newRoomType} onValueChange={(v) => (newRoomType = v ?? "classroom")}>
-              <SelectTrigger class="w-full h-9 text-xs">
-                {#if newRoomType === "classroom"}{m.onboarding_room_type_classroom()}
-                {:else if newRoomType === "computer_lab"}{m.onboarding_room_type_computer()}
-                {:else if newRoomType === "chemistry_lab"}{m.onboarding_room_type_chemistry()}
-                {:else if newRoomType === "physics_lab"}{m.onboarding_room_type_physics()}
-                {:else}{m.onboarding_room_type_hall()}
-                {/if}
-              </SelectTrigger>
-              <SelectContent class="text-xs">
-                <SelectItem value="classroom">{m.onboarding_room_type_classroom()}</SelectItem>
-                <SelectItem value="computer_lab">{m.onboarding_room_type_computer()}</SelectItem>
-                <SelectItem value="chemistry_lab">{m.onboarding_room_type_chemistry()}</SelectItem>
-                <SelectItem value="physics_lab">{m.onboarding_room_type_physics()}</SelectItem>
-                <SelectItem value="hall">{m.onboarding_room_type_hall()}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div class="space-y-2 text-start">
-            <Label class="text-xs font-semibold">
-              {m.onboarding_room_floor_capacity()}
-            </Label>
-            <div class="grid grid-cols-2 gap-2">
-              <Select type="single" value={String(newRoomFloor)} onValueChange={(v) => (newRoomFloor = Number(v ?? "1"))}>
-                <SelectTrigger class="w-full h-9 text-xs">
-                  {m.onboarding_room_floor_n({ n: newRoomFloor })}
-                </SelectTrigger>
-                <SelectContent class="text-xs">
-                  <SelectItem value="1">{m.onboarding_room_floor_n({ n: 1 })}</SelectItem>
-                  <SelectItem value="2">{m.onboarding_room_floor_n({ n: 2 })}</SelectItem>
-                  <SelectItem value="3">{m.onboarding_room_floor_n({ n: 3 })}</SelectItem>
-                  <SelectItem value="4">{m.onboarding_room_floor_n({ n: 4 })}</SelectItem>
-                </SelectContent>
-              </Select>
-              <Input type="number" bind:value={newRoomCapacity} min="10" max="100" class="text-xs h-9 font-sans" />
-            </div>
-          </div>
-
-          <Button onclick={handleAddRoom} class="w-full h-9 text-xs flex gap-1.5 items-center justify-center">
-            <Plus class="w-4 h-4" />
-            <span>{m.onboarding_add_room_title()}</span>
-          </Button>
-        </div>
-
         <!-- Rooms List for the Active Building -->
         <div class="space-y-3">
           <h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-start">
             {m.onboarding_room_approved({ building: bld })}
           </h4>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {#each onboardingState.rooms.filter((r) => r.building === bld) as rm (rm.id)}
-              <div class="bg-card border border-border rounded-xl p-4 flex justify-between items-start hover:border-muted-foreground/30 transition-colors">
-                <div class="space-y-1 text-start">
-                  <div class="flex items-center gap-2">
-                    <span class="font-semibold text-foreground text-sm">{rm.name_ar}</span>
-                    <span class="text-xs text-muted-foreground font-mono">({rm.name})</span>
-                  </div>
-                  <div class="flex items-center gap-2 mt-2">
-                    <Badge variant="outline" class="text-[10px] text-primary border-primary/20 bg-primary/5">
+          <div class="w-full overflow-x-auto scrollbar-hide border border-border/60 rounded-2xl bg-card shadow-sm">
+            <div class="min-w-[800px] divide-y divide-border/60">
+              <!-- Header Row -->
+              <div class="grid grid-cols-[1.5fr_1.5fr_1.2fr_1fr_1fr_auto] gap-4 p-4 bg-muted/20 text-xs font-semibold text-muted-foreground select-none text-start">
+                <span>{getLocale() === "ar" ? "اسم القاعة (عربي)" : "Room Name (Ar)"}</span>
+                <span>{getLocale() === "ar" ? "اسم القاعة (إنجليزي)" : "Room Name (En)"}</span>
+                <span>{getLocale() === "ar" ? "النوع" : "Type"}</span>
+                <span>{getLocale() === "ar" ? "الطابق" : "Floor"}</span>
+                <span>{getLocale() === "ar" ? "السعة" : "Capacity"}</span>
+                <span class="w-8"></span>
+              </div>
+
+              <!-- Inline Add New Room Row -->
+              <div class="grid grid-cols-[1.5fr_1.5fr_1.2fr_1fr_1fr_auto] gap-4 px-4 py-2.5 items-center bg-muted/5 transition-colors">
+                <!-- Arabic Name -->
+                <Input bind:value={newRoomNameAr} placeholder={getLocale() === "ar" ? "مثال: فصل 1-05" : "e.g. Room 1-05"} class="h-8 text-xs font-bold font-sans bg-background/50 border-dashed border-border/80" />
+                
+                <!-- English Name -->
+                <Input bind:value={newRoomName} placeholder={getLocale() === "ar" ? "مثال: Classroom 1-05" : "e.g. Classroom 1-05"} class="h-8 text-xs font-mono text-left font-sans bg-background/50 border-dashed border-border/80" style="direction: ltr;" />
+                
+                <!-- Room Type Select -->
+                <Select type="single" value={newRoomType} onValueChange={(v) => (newRoomType = v ?? "classroom")}>
+                  <SelectTrigger class="h-8 text-xs bg-background/50 border-dashed border-border/80">
+                    {#if newRoomType === "classroom"}{m.onboarding_room_type_classroom()}
+                    {:else if newRoomType === "computer_lab"}{m.onboarding_room_type_computer()}
+                    {:else if newRoomType === "chemistry_lab"}{m.onboarding_room_type_chemistry()}
+                    {:else if newRoomType === "physics_lab"}{m.onboarding_room_type_physics()}
+                    {:else}{m.onboarding_room_type_hall()}
+                    {/if}
+                  </SelectTrigger>
+                  <SelectContent class="text-xs">
+                    <SelectItem value="classroom">{m.onboarding_room_type_classroom()}</SelectItem>
+                    <SelectItem value="computer_lab">{m.onboarding_room_type_computer()}</SelectItem>
+                    <SelectItem value="chemistry_lab">{m.onboarding_room_type_chemistry()}</SelectItem>
+                    <SelectItem value="physics_lab">{m.onboarding_room_type_physics()}</SelectItem>
+                    <SelectItem value="hall">{m.onboarding_room_type_hall()}</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <!-- Floor Select -->
+                <Select type="single" value={String(newRoomFloor)} onValueChange={(v) => (newRoomFloor = Number(v ?? "1") || 1)}>
+                  <SelectTrigger class="h-8 text-xs bg-background/50 border-dashed border-border/80">
+                    {m.onboarding_room_floor_n({ n: newRoomFloor })}
+                  </SelectTrigger>
+                  <SelectContent class="text-xs">
+                    <SelectItem value="1">{m.onboarding_room_floor_n({ n: 1 })}</SelectItem>
+                    <SelectItem value="2">{m.onboarding_room_floor_n({ n: 2 })}</SelectItem>
+                    <SelectItem value="3">{m.onboarding_room_floor_n({ n: 3 })}</SelectItem>
+                    <SelectItem value="4">{m.onboarding_room_floor_n({ n: 4 })}</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <!-- Capacity Input -->
+                <Input type="number" bind:value={newRoomCapacity} min="1" max="150" class="h-8 text-xs text-center font-bold font-mono bg-background/50 border-dashed border-border/80" />
+
+                <!-- Add Button -->
+                <Button variant="default" size="icon-sm" class="h-8 w-8 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 animate-pulse" onclick={handleAddRoom}>
+                  <Plus size={14} />
+                </Button>
+              </div>
+
+              {#each onboardingState.rooms.filter((r) => r.building === bld) as rm (rm.id)}
+                <div class="grid grid-cols-[1.5fr_1.5fr_1.2fr_1fr_1fr_auto] gap-4 px-4 py-3 items-center hover:bg-muted/10 transition-colors">
+                  <!-- Arabic Name -->
+                  <Input bind:value={rm.name_ar} class="h-8 text-xs font-bold font-sans" onchange={() => onboardingState.save()} />
+                  
+                  <!-- English Name -->
+                  <Input bind:value={rm.name} class="h-8 text-xs font-mono text-left font-sans" style="direction: ltr;" onchange={() => onboardingState.save()} />
+                  
+                  <!-- Room Type Select -->
+                  <Select type="single" value={rm.room_type} onValueChange={(v) => { if (v) { rm.room_type = v; onboardingState.save(); } }}>
+                    <SelectTrigger class="h-8 text-xs">
                       {#if rm.room_type === "classroom"}{m.onboarding_room_type_classroom()}
                       {:else if rm.room_type === "computer_lab"}{m.onboarding_room_type_computer()}
                       {:else if rm.room_type === "chemistry_lab"}{m.onboarding_room_type_chemistry()}
                       {:else if rm.room_type === "physics_lab"}{m.onboarding_room_type_physics()}
                       {:else}{m.onboarding_room_type_hall()}
                       {/if}
-                    </Badge>
-                    <span class="text-xs text-muted-foreground">
-                      {m.onboarding_room_floor_label({ floor: rm.floor })}
-                    </span>
-                    <span class="text-xs text-muted-foreground">
-                      {rm.capacity} {m.onboarding_room_capacity_unit()}
-                    </span>
-                  </div>
-                </div>
+                    </SelectTrigger>
+                    <SelectContent class="text-xs">
+                      <SelectItem value="classroom">{m.onboarding_room_type_classroom()}</SelectItem>
+                      <SelectItem value="computer_lab">{m.onboarding_room_type_computer()}</SelectItem>
+                      <SelectItem value="chemistry_lab">{m.onboarding_room_type_chemistry()}</SelectItem>
+                      <SelectItem value="physics_lab">{m.onboarding_room_type_physics()}</SelectItem>
+                      <SelectItem value="hall">{m.onboarding_room_type_hall()}</SelectItem>
+                    </SelectContent>
+                  </Select>
 
-                <button
-                  onclick={() => onboardingState.removeRoom(rm.id)}
-                  class="text-muted-foreground hover:text-destructive p-1.5 hover:bg-destructive/10 rounded-lg transition-colors"
-                >
-                  <Trash class="w-4 h-4" />
-                </button>
-              </div>
-            {/each}
+                  <!-- Floor Select -->
+                  <Select type="single" value={String(rm.floor)} onValueChange={(v) => { if (v) { rm.floor = Number(v); onboardingState.save(); } }}>
+                    <SelectTrigger class="h-8 text-xs">
+                      {m.onboarding_room_floor_n({ n: rm.floor })}
+                    </SelectTrigger>
+                    <SelectContent class="text-xs">
+                      <SelectItem value="1">{m.onboarding_room_floor_n({ n: 1 })}</SelectItem>
+                      <SelectItem value="2">{m.onboarding_room_floor_n({ n: 2 })}</SelectItem>
+                      <SelectItem value="3">{m.onboarding_room_floor_n({ n: 3 })}</SelectItem>
+                      <SelectItem value="4">{m.onboarding_room_floor_n({ n: 4 })}</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <!-- Capacity Input -->
+                  <Input type="number" bind:value={rm.capacity} min="1" max="150" class="h-8 text-xs text-center font-bold font-mono" onchange={() => onboardingState.save()} />
+
+                  <!-- Delete action -->
+                  <Button variant="ghost" size="icon-sm" class="text-muted-foreground hover:text-destructive h-8 w-8 hover:bg-destructive/10" onclick={() => onboardingState.removeRoom(rm.id)}>
+                    <Trash size={14} />
+                  </Button>
+                </div>
+              {/each}
+            </div>
           </div>
 
           <div class="flex justify-end pt-2">

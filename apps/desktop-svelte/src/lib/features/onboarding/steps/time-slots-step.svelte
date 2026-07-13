@@ -30,14 +30,7 @@ function handleAddTimeSlot() {
 </script>
 
 <div class="max-w-3xl space-y-6">
-  <div class="space-y-2 text-start">
-    <h3 class="text-foreground font-bold text-xl font-serif">
-      {m.onboarding_schedule_title()}
-    </h3>
-    <p class="text-muted-foreground text-sm">
-      {m.onboarding_schedule_desc()}
-    </p>
-  </div>
+
 
   <!-- Add Period Form -->
   <div class="p-6 bg-muted/40 rounded-xl border border-border grid grid-cols-1 md:grid-cols-4 gap-4 items-end">

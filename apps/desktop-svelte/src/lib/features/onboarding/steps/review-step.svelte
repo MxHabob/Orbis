@@ -36,14 +36,7 @@ async function handleCompleteSetup() {
 </script>
 
 <div class="max-w-4xl space-y-6">
-  <div class="space-y-2 text-start">
-    <h3 class="text-foreground font-bold text-xl font-serif">
-      {m.onboarding_review_title()}
-    </h3>
-    <p class="text-muted-foreground text-sm">
-      {m.onboarding_review_desc()}
-    </p>
-  </div>
+
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
     <!-- School info card -->

@@ -26,14 +26,7 @@ async function handleLanguageChange(newLocale: string) {
 </script>
 
 <div class="max-w-3xl space-y-6">
-  <div class="space-y-2 text-start">
-    <h3 class="text-foreground font-bold text-xl font-serif">
-      {m.onboarding_calendar_title()}
-    </h3>
-    <p class="text-muted-foreground text-sm">
-      {m.onboarding_calendar_desc()}
-    </p>
-  </div>
+
 
   <!-- Regional Settings Section -->
   <div class="border border-border rounded-xl overflow-hidden flex flex-col bg-card">

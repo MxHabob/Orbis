@@ -15,14 +15,7 @@ import { onboardingState } from "../state.svelte";
 
 
 <div class="max-w-4xl space-y-6">
-  <div class="space-y-2 text-start">
-    <h3 class="text-foreground font-bold text-xl font-serif">
-      {m.onboarding_configure_stage({ stage: onboardingState.stageLabel })}
-    </h3>
-    <p class="text-muted-foreground text-sm">
-      {m.onboarding_configure_stage_desc({ stage: onboardingState.stageLabel, division: onboardingState.divisionLabel })}
-    </p>
-  </div>
+
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     {#each onboardingState.gradeLevels as gl (gl.level)}

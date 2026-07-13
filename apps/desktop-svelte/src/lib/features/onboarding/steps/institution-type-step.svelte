@@ -32,14 +32,7 @@ function selectProfile(type: string) {
 </script>
 
 <div class="max-w-3xl space-y-6">
-  <div class="space-y-2 text-start">
-    <h3 class="text-foreground font-bold text-xl font-serif">
-      {m.onboarding_profile_title()}
-    </h3>
-    <p class="text-xs text-muted-foreground">
-      {m.onboarding_profile_desc()}
-    </p>
-  </div>
+
 
   <!-- Profiles Grid -->
   <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
