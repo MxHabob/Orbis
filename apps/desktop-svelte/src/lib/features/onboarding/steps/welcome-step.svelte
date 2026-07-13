@@ -9,20 +9,29 @@ let orgName = $derived(
 );
 </script>
 
-<div class="flex-1 flex flex-col items-center justify-center px-6 pb-8 select-none max-w-2xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-  <!-- Avatar Section -->
-  <div class="flex justify-center w-full">
-    <Avatar hat="graduation" width="112px" height="112px" />
-  </div>
+<div class="min-h-[55vh] flex flex-col items-center justify-center px-6 select-none w-full max-w-3xl mx-auto space-y-12 animate-in fade-in duration-1000">
 
-  <!-- Content Section -->
-  <div class="space-y-4 text-center">
-    <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-serif">
+  <!-- School Name Title (Google-style thin-to-normal weight typography) -->
+  <div class="text-center">
+    <h1 class="text-3xl sm:text-5xl font-light tracking-tight text-foreground font-sans leading-tight">
       {m.onboarding_welcome_title({ orgName })}
     </h1>
+  </div>
+
+  <!-- Avatar & Description (No container card, direct horizontal flex flow) -->
+  <div class="w-full max-w-2xl flex flex-col sm:flex-row items-center gap-6 sm:gap-8 justify-center">
     
-    <p class="text-sm sm:text-[15px] text-muted-foreground leading-relaxed max-w-lg mx-auto">
-      {m.onboarding_welcome_message()}
-    </p>
+    <!-- Avatar Section (Clean and minimalist) -->
+    <div class="shrink-0 flex items-center justify-center">
+      <Avatar hat="graduation" width="96px" height="96px" />
+    </div>
+
+    <!-- Description Text (Clear, friendly, readable) -->
+    <div class="text-center sm:text-start self-center max-w-lg">
+      <p class="text-base sm:text-lg text-foreground/90 leading-relaxed font-sans font-normal">
+        {m.onboarding_welcome_message()}
+      </p>
+    </div>
+
   </div>
 </div>

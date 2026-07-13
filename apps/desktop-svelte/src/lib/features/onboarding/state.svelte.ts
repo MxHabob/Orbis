@@ -18,7 +18,6 @@ import type {
   PeriodTemplateDef,
   TemplateNode,
 } from "./types";
-import { commands } from "$lib/core/ipc";
 
 function detectTimezone(): string {
   try {
@@ -55,231 +54,31 @@ function getDefaultBuildings(): string[] {
 
 // ── Default Data ─────────────────────────────────────────────────────
 
-const DEFAULT_GRADE_LEVELS: GradeLevel[] = [
-  {
-    level: "kg1",
-    name: "KG1",
-    name_ar: "روضة أولى",
-    color: "#f43f5e",
-    enabled: true,
-    divisions: ["أ"],
-  },
-  {
-    level: "kg2",
-    name: "KG2",
-    name_ar: "روضة ثانية",
-    color: "#ec4899",
-    enabled: true,
-    divisions: ["أ"],
-  },
-  {
-    level: "grade1",
-    name: "Grade 1",
-    name_ar: "الصف الأول",
-    color: "#d946ef",
-    enabled: true,
-    divisions: ["أ", "ب"],
-  },
-  {
-    level: "grade2",
-    name: "Grade 2",
-    name_ar: "الصف الثاني",
-    color: "#a855f7",
-    enabled: true,
-    divisions: ["أ", "ب"],
-  },
-  {
-    level: "grade3",
-    name: "Grade 3",
-    name_ar: "الصف الثالث",
-    color: "#6366f1",
-    enabled: true,
-    divisions: ["أ", "ب"],
-  },
-  {
-    level: "grade4",
-    name: "Grade 4",
-    name_ar: "الصف الرابع",
-    color: "#3b82f6",
-    enabled: true,
-    divisions: ["أ"],
-  },
-  {
-    level: "grade5",
-    name: "Grade 5",
-    name_ar: "الصف الخامس",
-    color: "#0ea5e9",
-    enabled: true,
-    divisions: ["أ"],
-  },
-  {
-    level: "grade6",
-    name: "Grade 6",
-    name_ar: "الصف السادس",
-    color: "#06b6d4",
-    enabled: true,
-    divisions: ["أ"],
-  },
-  {
-    level: "grade7",
-    name: "Grade 7",
-    name_ar: "الصف السابع",
-    color: "#14b8a6",
-    enabled: true,
-    divisions: ["أ"],
-  },
-  {
-    level: "grade8",
-    name: "Grade 8",
-    name_ar: "الصف الثامن",
-    color: "#10b981",
-    enabled: true,
-    divisions: ["أ"],
-  },
-  {
-    level: "grade9",
-    name: "Grade 9",
-    name_ar: "الصف التاسع",
-    color: "#22c55e",
-    enabled: true,
-    divisions: ["أ"],
-  },
-];
+const DEFAULT_GRADE_LEVELS: GradeLevel[] = INSTITUTION_PROFILES.school.stages.map((s) => ({
+  level: s.level,
+  name: s.name,
+  name_ar: s.name_ar,
+  color: s.color,
+  enabled: true,
+  divisions: [...s.divisions],
+}));
 
-const DEFAULT_TIME_SLOTS: TimeSlot[] = [
-  {
-    name: "1st Period",
-    name_ar: "الحصة الأولى",
-    start_time: "08:00",
-    end_time: "08:45",
-  },
-  {
-    name: "2nd Period",
-    name_ar: "الحصة الثانية",
-    start_time: "08:45",
-    end_time: "09:30",
-  },
-  {
-    name: "3rd Period",
-    name_ar: "الحصة الثالثة",
-    start_time: "09:45",
-    end_time: "10:30",
-  },
-  {
-    name: "4th Period",
-    name_ar: "الحصة الرابعة",
-    start_time: "10:30",
-    end_time: "11:15",
-  },
-  {
-    name: "5th Period",
-    name_ar: "الحصة الخامسة",
-    start_time: "11:30",
-    end_time: "12:15",
-  },
-];
+const DEFAULT_TIME_SLOTS: TimeSlot[] = INSTITUTION_PROFILES.school.timeSlots.map((t) => ({
+  name: t.name,
+  name_ar: t.name_ar,
+  start_time: t.start_time,
+  end_time: t.end_time,
+}));
 
-const DEFAULT_SUBJECTS: Subject[] = [
-  {
-    code: "QUR",
-    name: "Holy Quran",
-    name_ar: "القرآن الكريم",
-    color: "#10b981",
-    icon: "book-open",
-    sort_order: 1,
-    enabled: true,
-  },
-  {
-    code: "ISL",
-    name: "Islamic Studies",
-    name_ar: "الدراسات الإسلامية",
-    color: "#0d9488",
-    icon: "bookmark",
-    sort_order: 2,
-    enabled: true,
-  },
-  {
-    code: "ARB",
-    name: "Arabic Language",
-    name_ar: "اللغة العربية",
-    color: "#f59e0b",
-    icon: "pen-tool",
-    sort_order: 3,
-    enabled: true,
-  },
-  {
-    code: "MTH",
-    name: "Mathematics",
-    name_ar: "الرياضيات",
-    color: "#3b82f6",
-    icon: "binary",
-    sort_order: 4,
-    enabled: true,
-  },
-  {
-    code: "SCI",
-    name: "Science",
-    name_ar: "العلوم",
-    color: "#8b5cf6",
-    icon: "flask-conical",
-    sort_order: 5,
-    enabled: true,
-  },
-  {
-    code: "ENG",
-    name: "English Language",
-    name_ar: "اللغة الإنجليزية",
-    color: "#6366f1",
-    icon: "languages",
-    sort_order: 6,
-    enabled: true,
-  },
-  {
-    code: "SOC",
-    name: "Social Studies",
-    name_ar: "الدراسات الاجتماعية",
-    color: "#f97316",
-    icon: "globe",
-    sort_order: 7,
-    enabled: true,
-  },
-  {
-    code: "ART",
-    name: "Art",
-    name_ar: "التربية الفنية",
-    color: "#f43f5e",
-    icon: "palette",
-    sort_order: 7,
-    enabled: true,
-  },
-  {
-    code: "MUS",
-    name: "Music",
-    name_ar: "التربية الموسيقية",
-    color: "#8b5cf6",
-    icon: "music",
-    sort_order: 8,
-    enabled: true,
-  },
-  {
-    code: "PE",
-    name: "Physical Education",
-    name_ar: "التربية البدنية",
-    color: "#f97316",
-    icon: "activity",
-    sort_order: 9,
-    enabled: true,
-  },
-  {
-    code: "COMP",
-    name: "Computer Science",
-    name_ar: "الحاسوب",
-    color: "#06b6d4",
-    icon: "monitor",
-    sort_order: 10,
-    enabled: true,
-  },
-];
+const DEFAULT_SUBJECTS: Subject[] = INSTITUTION_PROFILES.school.subjects.map((s) => ({
+  code: s.code,
+  name: s.name,
+  name_ar: s.name_ar,
+  color: s.color,
+  icon: s.icon,
+  sort_order: s.sort_order,
+  enabled: true,
+}));
 
 // ── Store Class ──────────────────────────────────────────────────────
 
@@ -482,14 +281,6 @@ class OnboardingState {
         academicYearNameAr: this.academicYearNameAr,
         startDate: this.startDate,
         endDate: this.endDate,
-        semester1Name: this.semester1Name,
-        semester1NameAr: this.semester1NameAr,
-        semester1Start: this.semester1Start,
-        semester1End: this.semester1End,
-        semester2Name: this.semester2Name,
-        semester2NameAr: this.semester2NameAr,
-        semester2Start: this.semester2Start,
-        semester2End: this.semester2End,
         timeSlots: this.timeSlots,
         subjects: this.subjects,
         rooms: this.rooms,
@@ -522,14 +313,6 @@ class OnboardingState {
           this.academicYearNameAr = data.academicYearNameAr;
         if (data.startDate) this.startDate = data.startDate;
         if (data.endDate) this.endDate = data.endDate;
-        if (data.semester1Name) this.semester1Name = data.semester1Name;
-        if (data.semester1NameAr) this.semester1NameAr = data.semester1NameAr;
-        if (data.semester1Start) this.semester1Start = data.semester1Start;
-        if (data.semester1End) this.semester1End = data.semester1End;
-        if (data.semester2Name) this.semester2Name = data.semester2Name;
-        if (data.semester2NameAr) this.semester2NameAr = data.semester2NameAr;
-        if (data.semester2Start) this.semester2Start = data.semester2Start;
-        if (data.semester2End) this.semester2End = data.semester2End;
         if (data.timeSlots) this.timeSlots = data.timeSlots;
         if (data.subjects) this.subjects = data.subjects;
         if (data.rooms) this.rooms = data.rooms;

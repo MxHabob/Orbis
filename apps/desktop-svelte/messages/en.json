@@ -2925,6 +2925,6 @@
   "bulk_card_grades_tag_period": "Period",
   "onboarding_template_label": "Academic Structure Template",
   "onboarding_template_placeholder": "Select Template",
-  "onboarding_welcome_title": "Welcome to {orgName}",
-  "onboarding_welcome_message": "I am Orbis, an AI agent specifically built by mulverse. My goal is to improve the global education system and help you manage your institution with ease."
+  "onboarding_welcome_title": "Hi {orgName}",
+  "onboarding_welcome_message": "Hi! I'm Orbis, your AI assistant. I'm here to help you manage your school and organize your daily tasks with ease. Let's create an amazing learning environment together."
 }

@@ -60,7 +60,7 @@ function handleAddSubject() {
     </div>
 
     <div class="space-y-2 text-start">
-      <Label class="text-xs">{m.settings_registration_table_color()}</Label>
+      <Label class="text-xs">{m.onboarding_subject_color()}</Label>
       <div class="flex gap-2 items-center">
         <input type="color" bind:value={newSubColor} class="w-9 h-9 border border-border rounded bg-background cursor-pointer" />
         <span class="text-xs font-mono text-muted-foreground">{newSubColor}</span>

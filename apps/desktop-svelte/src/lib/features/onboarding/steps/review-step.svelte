@@ -22,7 +22,7 @@ import * as m from "$lib/paraglide/messages";
 import { onboardingState } from "../state.svelte";
 import { authStore } from "$lib/stores";
 import { goto } from "$app/navigation";
-import { localizeHref } from "$lib/paraglide/runtime";
+import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 
 async function handleCompleteSetup() {
   const orgId = authStore.orgId;
@@ -91,16 +91,17 @@ async function handleCompleteSetup() {
         </div>
         <div class="flex justify-between">
           <span class="text-muted-foreground font-medium">{m.onboarding_review_year_duration()}</span>
-          <span class="font-mono text-xs text-muted-foreground">{onboardingState.startDate} إلى {onboardingState.endDate}</span>
+          <span class="font-mono text-xs text-muted-foreground">{onboardingState.startDate} {getLocale() === "ar" ? "إلى" : "to"} {onboardingState.endDate}</span>
         </div>
-        <div class="flex justify-between">
-          <span class="text-muted-foreground font-medium">{m.onboarding_review_sem1()}</span>
-          <span class="font-mono text-xs text-muted-foreground">{onboardingState.semester1Start} إلى {onboardingState.semester1End}</span>
-        </div>
-        <div class="flex justify-between">
-          <span class="text-muted-foreground font-medium">{m.onboarding_review_sem2()}</span>
-          <span class="font-mono text-xs text-muted-foreground">{onboardingState.semester2Start} إلى {onboardingState.semester2End}</span>
-        </div>
+        {#if onboardingState.selectedTemplateId}
+          {@const activeTemplate = onboardingState.periodTemplates.find((t) => t.id === onboardingState.selectedTemplateId)}
+          {#if activeTemplate}
+            <div class="flex justify-between">
+              <span class="text-muted-foreground font-medium">{m.onboarding_template_label()}</span>
+              <span class="font-medium text-foreground font-sans">{getLocale() === "ar" ? activeTemplate.name_ar : activeTemplate.name}</span>
+            </div>
+          {/if}
+        {/if}
       </CardContent>
     </Card>
 

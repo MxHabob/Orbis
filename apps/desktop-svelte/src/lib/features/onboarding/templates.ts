@@ -274,7 +274,7 @@ export const INSTITUTION_PROFILES: Record<string, InstitutionProfile> = {
       {
         code: "ART",
         name: "Art",
-        name_ar: "التربية الفنية",
+        name_ar: "الفن",
         color: "#f43f5e",
         icon: "palette",
         sort_order: 8,
@@ -282,7 +282,7 @@ export const INSTITUTION_PROFILES: Record<string, InstitutionProfile> = {
       {
         code: "MUS",
         name: "Music",
-        name_ar: "التربية الموسيقية",
+        name_ar: "الموسيقى",
         color: "#8b5cf6",
         icon: "music",
         sort_order: 9,
@@ -290,7 +290,7 @@ export const INSTITUTION_PROFILES: Record<string, InstitutionProfile> = {
       {
         code: "PE",
         name: "Physical Education",
-        name_ar: "التربية البدنية",
+        name_ar: "الرياضة",
         color: "#f97316",
         icon: "activity",
         sort_order: 10,
