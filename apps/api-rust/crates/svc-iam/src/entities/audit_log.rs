@@ -12,12 +12,9 @@ pub struct Model {
     pub action: String,
     pub entity_type: String,
     pub entity_id: String,
-    pub old_data: Option<String>,
-    pub new_data: Option<String>,
+    pub changes: Option<String>,
     pub ip_address: Option<String>,
     pub user_agent: Option<String>,
-    pub session_id: Option<String>,
-    pub metadata: String,
     /// Actor type: "user", "system", "ai_agent", "autopilot"
     #[sea_orm(default_value = "user")]
     pub actor_type: String,
