@@ -21,8 +21,8 @@ export interface PlatformCommands {
   // ── Academic Years ────────────────────────────────────────────
   getCurrentYear(orgId: string): Promise<AcademicYear>;
   listYears(orgId: string): Promise<AcademicYearInfo[]>;
-  switchYear(yearId: string): Promise<void>;
-  isYearArchived(yearId: string): Promise<boolean>;
+  switchYear(periodId: string): Promise<void>;
+  isYearArchived(periodId: string): Promise<boolean>;
   getAcademicContext(orgId: string): Promise<AcademicContextResponse>;
   getSetupStatus(orgId: string): Promise<boolean>;
   initializeSchoolSetup(orgId: string, payload: any): Promise<void>;
@@ -41,7 +41,7 @@ export interface PlatformCommands {
   getPromotionPolicy(orgId: string): Promise<Record<string, unknown>>;
 
   // ── Calendar / Periods ──────────────────────────────────────
-  listCalendarEvents(orgId: string, yearId: string): Promise<any[]>;
+  listCalendarEvents(orgId: string, periodId: string): Promise<any[]>;
   listPendingCalendarEvents(orgId: string): Promise<any[]>;
   getOrgPolicy(orgId: string): Promise<AcademicPolicy | null>;
 

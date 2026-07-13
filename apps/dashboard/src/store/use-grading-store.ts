@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 interface GradingState {
-  yearId: number | null;
+  periodId: number | null;
   classId: number | null;
   subjectId: number | null;
   termId: number | null;
@@ -18,7 +18,7 @@ interface GradingState {
 export const useGradingStore = create<GradingState>()(
   persist(
     (set) => ({
-      yearId: null,
+      periodId: null,
       classId: null,
       subjectId: null,
       termId: null,
@@ -27,7 +27,7 @@ export const useGradingStore = create<GradingState>()(
       setFilters: (filters) => set((state) => ({ ...state, ...filters })),
       reset: () =>
         set({
-          yearId: null,
+          periodId: null,
           classId: null,
           subjectId: null,
           termId: null,

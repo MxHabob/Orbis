@@ -18,11 +18,11 @@ export function createCurrentYearQuery(orgId: string) {
   });
 }
 
-export function createIsArchivedQuery(yearId: string) {
+export function createIsArchivedQuery(periodId: string) {
   return createQuery({
-    queryKey: ["academicYears", "isArchived", yearId],
-    queryFn: () => commands.platform.isYearArchived(yearId),
-    enabled: !!yearId,
+    queryKey: ["academicYears", "isArchived", periodId],
+    queryFn: () => commands.platform.isYearArchived(periodId),
+    enabled: !!periodId,
     staleTime: 30 * 60 * 1000,
   });
 }
@@ -30,7 +30,7 @@ export function createIsArchivedQuery(yearId: string) {
 export function createSwitchYearMutation() {
   const queryClient = useQueryClient();
   return createMutation({
-    mutationFn: (yearId: string) => commands.platform.switchYear(yearId),
+    mutationFn: (periodId: string) => commands.platform.switchYear(periodId),
     onSuccess: () => {
       queryClient.invalidateQueries();
     },

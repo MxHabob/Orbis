@@ -5,7 +5,7 @@ export function useClassParams() {
   const pathParams = useParams();
 
   const [queryStates, setQueryStates] = useQueryStates({
-    academicYearId: parseAsString,
+    academicPeriodId: parseAsString,
     classId: parseAsString,
     deleteClassId: parseAsString,
     createClass: parseAsBoolean,

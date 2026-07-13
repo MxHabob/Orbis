@@ -64,23 +64,23 @@ impl AcademicExecutor {
                 active_model.updated_at = Set(now.clone());
                 active_model.update(db).await?;
 
-                // Update organizations.current_year_id
+                // Update organizations.current_period_id
                 let org = organization::Entity::find_by_id(task.org_id.clone())
                     .one(db)
                     .await?
                     .ok_or_else(|| AppError::not_found("organization", &task.org_id))?;
 
                 let mut org_active = org.into_active_model();
-                org_active.current_year_id = Set(Some(target_id.to_string()));
+                org_active.current_period_id = Set(Some(target_id.to_string()));
                 org_active.updated_at = Set(now.clone());
                 org_active.update(db).await?;
 
                 Self::emit(event_bus, "academic.year.activated", "academic_year", target_id, &task.org_id);
-                info!(year_id = target_id, "Year activated");
+                info!(period_id = target_id, "Year activated");
 
                 Ok(json!({
                     "action": "year_activated",
-                    "year_id": target_id,
+                    "period_id": target_id,
                     "current_year_updated": true
                 }).to_string())
             }
@@ -93,11 +93,11 @@ impl AcademicExecutor {
                 active_model.update(db).await?;
 
                 Self::emit(event_bus, "academic.year.closing", "academic_year", target_id, &task.org_id);
-                info!(year_id = target_id, "Year entering closing state");
+                info!(period_id = target_id, "Year entering closing state");
 
                 Ok(json!({
                     "action": "year_closing_started",
-                    "year_id": target_id
+                    "period_id": target_id
                 }).to_string())
             }
 
@@ -115,11 +115,11 @@ impl AcademicExecutor {
                 active_model.update(db).await?;
 
                 Self::emit(event_bus, "academic.year.archived", "academic_year", target_id, &task.org_id);
-                info!(year_id = target_id, "Year archived");
+                info!(period_id = target_id, "Year archived");
 
                 Ok(json!({
                     "action": "year_archived",
-                    "year_id": target_id
+                    "period_id": target_id
                 }).to_string())
             }
 
@@ -275,11 +275,11 @@ impl AcademicExecutor {
             "promotion.suggest" => {
                 // This is advisory-only — doesn't auto-promote.
                 // Creates an AI insight suggesting the admin start promotion.
-                info!(year_id = target_id, "Promotion suggested for year");
+                info!(period_id = target_id, "Promotion suggested for year");
 
                 Ok(json!({
                     "action": "promotion_suggested",
-                    "year_id": target_id,
+                    "period_id": target_id,
                     "message": "Year is ready for promotion. Review and initiate manually."
                 }).to_string())
             }

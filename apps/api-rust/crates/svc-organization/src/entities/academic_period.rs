@@ -18,7 +18,7 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: String,
     pub org_id: String,
-    pub year_id: String,
+    pub period_id: String,
     pub parent_id: Option<String>,
 
     // Identity
@@ -68,7 +68,7 @@ pub struct Model {
 pub enum Relation {
     #[sea_orm(
         belongs_to = "super::academic_year::Entity",
-        from = "Column::YearId",
+        from = "Column::PeriodId",
         to = "super::academic_year::Column::Id",
         on_update = "NoAction",
         on_delete = "NoAction"

@@ -9,7 +9,7 @@ const schema = z.object({
   subjectId: z.number(),
   termId: z.number(),
   month: z.number().min(1).max(14),
-  academicYearId: z.number(),
+  academicPeriodId: z.number(),
 });
 
 export const getGradeGridDataAction = authActionClient
@@ -19,14 +19,14 @@ export const getGradeGridDataAction = authActionClient
   })
   .action(
     async ({
-      parsedInput: { classId, subjectId, termId, month, academicYearId },
+      parsedInput: { classId, subjectId, termId, month, academicPeriodId },
     }) => {
       const data = await getGradeGridData({
         classId,
         subjectId,
         termId,
         month,
-        academicYearId,
+        academicPeriodId,
       });
 
       return data;

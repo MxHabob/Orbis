@@ -35,7 +35,7 @@ let name = $state(period?.name || "");
 let nameAr = $state(period?.name_ar || "");
 let code = $state(period?.code || "");
 let periodType = $state(period?.period_type || period?.period_type || "year");
-let parentId = $state(period?.parent_id || period?.year_id || "");
+let parentId = $state(period?.parent_id || period?.period_id || "");
 let startDate = $state(period?.start_date || "");
 let endDate = $state(period?.end_date || "");
 let gradingSystem = $state(period?.grading_system || "percentage");
@@ -90,7 +90,7 @@ async function handleSubmit(e: SubmitEvent) {
       name_ar: nameAr || name,
       code: code || undefined,
       period_type: periodType,
-      year_id: periodType === "term" && parentId ? parentId : undefined,
+      period_id: periodType === "term" && parentId ? parentId : undefined,
       start_date: startDate,
       end_date: endDate,
       grading_system: gradingSystem,

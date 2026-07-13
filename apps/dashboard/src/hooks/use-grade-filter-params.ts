@@ -6,7 +6,7 @@ export const gradeFilterParamsSchema = {
   selectedClassId: parseAsInteger,
   selectedSubjectId: parseAsInteger,
   termId: parseAsInteger,
-  yearId: parseAsInteger,
+  periodId: parseAsInteger,
   month: parseAsInteger,
 };
 

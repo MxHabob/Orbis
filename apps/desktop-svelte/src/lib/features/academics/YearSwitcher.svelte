@@ -27,8 +27,8 @@ $effect(() => {
   }
 });
 
-function handleSwitch(yearId: string) {
-  store.switchYear(yearId);
+function handleSwitch(periodId: string) {
+  store.switchYear(periodId);
 }
 
 const currentLabel = $derived(store.yearLabel || m.year_current());

@@ -12,7 +12,7 @@ export const commands: OrbisCommands = {
   // ACADEMIC
   // ═══════════════════════════════════════════════════════════════
   academic: {
-    listClasses: (_orgId, _yearId?) => http.get("/api/classes"),
+    listClasses: (_orgId, _periodId?) => http.get("/api/classes"),
     getClass: (classId) => http.get(`/api/classes/${classId}`),
     createClass: (data) => http.post("/api/classes", data),
     updateClass: (classId, data) => http.put(`/api/classes/${classId}`, data),
@@ -32,7 +32,7 @@ export const commands: OrbisCommands = {
     updateOrgUnit: (unitId, data) => http.put(`/api/units/${unitId}`, data),
     deleteOrgUnit: (unitId) => http.del(`/api/units/${unitId}`),
 
-    listEnrollments: (_orgId, _classId?, _yearId?) =>
+    listEnrollments: (_orgId, _classId?, _periodId?) =>
       http.get("/api/enrollments"),
     getEnrollment: (enrollmentId) =>
       http.get(`/api/enrollments/${enrollmentId}`),
@@ -43,9 +43,9 @@ export const commands: OrbisCommands = {
       http.post(`/api/enrollments/${enrollmentId}/transfer`, {
         class_id: newClassId,
       }),
-    checkDuplicate: (studentId, yearId) =>
+    checkDuplicate: (studentId, periodId) =>
       http.get(
-        `/api/enrollments/check-duplicate?student_id=${studentId}&year_id=${yearId}`,
+        `/api/enrollments/check-duplicate?student_id=${studentId}&period_id=${periodId}`,
       ),
 
     listClassSubjects: (classId, periodId) =>
@@ -60,8 +60,8 @@ export const commands: OrbisCommands = {
     deleteClassSubject: (id) => http.del(`/api/class-subjects/${id}`),
 
     listCycles: (_orgId) => http.get("/api/periods"),
-    listPeriodsByYear: (_orgId, yearId) =>
-      http.get(`/api/periods/year/${yearId}`),
+    listPeriodsByYear: (_orgId, periodId) =>
+      http.get(`/api/periods/year/${periodId}`),
     getCycle: (periodId) => http.get(`/api/periods/${periodId}`),
     createCycle: (data) => http.post("/api/periods", data),
     lockCycle: (_orgId, periodId) => http.post(`/api/periods/${periodId}/lock`),
@@ -183,23 +183,23 @@ export const commands: OrbisCommands = {
   // SCHEDULING
   // ═══════════════════════════════════════════════════════════════
   scheduling: {
-    listTimeSlots: (_yearId) => http.get("/api/time-slots"),
+    listTimeSlots: (_periodId) => http.get("/api/time-slots"),
     createTimeSlot: (data) => http.post("/api/time-slots", data),
     updateTimeSlot: (slotId, data) =>
       http.put(`/api/time-slots/${slotId}`, data),
     deleteTimeSlot: (slotId) => http.del(`/api/time-slots/${slotId}`),
 
-    listLessonsByClass: (yearId, classId) =>
-      http.get(`/api/schedule/${classId}/${yearId}`),
-    listLessonsByTeacher: (yearId, teacherId) =>
-      http.get(`/api/schedule/teacher/${teacherId}/${yearId}`),
+    listLessonsByClass: (periodId, classId) =>
+      http.get(`/api/schedule/${classId}/${periodId}`),
+    listLessonsByTeacher: (periodId, teacherId) =>
+      http.get(`/api/schedule/teacher/${teacherId}/${periodId}`),
     createLesson: (data) => http.post("/api/lessons", data),
     updateLesson: (lessonId, data) =>
       http.put(`/api/lessons/${lessonId}`, data),
     deleteLesson: (lessonId) => http.del(`/api/lessons/${lessonId}`),
-    checkConflicts: (yearId, teacherId, timeSlotId, dayOfWeek, roomId?) =>
+    checkConflicts: (periodId, teacherId, timeSlotId, dayOfWeek, roomId?) =>
       http.post("/api/schedule/conflicts", {
-        yearId,
+        periodId,
         teacherId,
         timeSlotId,
         dayOfWeek,
@@ -211,10 +211,10 @@ export const commands: OrbisCommands = {
     updateRoom: (roomId, data) => http.put(`/api/rooms/${roomId}`, data),
     deleteRoom: (roomId) => http.del(`/api/rooms/${roomId}`),
 
-    startSolver: (yearId, mode?) =>
-      http.post("/api/schedule/solve", { year_id: yearId, mode }),
+    startSolver: (periodId, mode?) =>
+      http.post("/api/schedule/solve", { period_id: periodId, mode }),
     getSolverJob: (jobId) => http.get(`/api/schedule/solve/job/${jobId}`),
-    listSolverJobs: (yearId) => http.get(`/api/schedule/solve/${yearId}`),
+    listSolverJobs: (periodId) => http.get(`/api/schedule/solve/${periodId}`),
     cancelSolver: (jobId) => http.post(`/api/schedule/solve/${jobId}/cancel`),
     applySolver: (jobId) => http.post(`/api/schedule/solve/${jobId}/apply`),
   },
@@ -299,9 +299,9 @@ export const commands: OrbisCommands = {
     getCurrentYear: (orgId) =>
       http.get(`/api/academic-years/current?orgId=${orgId}`),
     listYears: (_orgId) => http.get("/api/academic-years"),
-    switchYear: (yearId) => http.post(`/api/academic-years/${yearId}/switch`),
-    isYearArchived: (yearId) =>
-      http.get(`/api/academic-years/${yearId}/archived-status`),
+    switchYear: (periodId) => http.post(`/api/academic-years/${periodId}/switch`),
+    isYearArchived: (periodId) =>
+      http.get(`/api/academic-years/${periodId}/archived-status`),
     getAcademicContext: (_orgId) => http.get("/api/academic-context"),
     getSetupStatus: (_orgId) => http.get("/api/setup-status"),
 
@@ -319,8 +319,8 @@ export const commands: OrbisCommands = {
       http.post("/api/promotion/override", request),
     getPromotionPolicy: (_orgId) => http.get("/api/promotion/policy"),
 
-    listCalendarEvents: (_orgId, yearId) =>
-      http.get(`/api/calendar?year_id=${yearId}`),
+    listCalendarEvents: (_orgId, periodId) =>
+      http.get(`/api/calendar?period_id=${periodId}`),
     listPendingCalendarEvents: (_orgId) => http.get("/api/calendar/pending"),
     getOrgPolicy: (_orgId) => http.get("/api/organization/policy"),
 

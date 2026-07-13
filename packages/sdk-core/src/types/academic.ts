@@ -1,14 +1,14 @@
 /**
  * Academic domain types — mirrors Rust entities in svc-academic + svc-organization.
  *
- * Migrated: AcademicPeriod → AcademicPeriod, period_id → period_id/year_id.
+ * Migrated: AcademicPeriod → AcademicPeriod, period_id → period_id/period_id.
  */
 
 /** Academic Period (replaces AcademicPeriod) */
 export interface AcademicPeriod {
   id: string;
   org_id: string;
-  year_id: string;
+  period_id: string;
   parent_id?: string | null;
   name: string;
   name_ar?: string | null;
@@ -45,7 +45,7 @@ export interface Class {
   id: string;
   org_id: string;
   unit_id: string;
-  year_id: string;
+  period_id: string;
   name: string;
   name_ar?: string | null;
   level: string;
@@ -64,7 +64,7 @@ export interface Class {
 export interface Enrollment {
   id: string;
   org_id: string;
-  year_id: string;
+  period_id: string;
   student_id: string;
   class_id: string;
   student_number: string;
@@ -179,7 +179,7 @@ export interface Organization {
   name_ar?: string | null;
   slug: string;
   code?: string | null;
-  current_year_id?: string | null;
+  current_period_id?: string | null;
   timezone: string;
   locale: string;
   currency: string;

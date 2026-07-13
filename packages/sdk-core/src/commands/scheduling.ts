@@ -1,15 +1,15 @@
 /**
  * Scheduling command interfaces — mirrors svc-scheduling/ops.
  *
- * Migrated: periodId → yearId for scheduling scope.
+ * Migrated: periodId → periodId for scheduling scope.
  */
 import type { TimeSlot, ScheduledLesson, Room, SolveJob } from "../types";
 
 export interface SchedulingCommands {
   // ── Time Slots ──────────────────────────────────────────────
-  listTimeSlots(orgId: string, yearId: string): Promise<TimeSlot[]>;
+  listTimeSlots(orgId: string, periodId: string): Promise<TimeSlot[]>;
   createTimeSlot(data: {
-    year_id: string;
+    period_id: string;
     slot_number: number;
     name?: string;
     start_time: string;
@@ -26,16 +26,16 @@ export interface SchedulingCommands {
   // ── Lessons ─────────────────────────────────────────────────
   listLessonsByClass(
     orgId: string,
-    yearId: string,
+    periodId: string,
     classId: string,
   ): Promise<ScheduledLesson[]>;
   listLessonsByTeacher(
     orgId: string,
-    yearId: string,
+    periodId: string,
     teacherId: string,
   ): Promise<ScheduledLesson[]>;
   createLesson(data: {
-    year_id: string;
+    period_id: string;
     class_id: string;
     class_subject_id: string;
     subject_id: string;
@@ -56,7 +56,7 @@ export interface SchedulingCommands {
   deleteLesson(lessonId: string): Promise<void>;
   checkConflicts(
     orgId: string,
-    yearId: string,
+    periodId: string,
     teacherId: string,
     timeSlotId: string,
     dayOfWeek: number,
@@ -78,9 +78,9 @@ export interface SchedulingCommands {
   deleteRoom(roomId: string): Promise<void>;
 
   // ── Solver ──────────────────────────────────────────────────
-  startSolver(yearId: string, mode?: string): Promise<SolveJob>;
+  startSolver(periodId: string, mode?: string): Promise<SolveJob>;
   getSolverJob(jobId: string): Promise<SolveJob>;
-  listSolverJobs(yearId: string): Promise<SolveJob[]>;
+  listSolverJobs(periodId: string): Promise<SolveJob[]>;
   cancelSolver(jobId: string): Promise<SolveJob>;
   applySolver(jobId: string): Promise<SolveJob>;
 }

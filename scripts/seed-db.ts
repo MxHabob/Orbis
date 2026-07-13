@@ -91,7 +91,7 @@ try {
       regDb.prepare("DELETE FROM academic_years WHERE org_id = ?").run(orgId);
       regDb
         .prepare(`
-        INSERT INTO academic_years (id, org_id, name, name_ar, start_date, end_date, hijri_start_date, hijri_end_date, db_filename, status, is_current, archived_at, archived_by, promotion_source_year_id, db_size_bytes, student_count, teacher_count, class_count, notes, created_at, updated_at)
+        INSERT INTO academic_years (id, org_id, name, name_ar, start_date, end_date, hijri_start_date, hijri_end_date, db_filename, status, is_current, archived_at, archived_by, promotion_source_period_id, db_size_bytes, student_count, teacher_count, class_count, notes, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, '../orbis.db', 'active', 1, NULL, NULL, NULL, NULL, 0, 0, 0, 'Initial seeded year', datetime('now'), datetime('now'))
       `)
         .run(
@@ -131,6 +131,20 @@ try {
     INSERT INTO user_roles (id, user_id, role, org_id, scope_type, is_primary, assigned_at)
     VALUES (?, ?, 'admin', ?, 'org', 1, datetime('now'))
   `).run(crypto.randomUUID(), adminId, orgId);
+
+  console.log("Creating default period templates...");
+  db.prepare("DELETE FROM period_templates WHERE org_id = ?").run(orgId);
+  db.prepare(`
+    INSERT INTO period_templates (id, org_id, name, name_ar, institution_type, structure, is_default, created_at, updated_at)
+    VALUES 
+      (?, ?, 'Two Semesters (4 Months each)', 'نظام فصلين دراسيين', 'school', '[{"name":"Semester 1","name_ar":"الفصل الدراسي الأول","type":"term","weight":50,"children":[{"name":"Month 1","name_ar":"الشهر الأول","type":"month","weight":25},{"name":"Month 2","name_ar":"الشهر الثاني","type":"month","weight":25},{"name":"Month 3","name_ar":"الشهر الثالث","type":"month","weight":25},{"name":"Month 4 (Final)","name_ar":"الشهر الرابع (النهائي)","type":"month","weight":25}]},{"name":"Semester 2","name_ar":"الفصل الدراسي الثاني","type":"term","weight":50,"children":[{"name":"Month 1","name_ar":"الشهر الأول","type":"month","weight":25},{"name":"Month 2","name_ar":"الشهر الثاني","type":"month","weight":25},{"name":"Month 3","name_ar":"الشهر الثالث","type":"month","weight":25},{"name":"Month 4 (Final)","name_ar":"الشهر الرابع (النهائي)","type":"month","weight":25}]}]', 1, datetime('now'), datetime('now')),
+      (?, ?, 'Three Trimesters', 'نظام 3 فصول دراسية', 'school', '[{"name":"Trimester 1","name_ar":"الفصل الدراسي الأول","type":"term","weight":33.33,"children":[{"name":"Mid-Term","name_ar":"منتصف الفصل","type":"quarter","weight":50},{"name":"Final","name_ar":"النهائي","type":"quarter","weight":50}]},{"name":"Trimester 2","name_ar":"الفصل الدراسي الثاني","type":"term","weight":33.33,"children":[{"name":"Mid-Term","name_ar":"منتصف الفصل","type":"quarter","weight":50},{"name":"Final","name_ar":"النهائي","type":"quarter","weight":50}]},{"name":"Trimester 3","name_ar":"الفصل الدراسي الثالث","type":"term","weight":33.34,"children":[{"name":"Mid-Term","name_ar":"منتصف الفصل","type":"quarter","weight":50},{"name":"Final","name_ar":"النهائي","type":"quarter","weight":50}]}]', 0, datetime('now'), datetime('now')),
+      (?, ?, 'Four Quarters', 'نظام 4 أرباع', 'school', '[{"name":"Quarter 1","name_ar":"الربع الأول","type":"quarter","weight":25},{"name":"Quarter 2","name_ar":"الربع الثاني","type":"quarter","weight":25},{"name":"Quarter 3","name_ar":"الربع الثالث","type":"quarter","weight":25},{"name":"Quarter 4","name_ar":"الربع الرابع","type":"quarter","weight":25}]', 0, datetime('now'), datetime('now'))
+  `).run(
+    `tpl-2-semesters-${orgId}`, orgId,
+    `tpl-3-trimesters-${orgId}`, orgId,
+    `tpl-4-quarters-${orgId}`, orgId
+  );
 
   // 1. Create Academic Cycle (Hijri)
   db.prepare("DELETE FROM academic_cycles WHERE org_id = ?").run(orgId);

@@ -128,11 +128,11 @@ class AcademicContextStore {
     }
   }
 
-  async switchYear(yearId: string) {
+  async switchYear(periodId: string) {
     if (this.isSwitching) return;
     this.isSwitching = true;
     try {
-      await commands.platform.switchYear(yearId);
+      await commands.platform.switchYear(periodId);
       await this.loadCurrentYear();
       toast.success(`Switched to ${this.yearLabel}`);
     } catch (e: unknown) {

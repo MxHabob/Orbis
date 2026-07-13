@@ -39,10 +39,10 @@ pub async fn list_periods(
 pub async fn list_periods_by_year(
     state: State<'_, Arc<AppState>>,
     org_id: String,
-    year_id: String,
+    period_id: String,
 ) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let result = org_ops::academic_period::list_by_year(&ctx, &year_id).await.map_err(CommandError::from)?;
+    let result = org_ops::academic_period::list_by_year(&ctx, &period_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -86,7 +86,7 @@ pub async fn set_current_period(
     _period_id: String,
 ) -> CmdResult<()> {
     // set_current period is deprecated.
-    // Current year is now set via organizations.current_year_id.
+    // Current year is now set via organizations.current_period_id.
     Err(CommandError::new("Deprecated: set active year via switch_academic_year command."))
 }
 

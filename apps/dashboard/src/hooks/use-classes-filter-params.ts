@@ -4,7 +4,7 @@ import { createLoader, parseAsArrayOf, parseAsString } from "nuqs/server";
 const classesFilterParamsSchema = {
   q: parseAsString,
   parentId: parseAsString,
-  academicYearId: parseAsString,
+  academicPeriodId: parseAsString,
   ids: parseAsArrayOf(parseAsString),
 };
 

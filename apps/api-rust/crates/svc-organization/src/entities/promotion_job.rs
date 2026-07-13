@@ -9,8 +9,8 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: String,
     pub org_id: String,
-    pub source_year_id: String,
-    pub target_year_id: Option<String>,
+    pub source_period_id: String,
+    pub target_period_id: Option<String>,
     pub status: String,
     pub initiated_by: String,
     pub initiated_by_name: Option<String>,

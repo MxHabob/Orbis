@@ -301,6 +301,7 @@ pub fn run() {
             commands::organization::thin::get_dashboard_stats,
             commands::organization::thin::get_setup_status,
             commands::organization::thin::initialize_school_setup,
+            commands::organization::thin::get_period_templates,
             commands::organization::thin::get_current_academic_year,
             commands::organization::thin::list_academic_years,
             commands::organization::thin::switch_academic_year,

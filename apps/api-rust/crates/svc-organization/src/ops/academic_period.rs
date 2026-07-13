@@ -1,7 +1,7 @@
 //! Academic period operations — CRUD + lock/unlock + enrollment/grade entry windows.
 //!
 //! Replaces the old `period.rs` that operated on `academic_periods`.
-//! All operations now work on `academic_periods` with explicit year scoping via ctx.year_id.
+//! All operations now work on `academic_periods` with explicit year scoping via ctx.period_id.
 
 use chrono::Utc;
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, IntoActiveModel};
@@ -18,17 +18,17 @@ pub async fn list(ctx: &ServiceContext) -> Result<Vec<academic_period::Model>, A
     ctx.permissions.check(&ctx.actor, Permission::PeriodRead).await?;
     Ok(academic_period::Entity::find()
         .filter(academic_period::Column::OrgId.eq(&ctx.org_id))
-        .filter(academic_period::Column::YearId.eq(&ctx.year_id))
+        .filter(academic_period::Column::PeriodId.eq(&ctx.period_id))
         .order_by_asc(academic_period::Column::SortOrder)
         .all(&ctx.db).await?)
 }
 
 /// List periods for a specific year (cross-year queries).
-pub async fn list_by_year(ctx: &ServiceContext, year_id: &str) -> Result<Vec<academic_period::Model>, AppError> {
+pub async fn list_by_year(ctx: &ServiceContext, period_id: &str) -> Result<Vec<academic_period::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::PeriodRead).await?;
     Ok(academic_period::Entity::find()
         .filter(academic_period::Column::OrgId.eq(&ctx.org_id))
-        .filter(academic_period::Column::YearId.eq(year_id))
+        .filter(academic_period::Column::PeriodId.eq(period_id))
         .order_by_asc(academic_period::Column::SortOrder)
         .all(&ctx.db).await?)
 }
@@ -47,7 +47,7 @@ pub async fn get_current(ctx: &ServiceContext) -> Result<academic_period::Model,
     
     academic_period::Entity::find()
         .filter(academic_period::Column::OrgId.eq(&ctx.org_id))
-        .filter(academic_period::Column::YearId.eq(&ctx.year_id))
+        .filter(academic_period::Column::PeriodId.eq(&ctx.period_id))
         .order_by_asc(academic_period::Column::SortOrder)
         .one(&ctx.db).await?
         .ok_or_else(|| AppError::not_found("academic_period", "current"))
@@ -90,7 +90,7 @@ pub async fn create(
     let model = academic_period::ActiveModel {
         id: Set(id.clone()),
         org_id: Set(ctx.org_id.clone()),
-        year_id: Set(ctx.year_id.clone()),
+        period_id: Set(ctx.period_id.clone()),
         parent_id: Set(req.parent_id),
         name: Set(req.name),
         name_ar: Set(req.name_ar),

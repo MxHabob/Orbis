@@ -62,6 +62,13 @@ pub async fn initialize_school_setup(state: State<'_, Arc<AppState>>, org_id: St
     ops::organization::initialize_school_setup(&ctx, payload).await.map_err(CommandError::from)
 }
 
+#[tauri::command]
+pub async fn get_period_templates(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let r = ops::organization::get_period_templates(&ctx).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(r).unwrap())
+}
+
 // ── Academic Years ──────────────────────────────────────────────────
 
 #[tauri::command]
@@ -93,17 +100,17 @@ pub async fn list_academic_years(state: State<'_, Arc<AppState>>, org_id: String
 }
 
 #[tauri::command]
-pub async fn switch_academic_year(_state: State<'_, Arc<AppState>>, _year_id: String) -> CmdResult<()> {
+pub async fn switch_academic_year(_state: State<'_, Arc<AppState>>, _period_id: String) -> CmdResult<()> {
     // In the single DB architecture, the frontend manages the active year via routing
     // and passes it to commands. The backend doesn't need to switch physical databases.
     Ok(())
 }
 
 #[tauri::command]
-pub async fn is_year_archived(state: State<'_, Arc<AppState>>, year_id: String) -> CmdResult<bool> {
+pub async fn is_year_archived(state: State<'_, Arc<AppState>>, period_id: String) -> CmdResult<bool> {
     use sea_orm::EntityTrait;
     let db = state.db();
-    let r = svc_organization::entities::academic_year::Entity::find_by_id(year_id)
+    let r = svc_organization::entities::academic_year::Entity::find_by_id(period_id)
         .one(&db)
         .await
         .map_err(CommandError::from)?
@@ -123,11 +130,11 @@ pub async fn get_academic_context(state: State<'_, Arc<AppState>>, org_id: Strin
         .map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Organization not found"))?;
 
-    let current_year_id = org.current_year_id.clone().unwrap_or_default();
+    let current_period_id = org.current_period_id.clone().unwrap_or_default();
 
     // Find current year
-    let current_year = if !current_year_id.is_empty() {
-        svc_organization::entities::academic_year::Entity::find_by_id(&current_year_id)
+    let current_year = if !current_period_id.is_empty() {
+        svc_organization::entities::academic_year::Entity::find_by_id(&current_period_id)
             .one(&db)
             .await
             .map_err(CommandError::from)?
@@ -144,9 +151,9 @@ pub async fn get_academic_context(state: State<'_, Arc<AppState>>, org_id: Strin
         .map_err(CommandError::from)?;
 
     // Find periods for current year
-    let periods = if !current_year_id.is_empty() {
+    let periods = if !current_period_id.is_empty() {
         svc_organization::entities::academic_period::Entity::find()
-            .filter(svc_organization::entities::academic_period::Column::YearId.eq(&current_year_id))
+            .filter(svc_organization::entities::academic_period::Column::PeriodId.eq(&current_period_id))
             .order_by_asc(svc_organization::entities::academic_period::Column::SortOrder)
             .all(&db)
             .await
@@ -170,7 +177,7 @@ pub async fn get_academic_context(state: State<'_, Arc<AppState>>, org_id: Strin
         "periods": periods,
         "year_status": year_status,
         "is_read_only": is_read_only,
-        "year_id": current_year_id,
+        "period_id": current_period_id,
     }))
 }
 
@@ -213,12 +220,12 @@ pub async fn promotion_dry_run(
     let config_str = config.to_string();
     let parsed_config: PromotionConfig = serde_json::from_value(config)
         .map_err(|e| CommandError::new(format!("Invalid config: {}", e)))?;
-    let source_year_id = parsed_config.source_year_id.clone();
+    let source_period_id = parsed_config.source_period_id.clone();
     
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
     
     // 1. Create a promotion job in registry
-    let job = ops::promotion::create_job(&ctx, source_year_id, config_str)
+    let job = ops::promotion::create_job(&ctx, source_period_id, config_str)
         .await
         .map_err(CommandError::from)?;
         
@@ -311,14 +318,14 @@ pub async fn get_promotion_policy(state: State<'_, Arc<AppState>>, org_id: Strin
 pub async fn get_calendar_events(
     state: State<'_, Arc<AppState>>,
     org_id: String,
-    year_id: String,
+    period_id: String,
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, QueryOrder};
     use svc_organization::entities::academic_period;
     let db = state.db();
     let periods = academic_period::Entity::find()
         .filter(academic_period::Column::OrgId.eq(org_id))
-        .filter(academic_period::Column::YearId.eq(year_id))
+        .filter(academic_period::Column::PeriodId.eq(period_id))
         .order_by_asc(academic_period::Column::SortOrder)
         .all(&db)
         .await
@@ -381,7 +388,7 @@ pub async fn delete_calendar_event(
 pub async fn generate_default_calendar(
     _state: State<'_, Arc<AppState>>,
     _org_id: String,
-    _year_id: String,
+    _period_id: String,
 ) -> CmdResult<()> {
     // Period templates now handle this. See period_templates entity.
     Ok(())

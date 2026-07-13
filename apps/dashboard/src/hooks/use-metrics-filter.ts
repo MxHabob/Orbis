@@ -109,8 +109,8 @@ export function useMetricsFilter() {
   useEffect(() => {
     if (!academicYear?.id) return;
     // We use academicYear.id as the "teamId" equivalent for initialization to keep it unique per year
-    const yearId = String(academicYear.id);
-    initialize(yearId, fiscalYearStartMonth);
+    const periodId = String(academicYear.id);
+    initialize(periodId, fiscalYearStartMonth);
   }, [academicYear?.id, fiscalYearStartMonth, initialize]);
 
   // Update fiscal year start month when it changes

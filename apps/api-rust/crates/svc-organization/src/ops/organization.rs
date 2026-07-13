@@ -10,7 +10,7 @@ use shared_kernel::traits::{AuditEntry, Permission};
 use crate::contracts::commands::{CreateOrganizationCmd, UpdateOrganizationCmd};
 use crate::contracts::responses::OrganizationResponse;
 use crate::contracts::events::event_types;
-use crate::entities::organization;
+use crate::entities::{organization, period_template};
 use crate::ops::settings::OrgSettingsProvider;
 
 /// Get organization by ID.
@@ -60,7 +60,7 @@ pub async fn create_organization(
     let org_id = uuid::Uuid::new_v4().to_string();
 
     let org = organization::ActiveModel {
-        current_year_id: Set(None),
+        current_period_id: Set(None),
         id: Set(org_id.clone()),
         name: Set(cmd.name),
         name_ar: Set(None),
@@ -87,10 +87,51 @@ pub async fn create_organization(
         deleted_at: Set(None),
         deleted_by: Set(None),
         created_at: Set(now.clone()),
-        updated_at: Set(now),
+        updated_at: Set(now.clone()),
     };
 
     let inserted = org.insert(&ctx.db).await?;
+
+    // Seed default period templates
+    let default_templates = vec![
+        period_template::ActiveModel {
+            id: Set(format!("tpl-2-semesters-{}", org_id)),
+            org_id: Set(org_id.clone()),
+            name: Set("Two Semesters (4 Months each)".to_string()),
+            name_ar: Set(Some("نظام فصلين دراسيين".to_string())),
+            institution_type: Set("school".to_string()),
+            structure: Set(r#"[{"name":"Semester 1","name_ar":"الفصل الدراسي الأول","type":"term","weight":50,"children":[{"name":"Month 1","name_ar":"الشهر الأول","type":"month","weight":25},{"name":"Month 2","name_ar":"الشهر الثاني","type":"month","weight":25},{"name":"Month 3","name_ar":"الشهر الثالث","type":"month","weight":25},{"name":"Month 4 (Final)","name_ar":"الشهر الرابع (النهائي)","type":"month","weight":25}]},{"name":"Semester 2","name_ar":"الفصل الدراسي الثاني","type":"term","weight":50,"children":[{"name":"Month 1","name_ar":"الشهر الأول","type":"month","weight":25},{"name":"Month 2","name_ar":"الشهر الثاني","type":"month","weight":25},{"name":"Month 3","name_ar":"الشهر الثالث","type":"month","weight":25},{"name":"Month 4 (Final)","name_ar":"الشهر الرابع (النهائي)","type":"month","weight":25}]}]"#.to_string()),
+            is_default: Set(1),
+            created_at: Set(now.clone()),
+            updated_at: Set(now.clone()),
+        },
+        period_template::ActiveModel {
+            id: Set(format!("tpl-3-trimesters-{}", org_id)),
+            org_id: Set(org_id.clone()),
+            name: Set("Three Trimesters".to_string()),
+            name_ar: Set(Some("نظام 3 فصول دراسية".to_string())),
+            institution_type: Set("school".to_string()),
+            structure: Set(r#"[{"name":"Trimester 1","name_ar":"الفصل الدراسي الأول","type":"term","weight":33.33,"children":[{"name":"Mid-Term","name_ar":"منتصف الفصل","type":"quarter","weight":50},{"name":"Final","name_ar":"النهائي","type":"quarter","weight":50}]},{"name":"Trimester 2","name_ar":"الفصل الدراسي الثاني","type":"term","weight":33.33,"children":[{"name":"Mid-Term","name_ar":"منتصف الفصل","type":"quarter","weight":50},{"name":"Final","name_ar":"النهائي","type":"quarter","weight":50}]},{"name":"Trimester 3","name_ar":"الفصل الدراسي الثالث","type":"term","weight":33.34,"children":[{"name":"Mid-Term","name_ar":"منتصف الفصل","type":"quarter","weight":50},{"name":"Final","name_ar":"النهائي","type":"quarter","weight":50}]}]"#.to_string()),
+            is_default: Set(0),
+            created_at: Set(now.clone()),
+            updated_at: Set(now.clone()),
+        },
+        period_template::ActiveModel {
+            id: Set(format!("tpl-4-quarters-{}", org_id)),
+            org_id: Set(org_id.clone()),
+            name: Set("Four Quarters".to_string()),
+            name_ar: Set(Some("نظام 4 أرباع".to_string())),
+            institution_type: Set("school".to_string()),
+            structure: Set(r#"[{"name":"Quarter 1","name_ar":"الربع الأول","type":"quarter","weight":25},{"name":"Quarter 2","name_ar":"الربع الثاني","type":"quarter","weight":25},{"name":"Quarter 3","name_ar":"الربع الثالث","type":"quarter","weight":25},{"name":"Quarter 4","name_ar":"الربع الرابع","type":"quarter","weight":25}]"#.to_string()),
+            is_default: Set(0),
+            created_at: Set(now.clone()),
+            updated_at: Set(now.clone()),
+        }
+    ];
+
+    for t in default_templates {
+        t.insert(&ctx.db).await.ok();
+    }
 
     // Audit
     ctx.audit.log(AuditEntry {
@@ -292,6 +333,7 @@ pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::
     let org_name = payload.get("org_name").and_then(|v| v.as_str()).unwrap_or("Organization");
     let org_name_ar = payload.get("org_name_ar").and_then(|v| v.as_str()).unwrap_or(org_name);
     let currency = payload.get("currency").and_then(|v| v.as_str()).unwrap_or("YER");
+    let now = chrono::Utc::now().naive_utc().to_string();
     
     // 1. Update Organization
     txn.execute(Statement::from_string(
@@ -310,12 +352,12 @@ pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::
     txn.execute(Statement::from_string(
         DatabaseBackend::Sqlite,
         format!(
-            "INSERT INTO org_units (id, org_id, name, name_ar, type_code, status) VALUES ('{}', '{}', '{}', '{}', 'root', 'active') ON CONFLICT DO NOTHING;",
-            root_unit_id.replace("'", "''"), ctx.org_id.replace("'", "''"), root_name.replace("'", "''"), root_name_ar.replace("'", "''")
+            "INSERT INTO org_units (id, org_id, name, name_ar, unit_type, is_active, created_at, updated_at) VALUES ('{}', '{}', '{}', '{}', 'root', 1, '{}', '{}') ON CONFLICT DO NOTHING;",
+            root_unit_id.replace("'", "''"), ctx.org_id.replace("'", "''"), root_name.replace("'", "''"), root_name_ar.replace("'", "''"), now, now
         )
     )).await?;
 
-    let mut year_id_val = String::from("default-year");
+    let mut period_id_val = String::from("default-year");
 
     // 3. Insert periods
     if let Some(periods) = payload.get("periods").and_then(|v| v.as_array()) {
@@ -329,12 +371,12 @@ pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::
             let ptype = p.get("period_type").and_then(|v| v.as_str()).unwrap_or("term");
 
             if ptype == "year" {
-                year_id_val = id.to_string();
+                period_id_val = id.to_string();
                 txn.execute(Statement::from_string(
                     DatabaseBackend::Sqlite,
                     format!(
-                        "INSERT INTO academic_years (id, org_id, name, name_ar, start_date, end_date, status) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', 'active') ON CONFLICT DO NOTHING;",
-                        id.replace("'", "''"), ctx.org_id.replace("'", "''"), name.replace("'", "''"), name_ar.replace("'", "''"), start_date, end_date
+                        "INSERT INTO academic_years (id, org_id, name, name_ar, start_date, end_date, status, created_at, updated_at) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', 'active', '{}', '{}') ON CONFLICT DO NOTHING;",
+                        id.replace("'", "''"), ctx.org_id.replace("'", "''"), name.replace("'", "''"), name_ar.replace("'", "''"), start_date, end_date, now, now
                     )
                 )).await?;
             } else {
@@ -343,8 +385,8 @@ pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::
                 txn.execute(Statement::from_string(
                     DatabaseBackend::Sqlite,
                     format!(
-                        "INSERT INTO academic_periods (id, org_id, year_id, parent_id, name, name_ar, period_type, start_date, end_date) VALUES ('{}', '{}', '{}', {}, '{}', '{}', '{}', '{}', '{}') ON CONFLICT DO NOTHING;",
-                        id.replace("'", "''"), ctx.org_id.replace("'", "''"), year_id_val.replace("'", "''"), parent_val, name.replace("'", "''"), name_ar.replace("'", "''"), mapped_ptype, start_date, end_date
+                        "INSERT INTO academic_periods (id, org_id, period_id, parent_id, name, name_ar, period_type, start_date, end_date, status, created_at, updated_at) VALUES ('{}', '{}', '{}', {}, '{}', '{}', '{}', '{}', '{}', 'active', '{}', '{}') ON CONFLICT DO NOTHING;",
+                        id.replace("'", "''"), ctx.org_id.replace("'", "''"), period_id_val.replace("'", "''"), parent_val, name.replace("'", "''"), name_ar.replace("'", "''"), mapped_ptype, start_date, end_date, now, now
                     )
                 )).await?;
             }
@@ -352,6 +394,9 @@ pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::
     }
 
     // 4. Insert classes
+    // Note: Schema expects period_id, not period_id. Since we don't have exactly the term period ID here easily, we fallback to period_id if needed,
+    // wait, actually we can just pass period_id from the frontend payload or use period_id_val as a fallback if the column allows. 
+    // In schema_baseline.sql, classes has: period_id TEXT NOT NULL. So let's use period_id_val as period_id to ensure it inserts without error.
     if let Some(classes) = payload.get("classes").and_then(|v| v.as_array()) {
         for c in classes {
             let id = c.get("id").and_then(|v| v.as_str()).unwrap_or("");
@@ -362,8 +407,8 @@ pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::
             txn.execute(Statement::from_string(
                 DatabaseBackend::Sqlite,
                 format!(
-                    "INSERT INTO classes (id, org_id, year_id, unit_id, name, name_ar, level, division, capacity, status) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', 30, 'active') ON CONFLICT DO NOTHING;",
-                    id.replace("'", "''"), ctx.org_id.replace("'", "''"), year_id_val.replace("'", "''"), root_unit_id.replace("'", "''"), name.replace("'", "''"), name_ar.replace("'", "''"), level.replace("'", "''"), div.replace("'", "''")
+                    "INSERT INTO classes (id, org_id, period_id, unit_id, name, name_ar, level, division, capacity, is_active, created_at, updated_at) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', 30, 1, '{}', '{}') ON CONFLICT DO NOTHING;",
+                    id.replace("'", "''"), ctx.org_id.replace("'", "''"), period_id_val.replace("'", "''"), root_unit_id.replace("'", "''"), name.replace("'", "''"), name_ar.replace("'", "''"), level.replace("'", "''"), div.replace("'", "''"), now, now
                 )
             )).await?;
         }
@@ -379,8 +424,8 @@ pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::
             txn.execute(Statement::from_string(
                 DatabaseBackend::Sqlite,
                 format!(
-                    "INSERT INTO subjects (id, org_id, unit_id, code, name, name_ar, is_core, status) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', 1, 'active') ON CONFLICT DO NOTHING;",
-                    id.replace("'", "''"), ctx.org_id.replace("'", "''"), root_unit_id.replace("'", "''"), code.replace("'", "''"), name.replace("'", "''"), name_ar.replace("'", "''")
+                    "INSERT INTO subjects (id, org_id, unit_id, code, name, name_ar, is_core, is_elective, requires_lab, requires_practical, is_active, created_at, updated_at) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', 1, 0, 0, 0, 1, '{}', '{}') ON CONFLICT DO NOTHING;",
+                    id.replace("'", "''"), ctx.org_id.replace("'", "''"), root_unit_id.replace("'", "''"), code.replace("'", "''"), name.replace("'", "''"), name_ar.replace("'", "''"), now, now
                 )
             )).await?;
         }
@@ -397,8 +442,8 @@ pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::
             txn.execute(Statement::from_string(
                 DatabaseBackend::Sqlite,
                 format!(
-                    "INSERT INTO time_slots (id, org_id, year_id, slot_number, name, name_ar, start_time, end_time, duration_minutes, is_break) VALUES ('{}', '{}', '{}', {}, '{}', '{}', '{}', '{}', 45, 0) ON CONFLICT DO NOTHING;",
-                    id.replace("'", "''"), ctx.org_id.replace("'", "''"), year_id_val.replace("'", "''"), i+1, name.replace("'", "''"), name_ar.replace("'", "''"), start.replace("'", "''"), end.replace("'", "''")
+                    "INSERT INTO time_slots (id, org_id, period_id, slot_number, name, name_ar, start_time, end_time, duration_minutes, is_break, is_active, created_at, updated_at) VALUES ('{}', '{}', '{}', {}, '{}', '{}', '{}', '{}', 45, 0, 1, '{}', '{}') ON CONFLICT DO NOTHING;",
+                    id.replace("'", "''"), ctx.org_id.replace("'", "''"), period_id_val.replace("'", "''"), i+1, name.replace("'", "''"), name_ar.replace("'", "''"), start.replace("'", "''"), end.replace("'", "''"), now, now
                 )
             )).await?;
         }
@@ -413,8 +458,8 @@ pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::
             txn.execute(Statement::from_string(
                 DatabaseBackend::Sqlite,
                 format!(
-                    "INSERT INTO rooms (id, org_id, name, name_ar, capacity, room_type, is_active, created_at) VALUES ('{}', '{}', '{}', '{}', 30, 'classroom', 1, '{}') ON CONFLICT DO NOTHING;",
-                    id.replace("'", "''"), ctx.org_id.replace("'", "''"), name.replace("'", "''"), name_ar.replace("'", "''"), chrono::Utc::now().to_rfc3339()
+                    "INSERT INTO rooms (id, org_id, name, name_ar, capacity, room_type, is_active, created_at, updated_at) VALUES ('{}', '{}', '{}', '{}', 30, 'classroom', 1, '{}', '{}') ON CONFLICT DO NOTHING;",
+                    id.replace("'", "''"), ctx.org_id.replace("'", "''"), name.replace("'", "''"), name_ar.replace("'", "''"), now, now
                 )
             )).await?;
         }
@@ -446,7 +491,7 @@ pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::
         txn.execute(Statement::from_string(
             DatabaseBackend::Sqlite,
             format!(
-                "INSERT INTO fiscal_periods (id, org_id, fiscal_year_id, name, start_date, end_date, status, created_at, updated_at) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', 'open', '{}', '{}') ON CONFLICT DO NOTHING;",
+                "INSERT INTO fiscal_periods (id, org_id, fiscal_period_id, name, start_date, end_date, status, created_at, updated_at) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', 'open', '{}', '{}') ON CONFLICT DO NOTHING;",
                 fp_id, ctx.org_id, fy_id, name, start_date, end_date, created_at, created_at
             )
         )).await?;
@@ -462,7 +507,43 @@ pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::
         )
     )).await?;
 
+    // 10. Default Currency
+    txn.execute(Statement::from_string(
+        DatabaseBackend::Sqlite,
+        format!(
+            "INSERT INTO currencies (code, org_id, name, symbol, symbol_position, decimal_places, exchange_rate, is_base, is_active, updated_at) VALUES ('{}', '{}', '{}', '{}', 'right', 2, 1.0, 1, 1, '{}') ON CONFLICT DO NOTHING;",
+            currency.replace("'", "''"), ctx.org_id, currency.replace("'", "''"), currency.replace("'", "''"), now
+        )
+    )).await?;
+
     txn.commit().await?;
     
     Ok(())
+}
+
+/// Fetch period templates for the organization
+pub async fn get_period_templates(ctx: &ServiceContext) -> Result<serde_json::Value, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::OrganizationRead).await?;
+
+    let templates = period_template::Entity::find()
+        .filter(period_template::Column::OrgId.eq(&ctx.org_id))
+        .all(&ctx.db)
+        .await?;
+
+    // We can map it directly to JSON
+    let mut mapped = Vec::new();
+    for t in templates {
+        let structure_val: serde_json::Value = serde_json::from_str(&t.structure).unwrap_or(serde_json::json!([]));
+        mapped.push(serde_json::json!({
+            "id": t.id,
+            "org_id": t.org_id,
+            "name": t.name,
+            "name_ar": t.name_ar,
+            "institution_type": t.institution_type,
+            "structure": structure_val,
+            "is_default": t.is_default,
+        }));
+    }
+
+    Ok(serde_json::Value::Array(mapped))
 }

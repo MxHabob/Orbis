@@ -6,7 +6,7 @@ export const customerFilterParamsSchema = {
   sort: parseAsArrayOf(parseAsString),
   start: parseAsString,
   end: parseAsString,
-  academicYearId: parseAsString,
+  academicPeriodId: parseAsString,
 };
 
 export function useCustomerFilterParams() {

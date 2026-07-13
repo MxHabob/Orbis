@@ -13,7 +13,7 @@ use svc_academic::entities::{class, enrollment};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PromotionConfig {
-    pub source_year_id: String,
+    pub source_period_id: String,
     pub target_year_name: String,
     pub target_year_name_ar: Option<String>,
     pub target_start_date: String,
@@ -75,7 +75,7 @@ pub struct ClassPlanEntry {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PromotionResult {
     pub job_id: String,
-    pub target_year_id: String,
+    pub target_period_id: String,
     pub target_year_name: String,
     pub total: i32,
     pub promoted: i32,
@@ -125,8 +125,8 @@ impl PromotionService {
         let job = promotion_job::Model {
             id: uuid::Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
-            source_year_id: config.source_year_id.clone(),
-            target_year_id: None,
+            source_period_id: config.source_period_id.clone(),
+            target_period_id: None,
             status: "validating".to_string(),
             initiated_by: user_id.to_string(),
             initiated_by_name: None,
@@ -340,7 +340,7 @@ impl PromotionService {
         final_job.retained_count = Some(retained_count);
         final_job.graduated_count = Some(graduated_count);
         final_job.excluded_count = Some(excluded_count);
-        final_job.target_year_id = Some(target_year.id.clone());
+        final_job.target_period_id = Some(target_year.id.clone());
         final_job.updated_at = chrono::Utc::now().to_rfc3339();
 
         self.cmd.update_promotion_job(final_job).await?;
@@ -350,7 +350,7 @@ impl PromotionService {
 
         Ok(PromotionResult {
             job_id: job_id.to_string(),
-            target_year_id: target_year.id,
+            target_period_id: target_year.id,
             target_year_name: config.target_year_name,
             total,
             promoted: promoted_count,
@@ -377,7 +377,7 @@ impl PromotionService {
             return Err(AppError::validation("Rollback is no longer available"));
         }
 
-        if let Some(target_year_id) = &job.target_year_id {
+        if let Some(target_period_id) = &job.target_period_id {
             // In a single DB, we delete the enrollments, classes, periods, and the academic year itself.
             let _ = db.execute(
                 sea_orm::Statement::from_sql_and_values(
@@ -388,7 +388,7 @@ impl PromotionService {
             ).await;
             
             // Delete the academic year
-            self.cmd.delete_year(target_year_id).await?;
+            self.cmd.delete_year(target_period_id).await?;
         }
 
         job.status = "rolled_back".to_string();

@@ -112,9 +112,9 @@ export function useDeleteAcademicYearMutation() {
 /**
  * Hook to fetch terms associated with a specific academic year
  */
-export function useAcademicTermsQuery(yearId: number) {
+export function useAcademicTermsQuery(periodId: number) {
   const trpc = useTRPC();
-  return useSuspenseQuery(trpc.academic.getTerms.queryOptions({ yearId }));
+  return useSuspenseQuery(trpc.academic.getTerms.queryOptions({ periodId }));
 }
 
 /**
@@ -129,7 +129,7 @@ export function useCreateAcademicTermMutation() {
       onSuccess: (data, variables) => {
         queryClient.invalidateQueries({
           queryKey: trpc.academic.getTerms.queryKey({
-            yearId: variables.academicYearId as number,
+            periodId: variables.academicPeriodId as number,
           }),
         });
       },
@@ -147,7 +147,7 @@ export function useUpdateAcademicTermMutation() {
   return useMutation(
     trpc.academic.updateTerm.mutationOptions({
       onSuccess: () => {
-        // Since we don't always have the yearId here, we invalidate all terms
+        // Since we don't always have the periodId here, we invalidate all terms
         queryClient.invalidateQueries({
           queryKey: trpc.academic.getTerms.queryKey(),
         });

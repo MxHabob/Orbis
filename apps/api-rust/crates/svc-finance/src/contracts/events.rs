@@ -8,7 +8,7 @@ pub mod event_types {
     pub const PAYMENT_OVERDUE: &str = "payment.overdue";
     pub const TREASURY_DEPOSIT: &str = "treasury.deposit";
     pub const TREASURY_WITHDRAWAL: &str = "treasury.withdrawal";
-    pub const account_CREATED: &str = "account.created";
+    pub const ACCOUNT_CREATED: &str = "account.created";
     pub const JOURNAL_ENTRY_POSTED: &str = "journal_entry.posted";
     pub const FEE_TEMPLATE_CREATED: &str = "fee_template.created";
     pub const FEE_TEMPLATE_UPDATED: &str = "fee_template.updated";

@@ -2,10 +2,10 @@ import { parseAsBoolean, parseAsString, useQueryStates } from "nuqs";
 
 export function useAcademicParams() {
   const [queryStates, setQueryStates] = useQueryStates({
-    editYearId: parseAsString,
+    editPeriodId: parseAsString,
     editTermId: parseAsString,
-    parentYearId: parseAsString,
-    deleteYearId: parseAsString,
+    parentPeriodId: parseAsString,
+    deletePeriodId: parseAsString,
     deleteTermId: parseAsString,
     createYear: parseAsBoolean,
     createTerm: parseAsBoolean,

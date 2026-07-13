@@ -58,8 +58,8 @@ let years = $derived(
   periods.filter((p) => p.parent_id === null || p.parent_id === undefined),
 );
 
-function getTermsForYear(yearId: string) {
-  return periods.filter((p) => p.parent_id === yearId);
+function getTermsForYear(periodId: string) {
+  return periods.filter((p) => p.parent_id === periodId);
 }
 
 function openCreateSheet() {
@@ -93,8 +93,8 @@ async function handleLock(periodId: string) {
   }
 }
 
-function toggleCollapse(yearId: string) {
-  collapsedYears[yearId] = !collapsedYears[yearId];
+function toggleCollapse(periodId: string) {
+  collapsedYears[periodId] = !collapsedYears[periodId];
 }
 </script>
 

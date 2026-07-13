@@ -16,7 +16,7 @@ export function useLessonParams() {
     timeSlotId: parseAsInteger,
     dayOfWeek: parseAsInteger,
     schedule: parseAsBoolean,
-    academicYearId: parseAsInteger,
+    academicPeriodId: parseAsInteger,
   });
 
   return {

@@ -35,7 +35,7 @@ export function usePromotions() {
   const trpc = useTRPC();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { promotionClassId, sourceYearId, targetYearId, setParams } =
+  const { promotionClassId, sourcePeriodId, targetPeriodId, setParams } =
     usePromotionsParams();
 
   const [activeTab, setActiveTab] = useState<PromotionTab>("preview");
@@ -48,17 +48,17 @@ export function usePromotions() {
 
   const previewQueryOptions = trpc.promotions.preview.queryOptions({
     classId: promotionClassId ?? 0,
-    academicYearId: sourceYearId ?? 0,
+    academicPeriodId: sourcePeriodId ?? 0,
   });
 
   const previewQuery = useQuery({
     ...previewQueryOptions,
-    enabled: !!promotionClassId && !!sourceYearId && activeTab === "preview",
+    enabled: !!promotionClassId && !!sourcePeriodId && activeTab === "preview",
   });
 
   const historyQueryOptions = trpc.promotions.historyRecords.queryOptions({
     classId: promotionClassId ?? undefined,
-    academicYearId: sourceYearId ?? undefined,
+    academicPeriodId: sourcePeriodId ?? undefined,
   });
 
   const historyQuery = useQuery({
@@ -67,13 +67,13 @@ export function usePromotions() {
   });
 
   const statsQueryOptions = trpc.promotions.statistics.queryOptions({
-    academicYearId: sourceYearId ?? 0,
+    academicPeriodId: sourcePeriodId ?? 0,
     classId: promotionClassId ?? undefined,
   });
 
   const statsQuery = useQuery({
     ...statsQueryOptions,
-    enabled: !!sourceYearId && activeTab === "statistics",
+    enabled: !!sourcePeriodId && activeTab === "statistics",
   });
 
   const classesQuery = useSuspenseQuery(trpc.classes.getAll.queryOptions());
@@ -128,8 +128,8 @@ export function usePromotions() {
   const handleExecute = useCallback(() => {
     if (
       !promotionClassId ||
-      !sourceYearId ||
-      !targetYearId ||
+      !sourcePeriodId ||
+      !targetPeriodId ||
       !previewQuery.data
     )
       return;
@@ -150,8 +150,8 @@ export function usePromotions() {
     setExecuteConfirmOpen(true);
   }, [
     promotionClassId,
-    sourceYearId,
-    targetYearId,
+    sourcePeriodId,
+    targetPeriodId,
     previewQuery.data,
     toast,
     t,
@@ -160,8 +160,8 @@ export function usePromotions() {
   const confirmExecute = useCallback(() => {
     if (
       !promotionClassId ||
-      !sourceYearId ||
-      !targetYearId ||
+      !sourcePeriodId ||
+      !targetPeriodId ||
       !previewQuery.data
     )
       return;
@@ -180,14 +180,14 @@ export function usePromotions() {
 
     executeMutation.mutate({
       classId: promotionClassId,
-      fromAcademicYearId: sourceYearId,
-      toAcademicYearId: targetYearId,
+      fromAcademicPeriodId: sourcePeriodId,
+      toAcademicPeriodId: targetPeriodId,
       decisions,
     });
   }, [
     promotionClassId,
-    sourceYearId,
-    targetYearId,
+    sourcePeriodId,
+    targetPeriodId,
     previewQuery.data,
     executeMutation,
   ]);
@@ -198,15 +198,15 @@ export function usePromotions() {
   }, []);
 
   const confirmRollback = useCallback(() => {
-    if (!promotionClassId || !sourceYearId) return;
+    if (!promotionClassId || !sourcePeriodId) return;
 
     rollbackMutation.mutate({
       studentIds: pendingRollbackIds,
       classId: promotionClassId,
-      academicYearId: sourceYearId,
+      academicPeriodId: sourcePeriodId,
     });
     setRollbackConfirmOpen(false);
-  }, [promotionClassId, sourceYearId, pendingRollbackIds, rollbackMutation]);
+  }, [promotionClassId, sourcePeriodId, pendingRollbackIds, rollbackMutation]);
 
   const handleRefresh = useCallback(() => {
     previewQuery.refetch();
@@ -232,7 +232,7 @@ export function usePromotions() {
 
     // Params
     promotionClassId,
-    sourceYearId,
+    sourcePeriodId,
     setParams,
 
     // Queries

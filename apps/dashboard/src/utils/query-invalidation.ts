@@ -5,7 +5,7 @@ type GradeGridInput = {
   subjectId: number;
   termId: number;
   month: number;
-  academicYearId: number;
+  academicPeriodId: number;
 };
 
 export async function invalidateStudentDomain(
@@ -50,7 +50,7 @@ export async function invalidateGradesDomain(
     queryClient.invalidateQueries({
       queryKey: trpc.grades.getClassStatistics.queryKey({
         classId: String(input.classId),
-        academicYearId: input.academicYearId,
+        academicPeriodId: input.academicPeriodId,
       }),
     }),
   ]);

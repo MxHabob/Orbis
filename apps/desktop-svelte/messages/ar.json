@@ -2917,5 +2917,7 @@
   "exams_ordering_select_period": "اختر الفترة الأكاديمية",
   "exams_ordering_rebuild_success": "تم إعادة بناء الترتيب بنجاح",
   "exams_ordering_freeze_success": "تم تجميد الترتيب بنجاح",
-  "bulk_card_grades_tag_period": "الفترة"
+  "bulk_card_grades_tag_period": "الفترة",
+  "onboarding_template_label": "قالب الهيكل الأكاديمي",
+  "onboarding_template_placeholder": "اختر القالب"
 }

@@ -2,7 +2,7 @@
  * Academic domain queries — periods, classes, subjects, schedules.
  * Wraps IPC commands with TanStack Query for automatic caching.
  *
- * Migrated: periods → periods, periodId → periodId/yearId.
+ * Migrated: periods → periods, periodId → periodId/periodId.
  */
 import { createQuery } from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
@@ -18,11 +18,11 @@ export function createPeriodsQuery(orgId: string) {
 }
 
 /** Periods for a specific year (cross-year queries). */
-export function createPeriodsByYearQuery(orgId: string, yearId: string) {
+export function createPeriodsByYearQuery(orgId: string, periodId: string) {
   return createQuery({
-    queryKey: ["periods", orgId, yearId],
-    queryFn: () => commands.academic.listPeriodsByYear(orgId, yearId),
-    enabled: !!orgId && !!yearId,
+    queryKey: ["periods", orgId, periodId],
+    queryFn: () => commands.academic.listPeriodsByYear(orgId, periodId),
+    enabled: !!orgId && !!periodId,
     staleTime: 10 * 60 * 1000,
   });
 }
@@ -75,35 +75,35 @@ export function createAssessmentsQuery(params: {
 }
 
 /** Time slots for an academic year. */
-export function createTimeSlotsQuery(yearId?: string) {
+export function createTimeSlotsQuery(periodId?: string) {
   return createQuery({
-    queryKey: ["time-slots", yearId],
-    queryFn: () => commands.scheduling.listTimeSlots(yearId!),
-    enabled: !!yearId,
+    queryKey: ["time-slots", periodId],
+    queryFn: () => commands.scheduling.listTimeSlots(periodId!),
+    enabled: !!periodId,
     staleTime: 10 * 60 * 1000,
   });
 }
 
 /** Class schedule lessons. */
-export function createClassScheduleQuery(yearId?: string, classId?: string) {
+export function createClassScheduleQuery(periodId?: string, classId?: string) {
   return createQuery({
-    queryKey: ["class-schedule", yearId, classId],
-    queryFn: () => commands.scheduling.listLessonsByClass(yearId!, classId!),
-    enabled: !!yearId && !!classId,
+    queryKey: ["class-schedule", periodId, classId],
+    queryFn: () => commands.scheduling.listLessonsByClass(periodId!, classId!),
+    enabled: !!periodId && !!classId,
     staleTime: 2 * 60 * 1000,
   });
 }
 
 /** Teacher schedule lessons. */
 export function createTeacherScheduleQuery(
-  yearId?: string,
+  periodId?: string,
   teacherId?: string,
 ) {
   return createQuery({
-    queryKey: ["teacher-schedule", yearId, teacherId],
+    queryKey: ["teacher-schedule", periodId, teacherId],
     queryFn: () =>
-      commands.scheduling.listLessonsByTeacher(yearId!, teacherId!),
-    enabled: !!yearId && !!teacherId,
+      commands.scheduling.listLessonsByTeacher(periodId!, teacherId!),
+    enabled: !!periodId && !!teacherId,
     staleTime: 2 * 60 * 1000,
   });
 }

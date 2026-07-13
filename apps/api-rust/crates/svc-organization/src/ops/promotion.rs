@@ -28,7 +28,7 @@ pub async fn get_job(ctx: &ServiceContext, job_id: &str) -> Result<promotion_job
 
 pub async fn create_job(
     ctx: &ServiceContext,
-    source_year_id: String, config: String,
+    source_period_id: String, config: String,
 ) -> Result<promotion_job::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::PromotionWrite).await?;
 
@@ -37,7 +37,7 @@ pub async fn create_job(
 
     let model = promotion_job::Model {
         id: id.clone(), org_id: ctx.org_id.clone(),
-        source_year_id, target_year_id: None,
+        source_period_id, target_period_id: None,
         status: "pending".into(),
         initiated_by: ctx.actor.as_str().to_string(),
         initiated_by_name: None, config,

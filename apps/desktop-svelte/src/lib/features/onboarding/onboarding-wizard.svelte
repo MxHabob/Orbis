@@ -45,10 +45,16 @@ import ReviewStep from "./steps/review-step.svelte";
     {:else if onboardingState.activeStep === 2}
       <AcademicCalendarStep />
     {:else if onboardingState.activeStep === 3}
-      <SubjectsStep />
+      <BuildingsRoomsStep />
     {:else if onboardingState.activeStep === 4}
-      <FinancialSetupStep />
+      <GradesClassesStep />
     {:else if onboardingState.activeStep === 5}
+      <TimeSlotsStep />
+    {:else if onboardingState.activeStep === 6}
+      <SubjectsStep />
+    {:else if onboardingState.activeStep === 7}
+      <FinancialSetupStep />
+    {:else if onboardingState.activeStep === 8}
       <ReviewStep />
     {/if}
   </div>

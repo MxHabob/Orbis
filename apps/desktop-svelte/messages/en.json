@@ -2912,5 +2912,7 @@
   "exams_ordering_select_period": "Select academic period",
   "exams_ordering_rebuild_success": "Student ordering rebuilt successfully",
   "exams_ordering_freeze_success": "Student ordering frozen successfully",
-  "bulk_card_grades_tag_period": "Period"
+  "bulk_card_grades_tag_period": "Period",
+  "onboarding_template_label": "Academic Structure Template",
+  "onboarding_template_placeholder": "Select Template"
 }

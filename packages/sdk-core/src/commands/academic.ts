@@ -2,7 +2,7 @@
  * Academic command interfaces — mirrors svc-academic/ops + svc-organization/ops/period.
  * Platform adapters (Desktop/Web) implement these interfaces.
  *
- * Migrated: periods → periods, periodId → periodId/yearId.
+ * Migrated: periods → periods, periodId → periodId/periodId.
  */
 import type {
   Class,
@@ -18,11 +18,11 @@ import type {
 
 export interface AcademicCommands {
   // ── Classes ─────────────────────────────────────────────────
-  listClasses(orgId: string, yearId?: string): Promise<Class[]>;
+  listClasses(orgId: string, periodId?: string): Promise<Class[]>;
   getClass(classId: string): Promise<Class>;
   createClass(data: {
     org_unit_id: string;
-    year_id: string;
+    period_id: string;
     name: string;
     name_ar?: string;
     grade_level: string;
@@ -72,12 +72,12 @@ export interface AcademicCommands {
   listEnrollments(
     orgId: string,
     classId?: string,
-    yearId?: string,
+    periodId?: string,
   ): Promise<Enrollment[]>;
   getEnrollment(orgId: string, enrollmentId: string): Promise<Enrollment>;
   createEnrollment(data: {
     org_id: string;
-    year_id: string;
+    period_id: string;
     student_id: string;
     class_id: string;
     student_number: string;
@@ -92,7 +92,7 @@ export interface AcademicCommands {
     enrollmentId: string,
     newClassId: string,
   ): Promise<Enrollment>;
-  checkDuplicate(studentId: string, yearId: string): Promise<Enrollment | null>;
+  checkDuplicate(studentId: string, periodId: string): Promise<Enrollment | null>;
 
   // ── Class-Subject ───────────────────────────────────────────
   listClassSubjects(
@@ -120,7 +120,7 @@ export interface AcademicCommands {
 
   // ── Periods (was Periods) ────────────────────────────────────
   listPeriods(orgId: string): Promise<AcademicPeriod[]>;
-  listPeriodsByYear(orgId: string, yearId: string): Promise<AcademicPeriod[]>;
+  listPeriodsByYear(orgId: string, periodId: string): Promise<AcademicPeriod[]>;
   getPeriod(periodId: string): Promise<AcademicPeriod>;
   createPeriod(data: {
     name: string;

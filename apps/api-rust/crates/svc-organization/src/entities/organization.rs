@@ -35,8 +35,8 @@ pub struct Model {
     pub deleted_by: Option<String>,
 
     /// FK to the currently active academic year.
-    /// Switching years = UPDATE organizations SET current_year_id = ?
-    pub current_year_id: Option<String>,
+    /// Switching years = UPDATE organizations SET current_period_id = ?
+    pub current_period_id: Option<String>,
 
     pub created_at: String,
     pub updated_at: String,

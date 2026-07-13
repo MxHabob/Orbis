@@ -15,8 +15,8 @@ pub async fn get_stats(
     let org = organization::Entity::find_by_id(&ctx.org_id).one(&ctx.db).await?;
     let mut current_period = "N/A".to_string();
     if let Some(org) = org {
-        if let Some(year_id) = org.current_year_id {
-            if let Some(year) = academic_year::Entity::find_by_id(year_id).one(&ctx.db).await? {
+        if let Some(period_id) = org.current_period_id {
+            if let Some(year) = academic_year::Entity::find_by_id(period_id).one(&ctx.db).await? {
                 current_period = year.name;
             }
         }

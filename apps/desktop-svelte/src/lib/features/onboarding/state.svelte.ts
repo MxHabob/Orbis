@@ -15,7 +15,10 @@ import type {
   ClassEntry,
   SubjectEntry,
   OnboardingPayload,
+  PeriodTemplateDef,
+  TemplateNode,
 } from "./types";
+import { commands } from "$lib/core/ipc";
 
 function detectTimezone(): string {
   try {
@@ -247,8 +250,8 @@ class OnboardingState {
   activeStep = $state(1);
   isLoading = $state(false);
   errorMessage = $state<string | null>(null);
-  totalSteps = 5;
-  completedSteps = $state([false, false, false, false, false]);
+  totalSteps = 8;
+  completedSteps = $state([false, false, false, false, false, false, false, false]);
 
   // Central Configuration Defaults
   institutionType = $state("school");
@@ -275,14 +278,8 @@ class OnboardingState {
   academicYearNameAr = $state("العام الدراسي 1447 هـ");
   startDate = $state("2026-06-21");
   endDate = $state("2027-02-21");
-  semester1Name = $state("Semester 1");
-  semester1NameAr = $state("الفصل الدراسي الأول");
-  semester1Start = $state("2026-06-21");
-  semester1End = $state("2026-10-21");
-  semester2Name = $state("Semester 2");
-  semester2NameAr = $state("الفصل الدراسي الثاني");
-  semester2Start = $state("2026-10-22");
-  semester2End = $state("2027-02-21");
+  selectedTemplateId = $state("");
+  periodTemplates = $state<PeriodTemplateDef[]>([]);
 
   // Step 3: Buildings & Rooms
   rooms = $state<Room[]>([]);
@@ -528,6 +525,7 @@ class OnboardingState {
         this.timezone = org.timezone || detectTimezone();
         this.locale = org.locale || detectLocale();
         this.currency = org.currency || detectCurrency(this.timezone);
+        await this.loadTemplates(orgId);
         this.save();
       }
     } catch (e) {
@@ -684,6 +682,73 @@ class OnboardingState {
 
   // ── Step 5: Time Slot Management ───────────────────────────────
 
+  async loadTemplates(orgId: string) {
+    try {
+      const { commands } = await import("$lib/core/ipc");
+      this.periodTemplates = await commands.platform.getPeriodTemplates(orgId);
+      if (this.periodTemplates.length > 0 && !this.selectedTemplateId) {
+        this.selectedTemplateId = this.periodTemplates[0].id;
+      }
+    } catch (e) {
+      console.error("Failed to load period templates:", e);
+    }
+  }
+
+  private generatePeriodsFromTemplate(
+    templateNode: TemplateNode,
+    parentId: string,
+    orgId: string,
+    cycleStartMs: number,
+    totalCycleDays: number,
+    parentStartDateMs: number,
+    parentDurationDays: number,
+    level: number,
+    index: number,
+  ): PeriodEntry[] {
+    const startMs = parentStartDateMs;
+    const durationDays = Math.round((templateNode.weight / 100) * parentDurationDays);
+    const endMs = startMs + durationDays * 24 * 60 * 60 * 1000;
+    
+    const startDate = new Date(startMs).toISOString().split("T")[0];
+    const endDate = new Date(endMs).toISOString().split("T")[0];
+    const id = `${parentId}-${templateNode.type}-${index}`;
+
+    const entry: PeriodEntry = {
+      id,
+      parent_id: parentId,
+      name: templateNode.name,
+      name_ar: templateNode.name_ar,
+      start_date: startDate,
+      end_date: endDate,
+      period_type: templateNode.type,
+      weight: templateNode.weight,
+    };
+
+    let allEntries = [entry];
+
+    if (templateNode.children && templateNode.children.length > 0) {
+      let currentChildStartMs = startMs;
+      templateNode.children.forEach((child, childIdx) => {
+        const childDurationDays = Math.round((child.weight / 100) * durationDays);
+        const childEntries = this.generatePeriodsFromTemplate(
+          child,
+          id,
+          orgId,
+          cycleStartMs,
+          totalCycleDays,
+          currentChildStartMs,
+          durationDays,
+          level + 1,
+          childIdx + 1
+        );
+        allEntries = allEntries.concat(childEntries);
+        currentChildStartMs += childDurationDays * 24 * 60 * 60 * 1000;
+      });
+    }
+
+    return allEntries;
+  }
+
   addTimeSlot(
     name: string,
     nameAr: string,
@@ -731,61 +796,19 @@ class OnboardingState {
     return true;
   }
 
-  // ── Period Generation Helpers ───────────────────────────────────
-
-  private generateMonthsForSemester(
-    parentPeriodId: string,
-    namePrefix: string,
-    namePrefixAr: string,
-    startStr: string,
-    endStr: string,
-  ): PeriodEntry[] {
-    const start = new Date(startStr);
-    const end = new Date(endStr);
-    const totalDays = Math.ceil(
-      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
-    );
-    const daysPerMonth = Math.floor(totalDays / 4);
-
-    const months: PeriodEntry[] = [];
-    const monthNamesAr = ["الأول", "الثاني", "الثالث", "الرابع (النهائي)"];
-    const monthNamesEn = ["Month 1", "Month 2", "Month 3", "Month 4 (Final)"];
-
-    let currentStart = new Date(start);
-    for (let i = 0; i < 4; i++) {
-      const mStart = new Date(currentStart);
-      const mEnd = new Date(currentStart);
-      if (i === 3) {
-        mEnd.setTime(end.getTime());
-      } else {
-        mEnd.setDate(mEnd.getDate() + daysPerMonth - 1);
-      }
-
-      months.push({
-        id: `${parentPeriodId}-m${i + 1}`,
-        parent_id: parentPeriodId,
-        name: `${namePrefix} - ${monthNamesEn[i]}`,
-        name_ar: `${namePrefixAr} - الشهر ${monthNamesAr[i]}`,
-        start_date: mStart.toISOString().split("T")[0],
-        end_date: mEnd.toISOString().split("T")[0],
-        period_type: "month",
-        weight: i === 3 ? 30 : 20,
-      });
-
-      currentStart = new Date(mEnd);
-      currentStart.setDate(currentStart.getDate() + 1);
-    }
-    return months;
-  }
 
   // ── Build Final Payload ────────────────────────────────────────
 
   buildPayload(orgId: string): OnboardingPayload {
-    const periodYearId = `period-1447-${orgId}`;
+    const periodPeriodId = `period-1447-${orgId}`;
 
-    const periods: PeriodEntry[] = [
+    const startMs = new Date(this.startDate).getTime();
+    const endMs = new Date(this.endDate).getTime();
+    const totalDays = Math.ceil((endMs - startMs) / (1000 * 60 * 60 * 24));
+
+    let periods: PeriodEntry[] = [
       {
-        id: periodYearId,
+        id: periodPeriodId,
         parent_id: null,
         name: this.academicYearName,
         name_ar: this.academicYearNameAr,
@@ -793,42 +816,30 @@ class OnboardingState {
         end_date: this.endDate,
         period_type: "year",
         weight: null,
-      },
-      {
-        id: `${periodYearId}-s1`,
-        parent_id: periodYearId,
-        name: this.semester1Name,
-        name_ar: this.semester1NameAr,
-        start_date: this.semester1Start,
-        end_date: this.semester1End,
-        period_type: "term",
-        weight: 50,
-      },
-      {
-        id: `${periodYearId}-s2`,
-        parent_id: periodYearId,
-        name: this.semester2Name,
-        name_ar: this.semester2NameAr,
-        start_date: this.semester2Start,
-        end_date: this.semester2End,
-        period_type: "term",
-        weight: 50,
-      },
-      ...this.generateMonthsForSemester(
-        `${periodYearId}-s1`,
-        this.semester1Name,
-        this.semester1NameAr,
-        this.semester1Start,
-        this.semester1End,
-      ),
-      ...this.generateMonthsForSemester(
-        `${periodYearId}-s2`,
-        this.semester2Name,
-        this.semester2NameAr,
-        this.semester2Start,
-        this.semester2End,
-      ),
+      }
     ];
+
+    const template = this.periodTemplates.find((t) => t.id === this.selectedTemplateId);
+    
+    if (template && template.structure) {
+      let currentTermStartMs = startMs;
+      template.structure.forEach((term, idx) => {
+        const termDurationDays = Math.round((term.weight / 100) * totalDays);
+        const termEntries = this.generatePeriodsFromTemplate(
+          term,
+          periodPeriodId,
+          orgId,
+          startMs,
+          totalDays,
+          currentTermStartMs,
+          totalDays,
+          1,
+          idx + 1
+        );
+        periods = periods.concat(termEntries);
+        currentTermStartMs += termDurationDays * 24 * 60 * 60 * 1000;
+      });
+    }
 
     const classes: ClassEntry[] = [];
     for (const gl of this.gradeLevels) {

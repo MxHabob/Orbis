@@ -23,7 +23,7 @@ export interface Payment {
 export interface StudentFee {
   id: string;
   org_id: string;
-  year_id: string;
+  period_id: string;
   enrollment_id: string;
   fee_template_id: string;
   original_amount: number;
@@ -155,7 +155,7 @@ export interface FiscalYear {
 export interface FiscalPeriod {
   id: string;
   org_id: string;
-  fiscal_year_id: string;
+  fiscal_period_id: string;
   name: string;
   start_date: string;
   end_date: string;

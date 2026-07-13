@@ -25,10 +25,10 @@ pub async fn get_period(State(state): State<AppState>, Path(id): Path<String>, A
     ok!(r)
 }
 
-#[utoipa::path(get, path = "/api/periods/year/{year_id}")]
-pub async fn get_periods_by_year(State(state): State<AppState>, Path(year_id): Path<String>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+#[utoipa::path(get, path = "/api/periods/year/{period_id}")]
+pub async fn get_periods_by_year(State(state): State<AppState>, Path(period_id): Path<String>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let ctx = state.build_context(&user.org_id, &user.id);
-    let r = ops::academic_period::list_by_year(&ctx, &year_id).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
+    let r = ops::academic_period::list_by_year(&ctx, &period_id).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(r)
 }
 

@@ -24,9 +24,9 @@ impl AcademicYearRepo {
     /// Get a single academic year by ID.
     pub async fn get_by_id(
         db: &DatabaseConnection,
-        year_id: &str,
+        period_id: &str,
     ) -> Result<Option<academic_year::Model>, DbErr> {
-        academic_year::Entity::find_by_id(year_id).one(db).await
+        academic_year::Entity::find_by_id(period_id).one(db).await
     }
 
     /// Get the current active academic year for an organization.
@@ -38,8 +38,8 @@ impl AcademicYearRepo {
         
         let org = organization::Entity::find_by_id(org_id).one(db).await?;
         if let Some(org) = org {
-            if let Some(year_id) = org.current_year_id {
-                return academic_year::Entity::find_by_id(year_id).one(db).await;
+            if let Some(period_id) = org.current_period_id {
+                return academic_year::Entity::find_by_id(period_id).one(db).await;
             }
         }
         Ok(None)
@@ -58,13 +58,13 @@ impl AcademicYearRepo {
     pub async fn set_current(
         db: &DatabaseConnection,
         org_id: &str,
-        year_id: &str,
+        period_id: &str,
     ) -> Result<(), DbErr> {
         use crate::entities::organization;
         use sea_orm::sea_query::Expr;
 
         organization::Entity::update_many()
-            .col_expr(organization::Column::CurrentYearId, Expr::value(year_id))
+            .col_expr(organization::Column::CurrentPeriodId, Expr::value(period_id))
             .filter(organization::Column::Id.eq(org_id))
             .exec(db)
             .await?;
@@ -75,11 +75,11 @@ impl AcademicYearRepo {
     /// Update the status of an academic year.
     pub async fn update_status(
         db: &DatabaseConnection,
-        year_id: &str,
+        period_id: &str,
         status: &str,
         archived_by: Option<&str>,
     ) -> Result<academic_year::Model, DbErr> {
-        let year = academic_year::Entity::find_by_id(year_id)
+        let year = academic_year::Entity::find_by_id(period_id)
             .one(db)
             .await?
             .ok_or(DbErr::RecordNotFound("academic year not found".into()))?;

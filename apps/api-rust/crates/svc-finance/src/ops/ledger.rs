@@ -208,7 +208,7 @@ pub async fn create_account(
     let created = active.insert(&ctx.db).await?;
 
     ctx.event_bus.publish(EventEnvelope {
-        event_type: event_types::account_CREATED.into(),
+        event_type: event_types::ACCOUNT_CREATED.into(),
         entity_type: "account".into(), entity_id: id.clone(),
         org_id: ctx.org_id.clone(), actor: ctx.actor.as_str().into(),
         actor_type: ctx.actor.actor_type().into(), correlation_id: ctx.correlation_id.clone(),
@@ -338,7 +338,7 @@ pub async fn get_or_create_sub_account(
     let created = active.insert(&ctx.db).await?;
     
     ctx.event_bus.publish(EventEnvelope {
-        event_type: event_types::account_CREATED.into(),
+        event_type: event_types::ACCOUNT_CREATED.into(),
         entity_type: "account".into(), entity_id: acc_id.clone(),
         org_id: ctx.org_id.clone(), actor: ctx.actor.as_str().into(),
         actor_type: ctx.actor.actor_type().into(), correlation_id: ctx.correlation_id.clone(),

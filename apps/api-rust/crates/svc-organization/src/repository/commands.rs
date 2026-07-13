@@ -5,7 +5,7 @@ use crate::entities::{
     academic_policy,
     promotion_job, promotion_detail,
 };
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, DbErr, EntityTrait, ColumnTrait, QueryFilter};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, DbErr, EntityTrait};
 use super::OrganizationCommandRepo;
 
 impl OrganizationCommandRepo {
@@ -13,7 +13,7 @@ impl OrganizationCommandRepo {
 
     pub async fn create_organization(&self, o: organization::Model) -> Result<organization::Model, DbErr> {
         let active = organization::ActiveModel {
-            current_year_id: Set(o.current_year_id),
+            current_period_id: Set(o.current_period_id),
             id: Set(o.id),
             name: Set(o.name),
             name_ar: Set(o.name_ar),
@@ -60,8 +60,8 @@ impl OrganizationCommandRepo {
         model.update(&self.db).await
     }
 
-    pub async fn delete_year(&self, year_id: &str) -> Result<(), DbErr> {
-        crate::entities::academic_year::Entity::delete_by_id(year_id.to_string())
+    pub async fn delete_year(&self, period_id: &str) -> Result<(), DbErr> {
+        crate::entities::academic_year::Entity::delete_by_id(period_id.to_string())
             .exec(&self.db)
             .await?;
         Ok(())
@@ -73,7 +73,7 @@ impl OrganizationCommandRepo {
         let active = academic_period::ActiveModel {
             id: Set(c.id),
             org_id: Set(c.org_id),
-            year_id: Set(c.year_id),
+            period_id: Set(c.period_id),
             parent_id: Set(c.parent_id),
             name: Set(c.name),
             name_ar: Set(c.name_ar),

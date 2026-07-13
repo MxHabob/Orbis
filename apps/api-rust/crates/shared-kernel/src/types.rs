@@ -102,7 +102,7 @@ define_id!(
 
 define_id!(
     /// Academic year identifier (registry).
-    AcademicYearId
+    AcademicPeriodId
 );
 
 define_id!(

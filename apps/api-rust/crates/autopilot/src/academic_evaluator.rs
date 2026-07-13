@@ -265,7 +265,7 @@ impl AcademicEvaluator {
         for year in &years {
             if year.status == "active" {
                 let year_periods = academic_period::Entity::find()
-                    .filter(academic_period::Column::YearId.eq(&year.id))
+                    .filter(academic_period::Column::PeriodId.eq(&year.id))
                     .filter(academic_period::Column::ParentId.is_null()) // top-level only
                     .all(db)
                     .await?;

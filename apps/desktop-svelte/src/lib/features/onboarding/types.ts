@@ -1,6 +1,21 @@
 // ── Onboarding Types ─────────────────────────────────────────────────
 // Shared TypeScript interfaces for the onboarding wizard.
 
+export interface TemplateNode {
+  name: string;
+  name_ar: string;
+  type: string;
+  weight: number;
+  children?: TemplateNode[];
+}
+
+export interface PeriodTemplateDef {
+  id: string;
+  name: string;
+  name_ar: string;
+  structure: TemplateNode[];
+}
+
 export interface Room {
   id: string;
   name: string;

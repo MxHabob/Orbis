@@ -35,7 +35,7 @@ export interface AcademicYearInfo {
 }
 
 export interface AcademicContextResponse {
-  year_id: string;
+  period_id: string;
   current_year: AcademicYear | null;
   all_years: AcademicYearInfo[];
   periods: AcademicPeriod[];
@@ -59,8 +59,8 @@ export type PeriodPhase =
 export interface PromotionJob {
   id: string;
   org_id: string;
-  source_year_id: string;
-  target_year_id?: string | null;
+  source_period_id: string;
+  target_period_id?: string | null;
   status: string;
   initiated_by: string;
   config: string;

@@ -55,7 +55,7 @@ pub async fn start_server(_database_url: &str, port: u16) -> Result<(), Box<dyn 
         // Academic Periods
         .route("/api/periods", get(handler::academic_period::get_periods).post(handler::academic_period::post_periods))
         .route("/api/periods/:id", get(handler::academic_period::get_period))
-        .route("/api/periods/year/:year_id", get(handler::academic_period::get_periods_by_year))
+        .route("/api/periods/year/:period_id", get(handler::academic_period::get_periods_by_year))
         .route("/api/periods/:id/lock", post(handler::academic_period::post_lock_period))
         .route("/api/periods/:id/unlock", post(handler::academic_period::post_unlock_period))
         .route("/api/periods/:id/enrollment/open", post(handler::academic_period::post_open_enrollment))
@@ -118,14 +118,14 @@ pub async fn start_server(_database_url: &str, port: u16) -> Result<(), Box<dyn 
         .route("/api/treasuries", get(handler::finance::get_treasuries))
         .route("/api/ledger-accounts", get(handler::finance::get_ledger_accounts))
         // Schedule
-        .route("/api/schedule/:class_id/:year_id", get(handler::schedule::get_class_schedule))
-        .route("/api/schedule/teacher/:teacher_id/:year_id", get(handler::schedule::get_teacher_schedule))
+        .route("/api/schedule/:class_id/:period_id", get(handler::schedule::get_class_schedule))
+        .route("/api/schedule/teacher/:teacher_id/:period_id", get(handler::schedule::get_teacher_schedule))
         .route("/api/lessons", post(handler::schedule::post_lesson))
         .route("/api/lessons/:id", put(handler::schedule::put_lesson).delete(handler::schedule::delete_lesson))
         .route("/api/time-slots", get(handler::schedule::get_time_slots))
         // Schedule Solver
         .route("/api/schedule/solve", post(handler::schedule_solve::post_solve))
-        .route("/api/schedule/solve/:year_id", get(handler::schedule_solve::get_solve_jobs))
+        .route("/api/schedule/solve/:period_id", get(handler::schedule_solve::get_solve_jobs))
         .route("/api/schedule/solve/:job_id/apply", post(handler::schedule_solve::post_apply_solve))
         .route("/api/schedule/solve/:job_id/cancel", post(handler::schedule_solve::post_cancel_solve))
         // Rooms

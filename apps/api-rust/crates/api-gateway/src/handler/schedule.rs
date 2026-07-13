@@ -4,17 +4,17 @@ use crate::app_state::AppState;
 use crate::middleware::AuthenticatedUser;
 use svc_scheduling::ops;
 
-#[utoipa::path(get, path = "/api/schedule/{class_id}/{year_id}")]
-pub async fn get_class_schedule(State(state): State<AppState>, Path((class_id, year_id)): Path<(String, String)>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+#[utoipa::path(get, path = "/api/schedule/{class_id}/{period_id}")]
+pub async fn get_class_schedule(State(state): State<AppState>, Path((class_id, period_id)): Path<(String, String)>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let ctx = state.build_context(&user.org_id, &user.id);
-    let r = ops::lesson::list_by_class(&ctx, &class_id, &year_id).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
+    let r = ops::lesson::list_by_class(&ctx, &class_id, &period_id).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(r)
 }
 
-#[utoipa::path(get, path = "/api/schedule/teacher/{teacher_id}/{year_id}")]
-pub async fn get_teacher_schedule(State(state): State<AppState>, Path((teacher_id, year_id)): Path<(String, String)>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+#[utoipa::path(get, path = "/api/schedule/teacher/{teacher_id}/{period_id}")]
+pub async fn get_teacher_schedule(State(state): State<AppState>, Path((teacher_id, period_id)): Path<(String, String)>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let ctx = state.build_context(&user.org_id, &user.id);
-    let r = ops::lesson::list_by_teacher(&ctx, &teacher_id, &year_id).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
+    let r = ops::lesson::list_by_teacher(&ctx, &teacher_id, &period_id).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(r)
 }
 

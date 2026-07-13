@@ -82,7 +82,7 @@ const progressValue = $derived(((currentStep + 1) / steps.length) * 100);
 // ── Config Form ─────────────────────────────────────────────────────
 
 let config = $state<PromotionConfig>({
-  source_year_id: academicContext.currentYear?.id ?? "",
+  source_period_id: academicContext.currentYear?.id ?? "",
   target_year_name: "",
   target_year_name_ar: null,
   target_start_date: "",
@@ -142,7 +142,7 @@ let executionResult = $state<PromotionJob | null>(null);
 // ── Config step valid ───────────────────────────────────────────
 
 const isConfigValid = $derived(
-  config.source_year_id &&
+  config.source_period_id &&
     config.target_year_name &&
     config.target_start_date &&
     config.target_end_date,

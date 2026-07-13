@@ -1,16 +1,16 @@
 /**
  * Academic Calendar & Policy queries.
- * Migrated: calendar events → periods, periodId → yearId.
+ * Migrated: calendar events → periods, periodId → periodId.
  */
 import { createQuery } from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
 
 /** Periods for a given year (replaces calendar events). */
-export function createCalendarEventsQuery(orgId: string, yearId: string) {
+export function createCalendarEventsQuery(orgId: string, periodId: string) {
   return createQuery({
-    queryKey: ["calendar-periods", orgId, yearId],
-    queryFn: () => commands.platform.listCalendarEvents(orgId, yearId),
-    enabled: !!orgId && !!yearId,
+    queryKey: ["calendar-periods", orgId, periodId],
+    queryFn: () => commands.platform.listCalendarEvents(orgId, periodId),
+    enabled: !!orgId && !!periodId,
     staleTime: 5 * 60 * 1000,
   });
 }

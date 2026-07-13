@@ -62,7 +62,7 @@ export const commands: OrbisCommands = {
   // ACADEMIC
   // ═══════════════════════════════════════════════════════════════
   academic: {
-    listClasses: (orgId, yearId?) => cmd("list_classes", { orgId, yearId }),
+    listClasses: (orgId, periodId?) => cmd("list_classes", { orgId, periodId }),
     getClass: (classId) => cmd("get_class", { classId }),
     createClass: (data) => cmd("create_class", { data }),
     updateClass: (classId, data) => cmd("update_class", { classId, data }),
@@ -82,8 +82,8 @@ export const commands: OrbisCommands = {
     updateOrgUnit: (unitId, data) => cmd("update_org_unit", { unitId, data }),
     deleteOrgUnit: (unitId) => cmd("delete_org_unit", { unitId }),
 
-    listEnrollments: (orgId, classId?, yearId?) =>
-      cmd("list_enrollments", { orgId, classId, yearId }),
+    listEnrollments: (orgId, classId?, periodId?) =>
+      cmd("list_enrollments", { orgId, classId, periodId }),
     getEnrollment: (orgId, enrollmentId) =>
       cmd("get_enrollment", { orgId, enrollmentId }),
     createEnrollment: (data) => cmd("create_enrollment", { data }),
@@ -91,8 +91,8 @@ export const commands: OrbisCommands = {
       cmd("withdraw_enrollment", { orgId, enrollmentId, reason }),
     transferEnrollment: (orgId, enrollmentId, newClassId) =>
       cmd("transfer_enrollment", { orgId, enrollmentId, newClassId }),
-    checkDuplicate: (studentId, yearId) =>
-      cmd("check_duplicate_enrollment", { studentId, yearId }),
+    checkDuplicate: (studentId, periodId) =>
+      cmd("check_duplicate_enrollment", { studentId, periodId }),
 
     listClassSubjects: (orgId, classId, periodId?) =>
       cmd("list_class_subjects", { orgId, classId, periodId }),
@@ -103,8 +103,8 @@ export const commands: OrbisCommands = {
     deleteClassSubject: (id) => cmd("delete_class_subject", { id }),
 
     listPeriods: (orgId) => cmd("list_periods", { orgId }),
-    listPeriodsByYear: (orgId, yearId) =>
-      cmd("list_periods_by_year", { orgId, yearId }),
+    listPeriodsByYear: (orgId, periodId) =>
+      cmd("list_periods_by_year", { orgId, periodId }),
     getPeriod: (periodId) => cmd("get_period", { periodId: periodId }),
     createPeriod: (data) => cmd("create_period", { data }),
     lockPeriod: (orgId, periodId) =>
@@ -349,21 +349,21 @@ export const commands: OrbisCommands = {
   // SCHEDULING
   // ═══════════════════════════════════════════════════════════════
   scheduling: {
-    listTimeSlots: (orgId, yearId) => cmd("list_time_slots", { orgId, yearId }),
+    listTimeSlots: (orgId, periodId) => cmd("list_time_slots", { orgId, periodId }),
     createTimeSlot: (data) => cmd("create_time_slot", { data }),
     updateTimeSlot: (slotId, data) => cmd("update_time_slot", { slotId, data }),
     deleteTimeSlot: (slotId) => cmd("delete_time_slot", { slotId }),
 
-    listLessonsByClass: (orgId, yearId, classId) =>
-      cmd("list_lessons_by_class", { orgId, yearId, classId }),
-    listLessonsByTeacher: (orgId, yearId, teacherId) =>
-      cmd("list_lessons_by_teacher", { orgId, yearId, teacherId }),
+    listLessonsByClass: (orgId, periodId, classId) =>
+      cmd("list_lessons_by_class", { orgId, periodId, classId }),
+    listLessonsByTeacher: (orgId, periodId, teacherId) =>
+      cmd("list_lessons_by_teacher", { orgId, periodId, teacherId }),
     createLesson: (data) => cmd("create_lesson", { data }),
     updateLesson: (lessonId, data) => cmd("update_lesson", { lessonId, data }),
     deleteLesson: (lessonId) => cmd("delete_lesson", { lessonId }),
     checkConflicts: (
       orgId,
-      yearId,
+      periodId,
       teacherId,
       timeSlotId,
       dayOfWeek,
@@ -371,7 +371,7 @@ export const commands: OrbisCommands = {
     ) =>
       cmd("check_schedule_conflicts", {
         orgId,
-        yearId,
+        periodId,
         teacherId,
         timeSlotId,
         dayOfWeek,
@@ -383,9 +383,9 @@ export const commands: OrbisCommands = {
     updateRoom: (roomId, data) => cmd("update_room", { roomId, data }),
     deleteRoom: (roomId) => cmd("delete_room", { roomId }),
 
-    startSolver: (yearId, mode?) => cmd("start_solver", { yearId, mode }),
+    startSolver: (periodId, mode?) => cmd("start_solver", { periodId, mode }),
     getSolverJob: (jobId) => cmd("get_solver_job", { jobId }),
-    listSolverJobs: (yearId) => cmd("list_solver_jobs", { yearId }),
+    listSolverJobs: (periodId) => cmd("list_solver_jobs", { periodId }),
     cancelSolver: (jobId) => cmd("cancel_solver", { jobId }),
     applySolver: (jobId) => cmd("apply_solver", { jobId }),
   },
@@ -602,12 +602,13 @@ export const commands: OrbisCommands = {
     // Academic Years
     getCurrentYear: (orgId) => cmd("get_current_academic_year", { orgId }),
     listYears: (orgId) => cmd("list_academic_years", { orgId }),
-    switchYear: (yearId) => cmd("switch_academic_year", { yearId }),
-    isYearArchived: (yearId) => cmd("is_year_archived", { yearId }),
+    switchYear: (periodId) => cmd("switch_academic_year", { periodId }),
+    isYearArchived: (periodId) => cmd("is_year_archived", { periodId }),
     getAcademicContext: (orgId) => cmd("get_academic_context", { orgId }),
     getSetupStatus: (orgId) => cmd("get_setup_status", { orgId }),
     initializeSchoolSetup: (orgId, payload) =>
       cmd("initialize_school_setup", { orgId, payload }),
+    getPeriodTemplates: (orgId) => cmd("get_period_templates", { orgId }),
 
     // Promotion
     listPromotionJobs: (orgId) => cmd("get_promotion_jobs", { orgId }),
@@ -623,8 +624,8 @@ export const commands: OrbisCommands = {
     getPromotionPolicy: (orgId) => cmd("get_promotion_policy", { orgId }),
 
     // Calendar / Periods
-    listCalendarEvents: (orgId, yearId) =>
-      cmd("get_calendar_events", { orgId, yearId }),
+    listCalendarEvents: (orgId, periodId) =>
+      cmd("get_calendar_events", { orgId, periodId }),
     listPendingCalendarEvents: (orgId) =>
       cmd("get_pending_calendar_events", { orgId }),
     getOrgPolicy: (orgId) => cmd("get_org_policy", { orgId }),

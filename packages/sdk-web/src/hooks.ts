@@ -54,9 +54,9 @@ export const queryKeys = {
   // Scheduling
   timeSlots: () => ["timeSlots"] as const,
   rooms: () => ["rooms"] as const,
-  schedule: (classId: string, yearId: string) =>
-    ["schedule", classId, yearId] as const,
-  solverJobs: (yearId: string) => ["solverJobs", yearId] as const,
+  schedule: (classId: string, periodId: string) =>
+    ["schedule", classId, periodId] as const,
+  solverJobs: (periodId: string) => ["solverJobs", periodId] as const,
 
   // Exam
   examSessions: (periodId: string) => ["examSessions", periodId] as const,
@@ -229,11 +229,11 @@ export function useRooms() {
   });
 }
 
-export function useClassSchedule(classId: string, yearId: string) {
+export function useClassSchedule(classId: string, periodId: string) {
   return useQuery({
-    queryKey: queryKeys.schedule(classId, yearId),
-    queryFn: () => commands.scheduling.listLessonsByClass(yearId, classId),
-    enabled: !!classId && !!yearId,
+    queryKey: queryKeys.schedule(classId, periodId),
+    queryFn: () => commands.scheduling.listLessonsByClass(periodId, classId),
+    enabled: !!classId && !!periodId,
     staleTime: 5 * 60 * 1000,
   });
 }

@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS organizations (
   is_deleted INTEGER NOT NULL DEFAULT 0,
   deleted_at TEXT,
   deleted_by TEXT,
-  current_year_id TEXT,
+  current_period_id TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
@@ -147,14 +147,14 @@ CREATE TABLE IF NOT EXISTS academic_years (
 CREATE INDEX IF NOT EXISTS idx_ay_org ON academic_years(org_id);
 CREATE INDEX IF NOT EXISTS idx_ay_org_status ON academic_years(org_id, status);
 
--- FK: organizations.current_year_id → academic_years.id
+-- FK: organizations.current_period_id → academic_years.id
 -- (enforced at application level since SQLite ALTER TABLE ADD CONSTRAINT is limited)
 
 -- ── Academic Periods ──
 CREATE TABLE IF NOT EXISTS academic_periods (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
-  year_id TEXT NOT NULL,
+  period_id TEXT NOT NULL,
   parent_id TEXT,
   name TEXT NOT NULL,
   name_ar TEXT,
@@ -185,12 +185,12 @@ CREATE TABLE IF NOT EXISTS academic_periods (
   sort_order INTEGER,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
-  FOREIGN KEY (year_id) REFERENCES academic_years(id),
+  FOREIGN KEY (period_id) REFERENCES academic_years(id),
   FOREIGN KEY (parent_id) REFERENCES academic_periods(id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_ap_year ON academic_periods(year_id);
-CREATE INDEX IF NOT EXISTS idx_ap_org_year ON academic_periods(org_id, year_id);
+CREATE INDEX IF NOT EXISTS idx_ap_period ON academic_periods(period_id);
+CREATE INDEX IF NOT EXISTS idx_ap_org_period ON academic_periods(org_id, period_id);
 
 -- ── Academic Policies (unified: grading + enrollment + promotion + autopilot) ──
 CREATE TABLE IF NOT EXISTS academic_policies (
@@ -312,8 +312,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_enr_unique_active
 CREATE TABLE IF NOT EXISTS promotion_jobs (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
-  source_year_id TEXT NOT NULL,
-  target_year_id TEXT,
+  source_period_id TEXT NOT NULL,
+  target_period_id TEXT,
   status TEXT NOT NULL DEFAULT 'pending'
     CHECK (status IN ('pending','validating','dry_run','confirmed','executing','completed','failed','rolled_back')),
   initiated_by TEXT NOT NULL,
@@ -335,8 +335,8 @@ CREATE TABLE IF NOT EXISTS promotion_jobs (
   rolled_back_by TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
-  FOREIGN KEY (source_year_id) REFERENCES academic_years(id),
-  FOREIGN KEY (target_year_id) REFERENCES academic_years(id)
+  FOREIGN KEY (source_period_id) REFERENCES academic_years(id),
+  FOREIGN KEY (target_period_id) REFERENCES academic_years(id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_pj_org ON promotion_jobs(org_id);
@@ -728,7 +728,7 @@ CREATE TABLE IF NOT EXISTS student_guardians (
 CREATE TABLE IF NOT EXISTS time_slots (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
-  year_id TEXT NOT NULL,
+  period_id TEXT NOT NULL,
   slot_number INTEGER NOT NULL,
   name TEXT,
   name_ar TEXT,
@@ -747,7 +747,7 @@ CREATE TABLE IF NOT EXISTS time_slots (
 CREATE TABLE IF NOT EXISTS scheduled_lessons (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
-  year_id TEXT NOT NULL,
+  period_id TEXT NOT NULL,
   class_id TEXT NOT NULL,
   class_subject_id TEXT NOT NULL,
   subject_id TEXT NOT NULL,
@@ -887,7 +887,7 @@ CREATE TABLE IF NOT EXISTS fiscal_years (
 CREATE TABLE IF NOT EXISTS fiscal_periods (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
-  fiscal_year_id TEXT NOT NULL,
+  fiscal_period_id TEXT NOT NULL,
   name TEXT NOT NULL,
   start_date TEXT NOT NULL,
   end_date TEXT NOT NULL,
@@ -896,7 +896,7 @@ CREATE TABLE IF NOT EXISTS fiscal_periods (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (org_id) REFERENCES organizations(id),
-  FOREIGN KEY (fiscal_year_id) REFERENCES fiscal_years(id)
+  FOREIGN KEY (fiscal_period_id) REFERENCES fiscal_years(id)
 );
 
 -- ── Currencies ──
@@ -1027,7 +1027,7 @@ CREATE TABLE IF NOT EXISTS discount_templates (
 CREATE TABLE IF NOT EXISTS student_fees (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
-  year_id TEXT NOT NULL,
+  period_id TEXT NOT NULL,
   enrollment_id TEXT NOT NULL,
   fee_template_id TEXT NOT NULL,
   original_amount REAL NOT NULL,
@@ -1215,7 +1215,7 @@ CREATE TABLE IF NOT EXISTS teacher_availability (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
   teacher_id TEXT NOT NULL,
-  year_id TEXT NOT NULL,
+  period_id TEXT NOT NULL,
   day_of_week INTEGER NOT NULL,
   time_slot_id TEXT NOT NULL,
   is_available INTEGER NOT NULL,
@@ -1250,7 +1250,7 @@ CREATE TABLE IF NOT EXISTS solve_jobs (
 CREATE TABLE IF NOT EXISTS student_ordering (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
-  year_id TEXT NOT NULL,
+  period_id TEXT NOT NULL,
   enrollment_id TEXT NOT NULL UNIQUE,
   student_id TEXT NOT NULL,
   class_id TEXT NOT NULL,
@@ -1273,8 +1273,8 @@ CREATE TABLE IF NOT EXISTS student_ordering (
   updated_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_so_class_order ON student_ordering(class_id, order_in_class);
-CREATE INDEX IF NOT EXISTS idx_so_sort_key ON student_ordering(org_id, year_id, sort_key);
-CREATE INDEX IF NOT EXISTS idx_so_level ON student_ordering(org_id, year_id, level, order_in_level);
+CREATE INDEX IF NOT EXISTS idx_so_sort_key ON student_ordering(org_id, period_id, sort_key);
+CREATE INDEX IF NOT EXISTS idx_so_level ON student_ordering(org_id, period_id, level, order_in_level);
 
 -- ── Exam Sessions (Examination Cycles) ──
 CREATE TABLE IF NOT EXISTS exam_sessions (
