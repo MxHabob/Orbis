@@ -30,7 +30,15 @@ let filteredRoles = $derived(
   ),
 );
 
-const AVAILABLE_ROLES = ["super_admin", "admin", "registrar", "teacher", "accountant", "student", "guardian"];
+const AVAILABLE_ROLES = [
+  "super_admin",
+  "admin",
+  "registrar",
+  "teacher",
+  "accountant",
+  "student",
+  "guardian",
+];
 
 async function loadRoles() {
   if (!userId) return;

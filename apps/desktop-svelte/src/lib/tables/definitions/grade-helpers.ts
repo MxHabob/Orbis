@@ -87,7 +87,7 @@ export function buildGradeColumns(
     readonly: true,
     sort: true,
     cellClass: "cell-student-name",
-    cell: AvatarCell
+    cell: AvatarCell,
   });
 
   if (matrixData.students.length > 0) {
@@ -104,13 +104,15 @@ export function buildGradeColumns(
           readonly: isReadonly,
           sort: false,
           align: "center",
-          editor: isReadonly ? undefined : {
-            type: "text",
-            config: {
-              min: 0,
-              max: grade.max_score
-            }
-          },
+          editor: isReadonly
+            ? undefined
+            : {
+                type: "text",
+                config: {
+                  min: 0,
+                  max: grade.max_score,
+                },
+              },
           meta: {
             min: 0,
             max: grade.max_score,
@@ -212,7 +214,8 @@ export function recalculateRowTotals(
 
   for (const key of assessmentKeys) {
     const scoreVal = row[`score_${key}`];
-    const score = (scoreVal !== "" && scoreVal !== null) ? Number(scoreVal) : null;
+    const score =
+      scoreVal !== "" && scoreVal !== null ? Number(scoreVal) : null;
     const maxScore = row[`__maxScore_${key}`];
 
     if (score != null && typeof score === "number" && !isNaN(score)) {

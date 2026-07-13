@@ -38,13 +38,20 @@ async function loadData() {
   isLoading = true;
   try {
     // Try to load dynamic profit stats or calculate from database
-    const payments = await commands.finance.getPayments(orgId);
+    const payments = await commands.finance.listPayments(orgId);
     if (payments && payments.length > 0) {
       // Calculate monthly average payment as a proxy for profit
-      const totalAmount = payments.reduce((acc, p) => acc + Number(p.amount || 0), 0);
+      const totalAmount = payments.reduce(
+        (acc, p) => acc + Number(p.amount || 0),
+        0,
+      );
       const avg = totalAmount / 6;
       // Format to currency
-      avgProfit = new Intl.NumberFormat(getLocale(), { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(avg);
+      avgProfit = new Intl.NumberFormat(getLocale(), {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 2,
+      }).format(avg);
     } else {
       avgProfit = "$1,450.50";
     }

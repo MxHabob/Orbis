@@ -73,8 +73,6 @@ let filterMode = $state<"day" | "all">("day");
 let selectedFilterDate = $state(new Date().toISOString().split("T")[0]);
 let showUserRecords = $state(true);
 
-
-
 // Search query
 let searchQuery = $state("");
 let statusFilter = $state("all");
@@ -188,8 +186,6 @@ function selectRow(entry: any) {
 
   // Set fields to entry values to view/copy them
 }
-
-
 
 function handleVoid() {
   if (!selectedEntry) {

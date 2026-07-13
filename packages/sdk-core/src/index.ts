@@ -16,32 +16,60 @@
 // ── Types ───────────────────────────────────────────────────────
 export type * from "./types/index";
 export {
-  type AcademicPeriod, type AcademicPeriod, type Class, type Enrollment, type Subject,
-  type OrgUnit, type ClassSubject, type StudentGuardian, type Document,
-  type Notification, type Organization,
+  type AcademicPeriod,
+  type AcademicPeriod,
+  type Class,
+  type Enrollment,
+  type Subject,
+  type OrgUnit,
+  type ClassSubject,
+  type StudentGuardian,
+  type Document,
+  type Notification,
+  type Organization,
 } from "./types/academic";
 
 export {
-  type Grade, type Attendance, type BehaviorRecord, type Assessment,
-  type GradeReportCard, type AttendanceReport, type GradeAnalytics,
+  type Grade,
+  type Attendance,
+  type BehaviorRecord,
+  type Assessment,
+  type GradeReportCard,
+  type AttendanceReport,
+  type GradeAnalytics,
 } from "./types/assessment";
 
 export {
-  type Payment, type StudentFee, type FeeTemplate, type Treasury,
-  type DiscountTemplate, type Account, type JournalEntry, type Currency,
+  type Payment,
+  type StudentFee,
+  type FeeTemplate,
+  type Treasury,
+  type DiscountTemplate,
+  type Account,
+  type JournalEntry,
+  type Currency,
 } from "./types/finance";
 
 export {
-  type TimeSlot, type ScheduledLesson, type Room, type SolveJob,
+  type TimeSlot,
+  type ScheduledLesson,
+  type Room,
+  type SolveJob,
 } from "./types/scheduling";
 
 export {
-  type ExamSession, type ExamSubject, type ExamSchedule,
-  type ExamHall, type SeatingNumber,
+  type ExamSession,
+  type ExamSubject,
+  type ExamSchedule,
+  type ExamHall,
+  type SeatingNumber,
 } from "./types/exam";
 
 export {
-  type User, type UserRole, type UserSession, type Permission,
+  type User,
+  type UserRole,
+  type UserSession,
+  type Permission,
 } from "./types/iam";
 
 // ── Commands ────────────────────────────────────────────────────

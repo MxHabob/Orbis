@@ -12,10 +12,7 @@ import { academicContext } from "$lib/stores";
 import { fade } from "svelte/transition";
 import type { JsonRecord } from "@orbis/sdk-core";
 
-let {
-  student,
-  onClose,
-}: { student: any; onClose: () => void } = $props();
+let { student, onClose }: { student: any; onClose: () => void } = $props();
 
 const studentId = $derived(student?.id || "");
 const orgId = $derived(student?.org_id || authStore.orgId || "");
@@ -32,12 +29,16 @@ async function fetchStats() {
   guardiansList = [];
   isLoading = true;
   try {
-    const periodId = academicContext.effectivePeriodId || student.period_id || "";
+    const periodId =
+      academicContext.effectivePeriodId || student.period_id || "";
 
     // Fetch finances
     const [fees, payments] = await Promise.all([
       commands.finance.listStudentFees(studentId).catch(() => []),
-      commands.finance.getPayments(orgId, studentId).catch(() => []),
+      commands.finance
+        .listPayments(orgId)
+        .then((list) => list.filter((p: any) => p.enrollment_id === studentId))
+        .catch(() => []),
     ]);
 
     const totalFees = fees.reduce((sum, f) => sum + Number(f.amount || 0), 0);
@@ -50,7 +51,9 @@ async function fetchStats() {
 
     // Fetch grades report card summary
     if (periodId) {
-      const report = await commands.assessment.getReportCard(studentId, periodId).catch(() => null);
+      const report = await commands.assessment
+        .getReportCard(studentId, periodId)
+        .catch(() => null);
       if (report && Array.isArray(report.grades)) {
         const avg =
           report.grades.reduce(
@@ -66,7 +69,10 @@ async function fetchStats() {
     }
 
     // Fetch guardians list
-    const links = await commands.academic.listGuardiansByStudent(orgId, student.student_id || student.id);
+    const links = await commands.academic.listGuardiansByStudent(
+      orgId,
+      student.student_id || student.id,
+    );
     if (links) {
       const resolved = [];
       for (const link of links) {

@@ -13,7 +13,9 @@ class WorkflowInboxStore {
 
   async loadCount(orgId: string): Promise<void> {
     try {
-      const pending = await commands.platform.listOverrideRequests(orgId, { status: "pending" });
+      const pending = await commands.platform.listOverrideRequests(orgId, {
+        status: "pending",
+      });
       this.pendingApprovals = Array.isArray(pending) ? pending.length : 0;
       this.isLoaded = true;
     } catch (e: unknown) {
@@ -26,9 +28,17 @@ class WorkflowInboxStore {
     this.pendingSuggestions = Array.isArray(payload) ? payload.length : 0;
   }
 
-  decrementApprovals(): void { if (this.pendingApprovals > 0) this.pendingApprovals--; }
-  decrementSuggestions(): void { if (this.pendingSuggestions > 0) this.pendingSuggestions--; }
-  reset(): void { this.pendingApprovals = 0; this.pendingSuggestions = 0; this.isLoaded = false; }
+  decrementApprovals(): void {
+    if (this.pendingApprovals > 0) this.pendingApprovals--;
+  }
+  decrementSuggestions(): void {
+    if (this.pendingSuggestions > 0) this.pendingSuggestions--;
+  }
+  reset(): void {
+    this.pendingApprovals = 0;
+    this.pendingSuggestions = 0;
+    this.isLoaded = false;
+  }
 }
 
 export const workflowInbox = new WorkflowInboxStore();

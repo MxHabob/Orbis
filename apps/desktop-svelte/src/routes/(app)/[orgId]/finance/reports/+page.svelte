@@ -37,7 +37,7 @@ async function loadData() {
   isLoading = true;
   error = null;
   try {
-    ledgers = await commands.finance.getAccounts(data.orgId);
+    ledgers = await commands.finance.listAccounts(data.orgId);
   } catch (e) {
     console.error("Error loading ledger data for reports:", e);
     error = e instanceof Error ? e.message : String(e);

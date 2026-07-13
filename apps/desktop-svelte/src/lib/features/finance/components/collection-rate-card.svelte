@@ -9,7 +9,7 @@ let {
   collectionRate,
   totalFees,
   totalPaid,
-  orgId
+  orgId,
 }: {
   collectionRate: number;
   totalFees: number;

@@ -141,6 +141,11 @@ const filtered = $derived(
 <svelte:head>
   <title>{m.settings_ordering_window_title()} | Orbis</title>
 </svelte:head>
+<div class="h-full w-full overflow-hidden flex flex-col font-sans text-start bg-background relative">
+  <div class="flex-1 overflow-y-auto scrollbar-hide">
+    <div class="p-6 pb-28 flex flex-col gap-6">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 font-sans border-b border-border/40 pb-5 select-none">
+        <div class="flex flex-col gap-1.5 flex-1">
         <span class="text-xs font-semibold text-muted-foreground">
           {m.exams_ordering_strategy()}
         </span>
@@ -159,7 +164,6 @@ const filtered = $derived(
           </SelectContent>
         </Select>
       </div>
-    </div>
 
     <!-- Rebuild & Freeze buttons -->
     <div class="flex items-center gap-2 justify-end lg:self-end h-9 mt-4 lg:mt-0">
@@ -183,7 +187,7 @@ const filtered = $derived(
         {m.exams_ordering_freeze()}
       </Button>
     </div>
-  </div>
+      </div>
 
   <!-- Search -->
   <SearchField
@@ -238,4 +242,6 @@ const filtered = $derived(
       </Table>
     </div>
   {/if}
+    </div>
+  </div>
 </div>

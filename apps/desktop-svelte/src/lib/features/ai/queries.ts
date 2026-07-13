@@ -1,7 +1,11 @@
 /**
  * AI domain queries and mutations.
  */
-import { createQuery, createMutation, useQueryClient } from "@tanstack/svelte-query";
+import {
+  createQuery,
+  createMutation,
+  useQueryClient,
+} from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
 
 export function createAutopilotConfigQuery(orgId: string) {
@@ -34,10 +38,22 @@ export function createAutopilotDiagnosticsQuery(orgId: string) {
 export function useConfigureAutopilot() {
   const queryClient = useQueryClient();
   return createMutation({
-    mutationFn: (vars: { orgId: string; isEnabled: boolean; paused: boolean; mode: string }) =>
-      commands.platform.configureAutopilot(vars.orgId, vars.isEnabled, vars.paused, vars.mode),
+    mutationFn: (vars: {
+      orgId: string;
+      isEnabled: boolean;
+      paused: boolean;
+      mode: string;
+    }) =>
+      commands.platform.configureAutopilot(
+        vars.orgId,
+        vars.isEnabled,
+        vars.paused,
+        vars.mode,
+      ),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: ["autopilot-config", vars.orgId] });
+      queryClient.invalidateQueries({
+        queryKey: ["autopilot-config", vars.orgId],
+      });
     },
   });
 }
@@ -45,11 +61,18 @@ export function useConfigureAutopilot() {
 export function useRunAutopilotTick() {
   const queryClient = useQueryClient();
   return createMutation({
-    mutationFn: (vars: { orgId: string }) => commands.platform.runAutopilotTick(vars.orgId),
+    mutationFn: (vars: { orgId: string }) =>
+      commands.platform.runAutopilotTick(vars.orgId),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: ["autopilot-config", vars.orgId] });
-      queryClient.invalidateQueries({ queryKey: ["autopilot-tasks", vars.orgId] });
-      queryClient.invalidateQueries({ queryKey: ["autopilot-diagnostics", vars.orgId] });
+      queryClient.invalidateQueries({
+        queryKey: ["autopilot-config", vars.orgId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["autopilot-tasks", vars.orgId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["autopilot-diagnostics", vars.orgId],
+      });
     },
   });
 }
@@ -57,9 +80,13 @@ export function useRunAutopilotTick() {
 export function createAgentSessionsQuery(orgId: string | (() => string)) {
   const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
   return createQuery({
-    get queryKey() { return ["agent-sessions", getOrgId()]; },
+    get queryKey() {
+      return ["agent-sessions", getOrgId()];
+    },
     queryFn: () => commands.platform.listAgentSessions(getOrgId()),
-    get enabled() { return !!getOrgId(); },
+    get enabled() {
+      return !!getOrgId();
+    },
     staleTime: 2 * 60 * 1000,
   });
 }
@@ -69,11 +96,17 @@ export function createAgentSessionLogsQuery(
   sessionId: string | (() => string),
 ) {
   const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
-  const getSessionId = typeof sessionId === "function" ? sessionId : () => sessionId;
+  const getSessionId =
+    typeof sessionId === "function" ? sessionId : () => sessionId;
   return createQuery({
-    get queryKey() { return ["agent-session-logs", getOrgId(), getSessionId()]; },
-    queryFn: () => commands.platform.getAgentSessionLogs(getOrgId(), getSessionId()),
-    get enabled() { return !!getOrgId() && !!getSessionId(); },
+    get queryKey() {
+      return ["agent-session-logs", getOrgId(), getSessionId()];
+    },
+    queryFn: () =>
+      commands.platform.getAgentSessionLogs(getOrgId(), getSessionId()),
+    get enabled() {
+      return !!getOrgId() && !!getSessionId();
+    },
     staleTime: 1 * 60 * 1000,
   });
 }
@@ -81,11 +114,23 @@ export function createAgentSessionLogsQuery(
 export function useApproveAgentAction() {
   const queryClient = useQueryClient();
   return createMutation({
-    mutationFn: (vars: { orgId: string; actionLogId: string; approvedBy: string }) =>
-      commands.platform.approveAgentAction(vars.orgId, vars.actionLogId, vars.approvedBy),
+    mutationFn: (vars: {
+      orgId: string;
+      actionLogId: string;
+      approvedBy: string;
+    }) =>
+      commands.platform.approveAgentAction(
+        vars.orgId,
+        vars.actionLogId,
+        vars.approvedBy,
+      ),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: ["agent-session-logs", vars.orgId] });
-      queryClient.invalidateQueries({ queryKey: ["agent-sessions", vars.orgId] });
+      queryClient.invalidateQueries({
+        queryKey: ["agent-session-logs", vars.orgId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["agent-sessions", vars.orgId],
+      });
     },
   });
 }
@@ -93,11 +138,25 @@ export function useApproveAgentAction() {
 export function useRejectAgentAction() {
   const queryClient = useQueryClient();
   return createMutation({
-    mutationFn: (vars: { orgId: string; actionLogId: string; rejectedBy: string; reason: string }) =>
-      commands.platform.rejectAgentAction(vars.orgId, vars.actionLogId, vars.rejectedBy, vars.reason),
+    mutationFn: (vars: {
+      orgId: string;
+      actionLogId: string;
+      rejectedBy: string;
+      reason: string;
+    }) =>
+      commands.platform.rejectAgentAction(
+        vars.orgId,
+        vars.actionLogId,
+        vars.rejectedBy,
+        vars.reason,
+      ),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: ["agent-session-logs", vars.orgId] });
-      queryClient.invalidateQueries({ queryKey: ["agent-sessions", vars.orgId] });
+      queryClient.invalidateQueries({
+        queryKey: ["agent-session-logs", vars.orgId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["agent-sessions", vars.orgId],
+      });
     },
   });
 }

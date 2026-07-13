@@ -153,8 +153,8 @@ async function loadData() {
   error = null;
   try {
     const [paymentsList, treasuriesList, studentsList] = await Promise.all([
-      commands.finance.getPayments(data.orgId),
-      commands.finance.getTreasuries(data.orgId),
+      commands.finance.listPayments(data.orgId),
+      commands.finance.listTreasuries(data.orgId),
       commands.academic.listEnrollments(data.orgId),
     ]);
 
@@ -186,7 +186,7 @@ async function loadData() {
 
 async function loadCurrencies() {
   try {
-    const list = await commands.finance.getCurrencies(data.orgId);
+    const list = await commands.finance.listCurrencies(data.orgId);
     if (list && list.length > 0) {
       currencies = list.map((c) => ({
         code: c.code,
@@ -289,7 +289,7 @@ async function handleStudentChange(index: number, studentId: string) {
 
   paymentRows[index].isLoadingFees = true;
   try {
-    const list = await commands.finance.getStudentFees(data.orgId, studentId);
+    const list = await commands.finance.listStudentFees(studentId);
     paymentRows[index].availableFees = list.filter((f) => f.status !== "paid");
   } catch (e) {
     console.error("Failed to load student fees for row:", e);
@@ -353,7 +353,7 @@ async function selectRow(p: any) {
   let rowFees: any[] = [];
   if (enrollId && data.orgId) {
     try {
-      const list = await commands.finance.getStudentFees(data.orgId, enrollId);
+      const list = await commands.finance.listStudentFees(enrollId);
       rowFees = list.filter(
         (f) => f.status !== "paid" || String(f.id) === String(p.fee_id),
       );

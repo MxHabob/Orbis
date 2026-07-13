@@ -27,10 +27,7 @@ import {
   SelectItem,
 } from "@orbis/ui-svelte/select";
 import { OrbisGrid } from "@orbis/svelte-grid";
-import {
-  buildGradeColumns,
-  transformMatrixToSource,
-} from "$lib/tables";
+import { buildGradeColumns, transformMatrixToSource } from "$lib/tables";
 import {
   AlertTriangle,
   Activity,
@@ -67,7 +64,8 @@ const classSubjectsQuery = createQuery({
 
 const assessmentsQuery = createQuery({
   queryKey: ["assessments", classId, periodId],
-  queryFn: () => commands.assessment.listAssessments(orgId, periodId || "").catch(() => []),
+  queryFn: () =>
+    commands.assessment.listAssessments(orgId, periodId || "").catch(() => []),
   enabled: !!classId && !!periodId && !!orgId,
   staleTime: 5 * 60 * 1000,
 });
@@ -75,7 +73,10 @@ const assessmentsQuery = createQuery({
 // Dynamic class attendance analytics
 const attendanceQuery = createQuery({
   queryKey: ["attendance-analytics", orgId, classId, periodId],
-  queryFn: () => commands.assessment.listAttendance(orgId, periodId || "", classId).catch(() => []),
+  queryFn: () =>
+    commands.assessment
+      .listAttendance(orgId, periodId || "", classId)
+      .catch(() => []),
   enabled: !!orgId && !!classId && !!periodId,
   staleTime: 5 * 60 * 1000,
 });
@@ -92,14 +93,23 @@ const subjectsCount = $derived(
 
 const assessmentsCount = $derived.by(() => {
   const allAssessments = assessmentsQuery.data || [];
-  const classSubjectIds = new Set((classSubjectsQuery.data || []).map((cs) => cs.id));
-  return allAssessments.filter((a) => classSubjectIds.has(a.class_subject_id)).length;
+  const classSubjectIds = new Set(
+    (classSubjectsQuery.data || []).map((cs) => cs.id),
+  );
+  return allAssessments.filter((a) => classSubjectIds.has(a.class_subject_id))
+    .length;
 });
 
 const attendanceRate = $derived.by(() => {
   const list = attendanceQuery.data || [];
   if (list.length === 0) return 100;
-  const presentCount = list.filter((r) => r.status === "present" || r.status === "late" || String(r.status).toLowerCase().includes("present") || String(r.status).includes("حاضر")).length;
+  const presentCount = list.filter(
+    (r) =>
+      r.status === "present" ||
+      r.status === "late" ||
+      String(r.status).toLowerCase().includes("present") ||
+      String(r.status).includes("حاضر"),
+  ).length;
   return Math.round((presentCount / list.length) * 100);
 });
 
@@ -152,8 +162,6 @@ $effect(() => {
     selectedSubjectId = String(subjects[0].subject_id || subjects[0].id);
   }
 });
-
-
 
 const gradeMatrixQuery = createQuery({
   queryKey: ["grade-matrix", orgId, periodId, classId, selectedSubjectId],

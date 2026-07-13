@@ -21,7 +21,13 @@ export function normalizeSex(val: string): string {
   if (clean === "male" || clean === "m" || clean === "ذكر" || clean === "ولد") {
     return "male";
   }
-  if (clean === "female" || clean === "f" || clean === "أنثى" || clean === "انثى" || clean === "بنت") {
+  if (
+    clean === "female" ||
+    clean === "f" ||
+    clean === "أنثى" ||
+    clean === "انثى" ||
+    clean === "بنت"
+  ) {
     return "female";
   }
   return val;

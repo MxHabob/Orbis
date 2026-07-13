@@ -27,9 +27,6 @@ export function createPeriodsByYearQuery(orgId: string, yearId: string) {
   });
 }
 
-// Backward compat alias
-export const createPeriodsQuery = createPeriodsQuery;
-
 /** Classes for an organization. */
 export function createClassesQuery(orgId: string) {
   return createQuery({
@@ -67,7 +64,11 @@ export function createAssessmentsQuery(params: {
 }) {
   return createQuery({
     queryKey: ["assessments", params.periodId, params.classSubjectId],
-    queryFn: () => commands.assessment.listAssessments(params.periodId!, params.classSubjectId),
+    queryFn: () =>
+      commands.assessment.listAssessments(
+        params.periodId!,
+        params.classSubjectId,
+      ),
     enabled: !!params.periodId,
     staleTime: 2 * 60 * 1000,
   });
@@ -94,10 +95,14 @@ export function createClassScheduleQuery(yearId?: string, classId?: string) {
 }
 
 /** Teacher schedule lessons. */
-export function createTeacherScheduleQuery(yearId?: string, teacherId?: string) {
+export function createTeacherScheduleQuery(
+  yearId?: string,
+  teacherId?: string,
+) {
   return createQuery({
     queryKey: ["teacher-schedule", yearId, teacherId],
-    queryFn: () => commands.scheduling.listLessonsByTeacher(yearId!, teacherId!),
+    queryFn: () =>
+      commands.scheduling.listLessonsByTeacher(yearId!, teacherId!),
     enabled: !!yearId && !!teacherId,
     staleTime: 2 * 60 * 1000,
   });

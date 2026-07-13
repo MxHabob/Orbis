@@ -44,7 +44,13 @@ export type AcademicPeriodContext = AcademicPeriod;
 /** @deprecated Use AcademicPeriod instead */
 export type AcademicPeriodSummary = AcademicPeriod;
 /** @deprecated Use period status instead */
-export type PeriodPhase = "planned" | "active" | "grading" | "exam" | "locked" | "closed";
+export type PeriodPhase =
+  | "planned"
+  | "active"
+  | "grading"
+  | "exam"
+  | "locked"
+  | "closed";
 
 export interface PromotionJob {
   id: string;

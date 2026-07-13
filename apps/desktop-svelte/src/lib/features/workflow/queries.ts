@@ -4,7 +4,10 @@
 import { createQuery } from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
 
-export function createPendingApprovalsQuery(orgId: string, approverRole: string) {
+export function createPendingApprovalsQuery(
+  orgId: string,
+  approverRole: string,
+) {
   return createQuery({
     queryKey: ["pending-approvals", orgId, approverRole],
     queryFn: () => commands.platform.getPendingApprovals(orgId, approverRole),
@@ -13,7 +16,10 @@ export function createPendingApprovalsQuery(orgId: string, approverRole: string)
   });
 }
 
-export function createOverrideRequestsQuery(orgId: string, params?: Record<string, unknown>) {
+export function createOverrideRequestsQuery(
+  orgId: string,
+  params?: Record<string, unknown>,
+) {
   return createQuery({
     queryKey: ["override-requests", orgId, params ?? {}],
     queryFn: () => commands.platform.listOverrideRequests(orgId, params),

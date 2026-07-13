@@ -135,7 +135,7 @@ async function handleSave(e: Event) {
     };
 
     await commands.platform.updateOrgPolicy(orgId, payload);
-    
+
     // Save Autopilot configuration
     if ($autopilotConfigQuery.data) {
       await $configureAutopilotMutation.mutateAsync({
@@ -154,7 +154,9 @@ async function handleSave(e: Event) {
     queryClient.invalidateQueries({ queryKey: ["org-academic-policy", orgId] });
     queryClient.invalidateQueries({ queryKey: ["autopilot-config", orgId] });
     queryClient.invalidateQueries({ queryKey: ["autopilot-tasks", orgId] });
-    queryClient.invalidateQueries({ queryKey: ["autopilot-diagnostics", orgId] });
+    queryClient.invalidateQueries({
+      queryKey: ["autopilot-diagnostics", orgId],
+    });
   } catch (err: unknown) {
     toast.error(extractErrorMessage(err));
   } finally {

@@ -9,12 +9,7 @@ import Resizer from "../resizer.svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import * as m from "$lib/paraglide/messages";
-import {
-  X,
-  MoreHorizontal,
-  Columns,
-  Plus,
-} from "lucide-svelte";
+import { X, MoreHorizontal, Columns, Plus } from "lucide-svelte";
 import { fly } from "svelte/transition";
 import { getLocale } from "$lib/paraglide/runtime";
 import { isDesktopApp } from "$lib/core/ipc";
@@ -26,9 +21,7 @@ import { goto } from "$app/navigation";
 import { createQuery } from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
 import { Badge } from "@orbis/ui-svelte/badge";
-import {
-  createAgentSessionsQuery,
-} from "$lib/features/ai/queries";
+import { createAgentSessionsQuery } from "$lib/features/ai/queries";
 import { Avatar } from "@orbis/avatar-engine";
 import AgentHeader from "./agent-header.svelte";
 import AgentCockpit from "./agent-cockpit.svelte";
@@ -41,16 +34,24 @@ const currentOrgId = $derived(page.params.orgId || authStore.orgId || "");
 
 // TanStack query caching for autocomplete using reactive config closures
 const enrollmentsQuery = createQuery({
-  get queryKey() { return ["enrollments", currentOrgId]; },
+  get queryKey() {
+    return ["enrollments", currentOrgId];
+  },
   queryFn: () => commands.academic.listEnrollments(currentOrgId),
-  get enabled() { return !!currentOrgId; },
+  get enabled() {
+    return !!currentOrgId;
+  },
   staleTime: 2 * 60 * 1000,
 });
 
 const usersQuery = createQuery({
-  get queryKey() { return ["users", currentOrgId]; },
+  get queryKey() {
+    return ["users", currentOrgId];
+  },
   queryFn: () => commands.iam.listUsers(currentOrgId),
-  get enabled() { return !!currentOrgId; },
+  get enabled() {
+    return !!currentOrgId;
+  },
   staleTime: 5 * 60 * 1000,
 });
 
@@ -63,7 +64,9 @@ let selectedSessionId = $state<string | null>(null);
 const sessionsQuery = createAgentSessionsQuery(() => currentOrgId);
 const sessions = $derived($sessionsQuery.data ?? []);
 
-const effectiveSessionId = $derived(selectedSessionId || (sessions.length > 0 ? sessions[0].id : null));
+const effectiveSessionId = $derived(
+  selectedSessionId || (sessions.length > 0 ? sessions[0].id : null),
+);
 
 const slashPages = [
   { label: "الطلاب", path: "/students", cleanLabel: "الطلاب" },
@@ -146,7 +149,9 @@ let messages = $state<Message[]>([]);
 let isThinking = $state(false);
 let chatContainer = $state<HTMLDivElement>();
 
-const currentSession = $derived(sessions.find(s => s.id === effectiveSessionId));
+const currentSession = $derived(
+  sessions.find((s) => s.id === effectiveSessionId),
+);
 
 const userHat = $derived.by(() => {
   const role = authStore.user?.role || authStore.user?.primary_role || "viewer";
@@ -204,13 +209,20 @@ async function openStandaloneWindow() {
       toast.error(m.agent_toast_open_standalone_failed());
     }
   } else {
-    window.open(`/agent?orgId=${currentOrgId}`, "_blank", "width=400,height=600");
+    window.open(
+      `/agent?orgId=${currentOrgId}`,
+      "_blank",
+      "width=400,height=600",
+    );
   }
 }
 
 async function handleNewChat() {
   try {
-    const newSession = await commands.agent.createSession(currentOrgId, "greeting");
+    const newSession = await commands.agent.createSession(
+      currentOrgId,
+      "greeting",
+    );
     selectedSessionId = newSession.id;
     messages = [];
   } catch (e: unknown) {
@@ -236,11 +248,18 @@ async function submitMessage(queryText?: string) {
   try {
     const activeId = effectiveSessionId;
     if (!activeId) {
-      const newSession = await commands.agent.createSession(currentOrgId, "greeting");
+      const newSession = await commands.agent.createSession(
+        currentOrgId,
+        "greeting",
+      );
       selectedSessionId = newSession.id;
     }
 
-    const response = await commands.agent.query(currentOrgId, effectiveSessionId || "", text);
+    const response = await commands.agent.query(
+      currentOrgId,
+      effectiveSessionId || "",
+      text,
+    );
     messages = [
       ...messages,
       { id: Math.random().toString(), role: "assistant", content: response },

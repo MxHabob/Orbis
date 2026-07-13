@@ -64,8 +64,8 @@ async function loadFormData() {
   try {
     isLoading = true;
     const [ledgerList, currencyList] = await Promise.all([
-      commands.finance.getAccounts(orgId),
-      commands.finance.getCurrencies(orgId),
+      commands.finance.listAccounts(orgId),
+      commands.finance.listCurrencies(orgId),
     ]);
     ledgers = ledgerList;
     currencies = currencyList;

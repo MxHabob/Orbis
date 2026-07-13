@@ -78,7 +78,10 @@ async function loadDocuments() {
   error = null;
   try {
     // Fetch real documents for this student
-    documents = await commands.platform.listDocumentsByOwner(orgId, studentUserId);
+    documents = await commands.platform.listDocumentsByOwner(
+      orgId,
+      studentUserId,
+    );
   } catch (e) {
     error = e instanceof Error ? e.message : String(e);
   } finally {

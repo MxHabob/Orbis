@@ -12,7 +12,13 @@ import { OrbisGrid } from "@orbis/svelte-grid";
 import type { CellEditEvent, OrbisColumnDef } from "@orbis/svelte-grid";
 import { addRowIndices } from "$lib/tables";
 import { getLocale } from "$lib/paraglide/runtime";
-import { parseTSV, mapTSVToRows, isHeaderRow, normalizeSex, normalizeDate } from "./paste-handler";
+import {
+  parseTSV,
+  mapTSVToRows,
+  isHeaderRow,
+  normalizeSex,
+  normalizeDate,
+} from "./paste-handler";
 
 // ── Props ──────────────────────────────────────────────────────────
 interface Props {
@@ -151,7 +157,9 @@ function handleClipboardPaste(e: ClipboardEvent) {
       const rowId = focusCell.row;
       const colId = focusCell.column;
       if (rowId !== undefined && rowId !== null) {
-        const foundRow = indexedSource.find((r: any) => String(r.id) === String(rowId));
+        const foundRow = indexedSource.find(
+          (r: any) => String(r.id) === String(rowId),
+        );
         if (foundRow && foundRow.__rowIndex !== undefined) {
           startRow = foundRow.__rowIndex - 1;
         }
@@ -183,7 +191,7 @@ function handleClipboardPaste(e: ClipboardEvent) {
 
       if (pastedRows[r][sourceColProp] !== undefined && targetColProp) {
         let val = pastedRows[r][sourceColProp];
-        
+
         // Normalize val based on the target column property
         if (targetColProp === "sex") {
           val = normalizeSex(val);

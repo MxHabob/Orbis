@@ -26,13 +26,21 @@ let {
 
 function parseMarkdownLinks(text: string) {
   const regex = /\[([^\]]+)\]\(([^)]+)\)/g;
-  const parts: { type: "text" | "link"; content?: string; label?: string; href?: string }[] = [];
+  const parts: {
+    type: "text" | "link";
+    content?: string;
+    label?: string;
+    href?: string;
+  }[] = [];
   let lastIndex = 0;
   let match;
 
   while ((match = regex.exec(text)) !== null) {
     if (match.index > lastIndex) {
-      parts.push({ type: "text", content: text.substring(lastIndex, match.index) });
+      parts.push({
+        type: "text",
+        content: text.substring(lastIndex, match.index),
+      });
     }
     const fullLabel = match[1];
     const href = match[2];

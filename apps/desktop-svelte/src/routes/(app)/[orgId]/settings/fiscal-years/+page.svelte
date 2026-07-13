@@ -10,7 +10,13 @@ import {
   TableHeader,
   TableRow,
 } from "@orbis/ui-svelte/table";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@orbis/ui-svelte/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+} from "@orbis/ui-svelte/card";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { toast } from "svelte-sonner";
 import { Calendar, Plus, CalendarRange } from "lucide-svelte";

@@ -32,11 +32,14 @@ async function loadData() {
 
     const classes = await commands.academic.listClasses(orgId, params);
     if (classes && classes.length > 0) {
-      data = classes.map(c => ({
-        name: c.name_ar || c.name,
-        count: c.current_students || 0
-      })).sort((a, b) => b.count - a.count).slice(0, 9); // top 9 classes
-      
+      data = classes
+        .map((c) => ({
+          name: c.name_ar || c.name,
+          count: c.current_students || 0,
+        }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 9); // top 9 classes
+
       activeClassesCount = classes.length;
     } else {
       // Fallback mockup matching Screenshot 5 (Right)
@@ -49,7 +52,7 @@ async function loadData() {
         { name: "الصف السابع", count: 148 },
         { name: "الصف السادس", count: 140 },
         { name: "الصف الثاني", count: 120 },
-        { name: "الصف الخامس", count: 120 }
+        { name: "الصف الخامس", count: 120 },
       ];
       activeClassesCount = 9;
     }
@@ -68,7 +71,7 @@ $effect(() => {
   }
 });
 
-const maxVal = $derived(Math.max(...data.map(d => d.count), 1));
+const maxVal = $derived(Math.max(...data.map((d) => d.count), 1));
 </script>
 
 <div class="card-tactile h-full relative group min-h-[265px] p-5 flex flex-col justify-between font-sans border border-border/60 bg-card shadow-sm">

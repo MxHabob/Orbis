@@ -235,19 +235,27 @@ async function handleSubmit() {
           username: null,
           password: null,
         };
-        
+
         // Resolve sex input to database enum value (male/female) expected by the backend
-        const sexInput = String(r.sex ?? "").trim().toLowerCase();
+        const sexInput = String(r.sex ?? "")
+          .trim()
+          .toLowerCase();
         if (sexInput === "ذكر" || sexInput === "male") {
           row.gender = "male";
-        } else if (sexInput === "أنثى" || sexInput === "انثى" || sexInput === "female") {
+        } else if (
+          sexInput === "أنثى" ||
+          sexInput === "انثى" ||
+          sexInput === "female"
+        ) {
           row.gender = "female";
         } else {
           row.gender = null;
         }
 
         // Map birth date
-        row.birth_date = r.date_of_birth ? String(r.date_of_birth).trim() : null;
+        row.birth_date = r.date_of_birth
+          ? String(r.date_of_birth).trim()
+          : null;
 
         // Resolve class name/ID to ID (extra info if needed by client/logging)
         const classInput = String(r.class_id ?? "").trim();

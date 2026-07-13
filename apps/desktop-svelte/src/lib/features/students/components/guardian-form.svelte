@@ -116,13 +116,15 @@ const usersQuery = createUsersQuery(orgId);
 const enrollmentsQuery = createEnrollmentsQuery(orgId);
 
 const allUsers = $derived(
-  ((($usersQuery).data as JsonRecord[]) ?? []).filter(
+  (($usersQuery.data as JsonRecord[]) ?? []).filter(
     (u) => String(u.primary_role ?? u.role) === "parent",
   ),
 );
-const enrollments = $derived((($enrollmentsQuery).data as any[]) ?? []);
+const enrollments = $derived(($enrollmentsQuery.data as any[]) ?? []);
 
-const isLoading = $derived(($usersQuery).isLoading || ($enrollmentsQuery).isLoading);
+const isLoading = $derived(
+  $usersQuery.isLoading || $enrollmentsQuery.isLoading,
+);
 let isSaving = $state(false);
 
 const relations = $derived([
@@ -139,7 +141,9 @@ const studentLastName = $derived.by(() => {
   if (!student) return "";
   const studentName = (student.full_name || student.name_ar || "").trim();
   const nameParts = studentName.split(/\s+/);
-  return nameParts.length > 0 ? nameParts[nameParts.length - 1].toLowerCase() : "";
+  return nameParts.length > 0
+    ? nameParts[nameParts.length - 1].toLowerCase()
+    : "";
 });
 
 const filteredUsers = $derived(
@@ -250,7 +254,7 @@ async function handleSubmit() {
         // Generate a secure random password for initial account setup
         const tempPassword = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
         const guardEmail = emailClean || `parent.${Date.now()}@orbis.local`;
-        
+
         // Create a new parent user
         const guardUser = await commands.iam.createUser(orgId, createdBy, {
           email: guardEmail,
@@ -308,7 +312,10 @@ async function handleSubmit() {
       toast.success(m.guardians_update_success());
     } else {
       // Create link requires guardian_id. Let's make sure it is sent correctly.
-      const requestWithGuardian = { ...request, guardian_id: finalGuardianUserId };
+      const requestWithGuardian = {
+        ...request,
+        guardian_id: finalGuardianUserId,
+      };
       await commands.platform.createGuardianLink(requestWithGuardian);
       toast.success(m.guardians_create_success());
     }

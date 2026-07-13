@@ -145,7 +145,7 @@ export function buildStudentColumns(
     name: labels.class ?? "Class",
     size: 160,
     editor: classOptions && classOptions.length > 0 ? "combo" : "text",
-    options: classOptions?.map(c => ({ id: c.id, label: c.name })) || [],
+    options: classOptions?.map((c) => ({ id: c.id, label: c.name })) || [],
     cellProperties: errorCellProps("class_id"),
   });
 
@@ -158,8 +158,8 @@ export function buildStudentColumns(
       editor: "combo",
       options: [
         { id: "active", label: m.status_active() },
-        { id: "withdrawn", label: m.status_withdrawn() }
-      ]
+        { id: "withdrawn", label: m.status_withdrawn() },
+      ],
     });
   }
 
@@ -168,7 +168,7 @@ export function buildStudentColumns(
       prop: "nationality",
       name: labels.nationality ?? "Nationality",
       size: 130,
-      editor: "text"
+      editor: "text",
     });
   }
 
@@ -177,7 +177,7 @@ export function buildStudentColumns(
       prop: "address",
       name: labels.address ?? "Address",
       size: 180,
-      editor: "text"
+      editor: "text",
     });
   }
 
@@ -186,7 +186,7 @@ export function buildStudentColumns(
       prop: "city",
       name: labels.city ?? "City",
       size: 110,
-      editor: "text"
+      editor: "text",
     });
   }
 
@@ -195,7 +195,7 @@ export function buildStudentColumns(
       prop: "country",
       name: labels.country ?? "Country",
       size: 110,
-      editor: "text"
+      editor: "text",
     });
   }
 
@@ -214,7 +214,7 @@ export function buildStudentColumns(
       prop: "guardian_phone",
       name: labels.guardian_phone ?? "Guardian Phone",
       size: 140,
-      editor: "text"
+      editor: "text",
     });
   }
 
@@ -227,8 +227,8 @@ export function buildStudentColumns(
       options: [
         { id: "father", label: m.relationship_father?.() || "Father" },
         { id: "mother", label: m.relationship_mother?.() || "Mother" },
-        { id: "other", label: m.relationship_other?.() || "Other" }
-      ]
+        { id: "other", label: m.relationship_other?.() || "Other" },
+      ],
     });
   }
 
@@ -238,7 +238,10 @@ export function buildStudentColumns(
       name: labels.blood_type ?? "Blood Type",
       size: 100,
       editor: "combo",
-      options: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(bt => ({ id: bt, label: bt }))
+      options: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bt) => ({
+        id: bt,
+        label: bt,
+      })),
     });
   }
 
@@ -247,7 +250,7 @@ export function buildStudentColumns(
       prop: "emergency_contact",
       name: labels.emergency ?? "Emergency Contact",
       size: 150,
-      editor: "text"
+      editor: "text",
     });
   }
 
@@ -256,7 +259,7 @@ export function buildStudentColumns(
       prop: "allergies",
       name: labels.allergies ?? "Allergies",
       size: 150,
-      editor: "text"
+      editor: "text",
     });
   }
 
@@ -265,7 +268,7 @@ export function buildStudentColumns(
       prop: "medical_conditions",
       name: labels.medical ?? "Medical Conditions",
       size: 170,
-      editor: "text"
+      editor: "text",
     });
   }
 

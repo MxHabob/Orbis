@@ -17,7 +17,7 @@ export function indexColumn(label = "#"): OrbisColumnDef {
     width: 50,
     readonly: true,
     cellClass: "orbis-cell-index",
-    sort: false
+    sort: false,
   };
 }
 
@@ -32,7 +32,7 @@ export function selectionColumn(): OrbisColumnDef {
     name: "",
     width: 40,
     editor: "checkbox",
-    sort: false
+    sort: false,
   };
 }
 
@@ -52,7 +52,7 @@ export function studentNameColumn(
     width: size,
     readonly: true,
     cell: AvatarCell,
-    sort: true
+    sort: true,
   };
 }
 
@@ -73,15 +73,17 @@ export function scoreColumn(opts: {
     header: name,
     name,
     width: size,
-    editor: readonly ? undefined : {
-      type: "text",
-      config: {
-        min: 0,
-        max: maxScore
-      }
-    },
+    editor: readonly
+      ? undefined
+      : {
+          type: "text",
+          config: {
+            min: 0,
+            max: maxScore,
+          },
+        },
     sort: true,
-    cellClass: "font-mono text-center"
+    cellClass: "font-mono text-center",
   };
 }
 
@@ -100,7 +102,7 @@ export function textColumn(opts: {
     header: name,
     name,
     width: size,
-    sort: true
+    sort: true,
   };
 }
 
@@ -120,7 +122,7 @@ export function statusColumn(opts: {
     name,
     width: size,
     cell: BadgeCell,
-    sort: true
+    sort: true,
   };
 }
 
@@ -140,7 +142,7 @@ export function percentageColumn(opts: {
     name,
     width: size,
     sort: true,
-    cellClass: "font-medium"
+    cellClass: "font-medium",
   };
 }
 
@@ -220,7 +222,7 @@ export function buildAttendanceColumns(opts: {
       name: day,
       width: 55,
       editor: readonly ? undefined : "text",
-      sort: false
+      sort: false,
     });
   }
 
@@ -315,7 +317,7 @@ export function buildFeesColumns(opts: {
       name: labels.totalFees || "Total Fees",
       width: 110,
       readonly: true,
-      sort: true
+      sort: true,
     },
     {
       id: "total_paid",
@@ -324,7 +326,7 @@ export function buildFeesColumns(opts: {
       name: labels.paid || "Paid",
       width: 100,
       readonly: true,
-      sort: true
+      sort: true,
     },
     {
       id: "total_discount",
@@ -333,7 +335,7 @@ export function buildFeesColumns(opts: {
       name: labels.discount || "Discount",
       width: 100,
       readonly: true,
-      sort: true
+      sort: true,
     },
     {
       id: "balance",
@@ -342,7 +344,7 @@ export function buildFeesColumns(opts: {
       name: labels.balance || "Balance",
       width: 110,
       readonly: true,
-      sort: true
+      sort: true,
     },
     statusColumn({
       prop: "payment_status",

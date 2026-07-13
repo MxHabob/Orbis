@@ -68,7 +68,6 @@ let customStartDate = $state<string>(new Date().toISOString().split("T")[0]);
 let movementFilter = $state<string>("all"); // 'all' or 'active' (with movements)
 let debtorCreditorFilter = $state<string>("all"); // 'all', 'debtor', 'creditor'
 
-
 // Tree state
 let expandedCategories = $state<Record<string, boolean>>({
   asset: true,
@@ -154,7 +153,8 @@ async function loadData() {
     if (ledgerList.length > 0) {
       selectedAccountId = ledgerList[0].id as string;
       accountCodeQuery = String(ledgerList[0].code);
-      accountNameQuery = ledgerList[0].name_ar as string || ledgerList[0].name as string;
+      accountNameQuery =
+        (ledgerList[0].name_ar as string) || (ledgerList[0].name as string);
     }
 
     // Default select all accounts in tree selection
@@ -334,12 +334,19 @@ const currencySummaryRows = $derived.by(() => {
   for (const [currency, balanceVal] of Object.entries(row.balances)) {
     const balance = Number(balanceVal);
     if (balance === 0) continue;
-    
+
     // Mock rates for demonstration since actual exchange rates aren't fetched in this view yet
-    const rate = currency === "USD" ? 530.2 : currency === "SAR" ? 139.8 : currency === "AED" ? 144.1 : 1.0;
-    
+    const rate =
+      currency === "USD"
+        ? 530.2
+        : currency === "SAR"
+          ? 139.8
+          : currency === "AED"
+            ? 144.1
+            : 1.0;
+
     const isDebitType = normalBalance === 1;
-    // If account is Asset (Debit normal), a positive balance means debit. 
+    // If account is Asset (Debit normal), a positive balance means debit.
     // If Liability (Credit normal), a positive balance means credit.
     // In our backend schema, positive usually means debit and negative means credit, or vice versa depending on normal balance flag.
     // Let's assume standard: positive = Debit, negative = Credit.

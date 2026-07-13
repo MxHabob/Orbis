@@ -21,7 +21,10 @@ let {
   onBack: () => void;
 } = $props();
 
-const logsQuery = createAgentSessionLogsQuery(() => orgId, () => sessionId);
+const logsQuery = createAgentSessionLogsQuery(
+  () => orgId,
+  () => sessionId,
+);
 const logs = $derived($logsQuery.data ?? []);
 
 const approveActionMutation = useApproveAgentAction();
@@ -29,15 +32,18 @@ const rejectActionMutation = useRejectAgentAction();
 
 async function handleApprove(actionId: string) {
   try {
-    toast.promise($approveActionMutation.mutateAsync({
-      orgId,
-      actionLogId: actionId,
-      approvedBy: "Admin",
-    }), {
-      loading: m.agent_toast_rejecting(),
-      success: m.agent_toast_reject_success(),
-      error: (e) => extractErrorMessage(e) || m.agent_toast_reject_failed(),
-    });
+    toast.promise(
+      $approveActionMutation.mutateAsync({
+        orgId,
+        actionLogId: actionId,
+        approvedBy: "Admin",
+      }),
+      {
+        loading: m.agent_toast_rejecting(),
+        success: m.agent_toast_reject_success(),
+        error: (e) => extractErrorMessage(e) || m.agent_toast_reject_failed(),
+      },
+    );
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
   }
@@ -45,15 +51,18 @@ async function handleApprove(actionId: string) {
 
 async function handleReject(actionId: string) {
   try {
-    toast.promise($rejectActionMutation.mutateAsync({
-      orgId,
-      actionLogId: actionId,
-      rejectedBy: "Admin",
-    }), {
-      loading: m.agent_toast_rejecting(),
-      success: m.agent_toast_reject_success(),
-      error: (e) => extractErrorMessage(e) || m.agent_toast_reject_failed(),
-    });
+    toast.promise(
+      $rejectActionMutation.mutateAsync({
+        orgId,
+        actionLogId: actionId,
+        rejectedBy: "Admin",
+      }),
+      {
+        loading: m.agent_toast_rejecting(),
+        success: m.agent_toast_reject_success(),
+        error: (e) => extractErrorMessage(e) || m.agent_toast_reject_failed(),
+      },
+    );
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
   }

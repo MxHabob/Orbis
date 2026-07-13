@@ -129,11 +129,16 @@ let behaviorRecords = $state<any[]>([]);
 onMount(async () => {
   evaluationLoading = true;
   try {
-    const periodId = academicContext.effectivePeriodId || student?.period_id || "";
+    const periodId =
+      academicContext.effectivePeriodId || student?.period_id || "";
     if (periodId && studentId) {
       const [gRes, aRes, bRes] = await Promise.all([
-        commands.assessment.getReportCard(studentId, periodId).catch(() => null),
-        commands.assessment.getAttendanceReport(periodId, studentId).catch(() => null),
+        commands.assessment
+          .getReportCard(studentId, periodId)
+          .catch(() => null),
+        commands.assessment
+          .getAttendanceReport(periodId, studentId)
+          .catch(() => null),
         commands.assessment.listBehavior(orgId, studentId).catch(() => []),
       ]);
       gradesReport = gRes;
@@ -275,7 +280,9 @@ async function saveStudentDetails(e: Event) {
   try {
     // 1. Verify parent control account '110301' exists in chart of accounts
     const accounts = await commands.finance.listAccounts(orgId);
-    const hasControlAccount = accounts.some((acc: any) => acc.code === "110301");
+    const hasControlAccount = accounts.some(
+      (acc: any) => acc.code === "110301",
+    );
     if (!hasControlAccount) {
       toast.error(m.form_error_control_account_missing());
       isSaving = false;
@@ -295,10 +302,7 @@ async function saveStudentDetails(e: Event) {
     };
 
     // Update student user details
-    await commands.iam.updateUser(
-      String(student.student_id),
-      studentUserData,
-    );
+    await commands.iam.updateUser(String(student.student_id), studentUserData);
 
     // If class has changed, invoke transfer command
     if (student.class_id !== classId) {
@@ -310,7 +314,11 @@ async function saveStudentDetails(e: Event) {
       (student.status === "draft" || student.status === "pending_review") &&
       isActiveState
     ) {
-      await commands.platform.transitionEnrollmentStatus(orgId, studentId, "active");
+      await commands.platform.transitionEnrollmentStatus(
+        orgId,
+        studentId,
+        "active",
+      );
     }
 
     toast.success(m.form_success_update());

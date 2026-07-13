@@ -77,8 +77,10 @@ async function loadSearchData() {
     const [studentsData, classesData, subjectsData] = await Promise.all([
       cachedStudents ??
         commands.academic.listEnrollments(currentOrgId).catch(() => []),
-      cachedClasses ?? commands.academic.listClasses(currentOrgId).catch(() => []),
-      cachedSubjects ?? commands.academic.listSubjects(currentOrgId).catch(() => []),
+      cachedClasses ??
+        commands.academic.listClasses(currentOrgId).catch(() => []),
+      cachedSubjects ??
+        commands.academic.listSubjects(currentOrgId).catch(() => []),
     ]);
     students = studentsData;
     classes = classesData;
@@ -229,7 +231,9 @@ const systemPages = $derived([
     icon: Shield,
   },
   {
-    title: m.settings_nav_periods ? m.settings_nav_periods() : "Academic Periods",
+    title: m.settings_nav_periods
+      ? m.settings_nav_periods()
+      : "Academic Periods",
     path: `/${currentOrgId}/settings/periods`,
     icon: Calendar,
   },

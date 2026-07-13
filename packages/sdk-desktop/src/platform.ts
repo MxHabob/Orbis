@@ -10,7 +10,7 @@ export function isDesktopApp(): boolean {
 
 /** Listen for OS deep link events. */
 export async function listenForDeepLinks(
-  callback: (url: string) => void
+  callback: (url: string) => void,
 ): Promise<() => void> {
   const { listen } = await import("@tauri-apps/api/event");
   const unlisten = await listen<string>("deep-link://new-url", (event) => {

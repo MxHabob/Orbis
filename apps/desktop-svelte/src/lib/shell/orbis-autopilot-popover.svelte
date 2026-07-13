@@ -1,15 +1,24 @@
 <script lang="ts">
 import { Button } from "@orbis/ui-svelte/button";
 import { Badge } from "@orbis/ui-svelte/badge";
-import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui-svelte/popover";
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@orbis/ui-svelte/tooltip";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@orbis/ui-svelte/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from "@orbis/ui-svelte/tooltip";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { 
-  Activity, 
-  RefreshCw, 
-  AlertTriangle, 
+import {
+  Activity,
+  RefreshCw,
+  AlertTriangle,
   AlertCircle,
-  Settings
+  Settings,
 } from "lucide-svelte";
 import { academicContext } from "$lib/stores";
 import * as m from "$lib/paraglide/messages";

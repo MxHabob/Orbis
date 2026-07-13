@@ -202,7 +202,10 @@ export class StudentFormState {
       if (this.isEditMode && this.studentId) {
         let originalStudent: any = null;
         try {
-          originalStudent = await commands.academic.getEnrollment(this.orgId, this.studentId);
+          originalStudent = await commands.academic.getEnrollment(
+            this.orgId,
+            this.studentId,
+          );
         } catch (err) {
           console.error("Failed to load student by ID from backend:", err);
         }
@@ -267,16 +270,15 @@ export class StudentFormState {
 
           // Fetch guardians
           try {
-            const guardiansList = await commands.academic.listGuardiansByStudent(
-              this.orgId,
-              originalStudent.student_id,
-            );
+            const guardiansList =
+              await commands.academic.listGuardiansByStudent(
+                this.orgId,
+                originalStudent.student_id,
+              );
             const populatedGuardians = [];
             for (const link of guardiansList) {
               try {
-                const u = await commands.iam.getUser(
-                  String(link.guardian_id),
-                );
+                const u = await commands.iam.getUser(String(link.guardian_id));
                 if (u) {
                   populatedGuardians.push({
                     id: String(link.id),
@@ -355,9 +357,8 @@ export class StudentFormState {
         email: field === "email" ? value : undefined,
         phone: field === "phone" ? value : undefined,
       };
-      const duplicates = await commands.academic.checkDuplicateEnrollment(
-        params,
-      );
+      const duplicates =
+        await commands.academic.checkDuplicateEnrollment(params);
       if (duplicates && duplicates.length > 0) {
         const match = duplicates[0];
         this.duplicateWarnings = {
@@ -383,9 +384,7 @@ export class StudentFormState {
     }
     this.activeSearchIndex = index;
     try {
-      this.parentSearchResults = await commands.academic.searchGuardians(
-        query,
-      );
+      this.parentSearchResults = await commands.academic.searchGuardians(query);
     } catch (err) {
       console.error("Guardian search error:", err);
     }
@@ -576,7 +575,10 @@ export class StudentFormState {
         await commands.iam.updateUser(targetStudentId, studentUserData);
 
         if (originalStudent.class_id !== this.classId) {
-          await commands.academic.transferEnrollment(this.studentId!, this.classId);
+          await commands.academic.transferEnrollment(
+            this.studentId!,
+            this.classId,
+          );
         }
 
         // Update registration status transition
@@ -592,15 +594,15 @@ export class StudentFormState {
       } else {
         const tempEmail = this.email.trim() || `stu.${Date.now()}@orbis.local`;
         const studentUser = await commands.iam.createUser({
-            email: tempEmail,
-            password: "Orbis123456",
-            full_name: this.nameAr.trim(),
-            name_ar: this.nameAr.trim(),
-            primary_role: "student",
-            sex: this.sex,
-            phone: this.phone.trim() || null,
-            national_id: this.nationalId.trim() || null,
-            date_of_birth: this.birthDate || null,
+          email: tempEmail,
+          password: "Orbis123456",
+          full_name: this.nameAr.trim(),
+          name_ar: this.nameAr.trim(),
+          primary_role: "student",
+          sex: this.sex,
+          phone: this.phone.trim() || null,
+          national_id: this.nationalId.trim() || null,
+          date_of_birth: this.birthDate || null,
         });
         targetStudentId = studentUser.id;
 
@@ -624,9 +626,7 @@ export class StudentFormState {
           status: this.registrationStatus,
         };
 
-        const res = await commands.academic.createEnrollment(
-          enrollmentRequest,
-        );
+        const res = await commands.academic.createEnrollment(enrollmentRequest);
         targetEnrollmentId = String(res.id);
 
         const mergedEnrollment = {
@@ -667,15 +667,15 @@ export class StudentFormState {
             const guardEmail =
               guardian.email.trim() || `parent.${Date.now()}@orbis.local`;
             const guardUser = await commands.iam.createUser({
-                email: guardEmail,
-                password: "Orbis123456",
-                full_name: guardian.full_name.trim(),
-                name_ar: guardian.full_name.trim(),
-                primary_role: "parent",
-                phone: guardian.phone.trim() || null,
-                sex: "male",
-                national_id: guardian.national_id.trim() || null,
-                date_of_birth: null,
+              email: guardEmail,
+              password: "Orbis123456",
+              full_name: guardian.full_name.trim(),
+              name_ar: guardian.full_name.trim(),
+              primary_role: "parent",
+              phone: guardian.phone.trim() || null,
+              sex: "male",
+              national_id: guardian.national_id.trim() || null,
+              date_of_birth: null,
             });
             guardianUserId = guardUser.id;
           }
@@ -690,8 +690,10 @@ export class StudentFormState {
         }
 
         // Check if link exists
-        const existingLinks =
-          await commands.academic.listGuardiansByStudent(this.orgId, targetStudentId);
+        const existingLinks = await commands.academic.listGuardiansByStudent(
+          this.orgId,
+          targetStudentId,
+        );
         const matchedLink = existingLinks.find(
           (l) => l.guardian_id === guardianUserId,
         );

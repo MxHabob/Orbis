@@ -32,8 +32,8 @@ let treasuriesCount = $state(0);
 async function loadSidebarStats() {
   try {
     const [feeList, treasuryList] = await Promise.all([
-      commands.finance.getStudentFees(data.orgId),
-      commands.finance.getTreasuries(data.orgId),
+      commands.finance.listStudentFees("").catch(() => []),
+      commands.finance.listTreasuries(data.orgId).catch(() => []),
     ]);
     unpaidFeesCount = feeList.filter(
       (f) => f.status === "unpaid" || f.status === "partially_paid",

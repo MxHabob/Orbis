@@ -25,8 +25,7 @@ export function createExamSessionsQuery(periodId?: string) {
 export function createExamSessionQuery(sessionId: string) {
   return createQuery({
     queryKey: ["exam-session", sessionId],
-    queryFn: () =>
-      commands.exam.getSession(sessionId) as Promise<ExamSession>,
+    queryFn: () => commands.exam.getSession(sessionId) as Promise<ExamSession>,
     enabled: !!sessionId,
     staleTime: 5 * 60 * 1000,
   });
@@ -56,8 +55,7 @@ export function createSessionMutation() {
         start_date: string;
         end_date: string;
       };
-    }) =>
-      commands.exam.createSession(variables.data) as Promise<ExamSession>,
+    }) => commands.exam.createSession(variables.data) as Promise<ExamSession>,
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["exam-sessions"],
@@ -72,7 +70,12 @@ export function updateSessionMutation() {
   return createMutation({
     mutationFn: (variables: {
       sessionId: string;
-      updates: { name?: string; status?: string; start_date?: string; end_date?: string };
+      updates: {
+        name?: string;
+        status?: string;
+        start_date?: string;
+        end_date?: string;
+      };
     }) =>
       commands.exam.updateSession(
         variables.sessionId,

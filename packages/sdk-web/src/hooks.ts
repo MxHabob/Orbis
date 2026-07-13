@@ -37,10 +37,12 @@ export const queryKeys = {
 
   // Assessment
   grades: (periodId: string) => ["grades", periodId] as const,
-  attendance: (classId: string, date: string) => ["attendance", classId, date] as const,
+  attendance: (classId: string, date: string) =>
+    ["attendance", classId, date] as const,
   assessments: (periodId: string) => ["assessments", periodId] as const,
   behavior: (studentId: string) => ["behavior", studentId] as const,
-  reportCard: (enrollmentId: string, periodId: string) => ["reportCard", enrollmentId, periodId] as const,
+  reportCard: (enrollmentId: string, periodId: string) =>
+    ["reportCard", enrollmentId, periodId] as const,
 
   // Finance
   feeTemplates: () => ["feeTemplates"] as const,
@@ -52,7 +54,8 @@ export const queryKeys = {
   // Scheduling
   timeSlots: () => ["timeSlots"] as const,
   rooms: () => ["rooms"] as const,
-  schedule: (classId: string, yearId: string) => ["schedule", classId, yearId] as const,
+  schedule: (classId: string, yearId: string) =>
+    ["schedule", classId, yearId] as const,
   solverJobs: (yearId: string) => ["solverJobs", yearId] as const,
 
   // Exam

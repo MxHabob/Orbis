@@ -281,6 +281,7 @@ pub fn run() {
             commands::finance::thin::list_discount_templates,
             commands::finance::thin::assign_fee,
             commands::finance::thin::list_student_fees,
+            commands::finance::thin::list_all_student_fees,
             commands::finance::thin::record_payment,
             commands::finance::thin::list_payments,
             commands::finance::thin::list_ledger_accounts,

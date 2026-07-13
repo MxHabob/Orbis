@@ -64,7 +64,8 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
     name: m.table_student_number(),
     width: 150,
     size: 150,
-    cellClass: "inline-flex items-center rounded-md border border-border px-2 py-0.5 text-[10px] font-mono font-medium text-foreground bg-background",
+    cellClass:
+      "inline-flex items-center rounded-md border border-border px-2 py-0.5 text-[10px] font-mono font-medium text-foreground bg-background",
   },
   {
     id: "class_name",
@@ -107,8 +108,15 @@ let gridSource = $derived(
     ...student,
     __idx: i + 1,
     class_name: getClassName(String(student.class_id)),
-    sex_display: student.sex === "male" ? m.form_male() : student.sex === "female" ? m.form_female() : "-",
-    enrollment_date_display: student.enrollment_date ? formatDate(student.enrollment_date) : "-",
+    sex_display:
+      student.sex === "male"
+        ? m.form_male()
+        : student.sex === "female"
+          ? m.form_female()
+          : "-",
+    enrollment_date_display: student.enrollment_date
+      ? formatDate(student.enrollment_date)
+      : "-",
     __selected: selectedIds.has(String(student.id)),
   })),
 );
@@ -125,7 +133,7 @@ let activeColumns = $derived.by(() => {
       size: 40,
       readonly: true,
       pin: "colPinStart",
-      editor: "checkbox"
+      editor: "checkbox",
     });
   }
   return cols;

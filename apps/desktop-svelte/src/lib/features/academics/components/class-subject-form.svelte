@@ -17,7 +17,11 @@ import { commands, extractErrorMessage } from "$lib/core/ipc";
 import type { ClassSubject, JsonRecord } from "@orbis/sdk-core";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
-import { createPeriodsQuery, createClassesQuery, createSubjectsQuery } from "$lib/features/academics/queries";
+import {
+  createPeriodsQuery,
+  createClassesQuery,
+  createSubjectsQuery,
+} from "$lib/features/academics/queries";
 import { createUsersQuery } from "$lib/features/settings/queries";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 

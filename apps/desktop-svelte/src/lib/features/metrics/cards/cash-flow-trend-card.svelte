@@ -34,8 +34,8 @@ async function loadData() {
     if (selectedClass !== "all") params.class_id = selectedClass;
     if (selectedTerm !== "all") params.period_id = selectedTerm;
 
-    const paymentsList = await commands.finance.getPayments(orgId);
-    const feesList = await commands.finance.getStudentFees(orgId);
+    const paymentsList = await commands.finance.listPayments(orgId);
+    const feesList = await commands.finance.listAllStudentFees(orgId);
 
     if (paymentsList && paymentsList.length > 0) {
       const monthsMap: Record<string, { invoiced: number; collected: number }> =
@@ -130,7 +130,8 @@ const displayData = $derived(
 );
 
 const maxVal = $derived(
-  Math.max(1000, ...displayData.map((d) => Math.max(d.invoiced, d.collected))) * 1.15
+  Math.max(1000, ...displayData.map((d) => Math.max(d.invoiced, d.collected))) *
+    1.15,
 );
 
 const bars = $derived.by(() => {
@@ -140,7 +141,7 @@ const bars = $derived.by(() => {
       invPct: Math.min(100, (item.invoiced / maxVal) * 100),
       colPct: Math.min(100, (item.collected / maxVal) * 100),
       invoiced: item.invoiced,
-      collected: item.collected
+      collected: item.collected,
     };
   });
 });
@@ -157,7 +158,10 @@ function handleMouseMove(e: MouseEvent & { currentTarget: HTMLDivElement }) {
   const isRtl = document.documentElement.dir === "rtl";
   const colWidth = rect.width / displayData.length;
   const rawIdx = Math.floor(mouseX / colWidth);
-  const idx = Math.min(displayData.length - 1, Math.max(0, isRtl ? (displayData.length - 1 - rawIdx) : rawIdx));
+  const idx = Math.min(
+    displayData.length - 1,
+    Math.max(0, isRtl ? displayData.length - 1 - rawIdx : rawIdx),
+  );
 
   hoveredIdx = idx;
   tooltipPos = { x: mouseX, y: mouseY };
@@ -169,7 +173,8 @@ function handleMouseLeave() {
 }
 
 function formatVal(val: number) {
-  if (val >= 1000000) return `${(val / 1000000).toFixed(1).replace(/\.0$/, "")}M`;
+  if (val >= 1000000)
+    return `${(val / 1000000).toFixed(1).replace(/\.0$/, "")}M`;
   if (val >= 1000) return `${Math.round(val / 1000)}k`;
   return `${val}`;
 }

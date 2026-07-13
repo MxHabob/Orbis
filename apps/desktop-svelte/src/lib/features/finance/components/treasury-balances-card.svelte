@@ -7,7 +7,7 @@ import * as m from "$lib/paraglide/messages";
 
 let {
   treasuries,
-  orgId
+  orgId,
 }: {
   treasuries: any[];
   orgId: string;

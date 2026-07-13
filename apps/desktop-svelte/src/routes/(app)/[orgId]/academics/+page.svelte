@@ -90,7 +90,8 @@ const activeYearName = $derived(
 
 // Find active period / term
 const activePeriod = $derived(
-  periods.find((c) => c.is_current === 1 || c.is_current === true) || periods[0],
+  periods.find((c) => c.is_current === 1 || c.is_current === true) ||
+    periods[0],
 );
 
 const activePeriodName = $derived(

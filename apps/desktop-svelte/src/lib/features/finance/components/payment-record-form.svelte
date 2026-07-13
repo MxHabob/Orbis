@@ -56,8 +56,8 @@ async function loadDropdownData() {
   try {
     const [studentList, treasuryList, currencyList] = await Promise.all([
       commands.academic.listEnrollments(orgId),
-      commands.finance.getTreasuries(orgId),
-      commands.finance.getCurrencies(orgId),
+      commands.finance.listTreasuries(orgId),
+      commands.finance.listCurrencies(orgId),
     ]);
     students = studentList;
     treasuries = treasuryList;
@@ -103,7 +103,7 @@ async function loadStudentFees(enrollId: string) {
   if (!enrollId || !orgId) return;
   isLoadingFees = true;
   try {
-    const list = await commands.finance.getStudentFees(orgId, enrollId);
+    const list = await commands.finance.listStudentFees(enrollId);
     fees = list.filter((f) => f.status !== "paid");
     if (fees.length > 0) {
       selectedFeeId = String(fees[0].id);

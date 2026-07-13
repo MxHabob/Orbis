@@ -284,7 +284,10 @@ async function createEvent() {
 async function executeEvent(eventId: string) {
   executingId = eventId;
   try {
-    const result = await commands.platform.executeCalendarEvent(eventId, authStore.userId);
+    const result = await commands.platform.executeCalendarEvent(
+      eventId,
+      authStore.userId,
+    );
     if (result.outcome === "executed") {
       toast.success(
         m.calendar_event_executed

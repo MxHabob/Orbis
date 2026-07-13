@@ -48,8 +48,8 @@ async function loadData() {
   isLoading = true;
   try {
     const [tList, lList] = await Promise.all([
-      commands.finance.getTreasuries(data.orgId),
-      commands.finance.getTransactionAccounts(data.orgId),
+      commands.finance.listTreasuries(data.orgId),
+      commands.finance.listTransactionAccounts(data.orgId),
     ]);
     treasuries = tList;
     ledgers = lList;
@@ -149,7 +149,7 @@ const rtl = $derived(getLocale() === "ar");
       <Skeleton class="h-80 w-full rounded-xl" />
     </div>
   {:else}
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" in:fade={{ duration: 150 }}>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- Treasuries Section -->
       <div class="bg-card/45 border border-border rounded-xl p-5 flex flex-col gap-4 text-start">
         <div class="flex items-center justify-between border-b border-border/60 pb-3 select-none">
@@ -187,7 +187,7 @@ const rtl = $derived(getLocale() === "ar");
               <span>{m.finance_ledger_chart_title()}</span>
             </h3>
             <span class="text-[8px] text-muted-foreground mt-0.5">
-              {m.finance_accounts_count({ count: ledgers.length })}
+              {m.finance_ledger_accounts_count({ count: ledgers.length })}
             </span>
           </div>
           <Button variant="outline" class="text-[10px] h-7 px-2" onclick={() => { activeTabType = "gl"; isAddDialogOpen = true; }}>

@@ -43,10 +43,7 @@ import {
   AlertTriangle,
   Loader2,
 } from "lucide-svelte";
-import type {
-  AcademicOverrideRequest,
-  ApprovalAction,
-} from "@orbis/sdk-core";
+import type { AcademicOverrideRequest, ApprovalAction } from "@orbis/sdk-core";
 
 let { data }: { data: { orgId: string } } = $props();
 const orgId = $derived(data?.orgId ?? "");

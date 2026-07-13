@@ -61,6 +61,13 @@ pub async fn list_student_fees(state: State<'_, Arc<AppState>>, enrollment_id: S
 }
 
 #[tauri::command]
+pub async fn list_all_student_fees(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let r = ops::student_fee::list_by_org(&ctx).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(r).unwrap())
+}
+
+#[tauri::command]
 pub async fn record_payment(state: State<'_, Arc<AppState>>, org_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
     let cmd: svc_finance::contracts::commands::RecordPaymentCmd = serde_json::from_value(data).map_err(|e| CommandError::with_code(e.to_string(), "VALIDATION_ERROR"))?;

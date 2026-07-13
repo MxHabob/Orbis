@@ -19,7 +19,7 @@ let academicYears = $state<{ value: string; label: string }[]>([]);
 
 async function loadYears() {
   let orgId = selectedBranch;
-  
+
   try {
     const org = await commands.organization.getMainOrganization();
     if (org && org.id) {

@@ -20,7 +20,9 @@ let {
   isEditing?: boolean;
 } = $props();
 
-let data = $state<{ month: string; amount: number; lastYearAmount: number }[]>([]);
+let data = $state<{ month: string; amount: number; lastYearAmount: number }[]>(
+  [],
+);
 let isLoading = $state(true);
 
 // Mock dataset matching Image 1 & 2 exactly as a fallback
@@ -42,13 +44,15 @@ const mockRevenueData = [
 async function loadData() {
   isLoading = true;
   try {
-    const payments = await commands.finance.getPayments(orgId);
-    
+    const payments = await commands.finance.listPayments(orgId);
+
     // Setup localized short names for 12 months (Jan to Dec)
     const months: { label: string; index: number }[] = [];
     for (let i = 0; i < 12; i++) {
       const dateObj = new Date(new Date().getFullYear(), i, 1);
-      const label = new Intl.DateTimeFormat(getLocale(), { month: "short" }).format(dateObj);
+      const label = new Intl.DateTimeFormat(getLocale(), {
+        month: "short",
+      }).format(dateObj);
       months.push({ label, index: i });
     }
 
@@ -62,7 +66,7 @@ async function loadData() {
         if (!dateStr) continue;
         const dateObj = new Date(dateStr);
         if (isNaN(dateObj.getTime())) continue;
-        
+
         const year = dateObj.getFullYear();
         const month = dateObj.getMonth();
         const amt = Number(p.amount || 0);
@@ -74,35 +78,49 @@ async function loadData() {
         }
       }
 
-      const hasPayments = thisYearMap.some(v => v > 0) || lastYearMap.some(v => v > 0);
+      const hasPayments =
+        thisYearMap.some((v) => v > 0) || lastYearMap.some((v) => v > 0);
       if (hasPayments) {
         data = months.map(({ label, index }) => ({
           month: label,
           amount: thisYearMap[index],
-          lastYearAmount: lastYearMap[index]
+          lastYearAmount: lastYearMap[index],
         }));
       } else {
         data = months.map(({ label, index }) => ({
           month: label,
           amount: mockRevenueData[index]!.amount,
-          lastYearAmount: mockRevenueData[index]!.lastYearAmount
+          lastYearAmount: mockRevenueData[index]!.lastYearAmount,
         }));
       }
     } else {
       data = months.map(({ label, index }) => ({
         month: label,
         amount: mockRevenueData[index]!.amount,
-        lastYearAmount: mockRevenueData[index]!.lastYearAmount
+        lastYearAmount: mockRevenueData[index]!.lastYearAmount,
       }));
     }
   } catch (e) {
     console.error("Error loading finance revenue trends:", e);
     // fallback
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
     data = months.map((label, index) => ({
       month: label,
       amount: mockRevenueData[index]!.amount,
-      lastYearAmount: mockRevenueData[index]!.lastYearAmount
+      lastYearAmount: mockRevenueData[index]!.lastYearAmount,
     }));
   } finally {
     isLoading = false;
@@ -126,7 +144,7 @@ const bars = $derived.by(() => {
       lastYearPct: Math.min(100, (item.lastYearAmount / maxVal) * 100),
       thisYearPct: Math.min(100, (item.amount / maxVal) * 100),
       lastYearAmount: item.lastYearAmount,
-      amount: item.amount
+      amount: item.amount,
     };
   });
 });
@@ -143,7 +161,10 @@ function handleMouseMove(e: MouseEvent & { currentTarget: HTMLDivElement }) {
   const isRtl = document.documentElement.dir === "rtl";
   const colWidth = rect.width / data.length;
   const rawIdx = Math.floor(mouseX / colWidth);
-  const idx = Math.min(data.length - 1, Math.max(0, isRtl ? (data.length - 1 - rawIdx) : rawIdx));
+  const idx = Math.min(
+    data.length - 1,
+    Math.max(0, isRtl ? data.length - 1 - rawIdx : rawIdx),
+  );
 
   hoveredIdx = idx;
   tooltipPos = { x: mouseX, y: mouseY };

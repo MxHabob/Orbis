@@ -39,11 +39,14 @@ const greeting = $derived.by(() => {
 
 const firstName = $derived(authStore.user?.full_name?.split(" ")[0]);
 
-let manualHat = $state<"none" | "crown" | "graduation" | "firefighter" | null>(null);
+let manualHat = $state<"none" | "crown" | "graduation" | "firefighter" | null>(
+  null,
+);
 
 const userHat = $derived.by(() => {
   if (manualHat !== null) return manualHat;
-  const rawRole = authStore.user?.role || authStore.user?.primary_role || "viewer";
+  const rawRole =
+    authStore.user?.role || authStore.user?.primary_role || "viewer";
   const role = String(rawRole).toLowerCase();
   if (role === "admin" || role === "super_admin") return "crown";
   if (role === "teacher") return "graduation";

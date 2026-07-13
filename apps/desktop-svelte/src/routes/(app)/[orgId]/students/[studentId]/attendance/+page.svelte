@@ -29,10 +29,19 @@ async function loadAttendance() {
   isLoading = true;
   try {
     if (!orgId || !studentId || !periodId) return;
-    const enrollments = await commands.academic.listEnrollments(orgId, undefined, periodId);
-    const activeEnrollment = enrollments.find((e) => e.student_id === studentId);
+    const enrollments = await commands.academic.listEnrollments(
+      orgId,
+      undefined,
+      periodId,
+    );
+    const activeEnrollment = enrollments.find(
+      (e) => e.student_id === studentId,
+    );
     if (activeEnrollment) {
-      report = await commands.assessment.getAttendanceReport(periodId, activeEnrollment.id);
+      report = await commands.assessment.getAttendanceReport(
+        periodId,
+        activeEnrollment.id,
+      );
     }
   } catch (e) {
     console.error(e);

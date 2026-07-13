@@ -30,10 +30,11 @@ const sessions = $derived($sessionsQuery.data ?? []);
 let searchQuery = $state("");
 
 const filteredSessions = $derived(
-  sessions.filter((session) =>
-    session.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    session.agent_type.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  sessions.filter(
+    (session) =>
+      session.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      session.agent_type.toLowerCase().includes(searchQuery.toLowerCase()),
+  ),
 );
 </script>
 

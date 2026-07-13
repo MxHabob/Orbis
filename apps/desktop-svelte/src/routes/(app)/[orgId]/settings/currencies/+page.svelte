@@ -86,7 +86,7 @@ async function loadCurrencies() {
   if (!orgId) return;
   isLoading = true;
   try {
-    currencies = await commands.finance.getCurrencies(orgId);
+    currencies = await commands.finance.listCurrencies(orgId);
   } catch (e) {
     console.error("Error loading currencies:", e);
     toast.error(m.settings_currencies_load_error());

@@ -28,14 +28,21 @@ async function loadData() {
   isLoading = true;
   try {
     const classId = selectedClass !== "all" ? selectedClass : "";
-    const cycleId = selectedTerm !== "all" ? selectedTerm : academicContext.effectiveCycleId || "";
+    const cycleId =
+      selectedTerm !== "all"
+        ? selectedTerm
+        : academicContext.effectiveCycleId || "";
 
     if (!classId || !cycleId) {
       stats = null;
       return;
     }
 
-    const res = await commands.assessment.getGradeAnalytics(orgId, classId, cycleId);
+    const res = await commands.assessment.getGradeAnalytics(
+      orgId,
+      classId,
+      cycleId,
+    );
     if (
       res &&
       res.grade_distribution &&
@@ -100,7 +107,7 @@ const bars = $derived.by(() => {
     return {
       name: item.name,
       value: item.value,
-      pct: Math.min(100, (item.value / maxValue) * 100)
+      pct: Math.min(100, (item.value / maxValue) * 100),
     };
   });
 });
@@ -117,7 +124,10 @@ function handleMouseMove(e: MouseEvent & { currentTarget: HTMLDivElement }) {
   const isRtl = document.documentElement.dir === "rtl";
   const colWidth = rect.width / displayArray.length;
   const rawIdx = Math.floor(mouseX / colWidth);
-  const idx = Math.min(displayArray.length - 1, Math.max(0, isRtl ? (displayArray.length - 1 - rawIdx) : rawIdx));
+  const idx = Math.min(
+    displayArray.length - 1,
+    Math.max(0, isRtl ? displayArray.length - 1 - rawIdx : rawIdx),
+  );
 
   hoveredIndex = idx;
   tooltipPos = { x: mouseX, y: mouseY };

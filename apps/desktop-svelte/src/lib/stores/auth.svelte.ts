@@ -53,7 +53,9 @@ class AuthStore {
     try {
       const token = localStorage.getItem("orbis_token");
       const userStr = localStorage.getItem("orbis_user");
-      const isSetupCompleteStr = localStorage.getItem("orbis_is_setup_complete");
+      const isSetupCompleteStr = localStorage.getItem(
+        "orbis_is_setup_complete",
+      );
       if (token && userStr) {
         this.token = token;
         this.user = JSON.parse(userStr);

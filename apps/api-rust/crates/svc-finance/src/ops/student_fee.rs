@@ -28,6 +28,16 @@ pub async fn list_by_enrollment(
         .all(&ctx.db).await?)
 }
 
+pub async fn list_by_org(
+    ctx: &ServiceContext,
+) -> Result<Vec<student_fee::Model>, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::FinanceRead).await?;
+    Ok(student_fee::Entity::find()
+        .filter(student_fee::Column::OrgId.eq(&ctx.org_id))
+        .order_by_desc(student_fee::Column::CreatedAt)
+        .all(&ctx.db).await?)
+}
+
 pub async fn assign(
     ctx: &ServiceContext,
     cmd: AssignFeeCmd,

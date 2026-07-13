@@ -9,7 +9,7 @@ import * as m from "$lib/paraglide/messages";
 
 let {
   lateStudents,
-  orgId
+  orgId,
 }: {
   lateStudents: any[];
   orgId: string;

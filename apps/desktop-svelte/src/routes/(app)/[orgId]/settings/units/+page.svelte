@@ -1,6 +1,6 @@
 <script lang="ts">
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import {
@@ -62,8 +62,8 @@ async function loadUnits() {
     const list = await commands.academic.listOrgUnits(data.orgId);
     units = list;
   } catch (e) {
-    error = e instanceof Error ? e.message : String(e);
-    toast.error("Failed to load organizational units");
+    error = extractErrorMessage(e);
+    toast.error(error);
   } finally {
     isLoading = false;
   }

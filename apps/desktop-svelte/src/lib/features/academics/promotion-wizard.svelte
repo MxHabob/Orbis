@@ -79,7 +79,6 @@ const steps = [
 
 const progressValue = $derived(((currentStep + 1) / steps.length) * 100);
 
-
 // ── Config Form ─────────────────────────────────────────────────────
 
 let config = $state<PromotionConfig>({
@@ -174,7 +173,9 @@ async function runDryRun() {
   try {
     previewJob = await commands.platform.promotionDryRun(orgId, config);
     if (previewJob) {
-      previewDetails = await commands.platform.getPromotionDetails(previewJob.id);
+      previewDetails = await commands.platform.getPromotionDetails(
+        previewJob.id,
+      );
       if (previewJob.dry_run_result) {
         previewStats = JSON.parse(previewJob.dry_run_result);
       }

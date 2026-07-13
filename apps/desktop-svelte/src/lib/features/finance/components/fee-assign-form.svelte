@@ -34,7 +34,7 @@ async function loadDropdownData() {
   try {
     const [studentList, templateList] = await Promise.all([
       commands.academic.listEnrollments(orgId),
-      commands.finance.getActiveFeeTemplates(orgId),
+      commands.finance.listActiveFeeTemplates(orgId),
     ]);
     students = studentList;
     templates = templateList;

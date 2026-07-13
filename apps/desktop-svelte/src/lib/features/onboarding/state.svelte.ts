@@ -248,13 +248,7 @@ class OnboardingState {
   isLoading = $state(false);
   errorMessage = $state<string | null>(null);
   totalSteps = 5;
-  completedSteps = $state([
-    false,
-    false,
-    false,
-    false,
-    false,
-  ]);
+  completedSteps = $state([false, false, false, false, false]);
 
   // Central Configuration Defaults
   institutionType = $state("school");

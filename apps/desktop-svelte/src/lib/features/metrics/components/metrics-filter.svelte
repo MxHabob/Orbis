@@ -36,7 +36,14 @@ async function loadOptions() {
   try {
     // Load Terms (Periods of type 'term')
     const periods = await commands.academic.listPeriods(orgId);
-    terms = periods ? periods.filter(c => c.period_type === "term" || !c.period_type || c.period_type === "academic_year") : [];
+    terms = periods
+      ? periods.filter(
+          (c) =>
+            c.period_type === "term" ||
+            !c.period_type ||
+            c.period_type === "academic_year",
+        )
+      : [];
 
     // Load Classes
     const cl = await commands.academic.listClasses(orgId);

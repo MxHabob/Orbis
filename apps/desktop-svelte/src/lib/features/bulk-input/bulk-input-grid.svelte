@@ -10,11 +10,13 @@ import { addRowIndices } from "$lib/tables";
 import { getLocale } from "$lib/paraglide/runtime";
 import { type BulkInputType, getColumnsForType } from "./config";
 import { getDataProps } from "./config";
+import { validateRows, type RowValidationResult } from "./validator";
 import {
-  validateRows,
-  type RowValidationResult,
-} from "./validator";
-import { parseTSV, mapTSVToRows, normalizeSex, normalizeDate } from "./paste-handler";
+  parseTSV,
+  mapTSVToRows,
+  normalizeSex,
+  normalizeDate,
+} from "./paste-handler";
 
 // ── Props ──────────────────────────────────────────────────────────
 interface Props {

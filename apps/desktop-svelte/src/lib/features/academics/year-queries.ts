@@ -1,7 +1,11 @@
 /**
  * Academic Year & Promotion queries — TanStack Query hooks.
  */
-import { createQuery, createMutation, useQueryClient } from "@tanstack/svelte-query";
+import {
+  createQuery,
+  createMutation,
+  useQueryClient,
+} from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
 import type { PromotionConfig } from "@orbis/sdk-core";
 
@@ -25,7 +29,9 @@ export function createSwitchYearMutation() {
   const queryClient = useQueryClient();
   return createMutation({
     mutationFn: (yearId: string) => commands.platform.switchYear(yearId),
-    onSuccess: () => { queryClient.invalidateQueries(); },
+    onSuccess: () => {
+      queryClient.invalidateQueries();
+    },
   });
 }
 
@@ -59,8 +65,11 @@ export function createPromotionDetailsQuery(jobId: string) {
 export function createDryRunMutation(orgId: string) {
   const queryClient = useQueryClient();
   return createMutation({
-    mutationFn: (config: PromotionConfig) => commands.platform.promotionDryRun(orgId, config),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["promotionJobs"] }); },
+    mutationFn: (config: PromotionConfig) =>
+      commands.platform.promotionDryRun(orgId, config),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["promotionJobs"] });
+    },
   });
 }
 
@@ -78,15 +87,19 @@ export function createExecutePromotionMutation() {
 export function createOverrideDecisionMutation() {
   const queryClient = useQueryClient();
   return createMutation({
-    mutationFn: (request: Record<string, unknown>) => commands.platform.overridePromotionDecision(request),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["promotionDetails"] }); },
+    mutationFn: (request: Record<string, unknown>) =>
+      commands.platform.overridePromotionDecision(request),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["promotionDetails"] });
+    },
   });
 }
 
 export function createRollbackMutation() {
   const queryClient = useQueryClient();
   return createMutation({
-    mutationFn: ({ jobId, userId }: { jobId: string; userId: string }) => commands.platform.rollbackPromotion(jobId, userId),
+    mutationFn: ({ jobId, userId }: { jobId: string; userId: string }) =>
+      commands.platform.rollbackPromotion(jobId, userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["promotionJobs"] });
       queryClient.invalidateQueries({ queryKey: ["academicYears"] });

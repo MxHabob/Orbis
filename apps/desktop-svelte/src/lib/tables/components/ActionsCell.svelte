@@ -1,49 +1,60 @@
 <script lang="ts">
-  import { getContext } from "svelte";
-  import { Button } from "@orbis/ui-svelte/button";
-  import * as Icons from "lucide-svelte";
-  import type { GridActionEvent } from "@orbis/svelte-grid";
+import { getContext } from "svelte";
+import { Button } from "@orbis/ui-svelte/button";
+import * as Icons from "lucide-svelte";
+import type { GridActionEvent } from "@orbis/svelte-grid";
 
-  interface ActionItem {
-    id: string;
-    icon?: string;
-    label?: string;
-    variant?: "default" | "destructive" | "success" | "secondary" | "outline" | "ghost" | "link";
-    visible?: (row: any) => boolean;
-    disabled?: (row: any) => boolean;
+interface ActionItem {
+  id: string;
+  icon?: string;
+  label?: string;
+  variant?:
+    | "default"
+    | "destructive"
+    | "success"
+    | "secondary"
+    | "outline"
+    | "ghost"
+    | "link";
+  visible?: (row: any) => boolean;
+  disabled?: (row: any) => boolean;
+}
+
+interface Props {
+  row: Record<string, any>;
+  column: { id: string; meta?: Record<string, any> };
+  api?: any;
+}
+
+let { row, column }: Props = $props();
+
+const items: ActionItem[] = $derived(column.meta?.items || []);
+const visibleActions = $derived(
+  items.filter((item) => !item.visible || item.visible(row)),
+);
+
+const parentOnaction = getContext<(event: GridActionEvent) => void>(
+  "orbis-grid-onaction",
+);
+
+function handleActionClick(actionId: string, e: MouseEvent) {
+  if (parentOnaction) {
+    parentOnaction({
+      actionId,
+      row,
+      rowIndex: row.__rowIndex ?? 0,
+      prop: column.id,
+      originalEvent: e,
+    });
   }
+}
 
-  interface Props {
-    row: Record<string, any>;
-    column: { id: string; meta?: Record<string, any> };
-    api?: any;
-  }
-
-  let { row, column }: Props = $props();
-
-  const items: ActionItem[] = $derived(column.meta?.items || []);
-  const visibleActions = $derived(items.filter(item => !item.visible || item.visible(row)));
-
-  const parentOnaction = getContext<(event: GridActionEvent) => void>("orbis-grid-onaction");
-
-  function handleActionClick(actionId: string, e: MouseEvent) {
-    if (parentOnaction) {
-      parentOnaction({
-        actionId,
-        row,
-        rowIndex: row.__rowIndex ?? 0,
-        prop: column.id,
-        originalEvent: e
-      });
-    }
-  }
-
-  function mapVariant(variant?: string) {
-    if (variant === "success") return "lime";
-    if (variant === "destructive") return "destructive";
-    if (variant === "secondary") return "secondary";
-    return "ghost";
-  }
+function mapVariant(variant?: string) {
+  if (variant === "success") return "lime";
+  if (variant === "destructive") return "destructive";
+  if (variant === "secondary") return "secondary";
+  return "ghost";
+}
 </script>
 
 <div class="flex items-center gap-1.5 px-2 w-full h-full justify-start">

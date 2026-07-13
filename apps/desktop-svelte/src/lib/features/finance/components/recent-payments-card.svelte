@@ -8,7 +8,7 @@ import * as m from "$lib/paraglide/messages";
 
 let {
   recentPayments,
-  orgId
+  orgId,
 }: {
   recentPayments: any[];
   orgId: string;

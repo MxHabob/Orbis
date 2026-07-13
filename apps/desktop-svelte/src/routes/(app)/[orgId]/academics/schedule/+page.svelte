@@ -56,33 +56,41 @@ function toStore<T>(getter: () => T) {
 }
 
 // Reactive Queries using toStore for Svelte 5 runes responsiveness
-const periodsQuery = createQuery(toStore(() => ({
-  queryKey: ["periods", data.orgId],
-  queryFn: () => commands.academic.listPeriods(data.orgId),
-  enabled: !!data.orgId,
-  staleTime: 10 * 60 * 1000,
-})));
+const periodsQuery = createQuery(
+  toStore(() => ({
+    queryKey: ["periods", data.orgId],
+    queryFn: () => commands.academic.listPeriods(data.orgId),
+    enabled: !!data.orgId,
+    staleTime: 10 * 60 * 1000,
+  })),
+);
 
-const classesQuery = createQuery(toStore(() => ({
-  queryKey: ["classes", data.orgId],
-  queryFn: () => commands.academic.listClasses(data.orgId),
-  enabled: !!data.orgId,
-  staleTime: 5 * 60 * 1000,
-})));
+const classesQuery = createQuery(
+  toStore(() => ({
+    queryKey: ["classes", data.orgId],
+    queryFn: () => commands.academic.listClasses(data.orgId),
+    enabled: !!data.orgId,
+    staleTime: 5 * 60 * 1000,
+  })),
+);
 
-const subjectsQuery = createQuery(toStore(() => ({
-  queryKey: ["subjects", data.orgId],
-  queryFn: () => commands.academic.listSubjects(data.orgId),
-  enabled: !!data.orgId,
-  staleTime: 10 * 60 * 1000,
-})));
+const subjectsQuery = createQuery(
+  toStore(() => ({
+    queryKey: ["subjects", data.orgId],
+    queryFn: () => commands.academic.listSubjects(data.orgId),
+    enabled: !!data.orgId,
+    staleTime: 10 * 60 * 1000,
+  })),
+);
 
-const usersQuery = createQuery(toStore(() => ({
-  queryKey: ["users", data.orgId],
-  queryFn: () => commands.iam.listUsers(data.orgId),
-  enabled: !!data.orgId,
-  staleTime: 5 * 60 * 1000,
-})));
+const usersQuery = createQuery(
+  toStore(() => ({
+    queryKey: ["users", data.orgId],
+    queryFn: () => commands.iam.listUsers(data.orgId),
+    enabled: !!data.orgId,
+    staleTime: 5 * 60 * 1000,
+  })),
+);
 
 const periods = $derived($periodsQuery.data ?? []);
 const classes = $derived($classesQuery.data ?? []);
@@ -96,7 +104,7 @@ const teachers = $derived(
       u.primary_role === "teacher" ||
       u.primary_role === "admin" ||
       u.primary_role === "super_admin",
-  )
+  ),
 );
 
 // Track periods and activeYearId selection
@@ -147,29 +155,53 @@ $effect(() => {
 });
 
 // Time Slots logic
-const timeSlotsQuery = createQuery(toStore(() => ({
-  queryKey: ["time-slots", data.orgId, activeYearId],
-  queryFn: () => commands.scheduling.listTimeSlots(data.orgId, activeYearId),
-  enabled: !!data.orgId && !!activeYearId,
-  staleTime: 10 * 60 * 1000,
-})));
+const timeSlotsQuery = createQuery(
+  toStore(() => ({
+    queryKey: ["time-slots", data.orgId, activeYearId],
+    queryFn: () => commands.scheduling.listTimeSlots(data.orgId, activeYearId),
+    enabled: !!data.orgId && !!activeYearId,
+    staleTime: 10 * 60 * 1000,
+  })),
+);
 
 const timeSlots = $derived($timeSlotsQuery.data ?? []);
 
 // Schedules logic
-const classScheduleQuery = createQuery(toStore(() => ({
-  queryKey: ["class-schedule", data.orgId, activeYearId, selectedClassId],
-  queryFn: () => commands.scheduling.listLessonsByClass(data.orgId, activeYearId, selectedClassId),
-  enabled: !!data.orgId && !!activeYearId && !!selectedClassId && viewMode === "class",
-  staleTime: 2 * 60 * 1000,
-})));
+const classScheduleQuery = createQuery(
+  toStore(() => ({
+    queryKey: ["class-schedule", data.orgId, activeYearId, selectedClassId],
+    queryFn: () =>
+      commands.scheduling.listLessonsByClass(
+        data.orgId,
+        activeYearId,
+        selectedClassId,
+      ),
+    enabled:
+      !!data.orgId &&
+      !!activeYearId &&
+      !!selectedClassId &&
+      viewMode === "class",
+    staleTime: 2 * 60 * 1000,
+  })),
+);
 
-const teacherScheduleQuery = createQuery(toStore(() => ({
-  queryKey: ["teacher-schedule", data.orgId, activeYearId, selectedTeacherId],
-  queryFn: () => commands.scheduling.listLessonsByTeacher(data.orgId, activeYearId, selectedTeacherId),
-  enabled: !!data.orgId && !!activeYearId && !!selectedTeacherId && viewMode === "teacher",
-  staleTime: 2 * 60 * 1000,
-})));
+const teacherScheduleQuery = createQuery(
+  toStore(() => ({
+    queryKey: ["teacher-schedule", data.orgId, activeYearId, selectedTeacherId],
+    queryFn: () =>
+      commands.scheduling.listLessonsByTeacher(
+        data.orgId,
+        activeYearId,
+        selectedTeacherId,
+      ),
+    enabled:
+      !!data.orgId &&
+      !!activeYearId &&
+      !!selectedTeacherId &&
+      viewMode === "teacher",
+    staleTime: 2 * 60 * 1000,
+  })),
+);
 
 const lessons = $derived.by(() => {
   if (viewMode === "class") {
@@ -180,7 +212,9 @@ const lessons = $derived.by(() => {
 });
 
 const isLessonsLoading = $derived(
-  viewMode === "class" ? $classScheduleQuery.isLoading : $teacherScheduleQuery.isLoading
+  viewMode === "class"
+    ? $classScheduleQuery.isLoading
+    : $teacherScheduleQuery.isLoading,
 );
 
 const isLoading = $derived(
@@ -189,7 +223,7 @@ const isLoading = $derived(
     $subjectsQuery.isLoading ||
     $usersQuery.isLoading ||
     $timeSlotsQuery.isLoading ||
-    isLessonsLoading
+    isLessonsLoading,
 );
 
 const error = $derived(
@@ -198,7 +232,9 @@ const error = $derived(
     $subjectsQuery.error ||
     $usersQuery.error ||
     $timeSlotsQuery.error ||
-    (viewMode === "class" ? $classScheduleQuery.error : $teacherScheduleQuery.error)
+    (viewMode === "class"
+      ? $classScheduleQuery.error
+      : $teacherScheduleQuery.error),
 );
 
 // Derived state to map and filter draft assignments for preview
@@ -268,14 +304,10 @@ async function handleMoveLesson(
       return;
     }
 
-    await commands.scheduling.updateLesson(
-      data.orgId,
-      lesson.id,
-      {
-        day_of_week: targetDay,
-        time_slot_id: targetSlotId,
-      }
-    );
+    await commands.scheduling.updateLesson(data.orgId, lesson.id, {
+      day_of_week: targetDay,
+      time_slot_id: targetSlotId,
+    });
     toast.success(
       getLocale() === "ar" ? "تم نقل الحصة بنجاح" : "Lesson moved successfully",
     );

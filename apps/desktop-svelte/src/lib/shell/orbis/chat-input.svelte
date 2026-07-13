@@ -31,16 +31,24 @@ const currentOrgId = $derived(page.params.orgId || authStore.orgId || "");
 
 // TanStack query caching for autocomplete using reactive config closures
 const enrollmentsQuery = createQuery({
-  get queryKey() { return ["enrollments", currentOrgId]; },
+  get queryKey() {
+    return ["enrollments", currentOrgId];
+  },
   queryFn: () => commands.academic.listEnrollments(currentOrgId),
-  get enabled() { return !!currentOrgId; },
+  get enabled() {
+    return !!currentOrgId;
+  },
   staleTime: 2 * 60 * 1000,
 });
 
 const usersQuery = createQuery({
-  get queryKey() { return ["users", currentOrgId]; },
+  get queryKey() {
+    return ["users", currentOrgId];
+  },
   queryFn: () => commands.iam.listUsers(currentOrgId),
-  get enabled() { return !!currentOrgId; },
+  get enabled() {
+    return !!currentOrgId;
+  },
   staleTime: 5 * 60 * 1000,
 });
 
@@ -162,8 +170,10 @@ const filteredSuggestions = $derived.by(() => {
         return name.includes(q) || email.includes(q);
       })
       .map((u: any) => {
-        const name = u.full_name || u.name_ar || u.name_en || m.agent_default_user_name();
-        const roleStr = u.primary_role || u.role || m.agent_default_role_staff();
+        const name =
+          u.full_name || u.name_ar || u.name_en || m.agent_default_user_name();
+        const roleStr =
+          u.primary_role || u.role || m.agent_default_role_staff();
         return {
           id: `user-${u.id}`,
           label: name,

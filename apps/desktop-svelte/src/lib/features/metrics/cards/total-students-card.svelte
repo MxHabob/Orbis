@@ -33,16 +33,18 @@ async function loadData() {
     if (selectedTerm !== "all") params.period_id = selectedTerm;
 
     const enrollments = await commands.academic.listEnrollments(orgId, params);
-    
+
     // We want to generate a 12-month timeline ending in the current month
     const months: { label: string; key: string; dateObj: Date }[] = [];
     const now = new Date();
-    
+
     // Generate the last 12 months, e.g. Mar to Feb (or similar depending on current date)
     for (let i = 11; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const label = new Intl.DateTimeFormat(getLocale(), { month: "short" }).format(d);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = new Intl.DateTimeFormat(getLocale(), {
+        month: "short",
+      }).format(d);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       months.push({ label, key, dateObj: d });
     }
 
@@ -50,36 +52,47 @@ async function loadData() {
       // Calculate active student count for each of the 12 months
       data = months.map(({ label, key, dateObj }) => {
         // Count how many enrollments were active during this month
-        const activeCount = enrollments.filter(e => {
-          const enrollDate = e.enrollment_date ? new Date(e.enrollment_date) : null;
-          const withdrawDate = e.withdrawal_date ? new Date(e.withdrawal_date) : null;
-          
+        const activeCount = enrollments.filter((e) => {
+          const enrollDate = e.enrollment_date
+            ? new Date(e.enrollment_date)
+            : null;
+          const withdrawDate = e.withdrawal_date
+            ? new Date(e.withdrawal_date)
+            : null;
+
           if (!enrollDate) return false;
           // Must be enrolled before/during this month
-          if (enrollDate > new Date(dateObj.getFullYear(), dateObj.getMonth() + 1, 0)) return false;
+          if (
+            enrollDate >
+            new Date(dateObj.getFullYear(), dateObj.getMonth() + 1, 0)
+          )
+            return false;
           // Must not be withdrawn before this month
           if (withdrawDate && withdrawDate < dateObj) return false;
-          
+
           return true;
         }).length;
 
         return {
           month: label,
           rawDate: key,
-          count: activeCount
+          count: activeCount,
         };
       });
 
-      const currentMonthActive = data[data.length - 1]?.count ?? enrollments.length;
+      const currentMonthActive =
+        data[data.length - 1]?.count ?? enrollments.length;
       totalCount = currentMonthActive;
     } else {
       // Fallback mockup matching Screenshot 4 (Right):
       // Monthly Enrollment starting from Mar (~590) to Feb (~738)
-      const mockCounts = [590, 610, 635, 650, 640, 660, 655, 670, 710, 700, 715, 738];
+      const mockCounts = [
+        590, 610, 635, 650, 640, 660, 655, 670, 710, 700, 715, 738,
+      ];
       data = months.map(({ label, key }, idx) => ({
         month: label,
         rawDate: key,
-        count: mockCounts[idx] ?? 0
+        count: mockCounts[idx] ?? 0,
       }));
       totalCount = 738;
     }
@@ -110,7 +123,9 @@ const chartWidth = width - padding.left - padding.right;
 const chartHeight = height - padding.top - padding.bottom;
 
 // Define Y scale max dynamically based on data (with minimum limit of 10)
-const maxVal = $derived(data.length > 0 ? Math.max(10, ...data.map(d => d.count)) * 1.15 : 800);
+const maxVal = $derived(
+  data.length > 0 ? Math.max(10, ...data.map((d) => d.count)) * 1.15 : 800,
+);
 
 // Path generator
 const linePath = $derived.by(() => {
@@ -123,7 +138,9 @@ const linePath = $derived.by(() => {
   return `M ${points.join(" L ")}`;
 });
 
-const avgY = $derived(padding.top + chartHeight - (avgCount / maxVal) * chartHeight);
+const avgY = $derived(
+  padding.top + chartHeight - (avgCount / maxVal) * chartHeight,
+);
 
 // Closed path for filled area underneath the line
 const areaPath = $derived.by(() => {

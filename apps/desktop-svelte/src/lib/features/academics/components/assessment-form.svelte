@@ -38,12 +38,13 @@ let maxScore = $state<number>(100);
 let weight = $state<number>(15);
 let assessmentType = $state<"exam" | "quiz" | "homework" | "classwork">("exam");
 
-const typeLabels: Record<"exam" | "quiz" | "homework" | "classwork", string> = $derived({
-  exam: m.assessment_option_exam(),
-  quiz: m.assessment_option_quiz(),
-  homework: m.assessment_option_homework(),
-  classwork: m.assessment_option_classwork(),
-});
+const typeLabels: Record<"exam" | "quiz" | "homework" | "classwork", string> =
+  $derived({
+    exam: m.assessment_option_exam(),
+    quiz: m.assessment_option_quiz(),
+    homework: m.assessment_option_homework(),
+    classwork: m.assessment_option_classwork(),
+  });
 
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();

@@ -13,7 +13,6 @@ import { commands, extractErrorMessage } from "$lib/core/ipc";
 
 // No props needed
 
-
 let email = $state("");
 let password = $state("");
 let showPassword = $state(false);

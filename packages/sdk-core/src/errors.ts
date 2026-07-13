@@ -10,7 +10,12 @@ export class OrbisError extends Error {
   public readonly statusCode: number;
   public readonly details?: unknown;
 
-  constructor(message: string, code: string = "UNKNOWN", statusCode: number = 500, details?: unknown) {
+  constructor(
+    message: string,
+    code: string = "UNKNOWN",
+    statusCode: number = 500,
+    details?: unknown,
+  ) {
     super(message);
     this.name = "OrbisError";
     this.code = code;

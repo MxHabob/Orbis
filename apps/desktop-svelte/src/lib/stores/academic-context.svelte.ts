@@ -23,37 +23,72 @@ class AcademicContextStore {
   isLoading = $state(false);
   isInitialized = $state(false);
 
-  private _selectedPeriodId = $state<string>(localStorage.getItem("orbis_academic_period_id") ?? "");
-  private _selectedClassId = $state<string>(localStorage.getItem("orbis_academic_class_id") ?? "");
-  private _selectedSubjectId = $state<string>(localStorage.getItem("orbis_academic_subject_id") ?? "");
+  private _selectedPeriodId = $state<string>(
+    localStorage.getItem("orbis_academic_period_id") ?? "",
+  );
+  private _selectedClassId = $state<string>(
+    localStorage.getItem("orbis_academic_class_id") ?? "",
+  );
+  private _selectedSubjectId = $state<string>(
+    localStorage.getItem("orbis_academic_subject_id") ?? "",
+  );
 
-  get selectedPeriodId(): string { return this._selectedPeriodId; }
-  set selectedPeriodId(val: string) { this._selectedPeriodId = val; localStorage.setItem("orbis_academic_period_id", val); }
-  get selectedClassId(): string { return this._selectedClassId; }
-  set selectedClassId(val: string) { this._selectedClassId = val; localStorage.setItem("orbis_academic_class_id", val); }
-  get selectedSubjectId(): string { return this._selectedSubjectId; }
-  set selectedSubjectId(val: string) { this._selectedSubjectId = val; localStorage.setItem("orbis_academic_subject_id", val); }
+  get selectedPeriodId(): string {
+    return this._selectedPeriodId;
+  }
+  set selectedPeriodId(val: string) {
+    this._selectedPeriodId = val;
+    localStorage.setItem("orbis_academic_period_id", val);
+  }
+  get selectedClassId(): string {
+    return this._selectedClassId;
+  }
+  set selectedClassId(val: string) {
+    this._selectedClassId = val;
+    localStorage.setItem("orbis_academic_class_id", val);
+  }
+  get selectedSubjectId(): string {
+    return this._selectedSubjectId;
+  }
+  set selectedSubjectId(val: string) {
+    this._selectedSubjectId = val;
+    localStorage.setItem("orbis_academic_subject_id", val);
+  }
 
-
-  isReadOnly = $derived(this._isReadOnly || this.currentYear?.status === "archived");
+  isReadOnly = $derived(
+    this._isReadOnly || this.currentYear?.status === "archived",
+  );
   hasYears = $derived(this.allYears.length > 0);
-  canEnroll = $derived(this.activePeriod?.is_enrollment_open === 1 && !this.isReadOnly);
-  canEditGrades = $derived(this.activePeriod?.is_grade_entry_open === 1 && !this.isReadOnly);
+  canEnroll = $derived(
+    this.activePeriod?.is_enrollment_open === 1 && !this.isReadOnly,
+  );
+  canEditGrades = $derived(
+    this.activePeriod?.is_grade_entry_open === 1 && !this.isReadOnly,
+  );
   isLocked = $derived(this.currentYear?.is_locked === 1);
   yearLabel = $derived(this.currentYear?.name ?? "");
-  yearLabelAr = $derived(this.currentYear?.name_ar ?? this.currentYear?.name ?? "");
-  statusBadge = $derived<"planning" | "active" | "closing" | "archived">(this.yearStatus);
-  effectivePeriodId = $derived(this._selectedPeriodId || this.activePeriod?.id || "");
+  yearLabelAr = $derived(
+    this.currentYear?.name_ar ?? this.currentYear?.name ?? "",
+  );
+  statusBadge = $derived<"planning" | "active" | "closing" | "archived">(
+    this.yearStatus,
+  );
+  effectivePeriodId = $derived(
+    this._selectedPeriodId || this.activePeriod?.id || "",
+  );
 
   /** First active period or first period in list */
   get activePeriod(): AcademicPeriod | null {
-    return this.periods.find(p => p.status === "active") ?? this.periods[0] ?? null;
+    return (
+      this.periods.find((p) => p.status === "active") ?? this.periods[0] ?? null
+    );
   }
 
   async resolveContext(orgId: string) {
     this.isLoading = true;
     try {
-      const ctx: AcademicContextResponse = await commands.platform.getAcademicContext(orgId);
+      const ctx: AcademicContextResponse =
+        await commands.platform.getAcademicContext(orgId);
       this.currentYear = ctx.current_year ?? null;
       this.allYears = ctx.all_years ?? [];
       this.periods = ctx.periods ?? [];
@@ -64,7 +99,10 @@ class AcademicContextStore {
       }
       this.isInitialized = true;
     } catch (e: unknown) {
-      console.warn("Failed to resolve academic context:", extractErrorMessage(e));
+      console.warn(
+        "Failed to resolve academic context:",
+        extractErrorMessage(e),
+      );
     } finally {
       this.isLoading = false;
     }

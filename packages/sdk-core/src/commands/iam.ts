@@ -13,13 +13,20 @@ export interface PermissionRule {
 
 export interface IamCommands {
   // ── Authentication ────────────────────────────────────────────
-  login(identifier: string, passwordHash?: string, ip?: string): Promise<UserSession>;
+  login(
+    identifier: string,
+    passwordHash?: string,
+    ip?: string,
+  ): Promise<UserSession>;
   logout(sessionId: string): Promise<void>;
   changePassword(userId: string, data: any): Promise<void>;
   listSessions(userId: string): Promise<UserSession[]>;
 
   // ── Users ───────────────────────────────────────────────────
-  listUsers(orgId: string, filter?: { role?: string; status?: string }): Promise<User[]>;
+  listUsers(
+    orgId: string,
+    filter?: { role?: string; status?: string },
+  ): Promise<User[]>;
   getUser(userId: string): Promise<User>;
   searchUsers(query: string): Promise<User[]>;
   createUser(orgId: string, createdBy: string, data: any): Promise<User>;
@@ -28,9 +35,18 @@ export interface IamCommands {
 
   // ── Roles & Permissions ─────────────────────────────────────
   listUserRoles(userId: string): Promise<UserRole[]>;
-  assignRole(data: { user_id: string; role: string; org_id: string; scope_type: string; scope_id?: string }): Promise<UserRole>;
+  assignRole(data: {
+    user_id: string;
+    role: string;
+    org_id: string;
+    scope_type: string;
+    scope_id?: string;
+  }): Promise<UserRole>;
   revokeRole(roleId: string): Promise<void>;
-  changeRole(userId: string, data: { current_role: string; new_role: string; document_type: string }): Promise<void>;
+  changeRole(
+    userId: string,
+    data: { current_role: string; new_role: string; document_type: string },
+  ): Promise<void>;
   saveUserRoles(userId: string, roles: string[]): Promise<void>;
 
   // ── Rule Engine ─────────────────────────────────────────────

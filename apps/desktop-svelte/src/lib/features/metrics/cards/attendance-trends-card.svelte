@@ -31,7 +31,8 @@ async function loadData() {
   try {
     const periodId = selectedTerm !== "all" ? selectedTerm : "";
     const classId = selectedClass !== "all" ? selectedClass : undefined;
-    const effectivePeriodId = periodId || academicContext.effectivePeriodId || "";
+    const effectivePeriodId =
+      periodId || academicContext.effectivePeriodId || "";
 
     if (!effectivePeriodId) {
       data = [];
@@ -56,8 +57,12 @@ async function loadData() {
         if (!groups[dateStr]) {
           groups[dateStr] = { present: 0, total: 0 };
         }
-        
-        const isPresent = r.status === "present" || r.status === "late" || String(r.status).toLowerCase().includes("present") || String(r.status).includes("حاضر");
+
+        const isPresent =
+          r.status === "present" ||
+          r.status === "late" ||
+          String(r.status).toLowerCase().includes("present") ||
+          String(r.status).includes("حاضر");
         if (isPresent) {
           groups[dateStr].present += 1;
           totalPresent += 1;
@@ -65,7 +70,8 @@ async function loadData() {
         groups[dateStr].total += 1;
       }
 
-      overallRate = records.length > 0 ? (totalPresent / records.length) * 100 : 0;
+      overallRate =
+        records.length > 0 ? (totalPresent / records.length) * 100 : 0;
 
       const sortedDates = Object.keys(groups).sort();
       data = sortedDates.map((date) => {
@@ -74,7 +80,9 @@ async function loadData() {
         const dateObj = new Date(date);
         const label = isNaN(dateObj.getTime())
           ? date.substring(5)
-          : new Intl.DateTimeFormat(getLocale(), { month: "short" }).format(dateObj);
+          : new Intl.DateTimeFormat(getLocale(), { month: "short" }).format(
+              dateObj,
+            );
         return {
           date: label,
           rawDate: date,

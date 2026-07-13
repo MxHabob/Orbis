@@ -7,39 +7,10 @@ recent transactions, and treasury balances. Inline action buttons are placed
 directly inside the cards' headers.
 -->
 <script lang="ts">
-import { Card } from "@orbis/ui-svelte";
-import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { Badge } from "@orbis/ui-svelte/badge";
-import { Avatar, AvatarFallback } from "@orbis/ui-svelte/avatar";
-import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell,
-} from "@orbis/ui-svelte/table";
-import {
-  Wallet,
-  CreditCard,
-  Landmark,
-  ArrowRight,
-  ShieldCheck,
-  TrendingUp,
-  AlertCircle,
-  RefreshCw,
-  Layers,
-  ArrowUpRight,
-  Calendar,
-  FileText,
-  Plus,
-} from "lucide-svelte";
-import { getLocale } from "$lib/paraglide/runtime";
-import { formatCurrency, formatDate } from "$lib/core/i18n";
-import { fade } from "svelte/transition";
-import { localizeHref } from "$lib/paraglide/runtime";
+import { AlertCircle } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
+import { extractErrorMessage } from "$lib/core/ipc/error";
 
 import {
   createStudentFeesQuery,
@@ -53,6 +24,7 @@ import LateStudentsCard from "$lib/features/finance/components/late-students-car
 import CollectionRateCard from "$lib/features/finance/components/collection-rate-card.svelte";
 import RecentPaymentsCard from "$lib/features/finance/components/recent-payments-card.svelte";
 import TreasuryBalancesCard from "$lib/features/finance/components/treasury-balances-card.svelte";
+    import { Button } from "@orbis/ui-svelte";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -231,7 +203,7 @@ const recentPayments = $derived.by(() => {
     <div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2">
       <AlertCircle size={24} />
       <h3 class="font-semibold text-xs">{m.finance_overview_error()}</h3>
-      <p class="text-[10px] text-muted-foreground">{error instanceof Error ? error.message : String(error)}</p>
+      <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
       <Button variant="outline" onclick={refetchAll} class="text-[10px] mt-2 h-8">{m.error_retry()}</Button>
     </div>
   {:else}

@@ -29,7 +29,7 @@ let selectedTemplate = $state<any | null>(null);
 async function loadTemplates() {
   isLoading = true;
   try {
-    templates = await commands.finance.getDiscountTemplates(data.orgId);
+    templates = await commands.finance.listDiscountTemplates(data.orgId);
   } catch (e) {
     toast.error((e as any)?.message || "Failed to load discount templates");
   } finally {
@@ -88,8 +88,6 @@ const columns = $derived(
     status: m.dt_col_status?.() || "Status",
   }),
 );
-
-
 
 function handleCreate() {
   selectedTemplate = null;

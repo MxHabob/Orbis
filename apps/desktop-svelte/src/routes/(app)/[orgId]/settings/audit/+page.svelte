@@ -43,7 +43,7 @@ async function loadData() {
   isLoading = true;
   try {
     const [logsList, usersList] = await Promise.all([
-      commands.auditLogs.getAll(data.orgId),
+      commands.platform.getAllAuditLogs(data.orgId),
       commands.iam.listUsers(data.orgId),
     ]);
     auditLogs = logsList.sort(

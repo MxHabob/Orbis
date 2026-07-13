@@ -121,7 +121,7 @@ onMount(async () => {
 async function loadPermissions() {
   isLoading = true;
   try {
-    const rawRules = await commands.permissions.getRolePermissions();
+    const rawRules = await commands.iam.getRolePermissions();
     rules = rawRules.map((r: any) => ({
       role: r.role,
       document_type: r.document_type,
@@ -168,7 +168,7 @@ async function saveChanges() {
     ]);
     for (const r of rolesToSave) {
       const roleRules = rulesByRole[r] || [];
-      await commands.permissions.saveRolePermissions(r, roleRules);
+      await commands.iam.saveRolePermissions(r, roleRules);
     }
 
     toast.success(m.settings_permissions_save_success());

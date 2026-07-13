@@ -2,11 +2,7 @@
 import { onMount } from "svelte";
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import {
-  ShieldCheck,
-  Lock,
-  AlertTriangle,
-} from "lucide-svelte";
+import { ShieldCheck, Lock, AlertTriangle } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import { slide } from "svelte/transition";
 import { academicContext, authStore } from "$lib/stores";
@@ -84,7 +80,6 @@ let gridColumns = $derived.by(() => {
     },
   });
 });
-
 
 async function loadInitialData() {
   isLoading = true;

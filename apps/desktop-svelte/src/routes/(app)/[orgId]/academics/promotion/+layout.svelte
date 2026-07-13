@@ -17,16 +17,12 @@ const basePath = $derived(`/${data.orgId}/academics/promotion`);
 const menuItems = $derived([
   {
     path: "",
-    label: m.promo_wizard_title
-      ? m.promo_wizard_title()
-      : "معالج الترفيع",
+    label: m.promo_wizard_title ? m.promo_wizard_title() : "معالج الترفيع",
     icon: TrendingUp,
   },
   {
     path: "history",
-    label: m.promo_history
-      ? m.promo_history()
-      : "سجل الترفيع",
+    label: m.promo_history ? m.promo_history() : "سجل الترفيع",
     icon: History,
   },
 ]);

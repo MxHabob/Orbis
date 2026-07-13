@@ -49,7 +49,7 @@ export const chartDisplayNames: Record<ChartId, string> = {
   "gender-distribution": "Gender Distribution",
   "class-distribution": "Class Distribution",
   "fee-collection": "Monthly Revenue Trend",
-  "profit": "Profit",
+  profit: "Profit",
   "grade-distribution": "Grade Distribution",
   "behavior-analysis": "Behavioral Incident Severity",
 };

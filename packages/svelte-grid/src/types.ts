@@ -69,7 +69,14 @@ export interface ActionItem {
   id: string;
   icon?: string;
   label?: string;
-  variant?: "default" | "destructive" | "success" | "secondary" | "outline" | "ghost" | "link";
+  variant?:
+    | "default"
+    | "destructive"
+    | "success"
+    | "secondary"
+    | "outline"
+    | "ghost"
+    | "link";
   visible?: (row: any) => boolean;
   disabled?: (row: any) => boolean;
 }

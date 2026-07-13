@@ -25,7 +25,8 @@ interface ServerConfig {
 }
 
 export function configureServer(config: ServerConfig): void {
-  const baseUrl = config.baseUrl ?? process.env.ORBIS_API_URL ?? "http://localhost:3001";
+  const baseUrl =
+    config.baseUrl ?? process.env.ORBIS_API_URL ?? "http://localhost:3001";
 
   // Wrap async getter in sync wrapper (configure expects sync)
   let cachedToken: string | null = null;
@@ -34,7 +35,9 @@ export function configureServer(config: ServerConfig): void {
   // Pre-resolve token
   const resolved = config.getToken();
   if (resolved instanceof Promise) {
-    resolved.then((t) => { cachedToken = t; });
+    resolved.then((t) => {
+      cachedToken = t;
+    });
   } else {
     cachedToken = resolved;
   }

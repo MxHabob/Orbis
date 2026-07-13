@@ -78,7 +78,7 @@ async function loadData() {
   try {
     const [studentList, treasuryList] = await Promise.all([
       commands.academic.listEnrollments(data.orgId),
-      commands.finance.getTreasuries(data.orgId),
+      commands.finance.listTreasuries(data.orgId),
     ]);
     students = studentList;
     treasuries = treasuryList;
@@ -109,8 +109,8 @@ async function loadStudentData(enrollId: string) {
   isLoadingStudentDetails = true;
   try {
     const [feesList, paymentsList] = await Promise.all([
-      commands.finance.getStudentFees(data.orgId, enrollId),
-      commands.finance.getPayments(data.orgId),
+      commands.finance.listStudentFees(enrollId),
+      commands.finance.listPayments(data.orgId),
     ]);
 
     // Unpaid/Partially paid fees

@@ -84,7 +84,9 @@ function handleMouseMove(e: MouseEvent & { currentTarget: HTMLDivElement }) {
   const mouseY = e.clientY - rect.top;
 
   const isRtl = document.documentElement.dir === "rtl";
-  const isFemaleHovered = isRtl ? (mouseX > rect.width / 2) : (mouseX < rect.width / 2);
+  const isFemaleHovered = isRtl
+    ? mouseX > rect.width / 2
+    : mouseX < rect.width / 2;
   hoveredBarIdx = isFemaleHovered ? 0 : 1;
   tooltipPos = { x: mouseX, y: mouseY };
 }

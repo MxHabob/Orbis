@@ -100,9 +100,7 @@ async function loadClassSubjects() {
 
 function getSubjectName(subjectId: string) {
   const sub = subjects.find((s) => String(s.id) === String(subjectId));
-  return sub
-    ? sub.name_ar || sub.name
-    : m.schedule_page_unknown_subject();
+  return sub ? sub.name_ar || sub.name : m.schedule_page_unknown_subject();
 }
 
 async function adjustSubjectHours(csId: string, delta: number) {
@@ -197,7 +195,9 @@ async function startPollingJob(jobId: string) {
           toast.success(m.schedule_ai_optimization_completed());
           previewDraft = true;
         } else if (job.status === "failed") {
-          solveError = (job.error_message as string) || m.schedule_ai_optimization_failed();
+          solveError =
+            (job.error_message as string) ||
+            m.schedule_ai_optimization_failed();
           toast.error(solveError);
         }
       }
@@ -265,7 +265,7 @@ async function deleteSolveJob(jobId: string) {
   try {
     await commands.scheduling.deleteSolveJob(orgId, jobId);
     toast.success(m.schedule_ai_record_deleted());
-    
+
     // Clear state if deleting currently active job
     if (activeJob && String(activeJob.id) === String(jobId)) {
       activeJob = null;
@@ -273,7 +273,7 @@ async function deleteSolveJob(jobId: string) {
       previewDraft = false;
       stopPolling();
     }
-    
+
     await loadSolveJobs();
   } catch (e) {
     toast.error(extractErrorMessage(e));

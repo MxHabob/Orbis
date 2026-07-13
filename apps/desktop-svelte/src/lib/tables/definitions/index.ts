@@ -27,7 +27,7 @@ function idx(label = "#"): OrbisColumnDef {
     size: 48,
     readonly: true,
     pin: "colPinStart",
-    cellClass: "orbis-cell-index"
+    cellClass: "orbis-cell-index",
   };
 }
 
@@ -62,7 +62,7 @@ function userCol(
     size,
     readonly: true,
     pin: "colPinStart",
-    cell: AvatarCell
+    cell: AvatarCell,
   };
 }
 
@@ -75,7 +75,7 @@ function text(prop: string, name: string, size = 120): OrbisColumnDef {
     name,
     width: size,
     size,
-    readonly: true
+    readonly: true,
   };
 }
 
@@ -103,7 +103,7 @@ function status(prop: string, name: string, size = 100): OrbisColumnDef {
     width: size,
     size,
     readonly: true,
-    cell: BadgeCell
+    cell: BadgeCell,
   };
 }
 
@@ -130,7 +130,7 @@ function date(prop: string, name: string, size = 110): OrbisColumnDef {
     name,
     width: size,
     size,
-    readonly: true
+    readonly: true,
   };
 }
 
@@ -182,7 +182,7 @@ export const users = {
         size: 90,
         readonly: true,
         cell: ActionsCell,
-        meta: { items: actionsList }
+        meta: { items: actionsList },
       });
     }
 

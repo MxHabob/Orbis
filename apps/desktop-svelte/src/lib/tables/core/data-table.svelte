@@ -34,7 +34,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@orbis/ui-svelte/dropdown-menu";
-import { Search, Download, RefreshCcw, TableProperties, SlidersHorizontal } from "lucide-svelte";
+import {
+  Search,
+  Download,
+  RefreshCcw,
+  TableProperties,
+  SlidersHorizontal,
+} from "lucide-svelte";
 import type { Snippet, Component } from "svelte";
 import { DefaultCell } from "../index";
 
@@ -138,7 +144,7 @@ let mappedColumns = $derived(
   columns.map((col) => ({
     ...col,
     cell: col.cell || DefaultCell,
-  }))
+  })),
 );
 
 let hasData = $derived(source.length > 0);
@@ -167,7 +173,7 @@ function handleSearchKeydown(e: KeyboardEvent) {
 }
 
 function toggleColumnVisibility(colId: string) {
-  columns = columns.map(col => {
+  columns = columns.map((col) => {
     const id = col.id || col.prop || "";
     if (id === colId) {
       return { ...col, hidden: !col.hidden };

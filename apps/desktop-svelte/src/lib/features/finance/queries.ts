@@ -9,16 +9,17 @@ import { commands } from "$lib/core/ipc";
 export function createTreasuriesQuery(orgId: string) {
   return createQuery({
     queryKey: ["treasuries", orgId],
-    queryFn: () => commands.finance.listTreasuries(),
+    queryFn: () => commands.finance.listTreasuries(orgId),
     staleTime: 5 * 60 * 1000,
   });
 }
 
 /** Payments list. */
-export function createPaymentsQuery(enrollmentId?: string, feeId?: string) {
+export function createPaymentsQuery(orgId: string) {
   return createQuery({
-    queryKey: ["payments", enrollmentId, feeId],
-    queryFn: () => commands.finance.listPayments(enrollmentId, feeId),
+    queryKey: ["payments", orgId],
+    queryFn: () => commands.finance.listPayments(orgId),
+    enabled: !!orgId,
     staleTime: 2 * 60 * 1000,
   });
 }
@@ -33,10 +34,10 @@ export function createAccountsQuery(orgId: string) {
 }
 
 /** Transaction/leaf accounts query. */
-export function createTransactionAccountsQuery() {
+export function createTransactionAccountsQuery(orgId: string) {
   return createQuery({
-    queryKey: ["transaction-accounts"],
-    queryFn: () => commands.finance.listTransactionAccounts(),
+    queryKey: ["transaction-accounts", orgId],
+    queryFn: () => commands.finance.listTransactionAccounts(orgId),
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -65,12 +66,18 @@ export function createFeeTemplatesQuery(orgId: string) {
   });
 }
 
-/** Student fees for an enrollment. */
-export function createStudentFeesQuery(enrollmentId: string) {
+/** Student fees. Pass orgId to get all fees for org, or enrollmentId to get fees for specific enrollment. */
+export function createStudentFeesQuery(
+  orgOrEnrollmentId: string,
+  isOrgId: boolean = true,
+) {
   return createQuery({
-    queryKey: ["student-fees", enrollmentId],
-    queryFn: () => commands.finance.listStudentFees(enrollmentId),
-    enabled: !!enrollmentId,
+    queryKey: ["student-fees", orgOrEnrollmentId],
+    queryFn: () =>
+      isOrgId
+        ? commands.finance.listAllStudentFees(orgOrEnrollmentId)
+        : commands.finance.listStudentFees(orgOrEnrollmentId),
+    enabled: !!orgOrEnrollmentId,
     staleTime: 2 * 60 * 1000,
   });
 }
