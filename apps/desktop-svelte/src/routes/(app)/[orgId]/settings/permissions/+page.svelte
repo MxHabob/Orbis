@@ -121,14 +121,28 @@ onMount(async () => {
 async function loadPermissions() {
   isLoading = true;
   try {
-    const rawRules = await commands.iam.getRolePermissions();
-    rules = rawRules.map((r: any) => ({
-      role: r.role,
-      document_type: r.document_type,
-      level: r.level,
-      only_if_creator: r.only_if_creator,
-      actions: r.actions || [],
-    }));
+    // Load permissions for all known roles and aggregate
+    const allRules: PermissionRule[] = [];
+    const roleNames = ["super_admin", "admin", ...standardRoles];
+    await Promise.all(
+      roleNames.map(async (role) => {
+        try {
+          const rawRules = await commands.iam.getRolePermissions(role);
+          for (const r of rawRules) {
+            allRules.push({
+              role: r.role,
+              document_type: r.document_type,
+              level: r.level,
+              only_if_creator: r.only_if_creator,
+              actions: r.actions || [],
+            });
+          }
+        } catch {
+          // Role may have no permissions yet — that's OK
+        }
+      }),
+    );
+    rules = allRules;
     initialRolesList = Array.from(new Set(rules.map((r) => r.role)));
     hasUnsavedChanges = false;
   } catch (e) {

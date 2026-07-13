@@ -2,30 +2,7 @@
 // Svelte 5 Runes-based exam sessions and related UI state.
 // No server data is stored directly in $state lists.
 
-export interface ExamSession {
-  id: string;
-  org_id: string;
-  period_id: string;
-  name: string;
-  name_ar?: string | null;
-  session_type: string;
-  status: string;
-  start_date: string;
-  end_date: string;
-  subjects_count?: number;
-  students_count?: number;
-  [key: string]: unknown;
-}
-
-export interface ExamSubject {
-  id: string;
-  exam_session_id: string;
-  subject_id: string;
-  max_score: number;
-  duration_minutes: number;
-  exam_type: string;
-  [key: string]: unknown;
-}
+import type { ExamSession, ExamSubject } from "@orbis/sdk-core";
 
 class ExamsStore {
   // UI-only selection state

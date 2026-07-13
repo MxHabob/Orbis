@@ -35,7 +35,7 @@ import {
   createPromotionJobsQuery,
 } from "$lib/features/academics/year-queries";
 import { createExamSessionsQuery } from "$lib/features/exams/queries";
-    import { extractErrorMessage } from "$lib/core/ipc/error";
+import { extractErrorMessage } from "$lib/core/ipc";
 
 let { data }: { data: { orgId: string } } = $props();
 

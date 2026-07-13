@@ -27,7 +27,7 @@ export function prefetchRouteData(route: string, orgId: string) {
     case "finance":
       queryClient.prefetchQuery({
         queryKey: ["treasuries", orgId],
-        queryFn: () => commands.finance.listTreasuries(),
+        queryFn: () => commands.finance.listTreasuries(orgId),
         staleTime: 5 * 60 * 1000,
       });
       break;

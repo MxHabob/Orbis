@@ -153,3 +153,40 @@ pub async fn search_users(
     Ok(serde_json::to_value(result).unwrap())
 }
 
+// ── Role Permission Commands ─────────────────────────────────────────
+
+#[tauri::command]
+pub async fn get_role_permissions(state: State<'_, Arc<AppState>>, role: String) -> CmdResult<serde_json::Value> {
+    use sea_orm::{EntityTrait, ColumnTrait, QueryFilter};
+    let db = state.db();
+    let perms = svc_iam::entities::role_permission::Entity::find()
+        .filter(svc_iam::entities::role_permission::Column::Role.eq(&role))
+        .all(&db).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(perms).unwrap())
+}
+
+#[tauri::command]
+pub async fn save_role_permissions(state: State<'_, Arc<AppState>>, role: String, permissions: Vec<serde_json::Value>) -> CmdResult<()> {
+    use sea_orm::{EntityTrait, ColumnTrait, QueryFilter, ActiveModelTrait, ActiveValue::Set};
+    let db = state.db();
+
+    // Delete existing permissions for this role
+    svc_iam::entities::role_permission::Entity::delete_many()
+        .filter(svc_iam::entities::role_permission::Column::Role.eq(&role))
+        .exec(&db).await.map_err(CommandError::from)?;
+
+    // Insert new permissions
+    let now = chrono::Utc::now().to_rfc3339();
+    for perm in permissions {
+        let active = svc_iam::entities::role_permission::ActiveModel {
+            role: Set(role.clone()),
+            document_type: Set(perm["document_type"].as_str().unwrap_or_default().to_string()),
+            level: Set(perm["level"].as_i64().unwrap_or(0) as i32),
+            only_if_creator: Set(perm["only_if_creator"].as_i64().unwrap_or(0) as i32),
+            actions: Set(perm["actions"].as_str().unwrap_or("read").to_string()),
+            created_at: Set(now.clone()),
+        };
+        active.insert(&db).await.map_err(CommandError::from)?;
+    }
+    Ok(())
+}

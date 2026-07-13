@@ -126,7 +126,7 @@ async function loadData() {
 
 async function loadCurrencies() {
   try {
-    const list = await commands.finance.listCurrencies();
+    const list = await commands.finance.listCurrencies(data.orgId);
     if (list && list.length > 0) {
       currencies = list.map((c) => ({
         code: c.code,

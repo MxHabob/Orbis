@@ -178,3 +178,18 @@ async fn resolve_org_id(db: &sea_orm::DatabaseConnection) -> Result<String, Comm
     Ok(user.org_id)
 }
 
+// ── Student Ordering Commands ────────────────────────────────────────
+
+#[tauri::command]
+pub async fn get_student_ordering(state: State<'_, Arc<AppState>>, org_id: String, period_id: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let r = ops::ordering::list_ordering(&ctx, &period_id).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(r).unwrap())
+}
+
+#[tauri::command]
+pub async fn rebuild_student_ordering(state: State<'_, Arc<AppState>>, org_id: String, session_id: String) -> CmdResult<()> {
+    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    ops::ordering::generate_ordering(&ctx, &session_id).await.map_err(CommandError::from)
+}
+

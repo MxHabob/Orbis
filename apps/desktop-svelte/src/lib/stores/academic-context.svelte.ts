@@ -85,6 +85,28 @@ class AcademicContextStore {
     );
   }
 
+  /** Alias for periods — used by TitleBar and other shell components. */
+  get allPeriods(): AcademicPeriod[] {
+    return this.periods;
+  }
+
+  /**
+   * Derived phase of the active period.
+   * Computed from period status, enrollment, and grade-entry flags.
+   */
+  get periodPhase(): "pre_start" | "active" | "exams" | "grade_entry" | "closed" | null {
+    const period = this.activePeriod;
+    if (!period) return null;
+    if (period.status === "closed" || period.status === "archived") return "closed";
+    if (period.is_grade_entry_open === 1) return "grade_entry";
+    if (period.exam_start && period.exam_end) {
+      const now = new Date().toISOString().slice(0, 10);
+      if (now >= period.exam_start && now <= period.exam_end) return "exams";
+    }
+    if (period.status === "active") return "active";
+    return "pre_start";
+  }
+
   async resolveContext(orgId: string) {
     this.orgId = orgId;
     this.isLoading = true;

@@ -214,135 +214,18 @@ export const commands: OrbisCommands = {
 
     listDiscountTemplates: (orgId) => cmd("list_discount_templates", { orgId }),
     createDiscountTemplate: (data) => cmd("create_discount_template", { data }),
-    listCurrencies: async () => {
-      const stored =
-        typeof window !== "undefined"
-          ? window.localStorage.getItem("orbis_currencies")
-          : null;
-      if (stored) {
-        try {
-          return JSON.parse(stored);
-        } catch {}
-      }
-      const defaults = [
-        {
-          code: "SAR",
-          name: "Saudi Riyal",
-          symbol: "ر.س",
-          symbol_position: "after",
-          decimal_places: 2,
-          exchange_rate: 1.0,
-          is_base: true,
-        },
-        {
-          code: "USD",
-          name: "US Dollar",
-          symbol: "$",
-          symbol_position: "before",
-          decimal_places: 2,
-          exchange_rate: 3.75,
-          is_base: false,
-        },
-        {
-          code: "EUR",
-          name: "Euro",
-          symbol: "€",
-          symbol_position: "before",
-          decimal_places: 2,
-          exchange_rate: 4.0,
-          is_base: false,
-        },
-      ];
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(
-          "orbis_currencies",
-          JSON.stringify(defaults),
-        );
-      }
-      return defaults;
-    },
-    createCurrency: async (data: any) => {
-      if (typeof window === "undefined") return data;
-      const currencies = await commands.finance.listCurrencies();
-      const newCurr = {
-        code: data.code,
-        name: data.name,
-        symbol: data.symbol,
-        symbol_position: data.symbol_position || "after",
-        decimal_places: data.decimal_places || 2,
-        exchange_rate: Number(data.exchange_rate) || 1.0,
-        is_base: !!data.is_base,
-      };
-      if (newCurr.is_base) {
-        currencies.forEach((c) => (c.is_base = false));
-      }
-      currencies.push(newCurr as any);
-      window.localStorage.setItem(
-        "orbis_currencies",
-        JSON.stringify(currencies),
-      );
-      return newCurr as any;
-    },
-    updateCurrency: async (orgId, code, data) => {
-      if (typeof window === "undefined") return {} as any;
-      const currencies = await commands.finance.listCurrencies();
-      const target = currencies.find((c) => c.code === code);
-      if (target) {
-        if (data.exchange_rate !== undefined)
-          target.exchange_rate = Number(data.exchange_rate);
-        window.localStorage.setItem(
-          "orbis_currencies",
-          JSON.stringify(currencies),
-        );
-        return target;
-      }
-      throw new Error("Currency not found");
-    },
-    deleteCurrency: async (orgId, code) => {
-      if (typeof window === "undefined") return;
-      let currencies = await commands.finance.listCurrencies();
-      currencies = currencies.filter((c) => c.code !== code);
-      window.localStorage.setItem(
-        "orbis_currencies",
-        JSON.stringify(currencies),
-      );
-    },
+    listCurrencies: (orgId) => cmd("list_currencies", { orgId }),
+    createCurrency: (orgId, data) => cmd("create_currency", { orgId, data }),
+    updateCurrency: (orgId, code, data) => cmd("update_currency", { orgId, code, data }),
+    deleteCurrency: (orgId, code) => cmd("delete_currency", { orgId, code }),
     seedDefaultFinancials: async (orgId) => {
       return;
     },
 
     listJournalEntries: (orgId) => cmd("list_journal_entries", { orgId }),
 
-    listFiscalYears: async (orgId) => {
-      const stored =
-        typeof window !== "undefined"
-          ? window.localStorage.getItem("orbis_fiscal_years")
-          : null;
-      if (stored) {
-        try {
-          return JSON.parse(stored);
-        } catch {}
-      }
-      return [];
-    },
-    createFiscalYear: async (orgId) => {
-      if (typeof window === "undefined") return {} as any;
-      const years = await commands.finance.listFiscalYears(orgId);
-      const yearStr = new Date().getFullYear().toString();
-      const newYear = {
-        id: "fy_" + Date.now(),
-        org_id: orgId,
-        name: `السنة المالية ${yearStr}`,
-        start_date: `${yearStr}-01-01`,
-        end_date: `${yearStr}-12-31`,
-        status: "open",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      years.push(newYear as any);
-      window.localStorage.setItem("orbis_fiscal_years", JSON.stringify(years));
-      return newYear as any;
-    },
+    listFiscalYears: (orgId) => cmd("list_fiscal_years", { orgId }),
+    createFiscalYear: (orgId, data) => cmd("create_fiscal_year", { orgId, data }),
   },
 
   // ═══════════════════════════════════════════════════════════════
@@ -413,62 +296,10 @@ export const commands: OrbisCommands = {
       cmd("list_seating_numbers", { examSubjectId }),
     generateOrdering: (sessionId) =>
       cmd("generate_exam_ordering", { sessionId }),
-    getOrdering: async (orgId, periodId) => {
-      const stored =
-        typeof window !== "undefined"
-          ? window.localStorage.getItem(`orbis_exam_ordering_${periodId}`)
-          : null;
-      if (stored) {
-        try {
-          return JSON.parse(stored);
-        } catch {}
-      }
-      return [];
-    },
-    rebuildOrdering: async (orgId, periodId, strategy) => {
-      if (typeof window === "undefined") return [];
-      const enrollments = await commands.academic.listEnrollments(orgId);
-      const classes = await commands.academic.listClasses(orgId, periodId);
-      const classMap = new Map(classes.map((c) => [c.id, c.name_ar || c.name]));
-
-      const students = enrollments.map((e) => ({
-        id: e.id,
-        student_id: e.student_id,
-        student_name_ar: e.full_name || e.name_ar || "طالب",
-        student_name_en: e.name_en || "Student",
-        academic_number: e.student_number || e.id,
-        class_name: classMap.get(e.class_id) || "الصف",
-        status: e.status || "active",
-      }));
-
-      if (strategy === "alphabetical_ar") {
-        students.sort((a, b) =>
-          a.student_name_ar.localeCompare(b.student_name_ar, "ar"),
-        );
-      } else if (strategy === "alphabetical_en") {
-        students.sort((a, b) =>
-          a.student_name_en.localeCompare(b.student_name_en, "en"),
-        );
-      }
-
-      const ordered = students.map((s, idx) => ({
-        ...s,
-        ordinal: idx + 1,
-      }));
-
-      window.localStorage.setItem(
-        `orbis_exam_ordering_${periodId}`,
-        JSON.stringify(ordered),
-      );
-      return ordered;
-    },
-    freezeOrdering: async (orgId, periodId, userId) => {
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(
-          `orbis_exam_ordering_frozen_${periodId}`,
-          "true",
-        );
-      }
+    getOrdering: (orgId, periodId) => cmd("get_student_ordering", { orgId, periodId }),
+    rebuildOrdering: (orgId, sessionId) => cmd("rebuild_student_ordering", { orgId, sessionId }),
+    freezeOrdering: async (_orgId, _periodId, _userId) => {
+      // TODO: Implement freeze ordering in Rust backend
     },
   },
 
@@ -516,69 +347,8 @@ export const commands: OrbisCommands = {
     changeRole: (userId, data) => cmd("change_role", { userId, data }),
     saveUserRoles: (userId, roles) => cmd("save_user_roles", { userId, roles }),
 
-    getRolePermissions: async () => {
-      const stored =
-        typeof window !== "undefined"
-          ? window.localStorage.getItem("orbis_role_permissions")
-          : null;
-      if (stored) {
-        try {
-          return JSON.parse(stored);
-        } catch {}
-      }
-      return [
-        {
-          role: "super_admin",
-          document_type: "*",
-          level: 3,
-          only_if_creator: false,
-          actions: ["*"],
-        },
-        {
-          role: "admin",
-          document_type: "*",
-          level: 2,
-          only_if_creator: false,
-          actions: ["read", "write"],
-        },
-        {
-          role: "teacher",
-          document_type: "student",
-          level: 1,
-          only_if_creator: false,
-          actions: ["read"],
-        },
-        {
-          role: "teacher",
-          document_type: "grades",
-          level: 1,
-          only_if_creator: false,
-          actions: ["read", "write"],
-        },
-        {
-          role: "accountant",
-          document_type: "finance",
-          level: 2,
-          only_if_creator: false,
-          actions: ["*"],
-        },
-      ];
-    },
-    saveRolePermissions: async (role, rules) => {
-      if (typeof window === "undefined") return;
-      const stored = window.localStorage.getItem("orbis_role_permissions");
-      let allRules: any[] = [];
-      if (stored) {
-        try {
-          allRules = JSON.parse(stored);
-        } catch {}
-      }
-      allRules = allRules.filter((r) => r.role !== role).concat(rules);
-      window.localStorage.setItem(
-        "orbis_role_permissions",
-        JSON.stringify(allRules),
-      );
-    },
+    getRolePermissions: (role) => cmd("get_role_permissions", { role }),
+    saveRolePermissions: (role, permissions) => cmd("save_role_permissions", { role, permissions }),
   },
 
   // ═══════════════════════════════════════════════════════════════

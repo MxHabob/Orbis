@@ -30,7 +30,7 @@ import {
   useRunAutopilotTick,
 } from "$lib/features/ai/queries";
 import { toast } from "svelte-sonner";
-import { extractErrorMessage } from "$lib/core/ipc/error";
+import { extractErrorMessage } from "$lib/core/ipc";
 
 let { orgId = "" }: { orgId?: string } = $props();
 

@@ -75,35 +75,36 @@ export function createAssessmentsQuery(params: {
 }
 
 /** Time slots for an academic year. */
-export function createTimeSlotsQuery(periodId?: string) {
+export function createTimeSlotsQuery(orgId?: string, periodId?: string) {
   return createQuery({
-    queryKey: ["time-slots", periodId],
-    queryFn: () => commands.scheduling.listTimeSlots(periodId!),
-    enabled: !!periodId,
+    queryKey: ["time-slots", orgId, periodId],
+    queryFn: () => commands.scheduling.listTimeSlots(orgId!, periodId!),
+    enabled: !!orgId && !!periodId,
     staleTime: 10 * 60 * 1000,
   });
 }
 
 /** Class schedule lessons. */
-export function createClassScheduleQuery(periodId?: string, classId?: string) {
+export function createClassScheduleQuery(orgId?: string, periodId?: string, classId?: string) {
   return createQuery({
-    queryKey: ["class-schedule", periodId, classId],
-    queryFn: () => commands.scheduling.listLessonsByClass(periodId!, classId!),
-    enabled: !!periodId && !!classId,
+    queryKey: ["class-schedule", orgId, periodId, classId],
+    queryFn: () => commands.scheduling.listLessonsByClass(orgId!, periodId!, classId!),
+    enabled: !!orgId && !!periodId && !!classId,
     staleTime: 2 * 60 * 1000,
   });
 }
 
 /** Teacher schedule lessons. */
 export function createTeacherScheduleQuery(
+  orgId?: string,
   periodId?: string,
   teacherId?: string,
 ) {
   return createQuery({
-    queryKey: ["teacher-schedule", periodId, teacherId],
+    queryKey: ["teacher-schedule", orgId, periodId, teacherId],
     queryFn: () =>
-      commands.scheduling.listLessonsByTeacher(periodId!, teacherId!),
-    enabled: !!periodId && !!teacherId,
+      commands.scheduling.listLessonsByTeacher(orgId!, periodId!, teacherId!),
+    enabled: !!orgId && !!periodId && !!teacherId,
     staleTime: 2 * 60 * 1000,
   });
 }

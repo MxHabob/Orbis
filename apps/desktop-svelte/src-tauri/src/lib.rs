@@ -190,6 +190,8 @@ pub fn run() {
             commands::iam::thin::revoke_role,
             commands::iam::thin::list_audit_logs,
             commands::iam::thin::search_users,
+            commands::iam::thin::get_role_permissions,
+            commands::iam::thin::save_role_permissions,
 
             // Academics commands
             commands::academic::thin::list_classes,
@@ -291,6 +293,12 @@ pub fn run() {
             commands::finance::thin::list_transaction_accounts,
             commands::finance::thin::get_account_statement,
             commands::finance::thin::list_active_fee_templates,
+            commands::finance::thin::list_currencies,
+            commands::finance::thin::create_currency,
+            commands::finance::thin::update_currency,
+            commands::finance::thin::delete_currency,
+            commands::finance::thin::list_fiscal_years,
+            commands::finance::thin::create_fiscal_year,
 
             // Lifeperiod commands
             commands::organization::thin::get_organization,
@@ -390,6 +398,8 @@ pub fn run() {
             commands::exam::thin::list_seating,
             commands::exam::thin::generate_exam_schedule,
             commands::exam::thin::list_schedule,
+            commands::exam::thin::get_student_ordering,
+            commands::exam::thin::rebuild_student_ordering,
         ])
         .setup(move |app| {
             // Add updater plugin conditionally for desktop

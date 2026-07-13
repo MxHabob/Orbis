@@ -98,10 +98,11 @@ export interface FinanceCommands {
   }): Promise<DiscountTemplate>;
 
   // ── Currencies ──────────────────────────────────────────────
-  listCurrencies(): Promise<Currency[]>;
-  createCurrency(data: {
+  listCurrencies(orgId: string): Promise<Currency[]>;
+  createCurrency(orgId: string, data: {
     code: string;
     name: string;
+    name_ar?: string;
     symbol: string;
     symbol_position: string;
     decimal_places: number;
@@ -111,7 +112,7 @@ export interface FinanceCommands {
   updateCurrency(
     orgId: string,
     code: string,
-    data: { exchange_rate: number },
+    data: { exchange_rate?: number; is_active?: boolean },
   ): Promise<Currency>;
   deleteCurrency(orgId: string, code: string): Promise<void>;
   seedDefaultFinancials(orgId: string): Promise<void>;
@@ -121,5 +122,10 @@ export interface FinanceCommands {
 
   // ── Fiscal Years ────────────────────────────────────────────
   listFiscalYears(orgId: string): Promise<FiscalYear[]>;
-  createFiscalYear(orgId: string): Promise<FiscalYear>;
+  createFiscalYear(orgId: string, data?: {
+    name: string;
+    start_date: string;
+    end_date: string;
+    status?: string;
+  }): Promise<FiscalYear>;
 }

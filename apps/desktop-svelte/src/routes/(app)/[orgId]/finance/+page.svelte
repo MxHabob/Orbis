@@ -10,7 +10,7 @@ directly inside the cards' headers.
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { AlertCircle } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
-import { extractErrorMessage } from "$lib/core/ipc/error";
+import { extractErrorMessage } from "$lib/core/ipc";
 
 import {
   createStudentFeesQuery,

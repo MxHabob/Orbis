@@ -185,3 +185,78 @@ async fn resolve_org_id(db: &sea_orm::DatabaseConnection) -> Result<String, Comm
     Ok(user.org_id)
 }
 
+// ── Currency Commands ────────────────────────────────────────────────
+
+#[tauri::command]
+pub async fn list_currencies(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let r = ops::currency::list(&ctx).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(r).unwrap())
+}
+
+#[tauri::command]
+pub async fn create_currency(state: State<'_, Arc<AppState>>, org_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let code = data["code"].as_str().unwrap_or_default().to_string();
+    let name = data["name"].as_str().unwrap_or_default().to_string();
+    let name_ar = data["name_ar"].as_str().map(|s| s.to_string());
+    let symbol = data["symbol"].as_str().unwrap_or("$").to_string();
+    let symbol_position = data["symbol_position"].as_str().unwrap_or("before").to_string();
+    let decimal_places = data["decimal_places"].as_i64().unwrap_or(2) as i32;
+    let exchange_rate = data["exchange_rate"].as_f64().unwrap_or(1.0);
+    let is_base = data["is_base"].as_bool().unwrap_or(false);
+    let r = ops::currency::create(&ctx, code, name, name_ar, symbol, symbol_position, decimal_places, exchange_rate, is_base)
+        .await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(r).unwrap())
+}
+
+#[tauri::command]
+pub async fn update_currency(state: State<'_, Arc<AppState>>, org_id: String, code: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let exchange_rate = data["exchange_rate"].as_f64();
+    let is_active = data["is_active"].as_bool();
+    let r = ops::currency::update(&ctx, &code, exchange_rate, is_active)
+        .await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(r).unwrap())
+}
+
+#[tauri::command]
+pub async fn delete_currency(state: State<'_, Arc<AppState>>, org_id: String, code: String) -> CmdResult<()> {
+    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    ops::currency::delete(&ctx, &code).await.map_err(CommandError::from)
+}
+
+// ── Fiscal Year Commands ─────────────────────────────────────────────
+
+#[tauri::command]
+pub async fn list_fiscal_years(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
+    use sea_orm::{EntityTrait, ColumnTrait, QueryFilter, QueryOrder};
+    let db = state.db();
+    let r = svc_finance::entities::fiscal_year::Entity::find()
+        .filter(svc_finance::entities::fiscal_year::Column::OrgId.eq(&org_id))
+        .order_by_desc(svc_finance::entities::fiscal_year::Column::StartDate)
+        .all(&db).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(r).unwrap())
+}
+
+#[tauri::command]
+pub async fn create_fiscal_year(state: State<'_, Arc<AppState>>, org_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
+    use sea_orm::ActiveModelTrait;
+    let db = state.db();
+    let id = uuid::Uuid::new_v4().to_string();
+    let now = chrono::Utc::now().to_rfc3339();
+    let model = svc_finance::entities::fiscal_year::Model {
+        id: id.clone(),
+        org_id,
+        name: data["name"].as_str().unwrap_or_default().to_string(),
+        start_date: data["start_date"].as_str().unwrap_or_default().to_string(),
+        end_date: data["end_date"].as_str().unwrap_or_default().to_string(),
+        status: data["status"].as_str().unwrap_or("active").to_string(),
+        created_at: now.clone(),
+        updated_at: now,
+    };
+    let active: svc_finance::entities::fiscal_year::ActiveModel = model.into();
+    let created = active.insert(&db).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(created).unwrap())
+}
+

@@ -17,7 +17,6 @@
 export type * from "./types/index";
 export {
   type AcademicPeriod,
-  type AcademicPeriod,
   type Class,
   type Enrollment,
   type Subject,
@@ -93,5 +92,6 @@ export { Permissions } from "./permissions";
 export { EventTypes } from "./events";
 
 // ── Shared aliases ──────────────────────────────────────────────
-export type GuardianLink = StudentGuardian;
+import type { StudentGuardian as _StudentGuardian } from "./types/academic";
+export type GuardianLink = _StudentGuardian;
 export type JsonRecord = Record<string, any>;
