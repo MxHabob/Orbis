@@ -185,4 +185,66 @@ impl AgentSessionManager {
 
         Ok(response)
     }
+
+    // ── Logs & Action Approval ────────────────────────────────────────
+
+    pub async fn get_session_logs(
+        db: &DatabaseConnection,
+        org_id: &str,
+        session_id: &str,
+    ) -> Result<Vec<crate::entities::ai_action_log::Model>, AppError> {
+        use crate::entities::ai_action_log;
+        use sea_orm::QueryOrder;
+        
+        Ok(ai_action_log::Entity::find()
+            .filter(ai_action_log::Column::OrgId.eq(org_id))
+            .filter(ai_action_log::Column::SessionId.eq(session_id))
+            .order_by_desc(ai_action_log::Column::ExecutedAt)
+            .all(db)
+            .await?)
+    }
+
+    pub async fn approve_action(
+        db: &DatabaseConnection,
+        _org_id: &str,
+        action_log_id: &str,
+        approved_by: &str,
+    ) -> Result<(), AppError> {
+        use crate::entities::ai_action_log;
+        
+        let log = ai_action_log::Entity::find_by_id(action_log_id.to_string())
+            .one(db)
+            .await?
+            .ok_or_else(|| AppError::not_found("ai_action_log", action_log_id))?;
+            
+        let mut active: ai_action_log::ActiveModel = log.into();
+        active.status = Set(ai_action_log::action_status::APPROVED.to_string());
+        active.approved_by = Set(Some(approved_by.to_string()));
+        active.approved_at = Set(Some(Utc::now().to_rfc3339()));
+        active.update(db).await?;
+        
+        Ok(())
+    }
+
+    pub async fn reject_action(
+        db: &DatabaseConnection,
+        _org_id: &str,
+        action_log_id: &str,
+        _rejected_by: &str,
+        reason: &str,
+    ) -> Result<(), AppError> {
+        use crate::entities::ai_action_log;
+        
+        let log = ai_action_log::Entity::find_by_id(action_log_id.to_string())
+            .one(db)
+            .await?
+            .ok_or_else(|| AppError::not_found("ai_action_log", action_log_id))?;
+            
+        let mut active: ai_action_log::ActiveModel = log.into();
+        active.status = Set(ai_action_log::action_status::REJECTED.to_string());
+        active.rejection_reason = Set(Some(reason.to_string()));
+        active.update(db).await?;
+        
+        Ok(())
+    }
 }

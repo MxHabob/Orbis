@@ -11,7 +11,7 @@ import { commands } from "$lib/core/ipc";
 export function createAutopilotConfigQuery(orgId: string) {
   return createQuery({
     queryKey: ["autopilot-config", orgId],
-    queryFn: () => commands.platform.getAutopilotStatus(orgId),
+    queryFn: () => commands.platform.getOrgPolicy(orgId),
     enabled: !!orgId,
     staleTime: 5 * 60 * 1000,
   });
@@ -44,15 +44,17 @@ export function useConfigureAutopilot() {
       paused: boolean;
       mode: string;
     }) =>
-      commands.platform.configureAutopilot(
-        vars.orgId,
-        vars.isEnabled,
-        vars.paused,
-        vars.mode,
-      ),
+      commands.platform.updateOrgPolicy(vars.orgId, {
+        autopilot_enabled: vars.isEnabled && !vars.paused ? 1 : 0,
+        autopilot_mode: vars.mode,
+      }),
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({
         queryKey: ["autopilot-config", vars.orgId],
+      });
+      // Also invalidate org-policy queries since they share the same backend table
+      queryClient.invalidateQueries({
+        queryKey: ["org-policy", vars.orgId],
       });
     },
   });

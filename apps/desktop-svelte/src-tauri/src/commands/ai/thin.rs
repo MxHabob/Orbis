@@ -4,36 +4,12 @@ use tauri::State;
 use crate::state::AppState;
 use crate::commands::error::{CmdResult, CommandError};
 
-#[tauri::command]
-pub async fn autopilot_get_status(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
-    use sea_orm::{EntityTrait, ColumnTrait, QueryFilter};
-    use svc_organization::entities::academic_policy;
-    let db = state.db();
-    let config = academic_policy::Entity::find()
-        .filter(academic_policy::Column::OrgId.eq(&org_id))
-        .one(&db)
-        .await
-        .map_err(CommandError::from)?;
-    
-    match config {
-        Some(c) => Ok(serde_json::to_value(c).unwrap()),
-        None => {
-            Ok(serde_json::json!({
-                "autopilot_enabled": 0,
-                "autopilot_mode": "suggested"
-            }))
-        }
-    }
-}
+// Deleted autopilot_get_status
 
 #[tauri::command]
 pub async fn autopilot_get_tasks(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
-    use sea_orm::{EntityTrait, ColumnTrait, QueryFilter};
-    use autopilot::entities::autopilot_task;
     let db = state.db();
-    let tasks = autopilot_task::Entity::find()
-        .filter(autopilot_task::Column::OrgId.eq(&org_id))
-        .all(&db)
+    let tasks = autopilot::ops::get_tasks(&db, &org_id)
         .await
         .map_err(CommandError::from)?;
     Ok(serde_json::to_value(tasks).unwrap())
@@ -48,33 +24,7 @@ pub async fn autopilot_get_diagnostics(state: State<'_, Arc<AppState>>, org_id: 
     Ok(serde_json::to_value(report).unwrap())
 }
 
-#[tauri::command]
-pub async fn autopilot_configure(
-    state: State<'_, Arc<AppState>>,
-    org_id: String,
-    is_enabled: bool,
-    paused: bool,
-    mode: String,
-) -> CmdResult<()> {
-    use sea_orm::{EntityTrait, ColumnTrait, QueryFilter, ActiveModelTrait, ActiveValue::Set};
-    use svc_organization::entities::academic_policy;
-    let db = state.db();
-    let config = academic_policy::Entity::find()
-        .filter(academic_policy::Column::OrgId.eq(&org_id))
-        .one(&db)
-        .await
-        .map_err(CommandError::from)?;
-
-    let now = chrono::Utc::now().to_rfc3339();
-    if let Some(c) = config {
-        let mut active: academic_policy::ActiveModel = c.into();
-        active.autopilot_enabled = Set(if is_enabled && !paused { 1 } else { 0 });
-        active.autopilot_mode = Set(mode);
-        active.updated_at = Set(now);
-        active.save(&db).await.map_err(CommandError::from)?;
-    }
-    Ok(())
-}
+// Deleted autopilot_configure
 
 #[tauri::command]
 pub async fn autopilot_run_tick(
@@ -106,14 +56,8 @@ pub async fn agent_get_session_logs(
     org_id: String,
     session_id: String,
 ) -> CmdResult<serde_json::Value> {
-    use sea_orm::{EntityTrait, ColumnTrait, QueryFilter, QueryOrder};
-    use ai_gateway::entities::ai_action_log;
     let db = state.db();
-    let logs = ai_action_log::Entity::find()
-        .filter(ai_action_log::Column::OrgId.eq(&org_id))
-        .filter(ai_action_log::Column::SessionId.eq(&session_id))
-        .order_by_desc(ai_action_log::Column::ExecutedAt)
-        .all(&db)
+    let logs = ai_gateway::agent::AgentSessionManager::get_session_logs(&db, &org_id, &session_id)
         .await
         .map_err(CommandError::from)?;
     Ok(serde_json::to_value(logs).unwrap())
@@ -126,21 +70,10 @@ pub async fn agent_approve_action(
     action_log_id: String,
     approved_by: String,
 ) -> CmdResult<()> {
-    use sea_orm::{EntityTrait, ActiveModelTrait, ActiveValue::Set};
-    use ai_gateway::entities::ai_action_log;
     let db = state.db();
-    let log = ai_action_log::Entity::find_by_id(action_log_id.clone())
-        .one(&db)
+    ai_gateway::agent::AgentSessionManager::approve_action(&db, &_org_id, &action_log_id, &approved_by)
         .await
-        .map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::not_found("Action log not found"))?;
-
-    let now = chrono::Utc::now().to_rfc3339();
-    let mut active: ai_action_log::ActiveModel = log.into();
-    active.status = Set(ai_action_log::action_status::APPROVED.to_string());
-    active.approved_by = Set(Some(approved_by));
-    active.approved_at = Set(Some(now));
-    active.update(&db).await.map_err(CommandError::from)?;
+        .map_err(CommandError::from)?;
     Ok(())
 }
 
@@ -152,19 +85,10 @@ pub async fn agent_reject_action(
     _rejected_by: String,
     reason: String,
 ) -> CmdResult<()> {
-    use sea_orm::{EntityTrait, ActiveModelTrait, ActiveValue::Set};
-    use ai_gateway::entities::ai_action_log;
     let db = state.db();
-    let log = ai_action_log::Entity::find_by_id(action_log_id.clone())
-        .one(&db)
+    ai_gateway::agent::AgentSessionManager::reject_action(&db, &_org_id, &action_log_id, &_rejected_by, &reason)
         .await
-        .map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::not_found("Action log not found"))?;
-
-    let mut active: ai_action_log::ActiveModel = log.into();
-    active.status = Set(ai_action_log::action_status::REJECTED.to_string());
-    active.rejection_reason = Set(Some(reason));
-    active.update(&db).await.map_err(CommandError::from)?;
+        .map_err(CommandError::from)?;
     Ok(())
 }
 

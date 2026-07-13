@@ -124,7 +124,7 @@ const phaseLabel = $derived(getPhaseLabel(academicContext.periodPhase));
               <Activity size={16} strokeWidth={1.8} class="text-foreground" />
               {#if diagnostics && (diagnostics.stuck_tasks.length > 0 || diagnostics.overdue_tasks.length > 0)}
                 <span class="absolute -top-0.5 -inset-e-0.5 w-1.5 h-1.5 rounded-full bg-destructive border border-background animate-pulse"></span>
-              {:else if config?.is_enabled === 1 && !config?.paused_at}
+              {:else if config?.autopilot_enabled === 1}
                 <span class="absolute -top-0.5 -inset-e-0.5 w-1.5 h-1.5 rounded-full bg-brand-lime border border-background"></span>
               {:else}
                 <span class="absolute -top-0.5 -inset-e-0.5 w-1.5 h-1.5 rounded-full bg-muted-foreground/60 border border-background"></span>
@@ -153,13 +153,9 @@ const phaseLabel = $derived(getPhaseLabel(academicContext.periodPhase));
         
         {#if !config}
           <Skeleton class="h-3.5 w-10 rounded" />
-        {:else if config.is_enabled === 0}
+        {:else if config.autopilot_enabled === 0}
           <Badge variant="outline" class="text-[8px] h-3.5 px-1 font-bold uppercase text-muted-foreground">
             {m.autopilot_popover_status_disabled()}
-          </Badge>
-        {:else if config.paused_at}
-          <Badge variant="secondary" class="text-[8px] h-3.5 px-1 font-bold uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border-none">
-            {m.autopilot_popover_status_paused()}
           </Badge>
         {:else}
           <Badge variant="lime" class="text-[8px] h-3.5 px-1 font-bold uppercase tracking-wider">
@@ -179,11 +175,11 @@ const phaseLabel = $derived(getPhaseLabel(academicContext.periodPhase));
     </div>
 
     <!-- Status Details Panel -->
-    {#if config && config.is_enabled !== 0}
+    {#if config && config.autopilot_enabled !== 0}
       <div class="px-4 py-2 border-b border-border bg-background flex flex-col gap-1.5 text-[10px]">
         <div class="flex items-center justify-between">
           <span class="text-muted-foreground">الوضع:</span>
-          <span class="font-medium text-foreground">{config.mode === "strict" ? "صارم" : config.mode === "relaxed" ? "مرن" : "عادي"}</span>
+          <span class="font-medium text-foreground">{config.autopilot_mode === "strict" ? "صارم" : config.autopilot_mode === "relaxed" ? "مرن" : "عادي"}</span>
         </div>
         {#if diagnostics?.last_run_at}
           <div class="flex items-center justify-between">
@@ -197,10 +193,6 @@ const phaseLabel = $derived(getPhaseLabel(academicContext.periodPhase));
             <span class="font-medium text-foreground" dir="ltr">{formatDate(diagnostics.next_run_at, "datetime")}</span>
           </div>
         {/if}
-        <div class="flex items-center justify-between">
-          <span class="text-muted-foreground">التكرار:</span>
-          <span class="font-medium text-foreground">كل {config.interval_minutes} دقيقة</span>
-        </div>
       </div>
     {/if}
 
@@ -257,25 +249,6 @@ const phaseLabel = $derived(getPhaseLabel(academicContext.periodPhase));
           {diagnostics?.status === 'critical' ? 'Critical' : diagnostics?.status === 'warning' ? 'Warning' : 'Healthy'}
         </Badge>
       </div>
-
-      <div class="flex items-center justify-between">
-        <span class="text-muted-foreground">{m.autopilot_popover_timezone()}</span>
-        <span class="font-medium text-foreground">{config?.timezone || "Asia/Riyadh"}</span>
-      </div>
-
-      <div class="flex items-center justify-between">
-        <span class="text-muted-foreground">{m.autopilot_popover_check_interval()}</span>
-        <span class="font-medium text-foreground">
-          {m.autopilot_popover_minutes({ minutes: config?.check_interval_minutes ?? 60 })}
-        </span>
-      </div>
-
-      {#if config?.last_tick_at}
-        <div class="flex items-center justify-between">
-          <span class="text-muted-foreground">{m.autopilot_popover_last_run()}</span>
-          <span class="font-medium text-foreground">{formatDate(config.last_tick_at)}</span>
-        </div>
-      {/if}
     </div>
   </PopoverContent>
 </Popover>

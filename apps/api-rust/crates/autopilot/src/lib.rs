@@ -22,6 +22,7 @@
 pub mod entities;
 pub mod config;
 pub mod engine;
+pub mod ops;
 
 pub mod diagnostics;
 pub mod academic_evaluator;

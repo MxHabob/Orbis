@@ -90,15 +90,8 @@ export interface PlatformCommands {
   ): Promise<DocumentTemplate>;
 
   // ── AI Autopilot ──────────────────────────────────────────────
-  getAutopilotStatus(orgId: string): Promise<AutopilotStatus>;
   getAutopilotTasks(orgId: string): Promise<AutopilotTask[]>;
   getAutopilotDiagnostics(orgId: string): Promise<Record<string, unknown>>;
-  configureAutopilot(
-    orgId: string,
-    isEnabled: boolean,
-    paused: boolean,
-    mode: string,
-  ): Promise<void>;
   runAutopilotTick(orgId: string): Promise<void>;
 
   // ── AI Agent ──────────────────────────────────────────────────

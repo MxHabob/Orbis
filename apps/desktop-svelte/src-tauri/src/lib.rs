@@ -353,10 +353,8 @@ pub fn run() {
             commands::organization::thin::export_grades,
 
             // AI commands
-            commands::ai::thin::autopilot_get_status,
             commands::ai::thin::autopilot_get_tasks,
             commands::ai::thin::autopilot_get_diagnostics,
-            commands::ai::thin::autopilot_configure,
             commands::ai::thin::autopilot_run_tick,
             commands::ai::thin::agent_get_sessions,
             commands::ai::thin::agent_get_session_logs,

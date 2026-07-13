@@ -438,12 +438,9 @@ export const commands: OrbisCommands = {
       cmd("update_document_template", { orgId, templateId, data }),
 
     // AI Autopilot
-    getAutopilotStatus: (orgId) => cmd("autopilot_get_status", { orgId }),
     getAutopilotTasks: (orgId) => cmd("autopilot_get_tasks", { orgId }),
     getAutopilotDiagnostics: (orgId) =>
       cmd("autopilot_get_diagnostics", { orgId }),
-    configureAutopilot: (orgId, isEnabled, paused, mode) =>
-      cmd("autopilot_configure", { orgId, isEnabled, paused, mode }),
     runAutopilotTick: (orgId) => cmd("autopilot_run_tick", { orgId }),
 
     // Auth (desktop login flow)

@@ -338,12 +338,10 @@ export const commands: OrbisCommands = {
     getDocumentTemplate: (_orgId, templateId) =>
       http.get(`/api/document-templates/${templateId}`),
 
-    getAutopilotStatus: (_orgId) => http.get("/api/autopilot/status"),
-    getAutopilotTasks: (_orgId) => http.get("/api/autopilot/tasks"),
-    getAutopilotDiagnostics: (_orgId) => http.get("/api/autopilot/diagnostics"),
-    configureAutopilot: (_orgId, isEnabled, paused, mode) =>
-      http.post("/api/autopilot/configure", { isEnabled, paused, mode }),
-    runAutopilotTick: (_orgId) => http.post("/api/autopilot/tick"),
+    // ── AI Autopilot ──────────────────────────────────────────────
+    getAutopilotTasks: (orgId) => http.get(`/api/autopilot/tasks?orgId=${orgId}`),
+    getAutopilotDiagnostics: (orgId) => http.get(`/api/autopilot/diagnostics?orgId=${orgId}`),
+    runAutopilotTick: (orgId) => http.post(`/api/autopilot/tick`, { orgId }),
 
     listAgentSessions: (_orgId) => http.get("/api/agent/sessions"),
     getAgentSessionLogs: (_orgId, sessionId) =>
