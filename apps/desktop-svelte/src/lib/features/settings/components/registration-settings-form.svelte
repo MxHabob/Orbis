@@ -33,16 +33,6 @@ let { org, isSaving, onsave } = $props<{
   onsave: (registrationConfig: any) => void;
 }>();
 
-// Parse initial config
-let regConfig: any = {};
-if (org?.settings) {
-  try {
-    regConfig = JSON.parse(org.settings).registration_config || {};
-  } catch {
-    regConfig = {};
-  }
-}
-
 // Form state initialized once with props
 let institutionType = $state("school");
 let studentNumberPattern = $state("STU-{YEAR}-{SEQ}");
@@ -52,19 +42,6 @@ let requiredDocuments = $state<string[]>([
   "Birth Certificate",
   "National ID or Passport",
 ]);
-
-$effect(() => {
-  if (org?.settings) {
-    let conf: any = {};
-    try {
-      conf = JSON.parse(org.settings).registration_config || {};
-    } catch {}
-    institutionType = conf.institution_type || "school";
-    studentNumberPattern = conf.student_number_pattern || "STU-{YEAR}-{SEQ}";
-    rawStages = conf.stages || ["primary", "middle", "high"];
-    requiredDocuments = conf.required_documents || ["Birth Certificate", "National ID or Passport"];
-  }
-});
 let documentInput = $state("");
 
 // Field configurations
@@ -78,7 +55,6 @@ let requiredFields = $state<Record<string, boolean>>({
   mother_name: false,
   previous_school: false,
   documents: true,
-  ...(regConfig.required_fields || {}),
 });
 
 let activeFields = $state<Record<string, boolean>>({
@@ -91,14 +67,29 @@ let activeFields = $state<Record<string, boolean>>({
   mother_name: true,
   previous_school: true,
   documents: true,
-  ...(regConfig.active_fields || {}),
 });
 
 let preventDuplicates = $state<Record<string, boolean>>({
   national_id: true,
   email: false,
   phone: false,
-  ...(regConfig.prevent_duplicates || {}),
+});
+
+$effect(() => {
+  if (org?.settings) {
+    let conf: any = {};
+    try {
+      conf = JSON.parse(org.settings).registration_config || {};
+    } catch {}
+    institutionType = conf.institution_type || "school";
+    studentNumberPattern = conf.student_number_pattern || "STU-{YEAR}-{SEQ}";
+    rawStages = conf.stages || ["primary", "middle", "high"];
+    requiredDocuments = conf.required_documents || ["Birth Certificate", "National ID or Passport"];
+    
+    if (conf.required_fields) requiredFields = { ...requiredFields, ...conf.required_fields };
+    if (conf.active_fields) activeFields = { ...activeFields, ...conf.active_fields };
+    if (conf.prevent_duplicates) preventDuplicates = { ...preventDuplicates, ...conf.prevent_duplicates };
+  }
 });
 
 function addStage() {

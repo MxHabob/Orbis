@@ -52,11 +52,11 @@ const userId = $derived(authStore.userId);
 
 // TanStack Queries
 const queryClient = useQueryClient();
-const pendingQuery = createPendingApprovalsQuery(orgId, userRole);
-const myRequestsQuery = createOverrideRequestsQuery(orgId, {
+const pendingQuery = createPendingApprovalsQuery(() => orgId, () => userRole);
+const myRequestsQuery = createOverrideRequestsQuery(() => orgId, () => ({
   requested_by: userId,
-});
-const logQuery = createOverrideRequestsQuery(orgId, {});
+}));
+const logQuery = createOverrideRequestsQuery(() => orgId, () => ({}));
 
 const pendingItems = $derived(
   ($pendingQuery.data ?? []) as AcademicOverrideRequest[],
@@ -127,7 +127,7 @@ async function cancelRequest(requestId: string) {
   }
 }
 
-function riskBadgeVariant(level: string) {
+function riskBadgeVariant(level?: string | null) {
   switch (level) {
     case "low":
       return "secondary" as const;
@@ -158,9 +158,10 @@ function statusBadgeVariant(status: string) {
 }
 
 function parseApprovalChain(
-  chainJson: string,
+  chainJson?: string | null,
 ): Array<{ role: string; status: string; by: string; at: string }> {
   try {
+    if (!chainJson) return [];
     return JSON.parse(chainJson) || [];
   } catch {
     return [];
@@ -232,7 +233,7 @@ function parseApprovalChain(
                     <div class="flex items-start justify-between">
                       <div class="flex items-center gap-2">
                         <Badge variant="outline" class="text-[10px] capitalize">
-                          {request.override_type.replace(/_/g, " ")}
+                          {(request.override_type || "").replace(/_/g, " ")}
                         </Badge>
                         <Badge variant={riskBadgeVariant(request.risk_level)} class="text-[10px]">
                           {#if request.risk_level === "high" || request.risk_level === "critical"}

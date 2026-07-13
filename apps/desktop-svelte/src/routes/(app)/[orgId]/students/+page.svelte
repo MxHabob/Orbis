@@ -35,8 +35,8 @@ import { debounce } from "$lib/shared/utils/debounce";
 let { data }: { data: { orgId: string } } = $props();
 
 // TanStack Queries
-const enrollmentsQuery = createEnrollmentsQuery(data.orgId);
-const classesQuery = createClassesQuery(data.orgId);
+const enrollmentsQuery = createEnrollmentsQuery(() => data.orgId);
+const classesQuery = createClassesQuery(() => data.orgId);
 
 // Derived data from queries
 const enrollments = $derived($enrollmentsQuery.data ?? []);

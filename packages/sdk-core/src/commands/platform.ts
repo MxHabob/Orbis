@@ -45,6 +45,7 @@ export interface PlatformCommands {
   listCalendarEvents(orgId: string, periodId: string): Promise<any[]>;
   listPendingCalendarEvents(orgId: string): Promise<any[]>;
   getOrgPolicy(orgId: string): Promise<AcademicPolicy | null>;
+  updateOrgPolicy(orgId: string, policy: Partial<AcademicPolicy>): Promise<void>;
 
   // ── Overrides / Approvals ─────────────────────────────────────
   listOverrideRequests(

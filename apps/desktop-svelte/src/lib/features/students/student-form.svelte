@@ -40,7 +40,7 @@ async function handleSave(status?: string) {
 }
 
 // Fetch classes via TanStack Query (complying with AGENTS.md §8.1)
-const classesQuery = createClassesQuery(orgId);
+const classesQuery = createClassesQuery(() => orgId);
 
 $effect(() => {
   if ($classesQuery.data) {

@@ -39,18 +39,11 @@ import {
   Cpu,
 } from "lucide-svelte";
 import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
-import {
-  createAutopilotConfigQuery,
-  useConfigureAutopilot,
-} from "$lib/features/ai/queries";
-
 let { data }: { data: { orgId: string } } = $props();
 const orgId = $derived(data.orgId);
 
 const queryClient = useQueryClient();
-const policyQuery = createOrgAcademicPolicyQuery(orgId);
-const autopilotConfigQuery = createAutopilotConfigQuery(orgId);
-const configureAutopilotMutation = useConfigureAutopilot();
+const policyQuery = createOrgAcademicPolicyQuery(() => orgId);
 
 // Form states
 let isSaving = $state(false);
@@ -58,53 +51,38 @@ let form = $state({
   default_grading_system: "percentage",
   default_passing_grade: 50,
   default_max_grade: 100,
-  enrollment_auto_close_on_capacity: false,
+  enrollment_auto_close: false,
   allow_late_enrollment: false,
-  late_enrollment_requires_approval: false,
-  grade_entry_auto_close_on_deadline: false,
-  allow_grade_modification_after_close: false,
-  grade_modification_requires_approval: false,
-  default_event_execution_mode: "suggested",
-});
-
-let autopilotForm = $state({
-  isEnabled: false,
-  paused: false,
-  mode: "suggested",
+  late_enrollment_approval: false,
+  grade_entry_auto_close: false,
+  allow_grade_edit_after_close: false,
+  grade_edit_approval: false,
+  autopilot_mode: "suggested",
+  autopilot_enabled: false,
+  auto_open_enrollment: false,
+  auto_close_enrollment: false,
+  auto_open_grade_entry: false,
 });
 
 // Sync database record to local form state
 $effect(() => {
   if ($policyQuery.data) {
-    const d = $policyQuery.data;
+    const d = $policyQuery.data as any; // Type workaround
     form = {
       default_grading_system: d.default_grading_system || "percentage",
       default_passing_grade: d.default_passing_grade ?? 50,
       default_max_grade: d.default_max_grade ?? 100,
-      enrollment_auto_close_on_capacity:
-        d.enrollment_auto_close_on_capacity === 1,
+      enrollment_auto_close: d.enrollment_auto_close === 1,
       allow_late_enrollment: d.allow_late_enrollment === 1,
-      late_enrollment_requires_approval:
-        d.late_enrollment_requires_approval === 1,
-      grade_entry_auto_close_on_deadline:
-        d.grade_entry_auto_close_on_deadline === 1,
-      allow_grade_modification_after_close:
-        d.allow_grade_modification_after_close === 1,
-      grade_modification_requires_approval:
-        d.grade_modification_requires_approval === 1,
-      default_event_execution_mode:
-        d.default_event_execution_mode || "suggested",
-    };
-  }
-});
-
-$effect(() => {
-  if ($autopilotConfigQuery.data) {
-    const cfg = $autopilotConfigQuery.data;
-    autopilotForm = {
-      isEnabled: cfg.is_enabled === 1,
-      paused: cfg.paused_at != null,
-      mode: cfg.mode || "suggested",
+      late_enrollment_approval: d.late_enrollment_approval === 1,
+      grade_entry_auto_close: d.grade_entry_auto_close === 1,
+      allow_grade_edit_after_close: d.allow_grade_edit_after_close === 1,
+      grade_edit_approval: d.grade_edit_approval === 1,
+      autopilot_mode: d.autopilot_mode || "suggested",
+      autopilot_enabled: d.autopilot_enabled === 1,
+      auto_open_enrollment: d.auto_open_enrollment === 1,
+      auto_close_enrollment: d.auto_close_enrollment === 1,
+      auto_open_grade_entry: d.auto_open_grade_entry === 1,
     };
   }
 });
@@ -117,34 +95,21 @@ async function handleSave(e: Event) {
       default_grading_system: form.default_grading_system,
       default_passing_grade: form.default_passing_grade,
       default_max_grade: form.default_max_grade,
-      enrollment_auto_close_on_capacity: form.enrollment_auto_close_on_capacity
-        ? 1
-        : 0,
+      enrollment_auto_close: form.enrollment_auto_close ? 1 : 0,
       allow_late_enrollment: form.allow_late_enrollment ? 1 : 0,
-      late_enrollment_requires_approval: form.late_enrollment_requires_approval
-        ? 1
-        : 0,
-      grade_entry_auto_close_on_deadline:
-        form.grade_entry_auto_close_on_deadline ? 1 : 0,
-      allow_grade_modification_after_close:
-        form.allow_grade_modification_after_close ? 1 : 0,
-      grade_modification_requires_approval:
-        form.grade_modification_requires_approval ? 1 : 0,
-      default_event_execution_mode: autopilotForm.mode,
+      late_enrollment_approval: form.late_enrollment_approval ? 1 : 0,
+      grade_entry_auto_close: form.grade_entry_auto_close ? 1 : 0,
+      allow_grade_edit_after_close: form.allow_grade_edit_after_close ? 1 : 0,
+      grade_edit_approval: form.grade_edit_approval ? 1 : 0,
+      autopilot_mode: form.autopilot_mode,
+      autopilot_enabled: form.autopilot_enabled ? 1 : 0,
+      auto_open_enrollment: form.auto_open_enrollment ? 1 : 0,
+      auto_close_enrollment: form.auto_close_enrollment ? 1 : 0,
+      auto_open_grade_entry: form.auto_open_grade_entry ? 1 : 0,
       settings: null,
     };
 
     await commands.platform.updateOrgPolicy(orgId, payload);
-
-    // Save Autopilot configuration
-    if ($autopilotConfigQuery.data) {
-      await $configureAutopilotMutation.mutateAsync({
-        orgId,
-        isEnabled: autopilotForm.isEnabled,
-        paused: autopilotForm.paused,
-        mode: autopilotForm.mode,
-      });
-    }
 
     toast.success(
       m.settings_general_save_success
@@ -152,11 +117,6 @@ async function handleSave(e: Event) {
         : "Settings saved successfully",
     );
     queryClient.invalidateQueries({ queryKey: ["org-academic-policy", orgId] });
-    queryClient.invalidateQueries({ queryKey: ["autopilot-config", orgId] });
-    queryClient.invalidateQueries({ queryKey: ["autopilot-tasks", orgId] });
-    queryClient.invalidateQueries({
-      queryKey: ["autopilot-diagnostics", orgId],
-    });
   } catch (err: unknown) {
     toast.error(extractErrorMessage(err));
   } finally {
@@ -180,7 +140,7 @@ async function handleSave(e: Event) {
     <div class="max-w-4xl mx-auto p-6 text-center text-destructive">
       <p>{m.settings_policy_load_error ? m.settings_policy_load_error() : "Failed to load academic policies"}</p>
       <Button variant="outline" class="mt-4" onclick={() => $policyQuery.refetch()}>
-        {m.retry ? m.retry() : "Retry"}
+        Retry
       </Button>
     </div>
   {:else}
@@ -237,26 +197,26 @@ async function handleSave(e: Event) {
                 </span>
                 <span class="text-[10px] text-muted-foreground">Toggle all background lifecycle automations.</span>
               </div>
-              <Switch bind:checked={autopilotForm.isEnabled} disabled={isSaving} />
+              <Switch bind:checked={form.autopilot_enabled} disabled={isSaving} />
             </div>
 
             <!-- Mode Selection -->
-            {#if autopilotForm.isEnabled}
+            {#if form.autopilot_enabled}
               <div class="flex flex-col gap-2 py-2 border-b border-border/40">
                 <Label class="text-xs text-muted-foreground">
                   {m.policy_field_exec_mode ? m.policy_field_exec_mode() : "Execution Mode"}
                 </Label>
                 <Select
                   type="single"
-                  value={autopilotForm.mode}
-                  onValueChange={(v) => { if (v) autopilotForm.mode = v; }}
+                  value={form.autopilot_mode}
+                  onValueChange={(v) => { if (v) form.autopilot_mode = v; }}
                 >
                   <SelectTrigger class="text-xs capitalize h-9">
-                    {autopilotForm.mode === 'automatic' 
-                      ? m.autopilot_popover_mode_auto() 
-                      : autopilotForm.mode === 'suggested' 
-                        ? m.autopilot_popover_mode_suggested() 
-                        : m.autopilot_popover_mode_manual()}
+                    {form.autopilot_mode === 'automatic' 
+                      ? (m.autopilot_popover_mode_auto ? m.autopilot_popover_mode_auto() : "Automatic") 
+                      : form.autopilot_mode === 'suggested' 
+                        ? (m.autopilot_popover_mode_suggested ? m.autopilot_popover_mode_suggested() : "Suggested") 
+                        : (m.autopilot_popover_mode_manual ? m.autopilot_popover_mode_manual() : "Manual")}
                   </SelectTrigger>
                   <SelectContent class="text-start text-xs">
                     <SelectItem value="automatic">{m.autopilot_popover_mode_auto()}</SelectItem>
@@ -266,16 +226,7 @@ async function handleSave(e: Event) {
                 </Select>
               </div>
 
-              <!-- Pause Toggle -->
-              <div class="flex items-center justify-between py-2">
-                <div class="flex flex-col text-start gap-0.5">
-                  <span class="text-xs font-semibold text-foreground">
-                    Pause execution
-                  </span>
-                  <span class="text-[10px] text-muted-foreground">Temporarily halt all running processes.</span>
-                </div>
-                <Switch bind:checked={autopilotForm.paused} disabled={isSaving} />
-              </div>
+
             {/if}
           </CardContent>
         </Card>
@@ -314,7 +265,7 @@ async function handleSave(e: Event) {
                 </span>
                 <span class="text-[10px] text-muted-foreground">Route late enrollment requests to approval inbox.</span>
               </div>
-              <Switch bind:checked={form.late_enrollment_requires_approval} disabled={isSaving || !form.allow_late_enrollment} />
+              <Switch bind:checked={form.late_enrollment_approval} disabled={isSaving || !form.allow_late_enrollment} />
             </div>
 
             <!-- Auto Close on Capacity -->
@@ -325,7 +276,7 @@ async function handleSave(e: Event) {
                 </span>
                 <span class="text-[10px] text-muted-foreground">Automatically lock sections when max capacity is reached.</span>
               </div>
-              <Switch bind:checked={form.enrollment_auto_close_on_capacity} disabled={isSaving} />
+              <Switch bind:checked={form.enrollment_auto_close} disabled={isSaving} />
             </div>
           </CardContent>
         </Card>
@@ -392,7 +343,7 @@ async function handleSave(e: Event) {
                 </span>
                 <span class="text-[10px] text-muted-foreground">Disable teacher grade modification once deadline passes.</span>
               </div>
-              <Switch bind:checked={form.grade_entry_auto_close_on_deadline} disabled={isSaving} />
+              <Switch bind:checked={form.grade_entry_auto_close} disabled={isSaving} />
             </div>
 
             <!-- Allow Grade Modification After Close -->
@@ -403,7 +354,7 @@ async function handleSave(e: Event) {
                 </span>
                 <span class="text-[10px] text-muted-foreground">Permit changes to grade sheets after period has closed.</span>
               </div>
-              <Switch bind:checked={form.allow_grade_modification_after_close} disabled={isSaving} />
+              <Switch bind:checked={form.allow_grade_edit_after_close} disabled={isSaving} />
             </div>
 
             <!-- Grade Modification Requires Approval -->
@@ -414,7 +365,7 @@ async function handleSave(e: Event) {
                 </span>
                 <span class="text-[10px] text-muted-foreground">Force all grade modifications to pass through approvals.</span>
               </div>
-              <Switch bind:checked={form.grade_modification_requires_approval} disabled={isSaving || !form.allow_grade_modification_after_close} />
+              <Switch bind:checked={form.grade_edit_approval} disabled={isSaving || !form.allow_grade_edit_after_close} />
             </div>
           </CardContent>
         </Card>

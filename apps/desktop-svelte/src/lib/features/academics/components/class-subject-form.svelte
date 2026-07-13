@@ -43,7 +43,6 @@ const isEditMode = $derived(!!editData);
 let classId = $state("");
 let subjectId = $state("");
 let teacherId = $state("");
-let assistantTeacherId = $state("");
 let weeklyHours = $state(4);
 let periodId = $state("");
 
@@ -51,17 +50,14 @@ $effect(() => {
   classId = editData ? String(editData.class_id ?? "") : "";
   subjectId = editData ? String(editData.subject_id ?? "") : "";
   teacherId = editData ? String(editData.primary_teacher_id ?? "") : "";
-  assistantTeacherId = editData
-    ? String(editData.assistant_teacher_id ?? "")
-    : "";
   weeklyHours = editData ? Number(editData.weekly_hours ?? 4) : 4;
   periodId = editData ? String(editData.period_id ?? "") : "";
 });
 
 // TanStack Queries
-const periodsQuery = createPeriodsQuery(orgId);
-const classesQuery = createClassesQuery(orgId);
-const subjectsQuery = createSubjectsQuery(orgId);
+const periodsQuery = createPeriodsQuery(() => orgId);
+const classesQuery = createClassesQuery(() => orgId);
+const subjectsQuery = createSubjectsQuery(() => orgId);
 const usersQuery = createUsersQuery(() => orgId);
 
 const periods = $derived(($periodsQuery.data as JsonRecord[]) ?? []);
@@ -89,9 +85,6 @@ const selectedSubject = $derived(
 const selectedTeacher = $derived(
   teachers.find((t) => String(t.id) === teacherId),
 );
-const selectedAssistant = $derived(
-  teachers.find((t) => String(t.id) === assistantTeacherId),
-);
 const selectedPeriod = $derived(periods.find((c) => String(c.id) === periodId));
 
 async function handleSubmit() {
@@ -102,20 +95,19 @@ async function handleSubmit() {
 
   isSaving = true;
   try {
-    const request: JsonRecord = {
+    const request = {
       class_id: classId,
       subject_id: subjectId,
       period_id: periodId,
       primary_teacher_id: teacherId,
-      assistant_teacher_id: assistantTeacherId || null,
       weekly_hours: weeklyHours,
     };
 
     if (isEditMode && editData?.id) {
-      await commands.academic.updateClassSubject(String(editData.id), request);
+      await commands.academic.updateClassSubject(String(editData.id), request as any);
       toast.success(m.cs_update_success());
     } else {
-      await commands.academic.createClassSubject(request);
+      await commands.academic.createClassSubject(request as any);
       toast.success(m.cs_create_success());
     }
 
@@ -151,17 +143,17 @@ async function handleSubmit() {
   {:else}
     <!-- Period -->
     <div class="flex flex-col gap-1.5">
-      <Label class="text-xs font-semibold text-muted-foreground">{m.cs_form_period()} *</Label>
+      <Label class="text-xs font-semibold text-muted-foreground">{m.period ? m.period() : "Academic Period"} *</Label>
       <Select type="single" value={periodId} onValueChange={(v) => (periodId = v ?? "")}>
         <SelectTrigger class="h-9 text-sm">
           {selectedPeriod
             ? String(selectedPeriod.name ?? selectedPeriod.name_ar ?? "")
-            : m.cs_form_select_period()}
+            : "Select Period"}
         </SelectTrigger>
-        <SelectContent>
-          {#each periods as cyc (cyc.id)}
-            <SelectItem value={String(cyc.id)}>
-              {String(cyc.name ?? cyc.name_ar ?? cyc.id)}
+        <SelectContent class="max-h-[250px]">
+          {#each periods as p}
+            <SelectItem value={String(p.id)}>
+              {String(p.name ?? p.name_ar ?? "Unnamed")}
             </SelectItem>
           {/each}
         </SelectContent>
@@ -225,25 +217,7 @@ async function handleSubmit() {
       </Select>
     </div>
 
-    <!-- Assistant Teacher (optional) -->
-    <div class="flex flex-col gap-1.5">
-      <Label class="text-xs font-semibold text-muted-foreground">{m.cs_form_assistant()}</Label>
-      <Select type="single" value={assistantTeacherId} onValueChange={(v) => (assistantTeacherId = v ?? "")}>
-        <SelectTrigger class="h-9 text-sm">
-          {selectedAssistant
-            ? String(selectedAssistant.full_name ?? selectedAssistant.email ?? "")
-            : "— لا يوجد —"}
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="">— لا يوجد —</SelectItem>
-          {#each teachers.filter((t) => String(t.id) !== teacherId) as t (t.id)}
-            <SelectItem value={String(t.id)}>
-              {String(t.full_name ?? t.email ?? t.id)}
-            </SelectItem>
-          {/each}
-        </SelectContent>
-      </Select>
-    </div>
+
 
     <!-- Weekly Hours -->
     <div class="flex flex-col gap-1.5">

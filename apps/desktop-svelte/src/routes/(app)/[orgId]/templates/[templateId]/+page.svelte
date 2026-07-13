@@ -278,11 +278,11 @@ onMount(() => {
 });
 </script>
 
-<div class="editor-root" oncontextmenu={handleContextMenu}>
+<div class="editor-root" role="application" oncontextmenu={handleContextMenu}>
 
   {#if isLoading}
     <!-- Loading State -->
-    <div class="flex-grow flex flex-col items-center justify-center gap-3 bg-background/40">
+    <div class="grow flex flex-col items-center justify-center gap-3 bg-background/40">
       <RefreshCw size={24} class="animate-spin text-primary" />
       <p class="text-xs text-muted-foreground">جاري تحميل المحرر...</p>
     </div>
@@ -306,9 +306,9 @@ onMount(() => {
       <div class="canvas-area">
         {#if store.editorMode === "preview" && previewPdfUrl}
           <!-- PDF Preview Mode -->
-          <div class="flex-grow relative">
+          <div class="grow relative">
             <iframe src={previewPdfUrl} title="PDF Preview" class="w-full h-full border-none"></iframe>
-            <div class="absolute top-2 end-2">
+            <div class="absolute top-2 inset-e-2">
               <Button variant="outline" size="xs" onclick={() => { store.editorMode = "design"; }} class="cursor-pointer">
                 العودة للمحرر
               </Button>

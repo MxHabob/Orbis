@@ -117,9 +117,29 @@ let selectedFilterDate = $state("");
 let startDateFilter = $state("");
 let endDateFilter = $state("");
 
+interface PaymentRow {
+  studentEnrollmentId: string;
+  notes: string;
+  availableFees: any[];
+  isLoadingFees: boolean;
+  selectedFees: Set<string>;
+  feeAmounts: Record<string, number>;
+}
+
+let paymentRows = $state<PaymentRow[]>([
+  {
+    studentEnrollmentId: "",
+    notes: "",
+    availableFees: [],
+    isLoadingFees: false,
+    selectedFees: new Set<string>(),
+    feeAmounts: {},
+  },
+]);
 // Derived States for Dropdowns
 const studentItems = $derived.by(() => {
   return students.map((s) => ({
+    id: String(s.id),
     value: String(s.id),
     label: s.full_name || s.student_number || String(s.id),
   }));
@@ -158,7 +178,7 @@ async function loadData() {
       commands.academic.listEnrollments(data.orgId),
     ]);
 
-    payments = paymentsList.map((p) => ({
+    payments = (paymentsList as any[]).map((p: any) => ({
       ...p,
       reference_number:
         p.reference_number || `005${Math.floor(1000 + Math.random() * 9000)}`,
@@ -198,25 +218,7 @@ async function loadCurrencies() {
   }
 }
 
-interface PaymentRow {
-  studentEnrollmentId: string;
-  notes: string;
-  availableFees: any[];
-  isLoadingFees: boolean;
-  selectedFees: Set<string>;
-  feeAmounts: Record<string, number>;
-}
 
-let paymentRows = $state<PaymentRow[]>([
-  {
-    studentEnrollmentId: "",
-    notes: "",
-    availableFees: [],
-    isLoadingFees: false,
-    selectedFees: new Set<string>(),
-    feeAmounts: {},
-  },
-]);
 
 onMount(() => {
   if (data.orgId) {
@@ -464,7 +466,11 @@ async function handleAdd() {
           treasury_id: treasuryId,
           currency: currency.trim().toUpperCase(),
         };
-        await commands.finance.recordPayment(data.orgId, createdBy, request);
+        await commands.finance.recordPayment({
+          ...request,
+          exchange_rate: 1,
+          account_id: "",
+        } as any);
       }
     }
 

@@ -47,7 +47,7 @@ export class GuardianState {
   async populate() {
     if (!this.studentId) return;
     try {
-      const gList = await commands.academic.listStudentGuardians(
+      const gList = await commands.academic.listGuardiansByStudent(
         this.orgId,
         this.studentId,
       );

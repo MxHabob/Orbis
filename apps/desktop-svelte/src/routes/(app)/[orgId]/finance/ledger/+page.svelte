@@ -1307,7 +1307,8 @@ function exitPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {#each filteredLedgerRows as row, index (row.id)}
+                  {#each filteredLedgerRows as rowItem, index (rowItem.id)}
+                    {@const row = rowItem as any}
                     <TableRow class="hover:bg-accent/10 border-b border-border/40 text-[10px] leading-normal font-medium">
                       <TableCell class="border-r border-border/40 text-center text-muted-foreground font-mono">{index + 1}</TableCell>
                       

@@ -37,12 +37,12 @@ export function createSwitchYearMutation() {
   });
 }
 
-export function createPromotionJobsQuery(orgId: string) {
+export function createPromotionJobsQuery(orgId: () => string) {
   return createQuery({
-    queryKey: ["promotionJobs", orgId],
-    queryFn: () => commands.platform.listPromotionJobs(orgId),
-    enabled: !!orgId,
-    staleTime: 2 * 60 * 1000,
+    get queryKey() { return ["promotion-jobs", orgId()]; },
+    queryFn: () => commands.platform.listPromotionJobs(orgId()),
+    get enabled() { return !!orgId(); },
+    staleTime: 60 * 1000,
   });
 }
 

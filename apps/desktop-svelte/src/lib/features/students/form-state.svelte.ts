@@ -314,7 +314,7 @@ export class StudentFormState {
             guardianUserId = checkExisting[0].id;
           } else {
             const guardEmail = guardian.email.trim() || `parent.${Date.now()}@orbis.local`;
-            const guardUser = await commands.iam.createUser(this.orgId, {
+            const guardUser = await commands.iam.createUser(this.orgId, "system", {
               email: guardEmail,
               password: "Orbis123456",
               full_name: guardian.full_name.trim(),

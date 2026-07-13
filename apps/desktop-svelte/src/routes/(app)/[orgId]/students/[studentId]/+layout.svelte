@@ -46,8 +46,8 @@ const orgId = $derived(page.params.orgId || "");
 const studentId = $derived(page.params.studentId || "");
 
 // TanStack Queries
-const enrollmentsQuery = createEnrollmentsQuery(orgId);
-const classesQuery = createClassesQuery(orgId);
+const enrollmentsQuery = createEnrollmentsQuery(() => orgId);
+const classesQuery = createClassesQuery(() => orgId);
 
 const student = $derived(
   $enrollmentsQuery.data?.find((s) => s.id === studentId),

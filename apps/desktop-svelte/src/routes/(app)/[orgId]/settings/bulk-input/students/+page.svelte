@@ -49,7 +49,7 @@ const locale = getLocale();
 const isRtl = locale === "ar";
 
 const queryClient = useQueryClient();
-const classesQuery = createClassesQuery(data.orgId);
+const classesQuery = createClassesQuery(() => data.orgId);
 const classes = $derived($classesQuery.data ?? []);
 
 // ── State ──────────────────────────────────────────────────────────

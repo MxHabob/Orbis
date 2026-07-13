@@ -211,7 +211,11 @@ async function handlePaymentSubmit(e: SubmitEvent) {
       currency: currency.trim().toUpperCase(),
     };
 
-    await commands.finance.recordPayment(data.orgId, createdBy, request);
+    await commands.finance.recordPayment({
+      ...request,
+      exchange_rate: 1,
+      account_id: "", // Let backend resolve if needed via fee_id
+    } as any);
     toast.success(m.payment_toast_success());
 
     // Clean form elements

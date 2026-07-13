@@ -36,7 +36,7 @@ import type { PromotionJob } from "@orbis/sdk-core";
 
 let { orgId, userId }: { orgId: string; userId: string } = $props();
 
-const jobsQuery = createPromotionJobsQuery(orgId);
+const jobsQuery = createPromotionJobsQuery(() => orgId);
 const rollbackMutation = createRollbackMutation();
 
 let rollbackTarget = $state<PromotionJob | null>(null);

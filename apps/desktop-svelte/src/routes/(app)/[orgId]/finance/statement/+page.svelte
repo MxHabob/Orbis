@@ -128,16 +128,15 @@ interface AccountResponse {
 }
 
 // Queries
-const ledgersQuery = createAccountsQuery(orgId);
-const ledgers = $derived(($ledgersQuery.data || []) as AccountResponse[]);
+const ledgersQuery = createAccountsQuery(() => orgId);
+const ledgers = $derived(($ledgersQuery.data || []) as unknown as AccountResponse[]);
 const isLoadingLedgers = $derived($ledgersQuery.isLoading);
 
 // Query for detailed statement
 const statementQuery = createAccountStatementQuery(
-  orgId,
-  selectedAccountId,
-  startDate,
-  endDate,
+  () => selectedAccountId,
+  () => startDate,
+  () => endDate,
 );
 const statement = $derived(
   $statementQuery.data as AccountStatement | undefined,
@@ -826,7 +825,7 @@ function handleWindowClick(event: MouseEvent) {
             </div>
 
             <!-- Live instant search -->
-            <div class="flex-grow flex flex-col gap-1 text-[10px] font-bold text-muted-foreground min-w-[200px]">
+            <div class="grow flex flex-col gap-1 text-[10px] font-bold text-muted-foreground min-w-[200px]">
               <span>البحث السريع</span>
               <div class="relative">
                 <Search class="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />

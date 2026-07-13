@@ -184,7 +184,7 @@ const totalEquity = $derived.by(() => {
     </div>
   </div>
 
-  <Tabs defaultPreset="all" class="w-full">
+  <Tabs value="all" class="w-full">
     <TabsList class="grid w-full grid-cols-4 select-none mb-6">
       <TabsTrigger value="overview" class="text-xs font-semibold flex items-center gap-1.5 cursor-pointer">
         <BarChart3 size={13} />

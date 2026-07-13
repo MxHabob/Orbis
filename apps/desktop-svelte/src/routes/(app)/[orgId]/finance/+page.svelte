@@ -32,8 +32,8 @@ let { data }: { data: { orgId: string } } = $props();
 const feesQuery = createStudentFeesQuery(data.orgId);
 const paymentsQuery = createPaymentsQuery(data.orgId);
 const treasuriesQuery = createTreasuriesQuery(data.orgId);
-const enrollmentsQuery = createEnrollmentsQuery(data.orgId);
-const classesQuery = createClassesQuery(data.orgId);
+const enrollmentsQuery = createEnrollmentsQuery(() => data.orgId);
+const classesQuery = createClassesQuery(() => data.orgId);
 
 const fees = $derived($feesQuery.data ?? []);
 const payments = $derived($paymentsQuery.data ?? []);

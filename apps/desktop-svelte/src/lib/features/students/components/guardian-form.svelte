@@ -113,7 +113,7 @@ const updateSearch = debounce((q: string) => {
 
 // TanStack Queries
 const usersQuery = createUsersQuery(() => orgId);
-const enrollmentsQuery = createEnrollmentsQuery(orgId);
+const enrollmentsQuery = createEnrollmentsQuery(() => orgId);
 
 const allUsers = $derived(
   (($usersQuery.data as JsonRecord[]) ?? []).filter(

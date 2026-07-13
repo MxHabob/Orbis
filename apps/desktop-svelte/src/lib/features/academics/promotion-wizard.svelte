@@ -102,17 +102,18 @@ let policyLoaded = $state(false);
 // Load promotion policy and apply defaults (Policy-Driven Architecture)
 onMount(async () => {
   try {
-    const policy = await commands.platform.getPromotionPolicy(orgId);
-    // Apply policy values as defaults (user can still override)
-    config.passing_score = policy.passing_score ?? 50;
-    config.min_attendance_rate = policy.min_attendance_rate ?? 75;
-    config.auto_graduate_final_level =
-      (policy.auto_graduate_final_level ?? 1) === 1;
-    config.exclude_withdrawn = (policy.exclude_withdrawn ?? 1) === 1;
-    config.carry_over_outstanding_fees =
-      policy.fee_carry_over_mode !== "ignore";
-    config.carry_over_guardians = (policy.carry_over_guardians ?? 1) === 1;
-    if (policy.final_level) config.final_level = policy.final_level;
+    const policy = await commands.platform.getOrgPolicy(orgId);
+    if (policy) {
+      // Apply policy values as defaults (user can still override)
+      config.passing_score = policy.passing_score ?? 50;
+      config.min_attendance_rate = policy.min_attendance_rate ?? 75;
+      config.auto_graduate_final_level = policy.auto_graduate_final_level === 1;
+      config.exclude_withdrawn = policy.exclude_withdrawn === 1;
+      // Default to false for these since they aren't explicitly tracked in AcademicPolicy anymore
+      config.carry_over_outstanding_fees = false;
+      config.carry_over_guardians = true;
+      if (policy.final_level) config.final_level = policy.final_level;
+    }
     policyLoaded = true;
   } catch (e) {
     // Policy not found — keep hardcoded defaults
@@ -539,10 +540,6 @@ function decisionLabel(d: string) {
                 <TableHeader>
                   <TableRow>
                     <TableHead class="text-start">{m.promo_student()}</TableHead>
-                    <TableHead class="text-start">{m.promo_class()}</TableHead>
-                    <TableHead class="text-start">{m.promo_level()}</TableHead>
-                    <TableHead class="text-start">{m.promo_score()}</TableHead>
-                    <TableHead class="text-start">{m.promo_attendance()}</TableHead>
                     <TableHead class="text-start">{m.promo_decision()}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -552,16 +549,7 @@ function decisionLabel(d: string) {
                       <TableCell class="text-start font-sans">
                         <div>
                           <div class="font-medium text-sm text-foreground">{detail.student_name}</div>
-                          {#if detail.student_number}
-                            <div class="text-xs text-muted-foreground">{detail.student_number}</div>
-                          {/if}
                         </div>
-                      </TableCell>
-                      <TableCell class="text-start text-sm font-sans">{detail.source_class_name ?? "-"}</TableCell>
-                      <TableCell class="text-start text-sm font-sans">{detail.source_level}</TableCell>
-                      <TableCell class="text-start text-sm font-sans">{detail.final_score ?? "-"}</TableCell>
-                      <TableCell class="text-start text-sm font-sans">
-                        {detail.attendance_rate != null ? `${detail.attendance_rate.toFixed(1)}%` : "-"}
                       </TableCell>
                       <TableCell class="text-start font-sans">
                         <Badge variant={decisionVariant(detail.decision)}>

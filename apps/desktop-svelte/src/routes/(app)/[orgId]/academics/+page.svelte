@@ -40,9 +40,9 @@ import { extractErrorMessage } from "$lib/core/ipc";
 let { data }: { data: { orgId: string } } = $props();
 
 // TanStack Queries
-const classesQuery = createClassesQuery(data.orgId);
-const subjectsQuery = createSubjectsQuery(data.orgId);
-const periodsQuery = createPeriodsQuery(data.orgId);
+const classesQuery = createClassesQuery(() => data.orgId);
+const subjectsQuery = createSubjectsQuery(() => data.orgId);
+const periodsQuery = createPeriodsQuery(() => data.orgId);
 const currentYearQuery = createCurrentYearQuery(data.orgId);
 const promotionJobsQuery = createPromotionJobsQuery(data.orgId);
 const examSessionsQuery = createExamSessionsQuery(data.orgId);
