@@ -151,7 +151,7 @@ async function handleAddCurrency(e: Event) {
       updated_at: new Date().toISOString(),
     };
 
-    await commands.finance.createCurrency(newCurrency);
+    await commands.finance.createCurrency(orgId, newCurrency);
     toast.success(m.settings_currencies_added_success());
     showAddDialog = false;
     await loadCurrencies();
@@ -195,8 +195,7 @@ async function handleEditCurrency(e: Event) {
       symbol_position: editSymbolPosition,
       decimal_places: editDecimalPlaces,
       exchange_rate: editExchangeRate,
-      is_base: editIsBase ? 1 : 0,
-      is_active: editIsActive ? 1 : 0,
+      is_active: editIsActive,
     };
 
     await commands.finance.updateCurrency(orgId, editCode, updates);

@@ -417,7 +417,7 @@ function parseApprovalChain(
                   {request.status}
                 </Badge>
                 <Badge variant="outline" class="text-[10px] capitalize shrink-0">
-                  {request.override_type.replace(/_/g, " ")}
+                  {request.override_type?.replace(/_/g, " ") ?? "Unknown"}
                 </Badge>
                 <span class="flex-1 text-xs truncate">{request.reason}</span>
                 <span class="text-[10px] text-muted-foreground shrink-0">

@@ -117,7 +117,7 @@ async function handleSubmit() {
 
     submitProgress = 10;
 
-    const result = (await commands.bulkImport.createGrades(
+    const result = (await commands.platform.createBulkGrades(
       data.orgId,
       authStore.user?.id ?? "system",
       null, // auto-detect active period

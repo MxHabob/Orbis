@@ -277,7 +277,7 @@ async function handleSubmit() {
 
     submitProgress = 10;
 
-    const result = (await commands.bulkImport.createStudents(
+    const result = (await commands.platform.createBulkStudents(
       data.orgId,
       authStore.user?.id ?? "system",
       dataRows,
