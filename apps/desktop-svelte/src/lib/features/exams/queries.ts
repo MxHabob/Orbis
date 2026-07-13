@@ -101,11 +101,10 @@ export function addExamSubjectMutation() {
       data: {
         session_id: string;
         subject_id: string;
-        subject_name: string;
-        exam_date: string;
-        start_time: string;
-        end_time: string;
         max_score: number;
+        class_subject_id?: string;
+        duration_minutes?: number;
+        exam_type?: string;
       };
     }) =>
       commands.exam.createExamSubject(variables.data) as Promise<ExamSubject>,

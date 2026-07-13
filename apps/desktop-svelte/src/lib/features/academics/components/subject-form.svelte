@@ -36,11 +36,9 @@ async function handleSubmit(e: SubmitEvent) {
     const request = {
       name: name || nameAr,
       name_ar: nameAr || name,
-      code: code || undefined,
-      credit_hours: creditHours ? Number(creditHours) : 3,
-      color: color || undefined,
+      code: code || "",
     };
-    await commands.academic.createSubject(orgId, request);
+    await commands.academic.createSubject(request);
     toast.success(m.subject_toast_success());
 
     // Reset fields

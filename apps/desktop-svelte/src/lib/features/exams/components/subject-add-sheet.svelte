@@ -65,14 +65,14 @@ function resetForm() {
 // Fetch subjects catalog when sheet is opened
 $effect(() => {
   if (open && orgId) {
-    commands.subjects
-      .getAll(orgId)
-      .then((res) => {
+    (async () => {
+      try {
+        const res = await commands.academic.listSubjects(orgId);
         subjectsList = res || [];
-      })
-      .catch((e) => {
+      } catch (e: unknown) {
         console.error("Failed to load school subjects list:", e);
-      });
+      }
+    })();
   }
 });
 
@@ -91,7 +91,7 @@ async function handleSubmit() {
     isSaving = true;
     try {
       // 1. Create the subject in school catalog
-      const newSub = await commands.academic.createSubject(orgId, {
+      const newSub = await commands.academic.createSubject({
         name: newSubjectName || newSubjectNameAr,
         name_ar: newSubjectNameAr,
         code: newSubjectCode,
@@ -118,7 +118,6 @@ async function handleSubmit() {
       session_id: sessionId,
       subject_id: targetSubjectId,
       max_score: maxScore,
-      passing_score: maxScore * 0.5,
       duration_minutes: durationMinutes,
       exam_type: examType,
     });
