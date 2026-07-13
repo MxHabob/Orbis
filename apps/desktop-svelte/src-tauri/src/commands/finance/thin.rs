@@ -78,7 +78,7 @@ pub async fn record_payment(state: State<'_, Arc<AppState>>, org_id: String, dat
 #[tauri::command]
 pub async fn list_payments(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::payment::list(&ctx).await.map_err(CommandError::from)?;
+    let r = ops::payment::list(&ctx, None, None).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
@@ -92,7 +92,7 @@ pub async fn list_ledger_accounts(state: State<'_, Arc<AppState>>, org_id: Strin
 #[tauri::command]
 pub async fn list_journal_entries(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let entries = ops::ledger::get_journal_entries(&ctx).await.map_err(CommandError::from)?;
+    let entries = ops::ledger::get_journal_entries(&ctx, None, None).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(entries).unwrap())
 }
 

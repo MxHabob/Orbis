@@ -1,7 +1,7 @@
 //! Payment operations — record payments with double-entry accounting.
 
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
 use uuid::Uuid;
 
 use shared_kernel::context::ServiceContext;
@@ -18,12 +18,18 @@ use crate::ops::ledger;
 
 pub async fn list(
     ctx: &ServiceContext,
+    limit: Option<u64>,
+    offset: Option<u64>,
 ) -> Result<Vec<payment::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceRead).await?;
+    let limit_val = limit.unwrap_or(500);
+    let offset_val = offset.unwrap_or(0);
 
     Ok(payment::Entity::find()
         .filter(payment::Column::OrgId.eq(&ctx.org_id))
         .order_by_desc(payment::Column::PaidAt)
+        .limit(limit_val)
+        .offset(offset_val)
         .all(&ctx.db)
         .await?)
 }

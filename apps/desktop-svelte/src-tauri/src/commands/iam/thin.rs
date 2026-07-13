@@ -22,9 +22,14 @@ pub async fn logout_session(state: State<'_, Arc<AppState>>, session_id: String)
 }
 
 #[tauri::command]
-pub async fn list_users(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
+pub async fn list_users(
+    state: State<'_, Arc<AppState>>, 
+    org_id: String,
+    filter: Option<serde_json::Value>
+) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::user::list(&ctx).await.map_err(CommandError::from)?;
+    let f = filter.and_then(|v| serde_json::from_value(v).ok());
+    let r = ops::user::list(&ctx, f).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 

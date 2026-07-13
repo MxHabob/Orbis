@@ -1,7 +1,7 @@
 //! Ledger account operations.
 
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, PaginatorTrait};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, PaginatorTrait, QuerySelect};
 
 use uuid::Uuid;
 use serde::{Deserialize, Serialize};
@@ -459,12 +459,20 @@ pub async fn create_journal_entry(
     Ok(created_je)
 }
 
-pub async fn get_journal_entries(ctx: &ServiceContext) -> Result<Vec<journal_entry::Model>, AppError> {
+pub async fn get_journal_entries(
+    ctx: &ServiceContext,
+    limit: Option<u64>,
+    offset: Option<u64>,
+) -> Result<Vec<journal_entry::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceRead).await?;
+    let limit_val = limit.unwrap_or(500);
+    let offset_val = offset.unwrap_or(0);
     
     Ok(journal_entry::Entity::find()
         .filter(journal_entry::Column::OrgId.eq(&ctx.org_id))
         .order_by_desc(journal_entry::Column::AccountingDate)
+        .limit(limit_val)
+        .offset(offset_val)
         .all(&ctx.db).await?)
 }
 

@@ -12,17 +12,38 @@ use shared_kernel::traits::{AuditEntry, Permission};
 use crate::contracts::events::event_types;
 use crate::entities::user;
 
+#[derive(serde::Deserialize)]
+pub struct UserFilter {
+    pub role: Option<String>,
+    pub roles: Option<Vec<String>>,
+    pub status: Option<String>,
+}
+
 pub async fn list(
     ctx: &ServiceContext,
+    filter: Option<UserFilter>,
 ) -> Result<Vec<user::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::UserRead).await?;
 
-    Ok(user::Entity::find()
+    let mut query = user::Entity::find()
         .filter(user::Column::OrgId.eq(&ctx.org_id))
-        .filter(user::Column::IsDeleted.eq(0))
-        .order_by_asc(user::Column::FullName)
-        .all(&ctx.db)
-        .await?)
+        .filter(user::Column::IsDeleted.eq(0));
+
+    if let Some(f) = filter {
+        if let Some(role) = f.role {
+            query = query.filter(user::Column::PrimaryRole.eq(role));
+        } else if let Some(roles) = f.roles {
+            if !roles.is_empty() {
+                query = query.filter(user::Column::PrimaryRole.is_in(roles));
+            }
+        }
+        
+        if let Some(status) = f.status {
+            query = query.filter(user::Column::Status.eq(status));
+        }
+    }
+
+    Ok(query.order_by_asc(user::Column::FullName).all(&ctx.db).await?)
 }
 
 pub async fn get(ctx: &ServiceContext, user_id: &str) -> Result<user::Model, AppError> {

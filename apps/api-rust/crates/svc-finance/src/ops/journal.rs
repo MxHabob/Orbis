@@ -1,6 +1,6 @@
 //! Journal entry operations.
 
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
 
 use shared_kernel::context::ServiceContext;
 use shared_kernel::errors::AppError;
@@ -8,11 +8,20 @@ use shared_kernel::traits::{AuditEntry, Permission};
 
 use crate::entities::journal_entry;
 
-pub async fn list(ctx: &ServiceContext) -> Result<Vec<journal_entry::Model>, AppError> {
+pub async fn list(
+    ctx: &ServiceContext,
+    limit: Option<u64>,
+    offset: Option<u64>,
+) -> Result<Vec<journal_entry::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceRead).await?;
+    let limit_val = limit.unwrap_or(500);
+    let offset_val = offset.unwrap_or(0);
+    
     Ok(journal_entry::Entity::find()
         .filter(journal_entry::Column::OrgId.eq(&ctx.org_id))
         .order_by_desc(journal_entry::Column::AccountingDate)
+        .limit(limit_val)
+        .offset(offset_val)
         .all(&ctx.db).await?)
 }
 

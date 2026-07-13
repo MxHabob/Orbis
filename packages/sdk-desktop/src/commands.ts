@@ -280,22 +280,39 @@ export const commands: OrbisCommands = {
     listSessions: (periodId) => cmd("list_exam_sessions", { periodId }),
     getSession: (sessionId) => cmd("get_exam_session", { sessionId }),
     createSession: (data) => cmd("create_exam_session", { data }),
-    updateSession: (sessionId, data) =>
+    updateSession: (orgId, sessionId, data) =>
       cmd("update_exam_session", { sessionId, data }),
 
     listExamSubjects: (sessionId) => cmd("list_exam_subjects", { sessionId }),
+    getSubjects: (orgId, sessionId) => cmd("list_exam_subjects", { sessionId }),
     createExamSubject: (data) => cmd("create_exam_subject", { data }),
 
     listHalls: () => cmd("list_exam_halls"),
-    createHall: (data) => cmd("create_exam_hall", { data }),
+    getHalls: (orgId, sessionId) => cmd("list_exam_halls", { sessionId }),
+    createHall: (orgId, data) => cmd("create_exam_hall", { data }),
 
     listSchedule: (sessionId) => cmd("list_exam_schedule", { sessionId }),
+    getSchedules: (orgId, sessionId) => cmd("list_exam_schedule", { sessionId }),
     createScheduleEntry: (data) => cmd("create_exam_schedule_entry", { data }),
+    deleteSchedule: (orgId, scheduleId) => cmd("delete_exam_schedule", { scheduleId }),
+    updateScheduleStatus: (orgId, scheduleId, status) => cmd("update_exam_schedule_status", { scheduleId, status }),
 
-    listSeating: (examSubjectId) =>
-      cmd("list_seating_numbers", { examSubjectId }),
-    generateOrdering: (sessionId) =>
-      cmd("generate_exam_ordering", { sessionId }),
+    listSeating: (examSubjectId) => cmd("list_seating_numbers", { examSubjectId }),
+    getSeatingNumbers: (orgId, sessionId) => cmd("list_seating_numbers", { sessionId }),
+    generateSeating: (orgId, sessionId, userId) => cmd("generate_exam_ordering", { sessionId, userId }),
+    generateSecrets: (orgId, sessionId, userId) => cmd("generate_exam_secrets", { sessionId, userId }),
+    
+    getProctors: (orgId, sessionId) => cmd("list_exam_proctors", { sessionId }),
+    autoAssignProctors: (orgId, sessionId, scheduleId, data) => cmd("auto_assign_proctors", { scheduleId, data }),
+    allocateHalls: (orgId, sessionId, data) => cmd("allocate_exam_halls", { sessionId, data }),
+    
+    listSolveJobs: (orgId, sessionId) => cmd("list_exam_solver_jobs", { sessionId }),
+    startSolve: (orgId, userId, data) => cmd("start_exam_solver", { data }),
+    cancelSolve: (orgId, jobId) => cmd("cancel_exam_solver", { jobId }),
+    applySolve: (orgId, jobId) => cmd("apply_exam_solver", { jobId }),
+    getSolveJob: (orgId, jobId) => cmd("get_exam_solver_job", { jobId }),
+    
+    generateOrdering: (sessionId) => cmd("generate_exam_ordering", { sessionId }),
     getOrdering: (orgId, periodId) => cmd("get_student_ordering", { orgId, periodId }),
     rebuildOrdering: (orgId, sessionId) => cmd("rebuild_student_ordering", { orgId, sessionId }),
     freezeOrdering: async (_orgId, _periodId, _userId) => {
@@ -320,19 +337,8 @@ export const commands: OrbisCommands = {
     listSessions: (userId) => cmd("list_user_sessions", { userId }),
 
     listUsers: async (orgId, filter?) => {
-      const users = await cmd<User[]>("list_users", { orgId });
-      if (filter) {
-        return users.filter((u) => {
-          if (
-            filter.role &&
-            u.role !== filter.role &&
-            u.primary_role !== filter.role
-          )
-            return false;
-          if (filter.status && u.status !== filter.status) return false;
-          return true;
-        });
-      }
+      // Pass the filter directly to the Rust backend
+      const users = await cmd<User[]>("list_users", { orgId, filter });
       return users;
     },
     getUser: (userId) => cmd("get_user", { userId }),
