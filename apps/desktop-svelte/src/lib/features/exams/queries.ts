@@ -13,13 +13,13 @@ import type { ExamSession, ExamSubject } from "@orbis/sdk-core";
 
 /** Get all exam sessions for a period. */
 export function createExamSessionsQuery(orgId: () => string) {
-  return createQuery(() => ({
-    queryKey: ["exam-sessions", orgId()],
+  return createQuery({
+    get queryKey() { return ["exam-sessions", orgId()]; },
     queryFn: () =>
       commands.exam.listSessions(orgId()) as Promise<ExamSession[]>,
-    enabled: !!orgId(),
+    get enabled() { return !!orgId(); },
     staleTime: 5 * 60 * 1000,
-  }));
+  });
 }
 
 /** Get a single exam session. */
