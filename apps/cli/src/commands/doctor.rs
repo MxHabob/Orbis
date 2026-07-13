@@ -1,15 +1,15 @@
 use anyhow::Result;
-use colored::*;
 use std::path::Path;
+use crate::ui::output;
 
 pub async fn execute() -> Result<()> {
-    println!("{}", "[*] Running System Diagnostics...".cyan().bold());
-    println!("{}", "──────────────────────────────────────────────────".dimmed());
+    output::print_step("Running System Diagnostics...");
+    println!("──────────────────────────────────────────────────");
 
     let mut all_good = true;
 
     // 1. Check for DB file (SQLite)
-    let config = crate::config::CliConfig::default();
+    let config = crate::core::config::CliConfig::default();
     let db_path_str = config.db_url
         .replace("sqlite://", "")
         .replace("?mode=rwc", "")
@@ -19,9 +19,9 @@ pub async fn execute() -> Result<()> {
     
     print!("{: <40}", "Main Database (orbis.db):");
     if db_path.exists() {
-        println!("{}", "[+] Found".green());
+        println!("[+] Found");
     } else {
-        println!("{} (Expected at {:?})", "[-] Missing".red(), db_path);
+        println!("[-] Missing (Expected at {:?})", db_path);
         all_good = false;
     }
 
@@ -29,7 +29,7 @@ pub async fn execute() -> Result<()> {
     let app_name = if cfg!(windows) { "Orbis-Svelte.exe" } else { "Orbis-Svelte" };
     
     // Look in current dir, or relative to workspace root
-    let possible_paths = crate::config::CliConfig::get_app_executable_paths();
+    let possible_paths = crate::core::config::CliConfig::get_app_executable_paths();
 
     print!("{: <40}", format!("Desktop App ({}):", app_name));
     let mut app_found = false;
@@ -41,25 +41,25 @@ pub async fn execute() -> Result<()> {
     }
 
     if app_found {
-        println!("{}", "[+] Found".green());
+        println!("[+] Found");
     } else {
-        println!("{}", "[-] Missing".red());
+        println!("[-] Missing");
         all_good = false;
     }
 
     // 3. Environment variables
     print!("{: <40}", "Environment Mode:");
     if cfg!(debug_assertions) {
-        println!("{}", "[+] Development (Debug)".blue());
+        println!("[+] Development (Debug)");
     } else {
-        println!("{}", "[+] Production (Release)".green());
+        println!("[+] Production (Release)");
     }
 
-    println!("{}", "──────────────────────────────────────────────────".dimmed());
+    println!("──────────────────────────────────────────────────");
     if all_good {
-        println!("{}", "[*] System is healthy and ready to run!".green().bold());
+        output::print_success("System is healthy and ready to run!");
     } else {
-        println!("{}", "[!] Some issues were found. Run `cli init` to repair or build the desktop app.".yellow().bold());
+        output::print_warning("Some issues were found. Run `cli init` to repair or build the desktop app.");
     }
 
     Ok(())

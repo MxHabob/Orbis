@@ -1,8 +1,8 @@
 use anyhow::Result;
-use colored::*;
+use crate::ui::output;
 
 pub async fn execute() -> Result<()> {
-    println!("{}", "Managing Orbis License...".magenta().bold());
-    println!("(Not yet fully implemented)");
+    output::print_step("Managing Orbis License...");
+    output::print_info("(Not yet fully implemented)");
     Ok(())
 }

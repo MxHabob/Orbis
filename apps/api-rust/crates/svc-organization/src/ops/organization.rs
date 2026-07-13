@@ -497,24 +497,6 @@ pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::
         )).await?;
     }
 
-    // 9. Default Chart of Accounts
-    let acc_id = format!("{}-acc-main-cash", ctx.org_id);
-    txn.execute(Statement::from_string(
-        DatabaseBackend::Sqlite,
-        format!(
-            "INSERT INTO accounts (id, org_id, code, name, name_ar, type_code, balance_type, category_code, is_active, allow_manual_entries, currency, balances) VALUES ('{}', '{}', '1101', 'Main Cash', 'الصندوق الرئيسي / الخزينة', 'asset', 'debit', 'cash', 1, 1, '{}', '{{}}') ON CONFLICT DO NOTHING;",
-            acc_id, ctx.org_id, currency.replace("'", "''")
-        )
-    )).await?;
-
-    // 10. Default Currency
-    txn.execute(Statement::from_string(
-        DatabaseBackend::Sqlite,
-        format!(
-            "INSERT INTO currencies (code, org_id, name, symbol, symbol_position, decimal_places, exchange_rate, is_base, is_active, updated_at) VALUES ('{}', '{}', '{}', '{}', 'right', 2, 1.0, 1, 1, '{}') ON CONFLICT DO NOTHING;",
-            currency.replace("'", "''"), ctx.org_id, currency.replace("'", "''"), currency.replace("'", "''"), now
-        )
-    )).await?;
 
     txn.commit().await?;
     

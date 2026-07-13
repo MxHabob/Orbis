@@ -1,21 +1,21 @@
 use anyhow::{anyhow, Result};
-use colored::*;
 use std::fs;
 use std::path::Path;
 use chrono::Local;
+use crate::ui::output;
 
 pub async fn execute() -> Result<()> {
-    println!("{}", "[*] Initializing Database Backup...".cyan().bold());
+    output::print_step("Initializing Database Backup...");
 
     let backup_dir = Path::new("backups");
     if !backup_dir.exists() {
         fs::create_dir(backup_dir)?;
-        println!("{} Created backups directory", "[+]".green());
+        output::print_success("Created backups directory");
     }
 
     let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
     
-    let config = crate::config::CliConfig::default();
+    let config = crate::core::config::CliConfig::default();
     let db_path_str = config.db_url
         .replace("sqlite://", "")
         .replace("?mode=rwc", "")
@@ -29,11 +29,11 @@ pub async fn execute() -> Result<()> {
     let backup_filename = format!("orbis_{}.db.bak", timestamp);
     let backup_path = backup_dir.join(&backup_filename);
 
-    println!("{} Copying {:?} -> {}...", "[*]".cyan(), db_path, backup_filename);
+    output::print_info(&format!("Copying {:?} -> {}...", db_path, backup_filename));
     
     fs::copy(db_path, &backup_path)?;
 
-    println!("{} Backup successful! Saved to {:?}", "[+]".green().bold(), backup_path);
+    output::print_success(&format!("Backup successful! Saved to {:?}", backup_path));
 
     Ok(())
 }

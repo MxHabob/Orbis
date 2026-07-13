@@ -1,10 +1,10 @@
 use anyhow::{anyhow, Result};
-use colored::*;
 use std::process::Command;
-
+use crate::core::config::CliConfig;
+use crate::ui::output;
 
 pub async fn execute() -> Result<()> {
-    println!("{}", "[*] Booting Orbis System...".green().bold());
+    output::print_step("Booting Orbis System...");
     
     let app_name = if cfg!(windows) {
         "Orbis-Svelte.exe"
@@ -12,7 +12,7 @@ pub async fn execute() -> Result<()> {
         "Orbis-Svelte"
     };
 
-    let possible_paths = crate::config::CliConfig::get_app_executable_paths();
+    let possible_paths = CliConfig::get_app_executable_paths();
 
     let mut found_path = None;
     for path in possible_paths.iter() {
@@ -24,23 +24,18 @@ pub async fn execute() -> Result<()> {
 
     match found_path {
         Some(path) => {
-            println!("{} Found Orbis application at {:?}", "[+]", path);
-            println!("{} Spawning application process...", "[*]");
+            output::print_info(&format!("Found Orbis application at {:?}", path));
+            output::print_step("Spawning application process...");
             
-            // Spawn as a detached child process (so CLI can exit, or wait)
             let child = Command::new(path)
                 .spawn()
                 .map_err(|e| anyhow!("Failed to start Orbis-Svelte: {}", e))?;
                 
-            println!("{} System is running (PID: {})!", "[*]".green().bold(), child.id());
-            
-            // We can optionally wait for the process to exit
-            // child.wait()?;
+            output::print_success(&format!("System is running (PID: {})!", child.id()));
         }
         None => {
             return Err(anyhow!(
-                "{} Could not find Orbis executable ('{}'). Ensure it is downloaded or built.",
-                "[!]".red(),
+                "Could not find Orbis executable ('{}'). Ensure it is downloaded or built.",
                 app_name
             ));
         }
