@@ -47,16 +47,16 @@ function selectProfile(type: string) {
       {@const data = onboardingState.localizedProfile(prof.id)}
       <button
         type="button"
-        class="text-start relative group rounded-2xl border bg-card p-5 cursor-pointer transition-all duration-300 hover:shadow-lg hover:border-primary/50 flex flex-col justify-between gap-4 h-48 {onboardingState.institutionType === prof.id ? 'border-primary bg-primary/5 shadow-md ring-2 ring-primary/20' : 'border-border'}"
+        class="text-start relative group rounded-xl border bg-card p-4 cursor-pointer transition-all duration-200 flex flex-col justify-between gap-4 h-40 {onboardingState.institutionType === prof.id ? 'border-primary bg-primary/5 text-primary' : 'border-border/60 hover:bg-muted/30 hover:border-muted-foreground/30'}"
         onclick={() => selectProfile(prof.id)}
       >
         <div class="flex items-start justify-between w-full">
-          <div class="p-2.5 rounded-xl {onboardingState.institutionType === prof.id ? 'bg-primary/20 text-primary' : 'bg-muted/80 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'} transition-all duration-300">
-            <prof.icon size={22} />
+          <div class="p-2 rounded-lg {onboardingState.institutionType === prof.id ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'} transition-all duration-200">
+            <prof.icon size={20} />
           </div>
           {#if onboardingState.institutionType === prof.id}
             <div class="text-primary">
-              <CheckCircle2 size={18} />
+              <CheckCircle2 size={16} />
             </div>
           {/if}
         </div>
@@ -75,9 +75,9 @@ function selectProfile(type: string) {
 
   <!-- Terminology Information / Preview -->
   {#if onboardingState.institutionType}
-    <div class="p-5 border border-border/80 rounded-2xl bg-muted/20 space-y-4 text-start">
+    <div class="p-4 border border-border/60 rounded-xl bg-muted/10 space-y-3 text-start">
       <h4 class="text-xs font-bold text-foreground flex items-center gap-2 font-serif">
-        <span class="w-1.5 h-3 rounded-full bg-primary"></span>
+        <span class="w-1 h-2.5 rounded-full bg-primary"></span>
         {m.onboarding_profile_terminology_title()}
       </h4>
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-sans">
@@ -102,7 +102,7 @@ function selectProfile(type: string) {
   {/if}
 
   <!-- Automatic Numbering Customization -->
-  <div class="p-5 border border-border rounded-2xl bg-card space-y-4 text-start">
+  <div class="p-4 border border-border/60 rounded-xl bg-card space-y-3 text-start">
     <div class="flex flex-col gap-1">
       <Label for="numbering_pattern" class="text-xs font-bold text-foreground">
         {m.onboarding_profile_numbering_title()}

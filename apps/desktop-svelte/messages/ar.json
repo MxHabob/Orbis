@@ -1527,6 +1527,15 @@
   "onboarding_calendar_months_hint": "💡 سيقوم المعالج تلقائياً بتوزيع وتقسيم أشهر التقييم (4 أشهر بكل فصل دراسي) مع تخصيص 20% لكل شهر تقييم عادي و 30% لامتحان منتصف/نهاية العام ليتوافق تماماً مع إعداد المدرسة الذكية.",
   "onboarding_buildings_title": "توزيع الفصول والقاعات والمباني",
   "onboarding_buildings_desc": "حدد مباني المدرسة وأنشئ الفصول والمعامل والقاعات المتوفرة للتدريس.",
+  "onboarding_add_building": "إضافة مبنى",
+  "onboarding_add_building_name": "اسم المبنى",
+  "onboarding_add_building_placeholder": "مثال: مبنى العلوم",
+  "onboarding_delete_building": "حذف المبنى",
+  "onboarding_delete_building_confirm": "هل أنت متأكد تماماً؟",
+  "onboarding_delete_building_desc": "لا يمكن التراجع عن هذا الإجراء. سيؤدي هذا إلى حذف <strong>{building}</strong> وكافة قاعاته المرتبطة بشكل نهائي.",
+  "onboarding_cancel": "إلغاء",
+  "onboarding_add": "إضافة",
+  "onboarding_delete": "حذف",
   "onboarding_rooms_count_suffix": "قاعات",
   "onboarding_add_room_title": "إضافة القاعة",
   "onboarding_room_name_hint": "اسم القاعة (عربي / إنجليزي)",
@@ -2919,5 +2928,7 @@
   "exams_ordering_freeze_success": "تم تجميد الترتيب بنجاح",
   "bulk_card_grades_tag_period": "الفترة",
   "onboarding_template_label": "قالب الهيكل الأكاديمي",
-  "onboarding_template_placeholder": "اختر القالب"
+  "onboarding_template_placeholder": "اختر القالب",
+  "onboarding_welcome_title": "مرحباً بكم في {orgName}",
+  "onboarding_welcome_message": "أنا Orbis، وكيل ذكاء اصطناعي صُنع خصيصاً بواسطة شركة mulverse. أهدف إلى تحسين وتطوير نظام التعليم العالمي ومساعدتكم في إدارة مؤسستكم بكل سهولة."
 }

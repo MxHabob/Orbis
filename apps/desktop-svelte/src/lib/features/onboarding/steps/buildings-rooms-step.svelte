@@ -1,7 +1,4 @@
-<!--
-  Step 3: Buildings & Rooms Setup
-  Tabs for buildings, add/remove classrooms, labs, halls.
--->
+
 <script lang="ts">
 import {
   Tabs,
@@ -19,6 +16,23 @@ import {
   SelectItem,
 } from "@orbis/ui-svelte/select";
 import { Button } from "@orbis/ui-svelte/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@orbis/ui-svelte/dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@orbis/ui-svelte/alert-dialog";
 import { Plus, Trash } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
 import { onboardingState } from "../state.svelte";
@@ -42,6 +56,37 @@ function handleAddRoom() {
     newRoomNameAr = "";
   }
 }
+
+let isAddDialogOpen = $state(false);
+let newBuildingName = $state("");
+
+let isDeleteDialogOpen = $state(false);
+let buildingToDelete = $state("");
+
+function handleAddBuilding() {
+  isAddDialogOpen = true;
+}
+
+function confirmAddBuilding() {
+  if (newBuildingName.trim()) {
+    onboardingState.addBuilding(newBuildingName);
+    isAddDialogOpen = false;
+    newBuildingName = "";
+  }
+}
+
+function handleRemoveBuilding(bname: string) {
+  buildingToDelete = bname;
+  isDeleteDialogOpen = true;
+}
+
+function confirmRemoveBuilding() {
+  if (buildingToDelete) {
+    onboardingState.removeBuilding(buildingToDelete);
+    isDeleteDialogOpen = false;
+    buildingToDelete = "";
+  }
+}
 </script>
 
 <div class="max-w-5xl space-y-6">
@@ -56,14 +101,14 @@ function handleAddRoom() {
 
   <Tabs
     value={onboardingState.activeBuildingTab}
-    onValueChange={(v) => (onboardingState.activeBuildingTab = v ?? "المبنى 1")}
+    onValueChange={(v) => (onboardingState.activeBuildingTab = v ?? onboardingState.buildings[0])}
     class="w-full"
   >
-    <TabsList class="w-full justify-start bg-muted/50 border-b border-border rounded-none p-0 h-auto gap-2">
+    <TabsList class="w-full justify-start bg-muted/50 border-b border-border rounded-none p-0 h-auto gap-2 overflow-x-auto flex-nowrap scrollbar-hide">
       {#each onboardingState.buildings as bld}
         <TabsTrigger
           value={bld}
-          class="px-5 py-3 font-semibold text-sm rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground text-muted-foreground hover:text-foreground"
+          class="px-5 py-3 font-semibold text-sm rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground text-muted-foreground hover:text-foreground shrink-0"
         >
           {bld}
           <Badge variant="secondary" class="mr-2 ml-2 text-[10px]">
@@ -71,10 +116,22 @@ function handleAddRoom() {
           </Badge>
         </TabsTrigger>
       {/each}
+      <Button variant="ghost" size="sm" class="shrink-0 h-9 my-auto ml-2 text-muted-foreground hover:text-primary gap-1" onclick={handleAddBuilding}>
+        <Plus size={16} />
+        {m.onboarding_add_building()}
+      </Button>
     </TabsList>
 
     {#each onboardingState.buildings as bld}
       <TabsContent value={bld} class="space-y-6 pt-4">
+        {#if onboardingState.buildings.length > 1}
+          <div class="flex justify-end">
+            <Button variant="destructive" size="sm" class="gap-1 h-8 text-xs" onclick={() => handleRemoveBuilding(bld)}>
+              <Trash size={14} />
+              {m.onboarding_delete_building()}
+            </Button>
+          </div>
+        {/if}
         <!-- Add Room Form for current Building -->
         <div class="p-6 bg-muted/40 rounded-xl border border-border grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
           <div class="space-y-2 md:col-span-2">
@@ -189,4 +246,41 @@ function handleAddRoom() {
       </TabsContent>
     {/each}
   </Tabs>
+
+  <!-- Add Building Dialog -->
+  <Dialog bind:open={isAddDialogOpen}>
+    <DialogContent class="max-w-md">
+      <DialogHeader>
+        <DialogTitle>{m.onboarding_add_building()}</DialogTitle>
+      </DialogHeader>
+      <div class="py-4 space-y-4">
+        <div class="space-y-2">
+          <Label>{m.onboarding_add_building_name()}</Label>
+          <Input bind:value={newBuildingName} placeholder={m.onboarding_add_building_placeholder()} class="text-sm" />
+        </div>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" onclick={() => (isAddDialogOpen = false)}>{m.onboarding_cancel()}</Button>
+        <Button onclick={confirmAddBuilding}>{m.onboarding_add()}</Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+
+  <!-- Delete Building Alert -->
+  <AlertDialog bind:open={isDeleteDialogOpen}>
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>{m.onboarding_delete_building_confirm()}</AlertDialogTitle>
+        <AlertDialogDescription>
+          {@html m.onboarding_delete_building_desc({ building: buildingToDelete })}
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>{m.onboarding_cancel()}</AlertDialogCancel>
+        <AlertDialogAction class="bg-destructive text-destructive-foreground hover:bg-destructive/90" onclick={confirmRemoveBuilding}>
+          {m.onboarding_delete()}
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
 </div>

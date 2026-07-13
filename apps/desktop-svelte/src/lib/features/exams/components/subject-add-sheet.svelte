@@ -22,6 +22,8 @@ import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/core/ipc";
 
+const examTypeLabels = { written: "تحريري", oral: "شفوي", practical: "عملي", mixed: "مختلط" };
+
 let {
   open = $bindable(false),
   orgId,
@@ -112,8 +114,8 @@ async function handleSubmit() {
   isSaving = true;
   try {
     // 2. Link/create exam subject inside this session
-    await commands.exam.createSubject(orgId, {
-      exam_session_id: sessionId,
+    await commands.exam.createExamSubject({
+      session_id: sessionId,
       subject_id: targetSubjectId,
       max_score: maxScore,
       passing_score: maxScore * 0.5,
@@ -234,7 +236,6 @@ async function handleSubmit() {
           <label for="exam-type" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
             {m.exams_subjects_type()}
           </label>
-          {@const examTypeLabels = { written: "تحريري", oral: "شفوي", practical: "عملي", mixed: "مختلط" }}
           <Select type="single" value={examType} onValueChange={(v) => (examType = v ?? "written")}>
             <SelectTrigger class="h-9 text-xs w-full">
               {examTypeLabels[examType as keyof typeof examTypeLabels] || examType}

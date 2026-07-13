@@ -13,6 +13,7 @@ import * as m from "$lib/paraglide/messages";
 import { onboardingState } from "../state.svelte";
 </script>
 
+
 <div class="max-w-4xl space-y-6">
   <div class="space-y-2 text-start">
     <h3 class="text-foreground font-bold text-xl font-serif">
@@ -26,14 +27,14 @@ import { onboardingState } from "../state.svelte";
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     {#each onboardingState.gradeLevels as gl (gl.level)}
       <div
-        class="bg-card border rounded-xl p-5 space-y-4 transition-colors
-          {gl.enabled ? 'border-border' : 'border-border/40 opacity-50'}"
+        class="bg-card border rounded-xl p-4 space-y-3 transition-colors
+          {gl.enabled ? 'border-border/60' : 'border-border/30 opacity-40'}"
       >
         <!-- Grade Header -->
         <div class="flex justify-between items-start">
           <div class="flex gap-3 items-center text-start">
             <!-- Color Tag -->
-            <div class="w-4 h-4 rounded-full" style="background-color: {gl.color};"></div>
+            <div class="w-3.5 h-3.5 rounded-full" style="background-color: {gl.color};"></div>
             <div>
               <h4 class="font-bold text-foreground text-sm font-serif">{gl.name_ar}</h4>
               <p class="text-xs text-muted-foreground font-mono">{gl.name}</p>
@@ -50,20 +51,20 @@ import { onboardingState } from "../state.svelte";
 
         <!-- Divisions / Sections manager -->
         {#if gl.enabled}
-          <div class="space-y-3 pt-3 border-t border-border">
+          <div class="space-y-3 pt-3 border-t border-border/60">
             <Label class="text-xs text-muted-foreground flex justify-start">
               {m.onboarding_associated_divisions({ division: onboardingState.divisionLabel })}
             </Label>
 
-            <div class="flex flex-wrap gap-1.5 min-h-[32px] p-2 bg-muted/40 rounded-lg border border-border">
+            <div class="flex flex-wrap gap-1.5 min-h-[32px] p-2 bg-muted/20 rounded-lg border border-border/60">
               {#each gl.divisions as div}
-                <Badge variant="secondary" class="bg-card border-border text-foreground text-xs px-2.5 py-0.5 flex gap-1 items-center font-sans">
+                <Badge variant="secondary" class="bg-card border-border/60 text-foreground text-xs px-2 py-0.5 flex gap-1 items-center font-sans">
                   <span>
                     {onboardingState.divisionLabel} {div}
                   </span>
                   <button
                     onclick={() => onboardingState.removeDivision(gl.level, div)}
-                    class="hover:text-destructive font-bold ml-0.5 mr-0.5 text-[10px]"
+                    class="hover:text-destructive font-bold ml-0.5 mr-0.5 text-[10px] cursor-pointer"
                   >
                     &times;
                   </button>
@@ -86,10 +87,10 @@ import { onboardingState } from "../state.svelte";
               />
               <Button
                 onclick={() => onboardingState.addDivision(gl.level)}
-                size="sm"
-                class="h-8 text-xs shrink-0 px-3"
+                size="xs"
+                class="h-8 text-xs shrink-0 px-2.5"
               >
-                <Plus class="w-3.5 h-3.5" />
+                <Plus class="w-3 h-3" />
               </Button>
             </div>
           </div>

@@ -28,10 +28,10 @@ let {
     <Button
       variant="outline"
       onclick={onPrev}
-      disabled={activeStep === 1 || isLoading}
+      disabled={activeStep === 0 || isLoading}
       class="border-border text-muted-foreground hover:text-foreground hover:bg-muted flex gap-2 items-center"
     >
-      <ArrowRight class="w-4 h-4" />
+      <ArrowLeft class="w-4 h-4 rtl:rotate-180" />
       <span>{m.onboarding_prev_btn()}</span>
     </Button>
 
@@ -42,8 +42,8 @@ let {
         disabled={isLoading}
         class="bg-primary text-primary-foreground hover:bg-primary/90 flex gap-2 items-center"
       >
-        <span>{m.onboarding_next_btn()}</span>
-        <ArrowLeft class="w-4 h-4" />
+        <span>{activeStep === 0 ? m.onboarding_get_started() : m.onboarding_next_btn()}</span>
+        <ArrowRight class="w-4 h-4 rtl:rotate-180" />
       </Button>
     {/if}
   </div>

@@ -31,7 +31,9 @@ const progressPercent = $derived((completedTasks / totalTasks) * 100);
 const activeIndex = $derived(
   authStore.isSetupComplete
     ? -1
-    : onboardingState.completedSteps.findIndex((step) => !step),
+    : onboardingState.activeStep > 0
+      ? onboardingState.activeStep - 1
+      : onboardingState.completedSteps.findIndex((step) => !step),
 );
 
 const tasksList = $derived([

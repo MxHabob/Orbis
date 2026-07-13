@@ -46,7 +46,11 @@ function detectCurrency(timezone: string): string {
   if (timezone.includes("Dubai") || timezone.includes("Uae")) return "AED";
   if (timezone.includes("Cairo") || timezone.includes("Egypt")) return "EGP";
   if (timezone.includes("Aden") || timezone.includes("Yemen")) return "YER";
-  return "YER";
+  return detectLocale() === "en" ? "USD" : "SAR"; // Smarter fallback based on locale
+}
+
+function getDefaultBuildings(): string[] {
+  return detectLocale() === "ar" ? ["المبنى الرئيسي"] : ["Main Building"];
 }
 
 // ── Default Data ─────────────────────────────────────────────────────
@@ -239,15 +243,49 @@ const DEFAULT_SUBJECTS: Subject[] = [
     sort_order: 7,
     enabled: true,
   },
+  {
+    code: "ART",
+    name: "Art",
+    name_ar: "التربية الفنية",
+    color: "#f43f5e",
+    icon: "palette",
+    sort_order: 7,
+    enabled: true,
+  },
+  {
+    code: "MUS",
+    name: "Music",
+    name_ar: "التربية الموسيقية",
+    color: "#8b5cf6",
+    icon: "music",
+    sort_order: 8,
+    enabled: true,
+  },
+  {
+    code: "PE",
+    name: "Physical Education",
+    name_ar: "التربية البدنية",
+    color: "#f97316",
+    icon: "activity",
+    sort_order: 9,
+    enabled: true,
+  },
+  {
+    code: "COMP",
+    name: "Computer Science",
+    name_ar: "الحاسوب",
+    color: "#06b6d4",
+    icon: "monitor",
+    sort_order: 10,
+    enabled: true,
+  },
 ];
-
-const BUILDINGS = ["المبنى 1", "المبنى 2"];
 
 // ── Store Class ──────────────────────────────────────────────────────
 
 class OnboardingState {
   // Wizard navigation
-  activeStep = $state(1);
+  activeStep = $state(0);
   isLoading = $state(false);
   errorMessage = $state<string | null>(null);
   totalSteps = 8;
@@ -283,8 +321,8 @@ class OnboardingState {
 
   // Step 3: Buildings & Rooms
   rooms = $state<Room[]>([]);
-  activeBuildingTab = $state("المبنى 1");
-  buildings = BUILDINGS;
+  activeBuildingTab = $state(getDefaultBuildings()[0]);
+  buildings = $state<string[]>(getDefaultBuildings());
 
   // Step 4: Grade Levels & Classes
   gradeLevels = $state<GradeLevel[]>(structuredClone(DEFAULT_GRADE_LEVELS));
@@ -389,9 +427,8 @@ class OnboardingState {
 
       // Dynamic room list prefix mapping
       const roomsList: Room[] = [];
-      const bld1Name = getLocale() === "ar" ? "المبنى 1" : "Building 1";
-      const bld2Name = getLocale() === "ar" ? "المبنى 2" : "Building 2";
-
+      const bldName = this.buildings.length > 0 ? this.buildings[0] : getDefaultBuildings()[0];
+      
       profile.stages.slice(0, 5).forEach((stg, sIdx) => {
         roomsList.push({
           id: `room-b1-f1-${sIdx + 1}`,
@@ -399,13 +436,12 @@ class OnboardingState {
           name_ar: `${profile.terminology.classroom_ar} 1-0${sIdx + 1}`,
           capacity: 30,
           room_type: "classroom",
-          building: bld1Name,
+          building: bldName,
           floor: 1,
         });
       });
       this.rooms = roomsList;
-      this.buildings = [bld1Name, bld2Name];
-      this.activeBuildingTab = bld1Name;
+      this.activeBuildingTab = bldName;
 
       this.save();
     }
@@ -413,7 +449,7 @@ class OnboardingState {
 
   // ── Derived Values ───────────────────────────────────────────────
 
-  progressValue = $derived((this.activeStep / this.totalSteps) * 100);
+  progressValue = $derived(this.activeStep === 0 ? 0 : (this.activeStep / this.totalSteps) * 100);
   totalCapacity = $derived(this.rooms.reduce((acc, r) => acc + r.capacity, 0));
   enabledStages = $derived(this.gradeLevels.filter((l) => l.enabled).length);
   totalDivisions = $derived(
@@ -537,54 +573,80 @@ class OnboardingState {
 
   goNext() {
     if (this.activeStep < this.totalSteps) {
-      this.completedSteps[this.activeStep - 1] = true;
+      if (this.activeStep > 0) {
+        this.completedSteps[this.activeStep - 1] = true;
+      }
       this.activeStep += 1;
       this.save();
     }
   }
 
   goPrev() {
-    if (this.activeStep > 1) {
+    if (this.activeStep > 0) {
       this.activeStep -= 1;
       this.save();
     }
   }
 
   goToStep(step: number) {
-    if (!this.isLoading && step >= 1 && step <= this.totalSteps) {
+    if (!this.isLoading && step >= 0 && step <= this.totalSteps) {
       this.activeStep = step;
       this.save();
     }
   }
 
-  // ── Step 3: Room Management ────────────────────────────────────
+  // ── Step 3: Room & Building Management ────────────────────────────────────
+
+  addBuilding(name: string): boolean {
+    const trimmed = name.trim();
+    if (!trimmed || this.buildings.includes(trimmed)) return false;
+    this.buildings.push(trimmed);
+    this.activeBuildingTab = trimmed;
+    this.save();
+    return true;
+  }
+
+  removeBuilding(name: string): boolean {
+    if (this.buildings.length <= 1) return false; // Must have at least one building
+    const idx = this.buildings.indexOf(name);
+    if (idx === -1) return false;
+    
+    this.buildings.splice(idx, 1);
+    this.rooms = this.rooms.filter((r) => r.building !== name);
+    if (this.activeBuildingTab === name) {
+      this.activeBuildingTab = this.buildings[0];
+    }
+    this.save();
+    return true;
+  }
 
   resetRoomsToDefault() {
     const list: Room[] = [];
-    // Building 1 Classrooms
+    const bldName = this.buildings.length > 0 ? this.buildings[0] : getDefaultBuildings()[0];
+    const terminology = INSTITUTION_PROFILES[this.institutionType]?.terminology || INSTITUTION_PROFILES.school.terminology;
+
     for (let i = 1; i <= 10; i++) {
       list.push({
         id: `room-b1-f1-${i}`,
-        name: `Classroom 1-0${i}`,
-        name_ar: `فصل 1-0${i}`,
+        name: `${terminology.classroom} 1-0${i}`,
+        name_ar: `${terminology.classroom_ar} 1-0${i}`,
         capacity: 30,
         room_type: "classroom",
-        building: "المبنى 1",
+        building: bldName,
         floor: 1,
       });
     }
     for (let i = 11; i <= 20; i++) {
       list.push({
         id: `room-b1-f2-${i}`,
-        name: `Classroom 1-${i}`,
-        name_ar: `فصل 1-${i}`,
+        name: `${terminology.classroom} 1-${i}`,
+        name_ar: `${terminology.classroom_ar} 1-${i}`,
         capacity: 30,
         room_type: "classroom",
-        building: "المبنى 1",
+        building: bldName,
         floor: 2,
       });
     }
-    // Building 1 Computer labs
     for (let i = 1; i <= 3; i++) {
       list.push({
         id: `room-b1-lab-comp-${i}`,
@@ -592,11 +654,11 @@ class OnboardingState {
         name_ar: `مختبر الحاسوب 1-${i}`,
         capacity: 25,
         room_type: "computer_lab",
-        building: "المبنى 1",
+        building: bldName,
         floor: 2,
       });
     }
-    // Building 1 Chemistry labs
+    // Chemistry labs
     for (let i = 1; i <= 2; i++) {
       list.push({
         id: `room-b1-lab-chem-${i}`,
@@ -604,26 +666,13 @@ class OnboardingState {
         name_ar: `مختبر الكيمياء 1-${i}`,
         capacity: 25,
         room_type: "chemistry_lab",
-        building: "المبنى 1",
+        building: bldName,
         floor: 1,
       });
     }
-    // Building 2
-    for (let floor = 1; floor <= 3; floor++) {
-      for (let room = 1; room <= 7; room++) {
-        const roomNum = `${floor}-0${room}`;
-        list.push({
-          id: `room-b2-f${floor}-${room}`,
-          name: `Classroom 2-${roomNum}`,
-          name_ar: `فصل 2-${roomNum}`,
-          capacity: 30,
-          room_type: "classroom",
-          building: "المبنى 2",
-          floor,
-        });
-      }
-    }
     this.rooms = list;
+    this.activeBuildingTab = bldName;
+    this.save();
   }
 
   addRoom(
