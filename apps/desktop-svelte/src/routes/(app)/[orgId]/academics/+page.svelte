@@ -44,7 +44,7 @@ const classesQuery = createClassesQuery(() => data.orgId);
 const subjectsQuery = createSubjectsQuery(() => data.orgId);
 const periodsQuery = createPeriodsQuery(() => data.orgId);
 const currentYearQuery = createCurrentYearQuery(data.orgId);
-const promotionJobsQuery = createPromotionJobsQuery(data.orgId);
+const promotionJobsQuery = createPromotionJobsQuery(() => data.orgId);
 const examSessionsQuery = createExamSessionsQuery(data.orgId);
 
 // Derived Data

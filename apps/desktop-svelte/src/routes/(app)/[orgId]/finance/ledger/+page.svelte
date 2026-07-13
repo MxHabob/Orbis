@@ -177,16 +177,27 @@ onMount(() => {
 
 // Double entry ledger balance calculation
 const calculatedLedgerRows = $derived.by(() => {
-  return ledgers.map((acc) => ({
-    id: acc.id,
-    code: acc.code,
-    name: acc.name,
-    name_ar: acc.name_ar || acc.name,
-    item_type: acc.type || acc.item_type || "asset",
-    parent_id: acc.parent_id,
-    balances: acc.balances || {},
-    notes: acc.sub_type || "",
-  }));
+  return ledgers.map((acc: any) => {
+    const balances = acc.balances || {};
+    return {
+      id: acc.id,
+      code: acc.code,
+      name: acc.name,
+      name_ar: acc.name_ar || acc.name,
+      item_type: acc.type || acc.item_type || "asset",
+      parent_id: acc.parent_id,
+      balances,
+      notes: acc.sub_type || "",
+      debit_yer: balances.YER?.debit || 0,
+      credit_yer: balances.YER?.credit || 0,
+      debit_usd: balances.USD?.debit || 0,
+      credit_usd: balances.USD?.credit || 0,
+      debit_sar: balances.SAR?.debit || 0,
+      credit_sar: balances.SAR?.credit || 0,
+      debit_aed: balances.AED?.debit || 0,
+      credit_aed: balances.AED?.credit || 0,
+    };
+  });
 });
 
 // Selected Account Row derived state
@@ -893,7 +904,7 @@ function exitPage() {
     >
       <!-- Scrollable Tree content -->
       <div class="flex-1 overflow-y-auto flex flex-col gap-2.5 text-[10px]">
-        {#snippet renderNodes(nodes, depth)}
+        {#snippet renderNodes(nodes: any[], depth: number)}
           {#each nodes as node (node.id)}
             {@const isParent = node.children && node.children.length > 0}
             {@const isExpanded = expandedAccounts[node.id] !== false}
