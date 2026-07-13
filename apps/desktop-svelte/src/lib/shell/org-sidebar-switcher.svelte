@@ -21,6 +21,7 @@ import {
 } from "@orbis/ui-svelte";
 import { goto } from "$app/navigation";
 import { localizeHref } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 
 let {
@@ -31,40 +32,15 @@ let {
   orgName?: string;
 } = $props();
 
-let localOrgName = $state("");
-let customProjects = $state<{ id: string; label: string; logoType: string }[]>(
-  [],
-);
+let customProjects = $state<{ id: string; label: string; logoType: string }[]>([]);
 
-$effect(() => {
-  if (initialOrgName && initialOrgName !== "Orbis School") {
-    localOrgName = initialOrgName;
-    return;
-  }
-  const storedCustom = localStorage.getItem("orbis_custom_orgs");
-  if (storedCustom) {
-    try {
-      const customProjects = JSON.parse(storedCustom);
-      const match = customProjects.find((p: any) => p.id === orgId);
-      if (match) {
-        localOrgName = match.label;
-        return;
-      }
-    } catch {}
-  }
+const orgNameDisplay = $derived.by(() => {
+  if (initialOrgName && initialOrgName !== "Orbis School") return initialOrgName;
   if (orgId) {
-    localOrgName = orgId
-      .split("-")
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(" ");
-  } else {
-    localOrgName = "Orbis School";
+    return orgId.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
   }
+  return "Orbis School";
 });
-
-const orgNameDisplay = $derived(
-  localOrgName || initialOrgName || "Orbis School",
-);
 
 const orgInitials = $derived(
   orgNameDisplay.trim().charAt(0).toUpperCase() || "O",
@@ -137,7 +113,7 @@ function handleSelect(id: string) {
             aria-label={orgNameDisplay}
           >
             <Avatar class="h-full w-full rounded-md bg-transparent">
-              <AvatarFallback class="bg-transparent text-white font-bold text-sm">
+              <AvatarFallback class="bg-transparent font-bold text-sm">
                 {orgInitials}
               </AvatarFallback>
             </Avatar>
@@ -150,39 +126,39 @@ function handleSelect(id: string) {
     </div>
   </DropdownMenuTrigger>
 
-  <DropdownMenuContent align="start" side="right" sideOffset={12} class="w-56 p-1 z-50 bg-popover border border-border shadow-md rounded-md select-none overflow-visible">
+  <DropdownMenuContent align="start" side="right" sideOffset={12} class="w-56 p-1 z-50">
     <!-- Header info -->
     <div class="flex items-center gap-3 px-3 py-2.5 border-b border-border/50">
       <Avatar
-        class="h-8 w-8 rounded-[8px] {activeColors.bg} font-bold text-white text-xs"
+        class="h-8 w-8 rounded-[8px] {activeColors.bg} font-bold text-xs"
         style="box-shadow: 0 2px 0 0 {activeColors.shadow}, 0 0 0 1px {activeColors.shadow};"
       >
-        <AvatarFallback class="{activeColors.bg} text-white font-bold text-xs">
+        <AvatarFallback class="{activeColors.bg} font-bold text-xs">
           {orgInitials}
         </AvatarFallback>
       </Avatar>
       <div class="flex flex-col min-w-0 leading-tight">
         <span class="text-xs font-bold uppercase tracking-wider text-foreground truncate">{orgNameDisplay}</span>
-        <span class="text-[9px] text-muted-foreground uppercase font-semibold">{projects.length} {projects.length === 1 ? 'Project' : 'Projects'}</span>
+        <span class="text-[9px] text-muted-foreground uppercase font-semibold">{projects.length} {projects.length === 1 ? m.header_org_branch() : m.header_org_branches()}</span>
       </div>
     </div>
 
     <!-- Items -->
     <div class="py-1">
-      <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs text-foreground hover:bg-accent rounded" onclick={() => handleNavigate(`/${orgId}/settings`)}>
-        Organization Settings
+      <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/settings`)}>
+        {m.header_org_settings()}
       </DropdownMenuItem>
-      <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs text-foreground hover:bg-accent rounded" onclick={() => handleNavigate(`/${orgId}/settings`)}>
-        Projects
+      <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/settings/branches`)}>
+        {m.header_org_branches()}
       </DropdownMenuItem>
-      <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs text-foreground hover:bg-accent rounded" onclick={() => handleNavigate(`/${orgId}/students`)}>
-        Members
+      <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/settings/users`)}>
+        {m.header_org_members()}
       </DropdownMenuItem>
-      <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs text-foreground hover:bg-accent rounded">
-        Teams
+      <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/reports`)}>
+        {m.nav_reports()}
       </DropdownMenuItem>
-      <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs text-foreground hover:bg-accent rounded">
-        Usage & Billing
+      <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/billing`)}>
+        {m.header_org_billing()}
       </DropdownMenuItem>
     </div>
 
@@ -191,19 +167,19 @@ function handleSelect(id: string) {
     <!-- Submenu for Switch Organization -->
     <div class="py-1">
       <DropdownMenuSub>
-        <DropdownMenuSubTrigger class="cursor-pointer px-3 py-1.5 text-xs text-foreground hover:bg-accent rounded">
-          Switch Organization
+        <DropdownMenuSubTrigger class="cursor-pointer px-3 py-1.5 text-xs rounded">
+          {m.header_switch_org()}
         </DropdownMenuSubTrigger>
         <DropdownMenuPortal>
-          <DropdownMenuSubContent class="w-48 p-1 z-50 bg-popover border border-border shadow-md rounded-md">
+          <DropdownMenuSubContent class="w-48 p-1 z-50 shadow-md rounded-md">
             {#each projects as project}
               {@const projColors = getOrgColors(project.label)}
-              <DropdownMenuItem class="cursor-pointer flex items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-accent rounded" onclick={() => handleSelect(project.id)}>
+              <DropdownMenuItem class="cursor-pointer flex items-center gap-2 px-3 py-1.5 text-xs rounded" onclick={() => handleSelect(project.id)}>
                 <Avatar
-                  class="h-5 w-5 rounded-[6px] {projColors.bg} font-bold text-white text-[9px]"
+                  class="h-5 w-5 rounded-[6px] {projColors.bg} font-bold text-[9px]"
                   style="box-shadow: 0 1.5px 0 0 {projColors.shadow}, 0 0 0 0.5px {projColors.shadow};"
                 >
-                  <AvatarFallback class="{projColors.bg} text-white font-bold text-[9px]">
+                  <AvatarFallback class="{projColors.bg} font-bold text-[9px]">
                     {(project.label || "O").charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
@@ -211,8 +187,8 @@ function handleSelect(id: string) {
               </DropdownMenuItem>
             {/each}
             <DropdownMenuSeparator class="bg-border/50" />
-            <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs text-foreground hover:bg-accent rounded font-medium" >
-              + Create a new organization
+            <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded font-medium" >
+              {m.header_org_create()}
             </DropdownMenuItem>
           </DropdownMenuSubContent>
         </DropdownMenuPortal>

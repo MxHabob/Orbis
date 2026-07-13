@@ -33,6 +33,7 @@ import MoreActionsDropdown from "./more-actions-dropdown.svelte";
 import * as m from "$lib/paraglide/messages";
 import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
 import { onboardingState } from "$lib/features/onboarding/state.svelte";
+import { createOrganizationQuery } from "$lib/features/settings/queries";
 import { onMount } from "svelte";
 import { prefetchRouteData } from "$lib/core/ipc";
 
@@ -46,40 +47,22 @@ let {
   disabled?: boolean;
 } = $props();
 
-let localOrgName = $state("");
+const orgQuery = createOrganizationQuery(orgId);
 
 onMount(() => {
   onboardingState.load();
 });
 
-$effect(() => {
-  if (initialOrgName && initialOrgName !== "Orbis School") {
-    localOrgName = initialOrgName;
-    return;
-  }
-  const storedCustom = localStorage.getItem("orbis_custom_orgs");
-  if (storedCustom) {
-    try {
-      const customProjects = JSON.parse(storedCustom);
-      const match = customProjects.find((p: any) => p.id === orgId);
-      if (match) {
-        localOrgName = match.label;
-        return;
-      }
-    } catch {}
-  }
+const fallbackName = $derived.by(() => {
+  if (initialOrgName && initialOrgName !== "Orbis School") return initialOrgName;
   if (orgId) {
-    localOrgName = orgId
-      .split("-")
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(" ");
-  } else {
-    localOrgName = "Orbis School";
+    return orgId.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
   }
+  return "Orbis School";
 });
 
 const orgNameDisplay = $derived(
-  localOrgName || initialOrgName || "Orbis School",
+  orgQuery.data?.name || fallbackName
 );
 
 const navItems = $derived([
@@ -87,12 +70,6 @@ const navItems = $derived([
     href: `/${orgId}`,
     icon: LayoutDashboard,
     label: m.nav_overview(),
-    match: "exact",
-  },
-  {
-    href: `/${orgId}/reports`,
-    icon: BarChart3,
-    label: m.nav_reports(),
     match: "exact",
   },
   {
@@ -177,7 +154,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 				<GitIntegrationPopover />
 				<UpgradeButton />
 				<AutomationStatusPopover {orgId} />
-				<MoreActionsDropdown {orgId} />
+				<MoreActionsDropdown />
 			</div>
 
 			<UserSidebarMenu {orgId} />
