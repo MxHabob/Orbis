@@ -81,6 +81,13 @@ const attendanceQuery = createQuery({
   staleTime: 5 * 60 * 1000,
 });
 
+const gradesQuery = createQuery({
+  get queryKey() { return ["grades", periodId]; },
+  queryFn: () => commands.assessment.listGrades(periodId || "").catch(() => []),
+  get enabled() { return !!periodId; },
+  staleTime: 5 * 60 * 1000,
+});
+
 const filteredStudents = $derived(
   (enrollmentsQuery.data || []).filter((s) => String(s.class_id) === classId),
 );

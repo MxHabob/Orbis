@@ -50,7 +50,7 @@ let periodId = $state("");
 $effect(() => {
   classId = editData ? String(editData.class_id ?? "") : "";
   subjectId = editData ? String(editData.subject_id ?? "") : "";
-  teacherId = editData ? String(editData.teacher_id ?? "") : "";
+  teacherId = editData ? String(editData.primary_teacher_id ?? "") : "";
   assistantTeacherId = editData
     ? String(editData.assistant_teacher_id ?? "")
     : "";
@@ -62,7 +62,7 @@ $effect(() => {
 const periodsQuery = createPeriodsQuery(orgId);
 const classesQuery = createClassesQuery(orgId);
 const subjectsQuery = createSubjectsQuery(orgId);
-const usersQuery = createUsersQuery(orgId);
+const usersQuery = createUsersQuery(() => orgId);
 
 const periods = $derived(($periodsQuery.data as JsonRecord[]) ?? []);
 const classes = $derived(($classesQuery.data as JsonRecord[]) ?? []);

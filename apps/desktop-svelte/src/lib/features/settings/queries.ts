@@ -8,13 +8,14 @@ import {
   useQueryClient,
 } from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
+import type { Organization } from "$lib/core/ipc";
 
 /** Get the organization details. */
-export function createOrganizationQuery(orgId: string) {
-  return createQuery({
-    queryKey: ["organization", orgId],
-    queryFn: () => commands.organization.getOrganization(orgId),
-    enabled: !!orgId,
+export function createOrganizationQuery(orgId: () => string) {
+  return createQuery<Organization>({
+    get queryKey() { return ["organization", orgId()]; },
+    queryFn: async () => await commands.organization.getOrganization(orgId()),
+    get enabled() { return !!orgId(); },
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -37,11 +38,11 @@ export function createUpdateOrganizationMutation() {
 }
 
 /** Get all users for an organization. */
-export function createUsersQuery(orgId: string) {
+export function createUsersQuery(orgId: () => string) {
   return createQuery({
-    queryKey: ["users", orgId],
-    queryFn: () => commands.iam.listUsers(),
-    enabled: !!orgId,
+    get queryKey() { return ["users", orgId()]; },
+    queryFn: () => commands.iam.listUsers(orgId()),
+    get enabled() { return !!orgId(); },
     staleTime: 5 * 60 * 1000,
   });
 }

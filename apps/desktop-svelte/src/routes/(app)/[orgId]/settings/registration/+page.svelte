@@ -13,7 +13,7 @@ import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.s
 let orgId = $derived(page.params.orgId as string);
 
 // Query & Mutation
-const orgQuery = createOrganizationQuery(orgId);
+const orgQuery = createOrganizationQuery(() => orgId);
 const updateOrgMutation = createUpdateOrganizationMutation();
 
 let isLoading = $derived($orgQuery.isLoading);

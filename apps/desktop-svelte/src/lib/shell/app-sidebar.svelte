@@ -40,14 +40,12 @@ import { prefetchRouteData } from "$lib/core/ipc";
 let {
   orgId,
   orgName: initialOrgName = "Orbis School",
-  disabled = false,
 }: {
   orgId: string;
   orgName?: string;
-  disabled?: boolean;
 } = $props();
 
-const orgQuery = createOrganizationQuery(orgId);
+const orgQuery = createOrganizationQuery(() => orgId);
 
 onMount(() => {
   onboardingState.load();
@@ -62,7 +60,7 @@ const fallbackName = $derived.by(() => {
 });
 
 const orgNameDisplay = $derived(
-  orgQuery.data?.name || fallbackName
+  $orgQuery.data?.name || fallbackName
 );
 
 const navItems = $derived([

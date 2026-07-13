@@ -84,12 +84,12 @@ $effect(() => {
     : 0;
 
   if (editData && editData.guardian_id) {
-    commands.users
+    commands.iam
       .getUser(String(editData.guardian_id))
       .then((u) => {
         if (u) {
           fullName = String(u.full_name ?? u.name_ar ?? "");
-          phone = String(u.phone ?? u.phone_number ?? "");
+          phone = String(u.phone ?? u.phone ?? "");
           email = String(u.email ?? "");
           nationalId = String(u.national_id ?? "");
         }
@@ -112,7 +112,7 @@ const updateSearch = debounce((q: string) => {
 }, 150);
 
 // TanStack Queries
-const usersQuery = createUsersQuery(orgId);
+const usersQuery = createUsersQuery(() => orgId);
 const enrollmentsQuery = createEnrollmentsQuery(orgId);
 
 const allUsers = $derived(
