@@ -72,6 +72,8 @@ import {
   getHijriMonths,
 } from "$lib/core/i18n/hijri";
 
+import { confirmStore } from "$lib/stores";
+
 let { data }: { data: { orgId: string } } = $props();
 const orgId = $derived(data?.orgId ?? "");
 const periodId = $derived(academicContext.effectivePeriodId ?? "");
@@ -311,6 +313,13 @@ async function executeEvent(eventId: string) {
 }
 
 async function deleteEvent(eventId: string) {
+  const confirmed = await confirmStore.prompt({
+    title: m.common_action_delete() + "؟",
+    description: m.common_schedule_page_confirm_delete ? m.common_schedule_page_confirm_delete() : "Are you sure you want to delete this event?",
+    confirmText: m.common_action_delete(),
+    variant: "destructive"
+  });
+  if (!confirmed) return;
   try {
     await commands.platform.deleteCalendarEvent(eventId);
     toast.success(

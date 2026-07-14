@@ -213,22 +213,23 @@ async function handleEditCurrency(e: Event) {
   }
 }
 
-async function confirmDeleteCurrency(c: any) {
-  if (c.is_base === 1) {
+async function handleDeleteCurrency(currencyToDelete: any) {
+  if (currencyToDelete.is_base === 1) {
     toast.error(m.settings_currencies_delete_base_error());
     return;
   }
-  currencyToDelete = c;
-}
-
-async function handleDeleteCurrency() {
-  if (!currencyToDelete) return;
+  const confirmed = await confirmStore.prompt({
+    title: m.settings_currencies_delete_dialog_title(),
+    description: m.settings_currencies_delete_dialog_confirm({ code: currencyToDelete.code, name: l(currencyToDelete.name_ar, currencyToDelete.name) }) + "\n" + m.settings_currencies_delete_dialog_warning(),
+    confirmText: m.settings_currencies_btn_delete_confirm(),
+    variant: "destructive"
+  });
+  if (!confirmed) return;
   try {
     await commands.finance.deleteCurrency(currencyToDelete.code);
     toast.success(
       m.settings_currencies_deleted_success({ code: currencyToDelete.code }),
     );
-    currencyToDelete = null;
     await loadCurrencies();
   } catch (e) {
     console.error("Error deleting currency:", e);
@@ -237,28 +238,6 @@ async function handleDeleteCurrency() {
   }
 }
 
-async function seedFinancials() {
-  const confirmed = await confirmStore.prompt({
-    title: m.common_word_status() + "؟",
-    description: m.settings_currencies_seed_confirm(),
-    confirmText: m.common_word_status(),
-    variant: "default"
-  });
-  if (!confirmed) return;
-
-  isSeeding = true;
-  try {
-    await commands.finance.seedDefaultFinancials();
-    toast.success(m.settings_currencies_seeded_success());
-    await loadCurrencies();
-  } catch (e) {
-    console.error("Error seeding financials:", e);
-    const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(m.settings_currencies_seed_error({ error: errorMsg }));
-  } finally {
-    isSeeding = false;
-  }
-}
 
 function startEditingRate(c: any) {
   if (c.is_base === 1) return;
@@ -311,18 +290,7 @@ let baseCurrencyCode = $derived(
     </div>
 
     <!-- Actions -->
-    <div class="flex items-center gap-2">
-      <Button
-        variant="outline"
-        size="sm"
-        onclick={seedFinancials}
-        disabled={isSeeding}
-        class="h-9 text-xs flex items-center gap-1.5 cursor-pointer border-primary/30 hover:bg-primary/5 text-primary font-semibold"
-      >
-        <Sparkles size={13} class={isSeeding ? "animate-spin" : ""} />
-        <span>{isSeeding ? m.settings_currencies_seeding() : m.settings_currencies_seed_btn()}</span>
-      </Button>
-      
+    <div class="flex items-center gap-2">      
       <Button
         variant="outline"
         size="sm"
@@ -374,9 +342,6 @@ let baseCurrencyCode = $derived(
         <p class="text-xs text-muted-foreground max-w-xs">
           {m.settings_currencies_seed_hint()}
         </p>
-        <Button variant="default" size="sm" onclick={seedFinancials} class="mt-2 cursor-pointer font-bold">
-          {m.settings_currencies_seed_now_btn()}
-        </Button>
       </div>
     {:else}
       <div in:fade={{ duration: 150 }} class="overflow-hidden">
@@ -485,7 +450,7 @@ let baseCurrencyCode = $derived(
                       <Button
                         variant="outline"
                         size="icon"
-                        onclick={() => confirmDeleteCurrency(c)}
+                        onclick={() => handleDeleteCurrency(c)}
                         class="h-7 w-7 cursor-pointer text-destructive hover:bg-destructive/10 border-destructive/20"
                         title={m.settings_currencies_delete_title()}
                       >
@@ -836,37 +801,4 @@ let baseCurrencyCode = $derived(
   </div>
 {/if}
 
-<!-- Delete Confirmation Dialog -->
-{#if currencyToDelete}
-  <div 
-    in:fade={{ duration: 150 }} 
-    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-  >
-    <div 
-      in:slide={{ duration: 200 }} 
-      class="bg-card border border-border rounded-2xl w-full max-w-md p-6 flex flex-col gap-4 text-start shadow-2xl"
-    >
-      <div class="flex flex-col gap-1">
-        <h3 class="text-sm font-bold text-destructive flex items-center gap-1.5">
-          <Trash2 size={16} />
-          <span>{m.settings_currencies_delete_dialog_title()}</span>
-        </h3>
-        <p class="text-xs text-foreground mt-2 font-semibold">
-          {m.settings_currencies_delete_dialog_confirm({ code: currencyToDelete.code, name: l(currencyToDelete.name_ar, currencyToDelete.name) })}
-        </p>
-        <p class="text-[10px] text-muted-foreground leading-relaxed mt-1">
-          {m.settings_currencies_delete_dialog_warning()}
-        </p>
-      </div>
 
-      <div class="flex items-center justify-end gap-2 border-t border-border/40 pt-4 mt-2">
-        <Button variant="ghost" class="text-xs h-8 cursor-pointer" onclick={() => currencyToDelete = null}>
-          {m.common_td_undo()}
-        </Button>
-        <Button variant="destructive" class="text-xs h-8 font-bold cursor-pointer" onclick={handleDeleteCurrency}>
-          {m.settings_currencies_btn_delete_confirm()}
-        </Button>
-      </div>
-    </div>
-  </div>
-{/if}

@@ -25,6 +25,7 @@ import {
   CreateTemplateDialog,
   DeleteTemplateDialog,
 } from "$lib/features/templates";
+    import { confirmStore } from "$lib/stores";
 
 // State runes
 let templates = $state<any[]>([]);
@@ -33,7 +34,7 @@ let searchQuery = $state("");
 let filterEntityType = $state("all");
 let filterDocType = $state("all");
 
-// Dialog & Dialog State
+// Dialog & Modals State
 let isCreateDialogOpen = $state(false);
 let newTemplateName = $state("");
 let newTemplateNameAr = $state("");
@@ -42,10 +43,6 @@ let newTemplateEntityType = $state("enrollment");
 let newTemplateDocType = $state("CERTIFICATE");
 let newTemplatePageSize = $state("A4");
 let newTemplateOrientation = $state("portrait");
-
-// Alert Dialog delete state
-let isDeleteDialogOpen = $state(false);
-let templateToDeleteId = $state("");
 
 // Dynamic parameters from route
 const orgId: string = $derived(page.params.orgId ?? "");
@@ -179,25 +176,23 @@ async function handleCreateTemplate() {
 }
 
 // Trigger Delete
-function confirmDelete(id: string) {
-  templateToDeleteId = id;
-  isDeleteDialogOpen = true;
-}
-
-async function handleDeleteTemplate() {
-  if (!templateToDeleteId) return;
+async function confirmDelete(id: string) {
+  const confirmed = await confirmStore.prompt({
+    title: m.common_action_delete() + "؟",
+    description: m.common_docs_delete_confirm ? m.common_docs_delete_confirm() : "Are you sure you want to delete this template?",
+    confirmText: m.common_action_delete(),
+    variant: "destructive"
+  });
+  if (!confirmed) return;
 
   try {
-    await commands.platform.deleteDocumentTemplate(templateToDeleteId);
+    await commands.platform.deleteDocumentTemplate(id);
     toast.success("Template deleted successfully");
     loadTemplates();
   } catch (e: unknown) {
     console.error("Failed to delete template:", e);
     const msg = (e as any)?.message || "Failed to delete template";
     toast.error(msg);
-  } finally {
-    isDeleteDialogOpen = false;
-    templateToDeleteId = "";
   }
 }
 
@@ -346,10 +341,4 @@ async function restoreTemplate(id: string) {
   bind:pageSize={newTemplatePageSize}
   bind:orientation={newTemplateOrientation}
   onsubmit={handleCreateTemplate}
-/>
-
-<!-- Delete Dialog -->
-<DeleteTemplateDialog
-  bind:open={isDeleteDialogOpen}
-  onconfirm={handleDeleteTemplate}
 />
