@@ -54,12 +54,14 @@ let {
   onback,
   onsave,
   onpreview,
+  onrename,
 }: {
   store: EditorStore;
   templateName?: string;
   onback?: () => void;
   onsave: () => void;
   onpreview: () => void;
+  onrename?: (newName: string) => void;
 } = $props();
 
 const FONT_FAMILIES = [
@@ -87,6 +89,12 @@ const nodeType = $derived(isMultiSelect ? commonType : (node?.type ?? null));
 function updateProp(key: string, value: unknown) {
   store.updateSelectedProps({ props: { ...nodeProps, [key]: value } } as any);
 }
+
+// Keep track of local name value to prevent cursor jump during typing
+let editingName = $state(templateName);
+$effect(() => {
+  editingName = templateName;
+});
 </script>
 
 <TooltipProvider delayDuration={200}>
@@ -103,10 +111,27 @@ function updateProp(key: string, value: unknown) {
         <TooltipContent>{m.template_tooltip_back()}</TooltipContent>
       </Tooltip>
     {/if}
-    <span class="ctx-title">{templateName || "..."}</span>
-    {#if store.isDirty}
-      <div class="ctx-dirty-dot"></div>
+    {#if onrename}
+      <div class="ctx-title-wrapper" title={m.common_action_edit?.() || "Edit"}>
+        <span class="ctx-title-hidden" aria-hidden="true">{editingName || "..."}</span>
+        <input
+          type="text"
+          class="ctx-title-input"
+          bind:value={editingName}
+          maxlength="50"
+          onblur={(e) => onrename(e.currentTarget.value)}
+          onkeydown={(e) => {
+            if (e.key === 'Enter') {
+              e.currentTarget.blur();
+            }
+          }}
+          placeholder="..."
+        />
+      </div>
+    {:else}
+      <span class="ctx-title">{templateName || "..."}</span>
     {/if}
+    <div class="ctx-dirty-dot" class:is-dirty={store.isDirty}></div>
   </div>
 
   <div class="ctx-divider"></div>
@@ -348,14 +373,6 @@ function updateProp(key: string, value: unknown) {
         </Popover>
       </div>
 
-    {:else}
-      <!-- ═══ DEFAULT / PAGE TOOLBAR ═══ -->
-      <div class="ctx-group">
-        <Badge variant="outline" class="text-[9px] font-mono">
-          {store.document?.meta?.pageSetup?.size || "A4"}
-          {store.document?.meta?.pageSetup?.orientation === "landscape" ? "▬" : "▮"}
-        </Badge>
-      </div>
     {/if}
   </div>
 
@@ -469,7 +486,50 @@ function updateProp(key: string, value: unknown) {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 180px;
+    max-width: 250px;
+  }
+
+  .ctx-title-wrapper {
+    position: relative;
+    display: inline-grid;
+    align-items: center;
+    min-width: 150px;
+    max-width: 250px;
+  }
+
+  .ctx-title-hidden {
+    visibility: hidden;
+    white-space: pre;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 2px 4px;
+  }
+
+  .ctx-title-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--color-foreground);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 2px 4px;
+    outline: none;
+    transition: all 0.2s;
+    text-overflow: ellipsis;
+  }
+
+  .ctx-title-input:hover {
+    border-color: color-mix(in srgb, var(--color-border) 60%, transparent);
+  }
+
+  .ctx-title-input:focus {
+    border-color: var(--color-primary);
+    background: var(--color-background);
   }
 
   .ctx-dirty-dot {
@@ -478,6 +538,12 @@ function updateProp(key: string, value: unknown) {
     border-radius: 50%;
     background: var(--color-primary);
     flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+  }
+
+  .ctx-dirty-dot.is-dirty {
+    opacity: 1;
   }
 
   .ctx-label {

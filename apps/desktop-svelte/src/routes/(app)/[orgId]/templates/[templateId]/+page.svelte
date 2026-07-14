@@ -103,6 +103,56 @@ async function initEditor() {
   }
 }
 
+// ── Rename ───────────────────────────────────────────────────
+
+async function renameTemplate(newName: string) {
+  if (!templateRecord || !newName || newName.trim() === "") return;
+  const currentName = templateRecord.name;
+  const currentNameAr = templateRecord.name_ar;
+
+  // Optimistic UI update
+  templateRecord.name = newName;
+  templateRecord.name_ar = newName;
+
+  try {
+    const docJson = serializeDocument(store.document);
+    const setup = store.document.meta.pageSetup;
+
+    const updateRequest = {
+      name: newName,
+      name_ar: newName,
+      description: templateRecord.description,
+      category_id: templateRecord.category_id,
+      code: templateRecord.code,
+      page_size: setup.size,
+      orientation: setup.orientation,
+      margins_json: JSON.stringify(setup.margins),
+      document_json: docJson,
+      locale: templateRecord.locale || "ar",
+      tags: templateRecord.tags,
+    };
+
+    await commands.platform.updateDocumentTemplate(
+      templateId || "",
+      "current-user",
+      updateRequest,
+    );
+    
+    // We don't mark store as saved here to not interfere with document changes,
+    // though the document is technically saved. If it was dirty, it's now saved.
+    // So we should markSaved() if it was dirty.
+    if (store.isDirty) {
+      store.markSaved();
+    }
+  } catch (e: unknown) {
+    const msg = (e as any)?.message || "Failed to rename template";
+    toast.error(msg);
+    // revert
+    templateRecord.name = currentName;
+    templateRecord.name_ar = currentNameAr;
+  }
+}
+
 // ── Save ─────────────────────────────────────────────────────
 
 async function saveTemplate() {
@@ -188,31 +238,35 @@ function handleKeydown(e: KeyboardEvent) {
   }
 
   // Close flyout on Escape
-  if (e.key === "Escape" && store.activeRailPanel) {
+  if (e.code === "Escape" && store.activeRailPanel) {
     e.preventDefault();
     store.activeRailPanel = null;
     return;
   }
 
-  if (isCtrl && e.key === "z") {
+  if (isCtrl && e.code === "KeyZ" && !isInputFocused) {
     e.preventDefault();
-    store.undo();
-  } else if (isCtrl && e.key === "y") {
+    if (e.shiftKey) {
+      store.redo();
+    } else {
+      store.undo();
+    }
+  } else if (isCtrl && e.code === "KeyY" && !isInputFocused) {
     e.preventDefault();
     store.redo();
-  } else if (isCtrl && e.key === "s") {
+  } else if (isCtrl && e.code === "KeyS") {
     e.preventDefault();
     saveTemplate();
-  } else if (isCtrl && e.key === "d") {
+  } else if (isCtrl && e.code === "KeyD") {
     e.preventDefault();
     store.duplicateSelected();
-  } else if (isCtrl && e.key === "a" && !isInputFocused) {
+  } else if (isCtrl && e.code === "KeyA" && !isInputFocused) {
     e.preventDefault();
     store.selectAll();
-  } else if (isCtrl && e.key === "c" && !isInputFocused) {
+  } else if (isCtrl && e.code === "KeyC" && !isInputFocused) {
     e.preventDefault();
     copyNodes(store.document, store.selectedIds);
-  } else if (isCtrl && e.key === "x" && !isInputFocused) {
+  } else if (isCtrl && e.code === "KeyX" && !isInputFocused) {
     e.preventDefault();
     cutNodes(store.document, store.selectedIds).then((cmd) => {
       if (cmd) {
@@ -220,7 +274,7 @@ function handleKeydown(e: KeyboardEvent) {
         store.clearSelection();
       }
     });
-  } else if (isCtrl && e.key === "v" && !isInputFocused) {
+  } else if (isCtrl && e.code === "KeyV" && !isInputFocused) {
     e.preventDefault();
     const parentId = store.activePage?.id;
     if (parentId) {
@@ -228,15 +282,15 @@ function handleKeydown(e: KeyboardEvent) {
         if (cmd) store.executeCommand(cmd);
       });
     }
-  } else if (e.key === "Delete" || e.key === "Backspace") {
+  } else if (e.code === "Delete" || e.code === "Backspace") {
     if (store.selectedIds.length > 0 && !isInputFocused) {
       e.preventDefault();
       store.deleteSelected();
     }
-  } else if (e.key === "Escape") {
+  } else if (e.code === "Escape") {
     store.clearSelection();
   } else if (
-    ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key) &&
+    ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code) &&
     !isInputFocused
   ) {
     if (store.selectedIds.length > 0 && store.selectedNode) {
@@ -245,13 +299,14 @@ function handleKeydown(e: KeyboardEvent) {
       const pos = (store.selectedNode as any).position;
       if (pos) {
         const dx =
-          e.key === "ArrowLeft" ? -nudge : e.key === "ArrowRight" ? nudge : 0;
+          e.code === "ArrowLeft" ? -nudge : e.code === "ArrowRight" ? nudge : 0;
         const dy =
-          e.key === "ArrowUp" ? -nudge : e.key === "ArrowDown" ? nudge : 0;
-        store.moveSelected(
-          Math.round((pos.x + dx) * 10) / 10,
-          Math.round((pos.y + dy) * 10) / 10,
-        );
+          e.code === "ArrowUp" ? -nudge : e.code === "ArrowDown" ? nudge : 0;
+        store.moveNodes([{
+          id: store.selectedNode.id,
+          x: Math.round((pos.x + dx) * 10) / 10,
+          y: Math.round((pos.y + dy) * 10) / 10,
+        }]);
       }
     }
   }
@@ -305,6 +360,7 @@ onMount(() => {
           onback={goBack}
           onsave={saveTemplate}
           onpreview={generatePreview}
+          onrename={renameTemplate}
         />
 
         {#if store.editorMode === "preview" && previewPdfUrl}
