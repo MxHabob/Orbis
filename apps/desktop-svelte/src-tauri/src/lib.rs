@@ -190,6 +190,7 @@ pub fn run() {
             commands::organization::thin::update_org_unit,
             commands::organization::thin::delete_org_unit,
             commands::academic::thin::list_enrollments,
+            commands::academic::thin::list_enrollments_paginated,
             commands::academic::thin::get_enrollment,
             commands::academic::thin::create_enrollment,
             commands::academic::thin::withdraw_enrollment,

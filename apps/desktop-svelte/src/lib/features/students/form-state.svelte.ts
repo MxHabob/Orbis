@@ -1,6 +1,5 @@
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
-import { authStore } from "$lib/stores";
 import { commands } from "$lib/core/ipc";
 import { toast } from "svelte-sonner";
 
