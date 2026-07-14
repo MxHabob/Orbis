@@ -549,7 +549,7 @@ export function createEditorStore(initialDoc: TemplateDocument) {
       executeCommand({
         type: "reorder",
         description: `Bring ${node.name || node.id} to front`,
-        descriptionAr: `إحضار ${node.name || node.id} للأمام`,
+        descriptionAr: m.templates_editor_bring_front() + " " + (node.name || node.id) + " " + m.templates_editor_to_front(),
         execute: (doc) => {
           const p = getPages(doc).find((pg) => pg.id === page.id);
           if (p) (p as any).children = newChildren;
@@ -574,7 +574,7 @@ export function createEditorStore(initialDoc: TemplateDocument) {
       executeCommand({
         type: "reorder",
         description: `Send ${node.name || node.id} to back`,
-        descriptionAr: `إرسال ${node.name || node.id} للخلف`,
+        descriptionAr: m.templates_editor_send_back() + " " + (node.name || node.id) + " " + m.templates_editor_to_back(),
         execute: (doc) => {
           const p = getPages(doc).find((pg) => pg.id === page.id);
           if (p) (p as any).children = newChildren;

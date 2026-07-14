@@ -39,7 +39,7 @@ async function loadData() {
   error = null;
   try {
     const [ledgersData, currenciesData] = await Promise.all([
-      commands.finance.listAccounts(data.orgId),
+      commands.finance.listAccounts(),
       commands.finance.listCurrencies()
     ]);
     ledgers = ledgersData;
@@ -202,19 +202,19 @@ const totalEquity = $derived.by(() => {
     <TabsList class="grid w-full grid-cols-4 select-none mb-6">
       <TabsTrigger value="overview" class="text-xs font-semibold flex items-center gap-1.5 cursor-pointer">
         <BarChart3 size={13} />
-        <span>التحليل العام</span>
+        <span>{m.finance_reports_general_analysis()}</span>
       </TabsTrigger>
       <TabsTrigger value="trial_balance" class="text-xs font-semibold flex items-center gap-1.5 cursor-pointer">
         <Scale size={13} />
-        <span>ميزان المراجعة</span>
+        <span>{m.finance_reports_trial_balance()}</span>
       </TabsTrigger>
       <TabsTrigger value="income_statement" class="text-xs font-semibold flex items-center gap-1.5 cursor-pointer">
         <FileSpreadsheet size={13} />
-        <span>قائمة الدخل</span>
+        <span>{m.finance_reports_income_statement_tab()}</span>
       </TabsTrigger>
       <TabsTrigger value="balance_sheet" class="text-xs font-semibold flex items-center gap-1.5 cursor-pointer">
         <Landmark size={13} />
-        <span>الميزانية العمومية</span>
+        <span>{m.finance_reports_balance_sheet_tab()}</span>
       </TabsTrigger>
     </TabsList>
 
@@ -246,12 +246,12 @@ const totalEquity = $derived.by(() => {
 
           <div class="border-t border-border pt-4 flex flex-col gap-2 text-xs text-muted-foreground">
             <div class="flex justify-between items-center">
-              <span>آخر تحديث تلقائي:</span>
-              <span class="font-mono text-foreground font-bold">نشط الآن</span>
+              <span>{m.finance_reports_last_auto_update()}</span>
+              <span class="font-mono text-foreground font-bold">{m.finance_reports_active_now()}</span>
             </div>
             <div class="flex justify-between items-center">
-              <span>دقة توازن الدفاتر:</span>
-              <span class="text-emerald-500 font-bold">100% متوازن</span>
+              <span>{m.finance_reports_balance_accuracy()}</span>
+              <span class="text-emerald-500 font-bold">{m.finance_reports_balanced()}</span>
             </div>
           </div>
         </div>
@@ -272,11 +272,11 @@ const totalEquity = $derived.by(() => {
             <Table>
               <TableHeader class="bg-muted/40 font-bold sticky top-0 z-10">
                 <TableRow>
-                  <TableHead class="text-start text-xs w-[120px]">رمز الحساب</TableHead>
-                  <TableHead class="text-start text-xs">اسم الحساب</TableHead>
+                  <TableHead class="text-start text-xs w-[120px]">{m.finance_reports_account_code()}</TableHead>
+                  <TableHead class="text-start text-xs">{m.finance_reports_account_name()}</TableHead>
                   {#each activeCurrencies as c}
-                    <TableHead class="text-end text-xs text-emerald-600">مدين {c.code}</TableHead>
-                    <TableHead class="text-end text-xs text-rose-600">دائن {c.code}</TableHead>
+                    <TableHead class="text-end text-xs text-emerald-600">{m.finance_reports_debit()} {c.code}</TableHead>
+                    <TableHead class="text-end text-xs text-rose-600">{m.finance_reports_credit()} {c.code}</TableHead>
                   {/each}
                 </TableRow>
               </TableHeader>
@@ -312,11 +312,11 @@ const totalEquity = $derived.by(() => {
       {:else}
         <div class="grid grid-cols-1 gap-6">
           <div class="border border-border rounded-xl p-6 bg-card shadow-sm space-y-6 text-start">
-            <h3 class="text-sm font-bold text-foreground pb-3 border-b border-border/60">الإيرادات والمصروفات التشغيلية (Income Statement)</h3>
+            <h3 class="text-sm font-bold text-foreground pb-3 border-b border-border/60">{m.finance_reports_operating_income_statement()}</h3>
             
             <!-- Revenue Section -->
             <div class="space-y-3">
-              <h4 class="text-xs font-extrabold text-emerald-600 uppercase tracking-wider">الإيرادات (Revenue)</h4>
+              <h4 class="text-xs font-extrabold text-emerald-600 uppercase tracking-wider">{m.finance_reports_revenue()}</h4>
               <Table>
                 <TableBody>
                   {#each revenueAccounts as acc}
@@ -332,7 +332,7 @@ const totalEquity = $derived.by(() => {
                   {/each}
                   <!-- Total Revenue Row -->
                   <TableRow class="bg-emerald-50/10 font-bold border-t border-border">
-                    <TableCell colspan={2} class="text-start text-xs text-emerald-600">إجمالي الإيرادات</TableCell>
+                    <TableCell colspan={2} class="text-start text-xs text-emerald-600">{m.finance_reports_total_revenue()}</TableCell>
                     {#each activeCurrencies as c}
                       <TableCell class="text-end text-xs font-mono text-emerald-600">{formatCurrency(totalRevenue[c.code.toLowerCase()] || 0, c.code)}</TableCell>
                     {/each}
@@ -343,7 +343,7 @@ const totalEquity = $derived.by(() => {
 
             <!-- Expenses Section -->
             <div class="space-y-3">
-              <h4 class="text-xs font-extrabold text-rose-600 uppercase tracking-wider">المصروفات (Expenses)</h4>
+              <h4 class="text-xs font-extrabold text-rose-600 uppercase tracking-wider">{m.finance_reports_expenses()}</h4>
               <Table>
                 <TableBody>
                   {#each expenseAccounts as acc}
@@ -359,7 +359,7 @@ const totalEquity = $derived.by(() => {
                   {/each}
                   <!-- Total Expenses Row -->
                   <TableRow class="bg-rose-50/10 font-bold border-t border-border">
-                    <TableCell colspan={2} class="text-start text-xs text-rose-600">إجمالي المصروفات</TableCell>
+                    <TableCell colspan={2} class="text-start text-xs text-rose-600">{m.finance_reports_total_expenses()}</TableCell>
                     {#each activeCurrencies as c}
                       <TableCell class="text-end text-xs font-mono text-rose-600">{formatCurrency(totalExpenses[c.code.toLowerCase()] || 0, c.code)}</TableCell>
                     {/each}
@@ -370,7 +370,7 @@ const totalEquity = $derived.by(() => {
 
             <!-- Net Income Summary -->
             <div class="bg-primary/5 rounded-xl p-4 border border-primary/20 flex flex-col gap-2">
-              <h4 class="text-xs font-extrabold text-primary uppercase tracking-wider">صافي الدخل / الفائض (Net Profit / Loss)</h4>
+              <h4 class="text-xs font-extrabold text-primary uppercase tracking-wider">{m.finance_reports_net_profit_loss()}</h4>
               <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-center mt-2">
                 {#each activeCurrencies as c}
                   <div class="flex flex-col gap-1">
@@ -396,11 +396,11 @@ const totalEquity = $derived.by(() => {
       {:else}
         <div class="grid grid-cols-1 gap-6">
           <div class="border border-border rounded-xl p-6 bg-card shadow-sm space-y-6 text-start">
-            <h3 class="text-sm font-bold text-foreground pb-3 border-b border-border/60">المركز المالي للكيان (Balance Sheet)</h3>
+            <h3 class="text-sm font-bold text-foreground pb-3 border-b border-border/60">{m.finance_reports_entity_financial_position()}</h3>
 
             <!-- Assets Section -->
             <div class="space-y-3">
-              <h4 class="text-xs font-extrabold text-primary uppercase tracking-wider">الأصول (Assets)</h4>
+              <h4 class="text-xs font-extrabold text-primary uppercase tracking-wider">{m.finance_reports_assets()}</h4>
               <Table>
                 <TableBody>
                   {#each assetAccounts as acc}
@@ -416,7 +416,7 @@ const totalEquity = $derived.by(() => {
                   {/each}
                   <!-- Total Assets Row -->
                   <TableRow class="bg-primary/5 font-bold border-t border-border">
-                    <TableCell colspan={2} class="text-start text-xs text-primary">إجمالي الأصول (Total Assets)</TableCell>
+                    <TableCell colspan={2} class="text-start text-xs text-primary">{m.finance_reports_total_assets()}</TableCell>
                     {#each activeCurrencies as c}
                       <TableCell class="text-end text-xs font-mono text-primary">{formatCurrency(totalAssets[c.code.toLowerCase()] || 0, c.code)}</TableCell>
                     {/each}
@@ -427,7 +427,7 @@ const totalEquity = $derived.by(() => {
 
             <!-- Liabilities & Equity Section -->
             <div class="space-y-3">
-              <h4 class="text-xs font-extrabold text-rose-500 uppercase tracking-wider">الخصوم وحقوق الملكية (Liabilities & Equity)</h4>
+              <h4 class="text-xs font-extrabold text-rose-500 uppercase tracking-wider">{m.finance_reports_liabilities_equity()}</h4>
               <Table>
                 <TableBody>
                   {#each liabilityAccounts as acc}
@@ -454,7 +454,7 @@ const totalEquity = $derived.by(() => {
                   {/each}
                   <!-- Total Liabilities & Equity Row -->
                   <TableRow class="bg-rose-50/10 font-bold border-t border-border">
-                    <TableCell colspan={2} class="text-start text-xs text-rose-600">إجمالي الخصوم وحقوق الملكية</TableCell>
+                    <TableCell colspan={2} class="text-start text-xs text-rose-600">{m.finance_reports_total_liabilities_equity()}</TableCell>
                     {#each activeCurrencies as c}
                       <TableCell class="text-end text-xs font-mono text-rose-600">{formatCurrency((totalLiabilities[c.code.toLowerCase()] || 0) + (totalEquity[c.code.toLowerCase()] || 0), c.code)}</TableCell>
                     {/each}

@@ -52,7 +52,7 @@ let {
               <span class="text-[8px] text-muted-foreground font-mono flex items-center gap-1.5 select-none">
                 <span>{p.receiptNumber}</span>
                 <span>•</span>
-                <span>{p.payment_method === "Cash" ? "نقداً" : p.payment_method === "Check" ? "شيك" : "حوالة"}</span>
+                <span>{p.payment_method === "Cash" ? m.finance_payment_method_cash() : p.payment_method === "Check" ? m.finance_payment_method_check() : m.finance_payment_method_transfer()}</span>
               </span>
             </div>
           </div>

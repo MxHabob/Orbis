@@ -238,9 +238,7 @@ async function handleSubmit() {
 
     if (!finalGuardianUserId) {
       // Check if user already exists in db by phone
-      const checkExisting = await commands.academic.searchGuardians(
-        orgId,
-        phoneClean,
+      const checkExisting = await commands.academic.searchGuardians(phoneClean,
       );
       if (checkExisting && checkExisting.length > 0) {
         finalGuardianUserId = checkExisting[0].id;
@@ -461,7 +459,7 @@ async function handleSubmit() {
 
       <!-- Email -->
       <div class="flex flex-col gap-1.5">
-        <Label class="text-xs font-semibold text-muted-foreground">البريد الإلكتروني (اختياري)</Label>
+        <Label class="text-xs font-semibold text-muted-foreground">{m.students_guardian_email_optional()}</Label>
         <Input
           type="email"
           bind:value={email}
@@ -510,7 +508,7 @@ async function handleSubmit() {
 
       <!-- Permissions and Financial Responsibility -->
       <div class="flex flex-col gap-3 p-4 rounded-lg bg-muted/20 border border-border/30">
-        <p class="text-xs font-bold text-foreground">الصلاحيات والمسؤوليات</p>
+        <p class="text-xs font-bold text-foreground">{m.students_guardian_permissions()}</p>
         
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div class="flex items-center gap-2">

@@ -23,7 +23,7 @@ let {
   <div class="flex items-center justify-between w-full select-none text-[9px] font-bold text-muted-foreground/80 mb-3">
     <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
       <Hourglass size={11} class="text-muted-foreground/80" />
-      <span>{m.finance_overview_performance_title ? m.finance_overview_performance_title() : "معدل تحصيل الرسوم"}</span>
+      <span>{m.finance_overview_performance_title ? m.finance_overview_performance_title() : m.finance_overview_performance_title()}</span>
     </div>
   </div>
 
@@ -43,7 +43,7 @@ let {
   <!-- Footer -->
   <div class="flex flex-col gap-2 pt-2 border-t border-border/40 w-full mt-2 text-[10px]">
     <a href={localizeHref(`/${orgId}/finance/reports`)} class="flex items-center gap-1.5 hover:underline text-primary font-bold group/link">
-      <span>{m.finance_overview_btn_statement ? m.finance_overview_btn_statement() : "عرض التقارير المالية التفصيلية"}</span>
+      <span>{m.finance_overview_btn_statement ? m.finance_overview_btn_statement() : m.finance_overview_btn_statement()}</span>
       <ArrowRight size={10} class="transition-transform group-hover/link:translate-x-0.5 rtl:rotate-180" />
     </a>
   </div>

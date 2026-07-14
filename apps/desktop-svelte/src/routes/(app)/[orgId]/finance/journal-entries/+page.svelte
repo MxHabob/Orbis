@@ -95,10 +95,10 @@ async function loadData() {
   try {
     const [entriesList, ledgersList] = await Promise.all([
       dedup(`journal_entries:${data.orgId}`, () =>
-        commands.finance.listJournalEntries(data.orgId),
+        commands.finance.listJournalEntries(),
       ),
       dedup(`accounts:${data.orgId}`, () =>
-        commands.finance.listTransactionAccounts(data.orgId),
+        commands.finance.listTransactionAccounts(),
       ),
     ]);
 

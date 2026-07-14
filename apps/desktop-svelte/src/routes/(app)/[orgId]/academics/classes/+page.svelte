@@ -32,8 +32,8 @@ async function loadData() {
   error = null;
   try {
     const [classData, studentData] = await Promise.all([
-      commands.academic.listClasses(data.orgId),
-      commands.academic.listEnrollments(data.orgId),
+      commands.academic.listClasses(),
+      commands.academic.listEnrollments(),
     ]);
     classes = classData;
     students = studentData;
@@ -120,7 +120,7 @@ const averageClassSize = $derived(
 		</h2>
 
 		<Button variant="lime" class="text-xs h-9 px-3" onclick={() => isModalOpen = true}>
-			<Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
+			<Plus size={14} class={m.academics_classes_mr_1_5()} />
 			{m.common_classes_new_class()}
 		</Button>
 	</div>

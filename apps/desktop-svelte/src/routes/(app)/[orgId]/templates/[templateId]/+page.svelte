@@ -321,7 +321,7 @@ onMount(() => {
             <iframe src={previewPdfUrl} title="PDF Preview" class="w-full h-full border-none"></iframe>
             <div class="absolute top-2 inset-e-2">
               <Button variant="outline" size="xs" onclick={() => { store.editorMode = "design"; }} class="cursor-pointer">
-                العودة للمحرر
+                {m.common_td_back_to_editor()}
               </Button>
             </div>
           </div>

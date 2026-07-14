@@ -113,7 +113,7 @@ class AcademicContextStore {
     this.isLoading = true;
     try {
       const current_year = await commands.platform.getCurrentYear();
-      const all_years = await commands.platform.listYears(orgId);
+      const all_years = await commands.platform.listYears();
       const ctx: AcademicContextResponse = {
         current_year,
         all_years: all_years || [],

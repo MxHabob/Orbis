@@ -162,9 +162,7 @@ async function handleCreateTemplate() {
     };
 
     const userId = "current-user";
-    const response = await commands.platform.createDocumentTemplate(
-      orgId,
-      userId,
+    const response = await commands.platform.createDocumentTemplate(userId,
       createRequest,
     );
 

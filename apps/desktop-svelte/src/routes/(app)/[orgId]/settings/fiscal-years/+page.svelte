@@ -30,7 +30,7 @@ let isLoading = $state(true);
 async function loadData() {
   isLoading = true;
   try {
-    fiscalYears = await commands.finance.listFiscalYears(data.orgId);
+    fiscalYears = await commands.finance.listFiscalYears();
   } catch (e) {
     toast.error(extractErrorMessage(e));
   } finally {

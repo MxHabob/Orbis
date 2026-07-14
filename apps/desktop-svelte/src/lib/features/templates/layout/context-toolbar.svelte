@@ -249,7 +249,7 @@ function updateProp(key: string, value: unknown) {
     {:else if isMultiSelect}
       <!-- ═══ MULTI-SELECT TOOLBAR ═══ -->
       <div class="ctx-group">
-        <Badge variant="secondary" class="text-[9px]">{store.selectedIds.length} عناصر محددة</Badge>
+        <Badge variant="secondary" class="text-[9px]">{store.selectedIds.length}{m.templates_selected_items()}</Badge>
       </div>
       <Separator orientation="vertical" class="h-5 mx-1" />
       <div class="ctx-group">

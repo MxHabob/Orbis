@@ -54,7 +54,7 @@ let {
   <div class="flex flex-col gap-2 pt-2 border-t border-border/40 w-full mt-2 text-[10px]">
     <a href={localizeHref(`/${orgId}/finance/treasuries`)} class="flex items-center gap-2 hover:underline text-primary font-bold">
       <Wallet size={12} />
-      <span>{m.finance_overview_btn_manage_treasuries ? m.finance_overview_btn_manage_treasuries() : "إدارة الحسابات البنكية والخزائن"}</span>
+      <span>{m.finance_overview_btn_manage_treasuries ? m.finance_overview_btn_manage_treasuries() : m.finance_overview_btn_manage_treasuries()}</span>
     </a>
   </div>
 </Card>

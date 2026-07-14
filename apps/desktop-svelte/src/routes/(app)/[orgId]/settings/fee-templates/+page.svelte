@@ -29,7 +29,7 @@ let selectedTemplate = $state<any | null>(null);
 async function loadTemplates() {
   isLoading = true;
   try {
-    templates = await commands.finance.listFeeTemplates(data.orgId);
+    templates = await commands.finance.listFeeTemplates();
   } catch (e) {
     toast.error((e as any)?.message || "Failed to load fee templates");
   } finally {

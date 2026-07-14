@@ -115,13 +115,13 @@ let { state }: { state: StudentFormState } = $props();
           <div class="w-full md:w-[480px] shrink-0">
             <Select bind:value={guardian.relationship} type="single">
               <SelectTrigger class="h-9 w-full bg-background flex justify-between items-center">
-                <span>{guardian.relationship === "father" ? "أب" : guardian.relationship === "mother" ? "أم" : guardian.relationship === "uncle" ? "عم" : "آخر"}</span>
+                <span>{guardian.relationship === "father" ? m.students_family_father() : guardian.relationship === "mother" ? m.students_family_mother() : guardian.relationship === "uncle" ? m.students_family_uncle() : m.students_family_other()}</span>
               </SelectTrigger>
               <SelectContent class="text-start">
-                <SelectItem value="father" onclick={() => guardian.relationship_ar = "أب"}>أب</SelectItem>
-                <SelectItem value="mother" onclick={() => guardian.relationship_ar = "أم"}>أم</SelectItem>
-                <SelectItem value="uncle" onclick={() => guardian.relationship_ar = "عم"}>عم</SelectItem>
-                <SelectItem value="other" onclick={() => guardian.relationship_ar = "قريب/آخر"}>آخر</SelectItem>
+                <SelectItem value="father" onclick={() => guardian.relationship_ar = m.students_family_father()}>أب</SelectItem>
+                <SelectItem value="mother" onclick={() => guardian.relationship_ar = m.students_family_mother()}>أم</SelectItem>
+                <SelectItem value="uncle" onclick={() => guardian.relationship_ar = m.students_family_uncle()}>عم</SelectItem>
+                <SelectItem value="other" onclick={() => guardian.relationship_ar = m.students_family_relative_other()}>آخر</SelectItem>
               </SelectContent>
             </Select>
           </div>

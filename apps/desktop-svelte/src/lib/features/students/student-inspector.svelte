@@ -70,9 +70,7 @@ async function fetchStats() {
     }
 
     // Fetch guardians list
-    const links = await commands.academic.listGuardiansByStudent(
-      orgId,
-      student.student_id || student.id,
+    const links = await commands.academic.listGuardiansByStudent(student.student_id || student.id,
     );
     if (links) {
       const resolved = [];

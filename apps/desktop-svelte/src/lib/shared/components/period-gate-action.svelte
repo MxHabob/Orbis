@@ -16,11 +16,12 @@ Usage:
     onOverride={openOverrideDialog}
   >
     {#snippet allowed()}
-      <Button>➕ تسجيل طالب</Button>
+      <Button>{m.shared_enroll_student_btn()}</Button>
     {/snippet}
   </PeriodGateAction>
 -->
 <script lang="ts">
+  import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/core/ipc";
 import { createQuery } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui-svelte/button";

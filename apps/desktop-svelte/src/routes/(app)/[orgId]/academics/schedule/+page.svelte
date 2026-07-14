@@ -58,7 +58,7 @@ function toStore<T>(getter: () => T) {
 const periodsQuery = createQuery(
   toStore(() => ({
     queryKey: ["periods", data.orgId],
-    queryFn: () => commands.academic.listPeriods(data.orgId),
+    queryFn: () => commands.academic.listPeriods(),
     enabled: !!data.orgId,
     staleTime: 10 * 60 * 1000,
   })),
@@ -67,7 +67,7 @@ const periodsQuery = createQuery(
 const classesQuery = createQuery(
   toStore(() => ({
     queryKey: ["classes", data.orgId],
-    queryFn: () => commands.academic.listClasses(data.orgId),
+    queryFn: () => commands.academic.listClasses(),
     enabled: !!data.orgId,
     staleTime: 5 * 60 * 1000,
   })),
@@ -76,7 +76,7 @@ const classesQuery = createQuery(
 const subjectsQuery = createQuery(
   toStore(() => ({
     queryKey: ["subjects", data.orgId],
-    queryFn: () => commands.academic.listSubjects(data.orgId),
+    queryFn: () => commands.academic.listSubjects(),
     enabled: !!data.orgId,
     staleTime: 10 * 60 * 1000,
   })),
@@ -85,7 +85,7 @@ const subjectsQuery = createQuery(
 const usersQuery = createQuery(
   toStore(() => ({
     queryKey: ["users", data.orgId],
-    queryFn: () => commands.iam.listUsers(data.orgId),
+    queryFn: () => commands.iam.listUsers(),
     enabled: !!data.orgId,
     staleTime: 5 * 60 * 1000,
   })),
@@ -157,7 +157,7 @@ $effect(() => {
 const timeSlotsQuery = createQuery(
   toStore(() => ({
     queryKey: ["time-slots", data.orgId, activePeriodId],
-    queryFn: () => commands.scheduling.listTimeSlots(data.orgId, activePeriodId),
+    queryFn: () => commands.scheduling.listTimeSlots(activePeriodId),
     enabled: !!data.orgId && !!activePeriodId,
     staleTime: 10 * 60 * 1000,
   })),
@@ -170,9 +170,7 @@ const classScheduleQuery = createQuery(
   toStore(() => ({
     queryKey: ["class-schedule", data.orgId, activePeriodId, selectedClassId],
     queryFn: () =>
-      commands.scheduling.listLessonsByClass(
-        data.orgId,
-        activePeriodId,
+      commands.scheduling.listLessonsByClass(activePeriodId,
         selectedClassId,
       ),
     enabled:
@@ -188,9 +186,7 @@ const teacherScheduleQuery = createQuery(
   toStore(() => ({
     queryKey: ["teacher-schedule", data.orgId, activePeriodId, selectedTeacherId],
     queryFn: () =>
-      commands.scheduling.listLessonsByTeacher(
-        data.orgId,
-        activePeriodId,
+      commands.scheduling.listLessonsByTeacher(activePeriodId,
         selectedTeacherId,
       ),
     enabled:
@@ -273,13 +269,9 @@ async function handleMoveLesson(
 ) {
   try {
     toast.loading(
-      getLocale() === "ar"
-        ? "جاري التحقق من وجود تضاربات..."
-        : "Checking for conflicts...",
+      m.academics_schedule_checking_for_conflicts(),
     );
-    const conflicts = await commands.scheduling.checkConflicts(
-      data.orgId,
-      activePeriodId,
+    const conflicts = await commands.scheduling.checkConflicts(activePeriodId,
       lesson.teacher_id,
       targetSlotId,
       targetDay,
@@ -291,9 +283,7 @@ async function handleMoveLesson(
     if (conflicts.length > 0) {
       const conflictMsgs = conflicts.map((c: any) => c.message).join("\n");
       toast.error(
-        getLocale() === "ar"
-          ? "توجد تضاربات في هذا الموعد!"
-          : "Conflicts detected for this schedule!",
+        m.academics_schedule_conflicts_detected_for_this_schedule(),
         {
           description: conflictMsgs,
         },
@@ -306,7 +296,7 @@ async function handleMoveLesson(
       time_slot_id: targetSlotId,
     } as any);
     toast.success(
-      getLocale() === "ar" ? "تم نقل الحصة بنجاح" : "Lesson moved successfully",
+      m.academics_schedule_lesson_moved_successfully(),
     );
     refetchLessons();
   } catch (e: any) {

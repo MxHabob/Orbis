@@ -184,7 +184,7 @@ function handleHijriEndChange() {
 function formatHijriDateString(y: number, m: number, d: number) {
   const months = getHijriMonths();
   const monthName = months[m - 1] || "";
-  const suffix = getLocale() === "ar" ? "هـ" : "AH";
+  const suffix = m.academics_calendar_ah();
   return `${d} ${monthName} ${y} ${suffix}`;
 }
 

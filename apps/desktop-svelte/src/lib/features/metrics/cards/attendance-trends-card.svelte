@@ -41,9 +41,7 @@ async function loadData() {
       return;
     }
 
-    const records = await commands.assessment.listAttendance(
-      orgId,
-      effectivePeriodId,
+    const records = await commands.assessment.listAttendance(effectivePeriodId,
       classId,
     );
 

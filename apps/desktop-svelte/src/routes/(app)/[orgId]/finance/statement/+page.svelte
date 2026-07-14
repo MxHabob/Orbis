@@ -562,7 +562,7 @@ function handleWindowClick(event: MouseEvent) {
   <!-- ════ Right Sidebar: Accounts Hierarchical Tree Selector (RTL default) ════ -->
   <div class="w-80 border-r border-border bg-card/40 flex flex-col shrink-0 select-none print:hidden">
     <div class="p-4 border-b border-border flex items-center justify-between">
-      <h3 class="text-xs font-bold text-foreground">دليل شجرة الحسابات</h3>
+      <h3 class="text-xs font-bold text-foreground">{m.finance_statement_chart_guide()}</h3>
       <Button variant="ghost" size="xs" onclick={() => isCoadTreeExpanded = !isCoadTreeExpanded}>
         {isCoadTreeExpanded ? "طي الكل" : "عرض الكل"}
       </Button>
@@ -642,7 +642,7 @@ function handleWindowClick(event: MouseEvent) {
                 <ChevronRight size={12} class="text-muted-foreground {getLocale() === 'ar' ? 'rotate-180' : ''}" />
                 <Folder size={12} class="text-primary" />
               {/if}
-              <span>{getLocale() === 'ar' ? 'الدليل المحاسبي العام' : 'Chart of Accounts'}</span>
+              <span>{m.finance_statement_chart_of_accounts()}</span>
             </button>
             <button
               type="button"
@@ -670,7 +670,7 @@ function handleWindowClick(event: MouseEvent) {
       <div class="flex flex-col gap-1 text-start">
         <h1 class="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
           <ClipboardList class="text-primary animate-pulse" size={18} />
-          <span>كشف الحساب الموحد (Statement of Account)</span>
+          <span>{m.finance_statement_unified_statement()}</span>
         </h1>
         <p class="text-[11px] text-muted-foreground">
           استعراض ومراجعة كافة الأرصدة والعمليات المالية للحسابات العامة والفرعية والطرفية بدقة عالية
@@ -680,11 +680,11 @@ function handleWindowClick(event: MouseEvent) {
       <div class="flex items-center gap-2">
         <Button variant="outline" size="sm" onclick={exportToCsv} class="h-8 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer">
           <FileSpreadsheet size={13} />
-          <span>تصدير CSV</span>
+          <span>{m.finance_statement_export_csv()}</span>
         </Button>
         <Button variant="outline" size="sm" onclick={handlePrint} class="h-8 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer">
           <Printer size={13} />
-          <span>طباعة كشف الحساب</span>
+          <span>{m.finance_statement_print()}</span>
         </Button>
       </div>
     </div>
@@ -720,7 +720,7 @@ function handleWindowClick(event: MouseEvent) {
           <div class="flex flex-wrap gap-4 items-center">
             <!-- Account name search combobox -->
             <div class="flex-1 min-w-[200px] flex flex-col gap-1 text-[10px] font-bold text-muted-foreground combobox-container relative">
-              <span>ابحث باسم الحساب الدفتري</span>
+              <span>{m.finance_statement_search_ledger()}</span>
               <div class="relative">
                 <input
                   type="text"
@@ -733,7 +733,7 @@ function handleWindowClick(event: MouseEvent) {
                 {#if isNameDropdownOpen && !isLoadingLedgers}
                   <div class="absolute z-50 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded-md shadow-lg flex flex-col p-1 text-[10px]" transition:fade={{ duration: 80 }}>
                     {#if searchedAccountsByName.length === 0}
-                      <span class="text-[10px] text-muted-foreground p-2 text-center">لا توجد حسابات مطابقة</span>
+                      <span class="text-[10px] text-muted-foreground p-2 text-center">{m.finance_statement_no_match()}</span>
                     {:else}
                       {#each searchedAccountsByName as acc (acc.id)}
                         <button
@@ -752,7 +752,7 @@ function handleWindowClick(event: MouseEvent) {
 
             <!-- Account code search combobox -->
             <div class="w-32 flex flex-col gap-1 text-[10px] font-bold text-muted-foreground combobox-container relative">
-              <span>كود الحساب</span>
+              <span>{m.finance_statement_account_code()}</span>
               <div class="relative">
                 <input
                   type="text"
@@ -765,7 +765,7 @@ function handleWindowClick(event: MouseEvent) {
                 {#if isCodeDropdownOpen && !isLoadingLedgers}
                   <div class="absolute z-50 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded-md shadow-lg flex flex-col p-1 text-[10px]" transition:fade={{ duration: 80 }}>
                     {#if searchedAccountsByCode.length === 0}
-                      <span class="text-[10px] text-muted-foreground p-2 text-center">لا يوجد</span>
+                      <span class="text-[10px] text-muted-foreground p-2 text-center">{m.finance_statement_none()}</span>
                     {:else}
                       {#each searchedAccountsByCode as acc (acc.id)}
                         <button
@@ -785,11 +785,11 @@ function handleWindowClick(event: MouseEvent) {
             <!-- Date Selectors -->
             <div class="flex items-center gap-2">
               <div class="flex flex-col gap-1 text-[10px] font-bold text-muted-foreground">
-                <span>تاريخ البداية</span>
+                <span>{m.finance_statement_start_date()}</span>
                 <Input type="date" bind:value={startDate} class="h-8 text-xs w-[130px]" />
               </div>
               <div class="flex flex-col gap-1 text-[10px] font-bold text-muted-foreground">
-                <span>تاريخ النهاية</span>
+                <span>{m.finance_statement_end_date()}</span>
                 <Input type="date" bind:value={endDate} class="h-8 text-xs w-[130px]" />
               </div>
             </div>
@@ -799,12 +799,12 @@ function handleWindowClick(event: MouseEvent) {
           <div class="flex flex-wrap gap-4 items-center">
             <!-- Currency selector filter -->
             <div class="w-48 flex flex-col gap-1 text-[10px] font-bold text-muted-foreground">
-              <span>العملة المفعلة</span>
+              <span>{m.finance_statement_active_currency()}</span>
               <select
                 bind:value={selectedCurrency}
                 class="bg-background text-foreground border border-border rounded-md px-3 h-8.5 text-xs outline-none focus:ring-1 focus:ring-ring cursor-pointer"
               >
-                <option value="all">كافة العملات (جدول كامل)</option>
+                <option value="all">{m.finance_statement_all_currencies()}</option>
                 <option value="YER">YER (ريال يمني)</option>
                 <option value="SAR">SAR (سعودي)</option>
                 <option value="USD">USD (دولار)</option>
@@ -814,19 +814,19 @@ function handleWindowClick(event: MouseEvent) {
 
             <!-- Movement status filter -->
             <div class="w-48 flex flex-col gap-1 text-[10px] font-bold text-muted-foreground">
-              <span>عرض الحسابات</span>
+              <span>{m.finance_statement_display_accounts()}</span>
               <select
                 bind:value={movementFilter}
                 class="bg-background text-foreground border border-border rounded-md px-3 h-8.5 text-xs outline-none focus:ring-1 focus:ring-ring cursor-pointer"
               >
-                <option value="all">جميع الحسابات</option>
-                <option value="active">الحسابات ذات الحركات المالية فقط</option>
+                <option value="all">{m.finance_statement_all_accounts()}</option>
+                <option value="active">{m.finance_statement_accounts_with_transactions()}</option>
               </select>
             </div>
 
             <!-- Live instant search -->
             <div class="grow flex flex-col gap-1 text-[10px] font-bold text-muted-foreground min-w-[200px]">
-              <span>البحث السريع</span>
+              <span>{m.finance_statement_quick_search()}</span>
               <div class="relative">
                 <Search class="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
@@ -844,7 +844,7 @@ function handleWindowClick(event: MouseEvent) {
 
     <!-- Print-only Title Info -->
     <div class="hidden print:flex flex-col gap-1.5 text-center pb-6 border-b border-border/80 select-none">
-      <h2 class="text-xl font-bold">كشف الحساب المالي الموحد</h2>
+      <h2 class="text-xl font-bold">{m.finance_statement_unified_financial()}</h2>
       <p class="text-xs font-semibold text-muted-foreground">
         {#if activeTab === "all"}
           كشف ميزان المراجعة والأستاذ لكافة الحسابات الطرفية
@@ -867,7 +867,7 @@ function handleWindowClick(event: MouseEvent) {
         {:else if filteredLedgerRows.length === 0}
           <div class="border border-dashed border-border rounded-2xl p-16 flex flex-col items-center justify-center text-center gap-2 select-none my-8">
             <ClipboardList size={30} class="text-muted-foreground/60 mb-2" />
-            <h3 class="text-sm font-bold text-foreground">لا توجد حسابات مطابقة للفلاتر</h3>
+            <h3 class="text-sm font-bold text-foreground">{m.finance_statement_no_filtered_accounts()}</h3>
             <p class="text-xs text-muted-foreground max-w-xs leading-relaxed">
               لم نجد أي حساب طرفي مسجل أسفل العقدة المحددة يطابق الكلمة المدخلة في البحث.
             </p>
@@ -885,20 +885,20 @@ function handleWindowClick(event: MouseEvent) {
                     <TableHead colspan={2} class="border-l border-border/40 text-center bg-emerald-500/5 text-emerald-600">سعودي (SAR)</TableHead>
                     <TableHead colspan={2} class="border-l border-border/40 text-center bg-blue-500/5 text-blue-600">دولار (USD)</TableHead>
                     <TableHead colspan={2} class="border-l border-border/40 text-center bg-purple-500/5 text-purple-600">درهم (AED)</TableHead>
-                    <TableHead class="text-start border-l border-border/40">اسم الحساب الطرفي</TableHead>
-                    <TableHead class="text-center border-l border-border/40 w-24">الكود</TableHead>
-                    <TableHead class="text-center w-16">إجراء</TableHead>
+                    <TableHead class="text-start border-l border-border/40">{m.finance_statement_terminal_account()}</TableHead>
+                    <TableHead class="text-center border-l border-border/40 w-24">{m.finance_statement_code()}</TableHead>
+                    <TableHead class="text-center w-16">{m.finance_statement_action()}</TableHead>
                   </TableRow>
                   <TableRow class="hover:bg-transparent border-b border-border/80 text-[9px] font-bold">
                     <TableHead class="border-l border-border/40"></TableHead>
-                    <TableHead class="text-center border-l border-border/20 text-red-500 w-20">مدين</TableHead>
-                    <TableHead class="text-center border-l border-border/40 text-emerald-500 w-20">دائن</TableHead>
-                    <TableHead class="text-center border-l border-border/20 text-red-500 w-20">مدين</TableHead>
-                    <TableHead class="text-center border-l border-border/40 text-emerald-500 w-20">دائن</TableHead>
-                    <TableHead class="text-center border-l border-border/20 text-red-500 w-20">مدين</TableHead>
-                    <TableHead class="text-center border-l border-border/40 text-emerald-500 w-20">دائن</TableHead>
-                    <TableHead class="text-center border-l border-border/20 text-red-500 w-20">مدين</TableHead>
-                    <TableHead class="text-center border-l border-border/40 text-emerald-500 w-20">دائن</TableHead>
+                    <TableHead class="text-center border-l border-border/20 text-red-500 w-20">{m.finance_statement_debit()}</TableHead>
+                    <TableHead class="text-center border-l border-border/40 text-emerald-500 w-20">{m.finance_statement_credit()}</TableHead>
+                    <TableHead class="text-center border-l border-border/20 text-red-500 w-20">{m.finance_statement_debit()}</TableHead>
+                    <TableHead class="text-center border-l border-border/40 text-emerald-500 w-20">{m.finance_statement_credit()}</TableHead>
+                    <TableHead class="text-center border-l border-border/20 text-red-500 w-20">{m.finance_statement_debit()}</TableHead>
+                    <TableHead class="text-center border-l border-border/40 text-emerald-500 w-20">{m.finance_statement_credit()}</TableHead>
+                    <TableHead class="text-center border-l border-border/20 text-red-500 w-20">{m.finance_statement_debit()}</TableHead>
+                    <TableHead class="text-center border-l border-border/40 text-emerald-500 w-20">{m.finance_statement_credit()}</TableHead>
                     <TableHead class="border-l border-border/40"></TableHead>
                     <TableHead class="border-l border-border/40"></TableHead>
                     <TableHead></TableHead>
@@ -1000,7 +1000,7 @@ function handleWindowClick(event: MouseEvent) {
                       {allAccountsTotals.credA > 0 ? formatCurrency(allAccountsTotals.credA, "").replace(/YER|SAR|USD|AED/g, "") : "0"}
                     </TableCell>
 
-                    <TableCell class="border-l border-border/40 text-start text-foreground uppercase tracking-wider text-[10px] font-bold">الإجمالي العام</TableCell>
+                    <TableCell class="border-l border-border/40 text-start text-foreground uppercase tracking-wider text-[10px] font-bold">{m.finance_statement_grand_total()}</TableCell>
                     <TableCell class="border-l border-border/40 text-center font-bold font-mono">-</TableCell>
                     <TableCell class="text-center print:hidden">-</TableCell>
                   </TableRow>
@@ -1014,13 +1014,13 @@ function handleWindowClick(event: MouseEvent) {
                 <TableHeader class="bg-muted/40 select-none print:bg-transparent">
                   <TableRow class="hover:bg-transparent border-b border-border/80 text-[10px] font-bold text-foreground">
                     <TableHead class="w-10 border-l border-border/40 text-center font-bold font-mono">#</TableHead>
-                    <TableHead class="text-center border-l border-border/40 w-32">الرصيد الافتتاحي</TableHead>
-                    <TableHead class="text-center border-l border-border/40 text-red-500 w-32">الحركة (مدين)</TableHead>
-                    <TableHead class="text-center border-l border-border/40 text-emerald-500 w-32">الحركة (دائن)</TableHead>
-                    <TableHead class="text-center border-l border-border/40 w-32">الرصيد الحالي</TableHead>
-                    <TableHead class="text-start border-l border-border/40">اسم الحساب</TableHead>
-                    <TableHead class="text-center border-l border-border/40 w-32">الكود</TableHead>
-                    <TableHead class="text-center w-20">إجراء</TableHead>
+                    <TableHead class="text-center border-l border-border/40 w-32">{m.finance_statement_opening_balance()}</TableHead>
+                    <TableHead class="text-center border-l border-border/40 text-red-500 w-32">{m.finance_statement_transaction_debit()}</TableHead>
+                    <TableHead class="text-center border-l border-border/40 text-emerald-500 w-32">{m.finance_statement_transaction_credit()}</TableHead>
+                    <TableHead class="text-center border-l border-border/40 w-32">{m.finance_statement_current_balance()}</TableHead>
+                    <TableHead class="text-start border-l border-border/40">{m.finance_statement_account_name()}</TableHead>
+                    <TableHead class="text-center border-l border-border/40 w-32">{m.finance_statement_code()}</TableHead>
+                    <TableHead class="text-center w-20">{m.finance_statement_action()}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1074,7 +1074,7 @@ function handleWindowClick(event: MouseEvent) {
           </div>
         {:else if statementError}
           <div in:fade={{ duration: 150 }} class="border border-destructive/20 bg-destructive/10 text-destructive rounded-xl p-4 flex items-center gap-3 text-sm text-start print:hidden">
-            <div class="font-bold">خطأ في تحميل كشف الحساب:</div>
+            <div class="font-bold">{m.finance_statement_error_loading()}</div>
             <div>{statementError}</div>
           </div>
         {:else if !statement}
@@ -1082,7 +1082,7 @@ function handleWindowClick(event: MouseEvent) {
             <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-1 shrink-0">
               <ClipboardList size={22} />
             </div>
-            <h3 class="text-sm font-bold text-foreground">الرجاء اختيار حساب طرفي لعرض كشف الحركة</h3>
+            <h3 class="text-sm font-bold text-foreground">{m.finance_statement_select_terminal()}</h3>
             <p class="text-[11px] text-muted-foreground max-w-xs leading-relaxed">
               اختر أي حساب من الشجرة الدفترية الجانبية أو اكتب في قائمة البحث للوصول المباشر إلى مستندات وقيود الحساب وحركته التراكمية.
             </p>
@@ -1092,19 +1092,19 @@ function handleWindowClick(event: MouseEvent) {
           <div in:slide={{ duration: 200 }} class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 select-none">
             <!-- Card 1: Opening Balance -->
             <div class="border border-border/60 bg-card/25 p-4 rounded-2xl text-start flex flex-col justify-between hover:border-primary/30 transition-all duration-200">
-              <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">الرصيد الافتتاحي</span>
+              <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.finance_statement_opening_balance()}</span>
               <div class="flex items-baseline gap-1 mt-2">
                 <span class="text-lg font-extrabold font-mono text-foreground">
                   {formatCurrency(statement.opening_balance, statement.currency)}
                 </span>
               </div>
-              <span class="text-[9px] text-muted-foreground mt-1">قبل تاريخ {formatDate(statement.start_date)}</span>
+              <span class="text-[9px] text-muted-foreground mt-1">{m.finance_statement_before_date()}{formatDate(statement.start_date)}</span>
             </div>
 
             <!-- Card 2: Total Debits -->
             <div class="border border-border/60 bg-card/25 p-4 rounded-2xl text-start flex flex-col justify-between hover:border-emerald-500/30 transition-all duration-200">
               <div class="flex items-center justify-between w-full">
-                <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">إجمالي الحركات (مدين)</span>
+                <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.finance_statement_total_transactions_debit()}</span>
                 <div class="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
                   <ArrowDownLeft size={10} />
                 </div>
@@ -1114,13 +1114,13 @@ function handleWindowClick(event: MouseEvent) {
                   {formatCurrency(statementTotals.debit, statement.currency)}
                 </span>
               </div>
-              <span class="text-[9px] text-muted-foreground mt-1">مجموع المبالغ المقيدة كمدين</span>
+              <span class="text-[9px] text-muted-foreground mt-1">{m.finance_statement_total_debit_recorded()}</span>
             </div>
 
             <!-- Card 3: Total Credits -->
             <div class="border border-border/60 bg-card/25 p-4 rounded-2xl text-start flex flex-col justify-between hover:border-rose-500/30 transition-all duration-200">
               <div class="flex items-center justify-between w-full">
-                <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">إجمالي الحركات (دائن)</span>
+                <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.finance_statement_total_transactions_credit()}</span>
                 <div class="w-5 h-5 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 shrink-0">
                   <ArrowUpRight size={10} />
                 </div>
@@ -1130,13 +1130,13 @@ function handleWindowClick(event: MouseEvent) {
                   {formatCurrency(statementTotals.credit, statement.currency)}
                 </span>
               </div>
-              <span class="text-[9px] text-muted-foreground mt-1">مجموع المبالغ المقيدة كدائن</span>
+              <span class="text-[9px] text-muted-foreground mt-1">{m.finance_statement_total_credit_recorded()}</span>
             </div>
 
             <!-- Card 4: Closing Balance -->
             <div class="border-2 border-primary bg-primary/5 p-4 rounded-2xl text-start flex flex-col justify-between shadow-sm relative overflow-hidden">
               <div class="flex items-center justify-between w-full">
-                <span class="text-[10px] font-bold text-primary uppercase tracking-wider">الرصيد الختامي</span>
+                <span class="text-[10px] font-bold text-primary uppercase tracking-wider">{m.finance_statement_closing_balance()}</span>
                 <TrendingUp size={12} class="text-primary shrink-0" />
               </div>
               <div class="flex items-baseline gap-1 mt-2">
@@ -1144,20 +1144,20 @@ function handleWindowClick(event: MouseEvent) {
                   {formatCurrency(statement.closing_balance, statement.currency)}
                 </span>
               </div>
-              <span class="text-[9px] text-primary/80 mt-1">صافي الرصيد الجاري الفعلي</span>
+              <span class="text-[9px] text-primary/80 mt-1">{m.finance_statement_actual_net_balance()}</span>
             </div>
           </div>
 
           <!-- Spelling helper bar for accounting audit -->
           <div class="mb-4 bg-muted/30 border border-border/40 p-2.5 rounded-lg text-xs font-bold text-foreground text-start select-text flex items-center gap-2">
-            <span class="text-primary">ملاحظة الرصيد الفصيح:</span>
+            <span class="text-primary">{m.finance_statement_balance_note()}</span>
             <span>{runningBalanceText}</span>
           </div>
 
           <!-- Statement Transactions Table -->
           {#if filteredItems.length === 0}
             <div class="border border-dashed border-border/80 rounded-2xl p-12 flex flex-col items-center justify-center text-center gap-2 select-none">
-              <h4 class="text-xs font-bold text-muted-foreground">لا توجد قيود مسجلة للحساب</h4>
+              <h4 class="text-xs font-bold text-muted-foreground">{m.finance_statement_no_entries()}</h4>
               <p class="text-[10px] text-muted-foreground/80">
                 لم تسجل أي حركة ترحيل على هذا الحساب خلال الفترة المحددة.
               </p>
@@ -1167,12 +1167,12 @@ function handleWindowClick(event: MouseEvent) {
               <Table class="border-collapse w-full">
                 <TableHeader class="bg-muted/40 select-none print:bg-transparent">
                   <TableRow class="hover:bg-transparent border-b border-border/80 text-[11px] font-bold text-foreground">
-                    <TableHead class="text-start">التاريخ</TableHead>
-                    <TableHead class="text-start">المرجع</TableHead>
-                    <TableHead class="text-start">البيان / الحركة التفصيلية</TableHead>
-                    <TableHead class="text-end text-emerald-500 w-28">مدين (+)</TableHead>
-                    <TableHead class="text-end text-rose-500 w-28">دائن (-)</TableHead>
-                    <TableHead class="text-end w-32">الرصيد الجاري</TableHead>
+                    <TableHead class="text-start">{m.finance_statement_date()}</TableHead>
+                    <TableHead class="text-start">{m.finance_statement_reference()}</TableHead>
+                    <TableHead class="text-start">{m.finance_statement_detailed_desc()}</TableHead>
+                    <TableHead class="text-end text-emerald-500 w-28">{m.finance_statement_debit_plus()}</TableHead>
+                    <TableHead class="text-end text-rose-500 w-28">{m.finance_statement_credit_minus()}</TableHead>
+                    <TableHead class="text-end w-32">{m.finance_statement_running_balance()}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1180,7 +1180,7 @@ function handleWindowClick(event: MouseEvent) {
                   <TableRow class="bg-muted/10 font-bold hover:bg-muted/10 transition-colors text-[11px]">
                     <TableCell class="text-start text-muted-foreground font-mono">{formatDate(statement.start_date)}</TableCell>
                     <TableCell class="text-start text-muted-foreground font-mono">OPENING</TableCell>
-                    <TableCell class="text-start text-muted-foreground font-bold">رصيد أول المدة قبل الفترة المحددة</TableCell>
+                    <TableCell class="text-start text-muted-foreground font-bold">{m.finance_statement_opening_balance_before()}</TableCell>
                     <TableCell class="text-end font-mono">-</TableCell>
                     <TableCell class="text-end font-mono">-</TableCell>
                     <TableCell class="text-end font-bold font-mono text-foreground">

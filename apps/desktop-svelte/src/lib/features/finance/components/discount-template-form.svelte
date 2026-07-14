@@ -134,9 +134,7 @@ async function handleSubmit() {
     };
 
     if (template) {
-      await commands.finance.updateDiscountTemplate(
-        orgId,
-        template.id,
+      await commands.finance.updateDiscountTemplate(template.id,
         request,
       );
       toast.success(

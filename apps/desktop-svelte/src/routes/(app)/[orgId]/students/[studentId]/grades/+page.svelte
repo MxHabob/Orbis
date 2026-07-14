@@ -31,9 +31,7 @@ async function loadGrades() {
   isLoading = true;
   try {
     if (!orgId || !studentId || !periodId) return;
-    const enrollments = await commands.academic.listEnrollments(
-      orgId,
-      undefined,
+    const enrollments = await commands.academic.listEnrollments(undefined,
       periodId,
     );
     const activeEnrollment = enrollments.find(

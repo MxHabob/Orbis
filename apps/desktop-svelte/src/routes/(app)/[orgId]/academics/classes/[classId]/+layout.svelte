@@ -163,7 +163,7 @@ const menuItems = $derived([
     </DropdownMenu>
 
     <!-- Separator divider -->
-    <div class="h-4 w-[1px] bg-border/60 mx-1"></div>
+    <div class="h-4 w-px bg-border/60 mx-1"></div>
 
     <!-- Priority Indicator -->
     <div class="flex items-center gap-1.5 font-sans">
@@ -215,7 +215,7 @@ const menuItems = $derived([
         </Badge>
       {/if}
     {:else}
-      <span class="text-sm text-muted-foreground font-sans">{ m.error_not_found() || "غير موجود"}</span
+      <span class="text-sm text-muted-foreground font-sans">{ m.error_not_found() }</span
       >
     {/if}
   </DetailPageHeader>

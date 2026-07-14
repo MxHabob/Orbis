@@ -139,10 +139,10 @@ async function loadData() {
   error = null;
   try {
     const [ledgerList, paymentList, feeList, treasuryList] = await Promise.all([
-      commands.finance.listAccounts(data.orgId),
-      commands.finance.listPayments(data.orgId),
-      commands.finance.listAllStudentFees(data.orgId),
-      commands.finance.listTreasuries(data.orgId),
+      commands.finance.listAccounts(),
+      commands.finance.listPayments(),
+      commands.finance.listAllStudentFees(),
+      commands.finance.listTreasuries(),
     ]);
 
     ledgers = ledgerList;
@@ -907,7 +907,7 @@ function exitPage() {
             {@const isParent = node.children && node.children.length > 0}
             {@const isExpanded = expandedAccounts[node.id] !== false}
             {@const state = getAccountCheckboxState(node)}
-            <div class="flex flex-col gap-1 select-none" style="{getLocale() === 'ar' ? 'padding-right' : 'padding-left'}: {depth * 10}px">
+            <div class="flex flex-col gap-1 select-none" style="{m.finance_ledger_padding_left()}: {depth * 10}px">
               <div class="flex items-center justify-between hover:bg-accent/10 px-1.5 py-0.5 rounded text-[9px] text-muted-foreground hover:text-foreground w-full text-start">
                 <button
                   type="button"
@@ -971,7 +971,7 @@ function exitPage() {
                 <ChevronRight size={12} class="text-muted-foreground {getLocale() === "ar" ? "rotate-180" : ""}" />
                 <Folder size={12} class="text-primary" />
               {/if}
-              <span>{getLocale() === "ar" ? "الشجرة المحاسبية" : "Chart of Accounts"}</span>
+              <span>{m.finance_ledger_chart_of_accounts()}</span>
             </button>
 
             <!-- Chart of Accounts Checkbox -->
@@ -1043,7 +1043,7 @@ function exitPage() {
                   {#if expandedCategories[cat.id]}
                     <div class="border-r border-border/40 mr-2 my-0.5" transition:slide={{ duration: 150 }}>
                       {#if cat.accounts.length === 0}
-                        <span class="text-[8px] text-muted-foreground ps-2 py-0.5">لا توجد حسابات مضافة</span>
+                        <span class="text-[8px] text-muted-foreground ps-2 py-0.5">{m.finance_ledger_no_accounts_added()}</span>
                       {:else}
                         {@render renderNodes(cat.accounts, 0)}
                       {/if}
@@ -1090,7 +1090,7 @@ function exitPage() {
         <div class="flex gap-4 w-full">
           <!-- Name combobox selector -->
           <div class="flex-1 flex flex-col gap-1 text-[9px] font-bold text-muted-foreground combobox-container relative font-sans">
-            <span>اسم الحساب</span>
+            <span>{m.finance_ledger_account_name()}</span>
             <div class="relative">
               <input
                 type="text"
@@ -1103,7 +1103,7 @@ function exitPage() {
               {#if isNameDropdownOpen && activeTab === "single" && !isLoading}
                 <div class="absolute z-50 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded-md shadow-lg flex flex-col p-1 text-[10px]" transition:fade={{ duration: 80 }}>
                   {#if searchedAccountsByName.length === 0}
-                    <span class="text-[10px] text-muted-foreground p-2 text-center">لا توجد حسابات مطابقة</span>
+                    <span class="text-[10px] text-muted-foreground p-2 text-center">{m.finance_ledger_no_matching_accounts()}</span>
                   {:else}
                     {#each searchedAccountsByName as acc (acc.id)}
                       <button
@@ -1122,7 +1122,7 @@ function exitPage() {
 
           <!-- Code Search Combobox (shrunk) -->
           <div class="flex flex-col gap-1 text-[9px] font-bold text-muted-foreground combobox-container relative w-1/4 max-w-[160px] min-w-[100px]">
-            <span>كود الحساب</span>
+            <span>{m.finance_ledger_account_code()}</span>
             <div class="relative">
               <input
                 type="text"
@@ -1135,7 +1135,7 @@ function exitPage() {
               {#if isCodeDropdownOpen && activeTab === "single" && !isLoading}
                 <div class="absolute z-50 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded-md shadow-lg flex flex-col p-1 text-[10px]" transition:fade={{ duration: 80 }}>
                   {#if searchedAccountsByCode.length === 0}
-                    <span class="text-[10px] text-muted-foreground p-2 text-center">لا توجد حسابات</span>
+                    <span class="text-[10px] text-muted-foreground p-2 text-center">{m.finance_ledger_no_accounts()}</span>
                   {:else}
                     {#each searchedAccountsByCode as acc (acc.id)}
                       <button
@@ -1172,7 +1172,7 @@ function exitPage() {
 
           <!-- Date picker -->
           <div class="flex flex-col gap-1 text-[9px] font-bold text-muted-foreground">
-            <span>{selectedCurrency === "all" ? "حتى يوم" : "خلال يوم"}</span>
+            <span>{selectedCurrency === "all" ? m.finance_ledger_until_day() : m.finance_ledger_during_day()}</span>
             <Input
               type="date"
               bind:value={customStartDate}
@@ -1402,7 +1402,7 @@ function exitPage() {
                       {totals.credA > 0 ? formatCurrency(totals.credA, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
                     </TableCell>
     
-                    <TableCell class="border-r border-border/40 text-start text-foreground uppercase tracking-wider text-[9px]">{getLocale() === "ar" ? "الإجـمــالي" : "Grand Total"}</TableCell>
+                    <TableCell class="border-r border-border/40 text-start text-foreground uppercase tracking-wider text-[9px]">{m.finance_ledger_grand_total()}</TableCell>
                     <TableCell class="border-r border-border/40 text-center text-foreground font-bold">-</TableCell>
                     <TableCell class="text-start text-muted-foreground">-</TableCell>
                   </TableRow>
@@ -1418,7 +1418,7 @@ function exitPage() {
                     <TableHead class="w-10 border-r border-border/60 text-center font-bold">*</TableHead>
                     <TableHead class="text-center border-r border-border/60 w-28 text-red-500">{m.common_ledger_col_debit()}</TableHead>
                     <TableHead class="text-center border-r border-border/60 w-28 text-emerald-500">{m.common_action_edit()}</TableHead>
-                    <TableHead class="text-center border-r border-border/60 w-32 font-bold">{getLocale() === "ar" ? "الرصيد" : "Balance"}</TableHead>
+                    <TableHead class="text-center border-r border-border/60 w-32 font-bold">{m.finance_ledger_balance()}</TableHead>
                     <TableHead class="text-start border-r border-border/60 font-bold">{m.common_ledger_col_name()}</TableHead>
                     <TableHead class="text-center border-r border-border/60 w-28 font-bold">{m.common_ledger_col_code()}</TableHead>
                     <TableHead class="text-start font-bold w-64">{m.common_year_notes()}</TableHead>
@@ -1457,7 +1457,7 @@ function exitPage() {
                     <TableCell class="border-r border-border/60 text-center text-foreground font-bold">
                       {formatCurrency(tableA2Totals.balance, "").replace(/YER|USD|SAR|AED/g, '')} <span class="text-[9px] text-muted-foreground font-sans">{tableA2Totals.balance_label}</span>
                     </TableCell>
-                    <TableCell class="border-r border-border/40 text-start text-foreground uppercase tracking-wider text-[9px]">{getLocale() === "ar" ? "الإجـمــالي" : "Grand Total"}</TableCell>
+                    <TableCell class="border-r border-border/40 text-start text-foreground uppercase tracking-wider text-[9px]">{m.finance_ledger_grand_total()}</TableCell>
                     <TableCell class="border-r border-border/40 text-center text-foreground font-bold">-</TableCell>
                     <TableCell class="text-start text-muted-foreground">-</TableCell>
                   </TableRow>
@@ -1474,10 +1474,10 @@ function exitPage() {
                 <TableHeader class="bg-card">
                   <TableRow class="hover:bg-transparent border-b border-border/80 text-[10px] font-bold text-foreground">
                     <TableHead class="w-12 text-center font-bold border-r border-border/60">*</TableHead>
-                    <TableHead colspan={2} class="text-center font-bold border-r border-border/60">{getLocale() === "ar" ? "المبلـغ" : "Amount"}</TableHead>
-                    <TableHead class="text-center font-bold border-r border-border/60 w-32">{getLocale() === "ar" ? "الالعملة" : "Currency"}</TableHead>
-                    <TableHead colspan={2} class="text-center font-bold border-r border-border/60">{getLocale() === "ar" ? "المقابل بالريال اليمني" : "Equivalent in YER"}</TableHead>
-                    <TableHead class="text-start font-bold">{getLocale() === "ar" ? "البيان" : "Description"}</TableHead>
+                    <TableHead colspan={2} class="text-center font-bold border-r border-border/60">{m.finance_ledger_amount()}</TableHead>
+                    <TableHead class="text-center font-bold border-r border-border/60 w-32">{m.finance_ledger_currency()}</TableHead>
+                    <TableHead colspan={2} class="text-center font-bold border-r border-border/60">{m.finance_ledger_equivalent_in_yer()}</TableHead>
+                    <TableHead class="text-start font-bold">{m.finance_ledger_description()}</TableHead>
                   </TableRow>
                   <TableRow class="hover:bg-transparent border-b border-border/80 text-[9px] font-bold">
                     <TableHead class="border-r border-border/60 text-center">-</TableHead>
@@ -1524,7 +1524,7 @@ function exitPage() {
                     <TableCell class="border-r border-border/40 text-center text-foreground font-semibold">Σ</TableCell>
                     <TableCell class="border-r border-border/40 text-center text-muted-foreground/40">-</TableCell>
                     <TableCell class="border-r border-border/60 text-center text-muted-foreground/40">-</TableCell>
-                    <TableCell class="border-r border-border/60 text-center text-foreground font-bold">{getLocale() === "ar" ? "الإجـمــالي" : "Total"}</TableCell>
+                    <TableCell class="border-r border-border/60 text-center text-foreground font-bold">{m.finance_ledger_total()}</TableCell>
                     <TableCell class="border-r border-border/40 text-center text-red-500 font-bold">
                       {summaryTotals.debit_eq > 0 ? formatCurrency(summaryTotals.debit_eq, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
                     </TableCell>
@@ -1539,7 +1539,7 @@ function exitPage() {
                     <TableCell class="border-r border-border/40 text-center text-foreground font-semibold">♣</TableCell>
                     <TableCell class="border-r border-border/40 text-center text-muted-foreground/40">-</TableCell>
                     <TableCell class="border-r border-border/60 text-center text-muted-foreground/40">-</TableCell>
-                    <TableCell class="border-r border-border/60 text-center text-foreground font-bold">{getLocale() === "ar" ? "الرصيـد" : "Balance"}</TableCell>
+                    <TableCell class="border-r border-border/60 text-center text-foreground font-bold">{m.finance_ledger_balance()}</TableCell>
                     
                     <!-- Net Debit -->
                     <TableCell class="border-r border-border/40 text-center text-red-500 font-bold">
@@ -1564,18 +1564,18 @@ function exitPage() {
                   <TableRow class="hover:bg-transparent border-b border-border/80 text-[10px] font-bold text-foreground">
                     <TableHead class="w-28 text-center text-red-500 border-r border-border/60">{m.common_ledger_col_debit()}</TableHead>
                     <TableHead class="w-28 text-center text-emerald-500 border-r border-border/60">{m.common_action_edit()}</TableHead>
-                    <TableHead class="w-36 text-center text-foreground border-r border-border/60">{getLocale() === "ar" ? "الرصيد" : "Balance"}</TableHead>
-                    <TableHead class="w-20 text-center text-foreground border-r border-border/60">{getLocale() === "ar" ? "حالته" : "Status"}</TableHead>
-                    <TableHead class="w-28 text-center text-foreground border-r border-border/60">{getLocale() === "ar" ? "التاريخ" : "Date"}</TableHead>
-                    <TableHead class="w-32 text-center text-foreground border-r border-border/60">{getLocale() === "ar" ? "المستند" : "Voucher"}</TableHead>
-                    <TableHead class="w-24 text-center text-foreground border-r border-border/60">{getLocale() === "ar" ? "رقمه" : "No."}</TableHead>
-                    <TableHead class="text-start text-foreground">{getLocale() === "ar" ? "البيان" : "Description"}</TableHead>
+                    <TableHead class="w-36 text-center text-foreground border-r border-border/60">{m.finance_ledger_balance()}</TableHead>
+                    <TableHead class="w-20 text-center text-foreground border-r border-border/60">{m.finance_ledger_status()}</TableHead>
+                    <TableHead class="w-28 text-center text-foreground border-r border-border/60">{m.finance_ledger_date()}</TableHead>
+                    <TableHead class="w-32 text-center text-foreground border-r border-border/60">{m.finance_ledger_voucher()}</TableHead>
+                    <TableHead class="w-24 text-center text-foreground border-r border-border/60">{m.finance_ledger_no()}</TableHead>
+                    <TableHead class="text-start text-foreground">{m.finance_ledger_description()}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {#if ledgerTransactions.length === 0}
                     <TableRow>
-                      <TableCell colspan={8} class="text-center py-10 text-muted-foreground text-xs font-semibold">لا توجد قيود أو حركات مطابقة لهذا الحساب بالفترة المحددة</TableCell>
+                      <TableCell colspan={8} class="text-center py-10 text-muted-foreground text-xs font-semibold">{m.finance_ledger_no_entries_found()}</TableCell>
                     </TableRow>
                   {:else}
                     {#each ledgerTransactions as row}
@@ -1622,10 +1622,10 @@ function exitPage() {
                     </TableCell>
                     <TableCell class="border-r border-border/60 text-center text-muted-foreground/40">-</TableCell>
                     <TableCell class="border-r border-border/60 text-center text-muted-foreground/40">-</TableCell>
-                    <TableCell class="border-r border-border/60 text-center text-foreground uppercase tracking-wider text-[9px]">{getLocale() === "ar" ? "الإجـمــالي" : "Grand Total"}</TableCell>
+                    <TableCell class="border-r border-border/60 text-center text-foreground uppercase tracking-wider text-[9px]">{m.finance_ledger_grand_total()}</TableCell>
                     <TableCell class="border-r border-border/60 text-center text-muted-foreground/40">-</TableCell>
                     <TableCell class="text-start text-muted-foreground font-sans text-[9px] px-3 font-medium text-primary">
-                      {getLocale() === "ar" ? "صافي رصيد كشف الحساب التفصيلي الموضح" : "Net detailed account ledger balance summary"}
+                      {m.finance_ledger_net_detailed_account_ledger_balance()}
                     </TableCell>
                   </TableRow>
                 </tfoot>

@@ -164,8 +164,8 @@ let showQrModal = $state(false);
 let printMode = $state<"list" | "voucher">("list");
 
 const paymentMethods = [
-  { value: "Cash", label: "نقداً" },
-  { value: "Check", label: "شيك" },
+  { value: "Cash", label: m.finance_payments_cash() },
+  { value: "Check", label: m.finance_payments_check() },
   { value: "Transfer", label: "حوالة بنكية" },
 ];
 
@@ -174,9 +174,9 @@ async function loadData() {
   error = null;
   try {
     const [paymentsList, treasuriesList, studentsList] = await Promise.all([
-      commands.finance.listPayments(data.orgId),
-      commands.finance.listTreasuries(data.orgId),
-      commands.academic.listEnrollments(data.orgId),
+      commands.finance.listPayments(),
+      commands.finance.listTreasuries(),
+      commands.academic.listEnrollments(),
     ]);
 
     payments = (paymentsList as any[]).map((p: any) => ({
@@ -207,7 +207,7 @@ async function loadData() {
 
 async function loadCurrencies() {
   try {
-    const list = await commands.finance.listCurrencies(data.orgId);
+    const list = await commands.finance.listCurrencies();
     if (list && list.length > 0) {
       currencies = list.map((c) => ({
         code: c.code,
@@ -461,7 +461,7 @@ async function handleAdd() {
           reference: newRefNum,
           notes:
             row.notes ||
-            `سداد رسوم الطالب ${getStudentName(row.studentEnrollmentId)} - ${fee?.notes || "رسوم دراسية"}`,
+            `سداد رسوم الطالب ${getStudentName(row.studentEnrollmentId)} - ${fee?.notes || m.finance_payments_tuition_fees()}`,
           treasury_id: treasuryId,
           currency: currency.trim().toUpperCase(),
         };
@@ -499,7 +499,7 @@ async function handleAdd() {
           treasury_id: treasuryId,
           treasury_name:
             treasuries.find((t) => t.id === treasuryId)?.name ||
-            "صندوق التحصيلات",
+            m.finance_payments_collections_treasury(),
           student_name: getStudentName(row.studentEnrollmentId),
           student_number:
             students.find((s) => String(s.id) === row.studentEnrollmentId)
@@ -507,7 +507,7 @@ async function handleAdd() {
           check_info: checkInfo,
           notes:
             row.notes ||
-            `سداد رسوم الطالب ${getStudentName(row.studentEnrollmentId)} - ${fee?.notes || "رسوم دراسية"}`,
+            `سداد رسوم الطالب ${getStudentName(row.studentEnrollmentId)} - ${fee?.notes || m.finance_payments_tuition_fees()}`,
           reference_number: newRefNum,
           prints_count: 0,
           user: "U78",
@@ -564,7 +564,7 @@ function handlePrintVoucher() {
 
 function getMethodLabel(methodStr: string) {
   const methodLower = String(methodStr).toLowerCase();
-  if (methodLower === "cash") return "نقداً";
+  if (methodLower === "cash") return m.finance_payments_cash();
   if (
     methodLower === "check" ||
     methodLower === "bank_transfer" ||
@@ -631,7 +631,7 @@ const filteredPayments = $derived.by(() => {
       <!-- Voucher Header & Shared Controls -->
       <div class="bg-muted/45 border-b border-border/60 p-4 flex flex-wrap items-center justify-between gap-4 select-none">
         <div class="flex items-center gap-1.5">
-          <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">رقم السند</span>
+          <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">{m.finance_payments_receipt_number()}</span>
           <span class="text-[11px] font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
             {receiptNumber || "قبض جديد"}
           </span>
@@ -640,7 +640,7 @@ const filteredPayments = $derived.by(() => {
         <div class="flex flex-wrap items-center gap-4">
           <!-- Treasury select -->
           <div class="flex flex-col gap-1 text-start">
-            <Label class="text-[9px] font-bold text-muted-foreground">الصندوق</Label>
+            <Label class="text-[9px] font-bold text-muted-foreground">{m.finance_payments_treasury()}</Label>
             <Select type="single" bind:value={treasuryId}>
               <SelectTrigger class="h-8 text-xs bg-background/50 w-48 border-border/60 cursor-pointer text-start">
                 {treasuryItems.find(t => t.value === treasuryId)?.label || "اختر الصندوق..."}
@@ -650,7 +650,7 @@ const filteredPayments = $derived.by(() => {
                   <SelectItem value={tr.value}>{tr.label}</SelectItem>
                 {/each}
                 {#if treasuryItems.length === 0}
-                  <SelectItem value="">12110013 - صندوق التحصيلات</SelectItem>
+                  <SelectItem value="">{m.finance_payments_collections_treasury_full()}</SelectItem>
                 {/if}
               </SelectContent>
             </Select>
@@ -658,7 +658,7 @@ const filteredPayments = $derived.by(() => {
 
           <!-- Method select -->
           <div class="flex flex-col gap-1 text-start">
-            <Label class="text-[9px] font-bold text-muted-foreground">طريقة القبض</Label>
+            <Label class="text-[9px] font-bold text-muted-foreground">{m.finance_payments_payment_method()}</Label>
             <Select type="single" bind:value={paymentMethod}>
               <SelectTrigger class="h-8 text-xs bg-background/50 w-32 border-border/60 cursor-pointer text-start">
                 {paymentMethods.find(m => m.value === paymentMethod)?.label || "اختر الطريقة..."}
@@ -673,7 +673,7 @@ const filteredPayments = $derived.by(() => {
 
           <!-- Currency select -->
           <div class="flex flex-col gap-1 text-start">
-            <Label class="text-[9px] font-bold text-muted-foreground">العملة</Label>
+            <Label class="text-[9px] font-bold text-muted-foreground">{m.finance_payments_currency()}</Label>
             <Select type="single" bind:value={currency}>
               <SelectTrigger class="h-8 text-xs bg-background/50 w-24 border-border/60 cursor-pointer">
                 {currency}
@@ -688,7 +688,7 @@ const filteredPayments = $derived.by(() => {
 
           <!-- Date picker -->
           <div class="flex flex-col gap-1 text-start">
-            <Label class="text-[9px] font-bold text-muted-foreground">التاريخ</Label>
+            <Label class="text-[9px] font-bold text-muted-foreground">{m.finance_payments_date()}</Label>
             <Input 
               type="date" 
               bind:value={paymentDate} 
@@ -699,7 +699,7 @@ const filteredPayments = $derived.by(() => {
           <!-- Check Info (if method is Check) -->
           {#if paymentMethod === 'Check'}
             <div in:slide={{ duration: 150 }} class="flex flex-col gap-1 text-start">
-              <Label class="text-[9px] font-bold text-muted-foreground">معلومات الشيك</Label>
+              <Label class="text-[9px] font-bold text-muted-foreground">{m.finance_payments_check_info()}</Label>
               <Input 
                 type="text" 
                 bind:value={checkInfo} 
@@ -717,9 +717,9 @@ const filteredPayments = $derived.by(() => {
           <!-- Headers -->
           <div class="hidden md:grid grid-cols-[30px_1.2fr_2.5fr_1fr_40px] gap-4 px-2 text-xs font-bold text-muted-foreground select-none pb-2 border-b border-border/40">
             <div class="text-center">#</div>
-            <div>اسم الحساب (الطالب) / الملاحظات</div>
-            <div>الرسوم المستحقة والمدفوعة</div>
-            <div class="text-center">إجمالي المدفوع</div>
+            <div>{m.finance_payments_account_name_notes()}</div>
+            <div>{m.finance_payments_due_paid_fees()}</div>
+            <div class="text-center">{m.finance_payments_total_paid()}</div>
             <div class="text-center">{m.common_je_col_actions()}</div>
           </div>
 
@@ -729,13 +729,13 @@ const filteredPayments = $derived.by(() => {
               <div class="grid grid-cols-1 md:grid-cols-[30px_1.2fr_2.5fr_1fr_40px] gap-4 items-start bg-muted/30 md:bg-transparent p-4 md:p-0 rounded-lg border border-border/45 md:border-none">
                 <!-- Row Number -->
                 <div class="text-start md:text-center font-mono text-xs font-bold text-muted-foreground pt-2">
-                  <span class="md:hidden">السطر </span>{index + 1}
+                  <span class="md:hidden">{m.finance_payments_row()}</span>{index + 1}
                 </div>
                 
                 <!-- Student Selection & Notes -->
                 <div class="flex flex-col gap-2">
                   <div class="flex flex-col gap-1">
-                    <span class="text-[10px] font-bold text-muted-foreground md:hidden">اسم الحساب (الطالب)</span>
+                    <span class="text-[10px] font-bold text-muted-foreground md:hidden">{m.finance_payments_account_student_name()}</span>
                     <ComboboxDropdown
                       placeholder="-- اختر حساب الطالب --"
                       searchPlaceholder="ابحث باسم الطالب..."
@@ -746,7 +746,7 @@ const filteredPayments = $derived.by(() => {
                     />
                   </div>
                   <div class="flex flex-col gap-1">
-                    <span class="text-[10px] font-bold text-muted-foreground md:hidden">ملاحظات السند</span>
+                    <span class="text-[10px] font-bold text-muted-foreground md:hidden">{m.finance_payments_receipt_notes()}</span>
                     <Input
                       type="text"
                       bind:value={row.notes}
@@ -758,7 +758,7 @@ const filteredPayments = $derived.by(() => {
 
                 <!-- Fees List checkboxes & amount inputs -->
                 <div class="flex flex-col gap-1 text-start">
-                  <span class="text-[10px] font-bold text-muted-foreground md:hidden">الرسوم المستحقة والمدفوعة</span>
+                  <span class="text-[10px] font-bold text-muted-foreground md:hidden">{m.finance_payments_due_paid_fees()}</span>
                   {#if row.isLoadingFees}
                     <div class="space-y-1">
                       <Skeleton class="h-8 w-full rounded-md" />
@@ -781,8 +781,8 @@ const filteredPayments = $derived.by(() => {
                               class="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer"
                             />
                             <div class="flex flex-col text-start">
-                              <span class="font-bold text-foreground text-[11px]">{f.notes || "رسوم دراسية"}</span>
-                              <span class="text-[10px] text-muted-foreground">المستحق: {formatCurrency(f.balance, currency)}</span>
+                              <span class="font-bold text-foreground text-[11px]">{f.notes || m.finance_payments_tuition_fees()}</span>
+                              <span class="text-[10px] text-muted-foreground">{m.finance_payments_due()}{formatCurrency(f.balance, currency)}</span>
                             </div>
                           </label>
 
@@ -805,7 +805,7 @@ const filteredPayments = $derived.by(() => {
 
                 <!-- Row Total Paid -->
                 <div class="flex flex-col gap-1 items-stretch md:items-center">
-                  <span class="text-[10px] font-bold text-muted-foreground md:hidden text-center">إجمالي المدفوع</span>
+                  <span class="text-[10px] font-bold text-muted-foreground md:hidden text-center">{m.finance_payments_total_paid()}</span>
                   <div class="bg-background border border-border px-2 py-2 rounded-lg h-9 flex items-center justify-center font-mono font-extrabold text-emerald-500 text-xs w-full text-center">
                     {formatCurrency(calculateRowTotal(row), currency)}
                   </div>
@@ -836,7 +836,7 @@ const filteredPayments = $derived.by(() => {
             class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer border-border text-foreground hover:bg-muted"
           >
             <Plus size={14} />
-            <span>إضافة سطر</span>
+            <span>{m.finance_payments_add_row()}</span>
           </Button>
           
           <div class="flex items-center gap-3">
@@ -847,7 +847,7 @@ const filteredPayments = $derived.by(() => {
               class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-8 px-5 flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-[0.98] transition-all"
             >
               <Plus size={14} />
-              <span>ترحيل السندات</span>
+              <span>{m.finance_payments_post_receipts()}</span>
             </Button>
             
             <Button
@@ -858,7 +858,7 @@ const filteredPayments = $derived.by(() => {
               class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer active:scale-[0.98] transition-all"
             >
               <Trash2 size={14} />
-              <span>إلغاء السند (Void)</span>
+              <span>{m.finance_payments_void_receipt()}</span>
             </Button>
 
             <Button
@@ -868,7 +868,7 @@ const filteredPayments = $derived.by(() => {
               class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer active:scale-[0.98] transition-all border-border text-foreground hover:bg-muted"
             >
               <LogOut size={14} />
-              <span>تفريغ الحقول</span>
+              <span>{m.finance_payments_clear_fields()}</span>
             </Button>
           </div>
         </div>
@@ -925,12 +925,12 @@ const filteredPayments = $derived.by(() => {
         <!-- Method filter -->
         <Select type="single" bind:value={methodFilter}>
           <SelectTrigger class="h-8 text-xs bg-background border-border w-40 cursor-pointer text-start">
-            {methodFilter === "all" ? "طريقة القبض (الكل)" : (methodFilter === "Cash" ? "نقداً" : "شيك")}
+            {methodFilter === "all" ? m.finance_payments_all_methods() : (methodFilter === "Cash" ? m.finance_payments_cash() : m.finance_payments_check())}
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">طريقة القبض (الكل)</SelectItem>
-            <SelectItem value="Cash">نقداً</SelectItem>
-            <SelectItem value="Check">شيك</SelectItem>
+            <SelectItem value="all">{m.finance_payments_all_methods()}</SelectItem>
+            <SelectItem value="Cash">{m.finance_payments_cash()}</SelectItem>
+            <SelectItem value="Check">{m.finance_payments_check()}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -939,12 +939,12 @@ const filteredPayments = $derived.by(() => {
         <!-- Filter Mode Select -->
         <Select type="single" bind:value={filterMode}>
           <SelectTrigger class="h-8 text-xs bg-background border-border w-28 cursor-pointer text-start">
-            {filterMode === "day" ? "تاريخ اليوم" : (filterMode === "range" ? "فترة محددة" : "كل التواريخ")}
+            {filterMode === "day" ? m.finance_payments_today() : (filterMode === "range" ? m.finance_payments_specific_period() : m.finance_payments_all_dates())}
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="day">تاريخ اليوم</SelectItem>
-            <SelectItem value="range">فترة محددة</SelectItem>
-            <SelectItem value="all">كل التواريخ</SelectItem>
+            <SelectItem value="day">{m.finance_payments_today()}</SelectItem>
+            <SelectItem value="range">{m.finance_payments_specific_period()}</SelectItem>
+            <SelectItem value="all">{m.finance_payments_all_dates()}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -987,7 +987,7 @@ const filteredPayments = $derived.by(() => {
         {:else if filterMode === "range"}
           <div class="flex items-center gap-2" in:slide={{ axis: "x", duration: 150 }}>
             <Input type="date" bind:value={startDateFilter} class="h-7 text-xs w-[120px]" />
-            <span class="text-xs text-muted-foreground">إلى</span>
+            <span class="text-xs text-muted-foreground">{m.finance_payments_to()}</span>
             <Input type="date" bind:value={endDateFilter} class="h-7 text-xs w-[120px]" />
           </div>
         {/if}
@@ -1001,7 +1001,7 @@ const filteredPayments = $derived.by(() => {
             bind:checked={showUserRecords} 
             class="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer" 
           />
-          <span>عرض سجلات المستخدم</span>
+          <span>{m.finance_payments_show_user_logs()}</span>
         </label>
       </div>
 
@@ -1015,7 +1015,7 @@ const filteredPayments = $derived.by(() => {
             class="h-8 text-[11px] flex items-center gap-1.5 cursor-pointer hover:bg-muted border-primary/30 text-primary"
           >
             <Printer size={12} />
-            <span>طباعة القوالب ({selectedPaymentIds.size})</span>
+            <span>{m.finance_payments_print_templates()} ({selectedPaymentIds.size})</span>
           </Button>
         {/if}
         <Button 
@@ -1025,7 +1025,7 @@ const filteredPayments = $derived.by(() => {
           class="h-8 text-[11px] flex items-center gap-1.5 cursor-pointer hover:bg-muted"
         >
           <Printer size={12} />
-          <span>طباعة الجدول</span>
+          <span>{m.finance_payments_print_table()}</span>
         </Button>
         <Button 
           variant="outline" 
@@ -1035,7 +1035,7 @@ const filteredPayments = $derived.by(() => {
           class="h-8 text-[11px] flex items-center gap-1.5 cursor-pointer hover:bg-muted"
         >
           <FileText size={12} />
-          <span>طباعة السند</span>
+          <span>{m.finance_payments_print_receipt()}</span>
         </Button>
         <Button 
           variant="outline" 
@@ -1071,14 +1071,14 @@ const filteredPayments = $derived.by(() => {
                     class="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer"
                   />
                 </TableHead>
-                <TableHead class="text-start font-bold text-xs">الرقم</TableHead>
-                <TableHead class="text-start font-bold text-xs">التاريخ</TableHead>
-                <TableHead class="text-start font-bold text-xs">طريقة القبض</TableHead>
-                <TableHead class="text-end font-bold text-xs text-emerald-500">المبلغ</TableHead>
-                <TableHead class="text-center font-bold text-xs">العملة</TableHead>
-                <TableHead class="text-start font-bold text-xs">الصندوق</TableHead>
-                <TableHead class="text-start font-bold text-xs">اسم الحساب (العميل)</TableHead>
-                <TableHead class="text-start font-bold text-xs">ملاحظات</TableHead>
+                <TableHead class="text-start font-bold text-xs">{m.finance_payments_number()}</TableHead>
+                <TableHead class="text-start font-bold text-xs">{m.finance_payments_date()}</TableHead>
+                <TableHead class="text-start font-bold text-xs">{m.finance_payments_payment_method()}</TableHead>
+                <TableHead class="text-end font-bold text-xs text-emerald-500">{m.finance_payments_amount()}</TableHead>
+                <TableHead class="text-center font-bold text-xs">{m.finance_payments_currency()}</TableHead>
+                <TableHead class="text-start font-bold text-xs">{m.finance_payments_treasury()}</TableHead>
+                <TableHead class="text-start font-bold text-xs">{m.finance_payments_customer_account()}</TableHead>
+                <TableHead class="text-start font-bold text-xs">{m.finance_payments_notes()}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1103,7 +1103,7 @@ const filteredPayments = $derived.by(() => {
                       {formatCurrency(Number(p.amount || 0), p.currency || 'YER')}
                     </TableCell>
                     <TableCell class="text-center text-[11px] font-semibold font-mono">{p.currency || 'YER'}</TableCell>
-                    <TableCell class="text-start text-[11px] text-foreground max-w-[150px] truncate">{cleanAccountName(p.treasury_name) || 'صندوق التحصيلات'}</TableCell>
+                    <TableCell class="text-start text-[11px] text-foreground max-w-[150px] truncate">{cleanAccountName(p.treasury_name) || m.finance_payments_collections_treasury()}</TableCell>
                     <TableCell class="text-start text-[11px] text-foreground font-semibold max-w-[180px] truncate">{p.student_name || '-'}</TableCell>
                     <TableCell class="text-start text-[11px] text-muted-foreground max-w-[200px] truncate">{p.notes || '-'}</TableCell>
                   </TableRow>
@@ -1121,7 +1121,7 @@ const filteredPayments = $derived.by(() => {
   {#if showQrModal && selectedPayment}
     <div in:fade={{ duration: 150 }} class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div class="bg-card border border-border rounded-xl w-full max-w-sm p-5 shadow-2xl relative text-center">
-        <h3 class="text-sm font-bold mb-3 text-foreground">رمز الاستجابة السريعة للسند (QR)</h3>
+        <h3 class="text-sm font-bold mb-3 text-foreground">{m.finance_payments_qr_code()}</h3>
         <div class="bg-white p-3 rounded-lg inline-block mb-3 border border-zinc-200">
           <svg class="w-40 h-40 mx-auto text-black" viewBox="0 0 100 100" fill="currentColor">
             <path d="M0 0h30v30H0V0zm10 10v10h10V10H10zM70 0h30v30H70V0zm10 10v10h10V10H80zM0 70h30v30H0V70zm10 10v10h10V80H10zm35-80h10v10H45V0zm15 15h10v15H60V15zm-15 20h25v10H45V35zm-15 15h10v10H30V50zm15 10h10v15H45V60zm15 15h10v15H60V75zm15-15h25v10H75V60zm-30 20h10v10H45V80zm35 10h20v10H80V90z" />
@@ -1129,11 +1129,11 @@ const filteredPayments = $derived.by(() => {
         </div>
         
         <div class="text-xs text-muted-foreground flex flex-col gap-1 text-start px-2 bg-muted/30 p-2.5 rounded-lg border border-border/40">
-          <div><span class="font-bold text-foreground">سند رقم:</span> {receiptNumber}</div>
-          <div><span class="font-bold text-foreground">التاريخ:</span> {formatDate(paymentDate)}</div>
-          <div><span class="font-bold text-foreground">العميل / الحساب:</span> {studentName}</div>
-          <div><span class="font-bold text-foreground">المبلغ:</span> {formatCurrency(amount || 0, currency || 'YER')}</div>
-          <div><span class="font-bold text-foreground">البيان:</span> {notes || '-'}</div>
+          <div><span class="font-bold text-foreground">{m.finance_payments_receipt_no_label()}</span> {receiptNumber}</div>
+          <div><span class="font-bold text-foreground">{m.finance_payments_date_label()}</span> {formatDate(paymentDate)}</div>
+          <div><span class="font-bold text-foreground">{m.finance_payments_customer_account_label()}</span> {studentName}</div>
+          <div><span class="font-bold text-foreground">{m.finance_payments_amount_label()}</span> {formatCurrency(amount || 0, currency || 'YER')}</div>
+          <div><span class="font-bold text-foreground">{m.finance_payments_description_label()}</span> {notes || '-'}</div>
         </div>
         
         <Button variant="outline" size="sm" class="mt-4 w-full cursor-pointer hover:bg-muted" onclick={() => showQrModal = false}>
@@ -1148,59 +1148,59 @@ const filteredPayments = $derived.by(() => {
     {#if printMode === 'voucher' && selectedPayment}
       <div class="text-center pb-6 border-b-2 border-emerald-500/50 flex justify-between items-center">
         <div class="text-start">
-          <h2 class="text-xl font-bold text-zinc-800">مؤسسة أوربيس التعليمية</h2>
-          <p class="text-xs text-zinc-500">سند قبض عملاء</p>
+          <h2 class="text-xl font-bold text-zinc-800">{m.finance_payments_orbis_institution()}</h2>
+          <p class="text-xs text-zinc-500">{m.finance_payments_customer_receipt()}</p>
         </div>
         <h1 class="text-2xl font-extrabold text-emerald-600">
           سند قبض #{receiptNumber}
         </h1>
         <div class="text-end text-xs text-zinc-600">
-          <p>التاريخ: {formatDate(paymentDate)}</p>
-          <p>الصندوق: {selectedPayment.treasury_name || 'صندوق التحصيلات'}</p>
+          <p>{m.finance_payments_date_label()}{formatDate(paymentDate)}</p>
+          <p>{m.finance_payments_treasury_label()}{selectedPayment.treasury_name || m.finance_payments_collections_treasury()}</p>
         </div>
       </div>
 
       <div class="grid grid-cols-2 gap-4 my-6 text-sm">
         <div class="border border-zinc-200 p-3 rounded-lg col-span-2 flex justify-between items-center">
           <div>
-            <span class="text-xs text-zinc-500 block">وصلنا من السيد / السادة</span>
+            <span class="text-xs text-zinc-500 block">{m.finance_payments_received_from()}</span>
             <span class="font-bold text-lg text-zinc-800">{studentName}</span>
           </div>
           <div class="text-end">
-            <span class="text-xs text-zinc-500 block">المبلغ المقبوض</span>
+            <span class="text-xs text-zinc-500 block">{m.finance_payments_amount_received()}</span>
             <span class="font-mono font-extrabold text-emerald-600 text-lg">{formatCurrency(amount || 0, currency)}</span>
           </div>
         </div>
         <div class="border border-zinc-200 p-3 rounded-lg">
-          <span class="text-xs text-zinc-500 block">طريقة القبض</span>
+          <span class="text-xs text-zinc-500 block">{m.finance_payments_payment_method()}</span>
           <span class="font-bold text-zinc-800">{getMethodLabel(paymentMethod)}</span>
         </div>
         <div class="border border-zinc-200 p-3 rounded-lg col-span-2">
-          <span class="text-xs text-zinc-500 block">البيان / ملاحظات</span>
+          <span class="text-xs text-zinc-500 block">{m.finance_payments_desc_notes()}</span>
           <span class="font-medium text-zinc-700">{notes}</span>
         </div>
       </div>
 
       <div class="flex justify-between items-center mt-20 text-xs font-semibold text-zinc-600">
-        <div class="text-center w-32 border-t border-zinc-300 pt-2">أمين الصندوق (التحصيل)</div>
-        <div class="text-center w-32 border-t border-zinc-300 pt-2">المستلم</div>
-        <div class="text-center w-32 border-t border-zinc-300 pt-2">مدير النظام (U78)</div>
+        <div class="text-center w-32 border-t border-zinc-300 pt-2">{m.finance_payments_cashier()}</div>
+        <div class="text-center w-32 border-t border-zinc-300 pt-2">{m.finance_payments_recipient()}</div>
+        <div class="text-center w-32 border-t border-zinc-300 pt-2">{m.finance_payments_admin()}</div>
       </div>
     {:else}
       <div class="text-center pb-6 border-b border-zinc-300">
-        <h1 class="text-2xl font-bold">دفتر مقبوضات وتحصيلات العملاء</h1>
-        <p class="text-xs text-zinc-500">قائمة سندات التحصيل والمقبوضات المقيدة بالنظام</p>
+        <h1 class="text-2xl font-bold">{m.finance_payments_receipts_ledger()}</h1>
+        <p class="text-xs text-zinc-500">{m.finance_payments_vouchers_list()}</p>
       </div>
       <table class="w-full border-collapse mt-6 text-xs border border-zinc-200">
         <thead>
           <tr class="bg-zinc-100 border-b border-zinc-300 text-zinc-700">
-            <th class="p-2 text-start">الرقم</th>
-            <th class="p-2 text-start">التاريخ</th>
-            <th class="p-2 text-start">طريقة القبض</th>
-            <th class="p-2 text-end">المبلغ</th>
-            <th class="p-2 text-start">الصندوق</th>
-            <th class="p-2 text-start">العميل / الحساب</th>
-            <th class="p-2 text-start">البيان</th>
+            <th class="p-2 text-start">{m.finance_payments_number()}</th>
+            <th class="p-2 text-start">{m.finance_payments_date()}</th>
+            <th class="p-2 text-start">{m.finance_payments_payment_method()}</th>
+            <th class="p-2 text-end">{m.finance_payments_amount()}</th>
+            <th class="p-2 text-start">{m.finance_payments_treasury()}</th>
+            <th class="p-2 text-start">{m.finance_payments_customer_account()}</th>
+            <th class="p-2 text-start">{m.finance_payments_desc()}</th>
           </tr>
         </thead>
         <tbody>
@@ -1211,7 +1211,7 @@ const filteredPayments = $derived.by(() => {
                 <td class="p-2">{formatDate(p.payment_date || p.created_at)}</td>
                 <td class="p-2">{getMethodLabel(p.payment_method)}</td>
                 <td class="p-2 text-end font-mono">{formatCurrency(p.amount, p.currency)}</td>
-                <td class="p-2">{p.treasury_name || 'صندوق التحصيلات'}</td>
+                <td class="p-2">{p.treasury_name || m.finance_payments_collections_treasury()}</td>
                 <td class="p-2">{p.student_name || '-'}</td>
                 <td class="p-2">{p.notes || '-'}</td>
               </tr>

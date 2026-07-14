@@ -170,7 +170,7 @@ function formatDateWithDay(dateStr: string): string {
       month: "short",
     };
     return date.toLocaleDateString(
-      getLocale() === "ar" ? "ar-EG" : "en-US",
+      m.academics_exams_sessions_sessionId_en_us(),
       options,
     );
   } catch (e) {
@@ -253,23 +253,21 @@ async function loadSession() {
 
     // Load subjects
     try {
-      subjects = await commands.exam.getSubjects(data.orgId, sessionId);
+      subjects = await commands.exam.getSubjects(sessionId);
     } catch (err) {
       console.error("Failed to load subjects", err);
     }
 
     // Load schedules
     try {
-      schedules = await commands.exam.getSchedules(data.orgId, sessionId);
+      schedules = await commands.exam.getSchedules(sessionId);
     } catch (err) {
       console.error("Failed to load schedules", err);
     }
 
     // Load seating numbers
     try {
-      seatingNumbers = await commands.exam.getSeatingNumbers(
-        data.orgId,
-        sessionId,
+      seatingNumbers = await commands.exam.getSeatingNumbers(sessionId,
       );
     } catch (err) {
       console.error("Failed to load seating numbers", err);
@@ -277,21 +275,21 @@ async function loadSession() {
 
     // Load halls
     try {
-      halls = await commands.exam.getHalls(data.orgId, sessionId);
+      halls = await commands.exam.getHalls(sessionId);
     } catch (err) {
       console.error("Failed to load halls", err);
     }
 
     // Load proctors
     try {
-      proctors = await commands.exam.getProctors(data.orgId, sessionId);
+      proctors = await commands.exam.getProctors(sessionId);
     } catch (err) {
       console.error("Failed to load proctors", err);
     }
 
     // Load school rooms catalog
     try {
-      rooms = await commands.scheduling.listRooms(data.orgId);
+      rooms = await commands.scheduling.listRooms();
     } catch (err) {
       console.error("Failed to load school rooms", err);
     }
@@ -299,8 +297,8 @@ async function loadSession() {
     // Load school classes & subjects catalogs
     try {
       const [classList, subjectList] = await Promise.all([
-        commands.academic.listClasses(data.orgId),
-        commands.academic.listSubjects(data.orgId),
+        commands.academic.listClasses(),
+        commands.academic.listSubjects(),
       ]);
       classes = classList;
       schoolSubjects = subjectList;
@@ -327,7 +325,7 @@ onMount(() => {
 // Quick actions
 async function handleGenerateSeating() {
   const userId = authStore.userId || authStore.user?.id || "desktop_user";
-  const promise = commands.exam.generateSeating(data.orgId, sessionId as string, userId);
+  const promise = commands.exam.generateSeating(sessionId as string, userId);
   toast.promise(promise, {
     loading: "جاري توليد أرقام الجلوس...",
     success: "تم توليد أرقام الجلوس بنجاح!",
@@ -343,7 +341,7 @@ async function handleGenerateSeating() {
 
 async function handleGenerateSecrets() {
   const userId = authStore.userId || authStore.user?.id || "desktop_user";
-  const promise = commands.exam.generateSecrets(data.orgId, sessionId as string, userId);
+  const promise = commands.exam.generateSecrets(sessionId as string, userId);
   toast.promise(promise, {
     loading: "جاري توليد الأرقام السرية...",
     success: "تم توليد الأرقام السرية بنجاح!",
@@ -375,7 +373,7 @@ function generateDatesRange(startStr: string, endStr: string): string[] {
 async function loadSolveJobs() {
   if (!sessionId) return;
   try {
-    const list = await commands.exam.listSolveJobs(data.orgId, sessionId);
+    const list = await commands.exam.listSolveJobs(sessionId);
     solveJobs = list;
 
     // Auto-resume polling if any job is running in background
@@ -416,12 +414,10 @@ async function handleAutoSchedule() {
       preferred_period: preferredPeriod,
       default_duration_minutes: defaultDurationMinutes,
     };
-    const job = await commands.exam.startSolve(data.orgId, userId, req);
+    const job = await commands.exam.startSolve(userId, req);
     activeJob = job;
     toast.success(
-      getLocale() === "ar"
-        ? "تم بدء الجدولة التلقائية في الخلفية"
-        : "Started auto-scheduling in the background",
+      m.academics_exams_sessions_sessionId_started_auto_scheduling_in_the(),
     );
     startPollingJob(String(job.id));
   } catch (e: any) {
@@ -443,7 +439,7 @@ async function startPollingJob(jobId: string) {
 
   pollingInterval = setInterval(async () => {
     try {
-      const job = await commands.exam.getSolveJob(data.orgId, jobId);
+      const job = await commands.exam.getSolveJob(jobId);
       activeJob = job;
 
       if (
@@ -456,16 +452,12 @@ async function startPollingJob(jobId: string) {
         await loadSolveJobs();
         if (job.status === "completed") {
           toast.success(
-            getLocale() === "ar"
-              ? "اكتملت عملية الجدولة التلقائية بنجاح!"
-              : "Exam schedule optimization completed successfully!",
+            m.academics_exams_sessions_sessionId_exam_schedule_optimization_completed_successfully(),
           );
         } else if (job.status === "failed") {
           solveError =
             (job.error_message as string) ||
-            (getLocale() === "ar"
-              ? "فشلت عملية الجدولة"
-              : "Optimization job failed");
+            (m.academics_exams_sessions_sessionId_optimization_job_failed());
           toast.error(solveError || "Error");
         }
       }
@@ -489,14 +481,12 @@ function stopPolling() {
 async function handleCancelSolve() {
   if (!activeJob) return;
   try {
-    const job = await commands.exam.cancelSolve(data.orgId, activeJob.id);
+    const job = await commands.exam.cancelSolve(activeJob.id);
     activeJob = job;
     stopPolling();
     isSolving = false;
     toast.success(
-      getLocale() === "ar"
-        ? "تم إلغاء عملية الجدولة"
-        : "Optimization job cancelled",
+      m.academics_exams_sessions_sessionId_optimization_job_cancelled(),
     );
     await loadSolveJobs();
   } catch (err: any) {
@@ -506,16 +496,12 @@ async function handleCancelSolve() {
 
 async function handleApplySolve() {
   if (!activeJob) return;
-  const promise = commands.exam.applySolve(data.orgId, activeJob.id);
+  const promise = commands.exam.applySolve(activeJob.id);
   toast.promise(promise, {
     loading:
-      getLocale() === "ar"
-        ? "جاري تطبيق الجدول المحسّن..."
-        : "Applying optimized schedule...",
+      m.academics_exams_sessions_sessionId_applying_optimized_schedule(),
     success:
-      getLocale() === "ar"
-        ? "تم تطبيق الجدول بنجاح!"
-        : "Applied schedule successfully!",
+      m.academics_exams_sessions_sessionId_applied_schedule_successfully(),
     error: (err: any) => (err as any)?.message || "Failed to apply",
   });
   try {
@@ -531,22 +517,16 @@ async function handleApplySolve() {
 async function handleDeleteSchedule(scheduleId: string) {
   if (
     !confirm(
-      getLocale() === "ar"
-        ? "هل أنت متأكد من رغبتك في حذف هذا الامتحان نهائياً؟"
-        : "Are you sure you want to delete this scheduled exam permanently?",
+      m.academics_exams_sessions_sessionId_are_you_sure_you_want(),
     )
   )
     return;
-  const promise = commands.exam.deleteSchedule(data.orgId, scheduleId);
+  const promise = commands.exam.deleteSchedule(scheduleId);
   toast.promise(promise, {
     loading:
-      getLocale() === "ar"
-        ? "جاري حذف الامتحان..."
-        : "Deleting scheduled exam...",
+      m.academics_exams_sessions_sessionId_deleting_scheduled_exam(),
     success:
-      getLocale() === "ar"
-        ? "تم حذف الامتحان بنجاح!"
-        : "Deleted exam successfully!",
+      m.academics_exams_sessions_sessionId_deleted_exam_successfully(),
     error: (err: any) => (err as any)?.message || "Failed to delete",
   });
   try {
@@ -561,24 +541,14 @@ async function handleToggleScheduleStatus(sched: any) {
   const newStatus = sched.status === "cancelled" ? "scheduled" : "cancelled";
   const label =
     newStatus === "cancelled"
-      ? getLocale() === "ar"
-        ? "إلغاء تفعيل الامتحان..."
-        : "Deactivating exam..."
-      : getLocale() === "ar"
-        ? "تفعيل الامتحان..."
-        : "Activating exam...";
+      ? m.academics_exams_sessions_sessionId_deactivating_exam()
+      : m.academics_exams_sessions_sessionId_activating_exam();
   const labelSuccess =
     newStatus === "cancelled"
-      ? getLocale() === "ar"
-        ? "تم إلغاء التفعيل بنجاح!"
-        : "Deactivated successfully!"
-      : getLocale() === "ar"
-        ? "تم تفعيل الامتحان بنجاح!"
-        : "Activated successfully!";
+      ? m.academics_exams_sessions_sessionId_deactivated_successfully()
+      : m.academics_exams_sessions_sessionId_activated_successfully();
 
-  const promise = commands.exam.updateScheduleStatus(
-    data.orgId,
-    sched.id,
+  const promise = commands.exam.updateScheduleStatus(sched.id,
     newStatus,
   );
   toast.promise(promise, {
@@ -595,7 +565,7 @@ async function handleToggleScheduleStatus(sched: any) {
 }
 
 async function handleAllocateHalls() {
-  const promise = commands.exam.allocateHalls(data.orgId, sessionId as string, {
+  const promise = commands.exam.allocateHalls(sessionId as string, {
     separate_divisions: separateDivisions,
     separate_genders: separateGenders,
     balance_halls: balanceHalls,
@@ -617,7 +587,7 @@ async function handleAllocateHalls() {
 
 async function handleActivate() {
   if (!session) return;
-  const promise = commands.exam.updateSession(data.orgId, sessionId as string, {
+  const promise = commands.exam.updateSession(sessionId as string, {
     status: "active",
   });
 
@@ -636,7 +606,7 @@ async function handleActivate() {
 }
 
 async function handleToggleHall(room: any) {
-  const promise = commands.exam.createHall(data.orgId, {
+  const promise = commands.exam.createHall({
     exam_session_id: sessionId,
     room_id: room.id,
     hall_number: room.room_number || room.name || "لجنة",
@@ -667,7 +637,7 @@ async function handleAssignProctors() {
   isLoading = true;
   try {
     for (const sched of schedules) {
-      await commands.exam.autoAssignProctors(data.orgId, sessionId as string, sched.id, {
+      await commands.exam.autoAssignProctors(sessionId as string, sched.id, {
         proctors_per_hall: proctorsPerHall,
         prevent_own_subject: preventOwnSubject,
         max_sessions_per_teacher: maxSessionsPerTeacher,
@@ -773,7 +743,7 @@ async function handleAssignProctors() {
 					{#if subjects.length === 0}
 						<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
 							<BookOpen size={24} class="text-muted-foreground" />
-							<p class="text-xs text-muted-foreground">لم يتم إضافة مواد بعد</p>
+							<p class="text-xs text-muted-foreground">{m.academics_exams_no_subjects()}</p>
 							<Button variant="outline" class="h-7 px-3 text-[10px] cursor-pointer" onclick={() => isSubjectSheetOpen = true}>
 								<Plus size={12} class="me-1" />
 								{m.common_exams_subjects_add()}
@@ -797,7 +767,7 @@ async function handleAssignProctors() {
 											<TableCell class="font-mono text-muted-foreground">{i + 1}</TableCell>
 											<TableCell class="font-medium">{subject.subject_id}</TableCell>
 											<TableCell class="font-mono">{subject.max_score}</TableCell>
-											<TableCell class="font-mono">{subject.duration_minutes}د</TableCell>
+											<TableCell class="font-mono">{subject.duration_minutes}{m.academics_exams_duration_minutes_abbr()}</TableCell>
 											<TableCell>
 												<span class="px-1.5 py-0.5 rounded bg-muted/60 border border-border/40 text-[9px]">
 													{subject.exam_type}
@@ -821,7 +791,7 @@ async function handleAssignProctors() {
 					{#if activeSchedules.length === 0}
 						<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
 							<Calendar size={24} class="text-muted-foreground" />
-							<p class="text-xs text-muted-foreground">لم يتم جدولة امتحانات بعد</p>
+							<p class="text-xs text-muted-foreground">{m.academics_exams_no_exams_scheduled()}</p>
 							<Button variant="outline" class="h-7 px-3 text-[10px] cursor-pointer" onclick={handleAutoSchedule}>
 								<Zap size={12} class="me-1" />
 								{m.common_exams_actions_auto_schedule()}
@@ -836,13 +806,13 @@ async function handleAssignProctors() {
 							>
 								<!-- Header Row -->
 								<div class="timetable-header p-4 font-bold text-center flex items-center justify-center border-b uppercase text-[10px] tracking-wider">
-									{getLocale() === "ar" ? "اليوم / التاريخ" : "Day / Date"}
+									{m.academics_exams_sessions_sessionId_day_date()}
 								</div>
 								<div class="timetable-header p-4 font-bold text-center flex items-center justify-center border-b uppercase text-[10px] tracking-wider">
-									{getLocale() === "ar" ? "☀️ الفترة الصباحية (08:00)" : "☀️ Morning Period (08:00)"}
+									{m.academics_exams_sessions_sessionId_morning_period_08_00()}
 								</div>
 								<div class="timetable-header p-4 font-bold text-center flex items-center justify-center border-b uppercase text-[10px] tracking-wider">
-									{getLocale() === "ar" ? "🌙 الفترة المسائية (13:00)" : "🌙 Afternoon Period (13:00)"}
+									{m.academics_exams_sessions_sessionId_afternoon_period_13_00()}
 								</div>
 
 								<!-- Rows (Dates) -->
@@ -860,17 +830,17 @@ async function handleAssignProctors() {
 											<div 
 												style="--subject-color: {getSubjectColor(sched.exam_subject_id)};"
 												class="relative overflow-hidden w-full p-2.5 flex flex-row items-stretch justify-between gap-2.5 select-none transition-all duration-150 rounded-lg border
-													{sched.isDraft ? 'border-dashed border-primary/50 bg-primary/[0.02]' : 'border-border/60 hover:border-primary/20 bg-card hover:bg-muted/10'} 
+													{sched.isDraft ? 'border-dashed border-primary/50 bg-primary/2' : 'border-border/60 hover:border-primary/20 bg-card hover:bg-muted/10'} 
 													{sched.status === 'cancelled' ? 'opacity-40 bg-muted/20 border-dashed border-muted-foreground/30 line-through' : ''}"
 											>
 												<div class="flex-1 flex flex-col justify-center items-start text-start gap-1 min-w-0">
 													<div class="flex items-center gap-1.5 w-full">
-														<span class="w-1.5 h-1.5 rounded-full bg-[var(--subject-color)] shrink-0"></span>
+														<span class="w-1.5 h-1.5 rounded-full bg-(--subject-color) shrink-0"></span>
 														<span class="font-bold text-[11px] leading-tight text-foreground line-clamp-1">
 															{getSubjectName(sched.exam_subject_id)}
 														</span>
 														{#if sched.isDraft}
-															<span class="text-[8px] px-1 py-0.5 rounded bg-primary/10 text-primary font-bold">مسودة</span>
+															<span class="text-[8px] px-1 py-0.5 rounded bg-primary/10 text-primary font-bold">{m.academics_exams_draft()}</span>
 														{/if}
 													</div>
 													
@@ -915,17 +885,17 @@ async function handleAssignProctors() {
 											<div 
 												style="--subject-color: {getSubjectColor(sched.exam_subject_id)};"
 												class="relative overflow-hidden w-full p-2.5 flex flex-row items-stretch justify-between gap-2.5 select-none transition-all duration-150 rounded-lg border
-													{sched.isDraft ? 'border-dashed border-primary/50 bg-primary/[0.02]' : 'border-border/60 hover:border-primary/20 bg-card hover:bg-muted/10'} 
+													{sched.isDraft ? 'border-dashed border-primary/50 bg-primary/2' : 'border-border/60 hover:border-primary/20 bg-card hover:bg-muted/10'} 
 													{sched.status === 'cancelled' ? 'opacity-40 bg-muted/20 border-dashed border-muted-foreground/30 line-through' : ''}"
 											>
 												<div class="flex-1 flex flex-col justify-center items-start text-start gap-1 min-w-0">
 													<div class="flex items-center gap-1.5 w-full">
-														<span class="w-1.5 h-1.5 rounded-full bg-[var(--subject-color)] shrink-0"></span>
+														<span class="w-1.5 h-1.5 rounded-full bg-(--subject-color) shrink-0"></span>
 														<span class="font-bold text-[11px] leading-tight text-foreground line-clamp-1">
 															{getSubjectName(sched.exam_subject_id)}
 														</span>
 														{#if sched.isDraft}
-															<span class="text-[8px] px-1 py-0.5 rounded bg-primary/10 text-primary font-bold">مسودة</span>
+															<span class="text-[8px] px-1 py-0.5 rounded bg-primary/10 text-primary font-bold">{m.academics_exams_draft()}</span>
 														{/if}
 													</div>
 													
@@ -975,7 +945,7 @@ async function handleAssignProctors() {
 					{#if seatingNumbers.length === 0}
 						<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
 							<Hash size={24} class="text-muted-foreground" />
-							<p class="text-xs text-muted-foreground">لم يتم إصدار أرقام الجلوس بعد</p>
+							<p class="text-xs text-muted-foreground">{m.academics_exams_no_seating_numbers()}</p>
 							<Button variant="default" class="h-7 px-3 text-[10px] cursor-pointer" onclick={handleGenerateSeating}>
 								<Hash size={12} class="me-1" />
 								{m.common_exams_actions_generate_seating()}
@@ -983,7 +953,7 @@ async function handleAssignProctors() {
 						</div>
 					{:else}
 						<div class="flex items-center justify-between gap-3 px-1 select-none">
-							<span class="text-xs text-muted-foreground">تم إصدار {seatingNumbers.length} رقم جلوس للطلاب في هذه الدورة الامتحانية</span>
+							<span class="text-xs text-muted-foreground">{m.academics_exams_issued()}{seatingNumbers.length}{m.academics_exams_seating_numbers_suffix()}</span>
 							{#if selectedSeatIds.size > 0}
 								<Button 
 									variant="outline" 
@@ -991,7 +961,7 @@ async function handleAssignProctors() {
 									onclick={() => printDialogOpen = true}
 								>
 									<Printer size={12} />
-									<span>طباعة القوالب ({selectedSeatIds.size})</span>
+									<span>{m.academics_exams_print_templates()} ({selectedSeatIds.size})</span>
 								</Button>
 							{/if}
 						</div>
@@ -1008,10 +978,10 @@ async function handleAssignProctors() {
 											/>
 										</TableHead>
 										<TableHead class="w-10">#</TableHead>
-										<TableHead>رقم الجلوس</TableHead>
-										<TableHead>الطالب</TableHead>
-										<TableHead>الفصل</TableHead>
-										<TableHead>المستوى</TableHead>
+										<TableHead>{m.academics_exams_seat_number()}</TableHead>
+										<TableHead>{m.academics_exams_student()}</TableHead>
+										<TableHead>{m.academics_exams_class()}</TableHead>
+										<TableHead>{m.academics_exams_level()}</TableHead>
 									</TableRow>
 								</TableHeader>
 								<TableBody>
@@ -1042,7 +1012,7 @@ async function handleAssignProctors() {
 			{:else if activeTab === "halls"}
 				<div class="flex flex-col gap-4">
 					<div class="flex items-center justify-between text-xs text-muted-foreground select-none px-1">
-						<span>تم تفعيل {halls.length} لجنة من أصل {rooms.length} قاعة دراسية متاحة بالمدرسة</span>
+						<span>{m.academics_exams_activated()}{halls.length}{m.academics_exams_committees_out_of()}{rooms.length}{m.academics_exams_available_classrooms_suffix()}</span>
 						<Button variant="outline" class="h-6 px-2 text-[9px] cursor-pointer" onclick={() => { activeConfigTab = "halls"; isConfigModalOpen = true; }}>
 							<Shuffle size={10} class="me-1" />
 							توزيع الطلاب تلقائياً
@@ -1052,7 +1022,7 @@ async function handleAssignProctors() {
 					{#if rooms.length === 0}
 						<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
 							<Building2 size={24} class="text-muted-foreground" />
-							<p class="text-xs text-muted-foreground">لا توجد قاعات مسجلة في نظام المدرسة بعد</p>
+							<p class="text-xs text-muted-foreground">{m.academics_exams_no_classrooms()}</p>
 						</div>
 					{:else}
 						<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1064,7 +1034,7 @@ async function handleAssignProctors() {
 										<div class="flex flex-col">
 											<span class="text-xs font-bold text-foreground">{room.room_number || room.name}</span>
 											{#if room.building}
-												<span class="text-[8px] text-muted-foreground mt-0.5">{room.building} - الطابق {room.floor}</span>
+												<span class="text-[8px] text-muted-foreground mt-0.5">{room.building}{m.academics_exams_floor_connector()}{room.floor}</span>
 											{/if}
 										</div>
 										<span class="text-[9px] font-mono px-1.5 py-0.5 rounded {isAct ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-muted text-muted-foreground border border-border/40'}">
@@ -1076,8 +1046,8 @@ async function handleAssignProctors() {
 										{@const utilPct = activeHall.capacity > 0 ? Math.round((activeHall.allocated_count / activeHall.capacity) * 100) : 0}
 										<div class="flex flex-col gap-1.5">
 											<div class="flex justify-between text-[9px] text-muted-foreground font-mono">
-												<span>السعة المحددة: {activeHall.capacity}</span>
-												<span>الموزعين: {activeHall.allocated_count} طالب</span>
+												<span>{m.academics_exams_allocated_capacity()}{activeHall.capacity}</span>
+												<span>{m.academics_exams_allocated()}{activeHall.allocated_count}{m.academics_exams_student_suffix()}</span>
 											</div>
 											<div class="h-1 w-full rounded-full bg-muted/40 overflow-hidden">
 												<div
@@ -1088,7 +1058,7 @@ async function handleAssignProctors() {
 										</div>
 									{:else}
 										<div class="flex items-center justify-between mt-1">
-											<span class="text-[9px] text-muted-foreground">السعة الافتراضية: {room.capacity || 30}</span>
+											<span class="text-[9px] text-muted-foreground">{m.academics_exams_default_capacity()}{room.capacity || 30}</span>
 											<Button
 												variant="ghost"
 												class="h-6 px-2 text-[9px] font-semibold text-primary hover:bg-primary/5 cursor-pointer"
@@ -1111,7 +1081,7 @@ async function handleAssignProctors() {
 					{#if proctors.length === 0}
 						<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
 							<UserCheck size={24} class="text-muted-foreground" />
-							<p class="text-xs text-muted-foreground">لم يتم تعيين مراقبين بعد</p>
+							<p class="text-xs text-muted-foreground">{m.academics_exams_no_proctors_assigned()}</p>
 							<Button variant="outline" class="h-7 px-3 text-[10px] cursor-pointer" onclick={() => { activeConfigTab = "proctors"; isConfigModalOpen = true; }}>
 								<UserCheck size={12} class="me-1" />
 								{m.common_exams_actions_assign_proctors()}
@@ -1122,10 +1092,10 @@ async function handleAssignProctors() {
 							<Table>
 								<TableHeader>
 									<TableRow class="text-[10px]">
-										<TableHead>المراقب</TableHead>
-										<TableHead>اللجنة</TableHead>
-										<TableHead>الدور</TableHead>
-										<TableHead class="w-20">الحالة</TableHead>
+										<TableHead>{m.academics_exams_proctor()}</TableHead>
+										<TableHead>{m.academics_exams_committee()}</TableHead>
+										<TableHead>{m.academics_exams_role()}</TableHead>
+										<TableHead class="w-20">{m.academics_exams_status()}</TableHead>
 									</TableRow>
 								</TableHeader>
 								<TableBody>
@@ -1138,7 +1108,7 @@ async function handleAssignProctors() {
 												{#if p.is_confirmed === 1}
 													<CheckCircle2 size={14} class="text-emerald-500" />
 												{:else}
-													<span class="text-[9px] text-amber-500">قيد التأكيد</span>
+													<span class="text-[9px] text-amber-500">{m.academics_exams_pending_confirmation()}</span>
 												{/if}
 											</TableCell>
 										</TableRow>
@@ -1206,7 +1176,7 @@ async function handleAssignProctors() {
 
 		<!-- Quick Actions Bar -->
 		<div class="border-t border-border pt-4 flex flex-wrap items-center gap-2" in:fade={{ delay: 150, duration: 200 }}>
-			<span class="text-[9px] text-muted-foreground font-bold uppercase tracking-wider me-2">إجراءات سريعة</span>
+			<span class="text-[9px] text-muted-foreground font-bold uppercase tracking-wider me-2">{m.academics_exams_quick_actions()}</span>
 			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={handleGenerateSeating}>
 				<Hash size={10} /> أرقام الجلوس
 			</Button>
@@ -1235,8 +1205,8 @@ async function handleAssignProctors() {
 			<!-- Modal Header -->
 			<div class="border-b border-border p-4 flex items-center justify-between bg-muted/20">
 				<div>
-					<h3 class="text-sm font-bold text-foreground">معالج وتخصيص الجدولة والتوزيع الذكي AI</h3>
-					<p class="text-[10px] text-muted-foreground mt-0.5">خصص معايير وقيود وخوارزمية الجدولة الذكية</p>
+					<h3 class="text-sm font-bold text-foreground">{m.academics_exams_ai_wizard()}</h3>
+					<p class="text-[10px] text-muted-foreground mt-0.5">{m.academics_exams_ai_customize()}</p>
 				</div>
 				<button 
 					type="button" 
@@ -1281,30 +1251,30 @@ async function handleAssignProctors() {
 					<!-- Period Solver settings -->
 					<div class="flex flex-col gap-3.5">
 						<div class="flex flex-col gap-1.5">
-							<span class="font-bold text-foreground">تفضيل فترات الجدولة اليومية:</span>
+							<span class="font-bold text-foreground">{m.academics_exams_scheduling_preference()}</span>
 							<select 
 								bind:value={preferredPeriod}
 								class="bg-background text-foreground border border-border rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-primary w-full"
 							>
-								<option value="both">☀️ فترتين باليوم (صباحية ومسائية)</option>
-								<option value="morning">☀️ فترة واحدة (صباحية فقط)</option>
-								<option value="afternoon">🌙 فترة واحدة (مسائية فقط)</option>
+								<option value="both">{m.academics_exams_two_sessions()}</option>
+								<option value="morning">{m.academics_exams_morning_session()}</option>
+								<option value="afternoon">{m.academics_exams_afternoon_session()}</option>
 							</select>
 						</div>
 
 						<div class="flex flex-col gap-1.5">
-							<span class="font-bold text-foreground">الحد الأقصى للاختبارات باليوم للطالب/الصف:</span>
+							<span class="font-bold text-foreground">{m.academics_exams_max_exams_per_day()}</span>
 							<select 
 								bind:value={maxExamsPerDay}
 								class="bg-background text-foreground border border-border rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-primary w-full"
 							>
-								<option value={1}>اختبار واحد في اليوم (موصى به لتخفيف الضغط)</option>
-								<option value={2}>اختبارين كحد أقصى باليوم (صباحي ومسائي)</option>
+								<option value={1}>{m.academics_exams_one_exam_per_day()}</option>
+								<option value={2}>{m.academics_exams_two_exams_per_day()}</option>
 							</select>
 						</div>
 
 						<div class="flex flex-col gap-1.5">
-							<span class="font-bold text-foreground">مدة الامتحان الافتراضية (بالدقائق):</span>
+							<span class="font-bold text-foreground">{m.academics_exams_default_duration()}</span>
 							<input 
 								type="number"
 								bind:value={defaultDurationMinutes}
@@ -1316,7 +1286,7 @@ async function handleAssignProctors() {
 					</div>
 
 					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
-						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>إلغاء</Button>
+						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.academics_exams_cancel()}</Button>
 						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAutoSchedule(); }}>
 							<Zap size={12} class="me-1" /> بدء الجدولة الذكية
 						</Button>
@@ -1327,31 +1297,31 @@ async function handleAssignProctors() {
 					<div class="flex flex-col gap-3.5">
 						<div class="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/5">
 							<div class="flex flex-col gap-0.5 max-w-[80%]">
-								<span class="font-bold text-foreground">فصل الطلاب حسب التخصص:</span>
-								<p class="text-[10px] text-muted-foreground">توزيع طلاب المسارات المختلفة (علمي/أدبي) في لجان منفصلة</p>
+								<span class="font-bold text-foreground">{m.academics_exams_separate_major()}</span>
+								<p class="text-[10px] text-muted-foreground">{m.academics_exams_allocate_different_tracks()}</p>
 							</div>
 							<input type="checkbox" bind:checked={separateDivisions} class="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer" />
 						</div>
 
 						<div class="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/5">
 							<div class="flex flex-col gap-0.5 max-w-[80%]">
-								<span class="font-bold text-foreground">فصل الطلاب حسب الجنس:</span>
-								<p class="text-[10px] text-muted-foreground">توزيع البنين والبنات في لجان وقاعات منفصلة تماماً</p>
+								<span class="font-bold text-foreground">{m.academics_exams_separate_gender()}</span>
+								<p class="text-[10px] text-muted-foreground">{m.academics_exams_allocate_genders_separate()}</p>
 							</div>
 							<input type="checkbox" bind:checked={separateGenders} class="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer" />
 						</div>
 
 						<div class="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/5">
 							<div class="flex flex-col gap-0.5 max-w-[80%]">
-								<span class="font-bold text-foreground">موازنة أعداد الطلاب في اللجان:</span>
-								<p class="text-[10px] text-muted-foreground">موازنة وتوزيع الطلاب بالتساوي بدلاً من ملء اللجان تباعاً</p>
+								<span class="font-bold text-foreground">{m.academics_exams_balance_student_numbers()}</span>
+								<p class="text-[10px] text-muted-foreground">{m.academics_exams_balance_allocate_evenly()}</p>
 							</div>
 							<input type="checkbox" bind:checked={balanceHalls} class="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer" />
 						</div>
 					</div>
 
 					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
-						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>إلغاء</Button>
+						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.academics_exams_cancel()}</Button>
 						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAllocateHalls(); }}>
 							<Shuffle size={12} class="me-1" /> بدء التوزيع التلقائي
 						</Button>
@@ -1361,27 +1331,27 @@ async function handleAssignProctors() {
 					<!-- Proctors assignment settings -->
 					<div class="flex flex-col gap-3.5">
 						<div class="flex flex-col gap-1.5">
-							<span class="font-bold text-foreground">عدد المراقبين المطلوبين في اللجنة الواحدة:</span>
+							<span class="font-bold text-foreground">{m.academics_exams_required_proctors()}</span>
 							<select 
 								bind:value={proctorsPerHall}
 								class="bg-background text-foreground border border-border rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-primary w-full font-mono"
 							>
-								<option value={1}>مراقب واحد (1) لكل لجنة</option>
-								<option value={2}>مراقبين (2) لكل لجنة (موصى به للأمان)</option>
-								<option value={3}>ثلاثة مراقبين (3) لكل لجنة</option>
+								<option value={1}>{m.academics_exams_one_proctor()}</option>
+								<option value={2}>{m.academics_exams_two_proctors()}</option>
+								<option value={3}>{m.academics_exams_three_proctors()}</option>
 							</select>
 						</div>
 
 						<div class="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/5">
 							<div class="flex flex-col gap-0.5 max-w-[80%]">
-								<span class="font-bold text-foreground">منع المعلم من مراقبة مادته الدراسية:</span>
-								<p class="text-[10px] text-muted-foreground">تأكيد عدم مراقبة معلم الرياضيات لامتحان مادة الرياضيات منعاً للغش</p>
+								<span class="font-bold text-foreground">{m.academics_exams_prevent_proctoring_own_subject()}</span>
+								<p class="text-[10px] text-muted-foreground">{m.academics_exams_ensure_no_proctoring_own_subject()}</p>
 							</div>
 							<input type="checkbox" bind:checked={preventOwnSubject} class="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer" />
 						</div>
 
 						<div class="flex flex-col gap-1.5">
-							<span class="font-bold text-foreground">الحد الأقصى لفترات المراقبة للمعلم الواحد:</span>
+							<span class="font-bold text-foreground">{m.academics_exams_max_proctoring_sessions()}</span>
 							<input 
 								type="number"
 								bind:value={maxSessionsPerTeacher}
@@ -1393,7 +1363,7 @@ async function handleAssignProctors() {
 					</div>
 
 					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
-						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>إلغاء</Button>
+						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.academics_exams_cancel()}</Button>
 						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAssignProctors(); }}>
 							<UserCheck size={12} class="me-1" /> تعيين المراقبين تلقائياً
 						</Button>

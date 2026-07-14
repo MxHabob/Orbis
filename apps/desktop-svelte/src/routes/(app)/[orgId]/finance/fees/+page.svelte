@@ -43,7 +43,7 @@ async function loadFees() {
   isLoading = true;
   error = null;
   try {
-    const list = await commands.finance.listAllStudentFees(data.orgId);
+    const list = await commands.finance.listAllStudentFees();
     fees = list;
   } catch (e) {
     console.error("Error loading fees:", e);

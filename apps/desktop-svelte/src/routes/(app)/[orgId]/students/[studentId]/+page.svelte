@@ -316,7 +316,6 @@ async function saveStudentDetails(e: Event) {
       isActiveState
     ) {
       await commands.platform.transitionEnrollmentStatus(
-        orgId,
         studentId,
         "active",
       );

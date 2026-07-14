@@ -77,8 +77,8 @@ async function loadData() {
   isLoadingData = true;
   try {
     const [studentList, treasuryList] = await Promise.all([
-      commands.academic.listEnrollments(data.orgId),
-      commands.finance.listTreasuries(data.orgId),
+      commands.academic.listEnrollments(),
+      commands.finance.listTreasuries(),
     ]);
     students = studentList;
     treasuries = treasuryList;
@@ -90,9 +90,7 @@ async function loadData() {
   } catch (e) {
     console.error("Error loading POS startup data:", e);
     toast.error(
-      getLocale() === "ar"
-        ? "خطأ في تحميل البيانات الأساسية"
-        : "Error loading lookup data",
+      m.finance_pos_error_loading_lookup_data(),
     );
   } finally {
     isLoadingData = false;
@@ -110,7 +108,7 @@ async function loadStudentData(enrollId: string) {
   try {
     const [feesList, paymentsList] = await Promise.all([
       commands.finance.listStudentFees(enrollId),
-      commands.finance.listPayments(data.orgId),
+      commands.finance.listPayments(),
     ]);
 
     // Unpaid/Partially paid fees
@@ -132,9 +130,7 @@ async function loadStudentData(enrollId: string) {
   } catch (e) {
     console.error("Error loading details for student:", e);
     toast.error(
-      getLocale() === "ar"
-        ? "خطأ في تحميل تفاصيل الرسوم والمدفوعات للطالب"
-        : "Error loading student billing info",
+      m.finance_pos_error_loading_student_billing_info(),
     );
   } finally {
     isLoadingStudentDetails = false;
@@ -230,9 +226,7 @@ async function handlePaymentSubmit(e: SubmitEvent) {
     // Refocus search for next transaction if current balance is cleared
     if (activeStudentFees.length === 0) {
       toast.info(
-        getLocale() === "ar"
-          ? "تم سداد جميع الرسوم المستحقة لهذا الطالب بنجاح!"
-          : "All outstanding fees for this student have been cleared!",
+        m.finance_pos_all_outstanding_fees_for_this(),
       );
       deselectStudent();
     }
@@ -303,19 +297,17 @@ onMount(() => {
       <a 
         href={`/${data.orgId}/finance/payments`} 
         class="h-8 w-8 rounded-lg hover:bg-accent flex items-center justify-center border border-border duration-100"
-        title={getLocale() === "ar" ? "العودة لقائمة السندات" : "Back to Payments"}
+        title={m.finance_pos_back_to_payments()}
       >
         <ArrowLeft size={16} class={getLocale() === "ar" ? "rotate-180" : ""} />
       </a>
       <div class="text-start">
         <h2 class="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
           <CreditCard size={15} class="text-lime-500" />
-          <span>{getLocale() === "ar" ? "صالة البيع السريع والسداد (POS)" : "Quick POS Payment Register"}</span>
+          <span>{m.finance_pos_quick_pos_payment_register()}</span>
         </h2>
         <p class="text-[10px] text-muted-foreground mt-0.5">
-          {getLocale() === "ar" 
-            ? "تسجيل دفعات الرسوم الدراسية بشكل فوري ومحسّن للوحة المفاتيح" 
-            : "Record student payments instantly with keyboard shortcuts"}
+          {m.finance_pos_record_student_payments_instantly_with()}
         </p>
       </div>
     </div>
@@ -324,19 +316,19 @@ onMount(() => {
     <div class="hidden md:flex items-center gap-4 text-[10px] text-muted-foreground bg-accent/30 px-3 py-1.5 rounded-lg border border-border">
       <span class="font-bold text-foreground flex items-center gap-1">
         <Keyboard size={12} class="text-primary" />
-        <span>{getLocale() === "ar" ? "مفاتيح سريعة:" : "Shortcuts:"}</span>
+        <span>{m.finance_pos_shortcuts()}</span>
       </span>
       <span class="flex items-center gap-1">
         <kbd class="px-1.5 py-0.5 rounded bg-card border border-border font-mono text-[8px]">Ctrl + S</kbd>
-        <span>{getLocale() === "ar" ? "البحث عن طالب" : "Focus Search"}</span>
+        <span>{m.finance_pos_focus_search()}</span>
       </span>
       <span class="flex items-center gap-1">
         <kbd class="px-1.5 py-0.5 rounded bg-card border border-border font-mono text-[8px]">ESC</kbd>
-        <span>{getLocale() === "ar" ? "إلغاء الطالب" : "Clear Student"}</span>
+        <span>{m.finance_pos_clear_student()}</span>
       </span>
       <span class="flex items-center gap-1">
         <kbd class="px-1.5 py-0.5 rounded bg-card border border-border font-mono text-[8px]">Enter</kbd>
-        <span>{getLocale() === "ar" ? "تأكيد الدفع" : "Submit"}</span>
+        <span>{m.finance_pos_submit()}</span>
       </span>
     </div>
   </div>
@@ -350,7 +342,7 @@ onMount(() => {
       <!-- Student Search Bar -->
       <div class="relative w-full text-start">
         <label for="pos_search" class="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 block">
-          {getLocale() === "ar" ? "البحث والتحقق من الطالب" : "Search & Verify Student"}
+          {m.finance_pos_search_verify_student()}
         </label>
         
         <div class="relative">
@@ -358,7 +350,7 @@ onMount(() => {
           <input
             id="pos_search"
             type="text"
-            placeholder={getLocale() === "ar" ? "ابحث برقم الطالب، أو الاسم الكامل... [Ctrl + S]" : "Search by Student Number or Name... [Ctrl + S]"}
+            placeholder={m.finance_pos_search_by_student_number_or()}
             class="w-full bg-card/45 border border-border rounded-xl ps-9 pe-9 py-2.5 text-sm focus:ring-1 focus:ring-lime-500 focus:border-lime-500 outline-none transition-all"
             bind:value={searchQuery}
             bind:this={searchInputEl}
@@ -423,16 +415,14 @@ onMount(() => {
             <Search size={32} />
           </div>
           <h3 class="font-bold text-sm text-foreground mb-1">
-            {getLocale() === "ar" ? "بانتظار تحديد طالب للعملية" : "Select Student to Begin"}
+            {m.finance_pos_select_student_to_begin()}
           </h3>
           <p class="text-[10px] text-muted-foreground max-w-sm mb-4">
-            {getLocale() === "ar"
-              ? "استخدم شريط البحث بالأعلى للبحث عن الطالب بالاسم أو الرقم المالي للتحقق من رسومه ومستحقاته"
-              : "Search using full name or student reference ID to query outstanding balances and payment register logs"}
+            {m.finance_pos_search_using_full_name_or()}
           </p>
           <div class="flex items-center gap-2">
             <span class="text-[9px] px-2 py-1 bg-accent/50 rounded text-muted-foreground border border-border">
-              {getLocale() === "ar" ? "اضغط Ctrl + S للبدء الفوري" : "Press Ctrl + S to focus search"}
+              {m.finance_pos_press_ctrl_s_to_focus_search()}
             </span>
           </div>
         </div>
@@ -443,7 +433,7 @@ onMount(() => {
             type="button"
             onclick={deselectStudent}
             class="absolute top-3 right-3 text-muted-foreground/60 hover:text-foreground h-6 w-6 rounded-md flex items-center justify-center hover:bg-accent border border-border/50"
-            title={getLocale() === "ar" ? "إلغاء اختيار الطالب" : "Deselect Student"}
+            title={m.finance_pos_deselect_student()}
           >
             <X size={12} />
           </button>
@@ -473,9 +463,9 @@ onMount(() => {
         <!-- Student Outstanding Fees section -->
         <div class="flex flex-col gap-2.5 text-start">
           <h4 class="text-xs font-bold text-foreground flex items-center justify-between select-none">
-            <span>{getLocale() === "ar" ? "الرسوم المتبقية والمستحقة" : "Outstanding Fees (Unpaid)"}</span>
+            <span>{m.finance_pos_outstanding_fees_unpaid()}</span>
             <span class="text-[9.5px] px-2 py-0.5 rounded bg-rose-500/10 text-rose-500 font-mono">
-              {activeStudentFees.length} {getLocale() === "ar" ? "رسوم مستحقة" : "pending"}
+              {activeStudentFees.length} {m.finance_pos_pending()}
             </span>
           </h4>
 
@@ -487,9 +477,9 @@ onMount(() => {
           {:else if activeStudentFees.length === 0}
             <div class="border border-border/80 border-dashed rounded-xl p-6 text-center bg-emerald-500/5 text-emerald-500">
               <CheckCircle size={24} class="mx-auto mb-2 text-emerald-500/80" />
-              <p class="text-xs font-bold">{getLocale() === "ar" ? "لا توجد أي رسوم مستحقة على هذا الطالب" : "No Pending Fees"}</p>
+              <p class="text-xs font-bold">{m.finance_pos_no_pending_fees()}</p>
               <p class="text-[9px] text-muted-foreground mt-0.5">
-                {getLocale() === "ar" ? "تم سداد كافة الرسوم الدراسية بالكامل" : "All invoiced amounts have been paid."}
+                {m.finance_pos_all_invoiced_amounts_have_been()}
               </p>
             </div>
           {:else}
@@ -508,7 +498,7 @@ onMount(() => {
                     </span>
                     <span class="text-[9px] text-muted-foreground font-mono flex items-center gap-1">
                       <Calendar size={10} />
-                      <span>{getLocale() === "ar" ? "تاريخ الاستحقاق: " : "Due Date: "}{fee.due_date ? formatDate(fee.due_date) : "-"}</span>
+                      <span>{m.finance_pos_due_date()}{fee.due_date ? formatDate(fee.due_date) : "-"}</span>
                     </span>
                   </div>
 
@@ -519,7 +509,7 @@ onMount(() => {
                     </span>
                     {#if Number(fee.paid_amount) > 0}
                       <span class="text-[8.5px] text-emerald-500 font-mono">
-                        {getLocale() === "ar" ? "مدفوع جزئياً: " : "Paid: "}{formatCurrency(Number(fee.paid_amount), fee.currency)}
+                        {m.finance_pos_paid()}{formatCurrency(Number(fee.paid_amount), fee.currency)}
                       </span>
                     {/if}
                   </div>
@@ -532,7 +522,7 @@ onMount(() => {
         <!-- Student Recent Payment Ledger Logs -->
         <div class="flex flex-col gap-2.5 text-start mt-2">
           <h4 class="text-xs font-bold text-foreground select-none">
-            {getLocale() === "ar" ? "آخر السندات المالية المسجلة" : "Recent Recorded Payments"}
+            {m.finance_pos_recent_recorded_payments()}
           </h4>
 
           {#if isLoadingStudentDetails}
@@ -541,17 +531,17 @@ onMount(() => {
             </div>
           {:else if activeStudentPayments.length === 0}
             <p class="text-[10px] text-muted-foreground border border-border border-dashed p-4 text-center rounded-xl">
-              {getLocale() === "ar" ? "لا توجد سندات دفع سابقة لهذا الطالب" : "No payment logs on file."}
+              {m.finance_pos_no_payment_logs_on_file()}
             </p>
           {:else}
             <div class="border border-border rounded-xl bg-card overflow-hidden">
               <table class="w-full text-xs text-start">
                 <thead>
                   <tr class="bg-accent/40 border-b border-border/80 text-[10px] text-muted-foreground select-none">
-                    <th class="p-2.5 text-start font-semibold">{getLocale() === "ar" ? "السند" : "Receipt"}</th>
-                    <th class="p-2.5 text-start font-semibold">{getLocale() === "ar" ? "التاريخ" : "Date"}</th>
-                    <th class="p-2.5 text-start font-semibold">{getLocale() === "ar" ? "الطريقة" : "Method"}</th>
-                    <th class="p-2.5 text-end font-semibold">{getLocale() === "ar" ? "المبلغ" : "Amount"}</th>
+                    <th class="p-2.5 text-start font-semibold">{m.finance_pos_receipt()}</th>
+                    <th class="p-2.5 text-start font-semibold">{m.finance_pos_date()}</th>
+                    <th class="p-2.5 text-start font-semibold">{m.finance_pos_method()}</th>
+                    <th class="p-2.5 text-end font-semibold">{m.finance_pos_amount()}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -578,22 +568,18 @@ onMount(() => {
         <!-- Form Disabled Overlay state -->
         <div class="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground select-none">
           <FileText size={40} class="text-muted-foreground/30 mb-3" />
-          <p class="text-xs font-semibold">{getLocale() === "ar" ? "بانتظار تفاصيل الرسوم" : "Payment Form Offline"}</p>
+          <p class="text-xs font-semibold">{m.finance_pos_payment_form_offline()}</p>
           <p class="text-[9.5px] text-muted-foreground/80 mt-1 max-w-[250px]">
-            {getLocale() === "ar" 
-              ? "الرجاء اختيار الطالب وتحديد الفاتورة المطلوبة لتعبئة نموذج السداد" 
-              : "Search for a student and select an outstanding fee to activate this register form."}
+            {m.finance_pos_search_for_a_student_and()}
           </p>
         </div>
       {:else if !selectedFee}
         <!-- Fee Select Overlay State -->
         <div class="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground select-none">
           <Plus size={40} class="text-muted-foreground/30 mb-3" />
-          <p class="text-xs font-semibold">{getLocale() === "ar" ? "حدد رسماً للسداد" : "Select a Fee to Pay"}</p>
+          <p class="text-xs font-semibold">{m.finance_pos_select_a_fee_to_pay()}</p>
           <p class="text-[9.5px] text-muted-foreground/80 mt-1 max-w-[250px]">
-            {getLocale() === "ar" 
-              ? "الرجاء اختيار البند المطلوب سداده من قائمة الرسوم على اليسار" 
-              : "Please pick which outstanding item you wish to register a payment for."}
+            {m.finance_pos_please_pick_which_outstanding_item()}
           </p>
         </div>
       {:else}
@@ -601,21 +587,21 @@ onMount(() => {
         <form onsubmit={handlePaymentSubmit} class="flex flex-col gap-5 text-start h-full" in:fade={{ duration: 150 }}>
           <h3 class="text-sm font-bold text-foreground border-b border-border/80 pb-2 select-none flex items-center gap-2">
             <DollarSign size={15} class="text-lime-500" />
-            <span>{getLocale() === "ar" ? "نموذج تسجيل السند المالي" : "Record Payment Receipt"}</span>
+            <span>{m.finance_pos_record_payment_receipt()}</span>
           </h3>
 
           <!-- Fee Information Preview -->
           <div class="bg-accent/40 border border-border p-3.5 rounded-xl text-xs flex flex-col gap-1.5 select-none">
             <div class="flex justify-between">
-              <span class="text-muted-foreground">{getLocale() === "ar" ? "البند المحدد:" : "Active Item:"}</span>
+              <span class="text-muted-foreground">{m.finance_pos_active_item()}</span>
               <span class="font-bold text-foreground max-w-[200px] truncate">{selectedFee.description || m.common_ft_category_tuition()}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-muted-foreground">{getLocale() === "ar" ? "المبلغ الأصلي:" : "Total Invoice:"}</span>
+              <span class="text-muted-foreground">{m.finance_pos_total_invoice()}</span>
               <span class="font-medium text-foreground font-mono">{formatCurrency(Number(selectedFee.total_amount || selectedFee.amount), selectedFee.currency)}</span>
             </div>
             <div class="flex justify-between border-t border-border/60 pt-1.5 mt-0.5">
-              <span class="text-rose-500 font-semibold">{getLocale() === "ar" ? "الرصيد المتبقي (الدين):" : "Remaining Balance:"}</span>
+              <span class="text-rose-500 font-semibold">{m.finance_pos_remaining_balance()}</span>
               <span class="font-bold text-rose-500 font-mono">{formatCurrency(Number(selectedFee.balance || selectedFee.amount), selectedFee.currency)}</span>
             </div>
           </div>
@@ -651,9 +637,9 @@ onMount(() => {
                   disabled={isSubmitting}
                 >
                   <span class="text-[10px]">
-                    {#if method === 'Cash'}{getLocale() === "ar" ? "نقدي" : "Cash"}
-                    {:else if method === 'Bank Transfer'}{getLocale() === "ar" ? "تحويل بنكي" : "Bank Transfer"}
-                    {:else}{getLocale() === "ar" ? "شبكة / بطاقة" : "Card"}{/if}
+                    {#if method === 'Cash'}{m.finance_pos_cash()}
+                    {:else if method === 'Bank Transfer'}{m.finance_pos_bank_transfer()}
+                    {:else}{m.finance_pos_card()}{/if}
                   </span>
                 </button>
               {/each}
@@ -716,7 +702,7 @@ onMount(() => {
                   class="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] bg-accent/80 hover:bg-accent border border-border px-2 py-1 rounded font-bold text-muted-foreground duration-100"
                   disabled={isSubmitting}
                 >
-                  {getLocale() === "ar" ? "كامل المبلغ" : "Pay Full"}
+                  {m.finance_pos_pay_full()}
                 </button>
               {/if}
             </div>
@@ -779,7 +765,7 @@ onMount(() => {
               onclick={deselectStudent}
               disabled={isSubmitting}
             >
-              {getLocale() === "ar" ? "تراجع" : "Cancel"}
+              {m.finance_pos_cancel()}
             </Button>
             <Button 
               type="submit" 
@@ -792,7 +778,7 @@ onMount(() => {
               {:else}
                 <span class="flex items-center justify-center gap-1.5">
                   <CreditCard size={15} />
-                  <span>{getLocale() === "ar" ? "تأكيد وتسجيل السند المالي" : "Record & Post Payment"}</span>
+                  <span>{m.finance_pos_record_post_payment()}</span>
                 </span>
               {/if}
             </Button>

@@ -235,7 +235,7 @@ const breadcrumbs = $derived.by(() => {
       </BreadcrumbItem>
       {#if index < breadcrumbs.length - 1}
         <BreadcrumbSeparator class="opacity-40 shrink-0 select-none">
-          {getLocale() === "ar" ? "‹" : "›"}
+          {m.common_()}
         </BreadcrumbSeparator>
       {/if}
     {/each}

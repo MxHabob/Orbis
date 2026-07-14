@@ -23,7 +23,7 @@ import { toast } from "svelte-sonner";
 
 import { commands } from "$lib/core/ipc";
 
-const examTypeLabels = { written: "تحريري", oral: "شفوي", practical: "عملي", mixed: "مختلط" };
+const examTypeLabels = { written: m.exams_subject_type_written(), oral: m.exams_subject_type_oral(), practical: m.exams_subject_type_practical(), mixed: m.exams_subject_type_mixed() };
 
 let {
   open = $bindable(false),
@@ -188,7 +188,7 @@ async function handleSubmit() {
         {:else}
           <!-- New Subject Form Fields -->
           <div class="flex flex-col gap-3 p-3 rounded-lg border border-dashed border-border/60 bg-muted/20">
-            <span class="text-[9px] font-bold text-primary uppercase">بيانات المادة الجديدة</span>
+            <span class="text-[9px] font-bold text-primary uppercase">{m.exams_subject_new_details()}</span>
             
             <div class="flex flex-col gap-1.5">
               <label for="new-sub-name-ar" class="text-[10px] font-medium text-muted-foreground">
@@ -241,10 +241,10 @@ async function handleSubmit() {
               {examTypeLabels[examType as keyof typeof examTypeLabels] || examType}
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="written">تحريري</SelectItem>
-              <SelectItem value="oral">شفوي</SelectItem>
-              <SelectItem value="practical">عملي</SelectItem>
-              <SelectItem value="mixed">مختلط</SelectItem>
+              <SelectItem value="written">{m.exams_subject_type_written()}</SelectItem>
+              <SelectItem value="oral">{m.exams_subject_type_oral()}</SelectItem>
+              <SelectItem value="practical">{m.exams_subject_type_practical()}</SelectItem>
+              <SelectItem value="mixed">{m.exams_subject_type_mixed()}</SelectItem>
             </SelectContent>
           </Select>
         </div>

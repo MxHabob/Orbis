@@ -37,9 +37,7 @@ async function loadData() {
   if (!studentId) return;
   isLoading = true;
   try {
-    const links = await commands.academic.listGuardiansByStudent(
-      orgId,
-      studentId,
+    const links = await commands.academic.listGuardiansByStudent(studentId,
     );
     guardians = links;
 

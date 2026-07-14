@@ -49,8 +49,8 @@ async function loadData() {
   isLoading = true;
   try {
     const [tList, lList, cList] = await Promise.all([
-      commands.finance.listTreasuries(data.orgId),
-      commands.finance.listTransactionAccounts(data.orgId),
+      commands.finance.listTreasuries(),
+      commands.finance.listTransactionAccounts(),
       commands.finance.listCurrencies()
     ]);
     treasuries = tList;

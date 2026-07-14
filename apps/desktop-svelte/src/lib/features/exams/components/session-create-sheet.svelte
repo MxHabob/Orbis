@@ -146,7 +146,7 @@ async function handleSubmit() {
           bind:value={periodId}
           class="h-9 px-3 text-xs rounded-lg border border-border bg-background text-foreground focus:ring-1 focus:ring-primary w-full"
         >
-          <option value="" disabled>اختر الدورة الأكاديمية...</option>
+          <option value="" disabled>{m.exams_session_select_term()}</option>
           {#each periodsList as c}
             <option value={c.id}>{c.name_ar || c.name}</option>
           {/each}
@@ -179,10 +179,10 @@ async function handleSubmit() {
           bind:value={sessionType}
           class="h-9 px-3 text-xs rounded-lg border border-border bg-background text-foreground focus:ring-1 focus:ring-primary"
         >
-          <option value="final">نهائي — Final</option>
-          <option value="midterm">نصفي — Midterm</option>
-          <option value="quiz">اختبار قصير — Quiz</option>
-          <option value="practical">عملي — Practical</option>
+          <option value="final">{m.exams_session_type_final()}</option>
+          <option value="midterm">{m.exams_session_type_midterm()}</option>
+          <option value="quiz">{m.exams_session_type_quiz()}</option>
+          <option value="practical">{m.exams_session_type_practical()}</option>
         </select>
       </div>
 
