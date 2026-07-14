@@ -1,6 +1,7 @@
 {
   "productName": "Orbis Dev",
   "identifier": "com.mulverse.orbis.dev",
+  "version": "1.0.0",
   "bundle": {
     "icon": [
       "icons/dev/32x32.png",
@@ -14,7 +15,7 @@
   "plugins": {
     "deep-link": {
       "desktop": {
-        "schemes": ["midday-dev"]
+        "schemes": ["orbis-dev"]
       }
     }
   }

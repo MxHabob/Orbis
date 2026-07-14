@@ -1,6 +1,6 @@
 {
   "productName": "Orbis Staging",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "identifier": "com.mulverse.orbis.staging",
   "bundle": {
     "icon": [
@@ -13,7 +13,7 @@
   "plugins": {
     "deep-link": {
       "desktop": {
-        "schemes": ["midday-staging"]
+        "schemes": ["orbis-staging"]
       }
     }
   }

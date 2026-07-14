@@ -3,6 +3,12 @@
   "productName": "Orbis",
   "identifier": "com.mulverse.orbis",
   "version": "1.0.0",
+  "build": {
+    "beforeDevCommand": "bun run dev",
+    "beforeBuildCommand": "bun run build",
+    "devUrl": "http://localhost:1520",
+    "frontendDist": "../build"
+  },
   "app": {
     "macOSPrivateApi": true,
     "withGlobalTauri": true,
