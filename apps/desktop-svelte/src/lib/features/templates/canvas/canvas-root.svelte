@@ -12,6 +12,7 @@ import CanvasPage from "./canvas-page.svelte";
 import SelectionOverlay from "./selection-overlay.svelte";
 import GridOverlay from "./grid-overlay.svelte";
 import RulerBar from "./ruler-bar.svelte";
+import FloatingActionBar from "../layout/floating-action-bar.svelte";
 
 // ── Props ────────────────────────────────────────────────────
 
@@ -132,7 +133,8 @@ function handleMouseDown(e: MouseEvent) {
   if (
     e.button === 0 &&
     (e.target === svgEl ||
-      (e.target as Element)?.classList?.contains("canvas-bg"))
+      (e.target as Element)?.classList?.contains("canvas-bg") ||
+      (e.target as Element)?.classList?.contains("page-bg"))
   ) {
     // Start rubber band selection
     if (selectionOverlay && svgEl) {
@@ -319,6 +321,7 @@ function handleDrop(e: DragEvent) {
 
       <!-- Page background -->
       <rect
+        class="page-bg"
         width={pageWidthPx}
         height={pageHeightPx}
         rx="1"
@@ -366,5 +369,8 @@ function handleDrop(e: DragEvent) {
       {/if}
     </g>
   </svg>
+
+  <!-- HTML Overlays -->
+  <FloatingActionBar {store} {offsetX} {offsetY} />
 </div>
 

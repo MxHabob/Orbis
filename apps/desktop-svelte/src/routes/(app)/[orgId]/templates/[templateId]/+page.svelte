@@ -35,7 +35,6 @@ import * as m from "$lib/paraglide/messages";
 import SideRail from "$lib/features/templates/layout/side-rail.svelte";
 import FlyoutPanel from "$lib/features/templates/layout/flyout-panel.svelte";
 import ContextToolbar from "$lib/features/templates/layout/context-toolbar.svelte";
-import FloatingActionBar from "$lib/features/templates/layout/floating-action-bar.svelte";
 import StatusBar from "$lib/features/templates/layout/status-bar.svelte";
 import { TemplateEditorSkeleton } from "$lib/shared/components/skeletons";
 import ErrorState from "$lib/shared/components/error-state.svelte";
@@ -315,7 +314,6 @@ onMount(() => {
           </div>
         {:else}
           <CanvasRoot {store} />
-          <FloatingActionBar {store} />
         {/if}
 
         <FlyoutPanel {store} />
