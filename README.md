@@ -1,4 +1,6 @@
-<!-- Logo will be added here -->
+<p align="center">
+  <img src="logo.png" alt="Orbis Logo" width="128" />
+</p>
 
 <p align="center">
 	<h1 align="center"><b>Orbis</b></h1>
