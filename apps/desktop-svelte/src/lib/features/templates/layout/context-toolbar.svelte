@@ -95,6 +95,53 @@ let editingName = $state(templateName);
 $effect(() => {
   editingName = templateName;
 });
+
+function handleAlign(type: "left" | "center" | "right" | "top" | "middle" | "bottom") {
+  if (store.selectedNodes.length < 2) return;
+
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+  for (const node of store.selectedNodes) {
+    const pos = (node as any).position;
+    if (pos) {
+      if (pos.x < minX) minX = pos.x;
+      if (pos.y < minY) minY = pos.y;
+      if (pos.x + (pos.width || 0) > maxX) maxX = pos.x + (pos.width || 0);
+      if (pos.y + (pos.height || 0) > maxY) maxY = pos.y + (pos.height || 0);
+    }
+  }
+
+  if (minX === Infinity) return;
+
+  const centerX = minX + (maxX - minX) / 2;
+  const centerY = minY + (maxY - minY) / 2;
+
+  const updates = [];
+  for (const node of store.selectedNodes) {
+    const pos = (node as any).position;
+    if (pos) {
+      let newX = pos.x;
+      let newY = pos.y;
+      const w = pos.width || 0;
+      const h = pos.height || 0;
+
+      if (type === "left") newX = minX;
+      else if (type === "center") newX = centerX - w / 2;
+      else if (type === "right") newX = maxX - w;
+      else if (type === "top") newY = minY;
+      else if (type === "middle") newY = centerY - h / 2;
+      else if (type === "bottom") newY = maxY - h;
+
+      if (newX !== pos.x || newY !== pos.y) {
+        updates.push({ id: node.id, x: Math.round(newX * 10) / 10, y: Math.round(newY * 10) / 10 });
+      }
+    }
+  }
+
+  if (updates.length > 0) {
+    store.moveNodes(updates);
+  }
+}
 </script>
 
 <TooltipProvider delayDuration={200}>
@@ -357,15 +404,15 @@ $effect(() => {
           <PopoverContent class="w-auto p-2" align="center">
             <div class="flex items-center gap-1">
               {#each [
-                AlignLeft,
-                AlignCenter,
-                AlignRight,
-                AlignStartVertical,
-                AlignCenterVertical,
-                AlignEndVertical,
-              ] as icon, i (i)}
-                <button type="button" class="ctx-format-btn">
-                  <svelte:component this={icon} size={13} />
+                { icon: AlignLeft, type: "left" as const },
+                { icon: AlignCenter, type: "center" as const },
+                { icon: AlignRight, type: "right" as const },
+                { icon: AlignStartVertical, type: "top" as const },
+                { icon: AlignCenterVertical, type: "middle" as const },
+                { icon: AlignEndVertical, type: "bottom" as const },
+              ] as btn, i (i)}
+                <button type="button" class="ctx-format-btn" onclick={() => handleAlign(btn.type)}>
+                  <svelte:component this={btn.icon} size={13} />
                 </button>
               {/each}
             </div>
