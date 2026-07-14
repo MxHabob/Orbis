@@ -28,7 +28,6 @@ import StudentInspector from "$lib/features/students/student-inspector.svelte";
 import { toast } from "svelte-sonner";
 import { goto } from "$app/navigation";
 import PeriodGateAction from "$lib/shared/components/period-gate-action.svelte";
-import PeriodStatusBar from "$lib/shared/components/period-status-bar.svelte";
 import OverrideRequestDialog from "$lib/shared/components/override-request-dialog.svelte";
 
 import { localizeHref } from "$lib/paraglide/runtime";
@@ -216,10 +215,6 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 							{m.common_export()}
 						</Button>
 						{#if academicContext.effectivePeriodId}
-							<PeriodStatusBar 
-								periodId={academicContext.effectivePeriodId} 
-								showGates={["enrollment"]} 
-							/>
 							<PeriodGateAction
 								gateType="enrollment"
 								periodId={academicContext.effectivePeriodId}
