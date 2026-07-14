@@ -181,7 +181,7 @@ function insertPreset(preset: TextPreset) {
 
   <div class="px-3 py-2 border-t border-border/20">
     <p class="text-[8px] text-muted-foreground text-center">
-      {m.template_auto_9583b5a7()}
+      {m.template_msg_drag_text()}
     </p>
   </div>
 </div>

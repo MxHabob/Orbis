@@ -117,19 +117,19 @@ function handleSelectAll() {
     {#if hasSelection}
       <button type="button" class="context-menu-item" onclick={handleCopy}>
         <Copy size={12} />
-        <span>{m.template_auto_e46bb827()}</span>
+        <span>{m.template_action_copy()}</span>
         <span class="context-menu-shortcut">Ctrl+C</span>
       </button>
       <button type="button" class="context-menu-item" onclick={handleCut}>
         <Scissors size={12} />
-        <span>{m.template_auto_a0183ddd()}</span>
+        <span>{m.template_action_cut()}</span>
         <span class="context-menu-shortcut">Ctrl+X</span>
       </button>
     {/if}
 
     <button type="button" class="context-menu-item" onclick={handlePaste}>
       <ClipboardPaste size={12} />
-      <span>{m.template_auto_29593a9e()}</span>
+      <span>{m.template_action_paste()}</span>
       <span class="context-menu-shortcut">Ctrl+V</span>
     </button>
 
@@ -138,13 +138,13 @@ function handleSelectAll() {
 
       <button type="button" class="context-menu-item" onclick={handleDuplicate}>
         <Copy size={12} />
-        <span>{m.template_auto_4eb3b489()}</span>
+        <span>{m.template_action_duplicate()}</span>
         <span class="context-menu-shortcut">Ctrl+D</span>
       </button>
 
       <button type="button" class="context-menu-item text-destructive" onclick={handleDelete}>
         <Trash2 size={12} />
-        <span>{m.template_auto_8e11085f()}</span>
+        <span>{m.template_action_delete()}</span>
         <span class="context-menu-shortcut">Del</span>
       </button>
 
@@ -152,12 +152,12 @@ function handleSelectAll() {
 
       <button type="button" class="context-menu-item" onclick={handleBringToFront}>
         <BringToFront size={12} />
-        <span>{m.template_auto_6481693d()}</span>
+        <span>{m.template_action_bring_to_front()}</span>
       </button>
 
       <button type="button" class="context-menu-item" onclick={handleSendToBack}>
         <SendToBack size={12} />
-        <span>{m.template_auto_c97401f6()}</span>
+        <span>{m.template_action_send_to_back()}</span>
       </button>
 
       <div class="h-px bg-border/50 my-1"></div>
@@ -165,27 +165,27 @@ function handleSelectAll() {
       <button type="button" class="context-menu-item" onclick={handleToggleLock}>
         {#if isLocked}
           <Unlock size={12} />
-          <span>{m.template_auto_e99e7967()}</span>
+          <span>{m.template_action_unlock()}</span>
         {:else}
           <Lock size={12} />
-          <span>{m.template_auto_537ebcc5()}</span>
+          <span>{m.template_action_lock()}</span>
         {/if}
       </button>
 
       <button type="button" class="context-menu-item" onclick={handleToggleVisibility}>
         {#if isHidden}
           <Eye size={12} />
-          <span>{m.template_auto_b65f7100()}</span>
+          <span>{m.template_action_show()}</span>
         {:else}
           <EyeOff size={12} />
-          <span>{m.template_auto_979855d2()}</span>
+          <span>{m.template_action_hide()}</span>
         {/if}
       </button>
     {:else}
       <div class="h-px bg-border/50 my-1"></div>
       <button type="button" class="context-menu-item" onclick={handleSelectAll}>
         <Layers size={12} />
-        <span>{m.template_auto_3c726fa3()}</span>
+        <span>{m.template_action_select_all()}</span>
         <span class="context-menu-shortcut">Ctrl+A</span>
       </button>
     {/if}

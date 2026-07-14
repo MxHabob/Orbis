@@ -48,55 +48,55 @@ let {
     <DialogHeader>
       <DialogTitle>{m.settings_templates_create_btn()}</DialogTitle>
       <DialogDescription>
-        {m.template_auto_9c31267d()}
+        {m.template_desc_new_template()}
       </DialogDescription>
     </DialogHeader>
 
     <div class="flex flex-col gap-4 py-2">
       <div class="flex flex-col gap-2">
-        <Label for="name-en" class="text-xs font-semibold text-muted-foreground">{m.template_auto_bee31559()}</Label>
+        <Label for="name-en" class="text-xs font-semibold text-muted-foreground">{m.template_label_name_en()}</Label>
         <Input id="name-en" bind:value={name} placeholder="e.g. Student Certificate" />
       </div>
 
       <div class="flex flex-col gap-2">
-        <Label for="name-ar" class="text-xs font-semibold text-muted-foreground">{m.template_auto_4acc9951()}</Label>
-        <Input id=m.template_auto_a5ce9b4b() />
+        <Label for="name-ar" class="text-xs font-semibold text-muted-foreground">{m.template_label_name_ar()}</Label>
+        <Input id=m.template_placeholder_name_ar() />
       </div>
 
       <div class="flex flex-col gap-2">
-        <Label for="desc" class="text-xs font-semibold text-muted-foreground">{m.template_auto_ec58ae3a()}</Label>
-        <Input id=m.template_auto_8aa93a9a() />
+        <Label for="desc" class="text-xs font-semibold text-muted-foreground">{m.template_label_desc()}</Label>
+        <Input id=m.template_placeholder_desc() />
       </div>
 
       <div class="grid grid-cols-2 gap-4">
         <div class="flex flex-col gap-2">
-          <Label class="text-xs font-semibold text-muted-foreground">{m.template_auto_7f136f51()}</Label>
+          <Label class="text-xs font-semibold text-muted-foreground">{m.template_label_entity()}</Label>
           <Select type="single" bind:value={entityType}>
             <SelectTrigger>
-              {({ enrollment: m.template_auto_699544d2(), payment: m.template_auto_9ec74211(), exam: m.template_auto_963944de(), user: m.template_auto_0b3ac748(), organization: m.template_auto_b84adc1b() } as any)[entityType]}
+              {({ enrollment: m.template_entity_student_reg(), payment: m.template_entity_receipts(), exam: m.template_entity_seat_numbers(), user: m.template_entity_id_cards(), organization: m.template_entity_school() } as any)[entityType]}
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="enrollment">{m.template_auto_699544d2()}</SelectItem>
-              <SelectItem value="payment">{m.template_auto_9ec74211()}</SelectItem>
-              <SelectItem value="exam">{m.template_auto_963944de()}</SelectItem>
-              <SelectItem value="user">{m.template_auto_0b3ac748()}</SelectItem>
-              <SelectItem value="organization">{m.template_auto_b84adc1b()}</SelectItem>
+              <SelectItem value="enrollment">{m.template_entity_student_reg()}</SelectItem>
+              <SelectItem value="payment">{m.template_entity_receipts()}</SelectItem>
+              <SelectItem value="exam">{m.template_entity_seat_numbers()}</SelectItem>
+              <SelectItem value="user">{m.template_entity_id_cards()}</SelectItem>
+              <SelectItem value="organization">{m.template_entity_school()}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div class="flex flex-col gap-2">
-          <Label class="text-xs font-semibold text-muted-foreground">{m.template_auto_3e079611()}</Label>
+          <Label class="text-xs font-semibold text-muted-foreground">{m.template_label_doc_type()}</Label>
           <Select type="single" bind:value={docType}>
             <SelectTrigger>
-              {({ CERTIFICATE: m.template_auto_4e5975fa(), ID_CARD: m.template_auto_9faed6d0(), RECEIPT: m.template_auto_b51337de(), EXAM_CARD: m.template_auto_7b0a35ae(), REPORT: m.template_auto_b21a743b() } as any)[docType]}
+              {({ CERTIFICATE: m.template_doc_certificate(), ID_CARD: m.template_doc_id_card(), RECEIPT: m.template_doc_receipt(), EXAM_CARD: m.template_doc_seating(), REPORT: m.template_doc_report() } as any)[docType]}
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="CERTIFICATE">{m.template_auto_4e5975fa()}</SelectItem>
-              <SelectItem value="ID_CARD">{m.template_auto_9faed6d0()}</SelectItem>
-              <SelectItem value="RECEIPT">{m.template_auto_b51337de()}</SelectItem>
-              <SelectItem value="EXAM_CARD">{m.template_auto_7b0a35ae()}</SelectItem>
-              <SelectItem value="REPORT">{m.template_auto_b21a743b()}</SelectItem>
+              <SelectItem value="CERTIFICATE">{m.template_doc_certificate()}</SelectItem>
+              <SelectItem value="ID_CARD">{m.template_doc_id_card()}</SelectItem>
+              <SelectItem value="RECEIPT">{m.template_doc_receipt()}</SelectItem>
+              <SelectItem value="EXAM_CARD">{m.template_doc_seating()}</SelectItem>
+              <SelectItem value="REPORT">{m.template_doc_report()}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -104,7 +104,7 @@ let {
 
       <div class="grid grid-cols-2 gap-4">
         <div class="flex flex-col gap-2">
-          <Label class="text-xs font-semibold text-muted-foreground">{m.template_auto_b95e12f8()}</Label>
+          <Label class="text-xs font-semibold text-muted-foreground">{m.template_label_page_size()}</Label>
           <Select type="single" bind:value={pageSize}>
             <SelectTrigger>
               {({ A4: "A4 (210 x 297 mm)", A5: "A5 (148 x 210 mm)", Letter: "Letter (8.5 x 11 in)", Custom: "Custom" } as any)[pageSize]}
@@ -119,14 +119,14 @@ let {
         </div>
 
         <div class="flex flex-col gap-2">
-          <Label class="text-xs font-semibold text-muted-foreground">{m.template_auto_18ffda00()}</Label>
+          <Label class="text-xs font-semibold text-muted-foreground">{m.template_label_orientation()}</Label>
           <Select type="single" bind:value={orientation}>
             <SelectTrigger>
-              {({ portrait: m.template_auto_0605c426(), landscape: m.template_auto_3476da07() } as any)[orientation]}
+              {({ portrait: m.template_orientation_portrait(), landscape: m.template_orientation_landscape() } as any)[orientation]}
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="portrait">{m.template_auto_0605c426()}</SelectItem>
-              <SelectItem value="landscape">{m.template_auto_3476da07()}</SelectItem>
+              <SelectItem value="portrait">{m.template_orientation_portrait()}</SelectItem>
+              <SelectItem value="landscape">{m.template_orientation_landscape()}</SelectItem>
             </SelectContent>
           </Select>
         </div>

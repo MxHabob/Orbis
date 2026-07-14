@@ -233,7 +233,7 @@ function handleDragStart(e: DragEvent, varName: string) {
             <Plus size={11} />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>{m.template_auto_440bd8cd()}</TooltipContent>
+        <TooltipContent>{m.template_btn_add_var()}</TooltipContent>
       </Tooltip>
     </div>
   </div>
@@ -257,13 +257,13 @@ function handleDragStart(e: DragEvent, varName: string) {
     <div class="px-3 py-2 border-b border-border/30 bg-muted/20 flex flex-col gap-1.5">
       <Input
         type="text"
-        placeholder=m.template_auto_3d16e254()
+        placeholder=m.template_var_name()
         bind:value={newVarName}
         class="h-6 text-[10px]"
       />
       <Input
         type="text"
-        placeholder=m.template_auto_58cd4dec()
+        placeholder=m.template_var_source()
         bind:value={newVarSource}
         class="h-6 text-[10px] font-mono"
       />
@@ -280,7 +280,7 @@ function handleDragStart(e: DragEvent, varName: string) {
           <option value="array">Array</option>
         </select>
         <Button variant="lime" size="xs" class="cursor-pointer h-6 text-[10px]" onclick={addVariable}>
-          {m.template_auto_b9508aa2()}
+          {m.template_btn_add()}
         </Button>
       </div>
     </div>
@@ -292,7 +292,7 @@ function handleDragStart(e: DragEvent, varName: string) {
       <div class="flex flex-col items-center justify-center py-8 px-4 gap-2">
         <Variable size={20} class="text-muted-foreground/30" />
         <p class="text-[10px] text-muted-foreground text-center">
-          {searchQuery ? m.template_auto_40b06b2d() : m.template_auto_97c8a1d9()}
+          {searchQuery ? m.template_msg_no_results() : m.template_msg_no_vars()}
         </p>
       </div>
     {:else}
@@ -330,7 +330,7 @@ function handleDragStart(e: DragEvent, varName: string) {
                     <Plus size={10} class="text-primary" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>{m.template_auto_3957e908()}</TooltipContent>
+                <TooltipContent>{m.template_tooltip_insert_var()}</TooltipContent>
               </Tooltip>
 
               <Tooltip>
@@ -339,7 +339,7 @@ function handleDragStart(e: DragEvent, varName: string) {
                     <Copy size={10} class="text-muted-foreground" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>{m.template_auto_70b6d677()}</TooltipContent>
+                <TooltipContent>{m.template_tooltip_copy_tag()}</TooltipContent>
               </Tooltip>
 
               {#if !(varDef as any).isSystem}
@@ -349,7 +349,7 @@ function handleDragStart(e: DragEvent, varName: string) {
                       <Trash2 size={10} class="text-destructive" />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent>{m.template_auto_3b9854e1()}</TooltipContent>
+                  <TooltipContent>{m.template_tooltip_delete()}</TooltipContent>
                 </Tooltip>
               {:else}
                 <Badge variant="outline" class="text-[8px] px-1 h-3.5 font-normal text-muted-foreground bg-muted/30">نظام</Badge>
@@ -364,7 +364,7 @@ function handleDragStart(e: DragEvent, varName: string) {
   <!-- Footer hint -->
   <div class="px-3 py-1.5 border-t border-border/30 bg-muted/10">
     <p class="text-[8px] text-muted-foreground text-center">
-      {m.template_auto_9c71da79()}
+      {m.template_msg_var_drag()}
     </p>
   </div>
 </div>

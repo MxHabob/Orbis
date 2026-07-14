@@ -220,7 +220,7 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 								periodId={academicContext.effectivePeriodId}
 								classId={studentsStore.selectedClassId ?? undefined}
 								label={m.common_new()}
-								size="sm"
+								size="lg"
 								onAction={() => goto(localizeHref(`/${data.orgId}/students/new`))}
 								onDraft={() => goto(localizeHref(`/${data.orgId}/students/new?draft=true`))}
 								onOverride={() => { showOverrideDialog = true; }}

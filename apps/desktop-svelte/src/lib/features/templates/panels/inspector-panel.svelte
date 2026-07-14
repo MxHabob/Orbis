@@ -53,14 +53,14 @@ function updatePosition(key: string, value: number) {
   <!-- Header -->
   <div class="px-3 py-2 border-b border-border/40 flex items-center gap-2">
     <Sliders size={13} class="text-primary shrink-0" />
-    <h3 class="text-xs font-bold text-foreground">{m.template_auto_a7c95a2a()}</h3>
+    <h3 class="text-xs font-bold text-foreground">{m.template_title_properties()}</h3>
   </div>
 
   {#if !node}
     <!-- No selection -->
     <div class="flex-grow flex items-center justify-center p-6">
       <p class="text-[10px] text-muted-foreground text-center">
-        {m.template_auto_f52134f1()}
+        {m.template_msg_select_element()}
       </p>
     </div>
   {:else}
@@ -73,7 +73,7 @@ function updatePosition(key: string, value: number) {
 
       <!-- Name -->
       <div class="flex flex-col gap-1">
-        <Label class="text-[10px] text-muted-foreground">{m.template_auto_2e8b171b()}</Label>
+        <Label class="text-[10px] text-muted-foreground">{m.template_prop_name()}</Label>
         <Input
           type="text"
           value={node.name || ""}
@@ -89,7 +89,7 @@ function updatePosition(key: string, value: number) {
         <!-- Position & Size -->
         <AccordionItem value="position">
           <AccordionTrigger class="text-[10px] font-semibold py-1.5">
-            {m.template_auto_2d4a137a()}
+            {m.template_prop_position()}
           </AccordionTrigger>
           <AccordionContent>
             <div class="grid grid-cols-2 gap-2 pt-1">
@@ -161,12 +161,12 @@ function updatePosition(key: string, value: number) {
         <!-- Appearance -->
         <AccordionItem value="appearance">
           <AccordionTrigger class="text-[10px] font-semibold py-1.5">
-            {m.template_auto_98b5984f()}
+            {m.template_prop_appearance()}
           </AccordionTrigger>
           <AccordionContent>
             <div class="flex flex-col gap-2 pt-1">
               <div class="flex items-center justify-between">
-                <span class="text-[9px] text-muted-foreground">{m.template_auto_dcfa857c()}</span>
+                <span class="text-[9px] text-muted-foreground">{m.template_prop_opacity()}</span>
                 <Input
                   type="number"
                   step="0.1"
@@ -179,7 +179,7 @@ function updatePosition(key: string, value: number) {
               </div>
 
               <div class="flex items-center justify-between">
-                <span class="text-[9px] text-muted-foreground">{m.template_auto_e4fb8eae()}</span>
+                <span class="text-[9px] text-muted-foreground">{m.template_prop_visible()}</span>
                 <Switch
                   checked={node.visible !== false}
                   onCheckedChange={(v) => store.updateSelectedProps({ visible: v })}
@@ -187,7 +187,7 @@ function updatePosition(key: string, value: number) {
               </div>
 
               <div class="flex items-center justify-between">
-                <span class="text-[9px] text-muted-foreground">{m.template_auto_cb2ab273()}</span>
+                <span class="text-[9px] text-muted-foreground">{m.template_prop_locked()}</span>
                 <Switch
                   checked={node.locked === true}
                   onCheckedChange={(v) => store.updateSelectedProps({ locked: v })}
@@ -200,14 +200,14 @@ function updatePosition(key: string, value: number) {
         <!-- Content (type-specific) -->
         <AccordionItem value="content">
           <AccordionTrigger class="text-[10px] font-semibold py-1.5">
-            {m.template_auto_9f3797ed()}
+            {m.template_prop_content()}
           </AccordionTrigger>
           <AccordionContent>
             <div class="flex flex-col gap-2 pt-1">
               {#if nodeType === "Text"}
                 <!-- Text Content -->
                 <div class="flex flex-col gap-1">
-                  <Label class="text-[9px] text-muted-foreground">{m.template_auto_9f3797ed()}</Label>
+                  <Label class="text-[9px] text-muted-foreground">{m.template_prop_content()}</Label>
                   <Textarea
                     value={nodeProps.content || ""}
                     oninput={(e) => updateProp("content", e.currentTarget.value)}
@@ -217,11 +217,11 @@ function updatePosition(key: string, value: number) {
 
                 <div class="grid grid-cols-2 gap-2">
                   <div class="flex flex-col gap-0.5">
-                    <span class="text-[8px] text-muted-foreground">{m.template_auto_c4480b07()}</span>
+                    <span class="text-[8px] text-muted-foreground">{m.template_prop_font_size()}</span>
                     <Input type="number" step="1" value={nodeProps.fontSize ?? 12} oninput={(e) => updateProp("fontSize", parseFloat(e.currentTarget.value))} class="h-6 text-[10px]" />
                   </div>
                   <div class="flex flex-col gap-0.5">
-                    <span class="text-[8px] text-muted-foreground">{m.template_auto_67e19f82()}</span>
+                    <span class="text-[8px] text-muted-foreground">{m.template_prop_font_weight()}</span>
                     <Select type="single" value={nodeProps.fontWeight || "400"} onValueChange={(v) => { if (v) updateProp("fontWeight", v); }}>
                       <SelectTrigger class="h-6 text-[10px]">{nodeProps.fontWeight || "400"}</SelectTrigger>
                       <SelectContent>
@@ -236,7 +236,7 @@ function updatePosition(key: string, value: number) {
 
                 <div class="grid grid-cols-2 gap-2">
                   <div class="flex flex-col gap-0.5">
-                    <span class="text-[8px] text-muted-foreground">{m.template_auto_6875b864()}</span>
+                    <span class="text-[8px] text-muted-foreground">{m.template_prop_font_family()}</span>
                     <Select type="single" value={nodeProps.fontFamily || "Rubik"} onValueChange={(v) => { if (v) updateProp("fontFamily", v); }}>
                       <SelectTrigger class="h-6 text-[10px]">{nodeProps.fontFamily || "Rubik"}</SelectTrigger>
                       <SelectContent>
@@ -247,7 +247,7 @@ function updatePosition(key: string, value: number) {
                     </Select>
                   </div>
                   <div class="flex flex-col gap-0.5">
-                    <span class="text-[8px] text-muted-foreground">{m.template_auto_82b89ec2()}</span>
+                    <span class="text-[8px] text-muted-foreground">{m.template_prop_alignment()}</span>
                     <Select type="single" value={nodeProps.textAlign || "start"} onValueChange={(v) => { if (v) updateProp("textAlign", v); }}>
                       <SelectTrigger class="h-6 text-[10px]">{nodeProps.textAlign || "start"}</SelectTrigger>
                       <SelectContent>
@@ -260,7 +260,7 @@ function updatePosition(key: string, value: number) {
                 </div>
 
                 <div class="flex flex-col gap-0.5">
-                  <span class="text-[8px] text-muted-foreground">{m.template_auto_4851a7c0()}</span>
+                  <span class="text-[8px] text-muted-foreground">{m.template_prop_color()}</span>
                   <div class="flex items-center gap-2">
                     <input type="color" value={nodeProps.color || "#000000"} oninput={(e) => updateProp("color", e.currentTarget.value)} class="w-7 h-6 rounded border border-border cursor-pointer" />
                     <Input type="text" value={nodeProps.color || "#000000"} oninput={(e) => updateProp("color", e.currentTarget.value)} class="h-6 text-[10px] font-mono flex-grow" />
@@ -270,7 +270,7 @@ function updatePosition(key: string, value: number) {
               {:else if nodeType === "Shape"}
                 <!-- Shape properties -->
                 <div class="flex flex-col gap-0.5">
-                  <span class="text-[8px] text-muted-foreground">{m.template_auto_6d41699a()}</span>
+                  <span class="text-[8px] text-muted-foreground">{m.template_prop_shape()}</span>
                   <Select type="single" value={nodeProps.shape || "rectangle"} onValueChange={(v) => { if (v) updateProp("shape", v); }}>
                     <SelectTrigger class="h-6 text-[10px]">{nodeProps.shape || "rectangle"}</SelectTrigger>
                     <SelectContent>
@@ -282,7 +282,7 @@ function updatePosition(key: string, value: number) {
                 </div>
 
                 <div class="flex flex-col gap-0.5">
-                  <span class="text-[8px] text-muted-foreground">{m.template_auto_ec59a719()}</span>
+                  <span class="text-[8px] text-muted-foreground">{m.template_prop_fill_color()}</span>
                   <div class="flex items-center gap-2">
                     <input type="color" value={nodeProps.fillColor || "#e2e8f0"} oninput={(e) => updateProp("fillColor", e.currentTarget.value)} class="w-7 h-6 rounded border border-border cursor-pointer" />
                     <Input type="text" value={nodeProps.fillColor || "#e2e8f0"} oninput={(e) => updateProp("fillColor", e.currentTarget.value)} class="h-6 text-[10px] font-mono flex-grow" />
@@ -290,7 +290,7 @@ function updatePosition(key: string, value: number) {
                 </div>
 
                 <div class="flex flex-col gap-0.5">
-                  <span class="text-[8px] text-muted-foreground">{m.template_auto_92c46eb6()}</span>
+                  <span class="text-[8px] text-muted-foreground">{m.template_prop_border_color()}</span>
                   <div class="flex items-center gap-2">
                     <input type="color" value={nodeProps.strokeColor || "#94a3b8"} oninput={(e) => updateProp("strokeColor", e.currentTarget.value)} class="w-7 h-6 rounded border border-border cursor-pointer" />
                     <Input type="text" value={nodeProps.strokeColor || "#94a3b8"} oninput={(e) => updateProp("strokeColor", e.currentTarget.value)} class="h-6 text-[10px] font-mono flex-grow" />
@@ -299,11 +299,11 @@ function updatePosition(key: string, value: number) {
 
               {:else if nodeType === "Barcode"}
                 <div class="flex flex-col gap-1">
-                  <Label class="text-[9px] text-muted-foreground">{m.template_auto_36da7f2c()}</Label>
+                  <Label class="text-[9px] text-muted-foreground">{m.template_prop_data()}</Label>
                   <Input type="text" value={nodeProps.data || ""} oninput={(e) => updateProp("data", e.currentTarget.value)} class="h-7 text-xs font-mono" />
                 </div>
                 <div class="flex flex-col gap-0.5">
-                  <span class="text-[8px] text-muted-foreground">{m.template_auto_2ea3bbb9()}</span>
+                  <span class="text-[8px] text-muted-foreground">{m.template_prop_format()}</span>
                   <Select type="single" value={nodeProps.format || "Code128"} onValueChange={(v) => { if (v) updateProp("format", v); }}>
                     <SelectTrigger class="h-6 text-[10px]">{nodeProps.format || "Code128"}</SelectTrigger>
                     <SelectContent>
@@ -317,13 +317,13 @@ function updatePosition(key: string, value: number) {
 
               {:else if nodeType === "QRCode"}
                 <div class="flex flex-col gap-1">
-                  <Label class="text-[9px] text-muted-foreground">{m.template_auto_36da7f2c()}</Label>
+                  <Label class="text-[9px] text-muted-foreground">{m.template_prop_data()}</Label>
                   <Input type="text" value={nodeProps.data || ""} oninput={(e) => updateProp("data", e.currentTarget.value)} class="h-7 text-xs font-mono" />
                 </div>
 
               {:else}
                 <p class="text-[9px] text-muted-foreground">
-                  {m.template_auto_68efe1b5()}
+                  {m.template_msg_no_content_props()}
                 </p>
               {/if}
             </div>

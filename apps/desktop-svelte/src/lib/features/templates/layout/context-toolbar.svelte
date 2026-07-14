@@ -45,6 +45,7 @@ import {
   AlignEndVertical,
   Minus,
   Plus,
+  Group,
 } from "lucide-svelte";
 
 let {
@@ -71,12 +72,17 @@ const FONT_SIZES = [6, 8, 10, 12, 14, 16, 18, 21, 24, 28, 32, 36, 42, 48, 56, 64
 let fontSizePopoverOpen = $state(false);
 
 const node = $derived(store.selectedNode);
-const nodeType = $derived(node?.type ?? null);
 const nodeProps = $derived(
   node && "props" in node ? (node as any).props || {} : {},
 );
 const hasSelection = $derived(store.selectedIds.length > 0);
 const isMultiSelect = $derived(store.selectedIds.length > 1);
+
+const allSelectedTypes = $derived(Array.from(new Set(store.selectedNodes.map(n => n.type))));
+const commonType = $derived(allSelectedTypes.length === 1 ? allSelectedTypes[0] : null);
+
+// Use commonType if multiple items are selected so we can show text/shape tools for multiple items
+const nodeType = $derived(isMultiSelect ? commonType : (node?.type ?? null));
 
 function updateProp(key: string, value: unknown) {
   store.updateSelectedProps({ props: { ...nodeProps, [key]: value } } as any);
@@ -94,7 +100,7 @@ function updateProp(key: string, value: unknown) {
             <ArrowLeft size={15} class="rtl:rotate-180" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>{m.template_auto_11e83767()}</TooltipContent>
+        <TooltipContent>{m.template_tooltip_back()}</TooltipContent>
       </Tooltip>
     {/if}
     <span class="ctx-title">{templateName || "..."}</span>
@@ -107,7 +113,7 @@ function updateProp(key: string, value: unknown) {
 
   <!-- Center: Contextual Controls -->
   <div class="ctx-center">
-    {#if nodeType === "Text" && !isMultiSelect}
+    {#if nodeType === "Text"}
       <!-- ═══ TEXT TOOLBAR ═══ -->
       <div class="ctx-group">
         <div class="w-[110px]">
@@ -187,28 +193,31 @@ function updateProp(key: string, value: unknown) {
       <div class="ctx-divider"></div>
 
       <div class="ctx-group">
-        <button type="button" class="ctx-format-btn" class:active={nodeProps.textAlign === "start" || !nodeProps.textAlign} onclick={() => updateProp("textAlign", "start")}>
-          <AlignRight size={13} />
-        </button>
-        <button type="button" class="ctx-format-btn" class:active={nodeProps.textAlign === "center"} onclick={() => updateProp("textAlign", "center")}>
-          <AlignCenter size={13} />
-        </button>
-        <button type="button" class="ctx-format-btn" class:active={nodeProps.textAlign === "end"} onclick={() => updateProp("textAlign", "end")}>
-          <AlignLeft size={13} />
-        </button>
+        <Tooltip>
+          <TooltipTrigger>
+            <button type="button" class="ctx-format-btn" onclick={() => {
+              const current = nodeProps.textAlign || "start";
+              const next = current === "start" ? "center" : current === "center" ? "end" : "start";
+              updateProp("textAlign", next);
+            }}>
+              <svelte:component this={nodeProps.textAlign === "center" ? AlignCenter : nodeProps.textAlign === "end" ? AlignLeft : AlignRight} size={13} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>{m.template_auto_alignment ? m.template_auto_alignment() : "Alignment"}</TooltipContent>
+        </Tooltip>
       </div>
 
-    {:else if nodeType === "Shape" && !isMultiSelect}
+    {:else if nodeType === "Shape"}
       <!-- ═══ SHAPE TOOLBAR ═══ -->
       <div class="ctx-group">
-        <span class="ctx-label">{m.template_auto_d879709f()}</span>
+        <span class="ctx-label">{m.template_prop_fill()}</span>
         <input
           type="color"
           value={nodeProps.fillColor || "#e2e8f0"}
           oninput={(e) => updateProp("fillColor", e.currentTarget.value)}
           class="ctx-color-swatch"
         />
-        <span class="ctx-label">{m.template_auto_a327fb24()}</span>
+        <span class="ctx-label">{m.template_prop_border()}</span>
         <input
           type="color"
           value={nodeProps.strokeColor || "#94a3b8"}
@@ -222,7 +231,7 @@ function updateProp(key: string, value: unknown) {
           class="h-6 w-[40px] text-[10px]"
           min="0" max="20" step="0.5"
         />
-        <span class="ctx-label">{m.template_auto_5ad831b4()}</span>
+        <span class="ctx-label">{m.template_prop_corners()}</span>
         <Input
           type="number"
           value={nodeProps.borderRadius ?? 0}
@@ -232,10 +241,10 @@ function updateProp(key: string, value: unknown) {
         />
       </div>
 
-    {:else if nodeType === "Image" && !isMultiSelect}
+    {:else if nodeType === "Image"}
       <!-- ═══ IMAGE TOOLBAR ═══ -->
       <div class="ctx-group">
-        <span class="ctx-label">{m.template_auto_5bad6dcb()}</span>
+        <span class="ctx-label">{m.template_prop_fit()}</span>
         <select
           value={nodeProps.fit || "contain"}
           onchange={(e) => updateProp("fit", e.currentTarget.value)}
@@ -257,10 +266,10 @@ function updateProp(key: string, value: unknown) {
         <span class="text-[9px] text-muted-foreground">%</span>
       </div>
 
-    {:else if (nodeType === "Barcode" || nodeType === "QRCode") && !isMultiSelect}
+    {:else if (nodeType === "Barcode" || nodeType === "QRCode")}
       <!-- ═══ BARCODE TOOLBAR ═══ -->
       <div class="ctx-group">
-        <span class="ctx-label">{m.template_auto_36da7f2c()}</span>
+        <span class="ctx-label">{m.template_prop_data()}</span>
         <Input
           type="text"
           value={nodeProps.data || ""}
@@ -268,7 +277,7 @@ function updateProp(key: string, value: unknown) {
           class="h-6 w-[160px] text-[10px] font-mono"
         />
         {#if nodeType === "Barcode"}
-          <span class="ctx-label">{m.template_auto_2ea3bbb9()}</span>
+          <span class="ctx-label">{m.template_prop_format()}</span>
           <select
             value={nodeProps.format || "Code128"}
             onchange={(e) => updateProp("format", e.currentTarget.value)}
@@ -286,25 +295,57 @@ function updateProp(key: string, value: unknown) {
       <div class="ctx-group">
         <Badge variant="secondary" class="text-[9px]">{store.selectedIds.length}{m.templates_selected_items()}</Badge>
       </div>
-      <div class="ctx-divider"></div>
+    {:else if !hasSelection}
+      <!-- ═══ DEFAULT / PAGE TOOLBAR ═══ -->
       <div class="ctx-group">
-        {#each [
-          { icon: AlignLeft, action: m.template_auto_d18b14e5() },
-          { icon: AlignCenter, action: m.template_auto_04fc4ddb() },
-          { icon: AlignRight, action: m.template_auto_342e5073() },
-          { icon: AlignStartVertical, action: m.template_auto_478824bc() },
-          { icon: AlignCenterVertical, action: m.template_auto_e52c50f3() },
-          { icon: AlignEndVertical, action: m.template_auto_bd2cbe98() },
-        ] as item (item.action)}
-          <Tooltip>
-            <TooltipTrigger>
-              <button type="button" class="ctx-format-btn">
-                <svelte:component this={item.icon} size={13} />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>{item.label}</TooltipContent>
-          </Tooltip>
-        {/each}
+        <Badge variant="outline" class="text-[9px] font-mono">
+          {store.document?.meta?.pageSetup?.size || "A4"}
+          {store.document?.meta?.pageSetup?.orientation === "landscape" ? "▬" : "▮"}
+        </Badge>
+      </div>
+    {/if}
+
+    <!-- ═══ MULTI-SELECT APPENDED TOOLS ═══ -->
+    {#if isMultiSelect}
+      {#if nodeType !== null}
+        <div class="ctx-divider"></div>
+      {/if}
+      <div class="ctx-group">
+        <Tooltip>
+          <TooltipTrigger>
+            <button type="button" class="ctx-format-btn">
+              <Group size={13} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>{m.template_auto_group ? m.template_auto_group() : "Group"}</TooltipContent>
+        </Tooltip>
+      </div>
+      <div class="ctx-group">
+        <Popover>
+          <PopoverTrigger>
+            {#snippet child({ props })}
+              <Button {...props} variant="ghost" size="xs" class="cursor-pointer text-[11px] h-6 px-2">
+                {m.template_auto_position ? m.template_auto_position() : "Position"}
+              </Button>
+            {/snippet}
+          </PopoverTrigger>
+          <PopoverContent class="w-auto p-2" align="center">
+            <div class="flex items-center gap-1">
+              {#each [
+                AlignLeft,
+                AlignCenter,
+                AlignRight,
+                AlignStartVertical,
+                AlignCenterVertical,
+                AlignEndVertical,
+              ] as icon, i (i)}
+                <button type="button" class="ctx-format-btn">
+                  <svelte:component this={icon} size={13} />
+                </button>
+              {/each}
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
     {:else}
@@ -326,7 +367,7 @@ function updateProp(key: string, value: unknown) {
           <Undo2 size={14} />
         </Button>
       </TooltipTrigger>
-      <TooltipContent>{m.template_auto_23e6964d()}</TooltipContent>
+      <TooltipContent>{m.template_tooltip_undo()}</TooltipContent>
     </Tooltip>
     <Tooltip>
       <TooltipTrigger>
@@ -334,7 +375,7 @@ function updateProp(key: string, value: unknown) {
           <Redo2 size={14} />
         </Button>
       </TooltipTrigger>
-      <TooltipContent>{m.template_auto_08f60fc8()}</TooltipContent>
+      <TooltipContent>{m.template_tooltip_redo()}</TooltipContent>
     </Tooltip>
 
     <div class="ctx-divider"></div>
@@ -345,7 +386,7 @@ function updateProp(key: string, value: unknown) {
           <Grid3x3 size={13} class={store.gridVisible ? "text-primary" : ""} />
         </Button>
       </TooltipTrigger>
-      <TooltipContent>{m.template_auto_5a8dd99f()}</TooltipContent>
+      <TooltipContent>{m.template_tooltip_grid()}</TooltipContent>
     </Tooltip>
     <Tooltip>
       <TooltipTrigger>
@@ -353,7 +394,7 @@ function updateProp(key: string, value: unknown) {
           <Magnet size={13} class={store.snapEnabled ? "text-primary" : ""} />
         </Button>
       </TooltipTrigger>
-      <TooltipContent>{m.template_auto_f3374e87()}</TooltipContent>
+      <TooltipContent>{m.template_tooltip_snap()}</TooltipContent>
     </Tooltip>
     <Tooltip>
       <TooltipTrigger>
@@ -361,18 +402,18 @@ function updateProp(key: string, value: unknown) {
           <Ruler size={13} class={store.rulersVisible ? "text-primary" : ""} />
         </Button>
       </TooltipTrigger>
-      <TooltipContent>{m.template_auto_417741fa()}</TooltipContent>
+      <TooltipContent>{m.template_tooltip_rulers()}</TooltipContent>
     </Tooltip>
 
     <div class="ctx-divider"></div>
 
     <Button variant="ghost" size="xs" class="cursor-pointer text-[10px]" onclick={onpreview}>
       <Eye size={13} class="me-1" />
-      {m.template_auto_0d4de28c()}
+      {m.template_btn_preview()}
     </Button>
     <Button variant="lime" size="xs" class="cursor-pointer text-[10px]" onclick={onsave} disabled={!store.isDirty}>
       <Save size={13} class="me-1" />
-      {m.template_auto_871a087a()}
+      {m.template_btn_save()}
     </Button>
   </div>
 </div>

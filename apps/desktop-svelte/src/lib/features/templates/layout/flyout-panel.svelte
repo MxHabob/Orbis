@@ -105,15 +105,15 @@ function stopResize() {
           <TabsList class="flex h-8 p-0 bg-muted/20 border-b border-border/30 rounded-none shrink-0 mx-3 mt-1">
             <TabsTrigger value="layers" class="flex-1 text-[9px] gap-1 h-full rounded-none data-[state=active]:bg-card cursor-pointer">
               <Layers size={11} />
-              {m.template_auto_ec9ded9e()}
+              {m.template_panel_layers()}
             </TabsTrigger>
             <TabsTrigger value="variables" class="flex-1 text-[9px] gap-1 h-full rounded-none data-[state=active]:bg-card cursor-pointer">
               <Variable size={11} />
-              {m.template_auto_75dca14a()}
+              {m.template_panel_variables()}
             </TabsTrigger>
             <TabsTrigger value="history" class="flex-1 text-[9px] gap-1 h-full rounded-none data-[state=active]:bg-card cursor-pointer">
               <History size={11} />
-              {m.template_auto_ec4337ed()}
+              {m.template_panel_history()}
             </TabsTrigger>
           </TabsList>
           <TabsContent value="layers" class="grow overflow-hidden mt-0">
@@ -132,12 +132,12 @@ function stopResize() {
           <div class="px-3 py-2">
             <div class="relative">
               <Search size={12} class="absolute inset-s-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input type=m.template_auto_db41eba9() bind:value={searchQuery} class="h-7 text-[10px] ps-7" />
+              <Input type=m.template_search_templates() bind:value={searchQuery} class="h-7 text-[10px] ps-7" />
             </div>
           </div>
           <div class="flex flex-col items-center justify-center py-12 px-4 gap-2">
             <p class="text-[10px] text-muted-foreground text-center">
-              {m.template_auto_3be5c95f()}
+              {m.template_msg_soon_templates()}
             </p>
           </div>
         </div>

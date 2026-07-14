@@ -139,6 +139,12 @@ function onDragMove(e: MouseEvent) {
     const rawW = pxToMm(dragOrigW, vp.dpi, vp.zoom);
     const rawH = pxToMm(dragOrigH, vp.dpi, vp.zoom);
 
+    const draggedOrigX = pxToMm(dragOrigX, vp.dpi, vp.zoom);
+    const draggedOrigY = pxToMm(dragOrigY, vp.dpi, vp.zoom);
+
+    let finalX = Math.round(rawX * 10) / 10;
+    let finalY = Math.round(rawY * 10) / 10;
+
     if (store.snapEnabled) {
       const otherBounds = collectOtherNodeBounds(dragNodeId!);
       const pageSetup = store.document.meta.pageSetup;
@@ -161,15 +167,33 @@ function onDragMove(e: MouseEvent) {
         pageBounds,
         3,
       );
-      store.moveSelected(snapResult.x, snapResult.y);
+      finalX = snapResult.x;
+      finalY = snapResult.y;
       activeSnapLines = snapResult.snapLines;
     } else {
-      store.moveSelected(
-        Math.round(rawX * 10) / 10,
-        Math.round(rawY * 10) / 10,
-      );
       activeSnapLines = [];
     }
+
+    const deltaX = finalX - draggedOrigX;
+    const deltaY = finalY - draggedOrigY;
+
+    const updates = [];
+    for (const id of store.selectedIds) {
+      if (id === dragNodeId) {
+        updates.push({ id, x: finalX, y: finalY });
+      } else {
+        const node = findNode(store.document, id);
+        if (node && "position" in node && (node as any).position) {
+          const pos = (node as any).position;
+          updates.push({
+            id,
+            x: (pos.x ?? 0) + deltaX,
+            y: (pos.y ?? 0) + deltaY,
+          });
+        }
+      }
+    }
+    store.moveNodes(updates);
   } else if (dragHandle) {
     let newW = dragOrigW;
     let newH = dragOrigH;
@@ -208,10 +232,13 @@ function onDragMove(e: MouseEvent) {
 
     store.resizeSelected(wMm, hMm);
     if (dragHandle.includes("left") || dragHandle.includes("top")) {
-      store.moveSelected(
-        Math.round(pxToMm(newX, vp.dpi, vp.zoom) * 10) / 10,
-        Math.round(pxToMm(newY, vp.dpi, vp.zoom) * 10) / 10,
-      );
+      store.moveNodes([
+        {
+          id: dragNodeId,
+          x: Math.round(pxToMm(newX, vp.dpi, vp.zoom) * 10) / 10,
+          y: Math.round(pxToMm(newY, vp.dpi, vp.zoom) * 10) / 10,
+        },
+      ]);
     }
   }
 }

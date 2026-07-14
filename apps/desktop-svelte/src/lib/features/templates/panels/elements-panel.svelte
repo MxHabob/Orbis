@@ -43,7 +43,7 @@ const elements: ElementItem[] = [
     type: "Text",
     icon: Type,
     label: "Text",
-    labelAr: m.template_auto_ea433dcf(),
+    labelAr: m.template_element_text(),
     category: "basic",
   },
   {
@@ -51,7 +51,7 @@ const elements: ElementItem[] = [
     type: "Image",
     icon: Image,
     label: "Image",
-    labelAr: m.template_auto_22d88250(),
+    labelAr: m.template_element_image(),
     category: "basic",
   },
   {
@@ -59,7 +59,7 @@ const elements: ElementItem[] = [
     type: "Shape",
     icon: Square,
     label: "Rectangle",
-    labelAr: m.template_auto_57d1e62c(),
+    labelAr: m.template_element_rect(),
     category: "shapes",
   },
   {
@@ -67,7 +67,7 @@ const elements: ElementItem[] = [
     type: "Shape",
     icon: Circle,
     label: "Circle",
-    labelAr: m.template_auto_f5fd5064(),
+    labelAr: m.template_element_circle(),
     category: "shapes",
   },
   {
@@ -75,7 +75,7 @@ const elements: ElementItem[] = [
     type: "Separator",
     icon: Minus,
     label: "Separator",
-    labelAr: m.template_auto_66080a01(),
+    labelAr: m.template_element_divider(),
     category: "basic",
   },
   {
@@ -83,7 +83,7 @@ const elements: ElementItem[] = [
     type: "Table",
     icon: Table,
     label: "Table",
-    labelAr: m.template_auto_64b2ab32(),
+    labelAr: m.template_element_table(),
     category: "data",
   },
   {
@@ -91,7 +91,7 @@ const elements: ElementItem[] = [
     type: "Barcode",
     icon: Barcode,
     label: "Barcode",
-    labelAr: m.template_auto_a8f62212(),
+    labelAr: m.template_element_barcode(),
     category: "data",
   },
   {
@@ -99,7 +99,7 @@ const elements: ElementItem[] = [
     type: "QRCode",
     icon: QrCode,
     label: "QR Code",
-    labelAr: m.template_auto_6fe77abd(),
+    labelAr: m.template_element_qrcode(),
     category: "data",
   },
   {
@@ -107,16 +107,16 @@ const elements: ElementItem[] = [
     type: "Frame",
     icon: Frame,
     label: "Frame",
-    labelAr: m.template_auto_3545d651(),
+    labelAr: m.template_element_frame(),
     category: "layout",
   },
 ];
 
 const categories = [
-  { id: m.template_auto_11742414() },
-  { id: m.template_auto_69a047fb() },
-  { id: m.template_auto_cc9c9fcb() },
-  { id: m.template_auto_75201405() },
+  { id: m.template_category_basic() },
+  { id: m.template_category_shapes() },
+  { id: m.template_category_data() },
+  { id: m.template_category_layout() },
 ];
 
 const filteredElements = $derived(
@@ -149,7 +149,7 @@ function handleDragStart(e: DragEvent, item: ElementItem) {
       <Search size={12} class="absolute start-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
       <Input
         type="text"
-        placeholder=m.template_auto_9a078b42()
+        placeholder=m.template_search_elements()
         bind:value={searchQuery}
         class="h-7 text-[10px] ps-7"
       />
@@ -186,7 +186,7 @@ function handleDragStart(e: DragEvent, item: ElementItem) {
   <!-- Hint -->
   <div class="px-3 py-2 border-t border-border/20">
     <p class="text-[8px] text-muted-foreground text-center">
-      {m.template_auto_023b8490()}
+      {m.template_msg_drag_element()}
     </p>
   </div>
 </div>

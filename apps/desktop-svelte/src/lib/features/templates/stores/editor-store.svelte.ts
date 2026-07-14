@@ -284,14 +284,24 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     }
   }
 
-  function moveSelected(x: number, y: number): void {
-    if (selectedIds.length !== 1) return;
-    executeCommand(new MoveNodeCommand(selectedIds[0]!, x, y));
+  function moveNodes(updates: {id: string, x: number, y: number}[]): void {
+    if (updates.length === 0) return;
+    if (updates.length === 1) {
+      executeCommand(new MoveNodeCommand(updates[0]!.id, updates[0]!.x, updates[0]!.y));
+    } else {
+      const cmds = updates.map(u => new MoveNodeCommand(u.id, u.x, u.y));
+      executeCommand(new BatchCommand(cmds, "Move elements", m.template_cmd_move_element()));
+    }
   }
 
   function resizeSelected(w: number | string, h?: number | string): void {
-    if (selectedIds.length !== 1) return;
-    executeCommand(new ResizeNodeCommand(selectedIds[0]!, w, h));
+    if (selectedIds.length === 0) return;
+    if (selectedIds.length === 1) {
+      executeCommand(new ResizeNodeCommand(selectedIds[0]!, w, h));
+    } else {
+      const cmds = selectedIds.map(id => new ResizeNodeCommand(id, w, h));
+      executeCommand(new BatchCommand(cmds, "Resize elements", m.template_cmd_resize_element()));
+    }
   }
 
   // No-op for backwards compat (called by SelectionOverlay on drag end)
@@ -311,8 +321,13 @@ export function createEditorStore(initialDoc: TemplateDocument) {
   }
 
   function duplicateSelected(): void {
-    if (selectedIds.length !== 1) return;
-    executeCommand(new DuplicateNodeCommand(selectedIds[0]!));
+    if (selectedIds.length === 0) return;
+    if (selectedIds.length === 1) {
+      executeCommand(new DuplicateNodeCommand(selectedIds[0]!));
+    } else {
+      const cmds = selectedIds.map((id) => new DuplicateNodeCommand(id));
+      executeCommand(new BatchCommand(cmds, "Duplicate elements", m.template_cmd_duplicate_element()));
+    }
   }
 
   // ── Viewport ─────────────────────────────────────────────
@@ -538,7 +553,7 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     // Nodes
     addElement,
     updateSelectedProps,
-    moveSelected,
+    moveNodes,
     resizeSelected,
     deleteSelected,
     duplicateSelected,
@@ -546,18 +561,27 @@ export function createEditorStore(initialDoc: TemplateDocument) {
 
     // Layer ordering
     bringToFront() {
-      if (selectedIds.length !== 1 || !activePage) return;
+      if (selectedIds.length === 0 || !activePage) return;
       const page = activePage;
-      const idx = page.children.findIndex((c) => c.id === selectedIds[0]);
-      if (idx < 0 || idx === page.children.length - 1) return;
-      const node = page.children[idx]!;
       const newChildren = [...page.children];
-      newChildren.splice(idx, 1);
-      newChildren.push(node);
+      
+      const movedNodes: TemplateNode[] = [];
+      for (const id of selectedIds) {
+        const idx = newChildren.findIndex((c) => c.id === id);
+        if (idx >= 0) {
+          movedNodes.push(newChildren[idx]!);
+          newChildren.splice(idx, 1);
+        }
+      }
+      
+      if (movedNodes.length === 0) return;
+      // Push all selected nodes to the end (top)
+      newChildren.push(...movedNodes);
+      
       executeCommand({
         type: "reorder",
-        description: `Bring ${node.name || node.id} to front`,
-        descriptionAr: m.templates_editor_bring_front() + " " + (node.name || node.id) + " " + m.templates_editor_to_front(),
+        description: `Bring elements to front`,
+        descriptionAr: `إحضار العناصر إلى المقدمة`,
         execute: (doc) => {
           const p = getPages(doc).find((pg) => pg.id === page.id);
           if (p) (p as any).children = newChildren;
@@ -571,18 +595,27 @@ export function createEditorStore(initialDoc: TemplateDocument) {
       } as EditorCommand);
     },
     sendToBack() {
-      if (selectedIds.length !== 1 || !activePage) return;
+      if (selectedIds.length === 0 || !activePage) return;
       const page = activePage;
-      const idx = page.children.findIndex((c) => c.id === selectedIds[0]);
-      if (idx <= 0) return;
-      const node = page.children[idx]!;
       const newChildren = [...page.children];
-      newChildren.splice(idx, 1);
-      newChildren.unshift(node);
+      
+      const movedNodes: TemplateNode[] = [];
+      for (const id of [...selectedIds].reverse()) { // Reverse to preserve relative order
+        const idx = newChildren.findIndex((c) => c.id === id);
+        if (idx >= 0) {
+          movedNodes.unshift(newChildren[idx]!);
+          newChildren.splice(idx, 1);
+        }
+      }
+      
+      if (movedNodes.length === 0) return;
+      // Unshift all selected nodes to the start (bottom)
+      newChildren.unshift(...movedNodes);
+      
       executeCommand({
         type: "reorder",
-        description: `Send ${node.name || node.id} to back`,
-        descriptionAr: m.templates_editor_send_back() + " " + (node.name || node.id) + " " + m.templates_editor_to_back(),
+        description: `Send elements to back`,
+        descriptionAr: `إرسال العناصر إلى الخلف`,
         execute: (doc) => {
           const p = getPages(doc).find((pg) => pg.id === page.id);
           if (p) (p as any).children = newChildren;

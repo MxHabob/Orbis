@@ -72,7 +72,7 @@ const isLocked = $derived(node?.locked ?? false);
             <Copy size={13} />
           </button>
         </TooltipTrigger>
-        <TooltipContent>{m.template_auto_ce0055eb()}</TooltipContent>
+        <TooltipContent>{m.template_tooltip_duplicate()}</TooltipContent>
       </Tooltip>
 
       <Tooltip>
@@ -81,7 +81,7 @@ const isLocked = $derived(node?.locked ?? false);
             <Trash2 size={13} />
           </button>
         </TooltipTrigger>
-        <TooltipContent>{m.template_auto_3b9854e1()}</TooltipContent>
+        <TooltipContent>{m.template_tooltip_delete()}</TooltipContent>
       </Tooltip>
 
       <Tooltip>
@@ -94,7 +94,7 @@ const isLocked = $derived(node?.locked ?? false);
             {/if}
           </button>
         </TooltipTrigger>
-        <TooltipContent>{isLocked ? m.template_auto_3f9ccb60() : m.template_auto_ed3021bf()}</TooltipContent>
+        <TooltipContent>{isLocked ? m.template_tooltip_unlock() : m.template_tooltip_lock()}</TooltipContent>
       </Tooltip>
 
       <div class="fab-divider"></div>
@@ -105,7 +105,7 @@ const isLocked = $derived(node?.locked ?? false);
             <ArrowUpToLine size={13} />
           </button>
         </TooltipTrigger>
-        <TooltipContent>{m.template_auto_34b54e89()}</TooltipContent>
+        <TooltipContent>{m.template_tooltip_bring_forward()}</TooltipContent>
       </Tooltip>
 
       <Tooltip>
@@ -114,7 +114,7 @@ const isLocked = $derived(node?.locked ?? false);
             <ArrowDownToLine size={13} />
           </button>
         </TooltipTrigger>
-        <TooltipContent>{m.template_auto_77a43c56()}</TooltipContent>
+        <TooltipContent>{m.template_tooltip_send_backward()}</TooltipContent>
       </Tooltip>
     </div>
   </TooltipProvider>

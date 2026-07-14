@@ -101,7 +101,7 @@ export class MoveNodeCommand implements EditorCommand {
     private newY: number,
   ) {
     this.description = `Move element`;
-    this.descriptionAr = m.template_auto_c2f2cd44();
+    this.descriptionAr = m.template_cmd_move_element();
   }
 
   execute(doc: TemplateDocument): TemplateDocument {
@@ -208,7 +208,7 @@ export class RemoveNodeCommand implements EditorCommand {
 
   constructor(private nodeId: string) {
     this.description = `Remove element`;
-    this.descriptionAr = m.template_auto_7e2b43ff();
+    this.descriptionAr = m.template_cmd_delete_element();
   }
 
   execute(doc: TemplateDocument): TemplateDocument {
@@ -328,7 +328,7 @@ export class BatchCommand implements EditorCommand {
   readonly descriptionAr: string;
 
   constructor(
-    private commands: EditorCommand[],
+    public commands: EditorCommand[],
     description = "Multiple changes",
     descriptionAr = m.template_cmd_multiple_changes(),
   ) {
@@ -350,6 +350,32 @@ export class BatchCommand implements EditorCommand {
       current = this.commands[i]!.undo(current);
     }
     return current;
+  }
+
+  canMerge(prev: EditorCommand): boolean {
+    if (!(prev instanceof BatchCommand)) return false;
+    if (this.commands.length !== prev.commands.length) return false;
+    for (let i = 0; i < this.commands.length; i++) {
+      const myCmd = this.commands[i]!;
+      const prevCmd = prev.commands[i]!;
+      if (myCmd.type !== prevCmd.type) return false;
+      if (myCmd.canMerge && !myCmd.canMerge(prevCmd)) return false;
+      // If the command doesn't have a canMerge function, it cannot be merged
+      if (!myCmd.canMerge) return false;
+    }
+    return true;
+  }
+
+  merge(prev: EditorCommand): EditorCommand {
+    if (!(prev instanceof BatchCommand)) return this;
+    const mergedCommands = this.commands.map((cmd, i) => {
+      const prevCmd = prev.commands[i];
+      if (cmd.merge && prevCmd) {
+        return cmd.merge(prevCmd);
+      }
+      return cmd;
+    });
+    return new BatchCommand(mergedCommands, this.description, this.descriptionAr);
   }
 }
 
