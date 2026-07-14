@@ -243,12 +243,9 @@ async function restoreTemplate(id: string) {
 
 <div class="h-full w-full overflow-y-auto bg-background/30 scrollbar-hide">
   <div class="w-full p-6 md:p-8 flex flex-col gap-8">
-    <!-- Filters Section -->
     <div class="flex flex-wrap items-center justify-between gap-4 select-none" in:fade={{ delay: 50, duration: 200 }}>
       
-      <!-- Group: Search and Selects -->
       <div class="flex flex-wrap items-center gap-3 shrink-0">
-        <!-- Search bar -->
         <div class="w-full sm:w-72">
           <SearchField
             bind:value={searchQuery}

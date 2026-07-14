@@ -80,7 +80,7 @@ function updateProp(key: string, value: unknown) {
     {#if onback}
       <Tooltip>
         <TooltipTrigger>
-          <Button variant="ghost" size="icon-xs" class="cursor-pointer" onclick={onback}>
+          <Button variant="outline" size="icon-sm" class="cursor-pointer" onclick={onback}>
             <ArrowLeft size={15} class="rtl:rotate-180" />
           </Button>
         </TooltipTrigger>
@@ -93,7 +93,7 @@ function updateProp(key: string, value: unknown) {
     {/if}
   </div>
 
-  <Separator orientation="vertical" class="h-5 mx-1.5" />
+  <Separator orientation="vertical" class="h-5 mx-1.5 shrink-0" />
 
   <!-- Center: Contextual Controls -->
   <div class="ctx-center">
@@ -247,7 +247,6 @@ function updateProp(key: string, value: unknown) {
       </div>
 
     {:else if isMultiSelect}
-      <!-- ═══ MULTI-SELECT TOOLBAR ═══ -->
       <div class="ctx-group">
         <Badge variant="secondary" class="text-[9px]">{store.selectedIds.length}{m.templates_selected_items()}</Badge>
       </div>
@@ -352,7 +351,6 @@ function updateProp(key: string, value: unknown) {
     gap: 4px;
     padding: 0 8px;
     background: var(--color-card);
-    border-bottom: 1px solid color-mix(in srgb, var(--color-border) 30%, transparent);
     flex-shrink: 0;
     user-select: none;
     overflow-x: auto;
@@ -364,7 +362,8 @@ function updateProp(key: string, value: unknown) {
   .ctx-group {
     display: flex;
     align-items: center;
-    gap: 3px;
+    gap: 4px;
+    flex-shrink: 0;
   }
 
   .ctx-center {

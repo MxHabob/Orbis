@@ -1,6 +1,4 @@
 // ── UI Store ─────────────────────────────────────────────────────────
-// Svelte 5 Runes-based UI state for layout management.
-// Manages sidebar, panel widths, and global loading state.
 
 import { page } from "$app/state";
 
@@ -10,9 +8,6 @@ class UIStore {
   showUpgradeDialog = $state(false);
   focusMode = $state(localStorage.getItem("orbis_focus_mode") === "true");
   showSearch = $state(false);
-
-  // Panel resize preferences are persisted via Resizer component
-  // to localStorage with `resizer:{persistId}` keys.
 
   get showAskOrbis() {
     try {

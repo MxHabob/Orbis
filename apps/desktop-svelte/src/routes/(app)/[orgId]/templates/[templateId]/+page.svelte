@@ -292,25 +292,19 @@ onMount(() => {
       />
     </div>
   {:else}
-    <!-- ═══ Context Toolbar ═══ -->
-    <ContextToolbar
-      {store}
-      templateName={templateRecord ? l(templateRecord.name_ar, templateRecord.name) : "..."}
-      onback={goBack}
-      onsave={saveTemplate}
-      onpreview={generatePreview}
-    />
-
-    <!-- ═══ Main Area: SideRail + FlyoutPanel + Canvas ═══ -->
     <div class="editor-main">
-
-      <!-- Side Rail (icon strip - inline-start, same as app sidebar) -->
       <SideRail {store} />
 
-      <!-- Canvas Area (takes full remaining space) -->
       <div class="canvas-area">
+        <ContextToolbar
+          {store}
+          templateName={templateRecord ? l(templateRecord.name_ar, templateRecord.name) : "..."}
+          onback={goBack}
+          onsave={saveTemplate}
+          onpreview={generatePreview}
+        />
+
         {#if store.editorMode === "preview" && previewPdfUrl}
-          <!-- PDF Preview Mode -->
           <div class="grow relative">
             <iframe src={previewPdfUrl} title="PDF Preview" class="w-full h-full border-none"></iframe>
             <div class="absolute top-2 inset-e-2">
@@ -320,23 +314,16 @@ onMount(() => {
             </div>
           </div>
         {:else}
-          <!-- Design Canvas -->
           <CanvasRoot {store} />
-
-          <!-- Floating Action Bar (overlay above selected element) -->
           <FloatingActionBar {store} />
         {/if}
 
-        <!-- Flyout Panel (overlay from inline-start, next to rail) -->
         <FlyoutPanel {store} />
       </div>
     </div>
-
-    <!-- ═══ Status Bar ═══ -->
     <StatusBar {store} />
   {/if}
 
-  <!-- Context Menu -->
   <CanvasContextMenu
     {store}
     x={contextMenuX}
