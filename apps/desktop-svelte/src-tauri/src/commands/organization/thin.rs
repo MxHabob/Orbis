@@ -694,6 +694,13 @@ pub async fn list_document_templates(
 }
 
 #[tauri::command]
+pub async fn get_template_schemas(_state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
+    use docforge_orbis::datasource::DataSourceRegistry;
+    let registry = DataSourceRegistry::new();
+    Ok(serde_json::to_value(registry.list_schemas()).unwrap())
+}
+
+#[tauri::command]
 pub async fn get_document_template(state: State<'_, Arc<AppState>>, template_id: String) -> CmdResult<serde_json::Value> { use docforge_orbis::template_service::TemplateService; let ctx = state.build_guarded_context().await.map_err(CommandError::from)?; let db = state.db(); let r = TemplateService::get_by_id(&db, &ctx.org_id, &template_id).await.map_err(|e| CommandError::new(e))?;
     Ok(serde_json::to_value(r).unwrap())
 }

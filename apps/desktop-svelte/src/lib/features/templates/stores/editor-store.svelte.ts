@@ -59,6 +59,7 @@ export function createEditorStore(initialDoc: TemplateDocument) {
   // ── Core Document State ──────────────────────────────────
   let document = $state<TemplateDocument>(initialDoc);
   let savedSnapshot = $state<string>(JSON.stringify(initialDoc));
+  let systemSchemas = $state<Record<string, any>>({});
 
   // ── Selection ────────────────────────────────────────────
   let selectedIds = $state<string[]>([]);
@@ -622,6 +623,14 @@ export function createEditorStore(initialDoc: TemplateDocument) {
 
     // Cleanup
     destroy,
+
+    // Schema
+    get systemSchemas() {
+      return systemSchemas;
+    },
+    setSystemSchemas(schemas: Record<string, any>) {
+      systemSchemas = schemas;
+    },
   };
 }
 

@@ -313,6 +313,7 @@ pub fn run() {
             commands::organization::thin::get_org_policy,
             commands::organization::thin::update_org_policy,
             commands::organization::thin::list_document_templates,
+            commands::organization::thin::get_template_schemas,
             commands::organization::thin::get_document_template,
             commands::organization::thin::create_document_template,
             commands::organization::thin::update_document_template,

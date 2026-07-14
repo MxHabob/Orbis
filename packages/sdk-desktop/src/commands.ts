@@ -393,6 +393,8 @@ export const commands: OrbisCommands = {
     cancelOverride: (requestId, userId) =>
       cmd("cancel_override", { requestId, userId }),
     // Document Templates
+    getTemplateSchemas: () =>
+      cmd("get_template_schemas", {}),
     listDocumentTemplates: (orgId, params?) =>
       cmd("list_document_templates", { orgId, params }),
     getDocumentTemplate: (templateId) =>

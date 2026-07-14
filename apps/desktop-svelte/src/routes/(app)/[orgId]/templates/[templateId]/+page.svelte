@@ -84,9 +84,13 @@ async function initEditor() {
   isLoading = true;
   error = null;
   try {
-    templateRecord = await commands.platform.getDocumentTemplate(
-      templateId || "",
-    );
+    const [templateRecordData, schemas] = await Promise.all([
+      commands.platform.getDocumentTemplate(templateId || ""),
+      commands.platform.getTemplateSchemas().catch(() => ({})),
+    ]);
+
+    templateRecord = templateRecordData;
+    store.setSystemSchemas(schemas);
 
     const doc = deserializeDocument(templateRecord.document_json);
     store.loadDocument(doc);

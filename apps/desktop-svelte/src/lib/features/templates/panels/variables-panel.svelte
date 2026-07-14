@@ -49,7 +49,38 @@ let expandedGroups = $state<Set<string>>(new Set(["all"]));
 
 // ── Derived ──────────────────────────────────────────────────
 
-const variables = $derived(store.document.variables);
+function flattenSchema(schema: any, prefix = ""): Record<string, VariableDefinition & { isSystem?: boolean }> {
+  let result: Record<string, VariableDefinition & { isSystem?: boolean }> = {};
+  for (const [key, value] of Object.entries(schema)) {
+    const fullPath = prefix ? `${prefix}.${key}` : key;
+    if (value && typeof value === "object" && (value as any).type === "object" && (value as any).properties) {
+      result = { ...result, ...flattenSchema((value as any).properties, fullPath) };
+    } else if (value && typeof value === "object" && (value as any).type === "array" && (value as any).items?.type === "object") {
+      result[fullPath] = {
+        source: fullPath,
+        type: "array",
+        label: (value as any).label || fullPath,
+        labelAr: (value as any).label || fullPath,
+        isSystem: true,
+      };
+    } else {
+      result[fullPath] = {
+        source: fullPath,
+        type: (value as any)?.type || "string",
+        label: (value as any)?.label || fullPath,
+        labelAr: (value as any)?.label || fullPath,
+        isSystem: true,
+      };
+    }
+  }
+  return result;
+}
+
+const entityType = $derived(store.document.meta?.entityType || "");
+const systemSchema = $derived(store.systemSchemas?.[entityType] || {});
+const systemVariables = $derived(flattenSchema(systemSchema));
+
+const variables = $derived({ ...systemVariables, ...store.document.variables });
 
 const variableEntries = $derived(
   Object.entries(variables)
@@ -208,17 +239,18 @@ function handleDragStart(e: DragEvent, varName: string) {
   </div>
 
   <!-- Search -->
-  <div class="px-2 py-1.5 border-b border-border/30">
-    <div class="relative">
-      <Search size={11} class="absolute start-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
-      <Input
-        type="text"
-        placeholder=m.template_auto_1805657a()
-        bind:value={searchQuery}
-        class="h-6 text-[10px] ps-7"
-      />
-    </div>
-  </div>
+      <div class="px-4 pb-2 shrink-0">
+        <div class="relative flex items-center">
+          <Search
+            class="absolute inset-s-2.5 size-3.5 text-muted-foreground pointer-events-none"
+          />
+          <Input
+            placeholder={m.common_header_search ? m.common_header_search() : "البحث في المتغيرات..."}
+            bind:value={searchQuery}
+            class="h-7 text-[10px] ps-7"
+          />
+        </div>
+      </div>
 
   <!-- Add Variable Form -->
   {#if showAddForm}
@@ -255,7 +287,7 @@ function handleDragStart(e: DragEvent, varName: string) {
   {/if}
 
   <!-- Variable List -->
-  <div class="flex-grow overflow-y-auto scrollbar-hide">
+  <div class="grow overflow-y-auto scrollbar-hide">
     {#if variableEntries.length === 0}
       <div class="flex flex-col items-center justify-center py-8 px-4 gap-2">
         <Variable size={20} class="text-muted-foreground/30" />
@@ -280,7 +312,7 @@ function handleDragStart(e: DragEvent, varName: string) {
             <svelte:component this={TypeIconComp} size={11} class="shrink-0 text-muted-foreground" />
 
             <!-- Variable info -->
-            <div class="flex flex-col flex-grow min-w-0">
+            <div class="flex flex-col grow min-w-0">
               <div class="flex items-center gap-1">
                 <span class="text-[10px] font-medium text-foreground truncate">{varDef.labelAr || varDef.label || varName}</span>
                 <Badge variant={getTypeBadgeVariant(varDef.type)} class="text-[7px] h-3 px-1">{varDef.type}</Badge>
@@ -310,14 +342,18 @@ function handleDragStart(e: DragEvent, varName: string) {
                 <TooltipContent>{m.template_auto_70b6d677()}</TooltipContent>
               </Tooltip>
 
-              <Tooltip>
-                <TooltipTrigger>
-                  <button type="button" class="p-0.5 rounded hover:bg-accent cursor-pointer" onclick={() => removeVariable(varName)}>
-                    <Trash2 size={10} class="text-destructive" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>{m.template_auto_3b9854e1()}</TooltipContent>
-              </Tooltip>
+              {#if !(varDef as any).isSystem}
+                <Tooltip>
+                  <TooltipTrigger>
+                    <button type="button" class="p-0.5 rounded hover:bg-accent cursor-pointer" onclick={() => removeVariable(varName)}>
+                      <Trash2 size={10} class="text-destructive" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>{m.template_auto_3b9854e1()}</TooltipContent>
+                </Tooltip>
+              {:else}
+                <Badge variant="outline" class="text-[8px] px-1 h-3.5 font-normal text-muted-foreground bg-muted/30">نظام</Badge>
+              {/if}
             </div>
           </div>
         {/each}
