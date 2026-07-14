@@ -31,10 +31,9 @@
 //! This means checking the gate on every write is essentially **free** — no DB hit
 //! unless the cache has expired.
 
-use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter, ConnectionTrait};
+use sea_orm::{DatabaseConnection, ConnectionTrait};
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 use tracing::debug;
@@ -463,7 +462,7 @@ impl PeriodGate {
     fn evaluate_attendance(
         &self,
         period: &CachedPeriod,
-        now: &str,
+        _now: &str,
     ) -> Result<GateVerdict, AppError> {
         let base_context = GateContext {
             period_status: period.status.clone(),

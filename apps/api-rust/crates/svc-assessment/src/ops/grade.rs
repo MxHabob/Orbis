@@ -19,7 +19,6 @@ use crate::services::grade::{
     UpsertCellRequest, UpsertCellResult, GradeReportCard, GradeAnalytics, GradeMatrixResponse,
 };
 
-use svc_organization::entities::academic_period;
 
 // ── Helpers ─────────────────────────────────────────────────────
 

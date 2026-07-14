@@ -257,7 +257,7 @@ pub async fn delete(ctx: &ServiceContext, unit_id: &str) -> Result<(), AppError>
 
 /// Update the children_count for a parent node.
 async fn update_children_count(ctx: &ServiceContext, parent_id: &str) -> Result<(), AppError> {
-    use sea_orm::QuerySelect;
+    
 
     let count = org_unit::Entity::find()
         .filter(org_unit::Column::ParentId.eq(parent_id))

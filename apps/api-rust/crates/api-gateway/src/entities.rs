@@ -29,7 +29,7 @@ pub mod academic_policy {
 }
 
 pub mod org_unit {
-    pub use svc_academic::entities::org_unit::*;
+    pub use svc_organization::entities::org_unit::*;
 }
 
 pub mod class {

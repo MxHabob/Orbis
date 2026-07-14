@@ -2,7 +2,7 @@ use axum::{extract::{State, Path, Json}, http::StatusCode, response::IntoRespons
 use serde_json::json;
 use crate::app_state::AppState;
 use crate::middleware::AuthenticatedUser;
-use svc_academic::ops;
+use svc_organization::ops;
 
 #[utoipa::path(get, path = "/api/org-units")]
 pub async fn get_units(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {

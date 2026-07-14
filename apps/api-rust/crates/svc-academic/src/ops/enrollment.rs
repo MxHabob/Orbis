@@ -3,7 +3,7 @@
 //! Handles: enroll, withdraw, transfer + duplicate/capacity checks.
 
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, PaginatorTrait};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
 use uuid::Uuid;
 
 use shared_kernel::context::ServiceContext;
