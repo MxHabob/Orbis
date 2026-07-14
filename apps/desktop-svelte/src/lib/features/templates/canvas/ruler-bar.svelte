@@ -13,6 +13,7 @@ let {
   offsetX,
   offsetY,
   cursorMm,
+  containerSizePx,
 }: {
   axis: "horizontal" | "vertical";
   pageSizeMm: number;
@@ -20,23 +21,55 @@ let {
   offsetX: number;
   offsetY: number;
   cursorMm: number;
+  containerSizePx: number;
 } = $props();
 
 const RULER_SIZE = 24; // px
 const isHorizontal = $derived(axis === "horizontal");
 
-// Generate tick marks every 5mm, labels every 10mm
+// We need to figure out what range of mm is visible.
+// We can use a helper to convert px to mm:
+import { pxToMm } from "@docforge/core/canvas";
+
 const ticks = $derived(generateTicks());
 
 function generateTicks() {
   const result: { pos: number; label?: string; major: boolean }[] = [];
-  const step = 5; // mm
-  for (let mm = 0; mm <= pageSizeMm; mm += step) {
+  
+  const offset = isHorizontal ? offsetX : offsetY;
+  
+  // startPx is 0, endPx is containerSizePx
+  const startPx = -RULER_SIZE; // slight buffer
+  const endPx = containerSizePx + RULER_SIZE; // slight buffer
+
+  // Calculate the mm at start and end of the visible ruler area
+  const startMm = pxToMm(startPx - offset, viewport.dpi, viewport.zoom);
+  const endMm = pxToMm(endPx - offset, viewport.dpi, viewport.zoom);
+
+  // We want nice steps. Normally step is 5mm or 10mm.
+  // If we zoom out a lot, drawing ticks every 5mm might be too dense and slow!
+  // Let's adjust the step based on zoom.
+  let step = 5;
+  let majorStep = 10;
+  
+  if (viewport.zoom < 0.3) {
+    step = 50;
+    majorStep = 100;
+  } else if (viewport.zoom < 0.6) {
+    step = 10;
+    majorStep = 50;
+  }
+
+  // Snap start to the nearest step
+  const firstTickMm = Math.floor(startMm / step) * step;
+  const lastTickMm = Math.ceil(endMm / step) * step;
+
+  for (let mm = firstTickMm; mm <= lastTickMm; mm += step) {
     const px = mmToPx(mm, viewport.dpi, viewport.zoom);
-    const isMajor = mm % 10 === 0;
+    const isMajor = mm % majorStep === 0;
     result.push({
       pos: px,
-      label: isMajor ? String(mm) : undefined,
+      label: isMajor ? String(Math.round(mm)) : undefined,
       major: isMajor,
     });
   }
@@ -44,7 +77,7 @@ function generateTicks() {
 }
 
 const cursorPx = $derived(
-  mmToPx(Math.max(0, cursorMm), viewport.dpi, viewport.zoom),
+  mmToPx(cursorMm, viewport.dpi, viewport.zoom), // Allow negative cursor
 );
 </script>
 
@@ -52,7 +85,7 @@ const cursorPx = $derived(
   <!-- Horizontal ruler (top) -->
   <div
     class="absolute top-0 h-6 bg-card border-b border-border/40 overflow-hidden z-10"
-    style="left: {RULER_SIZE}px; right: 0;"
+    style="inset-inline-start: {RULER_SIZE}px; inset-inline-end: 0;"
   >
     <svg width="100%" height={RULER_SIZE} class="block">
       <g transform="translate({offsetX}, 0)">
@@ -80,7 +113,7 @@ const cursorPx = $derived(
         {/each}
 
         <!-- Cursor indicator -->
-        {#if cursorMm >= 0 && cursorMm <= pageSizeMm}
+        {#if cursorMm !== undefined}
           <line
             x1={cursorPx}
             y1="0"
@@ -96,7 +129,7 @@ const cursorPx = $derived(
 {:else}
   <!-- Vertical ruler (left) -->
   <div
-    class="absolute start-0 w-6 bg-card border-e border-border/40 overflow-hidden z-10"
+    class="absolute inset-s-0 w-6 bg-card border-e border-border/40 overflow-hidden z-10"
     style="top: {RULER_SIZE}px; bottom: 0;"
   >
     <svg width={RULER_SIZE} height="100%" class="block">
@@ -125,7 +158,7 @@ const cursorPx = $derived(
         {/each}
 
         <!-- Cursor indicator -->
-        {#if cursorMm >= 0 && cursorMm <= pageSizeMm}
+        {#if cursorMm !== undefined}
           <line
             x1="0"
             y1={cursorPx}

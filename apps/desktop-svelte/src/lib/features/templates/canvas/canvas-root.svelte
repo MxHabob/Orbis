@@ -268,6 +268,7 @@ function handleDrop(e: DragEvent) {
       {offsetX}
       {offsetY}
       cursorMm={cursorDocMm.x}
+      containerSizePx={containerWidth}
     />
     <RulerBar
       axis="vertical"
@@ -276,6 +277,7 @@ function handleDrop(e: DragEvent) {
       {offsetX}
       {offsetY}
       cursorMm={cursorDocMm.y}
+      containerSizePx={containerHeight}
     />
   {/if}
 

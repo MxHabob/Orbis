@@ -14,7 +14,6 @@ import type { EditorStore, EditorTool } from "../stores/editor-store.svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Input } from "@orbis/ui-svelte/input";
-import { Separator } from "@orbis/ui-svelte/separator";
 import {
   Tooltip,
   TooltipTrigger,
@@ -93,7 +92,7 @@ function updateProp(key: string, value: unknown) {
     {/if}
   </div>
 
-  <Separator orientation="vertical" class="h-5 mx-1.5 shrink-0" />
+  <div class="ctx-divider"></div>
 
   <!-- Center: Contextual Controls -->
   <div class="ctx-center">
@@ -123,7 +122,7 @@ function updateProp(key: string, value: unknown) {
         </div>
       </div>
 
-      <Separator orientation="vertical" class="h-5 mx-1" />
+      <div class="ctx-divider"></div>
 
       <div class="ctx-group">
         <button type="button" class="ctx-format-btn" class:active={nodeProps.fontWeight === "700" || nodeProps.fontWeight === "bold"} onclick={() => updateProp("fontWeight", nodeProps.fontWeight === "700" ? "400" : "700")}>
@@ -137,7 +136,7 @@ function updateProp(key: string, value: unknown) {
         </button>
       </div>
 
-      <Separator orientation="vertical" class="h-5 mx-1" />
+      <div class="ctx-divider"></div>
 
       <div class="ctx-group">
         <input
@@ -148,7 +147,7 @@ function updateProp(key: string, value: unknown) {
         />
       </div>
 
-      <Separator orientation="vertical" class="h-5 mx-1" />
+      <div class="ctx-divider"></div>
 
       <div class="ctx-group">
         <button type="button" class="ctx-format-btn" class:active={nodeProps.textAlign === "start" || !nodeProps.textAlign} onclick={() => updateProp("textAlign", "start")}>
@@ -250,7 +249,7 @@ function updateProp(key: string, value: unknown) {
       <div class="ctx-group">
         <Badge variant="secondary" class="text-[9px]">{store.selectedIds.length}{m.templates_selected_items()}</Badge>
       </div>
-      <Separator orientation="vertical" class="h-5 mx-1" />
+      <div class="ctx-divider"></div>
       <div class="ctx-group">
         {#each [
           { icon: AlignLeft, action: m.template_auto_d18b14e5() },
@@ -275,8 +274,8 @@ function updateProp(key: string, value: unknown) {
       <!-- ═══ DEFAULT / PAGE TOOLBAR ═══ -->
       <div class="ctx-group">
         <Badge variant="outline" class="text-[9px] font-mono">
-          {store.document.meta.pageSetup.size}
-          {store.document.meta.pageSetup.orientation === "landscape" ? "▬" : "▮"}
+          {store.document?.meta?.pageSetup?.size || "A4"}
+          {store.document?.meta?.pageSetup?.orientation === "landscape" ? "▬" : "▮"}
         </Badge>
       </div>
     {/if}
@@ -301,7 +300,7 @@ function updateProp(key: string, value: unknown) {
       <TooltipContent>{m.template_auto_08f60fc8()}</TooltipContent>
     </Tooltip>
 
-    <Separator orientation="vertical" class="h-5 mx-1" />
+    <div class="ctx-divider"></div>
 
     <Tooltip>
       <TooltipTrigger>
@@ -328,7 +327,7 @@ function updateProp(key: string, value: unknown) {
       <TooltipContent>{m.template_auto_417741fa()}</TooltipContent>
     </Tooltip>
 
-    <Separator orientation="vertical" class="h-5 mx-1" />
+    <div class="ctx-divider"></div>
 
     <Button variant="ghost" size="xs" class="cursor-pointer text-[10px]" onclick={onpreview}>
       <Eye size={13} class="me-1" />
@@ -363,6 +362,14 @@ function updateProp(key: string, value: unknown) {
     display: flex;
     align-items: center;
     gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .ctx-divider {
+    width: 1px;
+    height: 20px;
+    background: color-mix(in srgb, var(--color-border) 60%, transparent);
+    margin: 0 4px;
     flex-shrink: 0;
   }
 
