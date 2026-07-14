@@ -673,7 +673,7 @@ pub async fn update_org_policy(state: State<'_, Arc<AppState>>, data: serde_json
 // ── Document Templates ──────────────────────────────────────────────
 
 #[tauri::command]
-pub async fn get_document_templates(
+pub async fn list_document_templates(
     state: State<'_, Arc<AppState>>,
     params: Option<serde_json::Value>,
 ) -> CmdResult<serde_json::Value> {
