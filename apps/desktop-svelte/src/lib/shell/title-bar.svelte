@@ -213,7 +213,7 @@ onMount(() => {
           }}
         >
           <Bell size={14} class="stroke-[2px]" />
-          <span class="absolute -top-0.5 -end-0.5 size-4 bg-destructive text-destructive-foreground text-[10px] rounded-full flex items-center justify-center font-semibold">
+          <span class="absolute -top-0.5 -inset-e-0.5 size-4 bg-destructive text-destructive-foreground text-[10px] rounded-full flex items-center justify-center font-semibold">
             {workflowInbox.totalCount}
           </span>
         </Button>
