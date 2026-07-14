@@ -37,12 +37,12 @@ const panel = $derived(store.activeRailPanel);
 
 // Panel titles
 const panelTitles: Record<string, string> = {
-  templates: m.template_auto_b5cce580(),
-  elements: m.template_auto_65d289f5(),
-  text: m.template_auto_09cff955(),
-  uploads: m.template_auto_ec4c8945(),
-  tools: m.template_auto_a7ac8eaa(),
-  settings: m.template_auto_7791dd8d(),
+  templates: m.common_td_panel_pages(),
+  elements: m.common_td_panel_elements(),
+  text: m.common_td_panel_text(),
+  uploads: m.common_td_panel_media(),
+  tools: m.common_td_panel_tools(),
+  "page-setup": m.common_td_panel_settings(),
 };
 
 let toolsTab = $state("layers");
@@ -171,12 +171,12 @@ function stopResize() {
     display: flex;
     flex-direction: column;
     box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15);
-    animation: flyout-slide-in 0.2s ease-out;
+    animation: flyout-slide-in 0.08s ease-out;
   }
 
   @keyframes flyout-slide-in {
     from {
-      transform: translateX(-30px);
+      transform: translateX(-15px);
       opacity: 0;
     }
     to {
@@ -187,15 +187,12 @@ function stopResize() {
 
   :global([dir="rtl"]) .flyout-container {
     box-shadow: -4px 0 16px rgba(0, 0, 0, 0.15);
-  }
-
-  :global([dir="rtl"]) .flyout-container {
-    animation: flyout-slide-in-rtl 0.2s ease-out;
+    animation: flyout-slide-in-rtl 0.08s ease-out;
   }
 
   @keyframes flyout-slide-in-rtl {
     from {
-      transform: translateX(30px);
+      transform: translateX(15px);
       opacity: 0;
     }
     to {

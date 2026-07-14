@@ -29,8 +29,8 @@ type TextPreset = {
 const presets: TextPreset[] = [
   {
     id: "heading1",
-    label: m.template_auto_50ac317d(),
-    sampleAr: m.template_auto_1bf0b49a(),
+    label: m.common_td_heading1(),
+    sampleAr: m.common_td_heading1_sample(),
     sampleEn: "Add a heading",
     style: {
       fontSize: 32,
@@ -42,8 +42,8 @@ const presets: TextPreset[] = [
   },
   {
     id: "heading2",
-    label: m.template_auto_773fec34(),
-    sampleAr: m.template_auto_8cf80e1c(),
+    label: m.common_td_heading2(),
+    sampleAr: m.common_td_heading2_sample(),
     sampleEn: "Add a subheading",
     style: {
       fontSize: 22,
@@ -55,8 +55,8 @@ const presets: TextPreset[] = [
   },
   {
     id: "heading3",
-    label: m.template_auto_cefc9b72(),
-    sampleAr: m.template_auto_1273f351(),
+    label: m.common_td_heading3(),
+    sampleAr: m.common_td_heading3_sample(),
     sampleEn: "Add a small heading",
     style: {
       fontSize: 16,
@@ -68,8 +68,8 @@ const presets: TextPreset[] = [
   },
   {
     id: "body",
-    label: m.template_auto_331e28c0(),
-    sampleAr: m.template_auto_35c2d464(),
+    label: m.common_td_body(),
+    sampleAr: m.common_td_body_sample(),
     sampleEn: "Add body text",
     style: {
       fontSize: 14,
@@ -81,8 +81,8 @@ const presets: TextPreset[] = [
   },
   {
     id: "body-small",
-    label: m.template_auto_8a5926fd(),
-    sampleAr: m.template_auto_3c214733(),
+    label: m.common_td_body_small(),
+    sampleAr: m.common_td_body_small_sample(),
     sampleEn: "Add small text",
     style: {
       fontSize: 11,
@@ -94,8 +94,8 @@ const presets: TextPreset[] = [
   },
   {
     id: "caption",
-    label: m.template_auto_370c6056(),
-    sampleAr: m.template_auto_6eba5cf6(),
+    label: m.common_td_caption(),
+    sampleAr: m.common_td_caption_sample(),
     sampleEn: "Add a caption",
     style: {
       fontSize: 9,
@@ -107,8 +107,8 @@ const presets: TextPreset[] = [
   },
   {
     id: "label",
-    label: m.template_auto_d3c8fc63(),
-    sampleAr: m.template_auto_d598daef(),
+    label: m.common_td_label(),
+    sampleAr: m.common_td_label_sample(),
     sampleEn: "Field Label",
     style: {
       fontSize: 10,
@@ -120,8 +120,8 @@ const presets: TextPreset[] = [
   },
   {
     id: "number",
-    label: m.template_auto_6a9c0b40(),
-    sampleAr: m.template_auto_69b6be11(),
+    label: m.common_td_number(),
+    sampleAr: m.common_td_number_sample(),
     sampleEn: "1234",
     style: {
       fontSize: 36,

@@ -1,5 +1,4 @@
 <script lang="ts">
-import * as m from "$lib/paraglide/messages";
 /**
  * Template Designer — Main Editor Page (v3.0 — Canva-Inspired)
  *
@@ -21,10 +20,7 @@ import { goto } from "$app/navigation";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { toast } from "svelte-sonner";
-
 import { l } from "$lib/core/i18n";
-import { RefreshCw } from "lucide-svelte";
-
 import { deserializeDocument, serializeDocument } from "@docforge/core";
 import { createEditorStore } from "$lib/features/templates/stores/editor-store.svelte";
 import {
@@ -34,7 +30,7 @@ import {
 } from "$lib/features/templates/stores/clipboard-manager";
 import CanvasRoot from "$lib/features/templates/canvas/canvas-root.svelte";
 import CanvasContextMenu from "$lib/features/templates/canvas/canvas-context-menu.svelte";
-
+import * as m from "$lib/paraglide/messages";
 // ── New Layout Components ────────────────────────────────────
 import SideRail from "$lib/features/templates/layout/side-rail.svelte";
 import FlyoutPanel from "$lib/features/templates/layout/flyout-panel.svelte";
@@ -90,7 +86,6 @@ async function initEditor() {
   error = null;
   try {
     templateRecord = await commands.platform.getDocumentTemplate(
-      orgId || "",
       templateId || "",
     );
 
@@ -129,7 +124,6 @@ async function saveTemplate() {
     };
 
     await commands.platform.updateDocumentTemplate(
-      orgId || "",
       templateId || "",
       "current-user",
       updateRequest,
