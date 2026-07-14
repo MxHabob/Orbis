@@ -86,16 +86,18 @@ impl AutopilotEngine {
     /// Execute a single tick of the autopilot for a given org.
     ///
     /// Single `db` parameter — no more registry_db + year_db split.
+    /// `org_unit_id` — optional branch context for policy resolution.
     pub async fn tick(
         &self,
         db: &DatabaseConnection,
         org_id: &str,
+        org_unit_id: Option<&str>,
     ) -> TickResult {
         let tick_at = Utc::now().to_rfc3339();
-        info!(org_id, "Autopilot tick started");
+        info!(org_id, ?org_unit_id, "Autopilot tick started");
 
-        // ── 1. Load policy ───────────────────────────────────────
-        let policy = match Self::load_policy(db, org_id).await {
+        // ── 1. Load effective policy (branch override → org default) ──
+        let policy = match Self::load_effective_policy(db, org_id, org_unit_id).await {
             Ok(p) => p,
             Err(e) => return Self::error_result(org_id, &tick_at, &e.to_string()),
         };
@@ -399,12 +401,31 @@ impl AutopilotEngine {
 
     // ── Helpers ──────────────────────────────────────────────────────
 
-    async fn load_policy(
+    /// Load the effective policy for an org + optional org_unit.
+    ///
+    /// 1. If `org_unit_id` is provided, try to find a branch-specific override.
+    /// 2. If no branch override, fall back to the org-wide default (org_unit_id IS NULL).
+    async fn load_effective_policy(
         db: &DatabaseConnection,
         org_id: &str,
+        org_unit_id: Option<&str>,
     ) -> Result<academic_policy::Model, AppError> {
+        // Try branch-specific override first
+        if let Some(unit_id) = org_unit_id {
+            let branch_policy = academic_policy::Entity::find()
+                .filter(academic_policy::Column::OrgId.eq(org_id))
+                .filter(academic_policy::Column::OrgUnitId.eq(unit_id))
+                .one(db)
+                .await?;
+            if let Some(p) = branch_policy {
+                return Ok(p);
+            }
+        }
+
+        // Fall back to org-wide default
         academic_policy::Entity::find()
             .filter(academic_policy::Column::OrgId.eq(org_id))
+            .filter(academic_policy::Column::OrgUnitId.is_null())
             .one(db)
             .await?
             .ok_or_else(|| AppError::not_found("academic_policies", org_id))

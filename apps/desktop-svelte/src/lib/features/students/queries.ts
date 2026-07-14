@@ -9,7 +9,7 @@ import { commands } from "$lib/core/ipc";
 export function createEnrollmentsQuery(orgId: () => string) {
   return createQuery({
     get queryKey() { return ["enrollments", orgId()]; },
-    queryFn: () => commands.academic.listEnrollments(orgId()),
+    queryFn: () => commands.academic.listEnrollments(),
     get enabled() { return !!orgId(); },
     staleTime: 2 * 60 * 1000, // Student data changes more frequently — 2 min
   });

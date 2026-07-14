@@ -30,7 +30,7 @@ async function loadData() {
     if (selectedClass !== "all") params.class_id = selectedClass;
     if (selectedTerm !== "all") params.cycle_id = selectedTerm;
 
-    const classes = await commands.academic.listClasses(orgId, params);
+    const classes = await commands.academic.listClasses(params);
     if (classes && classes.length > 0) {
       data = classes
         .map((c) => ({

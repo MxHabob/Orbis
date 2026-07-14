@@ -13,7 +13,7 @@ import type { PromotionConfig } from "@orbis/sdk-core";
 export function createCurrentYearQuery(orgId: string) {
   return createQuery({
     queryKey: ["academicYears", "current", orgId],
-    queryFn: () => commands.platform.getCurrentYear(orgId),
+    queryFn: () => commands.platform.getCurrentYear(),
     enabled: !!orgId,
     staleTime: 30 * 60 * 1000,
   });
@@ -41,7 +41,7 @@ export function createSwitchYearMutation() {
 export function createPromotionJobsQuery(orgId: () => string) {
   return createQuery({
     get queryKey() { return ["promotion-jobs", orgId()]; },
-    queryFn: () => commands.platform.listPromotionJobs(orgId()),
+    queryFn: () => commands.platform.listPromotionJobs(),
     get enabled() { return !!orgId(); },
     staleTime: 60 * 1000,
   });
@@ -69,7 +69,7 @@ export function createDryRunMutation(orgId: string) {
   const queryClient = useQueryClient();
   return createMutation({
     mutationFn: (config: PromotionConfig) =>
-      commands.platform.promotionDryRun(orgId, config),
+      commands.platform.promotionDryRun(config),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["promotionJobs"] });
     },

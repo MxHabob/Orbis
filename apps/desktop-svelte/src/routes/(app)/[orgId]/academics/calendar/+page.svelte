@@ -264,7 +264,7 @@ async function createEvent() {
   }
   isSubmitting = true;
   try {
-    await commands.platform.createCalendarEvent(orgId, {
+    await commands.platform.createCalendarEvent({
       period_id: periodId,
       ...newEvent,
     });
@@ -313,7 +313,7 @@ async function executeEvent(eventId: string) {
 
 async function deleteEvent(eventId: string) {
   try {
-    await commands.platform.deleteCalendarEvent(orgId, eventId);
+    await commands.platform.deleteCalendarEvent(eventId);
     toast.success(
       m.common_calendar_event_deleted ? m.common_calendar_event_deleted() : "Event deleted",
     );
@@ -328,7 +328,7 @@ async function deleteEvent(eventId: string) {
 async function generateDefaults() {
   isSubmitting = true;
   try {
-    await commands.platform.generateDefaultCalendar(orgId, periodId);
+    await commands.platform.generateDefaultCalendar(periodId);
     toast.success(
       m.common_calendar_defaults_generated
         ? m.common_calendar_defaults_generated()

@@ -8,7 +8,7 @@ import { commands } from "$lib/core/ipc";
 export function createDashboardStatsQuery(orgId: string) {
   return createQuery({
     queryKey: ["dashboard-stats", orgId],
-    queryFn: () => commands.organization.getDashboardStats(orgId),
+    queryFn: () => commands.organization.getDashboardStats(),
     enabled: !!orgId,
     staleTime: 3 * 60 * 1000, // 3 minutes
   });

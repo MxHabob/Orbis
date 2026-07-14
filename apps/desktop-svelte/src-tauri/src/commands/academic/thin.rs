@@ -28,9 +28,8 @@ use docforge_orbis::{
 #[tauri::command]
 pub async fn list_periods(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = org_ops::academic_period::list(&ctx).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -38,10 +37,9 @@ pub async fn list_periods(
 #[tauri::command]
 pub async fn list_periods_by_year(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     period_id: String,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = org_ops::academic_period::list_by_year(&ctx, &period_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -49,10 +47,9 @@ pub async fn list_periods_by_year(
 #[tauri::command]
 pub async fn get_period(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     period_id: String,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = org_ops::academic_period::get(&ctx, &period_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -60,10 +57,9 @@ pub async fn get_period(
 #[tauri::command]
 pub async fn create_period(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = org_ops::academic_period::create(&ctx, data).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -71,7 +67,7 @@ pub async fn create_period(
 #[tauri::command]
 pub async fn update_period(
     _state: State<'_, Arc<AppState>>,
-    _org_id: String,
+    _
     _period_id: String,
     _data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
@@ -93,42 +89,38 @@ pub async fn set_current_period(
 #[tauri::command]
 pub async fn lock_period(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     period_id: String,
 ) -> CmdResult<()> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     org_ops::academic_period::lock(&ctx, &period_id).await.map(|_| ()).map_err(CommandError::from)
 }
 
 #[tauri::command]
 pub async fn unlock_period(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     period_id: String,
 ) -> CmdResult<()> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     org_ops::academic_period::unlock(&ctx, &period_id).await.map(|_| ()).map_err(CommandError::from)
 }
 
 #[tauri::command]
 pub async fn toggle_period_enrollment(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     period_id: String,
     open: bool,
 ) -> CmdResult<()> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     org_ops::academic_period::toggle_enrollment(&ctx, &period_id, open).await.map(|_| ()).map_err(CommandError::from)
 }
 
 #[tauri::command]
 pub async fn toggle_period_grade_entry(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     period_id: String,
     open: bool,
 ) -> CmdResult<()> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     org_ops::academic_period::toggle_grade_entry(&ctx, &period_id, open).await.map(|_| ()).map_err(CommandError::from)
 }
 
@@ -137,9 +129,8 @@ pub async fn toggle_period_grade_entry(
 #[tauri::command]
 pub async fn list_classes(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::class::list(&ctx).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -154,7 +145,7 @@ pub async fn get_class(
     let class = svc_academic::entities::class::Entity::find_by_id(class_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Class not found"))?;
-    let ctx = state.build_context(&class.org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::class::get(&ctx, &class_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -162,10 +153,9 @@ pub async fn get_class(
 #[tauri::command]
 pub async fn create_class(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::class::create(&ctx, data).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -181,7 +171,7 @@ pub async fn update_class(
     let class = svc_academic::entities::class::Entity::find_by_id(class_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Class not found"))?;
-    let ctx = state.build_context(&class.org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::class::update(&ctx, &class_id, data).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -196,7 +186,7 @@ pub async fn delete_class(
     let class = svc_academic::entities::class::Entity::find_by_id(class_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Class not found"))?;
-    let ctx = state.build_context(&class.org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     ops::class::delete(&ctx, &class_id).await.map_err(CommandError::from)
 }
 
@@ -205,9 +195,8 @@ pub async fn delete_class(
 #[tauri::command]
 pub async fn list_subjects(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::subject::list(&ctx).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -215,10 +204,9 @@ pub async fn list_subjects(
 #[tauri::command]
 pub async fn create_subject(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::subject::create(&ctx, data).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -233,7 +221,7 @@ pub async fn get_subject(
     let subject = svc_academic::entities::subject::Entity::find_by_id(subject_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Subject not found"))?;
-    let ctx = state.build_context(&subject.org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::subject::get(&ctx, &subject_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -249,7 +237,7 @@ pub async fn update_subject(
     let subject = svc_academic::entities::subject::Entity::find_by_id(subject_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Subject not found"))?;
-    let ctx = state.build_context(&subject.org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::subject::update(&ctx, &subject_id, data).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -264,7 +252,7 @@ pub async fn delete_subject(
     let subject = svc_academic::entities::subject::Entity::find_by_id(subject_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Subject not found"))?;
-    let ctx = state.build_context(&subject.org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     ops::subject::delete(&ctx, &subject_id).await.map_err(CommandError::from)
 }
 
@@ -273,9 +261,8 @@ pub async fn delete_subject(
 #[tauri::command]
 pub async fn list_enrollments(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::enrollment::list(&ctx).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -283,10 +270,9 @@ pub async fn list_enrollments(
 #[tauri::command]
 pub async fn get_enrollment(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     enrollment_id: String,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::enrollment::get(&ctx, &enrollment_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -294,10 +280,9 @@ pub async fn get_enrollment(
 #[tauri::command]
 pub async fn create_enrollment(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::enrollment::create(&ctx, data).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -305,11 +290,10 @@ pub async fn create_enrollment(
 #[tauri::command]
 pub async fn transfer_enrollment(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     enrollment_id: String,
     new_class_id: String,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::enrollment::transfer(&ctx, &enrollment_id, &new_class_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -317,22 +301,20 @@ pub async fn transfer_enrollment(
 #[tauri::command]
 pub async fn withdraw_enrollment(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     enrollment_id: String,
 ) -> CmdResult<()> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     ops::enrollment::withdraw(&ctx, &enrollment_id).await.map(|_| ()).map_err(CommandError::from)
 }
 
 #[tauri::command]
 pub async fn check_duplicate_enrollment(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     national_id: Option<String>,
     email: Option<String>,
     phone: Option<String>,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::enrollment::check_duplicate(&ctx, national_id, email, phone).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -342,11 +324,10 @@ pub async fn check_duplicate_enrollment(
 #[tauri::command]
 pub async fn list_class_subjects(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     class_id: String,
     period_id: Option<String>,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::class_subject::list(&ctx, &class_id, period_id.as_deref()).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -354,10 +335,9 @@ pub async fn list_class_subjects(
 #[tauri::command]
 pub async fn create_class_subject(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::class_subject::create(&ctx, data).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -365,11 +345,10 @@ pub async fn create_class_subject(
 #[tauri::command]
 pub async fn update_class_subject(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     class_subject_id: String,
     data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::class_subject::update(&ctx, &class_subject_id, data).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -377,10 +356,9 @@ pub async fn update_class_subject(
 #[tauri::command]
 pub async fn delete_class_subject(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     class_subject_id: String,
 ) -> CmdResult<()> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     ops::class_subject::delete(&ctx, &class_subject_id).await.map_err(CommandError::from)
 }
 
@@ -389,10 +367,9 @@ pub async fn delete_class_subject(
 #[tauri::command]
 pub async fn list_guardians_by_student(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     student_id: String,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::guardian::list_by_student(&ctx, &student_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -400,10 +377,9 @@ pub async fn list_guardians_by_student(
 #[tauri::command]
 pub async fn search_guardians(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     query: String,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::guardian::search(&ctx, &query).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -411,10 +387,9 @@ pub async fn search_guardians(
 #[tauri::command]
 pub async fn create_guardian_link(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::guardian::create(&ctx, data).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -422,11 +397,10 @@ pub async fn create_guardian_link(
 #[tauri::command]
 pub async fn update_guardian_link(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     link_id: String,
     data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::guardian::update(&ctx, &link_id, data).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -434,10 +408,9 @@ pub async fn update_guardian_link(
 #[tauri::command]
 pub async fn delete_guardian_link(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     link_id: String,
 ) -> CmdResult<()> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     ops::guardian::delete(&ctx, &link_id).await.map_err(CommandError::from)
 }
 
@@ -446,9 +419,8 @@ pub async fn delete_guardian_link(
 #[tauri::command]
 pub async fn list_org_units(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::org_unit::list(&ctx).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -456,10 +428,9 @@ pub async fn list_org_units(
 #[tauri::command]
 pub async fn create_org_unit(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::org_unit::create(&ctx, data).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -469,10 +440,9 @@ pub async fn create_org_unit(
 #[tauri::command]
 pub async fn list_documents(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     owner_id: String,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::document::list(&ctx, &owner_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -480,10 +450,9 @@ pub async fn list_documents(
 #[tauri::command]
 pub async fn create_document(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::document::create(&ctx, data).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -491,10 +460,9 @@ pub async fn create_document(
 #[tauri::command]
 pub async fn delete_document(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     document_id: String,
 ) -> CmdResult<()> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     ops::document::delete(&ctx, &document_id).await.map_err(CommandError::from)
 }
 
@@ -503,9 +471,8 @@ pub async fn delete_document(
 #[tauri::command]
 pub async fn list_notifications(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::notification::list(&ctx).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -513,10 +480,9 @@ pub async fn list_notifications(
 #[tauri::command]
 pub async fn mark_notification_read(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     notification_id: String,
 ) -> CmdResult<()> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     ops::notification::mark_read(&ctx, &notification_id).await.map(|_| ()).map_err(CommandError::from)
 }
 
@@ -531,7 +497,7 @@ pub async fn assign_teacher(
     let class = svc_academic::entities::class::Entity::find_by_id(class_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Class not found"))?;
-    let ctx = state.build_context(&class.org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     ops::class::assign_teacher(&ctx, &class_id, &teacher_id).await.map(|_| ()).map_err(CommandError::from)
 }
 
@@ -552,7 +518,7 @@ pub async fn list_teacher_subjects(
         // Fallback to active year's default org_id via session helper
         resolve_org_id(&db).await?
     };
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     
     let resolved_period_id = match period_id {
         Some(cid) => cid,
@@ -569,9 +535,8 @@ pub async fn list_teacher_subjects(
 #[tauri::command]
 pub async fn get_current_period(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
 ) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = org_ops::academic_period::get_current(&ctx).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -589,7 +554,7 @@ pub async fn toggle_grade_entry(
     let period = svc_organization::entities::academic_period::Entity::find_by_id(period_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Period not found"))?;
-    let ctx = state.build_context(&period.org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = org_ops::academic_period::toggle_grade_entry(&ctx, &period_id, open).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -605,7 +570,7 @@ pub async fn update_org_unit(
     let unit = svc_academic::entities::org_unit::Entity::find_by_id(unit_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Org unit not found"))?;
-    let ctx = state.build_context(&unit.org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::org_unit::update(&ctx, &unit_id, data).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -620,7 +585,7 @@ pub async fn delete_org_unit(
     let unit = svc_academic::entities::org_unit::Entity::find_by_id(unit_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Org unit not found"))?;
-    let ctx = state.build_context(&unit.org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     ops::org_unit::delete(&ctx, &unit_id).await.map_err(CommandError::from)
 }
 
@@ -680,7 +645,6 @@ pub async fn preview_document_template(
 #[tauri::command]
 pub async fn render_document(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     template_id: String,
     entity_id: String,
 ) -> CmdResult<Vec<u8>> {
@@ -749,7 +713,6 @@ pub async fn start_batch_print(
     state: State<'_, Arc<AppState>>,
     batch_manager: State<'_, Arc<docforge_orbis::batch::BatchJobManager>>,
     app_handle: tauri::AppHandle,
-    org_id: String,
     template_id: String,
     entity_ids: Vec<String>,
     output_dir: String,
@@ -846,7 +809,6 @@ pub async fn compute_multi_up_layout(
 #[tauri::command]
 pub async fn preview_multi_up(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     template_id: String,
     entity_ids: Vec<String>,
     config_json: String,
@@ -873,7 +835,6 @@ pub async fn start_multi_up_batch_print(
     state: State<'_, Arc<AppState>>,
     batch_manager: State<'_, Arc<docforge_orbis::batch::BatchJobManager>>,
     app_handle: tauri::AppHandle,
-    org_id: String,
     template_id: String,
     entity_ids: Vec<String>,
     config_json: String,

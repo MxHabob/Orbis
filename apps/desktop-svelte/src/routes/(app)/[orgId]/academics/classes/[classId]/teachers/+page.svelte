@@ -63,9 +63,9 @@ async function loadData() {
   isLoading = true;
   try {
     const [asgn, subj, usr] = await Promise.all([
-      commands.academic.listClassSubjects(orgId || "", classId || ""),
-      commands.academic.listSubjects(orgId),
-      commands.iam.listUsers(orgId, { role: "teacher" }),
+      commands.academic.listClassSubjects(, classId || ""),
+      commands.academic.listSubjects(),
+      commands.iam.listUsers({ role: "teacher" }),
     ]);
     allAssignments = asgn;
     subjects = subj as unknown as JsonRecord[];

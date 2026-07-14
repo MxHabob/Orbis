@@ -7,7 +7,7 @@ import type { TimeSlot, ScheduledLesson, Room, SolveJob } from "../types";
 
 export interface SchedulingCommands {
   // ── Time Slots ──────────────────────────────────────────────
-  listTimeSlots(orgId: string, periodId: string): Promise<TimeSlot[]>;
+  listTimeSlots(periodId: string): Promise<TimeSlot[]>;
   createTimeSlot(data: {
     period_id: string;
     slot_number: number;
@@ -25,12 +25,10 @@ export interface SchedulingCommands {
 
   // ── Lessons ─────────────────────────────────────────────────
   listLessonsByClass(
-    orgId: string,
     periodId: string,
     classId: string,
   ): Promise<ScheduledLesson[]>;
   listLessonsByTeacher(
-    orgId: string,
     periodId: string,
     teacherId: string,
   ): Promise<ScheduledLesson[]>;
@@ -55,7 +53,6 @@ export interface SchedulingCommands {
   ): Promise<ScheduledLesson>;
   deleteLesson(lessonId: string): Promise<void>;
   checkConflicts(
-    orgId: string,
     periodId: string,
     teacherId: string,
     timeSlotId: string,
@@ -64,7 +61,7 @@ export interface SchedulingCommands {
   ): Promise<ScheduledLesson[]>;
 
   // ── Rooms ───────────────────────────────────────────────────
-  listRooms(orgId: string): Promise<Room[]>;
+  listRooms(): Promise<Room[]>;
   createRoom(data: {
     name: string;
     name_ar?: string;

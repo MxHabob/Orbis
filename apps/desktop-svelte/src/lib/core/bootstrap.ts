@@ -31,7 +31,7 @@ export function bootstrapApp(orgId: string): void {
   academicContext.resolveContext(orgId);
 
   // 2. Load workflow inbox counts (pending approvals + calendar suggestions)
-  workflowInbox.loadCount(orgId);
+  workflowInbox.loadCount();
 
   // 3. Register Tauri event listeners for calendar automation
   if (isDesktopApp()) {

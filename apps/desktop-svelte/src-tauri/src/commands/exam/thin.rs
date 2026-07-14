@@ -12,7 +12,7 @@ pub async fn list_exam_sessions(state: State<'_, Arc<AppState>>, period_id: Stri
     let period = svc_organization::entities::academic_period::Entity::find_by_id(period_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Period not found"))?;
-    let ctx = state.build_context(&period.org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let r = ops::session::list(&ctx, &period_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
@@ -21,7 +21,7 @@ pub async fn list_exam_sessions(state: State<'_, Arc<AppState>>, period_id: Stri
 pub async fn create_exam_session(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let db = state.db();
     let org_id = resolve_org_id(&db).await?;
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let r = ops::session::create(&ctx, data).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
@@ -33,7 +33,7 @@ pub async fn get_exam_session(state: State<'_, Arc<AppState>>, session_id: Strin
     let sess = svc_exam::entities::exam_session::Entity::find_by_id(session_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Exam session not found"))?;
-    let ctx = state.build_context(&sess.org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let r = ops::session::get(&ctx, &session_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
@@ -59,7 +59,7 @@ pub async fn update_exam_session(
     let sess = svc_exam::entities::exam_session::Entity::find_by_id(session_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Exam session not found"))?;
-    let ctx = state.build_context(&sess.org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let r = ops::session::update(
         &ctx,
         &session_id,
@@ -78,7 +78,7 @@ pub async fn list_exam_subjects(state: State<'_, Arc<AppState>>, session_id: Str
     let sess = svc_exam::entities::exam_session::Entity::find_by_id(session_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Exam session not found"))?;
-    let ctx = state.build_context(&sess.org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let r = ops::exam_subject::list(&ctx, &session_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
@@ -87,7 +87,7 @@ pub async fn list_exam_subjects(state: State<'_, Arc<AppState>>, session_id: Str
 pub async fn create_exam_subject(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let db = state.db();
     let org_id = resolve_org_id(&db).await?;
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let r = ops::exam_subject::add(&ctx, data).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
@@ -96,7 +96,7 @@ pub async fn create_exam_subject(state: State<'_, Arc<AppState>>, data: serde_js
 pub async fn get_exam_halls(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     let db = state.db();
     let org_id = resolve_org_id(&db).await?;
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let r = ops::hall::list(&ctx).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
@@ -105,7 +105,7 @@ pub async fn get_exam_halls(state: State<'_, Arc<AppState>>) -> CmdResult<serde_
 pub async fn create_exam_hall(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let db = state.db();
     let org_id = resolve_org_id(&db).await?;
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let r = ops::hall::create(&ctx, data).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
@@ -117,7 +117,7 @@ pub async fn generate_ordering(state: State<'_, Arc<AppState>>, session_id: Stri
     let sess = svc_exam::entities::exam_session::Entity::find_by_id(session_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Exam session not found"))?;
-    let ctx = state.build_context(&sess.org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let r = ops::seating::generate(&ctx, &session_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
@@ -132,7 +132,7 @@ pub async fn list_seating(state: State<'_, Arc<AppState>>, exam_subject_id: Stri
     let sess = svc_exam::entities::exam_session::Entity::find_by_id(subject.exam_session_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Exam session not found"))?;
-    let ctx = state.build_context(&sess.org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let r = ops::seating::list(&ctx, &subject.exam_session_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
@@ -144,7 +144,7 @@ pub async fn generate_exam_schedule(state: State<'_, Arc<AppState>>, session_id:
     let sess = svc_exam::entities::exam_session::Entity::find_by_id(session_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Exam session not found"))?;
-    let ctx = state.build_context(&sess.org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let r = ops::schedule::generate(&ctx, &session_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
@@ -156,7 +156,7 @@ pub async fn list_schedule(state: State<'_, Arc<AppState>>, session_id: String) 
     let sess = svc_exam::entities::exam_session::Entity::find_by_id(session_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Exam session not found"))?;
-    let ctx = state.build_context(&sess.org_id).await.map_err(CommandError::from)?;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let r = ops::schedule::get(&ctx, &session_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
@@ -181,15 +181,15 @@ async fn resolve_org_id(db: &sea_orm::DatabaseConnection) -> Result<String, Comm
 // ── Student Ordering Commands ────────────────────────────────────────
 
 #[tauri::command]
-pub async fn get_student_ordering(state: State<'_, Arc<AppState>>, org_id: String, period_id: String) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+pub async fn get_student_ordering(state: State<'_, Arc<AppState>>, period_id: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let r = ops::ordering::list_ordering(&ctx, &period_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
 #[tauri::command]
-pub async fn rebuild_student_ordering(state: State<'_, Arc<AppState>>, org_id: String, session_id: String) -> CmdResult<()> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+pub async fn rebuild_student_ordering(state: State<'_, Arc<AppState>>, session_id: String) -> CmdResult<()> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     ops::ordering::generate_ordering(&ctx, &session_id).await.map_err(CommandError::from)
 }
 

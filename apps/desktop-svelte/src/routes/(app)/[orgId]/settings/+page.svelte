@@ -28,7 +28,7 @@ async function handleLanguageChange(newLocale: string, currentValues: any) {
   // Auto-save form to database before reloading to avoid losing unsaved input
   if (orgId) {
     try {
-      await commands.organization.updateOrganization(orgId, currentValues);
+      await commands.organization.updateOrganization(currentValues);
     } catch (e) {
       console.error("Failed to auto-save before language switch:", e);
     }

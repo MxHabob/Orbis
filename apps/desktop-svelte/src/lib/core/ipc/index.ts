@@ -11,3 +11,5 @@ export { extractErrorMessage, OrbisError } from "@orbis/sdk-core";
 export type * from "@orbis/sdk-core";
 export { dedup } from "./dedup";
 export { prefetchRouteData } from "./prefetch";
+export { loadPageBundle } from "./batch";
+export type { CursorRequest, CursorPage, PageBundleResult } from "./batch";

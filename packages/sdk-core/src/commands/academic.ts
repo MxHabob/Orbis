@@ -18,7 +18,7 @@ import type {
 
 export interface AcademicCommands {
   // ── Classes ─────────────────────────────────────────────────
-  listClasses(orgId: string, periodId?: string): Promise<Class[]>;
+  listClasses(periodId?: string): Promise<Class[]>;
   getClass(classId: string): Promise<Class>;
   createClass(data: {
     org_unit_id: string;
@@ -42,7 +42,7 @@ export interface AcademicCommands {
   assignTeacher(classId: string, teacherId: string): Promise<Class>;
 
   // ── Subjects ────────────────────────────────────────────────
-  listSubjects(orgId: string): Promise<Subject[]>;
+  listSubjects(): Promise<Subject[]>;
   getSubject(subjectId: string): Promise<Subject>;
   createSubject(data: {
     code: string;
@@ -56,7 +56,7 @@ export interface AcademicCommands {
   deleteSubject(subjectId: string): Promise<void>;
 
   // ── OrgUnits ────────────────────────────────────────────────
-  listOrgUnits(orgId: string): Promise<OrgUnit[]>;
+  listOrgUnits(): Promise<OrgUnit[]>;
   createOrgUnit(data: {
     name: string;
     name_ar?: string;
@@ -70,25 +70,21 @@ export interface AcademicCommands {
 
   // ── Enrollments ─────────────────────────────────────────────
   listEnrollments(
-    orgId: string,
     classId?: string,
     periodId?: string,
   ): Promise<Enrollment[]>;
-  getEnrollment(orgId: string, enrollmentId: string): Promise<Enrollment>;
+  getEnrollment(enrollmentId: string): Promise<Enrollment>;
   createEnrollment(data: {
-    org_id: string;
     period_id: string;
     student_id: string;
     class_id: string;
     student_number: string;
   }): Promise<Enrollment>;
   withdrawEnrollment(
-    orgId: string,
     enrollmentId: string,
     reason: string,
   ): Promise<Enrollment>;
   transferEnrollment(
-    orgId: string,
     enrollmentId: string,
     newClassId: string,
   ): Promise<Enrollment>;
@@ -96,12 +92,10 @@ export interface AcademicCommands {
 
   // ── Class-Subject ───────────────────────────────────────────
   listClassSubjects(
-    orgId: string,
     classId: string,
     periodId?: string,
   ): Promise<ClassSubject[]>;
   listTeacherSubjects(
-    orgId: string,
     teacherId: string,
     periodId?: string,
   ): Promise<ClassSubject[]>;
@@ -119,8 +113,8 @@ export interface AcademicCommands {
   deleteClassSubject(id: string): Promise<void>;
 
   // ── Periods (was Periods) ────────────────────────────────────
-  listPeriods(orgId: string): Promise<AcademicPeriod[]>;
-  listPeriodsByYear(orgId: string, periodId: string): Promise<AcademicPeriod[]>;
+  listPeriods(): Promise<AcademicPeriod[]>;
+  listPeriodsByYear(periodId: string): Promise<AcademicPeriod[]>;
   getPeriod(periodId: string): Promise<AcademicPeriod>;
   createPeriod(data: {
     name: string;
@@ -131,29 +125,26 @@ export interface AcademicCommands {
     end_date: string;
     grading_system?: string;
   }): Promise<AcademicPeriod>;
-  lockPeriod(orgId: string, periodId: string): Promise<void>;
-  unlockPeriod(orgId: string, periodId: string): Promise<void>;
+  lockPeriod(periodId: string): Promise<void>;
+  unlockPeriod(periodId: string): Promise<void>;
   togglePeriodEnrollment(
-    orgId: string,
     periodId: string,
     open: boolean,
   ): Promise<void>;
   togglePeriodGradeEntry(
-    orgId: string,
     periodId: string,
     open: boolean,
   ): Promise<void>;
 
   listGuardiansByStudent(
-    orgId: string,
     studentId: string,
   ): Promise<StudentGuardian[]>;
-  searchGuardians(orgId: string, query: string): Promise<StudentGuardian[]>;
+  searchGuardians(query: string): Promise<StudentGuardian[]>;
 
   // ── Documents ───────────────────────────────────────────────
   listDocuments(ownerId?: string): Promise<Document[]>;
   createDocument(data: any): Promise<Document>;
-  deleteDocument(orgId: string, documentId: string): Promise<void>;
+  deleteDocument(documentId: string): Promise<void>;
 
   // ── Notifications ───────────────────────────────────────────
   listNotifications(limit?: number): Promise<Notification[]>;

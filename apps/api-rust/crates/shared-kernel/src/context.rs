@@ -42,6 +42,7 @@ pub struct ServiceContext {
     // ── Core ──
     pub db: DatabaseConnection,
     pub org_id: String,
+    pub org_unit_id: Option<String>,
     pub period_id: String,
     pub actor: Actor,
     pub correlation_id: Option<String>,
@@ -82,6 +83,7 @@ impl ServiceContext {
         Self {
             db,
             org_id: org_id.into(),
+            org_unit_id: None,
             period_id: period_id.into(),
             actor,
             correlation_id: None,
@@ -118,6 +120,12 @@ impl ServiceContext {
         self
     }
 
+    /// Set the organizational unit context (branch/department).
+    pub fn with_org_unit(mut self, unit_id: impl Into<String>) -> Self {
+        self.org_unit_id = Some(unit_id.into());
+        self
+    }
+
     /// Generate a new correlation ID if none is set.
     pub fn ensure_correlation_id(&mut self) {
         if self.correlation_id.is_none() {
@@ -130,6 +138,7 @@ impl std::fmt::Debug for ServiceContext {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ServiceContext")
             .field("org_id", &self.org_id)
+            .field("org_unit_id", &self.org_unit_id)
             .field("period_id", &self.period_id)
             .field("actor", &self.actor)
             .field("correlation_id", &self.correlation_id)

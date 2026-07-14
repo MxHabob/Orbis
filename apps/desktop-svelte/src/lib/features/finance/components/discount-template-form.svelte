@@ -145,7 +145,7 @@ async function handleSubmit() {
           : "Discount template updated successfully",
       );
     } else {
-      await commands.finance.createDiscountTemplate(orgId, request);
+      await commands.finance.createDiscountTemplate(request);
       toast.success(
         m.common_dt_create_success
           ? m.common_dt_create_success()

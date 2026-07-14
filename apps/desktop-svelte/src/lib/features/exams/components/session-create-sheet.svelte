@@ -89,7 +89,7 @@ async function handleSubmit() {
   try {
     const userId = authStore.userId || authStore.user?.id || "desktop_user";
     if (isEdit && session) {
-      await commands.exam.updateSession(orgId, session.id, {
+      await commands.exam.updateSession(session.id, {
         name,
         
         start_date: startDate,

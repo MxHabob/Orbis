@@ -38,7 +38,7 @@ async function loadFinance() {
   isLoading = true;
   try {
     if (!orgId || !studentId) return;
-    const enrollments = await commands.academic.listEnrollments(orgId);
+    const enrollments = await commands.academic.listEnrollments();
     const activeEnrollment = enrollments.find(
       (e) => e.student_id === studentId,
     );

@@ -149,7 +149,7 @@ async function loadClasses() {
   if (!orgId) return;
   isLoadingClasses = true;
   try {
-    const list = await commands.academic.listClasses(orgId);
+    const list = await commands.academic.listClasses();
     classes = list;
 
     const levelNames: Record<string, { en: string; ar: string }> = {

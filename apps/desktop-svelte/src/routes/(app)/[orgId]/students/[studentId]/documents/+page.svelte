@@ -146,7 +146,7 @@ async function handleDelete(docId: string) {
   }
 
   try {
-    await commands.academic.deleteDocument(orgId, docId);
+    await commands.academic.deleteDocument(docId);
     toast.success(m.common_docs_delete_success());
     await loadDocuments();
   } catch (e: any) {
@@ -174,7 +174,7 @@ async function handleUploadFile() {
 
   try {
     // 1. Soft-delete the placeholder doc
-    await commands.academic.deleteDocument(orgId, selectedDoc.id);
+    await commands.academic.deleteDocument(selectedDoc.id);
 
     // 2. Create new doc entry with file url and details
     const sizeInBytes = uploadFileSize.includes("MB")

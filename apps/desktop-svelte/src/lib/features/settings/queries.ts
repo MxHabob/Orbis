@@ -15,7 +15,7 @@ import type { Organization } from "$lib/core/ipc";
 export function createOrganizationQuery(orgId: () => string) {
   return createQuery<Organization>({
     get queryKey() { return ["organization", orgId()]; },
-    queryFn: async () => await commands.organization.getOrganization(orgId()),
+    queryFn: async () => await commands.organization.getOrganization(),
     get enabled() { return !!orgId(); },
     staleTime: 5 * 60 * 1000,
   });
@@ -42,7 +42,7 @@ export function createUpdateOrganizationMutation() {
 export function createUsersQuery(orgId: () => string) {
   return createQuery({
     get queryKey() { return ["users", orgId()]; },
-    queryFn: () => commands.iam.listUsers(orgId()),
+    queryFn: () => commands.iam.listUsers(),
     get enabled() { return !!orgId(); },
     staleTime: 5 * 60 * 1000,
   });

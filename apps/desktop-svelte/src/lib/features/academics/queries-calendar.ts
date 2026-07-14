@@ -10,7 +10,7 @@ import { commands } from "$lib/core/ipc";
 export function createCalendarEventsQuery(orgId: string, periodId: string) {
   return createQuery({
     queryKey: ["calendar-periods", orgId, periodId],
-    queryFn: () => commands.platform.listCalendarEvents(orgId, periodId),
+    queryFn: () => commands.platform.listCalendarEvents(periodId),
     enabled: !!orgId && !!periodId,
     staleTime: 5 * 60 * 1000,
   });
@@ -20,7 +20,7 @@ export function createCalendarEventsQuery(orgId: string, periodId: string) {
 export function createPendingCalendarEventsQuery(orgId: string) {
   return createQuery({
     queryKey: ["calendar-pending", orgId],
-    queryFn: () => commands.platform.listPendingCalendarEvents(orgId),
+    queryFn: () => commands.platform.listPendingCalendarEvents(),
     enabled: !!orgId,
     staleTime: 2 * 60 * 1000,
   });
@@ -30,7 +30,7 @@ export function createPendingCalendarEventsQuery(orgId: string) {
 export function createOrgPolicyQuery(orgId: string) {
   return createQuery({
     queryKey: ["org-policy", orgId],
-    queryFn: () => commands.platform.getOrgPolicy(orgId),
+    queryFn: () => commands.platform.getOrgPolicy(),
     enabled: !!orgId,
     staleTime: 30 * 60 * 1000,
   });

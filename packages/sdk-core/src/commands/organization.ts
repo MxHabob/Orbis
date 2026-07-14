@@ -5,19 +5,16 @@ import type { Organization } from "../types";
 
 export interface OrganizationCommands {
   getMainOrganization(): Promise<Organization>;
-  getOrganization(orgId: string): Promise<Organization>;
+  getOrganization(): Promise<Organization>;
   updateOrganization(
-    orgId: string,
     data: Partial<Organization>,
   ): Promise<Organization>;
-  getSettings(orgId: string): Promise<Record<string, unknown>>;
+  getSettings(): Promise<Record<string, unknown>>;
   updateSettings(
-    orgId: string,
     settings: Record<string, unknown>,
   ): Promise<void>;
-  getDashboardStats(orgId: string): Promise<Record<string, unknown>>;
+  getDashboardStats(): Promise<Record<string, unknown>>;
   registerStudent(
-    orgId: string,
     data: {
       name: string;
       email?: string | null;

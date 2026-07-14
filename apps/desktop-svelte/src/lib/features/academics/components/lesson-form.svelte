@@ -106,7 +106,7 @@ async function handleSubmit(e: SubmitEvent) {
       day_of_week: dayOfWeek,
       room: formRoom || undefined,
     };
-    await commands.scheduling.createLesson(orgId, request);
+    await commands.scheduling.createLesson(request);
     toast.success(m.common_lesson_toast_success());
 
     // Reset fields

@@ -57,14 +57,12 @@ export interface AssessmentCommands {
     periodId: string,
   ): Promise<GradeReportCard>;
   getGradeAnalytics(
-    orgId: string,
     classId: string,
     periodId: string,
   ): Promise<GradeAnalytics>;
 
   // ── Attendance ──────────────────────────────────────────────
   listAttendance(
-    orgId: string,
     periodId: string,
     classId?: string,
     date?: string,
@@ -95,14 +93,13 @@ export interface AssessmentCommands {
   ): Promise<AttendanceReport>;
 
   // ── Behavior ────────────────────────────────────────────────
-  listBehavior(orgId: string, studentId: string): Promise<BehaviorRecord[]>;
+  listBehavior(studentId: string): Promise<BehaviorRecord[]>;
   updateBehavior(
-    orgId: string,
     recordId: string,
     data: { action_taken?: string; status?: string; resolution_notes?: string },
   ): Promise<BehaviorRecord>;
-  deleteBehavior(orgId: string, recordId: string): Promise<void>;
-  submitBehavior(orgId: string, data: any): Promise<any>;
+  deleteBehavior(recordId: string): Promise<void>;
+  submitBehavior(data: any): Promise<any>;
 
   // ── Assessments ─────────────────────────────────────────────
   listAssessments(

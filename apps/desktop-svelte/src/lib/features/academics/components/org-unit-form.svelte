@@ -64,8 +64,8 @@ async function loadReferenceData() {
   if (!orgId) return;
   try {
     const [allUnits, allUsers] = await Promise.all([
-      commands.academic.listOrgUnits(orgId),
-      commands.iam.listUsers(orgId),
+      commands.academic.listOrgUnits(),
+      commands.iam.listUsers(),
     ]);
 
     // Filter units: exclude current unit if editing to prevent period

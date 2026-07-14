@@ -39,7 +39,7 @@ async function loadData() {
   isLoading = true;
   try {
     // Try to load dynamic profit stats or calculate from database
-    const payments = await commands.finance.listPayments(orgId);
+    const payments = await commands.finance.listPayments();
     if (payments && payments.length > 0) {
       // Calculate monthly average payment as a proxy for profit
       const totalAmount = payments.reduce(

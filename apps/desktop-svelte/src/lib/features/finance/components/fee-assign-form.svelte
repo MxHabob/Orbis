@@ -33,8 +33,8 @@ async function loadDropdownData() {
   isLoadingDropdowns = true;
   try {
     const [studentList, templateList] = await Promise.all([
-      commands.academic.listEnrollments(orgId),
-      commands.finance.listActiveFeeTemplates(orgId),
+      commands.academic.listEnrollments(),
+      commands.finance.listActiveFeeTemplates(),
     ]);
     students = studentList;
     templates = templateList;
@@ -94,7 +94,7 @@ async function handleSubmit(e: SubmitEvent) {
       notes: description || undefined,
       due_date: dueDate,
     };
-    await commands.finance.assignStudentFee(orgId, request);
+    await commands.finance.assignStudentFee(request);
     toast.success(m.common_fee_toast_success());
 
     // Reset form

@@ -56,7 +56,7 @@ const gradingLabels = $derived({
 async function loadParentYears() {
   if (!orgId) return;
   try {
-    const list = await commands.platform.listYears(orgId);
+    const list = await commands.platform.listYears();
     years = list.filter(
       (y: any) => !isEdit || String(y.id) !== String(period.id),
     );

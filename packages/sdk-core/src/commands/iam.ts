@@ -24,12 +24,11 @@ export interface IamCommands {
 
   // ── Users ───────────────────────────────────────────────────
   listUsers(
-    orgId: string,
     filter?: { role?: string; status?: string },
   ): Promise<User[]>;
   getUser(userId: string): Promise<User>;
   searchUsers(query: string): Promise<User[]>;
-  createUser(orgId: string, createdBy: string, data: any): Promise<User>;
+  createUser(createdBy: string, data: any): Promise<User>;
   updateUser(userId: string, data: any): Promise<User>;
   deleteUser(userId: string, role?: string): Promise<void>;
 
@@ -38,7 +37,6 @@ export interface IamCommands {
   assignRole(data: {
     user_id: string;
     role: string;
-    org_id: string;
     scope_type: string;
     scope_id?: string;
   }): Promise<UserRole>;

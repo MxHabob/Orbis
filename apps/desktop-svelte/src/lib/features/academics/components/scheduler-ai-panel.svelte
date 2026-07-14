@@ -157,7 +157,7 @@ async function triggerSolving() {
       period_id: periodId,
       mode: solverMode,
     };
-    const job = await commands.scheduling.startSolver(orgId, userId, req);
+    const job = await commands.scheduling.startSolver(userId, req);
     activeJob = job;
     toast.success(m.common_schedule_ai_optimization_started());
     startPollingJob(String(job.id));
@@ -221,7 +221,7 @@ function stopPolling() {
 async function cancelSolving() {
   if (!activeJob) return;
   try {
-    const job = await commands.scheduling.cancelSolver(orgId, activeJob.id);
+    const job = await commands.scheduling.cancelSolver(activeJob.id);
     activeJob = job;
     stopPolling();
     isSolving = false;
@@ -236,7 +236,7 @@ async function applySolving() {
   if (!activeJob) return;
   try {
     toast.loading(m.common_schedule_ai_applying_timetable());
-    await commands.scheduling.applySolver(orgId, activeJob.id);
+    await commands.scheduling.applySolver(activeJob.id);
     activeJob = null;
     previewDraft = false;
     toast.dismiss();

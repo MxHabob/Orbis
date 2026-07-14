@@ -87,7 +87,7 @@ async function loadCurrencies() {
   if (!orgId) return;
   isLoading = true;
   try {
-    currencies = await commands.finance.listCurrencies(orgId);
+    currencies = await commands.finance.listCurrencies();
   } catch (e) {
     console.error("Error loading currencies:", e);
     toast.error(m.settings_currencies_load_error());
@@ -152,7 +152,7 @@ async function handleAddCurrency(e: Event) {
       updated_at: new Date().toISOString(),
     };
 
-    await commands.finance.createCurrency(orgId, newCurrency);
+    await commands.finance.createCurrency(newCurrency);
     toast.success(m.settings_currencies_added_success());
     showAddDialog = false;
     await loadCurrencies();
@@ -199,7 +199,7 @@ async function handleEditCurrency(e: Event) {
       is_active: editIsActive,
     };
 
-    await commands.finance.updateCurrency(orgId, editCode, updates);
+    await commands.finance.updateCurrency(editCode, updates);
     toast.success(m.settings_currencies_updated_success());
     showEditDialog = false;
     await loadCurrencies();
@@ -223,7 +223,7 @@ async function confirmDeleteCurrency(c: any) {
 async function handleDeleteCurrency() {
   if (!currencyToDelete) return;
   try {
-    await commands.finance.deleteCurrency(orgId, currencyToDelete.code);
+    await commands.finance.deleteCurrency(currencyToDelete.code);
     toast.success(
       m.settings_currencies_deleted_success({ code: currencyToDelete.code }),
     );
@@ -242,7 +242,7 @@ async function seedFinancials() {
 
   isSeeding = true;
   try {
-    await commands.finance.seedDefaultFinancials(orgId);
+    await commands.finance.seedDefaultFinancials();
     toast.success(m.settings_currencies_seeded_success());
     await loadCurrencies();
   } catch (e) {
@@ -270,7 +270,7 @@ async function saveRateValue(code: string) {
     return;
   }
   try {
-    await commands.finance.updateCurrency(orgId, code, {
+    await commands.finance.updateCurrency(code, {
       exchange_rate: editRateValue,
     });
     toast.success(m.settings_currencies_rate_updated_success());

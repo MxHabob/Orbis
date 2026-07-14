@@ -1,14 +1,7 @@
 import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/core/ipc";
 
-export class DocumentInfoState {
-  orgId: string;
-  studentId?: string;
-
-  orgRequiredDocuments = $state<string[]>([]);
-  submittedDocs = $state<string[]>([]);
-
-  constructor(orgId: string, studentId?: string) {
+export class DocumentInfoState { studentId?: string) {
     this.orgId = orgId;
     this.studentId = studentId;
   }

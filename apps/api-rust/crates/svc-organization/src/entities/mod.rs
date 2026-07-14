@@ -1,6 +1,7 @@
 //! Organization & academic domain entities.
 
 pub mod organization;
+pub mod org_unit;
 pub mod academic_year;
 pub mod academic_period;
 pub mod academic_policy;

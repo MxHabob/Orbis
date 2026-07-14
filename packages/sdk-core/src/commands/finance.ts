@@ -15,8 +15,8 @@ import type {
 
 export interface FinanceCommands {
   // ── Ledger ──────────────────────────────────────────────────
-  listAccounts(orgId: string): Promise<Account[]>;
-  listTransactionAccounts(orgId: string): Promise<Account[]>;
+  listAccounts(): Promise<Account[]>;
+  listTransactionAccounts(): Promise<Account[]>;
   createAccount(data: {
     name: string;
     name_ar?: string;
@@ -32,7 +32,7 @@ export interface FinanceCommands {
   ): Promise<JournalEntry[]>;
 
   // ── Treasury ────────────────────────────────────────────────
-  listTreasuries(orgId: string): Promise<Treasury[]>;
+  listTreasuries(): Promise<Treasury[]>;
   createTreasury(data: {
     name: string;
     name_ar?: string;
@@ -42,8 +42,8 @@ export interface FinanceCommands {
   }): Promise<Treasury>;
 
   // ── Fee Templates ───────────────────────────────────────────
-  listFeeTemplates(orgId: string): Promise<FeeTemplate[]>;
-  listActiveFeeTemplates(orgId: string): Promise<FeeTemplate[]>;
+  listFeeTemplates(): Promise<FeeTemplate[]>;
+  listActiveFeeTemplates(): Promise<FeeTemplate[]>;
   createFeeTemplate(data: {
     name: string;
     name_ar?: string;
@@ -62,7 +62,7 @@ export interface FinanceCommands {
 
   // ── Student Fees ────────────────────────────────────────────
   listStudentFees(enrollmentId: string): Promise<StudentFee[]>;
-  listAllStudentFees(orgId: string): Promise<StudentFee[]>;
+  listAllStudentFees(): Promise<StudentFee[]>;
   assignStudentFee(data: {
     enrollment_id: string;
     fee_template_id: string;
@@ -73,7 +73,7 @@ export interface FinanceCommands {
   }): Promise<StudentFee>;
 
   // ── Payments ────────────────────────────────────────────────
-  listPayments(orgId: string): Promise<Payment[]>;
+  listPayments(): Promise<Payment[]>;
   recordPayment(data: {
     fee_id?: string;
     enrollment_id?: string;
@@ -88,9 +88,9 @@ export interface FinanceCommands {
   }): Promise<Payment>;
 
   // ── Discounts ───────────────────────────────────────────────
-  listDiscountTemplates(orgId: string): Promise<DiscountTemplate[]>;
-  updateDiscountTemplate(orgId: string, id: string, data: any): Promise<DiscountTemplate>;
-  createDiscountTemplate(orgId: string, data: {
+  listDiscountTemplates(): Promise<DiscountTemplate[]>;
+  updateDiscountTemplate(id: string, data: any): Promise<DiscountTemplate>;
+  createDiscountTemplate(data: {
     name: string;
     item_type: string;
     calculation_method: string;
@@ -99,8 +99,8 @@ export interface FinanceCommands {
   }): Promise<DiscountTemplate>;
 
   // ── Currencies ──────────────────────────────────────────────
-  listCurrencies(orgId: string): Promise<Currency[]>;
-  createCurrency(orgId: string, data: {
+  listCurrencies(): Promise<Currency[]>;
+  createCurrency(data: {
     code: string;
     name: string;
     name_ar?: string;
@@ -111,19 +111,18 @@ export interface FinanceCommands {
     is_base: boolean | number;
   }): Promise<Currency>;
   updateCurrency(
-    orgId: string,
     code: string,
     data: { exchange_rate?: number; is_active?: boolean },
   ): Promise<Currency>;
-  deleteCurrency(orgId: string, code: string): Promise<void>;
-  seedDefaultFinancials(orgId: string): Promise<void>;
+  deleteCurrency(code: string): Promise<void>;
+  seedDefaultFinancials(): Promise<void>;
 
   // ── Journal ─────────────────────────────────────────────────
-  listJournalEntries(orgId: string): Promise<JournalEntry[]>;
+  listJournalEntries(): Promise<JournalEntry[]>;
 
   // ── Fiscal Years ────────────────────────────────────────────
-  listFiscalYears(orgId: string): Promise<FiscalYear[]>;
-  createFiscalYear(orgId: string, data?: {
+  listFiscalYears(): Promise<FiscalYear[]>;
+  createFiscalYear(data?: {
     name: string;
     start_date: string;
     end_date: string;

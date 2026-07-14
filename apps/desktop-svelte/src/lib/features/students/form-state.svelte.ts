@@ -11,21 +11,7 @@ import { GuardianState } from "./state/guardian-info.svelte";
 import { FinancialInfoState } from "./state/financial-info.svelte";
 import { DocumentInfoState } from "./state/document-info.svelte";
 
-export class StudentFormState {
-  orgId: string;
-  studentId?: string;
-  isEditMode: boolean;
-  classes = $state<any[]>([]);
-  originalStudent = $state<any>(null);
-
-  // Sub-states
-  personal: PersonalInfoState;
-  guardian: GuardianState;
-  financial: FinancialInfoState;
-  document: DocumentInfoState;
-
-  // Dynamic config fields
-  requiredFields = $state<Record<string, boolean>>({});
+export class StudentFormState { boolean>>({});
   activeFields = $state<Record<string, boolean>>({});
   preventDuplicates = $state<Record<string, boolean>>({});
   registrationStatus = $state("draft");

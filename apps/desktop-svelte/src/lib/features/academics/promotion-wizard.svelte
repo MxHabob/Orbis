@@ -103,7 +103,7 @@ let policyLoaded = $state(false);
 // Load promotion policy and apply defaults (Policy-Driven Architecture)
 onMount(async () => {
   try {
-    const policy = await commands.platform.getOrgPolicy(orgId);
+    const policy = await commands.platform.getOrgPolicy();
     if (policy) {
       // Apply policy values as defaults (user can still override)
       config.passing_score = policy.passing_score ?? 50;
@@ -173,7 +173,7 @@ function removeMapping(index: number) {
 async function runDryRun() {
   isAnalyzing = true;
   try {
-    previewJob = await commands.platform.promotionDryRun(orgId, config);
+    previewJob = await commands.platform.promotionDryRun(config);
     if (previewJob) {
       previewDetails = await commands.platform.getPromotionDetails(
         previewJob.id,

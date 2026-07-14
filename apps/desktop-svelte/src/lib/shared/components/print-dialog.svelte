@@ -117,7 +117,7 @@ async function loadTemplates() {
   if (!entityType || !orgId) return;
   loadingTemplates = true;
   try {
-    const list = await commands.platform.listDocumentTemplates(orgId || "", {
+    const list = await commands.platform.listDocumentTemplates(, {
       entity_type: entityType,
       status: "published",
     });

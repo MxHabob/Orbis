@@ -35,8 +35,8 @@ async function loadData() {
     if (selectedClass !== "all") params.class_id = selectedClass;
     if (selectedTerm !== "all") params.period_id = selectedTerm;
 
-    const paymentsList = await commands.finance.listPayments(orgId);
-    const feesList = await commands.finance.listAllStudentFees(orgId);
+    const paymentsList = await commands.finance.listPayments();
+    const feesList = await commands.finance.listAllStudentFees();
 
     if (paymentsList && paymentsList.length > 0) {
       const monthsMap: Record<string, { invoiced: number; collected: number }> =

@@ -14,12 +14,12 @@ export function prefetchRouteData(route: string, orgId: string) {
     case "students":
       queryClient.prefetchQuery({
         queryKey: ["enrollments", orgId],
-        queryFn: () => commands.academic.listEnrollments(orgId),
+        queryFn: () => commands.academic.listEnrollments(),
         staleTime: 2 * 60 * 1000,
       });
       queryClient.prefetchQuery({
         queryKey: ["classes", orgId],
-        queryFn: () => commands.academic.listClasses(orgId),
+        queryFn: () => commands.academic.listClasses(),
         staleTime: 5 * 60 * 1000,
       });
       break;
@@ -27,7 +27,7 @@ export function prefetchRouteData(route: string, orgId: string) {
     case "finance":
       queryClient.prefetchQuery({
         queryKey: ["treasuries", orgId],
-        queryFn: () => commands.finance.listTreasuries(orgId),
+        queryFn: () => commands.finance.listTreasuries(),
         staleTime: 5 * 60 * 1000,
       });
       break;
@@ -35,7 +35,7 @@ export function prefetchRouteData(route: string, orgId: string) {
     case "academics":
       queryClient.prefetchQuery({
         queryKey: ["classes", orgId],
-        queryFn: () => commands.academic.listClasses(orgId),
+        queryFn: () => commands.academic.listClasses(),
         staleTime: 5 * 60 * 1000,
       });
       break;
@@ -47,7 +47,7 @@ export function prefetchRouteData(route: string, orgId: string) {
     case "dashboard":
       queryClient.prefetchQuery({
         queryKey: ["dashboard-stats", orgId],
-        queryFn: () => commands.organization.getDashboardStats(orgId),
+        queryFn: () => commands.organization.getDashboardStats(),
         staleTime: 3 * 60 * 1000,
       });
       break;

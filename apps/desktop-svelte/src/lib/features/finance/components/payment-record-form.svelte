@@ -56,9 +56,9 @@ async function loadDropdownData() {
   isLoadingDropdowns = true;
   try {
     const [studentList, treasuryList, currencyList] = await Promise.all([
-      commands.academic.listEnrollments(orgId),
-      commands.finance.listTreasuries(orgId),
-      commands.finance.listCurrencies(orgId),
+      commands.academic.listEnrollments(),
+      commands.finance.listTreasuries(),
+      commands.finance.listCurrencies(),
     ]);
     students = studentList;
     treasuries = treasuryList;
@@ -189,7 +189,7 @@ async function handleSubmit(e: SubmitEvent) {
       treasury_id: selectedTreasuryId,
       currency: currency.trim().toUpperCase(),
     };
-    await commands.finance.recordPayment(orgId, createdBy, request);
+    await commands.finance.recordPayment(createdBy, request);
     toast.success(m.common_payment_toast_success());
 
     // Reset form

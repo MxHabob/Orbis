@@ -17,6 +17,7 @@ use crate::entities::academic_policy;
 /// Concrete `PolicyEngine` backed by the `academic_policies` table.
 ///
 /// Evaluates whether specific actions require approval based on org policies.
+/// Supports branch-level policy overrides via `org_unit_id`.
 pub struct OrgPolicyEngine {
     db: sea_orm::DatabaseConnection,
 }
@@ -26,13 +27,39 @@ impl OrgPolicyEngine {
         Self { db }
     }
 
-    /// Load the policy for an organization.
+    /// Load the default policy for an organization (org_unit_id = NULL).
     async fn get_policy(&self, org_id: &str) -> Result<Option<academic_policy::Model>, AppError> {
         let policy = academic_policy::Entity::find()
             .filter(academic_policy::Column::OrgId.eq(org_id))
+            .filter(academic_policy::Column::OrgUnitId.is_null())
             .one(&self.db)
             .await?;
         Ok(policy)
+    }
+
+    /// Resolve the effective policy for an org + optional org_unit.
+    ///
+    /// 1. If `org_unit_id` is provided, look for a unit-specific override.
+    /// 2. If no override found, fall back to the org-wide default.
+    pub async fn get_effective_policy(
+        &self,
+        org_id: &str,
+        org_unit_id: Option<&str>,
+    ) -> Result<Option<academic_policy::Model>, AppError> {
+        // Try unit-specific override first
+        if let Some(unit_id) = org_unit_id {
+            let unit_policy = academic_policy::Entity::find()
+                .filter(academic_policy::Column::OrgId.eq(org_id))
+                .filter(academic_policy::Column::OrgUnitId.eq(unit_id))
+                .one(&self.db)
+                .await?;
+            if unit_policy.is_some() {
+                return Ok(unit_policy);
+            }
+        }
+
+        // Fall back to org-wide default
+        self.get_policy(org_id).await
     }
 }
 

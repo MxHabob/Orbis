@@ -1,4 +1,4 @@
-﻿import { toast } from "svelte-sonner";
+import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
 import { INSTITUTION_PROFILES } from "./templates";
@@ -26,7 +26,7 @@ class OnboardingState {
   academics = new AcademicsInfoState();
   finance = new FinanceInfoState();
 
-  // ظ¤ظ¤ Centralized Terminology Mappings ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤
+  // ٤?٤? Centralized Terminology Mappings ٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?
   terminology = $derived(
     INSTITUTION_PROFILES[this.profile.institutionType]?.terminology ||
       INSTITUTION_PROFILES.school.terminology,
@@ -109,11 +109,11 @@ class OnboardingState {
     }
   }
 
-  // ظ¤ظ¤ Derived Values ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤
+  // ٤?٤? Derived Values ٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?
   progressValue = $derived(this.activeStep === 0 ? 0 : (this.activeStep / this.totalSteps) * 100);
   tasksCompletedCount = $derived(this.completedSteps.filter(Boolean).length);
 
-  // ظ¤ظ¤ Persistence ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤
+  // ٤?٤? Persistence ٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?
   save() {
     try {
       const data = {
@@ -163,7 +163,7 @@ class OnboardingState {
   async loadExistingOrg(orgId: string) {
     try {
       const { commands } = await import("$lib/core/ipc");
-      const org = await commands.organization.getOrganization(orgId);
+      const org = await commands.organization.getOrganization();
       if (org) {
         this.profile.orgName = org.name;
         this.profile.orgNameAr = org.name_ar || org.name;
@@ -180,7 +180,7 @@ class OnboardingState {
     }
   }
 
-  // ظ¤ظ¤ Navigation ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤
+  // ٤?٤? Navigation ٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?
   goNext() {
     if (this.activeStep < this.totalSteps) {
       if (this.activeStep > 0) this.completedSteps[this.activeStep - 1] = true;
@@ -203,7 +203,7 @@ class OnboardingState {
     }
   }
 
-  // ظ¤ظ¤ Step 3: Room & Building Management ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤
+  // ٤?٤? Step 3: Room & Building Management ٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?
   addBuilding(name: string): boolean {
     const trimmed = name.trim();
     if (!trimmed || this.facilities.buildings.includes(trimmed)) return false;
@@ -259,7 +259,7 @@ class OnboardingState {
       defaultList.push({
         id: `room-${bldName}-lab-comp-${i}-${tsSuffix}`,
         name: `Computer Lab 1-${i}`,
-        name_ar: `┘à╪«╪ز╪ذ╪▒ ╪د┘╪ص╪د╪│┘ê╪ذ 1-${i}`,
+        name_ar: `?�?�?�?�?? ?�???�?�???�?� 1-${i}`,
         capacity: 25,
         room_type: "computer_lab",
         building: bldName,
@@ -270,7 +270,7 @@ class OnboardingState {
       defaultList.push({
         id: `room-${bldName}-lab-chem-${i}-${tsSuffix}`,
         name: `Chemistry Lab 1-${i}`,
-        name_ar: `┘à╪«╪ز╪ذ╪▒ ╪د┘┘â┘è┘à┘è╪د╪ة 1-${i}`,
+        name_ar: `?�?�?�?�?? ?�???�?�?�?�?�?� 1-${i}`,
         capacity: 25,
         room_type: "chemistry_lab",
         building: bldName,
@@ -307,7 +307,7 @@ class OnboardingState {
     toast.success(m.onboarding_toast_room_deleted());
   }
 
-  // ظ¤ظ¤ Step 4: Grade/Division Management ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤
+  // ٤?٤? Step 4: Grade/Division Management ٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?
   addDivision(level: string) {
     const text = this.academics.divisionInput[level]?.trim();
     if (!text) return;
@@ -329,11 +329,11 @@ class OnboardingState {
     }
   }
 
-  // ظ¤ظ¤ Step 5: Time Slot Management ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤
+  // ٤?٤? Step 5: Time Slot Management ٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?
   async loadTemplates(orgId: string) {
     try {
       const { commands } = await import("$lib/core/ipc");
-      this.calendar.periodTemplates = await commands.platform.getPeriodTemplates(orgId);
+      this.calendar.periodTemplates = await commands.platform.getPeriodTemplates();
       if (this.calendar.periodTemplates.length > 0 && !this.calendar.selectedTemplateId) {
         this.calendar.selectedTemplateId = this.calendar.periodTemplates[0].id;
       }
@@ -417,7 +417,7 @@ class OnboardingState {
     toast.success(m.onboarding_toast_period_deleted());
   }
 
-  // ظ¤ظ¤ Step 6: Subject Management ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤
+  // ٤?٤? Step 6: Subject Management ٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?
   addSubject(code: string, name: string, nameAr: string, color: string) {
     if (!code || !name || !nameAr) {
       toast.error(m.onboarding_toast_fill_subject_fields());
@@ -437,9 +437,9 @@ class OnboardingState {
     return true;
   }
 
-  // ظ¤ظ¤ Build Final Payload ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤
+  // ٤?٤? Build Final Payload ٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?
   buildPayload(orgId: string): OnboardingPayload {
-    const periodPeriodId = `period-1447-${orgId}`;
+    const periodPeriodId = `period-1447-${}`;
     const startMs = new Date(this.calendar.startDate).getTime();
     const endMs = new Date(this.calendar.endDate).getTime();
     const totalDays = Math.ceil((endMs - startMs) / (1000 * 60 * 60 * 24));
@@ -474,9 +474,9 @@ class OnboardingState {
       if (!gl.enabled) continue;
       for (const div of gl.divisions) {
         classes.push({
-          id: `class-${gl.level}-${div}-${orgId}`,
+          id: `class-${gl.level}-${div}-${}`,
           name: `${gl.name} - ${div}`,
-          name_ar: `${gl.name_ar} - ╪┤╪╣╪ذ╪ر ${div}`,
+          name_ar: `${gl.name_ar} - ?????�?� ${div}`,
           level: gl.level,
           division: div,
           color: gl.color,
@@ -487,7 +487,7 @@ class OnboardingState {
     const activeSubjects: SubjectEntry[] = this.academics.subjects
       .filter((s) => s.enabled)
       .map((s, idx) => ({
-        id: `subject-${s.code.toLowerCase()}-${orgId}`,
+        id: `subject-${s.code.toLowerCase()}-${}`,
         code: s.code,
         name: s.name,
         name_ar: s.name_ar,
@@ -502,14 +502,14 @@ class OnboardingState {
       timezone: this.profile.timezone,
       locale: this.profile.locale,
       currency: this.profile.currency,
-      root_unit_id: `unit-${orgId}`,
+      root_unit_id: `unit-${}`,
       root_unit_name: this.profile.rootUnitName,
       root_unit_name_ar: this.profile.rootUnitNameAr,
       periods,
       time_slots: this.academics.timeSlots,
       rooms: this.facilities.rooms.map((r) => ({
         ...r,
-        id: `room-${r.id}-${orgId}`,
+        id: `room-${r.id}-${}`,
       })),
       subjects: activeSubjects,
       classes,
@@ -517,7 +517,7 @@ class OnboardingState {
     };
   }
 
-  // ظ¤ظ¤ Complete Setup ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤ظ¤
+  // ٤?٤? Complete Setup ٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?٤?
   async completeSetup(orgId: string): Promise<boolean> {
     this.isLoading = true;
     this.errorMessage = null;
@@ -527,7 +527,7 @@ class OnboardingState {
 
       const payload = this.buildPayload(orgId);
       const { commands } = await import("$lib/core/ipc");
-      await commands.platform.initializeSchoolSetup(orgId, payload);
+      await commands.platform.initializeSchoolSetup(payload);
 
       const settingsObj = {
         registration_config: {
@@ -543,7 +543,7 @@ class OnboardingState {
         },
       };
 
-      const org = await commands.organization.getOrganization(orgId);
+      const org = await commands.organization.getOrganization();
       if (org) {
         const updateRequest = {
           name: org.name,
@@ -556,7 +556,7 @@ class OnboardingState {
           hijri_enabled: org.hijri_enabled,
           settings: JSON.stringify(settingsObj),
         };
-        await commands.organization.updateOrganization(orgId, updateRequest);
+        await commands.organization.updateOrganization(updateRequest);
       }
 
       for (const gl of this.academics.gradeLevels) {
@@ -565,12 +565,12 @@ class OnboardingState {
         if (amount > 0) {
           const req = {
             name: `${gl.name} Registration Fee`,
-            name_ar: `╪▒╪│┘ê┘à ╪ز╪│╪ش┘è┘ ${gl.name_ar}`,
+            name_ar: `?????�?� ?�???�?�?? ${gl.name_ar}`,
             code: `REG_${gl.level.toUpperCase()}`,
             category: "tuition",
             default_amount: Number(amount),
-            revenue_account_id: `${orgId}_tuition_revenue`,
-            receivable_account_id: `${orgId}_student_receivable_control`,
+            revenue_account_id: `${}_tuition_revenue`,
+            receivable_account_id: `${}_student_receivable_control`,
             applicable_levels: JSON.stringify({ levels: [gl.level] }),
             frequency: "once",
             installment_config: null,

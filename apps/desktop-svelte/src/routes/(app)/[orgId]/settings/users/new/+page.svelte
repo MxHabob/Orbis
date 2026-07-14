@@ -85,7 +85,7 @@ async function handleSubmit(e: SubmitEvent) {
       date_of_birth: dob || null,
     };
 
-    const newUser = await commands.iam.createUser(orgId, createdBy, request);
+    const newUser = await commands.iam.createUser(createdBy, request);
 
     // 2. Update extra fields (name_en, address) since they are not in the primary createUser endpoint
     const updateRequest: Record<string, any> = {};

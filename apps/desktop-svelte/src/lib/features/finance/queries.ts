@@ -9,7 +9,7 @@ import { commands } from "$lib/core/ipc";
 export function createTreasuriesQuery(orgId: () => string) {
   return createQuery({
     get queryKey() { return ["treasuries", orgId()]; },
-    get queryFn() { return () => commands.finance.listTreasuries(orgId()); },
+    get queryFn() { return () => commands.finance.listTreasuries(); },
     get enabled() { return !!orgId(); },
     staleTime: 5 * 60 * 1000,
   });
@@ -19,7 +19,7 @@ export function createTreasuriesQuery(orgId: () => string) {
 export function createPaymentsQuery(orgId: () => string) {
   return createQuery({
     get queryKey() { return ["payments", orgId()]; },
-    get queryFn() { return () => commands.finance.listPayments(orgId()); },
+    get queryFn() { return () => commands.finance.listPayments(); },
     get enabled() { return !!orgId(); },
     staleTime: 2 * 60 * 1000,
   });
@@ -29,7 +29,7 @@ export function createPaymentsQuery(orgId: () => string) {
 export function createAccountsQuery(orgId: () => string) {
   return createQuery({
     get queryKey() { return ["ledger-accounts", orgId()]; },
-    queryFn: () => commands.finance.listAccounts(orgId()),
+    queryFn: () => commands.finance.listAccounts(),
     get enabled() { return !!orgId(); },
     staleTime: 5 * 60 * 1000,
   });
@@ -39,7 +39,7 @@ export function createAccountsQuery(orgId: () => string) {
 export function createTransactionAccountsQuery(orgId: string) {
   return createQuery({
     queryKey: ["transaction-accounts", orgId],
-    queryFn: () => commands.finance.listTransactionAccounts(orgId),
+    queryFn: () => commands.finance.listTransactionAccounts(),
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -63,7 +63,7 @@ export function createAccountStatementQuery(
 export function createFeeTemplatesQuery(orgId: string) {
   return createQuery({
     queryKey: ["fee-templates", orgId],
-    queryFn: () => commands.finance.listFeeTemplates(orgId),
+    queryFn: () => commands.finance.listFeeTemplates(),
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -89,7 +89,7 @@ export function createStudentFeesQuery(
 export function createDiscountTemplatesQuery(orgId: string) {
   return createQuery({
     queryKey: ["discount-templates", orgId],
-    queryFn: () => commands.finance.listDiscountTemplates(orgId),
+    queryFn: () => commands.finance.listDiscountTemplates(),
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -98,7 +98,7 @@ export function createDiscountTemplatesQuery(orgId: string) {
 export function createCurrenciesQuery(orgId: string) {
   return createQuery({
     queryKey: ["currencies", orgId],
-    queryFn: () => commands.finance.listCurrencies(orgId),
+    queryFn: () => commands.finance.listCurrencies(),
     enabled: !!orgId,
     staleTime: 10 * 60 * 1000,
   });

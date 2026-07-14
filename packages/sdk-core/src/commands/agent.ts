@@ -1,6 +1,6 @@
 export interface AgentCommands {
-  listSessions(orgId: string): Promise<any[]>;
-  createSession(orgId: string, type: string): Promise<any>;
-  query(orgId: string, sessionId: string, text: string, context?: any, onChunk?: (chunk: string) => void): Promise<string>;
-  openStandaloneWindow(orgId: string): Promise<void>;
+  listSessions(): Promise<any[]>;
+  createSession(type: string): Promise<any>;
+  query(sessionId: string, text: string, context?: any, onChunk?: (chunk: string) => void): Promise<string>;
+  openStandaloneWindow(): Promise<void>;
 }

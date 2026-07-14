@@ -40,7 +40,7 @@ async function loadYears() {
   }
 
   try {
-    const years = await commands.platform.listYears(orgId);
+    const years = await commands.platform.listYears();
     // @ts-ignore - y is typed based on OrbisCommands which might be outdated
     academicYears = years.map((y: any) => ({
       value: y.id,

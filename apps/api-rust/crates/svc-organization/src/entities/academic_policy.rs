@@ -13,8 +13,9 @@ use serde::{Deserialize, Serialize};
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: String,
-    #[sea_orm(unique)]
     pub org_id: String,
+    /// Branch-level policy override. NULL = org-wide default.
+    pub org_unit_id: Option<String>,
 
     // ── Grading defaults ──
     pub default_grading_system: String,

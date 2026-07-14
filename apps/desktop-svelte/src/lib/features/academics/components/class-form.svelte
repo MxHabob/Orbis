@@ -42,7 +42,7 @@ async function handleSubmit(e: SubmitEvent) {
       capacity: capacity ? Number(capacity) : 30,
       color: color || undefined,
     };
-    await commands.academic.createClass(orgId, request);
+    await commands.academic.createClass(request);
     toast.success(m.academics_class_toast_success());
 
     // Reset fields

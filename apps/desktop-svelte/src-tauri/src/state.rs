@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use std::path::Path;
 use sea_orm::DatabaseConnection;
+use tokio::sync::RwLock;
 
 // Re-export provider from infra-persistence
 pub use infra_persistence::provider::DatabaseProvider;
@@ -8,7 +9,20 @@ pub use shared_kernel::config::Config;
 
 use shared_kernel::context::ServiceContext;
 use shared_kernel::event_bus::EventBus;
+use shared_kernel::tenant_guard::TenantGuard;
 use shared_kernel::traits::Actor;
+
+/// Authenticated session context — set at login, cleared at logout.
+///
+/// The `org_id` is fixed for the session lifetime. This prevents the frontend
+/// from passing arbitrary org_ids.
+#[derive(Debug, Clone)]
+pub struct SessionContext {
+    pub user_id: String,
+    pub org_id: String,
+    pub roles: Vec<String>,
+    pub guard: TenantGuard,
+}
 
 /// Platform services container — holds all Arc'd trait implementations.
 /// Created once at startup, reused for all requests.
@@ -169,6 +183,9 @@ pub struct AppState {
 
     /// Platform services (new architecture).
     pub platform: Arc<PlatformServices>,
+
+    /// Authenticated session — set at login, cleared at logout.
+    pub session: Arc<RwLock<Option<SessionContext>>>,
 }
 
 impl AppState {
@@ -185,7 +202,12 @@ impl AppState {
         // Start background event loop (reactive pipeline + plugins)
         platform.start_event_loop();
         
-        Ok(Self { provider, config, platform })
+        Ok(Self {
+            provider,
+            config,
+            platform,
+            session: Arc::new(RwLock::new(None)),
+        })
     }
 
     /// Accessor for the database connection.
@@ -193,11 +215,101 @@ impl AppState {
         self.provider.db()
     }
 
-    /// Build a ServiceContext for the current session.
+    // ── Session Management ──────────────────────────────────────────
+
+    /// Set the authenticated session after login.
+    pub async fn set_session(&self, user_id: String, org_id: String, roles: Vec<String>) {
+        let guard = TenantGuard::new(&org_id);
+        let ctx = SessionContext {
+            user_id,
+            org_id,
+            roles,
+            guard,
+        };
+        *self.session.write().await = Some(ctx);
+    }
+
+    /// Set a Super Admin session with access to multiple orgs.
+    pub async fn set_super_admin_session(
+        &self,
+        user_id: String,
+        org_id: String,
+        roles: Vec<String>,
+        allowed_org_ids: Vec<String>,
+    ) {
+        let guard = TenantGuard::with_allowed_orgs(&org_id, allowed_org_ids);
+        let ctx = SessionContext {
+            user_id,
+            org_id,
+            roles,
+            guard,
+        };
+        *self.session.write().await = Some(ctx);
+    }
+
+    /// Clear the session on logout.
+    pub async fn clear_session(&self) {
+        *self.session.write().await = None;
+    }
+
+    // ── Context Building ────────────────────────────────────────────
+
+    /// Build a ServiceContext from the active session.
     ///
-    /// Resolves the active user from the latest session and creates
-    /// a fully-wired context for domain operations.
-    pub async fn build_context(&self, org_id: &str) -> Result<ServiceContext, shared_kernel::errors::AppError> {
+    /// This is the **primary** context builder. It reads `org_id` from the
+    /// session — the frontend never passes it.
+    pub async fn build_guarded_context(
+        &self,
+    ) -> Result<ServiceContext, shared_kernel::errors::AppError> {
+        let session_lock = self.session.read().await;
+        let session = session_lock
+            .as_ref()
+            .ok_or_else(|| shared_kernel::errors::AppError::unauthorized("No active session"))?;
+
+        let db = self.db();
+        let actor = Actor::User(session.user_id.clone());
+        let mut ctx = self.platform.context_for(db, &session.org_id, actor);
+        ctx.ensure_correlation_id();
+        Ok(ctx)
+    }
+
+    /// Build a ServiceContext for a **specific** org_id (Super Admin only).
+    ///
+    /// Validates against the TenantGuard before building.
+    pub async fn build_context_for_org(
+        &self,
+        target_org_id: &str,
+    ) -> Result<ServiceContext, shared_kernel::errors::AppError> {
+        let session_lock = self.session.read().await;
+        let session = session_lock
+            .as_ref()
+            .ok_or_else(|| shared_kernel::errors::AppError::unauthorized("No active session"))?;
+
+        // Validate tenant boundary
+        session.guard.validate(target_org_id)?;
+
+        let db = self.db();
+        let actor = Actor::User(session.user_id.clone());
+        let mut ctx = self.platform.context_for(db, target_org_id, actor);
+        ctx.ensure_correlation_id();
+        Ok(ctx)
+    }
+
+    /// Build a ServiceContext for the current session (legacy — delegates to guarded).
+    ///
+    /// Kept for backward compatibility during migration. New code should use
+    /// `build_guarded_context()`.
+    pub async fn build_context(
+        &self,
+        org_id: &str,
+    ) -> Result<ServiceContext, shared_kernel::errors::AppError> {
+        // If there's a session, validate against it
+        let session_lock = self.session.read().await;
+        if let Some(ref session) = *session_lock {
+            session.guard.validate(org_id)?;
+        }
+        drop(session_lock);
+
         let db = self.db();
         
         // Resolve current actor from the latest session

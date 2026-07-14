@@ -140,7 +140,7 @@ onMount(async () => {
         commands.assessment
           .getAttendanceReport(periodId, studentId)
           .catch(() => null),
-        commands.assessment.listBehavior(orgId, studentId).catch(() => []),
+        commands.assessment.listBehavior(studentId).catch(() => []),
       ]);
       gradesReport = gRes;
       attendanceReport = aRes;
@@ -280,7 +280,7 @@ async function saveStudentDetails(e: Event) {
   isSaving = true;
   try {
     // 1. Verify parent control account '110301' exists in chart of accounts
-    const accounts = await commands.finance.listAccounts(orgId);
+    const accounts = await commands.finance.listAccounts();
     const hasControlAccount = accounts.some(
       (acc: any) => acc.code === "110301",
     );
@@ -307,7 +307,7 @@ async function saveStudentDetails(e: Event) {
 
     // If class has changed, invoke transfer command
     if (student.class_id !== classId) {
-      await commands.academic.transferEnrollment(orgId, studentId, classId);
+      await commands.academic.transferEnrollment(studentId, classId);
     }
 
     // Transition enrollment status if it was draft/pending_review and active switch is checked

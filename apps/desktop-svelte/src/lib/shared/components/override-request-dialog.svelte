@@ -163,7 +163,7 @@ async function submit() {
   }
   isSubmitting = true;
   try {
-    await commands.platform.getOverrideRequest(orgId, {
+    await commands.platform.getOverrideRequest({
       override_type: overrideType,
       risk_level: riskLevel,
       entity_type: entityType,

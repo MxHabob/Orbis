@@ -75,7 +75,7 @@ class AuthStore {
       return;
     }
     try {
-      const status = await commands.platform.getSetupStatus(this.orgId);
+      const status = await commands.platform.getSetupStatus();
       this.isSetupComplete = status;
       localStorage.setItem("orbis_is_setup_complete", String(status));
     } catch (e) {

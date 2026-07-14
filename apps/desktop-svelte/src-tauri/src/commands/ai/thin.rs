@@ -7,7 +7,7 @@ use crate::commands::error::{CmdResult, CommandError};
 // Deleted autopilot_get_status
 
 #[tauri::command]
-pub async fn autopilot_get_tasks(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
+pub async fn autopilot_get_tasks(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     let db = state.db();
     let tasks = autopilot::ops::get_tasks(&db, &org_id)
         .await
@@ -16,7 +16,7 @@ pub async fn autopilot_get_tasks(state: State<'_, Arc<AppState>>, org_id: String
 }
 
 #[tauri::command]
-pub async fn autopilot_get_diagnostics(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
+pub async fn autopilot_get_diagnostics(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     let db = state.db();
     let report = autopilot::diagnostics::Diagnostics::health_check(&db, &org_id)
         .await
@@ -29,22 +29,20 @@ pub async fn autopilot_get_diagnostics(state: State<'_, Arc<AppState>>, org_id: 
 #[tauri::command]
 pub async fn autopilot_run_tick(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
 ) -> CmdResult<()> {
     use autopilot::engine::AutopilotEngine;
-    let db = state.db();
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let engine = AutopilotEngine::new(state.platform.event_bus.clone());
-    engine.tick(&db, &org_id).await;
+    engine.tick(&ctx.db, &ctx.org_id, ctx.org_unit_id.as_deref()).await;
     Ok(())
 }
 
 #[tauri::command]
 pub async fn agent_get_sessions(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
 ) -> CmdResult<serde_json::Value> {
-    let db = state.db();
-    let sessions = ai_gateway::agent::AgentSessionManager::list_active_sessions(&db, &org_id)
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let sessions = ai_gateway::agent::AgentSessionManager::list_active_sessions(&ctx.db, &ctx.org_id)
         .await
         .map_err(CommandError::from)?;
     Ok(serde_json::to_value(sessions).unwrap())
@@ -53,11 +51,10 @@ pub async fn agent_get_sessions(
 #[tauri::command]
 pub async fn agent_get_session_logs(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     session_id: String,
 ) -> CmdResult<serde_json::Value> {
-    let db = state.db();
-    let logs = ai_gateway::agent::AgentSessionManager::get_session_logs(&db, &org_id, &session_id)
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let logs = ai_gateway::agent::AgentSessionManager::get_session_logs(&ctx.db, &ctx.org_id, &session_id)
         .await
         .map_err(CommandError::from)?;
     Ok(serde_json::to_value(logs).unwrap())
@@ -66,12 +63,11 @@ pub async fn agent_get_session_logs(
 #[tauri::command]
 pub async fn agent_approve_action(
     state: State<'_, Arc<AppState>>,
-    _org_id: String,
     action_log_id: String,
     approved_by: String,
 ) -> CmdResult<()> {
-    let db = state.db();
-    ai_gateway::agent::AgentSessionManager::approve_action(&db, &_org_id, &action_log_id, &approved_by)
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    ai_gateway::agent::AgentSessionManager::approve_action(&ctx.db, &ctx.org_id, &action_log_id, &approved_by)
         .await
         .map_err(CommandError::from)?;
     Ok(())
@@ -80,13 +76,12 @@ pub async fn agent_approve_action(
 #[tauri::command]
 pub async fn agent_reject_action(
     state: State<'_, Arc<AppState>>,
-    _org_id: String,
     action_log_id: String,
-    _rejected_by: String,
+    rejected_by: String,
     reason: String,
 ) -> CmdResult<()> {
-    let db = state.db();
-    ai_gateway::agent::AgentSessionManager::reject_action(&db, &_org_id, &action_log_id, &_rejected_by, &reason)
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    ai_gateway::agent::AgentSessionManager::reject_action(&ctx.db, &ctx.org_id, &action_log_id, &rejected_by, &reason)
         .await
         .map_err(CommandError::from)?;
     Ok(())
@@ -95,21 +90,20 @@ pub async fn agent_reject_action(
 #[tauri::command]
 pub async fn agent_create_session(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     session_type: String,
 ) -> CmdResult<serde_json::Value> {
-    let db = state.db();
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let req = ai_gateway::agent::CreateSessionRequest {
-        org_id,
+        org_id: ctx.org_id.clone(),
         agent_type: session_type,
         agent_version: None,
-        acting_as_user_id: "system".to_string(), // TODO: Get from state
+        acting_as_user_id: ctx.actor.as_str().to_string(),
         acting_as_role: "admin".to_string(),
         conversation_id: None,
         max_risk_level: shared_kernel::types::RiskLevel::Low,
         requires_approval_above: shared_kernel::types::RiskLevel::Low,
     };
-    let session = ai_gateway::agent::AgentSessionManager::create_session(&db, req)
+    let session = ai_gateway::agent::AgentSessionManager::create_session(&ctx.db, req)
         .await
         .map_err(CommandError::from)?;
     Ok(serde_json::to_value(session).unwrap())
@@ -118,15 +112,14 @@ pub async fn agent_create_session(
 #[tauri::command]
 pub async fn agent_query(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
     session_id: String,
     text: String,
     context: Option<serde_json::Value>,
     on_chunk: tauri::ipc::Channel<String>,
 ) -> CmdResult<String> {
-    let db = state.db();
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let event_bus = state.platform.event_bus.clone();
-    let response = ai_gateway::agent::AgentSessionManager::query(&db, event_bus, &org_id, &session_id, &text, context)
+    let response = ai_gateway::agent::AgentSessionManager::query(&ctx.db, event_bus, &ctx.org_id, &session_id, &text, context)
         .await
         .map_err(CommandError::from)?;
 
@@ -148,7 +141,6 @@ pub async fn agent_query(
 #[tauri::command]
 pub async fn agent_open_standalone(
     _state: State<'_, Arc<AppState>>,
-    _org_id: String,
 ) -> CmdResult<()> {
     // Logic to open a new tauri window would go here
     Ok(())

@@ -32,7 +32,7 @@ async function loadData() {
   isLoading = true;
   try {
     // Query stats to extract behavior details
-    const res = await commands.organization.getDashboardStats(orgId);
+    const res = await commands.organization.getDashboardStats();
     if (
       res &&
       res.behavior_summary &&

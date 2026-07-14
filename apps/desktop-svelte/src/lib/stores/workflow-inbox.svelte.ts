@@ -12,9 +12,9 @@ class WorkflowInboxStore {
   totalCount = $derived(this.pendingApprovals + this.pendingSuggestions);
   hasActions = $derived(this.totalCount > 0);
 
-  async loadCount(orgId: string): Promise<void> {
+  async loadCount(): Promise<void> {
     try {
-      const pending = await commands.platform.listOverrideRequests(orgId, {
+      const pending = await commands.platform.listOverrideRequests({
         status: "pending",
       });
       this.pendingApprovals = Array.isArray(pending) ? pending.length : 0;

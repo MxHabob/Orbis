@@ -45,7 +45,7 @@ const mockRevenueData = [
 async function loadData() {
   isLoading = true;
   try {
-    const payments = await commands.finance.listPayments(orgId);
+    const payments = await commands.finance.listPayments();
 
     // Setup localized short names for 12 months (Jan to Dec)
     const months: { label: string; index: number }[] = [];

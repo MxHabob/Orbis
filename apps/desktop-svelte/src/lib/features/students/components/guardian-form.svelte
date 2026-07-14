@@ -257,7 +257,7 @@ async function handleSubmit() {
         const guardEmail = emailClean || `parent.${Date.now()}@orbis.local`;
 
         // Create a new parent user
-        const guardUser = await commands.iam.createUser(orgId, createdBy, {
+        const guardUser = await commands.iam.createUser(createdBy, {
           email: guardEmail,
           password: tempPassword,
           full_name: fullName.trim(),

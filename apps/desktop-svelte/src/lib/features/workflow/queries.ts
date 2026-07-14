@@ -11,7 +11,7 @@ export function createPendingApprovalsQuery(
 ) {
   return createQuery({
     get queryKey() { return ["pending-approvals", orgId(), approverRole()]; },
-    queryFn: () => commands.platform.getPendingApprovals(orgId(), approverRole()),
+    queryFn: () => commands.platform.getPendingApprovals(, approverRole()),
     get enabled() { return !!orgId() && !!approverRole(); },
     staleTime: 60 * 1000,
   });
@@ -23,7 +23,7 @@ export function createOverrideRequestsQuery(
 ) {
   return createQuery({
     get queryKey() { return ["override-requests", orgId(), params ? params() : {}]; },
-    queryFn: () => commands.platform.listOverrideRequests(orgId(), params ? params() : undefined),
+    queryFn: () => commands.platform.listOverrideRequests(, params ? params() : undefined),
     get enabled() { return !!orgId(); },
     staleTime: 60 * 1000,
   });

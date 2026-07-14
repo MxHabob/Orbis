@@ -51,7 +51,7 @@ const rtl = $derived(getLocale() === "ar");
 // ── TanStack Queries ──────────────────────────────────────────────────────────
 const enrollmentsQuery = createQuery({
   get queryKey() { return ["enrollments", orgId]; },
-  queryFn: () => commands.academic.listEnrollments(orgId),
+  queryFn: () => commands.academic.listEnrollments(),
   get enabled() { return !!orgId; },
   staleTime: 5 * 60 * 1000,
 });

@@ -68,7 +68,7 @@ $effect(() => {
   if (open && orgId) {
     (async () => {
       try {
-        const res = await commands.academic.listSubjects(orgId);
+        const res = await commands.academic.listSubjects();
         subjectsList = res || [];
       } catch (e: unknown) {
         console.error("Failed to load school subjects list:", e);

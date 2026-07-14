@@ -23,7 +23,6 @@ export interface ExamCommands {
     end_date: string;
   }): Promise<ExamSession>;
   updateSession(
-    orgId: string,
     sessionId: string,
     data: {
       name?: string;
@@ -34,7 +33,7 @@ export interface ExamCommands {
   ): Promise<ExamSession>;
 
   listExamSubjects(sessionId: string): Promise<ExamSubject[]>;
-  getSubjects(orgId: string, sessionId: string): Promise<ExamSubject[]>;
+  getSubjects(sessionId: string): Promise<ExamSubject[]>;
   createExamSubject(data: {
     session_id: string;
     subject_id: string;
@@ -45,39 +44,37 @@ export interface ExamCommands {
   }): Promise<ExamSubject>;
 
   listHalls(): Promise<ExamHall[]>;
-  getHalls(orgId: string, sessionId: string): Promise<ExamHall[]>;
-  createHall(orgId: string, data: any): Promise<ExamHall>;
+  getHalls(sessionId: string): Promise<ExamHall[]>;
+  createHall(data: any): Promise<ExamHall>;
 
   listSchedule(sessionId: string): Promise<ExamSchedule[]>;
-  getSchedules(orgId: string, sessionId: string): Promise<ExamSchedule[]>;
+  getSchedules(sessionId: string): Promise<ExamSchedule[]>;
   createScheduleEntry(data: any): Promise<ExamSchedule>;
-  deleteSchedule(orgId: string, scheduleId: string): Promise<void>;
-  updateScheduleStatus(orgId: string, scheduleId: string, status: string): Promise<void>;
+  deleteSchedule(scheduleId: string): Promise<void>;
+  updateScheduleStatus(scheduleId: string, status: string): Promise<void>;
 
   listSeating(examSubjectId: string): Promise<SeatingNumber[]>;
-  getSeatingNumbers(orgId: string, sessionId: string): Promise<SeatingNumber[]>;
-  generateSeating(orgId: string, sessionId: string, userId: string): Promise<void>;
-  generateSecrets(orgId: string, sessionId: string, userId: string): Promise<void>;
+  getSeatingNumbers(sessionId: string): Promise<SeatingNumber[]>;
+  generateSeating(sessionId: string, userId: string): Promise<void>;
+  generateSecrets(sessionId: string, userId: string): Promise<void>;
   
-  getProctors(orgId: string, sessionId: string): Promise<any[]>;
-  autoAssignProctors(orgId: string, sessionId: string, scheduleId: string, data: any): Promise<void>;
-  allocateHalls(orgId: string, sessionId: string, data: any): Promise<void>;
+  getProctors(sessionId: string): Promise<any[]>;
+  autoAssignProctors(sessionId: string, scheduleId: string, data: any): Promise<void>;
+  allocateHalls(sessionId: string, data: any): Promise<void>;
   
-  listSolveJobs(orgId: string, sessionId: string): Promise<any[]>;
-  startSolve(orgId: string, userId: string, data: any): Promise<any>;
-  cancelSolve(orgId: string, jobId: string): Promise<any>;
-  applySolve(orgId: string, jobId: string): Promise<any>;
-  getSolveJob(orgId: string, jobId: string): Promise<any>;
+  listSolveJobs(sessionId: string): Promise<any[]>;
+  startSolve(userId: string, data: any): Promise<any>;
+  cancelSolve(jobId: string): Promise<any>;
+  applySolve(jobId: string): Promise<any>;
+  getSolveJob(jobId: string): Promise<any>;
 
   generateOrdering(sessionId: string): Promise<void>;
-  getOrdering(orgId: string, periodId: string): Promise<any[]>;
+  getOrdering(periodId: string): Promise<any[]>;
   rebuildOrdering(
-    orgId: string,
     periodId: string,
     strategy: string,
   ): Promise<any[]>;
   freezeOrdering(
-    orgId: string,
     periodId: string,
     userId: string,
   ): Promise<void>;

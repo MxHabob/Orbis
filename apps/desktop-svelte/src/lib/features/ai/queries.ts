@@ -12,7 +12,7 @@ import { commands } from "$lib/core/ipc";
 export function createAutopilotConfigQuery(orgId: string) {
   return createQuery({
     queryKey: ["autopilot-config", orgId],
-    queryFn: () => commands.platform.getOrgPolicy(orgId),
+    queryFn: () => commands.platform.getOrgPolicy(),
     enabled: !!orgId,
     staleTime: 5 * 60 * 1000,
   });
@@ -21,7 +21,7 @@ export function createAutopilotConfigQuery(orgId: string) {
 export function createAutopilotTasksQuery(orgId: string) {
   return createQuery({
     queryKey: ["autopilot-tasks", orgId],
-    queryFn: () => commands.platform.getAutopilotTasks(orgId),
+    queryFn: () => commands.platform.getAutopilotTasks(),
     enabled: !!orgId,
     staleTime: 2 * 60 * 1000,
   });
@@ -30,7 +30,7 @@ export function createAutopilotTasksQuery(orgId: string) {
 export function createAutopilotDiagnosticsQuery(orgId: string) {
   return createQuery({
     queryKey: ["autopilot-diagnostics", orgId],
-    queryFn: () => commands.platform.getAutopilotDiagnostics(orgId),
+    queryFn: () => commands.platform.getAutopilotDiagnostics(),
     enabled: !!orgId,
     staleTime: 1 * 60 * 1000,
   });

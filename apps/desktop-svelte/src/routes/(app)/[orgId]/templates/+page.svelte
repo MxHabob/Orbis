@@ -193,7 +193,7 @@ async function handleDeleteTemplate() {
   if (!templateToDeleteId) return;
 
   try {
-    await commands.platform.deleteDocumentTemplate(orgId, templateToDeleteId);
+    await commands.platform.deleteDocumentTemplate(templateToDeleteId);
     toast.success("Template deleted successfully");
     loadTemplates();
   } catch (e: unknown) {
@@ -210,7 +210,7 @@ async function handleDeleteTemplate() {
 async function publishTemplate(id: string) {
   try {
     const userId = "current-user";
-    await commands.platform.publishDocumentTemplate(orgId, id, userId);
+    await commands.platform.publishDocumentTemplate(id, userId);
     toast.success(m.settings_templates_publish_success());
     loadTemplates();
   } catch (e: unknown) {
@@ -223,7 +223,7 @@ async function publishTemplate(id: string) {
 // Handle Template Archiving
 async function archiveTemplate(id: string) {
   try {
-    await commands.platform.archiveDocumentTemplate(orgId, id);
+    await commands.platform.archiveDocumentTemplate(id);
     toast.success(m.settings_templates_archive_success());
     loadTemplates();
   } catch (e: unknown) {
@@ -236,7 +236,7 @@ async function archiveTemplate(id: string) {
 // Handle Template Restoring
 async function restoreTemplate(id: string) {
   try {
-    await commands.platform.restoreDocumentTemplate(orgId, id);
+    await commands.platform.restoreDocumentTemplate(id);
     toast.success(m.settings_templates_restore_success());
     loadTemplates();
   } catch (e: unknown) {
