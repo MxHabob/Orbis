@@ -1,7 +1,7 @@
 /**
  * Organization command interfaces — mirrors svc-organization/ops.
  */
-import type { Organization } from "../types";
+import type { Organization, OrgUnit } from "../types";
 
 export interface OrganizationCommands {
   getMainOrganization(): Promise<Organization>;
@@ -37,4 +37,17 @@ export interface OrganizationCommands {
     fees_assigned: number;
     guardian_linked: boolean;
   }>;
+
+  // ── OrgUnits ────────────────────────────────────────────────
+  listOrgUnits(): Promise<OrgUnit[]>;
+  createOrgUnit(data: {
+    name: string;
+    name_ar?: string;
+    parent_id?: string;
+  }): Promise<OrgUnit>;
+  updateOrgUnit(
+    unitId: string,
+    data: { name: string; name_ar?: string },
+  ): Promise<OrgUnit>;
+  deleteOrgUnit(unitId: string): Promise<void>;
 }

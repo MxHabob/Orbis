@@ -1,6 +1,6 @@
 //! Academic query repository — optimized read operations.
 
-use crate::entities::{class, subject, class_subject, enrollment, org_unit};
+use crate::entities::{class, subject, class_subject, enrollment};
 use sea_orm::{entity::prelude::*, QueryFilter, QueryOrder, EntityTrait, ColumnTrait};
 use super::AcademicQueryRepo;
 
@@ -108,14 +108,4 @@ impl AcademicQueryRepo {
             .await
     }
 
-    // ── Org Unit Queries ────────────────────────────────────────
-
-    pub async fn list_units_by_org(&self, org_id: &str) -> Result<Vec<org_unit::Model>, DbErr> {
-        org_unit::Entity::find()
-            .filter(org_unit::Column::OrgId.eq(org_id))
-            .filter(org_unit::Column::IsActive.eq(1))
-            .order_by_asc(org_unit::Column::SortOrder)
-            .all(&self.db)
-            .await
-    }
 }

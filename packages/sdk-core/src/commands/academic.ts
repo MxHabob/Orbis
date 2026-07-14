@@ -58,18 +58,6 @@ export interface AcademicCommands {
   ): Promise<Subject>;
   deleteSubject(subjectId: string): Promise<void>;
 
-  // ── OrgUnits ────────────────────────────────────────────────
-  listOrgUnits(): Promise<OrgUnit[]>;
-  createOrgUnit(data: {
-    name: string;
-    name_ar?: string;
-    parent_id?: string;
-  }): Promise<OrgUnit>;
-  updateOrgUnit(
-    unitId: string,
-    data: { name: string; name_ar?: string },
-  ): Promise<OrgUnit>;
-  deleteOrgUnit(unitId: string): Promise<void>;
 
   // ── Enrollments ─────────────────────────────────────────────
   listEnrollments(

@@ -1,6 +1,6 @@
 //! Academic command repository — write operations.
 
-use crate::entities::{class, subject, class_subject, enrollment, org_unit};
+use crate::entities::{class, subject, class_subject, enrollment};
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, DbErr};
 use super::AcademicCommandRepo;
 
@@ -85,18 +85,4 @@ impl AcademicCommandRepo {
         active.insert(&self.db).await
     }
 
-    // ── Org Unit Commands ───────────────────────────────────────
-
-    pub async fn create_org_unit(&self, u: org_unit::Model) -> Result<org_unit::Model, DbErr> {
-        let active = org_unit::ActiveModel {
-            id: Set(u.id), org_id: Set(u.org_id), name: Set(u.name), name_ar: Set(u.name_ar),
-            code: Set(u.code), unit_type: Set(u.unit_type), parent_id: Set(u.parent_id),
-            path: Set(u.path), depth: Set(u.depth), head_id: Set(u.head_id),
-            capacity: Set(u.capacity), room_number: Set(u.room_number),
-            floor: Set(u.floor), building: Set(u.building), settings: Set(u.settings),
-            sort_order: Set(u.sort_order), is_active: Set(u.is_active),
-            created_at: Set(u.created_at), updated_at: Set(u.updated_at),
-        };
-        active.insert(&self.db).await
-    }
 }

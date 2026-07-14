@@ -77,11 +77,6 @@ export const commands: OrbisCommands = {
       cmd("update_subject", { subjectId, data }),
     deleteSubject: (subjectId) => cmd("delete_subject", { subjectId }),
 
-    listOrgUnits: (orgId) => cmd("list_org_units", {}),
-    createOrgUnit: (data) => cmd("create_org_unit", { data }),
-    updateOrgUnit: (unitId, data) => cmd("update_org_unit", { unitId, data }),
-    deleteOrgUnit: (unitId) => cmd("delete_org_unit", { unitId }),
-
     listEnrollments: (classId?, periodId?) =>
       cmd("list_enrollments", { classId, periodId }),
     listEnrollmentsPaginated: (cursor?: string | null, limit?: number | null) =>
@@ -381,6 +376,10 @@ export const commands: OrbisCommands = {
       cmd("update_settings", { settings }),
     getDashboardStats: (orgId) => cmd("get_dashboard_stats", {}),
     registerStudent: (data) => cmd("register_student", { data }),
+    listOrgUnits: (orgId) => cmd("list_org_units", {}),
+    createOrgUnit: (data) => cmd("create_org_unit", { data }),
+    updateOrgUnit: (unitId, data) => cmd("update_org_unit", { unitId, data }),
+    deleteOrgUnit: (unitId) => cmd("delete_org_unit", { unitId }),
   },
 
   // ═══════════════════════════════════════════════════════════════

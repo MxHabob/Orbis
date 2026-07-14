@@ -59,7 +59,7 @@ async function loadUnits() {
   isLoading = true;
   error = null;
   try {
-    const list = await commands.academic.listOrgUnits(data.orgId);
+    const list = await commands.organization.listOrgUnits();
     units = list;
   } catch (e) {
     error = extractErrorMessage(e);
@@ -275,7 +275,7 @@ async function handleDeleteUnit(unit: any) {
     return;
 
   try {
-    await commands.academic.deleteOrgUnit(unit.id);
+    await commands.organization.deleteOrgUnit(unit.id);
     toast.success("Organizational unit deleted successfully");
     loadUnits();
   } catch (e) {

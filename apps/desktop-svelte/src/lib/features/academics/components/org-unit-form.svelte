@@ -64,7 +64,7 @@ async function loadReferenceData() {
   if (!orgId) return;
   try {
     const [allUnits, allUsers] = await Promise.all([
-      commands.academic.listOrgUnits(),
+      commands.organization.listOrgUnits(),
       commands.iam.listUsers(),
     ]);
 
@@ -112,10 +112,10 @@ async function handleSubmit(e: SubmitEvent) {
     };
 
     if (isEdit && unit) {
-      await commands.academic.updateOrgUnit(unit.id, { name: request.name, name_ar: request.name_ar });
+      await commands.organization.updateOrgUnit(unit.id, { name: request.name, name_ar: request.name_ar });
       toast.success(m.settings_users_update_success());
     } else {
-      await commands.academic.createOrgUnit({ name: request.name, name_ar: request.name_ar, parent_id: request.parent_id });
+      await commands.organization.createOrgUnit({ name: request.name, name_ar: request.name_ar, parent_id: request.parent_id });
       toast.success("Organizational unit created successfully");
     }
 

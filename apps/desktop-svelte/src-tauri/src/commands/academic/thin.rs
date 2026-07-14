@@ -480,26 +480,7 @@ pub async fn delete_guardian_link(
     ops::guardian::delete(&ctx, &link_id).await.map_err(CommandError::from)
 }
 
-// ── Org Units ───────────────────────────────────────────────────────
 
-#[tauri::command]
-pub async fn list_org_units(
-    state: State<'_, Arc<AppState>>,
-) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::org_unit::list(&ctx).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(result).unwrap())
-}
-
-#[tauri::command]
-pub async fn create_org_unit(
-    state: State<'_, Arc<AppState>>,
-    data: serde_json::Value,
-) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::org_unit::create(&ctx, data).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(result).unwrap())
-}
 
 // ── Documents ───────────────────────────────────────────────────────
 
@@ -625,35 +606,6 @@ pub async fn toggle_grade_entry(
     Ok(serde_json::to_value(result).unwrap())
 }
 
-#[tauri::command]
-pub async fn update_org_unit(
-    state: State<'_, Arc<AppState>>,
-    unit_id: String,
-    data: serde_json::Value,
-) -> CmdResult<serde_json::Value> {
-    use sea_orm::EntityTrait;
-    let db = state.db();
-    let unit = svc_academic::entities::org_unit::Entity::find_by_id(unit_id.clone())
-        .one(&db).await.map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::not_found("Org unit not found"))?;
-    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::org_unit::update(&ctx, &unit_id, data).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(result).unwrap())
-}
-
-#[tauri::command]
-pub async fn delete_org_unit(
-    state: State<'_, Arc<AppState>>,
-    unit_id: String,
-) -> CmdResult<()> {
-    use sea_orm::EntityTrait;
-    let db = state.db();
-    let unit = svc_academic::entities::org_unit::Entity::find_by_id(unit_id.clone())
-        .one(&db).await.map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::not_found("Org unit not found"))?;
-    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    ops::org_unit::delete(&ctx, &unit_id).await.map_err(CommandError::from)
-}
 
 /// Helper function to resolve org_id from the latest active session.
 async fn resolve_org_id(db: &sea_orm::DatabaseConnection) -> Result<String, CommandError> {

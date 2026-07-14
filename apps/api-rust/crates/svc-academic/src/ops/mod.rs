@@ -11,7 +11,6 @@
 
 pub mod class;
 pub mod subject;
-pub mod org_unit;
 pub mod enrollment;
 pub mod class_subject;
 pub mod guardian;
