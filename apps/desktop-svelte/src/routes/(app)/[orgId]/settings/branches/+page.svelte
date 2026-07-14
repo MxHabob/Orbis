@@ -18,10 +18,10 @@ let orgId = $derived((page.params.orgId as string) || "");
 
 <div class="h-full w-full overflow-y-auto flex flex-col gap-6 scrollbar-hide">
 <div class="h-full w-full flex justify-center items-center flex-col gap-2">
-  <h1 class="text-3xl font-bold">الفروع ستصبح جاهزه في الاصدار القادم من Orbis</h1>
+  <h1 class="text-3xl font-bold">{m.settings_branches_coming_soon()}</h1>
   <p>{orgId}</p>
   <div class="flex gap-2 mt-2">
-    <Button>ارسال ملاحظات</Button>
+    <Button>{m.common_send_feedback()}</Button>
   </div>
 </div>
 </div>

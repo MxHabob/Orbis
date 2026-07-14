@@ -47,7 +47,7 @@ onMount(() => {
 async function handleCreateYear() {
   try {
     throw new Error("This feature has been deprecated.");
-    toast.success("تم إنشاء وتهيئة السنة المالية الجديدة وفتراتها بنجاح");
+    toast.success(m.settings_fiscal_years_created_success());
     await loadData();
   } catch (e) {
     toast.error(extractErrorMessage(e));
@@ -59,12 +59,14 @@ async function handleCreateYear() {
   <div class="max-w-4xl mx-auto p-4 md:p-6 flex flex-col gap-6">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight text-foreground">السنوات المالية</h1>
-        <p class="text-sm text-muted-foreground">عرض وإدارة الفترات المالية المحاسبية.</p>
+        <h1 class="text-2xl font-bold tracking-tight text-foreground">{m.settings_fiscal_years_title()}</h1>
+        <p class="text-sm text-muted-foreground">{m.settings_fiscal_years_desc()}</p>
       </div>
       <Button onclick={handleCreateYear} class="flex items-center gap-2">
-        <Plus class="h-4 w-4" />
-        تهيئة سنة مالية جديدة
+        {#if !isCreating}
+          <Plus class="h-4 w-4" />
+        {/if}
+        {isCreating ? m.common_loading() : m.settings_fiscal_years_init_btn()}
       </Button>
     </div>
 
@@ -72,28 +74,28 @@ async function handleCreateYear() {
       <CardHeader>
         <CardTitle class="flex items-center gap-2">
           <Calendar class="h-5 w-5 text-muted-foreground" />
-          قائمة السنوات المالية
+          <CardTitle>{m.settings_fiscal_years_list_title()}</CardTitle>
         </CardTitle>
-        <CardDescription>هذه القائمة تديرها مهام الطيار الآلي بشكل افتراضي لضمان استمرارية القيود المحاسبية.</CardDescription>
+        <CardDescription>{m.settings_fiscal_years_list_desc()}</CardDescription>
       </CardHeader>
       <CardContent>
         {#if isLoading}
-          <div class="flex items-center justify-center p-8 text-muted-foreground">جاري التحميل...</div>
+          <div class="flex items-center justify-center p-8 text-muted-foreground">{m.common_loading()}</div>
         {:else if fiscalYears.length === 0}
           <div class="text-center p-12 border border-dashed rounded-lg bg-background/50 flex flex-col items-center justify-center gap-3">
             <CalendarRange class="h-10 w-10 text-muted-foreground opacity-50" />
-            <h3 class="text-sm font-semibold">لا يوجد سنوات مالية</h3>
-            <p class="text-xs text-muted-foreground max-w-sm">قم بالنقر على تهيئة السنة المالية ليتم إنشاؤها تلقائياً.</p>
+            <h3 class="text-sm font-semibold">{m.settings_fiscal_years_empty_title()}</h3>
+            <p class="text-xs text-muted-foreground max-w-sm">{m.settings_fiscal_years_empty_desc()}</p>
           </div>
         {:else}
           <div class="rounded-md border overflow-hidden">
             <Table>
               <TableHeader class="bg-muted/40">
                 <TableRow>
-                  <TableHead>اسم السنة</TableHead>
-                  <TableHead>تاريخ البداية</TableHead>
-                  <TableHead>تاريخ النهاية</TableHead>
-                  <TableHead>الحالة</TableHead>
+                  <TableHead>{m.common_year_name_label()}</TableHead>
+                  <TableHead>{m.common_year_start_date()}</TableHead>
+                  <TableHead>{m.common_year_end_date()}</TableHead>
+                  <TableHead>{m.common_word_status()}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -104,9 +106,9 @@ async function handleCreateYear() {
                     <TableCell class="text-muted-foreground font-mono text-sm">{year.end_date}</TableCell>
                     <TableCell>
                       {#if year.status === "open"}
-                        <Badge variant="lime">مفتوحة</Badge>
+                        <Badge variant="lime">{m.common_status_open()}</Badge>
                       {:else}
-                        <Badge variant="secondary">مغلقة</Badge>
+                        <Badge variant="secondary">{m.common_status_closed()}</Badge>
                       {/if}
                     </TableCell>
                   </TableRow>

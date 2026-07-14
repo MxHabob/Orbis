@@ -563,7 +563,7 @@ let baseCurrencyCode = $derived(
             id="add_name_ar"
             type="text"
             bind:value={addNameAr}
-            placeholder="مثال: دولار أمريكي"
+            placeholder={m.settings_currencies_name_ar_placeholder()}
           />
         </div>
 
@@ -725,7 +725,7 @@ let baseCurrencyCode = $derived(
             id="edit_name_ar"
             type="text"
             bind:value={editNameAr}
-            placeholder="مثال: دولار أمريكي"
+            placeholder={m.settings_currencies_name_ar_placeholder()}
           />
         </div>
 

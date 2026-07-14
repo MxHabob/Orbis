@@ -47,7 +47,7 @@ import {
   FileSpreadsheet,
   AlertCircle,
 } from "lucide-svelte";
-import { formatDate } from "$lib/core/i18n";
+import { formatDate, isAr } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
 
 let { data }: { data: { orgId: string } } = $props();
@@ -56,16 +56,12 @@ let { data }: { data: { orgId: string } } = $props();
 let journalEntries = $state<any[]>([]);
 let ledgers = $state<any[]>([]);
 let currencies = $state<{ code: string; name: string }[]>([
-  { code: "YER", name: "ريال يمني" },
-  { code: "USD", name: "دولار أمريكي" },
-  { code: "SAR", name: "ريال سعودي" },
+  // Currencies will be loaded from the backend
 ]);
 let isLoading = $state(true);
 let error = $state<string | null>(null);
 
-// Dialog and Printing states
-let showQrModal = $state(false);
-let printMode = $state<"list" | "voucher">("list");
+// Dialog states
 let selectedEntry = $state<any | null>(null);
 
 // Date filtering options
@@ -109,8 +105,8 @@ async function loadData() {
     journalEntries = (entriesList as any[]).map((je: any) => ({
       ...je,
       prints_count: je.prints_count || 0,
-      user: je.user || "U78",
-      branch: je.branch || "المركز الرئيسي",
+      user: je.user || "-",
+      branch: je.branch || "-",
     }));
 
     ledgers = ledgersList;
@@ -126,11 +122,11 @@ async function loadData() {
 
 async function loadCurrencies() {
   try {
-    const list = await commands.finance.listCurrencies(data.orgId);
+    const list = await commands.finance.listCurrencies();
     if (list && list.length > 0) {
       currencies = list.map((c) => ({
         code: c.code,
-        name: c.name_ar || c.name || c.code,
+        name: isAr() ? (c.name_ar || c.name || c.code) : (c.name || c.name_ar || c.code),
       }));
     }
   } catch (e) {
@@ -140,6 +136,7 @@ async function loadCurrencies() {
 
 onMount(() => {
   if (data.orgId) {
+    loadCurrencies();
     loadData();
     selectedFilterDate = new Date().toISOString().split("T")[0];
   }
@@ -189,42 +186,17 @@ function selectRow(entry: any) {
 
 function handleVoid() {
   if (!selectedEntry) {
-    toast.error("الرجاء تحديد قيد من الجدول لإلغائه");
+    toast.error(m.finance_journal_select_to_void());
     return;
   }
 
   const deletedRef = selectedEntry.transaction_ref;
   journalEntries = journalEntries.filter((je) => je.id !== selectedEntry.id);
-  toast.success(`تم إلغاء وعكس القيد رقم ${deletedRef} بنجاح`);
+  toast.success(m.finance_journal_void_success({ ref: deletedRef }));
   selectedEntry = null;
 }
 
-function handlePrintList() {
-  printMode = "list";
-  setTimeout(() => {
-    window.print();
-  }, 50);
-}
 
-function handlePrintVoucher() {
-  if (!selectedEntry) {
-    toast.error("الرجاء اختيار قيد من الجدول أولاً");
-    return;
-  }
-  printMode = "voucher";
-  journalEntries = journalEntries.map((je) => {
-    if (je.id === selectedEntry.id) {
-      const updatedCount = (je.prints_count || 0) + 1;
-      selectedEntry.prints_count = updatedCount;
-      return { ...je, prints_count: updatedCount };
-    }
-    return je;
-  });
-
-  setTimeout(() => {
-    window.print();
-  }, 50);
-}
 
 // Derived filtered list of entries
 const filteredEntries = $derived.by(() => {
@@ -257,7 +229,7 @@ const filteredEntries = $derived.by(() => {
 </script>
 
 <div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide text-start font-sans">
-  <div class="max-w-7xl mx-auto p-4 md:p-6 flex flex-col gap-6 print:hidden">
+  <div class="max-w-7xl mx-auto p-4 md:p-6 flex flex-col gap-6">
 
     <!-- Entries Log Card -->
     <Card class="border border-border/60 shadow-sm overflow-hidden flex flex-col bg-card">
@@ -268,43 +240,10 @@ const filteredEntries = $derived.by(() => {
         <div class="flex flex-wrap items-center justify-between gap-4 select-none">
           <h2 class="text-sm font-bold text-foreground flex items-center gap-2">
             <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-            سجل قيود اليومية
+            {m.finance_journal_title()}
           </h2>
 
           <div class="flex flex-wrap items-center gap-3">
-            <!-- Print Actions -->
-            <Button
-              variant="outline"
-              size="sm"
-              onclick={handlePrintList}
-              class="h-8 text-xs font-semibold flex items-center gap-1.5 cursor-pointer border-border hover:bg-muted text-foreground"
-            >
-              <Printer size={12} />
-              <span>طباعة الجدول</span>
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onclick={handlePrintVoucher}
-              disabled={!selectedEntry}
-              class="h-8 text-xs font-semibold flex items-center gap-1.5 cursor-pointer border-border hover:bg-muted text-foreground"
-            >
-              <FileText size={12} />
-              <span>طباعة السند المحدد</span>
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onclick={() => { if (selectedEntry) showQrModal = true; else toast.error('الرجاء اختيار سند أولاً'); }}
-              disabled={!selectedEntry}
-              class="h-8 text-xs font-semibold flex items-center gap-1.5 cursor-pointer border-border hover:bg-muted text-foreground"
-            >
-              <QrCode size={12} />
-              <span>QR Code</span>
-            </Button>
-
             <span class="text-border hidden md:inline">|</span>
 
             <!-- Void Action -->
@@ -316,7 +255,7 @@ const filteredEntries = $derived.by(() => {
               class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer active:scale-[0.98] transition-all"
             >
               <Trash2 size={12} />
-              <span>إلغاء القيد (Void)</span>
+              <span>{m.finance_journal_void_entry()}</span>
             </Button>
           </div>
         </div>
@@ -377,7 +316,7 @@ const filteredEntries = $derived.by(() => {
             <div class="flex items-center gap-2 select-none">
               <Switch bind:checked={showUserRecords} id="show-user-records" class="cursor-pointer" />
               <Label for="show-user-records" class="text-xs font-semibold text-muted-foreground cursor-pointer">
-                عرض سجلات المستخدم
+                {m.finance_journal_view_user_logs()}
               </Label>
             </div>
 
@@ -390,7 +329,7 @@ const filteredEntries = $derived.by(() => {
               <Search class="absolute left-2.5 top-2.5 h-3 w-3 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="البحث بالرقم أو البيان..."
+                placeholder={m.finance_journal_search_placeholder()}
                 bind:value={searchQuery}
                 class="pl-8 h-8 text-[11px] bg-background/50 border-border"
               />
@@ -400,12 +339,14 @@ const filteredEntries = $derived.by(() => {
             <div class="w-32">
               <Select type="single" bind:value={statusFilter}>
                 <SelectTrigger class="h-8 text-xs bg-background/50 border-border cursor-pointer">
-                  {statusFilter === "all" ? "كل الحالات" : statusFilter === "draft" ? "مسودة" : "مرحل"}
+                  <SelectValue>
+                    {statusFilter === "all" ? m.common_status_all() : statusFilter === "draft" ? m.common_status_draft() : m.common_status_posted()}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">كل الحالات</SelectItem>
-                  <SelectItem value="draft">مسودة</SelectItem>
-                  <SelectItem value="posted">مرحل</SelectItem>
+                  <SelectItem value="all">{m.common_status_all()}</SelectItem>
+                  <SelectItem value="draft">{m.common_status_draft()}</SelectItem>
+                  <SelectItem value="posted">{m.common_status_posted()}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -425,27 +366,27 @@ const filteredEntries = $derived.by(() => {
         {:else if error}
           <div in:fade={{ duration: 150 }} class="m-6 border border-destructive/20 bg-destructive/10 text-destructive rounded-xl p-4 flex items-center gap-3 text-sm text-start">
             <AlertCircle class="h-4 w-4" />
-            <div>خطأ في تحميل القيود: {error}</div>
+            <div>{m.finance_journal_load_error({ error: error || '' })}</div>
           </div>
         {:else if filteredEntries.length === 0}
-          <div class="border-t border-border/40 p-16 flex flex-col items-center justify-center text-center gap-2 select-none">
-            <BookOpen size={36} class="text-muted-foreground/60 mb-2" />
-            <h4 class="text-sm font-bold text-foreground">لا توجد قيود مطابقة للبحث</h4>
-            <p class="text-xs text-muted-foreground">لم يتم العثور على أي قيود محاسبية بناءً على معايير التصفية الحالية.</p>
+          <div class="text-center p-12 border border-dashed rounded-lg bg-background/50 flex flex-col items-center justify-center gap-3">
+            <Search class="h-10 w-10 text-muted-foreground opacity-50" />
+            <h4 class="text-sm font-bold text-foreground">{m.finance_journal_empty_title()}</h4>
+            <p class="text-xs text-muted-foreground">{m.finance_journal_empty_desc()}</p>
           </div>
         {:else}
           <div in:fade={{ duration: 150 }} class="border-t border-border/40 overflow-x-auto">
             <Table>
               <TableHeader class="bg-muted/40 select-none border-b border-border/60">
                 <TableRow>
-                  <TableHead class="text-start font-bold text-xs">الرقم</TableHead>
-                  <TableHead class="text-start font-bold text-xs">التاريخ</TableHead>
-                  <TableHead class="text-end font-bold text-xs text-emerald-600">المبلغ</TableHead>
-                  <TableHead class="text-center font-bold text-xs">العملة</TableHead>
-                  <TableHead class="text-start font-bold text-xs">من حساب (المدين)</TableHead>
-                  <TableHead class="text-start font-bold text-xs">إلى حساب (الدائن)</TableHead>
-                  <TableHead class="text-start font-bold text-xs">البيان / ملاحظات</TableHead>
-                  <TableHead class="text-center font-bold text-xs w-16">الحالة</TableHead>
+                  <TableHead class="text-start font-bold text-xs">{m.common_word_number()}</TableHead>
+                  <TableHead class="text-start font-bold text-xs">{m.common_overview_date()}</TableHead>
+                  <TableHead class="text-end font-bold text-xs text-emerald-600">{m.common_ft_col_amount()}</TableHead>
+                  <TableHead class="text-center font-bold text-xs">{m.settings_general_currency()}</TableHead>
+                  <TableHead class="text-start font-bold text-xs">{m.finance_journal_debit_account()}</TableHead>
+                  <TableHead class="text-start font-bold text-xs">{m.finance_journal_credit_account()}</TableHead>
+                  <TableHead class="text-start font-bold text-xs">{m.finance_journal_description_notes()}</TableHead>
+                  <TableHead class="text-center font-bold text-xs w-16">{m.common_word_status()}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -491,7 +432,7 @@ const filteredEntries = $derived.by(() => {
   {#if showQrModal && selectedEntry}
     <div in:fade={{ duration: 150 }} class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div class="bg-card border border-border rounded-xl w-full max-w-sm p-5 shadow-2xl relative text-center">
-        <h3 class="text-sm font-bold mb-3 text-foreground">رمز الاستجابة السريعة للسند (QR)</h3>
+        <h3 class="text-sm font-bold mb-3 text-foreground">{m.finance_journal_qr_title()}</h3>
         <div class="bg-white p-3 rounded-lg inline-block mb-3 border border-zinc-200">
           <svg class="w-40 h-40 mx-auto text-black" viewBox="0 0 100 100" fill="currentColor">
             <path d="M0 0h30v30H0V0zm10 10v10h10V10H10zM70 0h30v30H70V0zm10 10v10h10V10H80zM0 70h30v30H0V70zm10 10v10h10V80H10zm35-80h10v10H45V0zm15 15h10v15H60V15zm-15 20h25v10H45V35zm-15 15h10v10H30V50zm15 10h10v15H45V60zm15 15h10v15H60V75zm15-15h25v10H75V60zm-30 20h10v10H45V80zm35 10h20v10H80V90z" />
@@ -499,130 +440,14 @@ const filteredEntries = $derived.by(() => {
         </div>
         
         <div class="text-xs text-muted-foreground flex flex-col gap-1 text-start px-2 bg-muted/30 p-2.5 rounded-lg border border-border/40">
-          <div><span class="font-bold text-foreground">الرقم المرجعي:</span> {selectedEntry.transaction_ref}</div>
-          <div><span class="font-bold text-foreground">التاريخ:</span> {formatDate(selectedEntry.accounting_date)}</div>
-          <div><span class="font-bold text-foreground">المبلغ:</span> {localFormatCurrency(selectedEntry.amount, selectedEntry.currency || 'YER')}</div>
-          <div><span class="font-bold text-foreground">البيان:</span> {selectedEntry.description_ar || selectedEntry.description || '-'}</div>
+          <div><span class="font-bold text-foreground">{m.finance_journal_ref_number()}</span> {selectedEntry.transaction_ref}</div>
+          <div><span class="font-bold text-foreground">{m.finance_journal_date_label()}</span> {formatDate(selectedEntry.accounting_date)}</div>
+          <div><span class="font-bold text-foreground">{m.finance_journal_amount_label()}</span> {localFormatCurrency(selectedEntry.amount, selectedEntry.currency || 'YER')}</div>
+          <div><span class="font-bold text-foreground">{m.finance_journal_desc_label()}</span> {selectedEntry.description_ar || selectedEntry.description || '-'}</div>
         </div>
         
         <Button variant="outline" size="sm" class="mt-4 w-full cursor-pointer hover:bg-muted text-foreground border-border" onclick={() => showQrModal = false}>
-          إغلاق النافذة
-        </Button>
+          {m.common_close_window()}        </Button>
       </div>
     </div>
   {/if}
-
-  <!-- Print View Container -->
-  <div class="hidden print:flex flex-col gap-6 text-start p-8 select-none bg-white text-black h-full w-full">
-    {#if printMode === 'voucher' && selectedEntry}
-      <!-- Voucher Print Template -->
-      <div class="text-center pb-6 border-b-2 border-primary/50 flex justify-between items-center">
-        <div class="text-start">
-          <h2 class="text-xl font-bold">مؤسسة أوربيس التعليمية</h2>
-          <p class="text-xs text-muted-foreground">سند قيد يومي بسيط</p>
-        </div>
-        <h1 class="text-2xl font-extrabold text-primary">سند قيد رقم #{selectedEntry.transaction_ref}</h1>
-        <div class="text-end text-xs">
-          <p>التاريخ: {formatDate(selectedEntry.accounting_date)}</p>
-          <p>الفرع: المركز الرئيسي</p>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-2 gap-4 my-6 text-sm">
-        <div class="border border-zinc-200 p-3 rounded-lg">
-          <span class="text-xs text-zinc-500 block">من حساب (المدين)</span>
-          <span class="font-bold">{getAccountLabel(selectedEntry.debit_account_id)}</span>
-        </div>
-        <div class="border border-zinc-200 p-3 rounded-lg">
-          <span class="text-xs text-zinc-500 block">إلى حساب (الدائن)</span>
-          <span class="font-bold">{getAccountLabel(selectedEntry.credit_account_id)}</span>
-        </div>
-        <div class="border border-zinc-200 p-3 rounded-lg col-span-2">
-          <span class="text-xs text-zinc-500 block">البيان / التفاصيل</span>
-          <span class="font-medium">{selectedEntry.description_ar || selectedEntry.description || '-'}</span>
-        </div>
-      </div>
-
-      <table class="w-full border-collapse my-4 text-sm border border-zinc-200">
-        <thead>
-          <tr class="bg-zinc-100 border-b border-zinc-300">
-            <th class="p-3 text-start font-bold">الحساب المحاسبي</th>
-            <th class="p-3 text-end font-bold">مدين (+)</th>
-            <th class="p-3 text-end font-bold">دائن (-)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="border-b border-zinc-200">
-            <td class="p-3 font-semibold">{getAccountLabel(selectedEntry.debit_account_id)}</td>
-            <td class="p-3 text-end font-mono font-bold text-emerald-600">{localFormatCurrency(selectedEntry.amount, selectedEntry.currency)}</td>
-            <td class="p-3 text-end font-mono">-</td>
-          </tr>
-          <tr class="border-b border-zinc-200">
-            <td class="p-3 font-semibold">{getAccountLabel(selectedEntry.credit_account_id)}</td>
-            <td class="p-3 text-end font-mono">-</td>
-            <td class="p-3 text-end font-mono font-bold text-rose-600">{localFormatCurrency(selectedEntry.amount, selectedEntry.currency)}</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div class="flex justify-between items-center mt-16 text-xs font-semibold">
-        <div class="text-center w-32 border-t border-zinc-300 pt-2">أمين الصندوق</div>
-        <div class="text-center w-32 border-t border-zinc-300 pt-2">المراجع المالي</div>
-        <div class="text-center w-32 border-t border-zinc-300 pt-2">مدير النظام (U78)</div>
-      </div>
-    {:else}
-      <div class="text-center pb-6 border-b border-zinc-300">
-        <h1 class="text-2xl font-bold">دفتر القيود المحاسبية اليومية</h1>
-        <p class="text-xs text-zinc-500">قائمة القيود والعمليات المحاسبية المسجلة في النظام</p>
-      </div>
-      <table class="w-full border-collapse mt-6 text-xs border border-zinc-200">
-        <thead>
-          <tr class="bg-zinc-100 border-b border-zinc-300 text-zinc-700">
-            <th class="p-2 text-start">الرقم</th>
-            <th class="p-2 text-start">التاريخ</th>
-            <th class="p-2 text-start">الحساب المدين</th>
-            <th class="p-2 text-start">الحساب الدائن</th>
-            <th class="p-2 text-end">المبلغ</th>
-            <th class="p-2 text-start">الحالة</th>
-            <th class="p-2 text-start">البيان</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each filteredEntries as je}
-            {#if showUserRecords || je.user === "U78"}
-              <tr class="border-b border-zinc-200 text-zinc-800">
-                <td class="p-2 font-mono font-bold">{je.transaction_ref}</td>
-                <td class="p-2">{formatDate(je.accounting_date)}</td>
-                <td class="p-2">{getAccountLabel(je.debit_account_id)}</td>
-                <td class="p-2">{getAccountLabel(je.credit_account_id)}</td>
-                <td class="p-2 text-end font-mono">{localFormatCurrency(je.amount, je.currency)}</td>
-                <td class="p-2">{je.status === 'posted' ? 'مرحل' : 'مسودة'}</td>
-                <td class="p-2">{je.description_ar || je.description || '-'}</td>
-              </tr>
-            {/if}
-          {/each}
-        </tbody>
-      </table>
-    {/if}
-  </div>
-
-</div>
-
-<style>
-/* Printing style overrides */
-@media print {
-  :global(body) {
-    background-color: white !important;
-    color: black !important;
-  }
-  :global(main), :global(#app) {
-    background-color: white !important;
-  }
-  .print\:hidden {
-    display: none !important;
-  }
-  .print\:flex {
-    display: flex !important;
-  }
-}
-</style>

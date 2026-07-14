@@ -44,8 +44,8 @@ async function loadFinance() {
     );
     if (activeEnrollment) {
       const [f, p] = await Promise.all([
-        commands.finance.listStudentFees(activeEnrollment.id),
-        commands.finance.listPayments(activeEnrollment.id),
+        commands.finance.listStudentFees(),
+        commands.finance.listPayments(),
       ]);
       fees = f;
       payments = p;

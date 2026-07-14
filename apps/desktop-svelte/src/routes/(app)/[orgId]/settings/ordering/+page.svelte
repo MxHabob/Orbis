@@ -55,7 +55,7 @@ async function loadOrdering() {
   }
   isLoading = true;
   try {
-    const result = await commands.exam.getOrdering(data.orgId, currentPeriodId);
+    const result = await commands.exam.getOrdering(currentPeriodId);
     students = result as any[];
     totalOrdered = students.length;
   } catch (e) {
@@ -76,7 +76,7 @@ $effect(() => {
 async function loadPeriodsAndData() {
   isLoading = true;
   try {
-    const resPeriods = await commands.academic.listPeriods(data.orgId);
+    const resPeriods = await commands.academic.listPeriods();
     periods = resPeriods || [];
     if (periods.length > 0) {
       currentPeriodId = periods[0].id;
@@ -119,7 +119,7 @@ async function handleFreeze() {
   if (!currentPeriodId) return;
   try {
     const userId = authStore.userId || authStore.user?.id || "desktop_user";
-    await commands.exam.freezeOrdering(data.orgId, currentPeriodId, userId);
+    await commands.exam.freezeOrdering(currentPeriodId, userId);
     toast.success(m.common_exams_ordering_freeze_success());
     isFrozen = true;
   } catch (e: unknown) {
@@ -192,7 +192,7 @@ const filtered = $derived(
 
   <!-- Search -->
   <SearchField
-    placeholder="بحث بالاسم أو الرقم أو الفصل..."
+    placeholder={m.settings_ordering_search_placeholder()}
     bind:value={searchQuery}
     class="max-w-none w-full"
   />
@@ -210,7 +210,7 @@ const filtered = $derived(
         <ListOrdered size={24} class="text-muted-foreground" />
       </div>
       <p class="text-xs text-muted-foreground max-w-xs">
-        اضغط "إعادة بناء الترتيب" لإنشاء ترتيب الطلاب للدورة المحددة.
+        {m.settings_ordering_empty_desc()}
       </p>
     </div>
   {:else}
@@ -218,11 +218,11 @@ const filtered = $derived(
       <Table>
         <TableHeader>
           <TableRow class="text-[10px]">
-            <TableHead class="w-12 text-center">الترتيب</TableHead>
-            <TableHead>اسم الطالب</TableHead>
-            <TableHead class="w-32">الرقم الأكاديمي</TableHead>
-            <TableHead class="w-28">الفصل</TableHead>
-            <TableHead class="w-28">المستوى</TableHead>
+            <TableHead class="w-12 text-center">{m.common_order_rank()}</TableHead>
+            <TableHead>{m.common_student_name_label()}</TableHead>
+            <TableHead class="w-32">{m.common_word_academic_number()}</TableHead>
+            <TableHead class="w-28">{m.common_cs_col_class()}</TableHead>
+            <TableHead class="w-28">{m.settings_permissions_col_level()}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

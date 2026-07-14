@@ -191,9 +191,9 @@ async function handleAction(event: GridActionEvent) {
           onclick={() => $usersQuery.fetchNextPage()}
         >
           {#if $usersQuery.isFetchingNextPage}
-            جاري التحميل...
+            {m.common_loading()}
           {:else}
-            تحميل المزيد من المستخدمين
+            {m.settings_users_load_more()}
           {/if}
         </Button>
       </div>

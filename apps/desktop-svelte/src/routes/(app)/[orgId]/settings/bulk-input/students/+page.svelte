@@ -299,7 +299,7 @@ async function handleSubmit() {
       console.error("Bulk Import failures:", result.errors);
       if (result.errors && Array.isArray(result.errors)) {
         for (const err of result.errors) {
-          toast.error(`الصف ${err.row_index} (${err.field}): ${err.message}`);
+          toast.error(m.settings_bulk_row_error({ row: err.row_index, field: err.field, message: err.message }));
         }
       }
     } else {
@@ -402,7 +402,7 @@ async function handleSubmit() {
             class="text-xs cursor-pointer"
             onclick={() => showOverrideDialog = true}
           >
-            🔑 طلب تجاوز
+            🔑 {m.common_override_request_title()}
           </Button>
         {/if}
         <Button
@@ -444,7 +444,7 @@ async function handleSubmit() {
       entityType="period"
       entityId={academicContext.activePeriod?.id || ""}
       riskLevel="high"
-      onSuccess={() => { toast.success('تم تقديم طلب التجاوز بنجاح'); gate.refetch(); }}
+      onSuccess={() => { toast.success(m.common_override_submitted_success()); gate.refetch(); }}
     />
   </div>
 </div>

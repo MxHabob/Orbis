@@ -214,7 +214,7 @@ async function handleSubmit() {
             class="text-xs cursor-pointer"
             onclick={() => showOverrideDialog = true}
           >
-            🔑 طلب تجاوز
+            🔑 {m.common_override_request_title()}
           </Button>
         {/if}
         <Button
@@ -256,7 +256,7 @@ async function handleSubmit() {
       entityType="period"
       entityId={academicContext.activePeriod?.id || ""}
       riskLevel="high"
-      onSuccess={() => { toast.success('تم تقديم طلب التجاوز بنجاح'); gate.refetch(); }}
+      onSuccess={() => { toast.success(m.common_override_submitted_success()); gate.refetch(); }}
     />
   </div>
 </div>

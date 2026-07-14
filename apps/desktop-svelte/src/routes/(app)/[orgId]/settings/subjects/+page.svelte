@@ -43,7 +43,7 @@ async function loadData() {
   isLoading = true;
   error = null;
   try {
-    const list = await commands.academic.listSubjects(data.orgId);
+    const list = await commands.academic.listSubjects();
     subjects = list;
   } catch (e) {
     error = e instanceof Error ? e.message : String(e);

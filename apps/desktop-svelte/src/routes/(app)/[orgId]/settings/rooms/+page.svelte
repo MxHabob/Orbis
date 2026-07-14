@@ -26,7 +26,7 @@ let editingRoom = $state<any>(null);
 async function loadRooms() {
   isLoading = true;
   try {
-    rooms = await commands.scheduling.listRooms(data.orgId);
+    rooms = await commands.scheduling.listRooms();
   } catch (e) {
     toast.error((e as any)?.message || "Failed to load rooms");
   } finally {
