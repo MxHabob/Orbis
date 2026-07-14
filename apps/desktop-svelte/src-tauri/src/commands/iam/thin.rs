@@ -40,6 +40,23 @@ pub async fn list_users(
 }
 
 #[tauri::command]
+pub async fn list_users_paginated(
+    state: State<'_, Arc<AppState>>,
+    cursor: Option<String>,
+    limit: Option<u64>,
+    filter: Option<serde_json::Value>,
+) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let request = shared_kernel::pagination::CursorRequest {
+        cursor,
+        limit: limit.unwrap_or(50),
+    };
+    let f = filter.and_then(|v| serde_json::from_value(v).ok());
+    let r = ops::user::list_paginated(&ctx, request, f).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(r).unwrap())
+}
+
+#[tauri::command]
 pub async fn get_user(state: State<'_, Arc<AppState>>, user_id: String) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
     let db = state.db();

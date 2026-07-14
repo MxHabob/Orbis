@@ -16,6 +16,7 @@ import type {
   Notification,
   GateVerdict,
   GateType,
+  CursorPage,
 } from "../types";
 
 export interface AcademicCommands {
@@ -75,6 +76,10 @@ export interface AcademicCommands {
     classId?: string,
     periodId?: string,
   ): Promise<Enrollment[]>;
+  listEnrollmentsPaginated(
+    cursor?: string | null,
+    limit?: number | null,
+  ): Promise<CursorPage<Enrollment>>;
   getEnrollment(enrollmentId: string): Promise<Enrollment>;
   createEnrollment(data: {
     period_id: string;

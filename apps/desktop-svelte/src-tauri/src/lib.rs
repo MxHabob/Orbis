@@ -178,6 +178,7 @@ pub fn run() {
             commands::iam::thin::logout_session,
             commands::iam::thin::list_user_sessions,
             commands::iam::thin::list_users,
+            commands::iam::thin::list_users_paginated,
             commands::iam::thin::get_user,
             commands::iam::thin::create_user,
             commands::iam::thin::update_user,

@@ -23,6 +23,9 @@ import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import { DataTable, AvatarCell } from "$lib/tables";
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
+import OverrideRequestDialog from "$lib/shared/components/override-request-dialog.svelte";
+import PeriodStatusBar from "$lib/shared/components/period-status-bar.svelte";
+import { usePeriodGate } from "$lib/shared/utils/use-period-gate";
 
 const orgId = $derived(page.params.orgId);
 const classId = $derived(page.params.classId);
@@ -39,6 +42,12 @@ let selectedSubjectId = $state<string>("");
 let activePeriodId = $state<string>("");
 let semesters = $state<any[]>([]);
 let selectedSemesterId = $state<string>("");
+
+const gate = usePeriodGate(
+  "grade_entry",
+  () => selectedSemesterId || activePeriodId || ""
+);
+let showOverrideDialog = $state(false);
 
 // Grade entries: { [studentId_assessmentId]: score }
 let gradeEntries = $state<Record<string, string>>({});
@@ -179,7 +188,7 @@ const gridColumns = $derived.by(() => {
       name: `${assessment.title_ar || assessment.title || assessment.item_type || "التقييم"} (/${assessment.max_score})`,
       size: 110,
       
-      readonly: false,
+      readonly: !gate.isAllowed,
       sortable: false,
       align: "center",
       
@@ -382,10 +391,24 @@ async function handleCellEdit(event: any) {
         {students.length}
         {m.common_word_student_single()}
       </Badge>
+
+      {#if selectedSemesterId || activePeriodId}
+        <PeriodStatusBar periodId={selectedSemesterId || activePeriodId} showGates={["grade_entry"]} />
+      {/if}
     </div>
 
     <!-- Actions -->
     <div class="flex items-center gap-2 flex-nowrap shrink-0">
+      {#if gate.requiresOverride}
+        <Button
+          variant="secondary"
+          size="sm"
+          class="h-8 text-xs gap-1.5"
+          onclick={() => { showOverrideDialog = true; }}
+        >
+          🔑 طلب تجاوز
+        </Button>
+      {/if}
       <Button
         variant="outline"
         size="sm"
@@ -427,4 +450,14 @@ async function handleCellEdit(event: any) {
       oncelledit={handleCellEdit}
     />
   </div>
+
+  <OverrideRequestDialog
+    bind:open={showOverrideDialog}
+    orgId={orgId}
+    overrideType="grade_modification"
+    entityType="period"
+    entityId={selectedSemesterId || activePeriodId || ""}
+    riskLevel="high"
+    onSuccess={() => { toast.success('تم تقديم طلب التجاوز لإدخال الدرجات بنجاح'); gate.refetch(); }}
+  />
 </div>

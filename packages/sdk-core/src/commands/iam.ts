@@ -1,7 +1,7 @@
 /**
  * IAM command interfaces — mirrors svc-iam/ops.
  */
-import type { User, UserRole, UserSession } from "../types";
+import type { User, UserRole, UserSession, CursorPage } from "../types";
 
 export interface PermissionRule {
   role: string;
@@ -26,6 +26,11 @@ export interface IamCommands {
   listUsers(
     filter?: { role?: string; status?: string },
   ): Promise<User[]>;
+  listUsersPaginated(
+    cursor?: string | null,
+    limit?: number | null,
+    filter?: { role?: string; status?: string },
+  ): Promise<CursorPage<User>>;
   getUser(userId: string): Promise<User>;
   searchUsers(query: string): Promise<User[]>;
   createUser(createdBy: string, data: any): Promise<User>;

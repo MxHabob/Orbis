@@ -46,6 +46,42 @@ pub async fn list(
     Ok(query.order_by_asc(user::Column::FullName).all(&ctx.db).await?)
 }
 
+pub async fn list_paginated(
+    ctx: &ServiceContext,
+    request: shared_kernel::pagination::CursorRequest,
+    filter: Option<UserFilter>,
+) -> Result<shared_kernel::pagination::CursorPage<user::Model>, AppError> {
+    use shared_kernel::pagination::CursorPage;
+    ctx.permissions.check(&ctx.actor, Permission::UserRead).await?;
+
+    let limit = request.effective_limit();
+    let mut query = user::Entity::find()
+        .filter(user::Column::OrgId.eq(&ctx.org_id))
+        .filter(user::Column::IsDeleted.eq(0))
+        .order_by_asc(user::Column::Id);
+
+    if let Some(f) = filter {
+        if let Some(role) = f.role {
+            query = query.filter(user::Column::PrimaryRole.eq(role));
+        } else if let Some(roles) = f.roles {
+            if !roles.is_empty() {
+                query = query.filter(user::Column::PrimaryRole.is_in(roles));
+            }
+        }
+        
+        if let Some(status) = f.status {
+            query = query.filter(user::Column::Status.eq(status));
+        }
+    }
+
+    if let Some(ref cursor) = request.cursor {
+        query = query.filter(user::Column::Id.gt(cursor));
+    }
+
+    let items = query.limit(limit + 1).all(&ctx.db).await?;
+    Ok(CursorPage::from_items_with(items, limit, |u| u.id.clone()))
+}
+
 pub async fn get(ctx: &ServiceContext, user_id: &str) -> Result<user::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::UserRead).await?;
     user::Entity::find_by_id(user_id.to_string())

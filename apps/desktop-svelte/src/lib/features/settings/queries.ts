@@ -5,6 +5,7 @@ import * as m from "$lib/paraglide/messages";
  */
 import {
   createQuery,
+  createInfiniteQuery,
   createMutation,
   useQueryClient,
 } from "@tanstack/svelte-query";
@@ -43,6 +44,26 @@ export function createUsersQuery(orgId: () => string) {
   return createQuery({
     get queryKey() { return ["users", orgId()]; },
     queryFn: () => commands.iam.listUsers(),
+    get enabled() { return !!orgId(); },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Paginated users query using Cursor-based infinite scrolling. */
+export function createUsersPaginatedQuery(orgId: () => string, limit: number = 50, filter?: { role?: string; status?: string }) {
+  // @ts-ignore - auto imported
+  return createInfiniteQuery({
+    get queryKey() { return ["users_paginated", orgId(), limit, filter]; },
+    queryFn: async ({ pageParam }) => {
+      return commands.iam.listUsersPaginated(pageParam, limit, filter);
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => {
+      if (lastPage.has_more && lastPage.next_cursor) {
+        return lastPage.next_cursor;
+      }
+      return undefined;
+    },
     get enabled() { return !!orgId(); },
     staleTime: 5 * 60 * 1000,
   });

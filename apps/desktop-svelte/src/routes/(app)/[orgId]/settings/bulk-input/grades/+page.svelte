@@ -18,6 +18,10 @@ import { toast } from "svelte-sonner";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { commands } from "$lib/core/ipc";
 import { authStore } from "$lib/stores";
+import { academicContext } from "$lib/stores/academic-context.svelte";
+import { usePeriodGate } from "$lib/shared/utils/use-period-gate";
+import PeriodStatusBar from "$lib/shared/components/period-status-bar.svelte";
+import OverrideRequestDialog from "$lib/shared/components/override-request-dialog.svelte";
 
 import BulkGrid from "$lib/features/bulk-input/bulk-grid.svelte";
 import BulkSummary from "$lib/features/bulk-input/bulk-summary.svelte";
@@ -42,6 +46,9 @@ let isSubmitting = $state(false);
 let submitProgress = $state(0);
 let identifierType = $state("auto");
 let activePeriodName = $state("");
+
+const gate = usePeriodGate("grade_entry", () => String(academicContext.activePeriod?.id || ""));
+let showOverrideDialog = $state(false);
 
 // Validation
 let validationResults = $state<ReturnType<typeof validateGradeRows>>([]);
@@ -119,9 +126,8 @@ async function handleSubmit() {
     submitProgress = 10;
 
     const result = (await commands.platform.createBulkGrades(
-      data.orgId,
       authStore.user?.id ?? "system",
-      null, // auto-detect active period
+      academicContext.activePeriod?.id ?? "",
       dataRows,
     )) as any;
 
@@ -163,6 +169,9 @@ async function handleSubmit() {
         >
           <ArrowLeft class="h-4 w-4 rtl:rotate-180" />
         </Button>
+      {#if academicContext.activePeriod?.id}
+        <PeriodStatusBar periodId={String(academicContext.activePeriod.id)} showGates={["grade_entry"]} />
+      {/if}
       <div class="flex items-center gap-2">
         <Select type="single" value={identifierType} onValueChange={(v) => (identifierType = v)}>
           <SelectTrigger class="w-44 h-8 text-xs">
@@ -198,11 +207,21 @@ async function handleSubmit() {
           {m.common_bulk_input_clear()}
         </Button>
 
+        {#if gate.requiresOverride}
+          <Button
+            variant="secondary"
+            size="sm"
+            class="text-xs cursor-pointer"
+            onclick={() => showOverrideDialog = true}
+          >
+            🔑 طلب تجاوز
+          </Button>
+        {/if}
         <Button
           variant="lime"
           size="sm"
           class="text-xs cursor-pointer"
-          disabled={isSubmitting || summary.totalFilled === 0 || summary.errorCount > 0}
+          disabled={isSubmitting || summary.totalFilled === 0 || summary.errorCount > 0 || !gate.isAllowed}
           onclick={handleSubmit}
         >
           <Upload size={13} class="me-1.5" />
@@ -228,6 +247,16 @@ async function handleSubmit() {
       errorDetails={summary.errorDetails}
       {isSubmitting}
       {submitProgress}
+    />
+    
+    <OverrideRequestDialog
+      bind:open={showOverrideDialog}
+      orgId={data.orgId}
+      overrideType="grade_modification"
+      entityType="period"
+      entityId={academicContext.activePeriod?.id || ""}
+      riskLevel="high"
+      onSuccess={() => { toast.success('تم تقديم طلب التجاوز بنجاح'); gate.refetch(); }}
     />
   </div>
 </div>

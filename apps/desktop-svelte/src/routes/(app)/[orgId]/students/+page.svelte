@@ -17,7 +17,7 @@ import {
   Upload,
   ShieldAlert,
 } from "lucide-svelte";
-import { studentsStore, createEnrollmentsQuery } from "$lib/features/students";
+import { studentsStore, createEnrollmentsPaginatedQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
 import { academicContext, authStore } from "$lib/stores";
 import StudentsTableSkeleton from "$lib/shared/skeletons/students-table-skeleton.svelte";
@@ -39,11 +39,11 @@ import { debounce } from "$lib/shared/utils/debounce";
 let { data }: { data: { orgId: string } } = $props();
 
 // TanStack Queries
-const enrollmentsQuery = createEnrollmentsQuery(() => data.orgId);
+const enrollmentsQuery = createEnrollmentsPaginatedQuery(() => data.orgId);
 const classesQuery = createClassesQuery(() => data.orgId);
 
 // Derived data from queries
-const enrollments = $derived($enrollmentsQuery.data ?? []);
+const enrollments = $derived($enrollmentsQuery.data?.pages?.flatMap((page: any) => page.items) ?? []);
 const classes = $derived($classesQuery.data ?? []);
 const filteredStudents = $derived(studentsStore.filterList(enrollments));
 
@@ -260,6 +260,23 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 							bind:selectedIds={selectedStudentIds}
 							orgId={data.orgId}
 						/>
+						{#if $enrollmentsQuery.hasNextPage}
+							<div class="p-2 border-t border-border flex justify-center bg-card shrink-0">
+								<Button 
+									variant="outline" 
+									size="sm" 
+									class="text-xs w-full max-w-md"
+									disabled={$enrollmentsQuery.isFetchingNextPage}
+									onclick={() => $enrollmentsQuery.fetchNextPage()}
+								>
+									{#if $enrollmentsQuery.isFetchingNextPage}
+										جاري التحميل...
+									{:else}
+										تحميل المزيد من الطلاب
+									{/if}
+								</Button>
+							</div>
+						{/if}
 					{/if}
 				</div>
 			</div>

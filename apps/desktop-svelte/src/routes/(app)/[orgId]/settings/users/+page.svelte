@@ -20,6 +20,7 @@ import { authStore } from "$lib/stores";
 
 import { DataTable } from "$lib/tables";
 import { users as usersDef, withIndex } from "$lib/tables/definitions";
+import { createUsersPaginatedQuery } from "$lib/features/settings/queries";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -28,8 +29,6 @@ import { ActionOverlay } from "$lib/tables";
 import type { GridActionEvent, ActionItem } from "@orbis/svelte-grid";
 
 // ── State ──────────────────────────────────────────────────────────────
-let users = $state<User[]>([]);
-let isLoading = $state(true);
 let searchQuery = $state("");
 let selectedRole = $state("all");
 let overlayEl = $state<any>();
@@ -40,21 +39,13 @@ const userActions: ActionItem[] = [
 ];
 
 // ── Data Loading ────────────────────────────────────────────────────────
+const usersQuery = createUsersPaginatedQuery(() => data.orgId);
+const users = $derived($usersQuery.data?.pages?.flatMap((page: any) => page.items) ?? []);
+const isLoading = $derived($usersQuery.isLoading);
 
-async function loadUsers() {
-  isLoading = true;
-  try {
-    users = await commands.iam.listUsers(data.orgId);
-  } catch (e) {
-    toast.error((e as any)?.message || "Failed to load users");
-  } finally {
-    isLoading = false;
-  }
+function loadUsers() {
+  $usersQuery.refetch();
 }
-
-onMount(() => {
-  if (data.orgId) loadUsers();
-});
 
 // ── Filtering ───────────────────────────────────────────────────────────
 
@@ -174,7 +165,7 @@ async function handleAction(event: GridActionEvent) {
   </div>
 
   <!-- DataTable -->
-  <div class="flex-1 min-h-0">
+  <div class="flex-1 min-h-0 flex flex-col">
     <DataTable
       {columns}
       source={gridSource}
@@ -190,6 +181,23 @@ async function handleAction(event: GridActionEvent) {
       onRefresh={loadUsers}
       onaction={handleAction}
     />
+    {#if $usersQuery.hasNextPage && selectedRole === 'all' && searchQuery === ''}
+      <div class="p-2 border-t border-border flex justify-center bg-card shrink-0">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          class="text-xs w-full max-w-md cursor-pointer"
+          disabled={$usersQuery.isFetchingNextPage}
+          onclick={() => $usersQuery.fetchNextPage()}
+        >
+          {#if $usersQuery.isFetchingNextPage}
+            جاري التحميل...
+          {:else}
+            تحميل المزيد من المستخدمين
+          {/if}
+        </Button>
+      </div>
+    {/if}
   </div>
 
   <ActionOverlay bind:this={overlayEl} actions={userActions} onselect={handleAction} />

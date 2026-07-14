@@ -84,6 +84,8 @@ export const commands: OrbisCommands = {
 
     listEnrollments: (classId?, periodId?) =>
       cmd("list_enrollments", { classId, periodId }),
+    listEnrollmentsPaginated: (cursor?: string | null, limit?: number | null) =>
+      cmd("list_enrollments_paginated", { cursor, limit }),
     getEnrollment: (enrollmentId) =>
       cmd("get_enrollment", { enrollmentId }),
     createEnrollment: (data) => cmd("create_enrollment", { data }),
@@ -346,6 +348,9 @@ export const commands: OrbisCommands = {
       // Pass the filter directly to the Rust backend
       const users = await cmd<User[]>("list_users", { filter });
       return users;
+    },
+    listUsersPaginated: async (cursor?, limit?, filter?) => {
+      return cmd("list_users_paginated", { cursor, limit, filter });
     },
     getUser: (userId) => cmd("get_user", { userId }),
     searchUsers: (query) => cmd("search_users", { query }),
