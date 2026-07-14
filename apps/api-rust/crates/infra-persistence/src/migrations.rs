@@ -31,8 +31,14 @@ pub async fn run_sql_migration<C: ConnectionTrait>(db: &C, sql: &str) -> Result<
 /// that may fail if the column/table doesn't exist).
 pub async fn run_sql_cleanup<C: ConnectionTrait>(db: &C, sql: &str) {
     for statement in sql.split(';') {
-        let stmt = statement.trim();
-        if stmt.is_empty() || stmt.starts_with("--") {
+        let cleaned: String = statement
+            .lines()
+            .map(|line| line.trim())
+            .filter(|line| !line.starts_with("--"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        let stmt = cleaned.trim();
+        if stmt.is_empty() {
             continue;
         }
         let _ = db.execute_unprepared(stmt).await;
