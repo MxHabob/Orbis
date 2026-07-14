@@ -44,7 +44,7 @@ pub async fn get_class_schedule(
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
     let db = state.db();
-    let class = svc_academic::entities::class::Entity::find_by_id(class_id.clone())
+    let _class = svc_academic::entities::class::Entity::find_by_id(class_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Class not found"))?;
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
@@ -60,7 +60,7 @@ pub async fn get_teacher_schedule(
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
     let db = state.db();
-    let period = svc_organization::entities::academic_period::Entity::find_by_id(period_id.clone())
+    let _period = svc_organization::entities::academic_period::Entity::find_by_id(period_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Period not found"))?;
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
@@ -75,7 +75,7 @@ pub async fn get_lesson_by_id(
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
     let db = state.db();
-    let lesson = svc_scheduling::entities::scheduled_lesson::Entity::find_by_id(lesson_id.clone())
+    let _lesson = svc_scheduling::entities::scheduled_lesson::Entity::find_by_id(lesson_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Lesson not found"))?;
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;

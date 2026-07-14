@@ -9,7 +9,7 @@ use svc_exam::ops;
 pub async fn list_exam_sessions(state: State<'_, Arc<AppState>>, period_id: String) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
     let db = state.db();
-    let period = svc_organization::entities::academic_period::Entity::find_by_id(period_id.clone())
+    let _period = svc_organization::entities::academic_period::Entity::find_by_id(period_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Period not found"))?;
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
@@ -49,7 +49,7 @@ pub async fn update_exam_session(
     let payload: UpdateExamSessionPayload = serde_json::from_value(data)
         .map_err(|e| CommandError::new(format!("Invalid payload: {}", e)))?;
     let db = state.db();
-    let sess = svc_exam::entities::exam_session::Entity::find_by_id(session_id.clone())
+    let _sess = svc_exam::entities::exam_session::Entity::find_by_id(session_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Exam session not found"))?;
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;

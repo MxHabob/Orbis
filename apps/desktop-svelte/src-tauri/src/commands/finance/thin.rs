@@ -24,7 +24,7 @@ pub async fn create_fee_template(state: State<'_, Arc<AppState>>, data: serde_js
 pub async fn update_fee_template(state: State<'_, Arc<AppState>>, template_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
     let db = state.db();
-    let template = svc_finance::entities::fee_template::Entity::find_by_id(template_id.clone())
+    let _template = svc_finance::entities::fee_template::Entity::find_by_id(template_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Fee template not found"))?;
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
@@ -52,7 +52,7 @@ pub async fn assign_fee(state: State<'_, Arc<AppState>>, data: serde_json::Value
 pub async fn list_student_fees(state: State<'_, Arc<AppState>>, enrollment_id: String) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
     let db = state.db();
-    let enrollment = svc_academic::entities::enrollment::Entity::find_by_id(enrollment_id.clone())
+    let _enrollment = svc_academic::entities::enrollment::Entity::find_by_id(enrollment_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Enrollment not found"))?;
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
@@ -127,7 +127,7 @@ pub async fn get_account_statement(
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
     let db = state.db();
-    let account = svc_finance::entities::account::Entity::find_by_id(account_id.clone())
+    let _account = svc_finance::entities::account::Entity::find_by_id(account_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Ledger account not found"))?;
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
@@ -140,7 +140,7 @@ pub async fn get_account_statement(
 #[tauri::command]
 pub async fn list_active_fee_templates(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let templates = ops::fee_template::list_active_templates(&ctx).await.map_err(CommandError::from)?;
+    let templates = ops::fee_template::list(&ctx).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(templates).unwrap())
 }
 

@@ -141,7 +141,7 @@ pub async fn get_class(
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
     let db = state.db();
-    let class = svc_academic::entities::class::Entity::find_by_id(class_id.clone())
+    let _class = svc_academic::entities::class::Entity::find_by_id(class_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Class not found"))?;
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
@@ -167,7 +167,7 @@ pub async fn update_class(
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
     let db = state.db();
-    let class = svc_academic::entities::class::Entity::find_by_id(class_id.clone())
+    let _class = svc_academic::entities::class::Entity::find_by_id(class_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Class not found"))?;
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
@@ -182,7 +182,7 @@ pub async fn delete_class(
 ) -> CmdResult<()> {
     use sea_orm::EntityTrait;
     let db = state.db();
-    let class = svc_academic::entities::class::Entity::find_by_id(class_id.clone())
+    let _class = svc_academic::entities::class::Entity::find_by_id(class_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Class not found"))?;
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
@@ -217,7 +217,7 @@ pub async fn get_subject(
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
     let db = state.db();
-    let subject = svc_academic::entities::subject::Entity::find_by_id(subject_id.clone())
+    let _subject = svc_academic::entities::subject::Entity::find_by_id(subject_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Subject not found"))?;
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
@@ -233,7 +233,7 @@ pub async fn update_subject(
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
     let db = state.db();
-    let subject = svc_academic::entities::subject::Entity::find_by_id(subject_id.clone())
+    let _subject = svc_academic::entities::subject::Entity::find_by_id(subject_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Subject not found"))?;
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
@@ -248,7 +248,7 @@ pub async fn delete_subject(
 ) -> CmdResult<()> {
     use sea_orm::EntityTrait;
     let db = state.db();
-    let subject = svc_academic::entities::subject::Entity::find_by_id(subject_id.clone())
+    let _subject = svc_academic::entities::subject::Entity::find_by_id(subject_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Subject not found"))?;
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
@@ -540,7 +540,7 @@ pub async fn assign_teacher(
 ) -> CmdResult<()> {
     use sea_orm::EntityTrait;
     let db = state.db();
-    let class = svc_academic::entities::class::Entity::find_by_id(class_id.clone())
+    let _class = svc_academic::entities::class::Entity::find_by_id(class_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Class not found"))?;
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
@@ -587,7 +587,7 @@ pub async fn toggle_grade_entry(
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
     let db = state.db();
-    let period = svc_organization::entities::academic_period::Entity::find_by_id(period_id.clone())
+    let _period = svc_organization::entities::academic_period::Entity::find_by_id(period_id.clone())
         .one(&db).await.map_err(CommandError::from)?
         .ok_or_else(|| CommandError::not_found("Period not found"))?;
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
