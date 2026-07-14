@@ -68,7 +68,7 @@ const labels: Record<string, string> = {
   student_id: m.common_bulk_col_student_identifier(),
   subject: m.common_word_subject(),
   score: m.common_promo_score(),
-  max_score: m.common_bulk_col_max_score(),
+  max_score: m.common_exams_subjects_score(),
   exam_type: m.common_bulk_col_exam_type(),
   semester: m.common_word_semester(),
   notes: m.common_year_notes(),
@@ -182,14 +182,14 @@ async function handleSubmit() {
                 : identifierType === "student_number"
                   ? m.common_table_student_number()
                   : identifierType === "national_id"
-                    ? m.common_bulk_col_national_id()
+                    ? m.common_user_form_national_id()
                     : m.common_word_fullname()}
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="auto">{m.common_bulk_id_auto()}</SelectItem>
             <SelectItem value="email">{m.common_word_email()}</SelectItem>
             <SelectItem value="student_number">{m.common_table_student_number()}</SelectItem>
-            <SelectItem value="national_id">{m.common_bulk_col_national_id()}</SelectItem>
+            <SelectItem value="national_id">{m.common_user_form_national_id()}</SelectItem>
             <SelectItem value="name">{m.common_word_fullname()}</SelectItem>
           </SelectContent>
         </Select>

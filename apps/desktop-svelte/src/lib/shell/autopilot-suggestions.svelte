@@ -68,11 +68,11 @@ const sortedTasks = $derived([...tasks].sort((a, b) => a.scheduled_at.localeComp
                 class="text-[8px] h-3 px-1 shrink-0"
               >
                 {#if isCompleted}
-                  {m.common_calendar_status_done()}
+                  {m.common_schedule_ai_status_done()}
                 {:else if isFailed}
                   {m.common_calendar_status_failed()}
                 {:else if isExecuting}
-                  {m.common_autopilot_popover_task_status_executing()}
+                  {m.common_promo_job_status_executing()}
                 {:else if isSuggested}
                   {m.common_calendar_field_mode_suggested()}
                 {:else}

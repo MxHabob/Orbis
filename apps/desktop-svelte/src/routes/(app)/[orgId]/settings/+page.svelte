@@ -89,7 +89,7 @@ async function handleSave(request: any) {
 </script>
 
 <svelte:head>
-  <title>{m.settings_general_window_title()} | Orbis</title>
+  <title>{m.common_header_org_settings()} | Orbis</title>
 </svelte:head>
 
 {#if isLoading}

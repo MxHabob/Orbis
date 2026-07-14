@@ -53,7 +53,7 @@ let progressPercent = $derived(
   <div class="flex items-center gap-4 flex-wrap">
     <div class="flex items-center gap-1.5">
       <Hash size={13} class="text-muted-foreground" />
-      <span class="text-xs font-medium text-muted-foreground">{m.common_behavior_total()}:</span>
+      <span class="text-xs font-medium text-muted-foreground">{m.common_grades_col_total()}:</span>
       <Badge variant="secondary" class="text-xs px-2 py-0.5">{totalFilled}</Badge>
     </div>
 

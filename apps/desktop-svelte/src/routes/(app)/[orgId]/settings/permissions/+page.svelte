@@ -393,7 +393,7 @@ function toggleAction(ruleIndex: number, action: string) {
           <TableRow>
             <TableHead class="text-start font-bold text-xs w-[20%]">{m.settings_permissions_col_doc_type()}</TableHead>
             <TableHead class="text-start font-bold text-xs w-[20%]">{m.common_user_form_role()}</TableHead>
-            <TableHead class="text-start font-bold text-xs w-[10%]">{m.settings_permissions_col_level()}</TableHead>
+            <TableHead class="text-start font-bold text-xs w-[10%]">{m.academics_exams_level()}</TableHead>
             <TableHead class="text-start font-bold text-xs w-[45%]">{m.settings_permissions_col_permissions()}</TableHead>
             <TableHead class="text-center w-[5%]"></TableHead>
           </TableRow>
@@ -556,7 +556,7 @@ function toggleAction(ruleIndex: number, action: string) {
         <!-- Level -->
         <div class="flex flex-col gap-1.5 text-start">
           <Label for="rule_level" class="text-xs font-medium text-muted-foreground">
-            {m.settings_permissions_col_level()}
+            {m.academics_exams_level()}
           </Label>
           <Input
             id="rule_level"

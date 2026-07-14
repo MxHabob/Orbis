@@ -119,7 +119,7 @@ onMount(async () => {
           value="profile" 
           class="text-xs font-semibold py-2 px-1 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none shadow-none text-muted-foreground data-[state=active]:text-foreground bg-transparent transition-all duration-150 cursor-pointer"
         >
-          {m.common_form_tab_profile()}
+          {m.common_breadcrumb_student_profile()}
         </TabsTrigger>
         <TabsTrigger 
           value="family" 

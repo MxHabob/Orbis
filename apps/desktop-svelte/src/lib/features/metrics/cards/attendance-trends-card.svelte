@@ -176,7 +176,7 @@ function handleMouseLeave() {
     <!-- Top Row layout matching exactly screenshots -->
     <div class="flex flex-col w-full text-start select-none">
       <div class="flex items-center justify-between w-full h-5">
-        <span class="text-xs text-muted-foreground">{m.reports_attendance_rate_title()}</span>
+        <span class="text-xs text-muted-foreground">{m.common_card_attendance_rate()}</span>
         {#if isEditing}
           <DragIndicator />
         {/if}

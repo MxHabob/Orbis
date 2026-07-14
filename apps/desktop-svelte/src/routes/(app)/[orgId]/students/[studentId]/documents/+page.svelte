@@ -383,7 +383,7 @@ async function handleUploadFile() {
           <Label class="text-[10px] font-semibold text-muted-foreground">{m.common_docs_form_name_en_label()}</Label>
           <Input 
             type="text" 
-            placeholder={m.common_docs_form_name_en_placeholder()} 
+            placeholder={m.common_docs_form_name_ar_placeholder()} 
             class="text-xs" 
             bind:value={newDocTitle}
           />

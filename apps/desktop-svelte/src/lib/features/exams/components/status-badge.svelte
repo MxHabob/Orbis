@@ -22,7 +22,7 @@ const config = $derived(() => {
       };
     case "active":
       return {
-        label: m.common_status_active_f(),
+        label: m.common_phase_active(),
         color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
       };
     case "grading":

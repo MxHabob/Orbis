@@ -323,7 +323,7 @@ async function handleSubmit() {
           disabled={isSubmitting}
         />
         <Label for="dt_active_chk" class="text-xs cursor-pointer select-none">
-          {m.common_status_active ? m.common_status_active() : "نشط"}
+          {m.common_phase_active ? m.common_phase_active() : "نشط"}
         </Label>
       </div>
     </div>

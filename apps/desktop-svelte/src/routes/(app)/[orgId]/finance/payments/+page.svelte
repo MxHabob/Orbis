@@ -164,7 +164,7 @@ let showQrModal = $state(false);
 let printMode = $state<"list" | "voucher">("list");
 
 const paymentMethods = [
-  { value: "Cash", label: m.finance_payments_cash() },
+  { value: "Cash", label: m.finance_pos_cash() },
   { value: "Check", label: m.finance_payments_check() },
   { value: "Transfer", label: "حوالة بنكية" },
 ];
@@ -564,7 +564,7 @@ function handlePrintVoucher() {
 
 function getMethodLabel(methodStr: string) {
   const methodLower = String(methodStr).toLowerCase();
-  if (methodLower === "cash") return m.finance_payments_cash();
+  if (methodLower === "cash") return m.finance_pos_cash();
   if (
     methodLower === "check" ||
     methodLower === "bank_transfer" ||
@@ -631,7 +631,7 @@ const filteredPayments = $derived.by(() => {
       <!-- Voucher Header & Shared Controls -->
       <div class="bg-muted/45 border-b border-border/60 p-4 flex flex-wrap items-center justify-between gap-4 select-none">
         <div class="flex items-center gap-1.5">
-          <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">{m.finance_payments_receipt_number()}</span>
+          <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">{m.common_payment_label_receipt()}</span>
           <span class="text-[11px] font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
             {receiptNumber || "قبض جديد"}
           </span>
@@ -640,7 +640,7 @@ const filteredPayments = $derived.by(() => {
         <div class="flex flex-wrap items-center gap-4">
           <!-- Treasury select -->
           <div class="flex flex-col gap-1 text-start">
-            <Label class="text-[9px] font-bold text-muted-foreground">{m.finance_payments_treasury()}</Label>
+            <Label class="text-[9px] font-bold text-muted-foreground">{m.common_ledger_tab_treasury()}</Label>
             <Select type="single" bind:value={treasuryId}>
               <SelectTrigger class="h-8 text-xs bg-background/50 w-48 border-border/60 cursor-pointer text-start">
                 {treasuryItems.find(t => t.value === treasuryId)?.label || "اختر الصندوق..."}
@@ -658,7 +658,7 @@ const filteredPayments = $derived.by(() => {
 
           <!-- Method select -->
           <div class="flex flex-col gap-1 text-start">
-            <Label class="text-[9px] font-bold text-muted-foreground">{m.finance_payments_payment_method()}</Label>
+            <Label class="text-[9px] font-bold text-muted-foreground">{m.finance_fees_col_method()}</Label>
             <Select type="single" bind:value={paymentMethod}>
               <SelectTrigger class="h-8 text-xs bg-background/50 w-32 border-border/60 cursor-pointer text-start">
                 {paymentMethods.find(m => m.value === paymentMethod)?.label || "اختر الطريقة..."}
@@ -673,7 +673,7 @@ const filteredPayments = $derived.by(() => {
 
           <!-- Currency select -->
           <div class="flex flex-col gap-1 text-start">
-            <Label class="text-[9px] font-bold text-muted-foreground">{m.finance_payments_currency()}</Label>
+            <Label class="text-[9px] font-bold text-muted-foreground">{m.finance_ledger_currency()}</Label>
             <Select type="single" bind:value={currency}>
               <SelectTrigger class="h-8 text-xs bg-background/50 w-24 border-border/60 cursor-pointer">
                 {currency}
@@ -688,7 +688,7 @@ const filteredPayments = $derived.by(() => {
 
           <!-- Date picker -->
           <div class="flex flex-col gap-1 text-start">
-            <Label class="text-[9px] font-bold text-muted-foreground">{m.finance_payments_date()}</Label>
+            <Label class="text-[9px] font-bold text-muted-foreground">{m.common_overview_date()}</Label>
             <Input 
               type="date" 
               bind:value={paymentDate} 
@@ -925,11 +925,11 @@ const filteredPayments = $derived.by(() => {
         <!-- Method filter -->
         <Select type="single" bind:value={methodFilter}>
           <SelectTrigger class="h-8 text-xs bg-background border-border w-40 cursor-pointer text-start">
-            {methodFilter === "all" ? m.finance_payments_all_methods() : (methodFilter === "Cash" ? m.finance_payments_cash() : m.finance_payments_check())}
+            {methodFilter === "all" ? m.finance_payments_all_methods() : (methodFilter === "Cash" ? m.finance_pos_cash() : m.finance_payments_check())}
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{m.finance_payments_all_methods()}</SelectItem>
-            <SelectItem value="Cash">{m.finance_payments_cash()}</SelectItem>
+            <SelectItem value="Cash">{m.finance_pos_cash()}</SelectItem>
             <SelectItem value="Check">{m.finance_payments_check()}</SelectItem>
           </SelectContent>
         </Select>
@@ -939,12 +939,12 @@ const filteredPayments = $derived.by(() => {
         <!-- Filter Mode Select -->
         <Select type="single" bind:value={filterMode}>
           <SelectTrigger class="h-8 text-xs bg-background border-border w-28 cursor-pointer text-start">
-            {filterMode === "day" ? m.finance_payments_today() : (filterMode === "range" ? m.finance_payments_specific_period() : m.finance_payments_all_dates())}
+            {filterMode === "day" ? m.finance_payments_today() : (filterMode === "range" ? m.finance_payments_specific_period() : m.finance_je_filter_all())}
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="day">{m.finance_payments_today()}</SelectItem>
             <SelectItem value="range">{m.finance_payments_specific_period()}</SelectItem>
-            <SelectItem value="all">{m.finance_payments_all_dates()}</SelectItem>
+            <SelectItem value="all">{m.finance_je_filter_all()}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -1015,7 +1015,7 @@ const filteredPayments = $derived.by(() => {
             class="h-8 text-[11px] flex items-center gap-1.5 cursor-pointer hover:bg-muted border-primary/30 text-primary"
           >
             <Printer size={12} />
-            <span>{m.finance_payments_print_templates()} ({selectedPaymentIds.size})</span>
+            <span>{m.common_print_templates()} ({selectedPaymentIds.size})</span>
           </Button>
         {/if}
         <Button 
@@ -1025,7 +1025,7 @@ const filteredPayments = $derived.by(() => {
           class="h-8 text-[11px] flex items-center gap-1.5 cursor-pointer hover:bg-muted"
         >
           <Printer size={12} />
-          <span>{m.finance_payments_print_table()}</span>
+          <span>{m.finance_journal_print_table()}</span>
         </Button>
         <Button 
           variant="outline" 
@@ -1071,14 +1071,14 @@ const filteredPayments = $derived.by(() => {
                     class="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer"
                   />
                 </TableHead>
-                <TableHead class="text-start font-bold text-xs">{m.finance_payments_number()}</TableHead>
-                <TableHead class="text-start font-bold text-xs">{m.finance_payments_date()}</TableHead>
-                <TableHead class="text-start font-bold text-xs">{m.finance_payments_payment_method()}</TableHead>
-                <TableHead class="text-end font-bold text-xs text-emerald-500">{m.finance_payments_amount()}</TableHead>
-                <TableHead class="text-center font-bold text-xs">{m.finance_payments_currency()}</TableHead>
-                <TableHead class="text-start font-bold text-xs">{m.finance_payments_treasury()}</TableHead>
+                <TableHead class="text-start font-bold text-xs">{m.common_word_number()}</TableHead>
+                <TableHead class="text-start font-bold text-xs">{m.common_overview_date()}</TableHead>
+                <TableHead class="text-start font-bold text-xs">{m.finance_fees_col_method()}</TableHead>
+                <TableHead class="text-end font-bold text-xs text-emerald-500">{m.common_ft_col_amount()}</TableHead>
+                <TableHead class="text-center font-bold text-xs">{m.finance_ledger_currency()}</TableHead>
+                <TableHead class="text-start font-bold text-xs">{m.common_ledger_tab_treasury()}</TableHead>
                 <TableHead class="text-start font-bold text-xs">{m.finance_payments_customer_account()}</TableHead>
-                <TableHead class="text-start font-bold text-xs">{m.finance_payments_notes()}</TableHead>
+                <TableHead class="text-start font-bold text-xs">{m.common_year_notes()}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1130,10 +1130,10 @@ const filteredPayments = $derived.by(() => {
         
         <div class="text-xs text-muted-foreground flex flex-col gap-1 text-start px-2 bg-muted/30 p-2.5 rounded-lg border border-border/40">
           <div><span class="font-bold text-foreground">{m.finance_payments_receipt_no_label()}</span> {receiptNumber}</div>
-          <div><span class="font-bold text-foreground">{m.finance_payments_date_label()}</span> {formatDate(paymentDate)}</div>
+          <div><span class="font-bold text-foreground">{m.finance_journal_date_label()}</span> {formatDate(paymentDate)}</div>
           <div><span class="font-bold text-foreground">{m.finance_payments_customer_account_label()}</span> {studentName}</div>
-          <div><span class="font-bold text-foreground">{m.finance_payments_amount_label()}</span> {formatCurrency(amount || 0, currency || 'YER')}</div>
-          <div><span class="font-bold text-foreground">{m.finance_payments_description_label()}</span> {notes || '-'}</div>
+          <div><span class="font-bold text-foreground">{m.finance_journal_amount_label()}</span> {formatCurrency(amount || 0, currency || 'YER')}</div>
+          <div><span class="font-bold text-foreground">{m.common_docs_detail_desc_label()}</span> {notes || '-'}</div>
         </div>
         
         <Button variant="outline" size="sm" class="mt-4 w-full cursor-pointer hover:bg-muted" onclick={() => showQrModal = false}>
@@ -1148,14 +1148,14 @@ const filteredPayments = $derived.by(() => {
     {#if printMode === 'voucher' && selectedPayment}
       <div class="text-center pb-6 border-b-2 border-emerald-500/50 flex justify-between items-center">
         <div class="text-start">
-          <h2 class="text-xl font-bold text-zinc-800">{m.finance_payments_orbis_institution()}</h2>
+          <h2 class="text-xl font-bold text-zinc-800">{m.finance_journal_print_org_name()}</h2>
           <p class="text-xs text-zinc-500">{m.finance_payments_customer_receipt()}</p>
         </div>
         <h1 class="text-2xl font-extrabold text-emerald-600">
           سند قبض #{receiptNumber}
         </h1>
         <div class="text-end text-xs text-zinc-600">
-          <p>{m.finance_payments_date_label()}{formatDate(paymentDate)}</p>
+          <p>{m.finance_journal_date_label()}{formatDate(paymentDate)}</p>
           <p>{m.finance_payments_treasury_label()}{selectedPayment.treasury_name || m.finance_payments_collections_treasury()}</p>
         </div>
       </div>
@@ -1172,11 +1172,11 @@ const filteredPayments = $derived.by(() => {
           </div>
         </div>
         <div class="border border-zinc-200 p-3 rounded-lg">
-          <span class="text-xs text-zinc-500 block">{m.finance_payments_payment_method()}</span>
+          <span class="text-xs text-zinc-500 block">{m.finance_fees_col_method()}</span>
           <span class="font-bold text-zinc-800">{getMethodLabel(paymentMethod)}</span>
         </div>
         <div class="border border-zinc-200 p-3 rounded-lg col-span-2">
-          <span class="text-xs text-zinc-500 block">{m.finance_payments_desc_notes()}</span>
+          <span class="text-xs text-zinc-500 block">{m.common_docs_form_desc_label()}</span>
           <span class="font-medium text-zinc-700">{notes}</span>
         </div>
       </div>
@@ -1194,13 +1194,13 @@ const filteredPayments = $derived.by(() => {
       <table class="w-full border-collapse mt-6 text-xs border border-zinc-200">
         <thead>
           <tr class="bg-zinc-100 border-b border-zinc-300 text-zinc-700">
-            <th class="p-2 text-start">{m.finance_payments_number()}</th>
-            <th class="p-2 text-start">{m.finance_payments_date()}</th>
-            <th class="p-2 text-start">{m.finance_payments_payment_method()}</th>
-            <th class="p-2 text-end">{m.finance_payments_amount()}</th>
-            <th class="p-2 text-start">{m.finance_payments_treasury()}</th>
+            <th class="p-2 text-start">{m.common_word_number()}</th>
+            <th class="p-2 text-start">{m.common_overview_date()}</th>
+            <th class="p-2 text-start">{m.finance_fees_col_method()}</th>
+            <th class="p-2 text-end">{m.common_ft_col_amount()}</th>
+            <th class="p-2 text-start">{m.common_ledger_tab_treasury()}</th>
             <th class="p-2 text-start">{m.finance_payments_customer_account()}</th>
-            <th class="p-2 text-start">{m.finance_payments_desc()}</th>
+            <th class="p-2 text-start">{m.common_calendar_field_description()}</th>
           </tr>
         </thead>
         <tbody>

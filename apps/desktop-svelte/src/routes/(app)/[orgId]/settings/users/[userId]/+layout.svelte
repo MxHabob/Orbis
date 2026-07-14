@@ -123,7 +123,7 @@ const menuItems = $derived([
   },
   {
     path: "sessions",
-    label: m.settings_user_detail_tab_sessions(),
+    label: m.settings_security_sessions(),
   },
   {
     path: "preferences",
@@ -157,7 +157,7 @@ const menuItems = $derived([
           variant="success"
           class="text-[9px] py-0 px-1.5 h-4.5 rounded shrink-0"
         >
-          {m.common_status_active()}
+          {m.common_phase_active()}
         </Badge>
       {:else}
         <Badge

@@ -74,12 +74,12 @@ const breadcrumbs = $derived.by(() => {
 
     if (pathname.includes("/classes")) {
       items.push({
-        label: m.academics_layout_nav_classes(),
+        label: m.common_search_group_classes(),
         href: `/${currentOrgId}/academics/classes`,
       });
     } else if (pathname.includes("/schedule")) {
       items.push({
-        label: m.academics_layout_nav_schedule(),
+        label: m.common_exams_detail_schedule(),
         href: `/${currentOrgId}/academics/schedule`,
       });
     } else if (pathname.includes("/exams")) {
@@ -167,8 +167,8 @@ const breadcrumbs = $derived.by(() => {
       });
     } else if (pathname.includes("/subjects")) {
       items.push({
-        label: m.common_word_subjects
-          ? m.common_word_subjects()
+        label: m.common_exams_detail_subjects
+          ? m.common_exams_detail_subjects()
           : "المواد الدراسية",
       });
     } else if (pathname.includes("/audit")) {
@@ -195,8 +195,8 @@ const breadcrumbs = $derived.by(() => {
       });
     } else if (pathname.includes("/discount-templates")) {
       items.push({
-        label: m.settings_nav_discount_templates
-          ? m.settings_nav_discount_templates()
+        label: m.common_form_summary_discount
+          ? m.common_form_summary_discount()
           : "قوالب الخصومات",
       });
     }

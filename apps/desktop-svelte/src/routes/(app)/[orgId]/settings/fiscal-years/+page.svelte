@@ -92,7 +92,7 @@ async function handleCreateYear() {
             <Table>
               <TableHeader class="bg-muted/40">
                 <TableRow>
-                  <TableHead>{m.common_year_name_label()}</TableHead>
+                  <TableHead>{m.common_year_name()}</TableHead>
                   <TableHead>{m.common_year_start_date()}</TableHead>
                   <TableHead>{m.common_year_end_date()}</TableHead>
                   <TableHead>{m.common_word_status()}</TableHead>
@@ -106,9 +106,9 @@ async function handleCreateYear() {
                     <TableCell class="text-muted-foreground font-mono text-sm">{year.end_date}</TableCell>
                     <TableCell>
                       {#if year.status === "open"}
-                        <Badge variant="lime">{m.common_status_open()}</Badge>
+                        <Badge variant="lime">{m.common_exams_open_section()}</Badge>
                       {:else}
-                        <Badge variant="secondary">{m.common_status_closed()}</Badge>
+                        <Badge variant="secondary">{m.common_phase_closed()}</Badge>
                       {/if}
                     </TableCell>
                   </TableRow>

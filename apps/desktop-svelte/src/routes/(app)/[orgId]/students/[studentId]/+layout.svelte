@@ -64,7 +64,7 @@ const basePath = $derived(`/${orgId}/students/${studentId}`);
 const menuItems = $derived([
   {
     path: "",
-    label: m.common_form_tab_profile(),
+    label: m.common_breadcrumb_student_profile(),
     icon: User,
   },
   {
@@ -79,7 +79,7 @@ const menuItems = $derived([
   },
   {
     path: "attendance",
-    label: m.common_detail_tab_attendance(),
+    label: m.common_promo_attendance(),
     icon: UserCheck,
   },
   {
@@ -298,7 +298,7 @@ const menuItems = $derived([
                 <div class="flex flex-col gap-0.5">
                   <span
                     class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
-                    >{m.common_word_guardian()}</span
+                    >{m.common_users_filter_guardian()}</span
                   >
                   <span class="text-xs text-foreground font-medium">
                     {student.guardian_name}
@@ -310,7 +310,7 @@ const menuItems = $derived([
                 <div class="flex flex-col gap-0.5">
                   <span
                     class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
-                    >{m.common_guardians_phone_label()}</span
+                    >{m.common_bulk_col_guardian_phone()}</span
                   >
                   <span class="text-xs text-foreground font-mono">
                     {student.guardian_phone}

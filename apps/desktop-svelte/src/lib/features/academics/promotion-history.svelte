@@ -92,7 +92,7 @@ function statusLabel(status: string) {
     dry_run: m.common_promo_job_status_dry_run,
     confirmed: m.common_promo_job_status_confirmed,
     executing: m.common_promo_job_status_executing,
-    completed: m.common_calendar_status_done,
+    completed: m.common_schedule_ai_status_done,
     failed: m.common_calendar_status_failed,
     rolled_back: m.common_action_back,
   };

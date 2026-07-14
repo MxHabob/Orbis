@@ -111,7 +111,7 @@ const averageClassSize = $derived(
 	<!-- Header Area -->
 	<div class="flex items-center justify-between font-sans">
 		<h2 class="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
-			<span>{m.common_classes_active_classes()}</span>
+			<span>{m.common_card_active_classes()}</span>
 			{#if !isLoading}
 				<span class="text-[10px] px-1.5 py-0.5 rounded bg-muted font-mono text-muted-foreground">
 					{classes.length}

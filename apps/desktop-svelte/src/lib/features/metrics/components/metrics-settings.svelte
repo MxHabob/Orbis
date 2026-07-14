@@ -28,7 +28,7 @@ let {
 		>
 			{#if isEditing}
 				<Check size={14} class="text-emerald-500" />
-				<span>{m.reports_metrics_done()}</span>
+				<span>{m.common_schedule_ai_status_done()}</span>
 			{:else}
 				<Settings size={14} class="text-muted-foreground" />
 				<span>{m.reports_metrics_customize()}</span>

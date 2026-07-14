@@ -281,14 +281,14 @@ async function restoreTemplate(id: string) {
           <div class="min-w-[140px]">
             <Select type="single" bind:value={filterEntityType} onValueChange={loadTemplates}>
               <SelectTrigger class="h-9 text-xs bg-background/50">
-                {({ all: m.settings_templates_filter_entity_all(), enrollment: m.settings_templates_filter_entity_enrollment(), payment: m.settings_templates_filter_entity_payment(), exam: m.settings_templates_filter_entity_exam(), user: m.settings_templates_filter_entity_user(), organization: m.settings_templates_filter_entity_organization() } as any)[filterEntityType] || m.settings_templates_filter_entity_trigger()}
+                {({ all: m.settings_templates_filter_entity_all(), enrollment: m.common_bulk_card_students_tag_enrollment(), payment: m.settings_templates_filter_entity_payment(), exam: m.settings_templates_filter_entity_exam(), user: m.common_agent_default_user_name(), organization: m.settings_templates_filter_entity_organization() } as any)[filterEntityType] || m.common_print_multi_up_entity_type()}
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{m.settings_templates_filter_entity_all()}</SelectItem>
-                <SelectItem value="enrollment">{m.settings_templates_filter_entity_enrollment()}</SelectItem>
+                <SelectItem value="enrollment">{m.common_bulk_card_students_tag_enrollment()}</SelectItem>
                 <SelectItem value="payment">{m.settings_templates_filter_entity_payment()}</SelectItem>
                 <SelectItem value="exam">{m.settings_templates_filter_entity_exam()}</SelectItem>
-                <SelectItem value="user">{m.settings_templates_filter_entity_user()}</SelectItem>
+                <SelectItem value="user">{m.common_agent_default_user_name()}</SelectItem>
                 <SelectItem value="organization">{m.settings_templates_filter_entity_organization()}</SelectItem>
               </SelectContent>
             </Select>
@@ -298,15 +298,15 @@ async function restoreTemplate(id: string) {
           <div class="min-w-[140px]">
             <Select type="single" bind:value={filterDocType} onValueChange={loadTemplates}>
               <SelectTrigger class="h-9 text-xs bg-background/50">
-                {({ all: m.settings_templates_filter_doc_all(), CERTIFICATE: m.settings_templates_filter_doc_certificate(), ID_CARD: m.settings_templates_filter_doc_id_card(), RECEIPT: m.settings_templates_filter_doc_receipt(), EXAM_CARD: m.settings_templates_filter_doc_exam_card(), REPORT: m.settings_templates_filter_doc_report() } as any)[filterDocType] || m.settings_permissions_col_doc_type()}
+                {({ all: m.settings_templates_filter_doc_all(), CERTIFICATE: m.settings_templates_filter_doc_certificate(), ID_CARD: m.settings_templates_filter_doc_id_card(), RECEIPT: m.finance_layout_nav_payments(), EXAM_CARD: m.settings_templates_filter_doc_exam_card(), REPORT: m.common_nav_reports() } as any)[filterDocType] || m.settings_permissions_col_doc_type()}
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{m.settings_templates_filter_doc_all()}</SelectItem>
                 <SelectItem value="CERTIFICATE">{m.settings_templates_filter_doc_certificate()}</SelectItem>
                 <SelectItem value="ID_CARD">{m.settings_templates_filter_doc_id_card()}</SelectItem>
-                <SelectItem value="RECEIPT">{m.settings_templates_filter_doc_receipt()}</SelectItem>
+                <SelectItem value="RECEIPT">{m.finance_layout_nav_payments()}</SelectItem>
                 <SelectItem value="EXAM_CARD">{m.settings_templates_filter_doc_exam_card()}</SelectItem>
-                <SelectItem value="REPORT">{m.settings_templates_filter_doc_report()}</SelectItem>
+                <SelectItem value="REPORT">{m.common_nav_reports()}</SelectItem>
               </SelectContent>
             </Select>
           </div>

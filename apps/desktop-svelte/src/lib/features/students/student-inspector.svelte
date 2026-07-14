@@ -144,7 +144,7 @@ $effect(() => {
           <h3 class="text-sm font-bold text-foreground">{student.full_name || student.name_ar || ''}</h3>
           <div class="flex justify-center">
             <Badge variant={student.status === 'active' ? 'lime' : student.status === 'draft' ? 'outline' : 'secondary'} class="text-[9px] scale-95 font-semibold px-2 py-0.5">
-              {student.status === 'active' ? m.common_status_active() : 
+              {student.status === 'active' ? m.common_phase_active() : 
                student.status === 'draft' ? m.common_status_draft() :
                student.status === 'pending_review' ? m.common_form_status_pending_review() :
                student.status === 'withdrawn' ? m.common_status_withdrawn() :

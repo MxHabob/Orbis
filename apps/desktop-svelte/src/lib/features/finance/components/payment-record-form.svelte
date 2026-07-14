@@ -221,7 +221,7 @@ async function handleSubmit(e: SubmitEvent) {
 			disabled={isLoadingDropdowns || isSubmitting}
 		>
 			{#if isLoadingDropdowns}
-				<option>{m.common_status_undefined() === "غير محدد" ? m.finance_payment_loading_students() : "Loading students..."}</option>
+				<option>{m.common_status_undefined() === "غير محدد" ? m.common_fee_dropdown_loading_students() : "Loading students..."}</option>
 			{:else}
 				{#each students as s (s.id)}
 					<option value={String(s.id)}>{s.full_name || s.student_number || s.id}</option>
@@ -287,8 +287,8 @@ async function handleSubmit(e: SubmitEvent) {
 			class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full"
 			disabled={isSubmitting}
 		>
-			<option value="Cash">{m.common_status_undefined() === "غير محدد" ? m.finance_payment_type_cash() : "Cash"}</option>
-			<option value="Bank Transfer">{m.common_status_undefined() === "غير محدد" ? m.finance_payment_type_transfer() : "Bank Transfer"}</option>
+			<option value="Cash">{m.common_status_undefined() === "غير محدد" ? m.finance_pos_cash() : "Cash"}</option>
+			<option value="Bank Transfer">{m.common_status_undefined() === "غير محدد" ? m.finance_pos_bank_transfer() : "Bank Transfer"}</option>
 			<option value="Card">{m.common_status_undefined() === "غير محدد" ? m.finance_payment_type_card() : "Card"}</option>
 		</select>
 	</div>

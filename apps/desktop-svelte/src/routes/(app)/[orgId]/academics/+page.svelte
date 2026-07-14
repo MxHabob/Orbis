@@ -114,7 +114,7 @@ const kpiStats = $derived([
     value: currentYear?.teacher_count ?? 0,
   },
   {
-    label: m.academics_overview_kpi_total_students(),
+    label: m.common_classes_enrolled_students(),
     value: currentYear?.student_count ?? 0,
   },
 ]);
@@ -123,21 +123,21 @@ const kpiStats = $derived([
 const directoryItems = $derived([
   {
     path: `/${data.orgId}/academics/classes`,
-    title: m.academics_layout_nav_classes(),
+    title: m.common_search_group_classes(),
     desc: m.academics_overview_card_classes_desc(),
     icon: GraduationCap,
     badge: m.academics_overview_card_classes_badge({ count: classes.length }),
   },
   {
     path: `/${data.orgId}/academics/schedule`,
-    title: m.academics_layout_nav_schedule(),
+    title: m.common_exams_detail_schedule(),
     desc: m.academics_overview_card_schedule_desc(),
     icon: Calendar,
     badge: m.academics_overview_card_schedule_badge(),
   },
   {
     path: `/${data.orgId}/academics/calendar`,
-    title: m.academics_overview_card_calendar_title(),
+    title: m.common_calendar_title(),
     desc: m.academics_overview_card_calendar_desc(),
     icon: CalendarClock,
     badge: m.academics_overview_card_calendar_badge(),

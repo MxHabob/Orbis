@@ -120,7 +120,7 @@ async function handleSubmit(e: SubmitEvent) {
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="flex flex-col gap-2">
         <label for="per_name_ar" class="text-xs font-semibold text-foreground">
-          {m.common_bulk_col_name_ar()}
+          {m.common_cycle_form_name()}
         </label>
         <Input
           id="per_name_ar"
@@ -133,7 +133,7 @@ async function handleSubmit(e: SubmitEvent) {
 
       <div class="flex flex-col gap-2">
         <label for="per_name_en" class="text-xs font-semibold text-foreground">
-          {m.common_ft_form_name_en()} <span class="text-destructive">*</span>
+          {m.common_user_form_name_en()} <span class="text-destructive">*</span>
         </label>
         <Input
           id="per_name_en"
@@ -229,7 +229,7 @@ async function handleSubmit(e: SubmitEvent) {
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div class="flex flex-col gap-2">
         <label for="per_grading" class="text-xs font-semibold text-foreground">
-          {m.common_period_form_grading()}
+          {m.common_cycle_form_grading()}
         </label>
         <Select type="single" value={gradingSystem} onValueChange={(v) => (gradingSystem = v ?? "percentage")}>
           <SelectTrigger class="h-9 text-sm w-full">

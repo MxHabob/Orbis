@@ -158,7 +158,7 @@ function handleClose() {
       <!-- Current Plan Status -->
       <div class="mt-8 flex flex-col gap-0.5 select-none">
         <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
-          {m.common_audit_user_system()}
+          {m.common_dt_type_system()}
         </span>
         <span class="text-[15px] font-extrabold text-foreground">
           {m.common_upgrade_plan_dev()}

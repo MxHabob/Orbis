@@ -157,7 +157,7 @@ export function buildStudentColumns(
       size: 110,
       editor: "combo",
       options: [
-        { id: "active", label: m.common_status_active() },
+        { id: "active", label: m.common_phase_active() },
         { id: "withdrawn", label: m.common_status_withdrawn() },
       ],
     });
@@ -225,9 +225,9 @@ export function buildStudentColumns(
       size: 120,
       editor: "combo",
       options: [
-        { id: "father", label: m.common_relationship_father?.() || "Father" },
-        { id: "mother", label: m.common_relationship_mother?.() || "Mother" },
-        { id: "other", label: m.common_ft_category_other?.() || "Other" },
+        { id: "father", label: m.common_guardians_relationship_father?.() || "Father" },
+        { id: "mother", label: m.common_guardians_relationship_mother?.() || "Mother" },
+        { id: "other", label: m.common_guardians_relationship_other?.() || "Other" },
       ],
     });
   }

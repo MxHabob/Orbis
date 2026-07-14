@@ -88,8 +88,8 @@ async function processApproval(
 
     const actionLabel =
       action === "approve"
-        ? m.common_approval_approved
-          ? m.common_approval_approved()
+        ? m.common_form_status_approved
+          ? m.common_form_status_approved()
           : "Approved"
         : action === "reject"
           ? m.common_approval_rejected
@@ -195,7 +195,7 @@ function parseApprovalChain(
     <Tabs value="pending">
       <TabsList>
         <TabsTrigger value="pending">
-          {m.common_approvals_tab_pending ? m.common_approvals_tab_pending() : "Pending"}
+          {m.common_calendar_status_pending ? m.common_calendar_status_pending() : "Pending"}
           {#if pendingItems.length > 0}
             <Badge variant="destructive" class="text-[10px] px-1.5 h-4 ms-1.5">{pendingItems.length}</Badge>
           {/if}

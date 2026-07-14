@@ -17,8 +17,8 @@ const basePath = $derived(`/${data.orgId}/academics/exams`);
 const menuItems = $derived([
   {
     path: "",
-    label: m.common_word_overview
-      ? m.common_word_overview()
+    label: m.common_nav_overview
+      ? m.common_nav_overview()
       : "نظرة عامة",
     icon: BarChart3,
   },

@@ -377,14 +377,14 @@ let baseCurrencyCode = $derived(
         <Table>
           <TableHeader class="bg-muted/40 select-none">
             <TableRow>
-              <TableHead class="text-start font-bold text-xs">{m.settings_currencies_col_code()}</TableHead>
+              <TableHead class="text-start font-bold text-xs">{m.common_ledger_col_code()}</TableHead>
               <TableHead class="text-start font-bold text-xs">{m.common_cycle_form_name()}</TableHead>
               <TableHead class="text-start font-bold text-xs">{m.common_user_form_name_en()}</TableHead>
               <TableHead class="text-start font-bold text-xs">{m.settings_currencies_col_symbol()}</TableHead>
               <TableHead class="text-start font-bold text-xs">{m.common_word_type()}</TableHead>
               <TableHead class="text-start font-bold text-xs">{m.common_word_status()}</TableHead>
               <TableHead class="text-end font-bold text-xs">{m.settings_currencies_col_rate()}</TableHead>
-              <TableHead class="text-end font-bold text-xs w-[140px]">{m.common_word_actions()}</TableHead>
+              <TableHead class="text-end font-bold text-xs w-[140px]">{m.common_je_col_actions()}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -415,11 +415,11 @@ let baseCurrencyCode = $derived(
                 <TableCell class="text-start text-xs">
                   {#if c.is_active === 1}
                     <Badge variant="success" class="text-[9px] font-bold">
-                      {m.common_status_active()}
+                      {m.common_phase_active()}
                     </Badge>
                   {:else}
                     <Badge variant="secondary" class="text-[9px] font-semibold">
-                      {m.settings_currencies_status_inactive()}
+                      {m.common_status_disabled()}
                     </Badge>
                   {/if}
                 </TableCell>
@@ -644,7 +644,7 @@ let baseCurrencyCode = $derived(
 
         <div class="flex items-center justify-between border-t border-border/20 pt-3">
           <div class="flex flex-col gap-0.5">
-            <span class="text-xs font-semibold text-foreground">{m.settings_currencies_active()}</span>
+            <span class="text-xs font-semibold text-foreground">{m.common_phase_active()}</span>
             <span class="text-[9px] text-muted-foreground">
               {m.settings_currencies_active_desc()}
             </span>
@@ -690,7 +690,7 @@ let baseCurrencyCode = $derived(
         <!-- Currency Code (Read Only) -->
         <div class="flex flex-col gap-1.5">
           <label for="edit_code" class="text-xs font-semibold text-muted-foreground">
-            {m.settings_currencies_col_code()}
+            {m.common_ledger_col_code()}
           </label>
           <Input
             id="edit_code"
@@ -809,7 +809,7 @@ let baseCurrencyCode = $derived(
 
         <div class="flex items-center justify-between border-t border-border/20 pt-3">
           <div class="flex flex-col gap-0.5">
-            <span class="text-xs font-semibold text-foreground">{m.settings_currencies_active()}</span>
+            <span class="text-xs font-semibold text-foreground">{m.common_phase_active()}</span>
             <span class="text-[9px] text-muted-foreground">
               {m.settings_currencies_active_desc()}
             </span>

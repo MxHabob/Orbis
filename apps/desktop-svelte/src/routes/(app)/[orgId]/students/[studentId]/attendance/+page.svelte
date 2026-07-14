@@ -72,7 +72,7 @@ const columns = $derived(
   saDef.columns({
     idx: "#",
     date: m.common_overview_date(),
-    status: m.academics_attendance_col_status(),
+    status: m.common_word_status(),
     notes: m.academics_attendance_col_notes(),
   }),
 );
@@ -107,7 +107,7 @@ const rtl = $derived(getLocale() === "ar");
       </div>
       <div class="border border-border bg-card/45 p-4 rounded-xl flex items-center justify-between shadow-sm">
         <div class="flex flex-col">
-          <span class="text-[9px] text-muted-foreground">{m.academics_attendance_rate()}</span>
+          <span class="text-[9px] text-muted-foreground">{m.common_card_attendance_rate()}</span>
           <span class="text-sm font-bold mt-0.5 text-gradient-brand">{formatPercent(report.rate ?? 100.0)}</span>
         </div>
         <Calendar size={16} class="text-primary" />

@@ -69,7 +69,7 @@ const gridSource = $derived(
 const columns = $derived(
   sgDef.columns({
     idx: "#",
-    subject: m.academics_grades_col_subject(),
+    subject: m.common_word_subject(),
     examType: m.academics_grades_col_assessment(),
     score: m.academics_grades_col_score(),
     maxScore: "Max",

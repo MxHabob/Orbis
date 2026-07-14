@@ -134,7 +134,7 @@ const columns = $derived(
     idx: "#",
     student: m.common_word_student(),
     template: m.finance_fees_col_description(),
-    total: m.finance_fees_col_amount(),
+    total: m.common_ft_col_amount(),
     paid: m.finance_fees_total_collected(),
     balance: m.finance_fees_total_due(),
     status: m.finance_fees_col_status(),
@@ -235,7 +235,7 @@ const rtl = $derived(getLocale() === "ar");
             <Select type="single" value={statusFilter} onValueChange={(v) => (statusFilter = v ?? "all")}>
               <SelectTrigger class="h-8 w-full text-xs bg-card border-border/60">
                 {#if statusFilter === "all"}
-                  {m.finance_fees_filter_status_all()}
+                  {m.common_status_all()}
                 {:else if statusFilter === "unpaid"}
                   {m.finance_fees_status_unpaid()}
                 {:else if statusFilter === "partially_paid"}
@@ -245,7 +245,7 @@ const rtl = $derived(getLocale() === "ar");
                 {/if}
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{m.finance_fees_filter_status_all()}</SelectItem>
+                <SelectItem value="all">{m.common_status_all()}</SelectItem>
                 <SelectItem value="unpaid">{m.finance_fees_status_unpaid()}</SelectItem>
                 <SelectItem value="partially_paid">{m.finance_fees_status_partially_paid()}</SelectItem>
                 <SelectItem value="paid">{m.finance_fees_status_paid()}</SelectItem>

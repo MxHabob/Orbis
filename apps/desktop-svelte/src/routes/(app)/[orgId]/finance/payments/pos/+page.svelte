@@ -539,9 +539,9 @@ onMount(() => {
                 <thead>
                   <tr class="bg-accent/40 border-b border-border/80 text-[10px] text-muted-foreground select-none">
                     <th class="p-2.5 text-start font-semibold">{m.finance_pos_receipt()}</th>
-                    <th class="p-2.5 text-start font-semibold">{m.finance_pos_date()}</th>
+                    <th class="p-2.5 text-start font-semibold">{m.common_overview_date()}</th>
                     <th class="p-2.5 text-start font-semibold">{m.finance_pos_method()}</th>
-                    <th class="p-2.5 text-end font-semibold">{m.finance_pos_amount()}</th>
+                    <th class="p-2.5 text-end font-semibold">{m.common_ft_col_amount()}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -765,7 +765,7 @@ onMount(() => {
               onclick={deselectStudent}
               disabled={isSubmitting}
             >
-              {m.finance_pos_cancel()}
+              {m.common_action_cancel()}
             </Button>
             <Button 
               type="submit" 

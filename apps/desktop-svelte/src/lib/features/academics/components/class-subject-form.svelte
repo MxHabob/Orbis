@@ -144,7 +144,7 @@ async function handleSubmit() {
   {:else}
     <!-- Period -->
     <div class="flex flex-col gap-1.5">
-      <Label class="text-xs font-semibold text-muted-foreground">{m.period ? m.period() : "Academic Period"} *</Label>
+      <Label class="text-xs font-semibold text-muted-foreground">{m.common_metrics_period ? m.common_metrics_period() : "Academic Period"} *</Label>
       <Select type="single" value={periodId} onValueChange={(v) => (periodId = v ?? "")}>
         <SelectTrigger class="h-9 text-sm">
           {selectedPeriod

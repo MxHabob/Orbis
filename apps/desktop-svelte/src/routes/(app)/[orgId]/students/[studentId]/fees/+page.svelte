@@ -91,7 +91,7 @@ const feesCols = $derived(
   sfDef.columns({
     idx: "#",
     fee: m.finance_fees_col_description(),
-    total: m.finance_fees_col_amount(),
+    total: m.common_ft_col_amount(),
     status: m.finance_fees_col_date(),
   }),
 );
@@ -129,7 +129,7 @@ const paymentsSource = $derived(
     payments.map((p) => ({
       ...p,
       receipt: `#${p.receipt_number || p.id?.slice(0, 8)}`,
-      method: p.method || m.finance_fees_default_method(),
+      method: p.method || m.finance_pos_cash(),
       date: formatDate(p.created_at) || "—",
       amount: formatCurrency(Number(p.amount || 0)),
     })),

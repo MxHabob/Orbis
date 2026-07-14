@@ -42,7 +42,7 @@ function handleAddSubject() {
         <span>{m.common_onboarding_subject_name_ar()}</span>
         <span>{m.common_subject_label_code()}</span>
         <span>{m.common_onboarding_subjects_table_name_en()}</span>
-        <span class="w-12 text-center">{m.common_cycles_activate()}</span>
+        <span class="w-12 text-center">{m.common_word_status()}</span>
       </div>
 
       <!-- Inline Add Subject Row -->
@@ -59,7 +59,7 @@ function handleAddSubject() {
         <Input bind:value={newSubCode} placeholder="CHM" class="h-8 text-xs font-mono uppercase bg-background/50 border-dashed border-border/80 text-center" />
 
         <!-- Name English -->
-        <Input bind:value={newSubName} placeholder={m.common_onboarding_subjects_placeholder_en()} class="h-8 text-xs font-sans bg-background/50 border-dashed border-border/80 text-left" style="direction: ltr;" />
+        <Input bind:value={newSubName} placeholder={m.common_onboarding_subjects_placeholder_ar()} class="h-8 text-xs font-sans bg-background/50 border-dashed border-border/80 text-left" style="direction: ltr;" />
 
         <!-- Add Button -->
         <div class="flex justify-center items-center">

@@ -77,7 +77,7 @@ function getTaskTypeLabel(type: string): string {
 function getPhaseLabel(phase: string) {
   switch (phase) {
     case "enrollment":
-      return m.common_phase_enrollment();
+      return m.common_bulk_card_students_tag_enrollment();
     case "active":
       return m.common_phase_active();
     case "exam":
@@ -160,7 +160,7 @@ const phaseLabel = $derived(getPhaseLabel(academicContext.periodPhase));
           </Badge>
         {:else}
           <Badge variant="lime" class="text-[8px] h-3.5 px-1 font-bold uppercase tracking-wider">
-            {m.common_status_active()}
+            {m.common_phase_active()}
           </Badge>
         {/if}
       </div>
@@ -247,7 +247,7 @@ const phaseLabel = $derived(getPhaseLabel(academicContext.periodPhase));
           variant={diagnostics?.status === 'critical' ? 'destructive' : diagnostics?.status === 'warning' ? 'secondary' : 'lime'}
           class="text-[9px] h-4 px-1.5"
         >
-          {diagnostics?.status === 'critical' ? m.common_status_critical() : diagnostics?.status === 'warning' ? m.common_status_warning() : m.common_status_healthy()}
+          {diagnostics?.status === 'critical' ? m.common_override_risk_critical() : diagnostics?.status === 'warning' ? m.common_status_warning() : m.common_status_healthy()}
         </Badge>
       </div>
     </div>

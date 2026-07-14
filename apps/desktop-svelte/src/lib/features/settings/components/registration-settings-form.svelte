@@ -336,7 +336,7 @@ function handleSubmit(e: Event) {
                 <TableHeader>
                   <TableRow class="border-b border-border/60 hover:bg-transparent">
                     <TableHead class="py-2 text-start font-semibold text-muted-foreground">{m.settings_registration_table_field()}</TableHead>
-                    <TableHead class="py-2 text-center font-semibold text-muted-foreground">{m.settings_registration_table_active()}</TableHead>
+                    <TableHead class="py-2 text-center font-semibold text-muted-foreground">{m.common_phase_active()}</TableHead>
                     <TableHead class="py-2 text-center font-semibold text-muted-foreground">{m.settings_registration_table_required()}</TableHead>
                     <TableHead class="py-2 text-center font-semibold text-muted-foreground">{m.settings_registration_table_duplicate()}</TableHead>
                   </TableRow>
@@ -345,7 +345,7 @@ function handleSubmit(e: Event) {
                   {#each Object.keys(activeFields) as fieldKey}
                     <TableRow class="border-b border-border/40 hover:bg-muted/5">
                       <TableCell class="py-3 font-semibold text-foreground text-start">
-                        {fieldKey === "national_id" ? m.settings_registration_field_national_id() :
+                        {fieldKey === "national_id" ? m.common_form_profile_nid_label() :
                          fieldKey === "email" ? m.common_word_email() :
                          fieldKey === "phone" ? m.common_word_phone() :
                          fieldKey === "birth_date" ? m.common_bulk_col_dob() :
@@ -353,7 +353,7 @@ function handleSubmit(e: Event) {
                          fieldKey === "address" ? m.common_word_address() :
                          fieldKey === "mother_name" ? m.common_form_mother_name() :
                          fieldKey === "previous_school" ? m.settings_registration_field_previous_school() :
-                         m.settings_registration_field_documents()}
+                         m.common_form_tab_documents()}
                       </TableCell>
                       <TableCell class="py-3 text-center">
                         <Checkbox 

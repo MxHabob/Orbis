@@ -203,7 +203,7 @@ async function saveProfile() {
       <!-- Arabic Name -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label for="nameAr" class="text-xs font-medium text-muted-foreground">
-          {m.settings_user_detail_label_fullname_ar()}
+          {m.common_form_full_name_ar()}
         </Label>
         <Input id="nameAr" type="text" bind:value={nameAr} />
       </div>

@@ -16,7 +16,7 @@ let { logo = $bindable(), name, isSaving = false, onsave }: Props = $props();
 <div class="border border-border rounded-md overflow-hidden flex flex-col">
   <!-- Card Header -->
   <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-    {m.settings_general_section_avatar()}
+    {m.common_account_avatar_section()}
   </div>
 
   <!-- Card Body -->

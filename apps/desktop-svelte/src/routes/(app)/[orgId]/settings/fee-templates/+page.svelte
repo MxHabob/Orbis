@@ -50,7 +50,7 @@ function getCategoryLabel(catStr: string) {
   if (c === "books") return m.common_ft_category_books?.() || "Books";
   if (c === "uniform") return m.common_ft_category_uniform?.() || "Uniform";
   if (c === "exam") return m.common_ft_category_exam?.() || "Exam";
-  return m.common_ft_category_other?.() || "Other";
+  return m.common_guardians_relationship_other?.() || "Other";
 }
 
 function getFrequencyLabel(freqStr: string) {

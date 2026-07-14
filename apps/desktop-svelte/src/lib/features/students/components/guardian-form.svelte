@@ -134,7 +134,7 @@ const relationships = $derived([
   { value: "sibling", label: m.common_guardians_relationship_other() },
   { value: "grandparent", label: m.common_guardians_relationship_other() },
   { value: "uncle", label: m.common_guardians_relationship_other() },
-  { value: "other", label: m.common_ft_category_other() },
+  { value: "other", label: m.common_guardians_relationship_other() },
 ]);
 
 const studentLastName = $derived.by(() => {

@@ -76,8 +76,8 @@ const basePath = $derived(`/${orgId}/academics/classes/${classId}`);
 const menuItems = $derived([
   {
     path: "",
-    label: m.common_word_overview
-      ? m.common_word_overview()
+    label: m.common_nav_overview
+      ? m.common_nav_overview()
       : "نظرة عامة",
     icon: GraduationCap,
   },
@@ -182,8 +182,8 @@ const menuItems = $derived([
   <!-- Detail Page Header -->
   <DetailPageHeader
     backHref={`/${orgId}/academics/classes`}
-    backLabel={m.academics_layout_nav_classes
-      ? m.academics_layout_nav_classes()
+    backLabel={m.common_search_group_classes
+      ? m.common_search_group_classes()
       : "الفصول"}
     actions={headerActions}
   >

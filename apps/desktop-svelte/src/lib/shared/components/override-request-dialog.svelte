@@ -258,7 +258,7 @@ async function submit() {
 
     <DialogFooter class="flex-nowrap shrink-0">
       <Button variant="outline" onclick={() => { open = false; }} disabled={isSubmitting}>
-        {m.cancel ? m.cancel() : "Cancel"}
+        {m.common_action_cancel ? m.common_action_cancel() : "Cancel"}
       </Button>
       <Button onclick={submit} disabled={isSubmitting || !reason.trim()}>
         {#if isSubmitting}

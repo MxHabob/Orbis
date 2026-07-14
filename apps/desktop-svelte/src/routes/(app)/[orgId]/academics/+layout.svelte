@@ -47,18 +47,18 @@ const basePath = $derived(`/${data.orgId}/academics`);
 const navItems = $derived([
   {
     path: "",
-    label: m.common_word_overview(),
+    label: m.common_nav_overview(),
     icon: Compass,
   },
   {
     path: "classes",
-    label: m.academics_layout_nav_classes(),
+    label: m.common_search_group_classes(),
     icon: GraduationCap,
     badge: classesCount > 0 ? classesCount : null,
   },
   {
     path: "schedule",
-    label: m.academics_layout_nav_schedule(),
+    label: m.common_exams_detail_schedule(),
     icon: Calendar,
   },
   {

@@ -159,11 +159,11 @@ function toggleCollapse(periodId: string) {
                     <!-- Status Badges -->
                     {#if year.status === "active"}
                       <Badge variant="lime" class="text-[9px] px-2 py-0 h-4.5 rounded-full font-bold">
-                        {m.common_status_active_f()}
+                        {m.common_phase_active()}
                       </Badge>
                     {:else}
                       <Badge variant="secondary" class="text-[9px] px-2 py-0 h-4.5 rounded-full font-bold">
-                        {year.is_locked === 1 ? m.common_status_locked() : m.settings_cycles_status_inactive()}
+                        {year.is_locked === 1 ? m.common_phase_locked() : m.common_status_disabled()}
                       </Badge>
                     {/if}
                     
@@ -189,7 +189,7 @@ function toggleCollapse(periodId: string) {
                     onclick={() => handleActivate(year.id)}
                   >
                     <CheckCircle2 size={12} class="me-1" />
-                    {m.common_cycles_activate()}
+                    {m.common_word_status()}
                   </Button>
                 {/if}
 
@@ -210,7 +210,7 @@ function toggleCollapse(periodId: string) {
                   onclick={() => openEditSheet(year)}
                 >
                   <Pencil size={12} class="me-1" />
-                  {m.settings_templates_action_edit()}
+                  {m.common_action_edit_simple()}
                 </Button>
               </div>
             </div>
@@ -233,11 +233,11 @@ function toggleCollapse(periodId: string) {
                           
                           {#if term.status === "active"}
                             <Badge variant="lime" class="text-[8px] px-1.5 py-0 h-4 rounded font-bold">
-                              {m.common_status_active_f()}
+                              {m.common_phase_active()}
                             </Badge>
                           {:else if term.is_locked === 1}
                             <Badge variant="destructive" class="text-[8px] px-1.5 py-0 h-4 rounded font-bold">
-                              {m.common_status_locked()}
+                              {m.common_phase_locked()}
                             </Badge>
                           {/if}
 
@@ -259,7 +259,7 @@ function toggleCollapse(periodId: string) {
                             class="text-[9px] h-6 px-2 text-emerald-500 hover:bg-emerald-500/5"
                             onclick={() => handleActivate(term.id)}
                           >
-                            {m.common_cycles_activate()}
+                            {m.common_word_status()}
                           </Button>
                         {/if}
                         {#if term.status === "active" && term.is_locked !== 1}
@@ -277,7 +277,7 @@ function toggleCollapse(periodId: string) {
                           class="text-[9px] h-6 px-2"
                           onclick={() => openEditSheet(term)}
                         >
-                          {m.settings_templates_action_edit()}
+                          {m.common_action_edit_simple()}
                         </Button>
                       </div>
                     </div>

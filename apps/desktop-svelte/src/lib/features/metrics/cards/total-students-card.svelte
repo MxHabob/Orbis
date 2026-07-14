@@ -223,7 +223,7 @@ function handleMouseLeave() {
         </div>
         <div class="flex items-center gap-1.5">
           <span class="font-mono text-muted-foreground/60 select-none">--</span>
-          <span>{m.reports_revenue_trend_average()}</span>
+          <span>{m.common_detail_gpa()}</span>
         </div>
       </div>
     </div>

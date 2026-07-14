@@ -498,7 +498,7 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
                     <TableCell class="text-start">
                       {#if event.executed_at}
                         <span class="text-[10px] text-primary font-medium font-sans">
-                          {m.common_calendar_status_done ? m.common_calendar_status_done() : "Done"}
+                          {m.common_schedule_ai_status_done ? m.common_schedule_ai_status_done() : "Done"}
                         </span>
                       {:else}
                         <span class="text-[10px] text-muted-foreground font-sans">

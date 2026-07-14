@@ -73,18 +73,18 @@ const periodLabel = $derived(() => {
 });
 
 const termName = $derived(() => {
-  if (selectedTerm === "all") return m.common_metrics_all_terms();
+  if (selectedTerm === "all") return m.common_filter_all_classes();
   const term = terms.find((t) => t.id === selectedTerm);
-  if (!term) return m.common_metrics_all_terms();
+  if (!term) return m.common_filter_all_classes();
   return getLocale() === "ar" && term.name_ar
     ? term.name_ar
     : term.name || term.name_en || term.name_ar || "";
 });
 
 const className = $derived(() => {
-  if (selectedClass === "all") return m.common_metrics_all_terms();
+  if (selectedClass === "all") return m.common_filter_all_classes();
   const c = classes.find((i) => i.id === selectedClass);
-  if (!c) return m.common_metrics_all_terms();
+  if (!c) return m.common_filter_all_classes();
   return getLocale() === "ar" && c.name_ar
     ? c.name_ar
     : c.name || c.name_en || c.name_ar || "";
@@ -123,7 +123,7 @@ const className = $derived(() => {
 						{m.common_word_semester()}
 					</DropdownMenuLabel>
 					<DropdownMenuRadioGroup value={selectedTerm} onValueChange={(val) => selectedTerm = val}>
-						<DropdownMenuRadioItem value="all" class="text-xs cursor-pointer">{m.common_metrics_all_terms()}</DropdownMenuRadioItem>
+						<DropdownMenuRadioItem value="all" class="text-xs cursor-pointer">{m.common_filter_all_classes()}</DropdownMenuRadioItem>
 						{#each terms as term (term.id)}
 							<DropdownMenuRadioItem value={term.id} class="text-xs cursor-pointer">
 								{getLocale() === "ar" && term.name_ar ? term.name_ar : (term.name || term.name_en || term.name_ar || '')}
@@ -140,7 +140,7 @@ const className = $derived(() => {
 						{m.reports_metrics_class_grade()}
 					</DropdownMenuLabel>
 					<DropdownMenuRadioGroup value={selectedClass} onValueChange={(val) => selectedClass = val}>
-						<DropdownMenuRadioItem value="all" class="text-xs cursor-pointer">{m.common_metrics_all_terms()}</DropdownMenuRadioItem>
+						<DropdownMenuRadioItem value="all" class="text-xs cursor-pointer">{m.common_filter_all_classes()}</DropdownMenuRadioItem>
 						{#each classes as c (c.id)}
 							<DropdownMenuRadioItem value={c.id} class="text-xs cursor-pointer">
 								{getLocale() === "ar" && c.name_ar ? c.name_ar : (c.name || c.name_en || c.name_ar || '')}

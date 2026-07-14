@@ -1090,7 +1090,7 @@ function exitPage() {
         <div class="flex gap-4 w-full">
           <!-- Name combobox selector -->
           <div class="flex-1 flex flex-col gap-1 text-[9px] font-bold text-muted-foreground combobox-container relative font-sans">
-            <span>{m.finance_ledger_account_name()}</span>
+            <span>{m.common_ledger_col_name()}</span>
             <div class="relative">
               <input
                 type="text"
@@ -1103,7 +1103,7 @@ function exitPage() {
               {#if isNameDropdownOpen && activeTab === "single" && !isLoading}
                 <div class="absolute z-50 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded-md shadow-lg flex flex-col p-1 text-[10px]" transition:fade={{ duration: 80 }}>
                   {#if searchedAccountsByName.length === 0}
-                    <span class="text-[10px] text-muted-foreground p-2 text-center">{m.finance_ledger_no_matching_accounts()}</span>
+                    <span class="text-[10px] text-muted-foreground p-2 text-center">{m.finance_statement_no_match()}</span>
                   {:else}
                     {#each searchedAccountsByName as acc (acc.id)}
                       <button
@@ -1474,10 +1474,10 @@ function exitPage() {
                 <TableHeader class="bg-card">
                   <TableRow class="hover:bg-transparent border-b border-border/80 text-[10px] font-bold text-foreground">
                     <TableHead class="w-12 text-center font-bold border-r border-border/60">*</TableHead>
-                    <TableHead colspan={2} class="text-center font-bold border-r border-border/60">{m.finance_ledger_amount()}</TableHead>
+                    <TableHead colspan={2} class="text-center font-bold border-r border-border/60">{m.common_ft_col_amount()}</TableHead>
                     <TableHead class="text-center font-bold border-r border-border/60 w-32">{m.finance_ledger_currency()}</TableHead>
                     <TableHead colspan={2} class="text-center font-bold border-r border-border/60">{m.finance_ledger_equivalent_in_yer()}</TableHead>
-                    <TableHead class="text-start font-bold">{m.finance_ledger_description()}</TableHead>
+                    <TableHead class="text-start font-bold">{m.common_calendar_field_description()}</TableHead>
                   </TableRow>
                   <TableRow class="hover:bg-transparent border-b border-border/80 text-[9px] font-bold">
                     <TableHead class="border-r border-border/60 text-center">-</TableHead>
@@ -1524,7 +1524,7 @@ function exitPage() {
                     <TableCell class="border-r border-border/40 text-center text-foreground font-semibold">Σ</TableCell>
                     <TableCell class="border-r border-border/40 text-center text-muted-foreground/40">-</TableCell>
                     <TableCell class="border-r border-border/60 text-center text-muted-foreground/40">-</TableCell>
-                    <TableCell class="border-r border-border/60 text-center text-foreground font-bold">{m.finance_ledger_total()}</TableCell>
+                    <TableCell class="border-r border-border/60 text-center text-foreground font-bold">{m.common_grades_col_total()}</TableCell>
                     <TableCell class="border-r border-border/40 text-center text-red-500 font-bold">
                       {summaryTotals.debit_eq > 0 ? formatCurrency(summaryTotals.debit_eq, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
                     </TableCell>
@@ -1565,11 +1565,11 @@ function exitPage() {
                     <TableHead class="w-28 text-center text-red-500 border-r border-border/60">{m.common_ledger_col_debit()}</TableHead>
                     <TableHead class="w-28 text-center text-emerald-500 border-r border-border/60">{m.common_action_edit()}</TableHead>
                     <TableHead class="w-36 text-center text-foreground border-r border-border/60">{m.finance_ledger_balance()}</TableHead>
-                    <TableHead class="w-20 text-center text-foreground border-r border-border/60">{m.finance_ledger_status()}</TableHead>
-                    <TableHead class="w-28 text-center text-foreground border-r border-border/60">{m.finance_ledger_date()}</TableHead>
+                    <TableHead class="w-20 text-center text-foreground border-r border-border/60">{m.common_word_status()}</TableHead>
+                    <TableHead class="w-28 text-center text-foreground border-r border-border/60">{m.common_overview_date()}</TableHead>
                     <TableHead class="w-32 text-center text-foreground border-r border-border/60">{m.finance_ledger_voucher()}</TableHead>
-                    <TableHead class="w-24 text-center text-foreground border-r border-border/60">{m.finance_ledger_no()}</TableHead>
-                    <TableHead class="text-start text-foreground">{m.finance_ledger_description()}</TableHead>
+                    <TableHead class="w-24 text-center text-foreground border-r border-border/60">{m.common_onboarding_schedule_col_num()}</TableHead>
+                    <TableHead class="text-start text-foreground">{m.common_calendar_field_description()}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

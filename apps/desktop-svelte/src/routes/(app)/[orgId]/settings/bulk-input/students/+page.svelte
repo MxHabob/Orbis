@@ -161,13 +161,13 @@ function handleTopClassChange(v: string) {
 // Column labels
 const labels: Record<string, string> = {
   full_name: m.common_word_fullname(),
-  name_ar: m.common_bulk_col_name_ar(),
+  name_ar: m.common_cycle_form_name(),
   email: m.common_word_email(),
   phone: m.common_bulk_col_phone(),
-  national_id: m.common_bulk_col_national_id(),
+  national_id: m.common_user_form_national_id(),
   sex: m.common_form_sex(),
   dob: m.common_bulk_col_dob(),
-  class: m.common_cs_col_class(),
+  class: m.common_table_class(),
   enrollment_status: m.common_bulk_col_enrollment_status(),
   nationality: m.common_bulk_col_nationality(),
   address: m.common_word_address(),
@@ -177,7 +177,7 @@ const labels: Record<string, string> = {
   guardian_phone: m.common_bulk_col_guardian_phone(),
   guardian_rel: m.common_bulk_col_guardian_rel(),
   blood_type: m.common_bulk_col_blood_type(),
-  emergency: m.common_bulk_col_emergency(),
+  emergency: m.common_form_guardian_role_emergency(),
   allergies: m.common_bulk_col_allergies(),
   medical: m.common_bulk_col_medical(),
 };

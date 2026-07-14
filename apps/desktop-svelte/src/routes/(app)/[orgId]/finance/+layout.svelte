@@ -54,7 +54,7 @@ const basePath = $derived(`/${data.orgId}/finance`);
 const navItems = $derived([
   {
     path: "",
-    label: m.common_word_overview(),
+    label: m.common_nav_overview(),
     icon: Compass,
   },
   {

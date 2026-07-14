@@ -417,7 +417,7 @@ async function handleAutoSchedule() {
     const job = await commands.exam.startSolve(userId, req);
     activeJob = job;
     toast.success(
-      m.academics_exams_sessions_sessionId_started_auto_scheduling_in_the(),
+      m.common_schedule_ai_optimization_started(),
     );
     startPollingJob(String(job.id));
   } catch (e: any) {
@@ -457,7 +457,7 @@ async function startPollingJob(jobId: string) {
         } else if (job.status === "failed") {
           solveError =
             (job.error_message as string) ||
-            (m.academics_exams_sessions_sessionId_optimization_job_failed());
+            (m.common_schedule_ai_optimization_failed());
           toast.error(solveError || "Error");
         }
       }
@@ -840,7 +840,7 @@ async function handleAssignProctors() {
 															{getSubjectName(sched.exam_subject_id)}
 														</span>
 														{#if sched.isDraft}
-															<span class="text-[8px] px-1 py-0.5 rounded bg-primary/10 text-primary font-bold">{m.academics_exams_draft()}</span>
+															<span class="text-[8px] px-1 py-0.5 rounded bg-primary/10 text-primary font-bold">{m.common_status_draft()}</span>
 														{/if}
 													</div>
 													
@@ -895,7 +895,7 @@ async function handleAssignProctors() {
 															{getSubjectName(sched.exam_subject_id)}
 														</span>
 														{#if sched.isDraft}
-															<span class="text-[8px] px-1 py-0.5 rounded bg-primary/10 text-primary font-bold">{m.academics_exams_draft()}</span>
+															<span class="text-[8px] px-1 py-0.5 rounded bg-primary/10 text-primary font-bold">{m.common_status_draft()}</span>
 														{/if}
 													</div>
 													
@@ -961,7 +961,7 @@ async function handleAssignProctors() {
 									onclick={() => printDialogOpen = true}
 								>
 									<Printer size={12} />
-									<span>{m.academics_exams_print_templates()} ({selectedSeatIds.size})</span>
+									<span>{m.common_print_templates()} ({selectedSeatIds.size})</span>
 								</Button>
 							{/if}
 						</div>
@@ -979,8 +979,8 @@ async function handleAssignProctors() {
 										</TableHead>
 										<TableHead class="w-10">#</TableHead>
 										<TableHead>{m.academics_exams_seat_number()}</TableHead>
-										<TableHead>{m.academics_exams_student()}</TableHead>
-										<TableHead>{m.academics_exams_class()}</TableHead>
+										<TableHead>{m.common_word_student()}</TableHead>
+										<TableHead>{m.common_table_class()}</TableHead>
 										<TableHead>{m.academics_exams_level()}</TableHead>
 									</TableRow>
 								</TableHeader>
@@ -1094,8 +1094,8 @@ async function handleAssignProctors() {
 									<TableRow class="text-[10px]">
 										<TableHead>{m.academics_exams_proctor()}</TableHead>
 										<TableHead>{m.academics_exams_committee()}</TableHead>
-										<TableHead>{m.academics_exams_role()}</TableHead>
-										<TableHead class="w-20">{m.academics_exams_status()}</TableHead>
+										<TableHead>{m.common_user_form_role()}</TableHead>
+										<TableHead class="w-20">{m.common_word_status()}</TableHead>
 									</TableRow>
 								</TableHeader>
 								<TableBody>
@@ -1286,7 +1286,7 @@ async function handleAssignProctors() {
 					</div>
 
 					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
-						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.academics_exams_cancel()}</Button>
+						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.common_action_cancel()}</Button>
 						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAutoSchedule(); }}>
 							<Zap size={12} class="me-1" /> بدء الجدولة الذكية
 						</Button>
@@ -1321,7 +1321,7 @@ async function handleAssignProctors() {
 					</div>
 
 					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
-						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.academics_exams_cancel()}</Button>
+						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.common_action_cancel()}</Button>
 						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAllocateHalls(); }}>
 							<Shuffle size={12} class="me-1" /> بدء التوزيع التلقائي
 						</Button>
@@ -1363,7 +1363,7 @@ async function handleAssignProctors() {
 					</div>
 
 					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
-						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.academics_exams_cancel()}</Button>
+						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.common_action_cancel()}</Button>
 						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAssignProctors(); }}>
 							<UserCheck size={12} class="me-1" /> تعيين المراقبين تلقائياً
 						</Button>

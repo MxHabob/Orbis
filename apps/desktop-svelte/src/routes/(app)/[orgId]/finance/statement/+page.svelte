@@ -642,7 +642,7 @@ function handleWindowClick(event: MouseEvent) {
                 <ChevronRight size={12} class="text-muted-foreground {getLocale() === 'ar' ? 'rotate-180' : ''}" />
                 <Folder size={12} class="text-primary" />
               {/if}
-              <span>{m.finance_statement_chart_of_accounts()}</span>
+              <span>{m.finance_ledger_chart_of_accounts()}</span>
             </button>
             <button
               type="button"
@@ -752,7 +752,7 @@ function handleWindowClick(event: MouseEvent) {
 
             <!-- Account code search combobox -->
             <div class="w-32 flex flex-col gap-1 text-[10px] font-bold text-muted-foreground combobox-container relative">
-              <span>{m.finance_statement_account_code()}</span>
+              <span>{m.finance_ledger_account_code()}</span>
               <div class="relative">
                 <input
                   type="text"
@@ -785,11 +785,11 @@ function handleWindowClick(event: MouseEvent) {
             <!-- Date Selectors -->
             <div class="flex items-center gap-2">
               <div class="flex flex-col gap-1 text-[10px] font-bold text-muted-foreground">
-                <span>{m.finance_statement_start_date()}</span>
+                <span>{m.common_year_start_date()}</span>
                 <Input type="date" bind:value={startDate} class="h-8 text-xs w-[130px]" />
               </div>
               <div class="flex flex-col gap-1 text-[10px] font-bold text-muted-foreground">
-                <span>{m.finance_statement_end_date()}</span>
+                <span>{m.common_year_end_date()}</span>
                 <Input type="date" bind:value={endDate} class="h-8 text-xs w-[130px]" />
               </div>
             </div>
@@ -819,7 +819,7 @@ function handleWindowClick(event: MouseEvent) {
                 bind:value={movementFilter}
                 class="bg-background text-foreground border border-border rounded-md px-3 h-8.5 text-xs outline-none focus:ring-1 focus:ring-ring cursor-pointer"
               >
-                <option value="all">{m.finance_statement_all_accounts()}</option>
+                <option value="all">{m.common_ledger_tab_all()}</option>
                 <option value="active">{m.finance_statement_accounts_with_transactions()}</option>
               </select>
             </div>
@@ -886,19 +886,19 @@ function handleWindowClick(event: MouseEvent) {
                     <TableHead colspan={2} class="border-l border-border/40 text-center bg-blue-500/5 text-blue-600">دولار (USD)</TableHead>
                     <TableHead colspan={2} class="border-l border-border/40 text-center bg-purple-500/5 text-purple-600">درهم (AED)</TableHead>
                     <TableHead class="text-start border-l border-border/40">{m.finance_statement_terminal_account()}</TableHead>
-                    <TableHead class="text-center border-l border-border/40 w-24">{m.finance_statement_code()}</TableHead>
-                    <TableHead class="text-center w-16">{m.finance_statement_action()}</TableHead>
+                    <TableHead class="text-center border-l border-border/40 w-24">{m.common_ledger_col_code()}</TableHead>
+                    <TableHead class="text-center w-16">{m.common_audit_col_action()}</TableHead>
                   </TableRow>
                   <TableRow class="hover:bg-transparent border-b border-border/80 text-[9px] font-bold">
                     <TableHead class="border-l border-border/40"></TableHead>
-                    <TableHead class="text-center border-l border-border/20 text-red-500 w-20">{m.finance_statement_debit()}</TableHead>
-                    <TableHead class="text-center border-l border-border/40 text-emerald-500 w-20">{m.finance_statement_credit()}</TableHead>
-                    <TableHead class="text-center border-l border-border/20 text-red-500 w-20">{m.finance_statement_debit()}</TableHead>
-                    <TableHead class="text-center border-l border-border/40 text-emerald-500 w-20">{m.finance_statement_credit()}</TableHead>
-                    <TableHead class="text-center border-l border-border/20 text-red-500 w-20">{m.finance_statement_debit()}</TableHead>
-                    <TableHead class="text-center border-l border-border/40 text-emerald-500 w-20">{m.finance_statement_credit()}</TableHead>
-                    <TableHead class="text-center border-l border-border/20 text-red-500 w-20">{m.finance_statement_debit()}</TableHead>
-                    <TableHead class="text-center border-l border-border/40 text-emerald-500 w-20">{m.finance_statement_credit()}</TableHead>
+                    <TableHead class="text-center border-l border-border/20 text-red-500 w-20">{m.common_ledger_col_debit()}</TableHead>
+                    <TableHead class="text-center border-l border-border/40 text-emerald-500 w-20">{m.finance_reports_credit()}</TableHead>
+                    <TableHead class="text-center border-l border-border/20 text-red-500 w-20">{m.common_ledger_col_debit()}</TableHead>
+                    <TableHead class="text-center border-l border-border/40 text-emerald-500 w-20">{m.finance_reports_credit()}</TableHead>
+                    <TableHead class="text-center border-l border-border/20 text-red-500 w-20">{m.common_ledger_col_debit()}</TableHead>
+                    <TableHead class="text-center border-l border-border/40 text-emerald-500 w-20">{m.finance_reports_credit()}</TableHead>
+                    <TableHead class="text-center border-l border-border/20 text-red-500 w-20">{m.common_ledger_col_debit()}</TableHead>
+                    <TableHead class="text-center border-l border-border/40 text-emerald-500 w-20">{m.finance_reports_credit()}</TableHead>
                     <TableHead class="border-l border-border/40"></TableHead>
                     <TableHead class="border-l border-border/40"></TableHead>
                     <TableHead></TableHead>
@@ -1000,7 +1000,7 @@ function handleWindowClick(event: MouseEvent) {
                       {allAccountsTotals.credA > 0 ? formatCurrency(allAccountsTotals.credA, "").replace(/YER|SAR|USD|AED/g, "") : "0"}
                     </TableCell>
 
-                    <TableCell class="border-l border-border/40 text-start text-foreground uppercase tracking-wider text-[10px] font-bold">{m.finance_statement_grand_total()}</TableCell>
+                    <TableCell class="border-l border-border/40 text-start text-foreground uppercase tracking-wider text-[10px] font-bold">{m.finance_ledger_grand_total()}</TableCell>
                     <TableCell class="border-l border-border/40 text-center font-bold font-mono">-</TableCell>
                     <TableCell class="text-center print:hidden">-</TableCell>
                   </TableRow>
@@ -1014,13 +1014,13 @@ function handleWindowClick(event: MouseEvent) {
                 <TableHeader class="bg-muted/40 select-none print:bg-transparent">
                   <TableRow class="hover:bg-transparent border-b border-border/80 text-[10px] font-bold text-foreground">
                     <TableHead class="w-10 border-l border-border/40 text-center font-bold font-mono">#</TableHead>
-                    <TableHead class="text-center border-l border-border/40 w-32">{m.finance_statement_opening_balance()}</TableHead>
+                    <TableHead class="text-center border-l border-border/40 w-32">{m.common_ledger_label_opening_balance()}</TableHead>
                     <TableHead class="text-center border-l border-border/40 text-red-500 w-32">{m.finance_statement_transaction_debit()}</TableHead>
                     <TableHead class="text-center border-l border-border/40 text-emerald-500 w-32">{m.finance_statement_transaction_credit()}</TableHead>
-                    <TableHead class="text-center border-l border-border/40 w-32">{m.finance_statement_current_balance()}</TableHead>
-                    <TableHead class="text-start border-l border-border/40">{m.finance_statement_account_name()}</TableHead>
-                    <TableHead class="text-center border-l border-border/40 w-32">{m.finance_statement_code()}</TableHead>
-                    <TableHead class="text-center w-20">{m.finance_statement_action()}</TableHead>
+                    <TableHead class="text-center border-l border-border/40 w-32">{m.finance_col_balance()}</TableHead>
+                    <TableHead class="text-start border-l border-border/40">{m.common_ledger_col_name()}</TableHead>
+                    <TableHead class="text-center border-l border-border/40 w-32">{m.common_ledger_col_code()}</TableHead>
+                    <TableHead class="text-center w-20">{m.common_audit_col_action()}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1092,7 +1092,7 @@ function handleWindowClick(event: MouseEvent) {
           <div in:slide={{ duration: 200 }} class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 select-none">
             <!-- Card 1: Opening Balance -->
             <div class="border border-border/60 bg-card/25 p-4 rounded-2xl text-start flex flex-col justify-between hover:border-primary/30 transition-all duration-200">
-              <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.finance_statement_opening_balance()}</span>
+              <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.common_ledger_label_opening_balance()}</span>
               <div class="flex items-baseline gap-1 mt-2">
                 <span class="text-lg font-extrabold font-mono text-foreground">
                   {formatCurrency(statement.opening_balance, statement.currency)}
@@ -1167,12 +1167,12 @@ function handleWindowClick(event: MouseEvent) {
               <Table class="border-collapse w-full">
                 <TableHeader class="bg-muted/40 select-none print:bg-transparent">
                   <TableRow class="hover:bg-transparent border-b border-border/80 text-[11px] font-bold text-foreground">
-                    <TableHead class="text-start">{m.finance_statement_date()}</TableHead>
+                    <TableHead class="text-start">{m.common_overview_date()}</TableHead>
                     <TableHead class="text-start">{m.finance_statement_reference()}</TableHead>
                     <TableHead class="text-start">{m.finance_statement_detailed_desc()}</TableHead>
-                    <TableHead class="text-end text-emerald-500 w-28">{m.finance_statement_debit_plus()}</TableHead>
-                    <TableHead class="text-end text-rose-500 w-28">{m.finance_statement_credit_minus()}</TableHead>
-                    <TableHead class="text-end w-32">{m.finance_statement_running_balance()}</TableHead>
+                    <TableHead class="text-end text-emerald-500 w-28">{m.finance_journal_print_debit()}</TableHead>
+                    <TableHead class="text-end text-rose-500 w-28">{m.finance_journal_print_credit()}</TableHead>
+                    <TableHead class="text-end w-32">{m.finance_col_balance()}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

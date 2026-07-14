@@ -76,7 +76,7 @@ let {
         <CardHeader class="pb-3">
           <div class="flex items-start justify-between gap-2">
             <Badge variant={template.status === 'published' ? 'success' : (template.status === 'archived' ? 'outline' : 'secondary')}>
-              {template.status === 'published' ? m.common_status_active() : (template.status === 'archived' ? m.settings_templates_status_archived() : m.common_status_draft())}
+              {template.status === 'published' ? m.common_phase_active() : (template.status === 'archived' ? m.common_year_status_archived() : m.common_status_draft())}
             </Badge>
             <div class="text-[10px] text-muted-foreground">v{template.version}</div>
           </div>
@@ -123,7 +123,7 @@ let {
               href={`/${orgId}/templates/${template.id}`}
             >
               <Edit size={13} class="me-1" />
-              {m.settings_templates_action_edit()}
+              {m.common_action_edit_simple()}
             </Button>
 
             {#if template.status === 'published'}

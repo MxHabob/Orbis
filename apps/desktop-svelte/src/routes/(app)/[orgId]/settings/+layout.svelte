@@ -78,7 +78,7 @@ const navItems = $derived([
   },
   {
     path: "subjects",
-    label: m.common_word_subjects(),
+    label: m.common_exams_detail_subjects(),
     icon: BookOpen,
   },
   {
@@ -114,7 +114,7 @@ const navItems = $derived([
   },
   {
     path: "discount-templates",
-    label: m.settings_nav_discount_templates(),
+    label: m.common_form_summary_discount(),
     icon: Percent,
   },
   {

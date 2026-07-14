@@ -296,8 +296,8 @@ const totalWeight = $derived(
               </span>
               <span class="flex items-center gap-1">
                 <Award size={10} />
-                {m.common_assessments_max_score
-                  ? m.common_assessments_max_score()
+                {m.common_exams_subjects_score
+                  ? m.common_exams_subjects_score()
                   : "أقصى درجة"}: {assessment.max_score}
               </span>
               {#if assessment.date}

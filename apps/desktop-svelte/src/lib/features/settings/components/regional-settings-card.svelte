@@ -50,7 +50,7 @@ const dateFormats = [
     <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
       <div class="flex flex-col gap-1 text-start">
         <Label for="org_currency" class="text-xs font-semibold text-foreground">
-          {m.settings_general_currency()}
+          {m.finance_ledger_currency()}
         </Label>
         <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_currency_desc()}</span>
       </div>

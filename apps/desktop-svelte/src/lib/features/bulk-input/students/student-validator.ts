@@ -106,7 +106,7 @@ export function validateStudentRows(
     // ── date_of_birth: required, YYYY-MM-DD ──
     const dob = str(row.date_of_birth);
     if (!dob) {
-      errors.set("date_of_birth", m.common_validation_dob_required());
+      errors.set("date_of_birth", m.common_form_error_birth_required());
     } else if (!DATE_RE.test(dob)) {
       errors.set("date_of_birth", m.common_validation_dob_format());
     }

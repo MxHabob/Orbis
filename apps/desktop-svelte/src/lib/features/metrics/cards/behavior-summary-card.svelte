@@ -68,7 +68,7 @@ const listItems = $derived.by(() => {
   return [
     {
       name: "critical",
-      label: m.reports_behavior_critical(),
+      label: m.common_override_risk_critical(),
       value: critical,
       percent: Math.round((critical / total) * 100),
       color: "bg-destructive",
@@ -97,7 +97,7 @@ const displayItems = $derived(
     : [
         {
           name: "critical",
-          label: m.reports_behavior_critical(),
+          label: m.common_override_risk_critical(),
           value: 0,
           percent: 0,
           color: "bg-destructive",

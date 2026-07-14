@@ -182,7 +182,7 @@ async function handleSubmit() {
           <option value="final">{m.exams_session_type_final()}</option>
           <option value="midterm">{m.exams_session_type_midterm()}</option>
           <option value="quiz">{m.exams_session_type_quiz()}</option>
-          <option value="practical">{m.exams_session_type_practical()}</option>
+          <option value="practical">{m.exams_subject_type_practical()}</option>
         </select>
       </div>
 

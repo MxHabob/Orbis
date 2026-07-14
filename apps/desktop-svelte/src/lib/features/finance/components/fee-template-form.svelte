@@ -69,7 +69,7 @@ const categories = $derived([
   },
   {
     value: "other",
-    label: m.common_ft_category_other ? m.common_ft_category_other() : "أخرى",
+    label: m.common_guardians_relationship_other ? m.common_guardians_relationship_other() : "أخرى",
   },
 ]);
 const categoryLabels = $derived(
@@ -290,7 +290,7 @@ async function handleSubmit() {
     <!-- Name (English) -->
     <div class="flex flex-col gap-1.5 text-start">
       <Label for="ft_form_name_en" class="text-xs font-semibold text-muted-foreground">
-        {m.common_ft_form_name_en ? m.common_ft_form_name_en() : "Name (English)"} *
+        {m.common_user_form_name_en ? m.common_user_form_name_en() : "Name (English)"} *
       </Label>
       <Input 
         id="ft_form_name_en"
@@ -446,7 +446,7 @@ async function handleSubmit() {
           disabled={isSubmitting}
         />
         <Label for="ft_active_chk" class="text-xs cursor-pointer">
-          {m.common_status_active ? m.common_status_active() : "نشط"}
+          {m.common_phase_active ? m.common_phase_active() : "نشط"}
         </Label>
       </div>
     </div>

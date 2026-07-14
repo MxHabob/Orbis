@@ -219,8 +219,8 @@ const filtered = $derived(
             <TableHead class="w-12 text-center">{m.common_order_rank()}</TableHead>
             <TableHead>{m.common_student_name_label()}</TableHead>
             <TableHead class="w-32">{m.common_word_academic_number()}</TableHead>
-            <TableHead class="w-28">{m.common_cs_col_class()}</TableHead>
-            <TableHead class="w-28">{m.settings_permissions_col_level()}</TableHead>
+            <TableHead class="w-28">{m.common_table_class()}</TableHead>
+            <TableHead class="w-28">{m.academics_exams_level()}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

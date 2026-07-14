@@ -416,7 +416,7 @@ async function saveStudentDetails(e: Event) {
                 onCheckedChange={(checked) => isActiveState = checked}
               />
               <Label for="student_status_switch" class="text-xs text-muted-foreground select-none cursor-pointer">
-                {isActiveState ? m.common_status_active() : m.students_student_detail_row_status_inactive()}
+                {isActiveState ? m.common_phase_active() : m.students_student_detail_row_status_inactive()}
               </Label>
             </div>
           </div>

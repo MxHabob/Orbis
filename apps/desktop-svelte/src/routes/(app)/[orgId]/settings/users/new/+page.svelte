@@ -40,7 +40,7 @@ function getRoleLabel(roleStr: string): string {
     case "admin":
       return m.common_users_filter_admin();
     case "teacher":
-      return m.common_users_filter_teacher();
+      return m.common_schedule_page_teacher();
     case "parent":
       return m.common_users_filter_guardian();
     case "student":
@@ -285,7 +285,7 @@ async function handleSubmit(e: SubmitEvent) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="admin" class="text-xs">{m.common_users_filter_admin()}</SelectItem>
-                  <SelectItem value="teacher" class="text-xs">{m.common_users_filter_teacher()}</SelectItem>
+                  <SelectItem value="teacher" class="text-xs">{m.common_schedule_page_teacher()}</SelectItem>
                   <SelectItem value="parent" class="text-xs">{m.common_users_filter_guardian()}</SelectItem>
                   <SelectItem value="student" class="text-xs">{m.common_word_student_single()}</SelectItem>
                   <SelectItem value="staff" class="text-xs">{m.common_user_form_role_staff()}</SelectItem>

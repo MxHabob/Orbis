@@ -88,7 +88,7 @@ let { state }: { state: StudentFormState } = $props();
             <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_fullname_desc()}</span>
           </div>
           <div class="w-full md:w-[480px] shrink-0">
-            <Input bind:value={guardian.full_name} class="h-9 w-full bg-background" placeholder={m.common_form_guardian_fullname_placeholder()} />
+            <Input bind:value={guardian.full_name} class="h-9 w-full bg-background" placeholder={m.common_guardians_col_name()} />
           </div>
         </div>
 
@@ -115,11 +115,11 @@ let { state }: { state: StudentFormState } = $props();
           <div class="w-full md:w-[480px] shrink-0">
             <Select bind:value={guardian.relationship} type="single">
               <SelectTrigger class="h-9 w-full bg-background flex justify-between items-center">
-                <span>{guardian.relationship === "father" ? m.students_family_father() : guardian.relationship === "mother" ? m.students_family_mother() : guardian.relationship === "uncle" ? m.students_family_uncle() : m.students_family_other()}</span>
+                <span>{guardian.relationship === "father" ? m.common_guardians_relationship_father() : guardian.relationship === "mother" ? m.common_guardians_relationship_mother() : guardian.relationship === "uncle" ? m.students_family_uncle() : m.common_guardians_relationship_other()}</span>
               </SelectTrigger>
               <SelectContent class="text-start">
-                <SelectItem value="father" onclick={() => guardian.relationship_ar = m.students_family_father()}>أب</SelectItem>
-                <SelectItem value="mother" onclick={() => guardian.relationship_ar = m.students_family_mother()}>أم</SelectItem>
+                <SelectItem value="father" onclick={() => guardian.relationship_ar = m.common_guardians_relationship_father()}>أب</SelectItem>
+                <SelectItem value="mother" onclick={() => guardian.relationship_ar = m.common_guardians_relationship_mother()}>أم</SelectItem>
                 <SelectItem value="uncle" onclick={() => guardian.relationship_ar = m.students_family_uncle()}>عم</SelectItem>
                 <SelectItem value="other" onclick={() => guardian.relationship_ar = m.students_family_relative_other()}>آخر</SelectItem>
               </SelectContent>
@@ -134,7 +134,7 @@ let { state }: { state: StudentFormState } = $props();
             <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_nid_desc()}</span>
           </div>
           <div class="w-full md:w-[480px] shrink-0">
-            <Input bind:value={guardian.national_id} class="h-9 w-full bg-background font-mono" placeholder={m.common_form_guardian_nid_placeholder()} />
+            <Input bind:value={guardian.national_id} class="h-9 w-full bg-background font-mono" placeholder={m.common_form_guardian_national_id_label()} />
           </div>
         </div>
 

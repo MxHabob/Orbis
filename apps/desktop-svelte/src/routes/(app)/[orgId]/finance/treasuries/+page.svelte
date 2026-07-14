@@ -127,9 +127,9 @@ const treasuryCols = $derived(
 const ledgerCols = $derived(
   lDef.columns({
     idx: "#",
-    code: m.finance_col_code(),
+    code: m.common_ledger_col_code(),
     name: m.common_col_name(),
-    type: m.finance_col_type(),
+    type: m.common_word_type(),
   }),
 );
 

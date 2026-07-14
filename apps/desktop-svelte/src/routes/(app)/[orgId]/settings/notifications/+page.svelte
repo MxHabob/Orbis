@@ -100,7 +100,7 @@ async function handleSave(e: Event) {
             <!-- Attendance -->
             <div class="flex items-center justify-between py-2 border-b border-border/20">
               <div class="flex flex-col text-start">
-                <span class="text-xs font-semibold text-foreground">{m.common_detail_tab_attendance()}</span>
+                <span class="text-xs font-semibold text-foreground">{m.common_promo_attendance()}</span>
                 <span class="text-[10px] text-muted-foreground">Receive logs on student absence or tardiness</span>
               </div>
               <Switch bind:checked={prefs.inApp.attendance} disabled={isSaving} />
@@ -164,7 +164,7 @@ async function handleSave(e: Event) {
             <!-- Attendance -->
             <div class="flex items-center justify-between py-2 border-b border-border/20">
               <div class="flex flex-col text-start">
-                <span class="text-xs font-semibold text-foreground">{m.common_detail_tab_attendance()}</span>
+                <span class="text-xs font-semibold text-foreground">{m.common_promo_attendance()}</span>
                 <span class="text-[10px] text-muted-foreground">Receive logs on student absence or tardiness</span>
               </div>
               <Switch bind:checked={prefs.email.attendance} disabled={isSaving} />

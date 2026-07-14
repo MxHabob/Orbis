@@ -25,7 +25,7 @@ let {
     <div class="flex items-center gap-2">
       <a href={localizeHref(`/${orgId}/finance/fees`)}>
         <Button variant="outline" size="xs" class="h-6 text-[9px] font-bold cursor-pointer">
-          {m.finance_overview_btn_assign_fee ? m.finance_overview_btn_assign_fee() : "فرض رسوم"}
+          {m.common_fee_button_assign ? m.common_fee_button_assign() : "فرض رسوم"}
         </Button>
       </a>
       <a href={localizeHref(`/${orgId}/finance/fees`)}>

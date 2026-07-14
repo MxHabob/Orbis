@@ -272,10 +272,10 @@ const totalEquity = $derived.by(() => {
             <Table>
               <TableHeader class="bg-muted/40 font-bold sticky top-0 z-10">
                 <TableRow>
-                  <TableHead class="text-start text-xs w-[120px]">{m.finance_reports_account_code()}</TableHead>
-                  <TableHead class="text-start text-xs">{m.finance_reports_account_name()}</TableHead>
+                  <TableHead class="text-start text-xs w-[120px]">{m.finance_ledger_account_code()}</TableHead>
+                  <TableHead class="text-start text-xs">{m.common_ledger_col_name()}</TableHead>
                   {#each activeCurrencies as c}
-                    <TableHead class="text-end text-xs text-emerald-600">{m.finance_reports_debit()} {c.code}</TableHead>
+                    <TableHead class="text-end text-xs text-emerald-600">{m.common_ledger_col_debit()} {c.code}</TableHead>
                     <TableHead class="text-end text-xs text-rose-600">{m.finance_reports_credit()} {c.code}</TableHead>
                   {/each}
                 </TableRow>

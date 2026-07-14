@@ -181,15 +181,15 @@ const systemPages = $derived([
   },
   // Academics
   {
-    title: m.academics_layout_nav_classes
-      ? m.academics_layout_nav_classes()
+    title: m.common_search_group_classes
+      ? m.common_search_group_classes()
       : "Classes",
     path: `/${currentOrgId}/academics/classes`,
     icon: GraduationCap,
   },
   {
-    title: m.academics_layout_nav_schedule
-      ? m.academics_layout_nav_schedule()
+    title: m.common_exams_detail_schedule
+      ? m.common_exams_detail_schedule()
       : "Schedule",
     path: `/${currentOrgId}/academics/schedule`,
     icon: Calendar,
@@ -251,7 +251,7 @@ const systemPages = $derived([
     icon: Settings,
   },
   {
-    title: m.common_word_subjects ? m.common_word_subjects() : "Subjects",
+    title: m.common_exams_detail_subjects ? m.common_exams_detail_subjects() : "Subjects",
     path: `/${currentOrgId}/settings/subjects`,
     icon: BookOpen,
   },
@@ -270,8 +270,8 @@ const systemPages = $derived([
     icon: FileText,
   },
   {
-    title: m.settings_nav_discount_templates
-      ? m.settings_nav_discount_templates()
+    title: m.common_form_summary_discount
+      ? m.common_form_summary_discount()
       : "Discount Templates",
     path: `/${currentOrgId}/settings/discount-templates`,
     icon: FileText,
@@ -359,7 +359,7 @@ const filteredItems = $derived.by(() => {
         title: s.name || "Subject",
         icon: BookOpen,
         action: () => goto(`/${currentOrgId}/settings/subjects`),
-        group: m.common_word_subjects ? m.common_word_subjects() : "Subjects",
+        group: m.common_exams_detail_subjects ? m.common_exams_detail_subjects() : "Subjects",
       }));
     list.push(...matchedSubjects);
   }

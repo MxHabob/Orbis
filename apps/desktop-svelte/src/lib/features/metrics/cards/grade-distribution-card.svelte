@@ -152,7 +152,7 @@ function handleMouseLeave() {
       </div>
       <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
         <span class="h-1.5 w-1.5 rounded-full bg-primary {stats ? 'animate-pulse' : ''}"></span>
-        {m.reports_grade_distribution_title()} {#if stats}• Average: <span class="text-foreground font-mono">{stats?.class_average ?? 0}%</span> (Pass: {stats?.pass_rate ?? 0}%){/if}
+        {m.common_control_grade_distribution()} {#if stats}• Average: <span class="text-foreground font-mono">{stats?.class_average ?? 0}%</span> (Pass: {stats?.pass_rate ?? 0}%){/if}
       </div>
     </div>
 

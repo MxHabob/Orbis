@@ -36,7 +36,7 @@ async function loadData() {
       let male = 0;
       for (const e of enrollments) {
         const sex = String(e.sex || "").toLowerCase();
-        if (sex.startsWith("f") || sex === m.metrics_gender_female()) {
+        if (sex.startsWith("f") || sex === m.common_form_female()) {
           female++;
         } else {
           // Default to male or check
@@ -117,11 +117,11 @@ function handleMouseLeave() {
       <div class="flex items-center gap-4 text-[10px] text-muted-foreground mt-2 font-medium">
         <div class="flex items-center gap-1.5">
           <span class="h-2 w-2 rounded-full bg-foreground inline-block"></span>
-          <span>{m.reports_gender_dist_female()}</span>
+          <span>{m.common_form_female()}</span>
         </div>
         <div class="flex items-center gap-1.5">
           <span class="h-2 w-2 rounded-full bg-muted-foreground/40 inline-block"></span>
-          <span>{m.reports_gender_dist_male()}</span>
+          <span>{m.common_form_male()}</span>
         </div>
       </div>
     </div>
@@ -163,7 +163,7 @@ function handleMouseLeave() {
           ></div>
           <!-- Label -->
           <div class="absolute bottom-[-18px] text-[8px] font-bold text-muted-foreground/80 font-mono select-none">
-            {m.reports_gender_dist_female()}
+            {m.common_form_female()}
           </div>
         </div>
 
@@ -180,7 +180,7 @@ function handleMouseLeave() {
           ></div>
           <!-- Label -->
           <div class="absolute bottom-[-18px] text-[8px] font-bold text-muted-foreground/80 font-mono select-none">
-            {m.reports_gender_dist_male()}
+            {m.common_form_male()}
           </div>
         </div>
       </div>
@@ -192,7 +192,7 @@ function handleMouseLeave() {
           class="absolute z-30 p-2 text-[10px] font-sans border bg-card border-border text-foreground rounded-lg shadow-xl pointer-events-none flex flex-col gap-0.5 min-w-[95px] text-start"
           style="left: {tooltipPos.x + 15}px; top: {tooltipPos.y - 45}px;"
         >
-          <span class="text-foreground font-semibold">{isFemale ? m.reports_gender_dist_female() : m.reports_gender_dist_male()}</span>
+          <span class="text-foreground font-semibold">{isFemale ? m.common_form_female() : m.common_form_male()}</span>
           <span class="text-muted-foreground font-mono">count: {isFemale ? femaleCount : maleCount}</span>
         </div>
       {/if}

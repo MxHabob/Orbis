@@ -149,7 +149,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Max Score -->
 			<div class="flex flex-col gap-2 text-start">
 				<Label for="ass_max" class="text-sm font-medium text-foreground">
-					{m.common_bulk_col_max_score()}
+					{m.common_exams_subjects_score()}
 				</Label>
 				<Input 
 					id="ass_max"

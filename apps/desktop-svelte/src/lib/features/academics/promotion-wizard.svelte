@@ -233,7 +233,7 @@ function decisionLabel(d: string) {
     case "retained":
       return m.common_promo_retained();
     case "graduated":
-      return m.common_promo_graduated();
+      return m.common_form_status_graduated();
     case "excluded":
       return m.common_promo_excluded();
     default:
@@ -521,7 +521,7 @@ function decisionLabel(d: string) {
             <GraduationCap class="size-5 mx-auto text-foreground" />
             <div>
               <div class="text-2xl font-bold text-foreground">{previewStats.graduated}</div>
-              <div class="text-[10px] text-muted-foreground font-semibold uppercase">{m.common_promo_graduated()}</div>
+              <div class="text-[10px] text-muted-foreground font-semibold uppercase">{m.common_form_status_graduated()}</div>
             </div>
           </div>
           <!-- Excluded -->
@@ -606,7 +606,7 @@ function decisionLabel(d: string) {
               </div>
               <div class="text-center p-3 rounded-lg border border-border/50">
                 <div class="text-2xl font-bold text-foreground font-sans">{executionResult.graduated_count ?? 0}</div>
-                <div class="text-xs text-muted-foreground mt-1">{m.common_promo_graduated()}</div>
+                <div class="text-xs text-muted-foreground mt-1">{m.common_form_status_graduated()}</div>
               </div>
               <div class="text-center p-3 rounded-lg border border-border/50">
                 <div class="text-2xl font-bold text-muted-foreground font-sans">{executionResult.excluded_count ?? 0}</div>
@@ -684,7 +684,7 @@ function decisionLabel(d: string) {
       <AlertDialogDescription>{m.common_promo_execute_confirm()}</AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter>
-      <AlertDialogCancel>{m.common_cancel?.() ?? "Cancel"}</AlertDialogCancel>
+      <AlertDialogCancel>{m.common_action_cancel?.() ?? "Cancel"}</AlertDialogCancel>
       <AlertDialogAction onclick={executePromotion}>{m.common_promo_execute()}</AlertDialogAction>
     </AlertDialogFooter>
   </AlertDialogContent>

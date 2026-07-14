@@ -118,11 +118,11 @@ async function handleReject(actionId: string) {
               </Badge>
               {#if log.status === "pending"}
                 <Badge variant="secondary" class="text-[8px] px-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-none">
-                  {m.common_approvals_tab_pending()}
+                  {m.common_calendar_status_pending()}
                 </Badge>
               {:else if log.status === "approved" || log.status === "executed"}
                 <Badge variant="lime" class="text-[8px] px-1">
-                  {m.common_approval_approved()}
+                  {m.common_form_status_approved()}
                 </Badge>
               {:else if log.status === "rejected"}
                 <Badge variant="outline" class="text-[8px] px-1 text-destructive border-destructive/20">

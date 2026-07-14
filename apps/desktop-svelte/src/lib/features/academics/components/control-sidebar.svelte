@@ -69,7 +69,7 @@ let {
           <span class="text-muted-foreground">{m.common_control_cycle_lock()}</span>
           <span class="flex items-center gap-1 font-semibold {isPeriodLocked ? 'text-destructive' : 'text-emerald-500'}">
             {#if isPeriodLocked}
-              <Lock size={12} /> {m.common_status_locked()}
+              <Lock size={12} /> {m.common_phase_locked()}
             {:else}
               <Unlock size={12} /> {m.common_control_cycle_unlocked()}
             {/if}
@@ -79,7 +79,7 @@ let {
           <span class="text-muted-foreground">{m.common_control_grade_entry()}</span>
           <span class="flex items-center gap-1 font-semibold {isGradeEntryOpen ? 'text-emerald-500' : 'text-amber-500'}">
             {#if isGradeEntryOpen}
-              <CheckCircle2 size={12} /> {m.common_control_grade_entry_open()}
+              <CheckCircle2 size={12} /> {m.common_exams_open_section()}
             {:else}
               <XCircle size={12} /> {m.common_phase_locked()}
             {/if}

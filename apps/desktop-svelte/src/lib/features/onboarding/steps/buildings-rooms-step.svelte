@@ -144,7 +144,7 @@ function confirmRemoveBuilding() {
                 <span>{m.common_onboarding_rooms_table_name_en()}</span>
                 <span>{m.common_word_type()}</span>
                 <span>{m.common_onboarding_rooms_table_floor()}</span>
-                <span>{m.common_onboarding_rooms_table_capacity()}</span>
+                <span>{m.common_rooms_col_capacity()}</span>
                 <span class="w-8"></span>
               </div>
 

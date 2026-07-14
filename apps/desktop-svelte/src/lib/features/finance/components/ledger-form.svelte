@@ -359,12 +359,12 @@ async function handleSubmit(e: SubmitEvent) {
           <Select bind:value={trType} type="single">
             <SelectTrigger class="w-full text-xs text-start flex items-center justify-between bg-background">
               <span class="truncate">
-                {trType === "cash" ? m.common_ledger_type_cash() : m.common_ledger_type_bank()}
+                {trType === "cash" ? m.common_ledger_type_cash() : m.common_treasury_type_bank()}
               </span>
             </SelectTrigger>
             <SelectContent class="text-start">
               <SelectItem value="cash" class="text-xs cursor-pointer">{m.common_ledger_type_cash()}</SelectItem>
-              <SelectItem value="bank" class="text-xs cursor-pointer">{m.common_ledger_type_bank()}</SelectItem>
+              <SelectItem value="bank" class="text-xs cursor-pointer">{m.common_treasury_type_bank()}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -407,7 +407,7 @@ async function handleSubmit(e: SubmitEvent) {
         <!-- Entity Type Selection -->
         <div class="flex flex-col gap-1.5 text-start">
           <Label class="text-xs font-bold text-foreground">
-            {m.common_ledger_label_entity_type()}
+            {m.common_print_multi_up_entity_type()}
           </Label>
           <Select bind:value={enType} type="single">
             <SelectTrigger class="w-full text-xs text-start flex items-center justify-between bg-background">

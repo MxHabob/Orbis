@@ -340,13 +340,13 @@ const filteredEntries = $derived.by(() => {
               <Select type="single" bind:value={statusFilter}>
                 <SelectTrigger class="h-8 text-xs bg-background/50 border-border cursor-pointer">
                   <SelectValue>
-                    {statusFilter === "all" ? m.common_status_all() : statusFilter === "draft" ? m.common_status_draft() : m.common_status_posted()}
+                    {statusFilter === "all" ? m.common_status_all() : statusFilter === "draft" ? m.common_status_draft() : m.common_je_status_posted()}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{m.common_status_all()}</SelectItem>
                   <SelectItem value="draft">{m.common_status_draft()}</SelectItem>
-                  <SelectItem value="posted">{m.common_status_posted()}</SelectItem>
+                  <SelectItem value="posted">{m.common_je_status_posted()}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -382,10 +382,10 @@ const filteredEntries = $derived.by(() => {
                   <TableHead class="text-start font-bold text-xs">{m.common_word_number()}</TableHead>
                   <TableHead class="text-start font-bold text-xs">{m.common_overview_date()}</TableHead>
                   <TableHead class="text-end font-bold text-xs text-emerald-600">{m.common_ft_col_amount()}</TableHead>
-                  <TableHead class="text-center font-bold text-xs">{m.settings_general_currency()}</TableHead>
+                  <TableHead class="text-center font-bold text-xs">{m.finance_ledger_currency()}</TableHead>
                   <TableHead class="text-start font-bold text-xs">{m.finance_journal_debit_account()}</TableHead>
                   <TableHead class="text-start font-bold text-xs">{m.finance_journal_credit_account()}</TableHead>
-                  <TableHead class="text-start font-bold text-xs">{m.finance_journal_description_notes()}</TableHead>
+                  <TableHead class="text-start font-bold text-xs">{m.common_docs_form_desc_label()}</TableHead>
                   <TableHead class="text-center font-bold text-xs w-16">{m.common_word_status()}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -443,7 +443,7 @@ const filteredEntries = $derived.by(() => {
           <div><span class="font-bold text-foreground">{m.finance_journal_ref_number()}</span> {selectedEntry.transaction_ref}</div>
           <div><span class="font-bold text-foreground">{m.finance_journal_date_label()}</span> {formatDate(selectedEntry.accounting_date)}</div>
           <div><span class="font-bold text-foreground">{m.finance_journal_amount_label()}</span> {localFormatCurrency(selectedEntry.amount, selectedEntry.currency || 'YER')}</div>
-          <div><span class="font-bold text-foreground">{m.finance_journal_desc_label()}</span> {selectedEntry.description_ar || selectedEntry.description || '-'}</div>
+          <div><span class="font-bold text-foreground">{m.common_docs_detail_desc_label()}</span> {selectedEntry.description_ar || selectedEntry.description || '-'}</div>
         </div>
         
         <Button variant="outline" size="sm" class="mt-4 w-full cursor-pointer hover:bg-muted text-foreground border-border" onclick={() => showQrModal = false}>

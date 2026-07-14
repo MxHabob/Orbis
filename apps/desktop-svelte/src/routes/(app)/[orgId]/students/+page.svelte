@@ -137,7 +137,7 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 						]
 					},
 					{
-						title: m.common_filter_classes(),
+						title: m.common_search_group_classes(),
 						items: [
 							{
 								label: m.common_filter_all_classes(),
