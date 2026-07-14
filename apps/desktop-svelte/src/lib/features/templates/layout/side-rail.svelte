@@ -35,12 +35,12 @@ type RailItem = {
 };
 
 const topItems: RailItem[] = [
-  { id: "pages", icon: LayoutTemplate, label: m.common_td_panel_pages() },
+  { id: "templates", icon: LayoutTemplate, label: m.common_td_panel_pages() },
   { id: "elements", icon: Shapes, label: m.common_td_panel_elements() },
   { id: "text", icon: Type, label: m.common_td_panel_text() },
-  { id: "media", icon: ImageIcon, label: m.common_td_panel_media() },
-  { id: "variables", icon: Wrench, label: m.common_td_panel_tools() },
-  { id: "settings", icon: Settings2, label: m.common_td_panel_settings() },
+  { id: "uploads", icon: ImageIcon, label: m.common_td_panel_media() },
+  { id: "tools", icon: Wrench, label: m.common_td_panel_tools() },
+  { id: "page-setup", icon: Settings2, label: m.common_td_panel_settings() },
 ];
 </script>
 
