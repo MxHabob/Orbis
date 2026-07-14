@@ -11,7 +11,7 @@ pub async fn login(state: State<'_, Arc<AppState>>, identifier: String, password
     let (user, session) = ops::auth::login(&db, &identifier, &password_hash).await.map_err(CommandError::from)?;
 
     // Lock the session org_id in TenantGuard
-    let roles: Vec<String> = vec![user.role.clone()];
+    let roles: Vec<String> = vec![user.primary_role.clone()];
     state.set_session(user.id.clone(), user.org_id.clone(), roles).await;
 
     Ok(serde_json::json!({
@@ -58,11 +58,7 @@ pub async fn list_users_paginated(
 
 #[tauri::command]
 pub async fn get_user(state: State<'_, Arc<AppState>>, user_id: String) -> CmdResult<serde_json::Value> {
-    use sea_orm::EntityTrait;
-    let db = state.db();
-    let u = svc_iam::entities::user::Entity::find_by_id(user_id.clone())
-        .one(&db).await.map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::not_found("User not found"))?;
+
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let r = ops::user::get(&ctx, &user_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
@@ -77,11 +73,7 @@ pub async fn create_user(state: State<'_, Arc<AppState>>, data: serde_json::Valu
 
 #[tauri::command]
 pub async fn update_user(state: State<'_, Arc<AppState>>, user_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
-    use sea_orm::EntityTrait;
-    let db = state.db();
-    let u = svc_iam::entities::user::Entity::find_by_id(user_id.clone())
-        .one(&db).await.map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::not_found("User not found"))?;
+
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let r = ops::user::update(&ctx, &user_id, data).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
@@ -89,44 +81,28 @@ pub async fn update_user(state: State<'_, Arc<AppState>>, user_id: String, data:
 
 #[tauri::command]
 pub async fn delete_user(state: State<'_, Arc<AppState>>, user_id: String) -> CmdResult<()> {
-    use sea_orm::EntityTrait;
-    let db = state.db();
-    let u = svc_iam::entities::user::Entity::find_by_id(user_id.clone())
-        .one(&db).await.map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::not_found("User not found"))?;
+
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     ops::user::delete(&ctx, &user_id).await.map_err(CommandError::from)
 }
 
 #[tauri::command]
 pub async fn change_password(state: State<'_, Arc<AppState>>, user_id: String, data: serde_json::Value) -> CmdResult<()> {
-    use sea_orm::EntityTrait;
-    let db = state.db();
-    let u = svc_iam::entities::user::Entity::find_by_id(user_id.clone())
-        .one(&db).await.map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::not_found("User not found"))?;
+
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     ops::auth::change_password(&ctx, &user_id, data).await.map_err(CommandError::from)
 }
 
 #[tauri::command]
 pub async fn change_role(state: State<'_, Arc<AppState>>, user_id: String, data: serde_json::Value) -> CmdResult<()> {
-    use sea_orm::EntityTrait;
-    let db = state.db();
-    let u = svc_iam::entities::user::Entity::find_by_id(user_id.clone())
-        .one(&db).await.map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::not_found("User not found"))?;
+
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     ops::user::change_role(&ctx, &user_id, data).await.map(|_| ()).map_err(CommandError::from)
 }
 
 #[tauri::command]
 pub async fn list_user_sessions(state: State<'_, Arc<AppState>>, user_id: String) -> CmdResult<serde_json::Value> {
-    use sea_orm::EntityTrait;
-    let db = state.db();
-    let u = svc_iam::entities::user::Entity::find_by_id(user_id.clone())
-        .one(&db).await.map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::not_found("User not found"))?;
+
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let r = ops::auth::list_sessions(&ctx, &user_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
@@ -134,11 +110,7 @@ pub async fn list_user_sessions(state: State<'_, Arc<AppState>>, user_id: String
 
 #[tauri::command]
 pub async fn list_user_roles(state: State<'_, Arc<AppState>>, user_id: String) -> CmdResult<serde_json::Value> {
-    use sea_orm::EntityTrait;
-    let db = state.db();
-    let user = svc_iam::entities::user::Entity::find_by_id(user_id.clone())
-        .one(&db).await.map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::not_found("User not found"))?;
+
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let r = ops::role::list_by_user(&ctx, &user_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
@@ -217,3 +189,4 @@ pub async fn save_role_permissions(state: State<'_, Arc<AppState>>, role: String
     }
     Ok(())
 }
+

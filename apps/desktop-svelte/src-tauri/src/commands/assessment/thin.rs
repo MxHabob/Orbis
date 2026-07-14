@@ -95,7 +95,7 @@ pub async fn list_attendance(
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     
     let mut query = svc_assessment::entities::attendance::Entity::find()
-        .filter(svc_assessment::entities::attendance::Column::OrgId.eq(&org_id));
+        .filter(svc_assessment::entities::attendance::Column::OrgId.eq(&ctx.org_id));
 
     if let Some(c_id) = period_id {
         if !c_id.trim().is_empty() {
@@ -184,11 +184,6 @@ pub async fn update_grade(
     grade_id: String,
     data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
-    use sea_orm::EntityTrait;
-    let db = state.db();
-    let grade = svc_assessment::entities::grade::Entity::find_by_id(grade_id.clone())
-        .one(&db).await.map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::not_found("Grade not found"))?;
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let req: svc_assessment::services::grade::UpdateGradeRequest = serde_json::from_value(data)
         .map_err(|e| shared_kernel::errors::AppError::validation(format!("Invalid update grade payload: {e}")))?;
@@ -209,11 +204,6 @@ pub async fn update_behavior(
     record_id: String,
     data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
-    use sea_orm::EntityTrait;
-    let db = state.db();
-    let record = svc_assessment::entities::behavior_record::Entity::find_by_id(record_id.clone())
-        .one(&db).await.map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::not_found("Behavior record not found"))?;
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let req: UpdateBehaviorPayload = serde_json::from_value(data)
         .map_err(|e| shared_kernel::errors::AppError::validation(format!("Invalid update behavior payload: {e}")))?;
@@ -226,12 +216,8 @@ pub async fn delete_behavior(
     state: State<'_, Arc<AppState>>,
     record_id: String,
 ) -> CmdResult<()> {
-    use sea_orm::EntityTrait;
-    let db = state.db();
-    let record = svc_assessment::entities::behavior_record::Entity::find_by_id(record_id.clone())
-        .one(&db).await.map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::not_found("Behavior record not found"))?;
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     ops::behavior::delete(&ctx, &record_id).await.map_err(CommandError::from)
 }
+
 

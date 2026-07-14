@@ -8,8 +8,8 @@ use crate::commands::error::{CmdResult, CommandError};
 
 #[tauri::command]
 pub async fn autopilot_get_tasks(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
-    let db = state.db();
-    let tasks = autopilot::ops::get_tasks(&db, &org_id)
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let tasks = autopilot::ops::get_tasks(&ctx.db, &ctx.org_id)
         .await
         .map_err(CommandError::from)?;
     Ok(serde_json::to_value(tasks).unwrap())
@@ -17,8 +17,8 @@ pub async fn autopilot_get_tasks(state: State<'_, Arc<AppState>>) -> CmdResult<s
 
 #[tauri::command]
 pub async fn autopilot_get_diagnostics(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
-    let db = state.db();
-    let report = autopilot::diagnostics::Diagnostics::health_check(&db, &org_id)
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let report = autopilot::diagnostics::Diagnostics::health_check(&ctx.db, &ctx.org_id)
         .await
         .map_err(CommandError::from)?;
     Ok(serde_json::to_value(report).unwrap())
@@ -145,3 +145,5 @@ pub async fn agent_open_standalone(
     // Logic to open a new tauri window would go here
     Ok(())
 }
+
+

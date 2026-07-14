@@ -67,7 +67,6 @@ pub async fn create_period(
 #[tauri::command]
 pub async fn update_period(
     _state: State<'_, Arc<AppState>>,
-    _
     _period_id: String,
     _data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
@@ -554,17 +553,7 @@ pub async fn list_teacher_subjects(
     teacher_id: String,
     period_id: Option<String>,
 ) -> CmdResult<serde_json::Value> {
-    use sea_orm::EntityTrait;
-    let db = state.db();
-    let org_id = if let Some(ref cid) = period_id {
-        let period = svc_organization::entities::academic_period::Entity::find_by_id(cid.clone())
-            .one(&db).await.map_err(CommandError::from)?
-            .ok_or_else(|| CommandError::not_found("Period not found"))?;
-        period.org_id
-    } else {
-        // Fallback to active year's default org_id via session helper
-        resolve_org_id(&db).await?
-    };
+
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     
     let resolved_period_id = match period_id {
@@ -604,24 +593,6 @@ pub async fn toggle_grade_entry(
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = org_ops::academic_period::toggle_grade_entry(&ctx, &period_id, open).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
-}
-
-
-/// Helper function to resolve org_id from the latest active session.
-async fn resolve_org_id(db: &sea_orm::DatabaseConnection) -> Result<String, CommandError> {
-    use sea_orm::{EntityTrait, QueryOrder};
-    let session = svc_iam::entities::user_session::Entity::find()
-        .order_by_desc(svc_iam::entities::user_session::Column::CreatedAt)
-        .one(db)
-        .await
-        .map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::unauthorized("No active session"))?;
-    let user = svc_iam::entities::user::Entity::find_by_id(session.user_id)
-        .one(db)
-        .await
-        .map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::unauthorized("Active user not found"))?;
-    Ok(user.org_id)
 }
 
 /// Previews a document template from raw editor JSON content and custom data context.
@@ -666,10 +637,11 @@ pub async fn render_document(
     template_id: String,
     entity_id: String,
 ) -> CmdResult<Vec<u8>> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let db = state.db();
 
     // 1. Fetch template record from DB
-    let template = TemplateService::get_by_id(&db, &org_id, &template_id)
+    let template = TemplateService::get_by_id(&db, &ctx.org_id, &template_id)
         .await
         .map_err(|e| CommandError::new(format!("Failed to fetch template: {}", e)))?;
 
@@ -751,12 +723,13 @@ pub async fn start_batch_print(
         let _ = app_handle_clone.emit("batch-job-progress", status);
     });
 
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     tokio::spawn(async move {
         docforge_orbis::batch::start_batch_print_job(
             callback,
             job_clone,
             db,
-            org_id,
+            ctx.org_id,
             template_id,
             entity_ids,
             output_dir,
@@ -831,6 +804,7 @@ pub async fn preview_multi_up(
     entity_ids: Vec<String>,
     config_json: String,
 ) -> CmdResult<Vec<u8>> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let db = state.db();
 
     let config: docforge_engine::layout::multi_up::MultiUpConfig =
@@ -838,7 +812,7 @@ pub async fn preview_multi_up(
             .map_err(|e| CommandError::new(format!("Invalid multi-up config: {}", e)))?;
 
     let pdf_bytes = docforge_orbis::batch_multi_up::preview_multi_up(
-        &db, &org_id, &template_id, &entity_ids, &config,
+        &db, &ctx.org_id, &template_id, &entity_ids, &config,
     )
     .await
     .map_err(|e| CommandError::new(e))?;
@@ -866,13 +840,14 @@ pub async fn start_multi_up_batch_print(
     let job_id = uuid::Uuid::new_v4().to_string();
 
     // Create the job status
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let job = batch_manager.create_job(job_id.clone(), entity_ids.len(), output_dir.clone());
 
     // Build the multi-up job config
     let multi_up_config = docforge_orbis::batch_multi_up::MultiUpPrintJobConfig {
         job_id: job_id.clone(),
         template_id,
-        org_id,
+        org_id: ctx.org_id.clone(),
         entity_ids,
         multi_up: config,
         output_mode: docforge_orbis::batch_multi_up::MultiUpOutputMode::MergedPdf,
@@ -902,4 +877,8 @@ pub async fn start_multi_up_batch_print(
     let status = job.status.lock().unwrap().clone();
     Ok(status)
 }
+
+
+
+
 

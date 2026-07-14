@@ -139,18 +139,8 @@ pub async fn get_account_statement(
 
 #[tauri::command]
 pub async fn list_active_fee_templates(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
-    use sea_orm::{EntityTrait, ColumnTrait, QueryFilter, QueryOrder};
-    let db = state.db();
-    let org_id = resolve_org_id(&db).await?;
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    ctx.permissions.check(&ctx.actor, shared_kernel::traits::Permission::FinanceRead).await.map_err(CommandError::from)?;
-    let templates = svc_finance::entities::fee_template::Entity::find()
-        .filter(svc_finance::entities::fee_template::Column::OrgId.eq(&org_id))
-        .filter(svc_finance::entities::fee_template::Column::IsActive.eq(1))
-        .order_by_asc(svc_finance::entities::fee_template::Column::SortOrder)
-        .all(&db)
-        .await
-        .map_err(CommandError::from)?;
+    let templates = ops::fee_template::list_active_templates(&ctx).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(templates).unwrap())
 }
 
@@ -168,22 +158,7 @@ pub async fn delete_fee_template(
     Ok(())
 }
 
-/// Helper function to resolve org_id from the latest active session.
-async fn resolve_org_id(db: &sea_orm::DatabaseConnection) -> Result<String, CommandError> {
-    use sea_orm::{EntityTrait, QueryOrder};
-    let session = svc_iam::entities::user_session::Entity::find()
-        .order_by_desc(svc_iam::entities::user_session::Column::CreatedAt)
-        .one(db)
-        .await
-        .map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::unauthorized("No active session"))?;
-    let user = svc_iam::entities::user::Entity::find_by_id(session.user_id)
-        .one(db)
-        .await
-        .map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::unauthorized("Active user not found"))?;
-    Ok(user.org_id)
-}
+
 
 // ── Currency Commands ────────────────────────────────────────────────
 
@@ -231,9 +206,10 @@ pub async fn delete_currency(state: State<'_, Arc<AppState>>, code: String) -> C
 #[tauri::command]
 pub async fn list_fiscal_years(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     use sea_orm::{EntityTrait, ColumnTrait, QueryFilter, QueryOrder};
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let db = state.db();
     let r = svc_finance::entities::fiscal_year::Entity::find()
-        .filter(svc_finance::entities::fiscal_year::Column::OrgId.eq(&org_id))
+        .filter(svc_finance::entities::fiscal_year::Column::OrgId.eq(&ctx.org_id))
         .order_by_desc(svc_finance::entities::fiscal_year::Column::StartDate)
         .all(&db).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
@@ -242,12 +218,13 @@ pub async fn list_fiscal_years(state: State<'_, Arc<AppState>>) -> CmdResult<ser
 #[tauri::command]
 pub async fn create_fiscal_year(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     use sea_orm::ActiveModelTrait;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let db = state.db();
     let id = uuid::Uuid::new_v4().to_string();
     let now = chrono::Utc::now().to_rfc3339();
     let model = svc_finance::entities::fiscal_year::Model {
         id: id.clone(),
-        org_id,
+        org_id: ctx.org_id.clone(),
         name: data["name"].as_str().unwrap_or_default().to_string(),
         start_date: data["start_date"].as_str().unwrap_or_default().to_string(),
         end_date: data["end_date"].as_str().unwrap_or_default().to_string(),
@@ -259,4 +236,5 @@ pub async fn create_fiscal_year(state: State<'_, Arc<AppState>>, data: serde_jso
     let created = active.insert(&db).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(created).unwrap())
 }
+
 

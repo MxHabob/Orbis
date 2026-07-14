@@ -1,7 +1,7 @@
 //! User operations — CRUD, profile, search.
 
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Condition};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Condition, QuerySelect};
 use uuid::Uuid;
 
 use shared_kernel::context::ServiceContext;

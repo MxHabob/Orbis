@@ -113,7 +113,7 @@ impl PromotionService {
     /// Phase 1: Dry Run — analyze all students and generate a preview.
     pub async fn dry_run(
         &self,
-        year_db: &DatabaseConnection,
+        db: &DatabaseConnection,
         org_id: &str,
         user_id: &str,
         config: PromotionConfig,
@@ -151,7 +151,7 @@ impl PromotionService {
 
         let job = self.cmd.create_promotion_job(job).await?;
 
-        let enrollments = Self::fetch_enrollment_data(year_db, org_id).await?;
+        let enrollments = Self::fetch_enrollment_data(db, org_id, &config.source_period_id).await?;
 
         let passing_score = config.passing_score.unwrap_or(50);
         let min_attendance = config.min_attendance_rate.unwrap_or(75.0);
@@ -313,7 +313,7 @@ impl PromotionService {
         let target_year = self.cmd.create_year(target_year).await?;
         
         // 2. Create target classes
-        Self::create_target_classes(db, db, &config).await?;
+        Self::create_target_classes(db, db, &config, &target_year.id).await?;
         info!("🏫 Target classes created");
 
         // 3. Create target enrollments
@@ -322,7 +322,7 @@ impl PromotionService {
             .filter(|d| d.decision == "promoted")
             .collect();
 
-        Self::create_target_enrollments(db, &promoted_details, &config).await?;
+        Self::create_target_enrollments(db, &promoted_details, &config, &target_year.id).await?;
         info!("📝 {} enrollments created in target year", promoted_details.len());
 
         // 4. Save execution stats
@@ -405,8 +405,9 @@ impl PromotionService {
     // ── Internal Helpers ──
 
     async fn fetch_enrollment_data(
-        year_db: &DatabaseConnection,
+        db: &DatabaseConnection,
         org_id: &str,
+        period_id: &str,
     ) -> Result<Vec<EnrollmentData>, AppError> {
         let sql = r#"
             SELECT
@@ -431,16 +432,17 @@ impl PromotionService {
             JOIN users u ON u.id = e.student_id
             JOIN classes c ON c.id = e.class_id
             WHERE e.org_id = ?1
+              AND e.period_id = ?2
               AND e.status = 'active'
               AND e.is_deleted = 0
             ORDER BY c.level, c.name, u.full_name
         "#;
 
-        let results = year_db.query_all(
+        let results = db.query_all(
             sea_orm::Statement::from_sql_and_values(
                 sea_orm::DatabaseBackend::Sqlite,
                 sql,
-                vec![org_id.into()],
+                vec![org_id.into(), period_id.into()],
             )
         ).await.map_err(|e| AppError::Database(e.to_string()))?;
 
@@ -508,10 +510,12 @@ impl PromotionService {
         target_db: &DatabaseConnection,
         source_db: &DatabaseConnection,
         config: &PromotionConfig,
+        target_period_id: &str,
     ) -> Result<(), AppError> {
         for mapping in &config.class_mapping {
             let source_classes: Vec<class::Model> = class::Entity::find()
                 .filter(class::Column::Level.eq(&mapping.source_level))
+                .filter(class::Column::PeriodId.eq(&config.source_period_id))
                 .filter(class::Column::IsDeleted.eq(0))
                 .all(source_db)
                 .await?;
@@ -524,7 +528,7 @@ impl PromotionService {
                     id: sea_orm::Set(uuid::Uuid::new_v4().to_string()),
                     org_id: sea_orm::Set(reference.map(|r| r.org_id.clone()).unwrap_or_default()),
                     unit_id: sea_orm::Set(reference.map(|r| r.unit_id.clone()).unwrap_or_default()),
-                    period_id: sea_orm::Set(reference.map(|r| r.period_id.clone()).unwrap_or_default()),
+                    period_id: sea_orm::Set(target_period_id.to_string()),
                     name: sea_orm::Set(class_name.clone()),
                     name_ar: sea_orm::Set(None),
                     level: sea_orm::Set(mapping.target_level.clone()),
@@ -550,6 +554,7 @@ impl PromotionService {
         target_db: &DatabaseConnection,
         promoted: &[&promotion_detail::Model],
         config: &PromotionConfig,
+        target_period_id: &str,
     ) -> Result<(), AppError> {
         let mut level_classes: std::collections::HashMap<String, Vec<class::Model>> =
             std::collections::HashMap::new();
@@ -557,6 +562,7 @@ impl PromotionService {
         for mapping in &config.class_mapping {
             let classes: Vec<class::Model> = class::Entity::find()
                 .filter(class::Column::Level.eq(&mapping.target_level))
+                .filter(class::Column::PeriodId.eq(target_period_id))
                 .filter(class::Column::IsDeleted.eq(0))
                 .all(target_db)
                 .await?;

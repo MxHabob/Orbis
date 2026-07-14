@@ -13,16 +13,11 @@ use tauri::menu::{Menu, MenuItem};
 use tauri::image::Image;
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use image;
-
 pub mod state;
 pub mod commands;
 pub mod features;
 pub mod events;
-
 use state::AppState;
-
-
-
 #[tauri::command]
 fn show_window(window: tauri::Window) -> Result<(), String> {
     // Always target the main window specifically, not the calling window
@@ -33,17 +28,14 @@ fn show_window(window: tauri::Window) -> Result<(), String> {
             return Err("Main window not found".to_string());
         }
     };
-
     main_window
         .show()
         .map_err(|e| format!("Failed to show window: {}", e))?;
     main_window
         .set_focus()
         .map_err(|e| format!("Failed to set focus: {}", e))?;
-
     Ok(())
 }
-
 #[tauri::command]
 async fn open_agent_window(app: tauri::AppHandle) -> Result<(), String> {
     if let Some(existing) = app.get_webview_window("orbis-agent") {
@@ -51,9 +43,7 @@ async fn open_agent_window(app: tauri::AppHandle) -> Result<(), String> {
         existing.set_focus().map_err(|e| e.to_string())?;
         return Ok(());
     }
-
     let main_window = app.get_webview_window("main");
-
     let mut builder = WebviewWindowBuilder::new(
         &app,
         "orbis-agent",
@@ -64,21 +54,16 @@ async fn open_agent_window(app: tauri::AppHandle) -> Result<(), String> {
     .resizable(true)
     .shadow(true)
     .decorations(true);
-
     if let Some(ref main) = main_window {
         builder = builder.parent(main).map_err(|e| e.to_string())?;
     }
-
     builder.build().map_err(|e| e.to_string())?;
-
     Ok(())
 }
-
 #[tauri::command]
 async fn check_for_updates(app: tauri::AppHandle) -> Result<(), String> {
     use tauri_plugin_dialog::{DialogExt, MessageDialogKind, MessageDialogButtons};
     use tauri_plugin_updater::UpdaterExt;
-    
     #[cfg(desktop)]
     {
         // Try to check for updates
@@ -92,7 +77,6 @@ async fn check_for_updates(app: tauri::AppHandle) -> Result<(), String> {
                         .kind(MessageDialogKind::Info)
                         .buttons(MessageDialogButtons::OkCancel)
                         .blocking_show();
-                    
                     if answer {
                         // User wants to update - provide required callbacks
                         let _ = update.download_and_install(
@@ -136,7 +120,6 @@ async fn check_for_updates(app: tauri::AppHandle) -> Result<(), String> {
                 .blocking_show();
         }
     }
-    
     #[cfg(not(desktop))]
     {
         // Mobile platforms don't support auto-updates
@@ -147,10 +130,8 @@ async fn check_for_updates(app: tauri::AppHandle) -> Result<(), String> {
             .buttons(MessageDialogButtons::Ok)
             .blocking_show();
     }
-    
     Ok(())
 }
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -172,7 +153,6 @@ pub fn run() {
             show_window,
             open_agent_window,
             check_for_updates,
-
             // IAM commands
             commands::iam::thin::login,
             commands::iam::thin::logout_session,
@@ -193,7 +173,6 @@ pub fn run() {
             commands::iam::thin::search_users,
             commands::iam::thin::get_role_permissions,
             commands::iam::thin::save_role_permissions,
-
             // Academics commands
             commands::academic::thin::list_classes,
             commands::academic::thin::get_class,
@@ -251,8 +230,6 @@ pub fn run() {
             commands::academic::thin::get_batch_print_status,
             commands::academic::thin::compute_multi_up_layout,
             commands::academic::thin::preview_multi_up,
-            commands::academic::thin::start_multi_up_batch_print,
-
             // Assessment commands
             commands::assessment::thin::list_assessments,
             commands::assessment::thin::create_assessment,
@@ -275,7 +252,6 @@ pub fn run() {
             commands::assessment::thin::upsert_grade_cell,
             commands::assessment::thin::compile_semester_grades,
             commands::assessment::thin::get_grade_matrix,
-
             // Finance commands
             commands::finance::thin::list_fee_templates,
             commands::finance::thin::create_fee_template,
@@ -299,8 +275,6 @@ pub fn run() {
             commands::finance::thin::update_currency,
             commands::finance::thin::delete_currency,
             commands::finance::thin::list_fiscal_years,
-            commands::finance::thin::create_fiscal_year,
-
             // Lifeperiod commands
             commands::organization::thin::get_organization,
             commands::organization::thin::register_student,
@@ -314,9 +288,6 @@ pub fn run() {
             commands::organization::thin::get_period_templates,
             commands::organization::thin::get_current_academic_year,
             commands::organization::thin::list_academic_years,
-            commands::organization::thin::switch_academic_year,
-            commands::organization::thin::is_year_archived,
-            commands::organization::thin::get_academic_context,
             commands::organization::thin::get_promotion_jobs,
             commands::organization::thin::get_promotion_job,
             commands::organization::thin::get_promotion_details,
@@ -333,13 +304,11 @@ pub fn run() {
             commands::organization::thin::generate_default_calendar,
             commands::organization::thin::list_override_requests,
             commands::organization::thin::get_override_request,
-            commands::organization::thin::create_override_request,
             commands::organization::thin::process_approval,
             commands::organization::thin::cancel_override,
             commands::organization::thin::get_pending_approvals,
             commands::organization::thin::get_org_policy,
             commands::organization::thin::update_org_policy,
-            commands::organization::thin::get_document_templates,
             commands::organization::thin::get_document_template,
             commands::organization::thin::create_document_template,
             commands::organization::thin::update_document_template,
@@ -352,7 +321,6 @@ pub fn run() {
             commands::organization::thin::import_grades,
             commands::organization::thin::export_students,
             commands::organization::thin::export_grades,
-
             // AI commands
             commands::ai::thin::autopilot_get_tasks,
             commands::ai::thin::autopilot_get_diagnostics,
@@ -364,7 +332,6 @@ pub fn run() {
             commands::ai::thin::agent_create_session,
             commands::ai::thin::agent_query,
             commands::ai::thin::agent_open_standalone,
-
             // Scheduling commands
             commands::scheduling::thin::list_time_slots,
             commands::scheduling::thin::create_time_slot,
@@ -387,7 +354,6 @@ pub fn run() {
             commands::scheduling::thin::apply_solver,
             commands::scheduling::thin::delete_solver_job,
             commands::scheduling::thin::check_schedule_conflicts,
-
             // Exam commands
             commands::exam::thin::list_exam_sessions,
             commands::exam::thin::create_exam_session,
@@ -408,7 +374,6 @@ pub fn run() {
             // Add updater plugin conditionally for desktop
             #[cfg(desktop)]
             app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
-
             // 1. Initialize local AppData directory
             let app_data_dir = app
                 .path()
@@ -416,52 +381,38 @@ pub fn run() {
                 .map_err(|e| format!("Failed to resolve app data dir: {e}"))?;
             std::fs::create_dir_all(&app_data_dir)
                 .map_err(|e| format!("Failed to create app data dir {:?}: {e}", app_data_dir))?;
-
             // 2. Initialize managed AppState with DatabaseProvider (multi-year support)
             let app_state = tauri::async_runtime::block_on(async {
                 let state = AppState::init(&app_data_dir)
                     .await
                     .map_err(|e| format!("Database init failed: {e}"))?;
-                
                 // Run docforge template database migrations on the current year's DB
                 let db = state.db();
                 docforge_orbis::schema::migrate_template_schema(&db)
                     .await
                     .map_err(|e| format!("Template schema migration failed: {e}"))?;
-                
                 Ok::<AppState, String>(state)
             })?;
             app.manage(Arc::new(app_state));
-            
             // Create batch job manager state
             let batch_job_manager = Arc::new(docforge_orbis::batch::BatchJobManager::new());
             app.manage(batch_job_manager);
-
             let app_handle = app.handle().clone();
             let initial_url = WebviewUrl::App("index.html".into());
-
-
-
             // Clone app_handle before it gets moved into closures
             let app_handle_for_deep_links = app_handle.clone();
             let app_handle_for_navigation = app_handle.clone();
-
-
-
-
             // Register deep links at runtime for development
             #[cfg(debug_assertions)]
             {
                 let _ = app_handle.deep_link().register_all();
             }
-
             // Handle deep link events
             app_handle.deep_link().on_open_url(move |event| {
                 let url_strings: Vec<String> =
                     event.urls().iter().map(|url| url.to_string()).collect();
                 features::deep_link::handle_deep_link(&app_handle_for_deep_links, url_strings);
             });
-
             // Dynamically calculate window size based on primary monitor resolution (flexible size)
             let (width, height) = if let Ok(Some(monitor)) = app.primary_monitor() {
                 let size = monitor.size();
@@ -474,7 +425,6 @@ pub fn run() {
             } else {
                 (1200.0, 750.0)
             };
-
             let win_builder = WebviewWindowBuilder::new(
                 app,
                 "main",
@@ -487,21 +437,16 @@ pub fn run() {
             .visible(false)
             .center()
             .shadow(true);
-
             #[cfg(debug_assertions)]
             let win_builder = win_builder.devtools(true);
-
             #[cfg(target_os = "macos")]
             let win_builder = win_builder
                 .decorations(false)
                 .transparent(false)
                 .hidden_title(true)
                 .title_bar_style(tauri::TitleBarStyle::Overlay);
-
             #[cfg(not(target_os = "macos"))]
             let win_builder = win_builder.decorations(false).transparent(false);
-
-
             let window = win_builder
                 .disable_drag_drop_handler()
                 .on_download(|_window, _event| {
@@ -512,13 +457,11 @@ pub fn run() {
                     if url.scheme() == "tauri" || url.host_str() == Some("tauri.localhost") {
                         return true;
                     }
-
                     // Allow Vite dev server during `tauri dev`
                     #[cfg(debug_assertions)]
                     if matches!(url.host_str(), Some("localhost") | Some("127.0.0.1")) {
                         return true;
                     }
-
                     let is_http_or_https = url.scheme() == "http" || url.scheme() == "https";
                     if is_http_or_https {
                         let url_string = url.as_str().to_string();
@@ -529,19 +472,14 @@ pub fn run() {
                         });
                         return false;
                     }
-
                     true
                 })
                 .build()
                 .unwrap();
-
-
-
             // Fallback timer to ensure main window shows on first launch
             let window_clone = window.clone();
             tauri::async_runtime::spawn(async move {
                 std::thread::sleep(std::time::Duration::from_secs(2));
-
                 if let Ok(is_visible) = window_clone.is_visible() {
                     if !is_visible {
                         let _ = window_clone.show();
@@ -549,15 +487,12 @@ pub fn run() {
                     }
                 }
             });
-
             // Set the default app menu to restore the Orbis menu (macOS only, prevents window menu bar on Windows/Linux)
             #[cfg(target_os = "macos")]
             {
                 let app_menu = Menu::default(app.handle())?;
                 app.set_menu(app_menu)?;
             }
-
-
             // Setup simple system tray for search toggle only
             let tray_icon = {
                 let icon_bytes = include_bytes!("../icons/tray-icon.png");
@@ -566,11 +501,9 @@ pub fn run() {
                 let (width, height) = rgba.dimensions();
                 Image::new_owned(rgba.into_raw(), width, height)
             };
-
             let check_updates_item = MenuItem::with_id(app, "check_updates", "Check for Updates...", true, None::<&str>)?;
             let exit_item = MenuItem::with_id(app, "exit", "Exit", true, None::<&str>)?;
             let tray_menu = Menu::with_items(app, &[&check_updates_item, &exit_item])?;
-
             let _tray = TrayIconBuilder::new()
                 .icon(tray_icon)
                 .menu(&tray_menu)
@@ -606,7 +539,6 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
-
             Ok(())
         })
         .build(tauri::generate_context!())
@@ -625,7 +557,6 @@ pub fn run() {
                     if let Some(main_window) = app_handle.get_webview_window("main") {
                         let _ = main_window.hide();
                     }
-
                 }
             }
             _ => {}

@@ -56,7 +56,7 @@ impl TenantGuard {
         if self.allowed_org_ids.iter().any(|id| id == requested_org_id) {
             return Ok(());
         }
-        Err(AppError::forbidden(
+        Err(AppError::unauthorized(
             "Tenant boundary violation: unauthorized org_id",
         ))
     }

@@ -86,7 +86,7 @@ pub async fn create(
     let req: CreateEnrollmentPayload = serde_json::from_value(data)
         .map_err(|e| AppError::validation(format!("Invalid create enrollment payload: {e}")))?;
 
-    let org_id = req.org_id.unwrap_or_else(|| ctx.org_id.clone());
+    let org_id = req.org_id.clone().unwrap_or_else(|| ctx.org_id.clone());
 
     // ── Period Gate: enrollment window + capacity + policy ──
     let verdict = ctx.period_gate

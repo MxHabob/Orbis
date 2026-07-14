@@ -228,6 +228,7 @@ impl AppState {
         let ctx = SessionContext {
             user_id,
             org_id,
+            org_unit_id: None,
             roles,
             guard,
         };
@@ -246,6 +247,7 @@ impl AppState {
         let ctx = SessionContext {
             user_id,
             org_id,
+            org_unit_id: None,
             roles,
             guard,
         };
@@ -365,3 +367,4 @@ impl AppState {
         Ok(())
     }
 }
+

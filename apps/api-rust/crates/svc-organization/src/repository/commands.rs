@@ -118,6 +118,7 @@ impl OrganizationCommandRepo {
         let active = academic_policy::ActiveModel {
             id: Set(p.id),
             org_id: Set(p.org_id),
+            org_unit_id: Set(p.org_unit_id),
             default_grading_system: Set(p.default_grading_system),
             default_passing_grade: Set(p.default_passing_grade),
             default_max_grade: Set(p.default_max_grade),

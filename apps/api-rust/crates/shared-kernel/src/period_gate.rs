@@ -34,7 +34,7 @@
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter};
+use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter, ConnectionTrait};
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 use tracing::debug;
@@ -630,26 +630,29 @@ impl PeriodGate {
 
         // Cache miss — load from DB
         debug!(period_id, "PeriodGate cache miss — loading from DB");
-        use svc_organization::entities::academic_period;
+        
 
-        let period = academic_period::Entity::find_by_id(period_id.to_string())
-            .one(db)
-            .await?
-            .ok_or_else(|| AppError::not_found("academic_period", period_id))?;
-
+        let sql = "SELECT status, is_locked, is_enrollment_open, is_grade_entry_open, enrollment_start, enrollment_end, grade_entry_start, grade_entry_end, exam_start, exam_end, start_date, end_date FROM academic_periods WHERE id = ?1";
+        let stmt = sea_orm::Statement::from_sql_and_values(
+            db.get_database_backend(),
+            sql,
+            vec![period_id.into()]
+        );
+        let row = db.query_one(stmt).await?.ok_or_else(|| AppError::not_found("academic_period", period_id))?;
+        
         let cached = CachedPeriod {
-            status: period.status,
-            is_locked: period.is_locked == 1,
-            is_enrollment_open: period.is_enrollment_open == 1,
-            is_grade_entry_open: period.is_grade_entry_open == 1,
-            enrollment_start: period.enrollment_start,
-            enrollment_end: period.enrollment_end,
-            grade_entry_start: period.grade_entry_start,
-            grade_entry_end: period.grade_entry_end,
-            exam_start: period.exam_start,
-            exam_end: period.exam_end,
-            start_date: period.start_date,
-            end_date: period.end_date,
+            status: row.try_get::<String>("", "status").unwrap_or_default(),
+            is_locked: row.try_get::<i32>("", "is_locked").unwrap_or(0) == 1,
+            is_enrollment_open: row.try_get::<i32>("", "is_enrollment_open").unwrap_or(0) == 1,
+            is_grade_entry_open: row.try_get::<i32>("", "is_grade_entry_open").unwrap_or(0) == 1,
+            enrollment_start: row.try_get_by::<String, _>("enrollment_start").ok(),
+            enrollment_end: row.try_get_by::<String, _>("enrollment_end").ok(),
+            grade_entry_start: row.try_get_by::<String, _>("grade_entry_start").ok(),
+            grade_entry_end: row.try_get_by::<String, _>("grade_entry_end").ok(),
+            exam_start: row.try_get_by::<String, _>("exam_start").ok(),
+            exam_end: row.try_get_by::<String, _>("exam_end").ok(),
+            start_date: row.try_get_by::<String, _>("start_date").ok().unwrap_or_default(),
+            end_date: row.try_get_by::<String, _>("end_date").ok().unwrap_or_default(),
             fetched_at: Instant::now(),
         };
 
@@ -678,21 +681,23 @@ impl PeriodGate {
         }
 
         // Cache miss — load from DB
-        use svc_organization::entities::academic_policy;
+        
 
-        let policy = academic_policy::Entity::find()
-            .filter(academic_policy::Column::OrgId.eq(org_id))
-            .filter(academic_policy::Column::OrgUnitId.is_null())
-            .one(db)
-            .await?;
-
-        let cached = match policy {
+        let sql = "SELECT allow_late_enrollment, late_enrollment_approval, allow_grade_edit_after_close, grade_edit_approval, grace_days_after_deadline FROM academic_policies WHERE org_id = ?1 AND org_unit_id IS NULL";
+        let stmt = sea_orm::Statement::from_sql_and_values(
+            db.get_database_backend(),
+            sql,
+            vec![org_id.into()]
+        );
+        let row = db.query_one(stmt).await?;
+        
+        let cached = match row {
             Some(p) => CachedPolicy {
-                allow_late_enrollment: p.allow_late_enrollment == 1,
-                late_enrollment_approval: p.late_enrollment_approval == 1,
-                allow_grade_edit_after_close: p.allow_grade_edit_after_close == 1,
-                grade_edit_approval: p.grade_edit_approval == 1,
-                grace_days_after_deadline: p.grace_days_after_deadline,
+                allow_late_enrollment: p.try_get::<i32>("", "allow_late_enrollment").unwrap_or(0) == 1,
+                late_enrollment_approval: p.try_get::<i32>("", "late_enrollment_approval").unwrap_or(0) == 1,
+                allow_grade_edit_after_close: p.try_get::<i32>("", "allow_grade_edit_after_close").unwrap_or(0) == 1,
+                grade_edit_approval: p.try_get::<i32>("", "grade_edit_approval").unwrap_or(0) == 1,
+                grace_days_after_deadline: p.try_get::<i32>("", "grace_days_after_deadline").unwrap_or(0),
                 fetched_at: Instant::now(),
             },
             None => CachedPolicy {
@@ -719,26 +724,31 @@ impl PeriodGate {
         class_id: &str,
         period_id: &str,
     ) -> Result<Option<CapacityInfo>, AppError> {
-        use svc_academic::entities::{class, enrollment};
-
-        let target_class = class::Entity::find_by_id(class_id.to_string())
-            .one(db)
-            .await?;
+        let sql_class = "SELECT capacity FROM classes WHERE id = ?1";
+        let stmt_class = sea_orm::Statement::from_sql_and_values(
+            db.get_database_backend(),
+            sql_class,
+            vec![class_id.into()]
+        );
+        let target_class = db.query_one(stmt_class).await?;
 
         let Some(target_class) = target_class else {
             return Ok(None);
         };
 
-        let Some(max_cap) = target_class.capacity else {
+        let max_cap = target_class.try_get_by::<Option<i32>, _>("capacity").ok().flatten();
+        let Some(max_cap) = max_cap else {
             return Ok(None); // No capacity limit
         };
 
-        let current = enrollment::Entity::find()
-            .filter(enrollment::Column::ClassId.eq(class_id))
-            .filter(enrollment::Column::PeriodId.eq(period_id))
-            .filter(enrollment::Column::Status.ne("withdrawn"))
-            .count(db)
-            .await? as i64;
+        let sql_enrollment = "SELECT COUNT(*) AS c FROM enrollments WHERE class_id = ?1 AND period_id = ?2 AND status != 'withdrawn'";
+        let stmt_enrollment = sea_orm::Statement::from_sql_and_values(
+            db.get_database_backend(),
+            sql_enrollment,
+            vec![class_id.into(), period_id.into()]
+        );
+        let current_row = db.query_one(stmt_enrollment).await?;
+        let current = current_row.map(|r| r.try_get::<i64>("", "c").unwrap_or(0)).unwrap_or(0);
 
         let available = (max_cap as i64 - current).max(0) as i32;
         let utilization = if max_cap > 0 {
@@ -761,3 +771,5 @@ impl Default for PeriodGate {
         Self::new()
     }
 }
+
+

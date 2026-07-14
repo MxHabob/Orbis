@@ -6,7 +6,7 @@
 //! Adds hierarchy traversal functions using the Materialized Path pattern.
 
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, PaginatorTrait};
 use uuid::Uuid;
 
 use shared_kernel::context::ServiceContext;
