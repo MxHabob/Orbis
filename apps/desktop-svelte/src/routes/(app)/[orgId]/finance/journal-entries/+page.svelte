@@ -16,7 +16,6 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import { ComboboxDropdown } from "@orbis/ui-svelte/combobox-dropdown";
 import {
   Table,
   TableBody,
@@ -32,19 +31,11 @@ import { Card, CardContent } from "@orbis/ui-svelte/card";
 import { Separator } from "@orbis/ui-svelte/separator";
 import { toast } from "svelte-sonner";
 import {
-  BookOpen,
   Search,
-  Plus,
   Trash2,
-  RefreshCw,
-  LogOut,
-  QrCode,
-  Printer,
-  FileText,
   ChevronLeft,
   ChevronRight,
   Calendar,
-  FileSpreadsheet,
   AlertCircle,
 } from "lucide-svelte";
 import { formatDate, isAr } from "$lib/core/i18n";
@@ -63,6 +54,7 @@ let error = $state<string | null>(null);
 
 // Dialog states
 let selectedEntry = $state<any | null>(null);
+let showQrModal = $state(false);
 
 // Date filtering options
 let filterMode = $state<"day" | "all">("day");
@@ -339,9 +331,7 @@ const filteredEntries = $derived.by(() => {
             <div class="w-32">
               <Select type="single" bind:value={statusFilter}>
                 <SelectTrigger class="h-8 text-xs bg-background/50 border-border cursor-pointer">
-                  <SelectValue>
-                    {statusFilter === "all" ? m.common_status_all() : statusFilter === "draft" ? m.common_status_draft() : m.common_je_status_posted()}
-                  </SelectValue>
+                  {statusFilter === "all" ? m.common_status_all() : statusFilter === "draft" ? m.common_status_draft() : m.common_je_status_posted()}
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{m.common_status_all()}</SelectItem>
@@ -356,7 +346,7 @@ const filteredEntries = $derived.by(() => {
       </div>
 
       <!-- Table Content Area -->
-      <CardContent class="p-0 flex-grow min-h-[300px]">
+      <CardContent class="p-0 grow min-h-[300px]">
         {#if isLoading}
           <div class="p-6 flex flex-col gap-2.5">
             {#each Array(4) as _}
@@ -451,3 +441,4 @@ const filteredEntries = $derived.by(() => {
       </div>
     </div>
   {/if}
+</div>
