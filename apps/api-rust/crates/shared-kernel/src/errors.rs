@@ -83,6 +83,21 @@ pub enum AppError {
         approval_id: String,
     },
 
+    // ── Period Gate Errors ───────────────────────────────────────
+
+    /// The operation is blocked by academic policy (period closed, locked, etc.).
+    #[error("Blocked by policy: {reason}")]
+    PolicyBlocked {
+        reason: String,
+    },
+
+    /// The operation requires an override request (late enrollment, etc.).
+    #[error("Override required: {reason}")]
+    PolicyOverrideRequired {
+        reason: String,
+        override_type: String,
+    },
+
     // ── Infrastructure Errors ───────────────────────────────────
 
     /// Database error from SeaORM/SQLite.
@@ -121,6 +136,14 @@ impl AppError {
         Self::BusinessRule { rule: rule.into(), details: None }
     }
 
+    pub fn policy_blocked(reason: impl Into<String>) -> Self {
+        Self::PolicyBlocked { reason: reason.into() }
+    }
+
+    pub fn policy_override_required(reason: impl Into<String>, override_type: impl Into<String>) -> Self {
+        Self::PolicyOverrideRequired { reason: reason.into(), override_type: override_type.into() }
+    }
+
     pub fn internal(message: impl Into<String>) -> Self {
         Self::Internal(message.into())
     }
@@ -137,6 +160,8 @@ impl AppError {
             Self::RiskExceeded { .. } => "RISK_EXCEEDED",
             Self::AlreadyExecuted => "ALREADY_EXECUTED",
             Self::ApprovalRequired { .. } => "APPROVAL_REQUIRED",
+            Self::PolicyBlocked { .. } => "POLICY_BLOCKED",
+            Self::PolicyOverrideRequired { .. } => "POLICY_OVERRIDE_REQUIRED",
             Self::Database(_) => "DATABASE_ERROR",
             Self::Internal(_) => "INTERNAL_ERROR",
         }

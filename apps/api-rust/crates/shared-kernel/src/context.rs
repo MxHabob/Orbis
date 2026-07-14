@@ -17,6 +17,7 @@ use crate::event_bus::EventBus;
 use crate::event_store::EventStore;
 use crate::reactive::ReactivePipeline;
 use crate::plugin::PluginRegistry;
+use crate::period_gate::PeriodGate;
 use crate::traits::{
     Actor, PermissionChecker, AuditLogger, SettingsProvider,
     PolicyEngine, NotificationSender, FeeAssigner,
@@ -54,6 +55,7 @@ pub struct ServiceContext {
     pub policy: Arc<dyn PolicyEngine>,
     pub notifier: Arc<dyn NotificationSender>,
     pub fee_assigner: Arc<dyn FeeAssigner>,
+    pub period_gate: Arc<PeriodGate>,
 
     // ── Event Infrastructure ──
     pub event_bus: Arc<EventBus>,
@@ -75,6 +77,7 @@ impl ServiceContext {
         policy: Arc<dyn PolicyEngine>,
         notifier: Arc<dyn NotificationSender>,
         fee_assigner: Arc<dyn FeeAssigner>,
+        period_gate: Arc<PeriodGate>,
         event_bus: Arc<EventBus>,
         event_store: Arc<EventStore>,
         reactive: Arc<ReactivePipeline>,
@@ -93,6 +96,7 @@ impl ServiceContext {
             policy,
             notifier,
             fee_assigner,
+            period_gate,
             event_bus,
             event_store,
             reactive,

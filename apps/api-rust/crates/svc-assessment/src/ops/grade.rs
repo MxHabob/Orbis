@@ -6,7 +6,7 @@
 //! - Grade letter/GPA calculated from org grading settings
 
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
 use uuid::Uuid;
 
 use shared_kernel::context::ServiceContext;
@@ -23,29 +23,14 @@ use svc_organization::entities::academic_period;
 
 // ── Helpers ─────────────────────────────────────────────────────
 
-/// Check if period is open for grade entry.
+/// Check if period is open for grade entry via the centralized Period Gate.
+/// Replaces the old manual check with cached, policy-aware enforcement.
 async fn check_period_open(ctx: &ServiceContext, period_id: &str) -> Result<(), AppError> {
-    let period = academic_period::Entity::find_by_id(period_id.to_string())
-        .one(&ctx.db)
-        .await?
-        .ok_or_else(|| AppError::not_found("academic_period", period_id))?;
-
-    if period.is_locked == 1 {
-        return Err(AppError::unauthorized("Academic period is locked"));
-    }
-    if period.is_grade_entry_open == 0 {
-        return Err(AppError::unauthorized("Grade entry window is closed"));
-    }
-    if let (Some(ref start), Some(ref end)) = (&period.grade_entry_start, &period.grade_entry_end) {
-        let now = Utc::now().to_rfc3339();
-        if now < *start {
-            return Err(AppError::unauthorized(format!("Grade entry has not started yet. Starts: {}", start)));
-        }
-        if now > *end {
-            return Err(AppError::unauthorized(format!("Grade entry ended on: {}", end)));
-        }
-    }
-    Ok(())
+    use shared_kernel::period_gate::GateType;
+    let verdict = ctx.period_gate
+        .check(&ctx.db, &ctx.org_id, period_id, GateType::GradeEntry)
+        .await?;
+    verdict.enforce()
 }
 
 async fn save_grade_history(
@@ -90,6 +75,29 @@ pub async fn list(
         .order_by_asc(grade::Column::SubjectName)
         .all(&ctx.db)
         .await?)
+}
+
+/// Paginated grades list — cursor-based for large grade sheets.
+pub async fn list_paginated(
+    ctx: &ServiceContext,
+    assessment_id: &str,
+    request: shared_kernel::pagination::CursorRequest,
+) -> Result<shared_kernel::pagination::CursorPage<grade::Model>, AppError> {
+    use shared_kernel::pagination::CursorPage;
+    ctx.permissions.check(&ctx.actor, Permission::GradeRead).await?;
+
+    let limit = request.effective_limit();
+    let mut query = grade::Entity::find()
+        .filter(grade::Column::OrgId.eq(&ctx.org_id))
+        .filter(grade::Column::AssessmentId.eq(assessment_id))
+        .order_by_asc(grade::Column::Id);
+
+    if let Some(ref cursor) = request.cursor {
+        query = query.filter(grade::Column::Id.gt(cursor));
+    }
+
+    let items = query.limit(limit + 1).all(&ctx.db).await?;
+    Ok(CursorPage::from_items_with(items, limit, |g| g.id.clone()))
 }
 
 /// Get a single grade report card for a student enrollment.

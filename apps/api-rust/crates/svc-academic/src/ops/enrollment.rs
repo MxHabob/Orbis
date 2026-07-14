@@ -3,7 +3,7 @@
 //! Handles: enroll, withdraw, transfer + duplicate/capacity checks.
 
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, PaginatorTrait};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, PaginatorTrait};
 use uuid::Uuid;
 
 use shared_kernel::context::ServiceContext;
@@ -27,6 +27,27 @@ pub async fn list(
         .order_by_asc(enrollment::Column::StudentNumber)
         .all(&ctx.db)
         .await?)
+}
+
+/// Paginated enrollment list — cursor-based for high-volume lists.
+pub async fn list_paginated(
+    ctx: &ServiceContext,
+    request: shared_kernel::pagination::CursorRequest,
+) -> Result<shared_kernel::pagination::CursorPage<enrollment::Model>, AppError> {
+    use shared_kernel::pagination::CursorPage;
+    ctx.permissions.check(&ctx.actor, Permission::EnrollmentRead).await?;
+
+    let limit = request.effective_limit();
+    let mut query = enrollment::Entity::find()
+        .filter(enrollment::Column::OrgId.eq(&ctx.org_id))
+        .order_by_asc(enrollment::Column::Id);
+
+    if let Some(ref cursor) = request.cursor {
+        query = query.filter(enrollment::Column::Id.gt(cursor));
+    }
+
+    let items = query.limit(limit + 1).all(&ctx.db).await?;
+    Ok(CursorPage::from_items_with(items, limit, |e| e.id.clone()))
 }
 
 /// Get a single enrollment by ID.
@@ -67,6 +88,24 @@ pub async fn create(
 
     let org_id = req.org_id.unwrap_or_else(|| ctx.org_id.clone());
 
+    // ── Period Gate: enrollment window + capacity + policy ──
+    let verdict = ctx.period_gate
+        .check_enrollment(&ctx.db, &org_id, &req.period_id, &req.class_id)
+        .await?;
+
+    match verdict.decision {
+        shared_kernel::period_gate::GateDecision::Blocked => {
+            return Err(AppError::policy_blocked(
+                verdict.reason.unwrap_or_else(|| "التسجيل مغلق".into()),
+            ));
+        }
+        shared_kernel::period_gate::GateDecision::RequiresOverride => {
+            // Create as draft instead — caller must send override request
+            return create_draft(ctx, req, &org_id, &verdict).await;
+        }
+        _ => { /* Allowed or Late — proceed */ }
+    }
+
     // Business rule: no duplicate enrollment in the same period
     let existing = enrollment::Entity::find()
         .filter(enrollment::Column::StudentId.eq(&req.student_id))
@@ -79,25 +118,12 @@ pub async fn create(
         return Err(AppError::conflict("Student is already enrolled in this period"));
     }
 
-    // Business rule: class capacity check
-    let target_class = class::Entity::find_by_id(req.class_id.clone())
-        .one(&ctx.db)
-        .await?
-        .ok_or_else(|| AppError::not_found("class", &req.class_id))?;
-
-    if let Some(cap) = target_class.capacity {
-        let current = enrollment::Entity::find()
-            .filter(enrollment::Column::ClassId.eq(&req.class_id))
-            .filter(enrollment::Column::PeriodId.eq(&req.period_id))
-            .filter(enrollment::Column::Status.ne("withdrawn"))
-            .count(&ctx.db)
-            .await?;
-        if current as i32 >= cap {
-            return Err(AppError::conflict(format!(
-                "Class '{}' is at capacity ({}/{})", target_class.name, current, cap
-            )));
-        }
-    }
+    // Determine enrollment_type based on gate verdict
+    let enrollment_type = if verdict.decision == shared_kernel::period_gate::GateDecision::Late {
+        "late"
+    } else {
+        "regular"
+    };
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
@@ -111,7 +137,7 @@ pub async fn create(
         student_number: req.student_number,
         status: "active".into(),
         enrollment_date: now.clone(),
-        enrollment_type: "regular".into(),
+        enrollment_type: enrollment_type.into(),
         withdrawal_date: None,
         withdrawal_reason: None,
         final_grade: None,
@@ -365,4 +391,149 @@ pub async fn promote(
     });
 
     Ok(updated)
+}
+
+// ── Period Gate Integration ─────────────────────────────────────
+
+/// Check enrollment eligibility without performing the enrollment.
+/// Returns the GateVerdict for the frontend to display appropriate UI.
+pub async fn check_eligibility(
+    ctx: &ServiceContext,
+    period_id: &str,
+    class_id: &str,
+) -> Result<shared_kernel::period_gate::GateVerdict, AppError> {
+    ctx.period_gate
+        .check_enrollment(&ctx.db, &ctx.org_id, period_id, class_id)
+        .await
+}
+
+/// Create a draft enrollment (used when PeriodGate returns RequiresOverride).
+/// The draft is not active — it must be confirmed after override approval.
+async fn create_draft(
+    ctx: &ServiceContext,
+    req: CreateEnrollmentPayload,
+    org_id: &str,
+    verdict: &shared_kernel::period_gate::GateVerdict,
+) -> Result<enrollment::Model, AppError> {
+    // Still check for duplicates
+    let existing = enrollment::Entity::find()
+        .filter(enrollment::Column::StudentId.eq(&req.student_id))
+        .filter(enrollment::Column::PeriodId.eq(&req.period_id))
+        .filter(enrollment::Column::Status.is_in(["active", "draft"]))
+        .one(&ctx.db)
+        .await?;
+
+    if existing.is_some() {
+        return Err(AppError::conflict("Student already has an active or draft enrollment"));
+    }
+
+    let now = Utc::now().to_rfc3339();
+    let id = Uuid::new_v4().to_string();
+
+    let model = enrollment::Model {
+        id: id.clone(),
+        org_id: org_id.to_string(),
+        period_id: req.period_id,
+        student_id: req.student_id,
+        class_id: req.class_id,
+        student_number: req.student_number,
+        status: "draft".into(),
+        enrollment_date: now.clone(),
+        enrollment_type: verdict.override_type.clone().unwrap_or_else(|| "override".into()),
+        withdrawal_date: None,
+        withdrawal_reason: None,
+        final_grade: None,
+        final_score: None,
+        final_rank: None,
+        is_promoted: None,
+        promotion_decision: None,
+        promotion_notes: None,
+        meta: Some(serde_json::json!({
+            "gate_reason": verdict.reason,
+            "override_type": verdict.override_type,
+        }).to_string()),
+        created_at: now.clone(),
+        updated_at: now,
+    };
+
+    let active: enrollment::ActiveModel = model.into();
+    let created = active.insert(&ctx.db).await?;
+
+    ctx.audit.log(AuditEntry {
+        org_id: ctx.org_id.clone(),
+        actor: ctx.actor.clone(),
+        action: "enrollment.create_draft".into(),
+        entity_type: "enrollment".into(),
+        entity_id: id.clone(),
+        old_data: None,
+        new_data: Some(serde_json::to_value(&created).unwrap_or_default()),
+        correlation_id: ctx.correlation_id.clone(),
+    }).await?;
+
+    ctx.event_bus.publish(EventEnvelope {
+        event_type: "enrollment.draft_created".into(),
+        entity_type: "enrollment".into(),
+        entity_id: id,
+        org_id: ctx.org_id.clone(),
+        actor: ctx.actor.as_str().into(),
+        actor_type: ctx.actor.actor_type().into(),
+        correlation_id: ctx.correlation_id.clone(),
+        payload: serde_json::to_value(&created).unwrap_or_default(),
+        chain_depth: 0,
+    });
+
+    Ok(created)
+}
+
+/// Confirm a draft enrollment — converts status from "draft" to "active".
+/// Called after an override request is approved.
+pub async fn confirm_draft(
+    ctx: &ServiceContext,
+    enrollment_id: &str,
+) -> Result<enrollment::Model, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::EnrollmentWrite).await?;
+
+    let existing = get(ctx, enrollment_id).await?;
+
+    if existing.status != "draft" {
+        return Err(AppError::validation(format!(
+            "Enrollment '{}' is not a draft (status: {})", enrollment_id, existing.status
+        )));
+    }
+
+    let old_data = serde_json::to_value(&existing).ok();
+    let mut active: enrollment::ActiveModel = existing.into();
+    active.status = Set("active".into());
+    active.updated_at = Set(Utc::now().to_rfc3339());
+    let confirmed = active.update(&ctx.db).await?;
+
+    // Assign fees now that enrollment is confirmed
+    if let Err(e) = ctx.fee_assigner.assign_mandatory_fees(&ctx.org_id, enrollment_id, &confirmed.class_id).await {
+        tracing::warn!("Fee assignment failed for confirmed enrollment {}: {}", enrollment_id, e);
+    }
+
+    ctx.audit.log(AuditEntry {
+        org_id: ctx.org_id.clone(),
+        actor: ctx.actor.clone(),
+        action: "enrollment.confirm_draft".into(),
+        entity_type: "enrollment".into(),
+        entity_id: enrollment_id.into(),
+        old_data,
+        new_data: Some(serde_json::to_value(&confirmed).unwrap_or_default()),
+        correlation_id: ctx.correlation_id.clone(),
+    }).await?;
+
+    ctx.event_bus.publish(EventEnvelope {
+        event_type: event_types::ENROLLMENT_CREATED.into(),
+        entity_type: "enrollment".into(),
+        entity_id: enrollment_id.into(),
+        org_id: ctx.org_id.clone(),
+        actor: ctx.actor.as_str().into(),
+        actor_type: ctx.actor.actor_type().into(),
+        correlation_id: ctx.correlation_id.clone(),
+        payload: serde_json::to_value(&confirmed).unwrap_or_default(),
+        chain_depth: 0,
+    });
+
+    Ok(confirmed)
 }

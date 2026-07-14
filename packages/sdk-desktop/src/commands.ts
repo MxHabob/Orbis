@@ -94,6 +94,14 @@ export const commands: OrbisCommands = {
     checkDuplicate: (studentId, periodId) =>
       cmd("check_duplicate_enrollment", { studentId, periodId }),
 
+    // ── Period Gate ──
+    checkEnrollmentEligibility: (periodId, classId) =>
+      cmd("check_enrollment_eligibility", { periodId, classId }),
+    confirmEnrollmentDraft: (enrollmentId) =>
+      cmd("confirm_enrollment_draft", { enrollmentId }),
+    checkPeriodGate: (gateType, periodId) =>
+      cmd("check_period_gate", { gateType, periodId }),
+
     listClassSubjects: (classId, periodId?) =>
       cmd("list_class_subjects", { classId, periodId }),
     listTeacherSubjects: (teacherId, periodId?) =>

@@ -27,6 +27,9 @@ import StudentTable from "$lib/features/students/student-table.svelte";
 import StudentInspector from "$lib/features/students/student-inspector.svelte";
 import { toast } from "svelte-sonner";
 import { goto } from "$app/navigation";
+import PeriodGateAction from "$lib/shared/components/period-gate-action.svelte";
+import PeriodStatusBar from "$lib/shared/components/period-status-bar.svelte";
+import OverrideRequestDialog from "$lib/shared/components/override-request-dialog.svelte";
 
 import { localizeHref } from "$lib/paraglide/runtime";
 import { formatNumber } from "$lib/core/i18n";
@@ -212,7 +215,22 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 							<Download size={13} class="me-1.5" />
 							{m.common_export()}
 						</Button>
-						{#if canCreateStudent}
+						{#if academicContext.effectivePeriodId}
+							<PeriodStatusBar 
+								periodId={academicContext.effectivePeriodId} 
+								showGates={["enrollment"]} 
+							/>
+							<PeriodGateAction
+								gateType="enrollment"
+								periodId={academicContext.effectivePeriodId}
+								classId={studentsStore.selectedClassId ?? undefined}
+								label={m.common_new()}
+								size="sm"
+								onAction={() => goto(localizeHref(`/${data.orgId}/students/new`))}
+								onDraft={() => goto(localizeHref(`/${data.orgId}/students/new?draft=true`))}
+								onOverride={() => { showOverrideDialog = true; }}
+							/>
+						{:else}
 							<Button 
 								variant="lime" 
 								class="text-xs h-9 px-3" 
@@ -220,15 +238,6 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 							>
 								<Plus size={14} class="me-1.5" />
 								{m.common_new()}
-							</Button>
-						{:else if canRequestLateEnrollment}
-							<Button 
-								variant="outline" 
-								class="text-xs h-9 px-3" 
-								onclick={() => { showOverrideDialog = true; }}
-							>
-								<ShieldAlert size={14} class="me-1.5" />
-								{m.students_request_late_enrollment ? m.students_request_late_enrollment() : "Request Late Enrollment"}
 							</Button>
 						{/if}
 					</div>
@@ -271,6 +280,16 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 		bind:open={printDialogOpen}
 		entityType="enrollment"
 		entityIds={Array.from(selectedStudentIds)}
+	/>
+
+	<OverrideRequestDialog
+		bind:open={showOverrideDialog}
+		orgId={data.orgId}
+		overrideType="late_enrollment"
+		entityType="enrollment"
+		entityId={studentsStore.selectedClassId ?? ""}
+		riskLevel="medium"
+		onSuccess={() => { toast.success('تم تقديم طلب التجاوز بنجاح'); }}
 	/>
 
 </div>

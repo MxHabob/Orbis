@@ -117,6 +117,15 @@ pub async fn record(
     let req: CreateAttendancePayload = serde_json::from_value(data)
         .map_err(|e| AppError::validation(format!("Invalid record attendance payload: {e}")))?;
 
+    // ── Period Gate: check period is active ──
+    {
+        use shared_kernel::period_gate::GateType;
+        let verdict = ctx.period_gate
+            .check(&ctx.db, &ctx.org_id, &req.period_id, GateType::Attendance)
+            .await?;
+        verdict.enforce()?;
+    }
+
     // Validate status
     let valid_statuses = ["present", "absent", "late", "excused", "sick"];
     if !valid_statuses.contains(&req.status.as_str()) {
@@ -174,6 +183,15 @@ pub async fn record_bulk(
 
     let req: BulkAttendancePayload = serde_json::from_value(data)
         .map_err(|e| AppError::validation(format!("Invalid bulk attendance payload: {e}")))?;
+
+    // ── Period Gate: single check for the entire bulk (same period) ──
+    {
+        use shared_kernel::period_gate::GateType;
+        let verdict = ctx.period_gate
+            .check(&ctx.db, &ctx.org_id, &req.period_id, GateType::Attendance)
+            .await?;
+        verdict.enforce()?;
+    }
 
     let mut results = Vec::with_capacity(req.records.len());
     for item in req.records {

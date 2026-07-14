@@ -263,3 +263,62 @@ export interface ApprovalAction {
   user_role: string;
   notes?: string | null;
 }
+
+// ── Period Gate Types ─────────────────────────────────────────────
+
+export type GateType =
+  | "enrollment"
+  | "grade_entry"
+  | "attendance"
+  | "exam_entry"
+  | "assessment";
+
+export type GateDecision =
+  | "allowed"
+  | "late"
+  | "requires_override"
+  | "blocked";
+
+export type GateAction =
+  | "direct_action"
+  | "save_draft"
+  | "request_override";
+
+export interface CapacityInfo {
+  current: number;
+  max: number;
+  available: number;
+  utilization_pct: number;
+}
+
+export interface GateContext {
+  period_status: string;
+  window_start?: string | null;
+  window_end?: string | null;
+  is_within_grace: boolean;
+  grace_days: number;
+  capacity?: CapacityInfo | null;
+}
+
+export interface GateVerdict {
+  gate_type: GateType;
+  decision: GateDecision;
+  reason?: string | null;
+  override_type?: string | null;
+  allowed_actions: GateAction[];
+  context: GateContext;
+}
+
+// ── Cursor Pagination Types ──────────────────────────────────────
+
+export interface CursorRequest {
+  cursor?: string | null;
+  limit?: number;
+}
+
+export interface CursorPage<T> {
+  items: T[];
+  count: number;
+  next_cursor: string | null;
+  has_more: boolean;
+}

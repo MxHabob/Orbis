@@ -14,6 +14,8 @@ import type {
   StudentGuardian,
   Document,
   Notification,
+  GateVerdict,
+  GateType,
 } from "../types";
 
 export interface AcademicCommands {
@@ -89,6 +91,14 @@ export interface AcademicCommands {
     newClassId: string,
   ): Promise<Enrollment>;
   checkDuplicate(studentId: string, periodId: string): Promise<Enrollment | null>;
+
+  // ── Period Gate ──────────────────────────────────────────────
+  /** Pre-check enrollment eligibility (period window + capacity + policy). */
+  checkEnrollmentEligibility(periodId: string, classId: string): Promise<GateVerdict>;
+  /** Confirm a draft enrollment after override approval. */
+  confirmEnrollmentDraft(enrollmentId: string): Promise<Enrollment>;
+  /** Generic period gate check for any operation type. */
+  checkPeriodGate(gateType: GateType, periodId: string): Promise<GateVerdict>;
 
   // ── Class-Subject ───────────────────────────────────────────
   listClassSubjects(

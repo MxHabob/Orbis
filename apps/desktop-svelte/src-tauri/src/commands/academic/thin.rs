@@ -268,6 +268,21 @@ pub async fn list_enrollments(
 }
 
 #[tauri::command]
+pub async fn list_enrollments_paginated(
+    state: State<'_, Arc<AppState>>,
+    cursor: Option<String>,
+    limit: Option<u64>,
+) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let request = shared_kernel::pagination::CursorRequest {
+        cursor,
+        limit: limit.unwrap_or(50),
+    };
+    let result = ops::enrollment::list_paginated(&ctx, request).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
 pub async fn get_enrollment(
     state: State<'_, Arc<AppState>>,
     enrollment_id: String,
@@ -317,6 +332,57 @@ pub async fn check_duplicate_enrollment(
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::enrollment::check_duplicate(&ctx, national_id, email, phone).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
+}
+
+// ── Period Gate Commands ────────────────────────────────────────────
+
+#[tauri::command]
+pub async fn check_enrollment_eligibility(
+    state: State<'_, Arc<AppState>>,
+    period_id: String,
+    class_id: String,
+) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let verdict = ops::enrollment::check_eligibility(&ctx, &period_id, &class_id)
+        .await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(verdict).unwrap())
+}
+
+#[tauri::command]
+pub async fn confirm_enrollment_draft(
+    state: State<'_, Arc<AppState>>,
+    enrollment_id: String,
+) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::enrollment::confirm_draft(&ctx, &enrollment_id)
+        .await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn check_period_gate(
+    state: State<'_, Arc<AppState>>,
+    gate_type: String,
+    period_id: String,
+) -> CmdResult<serde_json::Value> {
+    use shared_kernel::period_gate::GateType;
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+
+    let gate = match gate_type.as_str() {
+        "enrollment" => GateType::Enrollment,
+        "grade_entry" => GateType::GradeEntry,
+        "attendance" => GateType::Attendance,
+        "exam_entry" => GateType::ExamEntry,
+        "assessment" => GateType::Assessment,
+        _ => return Err(CommandError::from(
+            shared_kernel::errors::AppError::validation(format!("Unknown gate type: {}", gate_type))
+        )),
+    };
+
+    let verdict = ctx.period_gate
+        .check(&ctx.db, &ctx.org_id, &period_id, gate)
+        .await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(verdict).unwrap())
 }
 
 // ── Class Subjects ──────────────────────────────────────────────────

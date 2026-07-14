@@ -10,6 +10,7 @@ pub use shared_kernel::config::Config;
 use shared_kernel::context::ServiceContext;
 use shared_kernel::event_bus::EventBus;
 use shared_kernel::tenant_guard::TenantGuard;
+use shared_kernel::period_gate::PeriodGate;
 use shared_kernel::traits::Actor;
 
 /// Authenticated session context — set at login, cleared at logout.
@@ -20,6 +21,7 @@ use shared_kernel::traits::Actor;
 pub struct SessionContext {
     pub user_id: String,
     pub org_id: String,
+    pub org_unit_id: Option<String>,
     pub roles: Vec<String>,
     pub guard: TenantGuard,
 }
@@ -33,6 +35,7 @@ pub struct PlatformServices {
     pub policy: Arc<dyn shared_kernel::traits::PolicyEngine>,
     pub notifier: Arc<dyn shared_kernel::traits::NotificationSender>,
     pub fee_assigner: Arc<dyn shared_kernel::traits::FeeAssigner>,
+    pub period_gate: Arc<PeriodGate>,
     pub event_bus: Arc<EventBus>,
     pub event_store: Arc<shared_kernel::event_store::EventStore>,
     pub reactive: Arc<shared_kernel::reactive::ReactivePipeline>,
@@ -67,6 +70,7 @@ impl PlatformServices {
             policy: Arc::new(OrgPolicyEngine::new(db.clone())),
             notifier: Arc::new(LogNotificationSender::new()),
             fee_assigner: Arc::new(FinanceFeeAssigner::new(db)),
+            period_gate: Arc::new(PeriodGate::new()),
             event_bus,
             event_store: Arc::new(shared_kernel::event_store::EventStore::new(db_for_store)),
             reactive: Arc::new(reactive),
@@ -164,6 +168,7 @@ impl PlatformServices {
             self.policy.clone(),
             self.notifier.clone(),
             self.fee_assigner.clone(),
+            self.period_gate.clone(),
             self.event_bus.clone(),
             self.event_store.clone(),
             self.reactive.clone(),

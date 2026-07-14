@@ -54,6 +54,22 @@ pub async fn list_grades(state: State<'_, Arc<AppState>>, assessment_id: String)
 }
 
 #[tauri::command]
+pub async fn list_grades_paginated(
+    state: State<'_, Arc<AppState>>,
+    assessment_id: String,
+    cursor: Option<String>,
+    limit: Option<u64>,
+) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let request = shared_kernel::pagination::CursorRequest {
+        cursor,
+        limit: limit.unwrap_or(50),
+    };
+    let r = ops::grade::list_paginated(&ctx, &assessment_id, request).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(r).unwrap())
+}
+
+#[tauri::command]
 pub async fn record_attendance(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let r = ops::attendance::record(&ctx, data).await.map_err(CommandError::from)?;

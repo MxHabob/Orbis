@@ -63,6 +63,15 @@ pub async fn create(
     let req: CreateAssessmentRequest = serde_json::from_value(data)
         .map_err(|e| AppError::validation(format!("Invalid create assessment payload: {e}")))?;
 
+    // ── Period Gate: check period is not locked ──
+    {
+        use shared_kernel::period_gate::GateType;
+        let verdict = ctx.period_gate
+            .check(&ctx.db, &ctx.org_id, &req.period_id, GateType::Assessment)
+            .await?;
+        verdict.enforce()?;
+    }
+
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
 

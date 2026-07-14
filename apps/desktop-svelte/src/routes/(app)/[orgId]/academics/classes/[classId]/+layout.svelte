@@ -24,6 +24,7 @@ import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import AskOrbisButton from "$lib/shared/components/ask-orbis-button.svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { toast } from "svelte-sonner";
+import CapacityIndicator from "$lib/shared/components/capacity-indicator.svelte";
 import {
   GraduationCap,
   Users,
@@ -202,6 +203,9 @@ const menuItems = $derived([
         <Users size={10} class="me-1" />
         {studentsCount}
       </Badge>
+      <div class="w-24 shrink-0 flex items-center">
+        <CapacityIndicator current={studentsCount} max={classData.capacity ?? 30} size="sm" />
+      </div>
       {#if classData.grade_level}
         <Badge
           variant="outline"
