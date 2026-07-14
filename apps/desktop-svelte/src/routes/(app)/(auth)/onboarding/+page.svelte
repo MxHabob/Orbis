@@ -12,7 +12,7 @@ import OnboardingWizard from "$lib/features/onboarding/onboarding-wizard.svelte"
 import { onboardingState } from "$lib/features/onboarding/state.svelte";
 
 onMount(async () => {
-  authStore.restore();
+  await authStore.restore();
   if (!authStore.isAuthenticated) {
     goto(localizeHref("/login"), { replaceState: true });
     return;

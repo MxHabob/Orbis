@@ -23,9 +23,28 @@ pub async fn login(state: State<'_, Arc<AppState>>, identifier: String, password
 #[tauri::command]
 pub async fn logout_session(state: State<'_, Arc<AppState>>, session_id: String) -> CmdResult<()> {
     let db = state.db();
-    ops::auth::logout(&db, &session_id).await.map_err(CommandError::from)?;
-    state.clear_session().await;
+    
+    // session_id here is actually the token from the frontend
+    if ops::auth::logout(&db, &session_id).await.is_ok() {
+        state.clear_session().await;
+    }
+    
     Ok(())
+}
+
+#[tauri::command]
+pub async fn restore_session(state: State<'_, Arc<AppState>>, token: String) -> CmdResult<serde_json::Value> {
+    let db = state.db();
+    
+    let (user, session) = ops::auth::restore_session(&db, &token).await.map_err(CommandError::from)?;
+
+    let roles: Vec<String> = vec![user.primary_role.clone()];
+    state.set_session(user.id.clone(), user.org_id.clone(), roles).await;
+
+    Ok(serde_json::json!({
+        "user": user,
+        "access_token": session.token
+    }))
 }
 
 #[tauri::command]

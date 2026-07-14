@@ -1,4 +1,3 @@
-import * as m from "$lib/paraglide/messages";
 // ── Auth Store ───────────────────────────────────────────────────────
 // Svelte 5 Runes-based authentication state.
 
@@ -50,7 +49,17 @@ class AuthStore {
     localStorage.removeItem("orbis_is_setup_complete");
   }
 
-  restore() {
+  private restorePromise: Promise<void> | null = null;
+
+  async restore() {
+    if (this.restorePromise) {
+      return this.restorePromise;
+    }
+    this.restorePromise = this._restore();
+    return this.restorePromise;
+  }
+
+  private async _restore() {
     try {
       const token = localStorage.getItem("orbis_token");
       const userStr = localStorage.getItem("orbis_user");
@@ -58,10 +67,17 @@ class AuthStore {
         "orbis_is_setup_complete",
       );
       if (token && userStr) {
-        this.token = token;
-        this.user = JSON.parse(userStr);
-        if (isSetupCompleteStr !== null) {
-          this.isSetupComplete = isSetupCompleteStr === "true";
+        try {
+          const res = await commands.iam.restoreSession(token);
+          this.token = res.access_token;
+          this.user = res.user;
+          if (isSetupCompleteStr !== null) {
+            this.isSetupComplete = isSetupCompleteStr === "true";
+          }
+        } catch (e) {
+          console.error("Failed to restore session on backend:", e);
+          this.token = null;
+          this.user = null;
         }
       }
     } catch {

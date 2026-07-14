@@ -97,16 +97,37 @@ pub async fn login(
 }
 
 /// Logout — invalidate session.
-pub async fn logout(db: &DatabaseConnection, session_id: &str) -> Result<(), AppError> {
-    let existing = user_session::Entity::find_by_id(session_id.to_string())
+pub async fn logout(db: &DatabaseConnection, token: &str) -> Result<(), AppError> {
+    let existing = user_session::Entity::find()
+        .filter(user_session::Column::Token.eq(token))
         .one(db).await?
-        .ok_or_else(|| AppError::not_found("user_session", session_id))?;
+        .ok_or_else(|| AppError::not_found("user_session", token))?;
 
     let mut active: user_session::ActiveModel = existing.into();
     active.is_current = Set(0);
     active.update(db).await?;
 
     Ok(())
+}
+
+/// Restore session from a token.
+pub async fn restore_session(
+    db: &DatabaseConnection,
+    token: &str,
+) -> Result<(user::Model, user_session::Model), AppError> {
+    let session = user_session::Entity::find()
+        .filter(user_session::Column::Token.eq(token))
+        .filter(user_session::Column::IsCurrent.eq(1))
+        .one(db)
+        .await?
+        .ok_or_else(|| AppError::unauthorized("Invalid or expired session token"))?;
+        
+    let user = user::Entity::find_by_id(session.user_id.clone())
+        .one(db)
+        .await?
+        .ok_or_else(|| AppError::unauthorized("User not found"))?;
+
+    Ok((user, session))
 }
 
 #[derive(serde::Deserialize)]

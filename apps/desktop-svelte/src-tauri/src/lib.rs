@@ -156,6 +156,7 @@ pub fn run() {
             // IAM commands
             commands::iam::thin::login,
             commands::iam::thin::logout_session,
+            commands::iam::thin::restore_session,
             commands::iam::thin::list_user_sessions,
             commands::iam::thin::list_users,
             commands::iam::thin::list_users_paginated,

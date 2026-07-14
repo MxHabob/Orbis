@@ -292,6 +292,7 @@ export const commands: OrbisCommands = {
   iam: {
     login: (identifier, passwordHash, ip?) =>
       cmd("login", { identifier, passwordHash, ip }),
+    restoreSession: (token) => cmd("restore_session", { token }),
     logout: (sessionId) => cmd("logout_session", { sessionId }),
     changePassword: (userId, data) => {
       const hash = typeof data === "string" ? data : data.new_password;
