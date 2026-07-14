@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 /**
  * ColorPicker — Advanced color picker with spectrum, HEX/RGB inputs,
  * opacity slider, preset swatches, and recent colors.
@@ -166,7 +167,7 @@ const swatchSize = $derived(size === "sm" ? 20 : 24);
 
       {#if showOpacity}
         <div class="opacity-row">
-          <span class="opacity-label">شفافية</span>
+          <span class="opacity-label">{m.template_color_opacity()}</span>
           <input
             type="range"
             min="0"
@@ -181,7 +182,7 @@ const swatchSize = $derived(size === "sm" ? 20 : 24);
 
       <!-- Preset swatches -->
       <div class="swatches-section">
-        <span class="section-label">الألوان</span>
+        <span class="section-label">{m.template_color_colors()}</span>
         <div class="swatches-grid">
           {#each presetColors as color}
             <button
@@ -198,7 +199,7 @@ const swatchSize = $derived(size === "sm" ? 20 : 24);
       <!-- Recent colors -->
       {#if recentColors.length > 0}
         <div class="swatches-section">
-          <span class="section-label">الأخيرة</span>
+          <span class="section-label">{m.template_color_recent()}</span>
           <div class="swatches-grid">
             {#each recentColors as color}
               <button

@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 // ═══════════════════════════════════════════════════════════════
 // Template Designer — Command System
 // Undoable command pattern for all editor operations.
@@ -100,7 +101,7 @@ export class MoveNodeCommand implements EditorCommand {
     private newY: number,
   ) {
     this.description = `Move element`;
-    this.descriptionAr = `نقل العنصر`;
+    this.descriptionAr = m.template_auto_c2f2cd44();
   }
 
   execute(doc: TemplateDocument): TemplateDocument {
@@ -142,7 +143,7 @@ export class MoveNodeCommand implements EditorCommand {
 export class ResizeNodeCommand implements EditorCommand {
   readonly type = "resize-node";
   readonly description = "Resize element";
-  readonly descriptionAr = "تغيير حجم العنصر";
+  readonly descriptionAr = m.template_cmd_resize_element();
   private prevWidth: number | string = 0;
   private prevHeight: number | string | undefined = 0;
 
@@ -207,7 +208,7 @@ export class RemoveNodeCommand implements EditorCommand {
 
   constructor(private nodeId: string) {
     this.description = `Remove element`;
-    this.descriptionAr = `حذف العنصر`;
+    this.descriptionAr = m.template_auto_7e2b43ff();
   }
 
   execute(doc: TemplateDocument): TemplateDocument {
@@ -232,7 +233,7 @@ export class RemoveNodeCommand implements EditorCommand {
 export class DuplicateNodeCommand implements EditorCommand {
   readonly type = "duplicate-node";
   readonly description = "Duplicate element";
-  readonly descriptionAr = "تكرار العنصر";
+  readonly descriptionAr = m.template_cmd_duplicate_element();
   private clonedNode: TemplateNode | null = null;
 
   constructor(private nodeId: string) {}
@@ -266,7 +267,7 @@ export class DuplicateNodeCommand implements EditorCommand {
 export class AddPageCommand implements EditorCommand {
   readonly type = "add-page";
   readonly description = "Add page";
-  readonly descriptionAr = "إضافة صفحة";
+  readonly descriptionAr = m.template_cmd_add_page();
   private pageId: string;
 
   constructor(
@@ -295,7 +296,7 @@ export class AddPageCommand implements EditorCommand {
 export class RemovePageCommand implements EditorCommand {
   readonly type = "remove-page";
   readonly description = "Remove page";
-  readonly descriptionAr = "حذف صفحة";
+  readonly descriptionAr = m.template_cmd_remove_page();
   private removedPage: PageNode | null = null;
   private removedIndex = 0;
 
@@ -329,7 +330,7 @@ export class BatchCommand implements EditorCommand {
   constructor(
     private commands: EditorCommand[],
     description = "Multiple changes",
-    descriptionAr = "تغييرات متعددة",
+    descriptionAr = m.template_cmd_multiple_changes(),
   ) {
     this.description = description;
     this.descriptionAr = descriptionAr;

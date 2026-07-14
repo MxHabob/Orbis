@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 /**
  * CanvasContextMenu — Right-click context menu for canvas elements.
  */
@@ -116,19 +117,19 @@ function handleSelectAll() {
     {#if hasSelection}
       <button type="button" class="context-menu-item" onclick={handleCopy}>
         <Copy size={12} />
-        <span>نسخ / Copy</span>
+        <span>{m.template_auto_e46bb827()}</span>
         <span class="context-menu-shortcut">Ctrl+C</span>
       </button>
       <button type="button" class="context-menu-item" onclick={handleCut}>
         <Scissors size={12} />
-        <span>قص / Cut</span>
+        <span>{m.template_auto_a0183ddd()}</span>
         <span class="context-menu-shortcut">Ctrl+X</span>
       </button>
     {/if}
 
     <button type="button" class="context-menu-item" onclick={handlePaste}>
       <ClipboardPaste size={12} />
-      <span>لصق / Paste</span>
+      <span>{m.template_auto_29593a9e()}</span>
       <span class="context-menu-shortcut">Ctrl+V</span>
     </button>
 
@@ -137,13 +138,13 @@ function handleSelectAll() {
 
       <button type="button" class="context-menu-item" onclick={handleDuplicate}>
         <Copy size={12} />
-        <span>تكرار / Duplicate</span>
+        <span>{m.template_auto_4eb3b489()}</span>
         <span class="context-menu-shortcut">Ctrl+D</span>
       </button>
 
       <button type="button" class="context-menu-item text-destructive" onclick={handleDelete}>
         <Trash2 size={12} />
-        <span>حذف / Delete</span>
+        <span>{m.template_auto_8e11085f()}</span>
         <span class="context-menu-shortcut">Del</span>
       </button>
 
@@ -151,12 +152,12 @@ function handleSelectAll() {
 
       <button type="button" class="context-menu-item" onclick={handleBringToFront}>
         <BringToFront size={12} />
-        <span>إحضار للأمام / Bring to Front</span>
+        <span>{m.template_auto_6481693d()}</span>
       </button>
 
       <button type="button" class="context-menu-item" onclick={handleSendToBack}>
         <SendToBack size={12} />
-        <span>إرسال للخلف / Send to Back</span>
+        <span>{m.template_auto_c97401f6()}</span>
       </button>
 
       <div class="h-px bg-border/50 my-1"></div>
@@ -164,27 +165,27 @@ function handleSelectAll() {
       <button type="button" class="context-menu-item" onclick={handleToggleLock}>
         {#if isLocked}
           <Unlock size={12} />
-          <span>فك القفل / Unlock</span>
+          <span>{m.template_auto_e99e7967()}</span>
         {:else}
           <Lock size={12} />
-          <span>قفل / Lock</span>
+          <span>{m.template_auto_537ebcc5()}</span>
         {/if}
       </button>
 
       <button type="button" class="context-menu-item" onclick={handleToggleVisibility}>
         {#if isHidden}
           <Eye size={12} />
-          <span>إظهار / Show</span>
+          <span>{m.template_auto_b65f7100()}</span>
         {:else}
           <EyeOff size={12} />
-          <span>إخفاء / Hide</span>
+          <span>{m.template_auto_979855d2()}</span>
         {/if}
       </button>
     {:else}
       <div class="h-px bg-border/50 my-1"></div>
       <button type="button" class="context-menu-item" onclick={handleSelectAll}>
         <Layers size={12} />
-        <span>تحديد الكل / Select All</span>
+        <span>{m.template_auto_3c726fa3()}</span>
         <span class="context-menu-shortcut">Ctrl+A</span>
       </button>
     {/if}

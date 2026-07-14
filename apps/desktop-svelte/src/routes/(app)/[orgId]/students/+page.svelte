@@ -270,9 +270,9 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 									onclick={() => $enrollmentsQuery.fetchNextPage()}
 								>
 									{#if $enrollmentsQuery.isFetchingNextPage}
-										جاري التحميل...
+										{m.common_loading()}
 									{:else}
-										تحميل المزيد من الطلاب
+										{m.common_bulk_action_load_more()}
 									{/if}
 								</Button>
 							</div>
@@ -306,7 +306,7 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 		entityType="enrollment"
 		entityId={studentsStore.selectedClassId ?? ""}
 		riskLevel="medium"
-		onSuccess={() => { toast.success('تم تقديم طلب التجاوز بنجاح'); }}
+		onSuccess={() => { toast.success(m.common_override_submitted()); }}
 	/>
 
 </div>

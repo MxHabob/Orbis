@@ -30,6 +30,7 @@ import { formatCurrency } from "$lib/core/i18n";
 let { data }: { data: { orgId: string } } = $props();
 
 let ledgers = $state<any[]>([]);
+let activeCurrencies = $state<any[]>([]);
 let isLoading = $state(true);
 let error = $state<string | null>(null);
 
@@ -37,7 +38,12 @@ async function loadData() {
   isLoading = true;
   error = null;
   try {
-    ledgers = await commands.finance.listAccounts(data.orgId);
+    const [ledgersData, currenciesData] = await Promise.all([
+      commands.finance.listAccounts(data.orgId),
+      commands.finance.listCurrencies()
+    ]);
+    ledgers = ledgersData;
+    activeCurrencies = currenciesData.filter((c: any) => c.is_active === 1);
   } catch (e) {
     console.error("Error loading ledger data for reports:", e);
     error = e instanceof Error ? e.message : String(e);
@@ -56,26 +62,31 @@ onMount(() => {
 // 1. Trial Balance Rows
 const trialBalanceRows = $derived.by(() => {
   return ledgers.map((l) => {
-    // For Trial Balance, we show aggregated YER, USD, SAR
+    // For Trial Balance, we show aggregated balances for active currencies
+    const balances: Record<string, { debit: number; credit: number }> = {};
+    activeCurrencies.forEach(c => {
+      const code = c.code.toLowerCase();
+      balances[code] = {
+        debit: l[`debit_${code}`] || 0.0,
+        credit: l[`credit_${code}`] || 0.0,
+      };
+    });
+
     return {
       code: l.code,
       name: l.name_ar || l.name,
-      debit_yer: l.debit_yer || 0.0,
-      credit_yer: l.credit_yer || 0.0,
-      debit_sar: l.debit_sar || 0.0,
-      credit_sar: l.credit_sar || 0.0,
-      debit_usd: l.debit_usd || 0.0,
-      credit_usd: l.credit_usd || 0.0,
+      balances,
     };
   });
 });
 
 // Helper to determine net balance depending on account type nature
-function getNetBalance(acc: any, currency: "yer" | "sar" | "usd"): number {
+function getNetBalance(acc: any, currencyCode: string): number {
   const isDebitNature =
     acc.item_type === "asset" || acc.item_type === "expense";
-  const debit = Number(acc[`debit_${currency}`] || 0.0);
-  const credit = Number(acc[`credit_${currency}`] || 0.0);
+  const code = currencyCode.toLowerCase();
+  const debit = Number(acc[`debit_${code}`] || 0.0);
+  const credit = Number(acc[`credit_${code}`] || 0.0);
   return isDebitNature ? debit - credit : credit - debit;
 }
 
@@ -88,33 +99,33 @@ const expenseAccounts = $derived.by(() =>
 );
 
 const totalRevenue = $derived.by(() => {
-  let yer = 0,
-    sar = 0,
-    usd = 0;
+  const totals: Record<string, number> = {};
+  activeCurrencies.forEach(c => { totals[c.code.toLowerCase()] = 0; });
+
   revenueAccounts.forEach((acc) => {
     if (!acc.parent_id) {
-      // Top level rollups
-      yer += getNetBalance(acc, "yer");
-      sar += getNetBalance(acc, "sar");
-      usd += getNetBalance(acc, "usd");
+      activeCurrencies.forEach(c => {
+        const code = c.code.toLowerCase();
+        totals[code] += getNetBalance(acc, code);
+      });
     }
   });
-  return { yer, sar, usd };
+  return totals;
 });
 
 const totalExpenses = $derived.by(() => {
-  let yer = 0,
-    sar = 0,
-    usd = 0;
+  const totals: Record<string, number> = {};
+  activeCurrencies.forEach(c => { totals[c.code.toLowerCase()] = 0; });
+
   expenseAccounts.forEach((acc) => {
     if (!acc.parent_id) {
-      // Top level rollups
-      yer += getNetBalance(acc, "yer");
-      sar += getNetBalance(acc, "sar");
-      usd += getNetBalance(acc, "usd");
+      activeCurrencies.forEach(c => {
+        const code = c.code.toLowerCase();
+        totals[code] += getNetBalance(acc, code);
+      });
     }
   });
-  return { yer, sar, usd };
+  return totals;
 });
 
 // 3. Balance Sheet (Assets, Liabilities, Equity)
@@ -129,45 +140,48 @@ const equityAccounts = $derived.by(() =>
 );
 
 const totalAssets = $derived.by(() => {
-  let yer = 0,
-    sar = 0,
-    usd = 0;
+  const totals: Record<string, number> = {};
+  activeCurrencies.forEach(c => { totals[c.code.toLowerCase()] = 0; });
+
   assetAccounts.forEach((acc) => {
     if (!acc.parent_id) {
-      yer += getNetBalance(acc, "yer");
-      sar += getNetBalance(acc, "sar");
-      usd += getNetBalance(acc, "usd");
+      activeCurrencies.forEach(c => {
+        const code = c.code.toLowerCase();
+        totals[code] += getNetBalance(acc, code);
+      });
     }
   });
-  return { yer, sar, usd };
+  return totals;
 });
 
 const totalLiabilities = $derived.by(() => {
-  let yer = 0,
-    sar = 0,
-    usd = 0;
+  const totals: Record<string, number> = {};
+  activeCurrencies.forEach(c => { totals[c.code.toLowerCase()] = 0; });
+
   liabilityAccounts.forEach((acc) => {
     if (!acc.parent_id) {
-      yer += getNetBalance(acc, "yer");
-      sar += getNetBalance(acc, "sar");
-      usd += getNetBalance(acc, "usd");
+      activeCurrencies.forEach(c => {
+        const code = c.code.toLowerCase();
+        totals[code] += getNetBalance(acc, code);
+      });
     }
   });
-  return { yer, sar, usd };
+  return totals;
 });
 
 const totalEquity = $derived.by(() => {
-  let yer = 0,
-    sar = 0,
-    usd = 0;
+  const totals: Record<string, number> = {};
+  activeCurrencies.forEach(c => { totals[c.code.toLowerCase()] = 0; });
+
   equityAccounts.forEach((acc) => {
     if (!acc.parent_id) {
-      yer += getNetBalance(acc, "yer");
-      sar += getNetBalance(acc, "sar");
-      usd += getNetBalance(acc, "usd");
+      activeCurrencies.forEach(c => {
+        const code = c.code.toLowerCase();
+        totals[code] += getNetBalance(acc, code);
+      });
     }
   });
-  return { yer, sar, usd };
+  return totals;
 });
 </script>
 
@@ -260,12 +274,10 @@ const totalEquity = $derived.by(() => {
                 <TableRow>
                   <TableHead class="text-start text-xs w-[120px]">رمز الحساب</TableHead>
                   <TableHead class="text-start text-xs">اسم الحساب</TableHead>
-                  <TableHead class="text-end text-xs text-emerald-600">مدين YER</TableHead>
-                  <TableHead class="text-end text-xs text-rose-600">دائن YER</TableHead>
-                  <TableHead class="text-end text-xs text-emerald-600">مدين SAR</TableHead>
-                  <TableHead class="text-end text-xs text-rose-600">دائن SAR</TableHead>
-                  <TableHead class="text-end text-xs text-emerald-600">مدين USD</TableHead>
-                  <TableHead class="text-end text-xs text-rose-600">دائن USD</TableHead>
+                  {#each activeCurrencies as c}
+                    <TableHead class="text-end text-xs text-emerald-600">مدين {c.code}</TableHead>
+                    <TableHead class="text-end text-xs text-rose-600">دائن {c.code}</TableHead>
+                  {/each}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -275,12 +287,13 @@ const totalEquity = $derived.by(() => {
                     <TableCell class="text-start text-xs text-foreground ps-4" style="padding-left: {row.code.length * 4}px">
                       {row.name}
                     </TableCell>
-                    <TableCell class="text-end text-xs font-mono text-emerald-600">{row.debit_yer > 0 ? formatCurrency(row.debit_yer, "YER") : "-"}</TableCell>
-                    <TableCell class="text-end text-xs font-mono text-rose-600">{row.credit_yer > 0 ? formatCurrency(row.credit_yer, "YER") : "-"}</TableCell>
-                    <TableCell class="text-end text-xs font-mono text-emerald-600">{row.debit_sar > 0 ? formatCurrency(row.debit_sar, "SAR") : "-"}</TableCell>
-                    <TableCell class="text-end text-xs font-mono text-rose-600">{row.credit_sar > 0 ? formatCurrency(row.credit_sar, "SAR") : "-"}</TableCell>
-                    <TableCell class="text-end text-xs font-mono text-emerald-600">{row.debit_usd > 0 ? formatCurrency(row.debit_usd, "USD") : "-"}</TableCell>
-                    <TableCell class="text-end text-xs font-mono text-rose-600">{row.credit_usd > 0 ? formatCurrency(row.credit_usd, "USD") : "-"}</TableCell>
+                    {#each activeCurrencies as c}
+                      {@const code = c.code.toLowerCase()}
+                      {@const deb = row.balances[code]?.debit || 0}
+                      {@const cred = row.balances[code]?.credit || 0}
+                      <TableCell class="text-end text-xs font-mono text-emerald-600">{deb > 0 ? formatCurrency(deb, c.code) : "-"}</TableCell>
+                      <TableCell class="text-end text-xs font-mono text-rose-600">{cred > 0 ? formatCurrency(cred, c.code) : "-"}</TableCell>
+                    {/each}
                   </TableRow>
                 {/each}
               </TableBody>
@@ -310,23 +323,19 @@ const totalEquity = $derived.by(() => {
                     <TableRow class="hover:bg-muted/10">
                       <TableCell class="text-start text-xs font-mono text-muted-foreground w-24">{acc.code}</TableCell>
                       <TableCell class="text-start text-xs text-foreground">{acc.name_ar || acc.name}</TableCell>
-                      <TableCell class="text-end text-xs font-bold font-mono">
-                        {formatCurrency(getNetBalance(acc, 'yer'), "YER")}
-                      </TableCell>
-                      <TableCell class="text-end text-xs font-bold font-mono">
-                        {formatCurrency(getNetBalance(acc, 'sar'), "SAR")}
-                      </TableCell>
-                      <TableCell class="text-end text-xs font-bold font-mono">
-                        {formatCurrency(getNetBalance(acc, 'usd'), "USD")}
-                      </TableCell>
+                      {#each activeCurrencies as c}
+                        <TableCell class="text-end text-xs font-bold font-mono">
+                          {formatCurrency(getNetBalance(acc, c.code), c.code)}
+                        </TableCell>
+                      {/each}
                     </TableRow>
                   {/each}
                   <!-- Total Revenue Row -->
                   <TableRow class="bg-emerald-50/10 font-bold border-t border-border">
                     <TableCell colspan={2} class="text-start text-xs text-emerald-600">إجمالي الإيرادات</TableCell>
-                    <TableCell class="text-end text-xs font-mono text-emerald-600">{formatCurrency(totalRevenue.yer, "YER")}</TableCell>
-                    <TableCell class="text-end text-xs font-mono text-emerald-600">{formatCurrency(totalRevenue.sar, "SAR")}</TableCell>
-                    <TableCell class="text-end text-xs font-mono text-emerald-600">{formatCurrency(totalRevenue.usd, "USD")}</TableCell>
+                    {#each activeCurrencies as c}
+                      <TableCell class="text-end text-xs font-mono text-emerald-600">{formatCurrency(totalRevenue[c.code.toLowerCase()] || 0, c.code)}</TableCell>
+                    {/each}
                   </TableRow>
                 </TableBody>
               </Table>
@@ -341,23 +350,19 @@ const totalEquity = $derived.by(() => {
                     <TableRow class="hover:bg-muted/10">
                       <TableCell class="text-start text-xs font-mono text-muted-foreground w-24">{acc.code}</TableCell>
                       <TableCell class="text-start text-xs text-foreground">{acc.name_ar || acc.name}</TableCell>
-                      <TableCell class="text-end text-xs font-bold font-mono">
-                        {formatCurrency(getNetBalance(acc, 'yer'), "YER")}
-                      </TableCell>
-                      <TableCell class="text-end text-xs font-bold font-mono">
-                        {formatCurrency(getNetBalance(acc, 'sar'), "SAR")}
-                      </TableCell>
-                      <TableCell class="text-end text-xs font-bold font-mono">
-                        {formatCurrency(getNetBalance(acc, 'usd'), "USD")}
-                      </TableCell>
+                      {#each activeCurrencies as c}
+                        <TableCell class="text-end text-xs font-bold font-mono">
+                          {formatCurrency(getNetBalance(acc, c.code), c.code)}
+                        </TableCell>
+                      {/each}
                     </TableRow>
                   {/each}
                   <!-- Total Expenses Row -->
                   <TableRow class="bg-rose-50/10 font-bold border-t border-border">
                     <TableCell colspan={2} class="text-start text-xs text-rose-600">إجمالي المصروفات</TableCell>
-                    <TableCell class="text-end text-xs font-mono text-rose-600">{formatCurrency(totalExpenses.yer, "YER")}</TableCell>
-                    <TableCell class="text-end text-xs font-mono text-rose-600">{formatCurrency(totalExpenses.sar, "SAR")}</TableCell>
-                    <TableCell class="text-end text-xs font-mono text-rose-600">{formatCurrency(totalExpenses.usd, "USD")}</TableCell>
+                    {#each activeCurrencies as c}
+                      <TableCell class="text-end text-xs font-mono text-rose-600">{formatCurrency(totalExpenses[c.code.toLowerCase()] || 0, c.code)}</TableCell>
+                    {/each}
                   </TableRow>
                 </TableBody>
               </Table>
@@ -366,25 +371,15 @@ const totalEquity = $derived.by(() => {
             <!-- Net Income Summary -->
             <div class="bg-primary/5 rounded-xl p-4 border border-primary/20 flex flex-col gap-2">
               <h4 class="text-xs font-extrabold text-primary uppercase tracking-wider">صافي الدخل / الفائض (Net Profit / Loss)</h4>
-              <div class="grid grid-cols-3 gap-4 text-center mt-2">
-                <div class="flex flex-col gap-1">
-                  <span class="text-[10px] font-bold text-muted-foreground">بالريال اليمني</span>
-                  <span class="text-sm font-extrabold font-mono text-primary">
-                    {formatCurrency(totalRevenue.yer - totalExpenses.yer, "YER")}
-                  </span>
-                </div>
-                <div class="flex flex-col gap-1">
-                  <span class="text-[10px] font-bold text-muted-foreground">بالريال السعودي</span>
-                  <span class="text-sm font-extrabold font-mono text-primary">
-                    {formatCurrency(totalRevenue.sar - totalExpenses.sar, "SAR")}
-                  </span>
-                </div>
-                <div class="flex flex-col gap-1">
-                  <span class="text-[10px] font-bold text-muted-foreground">بالدولار الأمريكي</span>
-                  <span class="text-sm font-extrabold font-mono text-primary">
-                    {formatCurrency(totalRevenue.usd - totalExpenses.usd, "USD")}
-                  </span>
-                </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-center mt-2">
+                {#each activeCurrencies as c}
+                  <div class="flex flex-col gap-1">
+                    <span class="text-[10px] font-bold text-muted-foreground">{c.name_ar || c.name}</span>
+                    <span class="text-sm font-extrabold font-mono text-primary">
+                      {formatCurrency((totalRevenue[c.code.toLowerCase()] || 0) - (totalExpenses[c.code.toLowerCase()] || 0), c.code)}
+                    </span>
+                  </div>
+                {/each}
               </div>
             </div>
           </div>
@@ -412,23 +407,19 @@ const totalEquity = $derived.by(() => {
                     <TableRow class="hover:bg-muted/10">
                       <TableCell class="text-start text-xs font-mono text-muted-foreground w-24">{acc.code}</TableCell>
                       <TableCell class="text-start text-xs text-foreground">{acc.name_ar || acc.name}</TableCell>
-                      <TableCell class="text-end text-xs font-bold font-mono">
-                        {formatCurrency(getNetBalance(acc, 'yer'), "YER")}
-                      </TableCell>
-                      <TableCell class="text-end text-xs font-bold font-mono">
-                        {formatCurrency(getNetBalance(acc, 'sar'), "SAR")}
-                      </TableCell>
-                      <TableCell class="text-end text-xs font-bold font-mono">
-                        {formatCurrency(getNetBalance(acc, 'usd'), "USD")}
-                      </TableCell>
+                      {#each activeCurrencies as c}
+                        <TableCell class="text-end text-xs font-bold font-mono">
+                          {formatCurrency(getNetBalance(acc, c.code), c.code)}
+                        </TableCell>
+                      {/each}
                     </TableRow>
                   {/each}
                   <!-- Total Assets Row -->
                   <TableRow class="bg-primary/5 font-bold border-t border-border">
                     <TableCell colspan={2} class="text-start text-xs text-primary">إجمالي الأصول (Total Assets)</TableCell>
-                    <TableCell class="text-end text-xs font-mono text-primary">{formatCurrency(totalAssets.yer, "YER")}</TableCell>
-                    <TableCell class="text-end text-xs font-mono text-primary">{formatCurrency(totalAssets.sar, "SAR")}</TableCell>
-                    <TableCell class="text-end text-xs font-mono text-primary">{formatCurrency(totalAssets.usd, "USD")}</TableCell>
+                    {#each activeCurrencies as c}
+                      <TableCell class="text-end text-xs font-mono text-primary">{formatCurrency(totalAssets[c.code.toLowerCase()] || 0, c.code)}</TableCell>
+                    {/each}
                   </TableRow>
                 </TableBody>
               </Table>
@@ -443,38 +434,30 @@ const totalEquity = $derived.by(() => {
                     <TableRow class="hover:bg-muted/10">
                       <TableCell class="text-start text-xs font-mono text-muted-foreground w-24">{acc.code}</TableCell>
                       <TableCell class="text-start text-xs text-foreground">{acc.name_ar || acc.name}</TableCell>
-                      <TableCell class="text-end text-xs font-bold font-mono">
-                        {formatCurrency(getNetBalance(acc, 'yer'), "YER")}
-                      </TableCell>
-                      <TableCell class="text-end text-xs font-bold font-mono">
-                        {formatCurrency(getNetBalance(acc, 'sar'), "SAR")}
-                      </TableCell>
-                      <TableCell class="text-end text-xs font-bold font-mono">
-                        {formatCurrency(getNetBalance(acc, 'usd'), "USD")}
-                      </TableCell>
+                      {#each activeCurrencies as c}
+                        <TableCell class="text-end text-xs font-bold font-mono">
+                          {formatCurrency(getNetBalance(acc, c.code), c.code)}
+                        </TableCell>
+                      {/each}
                     </TableRow>
                   {/each}
                   {#each equityAccounts as acc}
                     <TableRow class="hover:bg-muted/10">
                       <TableCell class="text-start text-xs font-mono text-muted-foreground w-24">{acc.code}</TableCell>
                       <TableCell class="text-start text-xs text-foreground">{acc.name_ar || acc.name}</TableCell>
-                      <TableCell class="text-end text-xs font-bold font-mono">
-                        {formatCurrency(getNetBalance(acc, 'yer'), "YER")}
-                      </TableCell>
-                      <TableCell class="text-end text-xs font-bold font-mono">
-                        {formatCurrency(getNetBalance(acc, 'sar'), "SAR")}
-                      </TableCell>
-                      <TableCell class="text-end text-xs font-bold font-mono">
-                        {formatCurrency(getNetBalance(acc, 'usd'), "USD")}
-                      </TableCell>
+                      {#each activeCurrencies as c}
+                        <TableCell class="text-end text-xs font-bold font-mono">
+                          {formatCurrency(getNetBalance(acc, c.code), c.code)}
+                        </TableCell>
+                      {/each}
                     </TableRow>
                   {/each}
                   <!-- Total Liabilities & Equity Row -->
                   <TableRow class="bg-rose-50/10 font-bold border-t border-border">
                     <TableCell colspan={2} class="text-start text-xs text-rose-600">إجمالي الخصوم وحقوق الملكية</TableCell>
-                    <TableCell class="text-end text-xs font-mono text-rose-600">{formatCurrency(totalLiabilities.yer + totalEquity.yer, "YER")}</TableCell>
-                    <TableCell class="text-end text-xs font-mono text-rose-600">{formatCurrency(totalLiabilities.sar + totalEquity.sar, "SAR")}</TableCell>
-                    <TableCell class="text-end text-xs font-mono text-rose-600">{formatCurrency(totalLiabilities.usd + totalEquity.usd, "USD")}</TableCell>
+                    {#each activeCurrencies as c}
+                      <TableCell class="text-end text-xs font-mono text-rose-600">{formatCurrency((totalLiabilities[c.code.toLowerCase()] || 0) + (totalEquity[c.code.toLowerCase()] || 0), c.code)}</TableCell>
+                    {/each}
                   </TableRow>
                 </TableBody>
               </Table>

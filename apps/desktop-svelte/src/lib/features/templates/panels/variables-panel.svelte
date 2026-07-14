@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 /**
  * VariablesPanel — Browse, search, and insert data variables into elements.
  * Supports drag-to-bind and click-to-insert {{variable}} syntax.
@@ -191,7 +192,7 @@ function handleDragStart(e: DragEvent, varName: string) {
   <div class="px-3 py-2 border-b border-border/40 flex items-center justify-between">
     <div class="flex items-center gap-2">
       <Variable size={13} class="text-primary" />
-      <h3 class="text-xs font-bold text-foreground">المتغيرات</h3>
+      <h3 class="text-xs font-bold text-foreground">{m.template_panel_variables()}</h3>
     </div>
     <div class="flex items-center gap-1">
       <Badge variant="outline" class="text-[8px]">{variableEntries.length}</Badge>
@@ -201,7 +202,7 @@ function handleDragStart(e: DragEvent, varName: string) {
             <Plus size={11} />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>إضافة متغير</TooltipContent>
+        <TooltipContent>{m.template_auto_440bd8cd()}</TooltipContent>
       </Tooltip>
     </div>
   </div>
@@ -212,7 +213,7 @@ function handleDragStart(e: DragEvent, varName: string) {
       <Search size={11} class="absolute start-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
       <Input
         type="text"
-        placeholder="بحث..."
+        placeholder=m.template_auto_1805657a()
         bind:value={searchQuery}
         class="h-6 text-[10px] ps-7"
       />
@@ -224,13 +225,13 @@ function handleDragStart(e: DragEvent, varName: string) {
     <div class="px-3 py-2 border-b border-border/30 bg-muted/20 flex flex-col gap-1.5">
       <Input
         type="text"
-        placeholder="اسم المتغير"
+        placeholder=m.template_auto_3d16e254()
         bind:value={newVarName}
         class="h-6 text-[10px]"
       />
       <Input
         type="text"
-        placeholder="المصدر"
+        placeholder=m.template_auto_58cd4dec()
         bind:value={newVarSource}
         class="h-6 text-[10px] font-mono"
       />
@@ -247,7 +248,7 @@ function handleDragStart(e: DragEvent, varName: string) {
           <option value="array">Array</option>
         </select>
         <Button variant="lime" size="xs" class="cursor-pointer h-6 text-[10px]" onclick={addVariable}>
-          إضافة
+          {m.template_auto_b9508aa2()}
         </Button>
       </div>
     </div>
@@ -259,7 +260,7 @@ function handleDragStart(e: DragEvent, varName: string) {
       <div class="flex flex-col items-center justify-center py-8 px-4 gap-2">
         <Variable size={20} class="text-muted-foreground/30" />
         <p class="text-[10px] text-muted-foreground text-center">
-          {searchQuery ? "لا توجد نتائج" : "لا توجد متغيرات — أضف متغيرات لربطها بالعناصر"}
+          {searchQuery ? m.template_auto_40b06b2d() : m.template_auto_97c8a1d9()}
         </p>
       </div>
     {:else}
@@ -297,7 +298,7 @@ function handleDragStart(e: DragEvent, varName: string) {
                     <Plus size={10} class="text-primary" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>إدراج في النص المحدد</TooltipContent>
+                <TooltipContent>{m.template_auto_3957e908()}</TooltipContent>
               </Tooltip>
 
               <Tooltip>
@@ -306,7 +307,7 @@ function handleDragStart(e: DragEvent, varName: string) {
                     <Copy size={10} class="text-muted-foreground" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>نسخ الوسم</TooltipContent>
+                <TooltipContent>{m.template_auto_70b6d677()}</TooltipContent>
               </Tooltip>
 
               <Tooltip>
@@ -315,7 +316,7 @@ function handleDragStart(e: DragEvent, varName: string) {
                     <Trash2 size={10} class="text-destructive" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>حذف</TooltipContent>
+                <TooltipContent>{m.template_auto_3b9854e1()}</TooltipContent>
               </Tooltip>
             </div>
           </div>
@@ -327,7 +328,7 @@ function handleDragStart(e: DragEvent, varName: string) {
   <!-- Footer hint -->
   <div class="px-3 py-1.5 border-t border-border/30 bg-muted/10">
     <p class="text-[8px] text-muted-foreground text-center">
-      اسحب المتغير إلى عنصر نص — أو اضغط + لإدراجه في العنصر المحدد
+      {m.template_auto_9c71da79()}
     </p>
   </div>
 </div>

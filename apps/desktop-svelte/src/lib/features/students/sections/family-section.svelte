@@ -56,7 +56,7 @@ let { state }: { state: StudentFormState } = $props();
           </div>
           <div class="w-full md:w-[480px] shrink-0 relative">
             <Input 
-              placeholder="ابحث بالاسم أو رقم الهاتف..." 
+              placeholder={m.common_form_guardian_search_placeholder_ext()} 
               class="h-9 w-full bg-background"
               oninput={(e) => state.guardian.searchParent((e.target as HTMLInputElement).value, index)}
             />
@@ -69,8 +69,8 @@ let { state }: { state: StudentFormState } = $props();
                     class="w-full text-start p-2 hover:bg-accent/40 rounded text-xs flex justify-between items-center text-foreground font-medium cursor-pointer"
                     onclick={() => state.guardian.selectExistingParent(parent, index)}
                   >
-                    <span>{parent.full_name} ({parent.phone || 'بلا هاتف'})</span>
-                    <Badge variant="secondary" class="text-[9px]">ولي أمر مسجل</Badge>
+                    <span>{parent.full_name} ({parent.phone || m.common_form_guardian_no_phone()})</span>
+                    <Badge variant="secondary" class="text-[9px]">{m.common_form_guardian_registered()}</Badge>
                   </button>
                 {/each}
               </div>
@@ -85,10 +85,10 @@ let { state }: { state: StudentFormState } = $props();
               {m.common_word_fullname()}
               <span class="text-destructive">*</span>
             </Label>
-            <span class="text-[11px] text-muted-foreground leading-relaxed">الاسم الرباعي الكامل لولي الأمر</span>
+            <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_fullname_desc()}</span>
           </div>
           <div class="w-full md:w-[480px] shrink-0">
-            <Input bind:value={guardian.full_name} class="h-9 w-full bg-background" placeholder="اسم ولي الأمر" />
+            <Input bind:value={guardian.full_name} class="h-9 w-full bg-background" placeholder={m.common_form_guardian_fullname_placeholder()} />
           </div>
         </div>
 
@@ -99,7 +99,7 @@ let { state }: { state: StudentFormState } = $props();
               {m.common_word_phone()}
               <span class="text-destructive">*</span>
             </Label>
-            <span class="text-[11px] text-muted-foreground leading-relaxed">رقم هاتف المحمول الفعّال لولي الأمر للتواصل الطارئ</span>
+            <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_phone_desc()}</span>
           </div>
           <div class="w-full md:w-[480px] shrink-0">
             <Input bind:value={guardian.phone} class="h-9 w-full bg-background font-mono text-left" dir="ltr" placeholder="777000000" />
@@ -110,7 +110,7 @@ let { state }: { state: StudentFormState } = $props();
         <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
           <div class="flex flex-col gap-1 text-start">
             <Label class="text-xs font-semibold text-foreground">{m.common_bulk_col_guardian_rel()}</Label>
-            <span class="text-[11px] text-muted-foreground leading-relaxed">صلة القرابة بين ولي الأمر والطالب</span>
+            <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_rel_desc()}</span>
           </div>
           <div class="w-full md:w-[480px] shrink-0">
             <Select bind:value={guardian.relationship} type="single">
@@ -131,29 +131,29 @@ let { state }: { state: StudentFormState } = $props();
         <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
           <div class="flex flex-col gap-1 text-start">
             <Label class="text-xs font-semibold text-foreground">{m.common_form_guardian_national_id_label()}</Label>
-            <span class="text-[11px] text-muted-foreground leading-relaxed">رقم الهوية الوطنية أو البطاقة الشخصية لولي الأمر</span>
+            <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_nid_desc()}</span>
           </div>
           <div class="w-full md:w-[480px] shrink-0">
-            <Input bind:value={guardian.national_id} class="h-9 w-full bg-background font-mono" placeholder="رقم هوية ولي الأمر" />
+            <Input bind:value={guardian.national_id} class="h-9 w-full bg-background font-mono" placeholder={m.common_form_guardian_nid_placeholder()} />
           </div>
         </div>
 
         <!-- Occupations / Job -->
         <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
           <div class="flex flex-col gap-1 text-start">
-            <Label class="text-xs font-semibold text-foreground">المهنة / الوظيفة</Label>
-            <span class="text-[11px] text-muted-foreground leading-relaxed">مهنة ولي الأمر الحالية وجهة العمل</span>
+            <Label class="text-xs font-semibold text-foreground">{m.common_form_guardian_job_label()}</Label>
+            <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_job_desc()}</span>
           </div>
           <div class="w-full md:w-[480px] shrink-0">
-            <Input bind:value={guardian.occupation} class="h-9 w-full bg-background" placeholder="مهنة ولي الأمر" />
+            <Input bind:value={guardian.occupation} class="h-9 w-full bg-background" placeholder={m.common_form_guardian_job_placeholder()} />
           </div>
         </div>
 
         <!-- Permissions Checkboxes -->
         <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
           <div class="flex flex-col gap-1 text-start">
-            <Label class="text-xs font-semibold text-foreground">الصلاحيات والمسؤوليات المالية</Label>
-            <span class="text-[11px] text-muted-foreground leading-relaxed">تحديد أدوار ولي الأمر تجاه الطالب وتوزيع الحصص المالية</span>
+            <Label class="text-xs font-semibold text-foreground">{m.common_form_guardian_perms_label()}</Label>
+            <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_perms_desc()}</span>
           </div>
           <div class="w-full md:w-[480px] shrink-0 flex flex-col gap-4">
             <div class="grid grid-cols-3 gap-3">

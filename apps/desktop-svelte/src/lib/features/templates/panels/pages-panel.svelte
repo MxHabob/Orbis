@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 /**
  * PagesPanel — Page management with thumbnails, add/remove/reorder.
  * Shows mini page previews and allows page navigation.
@@ -157,7 +158,7 @@ function reassignIds(node: any) {
   <div class="px-3 py-2 border-b border-border/40 flex items-center justify-between">
     <div class="flex items-center gap-2">
       <FileText size={13} class="text-primary" />
-      <h3 class="text-xs font-bold text-foreground">الصفحات</h3>
+      <h3 class="text-xs font-bold text-foreground">{m.template_auto_c79b0582()}</h3>
     </div>
     <div class="flex items-center gap-1">
       <Badge variant="outline" class="text-[8px]">{store.pageCount}</Badge>
@@ -167,7 +168,7 @@ function reassignIds(node: any) {
             <Plus size={11} />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>إضافة صفحة</TooltipContent>
+        <TooltipContent>{m.template_auto_77fd4446()}</TooltipContent>
       </Tooltip>
     </div>
   </div>
@@ -212,7 +213,7 @@ function reassignIds(node: any) {
                 {/if}
               </div>
             {:else}
-              <span class="text-[7px] text-muted-foreground/50">فارغة</span>
+              <span class="text-[7px] text-muted-foreground/50">{m.template_auto_29f6afc7()}</span>
             {/if}
           </div>
 
@@ -223,11 +224,11 @@ function reassignIds(node: any) {
                 صفحة {i + 1}
               </span>
               {#if isActive}
-                <Badge variant="success" class="text-[7px] h-3 px-1">نشطة</Badge>
+                <Badge variant="success" class="text-[7px] h-3 px-1">{m.template_auto_2c7cd087()}</Badge>
               {/if}
             </div>
             <span class="text-[8px] text-muted-foreground">
-              {childCount} {childCount === 1 ? "عنصر" : "عناصر"}
+              {childCount} {childCount === 1 ? m.template_auto_fd63841b() : m.template_auto_46648494()}
             </span>
             <span class="text-[7px] text-muted-foreground/60 font-mono truncate mt-0.5">
               {page.id}
@@ -245,25 +246,25 @@ function reassignIds(node: any) {
               <DropdownMenuContent align="end" class="min-w-[140px]">
                 <DropdownMenuItem class="text-[10px] cursor-pointer" onclick={() => duplicatePage(i)}>
                   <Copy size={11} class="me-2" />
-                  تكرار الصفحة
+                  {m.template_auto_ac830b85()}
                 </DropdownMenuItem>
                 {#if i > 0}
                   <DropdownMenuItem class="text-[10px] cursor-pointer" onclick={() => movePage(i, "up")}>
                     <ArrowUp size={11} class="me-2" />
-                    نقل للأعلى
+                    {m.template_auto_5c20e6ec()}
                   </DropdownMenuItem>
                 {/if}
                 {#if i < store.pages.length - 1}
                   <DropdownMenuItem class="text-[10px] cursor-pointer" onclick={() => movePage(i, "down")}>
                     <ArrowDown size={11} class="me-2" />
-                    نقل للأسفل
+                    {m.template_auto_ac73c902()}
                   </DropdownMenuItem>
                 {/if}
                 {#if store.pages.length > 1}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem class="text-[10px] text-destructive cursor-pointer" onclick={() => store.removePage(i)}>
                     <Trash2 size={11} class="me-2" />
-                    حذف الصفحة
+                    {m.template_auto_4d441653()}
                   </DropdownMenuItem>
                 {/if}
               </DropdownMenuContent>
@@ -278,7 +279,7 @@ function reassignIds(node: any) {
   <div class="px-3 py-2 border-t border-border/30">
     <Button variant="outline" size="xs" class="w-full cursor-pointer text-[10px]" onclick={() => store.addPage()}>
       <Plus size={11} class="me-1" />
-      إضافة صفحة جديدة
+      {m.template_auto_16f5f012()}
     </Button>
   </div>
 </div>

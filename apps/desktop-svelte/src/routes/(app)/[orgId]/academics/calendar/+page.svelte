@@ -69,8 +69,7 @@ type CalendarEventType = "enrollment_open" | "enrollment_close" | "exam_period" 
 import {
   gregorianToHijri,
   hijriToGregorian,
-  HIJRI_MONTHS_EN,
-  HIJRI_MONTHS_AR,
+  getHijriMonths,
 } from "$lib/core/i18n/hijri";
 
 let { data }: { data: { orgId: string } } = $props();
@@ -183,7 +182,7 @@ function handleHijriEndChange() {
 }
 
 function formatHijriDateString(y: number, m: number, d: number) {
-  const months = getLocale() === "ar" ? HIJRI_MONTHS_AR : HIJRI_MONTHS_EN;
+  const months = getHijriMonths();
   const monthName = months[m - 1] || "";
   const suffix = getLocale() === "ar" ? "هـ" : "AH";
   return `${d} ${monthName} ${y} ${suffix}`;
@@ -626,10 +625,10 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
                 <span class="text-[10px] text-muted-foreground">{m.common_calendar_hijri_month ? m.common_calendar_hijri_month() : "Month"}</span>
                 <Select type="single" value={String(hijriStartMonth)} onValueChange={(v) => { if (v) { hijriStartMonth = parseInt(v, 10); handleHijriStartChange(); } }}>
                   <SelectTrigger class="h-9 text-xs">
-                    {(getLocale() === "ar" ? HIJRI_MONTHS_AR : HIJRI_MONTHS_EN)[hijriStartMonth - 1]}
+                    {getHijriMonths()[hijriStartMonth - 1]}
                   </SelectTrigger>
                   <SelectContent>
-                    {#each (getLocale() === "ar" ? HIJRI_MONTHS_AR : HIJRI_MONTHS_EN) as monthName, i}
+                    {#each getHijriMonths() as monthName, i}
                       <SelectItem value={String(i + 1)}>{monthName}</SelectItem>
                     {/each}
                   </SelectContent>
@@ -663,10 +662,10 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
                 <span class="text-[10px] text-muted-foreground">{m.common_calendar_hijri_month ? m.common_calendar_hijri_month() : "Month"}</span>
                 <Select type="single" value={String(hijriEndMonth)} onValueChange={(v) => { if (v) { hijriEndMonth = parseInt(v, 10); handleHijriEndChange(); } }}>
                   <SelectTrigger class="h-9 text-xs">
-                    {(getLocale() === "ar" ? HIJRI_MONTHS_AR : HIJRI_MONTHS_EN)[hijriEndMonth - 1]}
+                    {getHijriMonths()[hijriEndMonth - 1]}
                   </SelectTrigger>
                   <SelectContent>
-                    {#each (getLocale() === "ar" ? HIJRI_MONTHS_AR : HIJRI_MONTHS_EN) as monthName, i}
+                    {#each getHijriMonths() as monthName, i}
                       <SelectItem value={String(i + 1)}>{monthName}</SelectItem>
                     {/each}
                   </SelectContent>

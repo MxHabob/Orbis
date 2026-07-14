@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 /**
  * FloatingActionBar — Appears above the selected element on the canvas.
  * Shows quick actions: delete, duplicate, copy, lock, layer ordering, more.
@@ -71,7 +72,7 @@ const isLocked = $derived(node?.locked ?? false);
             <Copy size={13} />
           </button>
         </TooltipTrigger>
-        <TooltipContent>تكرار</TooltipContent>
+        <TooltipContent>{m.template_auto_ce0055eb()}</TooltipContent>
       </Tooltip>
 
       <Tooltip>
@@ -80,7 +81,7 @@ const isLocked = $derived(node?.locked ?? false);
             <Trash2 size={13} />
           </button>
         </TooltipTrigger>
-        <TooltipContent>حذف</TooltipContent>
+        <TooltipContent>{m.template_auto_3b9854e1()}</TooltipContent>
       </Tooltip>
 
       <Tooltip>
@@ -93,7 +94,7 @@ const isLocked = $derived(node?.locked ?? false);
             {/if}
           </button>
         </TooltipTrigger>
-        <TooltipContent>{isLocked ? "فتح القفل" : "قفل"}</TooltipContent>
+        <TooltipContent>{isLocked ? m.template_auto_3f9ccb60() : m.template_auto_ed3021bf()}</TooltipContent>
       </Tooltip>
 
       <div class="fab-divider"></div>
@@ -104,7 +105,7 @@ const isLocked = $derived(node?.locked ?? false);
             <ArrowUpToLine size={13} />
           </button>
         </TooltipTrigger>
-        <TooltipContent>للأمام</TooltipContent>
+        <TooltipContent>{m.template_auto_34b54e89()}</TooltipContent>
       </Tooltip>
 
       <Tooltip>
@@ -113,7 +114,7 @@ const isLocked = $derived(node?.locked ?? false);
             <ArrowDownToLine size={13} />
           </button>
         </TooltipTrigger>
-        <TooltipContent>للخلف</TooltipContent>
+        <TooltipContent>{m.template_auto_77a43c56()}</TooltipContent>
       </Tooltip>
     </div>
   </TooltipProvider>

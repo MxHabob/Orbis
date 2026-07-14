@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 /**
  * HistoryPanel — Scrollable undo/redo history.
  * Allows clicking to jump to any history state.
@@ -48,7 +49,7 @@ function jumpToState(index: number) {
   <div class="px-3 py-2 border-b border-border/40 flex items-center justify-between">
     <div class="flex items-center gap-2">
       <History size={13} class="text-primary" />
-      <h3 class="text-xs font-bold text-foreground">السجل</h3>
+      <h3 class="text-xs font-bold text-foreground">{m.template_auto_ec4337ed()}</h3>
     </div>
     <div class="flex items-center gap-1">
       <Tooltip>
@@ -57,7 +58,7 @@ function jumpToState(index: number) {
             <Undo2 size={11} />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>تراجع</TooltipContent>
+        <TooltipContent>{m.template_auto_32d990bf()}</TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger>
@@ -65,7 +66,7 @@ function jumpToState(index: number) {
             <Redo2 size={11} />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>إعادة</TooltipContent>
+        <TooltipContent>{m.template_auto_071d5bf1()}</TooltipContent>
       </Tooltip>
     </div>
   </div>
@@ -76,7 +77,7 @@ function jumpToState(index: number) {
       <div class="flex flex-col items-center justify-center py-8 px-4 gap-2">
         <Clock size={20} class="text-muted-foreground/30" />
         <p class="text-[10px] text-muted-foreground text-center">
-          لا يوجد سجل أوامر بعد
+          {m.template_auto_ae63e7be()}
         </p>
       </div>
     {:else}
@@ -96,7 +97,7 @@ function jumpToState(index: number) {
             {/if}
           </div>
           <span class="text-[10px] font-medium">
-            {isAr ? "الحالة الأصلية" : "Initial State"}
+            {isAr ? m.template_auto_07890353() : "Initial State"}
           </span>
         </button>
 
@@ -146,7 +147,7 @@ function jumpToState(index: number) {
   <!-- Footer stats -->
   <div class="px-3 py-1.5 border-t border-border/30 bg-muted/10 flex items-center justify-between">
     <span class="text-[8px] text-muted-foreground">
-      {history.length} {isAr ? "أمر" : "commands"}
+      {history.length} {isAr ? m.template_auto_55c737e1() : "commands"}
     </span>
     <span class="text-[8px] text-muted-foreground">
       {currentIndex + 1}/{history.length}

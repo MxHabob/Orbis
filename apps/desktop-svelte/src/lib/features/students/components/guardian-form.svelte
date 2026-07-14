@@ -200,34 +200,34 @@ function clearSelectedUser() {
 
 async function handleSubmit() {
   if (!fullName.trim()) {
-    toast.error("يرجى إدخال الاسم الكامل لولي الأمر");
+    toast.error(m.common_validation_guardian_name_required());
     return;
   }
   if (!phone.trim()) {
-    toast.error("يرجى إدخال رقم الهاتف لولي الأمر");
+    toast.error(m.common_validation_guardian_phone_required());
     return;
   }
   if (!relationship) {
-    toast.error("يرجى تحديد صلة القرابة");
+    toast.error(m.common_validation_relationship_required());
     return;
   }
 
   // Inputs Validation
   const phoneClean = phone.trim();
   if (!/^\+?[0-9]{7,15}$/.test(phoneClean)) {
-    toast.error("يرجى إدخال رقم هاتف صحيح (أرقام فقط، بين 7 و 15 خانة)");
+    toast.error(m.common_validation_phone_format_strict());
     return;
   }
 
   const emailClean = email.trim();
   if (emailClean && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailClean)) {
-    toast.error("يرجى إدخال بريد إلكتروني صحيح");
+    toast.error(m.common_validation_email_format());
     return;
   }
 
   const nationalIdClean = nationalId.trim();
   if (nationalIdClean && !/^[0-9]{7,15}$/.test(nationalIdClean)) {
-    toast.error("يرجى إدخال رقم هوية وطنية صحيح (أرقام فقط)");
+    toast.error(m.common_validation_nid_format());
     return;
   }
 
@@ -295,10 +295,7 @@ async function handleSubmit() {
       relationship: relationship,
       relationship_ar: relationshipAr,
       is_primary: isPrimary,
-      is_primary: isEmergencyContact,
       is_authorized_pickup: false,
-      is_primary: isPayer,
-      is_primary: isPayer ? paymentSharePercent : 0,
       occupation: job.trim() || null,
       can_view_grades: true,
       can_view_attendance: true,

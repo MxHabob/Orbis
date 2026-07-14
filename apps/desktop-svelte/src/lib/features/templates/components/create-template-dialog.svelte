@@ -48,55 +48,55 @@ let {
     <DialogHeader>
       <DialogTitle>{m.settings_templates_create_btn()}</DialogTitle>
       <DialogDescription>
-        أدخل تفاصيل قالب المستندات الجديد لبدء تصميمه في المحرر.
+        {m.template_auto_9c31267d()}
       </DialogDescription>
     </DialogHeader>
 
     <div class="flex flex-col gap-4 py-2">
       <div class="flex flex-col gap-2">
-        <Label for="name-en" class="text-xs font-semibold text-muted-foreground">اسم القالب بالإنجليزية (Name EN) *</Label>
+        <Label for="name-en" class="text-xs font-semibold text-muted-foreground">{m.template_auto_bee31559()}</Label>
         <Input id="name-en" bind:value={name} placeholder="e.g. Student Certificate" />
       </div>
 
       <div class="flex flex-col gap-2">
-        <Label for="name-ar" class="text-xs font-semibold text-muted-foreground">اسم القالب بالعربية (Name AR)</Label>
-        <Input id="name-ar" bind:value={nameAr} placeholder="مثال: شهادة طالب" />
+        <Label for="name-ar" class="text-xs font-semibold text-muted-foreground">{m.template_auto_4acc9951()}</Label>
+        <Input id=m.template_auto_a5ce9b4b() />
       </div>
 
       <div class="flex flex-col gap-2">
-        <Label for="desc" class="text-xs font-semibold text-muted-foreground">وصف القالب / Description</Label>
-        <Input id="desc" bind:value={desc} placeholder="وصف موجز للقالب..." />
+        <Label for="desc" class="text-xs font-semibold text-muted-foreground">{m.template_auto_ec58ae3a()}</Label>
+        <Input id=m.template_auto_8aa93a9a() />
       </div>
 
       <div class="grid grid-cols-2 gap-4">
         <div class="flex flex-col gap-2">
-          <Label class="text-xs font-semibold text-muted-foreground">نوع السجل / Entity</Label>
+          <Label class="text-xs font-semibold text-muted-foreground">{m.template_auto_7f136f51()}</Label>
           <Select type="single" bind:value={entityType}>
             <SelectTrigger>
-              {({ enrollment: "تسجيل الطلاب", payment: "سندات القبض", exam: "أرقام الجلوس", user: "بطاقات التعريف", organization: "المؤسسة / المدرسة" } as any)[entityType]}
+              {({ enrollment: m.template_auto_699544d2(), payment: m.template_auto_9ec74211(), exam: m.template_auto_963944de(), user: m.template_auto_0b3ac748(), organization: m.template_auto_b84adc1b() } as any)[entityType]}
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="enrollment">تسجيل الطلاب</SelectItem>
-              <SelectItem value="payment">سندات القبض</SelectItem>
-              <SelectItem value="exam">أرقام الجلوس</SelectItem>
-              <SelectItem value="user">بطاقات التعريف</SelectItem>
-              <SelectItem value="organization">المؤسسة / المدرسة</SelectItem>
+              <SelectItem value="enrollment">{m.template_auto_699544d2()}</SelectItem>
+              <SelectItem value="payment">{m.template_auto_9ec74211()}</SelectItem>
+              <SelectItem value="exam">{m.template_auto_963944de()}</SelectItem>
+              <SelectItem value="user">{m.template_auto_0b3ac748()}</SelectItem>
+              <SelectItem value="organization">{m.template_auto_b84adc1b()}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div class="flex flex-col gap-2">
-          <Label class="text-xs font-semibold text-muted-foreground">نوع المستند / Document</Label>
+          <Label class="text-xs font-semibold text-muted-foreground">{m.template_auto_3e079611()}</Label>
           <Select type="single" bind:value={docType}>
             <SelectTrigger>
-              {({ CERTIFICATE: "شهادات (Certificate)", ID_CARD: "بطاقات (ID Card)", RECEIPT: "سندات (Receipt)", EXAM_CARD: "بطاقات جلوس (Seating)", REPORT: "تقارير (Report)" } as any)[docType]}
+              {({ CERTIFICATE: m.template_auto_4e5975fa(), ID_CARD: m.template_auto_9faed6d0(), RECEIPT: m.template_auto_b51337de(), EXAM_CARD: m.template_auto_7b0a35ae(), REPORT: m.template_auto_b21a743b() } as any)[docType]}
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="CERTIFICATE">شهادات (Certificate)</SelectItem>
-              <SelectItem value="ID_CARD">بطاقات (ID Card)</SelectItem>
-              <SelectItem value="RECEIPT">سندات (Receipt)</SelectItem>
-              <SelectItem value="EXAM_CARD">بطاقات جلوس (Seating)</SelectItem>
-              <SelectItem value="REPORT">تقارير (Report)</SelectItem>
+              <SelectItem value="CERTIFICATE">{m.template_auto_4e5975fa()}</SelectItem>
+              <SelectItem value="ID_CARD">{m.template_auto_9faed6d0()}</SelectItem>
+              <SelectItem value="RECEIPT">{m.template_auto_b51337de()}</SelectItem>
+              <SelectItem value="EXAM_CARD">{m.template_auto_7b0a35ae()}</SelectItem>
+              <SelectItem value="REPORT">{m.template_auto_b21a743b()}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -104,7 +104,7 @@ let {
 
       <div class="grid grid-cols-2 gap-4">
         <div class="flex flex-col gap-2">
-          <Label class="text-xs font-semibold text-muted-foreground">حجم الصفحة / Size</Label>
+          <Label class="text-xs font-semibold text-muted-foreground">{m.template_auto_b95e12f8()}</Label>
           <Select type="single" bind:value={pageSize}>
             <SelectTrigger>
               {({ A4: "A4 (210 x 297 mm)", A5: "A5 (148 x 210 mm)", Letter: "Letter (8.5 x 11 in)", Custom: "Custom" } as any)[pageSize]}
@@ -119,14 +119,14 @@ let {
         </div>
 
         <div class="flex flex-col gap-2">
-          <Label class="text-xs font-semibold text-muted-foreground">الاتجاه / Orientation</Label>
+          <Label class="text-xs font-semibold text-muted-foreground">{m.template_auto_18ffda00()}</Label>
           <Select type="single" bind:value={orientation}>
             <SelectTrigger>
-              {({ portrait: "طولي (Portrait)", landscape: "عرضي (Landscape)" } as any)[orientation]}
+              {({ portrait: m.template_auto_0605c426(), landscape: m.template_auto_3476da07() } as any)[orientation]}
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="portrait">طولي (Portrait)</SelectItem>
-              <SelectItem value="landscape">عرضي (Landscape)</SelectItem>
+              <SelectItem value="portrait">{m.template_auto_0605c426()}</SelectItem>
+              <SelectItem value="landscape">{m.template_auto_3476da07()}</SelectItem>
             </SelectContent>
           </Select>
         </div>

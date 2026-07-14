@@ -78,7 +78,7 @@ const resolvedGroups = $derived(groups || [{ items }]);
     <Button
       class="h-8 w-8 flex items-center justify-center  cursor-pointer duration-150"
       onclick={collapseSidebar}
-      title={getLocale() === 'ar' ? 'طي القائمة' : 'Collapse Sidebar'}
+      title={m.common_action_collapse()}
     >
       <svg
         width="18"
@@ -114,7 +114,7 @@ const resolvedGroups = $derived(groups || [{ items }]);
             onclick={item.onclick}
             variant="ghost"
             size="lg"
-            class="w-full !justify-start px-3.5 rounded-lg text-start transition-all duration-150 cursor-pointer border
+            class="w-full justify-start! px-3.5 rounded-lg text-start transition-all duration-150 cursor-pointer border
               {item.isActive ?? isActive(item.path ?? '')
               ? 'bg-primary/5 text-primary border-primary/20 font-medium'
               : 'text-muted-foreground/90 hover:bg-accent/50 hover:text-foreground border-transparent'}"
@@ -122,7 +122,7 @@ const resolvedGroups = $derived(groups || [{ items }]);
             <span class="truncate">{item.label}</span>
 
             {#if item.badge != null}
-              <div class="flex-grow"></div>
+              <div class="grow"></div>
               <span
                 class="text-[9px] px-1.5 py-0.5 rounded-md font-mono bg-muted/80 text-muted-foreground border border-border/40 font-bold"
               >

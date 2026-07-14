@@ -1,7 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui-svelte";
-import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import DragIndicator from "../components/drag-indicator.svelte";
 
@@ -37,7 +36,7 @@ async function loadData() {
       let male = 0;
       for (const e of enrollments) {
         const sex = String(e.sex || "").toLowerCase();
-        if (sex.startsWith("f") || sex === "أنثى") {
+        if (sex.startsWith("f") || sex === m.metrics_gender_female()) {
           female++;
         } else {
           // Default to male or check
@@ -48,10 +47,9 @@ async function loadData() {
       maleCount = male;
       totalCount = female + male;
     } else {
-      // Fallback mockup matching Screenshot 5 (Left)
-      femaleCount = 48;
-      maleCount = 690;
-      totalCount = 738;
+      femaleCount = 0;
+      maleCount = 0;
+      totalCount = 0;
     }
   } catch (e) {
     console.error("Error loading gender distribution:", e);
@@ -99,7 +97,7 @@ function handleMouseLeave() {
 
 <div class="card-tactile h-full relative group min-h-[265px] p-5 flex flex-col justify-between font-sans border border-border/60 bg-card shadow-sm">
   {#if isLoading}
-    <div class="flex-grow w-full relative flex items-center justify-center">
+    <div class="grow w-full relative flex items-center justify-center">
       <Skeleton class="h-full w-full rounded-lg animate-pulse" />
     </div>
   {:else}
@@ -131,7 +129,7 @@ function handleMouseLeave() {
     <!-- Chart -->
     <div 
       role="presentation"
-      class="flex-grow relative w-full h-[155px] select-none mt-4 flex flex-col justify-between" 
+      class="grow relative w-full h-[155px] select-none mt-4 flex flex-col justify-between" 
       onmouseleave={handleMouseLeave}
     >
       <!-- Grid lines -->
@@ -141,7 +139,7 @@ function handleMouseLeave() {
             <span class="w-8 text-end text-[8px] font-bold text-muted-foreground/80 font-mono pr-2 select-none">
               {tickVal}
             </span>
-            <div class="flex-grow border-t border-dashed border-border/40"></div>
+            <div class="grow border-t border-dashed border-border/40"></div>
           </div>
         {/each}
       </div>

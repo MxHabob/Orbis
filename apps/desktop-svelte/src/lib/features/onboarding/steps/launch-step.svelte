@@ -80,7 +80,7 @@ async function handleCompleteSetup() {
   <!-- Header Title -->
   <div class="text-center">
     <h1 class="text-3xl sm:text-5xl font-light tracking-tight text-foreground font-sans leading-tight">
-      {onboardingState.profile.locale.startsWith("ar") ? "تهيئة بنية المدرسة" : "Prepare School Infrastructure"}
+      {m.common_onboarding_launch_title()}
     </h1>
   </div>
 
@@ -112,7 +112,7 @@ async function handleCompleteSetup() {
           <div class="space-y-2.5">
             <Progress value={launchProgress} class="h-1.5 w-full bg-muted" />
             <div class="flex justify-between text-[10px] font-bold font-mono text-muted-foreground uppercase tracking-wider">
-              <span>{onboardingState.profile.locale.startsWith("ar") ? "جاري تهيئة النظام..." : "Initializing..."}</span>
+              <span>{m.common_onboarding_launch_loading()}</span>
               <span>{launchProgress}%</span>
             </div>
           </div>
@@ -120,8 +120,8 @@ async function handleCompleteSetup() {
 
         {#if onboardingState.errorMessage}
           <div class="mt-4 p-3 rounded-xl border border-destructive/20 bg-destructive/5 text-destructive text-xs text-start font-sans leading-relaxed animate-in fade-in duration-200">
-            <span class="font-bold">{onboardingState.profile.locale.startsWith("ar") ? "حدث خطأ أثناء التأسيس:" : "Setup Error:"}</span>
-            <p class="font-mono mt-1 text-[10px] opacity-90 break-words">{onboardingState.errorMessage}</p>
+            <span class="font-bold">{m.common_onboarding_launch_error()}</span>
+            <p class="font-mono mt-1 text-[10px] opacity-90 wrap-break-word">{onboardingState.errorMessage}</p>
           </div>
         {/if}
       </div>

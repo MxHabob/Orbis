@@ -69,7 +69,9 @@ export function hijriToGregorian(hy: number, hm: number, hd: number): Date {
   return targetDate; // Fallback if exact match not found
 }
 
-export const HIJRI_MONTHS_EN = [
+import * as m from "$lib/paraglide/messages";
+
+export const getHijriMonthsEn = () => [
   "Muharram",
   "Safar",
   "Rabi' al-Awwal",
@@ -84,7 +86,7 @@ export const HIJRI_MONTHS_EN = [
   "Dhu al-Hijjah",
 ];
 
-export const HIJRI_MONTHS_AR = [
+export const getHijriMonthsAr = () => [
   "محرم",
   "صفر",
   "ربيع الأول",
@@ -97,4 +99,19 @@ export const HIJRI_MONTHS_AR = [
   "شوال",
   "ذو القعدة",
   "ذو الحجة",
+];
+
+export const getHijriMonths = () => [
+  m.common_hijri_month_1(),
+  m.common_hijri_month_2(),
+  m.common_hijri_month_3(),
+  m.common_hijri_month_4(),
+  m.common_hijri_month_5(),
+  m.common_hijri_month_6(),
+  m.common_hijri_month_7(),
+  m.common_hijri_month_8(),
+  m.common_hijri_month_9(),
+  m.common_hijri_month_10(),
+  m.common_hijri_month_11(),
+  m.common_hijri_month_12(),
 ];

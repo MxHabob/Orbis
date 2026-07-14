@@ -235,9 +235,7 @@ const menuItems = $derived([
                   <span
                     class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
                   >
-                    {m.common_form_student_number
-                      ? m.common_form_student_number()
-                      : "الرقم الأكاديمي"}
+                    {m.common_word_academic_number()}
                   </span>
                   <span class="text-xs font-mono font-bold text-foreground">
                     {student.student_number || student.id}
@@ -249,7 +247,7 @@ const menuItems = $derived([
                 <div class="flex flex-col gap-0.5">
                   <span
                     class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
-                    >الهاتف</span
+                    >{m.common_word_phone()}</span
                   >
                   <span class="text-xs text-foreground font-mono">
                     {student.phone}
@@ -261,7 +259,7 @@ const menuItems = $derived([
                 <div class="flex flex-col gap-0.5">
                   <span
                     class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
-                    >البريد الإلكتروني</span
+                    >{m.common_word_email()}</span
                   >
                   <span
                     class="text-xs text-foreground font-mono truncate max-w-full"
@@ -276,10 +274,10 @@ const menuItems = $derived([
                 <div class="flex flex-col gap-0.5">
                   <span
                     class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
-                    >الجنس</span
+                    >{m.common_form_sex()}</span
                   >
                   <span class="text-xs text-foreground font-medium">
-                    {student.sex === "male" ? "ذكر" : "أنثى"}
+                    {student.sex === "male" ? m.common_form_male() : m.common_form_female()}
                   </span>
                 </div>
               {/if}
@@ -288,7 +286,7 @@ const menuItems = $derived([
                 <div class="flex flex-col gap-0.5">
                   <span
                     class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
-                    >تاريخ الميلاد</span
+                    >{m.common_word_dob()}</span
                   >
                   <span class="text-xs text-foreground font-mono">
                     {student.birth_date}
@@ -300,7 +298,7 @@ const menuItems = $derived([
                 <div class="flex flex-col gap-0.5">
                   <span
                     class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
-                    >ولي الأمر</span
+                    >{m.common_word_guardian()}</span
                   >
                   <span class="text-xs text-foreground font-medium">
                     {student.guardian_name}
@@ -312,7 +310,7 @@ const menuItems = $derived([
                 <div class="flex flex-col gap-0.5">
                   <span
                     class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
-                    >هاتف ولي الأمر</span
+                    >{m.common_guardians_phone_label()}</span
                   >
                   <span class="text-xs text-foreground font-mono">
                     {student.guardian_phone}

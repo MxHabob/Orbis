@@ -3,6 +3,8 @@
  * Client-side validation for bulk grade import.
  */
 
+import * as m from "$lib/paraglide/messages";
+
 export interface RowValidation {
   rowIndex: number;
   isValid: boolean;
@@ -32,14 +34,14 @@ export function validateGradeRows(
     if (!sid) {
       errors.set(
         "student_identifier",
-        "معرّف الطالب مطلوب (بريد، رقم أكاديمي، أو اسم)",
+        m.common_validation_student_id_required(),
       );
     }
 
     // ── subject_name: required ──
     const subj = str(row.subject_name);
     if (!subj) {
-      errors.set("subject_name", "اسم المادة مطلوب");
+      errors.set("subject_name", m.common_validation_subject_name_required());
     }
 
     // ── score: required, numeric, 0 ≤ score ≤ max_score ──
@@ -47,13 +49,13 @@ export function validateGradeRows(
     const maxScore = parseFloat(str(row.max_score) || "100") || 100;
 
     if (!scoreStr) {
-      errors.set("score", "الدرجة مطلوبة");
+      errors.set("score", m.common_validation_score_required());
     } else {
       const score = parseFloat(scoreStr);
       if (isNaN(score)) {
-        errors.set("score", "الدرجة يجب أن تكون رقماً");
+        errors.set("score", m.common_validation_score_number());
       } else if (score < 0 || score > maxScore) {
-        errors.set("score", `الدرجة بين 0 و ${maxScore}`);
+        errors.set("score", m.common_validation_score_range({ maxScore }));
       }
     }
 
@@ -62,14 +64,14 @@ export function validateGradeRows(
     if (maxStr) {
       const ms = parseFloat(maxStr);
       if (isNaN(ms) || ms <= 0) {
-        errors.set("max_score", "الدرجة القصوى يجب أن تكون أكبر من صفر");
+        errors.set("max_score", m.common_validation_max_score_positive());
       }
     }
 
     // ── semester: required ──
     const sem = str(row.semester);
     if (!sem) {
-      errors.set("semester", "الفصل الدراسي مطلوب");
+      errors.set("semester", m.common_validation_semester_required());
     }
 
     row.__errors = errors;

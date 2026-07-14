@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 /**
  * InspectorPanel — Dynamic property editor for the selected node.
  * Shows different fields based on the selected node's type.
@@ -52,14 +53,14 @@ function updatePosition(key: string, value: number) {
   <!-- Header -->
   <div class="px-3 py-2 border-b border-border/40 flex items-center gap-2">
     <Sliders size={13} class="text-primary shrink-0" />
-    <h3 class="text-xs font-bold text-foreground">الخصائص</h3>
+    <h3 class="text-xs font-bold text-foreground">{m.template_auto_a7c95a2a()}</h3>
   </div>
 
   {#if !node}
     <!-- No selection -->
     <div class="flex-grow flex items-center justify-center p-6">
       <p class="text-[10px] text-muted-foreground text-center">
-        اختر عنصراً من اللوحة أو شجرة الطبقات لتعديل خصائصه
+        {m.template_auto_f52134f1()}
       </p>
     </div>
   {:else}
@@ -72,7 +73,7 @@ function updatePosition(key: string, value: number) {
 
       <!-- Name -->
       <div class="flex flex-col gap-1">
-        <Label class="text-[10px] text-muted-foreground">الاسم</Label>
+        <Label class="text-[10px] text-muted-foreground">{m.template_auto_2e8b171b()}</Label>
         <Input
           type="text"
           value={node.name || ""}
@@ -88,7 +89,7 @@ function updatePosition(key: string, value: number) {
         <!-- Position & Size -->
         <AccordionItem value="position">
           <AccordionTrigger class="text-[10px] font-semibold py-1.5">
-            الموقع والأبعاد
+            {m.template_auto_2d4a137a()}
           </AccordionTrigger>
           <AccordionContent>
             <div class="grid grid-cols-2 gap-2 pt-1">
@@ -160,12 +161,12 @@ function updatePosition(key: string, value: number) {
         <!-- Appearance -->
         <AccordionItem value="appearance">
           <AccordionTrigger class="text-[10px] font-semibold py-1.5">
-            المظهر
+            {m.template_auto_98b5984f()}
           </AccordionTrigger>
           <AccordionContent>
             <div class="flex flex-col gap-2 pt-1">
               <div class="flex items-center justify-between">
-                <span class="text-[9px] text-muted-foreground">الشفافية</span>
+                <span class="text-[9px] text-muted-foreground">{m.template_auto_dcfa857c()}</span>
                 <Input
                   type="number"
                   step="0.1"
@@ -178,7 +179,7 @@ function updatePosition(key: string, value: number) {
               </div>
 
               <div class="flex items-center justify-between">
-                <span class="text-[9px] text-muted-foreground">مرئي</span>
+                <span class="text-[9px] text-muted-foreground">{m.template_auto_e4fb8eae()}</span>
                 <Switch
                   checked={node.visible !== false}
                   onCheckedChange={(v) => store.updateSelectedProps({ visible: v })}
@@ -186,7 +187,7 @@ function updatePosition(key: string, value: number) {
               </div>
 
               <div class="flex items-center justify-between">
-                <span class="text-[9px] text-muted-foreground">مقفل</span>
+                <span class="text-[9px] text-muted-foreground">{m.template_auto_cb2ab273()}</span>
                 <Switch
                   checked={node.locked === true}
                   onCheckedChange={(v) => store.updateSelectedProps({ locked: v })}
@@ -199,14 +200,14 @@ function updatePosition(key: string, value: number) {
         <!-- Content (type-specific) -->
         <AccordionItem value="content">
           <AccordionTrigger class="text-[10px] font-semibold py-1.5">
-            المحتوى
+            {m.template_auto_9f3797ed()}
           </AccordionTrigger>
           <AccordionContent>
             <div class="flex flex-col gap-2 pt-1">
               {#if nodeType === "Text"}
                 <!-- Text Content -->
                 <div class="flex flex-col gap-1">
-                  <Label class="text-[9px] text-muted-foreground">المحتوى</Label>
+                  <Label class="text-[9px] text-muted-foreground">{m.template_auto_9f3797ed()}</Label>
                   <Textarea
                     value={nodeProps.content || ""}
                     oninput={(e) => updateProp("content", e.currentTarget.value)}
@@ -216,11 +217,11 @@ function updatePosition(key: string, value: number) {
 
                 <div class="grid grid-cols-2 gap-2">
                   <div class="flex flex-col gap-0.5">
-                    <span class="text-[8px] text-muted-foreground">حجم الخط</span>
+                    <span class="text-[8px] text-muted-foreground">{m.template_auto_c4480b07()}</span>
                     <Input type="number" step="1" value={nodeProps.fontSize ?? 12} oninput={(e) => updateProp("fontSize", parseFloat(e.currentTarget.value))} class="h-6 text-[10px]" />
                   </div>
                   <div class="flex flex-col gap-0.5">
-                    <span class="text-[8px] text-muted-foreground">الوزن</span>
+                    <span class="text-[8px] text-muted-foreground">{m.template_auto_67e19f82()}</span>
                     <Select type="single" value={nodeProps.fontWeight || "400"} onValueChange={(v) => { if (v) updateProp("fontWeight", v); }}>
                       <SelectTrigger class="h-6 text-[10px]">{nodeProps.fontWeight || "400"}</SelectTrigger>
                       <SelectContent>
@@ -235,7 +236,7 @@ function updatePosition(key: string, value: number) {
 
                 <div class="grid grid-cols-2 gap-2">
                   <div class="flex flex-col gap-0.5">
-                    <span class="text-[8px] text-muted-foreground">الخط</span>
+                    <span class="text-[8px] text-muted-foreground">{m.template_auto_6875b864()}</span>
                     <Select type="single" value={nodeProps.fontFamily || "Rubik"} onValueChange={(v) => { if (v) updateProp("fontFamily", v); }}>
                       <SelectTrigger class="h-6 text-[10px]">{nodeProps.fontFamily || "Rubik"}</SelectTrigger>
                       <SelectContent>
@@ -246,7 +247,7 @@ function updatePosition(key: string, value: number) {
                     </Select>
                   </div>
                   <div class="flex flex-col gap-0.5">
-                    <span class="text-[8px] text-muted-foreground">المحاذاة</span>
+                    <span class="text-[8px] text-muted-foreground">{m.template_auto_82b89ec2()}</span>
                     <Select type="single" value={nodeProps.textAlign || "start"} onValueChange={(v) => { if (v) updateProp("textAlign", v); }}>
                       <SelectTrigger class="h-6 text-[10px]">{nodeProps.textAlign || "start"}</SelectTrigger>
                       <SelectContent>
@@ -259,7 +260,7 @@ function updatePosition(key: string, value: number) {
                 </div>
 
                 <div class="flex flex-col gap-0.5">
-                  <span class="text-[8px] text-muted-foreground">اللون</span>
+                  <span class="text-[8px] text-muted-foreground">{m.template_auto_4851a7c0()}</span>
                   <div class="flex items-center gap-2">
                     <input type="color" value={nodeProps.color || "#000000"} oninput={(e) => updateProp("color", e.currentTarget.value)} class="w-7 h-6 rounded border border-border cursor-pointer" />
                     <Input type="text" value={nodeProps.color || "#000000"} oninput={(e) => updateProp("color", e.currentTarget.value)} class="h-6 text-[10px] font-mono flex-grow" />
@@ -269,7 +270,7 @@ function updatePosition(key: string, value: number) {
               {:else if nodeType === "Shape"}
                 <!-- Shape properties -->
                 <div class="flex flex-col gap-0.5">
-                  <span class="text-[8px] text-muted-foreground">الشكل</span>
+                  <span class="text-[8px] text-muted-foreground">{m.template_auto_6d41699a()}</span>
                   <Select type="single" value={nodeProps.shape || "rectangle"} onValueChange={(v) => { if (v) updateProp("shape", v); }}>
                     <SelectTrigger class="h-6 text-[10px]">{nodeProps.shape || "rectangle"}</SelectTrigger>
                     <SelectContent>
@@ -281,7 +282,7 @@ function updatePosition(key: string, value: number) {
                 </div>
 
                 <div class="flex flex-col gap-0.5">
-                  <span class="text-[8px] text-muted-foreground">لون التعبئة</span>
+                  <span class="text-[8px] text-muted-foreground">{m.template_auto_ec59a719()}</span>
                   <div class="flex items-center gap-2">
                     <input type="color" value={nodeProps.fillColor || "#e2e8f0"} oninput={(e) => updateProp("fillColor", e.currentTarget.value)} class="w-7 h-6 rounded border border-border cursor-pointer" />
                     <Input type="text" value={nodeProps.fillColor || "#e2e8f0"} oninput={(e) => updateProp("fillColor", e.currentTarget.value)} class="h-6 text-[10px] font-mono flex-grow" />
@@ -289,7 +290,7 @@ function updatePosition(key: string, value: number) {
                 </div>
 
                 <div class="flex flex-col gap-0.5">
-                  <span class="text-[8px] text-muted-foreground">لون الإطار</span>
+                  <span class="text-[8px] text-muted-foreground">{m.template_auto_92c46eb6()}</span>
                   <div class="flex items-center gap-2">
                     <input type="color" value={nodeProps.strokeColor || "#94a3b8"} oninput={(e) => updateProp("strokeColor", e.currentTarget.value)} class="w-7 h-6 rounded border border-border cursor-pointer" />
                     <Input type="text" value={nodeProps.strokeColor || "#94a3b8"} oninput={(e) => updateProp("strokeColor", e.currentTarget.value)} class="h-6 text-[10px] font-mono flex-grow" />
@@ -298,11 +299,11 @@ function updatePosition(key: string, value: number) {
 
               {:else if nodeType === "Barcode"}
                 <div class="flex flex-col gap-1">
-                  <Label class="text-[9px] text-muted-foreground">البيانات</Label>
+                  <Label class="text-[9px] text-muted-foreground">{m.template_auto_36da7f2c()}</Label>
                   <Input type="text" value={nodeProps.data || ""} oninput={(e) => updateProp("data", e.currentTarget.value)} class="h-7 text-xs font-mono" />
                 </div>
                 <div class="flex flex-col gap-0.5">
-                  <span class="text-[8px] text-muted-foreground">الصيغة</span>
+                  <span class="text-[8px] text-muted-foreground">{m.template_auto_2ea3bbb9()}</span>
                   <Select type="single" value={nodeProps.format || "Code128"} onValueChange={(v) => { if (v) updateProp("format", v); }}>
                     <SelectTrigger class="h-6 text-[10px]">{nodeProps.format || "Code128"}</SelectTrigger>
                     <SelectContent>
@@ -316,13 +317,13 @@ function updatePosition(key: string, value: number) {
 
               {:else if nodeType === "QRCode"}
                 <div class="flex flex-col gap-1">
-                  <Label class="text-[9px] text-muted-foreground">البيانات</Label>
+                  <Label class="text-[9px] text-muted-foreground">{m.template_auto_36da7f2c()}</Label>
                   <Input type="text" value={nodeProps.data || ""} oninput={(e) => updateProp("data", e.currentTarget.value)} class="h-7 text-xs font-mono" />
                 </div>
 
               {:else}
                 <p class="text-[9px] text-muted-foreground">
-                  لا توجد خصائص محتوى إضافية لهذا النوع.
+                  {m.template_auto_68efe1b5()}
                 </p>
               {/if}
             </div>

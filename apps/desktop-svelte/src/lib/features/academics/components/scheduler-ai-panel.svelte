@@ -568,7 +568,7 @@ async function deleteSolverJob(jobId: string) {
 										size="icon-xs"
 										class="h-4 w-4 text-muted-foreground/60 hover:text-destructive p-0 cursor-pointer flex items-center justify-center rounded-sm"
 										onclick={() => deleteSolverJob(job.id)}
-										title={getLocale() === "ar" ? "حذف السجل" : "Delete record"}
+										title={m.common_action_delete()}
 									>
 										<Trash2 size={10} />
 									</Button>

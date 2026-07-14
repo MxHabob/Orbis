@@ -84,7 +84,7 @@ function updateProp(key: string, value: unknown) {
             <ArrowLeft size={15} class="rtl:rotate-180" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>رجوع</TooltipContent>
+        <TooltipContent>{m.template_auto_11e83767()}</TooltipContent>
       </Tooltip>
     {/if}
     <span class="ctx-title">{templateName || "..."}</span>
@@ -165,14 +165,14 @@ function updateProp(key: string, value: unknown) {
     {:else if nodeType === "Shape" && !isMultiSelect}
       <!-- ═══ SHAPE TOOLBAR ═══ -->
       <div class="ctx-group">
-        <span class="ctx-label">تعبئة</span>
+        <span class="ctx-label">{m.template_auto_d879709f()}</span>
         <input
           type="color"
           value={nodeProps.fillColor || "#e2e8f0"}
           oninput={(e) => updateProp("fillColor", e.currentTarget.value)}
           class="ctx-color-swatch"
         />
-        <span class="ctx-label">حدود</span>
+        <span class="ctx-label">{m.template_auto_a327fb24()}</span>
         <input
           type="color"
           value={nodeProps.strokeColor || "#94a3b8"}
@@ -186,7 +186,7 @@ function updateProp(key: string, value: unknown) {
           class="h-6 w-[40px] text-[10px]"
           min="0" max="20" step="0.5"
         />
-        <span class="ctx-label">زوايا</span>
+        <span class="ctx-label">{m.template_auto_5ad831b4()}</span>
         <Input
           type="number"
           value={nodeProps.borderRadius ?? 0}
@@ -199,7 +199,7 @@ function updateProp(key: string, value: unknown) {
     {:else if nodeType === "Image" && !isMultiSelect}
       <!-- ═══ IMAGE TOOLBAR ═══ -->
       <div class="ctx-group">
-        <span class="ctx-label">ملاءمة</span>
+        <span class="ctx-label">{m.template_auto_5bad6dcb()}</span>
         <select
           value={nodeProps.fit || "contain"}
           onchange={(e) => updateProp("fit", e.currentTarget.value)}
@@ -210,7 +210,7 @@ function updateProp(key: string, value: unknown) {
           <option value="fill">Fill</option>
           <option value="none">None</option>
         </select>
-        <span class="ctx-label">شفافية</span>
+        <span class="ctx-label">{m.template_color_opacity()}</span>
         <Input
           type="number"
           value={Math.round((nodeProps.opacity ?? 1) * 100)}
@@ -224,7 +224,7 @@ function updateProp(key: string, value: unknown) {
     {:else if (nodeType === "Barcode" || nodeType === "QRCode") && !isMultiSelect}
       <!-- ═══ BARCODE TOOLBAR ═══ -->
       <div class="ctx-group">
-        <span class="ctx-label">البيانات</span>
+        <span class="ctx-label">{m.template_auto_36da7f2c()}</span>
         <Input
           type="text"
           value={nodeProps.data || ""}
@@ -232,7 +232,7 @@ function updateProp(key: string, value: unknown) {
           class="h-6 w-[160px] text-[10px] font-mono"
         />
         {#if nodeType === "Barcode"}
-          <span class="ctx-label">الصيغة</span>
+          <span class="ctx-label">{m.template_auto_2ea3bbb9()}</span>
           <select
             value={nodeProps.format || "Code128"}
             onchange={(e) => updateProp("format", e.currentTarget.value)}
@@ -254,12 +254,12 @@ function updateProp(key: string, value: unknown) {
       <Separator orientation="vertical" class="h-5 mx-1" />
       <div class="ctx-group">
         {#each [
-          { icon: AlignLeft, action: "left", label: "يسار" },
-          { icon: AlignCenter, action: "center", label: "وسط" },
-          { icon: AlignRight, action: "right", label: "يمين" },
-          { icon: AlignStartVertical, action: "top", label: "أعلى" },
-          { icon: AlignCenterVertical, action: "middle", label: "وسط" },
-          { icon: AlignEndVertical, action: "bottom", label: "أسفل" },
+          { icon: AlignLeft, action: m.template_auto_d18b14e5() },
+          { icon: AlignCenter, action: m.template_auto_04fc4ddb() },
+          { icon: AlignRight, action: m.template_auto_342e5073() },
+          { icon: AlignStartVertical, action: m.template_auto_478824bc() },
+          { icon: AlignCenterVertical, action: m.template_auto_e52c50f3() },
+          { icon: AlignEndVertical, action: m.template_auto_bd2cbe98() },
         ] as item (item.action)}
           <Tooltip>
             <TooltipTrigger>
@@ -291,7 +291,7 @@ function updateProp(key: string, value: unknown) {
           <Undo2 size={14} />
         </Button>
       </TooltipTrigger>
-      <TooltipContent>تراجع (Ctrl+Z)</TooltipContent>
+      <TooltipContent>{m.template_auto_23e6964d()}</TooltipContent>
     </Tooltip>
     <Tooltip>
       <TooltipTrigger>
@@ -299,7 +299,7 @@ function updateProp(key: string, value: unknown) {
           <Redo2 size={14} />
         </Button>
       </TooltipTrigger>
-      <TooltipContent>إعادة (Ctrl+Y)</TooltipContent>
+      <TooltipContent>{m.template_auto_08f60fc8()}</TooltipContent>
     </Tooltip>
 
     <Separator orientation="vertical" class="h-5 mx-1" />
@@ -310,7 +310,7 @@ function updateProp(key: string, value: unknown) {
           <Grid3x3 size={13} class={store.gridVisible ? "text-primary" : ""} />
         </Button>
       </TooltipTrigger>
-      <TooltipContent>الشبكة</TooltipContent>
+      <TooltipContent>{m.template_auto_5a8dd99f()}</TooltipContent>
     </Tooltip>
     <Tooltip>
       <TooltipTrigger>
@@ -318,7 +318,7 @@ function updateProp(key: string, value: unknown) {
           <Magnet size={13} class={store.snapEnabled ? "text-primary" : ""} />
         </Button>
       </TooltipTrigger>
-      <TooltipContent>الالتصاق</TooltipContent>
+      <TooltipContent>{m.template_auto_f3374e87()}</TooltipContent>
     </Tooltip>
     <Tooltip>
       <TooltipTrigger>
@@ -326,18 +326,18 @@ function updateProp(key: string, value: unknown) {
           <Ruler size={13} class={store.rulersVisible ? "text-primary" : ""} />
         </Button>
       </TooltipTrigger>
-      <TooltipContent>المساطر</TooltipContent>
+      <TooltipContent>{m.template_auto_417741fa()}</TooltipContent>
     </Tooltip>
 
     <Separator orientation="vertical" class="h-5 mx-1" />
 
     <Button variant="ghost" size="xs" class="cursor-pointer text-[10px]" onclick={onpreview}>
       <Eye size={13} class="me-1" />
-      معاينة
+      {m.template_auto_0d4de28c()}
     </Button>
     <Button variant="lime" size="xs" class="cursor-pointer text-[10px]" onclick={onsave} disabled={!store.isDirty}>
       <Save size={13} class="me-1" />
-      حفظ
+      {m.template_auto_871a087a()}
     </Button>
   </div>
 </div>

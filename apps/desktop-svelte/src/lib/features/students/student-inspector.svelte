@@ -175,7 +175,7 @@ $effect(() => {
         {#if student.student_number || student.id}
           <div class="flex flex-col gap-0.5">
             <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
-              الرقم الأكاديمي
+              {m.common_word_academic_number()}
             </span>
             <span class="text-xs font-mono font-bold text-foreground">
               {student.student_number || student.id}
@@ -186,7 +186,7 @@ $effect(() => {
         {#if student.phone || student.phone_number}
           <div class="flex flex-col gap-0.5">
             <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
-              الهاتف
+              {m.common_word_phone()}
             </span>
             <span class="text-xs text-foreground font-mono">
               {student.phone || student.phone_number}
@@ -197,7 +197,7 @@ $effect(() => {
         {#if student.email}
           <div class="flex flex-col gap-0.5">
             <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
-              البريد الإلكتروني
+              {m.common_word_email()}
             </span>
             <span class="text-xs text-foreground font-mono truncate max-w-full" title={String(student.email)}>
               {student.email}
@@ -208,10 +208,10 @@ $effect(() => {
         {#if student.sex}
           <div class="flex flex-col gap-0.5">
             <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
-              الجنس
+              {m.common_form_sex()}
             </span>
             <span class="text-xs text-foreground font-medium">
-              {student.sex === 'male' ? 'ذكر' : 'أنثى'}
+              {student.sex === 'male' ? m.common_form_male() : m.common_form_female()}
             </span>
           </div>
         {/if}
@@ -219,7 +219,7 @@ $effect(() => {
         {#if student.birth_date}
           <div class="flex flex-col gap-0.5">
             <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
-              تاريخ الميلاد
+              {m.common_word_dob()}
             </span>
             <span class="text-xs text-foreground font-mono">
               {student.birth_date}
@@ -239,7 +239,7 @@ $effect(() => {
               <div class="flex items-center justify-between p-2.5 border border-border/60 rounded-xl bg-muted/20">
                 <div class="flex flex-col gap-0.5">
                   <span class="font-bold text-foreground text-xs">{g.name} ({g.relationship})</span>
-                  <span class="text-[10px] text-muted-foreground font-mono">{g.phone || 'بلا هاتف'}</span>
+                  <span class="text-[10px] text-muted-foreground font-mono">{g.phone || m.common_form_guardian_no_phone()}</span>
                 </div>
                 {#if g.is_primary}
                   <Badge variant="lime" class="text-[8px] scale-90 px-1.5 py-0.5 shrink-0 font-semibold uppercase">{m.common_form_guardian_role_primary()}</Badge>

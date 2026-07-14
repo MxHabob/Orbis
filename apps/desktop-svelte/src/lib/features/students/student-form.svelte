@@ -100,7 +100,7 @@ onMount(async () => {
             {/each}
             {#if state.availableTemplates.length === 0}
               <div class="px-3 py-4 text-center text-xs text-muted-foreground">
-                لا توجد قوالب متوفرة
+                {m.common_form_no_templates_available()}
               </div>
             {/if}
             <div class="border-t border-border/40 my-1"></div>
@@ -217,10 +217,10 @@ onMount(async () => {
               {m.common_form_status_approved()}
             </DropdownMenuItem>
             <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => handleSave("withdrawn")}>
-              {state.registrationStatus === "withdrawn" ? "تعديل كـ منسحب" : m.common_status_withdrawn()}
+              {state.registrationStatus === "withdrawn" ? m.common_form_edit_as_withdrawn() : m.common_status_withdrawn()}
             </DropdownMenuItem>
             <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => handleSave("graduated")}>
-              {state.registrationStatus === "graduated" ? "تعديل كـ خريج" : m.common_form_status_graduated()}
+              {state.registrationStatus === "graduated" ? m.common_form_edit_as_graduated() : m.common_form_status_graduated()}
             </DropdownMenuItem>
           {/if}
           <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5 border-t border-border/40 mt-1" onclick={() => state.handleDownloadRegistrationForm()}>

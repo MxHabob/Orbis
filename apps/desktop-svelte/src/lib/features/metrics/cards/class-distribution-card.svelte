@@ -1,8 +1,10 @@
 <script lang="ts">
+import { BarChart, Users } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui-svelte";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
+import { getLocale } from "$lib/paraglide/runtime";
 import DragIndicator from "../components/drag-indicator.svelte";
 
 let {
@@ -33,28 +35,17 @@ async function loadData() {
     const classes = await commands.academic.listClasses(params);
     if (classes && classes.length > 0) {
       data = classes
-        .map((c) => ({
-          name: c.name_ar || c.name,
+        .map((c: any) => ({
+          name: getLocale() === "ar" ? c.name_ar || c.name : c.name || c.name_ar,
           count: c.current_students || 0,
         }))
-        .sort((a, b) => b.count - a.count)
+        .sort((a: any, b: any) => b.count - a.count)
         .slice(0, 9); // top 9 classes
 
       activeClassesCount = classes.length;
     } else {
-      // Fallback mockup matching Screenshot 5 (Right)
-      data = [
-        { name: "الصف الرابع", count: 220 },
-        { name: "الصف الأول", count: 200 },
-        { name: "الصف الثامن", count: 180 },
-        { name: "الصف التاسع", count: 150 },
-        { name: "الصف الثالث", count: 150 },
-        { name: "الصف السابع", count: 148 },
-        { name: "الصف السادس", count: 140 },
-        { name: "الصف الثاني", count: 120 },
-        { name: "الصف الخامس", count: 120 },
-      ];
-      activeClassesCount = 9;
+      data = [];
+      activeClassesCount = 0;
     }
   } catch (e) {
     console.error("Error loading class distribution:", e);
@@ -76,7 +67,7 @@ const maxVal = $derived(Math.max(...data.map((d) => d.count), 1));
 
 <div class="card-tactile h-full relative group min-h-[265px] p-5 flex flex-col justify-between font-sans border border-border/60 bg-card shadow-sm">
   {#if isLoading}
-    <div class="flex-grow w-full relative flex items-center justify-center">
+    <div class="grow w-full relative flex items-center justify-center">
       <Skeleton class="h-full w-full rounded-lg animate-pulse" />
     </div>
   {:else}
@@ -102,7 +93,7 @@ const maxVal = $derived(Math.max(...data.map((d) => d.count), 1));
     </div>
 
     <!-- Chart List Area: Horizontal Progress Bars -->
-    <div class="flex-grow flex flex-col gap-2.5 mt-4 justify-center w-full min-h-[140px] relative">
+    <div class="grow flex flex-col gap-2.5 mt-4 justify-center w-full min-h-[140px] relative">
       {#each data as item}
         {@const pct = (item.count / maxVal) * 100}
         <div class="flex items-center gap-3 w-full text-[10px] hover:bg-foreground/5 p-1 rounded-md transition-colors duration-150">
@@ -112,9 +103,9 @@ const maxVal = $derived(Math.max(...data.map((d) => d.count), 1));
           </span>
 
           <!-- Sunken Progress Bar Track -->
-          <div class="flex-grow h-2.5 bg-muted/40 border border-border/40 rounded-md overflow-hidden relative shadow-[inset_0_1px_2.5px_rgba(0,0,0,0.08)] dark:shadow-[inset_0_1px_3px_rgba(0,0,0,0.35)]">
+          <div class="grow h-2.5 bg-muted/40 border border-border/40 rounded-md overflow-hidden relative shadow-[inset_0_1px_2.5px_rgba(0,0,0,0.08)] dark:shadow-[inset_0_1px_3px_rgba(0,0,0,0.35)]">
             <div
-              class="h-full rounded-md bg-gradient-to-r from-muted-foreground/20 to-foreground rtl:bg-gradient-to-l rtl:from-muted-foreground/20 rtl:to-foreground transition-all duration-500 shadow-[0_1.5px_0_0_rgba(0,0,0,0.15)] border-b border-black/10"
+              class="h-full rounded-md bg-linear-to-r from-muted-foreground/20 to-foreground rtl:bg-gradient-to-l rtl:from-muted-foreground/20 rtl:to-foreground transition-all duration-500 shadow-[0_1.5px_0_0_rgba(0,0,0,0.15)] border-b border-black/10"
               style="width: {pct}%"
             ></div>
           </div>

@@ -10,7 +10,7 @@ let { state }: { state: StudentFormState } = $props();
 
 <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
   <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-    العنوان والسكن والدراسة السابقة
+    {m.common_form_location_title()}
   </div>
 
   <div class="flex flex-col">
@@ -25,7 +25,7 @@ let { state }: { state: StudentFormState } = $props();
           <Input 
             id="previousSchool"
             type="text" 
-            placeholder="اسم المدرسة السابقة..." 
+            placeholder={m.common_form_location_school_ph()} 
             class="h-9 w-full bg-background" 
             bind:value={state.personal.previousSchool}
           />
@@ -43,7 +43,7 @@ let { state }: { state: StudentFormState } = $props();
         <Input 
           id="governorate"
           type="text" 
-          placeholder="مثال: صنعاء، عدن..." 
+          placeholder={m.common_form_location_gov_ph()} 
           class="h-9 w-full bg-background" 
           bind:value={state.personal.governorate}
         />
@@ -60,7 +60,7 @@ let { state }: { state: StudentFormState } = $props();
         <Input 
           id="district"
           type="text" 
-          placeholder="مثال: مديرية السبعين..." 
+          placeholder={m.common_form_location_dist_ph()} 
           class="h-9 w-full bg-background" 
           bind:value={state.personal.district}
         />
@@ -81,7 +81,7 @@ let { state }: { state: StudentFormState } = $props();
           <Input 
             id="address"
             type="text" 
-            placeholder="الشارع، الحي، المعلم القريب..." 
+            placeholder={m.common_form_location_address_ph()} 
             class="h-9 w-full bg-background" 
             bind:value={state.personal.address}
           />

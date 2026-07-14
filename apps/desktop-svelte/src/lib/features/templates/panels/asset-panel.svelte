@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 /**
  * AssetPanel — Image/logo/stamp library.
  * Browse, upload, and drag assets onto the canvas.
@@ -143,7 +144,7 @@ function addAssetManually() {
   <div class="px-3 py-2 border-b border-border/40 flex items-center justify-between">
     <div class="flex items-center gap-2">
       <ImageIcon size={13} class="text-primary" />
-      <h3 class="text-xs font-bold text-foreground">الأصول</h3>
+      <h3 class="text-xs font-bold text-foreground">{m.template_auto_306deec4()}</h3>
     </div>
     <div class="flex items-center gap-1">
       <Badge variant="outline" class="text-[8px]">{assetEntries.length}</Badge>
@@ -153,7 +154,7 @@ function addAssetManually() {
             <Upload size={11} />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>إضافة أصل</TooltipContent>
+        <TooltipContent>{m.template_auto_fe1d2af2()}</TooltipContent>
       </Tooltip>
     </div>
   </div>
@@ -164,7 +165,7 @@ function addAssetManually() {
       <Search size={11} class="absolute start-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
       <Input
         type="text"
-        placeholder="بحث..."
+        placeholder=m.template_auto_1805657a()
         bind:value={searchQuery}
         class="h-6 text-[10px] ps-7"
       />
@@ -176,13 +177,13 @@ function addAssetManually() {
     <div class="px-3 py-2 border-b border-border/30 bg-muted/20 flex flex-col gap-1.5">
       <Input
         type="text"
-        placeholder="اسم الأصل"
+        placeholder=m.template_auto_cefb6a11()
         bind:value={newAssetName}
         class="h-6 text-[10px]"
       />
       <Input
         type="text"
-        placeholder="رابط الصورة"
+        placeholder=m.template_auto_d11e4484()
         bind:value={newAssetUrl}
         class="h-6 text-[10px] font-mono"
       />
@@ -198,7 +199,7 @@ function addAssetManually() {
           <option value="background">Background</option>
         </select>
         <Button variant="lime" size="xs" class="cursor-pointer h-6 text-[10px]" onclick={addAssetManually}>
-          إضافة
+          {m.template_auto_b9508aa2()}
         </Button>
       </div>
     </div>
@@ -210,7 +211,7 @@ function addAssetManually() {
       <div class="flex flex-col items-center justify-center py-8 px-4 gap-2">
         <ImageIcon size={20} class="text-muted-foreground/30" />
         <p class="text-[10px] text-muted-foreground text-center">
-          {searchQuery ? "لا توجد نتائج" : "لا توجد أصول — أضف صوراً وشعارات"}
+          {searchQuery ? m.template_auto_40b06b2d() : m.template_auto_ce6c5036()}
         </p>
       </div>
     {:else}
@@ -263,7 +264,7 @@ function addAssetManually() {
   <!-- Footer hint -->
   <div class="px-3 py-1.5 border-t border-border/30 bg-muted/10">
     <p class="text-[8px] text-muted-foreground text-center">
-      اسحب الأصل إلى اللوحة لإنشاء عنصر صورة
+      {m.template_auto_1c338229()}
     </p>
   </div>
 </div>

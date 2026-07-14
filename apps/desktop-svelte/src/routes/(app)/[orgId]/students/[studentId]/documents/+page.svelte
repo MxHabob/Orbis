@@ -92,11 +92,7 @@ async function loadDocuments() {
 
 async function handleAddDocument() {
   if (!newDocName.trim()) {
-    toast.error(
-      getLocale() === "ar"
-        ? "يرجى إدخال اسم الوثيقة بالعربية"
-        : "Please enter document name",
-    );
+    toast.error(m.common_docs_form_name_required());
     return;
   }
 
@@ -135,13 +131,7 @@ async function handleAddDocument() {
 }
 
 async function handleDelete(docId: string) {
-  if (
-    !confirm(
-      getLocale() === "ar"
-        ? "هل أنت متأكد من حذف هذه الوثيقة؟"
-        : "Are you sure you want to delete this document?",
-    )
-  ) {
+  if (!confirm(m.common_docs_delete_confirm())) {
     return;
   }
 
@@ -164,11 +154,7 @@ function openUploadModal(doc: any) {
 
 async function handleUploadFile() {
   if (!uploadFileUrl.trim()) {
-    toast.error(
-      getLocale() === "ar"
-        ? "يرجى تحديد مسار أو رابط الملف"
-        : "Please specify file path or URL",
-    );
+    toast.error(m.common_docs_upload_url_required());
     return;
   }
 
@@ -301,7 +287,7 @@ async function handleUploadFile() {
                 {#if isUploaded}
                   <span class="uppercase font-semibold text-foreground/85">{doc.extension || 'FILE'}</span>
                 {:else}
-                  <span class="opacity-60">{getLocale() === 'ar' ? 'متطلب معلّق' : 'Requirement'}</span>
+                  <span class="opacity-60">{m.common_docs_status_requirement()}</span>
                 {/if}
               </TableCell>
               
@@ -332,7 +318,7 @@ async function handleUploadFile() {
                       variant="ghost" 
                       size="icon-xs"
                       class="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
-                      title={getLocale() === 'ar' ? 'فتح الملف' : 'Open File'}
+                      title={m.common_docs_action_open_file()}
                     >
                       <ExternalLink size={12} />
                     </Button>
@@ -386,40 +372,40 @@ async function handleUploadFile() {
 
       <div class="space-y-4 py-2">
         <div class="flex flex-col gap-1.5">
-          <Label class="text-[10px] font-semibold text-muted-foreground">{getLocale() === 'ar' ? 'اسم الوثيقة بالعربية *' : 'Document Name (AR) *'}</Label>
+          <Label class="text-[10px] font-semibold text-muted-foreground">{m.common_docs_form_name_ar_label()}</Label>
           <Input 
             type="text" 
-            placeholder={getLocale() === 'ar' ? 'مثال: شهادة التخرج' : 'e.g., Graduation Certificate'} 
+            placeholder={m.common_docs_form_name_ar_placeholder()} 
             class="text-xs" 
             bind:value={newDocName}
           />
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <Label class="text-[10px] font-semibold text-muted-foreground">{getLocale() === 'ar' ? 'اسم الوثيقة بالإنجليزية (اختياري)' : 'Document Name (EN - Optional)'}</Label>
+          <Label class="text-[10px] font-semibold text-muted-foreground">{m.common_docs_form_name_en_label()}</Label>
           <Input 
             type="text" 
-            placeholder={getLocale() === 'ar' ? 'مثال: Graduation Certificate' : 'e.g., Graduation Certificate'} 
+            placeholder={m.common_docs_form_name_en_placeholder()} 
             class="text-xs" 
             bind:value={newDocTitle}
           />
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <Label class="text-[10px] font-semibold text-muted-foreground">{getLocale() === 'ar' ? 'ملاحظات / وصف الوثيقة' : 'Description / Notes'}</Label>
+          <Label class="text-[10px] font-semibold text-muted-foreground">{m.common_docs_form_desc_label()}</Label>
           <Input 
             type="text" 
-            placeholder={getLocale() === 'ar' ? 'تفاصيل إضافية حول متطلب الوثيقة' : 'Additional info about document requirements'} 
+            placeholder={m.common_docs_form_desc_placeholder()} 
             class="text-xs" 
             bind:value={newDocDescription}
           />
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <Label class="text-[10px] font-semibold text-muted-foreground">{getLocale() === 'ar' ? 'رابط أو مسار الملف المرفوع (اختياري)' : 'File Path / URL (Optional)'}</Label>
+          <Label class="text-[10px] font-semibold text-muted-foreground">{m.common_docs_form_url_label()}</Label>
           <Input 
             type="text" 
-            placeholder={getLocale() === 'ar' ? 'اتركه فارغاً لتعريفها كمتطلب غير مرفوع' : 'Leave empty to create as a pending placeholder'} 
+            placeholder={m.common_docs_form_url_placeholder()} 
             class="text-xs font-mono"
             dir="ltr"
             bind:value={newDocUrl}
@@ -440,7 +426,7 @@ async function handleUploadFile() {
           class="text-xs h-8 px-5 cursor-pointer font-semibold"
           onclick={handleAddDocument}
         >
-          {getLocale() === 'ar' ? 'إضافة الوثيقة' : 'Create Requirement'}
+          {m.common_docs_action_create_req()}
         </Button>
       </div>
     </div>
@@ -468,9 +454,9 @@ async function handleUploadFile() {
 
       {#if selectedDoc}
         <div class="p-2 border border-border bg-card/45 rounded-lg text-[10px] space-y-0.5">
-          <div><span class="text-muted-foreground">{getLocale() === 'ar' ? 'اسم الوثيقة:' : 'Document:'}</span> <span class="font-bold text-foreground">{selectedDoc.title || selectedDoc.name}</span></div>
+          <div><span class="text-muted-foreground">{m.common_docs_detail_doc_label()}</span> <span class="font-bold text-foreground">{selectedDoc.title || selectedDoc.name}</span></div>
           {#if selectedDoc.description}
-            <div><span class="text-muted-foreground">{getLocale() === 'ar' ? 'الوصف:' : 'Description:'}</span> <span class="text-foreground">{selectedDoc.description}</span></div>
+            <div><span class="text-muted-foreground">{m.common_docs_detail_desc_label()}</span> <span class="text-foreground">{selectedDoc.description}</span></div>
           {/if}
         </div>
       {/if}
@@ -480,7 +466,7 @@ async function handleUploadFile() {
           <Label class="text-[10px] font-semibold text-muted-foreground">{m.common_docs_upload_dialog_url()} *</Label>
           <Input 
             type="text" 
-            placeholder={getLocale() === 'ar' ? 'أدخل مسار الملف المحلي أو رابط الويب للمستند' : 'Enter local file path or web URL for the document'} 
+            placeholder={m.common_docs_form_upload_url_placeholder()} 
             class="text-xs font-mono" 
             dir="ltr"
             bind:value={uploadFileUrl}
@@ -489,7 +475,7 @@ async function handleUploadFile() {
 
         <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1.5">
-            <Label class="text-[10px] font-semibold text-muted-foreground">{getLocale() === 'ar' ? 'حجم الملف' : 'File Size'}</Label>
+            <Label class="text-[10px] font-semibold text-muted-foreground">{m.common_docs_form_file_size()}</Label>
             <Input 
               type="text" 
               class="text-xs" 
@@ -498,7 +484,7 @@ async function handleUploadFile() {
           </div>
 
           <div class="flex flex-col gap-1.5">
-            <Label class="text-[10px] font-semibold text-muted-foreground">{getLocale() === 'ar' ? 'امتداد الملف' : 'Extension'}</Label>
+            <Label class="text-[10px] font-semibold text-muted-foreground">{m.common_docs_form_file_ext()}</Label>
             <Input 
               type="text" 
               class="text-xs font-mono uppercase" 

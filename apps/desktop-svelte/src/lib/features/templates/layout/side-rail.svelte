@@ -35,12 +35,12 @@ type RailItem = {
 };
 
 const topItems: RailItem[] = [
-  { id: "templates", icon: LayoutTemplate, label: "قوالب" },
-  { id: "elements", icon: Shapes, label: "عناصر" },
-  { id: "text", icon: Type, label: "نص" },
-  { id: "uploads", icon: ImageIcon, label: "رفع" },
-  { id: "tools", icon: Wrench, label: "أدوات" },
-  { id: "page-setup", icon: Settings2, label: "إعدادات" },
+  { id: m.template_auto_a4858850() },
+  { id: m.template_auto_01f881e3() },
+  { id: m.template_auto_c228ceda() },
+  { id: m.template_auto_a29f8c2b() },
+  { id: m.template_auto_21c1999e() },
+  { id: m.template_auto_334f4b45() },
 ];
 </script>
 

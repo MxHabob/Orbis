@@ -56,16 +56,11 @@ async function handleAISummarize() {
     aiSummary = String(
       aiRes.summary ||
         aiRes.analysis ||
-        (getLocale() === "ar"
-          ? "الطالب يظهر انضباطاً ممتازاً وتفاعلاً إيجابياً في الحصص الدراسية."
-          : "The student shows excellent discipline and positive engagement in classes."),
+        m.academics_behavior_ai_success_desc_1()
     );
     toast.success(m.academics_behavior_ai_success());
   } catch {
-    aiSummary =
-      getLocale() === "ar"
-        ? "الطالب يظهر سلوكاً منضبطاً جداً بشكل عام. مشاركته في الأنشطة المدرسية متميزة."
-        : "The student generally shows very disciplined behavior.";
+    aiSummary = m.academics_behavior_ai_success_desc_2();
     toast.success(m.academics_behavior_ai_success());
   } finally {
     isGeneratingAI = false;
@@ -142,8 +137,8 @@ const rtl = $derived(getLocale() === "ar");
       source={gridSource}
       loading={isLoading}
       emptyIcon={ShieldCheck}
-      emptyTitle={rtl ? "لا توجد سجلات سلوكية بعد" : "No behavior records logged"}
-      emptyDescription={rtl ? "السلوكيات والمخالفات المسجلة ستظهر هنا." : "Behavior records will appear here."}
+      emptyTitle={m.academics_behavior_empty_title()}
+      emptyDescription={m.academics_behavior_empty_desc()}
       {rtl}
       height="300px"
     />

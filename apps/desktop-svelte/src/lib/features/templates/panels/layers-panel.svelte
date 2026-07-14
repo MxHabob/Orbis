@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 /**
  * LayersPanel — Tree view of document elements with reordering.
  * Shows the hierarchy of the active page.
@@ -92,7 +93,7 @@ function getIconColor(type: string): string {
 <div class="flex flex-col h-full text-start">
   <!-- Header -->
   <div class="px-3 py-2 border-b border-border/40 flex items-center justify-between">
-    <h3 class="text-xs font-bold text-foreground">الطبقات</h3>
+    <h3 class="text-xs font-bold text-foreground">{m.template_auto_ec9ded9e()}</h3>
     <div class="flex items-center gap-1">
       <span class="text-[9px] text-muted-foreground">
         {store.activePageIndex + 1}/{store.pageCount}
@@ -195,7 +196,7 @@ function getIconColor(type: string): string {
 
       {#if store.activePage.children.length === 0}
         <div class="text-center py-8 text-[10px] text-muted-foreground">
-          الصفحة فارغة — استخدم شريط الأدوات لإضافة عناصر
+          {m.template_auto_00770339()}
         </div>
       {/if}
     {/if}

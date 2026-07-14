@@ -83,7 +83,7 @@ const progressValue = $derived(((currentStep + 1) / steps.length) * 100);
 // ── Config Form ─────────────────────────────────────────────────────
 
 let config = $state<PromotionConfig>({
-  source_period_id: academicContext.currentYear?.id ?? "",
+  source_period_id: academicContext.effectivePeriodId ?? "",
   target_year_name: "",
   target_year_name_ar: null,
   target_start_date: "",
@@ -96,6 +96,12 @@ let config = $state<PromotionConfig>({
   carry_over_outstanding_fees: false,
   carry_over_guardians: true,
   class_mapping: [],
+});
+
+$effect(() => {
+  if (academicContext.effectivePeriodId && !config.source_period_id) {
+    config.source_period_id = academicContext.effectivePeriodId;
+  }
 });
 
 let policyLoaded = $state(false);
@@ -241,7 +247,7 @@ function decisionLabel(d: string) {
     <div class="w-full max-w-md mx-auto mb-8 px-4 flex flex-col gap-2 items-center select-none">
       <Progress value={progressValue} class="h-1" />
       <span class="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-        {m.common_onboarding_progress_label ? m.common_onboarding_progress_label() : "الخطوة"} {currentStep + 1} / {steps.length}: {steps[currentStep].label()}
+        {m.common_onboarding_progress_label()} {currentStep + 1} / {steps.length}: {steps[currentStep].label()}
       </span>
     </div>
 
@@ -624,7 +630,7 @@ function decisionLabel(d: string) {
             class="border-border text-muted-foreground hover:text-foreground hover:bg-muted flex gap-2 items-center select-none"
           >
             <ArrowRight class="w-4 h-4 rtl:rotate-180" />
-            <span>{m.common_onboarding_prev_btn ? m.common_onboarding_prev_btn() : "السابق"}</span>
+            <span>{m.common_onboarding_prev_btn()}</span>
           </Button>
 
           <!-- Next / Action Button -->

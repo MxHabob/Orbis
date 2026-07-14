@@ -33,6 +33,7 @@ let { data }: { data: { orgId: string } } = $props();
 // ── State ──────────────────────────────────────────────────────────────
 let treasuries = $state<any[]>([]);
 let ledgers = $state<any[]>([]);
+let baseCurrency = $state("YER");
 let isLoading = $state(true);
 let activeTabType = $state<"gl" | "treasury" | "entity">("gl");
 let isAddDialogOpen = $state(false);
@@ -47,12 +48,15 @@ function handleSuccess() {
 async function loadData() {
   isLoading = true;
   try {
-    const [tList, lList] = await Promise.all([
+    const [tList, lList, cList] = await Promise.all([
       commands.finance.listTreasuries(data.orgId),
       commands.finance.listTransactionAccounts(data.orgId),
+      commands.finance.listCurrencies()
     ]);
     treasuries = tList;
     ledgers = lList;
+    const base = cList.find((c: any) => c.is_base === 1);
+    if (base) baseCurrency = base.code;
   } catch (e) {
     console.error("Error:", e);
   } finally {
@@ -93,8 +97,8 @@ const treasurySource = $derived(
       ...t,
       name: t.name_ar || t.name || "—",
       treasury_type: getTreasuryTypeLabel(t.treasury_type),
-      balance: formatCurrency(Number(t.balance || 0), t.currency),
-      currency_code: t.currency || "YER",
+      balance: formatCurrency(Number(t.balance || 0), t.currency || baseCurrency),
+      currency_code: t.currency || baseCurrency,
       status: "active",
     })),
   ),
@@ -159,7 +163,7 @@ const rtl = $derived(getLocale() === "ar");
               <span>{m.finance_vaults_title()}</span>
             </h3>
             <span class="text-[8px] text-muted-foreground mt-0.5">
-              {m.finance_total_cash_assets({ balance: formatCurrency(totalBalance, "YER") })}
+              {m.finance_total_cash_assets({ balance: formatCurrency(totalBalance, baseCurrency) })}
             </span>
           </div>
           <Button variant="outline" class="text-[10px] h-7 px-2" onclick={() => { activeTabType = "treasury"; isAddDialogOpen = true; }}>

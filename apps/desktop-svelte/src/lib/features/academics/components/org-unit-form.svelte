@@ -148,7 +148,7 @@ async function handleSubmit(e: SubmitEvent) {
           id="unit_name_ar"
           type="text"
           bind:value={nameAr}
-          placeholder="مثلاً: مبنى الإدارة أو الصف الأول"
+          placeholder={m.academics_org_unit_form_placeholder()}
           disabled={isSubmitting}
         />
       </div>
@@ -205,7 +205,7 @@ async function handleSubmit(e: SubmitEvent) {
             {#each unitsList as u}
               <SelectItem value={String(u.id)}>{u.name_ar || u.name} ({u.unit_type})</SelectItem>
             {:else}
-              <div class="p-2 text-xs text-muted-foreground">لا توجد وحدات</div>
+              <div class="p-2 text-xs text-muted-foreground">{m.academics_org_unit_form_empty()}</div>
             {/each}
           </SelectContent>
         </Select>

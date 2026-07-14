@@ -63,7 +63,7 @@ async function loadData() {
           r.status === "present" ||
           r.status === "late" ||
           String(r.status).toLowerCase().includes("present") ||
-          String(r.status).includes("حاضر");
+          String(r.status).includes(m.metrics_attendance_present());
         if (isPresent) {
           groups[dateStr].present += 1;
           totalPresent += 1;
@@ -171,7 +171,7 @@ function handleMouseLeave() {
 
 <div class="card-tactile h-full relative group min-h-[265px] p-5 flex flex-col justify-between font-sans border border-border/60 bg-card shadow-sm">
   {#if isLoading}
-    <div class="flex-grow w-full relative flex items-center justify-center">
+    <div class="grow w-full relative flex items-center justify-center">
       <Skeleton class="h-full w-full rounded-lg animate-pulse" />
     </div>
   {:else}
@@ -201,7 +201,7 @@ function handleMouseLeave() {
     </div>
 
     <!-- Main Chart Area -->
-    <div class="flex-grow relative w-full h-full min-h-[165px] select-none mt-4 flex items-center justify-center">
+    <div class="grow relative w-full h-full min-h-[165px] select-none mt-4 flex items-center justify-center">
       {#if data.length === 0}
         <!-- Dotted rectangle outline placeholder matching screenshot 4 left -->
         <div class="w-full h-full border border-dashed border-border/60 rounded-xl flex items-center justify-center bg-muted/5 transition-colors">

@@ -10,15 +10,6 @@ import {
 import { commands } from "$lib/core/ipc";
 import type { PromotionConfig } from "@orbis/sdk-core";
 
-export function createCurrentYearQuery(orgId: string) {
-  return createQuery({
-    queryKey: ["academicYears", "current", orgId],
-    queryFn: () => commands.platform.getCurrentYear(),
-    enabled: !!orgId,
-    staleTime: 30 * 60 * 1000,
-  });
-}
-
 
 export function createPromotionJobsQuery(orgId: () => string) {
   return createQuery({

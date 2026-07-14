@@ -25,12 +25,12 @@ let sheetOpen = $state(false);
 let editTarget = $state<GuardianLink | null>(null);
 
 const relations: Record<string, string> = {
-  father: "أب",
-  mother: "أم",
-  sibling: "أخ/أخت",
-  grandparent: "جد/جدة",
-  uncle: "عم/خال",
-  other: "أخرى",
+  father: m.common_guardians_relationship_father(),
+  mother: m.common_guardians_relationship_mother(),
+  sibling: m.common_guardians_relation_sibling(),
+  grandparent: m.common_guardians_relation_grandparent(),
+  uncle: m.common_guardians_relation_uncle(),
+  other: m.common_guardians_relationship_other(),
 };
 
 async function loadData() {
@@ -88,7 +88,7 @@ async function handleDelete(link: GuardianLink) {
     guardians = guardians.filter((g) => g.id !== link.id);
     toast.success(m.common_guardians_delete_success());
   } catch (e: unknown) {
-    toast.error(`فشل الحذف: ${e instanceof Error ? e.message : String(e)}`);
+    toast.error(`${m.common_guardians_delete_failed()}: ${e instanceof Error ? e.message : String(e)}`);
   }
 }
 </script>
@@ -151,7 +151,7 @@ async function handleDelete(link: GuardianLink) {
                 onclick={() => openEdit(link)}
               >
                 <Edit2 size={12} />
-                تعديل
+                {m.common_action_edit_simple()}
               </Button>
               <Button
                 variant="ghost"
@@ -160,7 +160,7 @@ async function handleDelete(link: GuardianLink) {
                 onclick={() => handleDelete(link)}
               >
                 <Trash2 size={12} />
-                إلغاء الربط
+                {m.common_action_unlink()}
               </Button>
             </div>
           </div>
@@ -170,7 +170,7 @@ async function handleDelete(link: GuardianLink) {
             <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
               <div class="flex flex-col gap-1 text-start">
                 <span class="text-xs font-semibold text-foreground">{m.common_word_fullname()}</span>
-                <span class="text-[11px] text-muted-foreground leading-relaxed">الاسم الكامل لولي الأمر</span>
+                <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_fullname_desc()}</span>
               </div>
               <div class="w-full md:w-[480px] shrink-0 text-start font-medium text-sm text-foreground">
                 {user?.full_name ?? user?.name_ar ?? "—"}
@@ -181,7 +181,7 @@ async function handleDelete(link: GuardianLink) {
             <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
               <div class="flex flex-col gap-1 text-start">
                 <span class="text-xs font-semibold text-foreground">{m.common_word_phone()}</span>
-                <span class="text-[11px] text-muted-foreground leading-relaxed">رقم هاتف المحمول لولي الأمر</span>
+                <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_phone_desc()}</span>
               </div>
               <div class="w-full md:w-[480px] shrink-0 text-start font-mono text-sm text-foreground" dir="ltr">
                 {user?.phone ?? user?.phone_number ?? "—"}
@@ -192,8 +192,8 @@ async function handleDelete(link: GuardianLink) {
             {#if user?.email && !String(user.email).endsWith("@orbis.local")}
               <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
                 <div class="flex flex-col gap-1 text-start">
-                  <span class="text-xs font-semibold text-foreground">البريد الإلكتروني</span>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">البريد الإلكتروني لولي الأمر</span>
+                  <span class="text-xs font-semibold text-foreground">{m.common_word_email()}</span>
+                  <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_guardians_email_desc()}</span>
                 </div>
                 <div class="w-full md:w-[480px] shrink-0 text-start font-mono text-sm text-foreground" dir="ltr">
                   {String(user.email)}
@@ -205,7 +205,7 @@ async function handleDelete(link: GuardianLink) {
             <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
               <div class="flex flex-col gap-1 text-start">
                 <span class="text-xs font-semibold text-foreground">{m.common_bulk_col_guardian_rel()}</span>
-                <span class="text-[11px] text-muted-foreground leading-relaxed">صلة القرابة بين ولي الأمر والطالب</span>
+                <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_rel_desc()}</span>
               </div>
               <div class="w-full md:w-[480px] shrink-0 text-start font-medium text-sm text-foreground">
                 {getRelationLabel(String(link.relationship || ""))}
@@ -216,7 +216,7 @@ async function handleDelete(link: GuardianLink) {
             <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
               <div class="flex flex-col gap-1 text-start">
                 <span class="text-xs font-semibold text-foreground">{m.common_form_guardian_national_id_label()}</span>
-                <span class="text-[11px] text-muted-foreground leading-relaxed">رقم الهوية الوطنية أو البطاقة الشخصية لولي الأمر</span>
+                <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_nid_desc()}</span>
               </div>
               <div class="w-full md:w-[480px] shrink-0 text-start font-mono text-sm text-foreground">
                 {user?.national_id ?? "—"}
@@ -226,8 +226,8 @@ async function handleDelete(link: GuardianLink) {
             <!-- Permissions -->
             <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
               <div class="flex flex-col gap-1 text-start">
-                <span class="text-xs font-semibold text-foreground">الصلاحيات والمسؤوليات المالية</span>
-                <span class="text-[11px] text-muted-foreground leading-relaxed">تحديد أدوار ولي الأمر ومسؤولياته المالية</span>
+                <span class="text-xs font-semibold text-foreground">{m.common_guardians_roles_title()}</span>
+                <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_guardians_roles_desc()}</span>
               </div>
               <div class="w-full md:w-[480px] shrink-0 flex flex-col gap-3">
                 <div class="flex flex-wrap gap-2 justify-start">

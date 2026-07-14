@@ -90,7 +90,7 @@ const selectedPeriod = $derived(periods.find((c) => String(c.id) === periodId));
 
 async function handleSubmit() {
   if (!classId || !subjectId || !teacherId || !periodId) {
-    toast.error("يرجى ملء الحقول المطلوبة");
+    toast.error(m.common_form_error_required_fields());
     return;
   }
 

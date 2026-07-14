@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 /**
  * PageSetupPanel — Page size, orientation, margins, background color.
  */
@@ -25,9 +26,9 @@ const pageSizes = [
   { id: "A5", label: "A5 (148×210)", w: 148, h: 210 },
   { id: "Letter", label: "Letter (216×279)", w: 216, h: 279 },
   { id: "Legal", label: "Legal (216×356)", w: 216, h: 356 },
-  { id: "ID_CARD", label: "بطاقة هوية (85.6×54)", w: 85.6, h: 53.98 },
-  { id: "BADGE", label: "شارة (86×54)", w: 86, h: 54 },
-  { id: "Custom", label: "مخصص", w: 0, h: 0 },
+  { id: m.template_auto_9a37ff9f(), w: 85.6, h: 53.98 },
+  { id: m.template_auto_45b2c0ac(), w: 86, h: 54 },
+  { id: m.template_auto_62ce78c0(), w: 0, h: 0 },
 ];
 
 function updatePageSetup(updates: Record<string, unknown>) {
@@ -60,7 +61,7 @@ function toggleOrientation() {
   <div class="panel-content">
     <!-- Page Size -->
     <div class="section">
-      <Label class="text-[10px] font-semibold text-muted-foreground">حجم الصفحة</Label>
+      <Label class="text-[10px] font-semibold text-muted-foreground">{m.template_auto_2cb9bc5e()}</Label>
       <div class="size-grid">
         {#each pageSizes as size (size.id)}
           <button
@@ -87,7 +88,7 @@ function toggleOrientation() {
 
     <!-- Orientation -->
     <div class="section">
-      <Label class="text-[10px] font-semibold text-muted-foreground">الاتجاه</Label>
+      <Label class="text-[10px] font-semibold text-muted-foreground">{m.template_auto_afcd0fde()}</Label>
       <div class="orientation-row">
         <button
           type="button"
@@ -96,7 +97,7 @@ function toggleOrientation() {
           onclick={() => updatePageSetup({ orientation: "portrait" })}
         >
           <div class="orient-icon portrait-icon"></div>
-          <span>عمودي</span>
+          <span>{m.template_auto_33f0a33e()}</span>
         </button>
         <button
           type="button"
@@ -105,7 +106,7 @@ function toggleOrientation() {
           onclick={() => updatePageSetup({ orientation: "landscape" })}
         >
           <div class="orient-icon landscape-icon"></div>
-          <span>أفقي</span>
+          <span>{m.template_auto_09103b75()}</span>
         </button>
       </div>
     </div>
@@ -114,10 +115,10 @@ function toggleOrientation() {
 
     <!-- Margins -->
     <div class="section">
-      <Label class="text-[10px] font-semibold text-muted-foreground">الهوامش (مم)</Label>
+      <Label class="text-[10px] font-semibold text-muted-foreground">{m.template_auto_5b669abb()}</Label>
       <div class="margins-grid">
         <div class="margin-field">
-          <span class="margin-label">أعلى</span>
+          <span class="margin-label">{m.template_auto_5519bc01()}</span>
           <Input
             type="number"
             value={margins.top}
@@ -127,7 +128,7 @@ function toggleOrientation() {
           />
         </div>
         <div class="margin-field">
-          <span class="margin-label">أسفل</span>
+          <span class="margin-label">{m.template_auto_b970f374()}</span>
           <Input
             type="number"
             value={margins.bottom}
@@ -137,7 +138,7 @@ function toggleOrientation() {
           />
         </div>
         <div class="margin-field">
-          <span class="margin-label">يمين</span>
+          <span class="margin-label">{m.template_auto_7135ce85()}</span>
           <Input
             type="number"
             value={margins.right}
@@ -147,7 +148,7 @@ function toggleOrientation() {
           />
         </div>
         <div class="margin-field">
-          <span class="margin-label">يسار</span>
+          <span class="margin-label">{m.template_auto_a6a4df3d()}</span>
           <Input
             type="number"
             value={margins.left}
@@ -164,10 +165,10 @@ function toggleOrientation() {
     <!-- Custom Size (only when Custom is selected) -->
     {#if pageSetup.size === "Custom"}
       <div class="section">
-        <Label class="text-[10px] font-semibold text-muted-foreground">أبعاد مخصصة (مم)</Label>
+        <Label class="text-[10px] font-semibold text-muted-foreground">{m.template_auto_e28c34af()}</Label>
         <div class="custom-dims">
           <div class="margin-field">
-            <span class="margin-label">عرض</span>
+            <span class="margin-label">{m.template_auto_6e63a5f0()}</span>
             <Input
               type="number"
               value={pageSetup.width ?? 210}
@@ -177,7 +178,7 @@ function toggleOrientation() {
             />
           </div>
           <div class="margin-field">
-            <span class="margin-label">ارتفاع</span>
+            <span class="margin-label">{m.template_auto_22d6c3b6()}</span>
             <Input
               type="number"
               value={pageSetup.height ?? 297}

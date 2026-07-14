@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -24,16 +25,16 @@ let { open = $bindable(), onconfirm }: Props = $props();
     <AlertDialogHeader>
       <AlertDialogTitle class="flex items-center gap-2 text-destructive">
         <AlertCircle size={20} />
-        <span>تأكيد الحذف / Confirm Delete</span>
+        <span>{m.template_auto_02a47dff()}</span>
       </AlertDialogTitle>
       <AlertDialogDescription>
-        هل أنت متأكد من رغبتك في حذف هذا القالب نهائياً؟ لن تتمكن من استرجاع البيانات أو استخدام هذا القالب للطباعة مجدداً.
+        {m.template_auto_a51b56ea()}
       </AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter class="gap-2">
-      <AlertDialogCancel>إلغاء / Cancel</AlertDialogCancel>
+      <AlertDialogCancel>{m.template_auto_c7b6c276()}</AlertDialogCancel>
       <AlertDialogAction class="bg-destructive hover:bg-destructive/90 text-white cursor-pointer" onclick={onconfirm}>
-        حذف نهائي / Delete
+        {m.template_auto_a0438ab1()}
       </AlertDialogAction>
     </AlertDialogFooter>
   </AlertDialogContent>

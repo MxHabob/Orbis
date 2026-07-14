@@ -97,27 +97,21 @@ const displayItems = $derived(
     : [
         {
           name: "critical",
-          label: m.reports_behavior_critical
-            ? m.reports_behavior_critical()
-            : "حرجة",
+          label: m.reports_behavior_critical(),
           value: 0,
           percent: 0,
           color: "bg-destructive",
         },
         {
           name: "major",
-          label: m.reports_behavior_major
-            ? m.reports_behavior_major()
-            : "متوسطة",
+          label: m.reports_behavior_major(),
           value: 0,
           percent: 0,
           color: "bg-orange-500",
         },
         {
           name: "minor",
-          label: m.reports_behavior_minor
-            ? m.reports_behavior_minor()
-            : "طفيفة",
+          label: m.reports_behavior_minor(),
           value: 0,
           percent: 0,
           color: "bg-primary",
@@ -128,7 +122,7 @@ const displayItems = $derived(
 
 <div class="card-tactile h-full relative group min-h-[235px] p-4 flex flex-col justify-between font-sans shadow-sm">
   {#if isLoading}
-    <div class="flex-grow w-full relative flex items-center justify-center">
+    <div class="grow w-full relative flex items-center justify-center">
       <Skeleton class="h-full w-full rounded-lg animate-pulse" />
     </div>
   {:else}

@@ -4,6 +4,8 @@
  * Mirrors the business rules in create_user_in_org() and create_enrollment().
  */
 
+import * as m from "$lib/paraglide/messages";
+
 export interface RowValidation {
   rowIndex: number;
   isValid: boolean;
@@ -57,20 +59,20 @@ export function validateStudentRows(
     // ── full_name: required, ≥2 chars ──
     const name = str(row.full_name);
     if (!name) {
-      errors.set("full_name", "الاسم مطلوب");
+      errors.set("full_name", m.common_validation_name_required());
     } else if (name.length < 2) {
-      errors.set("full_name", "الاسم يجب أن يكون حرفان على الأقل");
+      errors.set("full_name", m.common_validation_name_length());
     }
 
     // ── email: optional, valid format, no batch duplicates ──
     const email = str(row.email).toLowerCase();
     if (email) {
       if (!EMAIL_RE.test(email)) {
-        errors.set("email", "صيغة البريد غير صحيحة");
+        errors.set("email", m.common_validation_email_format());
       } else {
         const dups = emailIndex.get(email);
         if (dups && dups.length > 1) {
-          errors.set("email", "بريد إلكتروني مكرر في هذه الدفعة");
+          errors.set("email", m.common_validation_email_duplicate());
         }
       }
     }
@@ -78,7 +80,7 @@ export function validateStudentRows(
     // ── phone: optional, ≥7 digits ──
     const phone = str(row.phone);
     if (phone && phone.replace(/[\s\-+()]/g, "").length < 7) {
-      errors.set("phone", "رقم الهاتف غير صحيح (7 أرقام على الأقل)");
+      errors.set("phone", m.common_validation_phone_format());
     }
 
     // ── national_id: optional, no batch duplicates ──
@@ -86,33 +88,33 @@ export function validateStudentRows(
     if (nid) {
       const nidDups = nidIndex.get(nid);
       if (nidDups && nidDups.length > 1) {
-        errors.set("national_id", "رقم وطني مكرر في هذه الدفعة");
+        errors.set("national_id", m.common_validation_nid_duplicate());
       }
     }
 
     // ── sex: required, must be male/female/ذكر/أنثى ──
     const sex = str(row.sex).trim().toLowerCase();
     if (!sex) {
-      errors.set("sex", "الجنس مطلوب");
+      errors.set("sex", m.common_validation_sex_required());
     } else {
       const isValid = ["male", "female", "ذكر", "أنثى", "انثى"].includes(sex);
       if (!isValid) {
-        errors.set("sex", "الجنس يجب أن يكون 'ذكر' أو 'أنثى'");
+        errors.set("sex", m.common_validation_sex_invalid());
       }
     }
 
     // ── date_of_birth: required, YYYY-MM-DD ──
     const dob = str(row.date_of_birth);
     if (!dob) {
-      errors.set("date_of_birth", "تاريخ الميلاد مطلوب");
+      errors.set("date_of_birth", m.common_validation_dob_required());
     } else if (!DATE_RE.test(dob)) {
-      errors.set("date_of_birth", "التاريخ بصيغة YYYY-MM-DD");
+      errors.set("date_of_birth", m.common_validation_dob_format());
     }
 
     // ── class_id: required, validate against available classes ──
     const classInput = str(row.class_id);
     if (!classInput) {
-      errors.set("class_id", "الفصل مطلوب");
+      errors.set("class_id", m.common_validation_class_required());
     } else if (availableClasses) {
       const match = availableClasses.find(
         (c) =>
@@ -120,7 +122,7 @@ export function validateStudentRows(
           c.id === classInput,
       );
       if (!match) {
-        errors.set("class_id", "الفصل غير موجود في النظام");
+        errors.set("class_id", m.common_validation_class_not_found());
       }
     }
 
@@ -129,7 +131,7 @@ export function validateStudentRows(
     if (status && !VALID_STATUS.includes(status)) {
       errors.set(
         "enrollment_status",
-        `الحالة غير صحيحة. المتاح: ${VALID_STATUS.join(", ")}`,
+        m.common_validation_status_invalid({ options: VALID_STATUS.join(", ") }),
       );
     }
 
@@ -138,7 +140,7 @@ export function validateStudentRows(
     if (blood && !VALID_BLOOD.includes(blood)) {
       errors.set(
         "blood_type",
-        `فصيلة الدم غير صحيحة. المتاح: ${VALID_BLOOD.join(", ")}`,
+        m.common_validation_blood_invalid({ options: VALID_BLOOD.join(", ") }),
       );
     }
 

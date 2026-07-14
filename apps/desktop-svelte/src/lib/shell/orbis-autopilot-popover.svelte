@@ -179,18 +179,18 @@ const phaseLabel = $derived(getPhaseLabel(academicContext.periodPhase));
     {#if config && config.autopilot_enabled !== 0}
       <div class="px-4 py-2 border-b border-border bg-background flex flex-col gap-1.5 text-[10px]">
         <div class="flex items-center justify-between">
-          <span class="text-muted-foreground">الوضع:</span>
-          <span class="font-medium text-foreground">{config.autopilot_mode === "strict" ? "صارم" : config.autopilot_mode === "relaxed" ? "مرن" : "عادي"}</span>
+          <span class="text-muted-foreground">{m.common_autopilot_popover_mode()}</span>
+          <span class="font-medium text-foreground">{config.autopilot_mode === "strict" ? m.common_autopilot_mode_strict() : config.autopilot_mode === "relaxed" ? m.common_autopilot_mode_relaxed() : m.common_autopilot_mode_normal()}</span>
         </div>
         {#if diagnostics?.last_run_at}
           <div class="flex items-center justify-between">
-            <span class="text-muted-foreground">آخر فحص:</span>
+            <span class="text-muted-foreground">{m.common_autopilot_popover_last_run()}</span>
             <span class="font-medium text-foreground" dir="ltr">{formatDate(diagnostics.last_run_at, "datetime")}</span>
           </div>
         {/if}
         {#if diagnostics?.next_run_at}
           <div class="flex items-center justify-between">
-            <span class="text-muted-foreground">الفحص القادم:</span>
+            <span class="text-muted-foreground">{m.common_autopilot_popover_next_run()}</span>
             <span class="font-medium text-foreground" dir="ltr">{formatDate(diagnostics.next_run_at, "datetime")}</span>
           </div>
         {/if}
@@ -247,7 +247,7 @@ const phaseLabel = $derived(getPhaseLabel(academicContext.periodPhase));
           variant={diagnostics?.status === 'critical' ? 'destructive' : diagnostics?.status === 'warning' ? 'secondary' : 'lime'}
           class="text-[9px] h-4 px-1.5"
         >
-          {diagnostics?.status === 'critical' ? 'Critical' : diagnostics?.status === 'warning' ? 'Warning' : 'Healthy'}
+          {diagnostics?.status === 'critical' ? m.common_status_critical() : diagnostics?.status === 'warning' ? m.common_status_warning() : m.common_status_healthy()}
         </Badge>
       </div>
     </div>

@@ -37,7 +37,7 @@ let {
           <ZoomOut size={13} />
         </button>
       </TooltipTrigger>
-      <TooltipContent>تصغير</TooltipContent>
+      <TooltipContent>{m.template_auto_c3ccbd2b()}</TooltipContent>
     </Tooltip>
 
     <input
@@ -57,7 +57,7 @@ let {
           <ZoomIn size={13} />
         </button>
       </TooltipTrigger>
-      <TooltipContent>تكبير</TooltipContent>
+      <TooltipContent>{m.template_auto_498408d2()}</TooltipContent>
     </Tooltip>
 
     <Tooltip>
@@ -66,7 +66,7 @@ let {
           <Maximize2 size={12} />
         </button>
       </TooltipTrigger>
-      <TooltipContent>ملء الشاشة</TooltipContent>
+      <TooltipContent>{m.template_auto_5a5cbecd()}</TooltipContent>
     </Tooltip>
   </div>
 
@@ -94,7 +94,7 @@ let {
           <Magnet size={12} />
         </button>
       </TooltipTrigger>
-      <TooltipContent>{store.snapEnabled ? "إيقاف الالتصاق" : "تفعيل الالتصاق"}</TooltipContent>
+      <TooltipContent>{store.snapEnabled ? m.template_auto_d40d9bce() : m.template_auto_224fd02f()}</TooltipContent>
     </Tooltip>
     {#if store.selectedNode}
       <span class="status-divider"></span>

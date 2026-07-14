@@ -47,7 +47,7 @@ const monthsList = $derived([
           {m.common_form_full_name_ar()}
           <span class="text-destructive">*</span>
         </Label>
-        <span class="text-[11px] text-muted-foreground leading-relaxed">الاسم الكامل للطالب باللغة العربية كما هو وارد في الوثائق الرسمية</span>
+        <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_name_ar_desc()}</span>
       </div>
       <div class="w-full md:w-[480px] shrink-0">
         <Input 
@@ -67,7 +67,7 @@ const monthsList = $derived([
         <Label for="nameEn" class="text-xs font-semibold text-foreground">
           {m.common_form_full_name_en()}
         </Label>
-        <span class="text-[11px] text-muted-foreground leading-relaxed">الاسم الكامل للطالب باللغة الإنجليزية</span>
+        <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_name_en_desc()}</span>
       </div>
       <div class="w-full md:w-[480px] shrink-0">
         <Input 
@@ -87,10 +87,10 @@ const monthsList = $derived([
       <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
         <div class="flex flex-col gap-1 text-start">
           <Label for="nationalId" class="text-xs font-semibold text-foreground">
-            رقم الهوية الوطنية / جواز السفر 
+            {m.common_form_profile_nid_label()} 
             {#if state.requiredFields.national_id}<span class="text-destructive">*</span>{/if}
           </Label>
-          <span class="text-[11px] text-muted-foreground leading-relaxed">رقم الهوية أو جواز سفر الطالب المكون من 10 خانات</span>
+          <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_nid_desc()}</span>
         </div>
         <div class="w-full md:w-[480px] shrink-0 flex flex-col gap-1">
           <Input 
@@ -118,7 +118,7 @@ const monthsList = $derived([
             {m.common_bulk_col_dob()}
             {#if state.requiredFields.birth_date}<span class="text-destructive">*</span>{/if}
           </Label>
-          <span class="text-[11px] text-muted-foreground leading-relaxed">تاريخ الميلاد الرسمي للطالب (اليوم / الشهر / السنة)</span>
+          <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_dob_desc()}</span>
         </div>
         <div class="w-full md:w-[480px] shrink-0 grid grid-cols-3 gap-2" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
           <!-- Day -->
@@ -174,7 +174,7 @@ const monthsList = $derived([
             {m.common_form_sex()}
             {#if state.requiredFields.sex}<span class="text-destructive">*</span>{/if}
           </Label>
-          <span class="text-[11px] text-muted-foreground leading-relaxed">تحديد جنس الطالب</span>
+          <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_sex_desc()}</span>
         </div>
         <div class="w-full md:w-[480px] shrink-0 flex gap-2 items-center">
           <Button
@@ -204,7 +204,7 @@ const monthsList = $derived([
           {m.common_form_target_class()}
           <span class="text-destructive">*</span>
         </Label>
-        <span class="text-[11px] text-muted-foreground leading-relaxed">الصف أو المستوى الدراسي الذي سيتم تسجيل الطالب فيه</span>
+        <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_class_desc()}</span>
       </div>
       <div class="w-full md:w-[480px] shrink-0">
         <Select bind:value={state.personal.classId} type="single">
@@ -228,7 +228,7 @@ const monthsList = $derived([
         <Label for="studentNumber" class="text-xs font-semibold text-foreground">
           {m.common_form_student_number()}
         </Label>
-        <span class="text-[11px] text-muted-foreground leading-relaxed">الرقم الأكاديمي المميز للطالب (متاح فقط في وضع التعديل)</span>
+        <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_number_desc()}</span>
       </div>
       <div class="w-full md:w-[480px] shrink-0">
         <Input 
@@ -250,7 +250,7 @@ const monthsList = $derived([
             {m.common_form_student_phone()}
             {#if state.requiredFields.phone}<span class="text-destructive">*</span>{/if}
           </Label>
-          <span class="text-[11px] text-muted-foreground leading-relaxed">رقم هاتف الطالب للتواصل المباشر</span>
+          <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_phone_desc()}</span>
         </div>
         <div class="w-full md:w-[480px] shrink-0 flex flex-col gap-1">
           <Input 
@@ -279,7 +279,7 @@ const monthsList = $derived([
             {m.common_form_student_email()}
             {#if state.requiredFields.email}<span class="text-destructive">*</span>{/if}
           </Label>
-          <span class="text-[11px] text-muted-foreground leading-relaxed">البريد الإلكتروني الأساسي للطالب المستخدم لتسجيل الدخول والتنبيهات</span>
+          <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_email_desc()}</span>
         </div>
         <div class="w-full md:w-[480px] shrink-0 flex flex-col gap-1">
           <Input 

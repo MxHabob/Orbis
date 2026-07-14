@@ -5,6 +5,7 @@
  */
 
 import type { BulkInputType } from "./config";
+import * as m from "$lib/paraglide/messages";
 
 export interface RowValidationResult {
   rowIndex: number;
@@ -92,9 +93,9 @@ function validateUserRow(
   // full_name: required, min 2 chars
   const name = String(row.full_name ?? "").trim();
   if (!name) {
-    errors.set("full_name", "الاسم مطلوب");
+    errors.set("full_name", m.common_validation_name_required());
   } else if (name.length < 2) {
-    errors.set("full_name", "الاسم يجب أن يكون حرفان على الأقل");
+    errors.set("full_name", m.common_validation_name_length());
   }
 
   // email: required, valid format, no duplicates
@@ -102,20 +103,20 @@ function validateUserRow(
     .trim()
     .toLowerCase();
   if (!email) {
-    errors.set("email", "البريد الإلكتروني مطلوب");
+    errors.set("email", m.common_validation_email_required());
   } else if (!EMAIL_REGEX.test(email)) {
-    errors.set("email", "صيغة البريد الإلكتروني غير صحيحة");
+    errors.set("email", m.common_validation_email_format());
   } else {
     const duplicates = emailCount.get(email);
     if (duplicates && duplicates.length > 1) {
-      errors.set("email", "بريد إلكتروني مكرر في هذه الدفعة");
+      errors.set("email", m.common_validation_email_duplicate());
     }
   }
 
   // phone: if present, basic check (at least 7 digits)
   const phone = String(row.phone ?? "").trim();
   if (phone && phone.replace(/[\s\-+()]/g, "").length < 7) {
-    errors.set("phone", "رقم الهاتف غير صحيح");
+    errors.set("phone", m.common_validation_phone_format());
   }
 
   // national_id: if present, check duplicates
@@ -123,7 +124,7 @@ function validateUserRow(
   if (nid) {
     const nidDups = nidCount.get(nid);
     if (nidDups && nidDups.length > 1) {
-      errors.set("national_id", "رقم وطني مكرر في هذه الدفعة");
+      errors.set("national_id", m.common_validation_nid_duplicate());
     }
   }
 
@@ -132,13 +133,13 @@ function validateUserRow(
     .trim()
     .toLowerCase();
   if (sex && sex !== "male" && sex !== "female") {
-    errors.set("sex", "الجنس يجب أن يكون male أو female");
+    errors.set("sex", m.common_validation_sex_invalid());
   }
 
   // date_of_birth: if present, must be YYYY-MM-DD
   const dob = String(row.date_of_birth ?? "").trim();
   if (dob && !DATE_REGEX.test(dob)) {
-    errors.set("date_of_birth", "التاريخ يجب أن يكون بصيغة YYYY-MM-DD");
+    errors.set("date_of_birth", m.common_validation_dob_format());
   }
 }
 
@@ -153,15 +154,15 @@ function validateGradeRow(
     .trim()
     .toLowerCase();
   if (!email) {
-    errors.set("student_email", "بريد الطالب مطلوب");
+    errors.set("student_email", m.common_validation_student_email_required());
   } else if (!EMAIL_REGEX.test(email)) {
-    errors.set("student_email", "صيغة البريد غير صحيحة");
+    errors.set("student_email", m.common_validation_email_format());
   }
 
   // subject_name: required
   const subject = String(row.subject_name ?? "").trim();
   if (!subject) {
-    errors.set("subject_name", "اسم المادة مطلوب");
+    errors.set("subject_name", m.common_validation_subject_name_required());
   }
 
   // score: required, number, 0 ≤ score ≤ max_score
@@ -169,13 +170,13 @@ function validateGradeRow(
   const maxScore = parseFloat(String(row.max_score ?? "100").trim()) || 100;
 
   if (!scoreStr) {
-    errors.set("score", "الدرجة مطلوبة");
+    errors.set("score", m.common_validation_score_required());
   } else {
     const score = parseFloat(scoreStr);
     if (isNaN(score)) {
-      errors.set("score", "الدرجة يجب أن تكون رقماً");
+      errors.set("score", m.common_validation_score_number());
     } else if (score < 0 || score > maxScore) {
-      errors.set("score", `الدرجة يجب أن تكون بين 0 و ${maxScore}`);
+      errors.set("score", m.common_validation_score_range({ maxScore }));
     }
   }
 
@@ -184,14 +185,14 @@ function validateGradeRow(
   if (maxScoreStr) {
     const ms = parseFloat(maxScoreStr);
     if (isNaN(ms) || ms <= 0) {
-      errors.set("max_score", "الدرجة القصوى يجب أن تكون أكبر من صفر");
+      errors.set("max_score", m.common_validation_max_score_positive());
     }
   }
 
   // semester: required
   const semester = String(row.semester ?? "").trim();
   if (!semester) {
-    errors.set("semester", "الفصل الدراسي مطلوب");
+    errors.set("semester", m.common_validation_semester_required());
   }
 }
 

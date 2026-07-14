@@ -10,7 +10,7 @@ import { toast } from "svelte-sonner";
 import {
   createPromotionJobsQuery,
   createRollbackMutation,
-} from "$lib/features/academics/year-queries";
+} from "$lib/features/academics/promotion-queries";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
@@ -202,7 +202,7 @@ function statusLabel(status: string) {
       <AlertDialogDescription>{m.common_action_back()}</AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter>
-      <AlertDialogCancel onclick={() => rollbackTarget = null}>إلغاء</AlertDialogCancel>
+      <AlertDialogCancel onclick={() => rollbackTarget = null}>{m.common_action_cancel()}</AlertDialogCancel>
       <AlertDialogAction onclick={handleRollback}>{m.common_action_back()}</AlertDialogAction>
     </AlertDialogFooter>
   </AlertDialogContent>

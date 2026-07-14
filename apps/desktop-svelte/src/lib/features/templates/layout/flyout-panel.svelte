@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 /**
  * FlyoutPanel — Sliding panel overlay.
  * Slides from the side rail over the canvas.
@@ -36,12 +37,12 @@ const panel = $derived(store.activeRailPanel);
 
 // Panel titles
 const panelTitles: Record<string, string> = {
-  templates: "القوالب",
-  elements: "العناصر",
-  text: "النص",
-  uploads: "الأصول والصور",
-  tools: "الأدوات",
-  "page-setup": "إعدادات الصفحة",
+  templates: m.template_auto_b5cce580(),
+  elements: m.template_auto_65d289f5(),
+  text: m.template_auto_09cff955(),
+  uploads: m.template_auto_ec4c8945(),
+  tools: m.template_auto_a7ac8eaa(),
+  settings: m.template_auto_7791dd8d(),
 };
 
 let toolsTab = $state("layers");
@@ -104,24 +105,24 @@ function stopResize() {
           <TabsList class="flex h-8 p-0 bg-muted/20 border-b border-border/30 rounded-none shrink-0 mx-3 mt-1">
             <TabsTrigger value="layers" class="flex-1 text-[9px] gap-1 h-full rounded-none data-[state=active]:bg-card cursor-pointer">
               <Layers size={11} />
-              الطبقات
+              {m.template_auto_ec9ded9e()}
             </TabsTrigger>
             <TabsTrigger value="variables" class="flex-1 text-[9px] gap-1 h-full rounded-none data-[state=active]:bg-card cursor-pointer">
               <Variable size={11} />
-              المتغيرات
+              {m.template_auto_75dca14a()}
             </TabsTrigger>
             <TabsTrigger value="history" class="flex-1 text-[9px] gap-1 h-full rounded-none data-[state=active]:bg-card cursor-pointer">
               <History size={11} />
-              السجل
+              {m.template_auto_ec4337ed()}
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="layers" class="flex-grow overflow-hidden mt-0">
+          <TabsContent value="layers" class="grow overflow-hidden mt-0">
             <LayersPanel {store} />
           </TabsContent>
-          <TabsContent value="variables" class="flex-grow overflow-hidden mt-0">
+          <TabsContent value="variables" class="grow overflow-hidden mt-0">
             <VariablesPanel {store} />
           </TabsContent>
-          <TabsContent value="history" class="flex-grow overflow-hidden mt-0">
+          <TabsContent value="history" class="grow overflow-hidden mt-0">
             <HistoryPanel {store} />
           </TabsContent>
         </Tabs>
@@ -130,13 +131,13 @@ function stopResize() {
         <div class="flyout-placeholder">
           <div class="px-3 py-2">
             <div class="relative">
-              <Search size={12} class="absolute start-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input type="text" placeholder="ابحث في القوالب..." bind:value={searchQuery} class="h-7 text-[10px] ps-7" />
+              <Search size={12} class="absolute inset-s-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input type=m.template_auto_db41eba9() bind:value={searchQuery} class="h-7 text-[10px] ps-7" />
             </div>
           </div>
           <div class="flex flex-col items-center justify-center py-12 px-4 gap-2">
             <p class="text-[10px] text-muted-foreground text-center">
-              قريباً — مكتبة قوالب جاهزة
+              {m.template_auto_3be5c95f()}
             </p>
           </div>
         </div>

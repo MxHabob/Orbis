@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 // ═══════════════════════════════════════════════════════════════
 // Template Designer — Editor Store (Svelte 5 Runes)
 // Central reactive state for the template designer.
@@ -277,7 +278,7 @@ export function createEditorStore(initialDoc: TemplateDocument) {
       );
     } else {
       const cmds = selectedIds.map((id) => new UpdatePropsCommand(id, props));
-      executeCommand(new BatchCommand(cmds, "Update multiple", "تحديث متعدد"));
+      executeCommand(new BatchCommand(cmds, "Update multiple", m.template_cmd_batch_update()));
     }
   }
 
@@ -302,7 +303,7 @@ export function createEditorStore(initialDoc: TemplateDocument) {
       executeCommand(new RemoveNodeCommand(selectedIds[0]!));
     } else {
       const cmds = selectedIds.map((id) => new RemoveNodeCommand(id));
-      executeCommand(new BatchCommand(cmds, "Delete multiple", "حذف متعدد"));
+      executeCommand(new BatchCommand(cmds, "Delete multiple", m.template_cmd_batch_delete()));
     }
     selectedIds = [];
   }
@@ -682,7 +683,7 @@ function createDefaultNode(
         ...base,
         type: "Text",
         props: {
-          content: "نص جديد",
+          content: m.template_text_new(),
           fontSize: 14,
           fontFamily: "Rubik",
           fontWeight: "400",
@@ -783,8 +784,8 @@ function createDefaultNode(
         type: "Table",
         props: {
           columns: [
-            { key: "col1", header: "عمود 1", headerAr: "عمود 1", width: 50 },
-            { key: "col2", header: "عمود 2", headerAr: "عمود 2", width: 50 },
+            { key: "col1", header: m.template_table_col1(), headerAr: m.template_table_col1(), width: 50 },
+            { key: "col2", header: m.template_table_col2(), headerAr: m.template_table_col2(), width: 50 },
           ],
           rows: [],
           headerStyle: {},

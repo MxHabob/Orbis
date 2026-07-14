@@ -32,9 +32,9 @@ import {
   createPeriodsQuery,
 } from "$lib/features/academics";
 import {
-  createCurrentYearQuery,
   createPromotionJobsQuery,
-} from "$lib/features/academics/year-queries";
+} from "$lib/features/academics/promotion-queries";
+import { academicContext } from "$lib/stores";
 import { createExamSessionsQuery } from "$lib/features/exams/queries";
 import { extractErrorMessage } from "$lib/core/ipc";
 
@@ -44,7 +44,6 @@ let { data }: { data: { orgId: string } } = $props();
 const classesQuery = createClassesQuery(() => data.orgId);
 const subjectsQuery = createSubjectsQuery(() => data.orgId);
 const periodsQuery = createPeriodsQuery(() => data.orgId);
-const currentYearQuery = createCurrentYearQuery(data.orgId);
 const promotionJobsQuery = createPromotionJobsQuery(() => data.orgId);
 const examSessionsQuery = createExamSessionsQuery(() => data.orgId);
 
@@ -52,7 +51,7 @@ const examSessionsQuery = createExamSessionsQuery(() => data.orgId);
 const classes = $derived($classesQuery.data ?? []);
 const subjects = $derived($subjectsQuery.data ?? []);
 const periods = $derived($periodsQuery.data ?? []);
-const currentYear = $derived($currentYearQuery.data ?? null);
+const currentYear = $derived(academicContext.currentYear);
 const promotionJobs = $derived($promotionJobsQuery.data ?? []);
 const examSessions = $derived($examSessionsQuery.data ?? []);
 
@@ -60,7 +59,6 @@ const isLoading = $derived(
   $classesQuery.isLoading ||
     $subjectsQuery.isLoading ||
     $periodsQuery.isLoading ||
-    $currentYearQuery.isLoading ||
     $promotionJobsQuery.isLoading ||
     $examSessionsQuery.isLoading,
 );
@@ -69,7 +67,6 @@ const error = $derived(
   $classesQuery.error ||
     $subjectsQuery.error ||
     $periodsQuery.error ||
-    $currentYearQuery.error ||
     $promotionJobsQuery.error ||
     $examSessionsQuery.error,
 );
@@ -78,15 +75,11 @@ function refetchAll() {
   $classesQuery.refetch();
   $subjectsQuery.refetch();
   $periodsQuery.refetch();
-  $currentYearQuery.refetch();
   $promotionJobsQuery.refetch();
   $examSessionsQuery.refetch();
 }
 
-// Active Academic Year name
-const activeYearName = $derived(
-  currentYear ? currentYear.name_ar || currentYear.name : null,
-);
+const activeYearName = $derived(academicContext.yearLabelAr);
 
 // Find active period / term
 const activePeriod = $derived(

@@ -107,7 +107,7 @@ async function handleSubmit(e: SubmitEvent) {
           id="room_name_ar"
           type="text"
           bind:value={nameAr}
-          placeholder="مثلاً: قاعة 101 أو مختبر الحاسوب"
+          placeholder={m.academics_room_form_placeholder()}
           disabled={isSubmitting}
         />
       </div>

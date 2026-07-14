@@ -1,3 +1,4 @@
+import * as m from "$lib/paraglide/messages";
 // ═══════════════════════════════════════════════════════════════
 // Template Designer — Clipboard Manager
 // Copy, cut, paste for template nodes.
@@ -70,7 +71,7 @@ export async function cutNodes(
   return new BatchCommand(
     nodeIds.map((id) => new RemoveNodeCommand(id)),
     "Cut elements",
-    "قص العناصر",
+    m.template_auto_50621774(),
   );
 }
 
@@ -112,7 +113,7 @@ export async function pasteNodes(
   return new BatchCommand(
     clonedNodes.map((node) => new AddNodeCommand(parentId, node)),
     "Paste elements",
-    "لصق العناصر",
+    m.template_auto_486009f7(),
   );
 }
 
