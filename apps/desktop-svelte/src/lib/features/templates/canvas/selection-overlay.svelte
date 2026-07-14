@@ -79,6 +79,7 @@ let dragOrigX = 0;
 let dragOrigY = 0;
 let dragOrigW = 0;
 let dragOrigH = 0;
+let dragOrigPositions = new Map<string, {x: number, y: number}>();
 let activeSnapLines = $state<SnapLine[]>([]);
 
 // ── Rotation State ───────────────────────────────────────────
@@ -122,6 +123,17 @@ function startDrag(e: MouseEvent, nodeId: string, handle: string) {
     dragOrigY = rect.y;
     dragOrigW = rect.w;
     dragOrigH = rect.h;
+  }
+
+  dragOrigPositions.clear();
+  for (const id of store.selectedIds) {
+    const node = findNode(store.document, id);
+    if (node && "position" in node && (node as any).position) {
+      dragOrigPositions.set(id, {
+        x: (node as any).position.x ?? 0,
+        y: (node as any).position.y ?? 0,
+      });
+    }
   }
 
   window.addEventListener("mousemove", onDragMove);
@@ -182,13 +194,12 @@ function onDragMove(e: MouseEvent) {
       if (id === dragNodeId) {
         updates.push({ id, x: finalX, y: finalY });
       } else {
-        const node = findNode(store.document, id);
-        if (node && "position" in node && (node as any).position) {
-          const pos = (node as any).position;
+        const origPos = dragOrigPositions.get(id);
+        if (origPos) {
           updates.push({
             id,
-            x: (pos.x ?? 0) + deltaX,
-            y: (pos.y ?? 0) + deltaY,
+            x: Math.round((origPos.x + deltaX) * 10) / 10,
+            y: Math.round((origPos.y + deltaY) * 10) / 10,
           });
         }
       }
