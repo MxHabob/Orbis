@@ -22,6 +22,9 @@ export class StudentFormState {
     phone?: string;
   }>({});
 
+  // Class data for computations
+  classes = $state<any[]>([]);
+
   // Page level indicators
   isSaving = $state(false);
   orgName = $state("");
@@ -45,6 +48,13 @@ export class StudentFormState {
   async init() {
     try {
       await this.financial.init();
+
+      try {
+        const classesList = await commands.academic.listClasses(this.orgId);
+        this.classes = Array.isArray(classesList) ? classesList : [];
+      } catch (err) {
+        console.error("Failed to load classes:", err);
+      }
 
       // Load organization settings
       const org = await commands.organization.getOrganization(this.orgId);
