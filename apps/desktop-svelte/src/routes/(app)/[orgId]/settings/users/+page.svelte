@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { onMount } from "svelte";
+import { confirmStore } from "$lib/stores";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import {
@@ -106,7 +106,13 @@ async function handleAction(event: GridActionEvent) {
   } else if (event.actionId === "edit" || event.actionId === "dblclick") {
     goto(localizeHref(`/${data.orgId}/settings/users/${user.id}`));
   } else if (event.actionId === "delete") {
-    if (confirm(`Are you sure you want to delete ${user.full_name}?`)) {
+    const confirmed = await confirmStore.prompt({
+      title: m.common_action_delete() + "؟",
+      description: `Are you sure you want to delete ${user.full_name}?`,
+      confirmText: m.common_action_delete(),
+      variant: "destructive"
+    });
+    if (confirmed) {
       try {
         await commands.iam.deleteUser(user.id, "admin");
         toast.success("User deleted successfully");

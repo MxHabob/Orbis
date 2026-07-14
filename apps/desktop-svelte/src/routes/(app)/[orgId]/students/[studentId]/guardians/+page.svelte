@@ -5,6 +5,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
+import { confirmStore } from "$lib/stores";
 import { onMount } from "svelte";
 import { toast } from "svelte-sonner";
 import { Button } from "@orbis/ui-svelte/button";
@@ -80,7 +81,13 @@ function openEdit(link: GuardianLink) {
 }
 
 async function handleDelete(link: GuardianLink) {
-  if (!confirm(m.common_guardians_delete_confirm())) return;
+  const confirmed = await confirmStore.prompt({
+    title: m.common_action_delete() + "؟",
+    description: m.common_guardians_delete_confirm(),
+    confirmText: m.common_action_delete(),
+    variant: "destructive"
+  });
+  if (!confirmed) return;
   try {
     await commands.platform.deleteGuardianLink(String(link.id));
     guardians = guardians.filter((g) => g.id !== link.id);

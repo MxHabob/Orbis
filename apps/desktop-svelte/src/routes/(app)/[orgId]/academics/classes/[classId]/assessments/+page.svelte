@@ -10,6 +10,7 @@ import { page } from "$app/state";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
+import { confirmStore } from "$lib/stores";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import {
   Select,
@@ -142,12 +143,13 @@ $effect(() => {
 });
 
 async function handleDelete(id: string) {
-  if (
-    !confirm(
-      m.assessments_delete_confirm(),
-    )
-  )
-    return;
+  const confirmed = await confirmStore.prompt({
+    title: m.common_action_delete() + "؟",
+    description: m.assessments_delete_confirm(),
+    confirmText: m.common_action_delete(),
+    variant: "destructive"
+  });
+  if (!confirmed) return;
   try {
     await commands.assessment.deleteAssessment(id);
     assessments = assessments.filter((a) => String(a.id) !== id);

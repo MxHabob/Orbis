@@ -6,6 +6,7 @@ Excludes any hardcoded fake/placeholder data.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
+import { confirmStore } from "$lib/stores";
 import { commands } from "$lib/core/ipc";
 import {
   Table,
@@ -129,7 +130,13 @@ async function handleAddDocument() {
 }
 
 async function handleDelete(docId: string) {
-  if (!confirm(m.common_docs_delete_confirm())) {
+  const confirmed = await confirmStore.prompt({
+    title: m.common_action_delete() + "؟",
+    description: m.common_docs_delete_confirm(),
+    confirmText: m.common_action_delete(),
+    variant: "destructive"
+  });
+  if (!confirmed) {
     return;
   }
 

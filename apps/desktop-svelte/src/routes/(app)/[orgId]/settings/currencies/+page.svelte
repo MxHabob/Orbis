@@ -25,6 +25,7 @@ import {
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
+import { confirmStore } from "$lib/stores";
 import { Switch } from "@orbis/ui-svelte/switch";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { toast } from "svelte-sonner";
@@ -237,7 +238,12 @@ async function handleDeleteCurrency() {
 }
 
 async function seedFinancials() {
-  const confirmed = confirm(m.settings_currencies_seed_confirm());
+  const confirmed = await confirmStore.prompt({
+    title: m.common_word_status() + "؟",
+    description: m.settings_currencies_seed_confirm(),
+    confirmText: m.common_word_status(),
+    variant: "default"
+  });
   if (!confirmed) return;
 
   isSeeding = true;

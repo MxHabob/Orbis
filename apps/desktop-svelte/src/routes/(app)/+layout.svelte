@@ -1,6 +1,7 @@
 <script lang="ts">
 import { isDesktopApp } from "$lib/core/ipc";
 import TitleBar from "$lib/shell/title-bar.svelte";
+import GlobalConfirmDialog from "$lib/shared/components/global-confirm-dialog.svelte";
 import { uiStore } from "$lib/stores";
 
 let { children } = $props();
@@ -21,3 +22,5 @@ let { children } = $props();
 		<SearchModal />
 	{/await}
 {/if}
+
+<GlobalConfirmDialog />

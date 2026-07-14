@@ -30,8 +30,8 @@ pub async fn list_periods(
     state: State<'_, Arc<AppState>>,
 ) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = org_ops::academic_period::list(&ctx).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(result).unwrap())
+    let result = org_ops::academic_period::list_hierarchy(&ctx).await.map_err(CommandError::from)?;
+    Ok(result)
 }
 
 #[tauri::command]
@@ -66,13 +66,22 @@ pub async fn create_period(
 
 #[tauri::command]
 pub async fn update_period(
-    _state: State<'_, Arc<AppState>>,
-    _period_id: String,
-    _data: serde_json::Value,
+    state: State<'_, Arc<AppState>>,
+    period_id: String,
+    data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
-    // Note: update is not implemented yet in the new period ops
-    // Will be added when needed.
-    Err(CommandError::new("Period update not yet implemented via ops::period. Use Tauri Period API."))
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = org_ops::academic_period::update(&ctx, &period_id, data).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn delete_period(
+    state: State<'_, Arc<AppState>>,
+    period_id: String,
+) -> CmdResult<()> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    org_ops::academic_period::delete(&ctx, &period_id).await.map_err(CommandError::from)
 }
 
 #[tauri::command]

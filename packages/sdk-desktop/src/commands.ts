@@ -104,6 +104,8 @@ export const commands: OrbisCommands = {
       cmd("list_periods_by_year", { periodId }),
     getPeriod: (periodId) => cmd("get_period", { periodId: periodId }),
     createPeriod: (data) => cmd("create_period", { data }),
+    updatePeriod: (periodId, data) => cmd("update_period", { periodId, data }),
+    deletePeriod: (periodId) => cmd("delete_period", { periodId }),
     lockPeriod: (periodId) =>
       cmd("lock_period", { periodId: periodId }),
     unlockPeriod: (periodId) =>

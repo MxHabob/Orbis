@@ -42,7 +42,7 @@ import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte"
 import SubjectAddSheet from "$lib/features/exams/components/subject-add-sheet.svelte";
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import { commands } from "$lib/core/ipc";
-import { authStore, aiContext } from "$lib/stores";
+import { authStore, aiContext, confirmStore } from "$lib/stores";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -515,12 +515,13 @@ async function handleApplySolve() {
 }
 
 async function handleDeleteSchedule(scheduleId: string) {
-  if (
-    !confirm(
-      m.academics_exams_sessions_sessionId_are_you_sure_you_want(),
-    )
-  )
-    return;
+  const confirmed = await confirmStore.prompt({
+    title: m.common_action_delete() + "؟",
+    description: m.academics_exams_sessions_sessionId_are_you_sure_you_want(),
+    confirmText: m.common_action_delete(),
+    variant: "destructive"
+  });
+  if (!confirmed) return;
   const promise = commands.exam.deleteSchedule(scheduleId);
   toast.promise(promise, {
     loading:

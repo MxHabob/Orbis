@@ -2,6 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { readable } from "svelte/store";
 import { page } from "$app/state";
+import { confirmStore } from "$lib/stores";
 import { commands } from "$lib/core/ipc";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -306,7 +307,13 @@ async function handleMoveLesson(
 }
 
 async function handleDeleteLesson(lessonId: string) {
-  if (!confirm(m.common_schedule_page_confirm_delete())) return;
+  const confirmed = await confirmStore.prompt({
+    title: m.common_action_delete() + "؟",
+    description: m.common_schedule_page_confirm_delete(),
+    confirmText: m.common_action_delete(),
+    variant: "destructive"
+  });
+  if (!confirmed) return;
   try {
     await commands.scheduling.deleteLesson(lessonId);
     toast.success(m.common_schedule_page_success_delete());

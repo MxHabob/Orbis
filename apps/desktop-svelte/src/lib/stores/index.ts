@@ -3,6 +3,7 @@ import * as m from "$lib/paraglide/messages";
 export { authStore } from "./auth.svelte";
 export { themeStore } from "./theme.svelte";
 export { uiStore } from "./ui.svelte";
+export { confirmStore } from "./confirm.svelte";
 
 // ── Academic Context (unified store — single source of truth)
 export { academicContext } from "./academic-context.svelte";

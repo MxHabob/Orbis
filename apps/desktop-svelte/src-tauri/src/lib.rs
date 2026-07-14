@@ -216,6 +216,7 @@ pub fn run() {
             commands::academic::thin::get_period,
             commands::academic::thin::create_period,
             commands::academic::thin::update_period,
+            commands::academic::thin::delete_period,
             commands::academic::thin::get_current_period,
             commands::academic::thin::set_current_period,
             commands::academic::thin::lock_period,

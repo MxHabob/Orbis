@@ -6,9 +6,9 @@ paste from Excel, real-time validation, and submit via create_user_in_org + crea
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
+import { confirmStore } from "$lib/stores";
 import { onMount } from "svelte";
 import { Button } from "@orbis/ui-svelte/button";
-import { Badge } from "@orbis/ui-svelte/badge";
 import {
   Select,
   SelectTrigger,
@@ -200,9 +200,15 @@ function handleRowsChange(_: Record<string, unknown>[]) {
   runValidation();
 }
 
-function handleClearAll() {
+async function handleClearAll() {
   if (summary.totalFilled > 0) {
-    if (!confirm(m.common_bulk_input_confirm_clear())) return;
+    const confirmed = await confirmStore.prompt({
+      title: m.common_action_delete() + "؟",
+      description: m.common_bulk_input_confirm_clear(),
+      confirmText: m.common_action_delete(),
+      variant: "destructive"
+    });
+    if (!confirmed) return;
   }
   rows = [];
   validationResults = [];

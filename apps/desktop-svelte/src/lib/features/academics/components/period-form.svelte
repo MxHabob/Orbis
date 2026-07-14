@@ -12,6 +12,7 @@ import {
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import { extractErrorMessage } from "$lib/core/ipc";
+    import { ChevronRight } from "lucide-svelte";
 
 let {
   orgId,
@@ -29,13 +30,14 @@ const isEdit = $derived(!!period);
 
 // Form state
 let isSubmitting = $state(false);
-let years = $state<any[]>([]);
+let periodsList = $state<any[]>([]);
 
 let name = $state(period?.name || "");
 let nameAr = $state(period?.name_ar || "");
 let code = $state(period?.code || "");
-let periodType = $state(period?.period_type || period?.period_type || "year");
-let parentId = $state(period?.parent_id || period?.period_id || "");
+let periodType = $state(period?.period_type || "year");
+// For existing terms, fallback to parent_id. For legacy, fallback to period_id
+let parentId = $state(period?.parent_id || (periodType !== "year" ? period?.period_id : ""));
 let startDate = $state(period?.start_date || "");
 let endDate = $state(period?.end_date || "");
 let gradingSystem = $state(period?.grading_system || "percentage");
@@ -53,21 +55,21 @@ const gradingLabels = $derived({
   gpa: m.common_period_form_grading_gpa(),
 });
 
-async function loadParentYears() {
+async function loadParentOptions() {
   if (!orgId) return;
   try {
-    const list = await commands.platform.listYears();
-    years = list.filter(
-      (y: any) => !isEdit || String(y.id) !== String(period.id),
+    const list = await commands.academic.listPeriods();
+    periodsList = list.filter(
+      (p: any) => !isEdit || String(p.id) !== String(period.id),
     );
   } catch (e) {
-    console.error("Failed to load parent years:", e);
+    console.error("Failed to load parent periods:", e);
   }
 }
 
 $effect(() => {
   if (orgId) {
-    loadParentYears();
+    loadParentOptions();
   }
 });
 
@@ -90,15 +92,22 @@ async function handleSubmit(e: SubmitEvent) {
       name_ar: nameAr || name,
       code: code || undefined,
       period_type: periodType,
-      period_id: periodType === "term" && parentId ? parentId : undefined,
+      parent_id: periodType === "term" && parentId ? parentId : undefined,
       start_date: startDate,
       end_date: endDate,
       grading_system: gradingSystem,
       passing_grade: passingGrade ? Number(passingGrade) : 50,
       max_grade: maxGrade ? Number(maxGrade) : 100,
     };
-    await commands.academic.createPeriod(request);
-    toast.success(m.common_period_form_success());
+    
+    if (isEdit) {
+      await commands.academic.updatePeriod(period.id, request);
+      toast.success(m.common_action_save());
+    } else {
+      await commands.academic.createPeriod(request);
+      toast.success(m.common_period_form_success());
+    }
+    
     onSuccess();
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
@@ -170,12 +179,19 @@ async function handleSubmit(e: SubmitEvent) {
           </label>
           <Select type="single" value={parentId} onValueChange={(v) => (parentId = v ?? "")} disabled={isEdit}>
             <SelectTrigger class="h-9 text-sm w-full">
-              {years.find(y => String(y.id) === parentId) ? (years.find(y => String(y.id) === parentId).name_ar || years.find(y => String(y.id) === parentId).name) : m.common_period_form_parent_none()}
+              {periodsList.find(p => String(p.id) === parentId) ? (periodsList.find(p => String(p.id) === parentId).name_ar || periodsList.find(p => String(p.id) === parentId).name) : m.common_period_form_parent_none()}
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent class="max-h-60 overflow-y-auto">
               <SelectItem value="">{m.common_period_form_parent_none()}</SelectItem>
-              {#each years as y}
-                <SelectItem value={String(y.id)}>{y.name_ar || y.name}</SelectItem>
+              {#each periodsList as p}
+                <SelectItem value={String(p.id)}>
+                  <span class="flex items-center gap-2">
+                    {#if p.period_type !== "year"}
+                      <ChevronRight size={12} class="text-muted-foreground/50" />
+                    {/if}
+                    {p.name_ar || p.name}
+                  </span>
+                </SelectItem>
               {/each}
             </SelectContent>
           </Select>

@@ -17,7 +17,7 @@ import { toast } from "svelte-sonner";
 
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { commands } from "$lib/core/ipc";
-import { authStore } from "$lib/stores";
+import { authStore, confirmStore } from "$lib/stores";
 import { academicContext } from "$lib/stores/academic-context.svelte";
 import { usePeriodGate } from "$lib/shared/utils/use-period-gate";
 import PeriodStatusBar from "$lib/shared/components/period-status-bar.svelte";
@@ -81,9 +81,15 @@ function handleRowsChange(_: Record<string, unknown>[]) {
   runValidation();
 }
 
-function handleClearAll() {
+async function handleClearAll() {
   if (summary.totalFilled > 0) {
-    if (!confirm(m.common_bulk_input_confirm_clear())) return;
+    const confirmed = await confirmStore.prompt({
+      title: m.common_action_delete() + "؟",
+      description: m.common_bulk_input_confirm_clear(),
+      confirmText: m.common_action_delete(),
+      variant: "destructive"
+    });
+    if (!confirmed) return;
   }
   rows = [];
 }

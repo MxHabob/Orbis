@@ -7,6 +7,7 @@ Extracted from the original monolith TabsContent "profile".
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { onMount } from "svelte";
+import { confirmStore } from "$lib/stores";
 import { commands } from "$lib/core/ipc";
 import type { User } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
@@ -79,7 +80,13 @@ async function toggleAccountStatus() {
   const confirmMsg = nextState
     ? m.settings_user_detail_activate_confirm()
     : m.settings_user_detail_deactivate_confirm();
-  if (!confirm(confirmMsg)) return;
+  const confirmed = await confirmStore.prompt({
+    title: m.common_word_status() + "؟",
+    description: confirmMsg,
+    confirmText: m.common_word_status(),
+    variant: nextState ? "default" : "destructive"
+  });
+  if (!confirmed) return;
 
   isSaving = true;
   try {

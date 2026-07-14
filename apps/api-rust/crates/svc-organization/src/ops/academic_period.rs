@@ -23,6 +23,46 @@ pub async fn list(ctx: &ServiceContext) -> Result<Vec<academic_period::Model>, A
         .all(&ctx.db).await?)
 }
 
+/// List all years and periods combined into a hierarchical JSON structure.
+pub async fn list_hierarchy(ctx: &ServiceContext) -> Result<serde_json::Value, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::PeriodRead).await?;
+
+    // Fetch all years
+    let years = crate::entities::academic_year::Entity::find()
+        .filter(crate::entities::academic_year::Column::OrgId.eq(&ctx.org_id))
+        .order_by_desc(crate::entities::academic_year::Column::StartDate)
+        .all(&ctx.db)
+        .await?;
+
+    // Fetch all periods
+    let periods = academic_period::Entity::find()
+        .filter(academic_period::Column::OrgId.eq(&ctx.org_id))
+        .order_by_asc(academic_period::Column::SortOrder)
+        .all(&ctx.db)
+        .await?;
+
+    let mut combined: Vec<serde_json::Value> = Vec::new();
+
+    // Add years as root items (parent_id = null)
+    for y in years {
+        let mut val = serde_json::to_value(y).unwrap_or_default();
+        val["parent_id"] = serde_json::Value::Null;
+        val["period_type"] = serde_json::Value::String("year".to_string());
+        combined.push(val);
+    }
+
+    // Add periods as child items (parent_id = period_id if no parent_id)
+    for p in periods {
+        let mut val = serde_json::to_value(p).unwrap_or_default();
+        if val["parent_id"].is_null() {
+            val["parent_id"] = val["period_id"].clone();
+        }
+        combined.push(val);
+    }
+
+    Ok(serde_json::Value::Array(combined))
+}
+
 /// List periods for a specific year (cross-year queries).
 pub async fn list_by_year(ctx: &ServiceContext, period_id: &str) -> Result<Vec<academic_period::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::PeriodRead).await?;
@@ -188,4 +228,58 @@ pub async fn toggle_grade_entry(
     active.updated_at = Set(Utc::now().to_rfc3339());
 
     Ok(active.update(&ctx.db).await?)
+}
+
+#[derive(serde::Deserialize)]
+pub struct UpdatePeriodPayload {
+    pub name: Option<String>,
+    pub name_ar: Option<String>,
+    pub code: Option<String>,
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
+    pub grading_system: Option<String>,
+    pub passing_grade: Option<i32>,
+    pub max_grade: Option<i32>,
+}
+
+pub async fn update(
+    ctx: &ServiceContext,
+    period_id: &str,
+    data: serde_json::Value,
+) -> Result<academic_period::Model, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::PeriodWrite).await?;
+
+    let req: UpdatePeriodPayload = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid update period payload: {e}")))?;
+
+    let existing = get(ctx, period_id).await?;
+    let mut active = existing.into_active_model();
+
+    if let Some(name) = req.name { active.name = Set(name); }
+    if let Some(name_ar) = req.name_ar { active.name_ar = Set(Some(name_ar)); }
+    if let Some(code) = req.code { active.code = Set(Some(code)); }
+    if let Some(start_date) = req.start_date { active.start_date = Set(start_date); }
+    if let Some(end_date) = req.end_date { active.end_date = Set(end_date); }
+    if let Some(gs) = req.grading_system { active.grading_system = Set(gs); }
+    if let Some(pg) = req.passing_grade { active.passing_grade = Set(Some(pg)); }
+    if let Some(mg) = req.max_grade { active.max_grade = Set(Some(mg)); }
+
+    active.updated_at = Set(Utc::now().to_rfc3339());
+
+    Ok(active.update(&ctx.db).await?)
+}
+
+pub async fn delete(
+    ctx: &ServiceContext,
+    period_id: &str,
+) -> Result<(), AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::PeriodWrite).await?;
+
+    let existing = get(ctx, period_id).await?;
+    
+    academic_period::Entity::delete_by_id(existing.id)
+        .exec(&ctx.db)
+        .await?;
+
+    Ok(())
 }

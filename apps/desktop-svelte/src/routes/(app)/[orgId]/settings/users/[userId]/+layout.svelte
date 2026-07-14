@@ -8,6 +8,7 @@ import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
+import { confirmStore } from "$lib/stores";
 import { commands } from "$lib/core/ipc";
 import type { User } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
@@ -100,7 +101,13 @@ async function handleResetPassword(e: Event) {
 
 async function handleDeleteUser() {
   if (!userId) return;
-  if (!confirm(m.settings_user_detail_delete_confirm())) return;
+  const confirmed = await confirmStore.prompt({
+    title: m.common_action_delete() + "؟",
+    description: m.settings_user_detail_delete_confirm(),
+    confirmText: m.common_action_delete(),
+    variant: "destructive"
+  });
+  if (!confirmed) return;
   try {
     await commands.iam.deleteUser(userId as string, "admin");
     toast.success(m.settings_user_detail_deleted());
