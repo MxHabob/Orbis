@@ -63,6 +63,7 @@ export function createEditorStore(initialDoc: TemplateDocument) {
   // ── Selection ────────────────────────────────────────────
   let selectedIds = $state<string[]>([]);
   let activePageIndex = $state(0);
+  let editingNodeId = $state<string | null>(null);
 
   // ── Viewport ─────────────────────────────────────────────
   let viewport = $state<ViewportTransform>(createDefaultViewport());
@@ -392,6 +393,12 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     },
     get activePageIndex() {
       return activePageIndex;
+    },
+    get editingNodeId() {
+      return editingNodeId;
+    },
+    set editingNodeId(id: string | null) {
+      editingNodeId = id;
     },
     get selectedIds() {
       return selectedIds;

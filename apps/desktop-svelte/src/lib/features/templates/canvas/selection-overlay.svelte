@@ -511,15 +511,23 @@ function getHandles(r: { x: number; y: number; w: number; h: number }) {
 
     <!-- Move area (the entire selected element) -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <rect
-      x={rect.x}
-      y={rect.y}
-      width={rect.w}
-      height={rect.h}
-      fill="transparent"
-      class="cursor-move"
-      onmousedown={(e) => startDrag(e, rect.id, "move")}
-    />
+    {#if store.editingNodeId !== rect.id}
+      <rect
+        x={rect.x}
+        y={rect.y}
+        width={rect.w}
+        height={rect.h}
+        fill="transparent"
+        class="cursor-move"
+        onmousedown={(e) => startDrag(e, rect.id, "move")}
+        ondblclick={(e) => {
+          const node = findNode(store.document, rect.id);
+          if (node?.type === "Text") {
+            store.editingNodeId = rect.id;
+          }
+        }}
+      />
+    {/if}
 
     <!-- Dimension label (above rotation handle) -->
     <text

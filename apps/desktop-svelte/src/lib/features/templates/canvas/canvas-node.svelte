@@ -68,26 +68,26 @@ function handleClick(e: MouseEvent) {
 }
 
 // ── Inline Text Editing ──────────────────────────────────────
-let isEditing = $state(false);
+const isEditing = $derived(store.editingNodeId === node.id);
 let editEl: HTMLDivElement | undefined = $state();
+
+$effect(() => {
+  if (isEditing && editEl && document.activeElement !== editEl) {
+    // Focus and select all text
+    editEl.focus();
+    const range = document.createRange();
+    range.selectNodeContents(editEl);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+  }
+});
 
 function handleDoubleClick(e: MouseEvent) {
   if (node.type !== "Text") return;
   e.stopPropagation();
   e.preventDefault();
-  isEditing = true;
-  // Focus on next tick
-  requestAnimationFrame(() => {
-    if (editEl) {
-      editEl.focus();
-      // Select all text
-      const range = document.createRange();
-      range.selectNodeContents(editEl);
-      const sel = window.getSelection();
-      sel?.removeAllRanges();
-      sel?.addRange(range);
-    }
-  });
+  store.editingNodeId = node.id;
 }
 
 function commitEdit() {
@@ -98,13 +98,13 @@ function commitEdit() {
       props: { ...nodeProps, content: newContent },
     } as any);
   }
-  isEditing = false;
+  store.editingNodeId = null;
 }
 
 function handleEditKeydown(e: KeyboardEvent) {
   if (e.key === "Escape") {
     e.preventDefault();
-    isEditing = false; // Discard changes
+    store.editingNodeId = null; // Discard changes
   }
   // Stop propagation to prevent canvas shortcuts
   e.stopPropagation();
@@ -210,7 +210,8 @@ const textSegments = $derived(
               direction: {nodeProps.direction || 'rtl'};
               line-height: {nodeProps.lineHeight || 1.4};
               display: flex;
-              align-items: {nodeProps.verticalAlign === 'center' ? 'center' : nodeProps.verticalAlign === 'bottom' ? 'flex-end' : 'flex-start'};
+              flex-direction: column;
+              justify-content: {nodeProps.verticalAlign === 'center' ? 'center' : nodeProps.verticalAlign === 'bottom' ? 'flex-end' : 'flex-start'};
               overflow: hidden;
               word-wrap: break-word;
               padding: 0;

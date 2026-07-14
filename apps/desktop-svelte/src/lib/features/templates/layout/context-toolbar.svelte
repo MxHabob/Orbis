@@ -20,6 +20,8 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@orbis/ui-svelte/tooltip";
+import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui-svelte/popover";
+import { ComboboxDropdown } from "@orbis/ui-svelte/combobox-dropdown";
 import {
   ArrowLeft,
   Undo2,
@@ -58,6 +60,15 @@ let {
   onsave: () => void;
   onpreview: () => void;
 } = $props();
+
+const FONT_FAMILIES = [
+  { id: "rubik", label: "Rubik", value: "Rubik" },
+  { id: "tahoma", label: "Tahoma", value: "Tahoma" },
+  { id: "arial", label: "Arial", value: "Arial" },
+];
+
+const FONT_SIZES = [6, 8, 10, 12, 14, 16, 18, 21, 24, 28, 32, 36, 42, 48, 56, 64, 72, 80, 88, 96, 104, 120, 144];
+let fontSizePopoverOpen = $state(false);
 
 const node = $derived(store.selectedNode);
 const nodeType = $derived(node?.type ?? null);
@@ -99,24 +110,50 @@ function updateProp(key: string, value: unknown) {
     {#if nodeType === "Text" && !isMultiSelect}
       <!-- ═══ TEXT TOOLBAR ═══ -->
       <div class="ctx-group">
-        <Input
-          type="text"
-          value={nodeProps.fontFamily || "Rubik"}
-          oninput={(e) => updateProp("fontFamily", e.currentTarget.value)}
-          class="h-6 w-[90px] text-[10px] font-medium"
-        />
+        <div class="w-[110px]">
+          <ComboboxDropdown
+            items={FONT_FAMILIES}
+            selectedItem={FONT_FAMILIES.find(f => f.value === (nodeProps.fontFamily || "Rubik")) || { id: "custom", label: nodeProps.fontFamily || "Rubik", value: nodeProps.fontFamily || "Rubik" }}
+            onSelect={(item) => updateProp("fontFamily", item.value)}
+            class="h-6"
+            placeholder="Font"
+          />
+        </div>
         <div class="ctx-number-input">
           <button type="button" class="ctx-num-btn" onclick={() => updateProp("fontSize", Math.max(6, (nodeProps.fontSize || 14) - 1))}>
             <Minus size={10} />
           </button>
-          <Input
-            type="number"
-            value={nodeProps.fontSize || 14}
-            oninput={(e) => updateProp("fontSize", parseInt(e.currentTarget.value) || 14)}
-            class="h-6 w-[40px] text-[10px] text-center"
-            min="6" max="200"
-          />
-          <button type="button" class="ctx-num-btn" onclick={() => updateProp("fontSize", Math.min(200, (nodeProps.fontSize || 14) + 1))}>
+
+          <Popover bind:open={fontSizePopoverOpen}>
+            <PopoverTrigger>
+              {#snippet child({ props })}
+                <input
+                  {...props}
+                  type="number"
+                  value={nodeProps.fontSize || 14}
+                  oninput={(e) => updateProp("fontSize", parseInt(e.currentTarget.value) || 14)}
+                  class="flex h-6 w-[40px] text-[10px] text-center rounded-md border border-transparent bg-transparent px-1 transition-colors hover:border-border focus:border-border focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  min="6" max="300"
+                />
+              {/snippet}
+            </PopoverTrigger>
+            <PopoverContent class="w-[80px] p-0" align="center">
+              <div class="flex flex-col max-h-[250px] overflow-y-auto py-1 scrollbar-thin">
+                {#each FONT_SIZES as size}
+                  <button
+                    type="button"
+                    class="px-2 py-1.5 text-xs text-center hover:bg-muted font-sans cursor-pointer transition-colors"
+                    class:bg-muted={size === nodeProps.fontSize}
+                    onclick={() => { updateProp("fontSize", size); fontSizePopoverOpen = false; }}
+                  >
+                    {size}
+                  </button>
+                {/each}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          <button type="button" class="ctx-num-btn" onclick={() => updateProp("fontSize", Math.min(300, (nodeProps.fontSize || 14) + 1))}>
             <Plus size={10} />
           </button>
         </div>
