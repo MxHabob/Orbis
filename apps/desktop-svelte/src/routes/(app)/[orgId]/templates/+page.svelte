@@ -241,75 +241,54 @@ async function restoreTemplate(id: string) {
   <title>{m.settings_nav_templates()} | Orbis</title>
 </svelte:head>
 
-<div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide">
-  <div class="w-full p-6 flex flex-col gap-6">
-    <!-- Header -->
-    <div
-      class="bg-card border border-border rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4"
-      in:fade={{ duration: 150 }}
-    >
-      <div class="flex items-center gap-3 text-start">
-        <div class="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-          <FileText size={22} />
-        </div>
-        <div>
-          <h1 class="text-sm font-bold text-foreground">{m.settings_nav_templates()}</h1>
-          <p class="text-[10px] text-muted-foreground mt-0.5">
-            {m.settings_templates_empty_desc()}
-          </p>
-        </div>
-      </div>
-    </div>
-
+<div class="h-full w-full overflow-y-auto bg-background/30 scrollbar-hide">
+  <div class="w-full p-6 md:p-8 flex flex-col gap-8">
     <!-- Filters Section -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 select-none shrink-0" in:fade={{ delay: 50, duration: 200 }}>
-      <div class="flex items-center gap-3 flex-wrap">
+    <div class="flex flex-wrap items-center justify-between gap-4 select-none" in:fade={{ delay: 50, duration: 200 }}>
+      
+      <!-- Group: Search and Selects -->
+      <div class="flex flex-wrap items-center gap-3 shrink-0">
         <!-- Search bar -->
-        <SearchField
-          bind:value={searchQuery}
-          oninput={loadTemplates}
-          placeholder={m.settings_templates_search_placeholder()}
-        />
-
-        <div class="flex items-center gap-2">
-          <!-- Entity Type Select -->
-          <div class="min-w-[140px]">
-            <Select type="single" bind:value={filterEntityType} onValueChange={loadTemplates}>
-              <SelectTrigger class="h-9 text-xs bg-background/50">
-                {({ all: m.settings_templates_filter_entity_all(), enrollment: m.common_bulk_card_students_tag_enrollment(), payment: m.settings_templates_filter_entity_payment(), exam: m.settings_templates_filter_entity_exam(), user: m.common_agent_default_user_name(), organization: m.settings_templates_filter_entity_organization() } as any)[filterEntityType] || m.common_print_multi_up_entity_type()}
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{m.settings_templates_filter_entity_all()}</SelectItem>
-                <SelectItem value="enrollment">{m.common_bulk_card_students_tag_enrollment()}</SelectItem>
-                <SelectItem value="payment">{m.settings_templates_filter_entity_payment()}</SelectItem>
-                <SelectItem value="exam">{m.settings_templates_filter_entity_exam()}</SelectItem>
-                <SelectItem value="user">{m.common_agent_default_user_name()}</SelectItem>
-                <SelectItem value="organization">{m.settings_templates_filter_entity_organization()}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <!-- Doc Type Select -->
-          <div class="min-w-[140px]">
-            <Select type="single" bind:value={filterDocType} onValueChange={loadTemplates}>
-              <SelectTrigger class="h-9 text-xs bg-background/50">
-                {({ all: m.settings_templates_filter_doc_all(), CERTIFICATE: m.settings_templates_filter_doc_certificate(), ID_CARD: m.settings_templates_filter_doc_id_card(), RECEIPT: m.finance_layout_nav_payments(), EXAM_CARD: m.settings_templates_filter_doc_exam_card(), REPORT: m.common_nav_reports() } as any)[filterDocType] || m.settings_permissions_col_doc_type()}
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{m.settings_templates_filter_doc_all()}</SelectItem>
-                <SelectItem value="CERTIFICATE">{m.settings_templates_filter_doc_certificate()}</SelectItem>
-                <SelectItem value="ID_CARD">{m.settings_templates_filter_doc_id_card()}</SelectItem>
-                <SelectItem value="RECEIPT">{m.finance_layout_nav_payments()}</SelectItem>
-                <SelectItem value="EXAM_CARD">{m.settings_templates_filter_doc_exam_card()}</SelectItem>
-                <SelectItem value="REPORT">{m.common_nav_reports()}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <div class="w-full sm:w-72">
+          <SearchField
+            bind:value={searchQuery}
+            oninput={loadTemplates}
+            placeholder={m.settings_templates_search_placeholder()}
+          />
         </div>
-      </div>
 
-      <div class="flex items-center gap-2 flex-nowrap shrink-0">
-        <Button variant="lime" size="sm" class="h-9 text-xs font-semibold" onclick={() => (isCreateDialogOpen = true)}>
+          <Select type="single" bind:value={filterEntityType} onValueChange={loadTemplates}>
+            <SelectTrigger class="h-9 text-xs bg-background/40 border-border/40 hover:bg-muted/40 transition-colors">
+              {({ all: m.settings_templates_filter_entity_all(), enrollment: m.common_bulk_card_students_tag_enrollment(), payment: m.settings_templates_filter_entity_payment(), exam: m.settings_templates_filter_entity_exam(), user: m.common_agent_default_user_name(), organization: m.settings_templates_filter_entity_organization() } as any)[filterEntityType] || m.common_print_multi_up_entity_type()}
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{m.settings_templates_filter_entity_all()}</SelectItem>
+              <SelectItem value="enrollment">{m.common_bulk_card_students_tag_enrollment()}</SelectItem>
+              <SelectItem value="payment">{m.settings_templates_filter_entity_payment()}</SelectItem>
+              <SelectItem value="exam">{m.settings_templates_filter_entity_exam()}</SelectItem>
+              <SelectItem value="user">{m.common_agent_default_user_name()}</SelectItem>
+              <SelectItem value="organization">{m.settings_templates_filter_entity_organization()}</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select type="single" bind:value={filterDocType} onValueChange={loadTemplates}>
+            <SelectTrigger class="h-9 text-xs bg-background/40 border-border/40 hover:bg-muted/40 transition-colors">
+              {({ all: m.settings_templates_filter_doc_all(), CERTIFICATE: m.settings_templates_filter_doc_certificate(), ID_CARD: m.settings_templates_filter_doc_id_card(), RECEIPT: m.finance_layout_nav_payments(), EXAM_CARD: m.settings_templates_filter_doc_exam_card(), REPORT: m.common_nav_reports() } as any)[filterDocType] || m.settings_permissions_col_doc_type()}
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{m.settings_templates_filter_doc_all()}</SelectItem>
+              <SelectItem value="CERTIFICATE">{m.settings_templates_filter_doc_certificate()}</SelectItem>
+              <SelectItem value="ID_CARD">{m.settings_templates_filter_doc_id_card()}</SelectItem>
+              <SelectItem value="RECEIPT">{m.finance_layout_nav_payments()}</SelectItem>
+              <SelectItem value="EXAM_CARD">{m.settings_templates_filter_doc_exam_card()}</SelectItem>
+              <SelectItem value="REPORT">{m.common_nav_reports()}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+      <!-- Right side (in LTR) / Left side (in RTL): Action Button -->
+      <div class="flex items-center shrink-0">
+        <Button variant="default" size="sm" class="h-9 px-4 text-xs font-semibold shadow-sm" onclick={() => (isCreateDialogOpen = true)}>
           <Plus size={16} class="me-1.5" />
           {m.settings_templates_create_btn()}
         </Button>
