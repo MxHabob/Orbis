@@ -37,13 +37,13 @@ import AutopilotSuggestions from "./autopilot-suggestions.svelte";
 let { orgId = "" }: { orgId?: string } = $props();
 
 // Autopilot Queries
-const configQuery = createAutopilotConfigQuery(orgId);
+const configQuery = createAutopilotConfigQuery(() => orgId);
 const config = $derived($configQuery.data);
 
-const tasksQuery = createAutopilotTasksQuery(orgId);
+const tasksQuery = createAutopilotTasksQuery(() => orgId);
 const tasks = $derived($tasksQuery.data ?? []);
 
-const diagnosticsQuery = createAutopilotDiagnosticsQuery(orgId);
+const diagnosticsQuery = createAutopilotDiagnosticsQuery(() => orgId);
 const diagnostics = $derived($diagnosticsQuery.data);
 
 // Mutations

@@ -9,29 +9,44 @@ import {
 } from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
 
-export function createAutopilotConfigQuery(orgId: string) {
+export function createAutopilotConfigQuery(orgId: string | (() => string)) {
+  const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
   return createQuery({
-    queryKey: ["autopilot-config", orgId],
+    get queryKey() {
+      return ["autopilot-config", getOrgId()];
+    },
     queryFn: () => commands.platform.getOrgPolicy(),
-    enabled: !!orgId,
+    get enabled() {
+      return !!getOrgId();
+    },
     staleTime: 5 * 60 * 1000,
   });
 }
 
-export function createAutopilotTasksQuery(orgId: string) {
+export function createAutopilotTasksQuery(orgId: string | (() => string)) {
+  const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
   return createQuery({
-    queryKey: ["autopilot-tasks", orgId],
+    get queryKey() {
+      return ["autopilot-tasks", getOrgId()];
+    },
     queryFn: () => commands.platform.getAutopilotTasks(),
-    enabled: !!orgId,
+    get enabled() {
+      return !!getOrgId();
+    },
     staleTime: 2 * 60 * 1000,
   });
 }
 
-export function createAutopilotDiagnosticsQuery(orgId: string) {
+export function createAutopilotDiagnosticsQuery(orgId: string | (() => string)) {
+  const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
   return createQuery({
-    queryKey: ["autopilot-diagnostics", orgId],
+    get queryKey() {
+      return ["autopilot-diagnostics", getOrgId()];
+    },
     queryFn: () => commands.platform.getAutopilotDiagnostics(),
-    enabled: !!orgId,
+    get enabled() {
+      return !!getOrgId();
+    },
     staleTime: 1 * 60 * 1000,
   });
 }
