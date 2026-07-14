@@ -1,6 +1,17 @@
 import { commands } from "$lib/core/ipc";
 
-export class FinancialInfoState { { checked: boolean; amount: number }>
+export class FinancialInfoState {
+  orgId: string;
+  studentId?: string;
+
+  discountTemplates = $state<any[]>([]);
+  feeTemplates = $state<any[]>([]);
+  applyDiscount = $state(false);
+  discountType = $state("template"); // template | custom
+  selectedDiscountTemplateId = $state("");
+  customDiscountAmount = $state<number | null>(null);
+  selectedOptionalFees = $state<
+    Record<string, { checked: boolean; amount: number }>
   >({});
 
   constructor(orgId: string, studentId?: string) {

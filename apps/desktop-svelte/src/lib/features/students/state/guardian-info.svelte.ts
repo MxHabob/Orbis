@@ -16,7 +16,14 @@ export interface GuardianLink {
   occupation?: string;
 }
 
-export class GuardianState { phone: "",
+export class GuardianState {
+  orgId: string;
+  studentId?: string;
+
+  linkedGuardians = $state<GuardianLink[]>([
+    {
+      full_name: "",
+      phone: "",
       email: "",
       national_id: "",
       relationship: "father",

@@ -207,7 +207,6 @@ export const commands: OrbisCommands = {
     },
     listJournalEntries: (orgId) => cmd("list_journal_entries", {}),
     listFiscalYears: (orgId) => cmd("list_fiscal_years", {}),
-    createFiscalYear: (data) => cmd("create_fiscal_year", { data }),
   },
   // ═══════════════════════════════════════════════════════════════
   // SCHEDULING
@@ -348,8 +347,6 @@ export const commands: OrbisCommands = {
     // Academic Years
     getCurrentYear: (orgId) => cmd("get_current_academic_year", {}),
     listYears: (orgId) => cmd("list_academic_years", {}),
-    isYearArchived: (periodId) => cmd("is_year_archived", { periodId }),
-    getAcademicContext: (orgId) => cmd("get_academic_context", {}),
     getSetupStatus: (orgId) => cmd("get_setup_status", {}),
     initializeSchoolSetup: (payload) =>
       cmd("initialize_school_setup", { payload }),
@@ -393,8 +390,6 @@ export const commands: OrbisCommands = {
     cancelOverride: (requestId, userId) =>
       cmd("cancel_override", { requestId, userId }),
     // Document Templates
-    listDocumentTemplates: (params?) =>
-      cmd("get_document_templates", { params }),
     getDocumentTemplate: (templateId) =>
       cmd("get_document_template", { templateId }),
     createDocumentTemplate: (userId, data) =>

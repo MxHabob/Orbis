@@ -19,24 +19,6 @@ export function createCurrentYearQuery(orgId: string) {
   });
 }
 
-export function createIsArchivedQuery(periodId: string) {
-  return createQuery({
-    queryKey: ["academicYears", "isArchived", periodId],
-    queryFn: () => commands.platform.isYearArchived(periodId),
-    enabled: !!periodId,
-    staleTime: 30 * 60 * 1000,
-  });
-}
-
-export function createSwitchYearMutation() {
-  const queryClient = useQueryClient();
-  return createMutation({
-    mutationFn: (periodId: string) => commands.platform.switchYear(periodId),
-    onSuccess: () => {
-      queryClient.invalidateQueries();
-    },
-  });
-}
 
 export function createPromotionJobsQuery(orgId: () => string) {
   return createQuery({

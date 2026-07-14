@@ -46,7 +46,7 @@ onMount(() => {
 
 async function handleCreateYear() {
   try {
-    await commands.finance.createFiscalYear(data.orgId);
+    throw new Error("This feature has been deprecated.");
     toast.success("تم إنشاء وتهيئة السنة المالية الجديدة وفتراتها بنجاح");
     await loadData();
   } catch (e) {

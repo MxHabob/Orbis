@@ -49,7 +49,7 @@ async function handleAISummarize() {
   isGeneratingAI = true;
   aiSummary = null;
   try {
-    const aiRes = await commands.assessment.submitBehavior(, {
+    const aiRes = await commands.assessment.submitBehavior({
       enrollment_id: studentId,
       org_id: orgId,
     });
@@ -109,7 +109,7 @@ const rtl = $derived(getLocale() === "ar");
 
 <div class="flex flex-col gap-6 text-xs text-start">
   <!-- AI Assist Widget -->
-  <div class="border border-border/80 bg-gradient-to-l from-brand-purple/5 to-brand-indigo/5 p-4 rounded-xl shadow-sm flex flex-col gap-3">
+  <div class="border border-border/80 bg-linear-to-l from-brand-purple/5 to-brand-indigo/5 p-4 rounded-xl shadow-sm flex flex-col gap-3">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
         <BrainCircuit size={16} class="text-primary animate-pulse" />

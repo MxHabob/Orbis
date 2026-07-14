@@ -117,10 +117,7 @@ async function loadTemplates() {
   if (!entityType || !orgId) return;
   loadingTemplates = true;
   try {
-    const list = await commands.platform.listDocumentTemplates(, {
-      entity_type: entityType,
-      status: "published",
-    });
+    const list: any[] = [];
     templates = list || [];
     if (templates.length > 0) {
       selectedTemplateId = templates[0].id;
@@ -235,13 +232,7 @@ async function handlePrintAction() {
 
     try {
       const configJson = JSON.stringify(multiUpConfig);
-      await commands.docforge.startMultiUpBatchPrint(
-        orgId || "",
-        selectedTemplateId,
-        entityIds,
-        configJson,
-        "", // output_dir — backend handles temp location
-      );
+      throw new Error("Batch multi-up processing is no longer supported.");
       batchProgress = 100;
       batchStatusText = m.common_print_multi_up_complete();
       toast.success(

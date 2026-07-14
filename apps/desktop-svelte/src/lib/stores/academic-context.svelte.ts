@@ -112,8 +112,15 @@ class AcademicContextStore {
     this.orgId = orgId;
     this.isLoading = true;
     try {
-      const ctx: AcademicContextResponse =
-        await commands.platform.getAcademicContext();
+      const current_year = await commands.platform.getCurrentYear();
+      const all_years = await commands.platform.listYears(orgId);
+      const ctx: AcademicContextResponse = {
+        current_year,
+        all_years: all_years || [],
+        periods: all_years || [], // Assuming periods and years are the same in autopilot
+        year_status: current_year?.status === "archived" ? "archived" : "active",
+        is_read_only: current_year?.status === "archived",
+      };
       this.currentYear = ctx.current_year ?? null;
       this.allYears = ctx.all_years ?? [];
       this.periods = ctx.periods ?? [];

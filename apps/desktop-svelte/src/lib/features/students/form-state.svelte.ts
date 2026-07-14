@@ -11,7 +11,7 @@ import { GuardianState } from "./state/guardian-info.svelte";
 import { FinancialInfoState } from "./state/financial-info.svelte";
 import { DocumentInfoState } from "./state/document-info.svelte";
 
-export class StudentFormState { boolean>>({});
+export class StudentFormState {
   activeFields = $state<Record<string, boolean>>({});
   preventDuplicates = $state<Record<string, boolean>>({});
   registrationStatus = $state("draft");
@@ -75,10 +75,7 @@ export class StudentFormState { boolean>>({});
 
       // Load document templates for printing
       try {
-        const templatesList = await commands.platform.listDocumentTemplates(this.orgId, {
-          entity_type: "student",
-          status: "published",
-        });
+        const templatesList: any[] = [];
         this.availableTemplates = templatesList || [];
         if (this.availableTemplates.length > 0) {
           this.selectedTemplateId = this.availableTemplates[0].id;

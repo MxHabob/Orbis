@@ -60,10 +60,7 @@ async function loadTemplates() {
     if (filterDocType !== "all") listParams.document_type = filterDocType;
     if (searchQuery.trim() !== "") listParams.search = searchQuery.trim();
 
-    const response = await commands.platform.listDocumentTemplates(
-      orgId,
-      listParams,
-    );
+    const response: any[] = []; // feature removed
     templates = response || [];
   } catch (e: unknown) {
     console.error("Failed to load templates:", e);

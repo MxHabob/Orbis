@@ -8,7 +8,7 @@ Usage:
 -->
 <script lang="ts">
 import { commands } from "$lib/core/ipc";
-import { createQuery } from "@tanstack/svelte-query";
+import { createQueries } from "@tanstack/svelte-query";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { CalendarClock, BookOpen, ClipboardCheck, Lock, Unlock } from "lucide-svelte";
 import type { GateVerdict } from "@orbis/sdk-core";
@@ -21,16 +21,14 @@ interface Props {
 let { periodId, showGates = ["enrollment", "grade_entry"] }: Props = $props();
 
 // Query all relevant gates in parallel
-const gateQueries = $derived(
-  showGates.map((gate) =>
-    createQuery({
-      queryKey: ["period-gate", gate, periodId],
-      queryFn: () => commands.academic.checkPeriodGate(gate, periodId),
-      staleTime: 30_000,
-      enabled: !!periodId,
-    }),
-  ),
-);
+const gateQueries = createQueries({
+  queries: showGates.map((gate) => ({
+    queryKey: ["period-gate", gate, periodId],
+    queryFn: () => commands.academic.checkPeriodGate(gate, periodId),
+    staleTime: 30_000,
+    enabled: !!periodId,
+  }))
+});
 
 const gateLabels: Record<string, { label: string; icon: typeof BookOpen }> = {
   enrollment: { label: "التسجيل", icon: BookOpen },
@@ -77,8 +75,8 @@ function formatDate(d?: string | null): string {
   class="flex items-center gap-3 rounded-lg border border-border/50 bg-card/50 px-4 py-2 text-sm backdrop-blur-sm"
 >
   {#each showGates as gate, i}
-    {@const query = gateQueries[i]}
-    {@const verdict = $query?.data as GateVerdict | undefined}
+    {@const query = $gateQueries[i]}
+    {@const verdict = query?.data as GateVerdict | undefined}
     {@const info = gateLabels[gate]}
 
     {#if verdict}
@@ -100,7 +98,7 @@ function formatDate(d?: string | null): string {
       {#if i < showGates.length - 1}
         <div class="h-4 w-px bg-border/50"></div>
       {/if}
-    {:else if $query?.isLoading}
+    {:else if query?.isLoading}
       <div class="flex items-center gap-1.5 animate-pulse">
         <span class="opacity-50">{info.label}: ...</span>
       </div>
