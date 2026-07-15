@@ -46,6 +46,7 @@ infra-scheduler = { path = "../../api-rust/crates/infra-scheduler" }
 infra-integration = { path = "../../api-rust/crates/infra-integration" }
 docforge-orbis = { path = "../../api-rust/crates/docforge-orbis" }
 docforge-engine = { path = "../../api-rust/crates/docforge-engine" }
+svc-document = { path = "../../api-rust/crates/svc-document" }
 sea-orm = { version = "1.1.0", features = ["sqlx-sqlite", "runtime-tokio-native-tls", "macros"] }
 uuid = { version = "1.9.1", features = ["v4", "serde"] }
 chrono = { version = "0.4.38", features = ["serde"] }

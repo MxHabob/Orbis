@@ -479,6 +479,6 @@ export const commands: OrbisCommands = {
       });
     },
     getDocuments: (params) => cmd("get_documents", params),
-    deleteDocument: (id) => cmd("delete_document", { id }),
+    deleteDocument: (id) => cmd("storage_delete_document", { id }),
   },
 };

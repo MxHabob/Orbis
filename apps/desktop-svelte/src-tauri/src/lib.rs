@@ -156,7 +156,7 @@ pub fn run() {
             // Document
             commands::document::thin::upload_document,
             commands::document::thin::get_documents,
-            commands::document::thin::delete_document,
+            commands::document::thin::storage_delete_document,
             // IAM commands
             commands::iam::thin::login,
             commands::iam::thin::logout_session,

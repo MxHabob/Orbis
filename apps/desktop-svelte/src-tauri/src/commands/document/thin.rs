@@ -60,7 +60,7 @@ pub async fn get_documents(
 }
 
 #[tauri::command]
-pub async fn delete_document(
+pub async fn storage_delete_document(
     state: State<'_, Arc<AppState>>,
     id: String,
 ) -> CmdResult<serde_json::Value> {

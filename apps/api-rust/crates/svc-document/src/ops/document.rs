@@ -167,7 +167,7 @@ pub async fn delete(
         .filter(documents::Column::OrgId.eq(ctx.org_id.clone()))
         .one(&ctx.db)
         .await?
-        .ok_or_else(|| AppError::not_found("Document not found"))?
+        .ok_or_else(|| AppError::not_found("document", id))?
         .into();
 
     doc.deleted_at = Set(Some(Utc::now().to_rfc3339()));
