@@ -52,6 +52,8 @@ pub struct CreateClassPayload {
     pub name_ar: Option<String>,
     pub grade_level: String,
     pub capacity: i32,
+    pub division: Option<String>,
+    pub color: Option<String>,
 }
 
 /// Create a new class.
@@ -75,12 +77,12 @@ pub async fn create(
         name: req.name.clone(),
         name_ar: req.name_ar,
         level: req.grade_level,
-        division: None,
+        division: req.division,
         homeroom_teacher_id: None,
         capacity: Some(req.capacity),
         current_students: Some(0),
         room_id: None,
-        color: None,
+        color: req.color,
         is_active: 1,
         is_deleted: 0,
         deleted_at: None,

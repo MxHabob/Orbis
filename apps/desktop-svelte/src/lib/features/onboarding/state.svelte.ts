@@ -317,7 +317,7 @@ class OnboardingState {
       defaultList.push({
         id: `room-${bldName}-lab-comp-${i}-${tsSuffix}`,
         name: `Computer Lab 1-${i}`,
-        name_ar: `?à?«?ز?ذ?? ?د???ص?د???ê?ذ 1-${i}`,
+        name_ar: `مختبر حاسوب 1-${i}`,
         capacity: 25,
         room_type: "computer_lab",
         building: bldName,
@@ -328,7 +328,7 @@ class OnboardingState {
       defaultList.push({
         id: `room-${bldName}-lab-chem-${i}-${tsSuffix}`,
         name: `Chemistry Lab 1-${i}`,
-        name_ar: `?à?«?ز?ذ?? ?د???â?è?à?è?د?ة 1-${i}`,
+        name_ar: `مختبر كيمياء 1-${i}`,
         capacity: 25,
         room_type: "chemistry_lab",
         building: bldName,
@@ -567,7 +567,7 @@ class OnboardingState {
         classes.push({
           id: `class-${gl.level}-${div}-${orgId}`,
           name: `${gl.name} - ${div}`,
-          name_ar: `${gl.name_ar} - ?????ذ?ر ${div}`,
+          name_ar: `${gl.name_ar} - الشعبة ${div}`,
           level: gl.level,
           division: div,
           color: gl.color,
@@ -656,7 +656,7 @@ class OnboardingState {
         if (amount > 0) {
           const req = {
             name: `${gl.name} Registration Fee`,
-            name_ar: `?????ê?à ?ز???ش?è?? ${gl.name_ar}`,
+            name_ar: `رسوم تسجيل ${gl.name_ar}`,
             code: `REG_${gl.level.toUpperCase()}`,
             category: "tuition",
             default_amount: Number(amount),

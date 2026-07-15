@@ -102,6 +102,7 @@ dependencies = [
  "shared-kernel",
  "svc-academic",
  "svc-assessment",
+ "svc-document",
  "svc-exam",
  "svc-finance",
  "svc-iam",
@@ -1520,6 +1521,7 @@ dependencies = [
  "chrono",
  "sea-orm",
  "serde",
+ "serde_json",
  "shared-kernel",
  "tokio",
  "tracing",
@@ -3525,6 +3527,22 @@ dependencies = [
  "tokio",
  "tracing",
  "utoipa",
+ "uuid",
+]
+
+[[package]]
+name = "svc-document"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "chrono",
+ "infra-integration",
+ "infra-persistence",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "shared-kernel",
+ "tokio",
  "uuid",
 ]
 

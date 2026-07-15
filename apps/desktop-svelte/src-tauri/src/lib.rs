@@ -341,6 +341,8 @@ pub fn run() {
             commands::ai::thin::agent_create_session,
             commands::ai::thin::agent_query,
             commands::ai::thin::agent_open_standalone,
+            commands::ai::thin::ai_get_autopilot_config,
+            commands::ai::thin::ai_save_autopilot_config,
             // Scheduling commands
             commands::scheduling::thin::list_time_slots,
             commands::scheduling::thin::create_time_slot,

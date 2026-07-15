@@ -567,8 +567,6 @@ CREATE TABLE IF NOT EXISTS permissions (
   created_at TEXT NOT NULL
 );
 
-DROP TABLE IF EXISTS role_permissions;
-
 CREATE TABLE IF NOT EXISTS role_permissions (
   role TEXT NOT NULL,
   document_type TEXT NOT NULL,

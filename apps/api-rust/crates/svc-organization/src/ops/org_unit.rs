@@ -95,6 +95,10 @@ pub struct CreateOrgUnitPayload {
     pub parent_id: Option<String>,
     pub unit_type: Option<String>,
     pub code: Option<String>,
+    pub capacity: Option<i32>,
+    pub room_number: Option<String>,
+    pub floor: Option<i32>,
+    pub building: Option<String>,
 }
 
 /// Create a new org unit.
@@ -132,10 +136,10 @@ pub async fn create(
         code: req.code,
         unit_type: req.unit_type.unwrap_or_else(|| "department".into()),
         head_id: None,
-        capacity: None,
-        room_number: None,
-        floor: None,
-        building: None,
+        capacity: req.capacity,
+        room_number: req.room_number,
+        floor: req.floor,
+        building: req.building,
         settings: None,
         local_policies: None,
         data_isolation: "shared".into(),

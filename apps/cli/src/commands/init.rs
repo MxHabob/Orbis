@@ -38,14 +38,7 @@ pub async fn execute() -> Result<()> {
 
     println!("\n{}", "--- Orbis Initial Setup ---".truecolor(0, 204, 255).bold());
     let org_name = prompts::prompt_text("Enter Organization Name (e.g. My School):")?;
-    let generated_slug = org_name.to_lowercase()
-        .chars()
-        .map(|c| if c.is_alphanumeric() { c } else { '-' })
-        .collect::<String>()
-        .split('-')
-        .filter(|s| !s.is_empty())
-        .collect::<Vec<_>>()
-        .join("-");
+    let generated_slug = transliterate_arabic_to_ascii(&org_name);
     let org_slug = prompts::prompt_text_with_default("Enter Organization Slug (e.g. my-school):", &generated_slug)?;
     let admin_name = prompts::prompt_text("Enter Admin Full Name:")?;
     let admin_username = prompts::prompt_text("Enter Admin Username (or Email):")?;
@@ -95,4 +88,64 @@ pub async fn execute() -> Result<()> {
 
     output::print_success("Initialization complete! Run `cli start` to boot the system.");
     Ok(())
+}
+
+fn transliterate_arabic_to_ascii(input: &str) -> String {
+    let mut result = String::new();
+    for c in input.chars() {
+        match c {
+            'ا' | 'أ' | 'إ' | 'آ' | 'ى' | 'ء' | 'ئ' | 'ؤ' => result.push('a'),
+            'ب' => result.push('b'),
+            'ت' | 'ة' => result.push('t'),
+            'ث' => result.push_str("th"),
+            'ج' => result.push('j'),
+            'ح' => result.push('h'),
+            'خ' => result.push_str("kh"),
+            'د' => result.push('d'),
+            'ذ' => result.push_str("dh"),
+            'ر' => result.push('r'),
+            'ز' => result.push('z'),
+            'س' => result.push('s'),
+            'ش' => result.push_str("sh"),
+            'ص' => result.push('s'),
+            'ض' => result.push('d'),
+            'ط' => result.push('t'),
+            'ظ' => result.push_str("zh"),
+            'ع' => result.push('a'),
+            'غ' => result.push_str("gh"),
+            'ف' => result.push('f'),
+            'ق' => result.push('q'),
+            'ك' => result.push('k'),
+            'ل' => result.push('l'),
+            'م' => result.push('m'),
+            'ن' => result.push('n'),
+            'ه' => result.push('h'),
+            'و' => result.push('w'),
+            'ي' => result.push('y'),
+            other => {
+                if other.is_ascii_alphanumeric() {
+                    result.push(other.to_ascii_lowercase());
+                } else {
+                    result.push('-');
+                }
+            }
+        }
+    }
+    
+    // Clean up multiple consecutive hyphens, and leading/trailing hyphens
+    let mut cleaned = String::new();
+    let mut last_was_hyphen = false;
+    for c in result.chars() {
+        if c == '-' {
+            if !last_was_hyphen {
+                cleaned.push('-');
+                last_was_hyphen = true;
+            }
+        } else {
+            cleaned.push(c);
+            last_was_hyphen = false;
+        }
+    }
+    
+    cleaned.trim_matches('-').to_string()
 }

@@ -146,4 +146,30 @@ pub async fn agent_open_standalone(
     Ok(())
 }
 
+#[tauri::command]
+pub async fn ai_get_autopilot_config(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = svc_organization::ops::academic_policy::get_autopilot_config(&ctx, &org_id)
+        .await
+        .map_err(CommandError::from)?;
+    Ok(result)
+}
+
+#[tauri::command]
+pub async fn ai_save_autopilot_config(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    config: serde_json::Value,
+) -> CmdResult<()> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    svc_organization::ops::academic_policy::update_autopilot_config(&ctx, &org_id, config)
+        .await
+        .map_err(CommandError::from)?;
+    Ok(())
+}
+
+
 
