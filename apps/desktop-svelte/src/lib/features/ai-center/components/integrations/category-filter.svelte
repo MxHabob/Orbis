@@ -5,6 +5,7 @@ Pill-style category filter bar using official UI Button component.
 <script lang="ts">
 import type { CategoryDef } from "@orbis/app-store";
 import { Button } from "@orbis/ui-svelte/button";
+import { l } from "$lib/core/i18n";
 
 let {
   categories,
@@ -24,7 +25,7 @@ let {
       onclick={() => (active = cat.id)}
       class="text-xs cursor-pointer"
     >
-      {cat.name}
+      {l(cat.name_ar, cat.name)}
     </Button>
   {/each}
 </div>

@@ -12,7 +12,7 @@ import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import AppIcon from "$lib/features/ai-center/components/integrations/app-icon.svelte";
 import AppConnectForm from "$lib/features/ai-center/components/integrations/app-connect-form.svelte";
-import { getLocale } from "$lib/paraglide/runtime";
+import { l } from "$lib/core/i18n";
 
 let { data }: { data: { orgId: string; appId: string } } = $props();
 
@@ -73,7 +73,7 @@ async function handleDisconnect() {
 
 const activeFeatures = $derived(
   app
-    ? (getLocale() === "ar" && app.features_ar ? app.features_ar : app.features)
+    ? l(app.features_ar, app.features)
     : []
 );
 </script>
@@ -89,7 +89,7 @@ const activeFeatures = $derived(
               href={basePath}
               class="text-muted-foreground hover:text-foreground transition-colors"
             >
-              {getLocale() === "ar" ? "التكاملات" : "Integrations"}
+              {l("التكاملات", "Integrations")}
             </a>
           </li>
           <li class="text-muted-foreground/50">/</li>
@@ -118,24 +118,24 @@ const activeFeatures = $derived(
                 </h1>
                 {#if app.beta}
                   <span class="text-[10px] font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-md shrink-0">
-                    {getLocale() === "ar" ? "تجريبي" : "Beta"}
+                    {l("تجريبي", "Beta")}
                   </span>
                 {/if}
                 {#if !app.active}
                   <span class="text-[10px] font-medium bg-muted text-muted-foreground px-2 py-0.5 rounded-md shrink-0">
-                    {getLocale() === "ar" ? "قريباً" : "Coming soon"}
+                    {l("قريباً", "Coming soon")}
                   </span>
                 {/if}
               </div>
               <p class="text-xs text-muted-foreground">
-                {getLocale() === "ar" ? getCategoryNameAr(app.category) : getCategoryName(app.category)}
+                {l(getCategoryNameAr(app.category), getCategoryName(app.category))}
               </p>
             </div>
           </div>
 
           <!-- Short Description -->
           <p class="text-sm text-foreground leading-relaxed">
-            {getLocale() === "ar" && app.short_description_ar ? app.short_description_ar : app.short_description}
+            {l(app.short_description_ar, app.short_description)}
           </p>
 
           <!-- Full Description -->
@@ -143,17 +143,17 @@ const activeFeatures = $derived(
             <div class="border-t border-border/40 pt-6">
               <div class="prose-sm">
                 <p class="mb-3 text-sm text-muted-foreground leading-relaxed">
-                  {@html renderDescription(getLocale() === "ar" && app.description_ar ? app.description_ar : app.description)}
+                  {@html renderDescription(l(app.description_ar ?? "", app.description))}
                 </p>
               </div>
             </div>
           {/if}
 
           <!-- Features -->
-          {#if activeFeatures.length > 0}
+          {#if activeFeatures && activeFeatures.length > 0}
             <div class="border border-border/60 p-5 lg:p-6 rounded-lg">
               <h2 class="text-sm font-medium text-foreground mb-4">
-                {getLocale() === "ar" ? "المميزات الرئيسية" : "Key Features"}
+                {l("المميزات الرئيسية", "Key Features")}
               </h2>
               <ul class="space-y-3">
                 {#each activeFeatures as feature}
@@ -176,29 +176,29 @@ const activeFeatures = $derived(
                 <div class="flex items-center gap-2 mb-3">
                   <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                   <h3 class="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                    {getLocale() === "ar" ? "متصل" : "Connected"}
+                    {l("متصل", "Connected")}
                   </h3>
                 </div>
                 <p class="text-xs text-muted-foreground mb-4 leading-relaxed">
-                  {getLocale() === "ar" ? `${app.name} متصل ويعمل بشكل صحيح.` : `${app.name} is connected and operational.`}
+                  {l(`${app.name} متصل ويعمل بشكل صحيح.`, `${app.name} is connected and operational.`)}
                 </p>
                 <Button class="w-full" size="sm" variant="outline" onclick={handleDisconnect}>
-                  {getLocale() === "ar" ? "قطع الاتصال" : "Disconnect"}
+                  {l("قطع الاتصال", "Disconnect")}
                 </Button>
               {:else}
                 <h3 class="text-sm font-medium text-foreground mb-3">
-                  {app.active ? (getLocale() === "ar" ? "ابدأ الآن" : "Get started") : (getLocale() === "ar" ? "قريباً" : "Coming soon")}
+                  {app.active ? l("ابدأ الآن", "Get started") : l("قريباً", "Coming soon")}
                 </h3>
                 <p class="text-xs text-muted-foreground mb-4 leading-relaxed">
                   {app.active
-                    ? (getLocale() === "ar" ? `قم بربط ${app.name} بنظام Orbis لبدء الأتمتة.` : `Connect ${app.name} to your Orbis system and start automating.`)
-                    : (getLocale() === "ar" ? `نعمل حالياً على تكامل ${app.name}. ترقبوا جديدنا.` : `We're working on the ${app.name} integration. Stay tuned.`)}
+                    ? l(`قم بربط ${app.name} بنظام Orbis لبدء الأتمتة.`, `Connect ${app.name} to your Orbis system and start automating.`)
+                    : l(`نعمل حالياً على تكامل ${app.name}. ترقبوا جديدنا.`, `We're working on the ${app.name} integration. Stay tuned.`)}
                 </p>
                 {#if connectError}
                   <p class="text-[10px] text-red-500 mb-2">{connectError}</p>
                 {/if}
                 <Button class="w-full" size="sm" disabled={!app.active || isConnecting}>
-                  {isConnecting ? (getLocale() === "ar" ? "جاري الاتصال..." : "Connecting...") : app.active ? (getLocale() === "ar" ? `ربط ${app.name}` : `Connect ${app.name}`) : (getLocale() === "ar" ? "قريباً" : "Coming Soon")}
+                  {isConnecting ? l("جاري الاتصال...", "Connecting...") : app.active ? l(`ربط ${app.name}`, `Connect ${app.name}`) : l("قريباً", "Coming Soon")}
                 </Button>
               {/if}
             </div>
@@ -207,7 +207,7 @@ const activeFeatures = $derived(
             {#if app.settings.length > 0 && app.active && !isConnected}
               <div class="border border-border/60 p-5 rounded-lg">
                 <h3 class="text-xs font-medium text-muted-foreground mb-4 uppercase tracking-wider">
-                  {getLocale() === "ar" ? "الإعدادات" : "Configuration"}
+                  {l("الإعدادات", "Configuration")}
                 </h3>
                 <AppConnectForm settings={app.settings} onsubmit={handleConnect} />
               </div>
@@ -217,7 +217,7 @@ const activeFeatures = $derived(
             {#if relatedApps.length > 0}
               <div class="border border-border/60 p-5 rounded-lg">
                 <h3 class="text-xs font-medium text-muted-foreground mb-4 uppercase tracking-wider">
-                  {getLocale() === "ar" ? "التكاملات ذات الصلة" : "Related integrations"}
+                  {l("التكاملات ذات الصلة", "Related integrations")}
                 </h3>
                 <div class="space-y-3">
                   {#each relatedApps as related}
@@ -252,13 +252,13 @@ const activeFeatures = $derived(
   <div class="h-full flex items-center justify-center">
     <div class="text-center">
       <h2 class="text-sm font-medium text-foreground mb-2">
-        {getLocale() === "ar" ? "التكامل غير موجود" : "Integration not found"}
+        {l("التكامل غير موجود", "Integration not found")}
       </h2>
       <p class="text-xs text-muted-foreground mb-4">
-        {getLocale() === "ar" ? `التكامل "${data.appId}" غير موجود.` : `The integration "${data.appId}" does not exist.`}
+        {l(`التكامل "${data.appId}" غير موجود.`, `The integration "${data.appId}" does not exist.`)}
       </p>
       <Button size="sm" variant="outline" href={basePath}>
-        {getLocale() === "ar" ? "العودة للتكاملات" : "Back to Integrations"}
+        {l("العودة للتكاملات", "Back to Integrations")}
       </Button>
     </div>
   </div>
