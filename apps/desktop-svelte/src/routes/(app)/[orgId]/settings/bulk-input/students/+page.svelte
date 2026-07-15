@@ -32,7 +32,6 @@ import { useQueryClient } from "@tanstack/svelte-query";
 import { createClassesQuery } from "$lib/features/academics";
 import { academicContext } from "$lib/stores/academic-context.svelte";
 import { usePeriodGate } from "$lib/shared/utils/use-period-gate";
-import PeriodStatusBar from "$lib/shared/components/period-status-bar.svelte";
 import OverrideRequestDialog from "$lib/shared/components/override-request-dialog.svelte";
 
 import BulkGrid from "$lib/features/bulk-input/bulk-grid.svelte";
@@ -351,9 +350,6 @@ async function handleSubmit() {
         >
           <ArrowLeft class="h-4 w-4 rtl:rotate-180" />
         </Button>
-      {#if academicContext.activePeriod?.id}
-        <PeriodStatusBar periodId={String(academicContext.activePeriod.id)} showGates={["enrollment"]} />
-      {/if}
       <div class="flex items-center gap-2">
         <Select type="single" value={selectedClassId} onValueChange={handleTopClassChange}>
           <SelectTrigger class="w-52 h-8 text-xs">
