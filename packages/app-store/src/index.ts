@@ -7,7 +7,8 @@
 import type { OrbisApp, AppCategory } from "./types";
 
 // ── App Imports ─────────────────────────────────────────────────
-import ollamaAi from "./ollama-ai/config";
+import authen from "./authen/config";
+import orbisAi from "./orbis-ai/config";
 import geminiAi from "./gemini-ai/config";
 import hikvisionCamera from "./hikvision-camera/config";
 import smtpEmail from "./smtp-email/config";
@@ -21,15 +22,17 @@ import fingerprint from "./fingerprint/config";
 import rfid from "./rfid/config";
 import barcodeScanner from "./barcode-scanner/config";
 import printer from "./printer/config";
+import mulverseCloud from "./mulverse-cloud/config";
 import cloudStorage from "./cloud-storage/config";
 import ocrService from "./ocr-service/config";
-import webhooks from "./webhooks/config";
 
 // ── Exported App Collection ─────────────────────────────────────
 
 export const apps: OrbisApp[] = [
+  // First & Second Apps
+  authen,
+  orbisAi,
   // AI Providers
-  ollamaAi,
   geminiAi,
   // Surveillance
   hikvisionCamera,
@@ -48,11 +51,10 @@ export const apps: OrbisApp[] = [
   barcodeScanner,
   printer,
   // Storage
+  mulverseCloud,
   cloudStorage,
   // AI Services
   ocrService,
-  // Automation
-  webhooks,
 ];
 
 // ── Helpers ─────────────────────────────────────────────────────
@@ -77,3 +79,4 @@ export function getAllAppIds(): string[] {
 export type { OrbisApp, AppCategory, AppSetting, AppStatus } from "./types";
 export { categories, getCategoryName, getCategoryNameAr } from "./categories";
 export type { CategoryDef } from "./categories";
+

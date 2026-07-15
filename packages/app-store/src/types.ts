@@ -14,6 +14,7 @@ export type AppCategory =
   | "hardware" // Physical devices (fingerprint, RFID, barcode, printer)
   | "storage" // StorageProvider trait (local, S3, GCS)
   | "ai-service" // AI capabilities (OCR, STT, TTS)
+  | "ai-vision" // AI and Computer Vision (Authen)
   | "automation"; // Webhooks, REST APIs, workflow engines
 
 /** Connection status — mirrors AdapterStatus in infra-integration */

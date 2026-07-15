@@ -20,6 +20,7 @@ export const categories: CategoryDef[] = [
   { id: "hardware", name: "Hardware", name_ar: "الأجهزة" },
   { id: "storage", name: "Storage", name_ar: "التخزين" },
   { id: "ai-service", name: "AI Services", name_ar: "خدمات الذكاء الاصطناعي" },
+  { id: "ai-vision", name: "AI & Computer Vision", name_ar: "الذكاء الاصطناعي و الرؤية الحاسوبية" },
   { id: "automation", name: "Automation", name_ar: "الأتمتة" },
 ];
 
