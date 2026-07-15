@@ -1,26 +1,7 @@
 export const Logo = () => `
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="36"
-    height="36"
-    viewBox="0 0 48 48"
-  >
-    <path fill="#4caf50" d="m45 16.2-5 2.75-5 4.75V40h7a3 3 0 0 0 3-3V16.2z" />
-    <path
-      fill="#1e88e5"
-      d="m3 16.2 3.614 1.71L13 23.7V40H6a3 3 0 0 1-3-3V16.2z"
-    />
-    <path
-      fill="#e53935"
-      d="m35 11.2-11 8.25-11-8.25-1 5.8 1 6.7 11 8.25 11-8.25 1-6.7z"
-    />
-    <path
-      fill="#c62828"
-      d="M3 12.298V16.2l10 7.5V11.2L9.876 8.859A4.298 4.298 0 0 0 3 12.298z"
-    />
-    <path
-      fill="#fbc02d"
-      d="M45 12.298V16.2l-10 7.5V11.2l3.124-2.341A4.298 4.298 0 0 1 45 12.298z"
-    />
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="36" height="36" fill="none" stroke="#2f80ed" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect width="36" height="36" rx="8" fill="#0d1e33" stroke="none"/>
+    <path d="M9 18l19-8-8 19-3-7-8-4z" fill="#2f80ed"/>
+    <path d="M28 10L17 21" />
   </svg>
 `;

@@ -6,6 +6,15 @@ Renders appropriate input types: text, password, number, url, select, switch.
 <script lang="ts">
 import type { AppSetting } from "@orbis/app-store";
 import { Button } from "@orbis/ui-svelte/button";
+import { Input } from "@orbis/ui-svelte/input";
+import { Label } from "@orbis/ui-svelte/label";
+import { Switch } from "@orbis/ui-svelte/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui-svelte/select";
 
 let {
   settings,
@@ -15,15 +24,14 @@ let {
   onsubmit?: (values: Record<string, unknown>) => void;
 } = $props();
 
-let values = $state<Record<string, unknown>>({});
+let values = $state<Record<string, any>>({});
 
-// Initialize with defaults
-$effect(() => {
-  const initial: Record<string, unknown> = {};
+$effect.pre(() => {
+  const nextValues: Record<string, any> = {};
   for (const s of settings) {
-    initial[s.id] = s.value;
+    nextValues[s.id] = s.value ?? (s.type === "switch" ? false : "");
   }
-  values = initial;
+  values = nextValues;
 });
 
 function handleSubmit(e: SubmitEvent) {
@@ -35,43 +43,45 @@ function handleSubmit(e: SubmitEvent) {
 <form class="space-y-4" onsubmit={handleSubmit}>
   {#each settings as setting (setting.id)}
     <div class="space-y-1.5">
-      <label for={setting.id} class="text-xs font-medium text-foreground block">
+      <Label for={setting.id} class="text-xs font-medium text-foreground block">
         {setting.label}
         {#if setting.required}
           <span class="text-red-500 ml-0.5">*</span>
         {/if}
-      </label>
+      </Label>
 
       {#if setting.type === "switch"}
         <!-- Toggle Switch -->
-        <label class="flex items-center gap-2.5 cursor-pointer py-1">
-          <input
-            type="checkbox"
+        <div class="flex items-center gap-2.5">
+          <Switch
             id={setting.id}
-            bind:checked={values[setting.id]}
-            class="rounded border-border"
+            bind:checked={values[setting.id] as any}
+            size="sm"
           />
           <span class="text-xs text-muted-foreground leading-snug">{setting.description}</span>
-        </label>
+        </div>
 
       {:else if setting.type === "select"}
-        <!-- Select Dropdown -->
-        <select
-          id={setting.id}
-          bind:value={values[setting.id]}
-          class="w-full text-xs border border-border/60 rounded-md px-3 py-2
-                 bg-background text-foreground focus:border-primary focus:ring-1
-                 focus:ring-primary/20 outline-none transition-colors"
+        <Select
+          type="single"
+          value={values[setting.id] as string}
+          onValueChange={(v: string | undefined) => {
+            values[setting.id] = v ?? "";
+          }}
         >
-          {#each setting.options ?? [] as opt}
-            <option value={opt.value}>{opt.label}</option>
-          {/each}
-        </select>
+          <SelectTrigger class="w-full text-xs h-9 flex justify-between items-center px-3">
+            {setting.options?.find(o => o.value === values[setting.id])?.label || values[setting.id] || "Select an option..."}
+          </SelectTrigger>
+          <SelectContent>
+            {#each setting.options ?? [] as opt}
+              <SelectItem value={opt.value}>{opt.label}</SelectItem>
+            {/each}
+          </SelectContent>
+        </Select>
         <p class="text-[10px] text-muted-foreground/70">{setting.description}</p>
 
       {:else}
-        <!-- Text / Password / Number / URL -->
-        <input
+        <Input
           type={setting.type}
           id={setting.id}
           bind:value={values[setting.id]}
@@ -79,10 +89,7 @@ function handleSubmit(e: SubmitEvent) {
           required={setting.required}
           min={setting.validation?.min}
           max={setting.validation?.max}
-          class="w-full text-xs border border-border/60 rounded-md px-3 py-2
-                 bg-background text-foreground placeholder:text-muted-foreground/50
-                 focus:border-primary focus:ring-1 focus:ring-primary/20
-                 outline-none transition-colors"
+          class="h-9 w-full text-xs"
         />
         <p class="text-[10px] text-muted-foreground/70">{setting.description}</p>
       {/if}

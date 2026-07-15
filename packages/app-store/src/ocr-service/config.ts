@@ -1,6 +1,8 @@
+import { Logo } from "./assets/logo";
 import type { OrbisApp } from "../types";
 
 const config: OrbisApp = {
+  logo: Logo,
   id: "ocr-service",
   name: "OCR Service",
   name_ar: "خدمة التعرف الضوئي",

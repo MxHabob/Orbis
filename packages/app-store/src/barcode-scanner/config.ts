@@ -1,6 +1,8 @@
+import { Logo } from "./assets/logo";
 import type { OrbisApp } from "../types";
 
 const config: OrbisApp = {
+  logo: Logo,
   id: "barcode-scanner",
   name: "Barcode Scanner",
   name_ar: "ماسح الباركود",
