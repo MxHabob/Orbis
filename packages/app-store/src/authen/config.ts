@@ -5,7 +5,7 @@ const config: OrbisApp = {
   logo: Logo,
   id: "authen",
   name: "Authen",
-  name_ar: "أوثين",
+  name_ar: "أوثن",
   category: "ai-vision",
   active: true,
   icon: "ScanFace",
