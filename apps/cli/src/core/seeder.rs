@@ -80,8 +80,8 @@ pub async fn seed_essential_data(db: &DatabaseConnection, org_id: &str) -> Resul
     for (code, name, name_ar, symbol) in currencies {
         db.execute(Statement::from_sql_and_values(
             DatabaseBackend::Sqlite,
-            "INSERT INTO currencies (code, org_id, name, name_ar, symbol, symbol_position, decimal_places, exchange_rate, is_base, is_active, updated_at) VALUES (?, ?, ?, ?, ?, 'right', 2, 1.0, ?, 1, ?) ON CONFLICT DO NOTHING",
-            vec![code.into(), org_id.to_string().into(), name.into(), name_ar.into(), symbol.into(), (if code == "SAR" { 1 } else { 0 }).into(), now.clone().into()]
+            "INSERT INTO currencies (code, org_id, name, name_ar, symbol, symbol_position, decimal_places, exchange_rate, is_base, is_active, updated_at) VALUES (?, ?, ?, ?, ?, 'right', 2, 1.0, 0, 1, ?) ON CONFLICT DO NOTHING",
+            vec![code.into(), org_id.to_string().into(), name.into(), name_ar.into(), symbol.into(), now.clone().into()]
         )).await?;
     }
 
