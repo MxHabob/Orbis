@@ -384,4 +384,17 @@ export const commands: OrbisCommands = {
     previewDocumentTemplate: (templateJson, contextJson) =>
       http.post("/api/docforge/preview", { templateJson, contextJson }),
   },
+  document: {
+    uploadDocument: async (payload) => {
+      const formData = new FormData();
+      formData.append("file", payload.file);
+      formData.append("entity_type", payload.entity_type);
+      formData.append("entity_id", payload.entity_id);
+      formData.append("category", payload.category);
+      formData.append("visibility", payload.visibility);
+      return http.multipartRequest("POST", "/api/documents", formData);
+    },
+    getDocuments: (ownerId) => http.get(`/api/documents/${ownerId}`),
+    deleteDocument: (id) => http.del(`/api/documents/${id}`),
+  },
 };

@@ -58,6 +58,39 @@ export async function request<T>(
 
   if (!res.ok) {
     const msg = json?.error ?? json?.message ?? res.statusText;
+    throw new OrbisError(msg, "API_ERROR");
+  }
+
+  return json as T;
+}
+
+export async function multipartRequest<T>(
+  method: "POST" | "PUT",
+  path: string,
+  body: FormData,
+): Promise<T> {
+  const token = _config.getToken();
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+  };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const url = `${_config.baseUrl}${path}`;
+  const init: RequestInit = { method, headers, body };
+
+  const res = await fetch(url, init);
+
+  if (res.status === 401) {
+    _config.onUnauthorized?.();
+    throw new OrbisError("Unauthorized", "AUTH_EXPIRED");
+  }
+
+  const json = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    const msg = json?.error ?? json?.message ?? res.statusText;
     throw new OrbisError(msg, `HTTP_${res.status}`);
   }
 
@@ -71,4 +104,5 @@ export const http = {
   post: <T>(path: string, body?: unknown) => request<T>("POST", path, body),
   put: <T>(path: string, body?: unknown) => request<T>("PUT", path, body),
   del: <T>(path: string) => request<T>("DELETE", path),
+  multipartRequest,
 };

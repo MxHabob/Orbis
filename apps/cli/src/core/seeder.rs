@@ -128,5 +128,74 @@ pub async fn seed_essential_data(db: &DatabaseConnection, org_id: &str) -> Resul
         println!("{}", "[!] Warning: Could not parse educational_chart_of_accounts.json".yellow());
     }
 
+    // Default Role Permissions
+    let default_perms = vec![
+        // Teacher
+        ("teacher", "Class", "[\"read\"]"),
+        ("teacher", "Subject", "[\"read\"]"),
+        ("teacher", "Student", "[\"read\"]"),
+        ("teacher", "Attendance", "[\"read\", \"write\"]"),
+        ("teacher", "Behavior", "[\"read\", \"write\"]"),
+        ("teacher", "Grade", "[\"read\", \"write\"]"),
+        ("teacher", "Assessment Result", "[\"read\", \"write\"]"),
+        ("teacher", "Document", "[\"read\", \"write\", \"delete\"]"),
+        ("teacher", "Schedule", "[\"read\"]"),
+        ("teacher", "Exam", "[\"read\"]"),
+        
+        // Student
+        ("student", "Class", "[\"read\"]"),
+        ("student", "Subject", "[\"read\"]"),
+        ("student", "Attendance", "[\"read\"]"),
+        ("student", "Behavior", "[\"read\"]"),
+        ("student", "Grade", "[\"read\"]"),
+        ("student", "Assessment Result", "[\"read\"]"),
+        ("student", "Document", "[\"read\"]"),
+        ("student", "Schedule", "[\"read\"]"),
+        ("student", "Exam", "[\"read\"]"),
+
+        // Parent
+        ("parent", "Class", "[\"read\"]"),
+        ("parent", "Subject", "[\"read\"]"),
+        ("parent", "Attendance", "[\"read\"]"),
+        ("parent", "Behavior", "[\"read\"]"),
+        ("parent", "Grade", "[\"read\"]"),
+        ("parent", "Assessment Result", "[\"read\"]"),
+        ("parent", "Document", "[\"read\"]"),
+        ("parent", "Schedule", "[\"read\"]"),
+        ("parent", "Exam", "[\"read\"]"),
+        ("parent", "Finance", "[\"read\"]"),
+
+        // Principal
+        ("principal", "Class", "[\"read\", \"write\", \"delete\"]"),
+        ("principal", "Subject", "[\"read\", \"write\", \"delete\"]"),
+        ("principal", "Student", "[\"read\", \"write\", \"delete\"]"),
+        ("principal", "Teacher", "[\"read\", \"write\", \"delete\"]"),
+        ("principal", "Attendance", "[\"read\", \"write\", \"delete\"]"),
+        ("principal", "Behavior", "[\"read\", \"write\", \"delete\"]"),
+        ("principal", "Grade", "[\"read\", \"write\", \"delete\"]"),
+        ("principal", "Assessment Result", "[\"read\", \"write\", \"delete\"]"),
+        ("principal", "Document", "[\"read\", \"write\", \"delete\"]"),
+        ("principal", "Schedule", "[\"read\", \"write\", \"delete\"]"),
+        ("principal", "Exam", "[\"read\", \"write\", \"delete\"]"),
+        ("principal", "Dashboard", "[\"read\"]"),
+        ("principal", "Department", "[\"read\", \"write\"]"),
+
+        // Staff
+        ("staff", "Class", "[\"read\"]"),
+        ("staff", "Subject", "[\"read\"]"),
+        ("staff", "Student", "[\"read\"]"),
+        ("staff", "Document", "[\"read\", \"write\"]"),
+    ];
+
+    for (role, doc_type, actions) in default_perms {
+        db.execute(Statement::from_sql_and_values(
+            DatabaseBackend::Sqlite,
+            "INSERT INTO role_permissions (role, document_type, level, only_if_creator, actions, created_at) VALUES (?, ?, 0, 0, ?, ?) ON CONFLICT DO NOTHING",
+            vec![role.into(), doc_type.into(), actions.into(), now.clone().into()]
+        )).await?;
+    }
+    
+    println!("{}", "[+] Default Role Permissions seeded successfully.".green());
+
     Ok(())
 }

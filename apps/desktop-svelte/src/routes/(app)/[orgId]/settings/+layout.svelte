@@ -97,6 +97,11 @@ const navItems = $derived([
     icon: Coins,
   },
   {
+    path: "archive",
+    label: "Archive", // Using raw string for now
+    icon: FileText,
+  },
+  {
     path: "ordering",
     label: m.common_nav_ordering(),
     icon: ListOrdered,

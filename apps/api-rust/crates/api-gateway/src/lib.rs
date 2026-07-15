@@ -8,6 +8,7 @@ use axum::{
 };
 use serde_json::json;
 use tower_http::cors::CorsLayer;
+use tower_http::services::ServeDir;
 use tracing::info;
 
 pub mod entities;
@@ -143,6 +144,8 @@ pub async fn start_server(_database_url: &str, port: u16) -> Result<(), Box<dyn 
         .route("/api/import/grades", post(handler::import_export::post_import_grades))
         .route("/api/export/students", get(handler::import_export::get_export_students))
         .route("/api/export/grades", get(handler::import_export::get_export_grades))
+        // Static Storage
+        .nest_service("/storage", ServeDir::new("app_data/storage"))
         .with_state(state)
         .layer(cors);
 
@@ -162,7 +165,7 @@ async fn get_status() -> impl IntoResponse {
             "success": true,
             "status": "healthy",
             "timestamp": chrono::Utc::now().to_rfc3339(),
-            "version": "3.0.0",
+            "version": "1.0.0",
             "engine": "Orbis API Gateway (ops:: architecture)",
         })),
     )

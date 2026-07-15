@@ -153,6 +153,10 @@ pub fn run() {
             show_window,
             open_agent_window,
             check_for_updates,
+            // Document
+            commands::document::thin::upload_document,
+            commands::document::thin::get_documents,
+            commands::document::thin::delete_document,
             // IAM commands
             commands::iam::thin::login,
             commands::iam::thin::logout_session,

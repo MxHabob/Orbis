@@ -6,6 +6,7 @@ A circular avatar image uploader with hover edit states and customizable fallbac
 import { Avatar, AvatarImage, AvatarFallback } from "@orbis/ui-svelte/avatar";
 import { cn } from "@orbis/ui-svelte/utils";
 import { Loader2, User } from "lucide-svelte";
+import { useUploadDocument, resolveDocumentUrl } from "$lib/features/documents/queries";
 
 let {
   avatarUrl = $bindable(null),
@@ -13,6 +14,9 @@ let {
   isLoading = false,
   fallbackText = "",
   class: className,
+  entityType = "user",
+  entityId = "unknown",
+  category = "avatar",
   onupload,
 }: {
   avatarUrl?: string | null;
@@ -20,13 +24,29 @@ let {
   isLoading?: boolean;
   fallbackText?: string;
   class?: string;
+  entityType?: string;
+  entityId?: string;
+  category?: string;
   onupload?: (url: string) => void;
 } = $props();
 
+const uploadMutation = useUploadDocument();
 let fileInputRef: HTMLInputElement | undefined = $state();
+let localPreviewUrl: string | null = $state(null);
+
+let resolvedAvatarUrl: string | null = $state(null);
+$effect(() => {
+  if (avatarUrl && !localPreviewUrl) {
+    resolveDocumentUrl(avatarUrl).then(url => {
+      resolvedAvatarUrl = url;
+    });
+  }
+});
+
+let displayUrl = $derived(localPreviewUrl || resolvedAvatarUrl);
 
 function triggerFileInput() {
-  if (isLoading) return;
+  if (isLoading || $uploadMutation.isPending) return;
   fileInputRef?.click();
 }
 
@@ -35,21 +55,37 @@ function handleFileChange(event: Event) {
   const file = target.files?.[0];
   if (!file) return;
 
+  // Local preview immediately
   const reader = new FileReader();
   reader.onload = () => {
-    const resultUrl = reader.result as string;
-    avatarUrl = resultUrl;
-    if (onupload) {
-      onupload(resultUrl);
-    }
+    localPreviewUrl = reader.result as string;
   };
   reader.readAsDataURL(file);
+
+  // Background upload
+  $uploadMutation.mutate({
+    file,
+    entity_type: entityType,
+    entity_id: entityId,
+    category: category,
+    visibility: "public"
+  }, {
+    onSuccess: (data: any) => {
+      const serverUrl = data.url;
+      avatarUrl = serverUrl;
+      if (onupload) onupload(serverUrl);
+    },
+    onError: (err) => {
+      console.error("Failed to upload avatar", err);
+      localPreviewUrl = null; // Revert on failure
+    }
+  });
 }
 </script>
 
 <div 
   class={cn(
-    "relative flex items-center justify-center rounded-md  group cursor-pointer overflow-hidden bg-muted",
+    "relative flex items-center justify-center rounded-md group cursor-pointer overflow-hidden bg-muted",
     className
   )}
   style="width: {size}px; height: {size}px;"
@@ -58,14 +94,14 @@ function handleFileChange(event: Event) {
   role="button"
   tabindex="0"
 >
-  {#if isLoading}
+  {#if isLoading || $uploadMutation.isPending}
     <div class="flex items-center justify-center w-full h-full bg-background/50 backdrop-blur-xs">
       <Loader2 class="animate-spin text-primary shrink-0" size={Math.max(16, size / 3.5)} />
     </div>
   {:else}
     <Avatar class="w-full h-full rounded-md">
       <AvatarImage
-        src={avatarUrl ?? undefined}
+        src={displayUrl ?? undefined}
         alt="Avatar"
         class="w-full h-full object-cover"
       />

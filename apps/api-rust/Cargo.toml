@@ -17,6 +17,7 @@ members = [
     "crates/docforge-engine",
     "crates/docforge-orbis",
     "crates/api-gateway",
+    "crates/svc-document",
 ]
 
 [workspace.dependencies]
@@ -54,6 +55,7 @@ svc-scheduling = { path = "crates/svc-scheduling" }
 svc-finance = { path = "crates/svc-finance" }
 svc-exam = { path = "crates/svc-exam" }
 autopilot = { path = "crates/autopilot" }
+svc-document = { path = "crates/svc-document" }
 infra-persistence = { path = "crates/infra-persistence" }
 infra-integration = { path = "crates/infra-integration" }
 infra-scheduler = { path = "crates/infra-scheduler" }

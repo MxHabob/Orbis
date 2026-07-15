@@ -23,6 +23,7 @@ pub struct PlatformServices {
     pub event_store: Arc<shared_kernel::event_store::EventStore>,
     pub reactive: Arc<shared_kernel::reactive::ReactivePipeline>,
     pub plugins: Arc<shared_kernel::plugin::PluginRegistry>,
+    pub storage: Arc<dyn infra_integration::traits::StorageProvider>,
 }
 
 impl PlatformServices {
@@ -43,6 +44,8 @@ impl PlatformServices {
         ));
 
         let db_for_store = db.clone();
+        
+        let storage = infra_integration::adapters::storage::local::LocalStorageProvider::new("app_data/storage");
 
         Self {
             permissions: Arc::new(IamPermissionChecker::new(db.clone())),
@@ -56,6 +59,7 @@ impl PlatformServices {
             event_store: Arc::new(shared_kernel::event_store::EventStore::new(db_for_store)),
             reactive: Arc::new(reactive),
             plugins: Arc::new(shared_kernel::plugin::PluginRegistry::new()),
+            storage: Arc::new(storage),
         }
     }
 

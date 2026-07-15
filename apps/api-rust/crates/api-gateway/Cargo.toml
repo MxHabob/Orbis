@@ -18,6 +18,7 @@ svc-assessment = { workspace = true }
 svc-scheduling = { workspace = true }
 svc-finance = { workspace = true }
 svc-exam = { workspace = true }
+svc-document = { workspace = true }
 infra-persistence = { workspace = true }
 infra-integration = { workspace = true }
 infra-scheduler = { workspace = true }

@@ -461,4 +461,24 @@ export const commands: OrbisCommands = {
     previewDocumentTemplate: (templateJson, contextJson) =>
       cmd("preview_document_template", { templateJson, contextJson }),
   },
+  document: {
+    uploadDocument: async (payload) => {
+      // In a desktop environment, we might need to read the file to bytes 
+      // or pass the file path to Rust. Assuming we pass an array buffer or path.
+      // But standard web File API is used here. For large files, Tauri supports HTTP uploads or raw bytes.
+      const buffer = await payload.file.arrayBuffer();
+      const bytes = Array.from(new Uint8Array(buffer));
+      return cmd("upload_document", { 
+        fileName: payload.file.name,
+        mimeType: payload.file.type,
+        bytes,
+        entityType: payload.entity_type,
+        entityId: payload.entity_id,
+        category: payload.category,
+        visibility: payload.visibility
+      });
+    },
+    getDocuments: (ownerId) => cmd("get_documents", { ownerId }),
+    deleteDocument: (id) => cmd("delete_document", { id }),
+  },
 };

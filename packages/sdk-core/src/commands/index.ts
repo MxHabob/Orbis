@@ -15,6 +15,7 @@ import type { OrganizationCommands } from "./organization";
 import type { PlatformCommands } from "./platform";
 import type { DocforgeCommands } from "./docforge";
 import type { AgentCommands } from "./agent";
+import type { DocumentCommands } from "./document";
 
 export interface OrbisCommands {
   academic: AcademicCommands;
@@ -27,6 +28,7 @@ export interface OrbisCommands {
   platform: PlatformCommands;
   docforge: DocforgeCommands;
   agent: AgentCommands;
+  document: DocumentCommands;
 }
 
 export type { AcademicCommands } from "./academic";
@@ -39,3 +41,4 @@ export type { OrganizationCommands } from "./organization";
 export type { PlatformCommands } from "./platform";
 export type { DocforgeCommands } from "./docforge";
 export type { AgentCommands } from "./agent";
+export type { DocumentCommands } from "./document";

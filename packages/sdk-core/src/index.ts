@@ -40,10 +40,14 @@ export {
   type OrgUnit,
   type ClassSubject,
   type StudentGuardian,
-  type Document,
   type Notification,
   type Organization,
 } from "./types/academic";
+
+export {
+  type Document,
+  type UploadDocumentPayload,
+} from "./types/document";
 
 export {
   type Grade,

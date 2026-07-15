@@ -7,3 +7,4 @@ pub mod scheduling;
 pub mod finance;
 pub mod exam;
 pub mod ai;
+pub mod document;

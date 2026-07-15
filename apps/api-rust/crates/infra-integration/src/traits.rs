@@ -231,3 +231,21 @@ pub trait NotificationProvider: Send + Sync {
     async fn send(&self, notification: &Notification) -> Result<String, String>;
     async fn send_bulk(&self, notifications: &[Notification]) -> Result<Vec<String>, String>;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// Storage Provider (Local File System, S3, etc.)
+// ═══════════════════════════════════════════════════════════════
+
+#[async_trait]
+pub trait StorageProvider: Send + Sync {
+    fn provider_name(&self) -> &str;
+    
+    /// Uploads a file and returns its stored path or key
+    async fn upload(&self, bucket: &str, key: &str, data: &[u8]) -> Result<String, String>;
+    
+    /// Deletes a file by its key
+    async fn delete(&self, bucket: &str, key: &str) -> Result<(), String>;
+    
+    /// Gets the direct download URL if applicable (e.g., S3 pre-signed URL)
+    fn get_url(&self, bucket: &str, key: &str) -> Option<String>;
+}

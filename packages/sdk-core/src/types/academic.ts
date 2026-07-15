@@ -147,17 +147,6 @@ export interface StudentGuardian {
   updated_at: string;
 }
 
-export interface Document {
-  id: string;
-  org_id: string;
-  owner_id: string;
-  name: string;
-  title?: string | null;
-  item_type: string;
-  url?: string | null;
-  created_at: string;
-  updated_at: string;
-}
 
 export interface Notification {
   id: string;
