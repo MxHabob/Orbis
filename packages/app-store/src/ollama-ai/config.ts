@@ -1,6 +1,8 @@
+import { Logo } from "./assets/logo";
 import type { OrbisApp } from "../types";
 
 const config: OrbisApp = {
+  logo: Logo,
   id: "ollama-ai",
   name: "Ollama",
   name_ar: "أولاما",

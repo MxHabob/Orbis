@@ -1,6 +1,8 @@
+import { Logo } from "./assets/logo";
 import type { OrbisApp } from "../types";
 
 const config: OrbisApp = {
+  logo: Logo,
   id: "hikvision-camera",
   name: "Hikvision Camera",
   name_ar: "كاميرا هيكفيجن",

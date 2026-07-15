@@ -100,7 +100,7 @@ async function handleDisconnect() {
               class="w-14 h-14 flex items-center justify-center rounded-xl
                      bg-muted/50 text-foreground shrink-0"
             >
-              <AppIcon icon={app.icon} size={28} />
+              <AppIcon icon={app.icon} logo={app.logo} size={28} />
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2.5 mb-1.5">
@@ -139,6 +139,7 @@ async function handleDisconnect() {
               </div>
             </div>
           {/if}
+
 
           <!-- Features -->
           {#if app.features.length > 0}
@@ -216,7 +217,7 @@ async function handleDisconnect() {
                         class="w-8 h-8 flex items-center justify-center rounded-md
                                bg-muted/50 text-foreground shrink-0"
                       >
-                        <AppIcon icon={related.icon} size={16} />
+                        <AppIcon icon={related.icon} logo={related.logo} size={16} />
                       </div>
                       <span
                         class="text-xs text-foreground group-hover:text-muted-foreground

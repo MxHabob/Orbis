@@ -1,6 +1,8 @@
+import { Logo } from "./assets/logo";
 import type { OrbisApp } from "../types";
 
 const config: OrbisApp = {
+  logo: Logo,
   id: "cloud-storage",
   name: "Cloud Storage",
   name_ar: "التخزين السحابي",

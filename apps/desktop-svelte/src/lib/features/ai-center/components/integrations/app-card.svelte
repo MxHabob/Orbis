@@ -26,7 +26,7 @@ let {
       <!-- Top: Icon + UI Badges -->
       <div class="flex items-start justify-between mb-4">
         <div class="h-10 w-10 flex items-center justify-center overflow-hidden rounded-lg bg-muted/60 text-foreground">
-          <AppIcon icon={app.icon} size={22} />
+          <AppIcon icon={app.icon} logo={app.logo} size={22} />
         </div>
         <div class="flex gap-1.5">
           {#if app.status === "connected"}

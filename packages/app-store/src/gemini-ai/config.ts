@@ -1,6 +1,8 @@
+import { Logo } from "./assets/logo";
 import type { OrbisApp } from "../types";
 
 const config: OrbisApp = {
+  logo: Logo,
   id: "gemini-ai",
   name: "Google Gemini",
   name_ar: "جوجل جيميناي",

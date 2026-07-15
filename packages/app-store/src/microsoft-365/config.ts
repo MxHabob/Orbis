@@ -1,6 +1,8 @@
+import { Logo } from "./assets/logo";
 import type { OrbisApp } from "../types";
 
 const config: OrbisApp = {
+  logo: Logo,
   id: "microsoft-365",
   name: "Microsoft 365",
   name_ar: "مايكروسوفت 365",

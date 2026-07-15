@@ -70,6 +70,8 @@ export interface OrbisApp {
   // ── Presentation ──────────────────────────────────────────────
   /** Lucide icon name (e.g. "Camera", "Brain", "Sparkles") */
   icon: string;
+  /** Custom logo component */
+  logo?: any;
   /** One-line description (English) */
   short_description: string;
   /** One-line description (Arabic) */
@@ -82,6 +84,9 @@ export interface OrbisApp {
   features: string[];
   /** Key features list (Arabic) */
   features_ar?: string[];
+
+  /** App gallery/screenshot images */
+  images?: string[];
 
   // ── Configuration ─────────────────────────────────────────────
   /** Settings schema — auto-generates the connect form */
