@@ -111,6 +111,18 @@ CREATE TABLE IF NOT EXISTS org_units (
   unit_type TEXT NOT NULL DEFAULT 'division',
   sort_order INTEGER,
   is_active INTEGER NOT NULL DEFAULT 1,
+  path TEXT NOT NULL DEFAULT '/',
+  depth INTEGER NOT NULL DEFAULT 0,
+  head_id TEXT,
+  capacity INTEGER,
+  room_number TEXT,
+  floor INTEGER,
+  building TEXT,
+  settings TEXT,
+  local_policies TEXT,
+  data_isolation TEXT NOT NULL DEFAULT 'shared',
+  children_count INTEGER NOT NULL DEFAULT 0,
+  descendant_count INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (org_id) REFERENCES organizations(id),
@@ -196,6 +208,7 @@ CREATE INDEX IF NOT EXISTS idx_ap_org_period ON academic_periods(org_id, period_
 CREATE TABLE IF NOT EXISTS academic_policies (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL UNIQUE,
+  org_unit_id TEXT,
   default_grading_system TEXT NOT NULL DEFAULT 'percentage',
   default_passing_grade INTEGER NOT NULL DEFAULT 50,
   default_max_grade INTEGER NOT NULL DEFAULT 100,
@@ -1452,7 +1465,7 @@ CREATE TABLE IF NOT EXISTS teacher_exam_availability (
 CREATE INDEX IF NOT EXISTS idx_tea_teacher ON teacher_exam_availability(teacher_id, exam_session_id);
 
 -- ── Search Optimizations for Students & Guardians ──
-CREATE INDEX IF NOT EXISTS idx_users_org_role ON users(org_id, primary_role);
+CREATE INDEX IF NOT EXISTS idx_users_org_role ON users(org_id, primary_role) WHERE is_deleted = 0;
 CREATE INDEX IF NOT EXISTS idx_users_national_id ON users(national_id);
 CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -1602,3 +1615,58 @@ CREATE TABLE IF NOT EXISTS data_quality_findings (
 );
 CREATE INDEX IF NOT EXISTS idx_dqf_org_status ON data_quality_findings(org_id, status);
 CREATE INDEX IF NOT EXISTS idx_dqf_entity ON data_quality_findings(entity_type, entity_id);
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- Performance Indexes for Common Queries
+-- ══════════════════════════════════════════════════════════════════════════════
+
+CREATE INDEX IF NOT EXISTS idx_enrollment_org_period_class
+    ON enrollments(org_id, period_id, class_id) WHERE is_deleted = 0;
+
+CREATE INDEX IF NOT EXISTS idx_grades_enrollment_period_subject
+    ON grades(enrollment_id, period_id, class_subject_id);
+
+CREATE INDEX IF NOT EXISTS idx_attendance_enrollment_period_date
+    ON attendance(enrollment_id, period_id, date);
+
+CREATE INDEX IF NOT EXISTS idx_autopilot_org_status
+    ON autopilot_tasks(org_id, status);
+
+CREATE INDEX IF NOT EXISTS idx_classes_org_period_covering
+    ON classes(org_id, period_id, name, level, capacity);
+
+-- ═══════════════════════════════════════════════════════════════
+-- ── Domain Events ───────────────────────────────────────────────
+-- ═══════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS domain_events (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    aggregate_type  TEXT NOT NULL,
+    aggregate_id    TEXT NOT NULL,
+    event_type      TEXT NOT NULL,
+    payload         TEXT NOT NULL,
+    actor_id        TEXT NOT NULL,
+    actor_type      TEXT NOT NULL,
+    correlation_id  TEXT DEFAULT '',
+    version         INTEGER NOT NULL,
+    created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_de_aggregate ON domain_events(aggregate_type, aggregate_id, version);
+CREATE INDEX IF NOT EXISTS idx_de_type_time ON domain_events(event_type, created_at);
+CREATE INDEX IF NOT EXISTS idx_de_correlation ON domain_events(correlation_id) WHERE correlation_id != '';
+CREATE INDEX IF NOT EXISTS idx_de_actor ON domain_events(actor_id, created_at);
+
+-- ── Process State ───────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS process_log (
+    id              TEXT PRIMARY KEY,
+    process_type    TEXT NOT NULL,
+    org_id          TEXT NOT NULL,
+    status          TEXT NOT NULL,
+    steps_json      TEXT NOT NULL,
+    started_at      TEXT NOT NULL,
+    completed_at    TEXT,
+    error           TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_pl_org ON process_log(org_id, process_type, started_at);

@@ -25,10 +25,6 @@ impl DatabaseProvider {
         let active_baseline_sql = include_str!("schemas/schema_baseline.sql");
         let _ = crate::migrations::run_sql_migration(&db, active_baseline_sql).await;
 
-        // Run v4 org hierarchy migration (idempotent — uses run_sql_cleanup for ALTER TABLE)
-        let v4_sql = include_str!("schemas/schema_v4_org_hierarchy.sql");
-        crate::migrations::run_sql_cleanup(&db, v4_sql).await;
-
         Ok(Self {
             db,
             app_data_dir: app_data_dir.to_path_buf(),
