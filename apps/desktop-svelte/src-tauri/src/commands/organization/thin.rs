@@ -57,7 +57,14 @@ pub async fn get_setup_status(state: State<'_, Arc<AppState>>) -> CmdResult<bool
 }
 
 #[tauri::command]
-pub async fn initialize_school_setup(_state: State<'_, Arc<AppState>>, _payload: serde_json::Value) -> CmdResult<()> {
+pub async fn initialize_school_setup(
+    state: State<'_, Arc<AppState>>,
+    payload: serde_json::Value,
+) -> CmdResult<()> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    ops::organization::initialize_school_setup(&ctx, payload)
+        .await
+        .map_err(CommandError::from)?;
     Ok(())
 }
 
