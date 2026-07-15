@@ -8,6 +8,7 @@ Sidebar: CTA card + settings form + related apps.
 <script lang="ts">
 import { getAppById, getAppsByCategory, getCategoryName } from "@orbis/app-store";
 import type { OrbisApp } from "@orbis/app-store";
+import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import AppIcon from "$lib/features/ai-center/components/integrations/app-icon.svelte";
 import AppConnectForm from "$lib/features/ai-center/components/integrations/app-connect-form.svelte";
@@ -24,7 +25,22 @@ const relatedApps = $derived(
 );
 const basePath = $derived(`/${data.orgId}/ai-center/integrations`);
 
-/** Simple markdown bold parser (converts **text** to <strong>) */
+let isConnecting = $state(false);
+let isConnected = $state(false);
+let connectError = $state<string | null>(null);
+
+// Check current status on load
+$effect(() => {
+  if (data.appId) {
+    commands.aiCenter.getIntegrationStatus(data.appId)
+      .then((status: any) => {
+        isConnected = status?.connected ?? false;
+      })
+      .catch(() => { isConnected = false; });
+  }
+});
+
+/** Simple markdown bold parser */
 function renderDescription(text: string): string {
   return text
     .replace(/\*\*(.*?)\*\*/g, "<strong class='text-foreground font-medium'>$1</strong>")
@@ -32,9 +48,26 @@ function renderDescription(text: string): string {
     .replace(/\n/g, "<br />");
 }
 
-function handleConnect(values: Record<string, unknown>) {
-  // TODO: Wire to SDK/backend — send settings to api-rust adapter
-  console.log("[AI Center] Connect app:", data.appId, values);
+async function handleConnect(values: Record<string, unknown>) {
+  isConnecting = true;
+  connectError = null;
+  try {
+    await commands.aiCenter.connectIntegration(data.appId, values);
+    isConnected = true;
+  } catch (e: any) {
+    connectError = e?.message ?? "Connection failed";
+  } finally {
+    isConnecting = false;
+  }
+}
+
+async function handleDisconnect() {
+  try {
+    await commands.aiCenter.disconnectIntegration(data.appId);
+    isConnected = false;
+  } catch (e: any) {
+    console.error("[AI Center] Disconnect failed:", e);
+  }
 }
 </script>
 
@@ -128,21 +161,37 @@ function handleConnect(values: Record<string, unknown>) {
           <div class="sticky top-6 space-y-5">
             <!-- CTA Card -->
             <div class="border border-border/60 p-5 rounded-lg">
-              <h3 class="text-sm font-medium text-foreground mb-3">
-                {app.active ? "Get started" : "Coming soon"}
-              </h3>
-              <p class="text-xs text-muted-foreground mb-4 leading-relaxed">
-                {app.active
-                  ? `Connect ${app.name} to your Orbis system and start automating.`
-                  : `We're working on the ${app.name} integration. Stay tuned.`}
-              </p>
-              <Button class="w-full" size="sm" disabled={!app.active}>
-                {app.active ? `Connect ${app.name}` : "Coming Soon"}
-              </Button>
+              {#if isConnected}
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <h3 class="text-sm font-medium text-emerald-600 dark:text-emerald-400">Connected</h3>
+                </div>
+                <p class="text-xs text-muted-foreground mb-4 leading-relaxed">
+                  {app.name} is connected and operational.
+                </p>
+                <Button class="w-full" size="sm" variant="outline" onclick={handleDisconnect}>
+                  Disconnect
+                </Button>
+              {:else}
+                <h3 class="text-sm font-medium text-foreground mb-3">
+                  {app.active ? "Get started" : "Coming soon"}
+                </h3>
+                <p class="text-xs text-muted-foreground mb-4 leading-relaxed">
+                  {app.active
+                    ? `Connect ${app.name} to your Orbis system and start automating.`
+                    : `We're working on the ${app.name} integration. Stay tuned.`}
+                </p>
+                {#if connectError}
+                  <p class="text-[10px] text-red-500 mb-2">{connectError}</p>
+                {/if}
+                <Button class="w-full" size="sm" disabled={!app.active || isConnecting}>
+                  {isConnecting ? "Connecting..." : app.active ? `Connect ${app.name}` : "Coming Soon"}
+                </Button>
+              {/if}
             </div>
 
             <!-- Settings Form -->
-            {#if app.settings.length > 0 && app.active}
+            {#if app.settings.length > 0 && app.active && !isConnected}
               <div class="border border-border/60 p-5 rounded-lg">
                 <h3 class="text-xs font-medium text-muted-foreground mb-4 uppercase tracking-wider">
                   Configuration

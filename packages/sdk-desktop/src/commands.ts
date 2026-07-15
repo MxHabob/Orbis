@@ -459,6 +459,45 @@ export const commands: OrbisCommands = {
     },
     openStandaloneWindow: (orgId) => cmd("agent_open_standalone", {}),
   },
+  aiCenter: {
+    // ── Action Logs ──
+    listActionLogs: (orgId: string, sessionId?: string) =>
+      cmd("ai_list_action_logs", { orgId, sessionId }),
+    approveAction: (actionLogId: string) =>
+      cmd("ai_approve_action", { actionLogId }),
+    rejectAction: (actionLogId: string, reason?: string) =>
+      cmd("ai_reject_action", { actionLogId, reason }),
+    // ── Autopilot Tasks ──
+    listAutopilotTasks: (orgId: string) =>
+      cmd("ai_list_autopilot_tasks", { orgId }),
+    approveAutopilotTask: (taskId: string) =>
+      cmd("ai_approve_autopilot_task", { taskId }),
+    cancelAutopilotTask: (taskId: string) =>
+      cmd("ai_cancel_autopilot_task", { taskId }),
+    // ── Health & Providers ──
+    checkHealth: () => cmd("ai_check_health", {}),
+    listProviders: () => cmd("ai_list_providers", {}),
+    testProviderConnection: (provider: string, config: Record<string, unknown>) =>
+      cmd("ai_test_provider_connection", { provider, config }),
+    saveProviderConfig: (provider: string, config: Record<string, unknown>) =>
+      cmd("ai_save_provider_config", { provider, config }),
+    // ── Integration Connect/Disconnect ──
+    connectIntegration: (appId: string, settings: Record<string, unknown>) =>
+      cmd("ai_connect_integration", { appId, settings }),
+    disconnectIntegration: (appId: string) =>
+      cmd("ai_disconnect_integration", { appId }),
+    getIntegrationStatus: (appId: string) =>
+      cmd("ai_get_integration_status", { appId }),
+    listConnectedIntegrations: () =>
+      cmd("ai_list_connected_integrations", {}),
+    // ── Autopilot Config ──
+    getAutopilotConfig: (orgId: string) =>
+      cmd("ai_get_autopilot_config", { orgId }),
+    saveAutopilotConfig: (orgId: string, config: Record<string, unknown>) =>
+      cmd("ai_save_autopilot_config", { orgId, config }),
+    // ── Actions Registry ──
+    listRegisteredActions: () => cmd("ai_list_registered_actions", {}),
+  },
   docforge: {
     previewDocumentTemplate: (templateJson, contextJson) =>
       cmd("preview_document_template", { templateJson, contextJson }),

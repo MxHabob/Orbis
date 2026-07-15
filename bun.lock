@@ -101,6 +101,7 @@
       "dependencies": {
         "@docforge/core": "workspace:*",
         "@internationalized/date": "^3.12.0",
+        "@orbis/app-store": "workspace:*",
         "@orbis/avatar-engine": "workspace:*",
         "@orbis/location": "workspace:*",
         "@orbis/sdk-core": "workspace:*",
@@ -134,6 +135,10 @@
         "typescript": "^6.0.3",
         "vite": "^8.0.16",
       },
+    },
+    "packages/app-store": {
+      "name": "@orbis/app-store",
+      "version": "1.0.0",
     },
     "packages/avatar-engine": {
       "name": "@orbis/avatar-engine",
@@ -692,6 +697,8 @@
     "@opentelemetry/semantic-conventions": ["@opentelemetry/semantic-conventions@1.36.0", "", {}, "sha512-TtxJSRD8Ohxp6bKkhrm27JRHAxPczQA7idtcTOMYI+wQRRrfgqxHv1cFbCApcSnNjtXkmzFozn6jQtFrOmbjPQ=="],
 
     "@orbis/api-rust": ["@orbis/api-rust@workspace:apps/api-rust"],
+
+    "@orbis/app-store": ["@orbis/app-store@workspace:packages/app-store"],
 
     "@orbis/avatar-engine": ["@orbis/avatar-engine@workspace:packages/avatar-engine"],
 

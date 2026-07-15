@@ -650,3 +650,53 @@ export const ordering = {
     num("sort_order", labels.order || "Order", 80),
   ],
 };
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AI CENTER Tables
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const aiActionLogs = {
+  columns: (
+    labels: {
+      idx?: string;
+      action?: string;
+      status?: string;
+      risk?: string;
+      reasoning?: string;
+      duration?: string;
+      time?: string;
+      confidence?: string;
+    } = {},
+  ): OrbisColumnDef[] => [
+    idx(labels.idx),
+    date("executed_at", labels.time || "Time", 145),
+    nameCol("action_code", labels.action || "Action", 200),
+    status("status", labels.status || "Status", 95),
+    status("risk_level", labels.risk || "Risk", 85),
+    text("reasoning", labels.reasoning || "Reasoning", 280),
+    num("duration_ms", labels.duration || "Duration (ms)", 110),
+    num("confidence", labels.confidence || "Confidence", 90),
+  ],
+};
+
+export const autopilotTasks = {
+  columns: (
+    labels: {
+      idx?: string;
+      type?: string;
+      status?: string;
+      mode?: string;
+      scheduled?: string;
+      deadline?: string;
+      attempts?: string;
+    } = {},
+  ): OrbisColumnDef[] => [
+    idx(labels.idx),
+    nameCol("task_type", labels.type || "Task Type", 200),
+    status("status", labels.status || "Status", 95),
+    text("execution_mode", labels.mode || "Mode", 100),
+    date("scheduled_at", labels.scheduled || "Scheduled", 145),
+    date("deadline_at", labels.deadline || "Deadline", 145),
+    num("attempts", labels.attempts || "Attempts", 80),
+  ],
+};
