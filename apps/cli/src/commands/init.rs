@@ -39,6 +39,7 @@ pub async fn execute() -> Result<()> {
 
     println!("\n{}", "--- Orbis Initial Setup ---".truecolor(0, 204, 255).bold());
     let org_name = prompts::prompt_text("Enter Organization Name (e.g. My School):")?;
+    let org_slug = prompts::prompt_text("Enter Organization Slug (e.g. my-school):")?;
     let admin_name = prompts::prompt_text("Enter Admin Full Name:")?;
     let admin_username = prompts::prompt_text("Enter Admin Username (or Email):")?;
     let admin_password = prompts::prompt_password("Enter Admin Password:", Some("Must be strong"))?;
@@ -54,8 +55,8 @@ pub async fn execute() -> Result<()> {
     let now = chrono::Local::now().to_rfc3339();
     db.execute(Statement::from_sql_and_values(
         DatabaseBackend::Sqlite,
-        "INSERT INTO organizations (id, name, is_active, subscription_plan, created_at, updated_at) VALUES (?, ?, 1, 'basic', ?, ?)",
-        vec![org_id.clone().into(), org_name.into(), now.clone().into(), now.clone().into()]
+        "INSERT INTO organizations (id, name, slug, is_active, subscription_plan, created_at, updated_at) VALUES (?, ?, ?, 1, 'basic', ?, ?)",
+        vec![org_id.clone().into(), org_name.into(), org_slug.into(), now.clone().into(), now.clone().into()]
     )).await?;
 
     let user_id = Uuid::new_v4().to_string();

@@ -1621,7 +1621,7 @@ CREATE INDEX IF NOT EXISTS idx_dqf_entity ON data_quality_findings(entity_type, 
 -- ══════════════════════════════════════════════════════════════════════════════
 
 CREATE INDEX IF NOT EXISTS idx_enrollment_org_period_class
-    ON enrollments(org_id, period_id, class_id) WHERE is_deleted = 0;
+    ON enrollments(org_id, period_id, class_id);
 
 CREATE INDEX IF NOT EXISTS idx_grades_enrollment_period_subject
     ON grades(enrollment_id, period_id, class_subject_id);
