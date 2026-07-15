@@ -2,25 +2,39 @@
 import { onDestroy } from "svelte";
 import { spring } from "svelte/motion";
 import { AvatarController } from "./AvatarController.svelte";
+import AvatarHats from "./AvatarHats.svelte";
+import { ALL_AVATAR_HATS, type AvatarHat } from "./types.js";
 import { idleAnimation } from "./animations/idle.js";
 import { blinkAnimation } from "./animations/blink.js";
 import { thinkAnimation } from "./animations/think.js";
 import { happyAnimation } from "./animations/happy.js";
 import { errorAnimation } from "./animations/error.js";
 
-const {
-  controller = new AvatarController(),
-  hat = "none", // "none" | "crown" | "graduation" | "firefighter"
+let {
+  controller,
+  hat = "random",
   width = "100%",
   height = "100%",
   class: className = "",
 }: {
   controller?: AvatarController;
-  hat?: "none" | "crown" | "graduation" | "firefighter";
+  hat?: AvatarHat;
   width?: string;
   height?: string;
   class?: string;
 } = $props();
+
+const fallbackController = new AvatarController();
+const activeController = $derived(controller ?? fallbackController);
+
+// Idiomatic Svelte 5 Rune: pure reactivity derived state
+const resolvedHat = $derived.by<AvatarHat>(() => {
+  if (hat === "random") {
+    const idx = Math.floor(Math.random() * ALL_AVATAR_HATS.length);
+    return ALL_AVATAR_HATS[idx];
+  }
+  return hat;
+});
 
 // Create spring stores for interactive expressions
 const bodyScaleSpring = spring(1.0);
@@ -45,7 +59,7 @@ let isHovered = $state(false);
 
 // Derives current animation config based on controller state
 const activeAnimation = $derived.by(() => {
-  switch (controller.state) {
+  switch (activeController.state) {
     case "blinking":
       return blinkAnimation;
     case "thinking":
@@ -59,11 +73,10 @@ const activeAnimation = $derived.by(() => {
   }
 });
 
-// Watch for state/animation changes and update spring settings + targets
+// Sync animation spring targets on state change
 $effect(() => {
   const config = activeAnimation;
 
-  // Apply configuration springs settings dynamically
   if (config.springs) {
     if (config.springs.body) {
       bodyScaleSpring.stiffness = config.springs.body.stiffness;
@@ -85,8 +98,7 @@ $effect(() => {
     }
   }
 
-  // Set target spring positions if we are NOT hovered in idle state
-  if (!(controller.state === "idle" && isHovered)) {
+  if (!(activeController.state === "idle" && isHovered)) {
     bodyScaleSpring.set(config.bodyScale ?? 1.0);
     bodyXSpring.set(0);
     bodyYSpring.set(config.bodyY ?? 0);
@@ -96,24 +108,22 @@ $effect(() => {
     eyeYSpring.set(config.eyeY ?? 0);
   }
 
-  // Morph hand-drawn eyebrows based on state
-  if (controller.state === "happy") {
+  if (activeController.state === "happy") {
     leftEyebrowYSpring.set(-6);
     rightEyebrowYSpring.set(-6);
     leftEyebrowRotateSpring.set(-5);
     rightEyebrowRotateSpring.set(5);
-  } else if (controller.state === "thinking") {
+  } else if (activeController.state === "thinking") {
     leftEyebrowYSpring.set(1);
     rightEyebrowYSpring.set(-4);
     leftEyebrowRotateSpring.set(8);
     rightEyebrowRotateSpring.set(-10);
-  } else if (controller.state === "error") {
+  } else if (activeController.state === "error") {
     leftEyebrowYSpring.set(2);
     rightEyebrowYSpring.set(2);
     leftEyebrowRotateSpring.set(-15);
     rightEyebrowRotateSpring.set(15);
   } else {
-    // Idle / blinking
     leftEyebrowYSpring.set(0);
     rightEyebrowYSpring.set(0);
     leftEyebrowRotateSpring.set(0);
@@ -123,9 +133,9 @@ $effect(() => {
   isShaking = config.bodyShake ?? false;
 });
 
-// Mouse move handler for premium interactive parallax effect
+// Mouse move handler for interactive parallax effect
 function handleMouseMove(e: MouseEvent) {
-  if (!containerEl || controller.state !== "idle") return;
+  if (!containerEl || activeController.state !== "idle") return;
 
   const rect = containerEl.getBoundingClientRect();
   const centerX = rect.left + rect.width / 2;
@@ -138,7 +148,6 @@ function handleMouseMove(e: MouseEvent) {
   mouseY = Math.max(-1.0, Math.min(1.0, relY));
   isHovered = true;
 
-  // Apply interactive shifts (Parallax: eyes & face features move most, head moves medium)
   eyeXSpring.set(mouseX * 7.0);
   eyeYSpring.set(mouseY * 5.5);
   bodyXSpring.set(mouseX * 3.0);
@@ -151,7 +160,6 @@ function handleMouseLeave() {
   mouseX = 0;
   mouseY = 0;
 
-  // Reset springs smoothly back to idle parameters
   const config = activeAnimation;
   bodyScaleSpring.set(config.bodyScale ?? 1.0);
   bodyXSpring.set(0);
@@ -161,14 +169,14 @@ function handleMouseLeave() {
 }
 
 onDestroy(() => {
-  controller.destroy();
+  fallbackController.destroy();
 });
 </script>
 
 <div
   bind:this={containerEl}
-  onmousemove={handleMouseMove}
-  onmouseleave={handleMouseLeave}
+  onmousemove={(e) => handleMouseMove(e)}
+  onmouseleave={() => handleMouseLeave()}
   class="relative flex items-center justify-center select-none {className}"
   style:width
   style:height
@@ -181,18 +189,17 @@ onDestroy(() => {
     width="100%"
     height="100%"
   >
-    <!-- Main Head Casing (Notion clean circle, no border, filled with theme-aligned muted background) -->
+    <!-- Main Head Casing -->
     <g
       id="avatar-head"
       style="transform: translate({$bodyXSpring}px, {$bodyYSpring}px) scale({$bodyScaleSpring}); transform-origin: 100px 120px;"
-      class={controller.state === "idle" && !isHovered ? "idle-breathing" : ""}
+      class={activeController.state === "idle" && !isHovered ? "idle-breathing" : ""}
     >
       <!-- Head Circle -->
       <circle cx="100" cy="120" r="58" fill="var(--muted, #f1f5f9)" />
 
-      <!-- Minimalist Hand-Drawn Face Features matching the image -->
+      <!-- Minimalist Hand-Drawn Face Features -->
       <g id="face-features" style="transform: translate({$eyeXSpring * 0.4}px, {$eyeYSpring * 0.4}px); transform-origin: 100px 120px;">
-        
         <!-- Left Eyebrow -->
         <path
           d="M 68 100 C 72 88, 96 88, 102 100"
@@ -213,7 +220,7 @@ onDestroy(() => {
           style="transform: translate(0, {$rightEyebrowYSpring}px) rotate({$rightEyebrowRotateSpring}deg); transform-origin: 122px 94px;"
         />
 
-        <!-- Notion Style Nose starting from the eyebrow intersection -->
+        <!-- Notion Style Nose -->
         <path
           d="M 102 100 L 75 146 L 104 147"
           fill="none"
@@ -223,9 +230,8 @@ onDestroy(() => {
           stroke-linejoin="round"
         />
 
-        <!-- Eyes: Happy Arches vs Regular Dots -->
-        {#if controller.state === "happy"}
-          <!-- Smiling happy arches -->
+        <!-- Eyes -->
+        {#if activeController.state === "happy"}
           <path
             d="M 78 116 Q 86 109 94 116"
             fill="none"
@@ -243,7 +249,6 @@ onDestroy(() => {
             style="transform: translate({$eyeXSpring * 0.6}px, {$eyeYSpring * 0.6}px);"
           />
         {:else}
-          <!-- Standard blinking dots -->
           <circle
             cx="86"
             cy="114"
@@ -261,81 +266,8 @@ onDestroy(() => {
         {/if}
       </g>
 
-      <!-- Layer 3: Dynamic Role Hats (rendered on top of head, moving with head) -->
-      {#if hat === "crown"}
-        <!-- Gold Crown (Admin Role) -->
-        <g id="hat-crown" style="transform: translate(0, -6px);">
-          <path
-            d="M 70 70 L 60 38 L 82 54 L 100 28 L 118 54 L 140 38 L 130 70 Z"
-            fill="#fbbf24"
-            stroke="var(--foreground, #18181b)"
-            stroke-width="4.5"
-            stroke-linejoin="round"
-          />
-          <!-- Little jewels on points -->
-          <circle cx="60" cy="38" r="3.5" fill="#ef4444" stroke="var(--foreground, #18181b)" stroke-width="1.5" />
-          <circle cx="100" cy="28" r="3.5" fill="#3b82f6" stroke="var(--foreground, #18181b)" stroke-width="1.5" />
-          <circle cx="140" cy="38" r="3.5" fill="#10b981" stroke="var(--foreground, #18181b)" stroke-width="1.5" />
-        </g>
-      {:else if hat === "graduation"}
-        <!-- Graduation Cap (Teacher Role) -->
-        <g id="hat-graduation" style="transform: translate(0, -4px);">
-          <!-- Cap base -->
-          <path
-            d="M 74 52 L 74 69 C 74 76, 126 76, 126 69 L 126 52"
-            fill="#1f2937"
-            stroke="var(--foreground, #18181b)"
-            stroke-width="4.5"
-            stroke-linejoin="round"
-          />
-          <!-- Diamond board -->
-          <polygon
-            points="100,32 148,48 100,64 52,48"
-            fill="#111827"
-            stroke="var(--foreground, #18181b)"
-            stroke-width="4.5"
-            stroke-linejoin="round"
-          />
-          <!-- Tassel -->
-          <path
-            d="M 100 48 L 78 56 L 76 74"
-            fill="none"
-            stroke="#fbbf24"
-            stroke-width="2.5"
-            stroke-linecap="round"
-          />
-          <circle cx="76" cy="74" r="3" fill="#fbbf24" />
-        </g>
-      {:else if hat === "firefighter"}
-        <!-- Red Firefighter Hat (Staff/Fun Role) -->
-        <g id="hat-firefighter" style="transform: translate(0, -4px);">
-          <!-- Crown -->
-          <path
-            d="M 70 70 C 70 40, 130 40, 130 70 Z"
-            fill="#ef4444"
-            stroke="var(--foreground, #18181b)"
-            stroke-width="4.5"
-            stroke-linejoin="round"
-          />
-          <!-- Brim -->
-          <path
-            d="M 54 72 Q 100 64 146 72 C 150 73, 150 77, 146 77 Q 100 69 54 77 C 50 77, 50 73, 54 72 Z"
-            fill="#ef4444"
-            stroke="var(--foreground, #18181b)"
-            stroke-width="4.5"
-            stroke-linejoin="round"
-          />
-          <!-- Shield/Badge -->
-          <polygon
-            points="94,56 106,56 108,68 92,68"
-            fill="#fbbf24"
-            stroke="var(--foreground, #18181b)"
-            stroke-width="2"
-            stroke-linejoin="round"
-          />
-          <circle cx="100" cy="62" r="2" fill="#ef4444" />
-        </g>
-      {/if}
+      <!-- Layer 3: Render Hats Component -->
+      <AvatarHats hat={resolvedHat} />
     </g>
   </svg>
 </div>
@@ -345,7 +277,6 @@ onDestroy(() => {
     overflow: visible;
   }
 
-  /* Keyframe shake for error state */
   .shake {
     animation: shake-animation 0.15s infinite alternate;
   }
@@ -364,7 +295,6 @@ onDestroy(() => {
     100% { transform: translate(-1px, -1px) rotate(0.5deg); }
   }
 
-  /* Slow breathing translation on idle when not interactive */
   .idle-breathing {
     animation: breath-animation 5s ease-in-out infinite;
   }

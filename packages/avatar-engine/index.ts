@@ -1,8 +1,11 @@
 export { default as Avatar } from "./Avatar.svelte";
 export { AvatarController } from "./AvatarController.svelte";
-export { AvatarStateMachine, type AvatarState } from "./AvatarStateMachine";
-export { idleAnimation } from "./animations/idle";
-export { blinkAnimation } from "./animations/blink";
-export { thinkAnimation } from "./animations/think";
-export { happyAnimation } from "./animations/happy";
-export { errorAnimation } from "./animations/error";
+export { AvatarStateMachine, type AvatarState } from "./AvatarStateMachine.js";
+export { default as AvatarHats } from "./AvatarHats.svelte";
+export type { AvatarHat } from "./types.js";
+export { ALL_AVATAR_HATS } from "./types.js";
+export { idleAnimation } from "./animations/idle.js";
+export { blinkAnimation } from "./animations/blink.js";
+export { thinkAnimation } from "./animations/think.js";
+export { happyAnimation } from "./animations/happy.js";
+export { errorAnimation } from "./animations/error.js";

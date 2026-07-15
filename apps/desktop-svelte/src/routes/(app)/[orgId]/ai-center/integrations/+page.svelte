@@ -78,7 +78,7 @@ const basePath = $derived(`/${data.orgId}/ai-center/integrations`);
           : `أهلاً بك! لا توجد تكاملات مسجلة في هذا التصنيف حالياً. يمكنك استكشاف بقية التصنيفات أو إضافة جهاز جديد.`}
         actionLabel={searchQuery ? "إعادة ضبط الفلاتر والبحث" : "عرض كافة التكاملات"}
         onaction={() => { searchQuery = ""; activeCategory = "all"; }}
-        hat="graduation"
+        hat="random"
       />
     {/if}
   </main>

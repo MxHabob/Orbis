@@ -309,7 +309,7 @@ function toggleColumnVisibility(colId: string) {
       <div class="h-full w-full flex flex-col items-center justify-center p-6">
         <AiEmptyState
           text={emptyDescription ? `${emptyTitle} ${emptyDescription}` : emptyTitle}
-          hat="graduation"
+          hat="random"
         />
       </div>
     {/if}

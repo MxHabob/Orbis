@@ -6,7 +6,7 @@ import { fly } from "svelte/transition";
 import { quadOut } from "svelte/easing";
 
 import { localizeHref } from "$lib/paraglide/runtime";
-import { Avatar, AvatarController } from "@orbis/avatar-engine";
+import { Avatar, AvatarController, ALL_AVATAR_HATS, type AvatarHat } from "@orbis/avatar-engine";
 
 let {
   type,
@@ -40,11 +40,9 @@ const greeting = $derived.by(() => {
 
 const firstName = $derived(authStore.user?.full_name?.split(" ")[0]);
 
-let manualHat = $state<"none" | "crown" | "graduation" | "firefighter" | null>(
-  null,
-);
+let manualHat = $state<AvatarHat | null>(null);
 
-const userHat = $derived.by(() => {
+const userHat = $derived.by<AvatarHat>(() => {
   if (manualHat !== null) return manualHat;
   const rawRole =
     authStore.user?.role || authStore.user?.primary_role || "viewer";
@@ -52,13 +50,13 @@ const userHat = $derived.by(() => {
   if (role === "admin" || role === "super_admin") return "crown";
   if (role === "teacher") return "graduation";
   if (role === "registrar") return "firefighter";
-  return "none";
+  return "graduation";
 });
 
-function periodHat() {
-  const hatList = ["none", "crown", "graduation", "firefighter"] as const;
-  const currentIndex = hatList.indexOf(userHat);
-  manualHat = hatList[(currentIndex + 1) % hatList.length];
+function cycleHat() {
+  const currentIdx = ALL_AVATAR_HATS.indexOf(userHat);
+  const nextIdx = (currentIdx + 1) % ALL_AVATAR_HATS.length;
+  manualHat = ALL_AVATAR_HATS[nextIdx];
 }
 
 // Ticker / Insights Logic
@@ -261,12 +259,12 @@ function handleMouseLeave() {
 </script>
 
 {#if type === "greeting" || type === "both" || !type}
-	<div class="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 mb-0 text-center sm:text-start">
+	<div class="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 mb-0 text-center sm:text-start select-none">
 		<button
 			type="button"
 			class="cursor-pointer focus:outline-none transition-all duration-150 ease-out -translate-y-1 hover:-translate-y-2 active:translate-y-0 shrink-0"
 			onclick={() => {
-				periodHat();
+				cycleHat();
 				const rand = Math.random();
 				if (rand < 0.33) {
 					avatarController.happy();
@@ -339,4 +337,3 @@ function handleMouseLeave() {
 		{/if}
 	</div>
 {/if}
-

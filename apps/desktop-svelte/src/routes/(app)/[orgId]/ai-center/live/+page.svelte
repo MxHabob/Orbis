@@ -206,7 +206,7 @@ const eventStyles: Record<string, { color: string; icon: typeof Bell }> = {
           text="مرحباً! لم أكتشف أي كاميرات شبكية متصلة بالنظام حتى الآن. يمكنك توصيل كاميرات المراقبة المباشرة لمتابعة البث والأحداث فورياً."
           actionLabel="توصيل أول كاميرا مراقبة"
           onaction={() => goto(`/${data.orgId}/ai-center/integrations`)}
-          hat="graduation"
+          hat="random"
         />
       </div>
     {/if}
