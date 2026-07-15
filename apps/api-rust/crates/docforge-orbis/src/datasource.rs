@@ -343,7 +343,14 @@ impl DataSourceRegistry {
     }
 
     pub fn get(&self, entity_type: &str) -> Option<Arc<dyn DataSource>> {
-        self.sources.get(entity_type).cloned()
+        if let Some(source) = self.sources.get(entity_type).cloned() {
+            Some(source)
+        } else {
+            // Fallback to dynamic ProjectionDataSource if not hardcoded
+            Some(Arc::new(ProjectionDataSource {
+                entity_type: entity_type.to_string(),
+            }))
+        }
     }
 
     pub fn list_schemas(&self) -> HashMap<String, Value> {
@@ -352,5 +359,46 @@ impl DataSourceRegistry {
             schemas.insert(name.clone(), src.schema());
         }
         schemas
+    }
+}
+
+// ── Projection DataSource (CQRS) ──────────────────────────────
+
+pub struct ProjectionDataSource {
+    pub entity_type: String,
+}
+
+#[async_trait]
+impl DataSource for ProjectionDataSource {
+    fn entity_type(&self) -> &str {
+        &self.entity_type
+    }
+
+    async fn resolve(&self, db: &DatabaseConnection, entity_id: &str) -> Result<Value, String> {
+        let escaped_id = sql_escape(entity_id);
+        let escaped_type = sql_escape(&self.entity_type);
+        
+        let stmt = sea_orm::Statement::from_string(
+            sea_orm::DatabaseBackend::Sqlite,
+            format!(
+                "SELECT data FROM docforge_projections WHERE entity_type = '{}' AND entity_id = '{}'",
+                escaped_type, escaped_id
+            ),
+        );
+        let opt = db.query_one(stmt).await.map_err(|e| e.to_string())?;
+        let record = opt.ok_or_else(|| format!("Projection not found for {} - {}", self.entity_type, entity_id))?;
+        
+        let data_str = record.try_get::<String>("", "data").unwrap_or_else(|_| "{}".to_string());
+        let data: Value = serde_json::from_str(&data_str).unwrap_or_else(|_| json!({}));
+        
+        Ok(data)
+    }
+
+    fn schema(&self) -> Value {
+        // Ideally this schema comes from `docforge_schema_registry`
+        json!({
+            "type": "object",
+            "description": format!("CQRS Projection for {}", self.entity_type)
+        })
     }
 }

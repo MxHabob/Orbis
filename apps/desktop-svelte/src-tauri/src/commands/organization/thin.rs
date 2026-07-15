@@ -57,12 +57,12 @@ pub async fn get_setup_status(state: State<'_, Arc<AppState>>) -> CmdResult<bool
 }
 
 #[tauri::command]
-pub async fn initialize_school_setup(
+pub async fn bootstrap_organization(
     state: State<'_, Arc<AppState>>,
     payload: serde_json::Value,
 ) -> CmdResult<()> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    ops::organization::initialize_school_setup(&ctx, payload)
+    ops::bootstrap::bootstrap_organization(&ctx, payload)
         .await
         .map_err(CommandError::from)?;
     Ok(())

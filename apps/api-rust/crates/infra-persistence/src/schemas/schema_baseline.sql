@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS organizations (
   deleted_at TEXT,
   deleted_by TEXT,
   current_period_id TEXT,
+  metadata TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
@@ -123,6 +124,7 @@ CREATE TABLE IF NOT EXISTS org_units (
   data_isolation TEXT NOT NULL DEFAULT 'shared',
   children_count INTEGER NOT NULL DEFAULT 0,
   descendant_count INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (org_id) REFERENCES organizations(id),
@@ -151,6 +153,7 @@ CREATE TABLE IF NOT EXISTS academic_years (
   archived_at TEXT,
   archived_by TEXT,
   notes TEXT,
+  metadata TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (org_id) REFERENCES organizations(id)
@@ -195,10 +198,12 @@ CREATE TABLE IF NOT EXISTS academic_periods (
   locked_at TEXT,
   locked_by TEXT,
   sort_order INTEGER,
+  metadata TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (period_id) REFERENCES academic_years(id),
-  FOREIGN KEY (parent_id) REFERENCES academic_periods(id)
+  FOREIGN KEY (parent_id) REFERENCES academic_periods(id),
+  FOREIGN KEY (org_id) REFERENCES organizations(id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_ap_period ON academic_periods(period_id);
@@ -766,6 +771,93 @@ CREATE TABLE IF NOT EXISTS scheduled_lessons (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
+-- ══════════════════════════════════════════════════════════════════════════════
+-- ── Enterprise Assessment Engine ──
+-- ══════════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS assessment_schemes (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS assessment_scheme_components (
+  id TEXT PRIMARY KEY,
+  scheme_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  component_type TEXT NOT NULL,
+  weight REAL NOT NULL,
+  max_score REAL NOT NULL,
+  passing_score REAL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (scheme_id) REFERENCES assessment_schemes(id)
+);
+
+CREATE TABLE IF NOT EXISTS grade_scales (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  "type" TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS grade_scale_items (
+  id TEXT PRIMARY KEY,
+  scale_id TEXT NOT NULL,
+  grade_label TEXT NOT NULL,
+  min_score REAL NOT NULL,
+  max_score REAL NOT NULL,
+  gpa_points REAL,
+  is_passing INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (scale_id) REFERENCES grade_scales(id)
+);
+
+CREATE TABLE IF NOT EXISTS calculation_policies (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  target_period_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  version INTEGER NOT NULL DEFAULT 1,
+  rule_type TEXT NOT NULL,
+  formula_expression TEXT NOT NULL,
+  rounding_policy TEXT NOT NULL DEFAULT 'round_half_up',
+  valid_from TEXT,
+  valid_until TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS student_assessment_snapshots (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  student_id TEXT NOT NULL,
+  period_id TEXT NOT NULL,
+  class_subject_id TEXT NOT NULL,
+  total_score REAL,
+  grade_label TEXT,
+  gpa_points REAL,
+  is_passing INTEGER,
+  rank_in_class INTEGER,
+  rank_in_level INTEGER,
+  calculation_version INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'draft',
+  approved_at TEXT,
+  approved_by TEXT,
+  metadata TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- ── Legacy Assessments ──
+-- ══════════════════════════════════════════════════════════════════════════════
 
 CREATE TABLE IF NOT EXISTS assessments (
   id TEXT PRIMARY KEY,
@@ -1665,3 +1757,32 @@ CREATE TABLE IF NOT EXISTS process_log (
 );
 
 CREATE INDEX IF NOT EXISTS idx_pl_org ON process_log(org_id, process_type, started_at);
+
+-- ═══════════════════════════════════════════════════════════════
+-- ── CQRS DocForge Projections & Schema Registry ────────────────
+-- ═══════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS docforge_projections (
+    id TEXT PRIMARY KEY,
+    org_id TEXT NOT NULL,
+    entity_type TEXT NOT NULL, -- e.g., 'student_report_card', 'invoice'
+    entity_id TEXT NOT NULL,
+    data TEXT NOT NULL, -- JSONB payload for template rendering
+    version INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_docforge_proj_org_entity ON docforge_projections(org_id, entity_type, entity_id);
+
+CREATE TABLE IF NOT EXISTS docforge_schema_registry (
+    id TEXT PRIMARY KEY,
+    org_id TEXT NOT NULL,
+    provider_name TEXT NOT NULL, -- e.g. 'assessment_engine', 'finance'
+    schema_payload TEXT NOT NULL, -- JSON Schema
+    version INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_docforge_schema_org ON docforge_schema_registry(org_id, provider_name);

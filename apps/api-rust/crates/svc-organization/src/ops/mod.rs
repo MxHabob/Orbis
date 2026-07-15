@@ -12,3 +12,4 @@ pub mod promotion_core;
 pub mod dashboard;
 pub mod bulk_import;
 pub mod bulk_export;
+pub mod bootstrap;

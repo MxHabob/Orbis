@@ -9,6 +9,7 @@ pub mod currency;
 pub mod settings;
 pub mod context;
 pub mod event_store;
+pub mod job_queue;
 pub mod process;
 pub mod reactive;
 pub mod plugin;

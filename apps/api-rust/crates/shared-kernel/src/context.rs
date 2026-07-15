@@ -62,6 +62,7 @@ pub struct ServiceContext {
     pub event_store: Arc<EventStore>,
     pub reactive: Arc<ReactivePipeline>,
     pub plugins: Arc<PluginRegistry>,
+    pub job_queue: Arc<crate::job_queue::JobQueue>,
 }
 
 impl ServiceContext {
@@ -82,6 +83,7 @@ impl ServiceContext {
         event_store: Arc<EventStore>,
         reactive: Arc<ReactivePipeline>,
         plugins: Arc<PluginRegistry>,
+        job_queue: Arc<crate::job_queue::JobQueue>,
     ) -> Self {
         Self {
             db,
@@ -101,6 +103,7 @@ impl ServiceContext {
             event_store,
             reactive,
             plugins,
+            job_queue,
         }
     }
 

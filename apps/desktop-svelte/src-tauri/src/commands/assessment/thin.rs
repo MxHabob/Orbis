@@ -220,4 +220,27 @@ pub async fn delete_behavior(
     ops::behavior::delete(&ctx, &record_id).await.map_err(CommandError::from)
 }
 
-
+#[tauri::command]
+pub async fn generate_assessment_snapshot(
+    state: State<'_, Arc<AppState>>,
+    student_id: String,
+    period_id: String,
+    class_subject_id: String,
+    policy_id: String,
+    scale_id: String,
+    raw_scores: std::collections::HashMap<String, f64>,
+) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::snapshot_generator::generate_snapshot(
+        &ctx,
+        &student_id,
+        &period_id,
+        &class_subject_id,
+        &policy_id,
+        &scale_id,
+        raw_scores,
+    )
+    .await
+    .map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}

@@ -18,3 +18,6 @@ pub mod audit;
 pub mod datasource;
 pub mod batch;
 pub mod batch_multi_up;
+pub mod projection;
+pub mod schema_registry;
+pub mod event_handler;

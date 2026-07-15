@@ -41,6 +41,7 @@ pub struct PlatformServices {
     pub reactive: Arc<shared_kernel::reactive::ReactivePipeline>,
     pub plugins: Arc<shared_kernel::plugin::PluginRegistry>,
     pub storage: Arc<dyn infra_integration::traits::StorageProvider>,
+    pub job_queue: Arc<shared_kernel::job_queue::JobQueue>,
 }
 
 impl PlatformServices {
@@ -79,6 +80,7 @@ impl PlatformServices {
             reactive: Arc::new(reactive),
             plugins: Arc::new(shared_kernel::plugin::PluginRegistry::new()),
             storage: Arc::new(storage),
+            job_queue: Arc::new(shared_kernel::job_queue::JobQueue::new(1024)),
         }
     }
 
@@ -144,6 +146,9 @@ impl PlatformServices {
 
                         // 2. Notify plugins
                         platform.plugins.dispatch(db, org_id, &event).await;
+                        
+                        // 3. Update DocForge Projections
+                        docforge_orbis::event_handler::handle_domain_event(db, &event).await;
                     }
                     Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
                         tracing::warn!(missed = n, "Event subscriber lagged — missed events");
@@ -177,6 +182,7 @@ impl PlatformServices {
             self.event_store.clone(),
             self.reactive.clone(),
             self.plugins.clone(),
+            self.job_queue.clone(),
         )
     }
 }

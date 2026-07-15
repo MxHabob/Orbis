@@ -98,6 +98,10 @@ export type { DocumentDiff } from "./serialization";
 
 // ── Data Binding ─────────────────────────────────────────────
 export { createFullContext } from "./data";
+
+// ── Schema Validation ────────────────────────────────────────
+export { validateBindings } from "./schema";
+export type { DataSchema, DataSchemaProperty } from "./schema";
 export type {
   DataSchema,
   DataFieldSchema,

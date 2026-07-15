@@ -259,6 +259,7 @@ pub fn run() {
             commands::assessment::thin::upsert_grade_cell,
             commands::assessment::thin::compile_semester_grades,
             commands::assessment::thin::get_grade_matrix,
+            commands::assessment::thin::generate_assessment_snapshot,
             // Finance commands
             commands::finance::thin::list_fee_templates,
             commands::finance::thin::create_fee_template,
@@ -291,7 +292,7 @@ pub fn run() {
             commands::organization::thin::update_settings,
             commands::organization::thin::get_dashboard_stats,
             commands::organization::thin::get_setup_status,
-            commands::organization::thin::initialize_school_setup,
+            commands::organization::thin::bootstrap_organization,
             commands::organization::thin::get_period_templates,
             commands::organization::thin::get_current_academic_year,
             commands::organization::thin::list_academic_years,

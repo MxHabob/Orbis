@@ -37,6 +37,7 @@ pub struct PlatformServices {
     pub event_store: Arc<EventStore>,
     pub reactive: Arc<ReactivePipeline>,
     pub plugins: Arc<PluginRegistry>,
+    pub job_queue: Arc<shared_kernel::job_queue::JobQueue>,
 }
 
 impl PlatformServices {
@@ -56,6 +57,7 @@ impl PlatformServices {
             event_store: Arc::new(EventStore::new(db)),
             reactive: Arc::new(ReactivePipeline::new()),
             plugins: Arc::new(PluginRegistry::new()),
+            job_queue: Arc::new(shared_kernel::job_queue::JobQueue::new(1024)),
         }
     }
 
@@ -77,6 +79,7 @@ impl PlatformServices {
             self.event_store.clone(),
             self.reactive.clone(),
             self.plugins.clone(),
+            self.job_queue.clone(),
         )
     }
 }
