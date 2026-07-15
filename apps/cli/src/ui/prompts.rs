@@ -5,6 +5,10 @@ pub fn prompt_text(message: &str) -> Result<String> {
     Ok(Text::new(message).prompt()?)
 }
 
+pub fn prompt_text_with_default(message: &str, default: &str) -> Result<String> {
+    Ok(Text::new(message).with_default(default).prompt()?)
+}
+
 pub fn prompt_password(message: &str, help: Option<&str>) -> Result<String> {
     let mut prompt = Password::new(message).without_confirmation();
     if let Some(h) = help {

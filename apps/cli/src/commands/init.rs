@@ -38,7 +38,15 @@ pub async fn execute() -> Result<()> {
 
     println!("\n{}", "--- Orbis Initial Setup ---".truecolor(0, 204, 255).bold());
     let org_name = prompts::prompt_text("Enter Organization Name (e.g. My School):")?;
-    let org_slug = prompts::prompt_text("Enter Organization Slug (e.g. my-school):")?;
+    let generated_slug = org_name.to_lowercase()
+        .chars()
+        .map(|c| if c.is_alphanumeric() { c } else { '-' })
+        .collect::<String>()
+        .split('-')
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>()
+        .join("-");
+    let org_slug = prompts::prompt_text_with_default("Enter Organization Slug (e.g. my-school):", &generated_slug)?;
     let admin_name = prompts::prompt_text("Enter Admin Full Name:")?;
     let admin_username = prompts::prompt_text("Enter Admin Username (or Email):")?;
     let admin_password = prompts::prompt_password("Enter Admin Password:", Some("Must be strong"))?;
