@@ -8,7 +8,8 @@ struct ChartMetadata {
     pub currency: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct AccountNode {
     pub code: String,
     pub name_ar: String,
@@ -72,6 +73,9 @@ pub async fn seed_essential_data(db: &DatabaseConnection, org_id: &str) -> Resul
         ("SAR", "Saudi Riyal", "ريال سعودي", "ر.س"),
         ("YER", "Yemeni Rial", "ريال يمني", "ر.ي"),
         ("USD", "US Dollar", "دولار أمريكي", "$"),
+        ("CNY", "Chinese Yuan", "يوان صيني", "¥"),
+        ("QAR", "Qatari Riyal", "ريال قطري", "ر.ق"),
+        ("AED", "UAE Dirham", "درهم إماراتي", "د.إ"),
     ];
     for (code, name, name_ar, symbol) in currencies {
         db.execute(Statement::from_sql_and_values(

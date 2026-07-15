@@ -22,3 +22,4 @@ pub mod migrations;
 pub mod registry;
 pub mod provider;
 pub mod schemas;
+pub mod bootstrap;

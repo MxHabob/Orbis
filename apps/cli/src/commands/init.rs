@@ -1,7 +1,6 @@
 use anyhow::{anyhow, Result};
 use colored::*;
-use sea_orm::{Database, ConnectionTrait, Statement, DatabaseBackend};
-use uuid::Uuid;
+use sea_orm::{Database, ConnectionTrait};
 use bcrypt::{hash, DEFAULT_COST};
 
 use crate::core::config::CliConfig;
@@ -51,21 +50,17 @@ pub async fn execute() -> Result<()> {
     let schema_sql = include_str!("../../../api-rust/crates/infra-persistence/src/schemas/schema_baseline.sql");
     db.execute_unprepared(schema_sql).await?;
 
-    let org_id = Uuid::new_v4().to_string();
-    let now = chrono::Local::now().to_rfc3339();
-    db.execute(Statement::from_sql_and_values(
-        DatabaseBackend::Sqlite,
-        "INSERT INTO organizations (id, name, slug, is_active, subscription_plan, created_at, updated_at) VALUES (?, ?, ?, 1, 'basic', ?, ?)",
-        vec![org_id.clone().into(), org_name.into(), org_slug.into(), now.clone().into(), now.clone().into()]
-    )).await?;
-
-    let user_id = Uuid::new_v4().to_string();
     let hashed_password = hash(&admin_password, DEFAULT_COST).unwrap_or_default();
-    db.execute(Statement::from_sql_and_values(
-        DatabaseBackend::Sqlite,
-        "INSERT INTO users (id, org_id, email, full_name, password_hash, status, primary_role, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'active', 'super_admin', ?, ?)",
-        vec![user_id.into(), org_id.clone().into(), admin_username.into(), admin_name.into(), hashed_password.into(), now.clone().into(), now.into()]
-    )).await?;
+    let params = infra_persistence::bootstrap::BootstrapParams {
+        org_name,
+        org_slug,
+        admin_name,
+        admin_username,
+        admin_password_hash: hashed_password,
+    };
+    
+    let result = infra_persistence::bootstrap::bootstrap_system(&db, params).await?;
+    let org_id = result.org_id;
 
     output::print_success("Organization and Admin account created successfully!");
     
