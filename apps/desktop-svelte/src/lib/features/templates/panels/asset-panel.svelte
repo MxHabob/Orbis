@@ -19,12 +19,10 @@ import {
   Search,
   Plus,
   Trash2,
-  GripVertical,
   Upload,
-  FolderOpen,
-  Stamp,
-  Star,
+  Loader2,
 } from "lucide-svelte";
+import { useDocuments, useUploadDocument, useDeleteDocument, resolveDocumentUrl } from "$lib/features/documents/queries";
 
 let {
   store,
@@ -33,59 +31,43 @@ let {
 } = $props();
 
 let searchQuery = $state("");
-let showUpload = $state(false);
+let fileInput: HTMLInputElement;
 
-// ── Derived ──────────────────────────────────────────────────
+// --- Queries & Mutations ---
+const documentsQuery = useDocuments({ entityType: "template" });
+const uploadMutation = useUploadDocument();
+const deleteMutation = useDeleteDocument();
 
-const assets = $derived(store.document.assets);
-const assetEntries = $derived(
-  Object.entries(assets)
-    .filter(([key, asset]) => {
-      if (!searchQuery) return true;
-      const q = searchQuery.toLowerCase();
-      return (
-        key.toLowerCase().includes(q) ||
-        ((asset as any).name?.toLowerCase().includes(q) ?? false) ||
-        ((asset as any).type?.toLowerCase().includes(q) ?? false)
-      );
-    })
-    .sort((a, b) => a[0].localeCompare(b[0])),
+// Flatten pages into a single array of documents
+let serverAssets = $derived($documentsQuery.data?.pages.flatMap(p => p.items) || []);
+
+// Filter by search query
+let filteredAssets = $derived(
+  serverAssets.filter(doc => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return doc.name?.toLowerCase().includes(q) || doc.category?.toLowerCase().includes(q);
+  })
 );
-
-// ── Icons by type ────────────────────────────────────────────
-
-function getAssetIcon(type: string) {
-  switch (type) {
-    case "logo":
-      return Star;
-    case "stamp":
-      return Stamp;
-    case "background":
-      return FolderOpen;
-    default:
-      return ImageIcon;
-  }
-}
 
 // ── Asset Drag ───────────────────────────────────────────────
 
-function handleAssetDragStart(e: DragEvent, assetRef: string) {
-  e.dataTransfer?.setData("application/x-docforge-asset", assetRef);
-  const asset = assets[assetRef];
-  if ((asset as any)?.url) {
-    e.dataTransfer?.setData("text/uri-list", (asset as any).url);
+async function handleAssetDragStart(e: DragEvent, doc: any) {
+  e.dataTransfer?.setData("application/x-docforge-asset", doc.id);
+  const srcUrl = await resolveDocumentUrl(doc.url);
+  if (srcUrl) {
+    e.dataTransfer?.setData("text/uri-list", srcUrl);
   }
   if (e.dataTransfer) e.dataTransfer.effectAllowed = "copy";
 }
 
 // ── Insert asset as Image node ───────────────────────────────
 
-function insertAssetAsImage(assetRef: string) {
-  const asset = assets[assetRef];
-  if (!asset) return;
+async function insertAssetAsImage(doc: any) {
+  const srcUrl = await resolveDocumentUrl(doc.url);
   store.addElement("Image", {
-    assetRef,
-    src: (asset as any).url || "",
+    assetRef: doc.id,
+    src: srcUrl || "",
     width: 40,
     height: 30,
     fit: "contain",
@@ -94,47 +76,34 @@ function insertAssetAsImage(assetRef: string) {
 
 // ── Remove asset ─────────────────────────────────────────────
 
-function removeAsset(assetRef: string) {
-  const prevAssets = { ...store.document.assets };
-  const { [assetRef]: _, ...remaining } = prevAssets;
-  store.executeCommand({
-    type: "remove-asset",
-    description: `Remove asset ${assetRef}`,
-    descriptionAr: `حذف الأصل ${assetRef}`,
-    execute: (doc) => ({ ...doc, assets: remaining }),
-    undo: (doc) => ({ ...doc, assets: prevAssets }),
+function removeAsset(doc: any) {
+  if (confirm(m.template_confirm_delete_asset?.() || "Are you sure?")) {
+    $deleteMutation.mutate(doc.id);
+  }
+}
+
+// ── Upload ───────────────────────────────────────
+
+function handleFileSelect(e: Event) {
+  const target = e.target as HTMLInputElement;
+  if (!target.files?.length) return;
+  const file = target.files[0];
+  
+  $uploadMutation.mutate({
+    file,
+    entity_type: "template",
+    entity_id: "shared", // Can be shared across templates
+    category: "image",
+    visibility: "private"
+  }, {
+    onSuccess: () => {
+      if (fileInput) fileInput.value = "";
+    }
   });
 }
 
-// ── Upload placeholder ───────────────────────────────────────
-
-let newAssetName = $state("");
-let newAssetUrl = $state("");
-let newAssetType = $state("image");
-
-function addAssetManually() {
-  if (!newAssetName.trim() || !newAssetUrl.trim()) return;
-  const key = newAssetName.trim().replace(/\s+/g, "_").toLowerCase();
-  const updatedAssets = {
-    ...store.document.assets,
-    [key]: {
-      name: newAssetName.trim(),
-      url: newAssetUrl.trim(),
-      type: newAssetType,
-      mimeType: "image/png",
-    } as any,
-  };
-  store.executeCommand({
-    type: "add-asset",
-    description: `Add asset ${key}`,
-    descriptionAr: `إضافة أصل ${key}`,
-    execute: (doc) => ({ ...doc, assets: updatedAssets }),
-    undo: (doc) => ({ ...doc, assets: store.document.assets }),
-  });
-  newAssetName = "";
-  newAssetUrl = "";
-  newAssetType = "image";
-  showUpload = false;
+function triggerUpload() {
+  fileInput?.click();
 }
 </script>
 
@@ -147,15 +116,26 @@ function addAssetManually() {
       <h3 class="text-xs font-bold text-foreground">{m.template_title_assets()}</h3>
     </div>
     <div class="flex items-center gap-1">
-      <Badge variant="outline" class="text-[8px]">{assetEntries.length}</Badge>
+      <Badge variant="outline" class="text-[8px]">{filteredAssets.length}</Badge>
       <Tooltip>
         <TooltipTrigger>
-          <Button variant="ghost" size="icon-xs" class="cursor-pointer h-5 w-5" onclick={() => showUpload = !showUpload}>
-            <Upload size={11} />
+          <Button variant="ghost" size="icon-xs" class="cursor-pointer h-5 w-5" onclick={triggerUpload} disabled={$uploadMutation.isPending}>
+            {#if $uploadMutation.isPending}
+              <Loader2 size={11} class="animate-spin" />
+            {:else}
+              <Upload size={11} />
+            {/if}
           </Button>
         </TooltipTrigger>
         <TooltipContent>{m.template_btn_add_asset()}</TooltipContent>
       </Tooltip>
+      <input 
+        type="file" 
+        bind:this={fileInput} 
+        class="hidden" 
+        accept="image/*" 
+        onchange={handleFileSelect} 
+      />
     </div>
   </div>
 
@@ -165,49 +145,20 @@ function addAssetManually() {
       <Search size={11} class="absolute start-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
       <Input
         type="text"
-        placeholder=m.template_search_placeholder()
+        placeholder={m.template_search_placeholder()}
         bind:value={searchQuery}
         class="h-6 text-[10px] ps-7"
       />
     </div>
   </div>
 
-  <!-- Add Asset Form -->
-  {#if showUpload}
-    <div class="px-3 py-2 border-b border-border/30 bg-muted/20 flex flex-col gap-1.5">
-      <Input
-        type="text"
-        placeholder=m.template_asset_name()
-        bind:value={newAssetName}
-        class="h-6 text-[10px]"
-      />
-      <Input
-        type="text"
-        placeholder=m.template_asset_url()
-        bind:value={newAssetUrl}
-        class="h-6 text-[10px] font-mono"
-      />
-      <div class="flex items-center gap-1.5">
-        <select
-          bind:value={newAssetType}
-          class="h-6 text-[10px] rounded border border-border bg-background px-1.5 flex-grow"
-        >
-          <option value="image">Image</option>
-          <option value="logo">Logo</option>
-          <option value="stamp">Stamp</option>
-          <option value="signature">Signature</option>
-          <option value="background">Background</option>
-        </select>
-        <Button variant="lime" size="xs" class="cursor-pointer h-6 text-[10px]" onclick={addAssetManually}>
-          {m.template_btn_add()}
-        </Button>
-      </div>
-    </div>
-  {/if}
-
   <!-- Asset Grid -->
-  <div class="flex-grow overflow-y-auto scrollbar-hide p-2">
-    {#if assetEntries.length === 0}
+  <div class="flex-grow overflow-y-auto scrollbar-hide p-2 flex flex-col gap-2">
+    {#if $documentsQuery.isLoading && serverAssets.length === 0}
+      <div class="flex justify-center p-4">
+        <Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
+      </div>
+    {:else if filteredAssets.length === 0}
       <div class="flex flex-col items-center justify-center py-8 px-4 gap-2">
         <ImageIcon size={20} class="text-muted-foreground/30" />
         <p class="text-[10px] text-muted-foreground text-center">
@@ -216,48 +167,65 @@ function addAssetManually() {
       </div>
     {:else}
       <div class="grid grid-cols-2 gap-1.5">
-        {#each assetEntries as [key, asset] (key)}
-          {@const AssetIcon = getAssetIcon(asset.type || "image")}
+        {#each filteredAssets as doc (doc.id)}
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
-            class="relative group rounded-lg border border-border/40 bg-card/30 hover:border-primary/40 cursor-grab transition-all overflow-hidden"
+            class="relative group rounded-lg border border-border/40 bg-card/30 hover:border-primary/40 cursor-grab transition-all overflow-hidden flex flex-col"
             draggable="true"
-            ondragstart={(e) => handleAssetDragStart(e, key)}
+            ondragstart={(e) => handleAssetDragStart(e, doc)}
           >
             <!-- Thumbnail -->
             <div class="aspect-[4/3] bg-muted/20 flex items-center justify-center overflow-hidden">
-              {#if (asset as any).url}
+              {#await resolveDocumentUrl(doc.url)}
+                <Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
+              {:then srcUrl}
                 <img
-                  src={(asset as any).url}
-                  alt={(asset as any).name || key}
-                  class="w-full h-full object-contain"
+                  src={srcUrl}
+                  alt={doc.name}
+                  class="w-full h-full object-cover"
                   loading="lazy"
                 />
-              {:else}
-                <svelte:component this={AssetIcon} size={20} class="text-muted-foreground/30" />
-              {/if}
+              {:catch}
+                <ImageIcon size={20} class="text-muted-foreground/30" />
+              {/await}
             </div>
 
             <!-- Info -->
-            <div class="px-1.5 py-1 flex items-center justify-between">
+            <div class="px-1.5 py-1 flex items-center justify-between bg-card">
               <div class="flex flex-col min-w-0">
-                <span class="text-[8px] font-medium text-foreground truncate">{(asset as any).name || key}</span>
-                <span class="text-[7px] text-muted-foreground capitalize">{asset.type || "image"}</span>
+                <span class="text-[8px] font-medium text-foreground truncate">{doc.name}</span>
+                <span class="text-[7px] text-muted-foreground capitalize">{doc.extension?.toUpperCase() || 'IMG'}</span>
               </div>
             </div>
 
             <!-- Hover Actions -->
             <div class="absolute top-1 end-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5">
-              <button type="button" class="p-0.5 rounded bg-background/80 hover:bg-accent cursor-pointer" onclick={() => insertAssetAsImage(key)}>
+              <button type="button" class="p-0.5 rounded bg-background/80 hover:bg-accent cursor-pointer" onclick={() => insertAssetAsImage(doc)}>
                 <Plus size={10} class="text-primary" />
               </button>
-              <button type="button" class="p-0.5 rounded bg-background/80 hover:bg-accent cursor-pointer" onclick={() => removeAsset(key)}>
+              <button type="button" class="p-0.5 rounded bg-background/80 hover:bg-accent cursor-pointer" onclick={() => removeAsset(doc)}>
                 <Trash2 size={10} class="text-destructive" />
               </button>
             </div>
           </div>
         {/each}
       </div>
+      
+      {#if $documentsQuery.hasNextPage}
+        <Button 
+          variant="ghost" 
+          size="xs" 
+          class="w-full text-[10px] mt-2 cursor-pointer"
+          disabled={$documentsQuery.isFetchingNextPage}
+          onclick={() => $documentsQuery.fetchNextPage()}
+        >
+          {#if $documentsQuery.isFetchingNextPage}
+            <Loader2 class="mr-1 h-3 w-3 animate-spin" /> {m.template_loading?.() || "Loading..."}
+          {:else}
+            {m.template_load_more?.() || "Load More"}
+          {/if}
+        </Button>
+      {/if}
     {/if}
   </div>
 

@@ -91,22 +91,68 @@ pub async fn upload_file(
 pub async fn list(
     ctx: &ServiceContext,
     owner_id: Option<&str>,
-) -> Result<Vec<documents::Model>, AppError> {
-    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
+    entity_type: Option<&str>,
+    category: Option<&str>,
+    request: shared_kernel::pagination::CursorRequest,
+) -> Result<shared_kernel::pagination::CursorPage<documents::Model>, AppError> {
+    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, QuerySelect, QueryOrder};
+    use shared_kernel::pagination::CursorPage;
 
     ctx.permissions.check(&ctx.actor, Permission::DocumentRead).await?;
 
     let mut query = documents::Entity::find()
         .filter(documents::Column::OrgId.eq(ctx.org_id.clone()))
-        .filter(documents::Column::DeletedAt.is_null());
+        .filter(documents::Column::DeletedAt.is_null())
+        .order_by_desc(documents::Column::CreatedAt)
+        .order_by_desc(documents::Column::Id); // tie-breaker
 
     if let Some(oid) = owner_id {
-        // Here we could filter by uploaded_by, or by entity_id
         query = query.filter(documents::Column::UploadedBy.eq(oid));
     }
+    
+    if let Some(et) = entity_type {
+        query = query.filter(documents::Column::EntityType.eq(et));
+    }
 
-    let docs = query.all(&ctx.db).await?;
-    Ok(docs)
+    if let Some(cat) = category {
+        query = query.filter(documents::Column::Category.eq(cat));
+    }
+
+    let limit = request.effective_limit();
+    
+    // We treat cursor as a literal OFFSET index for simplicity
+    if let Some(ref cursor) = request.cursor {
+        if let Ok(offset) = cursor.parse::<u64>() {
+            query = query.offset(offset);
+        }
+    }
+
+    let items = query.limit(limit + 1).all(&ctx.db).await?;
+    
+    let effective_limit = limit.min(shared_kernel::pagination::CursorRequest::MAX_LIMIT).max(1) as usize;
+    let has_more = items.len() > effective_limit;
+    
+    let mut items = items;
+    if has_more {
+        items.truncate(effective_limit);
+    }
+    
+    let count = items.len();
+    
+    // The next cursor is the current offset + the number of items fetched this time
+    let next_cursor = if has_more {
+        let current_offset = request.cursor.as_deref().and_then(|c| c.parse::<u64>().ok()).unwrap_or(0);
+        Some((current_offset + count as u64).to_string())
+    } else {
+        None
+    };
+    
+    Ok(CursorPage {
+        items,
+        count,
+        next_cursor,
+        has_more,
+    })
 }
 
 pub async fn delete(

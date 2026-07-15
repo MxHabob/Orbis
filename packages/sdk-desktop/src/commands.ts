@@ -478,7 +478,7 @@ export const commands: OrbisCommands = {
         visibility: payload.visibility
       });
     },
-    getDocuments: (ownerId) => cmd("get_documents", { ownerId }),
+    getDocuments: (params) => cmd("get_documents", params),
     deleteDocument: (id) => cmd("delete_document", { id }),
   },
 };

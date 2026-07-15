@@ -37,12 +37,22 @@ pub async fn upload_document(
 #[tauri::command]
 pub async fn get_documents(
     state: State<'_, Arc<AppState>>,
-    owner_id: String,
+    owner_id: Option<String>,
+    entity_type: Option<String>,
+    category: Option<String>,
+    cursor: Option<String>,
+    limit: Option<u64>,
 ) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let target = if owner_id == "all" { None } else { Some(owner_id.as_str()) };
     
-    let docs = ops::document::list(&ctx, target)
+    let target = owner_id.as_deref().filter(|s| *s != "all");
+    
+    let request = shared_kernel::pagination::CursorRequest {
+        cursor,
+        limit: limit.unwrap_or(50),
+    };
+    
+    let docs = ops::document::list(&ctx, target, entity_type.as_deref(), category.as_deref(), request)
         .await
         .map_err(CommandError::from)?;
         

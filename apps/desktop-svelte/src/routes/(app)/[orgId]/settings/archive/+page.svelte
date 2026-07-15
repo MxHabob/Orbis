@@ -4,7 +4,7 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Trash2, File, Image as ImageIcon, Loader2 } from "lucide-svelte";
 import type { Document } from "@orbis/sdk-core";
 
-const documentsQuery = useDocuments("all");
+const documentsQuery = useDocuments({ ownerId: "all" });
 const deleteMutation = useDeleteDocument();
 
 function handleDelete(id: string) {
@@ -13,7 +13,8 @@ function handleDelete(id: string) {
   }
 }
 
-let documents = $derived(($documentsQuery.data as Document[]) || []);
+// Flatten pages into a single array of documents
+let documents = $derived($documentsQuery.data?.pages.flatMap(p => p.items) || []);
 let groupedDocs = $derived(documents.reduce((acc: Record<string, Document[]>, doc: Document) => {
   const cat = doc.category || "uncategorized";
   if (!acc[cat]) acc[cat] = [];
@@ -32,7 +33,7 @@ let groupedDocs = $derived(documents.reduce((acc: Record<string, Document[]>, do
     </div>
   </div>
 
-  {#if $documentsQuery.isLoading}
+  {#if $documentsQuery.isLoading && documents.length === 0}
     <div class="flex items-center justify-center py-12">
       <Loader2 class="h-8 w-8 animate-spin text-primary" />
     </div>
@@ -85,5 +86,22 @@ let groupedDocs = $derived(documents.reduce((acc: Record<string, Document[]>, do
         </div>
       </div>
     {/each}
+    
+    {#if $documentsQuery.hasNextPage}
+      <div class="flex justify-center pt-8 pb-4">
+        <Button 
+          variant="outline" 
+          disabled={$documentsQuery.isFetchingNextPage}
+          onclick={() => $documentsQuery.fetchNextPage()}
+        >
+          {#if $documentsQuery.isFetchingNextPage}
+            <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+            Loading more...
+          {:else}
+            Load More
+          {/if}
+        </Button>
+      </div>
+    {/if}
   {/if}
 </div>

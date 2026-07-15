@@ -1,4 +1,4 @@
-import { createQuery, createMutation, useQueryClient } from "@tanstack/svelte-query";
+import { createQuery, createInfiniteQuery, createMutation, useQueryClient } from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { appDataDir, join } from "@tauri-apps/api/path";
@@ -38,17 +38,25 @@ export async function resolveDocumentUrl(pathOrUrl: string | undefined | null): 
   }
 }
 
-// --- Queries ---
-
 export const documentKeys = {
   all: ["documents"] as const,
-  byOwner: (ownerId: string) => ["documents", "owner", ownerId] as const,
+  byFilter: (filter: { ownerId?: string; entityType?: string; category?: string }) => 
+    ["documents", "filter", filter] as const,
 };
 
-export function useDocuments(ownerId: string) {
-  return createQuery({
-    queryKey: documentKeys.byOwner(ownerId),
-    queryFn: () => commands.document.getDocuments(ownerId),
+export function useDocuments(filter: { ownerId?: string; entityType?: string; category?: string }) {
+  return createInfiniteQuery({
+    queryKey: documentKeys.byFilter(filter),
+    queryFn: ({ pageParam }) => 
+      commands.document.getDocuments({ 
+        ownerId: filter.ownerId,
+        entityType: filter.entityType,
+        category: filter.category,
+        cursor: pageParam, 
+        limit: 50 
+      }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.next_cursor,
   });
 }
 
@@ -67,10 +75,7 @@ export function useUploadDocument() {
     }) => commands.document.uploadDocument(payload),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({
-        queryKey: documentKeys.byOwner(variables.entity_id),
-      });
-      queryClient.invalidateQueries({
-        queryKey: documentKeys.byOwner("all"),
+        queryKey: documentKeys.all,
       });
     },
   });
