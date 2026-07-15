@@ -10,7 +10,7 @@ use shared_kernel::event_bus::EventEnvelope;
 use shared_kernel::traits::{AuditEntry, Permission};
 
 use crate::contracts::events::event_types;
-use crate::entities::user_role;
+use crate::entities::{role_permission, user_role};
 
 pub async fn list_by_user(
     ctx: &ServiceContext, user_id: &str,
@@ -111,5 +111,66 @@ pub async fn save_for_user(
         active.insert(db).await?;
     }
 
+    Ok(())
+}
+
+pub async fn get_permissions(
+    db: &sea_orm::DatabaseConnection,
+    role: Option<String>,
+) -> Result<Vec<role_permission::Model>, AppError> {
+    let query = role_permission::Entity::find();
+    let perms = match role {
+        Some(ref r) if !r.trim().is_empty() => {
+            query.filter(role_permission::Column::Role.eq(r)).all(db).await?
+        }
+        _ => query.all(db).await?,
+    };
+    Ok(perms)
+}
+
+pub async fn save_permissions(
+    db: &sea_orm::DatabaseConnection,
+    role: &str,
+    permissions: Vec<serde_json::Value>,
+) -> Result<(), AppError> {
+
+    role_permission::Entity::delete_many()
+        .filter(role_permission::Column::Role.eq(role))
+        .exec(db)
+        .await?;
+
+    let now = Utc::now().to_rfc3339();
+    for perm in permissions {
+        let actions_str = if perm["actions"].is_array() {
+            serde_json::to_string(&perm["actions"]).unwrap_or_else(|_| "[]".to_string())
+        } else if let Some(s) = perm["actions"].as_str() {
+            if s.starts_with('[') {
+                s.to_string()
+            } else {
+                let list: Vec<String> = s.split(',').map(|x| x.trim().to_string()).filter(|x| !x.is_empty()).collect();
+                serde_json::to_string(&list).unwrap_or_else(|_| "[]".to_string())
+            }
+        } else {
+            "[]".to_string()
+        };
+
+        let only_if_creator_val = if perm["only_if_creator"].as_bool().unwrap_or(false)
+            || perm["only_if_creator"].as_i64().unwrap_or(0) == 1
+        {
+            1
+        } else {
+            0
+        };
+
+        let active = role_permission::ActiveModel {
+            role: sea_orm::ActiveValue::Set(role.to_string()),
+            document_type: sea_orm::ActiveValue::Set(perm["document_type"].as_str().unwrap_or_default().to_string()),
+            level: sea_orm::ActiveValue::Set(perm["level"].as_i64().unwrap_or(0) as i32),
+            only_if_creator: sea_orm::ActiveValue::Set(only_if_creator_val),
+            actions: sea_orm::ActiveValue::Set(actions_str),
+            created_at: sea_orm::ActiveValue::Set(now.clone()),
+        };
+        active.insert(db).await?;
+    }
     Ok(())
 }

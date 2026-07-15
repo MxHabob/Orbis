@@ -51,7 +51,7 @@ export interface IamCommands {
   saveUserRoles(userId: string, roles: string[]): Promise<void>;
 
   // ── Rule Engine ─────────────────────────────────────────────
-  getRolePermissions(role: string): Promise<PermissionRule[]>;
+  getRolePermissions(role?: string): Promise<PermissionRule[]>;
   saveRolePermissions(
     role: string,
     permissions: PermissionRule[],

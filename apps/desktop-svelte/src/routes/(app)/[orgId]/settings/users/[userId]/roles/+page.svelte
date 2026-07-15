@@ -46,7 +46,17 @@ async function loadRoles() {
   isLoading = true;
   try {
     const userRoles = await commands.iam.listUserRoles(userId);
-    checkedRoles = userRoles.map((r: any) => r.role);
+    const rolesFromDb = userRoles.map((r: any) => r.role);
+    
+    // Fetch user details to get primary_role as fallback
+    const userDetails = await commands.iam.getUser(userId) as any;
+    if (userDetails && userDetails.primary_role) {
+      if (!rolesFromDb.includes(userDetails.primary_role)) {
+        rolesFromDb.push(userDetails.primary_role);
+      }
+    }
+    
+    checkedRoles = rolesFromDb;
     allAvailableRoles = AVAILABLE_ROLES;
   } catch (e) {
     console.error("Failed to load roles:", e);
@@ -80,6 +90,16 @@ async function saveRoles() {
   isSaving = true;
   try {
     await commands.iam.saveUserRoles(userId, checkedRoles);
+
+    // Also update primary_role in users table if needed
+    if (checkedRoles.length > 0) {
+      const userDetails = await commands.iam.getUser(userId) as any;
+      const currentPrimary = userDetails?.primary_role;
+      if (!currentPrimary || !checkedRoles.includes(currentPrimary)) {
+        await commands.iam.changeRole(userId, { role: checkedRoles[0] });
+      }
+    }
+
     toast.success(m.settings_user_detail_saved());
   } catch (e: unknown) {
     toast.error((e as any)?.message || "Save failed");

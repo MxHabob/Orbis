@@ -148,12 +148,28 @@ pub async fn create(
         login_count: Some(0), failed_logins: Some(0), locked_until: None,
         prefs: "{}".into(), meta: "{}".into(),
         is_deleted: 0, deleted_at: None, deleted_by: None,
-        created_at: now.clone(), updated_at: now,
+        created_at: now.clone(), updated_at: now.clone(),
         created_by: Some(ctx.actor.as_str().to_string()),
     };
 
     let active: user::ActiveModel = model.into();
     let created = active.insert(&ctx.db).await?;
+
+    let user_role_model = crate::entities::user_role::Model {
+        id: Uuid::new_v4().to_string(),
+        user_id: id.clone(),
+        role: created.primary_role.clone(),
+        org_id: ctx.org_id.clone(),
+        scope_type: "global".to_string(),
+        scope_id: None,
+        valid_from: None,
+        valid_until: None,
+        is_primary: 1,
+        assigned_by: Some(ctx.actor.as_str().to_string()),
+        assigned_at: now.clone(),
+    };
+    let user_role_active: crate::entities::user_role::ActiveModel = user_role_model.into();
+    user_role_active.insert(&ctx.db).await?;
 
     ctx.event_bus.publish(EventEnvelope {
         event_type: event_types::USER_CREATED.into(),

@@ -315,7 +315,7 @@ export const commands: OrbisCommands = {
     revokeRole: (roleId) => cmd("revoke_role", { roleId }),
     changeRole: (userId, data) => cmd("change_role", { userId, data }),
     saveUserRoles: (userId, roles) => cmd("save_user_roles", { userId, roles }),
-    getRolePermissions: (role) => cmd("get_role_permissions", { role }),
+    getRolePermissions: (role?) => cmd("get_role_permissions", { role }),
     saveRolePermissions: (role, permissions) =>
       cmd("save_role_permissions", { role, permissions }),
   },

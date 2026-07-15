@@ -30,8 +30,6 @@ import {
   TableRow,
 } from "@orbis/ui-svelte/table";
 import { toast } from "svelte-sonner";
-import { l, isAr } from "$lib/core/i18n";
-
 import { commands } from "$lib/core/ipc";
 import { goto } from "$app/navigation";
 import SearchField from "$lib/shared/components/search-field.svelte";
@@ -55,40 +53,112 @@ interface PermissionRule {
   actions: string[];
 }
 
-// Predefined lists for inputs
-const standardDocTypes = [
-  "Department",
-  "Assessment Result",
-  "Grade",
-  "User",
-  "Class",
-  "Subject",
-  "Schedule",
-  "Attendance",
-  "Behavior",
-  "Finance",
-  "Document",
-  "Organization",
-  "Enrollment",
-  "Exam",
-  "Notification",
-  "Dashboard",
-  "Audit",
-  "ImportExport",
-];
+interface PermissionMetadata {
+  roles: string[];
+  document_types: string[];
+  actions_by_doc_type: Record<string, string[]>;
+}
 
-const standardRoles = [
-  "Academics User",
-  "principal",
-  "teacher",
-  "student",
-  "parent",
-  "academic_supervisor",
-  "registrar",
-  "finance_officer",
-];
+const metadata: PermissionMetadata = {
+  roles: [
+    "super_admin",
+    "admin",
+    "principal",
+    "teacher",
+    "staff",
+    "registrar",
+    "accountant",
+    "student",
+    "guardian",
+  ],
+  document_types: [
+    "Organization",
+    "User",
+    "Period",
+    "GradeEntry",
+    "OrgUnit",
+    "Class",
+    "Subject",
+    "Schedule",
+    "Assessment",
+    "Guardian",
+    "Document",
+    "Enrollment",
+    "Grade",
+    "Attendance",
+    "Behavior",
+    "Notification",
+    "Dashboard",
+    "Audit",
+    "Finance",
+    "ImportExport",
+    "Exam",
+    "Template",
+  ],
+  actions_by_doc_type: {
+    Organization: ["read", "write"],
+    User: ["read", "write", "delete", "role_write", "password_write"],
+    Period: ["read", "write", "activate", "lock", "unlock"],
+    GradeEntry: ["manage"],
+    OrgUnit: ["read", "write", "delete"],
+    Class: ["read", "write", "delete"],
+    Subject: ["read", "write", "delete"],
+    Schedule: ["read", "write", "delete"],
+    Assessment: ["read", "write", "delete"],
+    Guardian: ["read", "write", "delete"],
+    Document: ["read", "write", "delete"],
+    Enrollment: ["read", "write", "promote", "transfer"],
+    Grade: ["read", "write", "analytics", "report"],
+    Attendance: ["read", "write", "analytics", "report"],
+    Behavior: ["read", "write", "delete", "ai"],
+    Notification: ["read", "write"],
+    Dashboard: ["read"],
+    Audit: ["read"],
+    Finance: ["read", "write"],
+    ImportExport: ["import", "export"],
+    Exam: [
+      "read",
+      "write",
+      "activate",
+      "delete",
+      "generate_seating",
+      "read_seating",
+      "generate_secret",
+      "read_secret",
+      "reveal_secret",
+      "read_hall",
+      "write_hall",
+      "allocate_hall",
+      "read_proctor",
+      "assign_proctor",
+      "read_order",
+      "rebuild_order",
+      "freeze_order",
+      "read_schedule",
+      "write_schedule",
+    ],
+    Template: [
+      "read",
+      "write",
+      "publish",
+      "delete",
+      "import",
+      "export",
+      "generate_single",
+      "generate_batch",
+      "generate_download",
+      "asset_upload",
+      "asset_delete",
+      "component_write",
+      "component_delete",
+    ],
+  },
+};
 
-// UI States
+const standardRoles = metadata.roles;
+const standardDocTypes = metadata.document_types;
+const actionsByDocType = metadata.actions_by_doc_type;
+
 let rules = $state<PermissionRule[]>([]);
 let isLoading = $state(false);
 let hasUnsavedChanges = $state(false);
@@ -108,10 +178,27 @@ let userSearchQuery = $state("");
 
 // Add Rule Form States
 let newRuleDocType = $state("");
-let newRuleRole = $state("Academics User");
+let newRuleRole = $state("super_admin");
 let newRuleLevel = $state(0);
 let newRuleOnlyIfCreator = $state(false);
 let newRuleActions = $state<string[]>([]);
+
+function parseActions(actions: any): string[] {
+  if (Array.isArray(actions)) return actions;
+  if (typeof actions === "string") {
+    try {
+      const parsed = JSON.parse(actions);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {
+      if (actions.trim()) return actions.split(",").map((s: string) => s.trim()).filter(Boolean);
+    }
+  }
+  return [];
+}
+
+const availableRoles = $derived(
+  Array.from(new Set([...standardRoles, ...rules.map((r) => r.role)])),
+);
 
 // Lifeperiod
 onMount(async () => {
@@ -122,28 +209,14 @@ onMount(async () => {
 async function loadPermissions() {
   isLoading = true;
   try {
-    // Load permissions for all known roles and aggregate
-    const allRules: PermissionRule[] = [];
-    const roleNames = ["super_admin", "admin", ...standardRoles];
-    await Promise.all(
-      roleNames.map(async (role) => {
-        try {
-          const rawRules = await commands.iam.getRolePermissions(role);
-          for (const r of rawRules) {
-            allRules.push({
-              role: r.role,
-              document_type: r.document_type,
-              level: r.level,
-              only_if_creator: r.only_if_creator,
-              actions: r.actions || [],
-            });
-          }
-        } catch {
-          // Role may have no permissions yet — that's OK
-        }
-      }),
-    );
-    rules = allRules;
+    const rawRules: any[] = await commands.iam.getRolePermissions();
+    rules = (rawRules || []).map((r) => ({
+      role: r.role,
+      document_type: r.document_type,
+      level: r.level ?? 0,
+      only_if_creator: Boolean(r.only_if_creator),
+      actions: parseActions(r.actions),
+    }));
     initialRolesList = Array.from(new Set(rules.map((r) => r.role)));
     hasUnsavedChanges = false;
   } catch (e) {
@@ -224,24 +297,12 @@ const filteredUsers = $derived(
 
 // Actions per Doc Type
 function getActionsForDocType(docType: string): string[] {
-  const dt = docType.toLowerCase();
-  if (dt === "assessment result" || dt === "assessment") {
-    return [
-      "select",
-      "read",
-      "write",
-      "create",
-      "delete",
-      "submit",
-      "cancel",
-      "amend",
-      "print",
-      "email",
-      "report",
-      "import",
-      "export",
-      "share",
-    ];
+  if (!docType) return [];
+  const matchKey = Object.keys(actionsByDocType).find(
+    (k) => k.toLowerCase() === docType.toLowerCase()
+  );
+  if (matchKey) {
+    return actionsByDocType[matchKey];
   }
   return [
     "select",
@@ -354,7 +415,7 @@ function toggleAction(ruleIndex: number, action: string) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">{m.settings_users_filter_role_all()}</SelectItem>
-                {#each standardRoles as role}
+                {#each availableRoles as role}
                   <SelectItem value={role}>{role}</SelectItem>
                 {/each}
               </SelectContent>

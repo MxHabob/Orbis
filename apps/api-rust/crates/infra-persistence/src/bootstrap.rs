@@ -61,6 +61,19 @@ pub async fn bootstrap_system(
         ]
     )).await.map_err(|e| AppError::internal(format!("Failed to create admin user: {}", e)))?;
 
+    // 2.5 Insert Admin Role into user_roles
+    let user_role_id = Uuid::new_v4().to_string();
+    db.execute(Statement::from_sql_and_values(
+        DatabaseBackend::Sqlite,
+        "INSERT INTO user_roles (id, user_id, role, org_id, scope_type, is_primary, assigned_by, assigned_at) VALUES (?, ?, 'super_admin', ?, 'global', 1, 'system', ?)",
+        vec![
+            user_role_id.into(),
+            user_id.clone().into(),
+            org_id.clone().into(),
+            now.clone().into()
+        ]
+    )).await.map_err(|e| AppError::internal(format!("Failed to assign admin role: {}", e)))?;
+
     // 3. Emit Domain Events
     let event_store = EventStore::new(db.clone());
     let system_actor = Actor::System;
