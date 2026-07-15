@@ -37,7 +37,9 @@ export function createAutopilotTasksQuery(orgId: string | (() => string)) {
   });
 }
 
-export function createAutopilotDiagnosticsQuery(orgId: string | (() => string)) {
+export function createAutopilotDiagnosticsQuery(
+  orgId: string | (() => string),
+) {
   const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
   return createQuery({
     get queryKey() {

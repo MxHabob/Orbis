@@ -315,10 +315,7 @@ async function saveStudentDetails(e: Event) {
       (student.status === "draft" || student.status === "pending_review") &&
       isActiveState
     ) {
-      await commands.platform.transitionEnrollmentStatus(
-        studentId,
-        "active",
-      );
+      await commands.platform.transitionEnrollmentStatus(studentId, "active");
     }
 
     toast.success(m.common_form_success_update());

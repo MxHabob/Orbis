@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import { Skeleton } from "@orbis/ui-svelte/skeleton";
 </script>
 
 <div class="flex h-full w-full">

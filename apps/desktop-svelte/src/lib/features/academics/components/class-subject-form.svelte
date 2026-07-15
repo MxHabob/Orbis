@@ -105,7 +105,10 @@ async function handleSubmit() {
     };
 
     if (isEditMode && editData?.id) {
-      await commands.academic.updateClassSubject(String(editData.id), request as any);
+      await commands.academic.updateClassSubject(
+        String(editData.id),
+        request as any,
+      );
       toast.success(m.common_cs_update_success());
     } else {
       await commands.academic.createClassSubject(request as any);

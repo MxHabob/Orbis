@@ -101,9 +101,7 @@ async function handleRebuild() {
   }
   isRebuilding = true;
   try {
-    await commands.exam.rebuildOrdering(currentPeriodId,
-      selectedStrategy,
-    );
+    await commands.exam.rebuildOrdering(currentPeriodId, selectedStrategy);
     toast.success(m.common_exams_ordering_rebuild_success());
     await loadOrdering();
   } catch (e: unknown) {

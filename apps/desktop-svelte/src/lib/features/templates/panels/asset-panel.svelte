@@ -22,7 +22,12 @@ import {
   Upload,
   Loader2,
 } from "lucide-svelte";
-import { useDocuments, useUploadDocument, useDeleteDocument, resolveDocumentUrl } from "$lib/features/documents/queries";
+import {
+  useDocuments,
+  useUploadDocument,
+  useDeleteDocument,
+  resolveDocumentUrl,
+} from "$lib/features/documents/queries";
 
 let {
   store,
@@ -39,15 +44,20 @@ const uploadMutation = useUploadDocument();
 const deleteMutation = useDeleteDocument();
 
 // Flatten pages into a single array of documents
-let serverAssets = $derived($documentsQuery.data?.pages.flatMap(p => p.items) || []);
+let serverAssets = $derived(
+  $documentsQuery.data?.pages.flatMap((p) => p.items) || [],
+);
 
 // Filter by search query
 let filteredAssets = $derived(
-  serverAssets.filter(doc => {
+  serverAssets.filter((doc) => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
-    return doc.name?.toLowerCase().includes(q) || doc.category?.toLowerCase().includes(q);
-  })
+    return (
+      doc.name?.toLowerCase().includes(q) ||
+      doc.category?.toLowerCase().includes(q)
+    );
+  }),
 );
 
 // ── Asset Drag ───────────────────────────────────────────────
@@ -88,18 +98,21 @@ function handleFileSelect(e: Event) {
   const target = e.target as HTMLInputElement;
   if (!target.files?.length) return;
   const file = target.files[0];
-  
-  $uploadMutation.mutate({
-    file,
-    entity_type: "template",
-    entity_id: "shared", // Can be shared across templates
-    category: "image",
-    visibility: "private"
-  }, {
-    onSuccess: () => {
-      if (fileInput) fileInput.value = "";
-    }
-  });
+
+  $uploadMutation.mutate(
+    {
+      file,
+      entity_type: "template",
+      entity_id: "shared", // Can be shared across templates
+      category: "image",
+      visibility: "private",
+    },
+    {
+      onSuccess: () => {
+        if (fileInput) fileInput.value = "";
+      },
+    },
+  );
 }
 
 function triggerUpload() {

@@ -79,7 +79,7 @@ let dragOrigX = 0;
 let dragOrigY = 0;
 let dragOrigW = 0;
 let dragOrigH = 0;
-let dragOrigPositions = new Map<string, {x: number, y: number}>();
+let dragOrigPositions = new Map<string, { x: number; y: number }>();
 let activeSnapLines = $state<SnapLine[]>([]);
 
 // ── Rotation State ───────────────────────────────────────────

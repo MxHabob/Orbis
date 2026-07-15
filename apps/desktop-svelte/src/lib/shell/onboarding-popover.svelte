@@ -43,7 +43,8 @@ const tasksList = $derived([
   },
   {
     label: m.common_onboarding_popover_task_calendar_label({
-      calendar: onboardingState.calendarLabel || m.common_onboarding_review_calendar(),
+      calendar:
+        onboardingState.calendarLabel || m.common_onboarding_review_calendar(),
     }),
     desc: m.common_onboarding_popover_task_calendar_desc(),
   },
@@ -59,7 +60,8 @@ const tasksList = $derived([
       stage: onboardingState.stageLabel || m.common_class_label_grade(),
     }),
     desc: m.common_onboarding_popover_task_stage_desc({
-      division: onboardingState.divisionLabel || m.common_onboarding_term_division(),
+      division:
+        onboardingState.divisionLabel || m.common_onboarding_term_division(),
     }),
   },
   {
@@ -68,7 +70,8 @@ const tasksList = $derived([
   },
   {
     label: m.common_onboarding_configure_subject({
-      subject: onboardingState.subjectLabel || m.common_onboarding_term_subject(),
+      subject:
+        onboardingState.subjectLabel || m.common_onboarding_term_subject(),
     }),
     desc: m.common_onboarding_popover_task_subject_desc(),
   },

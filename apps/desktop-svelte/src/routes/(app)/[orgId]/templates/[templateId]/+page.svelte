@@ -137,7 +137,7 @@ async function renameTemplate(newName: string) {
       "current-user",
       updateRequest,
     );
-    
+
     // We don't mark store as saved here to not interfere with document changes,
     // though the document is technically saved. If it was dirty, it's now saved.
     // So we should markSaved() if it was dirty.
@@ -183,7 +183,9 @@ async function saveTemplate() {
     );
 
     store.markSaved();
-    toast.success(m.common_td_saved_success?.() || "Template saved successfully");
+    toast.success(
+      m.common_td_saved_success?.() || "Template saved successfully",
+    );
   } catch (e: unknown) {
     const msg = (e as any)?.message || "Failed to save template";
     toast.error(msg);
@@ -302,11 +304,13 @@ function handleKeydown(e: KeyboardEvent) {
           e.code === "ArrowLeft" ? -nudge : e.code === "ArrowRight" ? nudge : 0;
         const dy =
           e.code === "ArrowUp" ? -nudge : e.code === "ArrowDown" ? nudge : 0;
-        store.moveNodes([{
-          id: store.selectedNode.id,
-          x: Math.round((pos.x + dx) * 10) / 10,
-          y: Math.round((pos.y + dy) * 10) / 10,
-        }]);
+        store.moveNodes([
+          {
+            id: store.selectedNode.id,
+            x: Math.round((pos.x + dx) * 10) / 10,
+            y: Math.round((pos.y + dy) * 10) / 10,
+          },
+        ]);
       }
     }
   }

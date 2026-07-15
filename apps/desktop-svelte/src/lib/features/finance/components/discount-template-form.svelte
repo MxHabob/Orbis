@@ -42,14 +42,21 @@ let isActive = $state(true);
 
 // Options for Type
 const itemTypes = $derived([
-  { value: "manual", label: m.common_dt_type_manual ? m.common_dt_type_manual() : "يدوي" },
+  {
+    value: "manual",
+    label: m.common_dt_type_manual ? m.common_dt_type_manual() : "يدوي",
+  },
   {
     value: "scholarship",
-    label: m.common_dt_type_scholarship ? m.common_dt_type_scholarship() : "منحة دراسية",
+    label: m.common_dt_type_scholarship
+      ? m.common_dt_type_scholarship()
+      : "منحة دراسية",
   },
   {
     value: "system",
-    label: m.common_dt_type_system ? m.common_dt_type_system() : "تلقائي بالنظام",
+    label: m.common_dt_type_system
+      ? m.common_dt_type_system()
+      : "تلقائي بالنظام",
   },
 ]);
 const itemTypeLabels = $derived(
@@ -64,7 +71,9 @@ const selectedItemTypeLabel = $derived(itemTypeLabels[itemType] ?? itemType);
 const calculationMethods = $derived([
   {
     value: "percentage",
-    label: m.common_dt_method_percentage ? m.common_dt_method_percentage() : "نسبة مئوية (%)",
+    label: m.common_dt_method_percentage
+      ? m.common_dt_method_percentage()
+      : "نسبة مئوية (%)",
   },
   {
     value: "fixed",
@@ -134,9 +143,7 @@ async function handleSubmit() {
     };
 
     if (template) {
-      await commands.finance.updateDiscountTemplate(template.id,
-        request,
-      );
+      await commands.finance.updateDiscountTemplate(template.id, request);
       toast.success(
         m.common_dt_update_success
           ? m.common_dt_update_success()

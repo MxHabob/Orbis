@@ -1,8 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-  import { page } from "$app/stores";
-  import ErrorState from "$lib/shared/components/error-state.svelte";
-  
+import { page } from "$app/stores";
+import ErrorState from "$lib/shared/components/error-state.svelte";
 </script>
 
 <div class="h-screen w-screen flex flex-col items-center justify-center bg-background p-4">

@@ -35,9 +35,9 @@ const ticks = $derived(generateTicks());
 
 function generateTicks() {
   const result: { pos: number; label?: string; major: boolean }[] = [];
-  
+
   const offset = isHorizontal ? offsetX : offsetY;
-  
+
   // startPx is 0, endPx is containerSizePx
   const startPx = -RULER_SIZE; // slight buffer
   const endPx = containerSizePx + RULER_SIZE; // slight buffer
@@ -51,7 +51,7 @@ function generateTicks() {
   // Let's adjust the step based on zoom.
   let step = 5;
   let majorStep = 10;
-  
+
   if (viewport.zoom < 0.3) {
     step = 50;
     majorStep = 100;

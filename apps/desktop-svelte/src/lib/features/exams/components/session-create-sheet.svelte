@@ -91,14 +91,14 @@ async function handleSubmit() {
     if (isEdit && session) {
       await commands.exam.updateSession(session.id, {
         name,
-        
+
         start_date: startDate,
         end_date: endDate,
       });
     } else {
       await commands.exam.createSession({
         name,
-        
+
         session_type: sessionType,
         start_date: startDate,
         end_date: endDate,
@@ -120,7 +120,6 @@ async function handleSubmit() {
     isSaving = false;
   }
 }
-
 </script>
 
 <Sheet bind:open>

@@ -25,7 +25,7 @@ import {
   CreateTemplateDialog,
   DeleteTemplateDialog,
 } from "$lib/features/templates";
-    import { confirmStore } from "$lib/stores";
+import { confirmStore } from "$lib/stores";
 
 // State runes
 let templates = $state<any[]>([]);
@@ -57,7 +57,10 @@ async function loadTemplates() {
     if (filterDocType !== "all") listParams.document_type = filterDocType;
     if (searchQuery.trim() !== "") listParams.search = searchQuery.trim();
 
-    const response = await commands.platform.listDocumentTemplates(orgId, listParams);
+    const response = await commands.platform.listDocumentTemplates(
+      orgId,
+      listParams,
+    );
     templates = response || [];
   } catch (e: unknown) {
     console.error("Failed to load templates:", e);
@@ -159,7 +162,8 @@ async function handleCreateTemplate() {
     };
 
     const userId = "current-user";
-    const response = await commands.platform.createDocumentTemplate(userId,
+    const response = await commands.platform.createDocumentTemplate(
+      userId,
       createRequest,
     );
 
@@ -179,9 +183,11 @@ async function handleCreateTemplate() {
 async function confirmDelete(id: string) {
   const confirmed = await confirmStore.prompt({
     title: m.common_action_delete() + "؟",
-    description: m.common_docs_delete_confirm ? m.common_docs_delete_confirm() : "Are you sure you want to delete this template?",
+    description: m.common_docs_delete_confirm
+      ? m.common_docs_delete_confirm()
+      : "Are you sure you want to delete this template?",
     confirmText: m.common_action_delete(),
-    variant: "destructive"
+    variant: "destructive",
   });
   if (!confirmed) return;
 

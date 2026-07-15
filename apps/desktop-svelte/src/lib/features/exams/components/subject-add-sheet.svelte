@@ -23,7 +23,12 @@ import { toast } from "svelte-sonner";
 
 import { commands } from "$lib/core/ipc";
 
-const examTypeLabels = { written: m.exams_subject_type_written(), oral: m.exams_subject_type_oral(), practical: m.exams_subject_type_practical(), mixed: m.exams_subject_type_mixed() };
+const examTypeLabels = {
+  written: m.exams_subject_type_written(),
+  oral: m.exams_subject_type_oral(),
+  practical: m.exams_subject_type_practical(),
+  mixed: m.exams_subject_type_mixed(),
+};
 
 let {
   open = $bindable(false),

@@ -47,7 +47,9 @@ let submitProgress = $state(0);
 let identifierType = $state("auto");
 let activePeriodName = $state("");
 
-const gate = usePeriodGate("grade_entry", () => String(academicContext.activePeriod?.id || ""));
+const gate = usePeriodGate("grade_entry", () =>
+  String(academicContext.activePeriod?.id || ""),
+);
 let showOverrideDialog = $state(false);
 
 // Validation
@@ -87,7 +89,7 @@ async function handleClearAll() {
       title: m.common_action_delete() + "؟",
       description: m.common_bulk_input_confirm_clear(),
       confirmText: m.common_action_delete(),
-      variant: "destructive"
+      variant: "destructive",
     });
     if (!confirmed) return;
   }
@@ -144,7 +146,9 @@ async function handleSubmit() {
     }
 
     if (result.created > 0) {
-      toast.success(m.common_bulk_input_success_grades({ count: result.created }));
+      toast.success(
+        m.common_bulk_input_success_grades({ count: result.created }),
+      );
     }
     if (result.failed > 0) {
       toast.error(m.common_bulk_input_failed_rows({ count: result.failed }));

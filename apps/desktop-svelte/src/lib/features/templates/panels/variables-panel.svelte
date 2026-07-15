@@ -49,13 +49,29 @@ let expandedGroups = $state<Set<string>>(new Set(["all"]));
 
 // ── Derived ──────────────────────────────────────────────────
 
-function flattenSchema(schema: any, prefix = ""): Record<string, VariableDefinition & { isSystem?: boolean }> {
+function flattenSchema(
+  schema: any,
+  prefix = "",
+): Record<string, VariableDefinition & { isSystem?: boolean }> {
   let result: Record<string, VariableDefinition & { isSystem?: boolean }> = {};
   for (const [key, value] of Object.entries(schema)) {
     const fullPath = prefix ? `${prefix}.${key}` : key;
-    if (value && typeof value === "object" && (value as any).type === "object" && (value as any).properties) {
-      result = { ...result, ...flattenSchema((value as any).properties, fullPath) };
-    } else if (value && typeof value === "object" && (value as any).type === "array" && (value as any).items?.type === "object") {
+    if (
+      value &&
+      typeof value === "object" &&
+      (value as any).type === "object" &&
+      (value as any).properties
+    ) {
+      result = {
+        ...result,
+        ...flattenSchema((value as any).properties, fullPath),
+      };
+    } else if (
+      value &&
+      typeof value === "object" &&
+      (value as any).type === "array" &&
+      (value as any).items?.type === "object"
+    ) {
       result[fullPath] = {
         source: fullPath,
         type: "array",

@@ -76,8 +76,7 @@ export const commands: OrbisCommands = {
       cmd("list_enrollments", { classId, periodId }),
     listEnrollmentsPaginated: (cursor?: string | null, limit?: number | null) =>
       cmd("list_enrollments_paginated", { cursor, limit }),
-    getEnrollment: (enrollmentId) =>
-      cmd("get_enrollment", { enrollmentId }),
+    getEnrollment: (enrollmentId) => cmd("get_enrollment", { enrollmentId }),
     createEnrollment: (data) => cmd("create_enrollment", { data }),
     withdrawEnrollment: (enrollmentId, reason) =>
       cmd("withdraw_enrollment", { enrollmentId, reason }),
@@ -100,24 +99,20 @@ export const commands: OrbisCommands = {
     updateClassSubject: (id, data) => cmd("update_class_subject", { id, data }),
     deleteClassSubject: (id) => cmd("delete_class_subject", { id }),
     listPeriods: (orgId) => cmd("list_periods", {}),
-    listPeriodsByYear: (periodId) =>
-      cmd("list_periods_by_year", { periodId }),
+    listPeriodsByYear: (periodId) => cmd("list_periods_by_year", { periodId }),
     getPeriod: (periodId) => cmd("get_period", { periodId: periodId }),
     createPeriod: (data) => cmd("create_period", { data }),
     updatePeriod: (periodId, data) => cmd("update_period", { periodId, data }),
     deletePeriod: (periodId) => cmd("delete_period", { periodId }),
-    lockPeriod: (periodId) =>
-      cmd("lock_period", { periodId: periodId }),
-    unlockPeriod: (periodId) =>
-      cmd("unlock_period", { periodId }),
+    lockPeriod: (periodId) => cmd("lock_period", { periodId: periodId }),
+    unlockPeriod: (periodId) => cmd("unlock_period", { periodId }),
     togglePeriodEnrollment: (periodId, open) =>
       cmd("toggle_period_enrollment", { periodId, open }),
     togglePeriodGradeEntry: (periodId, open) =>
       cmd("toggle_period_grade_entry", { periodId, open }),
     listGuardiansByStudent: (studentId) =>
       cmd("list_guardians_by_student", { studentId }),
-    searchGuardians: (query) =>
-      cmd("search_guardians", { query }),
+    searchGuardians: (query) => cmd("search_guardians", { query }),
     listDocuments: (ownerId?) => cmd("list_documents", { ownerId }),
     createDocument: (data) =>
       cmd("create_document", {
@@ -129,8 +124,7 @@ export const commands: OrbisCommands = {
           key: data.url || data.key || `doc_${Date.now()}`,
         },
       }),
-    deleteDocument: (documentId) =>
-      cmd("delete_document", { documentId }),
+    deleteDocument: (documentId) => cmd("delete_document", { documentId }),
     listNotifications: (limit?) => cmd("list_notifications", { limit }),
     markNotificationRead: (notificationId) =>
       cmd("mark_notification_read", { notificationId }),
@@ -157,12 +151,10 @@ export const commands: OrbisCommands = {
       cmd("record_bulk_attendance", { periodId, data }),
     getAttendanceReport: (periodId, enrollmentId) =>
       cmd("get_attendance_report", { periodId, enrollmentId }),
-    listBehavior: (studentId) =>
-      cmd("list_behavior", { studentId }),
+    listBehavior: (studentId) => cmd("list_behavior", { studentId }),
     updateBehavior: (recordId, data) =>
       cmd("update_behavior", { recordId, data }),
-    deleteBehavior: (recordId) =>
-      cmd("delete_behavior", { recordId }),
+    deleteBehavior: (recordId) => cmd("delete_behavior", { recordId }),
     submitBehavior: (data) => cmd("submit_behavior", { data }),
     listAssessments: (periodId, classSubjectId?) =>
       cmd("list_assessments", { periodId, classSubjectId }),
@@ -177,16 +169,14 @@ export const commands: OrbisCommands = {
   // ═══════════════════════════════════════════════════════════════
   finance: {
     listAccounts: (orgId) => cmd("list_ledger_accounts", {}),
-    listTransactionAccounts: (orgId) =>
-      cmd("list_transaction_accounts", {}),
+    listTransactionAccounts: (orgId) => cmd("list_transaction_accounts", {}),
     createAccount: (data) => cmd("create_ledger_account", { data }),
     getAccountStatement: (accountId, startDate?, endDate?) =>
       cmd("get_account_statement", { accountId, startDate, endDate }),
     listTreasuries: (orgId) => cmd("list_treasuries", {}),
     createTreasury: (data) => cmd("create_treasury", { data }),
     listFeeTemplates: (orgId) => cmd("list_fee_templates", {}),
-    listActiveFeeTemplates: (orgId) =>
-      cmd("list_active_fee_templates", {}),
+    listActiveFeeTemplates: (orgId) => cmd("list_active_fee_templates", {}),
     createFeeTemplate: (data) => cmd("create_fee_template", { data }),
     updateFeeTemplate: (templateId, data) =>
       cmd("update_fee_template", { templateId, data }),
@@ -225,13 +215,7 @@ export const commands: OrbisCommands = {
     createLesson: (data) => cmd("create_lesson", { data }),
     updateLesson: (lessonId, data) => cmd("update_lesson", { lessonId, data }),
     deleteLesson: (lessonId) => cmd("delete_lesson", { lessonId }),
-    checkConflicts: (
-      periodId,
-      teacherId,
-      timeSlotId,
-      dayOfWeek,
-      roomId?,
-    ) =>
+    checkConflicts: (periodId, teacherId, timeSlotId, dayOfWeek, roomId?) =>
       cmd("check_schedule_conflicts", {
         periodId,
         teacherId,
@@ -268,22 +252,31 @@ export const commands: OrbisCommands = {
     getSchedules: (sessionId) => cmd("list_exam_schedule", { sessionId }),
     createScheduleEntry: (data) => cmd("create_exam_schedule_entry", { data }),
     deleteSchedule: (scheduleId) => cmd("delete_exam_schedule", { scheduleId }),
-    updateScheduleStatus: (scheduleId, status) => cmd("update_exam_schedule_status", { scheduleId, status }),
-    listSeating: (examSubjectId) => cmd("list_seating_numbers", { examSubjectId }),
-    getSeatingNumbers: (sessionId) => cmd("list_seating_numbers", { sessionId }),
-    generateSeating: (sessionId, userId) => cmd("generate_exam_ordering", { sessionId, userId }),
-    generateSecrets: (sessionId, userId) => cmd("generate_exam_secrets", { sessionId, userId }),
+    updateScheduleStatus: (scheduleId, status) =>
+      cmd("update_exam_schedule_status", { scheduleId, status }),
+    listSeating: (examSubjectId) =>
+      cmd("list_seating_numbers", { examSubjectId }),
+    getSeatingNumbers: (sessionId) =>
+      cmd("list_seating_numbers", { sessionId }),
+    generateSeating: (sessionId, userId) =>
+      cmd("generate_exam_ordering", { sessionId, userId }),
+    generateSecrets: (sessionId, userId) =>
+      cmd("generate_exam_secrets", { sessionId, userId }),
     getProctors: (sessionId) => cmd("list_exam_proctors", { sessionId }),
-    autoAssignProctors: (sessionId, scheduleId, data) => cmd("auto_assign_proctors", { scheduleId, data }),
-    allocateHalls: (sessionId, data) => cmd("allocate_exam_halls", { sessionId, data }),
+    autoAssignProctors: (sessionId, scheduleId, data) =>
+      cmd("auto_assign_proctors", { scheduleId, data }),
+    allocateHalls: (sessionId, data) =>
+      cmd("allocate_exam_halls", { sessionId, data }),
     listSolveJobs: (sessionId) => cmd("list_exam_solver_jobs", { sessionId }),
     startSolve: (userId, data) => cmd("start_exam_solver", { data }),
     cancelSolve: (jobId) => cmd("cancel_exam_solver", { jobId }),
     applySolve: (jobId) => cmd("apply_exam_solver", { jobId }),
     getSolveJob: (jobId) => cmd("get_exam_solver_job", { jobId }),
-    generateOrdering: (sessionId) => cmd("generate_exam_ordering", { sessionId }),
+    generateOrdering: (sessionId) =>
+      cmd("generate_exam_ordering", { sessionId }),
     getOrdering: (periodId) => cmd("get_student_ordering", { periodId }),
-    rebuildOrdering: (sessionId) => cmd("rebuild_student_ordering", { sessionId }),
+    rebuildOrdering: (sessionId) =>
+      cmd("rebuild_student_ordering", { sessionId }),
     freezeOrdering: async (__periodId, _userId) => {
       // TODO: Implement freeze ordering in Rust backend
     },
@@ -323,7 +316,8 @@ export const commands: OrbisCommands = {
     changeRole: (userId, data) => cmd("change_role", { userId, data }),
     saveUserRoles: (userId, roles) => cmd("save_user_roles", { userId, roles }),
     getRolePermissions: (role) => cmd("get_role_permissions", { role }),
-    saveRolePermissions: (role, permissions) => cmd("save_role_permissions", { role, permissions }),
+    saveRolePermissions: (role, permissions) =>
+      cmd("save_role_permissions", { role, permissions }),
   },
   // ═══════════════════════════════════════════════════════════════
   // ORGANIZATION
@@ -331,11 +325,9 @@ export const commands: OrbisCommands = {
   organization: {
     getMainOrganization: () => cmd("get_main_organization"),
     getOrganization: (orgId) => cmd("get_organization", {}),
-    updateOrganization: (data) =>
-      cmd("update_organization", { data }),
+    updateOrganization: (data) => cmd("update_organization", { data }),
     getSettings: (orgId) => cmd("get_settings", {}),
-    updateSettings: (settings) =>
-      cmd("update_settings", { settings }),
+    updateSettings: (settings) => cmd("update_settings", { settings }),
     getDashboardStats: (orgId) => cmd("get_dashboard_stats", {}),
     registerStudent: (data) => cmd("register_student", { data }),
     listOrgUnits: (orgId) => cmd("list_org_units", {}),
@@ -358,8 +350,7 @@ export const commands: OrbisCommands = {
     listPromotionJobs: (orgId) => cmd("get_promotion_jobs", {}),
     getPromotionJob: (jobId) => cmd("get_promotion_job", { jobId }),
     getPromotionDetails: (jobId) => cmd("get_promotion_details", { jobId }),
-    promotionDryRun: (config) =>
-      cmd("promotion_dry_run", { config }),
+    promotionDryRun: (config) => cmd("promotion_dry_run", { config }),
     executePromotion: (jobId) => cmd("execute_promotion", { jobId }),
     rollbackPromotion: (jobId, userId) =>
       cmd("rollback_promotion", { jobId, userId }),
@@ -367,20 +358,24 @@ export const commands: OrbisCommands = {
       cmd("override_promotion_decision", { request }),
     getPromotionPolicy: (orgId) => cmd("get_promotion_policy", {}),
     // Calendar / Periods
-    listCalendarEvents: (periodId) =>
-      cmd("get_calendar_events", { periodId }),
+    listCalendarEvents: (periodId) => cmd("get_calendar_events", { periodId }),
     listPendingCalendarEvents: (orgId) =>
       cmd("get_pending_calendar_events", {}),
     createCalendarEvent: (data) => cmd("create_calendar_event", { ...data }),
-    executeCalendarEvent: (eventId) => cmd("execute_calendar_event", { eventId }),
+    executeCalendarEvent: (eventId) =>
+      cmd("execute_calendar_event", { eventId }),
     deleteCalendarEvent: (eventId) => cmd("delete_calendar_event", { eventId }),
-    generateDefaultCalendar: (periodId) => cmd("generate_default_calendar", { periodId }),
+    generateDefaultCalendar: (periodId) =>
+      cmd("generate_default_calendar", { periodId }),
     getOrgPolicy: (orgId) => cmd("get_org_policy", {}),
     updateOrgPolicy: (policy) => cmd("update_org_policy", { policy }),
     listAgentSessions: (orgId) => cmd("list_agent_sessions", {}),
-    getAgentSessionLogs: (sessionId) => cmd("get_agent_session_logs", { sessionId }),
-    approveAgentAction: (actionLogId, approvedBy) => cmd("approve_agent_action", { actionLogId, approvedBy }),
-    rejectAgentAction: (actionLogId, rejectedBy, reason) => cmd("reject_agent_action", { actionLogId, rejectedBy, reason }),
+    getAgentSessionLogs: (sessionId) =>
+      cmd("get_agent_session_logs", { sessionId }),
+    approveAgentAction: (actionLogId, approvedBy) =>
+      cmd("approve_agent_action", { actionLogId, approvedBy }),
+    rejectAgentAction: (actionLogId, rejectedBy, reason) =>
+      cmd("reject_agent_action", { actionLogId, rejectedBy, reason }),
     // Overrides
     listOverrideRequests: (params?) =>
       cmd("list_override_requests", { params }),
@@ -393,8 +388,7 @@ export const commands: OrbisCommands = {
     cancelOverride: (requestId, userId) =>
       cmd("cancel_override", { requestId, userId }),
     // Document Templates
-    getTemplateSchemas: () =>
-      cmd("get_template_schemas", {}),
+    getTemplateSchemas: () => cmd("get_template_schemas", {}),
     listDocumentTemplates: (orgId, params?) =>
       cmd("list_document_templates", { orgId, params }),
     getDocumentTemplate: (templateId) =>
@@ -413,8 +407,7 @@ export const commands: OrbisCommands = {
       cmd("update_document_template", { templateId, data }),
     // AI Autopilot
     getAutopilotTasks: (orgId) => cmd("autopilot_get_tasks", {}),
-    getAutopilotDiagnostics: (orgId) =>
-      cmd("autopilot_get_diagnostics", {}),
+    getAutopilotDiagnostics: (orgId) => cmd("autopilot_get_diagnostics", {}),
     runAutopilotTick: (orgId) => cmd("autopilot_run_tick", {}),
     // Auth (desktop login flow)
     login: (identifier, password) =>
@@ -441,17 +434,26 @@ export const commands: OrbisCommands = {
       cmd("update_guardian_link", { linkId, data }),
     deleteGuardianLink: (linkId) => cmd("delete_guardian_link", { linkId }),
     // Documents
-    listDocumentsByOwner: (ownerId) =>
-      cmd("list_documents", { ownerId }),
+    listDocumentsByOwner: (ownerId) => cmd("list_documents", { ownerId }),
   },
   agent: {
     listSessions: (orgId) => cmd("agent_get_sessions", {}),
     createSession: (type) => cmd("agent_create_session", { type }),
-    query: (sessionId: string, text: string, context?: any, onChunk?: (chunk: string) => void) => {
+    query: (
+      sessionId: string,
+      text: string,
+      context?: any,
+      onChunk?: (chunk: string) => void,
+    ) => {
       if (onChunk) {
         const channel = new Channel<string>();
         channel.onmessage = onChunk;
-        return cmd("agent_query", { sessionId, text, context, onChunk: channel });
+        return cmd("agent_query", {
+          sessionId,
+          text,
+          context,
+          onChunk: channel,
+        });
       }
       return cmd("agent_query", { sessionId, text, context });
     },
@@ -463,19 +465,19 @@ export const commands: OrbisCommands = {
   },
   document: {
     uploadDocument: async (payload) => {
-      // In a desktop environment, we might need to read the file to bytes 
+      // In a desktop environment, we might need to read the file to bytes
       // or pass the file path to Rust. Assuming we pass an array buffer or path.
       // But standard web File API is used here. For large files, Tauri supports HTTP uploads or raw bytes.
       const buffer = await payload.file.arrayBuffer();
       const bytes = Array.from(new Uint8Array(buffer));
-      return cmd("upload_document", { 
+      return cmd("upload_document", {
         fileName: payload.file.name,
         mimeType: payload.file.type,
         bytes,
         entityType: payload.entity_type,
         entityId: payload.entity_id,
         category: payload.category,
-        visibility: payload.visibility
+        visibility: payload.visibility,
       });
     },
     getDocuments: (params) => cmd("get_documents", params),

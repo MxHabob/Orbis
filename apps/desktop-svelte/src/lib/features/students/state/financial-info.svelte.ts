@@ -57,12 +57,15 @@ export class FinancialInfoState {
 
     if (this.studentId) {
       try {
-        const studentFees = await commands.finance.listStudentFees(this.studentId);
+        const studentFees = await commands.finance.listStudentFees(
+          this.studentId,
+        );
         for (const fee of studentFees as any[]) {
           const feeTemplateId = fee.fee_template_id as string;
           if (feeTemplateId && this.selectedOptionalFees[feeTemplateId]) {
             this.selectedOptionalFees[feeTemplateId].checked = true;
-            this.selectedOptionalFees[feeTemplateId].amount = Number(fee.amount) || 0;
+            this.selectedOptionalFees[feeTemplateId].amount =
+              Number(fee.amount) || 0;
           }
         }
       } catch (feeErr) {

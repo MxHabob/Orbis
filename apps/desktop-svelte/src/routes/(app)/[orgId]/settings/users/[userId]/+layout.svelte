@@ -105,7 +105,7 @@ async function handleDeleteUser() {
     title: m.common_action_delete() + "؟",
     description: m.settings_user_detail_delete_confirm(),
     confirmText: m.common_action_delete(),
-    variant: "destructive"
+    variant: "destructive",
   });
   if (!confirmed) return;
   try {

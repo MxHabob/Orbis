@@ -91,7 +91,8 @@ async function loadFilters() {
     const activeYear =
       periodList.find(
         (c) =>
-          c.period_type === "year" && (c.status === "active" || c.status === "active"),
+          c.period_type === "year" &&
+          (c.status === "active" || c.status === "active"),
       ) ||
       periodList.find((c) => c.period_type === "year") ||
       periodList[0];
@@ -121,7 +122,10 @@ async function loadAssessments() {
   if (!classId) return;
   isAssessmentsLoading = true;
   try {
-    const list = await commands.assessment.listAssessments(selectedSemesterId || activePeriodId || "", selectedSubjectId || undefined);
+    const list = await commands.assessment.listAssessments(
+      selectedSemesterId || activePeriodId || "",
+      selectedSubjectId || undefined,
+    );
     assessments = list;
   } catch (e) {
     console.error("Error loading assessments:", e);
@@ -147,15 +151,13 @@ async function handleDelete(id: string) {
     title: m.common_action_delete() + "؟",
     description: m.assessments_delete_confirm(),
     confirmText: m.common_action_delete(),
-    variant: "destructive"
+    variant: "destructive",
   });
   if (!confirmed) return;
   try {
     await commands.assessment.deleteAssessment(id);
     assessments = assessments.filter((a) => String(a.id) !== id);
-    toast.success(
-      m.assessments_delete_success(),
-    );
+    toast.success(m.assessments_delete_success());
   } catch (e: unknown) {
     toast.error((e as any)?.message || "فشل الحذف");
   }

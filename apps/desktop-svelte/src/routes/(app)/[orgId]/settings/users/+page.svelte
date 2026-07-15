@@ -40,7 +40,9 @@ const userActions: ActionItem[] = [
 
 // ── Data Loading ────────────────────────────────────────────────────────
 const usersQuery = createUsersPaginatedQuery(() => data.orgId);
-const users = $derived($usersQuery.data?.pages?.flatMap((page: any) => page.items) ?? []);
+const users = $derived(
+  $usersQuery.data?.pages?.flatMap((page: any) => page.items) ?? [],
+);
 const isLoading = $derived($usersQuery.isLoading);
 
 function loadUsers() {
@@ -110,7 +112,7 @@ async function handleAction(event: GridActionEvent) {
       title: m.common_action_delete() + "؟",
       description: `Are you sure you want to delete ${user.full_name}?`,
       confirmText: m.common_action_delete(),
-      variant: "destructive"
+      variant: "destructive",
     });
     if (confirmed) {
       try {

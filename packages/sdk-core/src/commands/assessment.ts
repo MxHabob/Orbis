@@ -56,10 +56,7 @@ export interface AssessmentCommands {
     enrollmentId: string,
     periodId: string,
   ): Promise<GradeReportCard>;
-  getGradeAnalytics(
-    classId: string,
-    periodId: string,
-  ): Promise<GradeAnalytics>;
+  getGradeAnalytics(classId: string, periodId: string): Promise<GradeAnalytics>;
 
   // ── Attendance ──────────────────────────────────────────────
   listAttendance(

@@ -23,9 +23,7 @@ export interface IamCommands {
   listSessions(userId: string): Promise<UserSession[]>;
 
   // ── Users ───────────────────────────────────────────────────
-  listUsers(
-    filter?: { role?: string; status?: string },
-  ): Promise<User[]>;
+  listUsers(filter?: { role?: string; status?: string }): Promise<User[]>;
   listUsersPaginated(
     cursor?: string | null,
     limit?: number | null,
@@ -54,5 +52,8 @@ export interface IamCommands {
 
   // ── Rule Engine ─────────────────────────────────────────────
   getRolePermissions(role: string): Promise<PermissionRule[]>;
-  saveRolePermissions(role: string, permissions: PermissionRule[]): Promise<void>;
+  saveRolePermissions(
+    role: string,
+    permissions: PermissionRule[],
+  ): Promise<void>;
 }

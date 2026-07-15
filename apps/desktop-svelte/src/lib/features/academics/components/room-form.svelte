@@ -38,7 +38,9 @@ let capacity = $state<number | null>(
 );
 let roomType = $state(initRoom?.room_type || "classroom");
 let building = $state(initRoom?.building || "");
-let floor = $state<number | null>(initRoom?.floor ? Number(initRoom.floor) : null);
+let floor = $state<number | null>(
+  initRoom?.floor ? Number(initRoom.floor) : null,
+);
 
 const roomTypeLabels = {
   classroom: "Classroom",

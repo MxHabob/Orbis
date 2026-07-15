@@ -5,7 +5,10 @@ A styled logo uploader with loading indicator, image preview, and hover states.
 <script lang="ts">
 import { Avatar, AvatarImage, AvatarFallback } from "@orbis/ui-svelte/avatar";
 import { Loader2, Upload } from "lucide-svelte";
-import { useUploadDocument, resolveDocumentUrl } from "$lib/features/documents/queries";
+import {
+  useUploadDocument,
+  resolveDocumentUrl,
+} from "$lib/features/documents/queries";
 
 let {
   logoUrl = $bindable(null),
@@ -32,7 +35,7 @@ let localPreviewUrl: string | null = $state(null);
 let resolvedLogoUrl: string | null = $state(null);
 $effect(() => {
   if (logoUrl && !localPreviewUrl) {
-    resolveDocumentUrl(logoUrl).then(url => {
+    resolveDocumentUrl(logoUrl).then((url) => {
       resolvedLogoUrl = url;
     });
   }
@@ -56,23 +59,26 @@ function handleFileChange(event: Event) {
   };
   reader.readAsDataURL(file);
 
-  $uploadMutation.mutate({
-    file,
-    entity_type: entityType,
-    entity_id: entityId,
-    category: category,
-    visibility: "public"
-  }, {
-    onSuccess: (data: any) => {
-      const serverUrl = data.url;
-      logoUrl = serverUrl;
-      if (onupload) onupload(serverUrl);
+  $uploadMutation.mutate(
+    {
+      file,
+      entity_type: entityType,
+      entity_id: entityId,
+      category: category,
+      visibility: "public",
     },
-    onError: (err) => {
-      console.error("Failed to upload logo", err);
-      localPreviewUrl = null;
-    }
-  });
+    {
+      onSuccess: (data: any) => {
+        const serverUrl = data.url;
+        logoUrl = serverUrl;
+        if (onupload) onupload(serverUrl);
+      },
+      onError: (err) => {
+        console.error("Failed to upload logo", err);
+        localPreviewUrl = null;
+      },
+    },
+  );
 }
 </script>
 

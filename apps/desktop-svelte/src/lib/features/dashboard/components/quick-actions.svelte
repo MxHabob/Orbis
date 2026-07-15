@@ -52,9 +52,7 @@ const ACTIONS = $derived.by(() => {
     },
     // Phase-specific actions
     {
-      label: m.common_control_label
-        ? m.common_control_label()
-        : "Control",
+      label: m.common_control_label ? m.common_control_label() : "Control",
       icon: ShieldCheck,
       href: `/${orgId}/academics/control`,
       show: phase === "grade_entry" || phase === "exams",

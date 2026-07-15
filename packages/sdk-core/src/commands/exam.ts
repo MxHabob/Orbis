@@ -57,11 +57,15 @@ export interface ExamCommands {
   getSeatingNumbers(sessionId: string): Promise<SeatingNumber[]>;
   generateSeating(sessionId: string, userId: string): Promise<void>;
   generateSecrets(sessionId: string, userId: string): Promise<void>;
-  
+
   getProctors(sessionId: string): Promise<any[]>;
-  autoAssignProctors(sessionId: string, scheduleId: string, data: any): Promise<void>;
+  autoAssignProctors(
+    sessionId: string,
+    scheduleId: string,
+    data: any,
+  ): Promise<void>;
   allocateHalls(sessionId: string, data: any): Promise<void>;
-  
+
   listSolveJobs(sessionId: string): Promise<any[]>;
   startSolve(userId: string, data: any): Promise<any>;
   cancelSolve(jobId: string): Promise<any>;
@@ -70,12 +74,6 @@ export interface ExamCommands {
 
   generateOrdering(sessionId: string): Promise<void>;
   getOrdering(periodId: string): Promise<any[]>;
-  rebuildOrdering(
-    periodId: string,
-    strategy: string,
-  ): Promise<any[]>;
-  freezeOrdering(
-    periodId: string,
-    userId: string,
-  ): Promise<void>;
+  rebuildOrdering(periodId: string, strategy: string): Promise<any[]>;
+  freezeOrdering(periodId: string, userId: string): Promise<void>;
 }

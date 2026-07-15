@@ -38,9 +38,7 @@ async function loadData() {
       return;
     }
 
-    const res = await commands.assessment.getGradeAnalytics(classId,
-      cycleId,
-    );
+    const res = await commands.assessment.getGradeAnalytics(classId, cycleId);
     if (
       res &&
       (res as any).grade_distribution &&

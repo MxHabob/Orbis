@@ -4,7 +4,6 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@orbis/ui-svelte";
 import { Zap } from "lucide-svelte";
 import { uiStore } from "$lib/stores";
-
 </script>
 
 <Tooltip>

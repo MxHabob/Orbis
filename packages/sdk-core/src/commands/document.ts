@@ -1,4 +1,9 @@
-import type { Document, UploadDocumentPayload, CursorPage, CursorRequest } from '../types';
+import type {
+  Document,
+  UploadDocumentPayload,
+  CursorPage,
+  CursorRequest,
+} from "../types";
 
 export interface GetDocumentsParams extends CursorRequest {
   ownerId?: string;

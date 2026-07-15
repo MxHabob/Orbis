@@ -47,7 +47,9 @@ let capacity = $state<number | null>(
   initUnit?.capacity ? Number(initUnit.capacity) : null,
 );
 let roomNumber = $state(initUnit?.room_number || "");
-let floor = $state<number | null>(initUnit?.floor ? Number(initUnit.floor) : null);
+let floor = $state<number | null>(
+  initUnit?.floor ? Number(initUnit.floor) : null,
+);
 let building = $state(initUnit?.building || "");
 let headId = $state(initUnit?.head_id || "");
 
@@ -112,10 +114,17 @@ async function handleSubmit(e: SubmitEvent) {
     };
 
     if (isEdit && unit) {
-      await commands.organization.updateOrgUnit(unit.id, { name: request.name, name_ar: request.name_ar });
+      await commands.organization.updateOrgUnit(unit.id, {
+        name: request.name,
+        name_ar: request.name_ar,
+      });
       toast.success(m.settings_users_update_success());
     } else {
-      await commands.organization.createOrgUnit({ name: request.name, name_ar: request.name_ar, parent_id: request.parent_id });
+      await commands.organization.createOrgUnit({
+        name: request.name,
+        name_ar: request.name_ar,
+        parent_id: request.parent_id,
+      });
       toast.success("Organizational unit created successfully");
     }
 

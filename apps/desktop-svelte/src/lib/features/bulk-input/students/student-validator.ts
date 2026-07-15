@@ -131,7 +131,9 @@ export function validateStudentRows(
     if (status && !VALID_STATUS.includes(status)) {
       errors.set(
         "enrollment_status",
-        m.common_validation_status_invalid({ options: VALID_STATUS.join(", ") }),
+        m.common_validation_status_invalid({
+          options: VALID_STATUS.join(", "),
+        }),
       );
     }
 

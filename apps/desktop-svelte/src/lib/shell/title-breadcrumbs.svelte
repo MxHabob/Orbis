@@ -89,9 +89,7 @@ const breadcrumbs = $derived.by(() => {
       });
     } else if (pathname.includes("/control")) {
       items.push({
-        label: m.common_control_label
-          ? m.common_control_label()
-          : "الكنترول",
+        label: m.common_control_label ? m.common_control_label() : "الكنترول",
         href: `/${currentOrgId}/academics/control`,
       });
     }
@@ -118,9 +116,7 @@ const breadcrumbs = $derived.by(() => {
       });
     } else if (pathname.includes("/journal-entries")) {
       items.push({
-        label: m.common_je_title
-          ? m.common_je_title()
-          : "القيود اليومية",
+        label: m.common_je_title ? m.common_je_title() : "القيود اليومية",
         href: `/${currentOrgId}/finance/journal-entries`,
       });
     } else if (
@@ -183,9 +179,7 @@ const breadcrumbs = $derived.by(() => {
       });
     } else if (pathname.includes("/ordering")) {
       items.push({
-        label: m.common_nav_ordering
-          ? m.common_nav_ordering()
-          : "ترتيب الطلاب",
+        label: m.common_nav_ordering ? m.common_nav_ordering() : "ترتيب الطلاب",
       });
     } else if (pathname.includes("/fee-templates")) {
       items.push({

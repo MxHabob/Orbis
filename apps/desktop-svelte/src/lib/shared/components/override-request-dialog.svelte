@@ -88,11 +88,17 @@ const riskLabel = $derived.by(() => {
     case "low":
       return m.common_override_risk_low ? m.common_override_risk_low() : "Low";
     case "medium":
-      return m.common_override_risk_medium ? m.common_override_risk_medium() : "Medium";
+      return m.common_override_risk_medium
+        ? m.common_override_risk_medium()
+        : "Medium";
     case "high":
-      return m.common_override_risk_high ? m.common_override_risk_high() : "High";
+      return m.common_override_risk_high
+        ? m.common_override_risk_high()
+        : "High";
     case "critical":
-      return m.common_override_risk_critical ? m.common_override_risk_critical() : "Critical";
+      return m.common_override_risk_critical
+        ? m.common_override_risk_critical()
+        : "Critical";
     default:
       return riskLevel;
   }
@@ -113,7 +119,9 @@ const typeLabel = $derived.by(() => {
         ? m.common_override_type_attendance()
         : "Attendance Correction";
     case "fee_waiver":
-      return m.common_override_type_fee ? m.common_override_type_fee() : "Fee Waiver";
+      return m.common_override_type_fee
+        ? m.common_override_type_fee()
+        : "Fee Waiver";
     case "period_unlock":
       return m.common_override_type_unlock
         ? m.common_override_type_unlock()
@@ -134,7 +142,9 @@ const typeLabel = $derived.by(() => {
 const approvalChainPreview = $derived.by(() => {
   switch (riskLevel) {
     case "low":
-      return m.common_override_chain_auto ? m.common_override_chain_auto() : "Auto-approved";
+      return m.common_override_chain_auto
+        ? m.common_override_chain_auto()
+        : "Auto-approved";
     case "medium":
       return m.common_override_chain_manager
         ? m.common_override_chain_manager()

@@ -129,7 +129,9 @@ interface AccountResponse {
 
 // Queries
 const ledgersQuery = createAccountsQuery(() => orgId);
-const ledgers = $derived(($ledgersQuery.data || []) as unknown as AccountResponse[]);
+const ledgers = $derived(
+  ($ledgersQuery.data || []) as unknown as AccountResponse[],
+);
 const isLoadingLedgers = $derived($ledgersQuery.isLoading);
 
 // Query for detailed statement

@@ -124,7 +124,9 @@ const draftSchedulesInGrid = $derived.by(() => {
         applicable_class_ids: a.class_id,
         start_time: period === "morning" ? "08:00" : "13:00",
         end_time: (() => {
-          const exam_subject = subjects.find((s: any) => s.id === a.exam_subject_id);
+          const exam_subject = subjects.find(
+            (s: any) => s.id === a.exam_subject_id,
+          );
           const duration = exam_subject ? exam_subject.duration_minutes : 90;
           const start_time = period === "morning" ? "08:00" : "13:00";
           return addMinutes(start_time, duration);
@@ -147,7 +149,9 @@ const sessionDates = $derived(
 );
 
 function getSubjectName(subjectId: string) {
-  const sub = schoolSubjects.find((s: any) => String(s.id) === String(subjectId));
+  const sub = schoolSubjects.find(
+    (s: any) => String(s.id) === String(subjectId),
+  );
   return sub ? sub.name_ar || sub.name : subjectId;
 }
 
@@ -157,7 +161,9 @@ function getClassName(classId: string) {
 }
 
 function getSubjectColor(subjectId: string) {
-  const sub = schoolSubjects.find((s: any) => String(s.id) === String(subjectId));
+  const sub = schoolSubjects.find(
+    (s: any) => String(s.id) === String(subjectId),
+  );
   return sub ? sub.color : "#3b82f6";
 }
 
@@ -239,8 +245,8 @@ $effect(() => {
       sessionName: session?.name || "",
       status: session?.status || "",
       subjectsCount: subjects.length,
-      schedulesCount: activeSchedules.length
-    }
+      schedulesCount: activeSchedules.length,
+    },
   });
   return () => aiContext.clearContext();
 });
@@ -267,8 +273,7 @@ async function loadSession() {
 
     // Load seating numbers
     try {
-      seatingNumbers = await commands.exam.getSeatingNumbers(sessionId,
-      );
+      seatingNumbers = await commands.exam.getSeatingNumbers(sessionId);
     } catch (err) {
       console.error("Failed to load seating numbers", err);
     }
@@ -416,9 +421,7 @@ async function handleAutoSchedule() {
     };
     const job = await commands.exam.startSolve(userId, req);
     activeJob = job;
-    toast.success(
-      m.common_schedule_ai_optimization_started(),
-    );
+    toast.success(m.common_schedule_ai_optimization_started());
     startPollingJob(String(job.id));
   } catch (e: any) {
     isSolving = false;
@@ -457,7 +460,7 @@ async function startPollingJob(jobId: string) {
         } else if (job.status === "failed") {
           solveError =
             (job.error_message as string) ||
-            (m.common_schedule_ai_optimization_failed());
+            m.common_schedule_ai_optimization_failed();
           toast.error(solveError || "Error");
         }
       }
@@ -498,8 +501,7 @@ async function handleApplySolve() {
   if (!activeJob) return;
   const promise = commands.exam.applySolve(activeJob.id);
   toast.promise(promise, {
-    loading:
-      m.academics_exams_sessions_sessionId_applying_optimized_schedule(),
+    loading: m.academics_exams_sessions_sessionId_applying_optimized_schedule(),
     success:
       m.academics_exams_sessions_sessionId_applied_schedule_successfully(),
     error: (err: any) => (err as any)?.message || "Failed to apply",
@@ -519,15 +521,13 @@ async function handleDeleteSchedule(scheduleId: string) {
     title: m.common_action_delete() + "؟",
     description: m.academics_exams_sessions_sessionId_are_you_sure_you_want(),
     confirmText: m.common_action_delete(),
-    variant: "destructive"
+    variant: "destructive",
   });
   if (!confirmed) return;
   const promise = commands.exam.deleteSchedule(scheduleId);
   toast.promise(promise, {
-    loading:
-      m.academics_exams_sessions_sessionId_deleting_scheduled_exam(),
-    success:
-      m.academics_exams_sessions_sessionId_deleted_exam_successfully(),
+    loading: m.academics_exams_sessions_sessionId_deleting_scheduled_exam(),
+    success: m.academics_exams_sessions_sessionId_deleted_exam_successfully(),
     error: (err: any) => (err as any)?.message || "Failed to delete",
   });
   try {
@@ -549,9 +549,7 @@ async function handleToggleScheduleStatus(sched: any) {
       ? m.academics_exams_sessions_sessionId_deactivated_successfully()
       : m.academics_exams_sessions_sessionId_activated_successfully();
 
-  const promise = commands.exam.updateScheduleStatus(sched.id,
-    newStatus,
-  );
+  const promise = commands.exam.updateScheduleStatus(sched.id, newStatus);
   toast.promise(promise, {
     loading: label,
     success: labelSuccess,

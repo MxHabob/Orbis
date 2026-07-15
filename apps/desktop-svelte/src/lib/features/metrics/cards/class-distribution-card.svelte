@@ -36,7 +36,8 @@ async function loadData() {
     if (classes && classes.length > 0) {
       data = classes
         .map((c: any) => ({
-          name: getLocale() === "ar" ? c.name_ar || c.name : c.name || c.name_ar,
+          name:
+            getLocale() === "ar" ? c.name_ar || c.name : c.name || c.name_ar,
           count: c.current_students || 0,
         }))
         .sort((a: any, b: any) => b.count - a.count)

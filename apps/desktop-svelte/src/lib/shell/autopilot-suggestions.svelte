@@ -18,7 +18,9 @@ let {
   getTaskTypeLabel: (type: string) => string;
 } = $props();
 
-const sortedTasks = $derived([...tasks].sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at)));
+const sortedTasks = $derived(
+  [...tasks].sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at)),
+);
 </script>
 
 <div class="p-4 border-b border-border flex flex-col gap-3">

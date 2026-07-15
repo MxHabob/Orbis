@@ -102,7 +102,9 @@ let submitProgress = $state(0);
 
 // Validation
 let validationResults = $state<ReturnType<typeof validateStudentRows>>([]);
-const gate = usePeriodGate("enrollment", () => String(academicContext.activePeriod?.id || ""));
+const gate = usePeriodGate("enrollment", () =>
+  String(academicContext.activePeriod?.id || ""),
+);
 let showOverrideDialog = $state(false);
 let summary = $derived(getStudentValidationSummary(validationResults, rows));
 
@@ -206,7 +208,7 @@ async function handleClearAll() {
       title: m.common_action_delete() + "؟",
       description: m.common_bulk_input_confirm_clear(),
       confirmText: m.common_action_delete(),
-      variant: "destructive"
+      variant: "destructive",
     });
     if (!confirmed) return;
   }
@@ -298,14 +300,22 @@ async function handleSubmit() {
     submitProgress = 100;
 
     if (result.created > 0) {
-      toast.success(m.common_bulk_input_success_students({ count: result.created }));
+      toast.success(
+        m.common_bulk_input_success_students({ count: result.created }),
+      );
     }
     if (result.failed > 0) {
       toast.error(m.common_bulk_input_failed_rows({ count: result.failed }));
       console.error("Bulk Import failures:", result.errors);
       if (result.errors && Array.isArray(result.errors)) {
         for (const err of result.errors) {
-          toast.error(m.settings_bulk_row_error({ row: err.row_index, field: err.field, message: err.message }));
+          toast.error(
+            m.settings_bulk_row_error({
+              row: err.row_index,
+              field: err.field,
+              message: err.message,
+            }),
+          );
         }
       }
     } else {

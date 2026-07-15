@@ -51,7 +51,7 @@ async function loadData() {
     const [tList, lList, cList] = await Promise.all([
       commands.finance.listTreasuries(),
       commands.finance.listTransactionAccounts(),
-      commands.finance.listCurrencies()
+      commands.finance.listCurrencies(),
     ]);
     treasuries = tList;
     ledgers = lList;
@@ -97,7 +97,10 @@ const treasurySource = $derived(
       ...t,
       name: t.name_ar || t.name || "—",
       treasury_type: getTreasuryTypeLabel(t.treasury_type),
-      balance: formatCurrency(Number(t.balance || 0), t.currency || baseCurrency),
+      balance: formatCurrency(
+        Number(t.balance || 0),
+        t.currency || baseCurrency,
+      ),
       currency_code: t.currency || baseCurrency,
       status: "active",
     })),

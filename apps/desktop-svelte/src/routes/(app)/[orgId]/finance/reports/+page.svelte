@@ -40,7 +40,7 @@ async function loadData() {
   try {
     const [ledgersData, currenciesData] = await Promise.all([
       commands.finance.listAccounts(),
-      commands.finance.listCurrencies()
+      commands.finance.listCurrencies(),
     ]);
     ledgers = ledgersData;
     activeCurrencies = currenciesData.filter((c: any) => c.is_active === 1);
@@ -64,7 +64,7 @@ const trialBalanceRows = $derived.by(() => {
   return ledgers.map((l) => {
     // For Trial Balance, we show aggregated balances for active currencies
     const balances: Record<string, { debit: number; credit: number }> = {};
-    activeCurrencies.forEach(c => {
+    activeCurrencies.forEach((c) => {
       const code = c.code.toLowerCase();
       balances[code] = {
         debit: l[`debit_${code}`] || 0.0,
@@ -100,11 +100,13 @@ const expenseAccounts = $derived.by(() =>
 
 const totalRevenue = $derived.by(() => {
   const totals: Record<string, number> = {};
-  activeCurrencies.forEach(c => { totals[c.code.toLowerCase()] = 0; });
+  activeCurrencies.forEach((c) => {
+    totals[c.code.toLowerCase()] = 0;
+  });
 
   revenueAccounts.forEach((acc) => {
     if (!acc.parent_id) {
-      activeCurrencies.forEach(c => {
+      activeCurrencies.forEach((c) => {
         const code = c.code.toLowerCase();
         totals[code] += getNetBalance(acc, code);
       });
@@ -115,11 +117,13 @@ const totalRevenue = $derived.by(() => {
 
 const totalExpenses = $derived.by(() => {
   const totals: Record<string, number> = {};
-  activeCurrencies.forEach(c => { totals[c.code.toLowerCase()] = 0; });
+  activeCurrencies.forEach((c) => {
+    totals[c.code.toLowerCase()] = 0;
+  });
 
   expenseAccounts.forEach((acc) => {
     if (!acc.parent_id) {
-      activeCurrencies.forEach(c => {
+      activeCurrencies.forEach((c) => {
         const code = c.code.toLowerCase();
         totals[code] += getNetBalance(acc, code);
       });
@@ -141,11 +145,13 @@ const equityAccounts = $derived.by(() =>
 
 const totalAssets = $derived.by(() => {
   const totals: Record<string, number> = {};
-  activeCurrencies.forEach(c => { totals[c.code.toLowerCase()] = 0; });
+  activeCurrencies.forEach((c) => {
+    totals[c.code.toLowerCase()] = 0;
+  });
 
   assetAccounts.forEach((acc) => {
     if (!acc.parent_id) {
-      activeCurrencies.forEach(c => {
+      activeCurrencies.forEach((c) => {
         const code = c.code.toLowerCase();
         totals[code] += getNetBalance(acc, code);
       });
@@ -156,11 +162,13 @@ const totalAssets = $derived.by(() => {
 
 const totalLiabilities = $derived.by(() => {
   const totals: Record<string, number> = {};
-  activeCurrencies.forEach(c => { totals[c.code.toLowerCase()] = 0; });
+  activeCurrencies.forEach((c) => {
+    totals[c.code.toLowerCase()] = 0;
+  });
 
   liabilityAccounts.forEach((acc) => {
     if (!acc.parent_id) {
-      activeCurrencies.forEach(c => {
+      activeCurrencies.forEach((c) => {
         const code = c.code.toLowerCase();
         totals[code] += getNetBalance(acc, code);
       });
@@ -171,11 +179,13 @@ const totalLiabilities = $derived.by(() => {
 
 const totalEquity = $derived.by(() => {
   const totals: Record<string, number> = {};
-  activeCurrencies.forEach(c => { totals[c.code.toLowerCase()] = 0; });
+  activeCurrencies.forEach((c) => {
+    totals[c.code.toLowerCase()] = 0;
+  });
 
   equityAccounts.forEach((acc) => {
     if (!acc.parent_id) {
-      activeCurrencies.forEach(c => {
+      activeCurrencies.forEach((c) => {
         const code = c.code.toLowerCase();
         totals[code] += getNetBalance(acc, code);
       });

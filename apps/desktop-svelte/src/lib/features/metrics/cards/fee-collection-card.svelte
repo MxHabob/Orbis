@@ -63,7 +63,9 @@ async function loadData() {
       const lastYearMap = Array(12).fill(0);
 
       for (const p of payments) {
-        const dateStr = ((p as any).payment_date || p.created_at || "") as string;
+        const dateStr = ((p as any).payment_date ||
+          p.created_at ||
+          "") as string;
         if (!dateStr) continue;
         const dateObj = new Date(dateStr);
         if (isNaN(dateObj.getTime())) continue;

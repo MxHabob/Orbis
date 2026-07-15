@@ -2,7 +2,14 @@ import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
 import { INSTITUTION_PROFILES } from "./templates";
-import type { OnboardingPayload, PeriodTemplateDef, TemplateNode, PeriodEntry, ClassEntry, SubjectEntry } from "./types";
+import type {
+  OnboardingPayload,
+  PeriodTemplateDef,
+  TemplateNode,
+  PeriodEntry,
+  ClassEntry,
+  SubjectEntry,
+} from "./types";
 import { getDefaultBuildings } from "./utils";
 
 import { ProfileInfoState } from "./state/profile-info.svelte";
@@ -17,7 +24,17 @@ class OnboardingState {
   isLoading = $state(false);
   errorMessage = $state<string | null>(null);
   totalSteps = 9;
-  completedSteps = $state([false, false, false, false, false, false, false, false, false]);
+  completedSteps = $state([
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+  ]);
 
   // Sub-states
   profile = new ProfileInfoState();
@@ -32,14 +49,44 @@ class OnboardingState {
       INSTITUTION_PROFILES.school.terminology,
   );
 
-  stageLabel = $derived(getLocale() === "ar" ? this.terminology.stage_ar : this.terminology.stage);
-  classroomLabel = $derived(getLocale() === "ar" ? this.terminology.classroom_ar : this.terminology.classroom);
-  divisionLabel = $derived(getLocale() === "ar" ? this.terminology.division_ar : this.terminology.division);
-  subjectLabel = $derived(getLocale() === "ar" ? this.terminology.subject_ar : this.terminology.subject);
-  calendarLabel = $derived(getLocale() === "ar" ? this.terminology.calendar_ar : this.terminology.calendar);
-  localizedLanguageName = $derived(this.profile.locale.startsWith("ar") ? m.onboarding_lang_ar() : m.onboarding_lang_en());
-  classroomsLabelPlural = $derived(getLocale() === "ar" ? this.terminology.classroom_ar : this.terminology.classroom + "s");
-  stagesLabelPlural = $derived(getLocale() === "ar" ? this.terminology.stage_ar : this.terminology.stage + "s");
+  stageLabel = $derived(
+    getLocale() === "ar" ? this.terminology.stage_ar : this.terminology.stage,
+  );
+  classroomLabel = $derived(
+    getLocale() === "ar"
+      ? this.terminology.classroom_ar
+      : this.terminology.classroom,
+  );
+  divisionLabel = $derived(
+    getLocale() === "ar"
+      ? this.terminology.division_ar
+      : this.terminology.division,
+  );
+  subjectLabel = $derived(
+    getLocale() === "ar"
+      ? this.terminology.subject_ar
+      : this.terminology.subject,
+  );
+  calendarLabel = $derived(
+    getLocale() === "ar"
+      ? this.terminology.calendar_ar
+      : this.terminology.calendar,
+  );
+  localizedLanguageName = $derived(
+    this.profile.locale.startsWith("ar")
+      ? m.onboarding_lang_ar()
+      : m.onboarding_lang_en(),
+  );
+  classroomsLabelPlural = $derived(
+    getLocale() === "ar"
+      ? this.terminology.classroom_ar
+      : this.terminology.classroom + "s",
+  );
+  stagesLabelPlural = $derived(
+    getLocale() === "ar"
+      ? this.terminology.stage_ar
+      : this.terminology.stage + "s",
+  );
 
   selectInstitutionType(type: string) {
     this.profile.institutionType = type;
@@ -89,8 +136,11 @@ class OnboardingState {
 
       // Dynamic room list prefix mapping
       const roomsList = [];
-      const bldName = this.facilities.buildings.length > 0 ? this.facilities.buildings[0] : getDefaultBuildings()[0];
-      
+      const bldName =
+        this.facilities.buildings.length > 0
+          ? this.facilities.buildings[0]
+          : getDefaultBuildings()[0];
+
       profile.stages.slice(0, 5).forEach((stg, sIdx) => {
         roomsList.push({
           id: `room-b1-f1-${sIdx + 1}`,
@@ -110,7 +160,9 @@ class OnboardingState {
   }
 
   // ظ¤?ظ¤? Derived Values ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?
-  progressValue = $derived(this.activeStep === 0 ? 0 : (this.activeStep / this.totalSteps) * 100);
+  progressValue = $derived(
+    this.activeStep === 0 ? 0 : (this.activeStep / this.totalSteps) * 100,
+  );
   tasksCompletedCount = $derived(this.completedSteps.filter(Boolean).length);
 
   // ظ¤?ظ¤? Persistence ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?
@@ -138,7 +190,7 @@ class OnboardingState {
         const data = JSON.parse(saved);
         if (data.completedSteps) this.completedSteps = data.completedSteps;
         if (data.activeStep) this.activeStep = data.activeStep;
-        
+
         // Handle migration from flat state to structured state
         if (data.profile) {
           this.profile.deserialize(data.profile);
@@ -217,9 +269,11 @@ class OnboardingState {
     if (this.facilities.buildings.length <= 1) return false;
     const idx = this.facilities.buildings.indexOf(name);
     if (idx === -1) return false;
-    
+
     this.facilities.buildings.splice(idx, 1);
-    this.facilities.rooms = this.facilities.rooms.filter((r) => r.building !== name);
+    this.facilities.rooms = this.facilities.rooms.filter(
+      (r) => r.building !== name,
+    );
     if (this.facilities.activeBuildingTab === name) {
       this.facilities.activeBuildingTab = this.facilities.buildings[0];
     }
@@ -228,8 +282,12 @@ class OnboardingState {
   }
 
   addDefaultRoomsToBuilding(bldName: string) {
-    const otherRooms = this.facilities.rooms.filter((r) => r.building !== bldName);
-    const terminology = INSTITUTION_PROFILES[this.profile.institutionType]?.terminology || INSTITUTION_PROFILES.school.terminology;
+    const otherRooms = this.facilities.rooms.filter(
+      (r) => r.building !== bldName,
+    );
+    const terminology =
+      INSTITUTION_PROFILES[this.profile.institutionType]?.terminology ||
+      INSTITUTION_PROFILES.school.terminology;
     const defaultList = [];
     const tsSuffix = Date.now();
 
@@ -282,7 +340,13 @@ class OnboardingState {
     this.save();
   }
 
-  addRoom(name: string, nameAr: string, capacity: number, roomType: string, floor: number) {
+  addRoom(
+    name: string,
+    nameAr: string,
+    capacity: number,
+    roomType: string,
+    floor: number,
+  ) {
     if (!name || !nameAr) {
       toast.error(m.onboarding_toast_fill_room_fields());
       return false;
@@ -333,8 +397,12 @@ class OnboardingState {
   async loadTemplates(orgId: string) {
     try {
       const { commands } = await import("$lib/core/ipc");
-      this.calendar.periodTemplates = await commands.platform.getPeriodTemplates();
-      if (this.calendar.periodTemplates.length > 0 && !this.calendar.selectedTemplateId) {
+      this.calendar.periodTemplates =
+        await commands.platform.getPeriodTemplates();
+      if (
+        this.calendar.periodTemplates.length > 0 &&
+        !this.calendar.selectedTemplateId
+      ) {
         this.calendar.selectedTemplateId = this.calendar.periodTemplates[0].id;
       }
     } catch (e) {
@@ -354,9 +422,11 @@ class OnboardingState {
     index: number,
   ): PeriodEntry[] {
     const startMs = parentStartDateMs;
-    const durationDays = Math.round((templateNode.weight / 100) * parentDurationDays);
+    const durationDays = Math.round(
+      (templateNode.weight / 100) * parentDurationDays,
+    );
     const endMs = startMs + durationDays * 24 * 60 * 60 * 1000;
-    
+
     const startDate = new Date(startMs).toISOString().split("T")[0];
     const endDate = new Date(endMs).toISOString().split("T")[0];
     const id = `${parentId}-${templateNode.type}-${index}`;
@@ -377,7 +447,9 @@ class OnboardingState {
     if (templateNode.children && templateNode.children.length > 0) {
       let currentChildStartMs = startMs;
       templateNode.children.forEach((child, childIdx) => {
-        const childDurationDays = Math.round((child.weight / 100) * durationDays);
+        const childDurationDays = Math.round(
+          (child.weight / 100) * durationDays,
+        );
         const childEntries = this.generatePeriodsFromTemplate(
           child,
           id,
@@ -387,7 +459,7 @@ class OnboardingState {
           currentChildStartMs,
           durationDays,
           level + 1,
-          childIdx + 1
+          childIdx + 1,
         );
         allEntries = allEntries.concat(childEntries);
         currentChildStartMs += childDurationDays * 24 * 60 * 60 * 1000;
@@ -396,7 +468,12 @@ class OnboardingState {
     return allEntries;
   }
 
-  addTimeSlot(name: string, nameAr: string, startTime: string, endTime: string) {
+  addTimeSlot(
+    name: string,
+    nameAr: string,
+    startTime: string,
+    endTime: string,
+  ) {
     if (!name || !nameAr) {
       toast.error(m.onboarding_toast_fill_period_name());
       return false;
@@ -413,7 +490,9 @@ class OnboardingState {
   }
 
   removeTimeSlot(idx: number) {
-    this.academics.timeSlots = this.academics.timeSlots.filter((_, i) => i !== idx);
+    this.academics.timeSlots = this.academics.timeSlots.filter(
+      (_, i) => i !== idx,
+    );
     toast.success(m.onboarding_toast_period_deleted());
   }
 
@@ -444,25 +523,37 @@ class OnboardingState {
     const endMs = new Date(this.calendar.endDate).getTime();
     const totalDays = Math.ceil((endMs - startMs) / (1000 * 60 * 60 * 24));
 
-    let periods: PeriodEntry[] = [{
-      id: periodPeriodId,
-      parent_id: null,
-      name: this.calendar.academicYearName,
-      name_ar: this.calendar.academicYearNameAr,
-      start_date: this.calendar.startDate,
-      end_date: this.calendar.endDate,
-      period_type: "year",
-      weight: null,
-    }];
+    let periods: PeriodEntry[] = [
+      {
+        id: periodPeriodId,
+        parent_id: null,
+        name: this.calendar.academicYearName,
+        name_ar: this.calendar.academicYearNameAr,
+        start_date: this.calendar.startDate,
+        end_date: this.calendar.endDate,
+        period_type: "year",
+        weight: null,
+      },
+    ];
 
-    const template = this.calendar.periodTemplates.find((t) => t.id === this.calendar.selectedTemplateId);
-    
+    const template = this.calendar.periodTemplates.find(
+      (t) => t.id === this.calendar.selectedTemplateId,
+    );
+
     if (template && template.structure) {
       let currentTermStartMs = startMs;
       template.structure.forEach((term, idx) => {
         const termDurationDays = Math.round((term.weight / 100) * totalDays);
         const termEntries = this.generatePeriodsFromTemplate(
-          term, periodPeriodId, orgId, startMs, totalDays, currentTermStartMs, totalDays, 1, idx + 1
+          term,
+          periodPeriodId,
+          orgId,
+          startMs,
+          totalDays,
+          currentTermStartMs,
+          totalDays,
+          1,
+          idx + 1,
         );
         periods = periods.concat(termEntries);
         currentTermStartMs += termDurationDays * 24 * 60 * 60 * 1000;
@@ -581,7 +672,10 @@ class OnboardingState {
           try {
             await commands.finance.createFeeTemplate(req as any);
           } catch (feeErr) {
-            console.error(`Failed to create fee template for ${gl.level}:`, feeErr);
+            console.error(
+              `Failed to create fee template for ${gl.level}:`,
+              feeErr,
+            );
           }
         }
       }
@@ -591,7 +685,8 @@ class OnboardingState {
       return true;
     } catch (err: any) {
       console.error("Setup initialization failed:", err);
-      this.errorMessage = err?.message || String(err) || m.onboarding_err_unexpected();
+      this.errorMessage =
+        err?.message || String(err) || m.onboarding_err_unexpected();
       toast.error(m.onboarding_toast_error());
       return false;
     } finally {
@@ -605,7 +700,8 @@ class OnboardingState {
     const locale = getLocale();
     return {
       name: locale === "ar" ? profile.name_ar : profile.name,
-      description: locale === "ar" ? profile.description_ar : profile.description,
+      description:
+        locale === "ar" ? profile.description_ar : profile.description,
     };
   }
 }

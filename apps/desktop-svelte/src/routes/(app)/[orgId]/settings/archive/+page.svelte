@@ -1,5 +1,9 @@
 <script lang="ts">
-import { useDocuments, useDeleteDocument, resolveDocumentUrl } from "$lib/features/documents/queries";
+import {
+  useDocuments,
+  useDeleteDocument,
+  resolveDocumentUrl,
+} from "$lib/features/documents/queries";
 import { Button } from "@orbis/ui-svelte/button";
 import { Trash2, File, Image as ImageIcon, Loader2 } from "lucide-svelte";
 import type { Document } from "@orbis/sdk-core";
@@ -14,13 +18,20 @@ function handleDelete(id: string) {
 }
 
 // Flatten pages into a single array of documents
-let documents = $derived($documentsQuery.data?.pages.flatMap(p => p.items) || []);
-let groupedDocs = $derived(documents.reduce((acc: Record<string, Document[]>, doc: Document) => {
-  const cat = doc.category || "uncategorized";
-  if (!acc[cat]) acc[cat] = [];
-  acc[cat].push(doc);
-  return acc;
-}, {} as Record<string, Document[]>));
+let documents = $derived(
+  $documentsQuery.data?.pages.flatMap((p) => p.items) || [],
+);
+let groupedDocs = $derived(
+  documents.reduce(
+    (acc: Record<string, Document[]>, doc: Document) => {
+      const cat = doc.category || "uncategorized";
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(doc);
+      return acc;
+    },
+    {} as Record<string, Document[]>,
+  ),
+);
 </script>
 
 <div class="flex flex-col gap-6 p-6 h-full overflow-auto">

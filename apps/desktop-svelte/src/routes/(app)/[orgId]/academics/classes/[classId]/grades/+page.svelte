@@ -45,7 +45,7 @@ let selectedSemesterId = $state<string>("");
 
 const gate = usePeriodGate(
   "grade_entry",
-  () => selectedSemesterId || activePeriodId || ""
+  () => selectedSemesterId || activePeriodId || "",
 );
 let showOverrideDialog = $state(false);
 
@@ -69,7 +69,8 @@ async function loadData() {
     const activeYear =
       periodList.find(
         (c) =>
-          c.period_type === "year" && (c.status === "active" || c.status === "active"),
+          c.period_type === "year" &&
+          (c.status === "active" || c.status === "active"),
       ) ||
       periodList.find((c) => c.period_type === "year") ||
       periodList[0];
@@ -174,7 +175,7 @@ const gridColumns = $derived.by(() => {
       name: m.common_word_student(),
       width: 180,
       size: 180,
-      
+
       pin: "colPinStart",
       readonly: true,
       sort: true,
@@ -187,11 +188,11 @@ const gridColumns = $derived.by(() => {
       prop: `score_${assessment.id}`,
       name: `${assessment.title_ar || assessment.title || assessment.item_type || "التقييم"} (/${assessment.max_score})`,
       size: 110,
-      
+
       readonly: !gate.isAllowed,
       sortable: false,
       align: "center",
-      
+
       editor: "number",
       cellProperties: () => ({ class: "cell-number-input" }),
       editorConfig: {
@@ -305,7 +306,10 @@ async function handleCellEdit(event: any) {
         semester: semesterObj?.name || "Semester",
       };
 
-      await commands.assessment.submitGrade(selectedSemesterId || activePeriodId || "", request);
+      await commands.assessment.submitGrade(
+        selectedSemesterId || activePeriodId || "",
+        request,
+      );
       toast.success(m.academics_grades_saved());
     } catch (e: unknown) {
       // Revert in-memory value if backend save fails

@@ -33,12 +33,18 @@ let {
   orgName?: string;
 } = $props();
 
-let customProjects = $state<{ id: string; label: string; logoType: string }[]>([]);
+let customProjects = $state<{ id: string; label: string; logoType: string }[]>(
+  [],
+);
 
 const orgNameDisplay = $derived.by(() => {
-  if (initialOrgName && initialOrgName !== "Orbis School") return initialOrgName;
+  if (initialOrgName && initialOrgName !== "Orbis School")
+    return initialOrgName;
   if (orgId) {
-    return orgId.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    return orgId
+      .split("-")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
   }
   return "Orbis School";
 });

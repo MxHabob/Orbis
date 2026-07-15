@@ -94,10 +94,18 @@ $effect(() => {
 const showCommands = $derived(value === "/");
 
 const commandOptions = [
-  { id: 'academic', label: '🎓 Academic Agent', desc: 'Schedules, grades, and classes' },
-  { id: 'finance', label: '💰 Financial Agent', desc: 'Payments, fees, and accounting' },
-  { id: 'exam', label: '📝 Exam Agent', desc: 'Exams and seating' },
-  { id: 'default', label: '🤖 General Agent', desc: 'General Orbis assistant' },
+  {
+    id: "academic",
+    label: "🎓 Academic Agent",
+    desc: "Schedules, grades, and classes",
+  },
+  {
+    id: "finance",
+    label: "💰 Financial Agent",
+    desc: "Payments, fees, and accounting",
+  },
+  { id: "exam", label: "📝 Exam Agent", desc: "Exams and seating" },
+  { id: "default", label: "🤖 General Agent", desc: "General Orbis assistant" },
 ];
 
 function handleCommandSelect(agentType: string) {

@@ -18,7 +18,9 @@ let {
 
 $effect(() => {
   if (showSuggestions && suggestionsContainer) {
-    const activeEl = suggestionsContainer.querySelector('[aria-selected="true"]');
+    const activeEl = suggestionsContainer.querySelector(
+      '[aria-selected="true"]',
+    );
     if (activeEl) {
       activeEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }

@@ -100,7 +100,9 @@ async function loadClassSubjects() {
 
 function getSubjectName(subjectId: string) {
   const sub = subjects.find((s) => String(s.id) === String(subjectId));
-  return sub ? sub.name_ar || sub.name : m.common_schedule_page_unknown_subject();
+  return sub
+    ? sub.name_ar || sub.name
+    : m.common_schedule_page_unknown_subject();
 }
 
 async function adjustSubjectHours(csId: string, delta: number) {

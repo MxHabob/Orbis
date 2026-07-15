@@ -6,7 +6,12 @@
 import * as m from "$lib/paraglide/messages";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
-import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
 
 import { onboardingState } from "../state.svelte";
 import LocaleSettings from "$lib/shared/components/locale-settings.svelte";

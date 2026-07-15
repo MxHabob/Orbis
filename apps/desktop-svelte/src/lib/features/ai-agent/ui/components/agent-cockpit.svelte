@@ -42,7 +42,8 @@ async function handleApprove(actionId: string) {
       {
         loading: m.common_agent_toast_rejecting(),
         success: m.common_agent_toast_reject_success(),
-        error: (e) => extractErrorMessage(e) || m.common_agent_toast_reject_failed(),
+        error: (e) =>
+          extractErrorMessage(e) || m.common_agent_toast_reject_failed(),
       },
     );
   } catch (e: unknown) {
@@ -61,7 +62,8 @@ async function handleReject(actionId: string) {
       {
         loading: m.common_agent_toast_rejecting(),
         success: m.common_agent_toast_reject_success(),
-        error: (e) => extractErrorMessage(e) || m.common_agent_toast_reject_failed(),
+        error: (e) =>
+          extractErrorMessage(e) || m.common_agent_toast_reject_failed(),
       },
     );
   } catch (e: unknown) {

@@ -60,12 +60,16 @@ import {
   XCircle,
   Pencil,
 } from "lucide-svelte";
-import type {
-  CalendarEvent
-} from "@orbis/sdk-core";
+import type { CalendarEvent } from "@orbis/sdk-core";
 
 type CalendarExecutionMode = "manual" | "auto" | string;
-type CalendarEventType = "enrollment_open" | "enrollment_close" | "exam_period" | "holiday" | "custom" | string;
+type CalendarEventType =
+  | "enrollment_open"
+  | "enrollment_close"
+  | "exam_period"
+  | "holiday"
+  | "custom"
+  | string;
 import {
   gregorianToHijri,
   hijriToGregorian,
@@ -80,7 +84,10 @@ const periodId = $derived(academicContext.effectivePeriodId ?? "");
 
 // TanStack Query
 const queryClient = useQueryClient();
-const eventsQuery = createCalendarEventsQuery(() => orgId, () => periodId);
+const eventsQuery = createCalendarEventsQuery(
+  () => orgId,
+  () => periodId,
+);
 const events = $derived(($eventsQuery.data ?? []) as CalendarEvent[]);
 
 // Phase progress — derived from events
@@ -270,7 +277,9 @@ async function createEvent() {
       ...newEvent,
     });
     toast.success(
-      m.common_calendar_event_created ? m.common_calendar_event_created() : "Event created",
+      m.common_calendar_event_created
+        ? m.common_calendar_event_created()
+        : "Event created",
     );
     showCreateDialog = false;
     resetForm();
@@ -315,15 +324,19 @@ async function executeEvent(eventId: string) {
 async function deleteEvent(eventId: string) {
   const confirmed = await confirmStore.prompt({
     title: m.common_action_delete() + "؟",
-    description: m.common_schedule_page_confirm_delete ? m.common_schedule_page_confirm_delete() : "Are you sure you want to delete this event?",
+    description: m.common_schedule_page_confirm_delete
+      ? m.common_schedule_page_confirm_delete()
+      : "Are you sure you want to delete this event?",
     confirmText: m.common_action_delete(),
-    variant: "destructive"
+    variant: "destructive",
   });
   if (!confirmed) return;
   try {
     await commands.platform.deleteCalendarEvent(eventId);
     toast.success(
-      m.common_calendar_event_deleted ? m.common_calendar_event_deleted() : "Event deleted",
+      m.common_calendar_event_deleted
+        ? m.common_calendar_event_deleted()
+        : "Event deleted",
     );
     queryClient.invalidateQueries({
       queryKey: ["calendar-events", orgId, periodId],
@@ -355,17 +368,18 @@ async function generateDefaults() {
 function statusIcon(event: CalendarEvent) {
   if (event.executed_at) return CheckCircle2;
   const today = new Date().toISOString().split("T")[0]!;
-  if ((event.start_date || '') <= today && (event.end_date || '') >= today) return Clock;
-  if ((event.start_date || '') > today) return AlertCircle;
+  if ((event.start_date || "") <= today && (event.end_date || "") >= today)
+    return Clock;
+  if ((event.start_date || "") > today) return AlertCircle;
   return XCircle;
 }
 
 function statusColor(event: CalendarEvent): string {
   if (event.executed_at) return "text-primary";
   const today = new Date().toISOString().split("T")[0]!;
-  if ((event.start_date || '') <= today && (event.end_date || '') >= today)
+  if ((event.start_date || "") <= today && (event.end_date || "") >= today)
     return "text-yellow-500";
-  if ((event.start_date || '') > today) return "text-muted-foreground";
+  if ((event.start_date || "") > today) return "text-muted-foreground";
   return "text-destructive";
 }
 

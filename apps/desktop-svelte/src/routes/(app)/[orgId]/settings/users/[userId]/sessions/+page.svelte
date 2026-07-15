@@ -40,14 +40,16 @@ async function loadSessions() {
         if (s.browser) device += ` (${s.browser})`;
       }
 
-      const location = s.is_current === 1
-        ? m.settings_user_session_current_device()
-        : m.settings_user_session_active_device();
-      const time = s.is_current === 1
-        ? m.settings_user_session_active_now()
-        : s.last_active_at
-          ? formatDate(s.last_active_at)
-          : "";
+      const location =
+        s.is_current === 1
+          ? m.settings_user_session_current_device()
+          : m.settings_user_session_active_device();
+      const time =
+        s.is_current === 1
+          ? m.settings_user_session_active_now()
+          : s.last_active_at
+            ? formatDate(s.last_active_at)
+            : "";
 
       return {
         id: s.id,

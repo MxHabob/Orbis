@@ -46,7 +46,8 @@ onMount(() => {
 function getCategoryLabel(catStr: string) {
   const c = String(catStr).toLowerCase();
   if (c === "tuition") return m.common_ft_category_tuition?.() || "Tuition";
-  if (c === "transport") return m.common_ft_category_transport?.() || "Transport";
+  if (c === "transport")
+    return m.common_ft_category_transport?.() || "Transport";
   if (c === "books") return m.common_ft_category_books?.() || "Books";
   if (c === "uniform") return m.common_ft_category_uniform?.() || "Uniform";
   if (c === "exam") return m.common_ft_category_exam?.() || "Exam";

@@ -37,15 +37,19 @@ function parseMessageParts(text: string) {
         content: text.substring(lastIndex, match.index),
       });
     }
-    
+
     if (match[1] && match[2]) {
       // Link
       parts.push({ type: "link", label: match[1], href: match[2] });
     } else if (match[3] && match[4]) {
       // Tool result
-      parts.push({ type: "tool", toolName: match[3].trim(), result: match[4].trim() });
+      parts.push({
+        type: "tool",
+        toolName: match[3].trim(),
+        result: match[4].trim(),
+      });
     }
-    
+
     lastIndex = regex.lastIndex;
   }
 

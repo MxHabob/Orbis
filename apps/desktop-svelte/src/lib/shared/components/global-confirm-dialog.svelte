@@ -1,31 +1,31 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { confirmStore } from "$lib/stores";
-  import {
-    AlertDialog,
-    AlertDialogContent,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogCancel,
-    AlertDialogAction,
-  } from "@orbis/ui-svelte/alert-dialog";
+import * as m from "$lib/paraglide/messages";
+import { confirmStore } from "$lib/stores";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@orbis/ui-svelte/alert-dialog";
 
-  function handleConfirm() {
-    confirmStore.respond(true);
-  }
+function handleConfirm() {
+  confirmStore.respond(true);
+}
 
-  function handleCancel() {
+function handleCancel() {
+  confirmStore.respond(false);
+}
+
+// To support clicking outside or pressing Escape, we update the store when the dialog closes natively
+function handleOpenChange(open: boolean) {
+  if (!open && confirmStore.isOpen) {
     confirmStore.respond(false);
   }
-
-  // To support clicking outside or pressing Escape, we update the store when the dialog closes natively
-  function handleOpenChange(open: boolean) {
-    if (!open && confirmStore.isOpen) {
-      confirmStore.respond(false);
-    }
-  }
+}
 </script>
 
 <AlertDialog open={confirmStore.isOpen} onOpenChange={handleOpenChange}>

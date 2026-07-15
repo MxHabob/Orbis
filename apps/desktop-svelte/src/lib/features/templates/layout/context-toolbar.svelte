@@ -20,7 +20,11 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@orbis/ui-svelte/tooltip";
-import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui-svelte/popover";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@orbis/ui-svelte/popover";
 import { ComboboxDropdown } from "@orbis/ui-svelte/combobox-dropdown";
 import {
   ArrowLeft,
@@ -70,7 +74,10 @@ const FONT_FAMILIES = [
   { id: "arial", label: "Arial", value: "Arial" },
 ];
 
-const FONT_SIZES = [6, 8, 10, 12, 14, 16, 18, 21, 24, 28, 32, 36, 42, 48, 56, 64, 72, 80, 88, 96, 104, 120, 144];
+const FONT_SIZES = [
+  6, 8, 10, 12, 14, 16, 18, 21, 24, 28, 32, 36, 42, 48, 56, 64, 72, 80, 88, 96,
+  104, 120, 144,
+];
 let fontSizePopoverOpen = $state(false);
 
 const node = $derived(store.selectedNode);
@@ -80,8 +87,12 @@ const nodeProps = $derived(
 const hasSelection = $derived(store.selectedIds.length > 0);
 const isMultiSelect = $derived(store.selectedIds.length > 1);
 
-const allSelectedTypes = $derived(Array.from(new Set(store.selectedNodes.map(n => n.type))));
-const commonType = $derived(allSelectedTypes.length === 1 ? allSelectedTypes[0] : null);
+const allSelectedTypes = $derived(
+  Array.from(new Set(store.selectedNodes.map((n) => n.type))),
+);
+const commonType = $derived(
+  allSelectedTypes.length === 1 ? allSelectedTypes[0] : null,
+);
 
 // Use commonType if multiple items are selected so we can show text/shape tools for multiple items
 const nodeType = $derived(isMultiSelect ? commonType : (node?.type ?? null));
@@ -96,10 +107,15 @@ $effect(() => {
   editingName = templateName;
 });
 
-function handleAlign(type: "left" | "center" | "right" | "top" | "middle" | "bottom") {
+function handleAlign(
+  type: "left" | "center" | "right" | "top" | "middle" | "bottom",
+) {
   if (store.selectedNodes.length < 2) return;
 
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
 
   for (const node of store.selectedNodes) {
     const pos = (node as any).position;
@@ -133,7 +149,11 @@ function handleAlign(type: "left" | "center" | "right" | "top" | "middle" | "bot
       else if (type === "bottom") newY = maxY - h;
 
       if (newX !== pos.x || newY !== pos.y) {
-        updates.push({ id: node.id, x: Math.round(newX * 10) / 10, y: Math.round(newY * 10) / 10 });
+        updates.push({
+          id: node.id,
+          x: Math.round(newX * 10) / 10,
+          y: Math.round(newY * 10) / 10,
+        });
       }
     }
   }

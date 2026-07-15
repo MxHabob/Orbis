@@ -37,11 +37,13 @@ export class ProfileInfoState {
   deserialize(data: any) {
     if (!data) return;
     if (data.institutionType) this.institutionType = data.institutionType;
-    if (data.studentNumberPattern) this.studentNumberPattern = data.studentNumberPattern;
+    if (data.studentNumberPattern)
+      this.studentNumberPattern = data.studentNumberPattern;
     if (data.activeFields) this.activeFields = data.activeFields;
     if (data.requiredFields) this.requiredFields = data.requiredFields;
     if (data.preventDuplicates) this.preventDuplicates = data.preventDuplicates;
-    if (data.requiredDocumentsList) this.requiredDocumentsList = data.requiredDocumentsList;
+    if (data.requiredDocumentsList)
+      this.requiredDocumentsList = data.requiredDocumentsList;
     if (data.orgName) this.orgName = data.orgName;
     if (data.orgNameAr) this.orgNameAr = data.orgNameAr;
     if (data.rootUnitName) this.rootUnitName = data.rootUnitName;

@@ -85,11 +85,17 @@ $effect(() => {
     institutionType = conf.institution_type || "school";
     studentNumberPattern = conf.student_number_pattern || "STU-{YEAR}-{SEQ}";
     rawStages = conf.stages || ["primary", "middle", "high"];
-    requiredDocuments = conf.required_documents || ["Birth Certificate", "National ID or Passport"];
-    
-    if (conf.required_fields) requiredFields = { ...requiredFields, ...conf.required_fields };
-    if (conf.active_fields) activeFields = { ...activeFields, ...conf.active_fields };
-    if (conf.prevent_duplicates) preventDuplicates = { ...preventDuplicates, ...conf.prevent_duplicates };
+    requiredDocuments = conf.required_documents || [
+      "Birth Certificate",
+      "National ID or Passport",
+    ];
+
+    if (conf.required_fields)
+      requiredFields = { ...requiredFields, ...conf.required_fields };
+    if (conf.active_fields)
+      activeFields = { ...activeFields, ...conf.active_fields };
+    if (conf.prevent_duplicates)
+      preventDuplicates = { ...preventDuplicates, ...conf.prevent_duplicates };
   }
 });
 

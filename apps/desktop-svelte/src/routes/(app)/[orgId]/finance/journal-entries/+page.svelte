@@ -118,7 +118,9 @@ async function loadCurrencies() {
     if (list && list.length > 0) {
       currencies = list.map((c) => ({
         code: c.code,
-        name: isAr() ? (c.name_ar || c.name || c.code) : (c.name || c.name_ar || c.code),
+        name: isAr()
+          ? c.name_ar || c.name || c.code
+          : c.name || c.name_ar || c.code,
       }));
     }
   } catch (e) {
@@ -187,8 +189,6 @@ function handleVoid() {
   toast.success(m.finance_journal_void_success({ ref: deletedRef }));
   selectedEntry = null;
 }
-
-
 
 // Derived filtered list of entries
 const filteredEntries = $derived.by(() => {

@@ -8,17 +8,26 @@ import { commands } from "$lib/core/ipc";
 /** All enrollments for an organization. */
 export function createEnrollmentsQuery(orgId: () => string) {
   return createQuery({
-    get queryKey() { return ["enrollments", orgId()]; },
+    get queryKey() {
+      return ["enrollments", orgId()];
+    },
     queryFn: () => commands.academic.listEnrollments(),
-    get enabled() { return !!orgId(); },
+    get enabled() {
+      return !!orgId();
+    },
     staleTime: 2 * 60 * 1000, // Student data changes more frequently — 2 min
   });
 }
 
 /** Paginated enrollments query using Cursor-based infinite scrolling. */
-export function createEnrollmentsPaginatedQuery(orgId: () => string, limit: number = 50) {
+export function createEnrollmentsPaginatedQuery(
+  orgId: () => string,
+  limit: number = 50,
+) {
   return createInfiniteQuery({
-    get queryKey() { return ["enrollments_paginated", orgId(), limit]; },
+    get queryKey() {
+      return ["enrollments_paginated", orgId(), limit];
+    },
     queryFn: async ({ pageParam }) => {
       return commands.academic.listEnrollmentsPaginated(pageParam, limit);
     },
@@ -30,7 +39,9 @@ export function createEnrollmentsPaginatedQuery(orgId: () => string, limit: numb
       }
       return undefined;
     },
-    get enabled() { return !!orgId(); },
+    get enabled() {
+      return !!orgId();
+    },
     staleTime: 2 * 60 * 1000,
   });
 }

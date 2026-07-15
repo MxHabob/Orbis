@@ -72,17 +72,12 @@ $effect(() => {
     ? Boolean(editData.is_primary === 1 || editData.is_primary === true)
     : false;
   isEmergencyContact = editData
-    ? Boolean(
-        editData.is_primary === 1 ||
-          editData.is_primary === true,
-      )
+    ? Boolean(editData.is_primary === 1 || editData.is_primary === true)
     : false;
   isPayer = editData
     ? Boolean(editData.is_primary === 1 || editData.is_primary === true)
     : false;
-  paymentSharePercent = editData
-    ? Number(editData.is_primary ?? 0)
-    : 0;
+  paymentSharePercent = editData ? Number(editData.is_primary ?? 0) : 0;
 
   if (editData && editData.guardian_id) {
     commands.iam
@@ -178,7 +173,9 @@ const filteredUsers = $derived(
     }),
 );
 
-const selectedRelation = $derived(relationships.find((r) => r.value === relationship));
+const selectedRelation = $derived(
+  relationships.find((r) => r.value === relationship),
+);
 
 function selectUser(u: JsonRecord) {
   guardianUserId = String(u.id);
@@ -238,8 +235,7 @@ async function handleSubmit() {
 
     if (!finalGuardianUserId) {
       // Check if user already exists in db by phone
-      const checkExisting = await commands.academic.searchGuardians(phoneClean,
-      );
+      const checkExisting = await commands.academic.searchGuardians(phoneClean);
       if (checkExisting && checkExisting.length > 0) {
         finalGuardianUserId = checkExisting[0].id;
         // Optionally update the existing user info

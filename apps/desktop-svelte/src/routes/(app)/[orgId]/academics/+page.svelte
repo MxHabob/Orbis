@@ -31,9 +31,7 @@ import {
   createSubjectsQuery,
   createPeriodsQuery,
 } from "$lib/features/academics";
-import {
-  createPromotionJobsQuery,
-} from "$lib/features/academics/promotion-queries";
+import { createPromotionJobsQuery } from "$lib/features/academics/promotion-queries";
 import { academicContext } from "$lib/stores";
 import { createExamSessionsQuery } from "$lib/features/exams/queries";
 import { extractErrorMessage } from "$lib/core/ipc";
@@ -83,8 +81,7 @@ const activeYearName = $derived(academicContext.yearLabelAr);
 
 // Find active period / term
 const activePeriod = $derived(
-  periods.find((c) => c.status === "active") ||
-    periods[0],
+  periods.find((c) => c.status === "active") || periods[0],
 );
 
 const activePeriodName = $derived(

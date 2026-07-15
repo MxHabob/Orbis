@@ -299,7 +299,8 @@ export const commands: OrbisCommands = {
     getCurrentYear: (orgId) =>
       http.get(`/api/academic-years/current?orgId=${orgId}`),
     listYears: (_orgId) => http.get("/api/academic-years"),
-    switchYear: (periodId) => http.post(`/api/academic-years/${periodId}/switch`),
+    switchYear: (periodId) =>
+      http.post(`/api/academic-years/${periodId}/switch`),
     isYearArchived: (periodId) =>
       http.get(`/api/academic-years/${periodId}/archived-status`),
     getAcademicContext: (_orgId) => http.get("/api/academic-context"),
@@ -339,8 +340,10 @@ export const commands: OrbisCommands = {
       http.get(`/api/document-templates/${templateId}`),
 
     // ── AI Autopilot ──────────────────────────────────────────────
-    getAutopilotTasks: (orgId) => http.get(`/api/autopilot/tasks?orgId=${orgId}`),
-    getAutopilotDiagnostics: (orgId) => http.get(`/api/autopilot/diagnostics?orgId=${orgId}`),
+    getAutopilotTasks: (orgId) =>
+      http.get(`/api/autopilot/tasks?orgId=${orgId}`),
+    getAutopilotDiagnostics: (orgId) =>
+      http.get(`/api/autopilot/diagnostics?orgId=${orgId}`),
     runAutopilotTick: (orgId) => http.post(`/api/autopilot/tick`, { orgId }),
 
     listAgentSessions: (_orgId) => http.get("/api/agent/sessions"),

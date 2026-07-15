@@ -6,7 +6,10 @@ A circular avatar image uploader with hover edit states and customizable fallbac
 import { Avatar, AvatarImage, AvatarFallback } from "@orbis/ui-svelte/avatar";
 import { cn } from "@orbis/ui-svelte/utils";
 import { Loader2, User } from "lucide-svelte";
-import { useUploadDocument, resolveDocumentUrl } from "$lib/features/documents/queries";
+import {
+  useUploadDocument,
+  resolveDocumentUrl,
+} from "$lib/features/documents/queries";
 
 let {
   avatarUrl = $bindable(null),
@@ -37,7 +40,7 @@ let localPreviewUrl: string | null = $state(null);
 let resolvedAvatarUrl: string | null = $state(null);
 $effect(() => {
   if (avatarUrl && !localPreviewUrl) {
-    resolveDocumentUrl(avatarUrl).then(url => {
+    resolveDocumentUrl(avatarUrl).then((url) => {
       resolvedAvatarUrl = url;
     });
   }
@@ -63,23 +66,26 @@ function handleFileChange(event: Event) {
   reader.readAsDataURL(file);
 
   // Background upload
-  $uploadMutation.mutate({
-    file,
-    entity_type: entityType,
-    entity_id: entityId,
-    category: category,
-    visibility: "public"
-  }, {
-    onSuccess: (data: any) => {
-      const serverUrl = data.url;
-      avatarUrl = serverUrl;
-      if (onupload) onupload(serverUrl);
+  $uploadMutation.mutate(
+    {
+      file,
+      entity_type: entityType,
+      entity_id: entityId,
+      category: category,
+      visibility: "public",
     },
-    onError: (err) => {
-      console.error("Failed to upload avatar", err);
-      localPreviewUrl = null; // Revert on failure
-    }
-  });
+    {
+      onSuccess: (data: any) => {
+        const serverUrl = data.url;
+        avatarUrl = serverUrl;
+        if (onupload) onupload(serverUrl);
+      },
+      onError: (err) => {
+        console.error("Failed to upload avatar", err);
+        localPreviewUrl = null; // Revert on failure
+      },
+    },
+  );
 }
 </script>
 

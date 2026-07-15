@@ -56,12 +56,8 @@ $effect(() => {
 let selectedPeriod = $derived(
   periods.find((c) => String(c.id) === selectedPeriodId),
 );
-let isPeriodLocked = $derived(
-  Boolean(selectedPeriod?.is_locked),
-);
-let isGradeEntryOpen = $derived(
-  Boolean(selectedPeriod?.is_grade_entry_open),
-);
+let isPeriodLocked = $derived(Boolean(selectedPeriod?.is_locked));
+let isGradeEntryOpen = $derived(Boolean(selectedPeriod?.is_grade_entry_open));
 let canEnterGrades = $derived(
   !isPeriodLocked && isGradeEntryOpen && !academicContext.isReadOnly,
 );

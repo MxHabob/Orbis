@@ -225,9 +225,18 @@ export function buildStudentColumns(
       size: 120,
       editor: "combo",
       options: [
-        { id: "father", label: m.common_guardians_relationship_father?.() || "Father" },
-        { id: "mother", label: m.common_guardians_relationship_mother?.() || "Mother" },
-        { id: "other", label: m.common_guardians_relationship_other?.() || "Other" },
+        {
+          id: "father",
+          label: m.common_guardians_relationship_father?.() || "Father",
+        },
+        {
+          id: "mother",
+          label: m.common_guardians_relationship_mother?.() || "Mother",
+        },
+        {
+          id: "other",
+          label: m.common_guardians_relationship_other?.() || "Other",
+        },
       ],
     });
   }

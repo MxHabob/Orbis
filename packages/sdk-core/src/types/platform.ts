@@ -273,16 +273,9 @@ export type GateType =
   | "exam_entry"
   | "assessment";
 
-export type GateDecision =
-  | "allowed"
-  | "late"
-  | "requires_override"
-  | "blocked";
+export type GateDecision = "allowed" | "late" | "requires_override" | "blocked";
 
-export type GateAction =
-  | "direct_action"
-  | "save_draft"
-  | "request_override";
+export type GateAction = "direct_action" | "save_draft" | "request_override";
 
 export interface CapacityInfo {
   current: number;

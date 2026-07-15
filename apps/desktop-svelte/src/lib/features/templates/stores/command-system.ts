@@ -375,7 +375,11 @@ export class BatchCommand implements EditorCommand {
       }
       return cmd;
     });
-    return new BatchCommand(mergedCommands, this.description, this.descriptionAr);
+    return new BatchCommand(
+      mergedCommands,
+      this.description,
+      this.descriptionAr,
+    );
   }
 }
 

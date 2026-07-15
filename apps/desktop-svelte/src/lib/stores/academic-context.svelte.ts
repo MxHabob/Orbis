@@ -95,10 +95,17 @@ class AcademicContextStore {
    * Derived phase of the active period.
    * Computed from period status, enrollment, and grade-entry flags.
    */
-  get periodPhase(): "pre_start" | "active" | "exams" | "grade_entry" | "closed" | null {
+  get periodPhase():
+    | "pre_start"
+    | "active"
+    | "exams"
+    | "grade_entry"
+    | "closed"
+    | null {
     const period = this.activePeriod;
     if (!period) return null;
-    if (period.status === "closed" || period.status === "archived") return "closed";
+    if (period.status === "closed" || period.status === "archived")
+      return "closed";
     if (period.is_grade_entry_open === 1) return "grade_entry";
     if (period.exam_start && period.exam_end) {
       const now = new Date().toISOString().slice(0, 10);
@@ -118,7 +125,8 @@ class AcademicContextStore {
         current_year,
         all_years: all_years || [],
         periods: all_years || [], // Assuming periods and years are the same in autopilot
-        year_status: current_year?.status === "archived" ? "archived" : "active",
+        year_status:
+          current_year?.status === "archived" ? "archived" : "active",
         is_read_only: current_year?.status === "archived",
       };
       this.currentYear = ctx.current_year ?? null;

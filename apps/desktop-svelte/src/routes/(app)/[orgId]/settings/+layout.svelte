@@ -61,9 +61,7 @@ const navItems = $derived([
   },
   {
     path: "periods",
-    label: m.settings_nav_cycles
-      ? m.settings_nav_cycles()
-      : "Academic Periods",
+    label: m.settings_nav_cycles ? m.settings_nav_cycles() : "Academic Periods",
     icon: Calendar,
   },
   {

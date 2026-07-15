@@ -49,11 +49,15 @@ let selectedLevels = $state<string[]>([]);
 const categories = $derived([
   {
     value: "tuition",
-    label: m.common_ft_category_tuition ? m.common_ft_category_tuition() : "رسوم دراسية",
+    label: m.common_ft_category_tuition
+      ? m.common_ft_category_tuition()
+      : "رسوم دراسية",
   },
   {
     value: "transport",
-    label: m.common_ft_category_transport ? m.common_ft_category_transport() : "نقل",
+    label: m.common_ft_category_transport
+      ? m.common_ft_category_transport()
+      : "نقل",
   },
   {
     value: "books",
@@ -61,15 +65,21 @@ const categories = $derived([
   },
   {
     value: "uniform",
-    label: m.common_ft_category_uniform ? m.common_ft_category_uniform() : "زي مدرسي",
+    label: m.common_ft_category_uniform
+      ? m.common_ft_category_uniform()
+      : "زي مدرسي",
   },
   {
     value: "exam",
-    label: m.common_ft_category_exam ? m.common_ft_category_exam() : "رسوم امتحانات",
+    label: m.common_ft_category_exam
+      ? m.common_ft_category_exam()
+      : "رسوم امتحانات",
   },
   {
     value: "other",
-    label: m.common_guardians_relationship_other ? m.common_guardians_relationship_other() : "أخرى",
+    label: m.common_guardians_relationship_other
+      ? m.common_guardians_relationship_other()
+      : "أخرى",
   },
 ]);
 const categoryLabels = $derived(
@@ -83,19 +93,27 @@ const selectedCategoryLabel = $derived(categoryLabels[category] ?? category);
 const frequencies = $derived([
   {
     value: "once",
-    label: m.common_ft_frequency_once ? m.common_ft_frequency_once() : "مرة واحدة",
+    label: m.common_ft_frequency_once
+      ? m.common_ft_frequency_once()
+      : "مرة واحدة",
   },
   {
     value: "monthly",
-    label: m.common_ft_frequency_monthly ? m.common_ft_frequency_monthly() : "شهري",
+    label: m.common_ft_frequency_monthly
+      ? m.common_ft_frequency_monthly()
+      : "شهري",
   },
   {
     value: "termly",
-    label: m.common_ft_frequency_termly ? m.common_ft_frequency_termly() : "فصلي",
+    label: m.common_ft_frequency_termly
+      ? m.common_ft_frequency_termly()
+      : "فصلي",
   },
   {
     value: "yearly",
-    label: m.common_ft_frequency_yearly ? m.common_ft_frequency_yearly() : "سنوي",
+    label: m.common_ft_frequency_yearly
+      ? m.common_ft_frequency_yearly()
+      : "سنوي",
   },
 ]);
 const frequencyLabels = $derived(
@@ -178,9 +196,7 @@ async function loadClasses() {
       return {
         level: lvl,
         label:
-          m.common_status_undefined() === "غير محدد"
-            ? nameObj.ar
-            : nameObj.en,
+          m.common_status_undefined() === "غير محدد" ? nameObj.ar : nameObj.en,
       };
     });
   } catch (e) {

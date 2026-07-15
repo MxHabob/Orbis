@@ -56,7 +56,7 @@ async function handleAISummarize() {
     aiSummary = String(
       aiRes.summary ||
         aiRes.analysis ||
-        m.academics_behavior_ai_success_desc_1()
+        m.academics_behavior_ai_success_desc_1(),
     );
     toast.success(m.academics_behavior_ai_success());
   } catch {

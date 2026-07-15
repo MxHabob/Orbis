@@ -10,12 +10,15 @@ import {
 import { commands } from "$lib/core/ipc";
 import type { PromotionConfig } from "@orbis/sdk-core";
 
-
 export function createPromotionJobsQuery(orgId: () => string) {
   return createQuery({
-    get queryKey() { return ["promotion-jobs", orgId()]; },
+    get queryKey() {
+      return ["promotion-jobs", orgId()];
+    },
     queryFn: () => commands.platform.listPromotionJobs(),
-    get enabled() { return !!orgId(); },
+    get enabled() {
+      return !!orgId();
+    },
     staleTime: 60 * 1000,
   });
 }

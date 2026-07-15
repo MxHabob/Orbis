@@ -26,13 +26,16 @@ let message = $derived.by(() => {
 
   if (isAr) {
     const bldText = bldCount === 1 ? "مبنى واحد" : `${bldCount} مباني`;
-    const roomText = roomCount === 1 ? "قاعة دراسية واحدة" : `${roomCount} قاعة دراسية`;
-    const stageText = stageCount === 1 ? "مرحلة دراسية واحدة" : `${stageCount} مراحل دراسية`;
+    const roomText =
+      roomCount === 1 ? "قاعة دراسية واحدة" : `${roomCount} قاعة دراسية`;
+    const stageText =
+      stageCount === 1 ? "مرحلة دراسية واحدة" : `${stageCount} مراحل دراسية`;
     return `لقد قمت بإعداد ${bldText} تحتوي على ${roomText} بسعة استيعابية إجمالية تبلغ ${capacity} طالباً. سأبدأ الآن بتنظيم هذه البنية، وربط المراحل الـ ${stageText} التي قمت بتفعيلها لبناء بيئة العمل الخاصة بمدرستك.`;
   } else {
     const bldText = bldCount === 1 ? "1 building" : `${bldCount} buildings`;
     const roomText = roomCount === 1 ? "1 room" : `${roomCount} rooms`;
-    const stageText = stageCount === 1 ? "1 academic stage" : `${stageCount} academic stages`;
+    const stageText =
+      stageCount === 1 ? "1 academic stage" : `${stageCount} academic stages`;
     return `You have configured ${bldText} containing ${roomText} with a total capacity of ${capacity} students. I will now link this infrastructure with the ${stageText} you activated to initialize your school's workspace.`;
   }
 });

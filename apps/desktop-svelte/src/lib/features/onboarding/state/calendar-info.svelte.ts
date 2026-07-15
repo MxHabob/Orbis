@@ -22,10 +22,12 @@ export class CalendarInfoState {
   deserialize(data: any) {
     if (!data) return;
     if (data.academicYearName) this.academicYearName = data.academicYearName;
-    if (data.academicYearNameAr) this.academicYearNameAr = data.academicYearNameAr;
+    if (data.academicYearNameAr)
+      this.academicYearNameAr = data.academicYearNameAr;
     if (data.startDate) this.startDate = data.startDate;
     if (data.endDate) this.endDate = data.endDate;
-    if (data.selectedTemplateId) this.selectedTemplateId = data.selectedTemplateId;
+    if (data.selectedTemplateId)
+      this.selectedTemplateId = data.selectedTemplateId;
     if (data.periodTemplates) this.periodTemplates = data.periodTemplates;
   }
 }

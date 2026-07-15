@@ -76,9 +76,7 @@ const basePath = $derived(`/${orgId}/academics/classes/${classId}`);
 const menuItems = $derived([
   {
     path: "",
-    label: m.common_nav_overview
-      ? m.common_nav_overview()
-      : "نظرة عامة",
+    label: m.common_nav_overview ? m.common_nav_overview() : "نظرة عامة",
     icon: GraduationCap,
   },
   {
@@ -90,9 +88,7 @@ const menuItems = $derived([
   },
   {
     path: "teachers",
-    label: m.common_year_teachers
-      ? m.common_year_teachers()
-      : "المعلمون",
+    label: m.common_year_teachers ? m.common_year_teachers() : "المعلمون",
     icon: BookUser,
   },
   {

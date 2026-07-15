@@ -105,7 +105,9 @@ const shortcuts = $derived([
     title: m.students_create ? m.students_create() : "إضافة طالب جديد",
     icon: Plus,
     action: () => goto(`/${currentOrgId}/students`),
-    group: m.common_search_group_shortcuts ? m.common_search_group_shortcuts() : "Shortcuts",
+    group: m.common_search_group_shortcuts
+      ? m.common_search_group_shortcuts()
+      : "Shortcuts",
   },
   {
     id: "sc-view-templates",
@@ -114,7 +116,9 @@ const shortcuts = $derived([
       : "قوالب المستندات",
     icon: FileText,
     action: () => goto(`/${currentOrgId}/templates`),
-    group: m.common_search_group_shortcuts ? m.common_search_group_shortcuts() : "Shortcuts",
+    group: m.common_search_group_shortcuts
+      ? m.common_search_group_shortcuts()
+      : "Shortcuts",
   },
   {
     id: "sc-view-reports",
@@ -123,14 +127,20 @@ const shortcuts = $derived([
       : "استخراج التقارير",
     icon: BarChart3,
     action: () => goto(`/${currentOrgId}/reports`),
-    group: m.common_search_group_shortcuts ? m.common_search_group_shortcuts() : "Shortcuts",
+    group: m.common_search_group_shortcuts
+      ? m.common_search_group_shortcuts()
+      : "Shortcuts",
   },
   {
     id: "sc-view-settings",
-    title: m.common_word_settings ? m.common_word_settings() : "الإعدادات العامة",
+    title: m.common_word_settings
+      ? m.common_word_settings()
+      : "الإعدادات العامة",
     icon: Settings,
     action: () => goto(`/${currentOrgId}/settings`),
-    group: m.common_search_group_shortcuts ? m.common_search_group_shortcuts() : "Shortcuts",
+    group: m.common_search_group_shortcuts
+      ? m.common_search_group_shortcuts()
+      : "Shortcuts",
   },
 ]);
 
@@ -159,9 +169,7 @@ const systemPages = $derived([
     icon: Wallet,
   },
   {
-    title: m.common_je_title
-      ? m.common_je_title()
-      : "Journal Entries",
+    title: m.common_je_title ? m.common_je_title() : "Journal Entries",
     path: `/${currentOrgId}/finance/journal-entries`,
     icon: FileText,
   },
@@ -200,9 +208,7 @@ const systemPages = $derived([
     icon: FileText,
   },
   {
-    title: m.common_control_label
-      ? m.common_control_label()
-      : "Control Board",
+    title: m.common_control_label ? m.common_control_label() : "Control Board",
     path: `/${currentOrgId}/academics/control`,
     icon: Shield,
   },
@@ -232,9 +238,7 @@ const systemPages = $derived([
     icon: Shield,
   },
   {
-    title: m.settings_nav_cycles
-      ? m.settings_nav_cycles()
-      : "Academic Periods",
+    title: m.settings_nav_cycles ? m.settings_nav_cycles() : "Academic Periods",
     path: `/${currentOrgId}/settings/periods`,
     icon: Calendar,
   },
@@ -251,7 +255,9 @@ const systemPages = $derived([
     icon: Settings,
   },
   {
-    title: m.common_exams_detail_subjects ? m.common_exams_detail_subjects() : "Subjects",
+    title: m.common_exams_detail_subjects
+      ? m.common_exams_detail_subjects()
+      : "Subjects",
     path: `/${currentOrgId}/settings/subjects`,
     icon: BookOpen,
   },
@@ -341,7 +347,9 @@ const filteredItems = $derived.by(() => {
         title: c.name || "Class",
         icon: GraduationCap,
         action: () => goto(`/${currentOrgId}/academics/classes`),
-        group: m.common_search_group_classes ? m.common_search_group_classes() : "Classes",
+        group: m.common_search_group_classes
+          ? m.common_search_group_classes()
+          : "Classes",
       }));
     list.push(...matchedClasses);
   }
@@ -359,7 +367,9 @@ const filteredItems = $derived.by(() => {
         title: s.name || "Subject",
         icon: BookOpen,
         action: () => goto(`/${currentOrgId}/settings/subjects`),
-        group: m.common_exams_detail_subjects ? m.common_exams_detail_subjects() : "Subjects",
+        group: m.common_exams_detail_subjects
+          ? m.common_exams_detail_subjects()
+          : "Subjects",
       }));
     list.push(...matchedSubjects);
   }

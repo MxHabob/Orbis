@@ -53,11 +53,20 @@ const userId = $derived(authStore.userId);
 
 // TanStack Queries
 const queryClient = useQueryClient();
-const pendingQuery = createPendingApprovalsQuery(() => orgId, () => userRole);
-const myRequestsQuery = createOverrideRequestsQuery(() => orgId, () => ({
-  requested_by: userId,
-}));
-const logQuery = createOverrideRequestsQuery(() => orgId, () => ({}));
+const pendingQuery = createPendingApprovalsQuery(
+  () => orgId,
+  () => userRole,
+);
+const myRequestsQuery = createOverrideRequestsQuery(
+  () => orgId,
+  () => ({
+    requested_by: userId,
+  }),
+);
+const logQuery = createOverrideRequestsQuery(
+  () => orgId,
+  () => ({}),
+);
 
 const pendingItems = $derived(
   ($pendingQuery.data ?? []) as AcademicOverrideRequest[],

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { page } from "$app/state";
-  let orgId = $derived((page.params.orgId as string) || "");
+import * as m from "$lib/paraglide/messages";
+import { page } from "$app/state";
+let orgId = $derived((page.params.orgId as string) || "");
 </script>
 
 <svelte:head>

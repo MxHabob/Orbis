@@ -220,9 +220,15 @@ async function handleDeleteCurrency(currencyToDelete: any) {
   }
   const confirmed = await confirmStore.prompt({
     title: m.settings_currencies_delete_dialog_title(),
-    description: m.settings_currencies_delete_dialog_confirm({ code: currencyToDelete.code, name: l(currencyToDelete.name_ar, currencyToDelete.name) }) + "\n" + m.settings_currencies_delete_dialog_warning(),
+    description:
+      m.settings_currencies_delete_dialog_confirm({
+        code: currencyToDelete.code,
+        name: l(currencyToDelete.name_ar, currencyToDelete.name),
+      }) +
+      "\n" +
+      m.settings_currencies_delete_dialog_warning(),
     confirmText: m.settings_currencies_btn_delete_confirm(),
-    variant: "destructive"
+    variant: "destructive",
   });
   if (!confirmed) return;
   try {
@@ -237,7 +243,6 @@ async function handleDeleteCurrency(currencyToDelete: any) {
     toast.error(m.settings_currencies_delete_error({ error: errorMsg }));
   }
 }
-
 
 function startEditingRate(c: any) {
   if (c.is_base === 1) return;

@@ -70,7 +70,8 @@ async function fetchStats() {
     }
 
     // Fetch guardians list
-    const links = await commands.academic.listGuardiansByStudent(student.student_id || student.id,
+    const links = await commands.academic.listGuardiansByStudent(
+      student.student_id || student.id,
     );
     if (links) {
       const resolved = [];
@@ -81,8 +82,7 @@ async function fetchStats() {
             resolved.push({
               name: user.full_name,
               phone: user.phone || "",
-              relationship:
-                link.relationship || link.relationship || "ولي أمر",
+              relationship: link.relationship || link.relationship || "ولي أمر",
               is_primary: link.is_primary === 1,
             });
           }

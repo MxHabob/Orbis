@@ -236,7 +236,9 @@ async function handlePrintAction() {
       batchProgress = 100;
       batchStatusText = m.common_print_multi_up_complete();
       toast.success(
-        m.common_print_multi_up_complete_detail({ count: String(entityIds.length) }),
+        m.common_print_multi_up_complete_detail({
+          count: String(entityIds.length),
+        }),
       );
 
       setTimeout(() => {

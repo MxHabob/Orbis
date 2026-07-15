@@ -84,7 +84,7 @@ async function toggleAccountStatus() {
     title: m.common_word_status() + "؟",
     description: confirmMsg,
     confirmText: m.common_word_status(),
-    variant: nextState ? "default" : "destructive"
+    variant: nextState ? "default" : "destructive",
   });
   if (!confirmed) return;
 

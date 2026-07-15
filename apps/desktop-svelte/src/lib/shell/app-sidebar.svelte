@@ -53,16 +53,18 @@ onMount(() => {
 });
 
 const fallbackName = $derived.by(() => {
-  if (initialOrgName && initialOrgName !== "Orbis School") return initialOrgName;
+  if (initialOrgName && initialOrgName !== "Orbis School")
+    return initialOrgName;
   if (orgId) {
-    return orgId.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    return orgId
+      .split("-")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
   }
   return "Orbis School";
 });
 
-const orgNameDisplay = $derived(
-  $orgQuery.data?.name || fallbackName
-);
+const orgNameDisplay = $derived($orgQuery.data?.name || fallbackName);
 
 const navItems = $derived([
   {

@@ -273,7 +273,7 @@ async function handleDeleteUnit(unit: any) {
     title: m.common_action_delete() + "؟",
     description: `Are you sure you want to delete org unit "${unit.name_ar || unit.name}"?`,
     confirmText: m.common_action_delete(),
-    variant: "destructive"
+    variant: "destructive",
   });
   if (!confirmed) return;
 

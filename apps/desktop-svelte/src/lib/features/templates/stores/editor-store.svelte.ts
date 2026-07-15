@@ -280,17 +280,27 @@ export function createEditorStore(initialDoc: TemplateDocument) {
       );
     } else {
       const cmds = selectedIds.map((id) => new UpdatePropsCommand(id, props));
-      executeCommand(new BatchCommand(cmds, "Update multiple", m.template_cmd_batch_update()));
+      executeCommand(
+        new BatchCommand(
+          cmds,
+          "Update multiple",
+          m.template_cmd_batch_update(),
+        ),
+      );
     }
   }
 
-  function moveNodes(updates: {id: string, x: number, y: number}[]): void {
+  function moveNodes(updates: { id: string; x: number; y: number }[]): void {
     if (updates.length === 0) return;
     if (updates.length === 1) {
-      executeCommand(new MoveNodeCommand(updates[0]!.id, updates[0]!.x, updates[0]!.y));
+      executeCommand(
+        new MoveNodeCommand(updates[0]!.id, updates[0]!.x, updates[0]!.y),
+      );
     } else {
-      const cmds = updates.map(u => new MoveNodeCommand(u.id, u.x, u.y));
-      executeCommand(new BatchCommand(cmds, "Move elements", m.template_cmd_move_element()));
+      const cmds = updates.map((u) => new MoveNodeCommand(u.id, u.x, u.y));
+      executeCommand(
+        new BatchCommand(cmds, "Move elements", m.template_cmd_move_element()),
+      );
     }
   }
 
@@ -299,8 +309,14 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     if (selectedIds.length === 1) {
       executeCommand(new ResizeNodeCommand(selectedIds[0]!, w, h));
     } else {
-      const cmds = selectedIds.map(id => new ResizeNodeCommand(id, w, h));
-      executeCommand(new BatchCommand(cmds, "Resize elements", m.template_cmd_resize_element()));
+      const cmds = selectedIds.map((id) => new ResizeNodeCommand(id, w, h));
+      executeCommand(
+        new BatchCommand(
+          cmds,
+          "Resize elements",
+          m.template_cmd_resize_element(),
+        ),
+      );
     }
   }
 
@@ -315,7 +331,13 @@ export function createEditorStore(initialDoc: TemplateDocument) {
       executeCommand(new RemoveNodeCommand(selectedIds[0]!));
     } else {
       const cmds = selectedIds.map((id) => new RemoveNodeCommand(id));
-      executeCommand(new BatchCommand(cmds, "Delete multiple", m.template_cmd_batch_delete()));
+      executeCommand(
+        new BatchCommand(
+          cmds,
+          "Delete multiple",
+          m.template_cmd_batch_delete(),
+        ),
+      );
     }
     selectedIds = [];
   }
@@ -326,7 +348,13 @@ export function createEditorStore(initialDoc: TemplateDocument) {
       executeCommand(new DuplicateNodeCommand(selectedIds[0]!));
     } else {
       const cmds = selectedIds.map((id) => new DuplicateNodeCommand(id));
-      executeCommand(new BatchCommand(cmds, "Duplicate elements", m.template_cmd_duplicate_element()));
+      executeCommand(
+        new BatchCommand(
+          cmds,
+          "Duplicate elements",
+          m.template_cmd_duplicate_element(),
+        ),
+      );
     }
   }
 
@@ -564,7 +592,7 @@ export function createEditorStore(initialDoc: TemplateDocument) {
       if (selectedIds.length === 0 || !activePage) return;
       const page = activePage;
       const newChildren = [...page.children];
-      
+
       const movedNodes: TemplateNode[] = [];
       for (const id of selectedIds) {
         const idx = newChildren.findIndex((c) => c.id === id);
@@ -573,11 +601,11 @@ export function createEditorStore(initialDoc: TemplateDocument) {
           newChildren.splice(idx, 1);
         }
       }
-      
+
       if (movedNodes.length === 0) return;
       // Push all selected nodes to the end (top)
       newChildren.push(...movedNodes);
-      
+
       executeCommand({
         type: "reorder",
         description: `Bring elements to front`,
@@ -598,20 +626,21 @@ export function createEditorStore(initialDoc: TemplateDocument) {
       if (selectedIds.length === 0 || !activePage) return;
       const page = activePage;
       const newChildren = [...page.children];
-      
+
       const movedNodes: TemplateNode[] = [];
-      for (const id of [...selectedIds].reverse()) { // Reverse to preserve relative order
+      for (const id of [...selectedIds].reverse()) {
+        // Reverse to preserve relative order
         const idx = newChildren.findIndex((c) => c.id === id);
         if (idx >= 0) {
           movedNodes.unshift(newChildren[idx]!);
           newChildren.splice(idx, 1);
         }
       }
-      
+
       if (movedNodes.length === 0) return;
       // Unshift all selected nodes to the start (bottom)
       newChildren.unshift(...movedNodes);
-      
+
       executeCommand({
         type: "reorder",
         description: `Send elements to back`,
@@ -833,8 +862,18 @@ function createDefaultNode(
         type: "Table",
         props: {
           columns: [
-            { key: "col1", header: m.template_table_col1(), headerAr: m.template_table_col1(), width: 50 },
-            { key: "col2", header: m.template_table_col2(), headerAr: m.template_table_col2(), width: 50 },
+            {
+              key: "col1",
+              header: m.template_table_col1(),
+              headerAr: m.template_table_col1(),
+              width: 50,
+            },
+            {
+              key: "col2",
+              header: m.template_table_col2(),
+              headerAr: m.template_table_col2(),
+              width: 50,
+            },
           ],
           rows: [],
           headerStyle: {},

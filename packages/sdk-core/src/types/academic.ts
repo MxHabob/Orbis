@@ -40,7 +40,6 @@ export interface AcademicPeriod {
   updated_at: string;
 }
 
-
 export interface Class {
   id: string;
   org_id: string;
@@ -146,7 +145,6 @@ export interface StudentGuardian {
   created_at: string;
   updated_at: string;
 }
-
 
 export interface Notification {
   id: string;

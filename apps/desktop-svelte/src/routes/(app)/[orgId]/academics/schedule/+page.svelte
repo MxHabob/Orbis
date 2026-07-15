@@ -111,8 +111,9 @@ const teachers = $derived(
 $effect(() => {
   if (periods.length > 0 && !activePeriodId) {
     const active =
-      periods.find((c: any) => c.status === "active" || c.status === "active") ||
-      periods[0];
+      periods.find(
+        (c: any) => c.status === "active" || c.status === "active",
+      ) || periods[0];
     if (active) {
       activePeriodId = String(active.id);
     }
@@ -171,9 +172,7 @@ const classScheduleQuery = createQuery(
   toStore(() => ({
     queryKey: ["class-schedule", data.orgId, activePeriodId, selectedClassId],
     queryFn: () =>
-      commands.scheduling.listLessonsByClass(activePeriodId,
-        selectedClassId,
-      ),
+      commands.scheduling.listLessonsByClass(activePeriodId, selectedClassId),
     enabled:
       !!data.orgId &&
       !!activePeriodId &&
@@ -185,9 +184,15 @@ const classScheduleQuery = createQuery(
 
 const teacherScheduleQuery = createQuery(
   toStore(() => ({
-    queryKey: ["teacher-schedule", data.orgId, activePeriodId, selectedTeacherId],
+    queryKey: [
+      "teacher-schedule",
+      data.orgId,
+      activePeriodId,
+      selectedTeacherId,
+    ],
     queryFn: () =>
-      commands.scheduling.listLessonsByTeacher(activePeriodId,
+      commands.scheduling.listLessonsByTeacher(
+        activePeriodId,
         selectedTeacherId,
       ),
     enabled:
@@ -269,26 +274,22 @@ async function handleMoveLesson(
   targetSlotId: string,
 ) {
   try {
-    toast.loading(
-      m.academics_schedule_checking_for_conflicts(),
-    );
-    const conflicts = await commands.scheduling.checkConflicts(activePeriodId,
+    toast.loading(m.academics_schedule_checking_for_conflicts());
+    const conflicts = await commands.scheduling.checkConflicts(
+      activePeriodId,
       lesson.teacher_id,
       targetSlotId,
       targetDay,
-      lesson.room_id || undefined
+      lesson.room_id || undefined,
     );
 
     toast.dismiss();
 
     if (conflicts.length > 0) {
       const conflictMsgs = conflicts.map((c: any) => c.message).join("\n");
-      toast.error(
-        m.academics_schedule_conflicts_detected_for_this_schedule(),
-        {
-          description: conflictMsgs,
-        },
-      );
+      toast.error(m.academics_schedule_conflicts_detected_for_this_schedule(), {
+        description: conflictMsgs,
+      });
       return;
     }
 
@@ -296,9 +297,7 @@ async function handleMoveLesson(
       day_of_week: targetDay,
       time_slot_id: targetSlotId,
     } as any);
-    toast.success(
-      m.academics_schedule_lesson_moved_successfully(),
-    );
+    toast.success(m.academics_schedule_lesson_moved_successfully());
     refetchLessons();
   } catch (e: any) {
     toast.dismiss();
@@ -311,7 +310,7 @@ async function handleDeleteLesson(lessonId: string) {
     title: m.common_action_delete() + "؟",
     description: m.common_schedule_page_confirm_delete(),
     confirmText: m.common_action_delete(),
-    variant: "destructive"
+    variant: "destructive",
   });
   if (!confirmed) return;
   try {
@@ -328,13 +327,20 @@ function refetchLessons() {
     queryKey: ["class-schedule", data.orgId, activePeriodId, selectedClassId],
   });
   queryClient.invalidateQueries({
-    queryKey: ["teacher-schedule", data.orgId, activePeriodId, selectedTeacherId],
+    queryKey: [
+      "teacher-schedule",
+      data.orgId,
+      activePeriodId,
+      selectedTeacherId,
+    ],
   });
 }
 
 function getSubjectName(subjectId: string) {
   const sub = subjects.find((s) => String(s.id) === String(subjectId));
-  return sub ? sub.name_ar || sub.name : m.common_schedule_page_unknown_subject();
+  return sub
+    ? sub.name_ar || sub.name
+    : m.common_schedule_page_unknown_subject();
 }
 
 function getTeacherName(teacherId: string) {

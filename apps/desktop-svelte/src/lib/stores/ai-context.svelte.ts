@@ -1,5 +1,11 @@
 export interface AiPageContext {
-  domain: "academic" | "finance" | "exam" | "scheduling" | "dashboard" | "general";
+  domain:
+    | "academic"
+    | "finance"
+    | "exam"
+    | "scheduling"
+    | "dashboard"
+    | "general";
   pageName: string;
   recordId?: string;
   metadata?: Record<string, any>;
@@ -11,7 +17,7 @@ class AiContextStore {
   setContext(ctx: AiPageContext) {
     this.context = ctx;
   }
-  
+
   clearContext() {
     this.context = null;
   }

@@ -15,9 +15,13 @@ import type { Organization } from "$lib/core/ipc";
 /** Get the organization details. */
 export function createOrganizationQuery(orgId: () => string) {
   return createQuery<Organization>({
-    get queryKey() { return ["organization", orgId()]; },
+    get queryKey() {
+      return ["organization", orgId()];
+    },
     queryFn: async () => await commands.organization.getOrganization(),
-    get enabled() { return !!orgId(); },
+    get enabled() {
+      return !!orgId();
+    },
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -42,18 +46,28 @@ export function createUpdateOrganizationMutation() {
 /** Get all users for an organization. */
 export function createUsersQuery(orgId: () => string) {
   return createQuery({
-    get queryKey() { return ["users", orgId()]; },
+    get queryKey() {
+      return ["users", orgId()];
+    },
     queryFn: () => commands.iam.listUsers(),
-    get enabled() { return !!orgId(); },
+    get enabled() {
+      return !!orgId();
+    },
     staleTime: 5 * 60 * 1000,
   });
 }
 
 /** Paginated users query using Cursor-based infinite scrolling. */
-export function createUsersPaginatedQuery(orgId: () => string, limit: number = 50, filter?: { role?: string; status?: string }) {
+export function createUsersPaginatedQuery(
+  orgId: () => string,
+  limit: number = 50,
+  filter?: { role?: string; status?: string },
+) {
   // @ts-ignore - auto imported
   return createInfiniteQuery({
-    get queryKey() { return ["users_paginated", orgId(), limit, filter]; },
+    get queryKey() {
+      return ["users_paginated", orgId(), limit, filter];
+    },
     queryFn: async ({ pageParam }) => {
       return commands.iam.listUsersPaginated(pageParam, limit, filter);
     },
@@ -64,7 +78,9 @@ export function createUsersPaginatedQuery(orgId: () => string, limit: number = 5
       }
       return undefined;
     },
-    get enabled() { return !!orgId(); },
+    get enabled() {
+      return !!orgId();
+    },
     staleTime: 5 * 60 * 1000,
   });
 }

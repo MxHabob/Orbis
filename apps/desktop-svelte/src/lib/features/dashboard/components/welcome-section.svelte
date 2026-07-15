@@ -87,42 +87,52 @@ const insights = $derived.by<Insight[]>(() => {
   if (stats.ai_insights && Array.isArray(stats.ai_insights)) {
     for (const ai of stats.ai_insights) {
       if (ai.key === "critical") {
-         const link = m.ai_insight_critical_link({ count: ai.count });
-         const parts = m.ai_insight_critical({ link: "||LINK||" }).split("||LINK||");
-         items.push({
-           key: "critical",
-           before: parts[0] ?? "",
-           link,
-           after: parts[1] ?? "",
-           href: ai.href ?? `/${orgId}/settings`
-         });
+        const link = m.ai_insight_critical_link({ count: ai.count });
+        const parts = m
+          .ai_insight_critical({ link: "||LINK||" })
+          .split("||LINK||");
+        items.push({
+          key: "critical",
+          before: parts[0] ?? "",
+          link,
+          after: parts[1] ?? "",
+          href: ai.href ?? `/${orgId}/settings`,
+        });
       } else if (ai.key === "warning") {
-         const link = m.ai_insight_warning_link({ count: ai.count });
-         const parts = m.ai_insight_warning({ link: "||LINK||" }).split("||LINK||");
-         items.push({
-           key: "warning",
-           before: parts[0] ?? "",
-           link,
-           after: parts[1] ?? "",
-           href: ai.href ?? `/${orgId}/settings`
-         });
+        const link = m.ai_insight_warning_link({ count: ai.count });
+        const parts = m
+          .ai_insight_warning({ link: "||LINK||" })
+          .split("||LINK||");
+        items.push({
+          key: "warning",
+          before: parts[0] ?? "",
+          link,
+          after: parts[1] ?? "",
+          href: ai.href ?? `/${orgId}/settings`,
+        });
       } else if (ai.key === "healthy") {
-         const link = m.ai_insight_healthy_link();
-         const parts = m.ai_insight_healthy({ link: "||LINK||" }).split("||LINK||");
-         items.push({
-           key: "healthy",
-           before: parts[0] ?? "",
-           link,
-           after: parts[1] ?? "",
-           href: ai.href ?? `/${orgId}/settings`
-         });
+        const link = m.ai_insight_healthy_link();
+        const parts = m
+          .ai_insight_healthy({ link: "||LINK||" })
+          .split("||LINK||");
+        items.push({
+          key: "healthy",
+          before: parts[0] ?? "",
+          link,
+          after: parts[1] ?? "",
+          href: ai.href ?? `/${orgId}/settings`,
+        });
       }
     }
   }
 
   if (items.length === 0) {
-    const studentLink = m.common_insight_students_link({ count: stats.total_students ?? 0 });
-    const studentParts = m.common_insight_students({ link: "||LINK||" }).split("||LINK||");
+    const studentLink = m.common_insight_students_link({
+      count: stats.total_students ?? 0,
+    });
+    const studentParts = m
+      .common_insight_students({ link: "||LINK||" })
+      .split("||LINK||");
     items.push({
       key: "students",
       before: studentParts[0] ?? "",
@@ -131,8 +141,15 @@ const insights = $derived.by<Insight[]>(() => {
       href: `/${orgId}/students`,
     });
 
-    const classLink = m.common_insight_classes_link({ count: stats.total_classes ?? 0 });
-    const classParts = m.common_insight_classes({ link: "||LINK||", teacherCount: stats.total_teachers ?? 0 }).split("||LINK||");
+    const classLink = m.common_insight_classes_link({
+      count: stats.total_classes ?? 0,
+    });
+    const classParts = m
+      .common_insight_classes({
+        link: "||LINK||",
+        teacherCount: stats.total_teachers ?? 0,
+      })
+      .split("||LINK||");
     items.push({
       key: "classes",
       before: classParts[0] ?? "",
@@ -141,8 +158,15 @@ const insights = $derived.by<Insight[]>(() => {
       href: `/${orgId}/academics`,
     });
 
-    const attendanceLink = m.common_insight_attendance_link({ rate: stats.attendance_overview?.present_rate ?? 0 });
-    const attendanceParts = m.common_insight_attendance({ link: "||LINK||", lateRate: stats.attendance_overview?.late_rate ?? 0 }).split("||LINK||");
+    const attendanceLink = m.common_insight_attendance_link({
+      rate: stats.attendance_overview?.present_rate ?? 0,
+    });
+    const attendanceParts = m
+      .common_insight_attendance({
+        link: "||LINK||",
+        lateRate: stats.attendance_overview?.late_rate ?? 0,
+      })
+      .split("||LINK||");
     items.push({
       key: "attendance",
       before: attendanceParts[0] ?? "",
@@ -151,8 +175,15 @@ const insights = $derived.by<Insight[]>(() => {
       href: `/${orgId}/reports`,
     });
 
-    const behaviorLink = m.common_insight_behavior_link({ count: stats.behavior_summary?.total_records ?? 0 });
-    const behaviorParts = m.common_insight_behavior({ link: "||LINK||", criticalCount: stats.behavior_summary?.critical_count ?? 0 }).split("||LINK||");
+    const behaviorLink = m.common_insight_behavior_link({
+      count: stats.behavior_summary?.total_records ?? 0,
+    });
+    const behaviorParts = m
+      .common_insight_behavior({
+        link: "||LINK||",
+        criticalCount: stats.behavior_summary?.critical_count ?? 0,
+      })
+      .split("||LINK||");
     items.push({
       key: "behavior",
       before: behaviorParts[0] ?? "",
@@ -161,8 +192,12 @@ const insights = $derived.by<Insight[]>(() => {
       href: `/${orgId}/students`,
     });
 
-    const staffLink = m.common_insight_staff_link({ count: stats.total_staff ?? 0 });
-    const staffParts = m.common_insight_staff({ link: "||LINK||" }).split("||LINK||");
+    const staffLink = m.common_insight_staff_link({
+      count: stats.total_staff ?? 0,
+    });
+    const staffParts = m
+      .common_insight_staff({ link: "||LINK||" })
+      .split("||LINK||");
     items.push({
       key: "staff",
       before: staffParts[0] ?? "",

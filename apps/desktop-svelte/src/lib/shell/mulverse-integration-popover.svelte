@@ -8,7 +8,6 @@ import {
 } from "@orbis/ui-svelte/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@orbis/ui-svelte";
 import { GitBranch } from "lucide-svelte";
-
 </script>
 
 <Popover>

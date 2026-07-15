@@ -12,7 +12,7 @@ import {
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import { extractErrorMessage } from "$lib/core/ipc";
-    import { ChevronRight } from "lucide-svelte";
+import { ChevronRight } from "lucide-svelte";
 
 let {
   orgId,
@@ -37,7 +37,9 @@ let nameAr = $state(period?.name_ar || "");
 let code = $state(period?.code || "");
 let periodType = $state(period?.period_type || "year");
 // For existing terms, fallback to parent_id. For legacy, fallback to period_id
-let parentId = $state(period?.parent_id || (periodType !== "year" ? period?.period_id : ""));
+let parentId = $state(
+  period?.parent_id || (periodType !== "year" ? period?.period_id : ""),
+);
 let startDate = $state(period?.start_date || "");
 let endDate = $state(period?.end_date || "");
 let gradingSystem = $state(period?.grading_system || "percentage");
@@ -99,7 +101,7 @@ async function handleSubmit(e: SubmitEvent) {
       passing_grade: passingGrade ? Number(passingGrade) : 50,
       max_grade: maxGrade ? Number(maxGrade) : 100,
     };
-    
+
     if (isEdit) {
       await commands.academic.updatePeriod(period.id, request);
       toast.success(m.common_action_save());
@@ -107,7 +109,7 @@ async function handleSubmit(e: SubmitEvent) {
       await commands.academic.createPeriod(request);
       toast.success(m.common_period_form_success());
     }
-    
+
     onSuccess();
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));

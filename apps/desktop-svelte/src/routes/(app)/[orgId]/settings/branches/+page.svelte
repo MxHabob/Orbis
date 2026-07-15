@@ -9,7 +9,6 @@ import { page } from "$app/state";
 import { Button } from "@orbis/ui-svelte/button";
 
 let orgId = $derived((page.params.orgId as string) || "");
-
 </script>
 
 <svelte:head>

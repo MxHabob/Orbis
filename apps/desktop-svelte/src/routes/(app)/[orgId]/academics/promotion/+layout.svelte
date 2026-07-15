@@ -17,7 +17,9 @@ const basePath = $derived(`/${data.orgId}/academics/promotion`);
 const menuItems = $derived([
   {
     path: "",
-    label: m.common_promo_wizard_title ? m.common_promo_wizard_title() : "معالج الترفيع",
+    label: m.common_promo_wizard_title
+      ? m.common_promo_wizard_title()
+      : "معالج الترفيع",
     icon: TrendingUp,
   },
   {

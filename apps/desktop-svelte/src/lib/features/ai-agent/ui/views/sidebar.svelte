@@ -22,7 +22,7 @@ import AgentHeader from "../components/agent-header.svelte";
 import AgentCockpit from "../components/agent-cockpit.svelte";
 import ChatMessageList from "../components/chat-message-list.svelte";
 import AgentEmptyState from "../components/agent-empty-state.svelte";
-    import Resizer from "$lib/shell/resizer.svelte";
+import Resizer from "$lib/shell/resizer.svelte";
 
 let { isStandalone = false }: { isStandalone?: boolean } = $props();
 
@@ -147,12 +147,12 @@ async function openStandaloneWindow() {
   }
 }
 
-  async function handleNewChat(agentType: string = "default") {
-    try {
-      const newSession = await commands.agent.createSession(
-        currentOrgId,
-        agentType,
-      );
+async function handleNewChat(agentType: string = "default") {
+  try {
+    const newSession = await commands.agent.createSession(
+      currentOrgId,
+      agentType,
+    );
     selectedSessionId = newSession.id;
     messages = [];
   } catch (e: unknown) {
@@ -202,11 +202,13 @@ async function submitMessage(queryText?: string) {
           messages[msgIndex].content = chunk;
           scrollToBottom();
         }
-      }
+      },
     );
-    
+
     // Ensure final response is set in case streaming didn't fire properly or at the end
-    const finalMsgIndex = messages.findIndex((m) => m.id === assistantMessageId);
+    const finalMsgIndex = messages.findIndex(
+      (m) => m.id === assistantMessageId,
+    );
     if (finalMsgIndex !== -1) {
       messages[finalMsgIndex].content = response;
     }

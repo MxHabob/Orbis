@@ -32,9 +32,7 @@ export interface PlatformCommands {
   listPromotionJobs(): Promise<PromotionJob[]>;
   getPromotionJob(jobId: string): Promise<PromotionJob>;
   getPromotionDetails(jobId: string): Promise<PromotionDetail[]>;
-  promotionDryRun(
-    config: PromotionConfig,
-  ): Promise<PromotionJob>;
+  promotionDryRun(config: PromotionConfig): Promise<PromotionJob>;
   executePromotion(jobId: string): Promise<PromotionJob>;
   rollbackPromotion(jobId: string, userId: string): Promise<void>;
   overridePromotionDecision(request: Record<string, unknown>): Promise<void>;
@@ -55,9 +53,7 @@ export interface PlatformCommands {
     params?: Record<string, unknown>,
   ): Promise<OverrideRequest[]>;
   getOverrideRequest(requestId: string): Promise<OverrideRequest>;
-  getPendingApprovals(
-    approverRole: string,
-  ): Promise<OverrideRequest[]>;
+  getPendingApprovals(approverRole: string): Promise<OverrideRequest[]>;
   processApproval(requestId: string, action: any): Promise<void>;
   cancelOverride(requestId: string, userId: string): Promise<void>;
 
@@ -65,18 +61,10 @@ export interface PlatformCommands {
   listDocumentTemplates(
     params?: Record<string, unknown>,
   ): Promise<DocumentTemplate[]>;
-  getDocumentTemplate(
-    templateId: string,
-  ): Promise<DocumentTemplate>;
-  createDocumentTemplate(
-    userId: string,
-    data: any,
-  ): Promise<DocumentTemplate>;
+  getDocumentTemplate(templateId: string): Promise<DocumentTemplate>;
+  createDocumentTemplate(userId: string, data: any): Promise<DocumentTemplate>;
   deleteDocumentTemplate(templateId: string): Promise<void>;
-  publishDocumentTemplate(
-    templateId: string,
-    userId: string,
-  ): Promise<void>;
+  publishDocumentTemplate(templateId: string, userId: string): Promise<void>;
   archiveDocumentTemplate(templateId: string): Promise<void>;
   restoreDocumentTemplate(templateId: string): Promise<void>;
   updateDocumentTemplate(
@@ -92,13 +80,8 @@ export interface PlatformCommands {
 
   // ── AI Agent ──────────────────────────────────────────────────
   listAgentSessions(): Promise<AgentSession[]>;
-  getAgentSessionLogs(
-    sessionId: string,
-  ): Promise<AgentActionLog[]>;
-  approveAgentAction(
-    actionLogId: string,
-    approvedBy: string,
-  ): Promise<void>;
+  getAgentSessionLogs(sessionId: string): Promise<AgentActionLog[]>;
+  approveAgentAction(actionLogId: string, approvedBy: string): Promise<void>;
   rejectAgentAction(
     actionLogId: string,
     rejectedBy: string,

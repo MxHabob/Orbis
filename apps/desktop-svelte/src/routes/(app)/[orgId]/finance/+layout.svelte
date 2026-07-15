@@ -77,9 +77,7 @@ const navItems = $derived([
   },
   {
     path: "journal-entries",
-    label: m.common_je_title
-      ? m.common_je_title()
-      : "القيود اليومية",
+    label: m.common_je_title ? m.common_je_title() : "القيود اليومية",
     icon: BookOpen,
   },
   {

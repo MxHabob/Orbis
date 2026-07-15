@@ -63,14 +63,14 @@ const navItems = $derived([
   },
   {
     path: "exams",
-    label: m.common_nav_exams
-      ? m.common_nav_exams()
-      : "الامتحانات",
+    label: m.common_nav_exams ? m.common_nav_exams() : "الامتحانات",
     icon: ClipboardList,
   },
   {
     path: "calendar",
-    label: m.common_calendar_title ? m.common_calendar_title() : "Academic Calendar",
+    label: m.common_calendar_title
+      ? m.common_calendar_title()
+      : "Academic Calendar",
     icon: CalendarClock,
   },
   {

@@ -1,17 +1,17 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-  import { AlertCircle, RefreshCcw } from "lucide-svelte";
-  import { Button } from "@orbis/ui-svelte/button";
+import { AlertCircle, RefreshCcw } from "lucide-svelte";
+import { Button } from "@orbis/ui-svelte/button";
 
-  let {
-    title = m.common_error_occurred(),
-    message = m.common_error_state_message(),
-    onRetry,
-  }: {
-    title?: string;
-    message?: string;
-    onRetry?: () => void;
-  } = $props();
+let {
+  title = m.common_error_occurred(),
+  message = m.common_error_state_message(),
+  onRetry,
+}: {
+  title?: string;
+  message?: string;
+  onRetry?: () => void;
+} = $props();
 </script>
 
 <div class="flex flex-col items-center justify-center p-8 text-center h-full min-h-[200px]">

@@ -35,9 +35,15 @@ export function usePeriodGate(
   });
 
   return {
-    get data() { return query.data as GateVerdict | undefined; },
-    get isLoading() { return query.isLoading; },
-    get isError() { return query.isError; },
+    get data() {
+      return query.data as GateVerdict | undefined;
+    },
+    get isLoading() {
+      return query.isLoading;
+    },
+    get isError() {
+      return query.isError;
+    },
     get isAllowed() {
       const d = query.data?.decision;
       return d === "allowed" || d === "late";

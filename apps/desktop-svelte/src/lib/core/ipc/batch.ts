@@ -57,8 +57,7 @@ export async function loadPageBundle<T extends BundleSpec>(
       (data as any)[key] = result.value;
     } else {
       (data as any)[key] = null;
-      (errors as any)[key] =
-        result.reason?.message || String(result.reason);
+      (errors as any)[key] = result.reason?.message || String(result.reason);
       ok = false;
     }
   });

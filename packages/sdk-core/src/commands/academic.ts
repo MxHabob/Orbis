@@ -58,12 +58,8 @@ export interface AcademicCommands {
   ): Promise<Subject>;
   deleteSubject(subjectId: string): Promise<void>;
 
-
   // ── Enrollments ─────────────────────────────────────────────
-  listEnrollments(
-    classId?: string,
-    periodId?: string,
-  ): Promise<Enrollment[]>;
+  listEnrollments(classId?: string, periodId?: string): Promise<Enrollment[]>;
   listEnrollmentsPaginated(
     cursor?: string | null,
     limit?: number | null,
@@ -75,19 +71,22 @@ export interface AcademicCommands {
     class_id: string;
     student_number: string;
   }): Promise<Enrollment>;
-  withdrawEnrollment(
-    enrollmentId: string,
-    reason: string,
-  ): Promise<Enrollment>;
+  withdrawEnrollment(enrollmentId: string, reason: string): Promise<Enrollment>;
   transferEnrollment(
     enrollmentId: string,
     newClassId: string,
   ): Promise<Enrollment>;
-  checkDuplicate(studentId: string, periodId: string): Promise<Enrollment | null>;
+  checkDuplicate(
+    studentId: string,
+    periodId: string,
+  ): Promise<Enrollment | null>;
 
   // ── Period Gate ──────────────────────────────────────────────
   /** Pre-check enrollment eligibility (period window + capacity + policy). */
-  checkEnrollmentEligibility(periodId: string, classId: string): Promise<GateVerdict>;
+  checkEnrollmentEligibility(
+    periodId: string,
+    classId: string,
+  ): Promise<GateVerdict>;
   /** Confirm a draft enrollment after override approval. */
   confirmEnrollmentDraft(enrollmentId: string): Promise<Enrollment>;
   /** Generic period gate check for any operation type. */
@@ -130,18 +129,10 @@ export interface AcademicCommands {
   }): Promise<AcademicPeriod>;
   lockPeriod(periodId: string): Promise<void>;
   unlockPeriod(periodId: string): Promise<void>;
-  togglePeriodEnrollment(
-    periodId: string,
-    open: boolean,
-  ): Promise<void>;
-  togglePeriodGradeEntry(
-    periodId: string,
-    open: boolean,
-  ): Promise<void>;
+  togglePeriodEnrollment(periodId: string, open: boolean): Promise<void>;
+  togglePeriodGradeEntry(periodId: string, open: boolean): Promise<void>;
 
-  listGuardiansByStudent(
-    studentId: string,
-  ): Promise<StudentGuardian[]>;
+  listGuardiansByStudent(studentId: string): Promise<StudentGuardian[]>;
   searchGuardians(query: string): Promise<StudentGuardian[]>;
 
   // ── Documents ───────────────────────────────────────────────

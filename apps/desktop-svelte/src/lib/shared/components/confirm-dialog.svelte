@@ -1,40 +1,46 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import {
-    AlertDialog,
-    AlertDialogContent,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogCancel,
-    AlertDialogAction,
-  } from "@orbis/ui-svelte/alert-dialog";
-  
-  let {
-    open = $bindable(false),
-    title,
-    description,
-    confirmText,
-    cancelText = m.common_action_cancel(),
-    onConfirm,
-    variant = "default",
-    isLoading = false,
-  }: {
-    open: boolean;
-    title: string;
-    description: string;
-    confirmText: string;
-    cancelText?: string;
-    onConfirm: () => void | Promise<void>;
-    variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
-    isLoading?: boolean;
-  } = $props();
+import * as m from "$lib/paraglide/messages";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@orbis/ui-svelte/alert-dialog";
 
-  async function handleConfirm() {
-    await onConfirm();
-    open = false;
-  }
+let {
+  open = $bindable(false),
+  title,
+  description,
+  confirmText,
+  cancelText = m.common_action_cancel(),
+  onConfirm,
+  variant = "default",
+  isLoading = false,
+}: {
+  open: boolean;
+  title: string;
+  description: string;
+  confirmText: string;
+  cancelText?: string;
+  onConfirm: () => void | Promise<void>;
+  variant?:
+    | "default"
+    | "destructive"
+    | "outline"
+    | "secondary"
+    | "ghost"
+    | "link";
+  isLoading?: boolean;
+} = $props();
+
+async function handleConfirm() {
+  await onConfirm();
+  open = false;
+}
 </script>
 
 <AlertDialog bind:open>

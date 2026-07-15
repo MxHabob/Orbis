@@ -113,8 +113,18 @@ const paymentsCols: OrbisColumnDef[] = [
     pin: "colPinStart",
     cellProperties: () => ({ class: "orbis-cell-student" }),
   },
-  { prop: "method", name: m.finance_fees_col_method(), size: 110, readonly: true },
-  { prop: "date", name: m.finance_fees_col_pay_date(), size: 110, readonly: true },
+  {
+    prop: "method",
+    name: m.finance_fees_col_method(),
+    size: 110,
+    readonly: true,
+  },
+  {
+    prop: "date",
+    name: m.finance_fees_col_pay_date(),
+    size: 110,
+    readonly: true,
+  },
   {
     prop: "amount",
     name: m.finance_payments_col_amount(),

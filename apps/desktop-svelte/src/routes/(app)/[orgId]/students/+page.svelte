@@ -17,7 +17,10 @@ import {
   Upload,
   ShieldAlert,
 } from "lucide-svelte";
-import { studentsStore, createEnrollmentsPaginatedQuery } from "$lib/features/students";
+import {
+  studentsStore,
+  createEnrollmentsPaginatedQuery,
+} from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
 import { academicContext, authStore } from "$lib/stores";
 import StudentsTableSkeleton from "$lib/shared/skeletons/students-table-skeleton.svelte";
@@ -42,7 +45,9 @@ const enrollmentsQuery = createEnrollmentsPaginatedQuery(() => data.orgId);
 const classesQuery = createClassesQuery(() => data.orgId);
 
 // Derived data from queries
-const enrollments = $derived($enrollmentsQuery.data?.pages?.flatMap((page: any) => page.items) ?? []);
+const enrollments = $derived(
+  $enrollmentsQuery.data?.pages?.flatMap((page: any) => page.items) ?? [],
+);
 const classes = $derived($classesQuery.data ?? []);
 const filteredStudents = $derived(studentsStore.filterList(enrollments));
 

@@ -89,9 +89,7 @@ async function loadData() {
     }
   } catch (e) {
     console.error("Error loading POS startup data:", e);
-    toast.error(
-      m.finance_pos_error_loading_lookup_data(),
-    );
+    toast.error(m.finance_pos_error_loading_lookup_data());
   } finally {
     isLoadingData = false;
     // Auto-focus search input
@@ -129,9 +127,7 @@ async function loadStudentData(enrollId: string) {
     }
   } catch (e) {
     console.error("Error loading details for student:", e);
-    toast.error(
-      m.finance_pos_error_loading_student_billing_info(),
-    );
+    toast.error(m.finance_pos_error_loading_student_billing_info());
   } finally {
     isLoadingStudentDetails = false;
   }
@@ -225,9 +221,7 @@ async function handlePaymentSubmit(e: SubmitEvent) {
 
     // Refocus search for next transaction if current balance is cleared
     if (activeStudentFees.length === 0) {
-      toast.info(
-        m.finance_pos_all_outstanding_fees_for_this(),
-      );
+      toast.info(m.finance_pos_all_outstanding_fees_for_this());
       deselectStudent();
     }
   } catch (e) {

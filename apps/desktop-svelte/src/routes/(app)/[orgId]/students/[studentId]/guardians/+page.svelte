@@ -38,8 +38,7 @@ async function loadData() {
   if (!studentId) return;
   isLoading = true;
   try {
-    const links = await commands.academic.listGuardiansByStudent(studentId,
-    );
+    const links = await commands.academic.listGuardiansByStudent(studentId);
     guardians = links;
 
     // Fetch guardian user details in parallel
@@ -85,7 +84,7 @@ async function handleDelete(link: GuardianLink) {
     title: m.common_action_delete() + "؟",
     description: m.common_guardians_delete_confirm(),
     confirmText: m.common_action_delete(),
-    variant: "destructive"
+    variant: "destructive",
   });
   if (!confirmed) return;
   try {
@@ -93,7 +92,9 @@ async function handleDelete(link: GuardianLink) {
     guardians = guardians.filter((g) => g.id !== link.id);
     toast.success(m.common_guardians_delete_success());
   } catch (e: unknown) {
-    toast.error(`${m.common_guardians_delete_failed()}: ${e instanceof Error ? e.message : String(e)}`);
+    toast.error(
+      `${m.common_guardians_delete_failed()}: ${e instanceof Error ? e.message : String(e)}`,
+    );
   }
 }
 </script>

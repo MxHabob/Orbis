@@ -7,7 +7,13 @@ export type ConfirmOptions = {
   description: string;
   confirmText: string;
   cancelText?: string;
-  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  variant?:
+    | "default"
+    | "destructive"
+    | "outline"
+    | "secondary"
+    | "ghost"
+    | "link";
   requireMfa?: boolean; // Future expansion
 };
 
@@ -19,7 +25,7 @@ class ConfirmStore {
   prompt(options: ConfirmOptions): Promise<boolean> {
     this.options = options;
     this.isOpen = true;
-    
+
     return new Promise((resolve) => {
       this.resolvePromise = resolve;
     });

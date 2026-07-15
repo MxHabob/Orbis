@@ -65,16 +65,27 @@ export class StudentFormState {
             const settings = JSON.parse(org.settings as string);
             const regConfig = settings.registration_config || {};
 
-            this.document.setRequiredDocuments(regConfig.required_documents || []);
+            this.document.setRequiredDocuments(
+              regConfig.required_documents || [],
+            );
 
             if (regConfig.required_fields) {
-              this.requiredFields = { ...this.requiredFields, ...regConfig.required_fields };
+              this.requiredFields = {
+                ...this.requiredFields,
+                ...regConfig.required_fields,
+              };
             }
             if (regConfig.active_fields) {
-              this.activeFields = { ...this.activeFields, ...regConfig.active_fields };
+              this.activeFields = {
+                ...this.activeFields,
+                ...regConfig.active_fields,
+              };
             }
             if (regConfig.prevent_duplicates) {
-              this.preventDuplicates = { ...this.preventDuplicates, ...regConfig.prevent_duplicates };
+              this.preventDuplicates = {
+                ...this.preventDuplicates,
+                ...regConfig.prevent_duplicates,
+              };
             }
           } catch (err) {
             console.error("Failed to parse settings JSON:", err);
@@ -97,7 +108,10 @@ export class StudentFormState {
       if (this.isEditMode && this.studentId) {
         let originalStudent: any = null;
         try {
-          originalStudent = await commands.academic.getEnrollment(this.orgId, this.studentId);
+          originalStudent = await commands.academic.getEnrollment(
+            this.orgId,
+            this.studentId,
+          );
         } catch (err) {
           console.error("Failed to load student by ID from backend:", err);
         }
@@ -118,7 +132,10 @@ export class StudentFormState {
   }
 
   // Live duplicate check triggers
-  async triggerDuplicateCheck(field: "national_id" | "email" | "phone", value: string) {
+  async triggerDuplicateCheck(
+    field: "national_id" | "email" | "phone",
+    value: string,
+  ) {
     if (!value.trim() || !this.preventDuplicates[field]) return;
     try {
       const duplicates = await commands.iam.searchUsers(value);
@@ -126,7 +143,9 @@ export class StudentFormState {
         const match = duplicates[0];
         this.duplicateWarnings = {
           ...this.duplicateWarnings,
-          [field]: m.common_form_guardian_duplicate_warning({ name: match.full_name }),
+          [field]: m.common_form_guardian_duplicate_warning({
+            name: match.full_name,
+          }),
         };
       } else {
         this.duplicateWarnings = {
@@ -141,13 +160,17 @@ export class StudentFormState {
 
   // Financial Computations proxy
   get classLevel() {
-    return this.classes.find((c) => String(c.id) === this.personal.classId)?.level || "";
+    return (
+      this.classes.find((c) => String(c.id) === this.personal.classId)?.level ||
+      ""
+    );
   }
 
   get selectedClassName() {
     return (
       this.classes.find((c) => String(c.id) === this.personal.classId)?.name ||
-      this.classes.find((c) => String(c.id) === this.personal.classId)?.name_ar ||
+      this.classes.find((c) => String(c.id) === this.personal.classId)
+        ?.name_ar ||
       m.common_form_select_class()
     );
   }
@@ -160,7 +183,8 @@ export class StudentFormState {
         if (t.applicable_levels) {
           try {
             const rules = JSON.parse(t.applicable_levels);
-            if (rules.levels && Array.isArray(rules.levels)) return rules.levels.includes(level);
+            if (rules.levels && Array.isArray(rules.levels))
+              return rules.levels.includes(level);
             else if (rules.level) return rules.level === level;
           } catch {
             return false;
@@ -178,8 +202,13 @@ export class StudentFormState {
 
   get discountTotal() {
     if (!this.financial.applyDiscount) return 0;
-    if (this.financial.discountType === "template" && this.financial.selectedDiscountTemplateId) {
-      const tpl = this.financial.discountTemplates.find(t => t.id === this.financial.selectedDiscountTemplateId);
+    if (
+      this.financial.discountType === "template" &&
+      this.financial.selectedDiscountTemplateId
+    ) {
+      const tpl = this.financial.discountTemplates.find(
+        (t) => t.id === this.financial.selectedDiscountTemplateId,
+      );
       if (tpl) {
         const val = (tpl.value as number) || 0;
         if (String(tpl.calculation_method).toLowerCase() === "percentage") {
@@ -188,14 +217,19 @@ export class StudentFormState {
           return val;
         }
       }
-    } else if (this.financial.discountType === "custom" && this.financial.customDiscountAmount) {
+    } else if (
+      this.financial.discountType === "custom" &&
+      this.financial.customDiscountAmount
+    ) {
       return this.financial.customDiscountAmount;
     }
     return 0;
   }
 
   get optionalFeesList() {
-    return this.financial.feeTemplates.filter(t => t.is_mandatory === 0 && t.is_active === 1);
+    return this.financial.feeTemplates.filter(
+      (t) => t.is_mandatory === 0 && t.is_active === 1,
+    );
   }
 
   get optionalTotal() {
@@ -209,7 +243,10 @@ export class StudentFormState {
   }
 
   get netTotal() {
-    return Math.max(0, this.mandatoryTotal + this.optionalTotal - this.discountTotal);
+    return Math.max(
+      0,
+      this.mandatoryTotal + this.optionalTotal - this.discountTotal,
+    );
   }
 
   // Save operation
@@ -256,22 +293,31 @@ export class StudentFormState {
 
       if (this.isEditMode) {
         const originalStudent = this.originalStudent;
-        if (!originalStudent) throw new Error(m.common_form_error_enrollment_not_found());
+        if (!originalStudent)
+          throw new Error(m.common_form_error_enrollment_not_found());
 
         targetStudentId = String(originalStudent.student_id);
         await commands.iam.updateUser(targetStudentId, studentUserData);
 
         if (originalStudent.class_id !== this.personal.classId) {
-          await commands.academic.transferEnrollment(this.orgId, this.studentId!, this.personal.classId);
+          await commands.academic.transferEnrollment(
+            this.orgId,
+            this.studentId!,
+            this.personal.classId,
+          );
         }
 
         if (originalStudent.status !== this.registrationStatus) {
-          await commands.platform.transitionEnrollmentStatus(this.orgId, this.studentId!, this.registrationStatus);
+          await commands.platform.transitionEnrollmentStatus(
+            this.orgId,
+            this.studentId!,
+            this.registrationStatus,
+          );
         }
         toast.success(m.common_form_success_update());
       } else {
         const firstGuardian = this.guardian.linkedGuardians[0];
-        
+
         const res = await commands.organization.registerStudent(this.orgId, {
           name: this.personal.nameAr.trim(),
           email: this.personal.email.trim() || null,
@@ -283,11 +329,13 @@ export class StudentFormState {
           class_id: this.personal.classId,
           guardian_name: firstGuardian ? firstGuardian.full_name.trim() : null,
           guardian_phone: firstGuardian ? firstGuardian.phone.trim() : null,
-          guardian_relationship: firstGuardian ? firstGuardian.relationship : null,
+          guardian_relationship: firstGuardian
+            ? firstGuardian.relationship
+            : null,
         });
         targetStudentId = String(res.user_id);
         targetEnrollmentId = String(res.enrollment_id);
-        
+
         toast.success(m.common_form_success_create());
       }
 
@@ -302,22 +350,30 @@ export class StudentFormState {
         let guardianUserId = guardian.user_id;
 
         if (!guardianUserId) {
-          const checkExisting = await commands.academic.searchGuardians(this.orgId, guardian.phone);
+          const checkExisting = await commands.academic.searchGuardians(
+            this.orgId,
+            guardian.phone,
+          );
           if (checkExisting && checkExisting.length > 0) {
             guardianUserId = checkExisting[0].id;
           } else {
-            const guardEmail = guardian.email.trim() || `parent.${Date.now()}@orbis.local`;
-            const guardUser = await commands.iam.createUser(this.orgId, "system", {
-              email: guardEmail,
-              password: "Orbis123456",
-              full_name: guardian.full_name.trim(),
-              name_ar: guardian.full_name.trim(),
-              primary_role: "parent",
-              phone: guardian.phone.trim() || null,
-              sex: "male",
-              national_id: guardian.national_id.trim() || null,
-              date_of_birth: null,
-            });
+            const guardEmail =
+              guardian.email.trim() || `parent.${Date.now()}@orbis.local`;
+            const guardUser = await commands.iam.createUser(
+              this.orgId,
+              "system",
+              {
+                email: guardEmail,
+                password: "Orbis123456",
+                full_name: guardian.full_name.trim(),
+                name_ar: guardian.full_name.trim(),
+                primary_role: "parent",
+                phone: guardian.phone.trim() || null,
+                sex: "male",
+                national_id: guardian.national_id.trim() || null,
+                date_of_birth: null,
+              },
+            );
             guardianUserId = guardUser.id;
           }
         } else {
@@ -329,8 +385,13 @@ export class StudentFormState {
           });
         }
 
-        const existingLinks = await commands.academic.listGuardiansByStudent(this.orgId, targetStudentId);
-        const matchedLink = existingLinks.find((l) => l.guardian_id === guardianUserId);
+        const existingLinks = await commands.academic.listGuardiansByStudent(
+          this.orgId,
+          targetStudentId,
+        );
+        const matchedLink = existingLinks.find(
+          (l) => l.guardian_id === guardianUserId,
+        );
 
         const linkRequest = {
           student_id: targetStudentId,
@@ -352,14 +413,20 @@ export class StudentFormState {
         };
 
         if (matchedLink) {
-          await commands.platform.updateGuardianLink(String(matchedLink.id), linkRequest);
+          await commands.platform.updateGuardianLink(
+            String(matchedLink.id),
+            linkRequest,
+          );
         } else {
           await commands.platform.createGuardianLink(linkRequest);
         }
       }
 
       // Assign optional/custom fees (only if status is active/approved)
-      if (this.registrationStatus === "active" || this.registrationStatus === "approved") {
+      if (
+        this.registrationStatus === "active" ||
+        this.registrationStatus === "approved"
+      ) {
         const today = new Date().toISOString().slice(0, 10);
         for (const key in this.financial.selectedOptionalFees) {
           if (this.financial.selectedOptionalFees[key].checked) {
@@ -402,9 +469,14 @@ export class StudentFormState {
     }
     this.isDownloadingForm = true;
     try {
-      const templateRecord = await commands.platform.getDocumentTemplate(this.orgId, this.selectedTemplateId);
+      const templateRecord = await commands.platform.getDocumentTemplate(
+        this.orgId,
+        this.selectedTemplateId,
+      );
       if (!templateRecord) {
-        toast.error(`القالب '${this.selectedTemplateId}' غير موجود في قاعدة البيانات`);
+        toast.error(
+          `القالب '${this.selectedTemplateId}' غير موجود في قاعدة البيانات`,
+        );
         return;
       }
       const documentModel = JSON.parse(templateRecord.document_json as string);
@@ -438,7 +510,8 @@ export class StudentFormState {
       if (pdfBytes && pdfBytes.length > 0) {
         let binary = "";
         const len = pdfBytes.length;
-        for (let i = 0; i < len; i++) binary += String.fromCharCode(pdfBytes[i]);
+        for (let i = 0; i < len; i++)
+          binary += String.fromCharCode(pdfBytes[i]);
         const base64 = window.btoa(binary);
         const pdfUrl = `data:application/pdf;base64,${base64}`;
 
@@ -455,7 +528,9 @@ export class StudentFormState {
       }
     } catch (e: any) {
       console.error("Failed to download registration form:", e);
-      toast.error(`خطأ أثناء تحميل الاستمارة: ${(e as any)?.message || String(e)}`);
+      toast.error(
+        `خطأ أثناء تحميل الاستمارة: ${(e as any)?.message || String(e)}`,
+      );
     } finally {
       this.isDownloadingForm = false;
     }

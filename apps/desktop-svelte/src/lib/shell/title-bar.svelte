@@ -53,13 +53,17 @@ const phaseLabel = $derived.by(() => {
   if (!phase) return "";
   switch (phase) {
     case "pre_start":
-      return m.common_phase_pre_start ? m.common_phase_pre_start() : "Pre-Start";
+      return m.common_phase_pre_start
+        ? m.common_phase_pre_start()
+        : "Pre-Start";
     case "active":
       return m.common_phase_active ? m.common_phase_active() : "Active";
     case "exams":
       return m.common_phase_exams ? m.common_phase_exams() : "Exams";
     case "grade_entry":
-      return m.common_phase_grade_entry ? m.common_phase_grade_entry() : "Grade Entry";
+      return m.common_phase_grade_entry
+        ? m.common_phase_grade_entry()
+        : "Grade Entry";
     case "closed":
       return m.common_phase_closed ? m.common_phase_closed() : "Closed";
     default:

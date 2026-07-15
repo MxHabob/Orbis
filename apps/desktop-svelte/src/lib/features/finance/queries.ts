@@ -8,9 +8,15 @@ import { commands } from "$lib/core/ipc";
 /** Treasuries for an organization. */
 export function createTreasuriesQuery(orgId: () => string) {
   return createQuery({
-    get queryKey() { return ["treasuries", orgId()]; },
-    get queryFn() { return () => commands.finance.listTreasuries(); },
-    get enabled() { return !!orgId(); },
+    get queryKey() {
+      return ["treasuries", orgId()];
+    },
+    get queryFn() {
+      return () => commands.finance.listTreasuries();
+    },
+    get enabled() {
+      return !!orgId();
+    },
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -18,9 +24,15 @@ export function createTreasuriesQuery(orgId: () => string) {
 /** Payments list. */
 export function createPaymentsQuery(orgId: () => string) {
   return createQuery({
-    get queryKey() { return ["payments", orgId()]; },
-    get queryFn() { return () => commands.finance.listPayments(); },
-    get enabled() { return !!orgId(); },
+    get queryKey() {
+      return ["payments", orgId()];
+    },
+    get queryFn() {
+      return () => commands.finance.listPayments();
+    },
+    get enabled() {
+      return !!orgId();
+    },
     staleTime: 2 * 60 * 1000,
   });
 }
@@ -28,9 +40,13 @@ export function createPaymentsQuery(orgId: () => string) {
 /** Ledger accounts query. */
 export function createAccountsQuery(orgId: () => string) {
   return createQuery({
-    get queryKey() { return ["ledger-accounts", orgId()]; },
+    get queryKey() {
+      return ["ledger-accounts", orgId()];
+    },
     queryFn: () => commands.finance.listAccounts(),
-    get enabled() { return !!orgId(); },
+    get enabled() {
+      return !!orgId();
+    },
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -51,10 +67,14 @@ export function createAccountStatementQuery(
   endDate: () => string,
 ) {
   return createQuery({
-    get queryKey() { return ["account-statement", accountId(), startDate(), endDate()]; },
+    get queryKey() {
+      return ["account-statement", accountId(), startDate(), endDate()];
+    },
     queryFn: () =>
       commands.finance.getAccountStatement(accountId(), startDate(), endDate()),
-    get enabled() { return !!accountId() && !!startDate() && !!endDate(); },
+    get enabled() {
+      return !!accountId() && !!startDate() && !!endDate();
+    },
     staleTime: 1 * 60 * 1000,
   });
 }
@@ -74,13 +94,18 @@ export function createStudentFeesQuery(
   isOrgId: boolean = true,
 ) {
   return createQuery({
-    get queryKey() { return ["student-fees", orgOrEnrollmentId()]; },
-    get queryFn() { return () =>
-      isOrgId
-        ? commands.finance.listAllStudentFees(orgOrEnrollmentId())
-        : commands.finance.listStudentFees(orgOrEnrollmentId());
+    get queryKey() {
+      return ["student-fees", orgOrEnrollmentId()];
     },
-    get enabled() { return !!orgOrEnrollmentId(); },
+    get queryFn() {
+      return () =>
+        isOrgId
+          ? commands.finance.listAllStudentFees(orgOrEnrollmentId())
+          : commands.finance.listStudentFees(orgOrEnrollmentId());
+    },
+    get enabled() {
+      return !!orgOrEnrollmentId();
+    },
     staleTime: 2 * 60 * 1000,
   });
 }

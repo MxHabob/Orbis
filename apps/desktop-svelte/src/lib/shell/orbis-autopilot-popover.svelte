@@ -99,7 +99,8 @@ async function handleRunTick() {
     toast.promise($runTickMutation.mutateAsync({ orgId }), {
       loading: m.common_autopilot_popover_tick_running(),
       success: () => m.common_autopilot_popover_run_tick(),
-      error: (e) => extractErrorMessage(e) || m.common_autopilot_popover_run_tick(),
+      error: (e) =>
+        extractErrorMessage(e) || m.common_autopilot_popover_run_tick(),
     });
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
