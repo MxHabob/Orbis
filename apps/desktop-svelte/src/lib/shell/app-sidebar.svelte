@@ -22,6 +22,7 @@ import {
   BarChart3,
   Settings,
   FileText,
+  Brain,
 } from "lucide-svelte";
 import { authStore } from "$lib/stores";
 import OrgSidebarSwitcher from "./org-sidebar-switcher.svelte";
@@ -95,6 +96,12 @@ const navItems = $derived([
     href: `/${orgId}/templates`,
     icon: FileText,
     label: m.settings_nav_templates(),
+    match: "prefix",
+  },
+  {
+    href: `/${orgId}/ai-center`,
+    icon: Brain,
+    label: "AI Center",
     match: "prefix",
   },
   {

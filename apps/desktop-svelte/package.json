@@ -23,6 +23,7 @@
     "@docforge/core": "workspace:*",
     "@internationalized/date": "^3.12.0",
     "@orbis/svelte-grid": "workspace:*",
+    "@orbis/app-store": "workspace:*",
     "@orbis/sdk-core": "workspace:*",
     "@orbis/sdk-desktop": "workspace:*",
     "@orbis/location": "workspace:*",

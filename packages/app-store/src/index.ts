@@ -1,0 +1,79 @@
+// ═══════════════════════════════════════════════════════════════
+// @orbis/app-store — Main Entry Point
+// Aggregates all app configs into a single `apps` array.
+// Pattern: same as @midday/app-store index.ts
+// ═══════════════════════════════════════════════════════════════
+
+import type { OrbisApp, AppCategory } from "./types";
+
+// ── App Imports ─────────────────────────────────────────────────
+import ollamaAi from "./ollama-ai/config";
+import geminiAi from "./gemini-ai/config";
+import hikvisionCamera from "./hikvision-camera/config";
+import smtpEmail from "./smtp-email/config";
+import whatsappBusiness from "./whatsapp-business/config";
+import smsProvider from "./sms-provider/config";
+import pushNotifications from "./push-notifications/config";
+import googleWorkspace from "./google-workspace/config";
+import microsoft365 from "./microsoft-365/config";
+import activeDirectory from "./active-directory/config";
+import fingerprint from "./fingerprint/config";
+import rfid from "./rfid/config";
+import barcodeScanner from "./barcode-scanner/config";
+import printer from "./printer/config";
+import cloudStorage from "./cloud-storage/config";
+import ocrService from "./ocr-service/config";
+import webhooks from "./webhooks/config";
+
+// ── Exported App Collection ─────────────────────────────────────
+
+export const apps: OrbisApp[] = [
+  // AI Providers
+  ollamaAi,
+  geminiAi,
+  // Surveillance
+  hikvisionCamera,
+  // Communication
+  smtpEmail,
+  whatsappBusiness,
+  smsProvider,
+  pushNotifications,
+  // Identity
+  googleWorkspace,
+  microsoft365,
+  activeDirectory,
+  // Hardware
+  fingerprint,
+  rfid,
+  barcodeScanner,
+  printer,
+  // Storage
+  cloudStorage,
+  // AI Services
+  ocrService,
+  // Automation
+  webhooks,
+];
+
+// ── Helpers ─────────────────────────────────────────────────────
+
+/** Get a single app by its unique ID */
+export function getAppById(id: string): OrbisApp | undefined {
+  return apps.find((app) => app.id === id);
+}
+
+/** Get all apps in a given category */
+export function getAppsByCategory(category: AppCategory | "all"): OrbisApp[] {
+  if (category === "all") return apps;
+  return apps.filter((app) => app.category === category);
+}
+
+/** Get all unique app IDs */
+export function getAllAppIds(): string[] {
+  return apps.map((app) => app.id);
+}
+
+// ── Re-exports ──────────────────────────────────────────────────
+export type { OrbisApp, AppCategory, AppSetting, AppStatus } from "./types";
+export { categories, getCategoryName, getCategoryNameAr } from "./categories";
+export type { CategoryDef } from "./categories";
