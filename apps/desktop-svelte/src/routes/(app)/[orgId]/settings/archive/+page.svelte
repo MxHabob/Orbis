@@ -1,4 +1,5 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import {
   useDocuments,
   useDeleteDocument,
@@ -12,7 +13,7 @@ const documentsQuery = useDocuments({ ownerId: "all" });
 const deleteMutation = useDeleteDocument();
 
 function handleDelete(id: string) {
-  if (confirm("Are you sure you want to delete this document?")) {
+  if (confirm(m.common_docs_delete_confirm())) {
     $deleteMutation.mutate(id);
   }
 }
@@ -37,9 +38,9 @@ let groupedDocs = $derived(
 <div class="flex flex-col gap-6 p-6 h-full overflow-auto">
   <div class="flex items-center justify-between">
     <div>
-      <h1 class="text-2xl font-semibold tracking-tight">Archive</h1>
+      <h1 class="text-2xl font-semibold tracking-tight">{m.settings_archive_title()}</h1>
       <p class="text-sm text-muted-foreground mt-1">
-        Manage all organization documents, files, avatars, and attachments.
+        {m.settings_archive_desc()}
       </p>
     </div>
   </div>
@@ -51,8 +52,8 @@ let groupedDocs = $derived(
   {:else if documents.length === 0}
     <div class="flex flex-col items-center justify-center py-20 text-center bg-muted/20 rounded-xl border border-dashed">
       <File class="h-12 w-12 text-muted-foreground/50 mb-4" />
-      <h3 class="text-lg font-medium">No documents found</h3>
-      <p class="text-sm text-muted-foreground">Uploaded files will appear here.</p>
+      <h3 class="text-lg font-medium">{m.settings_archive_empty_title()}</h3>
+      <p class="text-sm text-muted-foreground">{m.settings_archive_empty_desc()}</p>
     </div>
   {:else}
     {#each Object.entries(groupedDocs) as [category, docs]}
@@ -75,11 +76,11 @@ let groupedDocs = $derived(
                 <!-- Overlay Actions -->
                 <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity gap-2">
                   {#await resolveDocumentUrl(doc.url) then srcUrl}
-                    <a href={srcUrl} target="_blank" rel="noopener noreferrer" class="p-2 bg-background/80 hover:bg-background rounded-full text-foreground shadow-sm transition-colors" title="View">
+                    <a href={srcUrl} target="_blank" rel="noopener noreferrer" class="p-2 bg-background/80 hover:bg-background rounded-full text-foreground shadow-sm transition-colors" title={m.settings_archive_action_view()}>
                       <File class="h-4 w-4" />
                     </a>
                   {/await}
-                  <Button variant="destructive" class="p-2" onclick={() => handleDelete(doc.id)} title="Delete">
+                  <Button variant="destructive" class="p-2" onclick={() => handleDelete(doc.id)} title={m.common_action_delete()}>
                     <Trash2 class="h-4 w-4" />
                   </Button>
                 </div>
@@ -107,9 +108,9 @@ let groupedDocs = $derived(
         >
           {#if $documentsQuery.isFetchingNextPage}
             <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-            Loading more...
+            {m.settings_archive_loading_more()}
           {:else}
-            Load More
+            {m.settings_archive_load_more()}
           {/if}
         </Button>
       </div>

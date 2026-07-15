@@ -96,7 +96,7 @@ const navItems = $derived([
   },
   {
     path: "archive",
-    label: "Archive", // Using raw string for now
+    label: m.settings_nav_archive(),
     icon: FileText,
   },
   {

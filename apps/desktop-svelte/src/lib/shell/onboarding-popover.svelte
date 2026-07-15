@@ -13,10 +13,10 @@ import { Check, ChevronRight } from "lucide-svelte";
 import { onboardingState } from "$lib/features/onboarding/state.svelte";
 import { authStore } from "$lib/stores";
 import { goto } from "$app/navigation";
-import { localizeHref, getLocale } from "$lib/paraglide/runtime";
+import { localizeHref } from "$lib/paraglide/runtime";
 
 function handleChecklistItemClick(stepIndex: number) {
-  onboardingState.goToStep(stepIndex + 1);
+  onboardingState.goToStep(stepIndex + 0);
   goto(localizeHref("/onboarding"));
 }
 
