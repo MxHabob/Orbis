@@ -1623,11 +1623,8 @@ CREATE INDEX IF NOT EXISTS idx_dqf_entity ON data_quality_findings(entity_type, 
 CREATE INDEX IF NOT EXISTS idx_enrollment_org_period_class
     ON enrollments(org_id, period_id, class_id);
 
-CREATE INDEX IF NOT EXISTS idx_grades_enrollment_period_subject
-    ON grades(enrollment_id, period_id, class_subject_id);
-
-CREATE INDEX IF NOT EXISTS idx_attendance_enrollment_period_date
-    ON attendance(enrollment_id, period_id, date);
+CREATE INDEX IF NOT EXISTS idx_attendance_daily_enrollment_period_date
+    ON attendance_daily(enrollment_id, period_id, date);
 
 CREATE INDEX IF NOT EXISTS idx_autopilot_org_status
     ON autopilot_tasks(org_id, status);

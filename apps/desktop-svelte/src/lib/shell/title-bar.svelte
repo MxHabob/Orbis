@@ -252,15 +252,17 @@ onMount(() => {
     </Button>
 
     <!-- Focus Mode Toggle -->
-    <Button 
-      variant={"secondary"}
-      size="sm"
-      onclick={() => uiStore.toggleFocusMode()} 
-      class="font-semibold text-xs rounded-[8px] px-3 gap-2 shrink-0 {uiStore.focusMode ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/95 hover:text-primary-foreground' : 'bg-muted/40 text-foreground border-border/60 hover:bg-muted/70'}"
-      title={m.common_titlebar_focus_mode_tooltip()}
-    >
-      <span class="hidden sm:inline">{m.common_titlebar_focus_mode()}</span>
-    </Button>
+    {#if authStore.isAuthenticated}
+      <Button 
+        variant={"secondary"}
+        size="sm"
+        onclick={() => uiStore.toggleFocusMode()} 
+        class="font-semibold text-xs rounded-[8px] px-3 gap-2 shrink-0 {uiStore.focusMode ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/95 hover:text-primary-foreground' : 'bg-muted/40 text-foreground border-border/60 hover:bg-muted/70'}"
+        title={m.common_titlebar_focus_mode_tooltip()}
+      >
+        <span class="hidden sm:inline">{m.common_titlebar_focus_mode()}</span>
+      </Button>
+    {/if}
 
     <!-- Windows Window Controls (Min, Max, Close) -->
     {#if !isMac && appWindow}
