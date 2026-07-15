@@ -5,20 +5,6 @@ import * as m from "$lib/paraglide/messages";
  *
  * Wraps OrbisGrid with a professional toolbar, search, empty states,
  * and loading skeletons. Used system-wide for all data tables.
- *
- * @example
- * ```svelte
- * <DataTable
- *   columns={studentColumns}
- *   source={students}
- *   loading={isLoading}
- *   searchable
- *   searchPlaceholder={m.search_students()}
- *   onSearch={handleSearch}
- *   emptyTitle={m.no_students()}
- *   rtl={getLocale() === "ar"}
- * />
- * ```
  */
 import {
   OrbisGrid,
@@ -39,10 +25,10 @@ import {
   Search,
   Download,
   RefreshCcw,
-  TableProperties,
   SlidersHorizontal,
 } from "lucide-svelte";
-import type { Snippet, Component } from "svelte";
+import AiEmptyState from "$lib/shared/components/ai-empty-state.svelte";
+import type { Snippet } from "svelte";
 import { DefaultCell } from "../index";
 
 // ── Props ──────────────────────────────────────────────────────────────
@@ -284,12 +270,10 @@ function toggleColumnVisibility(colId: string) {
   {/if}
 
   <!-- ── Content Area ─────────────────────────────────────────────────── -->
-  <div class="flex-1 min-h-0 rounded-xl border border-border overflow-hidden bg-card">
+  <div class="flex-1 min-h-0 rounded-sm overflow-hidden">
     {#if loading}
-      <!-- Skeleton Loading -->
       <div class="p-0">
-        <!-- Skeleton header -->
-        <div class="flex items-center h-10 border-b border-border bg-muted/30 px-3 gap-4">
+        <div class="flex items-center h-10  px-3 gap-4">
           {#each columns.slice(0, 6) as col}
             <Skeleton class="h-3 rounded" style="width: {Math.min(col.size ?? 100, 150)}px" />
           {/each}
@@ -321,18 +305,12 @@ function toggleColumnVisibility(colId: string) {
         {onaction}
       />
     {:else if showEmpty}
-      <!-- Empty State -->
-      <div class="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
-        {#if emptyIcon}
-          {@const Icon = emptyIcon}
-          <Icon size={36} class="opacity-30" />
-        {:else}
-          <TableProperties size={36} class="opacity-30" />
-        {/if}
-        <p class="text-sm font-medium text-foreground/70">{emptyTitle}</p>
-        {#if emptyDescription}
-          <p class="text-xs text-muted-foreground/70 max-w-xs text-center">{emptyDescription}</p>
-        {/if}
+      <!-- Universal AI Avatar Empty State Centered Vertically & Horizontally -->
+      <div class="h-full w-full flex flex-col items-center justify-center p-6">
+        <AiEmptyState
+          text={emptyDescription ? `${emptyTitle} ${emptyDescription}` : emptyTitle}
+          hat="graduation"
+        />
       </div>
     {/if}
   </div>

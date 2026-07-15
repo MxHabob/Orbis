@@ -1,6 +1,6 @@
 <!--
 @component IntegrationsPage
-Integrations store page — Midday inspired centered layout header using shared SearchField component.
+Integrations store page — Midday inspired centered layout header using shared SearchField and AiEmptyState components.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -8,8 +8,8 @@ import { apps, categories, getAppsByCategory } from "@orbis/app-store";
 import type { OrbisApp } from "@orbis/app-store";
 import AppCard from "$lib/features/ai-center/components/integrations/app-card.svelte";
 import CategoryFilter from "$lib/features/ai-center/components/integrations/category-filter.svelte";
-import { PackageX } from "lucide-svelte";
 import SearchField from "$lib/shared/components/search-field.svelte";
+import AiEmptyState from "$lib/shared/components/ai-empty-state.svelte";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -63,7 +63,7 @@ const basePath = $derived(`/${data.orgId}/ai-center/integrations`);
     <CategoryFilter {categories} bind:active={activeCategory} />
   </div>
 
-  <!-- Apps Grid (Max 3 Columns) -->
+  <!-- Apps Grid or AI Interactive Empty State -->
   <main>
     {#if filteredApps.length > 0}
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -72,21 +72,14 @@ const basePath = $derived(`/${data.orgId}/ai-center/integrations`);
         {/each}
       </div>
     {:else}
-      <div class="flex flex-col items-center justify-center py-20 text-center">
-        <div class="w-12 h-12 rounded-full bg-muted/60 flex items-center justify-center mb-3">
-          <PackageX size={20} class="text-muted-foreground" />
-        </div>
-        <h3 class="text-sm font-bold text-foreground mb-1">
-          {m.ai_center_integrations_empty_title ? m.ai_center_integrations_empty_title() : "No integrations found"}
-        </h3>
-        <p class="text-xs text-muted-foreground max-w-xs leading-relaxed">
-          {#if searchQuery}
-            {m.ai_center_integrations_empty_search ? m.ai_center_integrations_empty_search() : "No results matching your query. Try searching with different terms."}
-          {:else}
-            {m.ai_center_integrations_empty_category ? m.ai_center_integrations_empty_category() : "No integrations available in this category currently."}
-          {/if}
-        </p>
-      </div>
+      <AiEmptyState
+        text={searchQuery
+          ? `أهلاً بك! لم أستطع العثور على أي خدمة أو جهاز يطابق "${searchQuery}". حاول تغيير كلمات البحث أو اختيار تصنيف مختلف.`
+          : `أهلاً بك! لا توجد تكاملات مسجلة في هذا التصنيف حالياً. يمكنك استكشاف بقية التصنيفات أو إضافة جهاز جديد.`}
+        actionLabel={searchQuery ? "إعادة ضبط الفلاتر والبحث" : "عرض كافة التكاملات"}
+        onaction={() => { searchQuery = ""; activeCategory = "all"; }}
+        hat="graduation"
+      />
     {/if}
   </main>
 </div>

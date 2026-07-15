@@ -22,7 +22,9 @@ import {
   Clock,
   Radio,
 } from "lucide-svelte";
+import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui-svelte/button";
+import AiEmptyState from "$lib/shared/components/ai-empty-state.svelte";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -198,22 +200,14 @@ const eventStyles: Record<string, { color: string; icon: typeof Bell }> = {
         </div>
       </div>
     {:else}
-      <!-- Empty State: No Cameras Connected -->
+      <!-- Interactive AI Empty State: No Cameras Connected -->
       <div class="flex-1 flex items-center justify-center p-8">
-        <div class="text-center max-w-sm bg-card border border-border rounded-xl p-8 shadow-sm">
-          <div class="w-14 h-14 rounded-full bg-primary/10 border border-primary/20 text-primary flex items-center justify-center mx-auto mb-4">
-            <Video size={24} />
-          </div>
-          <h2 class="text-sm font-semibold text-foreground mb-1">لا توجد كاميرات مربوطة</h2>
-          <p class="text-xs text-muted-foreground mb-6 leading-relaxed">
-            يمكنك ربط كاميرات المراقبة الشبكية عبر مدخلات RTSP أو Hikvision SDK لمتابعة البث المباشر.
-          </p>
-          <a href="/{data.orgId}/ai-center/integrations/hikvision-camera">
-            <Button size="sm" class="font-semibold text-xs">
-              <Camera size={13} class="ml-1.5" /> ربط جهاز كاميرا
-            </Button>
-          </a>
-        </div>
+        <AiEmptyState
+          text="مرحباً! لم أكتشف أي كاميرات شبكية متصلة بالنظام حتى الآن. يمكنك توصيل كاميرات المراقبة المباشرة لمتابعة البث والأحداث فورياً."
+          actionLabel="توصيل أول كاميرا مراقبة"
+          onaction={() => goto(`/${data.orgId}/ai-center/integrations`)}
+          hat="graduation"
+        />
       </div>
     {/if}
   </div>
