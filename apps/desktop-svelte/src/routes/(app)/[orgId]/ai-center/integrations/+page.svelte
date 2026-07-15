@@ -10,6 +10,7 @@ import AppCard from "$lib/features/ai-center/components/integrations/app-card.sv
 import CategoryFilter from "$lib/features/ai-center/components/integrations/category-filter.svelte";
 import SearchField from "$lib/shared/components/search-field.svelte";
 import AiEmptyState from "$lib/shared/components/ai-empty-state.svelte";
+import { getLocale } from "$lib/paraglide/runtime";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -25,8 +26,10 @@ const filteredApps = $derived.by(() => {
     result = result.filter(
       (app) =>
         app.name.toLowerCase().includes(q) ||
+        (app.name_ar && app.name_ar.toLowerCase().includes(q)) ||
         app.id.toLowerCase().includes(q) ||
-        app.short_description.toLowerCase().includes(q)
+        app.short_description.toLowerCase().includes(q) ||
+        (app.short_description_ar && app.short_description_ar.toLowerCase().includes(q))
     );
   }
 

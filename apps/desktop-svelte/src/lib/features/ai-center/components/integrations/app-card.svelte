@@ -6,10 +6,11 @@ Shows: icon, name, short description, category tag, status badge.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import type { OrbisApp } from "@orbis/app-store";
-import { getCategoryName } from "@orbis/app-store";
+import { getCategoryName, getCategoryNameAr } from "@orbis/app-store";
 import AppIcon from "./app-icon.svelte";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Card } from "@orbis/ui-svelte/card";
+import { getLocale } from "$lib/paraglide/runtime";
 
 let {
   app,
@@ -59,15 +60,16 @@ let {
 
       <!-- Description -->
       <p class="text-xs text-muted-foreground leading-relaxed flex-1 line-clamp-2">
-        {app.short_description}
+        {getLocale() === "ar" && app.short_description_ar ? app.short_description_ar : app.short_description}
       </p>
     </div>
 
     <!-- Footer: Category Tag -->
     <div class="mt-4 pt-3 border-t border-border/40">
       <Badge variant="outline" class="text-[10px] font-mono font-medium text-muted-foreground border-border/60 bg-muted/20">
-        {getCategoryName(app.category)}
+        {getLocale() === "ar" ? getCategoryNameAr(app.category) : getCategoryName(app.category)}
       </Badge>
     </div>
   </Card>
 </a>
+
