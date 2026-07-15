@@ -448,11 +448,14 @@ pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::
             let name = s.get("name").and_then(|v| v.as_str()).unwrap_or("");
             let name_ar = s.get("name_ar").and_then(|v| v.as_str()).unwrap_or(name);
             let code = s.get("code").and_then(|v| v.as_str()).unwrap_or("");
+            let color = s.get("color").and_then(|v| v.as_str()).unwrap_or("");
+            let icon = s.get("icon").and_then(|v| v.as_str()).unwrap_or("");
+            let sort_order = s.get("sort_order").and_then(|v| v.as_i64()).unwrap_or(0);
             txn.execute(Statement::from_string(
                 DatabaseBackend::Sqlite,
                 format!(
-                    "INSERT INTO subjects (id, org_id, period_id, name, name_ar, code, status, created_at, updated_at) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', 'active', '{}', '{}') ON CONFLICT DO NOTHING;",
-                    id.replace("'", "''"), ctx.org_id.replace("'", "''"), period_id_val.replace("'", "''"), name.replace("'", "''"), name_ar.replace("'", "''"), code.replace("'", "''"), now, now
+                    "INSERT INTO subjects (id, org_id, unit_id, name, name_ar, code, is_core, is_elective, requires_lab, requires_practical, color, icon, sort_order, is_active, created_at, updated_at) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', 1, 0, 0, 0, '{}', '{}', {}, 1, '{}', '{}') ON CONFLICT DO NOTHING;",
+                    id.replace("'", "''"), ctx.org_id.replace("'", "''"), root_unit_id.replace("'", "''"), name.replace("'", "''"), name_ar.replace("'", "''"), code.replace("'", "''"), color.replace("'", "''"), icon.replace("'", "''"), sort_order, now, now
                 )
             )).await?;
         }
@@ -484,11 +487,15 @@ pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::
             let id = r.get("id").and_then(|v| v.as_str()).unwrap_or("");
             let name = r.get("name").and_then(|v| v.as_str()).unwrap_or("");
             let name_ar = r.get("name_ar").and_then(|v| v.as_str()).unwrap_or(name);
+            let capacity = r.get("capacity").and_then(|v| v.as_i64()).unwrap_or(30);
+            let room_type = r.get("room_type").and_then(|v| v.as_str()).unwrap_or("classroom");
+            let building = r.get("building").and_then(|v| v.as_str()).unwrap_or("");
+            let floor = r.get("floor").and_then(|v| v.as_i64()).unwrap_or(1);
             txn.execute(Statement::from_string(
                 DatabaseBackend::Sqlite,
                 format!(
-                    "INSERT INTO rooms (id, org_id, name, name_ar, capacity, room_type, is_active, created_at, updated_at) VALUES ('{}', '{}', '{}', '{}', 30, 'classroom', 1, '{}', '{}') ON CONFLICT DO NOTHING;",
-                    id.replace("'", "''"), ctx.org_id.replace("'", "''"), name.replace("'", "''"), name_ar.replace("'", "''"), now, now
+                    "INSERT INTO rooms (id, org_id, name, name_ar, capacity, room_type, building, floor, is_active, created_at, updated_at) VALUES ('{}', '{}', '{}', '{}', {}, '{}', '{}', {}, 1, '{}', '{}') ON CONFLICT DO NOTHING;",
+                    id.replace("'", "''"), ctx.org_id.replace("'", "''"), name.replace("'", "''"), name_ar.replace("'", "''"), capacity, room_type.replace("'", "''"), building.replace("'", "''"), floor, now, now
                 )
             )).await?;
         }
