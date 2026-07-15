@@ -1,37 +1,41 @@
 <!--
-@component AiCenterOverview
-Main dashboard for AI Center. Shows live stats via SDK.
-Wired to: commands.aiCenter.checkHealth / listActionLogs / listAutopilotTasks / listConnectedIntegrations
+@component AiCenterOverviewPage
+Main dashboard for AI Center — unified background, responsive grid, zero div bloat.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
+import { fade } from "svelte/transition";
 import {
   Activity,
-  Brain,
-  Cpu,
-  Gauge,
-  Layers,
   Zap,
   CheckCircle,
   AlertTriangle,
   Clock,
   Bot,
   Plug,
+  ArrowRight,
+  ShieldAlert,
+  Sparkles,
 } from "lucide-svelte";
+import { Button } from "@orbis/ui-svelte/button";
+import { localizeHref } from "$lib/paraglide/runtime";
+import AiPerformanceTrendCard from "$lib/features/ai-center/components/overview/ai-performance-trend-card.svelte";
 
 let { data }: { data: { orgId: string } } = $props();
 
 // ── State ───────────────────────────────────────────────────
-let healthStatus = $state<"healthy" | "degraded" | "offline">("offline");
+let healthStatus = $state<"healthy" | "degraded" | "offline">("healthy");
 let sessionCount = $state(0);
 let actionCount = $state(0);
-let autopilotMode = $state("Manual");
-let connectedApps = $state(0);
+let autopilotMode = $state("مقترح");
+let connectedAppsCount = $state(0);
+let connectedIntegrations = $state<any[]>([]);
+let activeSessions = $state<any[]>([]);
 let recentLogs = $state<any[]>([]);
 let isLoading = $state(true);
 
-// ── Load Data ───────────────────────────────────────────────
 onMount(async () => {
   try {
     const [health, logs, tasks, integrations, sessions] = await Promise.all([
@@ -42,15 +46,17 @@ onMount(async () => {
       commands.agent.listSessions(data.orgId).catch(() => []),
     ]);
 
-    if (health) healthStatus = "healthy";
-    sessionCount = (sessions as any[])?.length ?? 0;
+    healthStatus = health ? "healthy" : "offline";
+    activeSessions = (sessions as any[]) ?? [];
+    sessionCount = activeSessions.length;
     actionCount = (logs as any[])?.length ?? 0;
-    connectedApps = (integrations as any[])?.length ?? 0;
+    connectedIntegrations = (integrations as any[]) ?? [];
+    connectedAppsCount = connectedIntegrations.length;
     recentLogs = ((logs as any[]) ?? []).slice(0, 5);
 
     const config = await commands.aiCenter.getAutopilotConfig(data.orgId).catch(() => null);
     if (config && (config as any).enabled) {
-      autopilotMode = (config as any).execution_mode === "automatic" ? "Automatic" : "Suggested";
+      autopilotMode = (config as any).execution_mode === "automatic" ? "تلقائي" : "مقترح";
     }
   } catch (e) {
     console.warn("[AI Center] Overview load:", e);
@@ -59,115 +65,220 @@ onMount(async () => {
   }
 });
 
-const agents = [
-  { name: "Academic Agent", icon: Brain, domain: "academic, scheduling", color: "text-blue-500" },
-  { name: "Finance Agent", icon: Gauge, domain: "finance, fees", color: "text-emerald-500" },
-  { name: "Exam Agent", icon: Layers, domain: "exams, grades", color: "text-purple-500" },
-  { name: "Admin Agent", icon: Bot, domain: "admin, reports", color: "text-orange-500" },
-];
-
 const healthConfig = {
-  healthy:  { color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-950/30", label: "Healthy", icon: CheckCircle },
-  degraded: { color: "text-amber-600 dark:text-amber-400",   bg: "bg-amber-50 dark:bg-amber-950/30",   label: "Degraded", icon: AlertTriangle },
-  offline:  { color: "text-muted-foreground",                bg: "bg-muted",                             label: "Offline",  icon: Clock },
+  healthy:  { color: "text-foreground font-semibold", bg: "bg-muted border border-border", label: "متصل ويعمل بكفاءة", icon: CheckCircle },
+  degraded: { color: "text-foreground font-semibold", bg: "bg-muted border border-border", label: "استجابة بطيئة", icon: AlertTriangle },
+  offline:  { color: "text-muted-foreground", bg: "bg-muted border border-border", label: "غير متصل", icon: Clock },
 };
 
 const healthInfo = $derived(healthConfig[healthStatus]);
 </script>
 
-<div class="h-full overflow-y-auto">
-  <div class="px-8 py-6 max-w-5xl space-y-5">
-    <div>
-      <h1 class="text-lg font-semibold text-foreground mb-1">AI Center</h1>
-      <p class="text-[11px] text-muted-foreground">Monitor and manage AI agents, integrations, and automated workflows.</p>
-    </div>
-
-    <!-- Stats Grid -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      <!-- Health -->
-      <div class="border border-border/60 rounded-lg p-4">
-        <div class="flex items-center gap-2 mb-2.5">
-          <div class="w-8 h-8 rounded-md {healthInfo.bg} flex items-center justify-center">
-            <healthInfo.icon size={15} class={healthInfo.color} />
-          </div>
-          <span class="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Health</span>
-        </div>
-        <p class="text-lg font-semibold {healthInfo.color}">{healthInfo.label}</p>
-      </div>
-
-      <!-- Sessions -->
-      <div class="border border-border/60 rounded-lg p-4">
-        <div class="flex items-center gap-2 mb-2.5">
-          <div class="w-8 h-8 rounded-md bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center">
-            <Activity size={15} class="text-blue-500" />
-          </div>
-          <span class="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Sessions</span>
-        </div>
-        <p class="text-lg font-semibold text-foreground">{sessionCount}</p>
-      </div>
-
-      <!-- Autopilot -->
-      <div class="border border-border/60 rounded-lg p-4">
-        <div class="flex items-center gap-2 mb-2.5">
-          <div class="w-8 h-8 rounded-md bg-purple-50 dark:bg-purple-950/30 flex items-center justify-center">
-            <Zap size={15} class="text-purple-500" />
-          </div>
-          <span class="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Autopilot</span>
-        </div>
-        <p class="text-lg font-semibold text-foreground">{autopilotMode}</p>
-      </div>
-
-      <!-- Connected Apps -->
-      <div class="border border-border/60 rounded-lg p-4">
-        <div class="flex items-center gap-2 mb-2.5">
-          <div class="w-8 h-8 rounded-md bg-orange-50 dark:bg-orange-950/30 flex items-center justify-center">
-            <Plug size={15} class="text-orange-500" />
-          </div>
-          <span class="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Integrations</span>
-        </div>
-        <p class="text-lg font-semibold text-foreground">{connectedApps}</p>
+<div class="h-full w-full overflow-y-auto bg-background scrollbar-hide p-6 flex flex-col gap-6 font-sans">
+  {#if isLoading}
+    <div class="h-64 flex items-center justify-center">
+      <div class="flex items-center gap-3 text-muted-foreground text-sm font-medium">
+        <Sparkles size={18} class="animate-spin text-primary" />
+        <span>جاري تحميل بيانات مركز الذكاء الاصطناعي...</span>
       </div>
     </div>
+  {:else}
+    <div class="flex flex-col gap-6" in:fade={{ duration: 150 }}>
+      
+      <!-- 1. Full-Width SVG AI Activity Trend Chart at top -->
+      <AiPerformanceTrendCard orgId={data.orgId} {isLoading} />
 
-    <!-- Agents -->
-    <div>
-      <h2 class="text-sm font-medium text-foreground mb-2.5">AI Agents</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {#each agents as agent}
-          <div class="border border-border/60 rounded-lg p-3.5 flex items-start gap-3">
-            <div class="w-9 h-9 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
-              <agent.icon size={18} class={agent.color} />
+      <!-- 2. Middle Section: AI Agents Grid & System Autopilot Health Card -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Agents List Card (2 cols) -->
+        <div class="lg:col-span-2 bg-card border border-border rounded-xl p-5 shadow-sm flex flex-col justify-between space-y-4">
+          <div class="flex items-center justify-between border-b border-border/40 pb-3">
+            <div class="flex items-center gap-2">
+              <Bot size={16} class="text-primary" />
+              <h2 class="text-sm font-bold text-foreground">
+                {m.ai_center_overview_agents_title ? m.ai_center_overview_agents_title() : "وكلاء الذكاء الاصطناعي النشطين"}
+              </h2>
             </div>
-            <div>
-              <h3 class="text-xs font-medium text-foreground mb-0.5">{agent.name}</h3>
-              <p class="text-[10px] text-muted-foreground">{agent.domain}</p>
-            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-muted text-muted-foreground font-semibold">
+              {activeSessions.length} جلسة مفعّلة
+            </span>
           </div>
-        {/each}
-      </div>
-    </div>
 
-    <!-- Recent Activity -->
-    <div>
-      <h2 class="text-sm font-medium text-foreground mb-2.5">Recent Activity</h2>
-      {#if recentLogs.length > 0}
-        <div class="border border-border/60 rounded-lg divide-y divide-border/30">
-          {#each recentLogs as log}
-            <div class="px-4 py-3 flex items-center justify-between">
-              <div>
-                <code class="text-[10px] font-mono text-foreground">{log.action_code}</code>
-                <p class="text-[10px] text-muted-foreground mt-0.5 truncate max-w-xs">{log.reasoning}</p>
+          {#if activeSessions.length > 0}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {#each activeSessions as session}
+                <div class="border border-border/60 rounded-lg p-3.5 flex items-start justify-between bg-background/40 hover:border-border transition-colors">
+                  <div class="flex items-start gap-3">
+                    <div class="w-9 h-9 rounded-lg border border-border flex items-center justify-center shrink-0 bg-primary/10 text-primary">
+                      <Bot size={18} />
+                    </div>
+                    <div>
+                      <h3 class="text-xs font-bold text-foreground mb-0.5">{session.title || session.id}</h3>
+                      <p class="text-[10px] text-muted-foreground">{session.agent_id || "وكيل ذكي"}</p>
+                    </div>
+                  </div>
+                  <span class="px-2 py-0.5 text-[9px] font-bold rounded-full bg-primary/10 text-primary border border-primary/20 shrink-0">
+                    نشط
+                  </span>
+                </div>
+              {/each}
+            </div>
+          {:else}
+            <div class="border border-border/40 rounded-lg p-6 flex flex-col items-center text-center bg-background/20 space-y-1.5">
+              <Bot size={24} class="text-muted-foreground" />
+              <p class="text-xs font-bold text-foreground">لا توجد جلسات وكلاء نشطة حالياً</p>
+              <p class="text-[11px] text-muted-foreground">يتم إنشاء وتفعيل جلسات الوكلاء تلقائياً عند تنفيذ المهام والاستفسارات.</p>
+            </div>
+          {/if}
+
+          <div class="pt-2 border-t border-border/40 flex items-center justify-between text-[10px] text-muted-foreground font-medium">
+            <span>محركات المعالجة المحلية والسحابية تعمل وفقاً للسياسات المعتمدة.</span>
+            <a href={localizeHref(`/${data.orgId}/ai-center/settings`)} class="text-primary hover:underline flex items-center gap-1 font-semibold">
+              <span>تكوين النماذج</span>
+              <ArrowRight size={10} class="rtl:rotate-180" />
+            </a>
+          </div>
+        </div>
+
+        <!-- System & Autopilot Status Card (1 col) -->
+        <div class="bg-card border border-border rounded-xl p-5 shadow-sm flex flex-col justify-between space-y-4">
+          <div class="flex items-center justify-between border-b border-border/40 pb-3">
+            <div class="flex items-center gap-2">
+              <Zap size={16} class="text-primary" />
+              <h2 class="text-sm font-bold text-foreground">
+                {m.ai_center_overview_health ? m.ai_center_overview_health() : "حالة محرك الذكاء الاصطناعي"}
+              </h2>
+            </div>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded {healthInfo.bg} {healthInfo.color}">
+              {healthInfo.label}
+            </span>
+          </div>
+
+          <div class="space-y-3">
+            <div class="flex items-center justify-between p-2.5 rounded-lg border border-border/40 bg-background/50">
+              <div class="flex items-center gap-2">
+                <Activity size={14} class="text-muted-foreground" />
+                <span class="text-xs text-foreground font-medium">{m.ai_center_overview_sessions ? m.ai_center_overview_sessions() : "الجلسات النشطة"}</span>
               </div>
-              <span class="text-[9px] text-muted-foreground shrink-0">{log.executed_at}</span>
+              <span class="text-sm font-mono font-bold text-foreground">{sessionCount}</span>
             </div>
-          {/each}
+
+            <div class="flex items-center justify-between p-2.5 rounded-lg border border-border/40 bg-background/50">
+              <div class="flex items-center gap-2">
+                <Zap size={14} class="text-muted-foreground" />
+                <span class="text-xs text-foreground font-medium">{m.ai_center_overview_autopilot ? m.ai_center_overview_autopilot() : "وضع الطيار الآلي"}</span>
+              </div>
+              <span class="text-xs font-bold text-foreground bg-muted px-2 py-0.5 rounded border border-border">{autopilotMode}</span>
+            </div>
+
+            <div class="flex items-center justify-between p-2.5 rounded-lg border border-border/40 bg-background/50">
+              <div class="flex items-center gap-2">
+                <Plug size={14} class="text-muted-foreground" />
+                <span class="text-xs text-foreground font-medium">{m.ai_center_overview_integrations ? m.ai_center_overview_integrations() : "التكاملات المتصلة"}</span>
+              </div>
+              <span class="text-sm font-mono font-bold text-foreground">{connectedAppsCount}</span>
+            </div>
+          </div>
+
+          <a href={localizeHref(`/${data.orgId}/ai-center/permissions`)} class="w-full">
+            <Button size="sm" variant="outline" class="w-full text-xs font-semibold justify-between">
+              <span>إدارة مصفوفة الصلاحيات</span>
+              <ShieldAlert size={12} />
+            </Button>
+          </a>
         </div>
-      {:else}
-        <div class="border border-border/60 rounded-lg p-5 flex flex-col items-center">
-          <Clock size={16} class="text-muted-foreground mb-1.5" />
-          <p class="text-xs text-muted-foreground">No recent activity. Connect an AI provider to get started.</p>
+
+      </div>
+
+      <!-- 3. Bottom Section: Recent Action Logs Timeline & Connected Integrations Quick Status -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Recent Action Logs Timeline (2 cols) -->
+        <div class="lg:col-span-2 bg-card border border-border rounded-xl p-5 shadow-sm space-y-4">
+          <div class="flex items-center justify-between border-b border-border/40 pb-3">
+            <div class="flex items-center gap-2">
+              <Clock size={16} class="text-primary" />
+              <h2 class="text-sm font-bold text-foreground">
+                {m.ai_center_overview_recent_activity ? m.ai_center_overview_recent_activity() : "أحدث الأنشطة والأوامر المنفذة"}
+              </h2>
+            </div>
+            <a href={localizeHref(`/${data.orgId}/ai-center/logs`)} class="text-xs text-primary hover:underline flex items-center gap-1 font-semibold">
+              <span>عرض الكل</span>
+              <ArrowRight size={10} class="rtl:rotate-180" />
+            </a>
+          </div>
+
+          {#if recentLogs.length > 0}
+            <div class="divide-y divide-border/30 border border-border/40 rounded-lg overflow-hidden bg-background/30">
+              {#each recentLogs as log}
+                <div class="px-4 py-3 flex items-center justify-between hover:bg-muted/20 transition-colors">
+                  <div class="flex items-center gap-3">
+                    <span class="w-2 h-2 rounded-full bg-primary shrink-0"></span>
+                    <div>
+                      <code class="text-[11px] font-mono font-semibold text-foreground bg-muted px-1.5 py-0.5 rounded">{log.action_code}</code>
+                      <p class="text-[11px] text-muted-foreground mt-1 truncate max-w-sm">{log.reasoning || "تم تنفيذ الإجراء تلقائياً."}</p>
+                    </div>
+                  </div>
+                  <span class="text-[10px] text-muted-foreground font-mono shrink-0">{log.executed_at || "—"}</span>
+                </div>
+              {/each}
+            </div>
+          {:else}
+            <div class="border border-border/40 rounded-lg p-6 flex flex-col items-center text-center bg-background/20">
+              <Clock size={20} class="text-muted-foreground mb-2" />
+              <p class="text-xs font-semibold text-foreground">لا توجد سجلات تنفيذية جديدة</p>
+              <p class="text-[11px] text-muted-foreground mt-0.5">ستظهر السجلات هنا فور قيام الوكلاء بتنفيذ مهام أو توصيات تلقائية.</p>
+            </div>
+          {/if}
         </div>
-      {/if}
+
+        <!-- Connected Providers Quick List (1 col) -->
+        <div class="bg-card border border-border rounded-xl p-5 shadow-sm flex flex-col justify-between space-y-4">
+          <div class="flex items-center justify-between border-b border-border/40 pb-3">
+            <div class="flex items-center gap-2">
+              <Plug size={16} class="text-primary" />
+              <h2 class="text-sm font-bold text-foreground">
+                {m.ai_center_overview_connected_providers ? m.ai_center_overview_connected_providers() : "المزودات المربوطة"}
+              </h2>
+            </div>
+            <a href={localizeHref(`/${data.orgId}/ai-center/integrations`)} class="text-xs text-primary hover:underline font-semibold">
+              المتجر
+            </a>
+          </div>
+
+          {#if connectedIntegrations.length > 0}
+            <div class="space-y-2.5">
+              {#each connectedIntegrations as item}
+                <div class="p-3 border border-border/40 rounded-lg bg-background/40 flex items-center justify-between">
+                  <div class="flex items-center gap-2.5">
+                    <Plug size={16} class="text-primary" />
+                    <div>
+                      <h4 class="text-xs font-bold text-foreground">{item.name || item.id}</h4>
+                      <p class="text-[10px] text-muted-foreground">{item.provider || "خدمة متصلة"}</p>
+                    </div>
+                  </div>
+                  <span class="w-2 h-2 rounded-full bg-primary" title="متصل"></span>
+                </div>
+              {/each}
+            </div>
+          {:else}
+            <div class="border border-border/40 rounded-lg p-6 flex flex-col items-center text-center bg-background/20 space-y-1.5">
+              <Plug size={20} class="text-muted-foreground" />
+              <p class="text-xs font-bold text-foreground">لا توجد خدمات مربوطة حالياً</p>
+              <p class="text-[11px] text-muted-foreground">يمكنك ربط وتكتاف أجهزة المزودين من خلال متجر التكاملات.</p>
+            </div>
+          {/if}
+
+          <a href={localizeHref(`/${data.orgId}/ai-center/settings`)} class="w-full">
+            <Button size="sm" variant="ghost" class="w-full text-xs font-semibold justify-center">
+              <span>إدارة تكوين المزودات والنماذج</span>
+            </Button>
+          </a>
+        </div>
+
+      </div>
+
     </div>
-  </div>
+  {/if}
 </div>

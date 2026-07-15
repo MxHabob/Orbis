@@ -1,10 +1,10 @@
 <!--
 @component CategoryFilter
-Pill-style category filter bar — matches midday.ai/integrations design.
-Horizontal row of pill buttons: active one is filled, others are outline.
+Pill-style category filter bar using official UI Button component.
 -->
 <script lang="ts">
 import type { CategoryDef } from "@orbis/app-store";
+import { Button } from "@orbis/ui-svelte/button";
 
 let {
   categories,
@@ -17,15 +17,14 @@ let {
 
 <div class="flex flex-wrap gap-2 justify-center">
   {#each categories as cat (cat.id)}
-    <button
+    <Button
       type="button"
+      size="sm"
+      variant={active === cat.id ? "default" : "outline"}
       onclick={() => (active = cat.id)}
-      class="px-3.5 py-1.5 text-xs font-medium border rounded-md transition-all duration-150 cursor-pointer select-none
-        {active === cat.id
-          ? 'bg-foreground text-background border-foreground shadow-sm'
-          : 'bg-background text-muted-foreground border-border/60 hover:border-foreground/40 hover:text-foreground'}"
+      class="text-xs cursor-pointer"
     >
       {cat.name}
-    </button>
+    </Button>
   {/each}
 </div>

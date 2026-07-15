@@ -1,12 +1,15 @@
 <!--
 @component AppCard
-Integration app card — matches midday.ai/integrations card design.
+Integration app card — uses official UI Card and Badge components with localized messages.
 Shows: icon, name, short description, category tag, status badge.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import type { OrbisApp } from "@orbis/app-store";
 import { getCategoryName } from "@orbis/app-store";
 import AppIcon from "./app-icon.svelte";
+import { Badge } from "@orbis/ui-svelte/badge";
+import { Card } from "@orbis/ui-svelte/card";
 
 let {
   app,
@@ -17,63 +20,54 @@ let {
 } = $props();
 </script>
 
-<a
-  {href}
-  class="group border border-border/60 p-5 hover:border-foreground/20
-         transition-all duration-200 flex flex-col rounded-lg bg-background"
->
-  <!-- Top: Icon + Badges -->
-  <div class="flex items-start justify-between mb-4">
-    <div
-      class="h-10 w-10 flex items-center justify-center overflow-hidden rounded-lg
-             bg-muted/50 text-foreground"
-    >
-      <AppIcon icon={app.icon} size={22} />
+<a {href} class="block h-full">
+  <Card class="p-5 h-full flex flex-col justify-between bg-card border-border/60">
+    <div>
+      <!-- Top: Icon + UI Badges -->
+      <div class="flex items-start justify-between mb-4">
+        <div class="h-10 w-10 flex items-center justify-center overflow-hidden rounded-lg bg-muted/60 text-foreground">
+          <AppIcon icon={app.icon} size={22} />
+        </div>
+        <div class="flex gap-1.5">
+          {#if app.status === "connected"}
+            <Badge variant="outline" class="text-[10px] font-semibold text-primary border-primary/20 bg-primary/10 px-2 py-0.5">
+              {m.ai_center_integrations_status_connected ? m.ai_center_integrations_status_connected() : "Connected"}
+            </Badge>
+          {/if}
+          {#if app.status === "error"}
+            <Badge variant="destructive" class="text-[10px] font-semibold px-2 py-0.5">
+              {m.ai_center_integrations_status_error ? m.ai_center_integrations_status_error() : "Error"}
+            </Badge>
+          {/if}
+          {#if app.beta}
+            <Badge variant="secondary" class="text-[10px] font-semibold px-2 py-0.5">
+              {m.ai_center_integrations_status_beta ? m.ai_center_integrations_status_beta() : "Beta"}
+            </Badge>
+          {/if}
+          {#if !app.active}
+            <Badge variant="outline" class="text-[10px] font-medium text-muted-foreground bg-muted px-2 py-0.5">
+              {m.ai_center_integrations_status_coming_soon ? m.ai_center_integrations_status_coming_soon() : "Coming Soon"}
+            </Badge>
+          {/if}
+        </div>
+      </div>
+
+      <!-- Name -->
+      <h3 class="text-sm font-semibold text-foreground mb-1.5">
+        {app.name}
+      </h3>
+
+      <!-- Description -->
+      <p class="text-xs text-muted-foreground leading-relaxed flex-1 line-clamp-2">
+        {app.short_description}
+      </p>
     </div>
-    <div class="flex gap-1.5">
-      {#if app.status === "connected"}
-        <span
-          class="text-[10px] font-medium text-emerald-600 bg-emerald-50
-                 dark:bg-emerald-950/30 dark:text-emerald-400 px-2 py-0.5 rounded-md"
-        >
-          Connected
-        </span>
-      {/if}
-      {#if app.status === "error"}
-        <span
-          class="text-[10px] font-medium text-red-600 bg-red-50
-                 dark:bg-red-950/30 dark:text-red-400 px-2 py-0.5 rounded-md"
-        >
-          Error
-        </span>
-      {/if}
-      {#if app.beta}
-        <span class="text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-md">
-          Beta
-        </span>
-      {/if}
-      {#if !app.active}
-        <span class="text-[10px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-md">
-          Coming soon
-        </span>
-      {/if}
+
+    <!-- Footer: Category Tag -->
+    <div class="mt-4 pt-3 border-t border-border/40">
+      <Badge variant="outline" class="text-[10px] font-mono font-medium text-muted-foreground border-border/60 bg-muted/20">
+        {getCategoryName(app.category)}
+      </Badge>
     </div>
-  </div>
-
-  <!-- Name -->
-  <h3 class="text-sm font-medium text-foreground mb-1.5 group-hover:text-primary transition-colors">
-    {app.name}
-  </h3>
-
-  <!-- Description -->
-  <p class="text-xs text-muted-foreground leading-relaxed flex-1 line-clamp-2">
-    {app.short_description}
-  </p>
-
-  <!-- Footer: Category -->
-  <div class="mt-4 pt-3 border-t border-border/40">
-    <span class="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider">
-      {getCategoryName(app.category)}
-    </span>
-  </div>
+  </Card>
 </a>

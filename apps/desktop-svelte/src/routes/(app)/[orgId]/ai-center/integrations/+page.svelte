@@ -1,13 +1,15 @@
 <!--
 @component IntegrationsPage
-Main integrations page — matches midday.ai/integrations design.
-Header + Category Filter Pills + 3-column App Cards Grid.
+Integrations store page — Midday inspired centered layout header using shared SearchField component.
 -->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { apps, categories, getAppsByCategory } from "@orbis/app-store";
 import type { OrbisApp } from "@orbis/app-store";
 import AppCard from "$lib/features/ai-center/components/integrations/app-card.svelte";
 import CategoryFilter from "$lib/features/ai-center/components/integrations/category-filter.svelte";
+import { PackageX } from "lucide-svelte";
+import SearchField from "$lib/shared/components/search-field.svelte";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -34,67 +36,57 @@ const filteredApps = $derived.by(() => {
 const basePath = $derived(`/${data.orgId}/ai-center/integrations`);
 </script>
 
-<div class="h-full flex flex-col">
-  <!-- Header -->
-  <div class="px-8 pt-8 pb-5 shrink-0">
-    <div class="max-w-2xl mx-auto text-center">
-      <h1 class="text-xl font-semibold text-foreground mb-2">
-        Integrations
+<div class="h-full overflow-y-auto font-sans p-6 scrollbar-hide space-y-6">
+  <!-- Centered Header (Midday Style) -->
+  <header class="pt-4 pb-2 text-center space-y-4">
+    <div class="max-w-2xl mx-auto space-y-2">
+      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+        {m.ai_center_integrations_title ? m.ai_center_integrations_title() : "Integrations"}
       </h1>
-      <p class="text-xs text-muted-foreground leading-relaxed max-w-lg mx-auto">
-        Connect Orbis with cameras, AI providers, communication channels,
-        and hardware devices to automate your school operations.
+      <p class="text-xs sm:text-sm text-muted-foreground max-w-lg mx-auto leading-relaxed">
+        {m.ai_center_integrations_subtitle ? m.ai_center_integrations_subtitle() : "Connect Orbis with the tools you already use. From messaging and cameras to accounting software, our integrations help you streamline your workflow."}
       </p>
     </div>
-  </div>
 
-  <!-- Search -->
-  <div class="px-8 pb-4 shrink-0">
-    <div class="max-w-sm mx-auto">
-      <input
-        type="search"
+    <!-- Centered Search Bar using Shared SearchField Component -->
+    <div class="max-w-xl mx-auto pt-2">
+      <SearchField
         bind:value={searchQuery}
-        placeholder="Search integrations..."
-        class="w-full text-xs border border-border/60 rounded-md px-3 py-2
-               bg-background text-foreground placeholder:text-muted-foreground/50
-               focus:border-primary focus:ring-1 focus:ring-primary/20
-               outline-none transition-colors"
+        placeholder={m.ai_center_integrations_search_placeholder ? m.ai_center_integrations_search_placeholder() : "Search devices, services, or AI providers..."}
+        class="max-w-xl mx-auto"
       />
     </div>
-  </div>
+  </header>
 
-  <!-- Category Filter -->
-  <div class="px-8 pb-5 shrink-0">
+  <!-- Category Filter Pills Bar -->
+  <div class="flex justify-center py-1">
     <CategoryFilter {categories} bind:active={activeCategory} />
   </div>
 
-  <!-- Apps Grid -->
-  <div class="px-8 pb-8 overflow-y-auto flex-1">
+  <!-- Apps Grid (Max 3 Columns) -->
+  <main>
     {#if filteredApps.length > 0}
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {#each filteredApps as app (app.id)}
           <AppCard {app} href="{basePath}/{app.id}" />
         {/each}
       </div>
     {:else}
-      <!-- Empty State -->
-      <div class="flex flex-col items-center justify-center py-20">
-        <div class="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-               fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
-               stroke-linejoin="round" class="text-muted-foreground">
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-          </svg>
+      <div class="flex flex-col items-center justify-center py-20 text-center">
+        <div class="w-12 h-12 rounded-full bg-muted/60 flex items-center justify-center mb-3">
+          <PackageX size={20} class="text-muted-foreground" />
         </div>
-        <h3 class="text-sm font-medium text-foreground mb-1">No integrations found</h3>
-        <p class="text-xs text-muted-foreground text-center max-w-xs">
+        <h3 class="text-sm font-bold text-foreground mb-1">
+          {m.ai_center_integrations_empty_title ? m.ai_center_integrations_empty_title() : "No integrations found"}
+        </h3>
+        <p class="text-xs text-muted-foreground max-w-xs leading-relaxed">
           {#if searchQuery}
-            No integrations match "{searchQuery}". Try a different search.
+            {m.ai_center_integrations_empty_search ? m.ai_center_integrations_empty_search() : "No results matching your query. Try searching with different terms."}
           {:else}
-            No integrations in this category yet.
+            {m.ai_center_integrations_empty_category ? m.ai_center_integrations_empty_category() : "No integrations available in this category currently."}
           {/if}
         </p>
       </div>
     {/if}
-  </div>
+  </main>
 </div>
