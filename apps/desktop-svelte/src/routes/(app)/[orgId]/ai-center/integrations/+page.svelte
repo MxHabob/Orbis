@@ -36,7 +36,7 @@ const filteredApps = $derived.by(() => {
 const basePath = $derived(`/${data.orgId}/ai-center/integrations`);
 </script>
 
-<div class="h-full overflow-y-auto font-sans p-6 scrollbar-hide space-y-6">
+<div class="h-full w-full overflow-y-auto font-sans p-6 scrollbar-hide space-y-6">
   <!-- Centered Header (Midday Style) -->
   <header class="pt-4 pb-2 text-center space-y-4">
     <div class="max-w-2xl mx-auto space-y-2">
@@ -66,7 +66,7 @@ const basePath = $derived(`/${data.orgId}/ai-center/integrations`);
   <!-- Apps Grid or AI Interactive Empty State -->
   <main>
     {#if filteredApps.length > 0}
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {#each filteredApps as app (app.id)}
           <AppCard {app} href="{basePath}/{app.id}" />
         {/each}

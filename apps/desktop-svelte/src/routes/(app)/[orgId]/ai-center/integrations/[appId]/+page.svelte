@@ -72,8 +72,8 @@ async function handleDisconnect() {
 </script>
 
 {#if app}
-  <div class="h-full overflow-y-auto">
-    <div class="px-8 py-6 max-w-5xl">
+  <div class="h-full w-full overflow-y-auto scrollbar-hide flex flex-col bg-background">
+    <div class="px-8 py-6 w-full max-w-none lg:max-w-7xl mx-auto flex-1">
       <!-- Breadcrumb -->
       <nav class="mb-7">
         <ol class="flex items-center gap-1.5 text-xs">
