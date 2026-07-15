@@ -41,10 +41,11 @@ $effect(() => {
   }
 });
 
-/** Simple markdown bold parser */
+/** Simple markdown bold and link parser */
 function renderDescription(text: string): string {
   return text
     .replace(/\*\*(.*?)\*\*/g, "<strong class='text-foreground font-medium'>$1</strong>")
+    .replace(/\[(.*?)\]\((.*?)\)/g, "<a href='$2' target='_blank' rel='noopener noreferrer' class='text-primary hover:underline'>$1</a>")
     .replace(/\n\n/g, "</p><p class='mb-3 text-sm text-muted-foreground leading-relaxed'>")
     .replace(/\n/g, "<br />");
 }

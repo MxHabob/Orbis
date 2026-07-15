@@ -9,9 +9,14 @@ const config: OrbisApp = {
   category: "ai-vision",
   active: true,
   icon: "ScanFace",
-  short_description: "A secure digital face storage and biometric identity platform developed by Mulverse.",
-  short_description_ar: "منصة آمنة لتخزين الوجوه الرقمية وإدارة الهوية البيومترية مطورة من قبل Mulverse.",
-  description: `Authen is a state-of-the-art platform to store and manage digital face signatures. Developed by Mulverse, it provides privacy-compliant biometric data storage that integrates seamlessly with Orbis.
+  short_description: "A secure digital verification and biometric identity platform developed by Mulverse.",
+  short_description_ar: "منصة آمنة للتحقق الرقمي وإدارة الهوية البيومترية مطورة من قبل Mulverse.",
+  description: `Authen is a state-of-the-art digital verification platform to store and manage digital face signatures. Developed by Mulverse, it provides privacy-compliant biometric data storage that integrates seamlessly with Orbis.
+
+**Get Started & Integration**
+1. Open the Authen system at [app.authen.io](https://app.authen.io).
+2. Generate your secure API key from the Developer Console.
+3. Learn more about service capabilities, specifications, and plans at [authen.io](https://authen.io).
 
 **Biometric Database**
 Store digital face information securely using advanced, irreversible vector templates.
@@ -21,7 +26,12 @@ Fully developed by [Mulverse](https://www.mulverse.com/) to work natively with O
 
 **Privacy-First Design**
 Designed to follow strict user consent and privacy standards for facial recognition databases.`,
-  description_ar: `Authen هي منصة متطورة لتخزين وإدارة الوجوه الرقمية البيومترية. تم تطويرها بواسطة [Mulverse](https://www.mulverse.com/)، وتوفر تخزيناً آمناً لبيانات الهوية الحيوية متوافقاً مع متطلبات الخصوصية ليتكامل بسلاسة مع نظام Orbis.
+  description_ar: `Authen هي منصة متطورة للتحقق الرقمي وتخزين وإدارة الوجوه الرقمية البيومترية. تم تطويرها بواسطة [Mulverse](https://www.mulverse.com/)، وتوفر تخزيناً آمناً لبيانات الهوية الحيوية متوافقاً مع متطلبات الخصوصية ليتكامل بسلاسة مع نظام Orbis.
+
+**بدء الاستخدام والربط**
+1. قم بفتح نظام Authen عبر الرابط [app.authen.io](https://app.authen.io).
+2. قم بإنشاء مفتاح الـ API الآمن الخاص بك من لوحة تحكم المطورين.
+3. تفضل بزيارة الموقع الرسمي [authen.io](https://authen.io) لمعرفة تفاصيل الخدمة والمميزات وخطط الأسعار المتاحة.
 
 **قاعدة بيانات بيومترية**
 تخزين معلومات الوجوه الرقمية بأمان باستخدام نماذج متجهات مشفرة غير قابلة للعكس.
@@ -32,18 +42,16 @@ Designed to follow strict user consent and privacy standards for facial recognit
 **التصميم يركز على الخصوصية**
 مصمم للامتثال لأعلى معايير موافقة المستخدم وحماية البيانات البيومترية.`,
   features: [
-    "Secure digital face storage",
-    "Developed by Mulverse",
-    "High-speed face matching vector search",
-    "GDPR & privacy compliance controls",
-    "Real-time sync with Orbis cameras",
+    "Uses the Authen algorithm, the smartest algorithm for simulating artificial perception",
+    "Leverages state-of-the-art patented algorithms",
+    "Advanced deepfake video and image detection",
+    "Developer REST API & MCP WebSocket server",
   ],
   features_ar: [
-    "تخزين آمن للوجوه الرقمية",
-    "مطور من قبل Mulverse",
-    "بحث سريع عن مطابقة متجهات الوجوه",
-    "ضوابط الامتثال لخصوصية البيانات",
-    "مزامنة فورية مع كاميرات Orbis",
+    "تستخدم خوارزمية Authen، أذكى خوارزمية لمحاكاة الإدراك الاصطناعي",
+    "تعتمد على خوارزميات متطورة حاصلة على براءة اختراع",
+    "كشف متقدم عن التزييف العميق للصور والفيديو",
+    "واجهات برمجية REST API وخادم MCP WebSocket مباشر",
   ],
   settings: [
     {
