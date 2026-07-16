@@ -13,4 +13,5 @@ export interface CalendarCommands {
   toggleEnrollment(periodId: string, open: boolean): Promise<any>;
   toggleGradeEntry(periodId: string, open: boolean): Promise<any>;
   updateAcademicPeriod(periodId: string, data: any): Promise<any>;
+  deleteAcademicPeriod(periodId: string): Promise<void>;
 }

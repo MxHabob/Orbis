@@ -41,7 +41,7 @@ async function loadPeriods() {
   isLoading = true;
   error = null;
   try {
-    const list = await commands.academic.listPeriods();
+    const list = await commands.calendar.listAcademicPeriods();
     periods = list;
   } catch (e: unknown) {
     error = extractErrorMessage(e);

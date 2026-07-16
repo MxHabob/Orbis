@@ -11,6 +11,7 @@ export interface AssessmentCommands {
   listBehaviors(enrollmentId: string): Promise<any[]>;
   submitAi(data: any): Promise<any>;
   updateBehavior(recordId: string, actionTaken: string | null, status: string | null, resolutionNotes: string | null): Promise<any>;
+  deleteBehavior(recordId: string): Promise<void>;
   listGrades(assessmentId: string): Promise<any[]>;
   listPaginated(assessmentId: string, request: any): Promise<any>;
   reportCard(enrollmentId: string, periodId: string): Promise<Types.GradeReportCard>;

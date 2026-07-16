@@ -502,10 +502,12 @@ export class StudentFormState {
         net_fees: this.netTotal.toString(),
       };
 
-      const pdfBytes = await commands.docforge.previewDocumentTemplate(
-        JSON.stringify(documentModel),
-        JSON.stringify(printVariables),
-      );
+      // const pdfBytes = await commands.docforge.previewDocumentTemplate(
+      //   JSON.stringify(documentModel),
+      //   JSON.stringify(printVariables),
+      // );
+      const pdfBytes: number[] = [];
+      toast.error("Preview is temporarily disabled in the backend.");
 
       if (pdfBytes && pdfBytes.length > 0) {
         let binary = "";

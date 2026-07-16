@@ -8,7 +8,15 @@ use platform_policy::ops;
 #[tauri::command]
 pub async fn platform_policy_academic_policy_get_autopilot_config(state: State<'_, Arc<AppState>>, orgId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::academic_policy::get_autopilot_config(&orgId).await.map_err(CommandError::from)?;
+    let result = ops::academic_policy::get_autopilot_config(&ctx, &orgId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn platform_policy_academic_policy_update_autopilot_config(state: State<'_, Arc<AppState>>, orgId: String, config: serde_json::Value) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let config_parsed = serde_json::from_value(config).map_err(|e| CommandError::new(e.to_string()))?;
+    let result = ops::academic_policy::update_autopilot_config(&ctx, &orgId, config_parsed).await.map_err(CommandError::from)?;
+    Ok(serde_json::json!({}))
 }
 

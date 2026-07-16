@@ -8,28 +8,35 @@ use svc_exam::ops;
 #[tauri::command]
 pub async fn exam_exam_schedule_list(state: State<'_, Arc<AppState>>, sessionId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::exam_schedule::list(&sessionId).await.map_err(CommandError::from)?;
+    let result = ops::exam_schedule::list(&ctx, &sessionId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn exam_exam_schedule_create(state: State<'_, Arc<AppState>>, examSessionId: String, examSubjectId: String, examDate: String, startTime: String, endTime: String, period: String, applicableClassIds: Option<String>, roomIds: Option<String>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::exam_schedule::create(examSessionId, examSubjectId, examDate, startTime, endTime, period, applicableClassIds, roomIds).await.map_err(CommandError::from)?;
+    let result = ops::exam_schedule::create(&ctx, examSessionId, examSubjectId, examDate, startTime, endTime, period, applicableClassIds, roomIds).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn exam_exam_schedule_update(state: State<'_, Arc<AppState>>, scheduleId: String, examDate: Option<String>, startTime: Option<String>, status: Option<String>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::exam_schedule::update(&scheduleId, examDate, startTime, status).await.map_err(CommandError::from)?;
+    let result = ops::exam_schedule::update(&ctx, &scheduleId, examDate, startTime, status).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn exam_exam_schedule_delete(state: State<'_, Arc<AppState>>, scheduleId: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::exam_schedule::delete(&ctx, &scheduleId).await.map_err(CommandError::from)?;
+    Ok(serde_json::json!({}))
 }
 
 #[tauri::command]
 pub async fn exam_exam_subject_list(state: State<'_, Arc<AppState>>, sessionId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::exam_subject::list(&sessionId).await.map_err(CommandError::from)?;
+    let result = ops::exam_subject::list(&ctx, &sessionId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -37,14 +44,14 @@ pub async fn exam_exam_subject_list(state: State<'_, Arc<AppState>>, sessionId: 
 pub async fn exam_exam_subject_add(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::exam_subject::add(data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::exam_subject::add(&ctx, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn exam_hall_list(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::hall::list().await.map_err(CommandError::from)?;
+    let result = ops::hall::list(&ctx).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -52,84 +59,98 @@ pub async fn exam_hall_list(state: State<'_, Arc<AppState>>) -> CmdResult<serde_
 pub async fn exam_hall_create(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::hall::create(data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::hall::create(&ctx, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn exam_hall_delete(state: State<'_, Arc<AppState>>, hallId: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::hall::delete(&ctx, &hallId).await.map_err(CommandError::from)?;
+    Ok(serde_json::json!({}))
 }
 
 #[tauri::command]
 pub async fn exam_hall_list_allocations(state: State<'_, Arc<AppState>>, examSessionId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::hall::list_allocations(&examSessionId).await.map_err(CommandError::from)?;
+    let result = ops::hall::list_allocations(&ctx, &examSessionId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn exam_hall_allocate(state: State<'_, Arc<AppState>>, examSessionId: String, examHallId: String, enrollmentId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::hall::allocate(examSessionId, examHallId, enrollmentId).await.map_err(CommandError::from)?;
+    let result = ops::hall::allocate(&ctx, examSessionId, examHallId, enrollmentId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn exam_ordering_list_seating(state: State<'_, Arc<AppState>>, examSessionId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::ordering::list_seating(&examSessionId).await.map_err(CommandError::from)?;
+    let result = ops::ordering::list_seating(&ctx, &examSessionId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn exam_ordering_list_secret_numbers(state: State<'_, Arc<AppState>>, sessionId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::ordering::list_secret_numbers(&sessionId).await.map_err(CommandError::from)?;
+    let result = ops::ordering::list_secret_numbers(&ctx, &sessionId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn exam_ordering_list_ordering(state: State<'_, Arc<AppState>>, periodId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::ordering::list_ordering(&periodId).await.map_err(CommandError::from)?;
+    let result = ops::ordering::list_ordering(&ctx, &periodId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn exam_ordering_generate_ordering(state: State<'_, Arc<AppState>>, sessionId: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::ordering::generate_ordering(&ctx, &sessionId).await.map_err(CommandError::from)?;
+    Ok(serde_json::json!({}))
 }
 
 #[tauri::command]
 pub async fn exam_schedule_generate(state: State<'_, Arc<AppState>>, SessionId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::schedule::generate(&SessionId).await.map_err(CommandError::from)?;
+    let result = ops::schedule::generate(&ctx, &SessionId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn exam_schedule_get(state: State<'_, Arc<AppState>>, sessionId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::schedule::get(&sessionId).await.map_err(CommandError::from)?;
+    let result = ops::schedule::get(&ctx, &sessionId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn exam_seating_generate(state: State<'_, Arc<AppState>>, sessionId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::seating::generate(&sessionId).await.map_err(CommandError::from)?;
+    let result = ops::seating::generate(&ctx, &sessionId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn exam_seating_list(state: State<'_, Arc<AppState>>, sessionId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::seating::list(&sessionId).await.map_err(CommandError::from)?;
+    let result = ops::seating::list(&ctx, &sessionId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn exam_session_list(state: State<'_, Arc<AppState>>, periodId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::session::list(&periodId).await.map_err(CommandError::from)?;
+    let result = ops::session::list(&ctx, &periodId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn exam_session_get(state: State<'_, Arc<AppState>>, sessionId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::session::get(&sessionId).await.map_err(CommandError::from)?;
+    let result = ops::session::get(&ctx, &sessionId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -137,14 +158,14 @@ pub async fn exam_session_get(state: State<'_, Arc<AppState>>, sessionId: String
 pub async fn exam_session_create(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::session::create(data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::session::create(&ctx, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn exam_session_update(state: State<'_, Arc<AppState>>, sessionId: String, name: Option<String>, status: Option<String>, startDate: Option<String>, endDate: Option<String>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::session::update(&sessionId, name, status, startDate, endDate).await.map_err(CommandError::from)?;
+    let result = ops::session::update(&ctx, &sessionId, name, status, startDate, endDate).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 

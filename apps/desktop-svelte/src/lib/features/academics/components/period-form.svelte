@@ -60,7 +60,7 @@ const gradingLabels = $derived({
 async function loadParentOptions() {
   if (!orgId) return;
   try {
-    const list = await commands.academic.listPeriods();
+    const list = await commands.calendar.listAcademicPeriods();
     periodsList = list.filter(
       (p: any) => !isEdit || String(p.id) !== String(period.id),
     );
@@ -103,10 +103,10 @@ async function handleSubmit(e: SubmitEvent) {
     };
 
     if (isEdit) {
-      await commands.academic.updatePeriod(period.id, request);
+      await commands.calendar.updateAcademicPeriod(period.id, request);
       toast.success(m.common_action_save());
     } else {
-      await commands.academic.createPeriod(request);
+      await commands.calendar.createAcademicPeriod(request);
       toast.success(m.common_period_form_success());
     }
 

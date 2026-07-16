@@ -8,21 +8,21 @@ use svc_assessment::ops;
 #[tauri::command]
 pub async fn assessment_attendance_list(state: State<'_, Arc<AppState>>, classId: String, date: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::attendance::list(&classId, &date).await.map_err(CommandError::from)?;
+    let result = ops::attendance::list(&ctx, &classId, &date).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn assessment_attendance_get_report(state: State<'_, Arc<AppState>>, PeriodId: String, enrollmentId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::attendance::get_report(&PeriodId, &enrollmentId).await.map_err(CommandError::from)?;
+    let result = ops::attendance::get_report(&ctx, &PeriodId, &enrollmentId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn assessment_attendance_get_analytics(state: State<'_, Arc<AppState>>, periodId: String, classId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::attendance::get_analytics(&periodId, &classId).await.map_err(CommandError::from)?;
+    let result = ops::attendance::get_analytics(&ctx, &periodId, &classId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -30,7 +30,7 @@ pub async fn assessment_attendance_get_analytics(state: State<'_, Arc<AppState>>
 pub async fn assessment_attendance_record(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::attendance::record(data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::attendance::record(&ctx, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -38,21 +38,21 @@ pub async fn assessment_attendance_record(state: State<'_, Arc<AppState>>, data:
 pub async fn assessment_attendance_record_bulk(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::attendance::record_bulk(data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::attendance::record_bulk(&ctx, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn assessment_attendance_report(state: State<'_, Arc<AppState>>, classId: String, startDate: String, endDate: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::attendance::report(&classId, &startDate, &endDate).await.map_err(CommandError::from)?;
+    let result = ops::attendance::report(&ctx, &classId, &startDate, &endDate).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn assessment_behavior_list(state: State<'_, Arc<AppState>>, enrollmentId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::behavior::list(&enrollmentId).await.map_err(CommandError::from)?;
+    let result = ops::behavior::list(&ctx, &enrollmentId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -60,21 +60,28 @@ pub async fn assessment_behavior_list(state: State<'_, Arc<AppState>>, enrollmen
 pub async fn assessment_behavior_submit_ai(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::behavior::submit_ai(data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::behavior::submit_ai(&ctx, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn assessment_behavior_update(state: State<'_, Arc<AppState>>, recordId: String, actionTaken: Option<String>, status: Option<String>, resolutionNotes: Option<String>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::behavior::update(&recordId, actionTaken, status, resolutionNotes).await.map_err(CommandError::from)?;
+    let result = ops::behavior::update(&ctx, &recordId, actionTaken, status, resolutionNotes).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn assessment_behavior_delete(state: State<'_, Arc<AppState>>, recordId: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::behavior::delete(&ctx, &recordId).await.map_err(CommandError::from)?;
+    Ok(serde_json::json!({}))
 }
 
 #[tauri::command]
 pub async fn assessment_grade_list(state: State<'_, Arc<AppState>>, assessmentId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::grade::list(&assessmentId).await.map_err(CommandError::from)?;
+    let result = ops::grade::list(&ctx, &assessmentId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -82,28 +89,28 @@ pub async fn assessment_grade_list(state: State<'_, Arc<AppState>>, assessmentId
 pub async fn assessment_grade_list_paginated(state: State<'_, Arc<AppState>>, assessmentId: String, request: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let request_parsed = serde_json::from_value(request).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::grade::list_paginated(&assessmentId, request_parsed).await.map_err(CommandError::from)?;
+    let result = ops::grade::list_paginated(&ctx, &assessmentId, request_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn assessment_grade_report_card(state: State<'_, Arc<AppState>>, enrollmentId: String, periodId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::grade::report_card(&enrollmentId, &periodId).await.map_err(CommandError::from)?;
+    let result = ops::grade::report_card(&ctx, &enrollmentId, &periodId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn assessment_grade_analytics(state: State<'_, Arc<AppState>>, periodId: String, classSubjectId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::grade::analytics(&periodId, &classSubjectId).await.map_err(CommandError::from)?;
+    let result = ops::grade::analytics(&ctx, &periodId, &classSubjectId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn assessment_grade_matrix(state: State<'_, Arc<AppState>>, periodId: String, classSubjectId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::grade::matrix(&periodId, &classSubjectId).await.map_err(CommandError::from)?;
+    let result = ops::grade::matrix(&ctx, &periodId, &classSubjectId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -111,7 +118,7 @@ pub async fn assessment_grade_matrix(state: State<'_, Arc<AppState>>, periodId: 
 pub async fn assessment_grade_submit(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::grade::submit(data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::grade::submit(&ctx, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -119,7 +126,7 @@ pub async fn assessment_grade_submit(state: State<'_, Arc<AppState>>, data: serd
 pub async fn assessment_grade_submit_bulk(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::grade::submit_bulk(data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::grade::submit_bulk(&ctx, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -127,7 +134,7 @@ pub async fn assessment_grade_submit_bulk(state: State<'_, Arc<AppState>>, data:
 pub async fn assessment_grade_update(state: State<'_, Arc<AppState>>, gradeId: String, req: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let req_parsed = serde_json::from_value(req).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::grade::update(&gradeId, req_parsed).await.map_err(CommandError::from)?;
+    let result = ops::grade::update(&ctx, &gradeId, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -135,7 +142,7 @@ pub async fn assessment_grade_update(state: State<'_, Arc<AppState>>, gradeId: S
 pub async fn assessment_grade_bulk_subject_entry(state: State<'_, Arc<AppState>>, entry: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let entry_parsed = serde_json::from_value(entry).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::grade::bulk_subject_entry(entry_parsed).await.map_err(CommandError::from)?;
+    let result = ops::grade::bulk_subject_entry(&ctx, entry_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -143,14 +150,14 @@ pub async fn assessment_grade_bulk_subject_entry(state: State<'_, Arc<AppState>>
 pub async fn assessment_grade_upsert_cell(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::grade::upsert_cell(data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::grade::upsert_cell(&ctx, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn assessment_grade_compile_semester(state: State<'_, Arc<AppState>>, periodId: String, classId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::grade::compile_semester(&periodId, &classId).await.map_err(CommandError::from)?;
+    let result = ops::grade::compile_semester(&ctx, &periodId, &classId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -158,7 +165,7 @@ pub async fn assessment_grade_compile_semester(state: State<'_, Arc<AppState>>, 
 pub async fn assessment_snapshot_generator_generate_snapshot(state: State<'_, Arc<AppState>>, studentId: String, periodId: String, classSubjectId: String, policyId: String, scaleId: String, rawScores: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let rawScores_parsed = serde_json::from_value(rawScores).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::snapshot_generator::generate_snapshot(&studentId, &periodId, &classSubjectId, &policyId, &scaleId, rawScores_parsed).await.map_err(CommandError::from)?;
+    let result = ops::snapshot_generator::generate_snapshot(&ctx, &studentId, &periodId, &classSubjectId, &policyId, &scaleId, rawScores_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -166,7 +173,7 @@ pub async fn assessment_snapshot_generator_generate_snapshot(state: State<'_, Ar
 pub async fn assessment_snapshot_generator_execute_snapshot_generation(state: State<'_, Arc<AppState>>, studentId: String, periodId: String, classSubjectId: String, policyId: String, scaleId: String, rawScores: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let rawScores_parsed = serde_json::from_value(rawScores).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::snapshot_generator::execute_snapshot_generation(&studentId, &periodId, &classSubjectId, &policyId, &scaleId, rawScores_parsed).await.map_err(CommandError::from)?;
+    let result = ops::snapshot_generator::execute_snapshot_generation(&ctx, &studentId, &periodId, &classSubjectId, &policyId, &scaleId, rawScores_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 

@@ -74,17 +74,17 @@ let isSaving = $state(false);
 
 onMount(async () => {
   try {
-    const config = await commands.aiCenter.getAutopilotConfig(data.orgId);
+    const config = await commands.ai.aiGetAutopilotConfig(data.orgId);
     if (config) Object.assign(autopilotSettings, config);
   } catch (e) {
-    console.warn("[AI Center] getAutopilotConfig not available:", e);
+    console.warn("[AI Center] aiGetAutopilotConfig not available:", e);
   }
 });
 
 async function saveAllSettings() {
   isSaving = true;
   try {
-    await commands.aiCenter.saveAutopilotConfig(data.orgId, autopilotSettings);
+    await commands.ai.aiSaveAutopilotConfig(data.orgId, autopilotSettings);
     toast.success(
       m.settings_general_save_success
         ? m.settings_general_save_success()

@@ -6,15 +6,18 @@ export interface AcademicCommands {
   getClass(id: string): Promise<any>;
   createClass(data: any): Promise<any>;
   updateClass(classId: string, data: any): Promise<any>;
+  deleteClass(classId: string): Promise<void>;
   assignTeacher(classId: string, teacherId: string): Promise<any>;
   listStudents(classId: string): Promise<any[]>;
   listClassSubjects(classId: string, periodId: string | null): Promise<any[]>;
   listByTeacher(teacherId: string, periodId: string): Promise<any[]>;
   createClassSubject(data: any): Promise<any>;
   updateClassSubject(id: string, data: any): Promise<any>;
+  deleteClassSubject(id: string): Promise<void>;
   listDocuments(ownerId: string): Promise<any[]>;
   getDocument(id: string): Promise<any>;
   createDocument(data: any): Promise<any>;
+  deleteDocument(docId: string): Promise<void>;
   listEnrollments(): Promise<any[]>;
   listPaginated(request: any): Promise<any>;
   getEnrollment(id: string): Promise<any>;
@@ -30,10 +33,12 @@ export interface AcademicCommands {
   search(query: string): Promise<any[]>;
   createGuardian(data: any): Promise<any>;
   updateGuardian(linkId: string, data: any): Promise<any>;
+  deleteGuardian(linkId: string): Promise<void>;
   listNotifications(): Promise<any[]>;
   markRead(notificationId: string): Promise<any>;
   listSubjects(): Promise<any[]>;
   getSubject(id: string): Promise<any>;
   createSubject(data: any): Promise<any>;
   updateSubject(subjectId: string, data: any): Promise<any>;
+  deleteSubject(subjectId: string): Promise<void>;
 }

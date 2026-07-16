@@ -6,11 +6,11 @@ import type { AssessmentCommands } from './assessment.js';
 import type { SchedulingCommands } from './scheduling.js';
 import type { FinanceCommands } from './finance.js';
 import type { ExamCommands } from './exam.js';
+import type { DocumentCommands } from './document.js';
 import type { CalendarCommands } from './calendar.js';
 import type { Enrollment_workflowCommands } from './enrollment_workflow.js';
 import type { Platform_policyCommands } from './platform_policy.js';
 import type { AiCommands } from './ai.js';
-import type { DocumentCommands } from './document.js';
 
 export interface OrbisCommands {
   iam: IamCommands;
@@ -20,11 +20,11 @@ export interface OrbisCommands {
   scheduling: SchedulingCommands;
   finance: FinanceCommands;
   exam: ExamCommands;
+  document: DocumentCommands;
   calendar: CalendarCommands;
   enrollment_workflow: Enrollment_workflowCommands;
   platform_policy: Platform_policyCommands;
   ai: AiCommands;
-  document: DocumentCommands;
 }
 
 export type { IamCommands } from './iam.js';
@@ -34,8 +34,8 @@ export type { AssessmentCommands } from './assessment.js';
 export type { SchedulingCommands } from './scheduling.js';
 export type { FinanceCommands } from './finance.js';
 export type { ExamCommands } from './exam.js';
+export type { DocumentCommands } from './document.js';
 export type { CalendarCommands } from './calendar.js';
 export type { Enrollment_workflowCommands } from './enrollment_workflow.js';
 export type { Platform_policyCommands } from './platform_policy.js';
 export type { AiCommands } from './ai.js';
-export type { DocumentCommands } from './document.js';

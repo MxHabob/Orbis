@@ -7,16 +7,20 @@ export interface SchedulingCommands {
   getLesson(lessonId: string): Promise<any>;
   createLesson(data: any): Promise<any>;
   updateLesson(lessonId: string, data: any): Promise<any>;
+  deleteLesson(lessonId: string): Promise<void>;
   checkConflicts(periodId: string, teacherId: string, timeSlotId: string, dayOfWeek: number, roomId: string | null): Promise<any[]>;
   listRooms(): Promise<any[]>;
   createRoom(data: any): Promise<any>;
   updateRoom(roomId: string, data: any): Promise<any>;
+  deleteRoom(roomId: string): Promise<void>;
   start(periodId: string): Promise<any>;
   getJob(jobId: string): Promise<any>;
   listJobs(periodId: string): Promise<any[]>;
   cancel(jobId: string): Promise<any>;
+  deleteJob(jobId: string): Promise<void>;
   apply(jobId: string): Promise<any>;
   listTimeSlots(): Promise<any[]>;
   createTimeSlot(data: any): Promise<any>;
   updateTimeSlot(slotId: string, data: any): Promise<any>;
+  deleteTimeSlot(slotId: string): Promise<void>;
 }

@@ -5,15 +5,18 @@ export interface ExamCommands {
   listExamSchedules(sessionId: string): Promise<any[]>;
   createExamSchedule(examSessionId: string, examSubjectId: string, examDate: string, startTime: string, endTime: string, period: string, applicableClassIds: string | null, roomIds: string | null): Promise<any>;
   updateExamSchedule(scheduleId: string, examDate: string | null, startTime: string | null, status: string | null): Promise<any>;
+  deleteExamSchedule(scheduleId: string): Promise<void>;
   listExamSubjects(sessionId: string): Promise<any[]>;
   add(data: any): Promise<any>;
   listHalls(): Promise<any[]>;
   createHall(data: any): Promise<any>;
+  deleteHall(hallId: string): Promise<void>;
   listAllocations(examSessionId: string): Promise<any[]>;
   allocate(examSessionId: string, examHallId: string, enrollmentId: string): Promise<any>;
   listSeating(examSessionId: string): Promise<any[]>;
   listSecretNumbers(sessionId: string): Promise<any[]>;
   listOrdering(periodId: string): Promise<any[]>;
+  generateOrdering(sessionId: string): Promise<void>;
   generate(SessionId: string): Promise<any>;
   getSchedule(sessionId: string): Promise<any[]>;
   generate2(sessionId: string): Promise<any>;

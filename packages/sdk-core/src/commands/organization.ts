@@ -2,6 +2,7 @@
 import type * as Types from '../types/index.js';
 
 export interface OrganizationCommands {
+  bootstrapOrganization(payload: any): Promise<void>;
   students(): Promise<any>;
   grades(): Promise<any>;
   students2(data: any): Promise<any>;
@@ -14,6 +15,7 @@ export interface OrganizationCommands {
   getMain(): Promise<any>;
   updateOrganization2(data: any): Promise<any>;
   getSettings(): Promise<any>;
+  updateSettings(data: any): Promise<void>;
   checkSetup(): Promise<any>;
   getPeriodTemplates(): Promise<any>;
   listOrgUnits(): Promise<any[]>;
@@ -22,6 +24,7 @@ export interface OrganizationCommands {
   getChildren(parentId: string): Promise<any[]>;
   createOrgUnit(data: any): Promise<any>;
   updateOrgUnit(unitId: string, data: any): Promise<any>;
+  deleteOrgUnit(unitId: string): Promise<void>;
   getAllSettings(): Promise<any>;
   getRegistrationSettings(): Promise<any>;
   getFinanceSettings(): Promise<any>;

@@ -6,10 +6,12 @@ export interface FinanceCommands {
   getCurrency(code: string): Promise<any>;
   createCurrency(code: string, name: string, nameAr: string | null, symbol: string, symbolPosition: string, decimalPlaces: number, exchangeRate: number, isBase: boolean): Promise<any>;
   updateCurrency(code: string, exchangeRate: number | null, isActive: boolean | null): Promise<any>;
+  deleteCurrency(code: string): Promise<void>;
   listDiscounts(): Promise<any[]>;
   listActive(): Promise<any[]>;
   createDiscount(cmd: any): Promise<any>;
   updateDiscount(templateId: string, name: string | null, value: number | null, isActive: boolean | null): Promise<any>;
+  deleteDiscount(templateId: string): Promise<void>;
   listFeeTemplates(): Promise<any[]>;
   createFeeTemplate(cmd: any): Promise<any>;
   updateFeeTemplate(templateId: string, cmd: any): Promise<any>;

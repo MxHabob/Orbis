@@ -209,16 +209,9 @@ async function generatePreview() {
   isPreviewLoading = true;
   try {
     const docJson = serializeDocument(store.document);
-    const pdfBytes = await commands.docforge.previewDocumentTemplate(
-      docJson,
-      '{"name": "Preview", "id": "preview-001"}',
-    );
-
-    if (pdfBytes && pdfBytes.length > 0) {
-      const base64 = uint8ArrayToBase64(pdfBytes);
-      previewPdfUrl = `data:application/pdf;base64,${base64}`;
-      store.editorMode = "preview";
-    }
+    // TODO: Connect to the new document engine when ready
+    // const pdfBytes = await commands.document.previewDocumentTemplate(docJson, ...);
+    toast.error("Preview generation is temporarily disabled in the backend.");
   } catch (e: unknown) {
     const msg = (e as any)?.message || "Failed to generate preview";
     toast.error(msg);

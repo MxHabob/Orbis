@@ -9,7 +9,14 @@ use svc_document::ops;
 pub async fn document_document_list(state: State<'_, Arc<AppState>>, ownerId: Option<String>, entityType: Option<String>, category: Option<String>, request: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let request_parsed = serde_json::from_value(request).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::document::list(ownerId.as_deref(), entityType.as_deref(), category.as_deref(), request_parsed).await.map_err(CommandError::from)?;
+    let result = ops::document::list(&ctx, ownerId.as_deref(), entityType.as_deref(), category.as_deref(), request_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn document_document_delete(state: State<'_, Arc<AppState>>, id: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::document::delete(&ctx, &id).await.map_err(CommandError::from)?;
+    Ok(serde_json::json!({}))
 }
 

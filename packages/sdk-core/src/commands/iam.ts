@@ -4,17 +4,24 @@ import type * as Types from '../types/index.js';
 export interface IamCommands {
   listAudits(): Promise<any[]>;
   login(identifier: string, passwordHash: string): Promise<any>;
+  logout(token: string): Promise<void>;
   restoreSession(token: string): Promise<any>;
+  changePassword(userId: string, data: any): Promise<void>;
   listSessions(userId: string): Promise<any[]>;
   register(data: any): Promise<any>;
+  logoutByUser(userId: string): Promise<void>;
   listByUser(userId: string): Promise<any[]>;
   assign(data: any): Promise<any>;
+  revoke(roleId: string): Promise<void>;
+  saveForUser(userId: string, roles: string[]): Promise<void>;
   getPermissions(role: string | null): Promise<any[]>;
+  savePermissions(role: string, permissions: any[]): Promise<void>;
   listUsers(filter: any | null): Promise<any[]>;
   listPaginated(request: any, filter: any | null): Promise<any>;
   getUser(userId: string): Promise<any>;
   search(queryStr: string): Promise<any[]>;
   createUser(data: any): Promise<any>;
   updateUser(userId: string, data: any): Promise<any>;
+  deleteUser(userId: string): Promise<void>;
   changeRole(userId: string, data: any): Promise<any>;
 }
