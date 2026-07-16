@@ -2,16 +2,15 @@
 import type * as Types from '../types/index.js';
 
 export interface CalendarCommands {
-  listAcademicPeriods(): Promise<Types.AcademicPeriod[]>;
+  listAcademicPeriods(): Promise<any[]>;
   listHierarchy(): Promise<any>;
-  listByYear(periodId: string): Promise<Types.AcademicPeriod[]>;
-  getAcademicPeriod(periodId: string): Promise<Types.AcademicPeriod>;
-  getCurrent(): Promise<Types.AcademicPeriod>;
-  createAcademicPeriod(data: any): Promise<Types.AcademicPeriod>;
-  lock(periodId: string): Promise<Types.AcademicPeriod>;
-  unlock(periodId: string): Promise<Types.AcademicPeriod>;
-  toggleEnrollment(periodId: string, open: boolean): Promise<Types.AcademicPeriod>;
-  toggleGradeEntry(periodId: string, open: boolean): Promise<Types.AcademicPeriod>;
-  updateAcademicPeriod(periodId: string, data: any): Promise<Types.AcademicPeriod>;
-  deleteAcademicPeriod(periodId: string): Promise<any>;
+  listByYear(periodId: string): Promise<any[]>;
+  getAcademicPeriod(periodId: string): Promise<any>;
+  getCurrent(): Promise<any>;
+  createAcademicPeriod(data: any): Promise<any>;
+  lock(periodId: string): Promise<any>;
+  unlock(periodId: string): Promise<any>;
+  toggleEnrollment(periodId: string, open: boolean): Promise<any>;
+  toggleGradeEntry(periodId: string, open: boolean): Promise<any>;
+  updateAcademicPeriod(periodId: string, data: any): Promise<any>;
 }

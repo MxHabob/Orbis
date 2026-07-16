@@ -6,24 +6,16 @@ use crate::commands::error::{CmdResult, CommandError};
 use svc_organization::ops;
 
 #[tauri::command]
-pub async fn organization_bootstrap_bootstrap_organization(state: State<'_, Arc<AppState>>, payload: serde_json::Value) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let payload_parsed = serde_json::from_value(payload).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::bootstrap::bootstrap_organization(&ctx, payload_parsed).await.map_err(CommandError::from)?;
-    Ok(serde_json::json!({}))
-}
-
-#[tauri::command]
 pub async fn organization_bulk_export_students(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::bulk_export::students(&ctx).await.map_err(CommandError::from)?;
+    let result = ops::bulk_export::students().await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn organization_bulk_export_grades(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::bulk_export::grades(&ctx).await.map_err(CommandError::from)?;
+    let result = ops::bulk_export::grades().await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -31,7 +23,7 @@ pub async fn organization_bulk_export_grades(state: State<'_, Arc<AppState>>) ->
 pub async fn organization_bulk_import_students(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::bulk_import::students(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::bulk_import::students(data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -39,21 +31,21 @@ pub async fn organization_bulk_import_students(state: State<'_, Arc<AppState>>, 
 pub async fn organization_bulk_import_grades(state: State<'_, Arc<AppState>>, Data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let Data_parsed = serde_json::from_value(Data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::bulk_import::grades(&ctx, Data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::bulk_import::grades(Data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn organization_dashboard_get_stats(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::dashboard::get_stats(&ctx).await.map_err(CommandError::from)?;
+    let result = ops::dashboard::get_stats().await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn organization_organization_get_organization(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::organization::get_organization(&ctx).await.map_err(CommandError::from)?;
+    let result = ops::organization::get_organization().await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -61,7 +53,7 @@ pub async fn organization_organization_get_organization(state: State<'_, Arc<App
 pub async fn organization_organization_create_organization(state: State<'_, Arc<AppState>>, cmd: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let cmd_parsed = serde_json::from_value(cmd).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::organization::create_organization(&ctx, cmd_parsed).await.map_err(CommandError::from)?;
+    let result = ops::organization::create_organization(cmd_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -69,14 +61,21 @@ pub async fn organization_organization_create_organization(state: State<'_, Arc<
 pub async fn organization_organization_update_organization(state: State<'_, Arc<AppState>>, cmd: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let cmd_parsed = serde_json::from_value(cmd).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::organization::update_organization(&ctx, cmd_parsed).await.map_err(CommandError::from)?;
+    let result = ops::organization::update_organization(cmd_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn organization_organization_get(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::organization::get(&ctx).await.map_err(CommandError::from)?;
+    let result = ops::organization::get().await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn organization_organization_get_main(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::organization::get_main().await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -84,64 +83,56 @@ pub async fn organization_organization_get(state: State<'_, Arc<AppState>>) -> C
 pub async fn organization_organization_update(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::organization::update(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::organization::update(data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn organization_organization_get_settings(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::organization::get_settings(&ctx).await.map_err(CommandError::from)?;
+    let result = ops::organization::get_settings().await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
-}
-
-#[tauri::command]
-pub async fn organization_organization_update_settings(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::organization::update_settings(&ctx, data_parsed).await.map_err(CommandError::from)?;
-    Ok(serde_json::json!({}))
 }
 
 #[tauri::command]
 pub async fn organization_organization_check_setup(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::organization::check_setup(&ctx).await.map_err(CommandError::from)?;
+    let result = ops::organization::check_setup().await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn organization_organization_get_period_templates(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::organization::get_period_templates(&ctx).await.map_err(CommandError::from)?;
+    let result = ops::organization::get_period_templates().await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn organization_org_unit_list(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::org_unit::list(&ctx).await.map_err(CommandError::from)?;
+    let result = ops::org_unit::list().await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn organization_org_unit_get_descendants(state: State<'_, Arc<AppState>>, nodePath: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::org_unit::get_descendants(&ctx, &nodePath).await.map_err(CommandError::from)?;
+    let result = ops::org_unit::get_descendants(&nodePath).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn organization_org_unit_get_ancestors(state: State<'_, Arc<AppState>>, nodePath: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::org_unit::get_ancestors(&ctx, &nodePath).await.map_err(CommandError::from)?;
+    let result = ops::org_unit::get_ancestors(&nodePath).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn organization_org_unit_get_children(state: State<'_, Arc<AppState>>, parentId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::org_unit::get_children(&ctx, &parentId).await.map_err(CommandError::from)?;
+    let result = ops::org_unit::get_children(&parentId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -149,7 +140,7 @@ pub async fn organization_org_unit_get_children(state: State<'_, Arc<AppState>>,
 pub async fn organization_org_unit_create(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::org_unit::create(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::org_unit::create(data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -157,42 +148,35 @@ pub async fn organization_org_unit_create(state: State<'_, Arc<AppState>>, data:
 pub async fn organization_org_unit_update(state: State<'_, Arc<AppState>>, unitId: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::org_unit::update(&ctx, &unitId, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::org_unit::update(&unitId, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
-}
-
-#[tauri::command]
-pub async fn organization_org_unit_delete(state: State<'_, Arc<AppState>>, unitId: String) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::org_unit::delete(&ctx, &unitId).await.map_err(CommandError::from)?;
-    Ok(serde_json::json!({}))
 }
 
 #[tauri::command]
 pub async fn organization_settings_get_all_settings(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::settings::get_all_settings(&ctx).await.map_err(CommandError::from)?;
+    let result = ops::settings::get_all_settings().await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn organization_settings_get_registration_settings(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::settings::get_registration_settings(&ctx).await.map_err(CommandError::from)?;
+    let result = ops::settings::get_registration_settings().await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn organization_settings_get_finance_settings(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::settings::get_finance_settings(&ctx).await.map_err(CommandError::from)?;
+    let result = ops::settings::get_finance_settings().await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn organization_settings_get_grading_settings(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::settings::get_grading_settings(&ctx).await.map_err(CommandError::from)?;
+    let result = ops::settings::get_grading_settings().await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -200,7 +184,7 @@ pub async fn organization_settings_get_grading_settings(state: State<'_, Arc<App
 pub async fn organization_settings_update_registration_settings(state: State<'_, Arc<AppState>>, cmd: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let cmd_parsed = serde_json::from_value(cmd).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::settings::update_registration_settings(&ctx, cmd_parsed).await.map_err(CommandError::from)?;
+    let result = ops::settings::update_registration_settings(cmd_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -208,7 +192,7 @@ pub async fn organization_settings_update_registration_settings(state: State<'_,
 pub async fn organization_settings_update_finance_settings(state: State<'_, Arc<AppState>>, cmd: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let cmd_parsed = serde_json::from_value(cmd).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::settings::update_finance_settings(&ctx, cmd_parsed).await.map_err(CommandError::from)?;
+    let result = ops::settings::update_finance_settings(cmd_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -216,7 +200,7 @@ pub async fn organization_settings_update_finance_settings(state: State<'_, Arc<
 pub async fn organization_settings_update_grading_settings(state: State<'_, Arc<AppState>>, cmd: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let cmd_parsed = serde_json::from_value(cmd).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::settings::update_grading_settings(&ctx, cmd_parsed).await.map_err(CommandError::from)?;
+    let result = ops::settings::update_grading_settings(cmd_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 

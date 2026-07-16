@@ -99,9 +99,9 @@ export { type AssessmentCommands } from './commands/assessment.js';
 export { type FinanceCommands } from './commands/finance.js';
 export { type SchedulingCommands } from './commands/scheduling.js';
 export { type ExamCommands } from './commands/exam.js';
-export { type IamCommands, type PermissionRule } from './commands/iam.js';
+export { type IamCommands } from './commands/iam.js';
 export { type OrganizationCommands } from './commands/organization.js';
-export { type DocforgeCommands } from './commands/docforge.js';
+export { type DocumentCommands } from './commands/document.js';
 
 // ── Errors ──────────────────────────────────────────────────────
 export { OrbisError, extractErrorMessage } from './errors.js';

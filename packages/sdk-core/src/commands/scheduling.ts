@@ -2,25 +2,21 @@
 import type * as Types from '../types/index.js';
 
 export interface SchedulingCommands {
-  listByClass(periodId: string, classId: string): Promise<Types.ScheduledLesson[]>;
-  listByTeacher(periodId: string, teacherId: string): Promise<Types.ScheduledLesson[]>;
-  getLesson(lessonId: string): Promise<Types.ScheduledLesson>;
-  createLesson(data: any): Promise<Types.ScheduledLesson>;
-  updateLesson(lessonId: string, data: any): Promise<Types.ScheduledLesson>;
-  deleteLesson(lessonId: string): Promise<any>;
-  checkConflicts(periodId: string, teacherId: string, timeSlotId: string, dayOfWeek: number, roomId: string | null): Promise<Types.ScheduledLesson[]>;
-  listRooms(): Promise<Types.Room[]>;
-  createRoom(data: any): Promise<Types.Room>;
-  updateRoom(roomId: string, data: any): Promise<Types.Room>;
-  deleteRoom(roomId: string): Promise<any>;
-  start(periodId: string): Promise<Types.SolveJob>;
-  getJob(jobId: string): Promise<Types.SolveJob>;
-  listJobs(periodId: string): Promise<Types.SolveJob[]>;
-  cancel(jobId: string): Promise<Types.SolveJob>;
-  deleteJob(jobId: string): Promise<any>;
-  apply(jobId: string): Promise<Types.SolveJob>;
-  listTimeSlots(): Promise<Types.TimeSlot[]>;
-  createTimeSlot(data: any): Promise<Types.TimeSlot>;
-  updateTimeSlot(slotId: string, data: any): Promise<Types.TimeSlot>;
-  deleteTimeSlot(slotId: string): Promise<any>;
+  listByClass(periodId: string, classId: string): Promise<any[]>;
+  listByTeacher(periodId: string, teacherId: string): Promise<any[]>;
+  getLesson(lessonId: string): Promise<any>;
+  createLesson(data: any): Promise<any>;
+  updateLesson(lessonId: string, data: any): Promise<any>;
+  checkConflicts(periodId: string, teacherId: string, timeSlotId: string, dayOfWeek: number, roomId: string | null): Promise<any[]>;
+  listRooms(): Promise<any[]>;
+  createRoom(data: any): Promise<any>;
+  updateRoom(roomId: string, data: any): Promise<any>;
+  start(periodId: string): Promise<any>;
+  getJob(jobId: string): Promise<any>;
+  listJobs(periodId: string): Promise<any[]>;
+  cancel(jobId: string): Promise<any>;
+  apply(jobId: string): Promise<any>;
+  listTimeSlots(): Promise<any[]>;
+  createTimeSlot(data: any): Promise<any>;
+  updateTimeSlot(slotId: string, data: any): Promise<any>;
 }

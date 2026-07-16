@@ -2,27 +2,24 @@
 import type * as Types from '../types/index.js';
 
 export interface ExamCommands {
-  listExamSchedules(sessionId: string): Promise<Types.ExamSchedule[]>;
-  createExamSchedule(examSessionId: string, examSubjectId: string, examDate: string, startTime: string, endTime: string, period: string, applicableClassIds: string | null, roomIds: string | null): Promise<Types.ExamSchedule>;
-  updateExamSchedule(scheduleId: string, examDate: string | null, startTime: string | null, status: string | null): Promise<Types.ExamSchedule>;
-  deleteExamSchedule(scheduleId: string): Promise<any>;
-  listExamSubjects(sessionId: string): Promise<Types.ExamSubject[]>;
-  add(data: any): Promise<Types.ExamSubject>;
-  listHalls(): Promise<Types.ExamHall[]>;
-  createHall(data: any): Promise<Types.ExamHall>;
-  deleteHall(hallId: string): Promise<any>;
-  listAllocations(examSessionId: string): Promise<Types.ExamHallAllocation[]>;
-  allocate(examSessionId: string, examHallId: string, enrollmentId: string): Promise<Types.ExamHallAllocation>;
-  listSeating(examSessionId: string): Promise<Types.SeatingNumber[]>;
-  listSecretNumbers(sessionId: string): Promise<Types.SecretNumber[]>;
-  listOrdering(periodId: string): Promise<Types.StudentOrdering[]>;
-  generateOrdering(sessionId: string): Promise<any>;
+  listExamSchedules(sessionId: string): Promise<any[]>;
+  createExamSchedule(examSessionId: string, examSubjectId: string, examDate: string, startTime: string, endTime: string, period: string, applicableClassIds: string | null, roomIds: string | null): Promise<any>;
+  updateExamSchedule(scheduleId: string, examDate: string | null, startTime: string | null, status: string | null): Promise<any>;
+  listExamSubjects(sessionId: string): Promise<any[]>;
+  add(data: any): Promise<any>;
+  listHalls(): Promise<any[]>;
+  createHall(data: any): Promise<any>;
+  listAllocations(examSessionId: string): Promise<any[]>;
+  allocate(examSessionId: string, examHallId: string, enrollmentId: string): Promise<any>;
+  listSeating(examSessionId: string): Promise<any[]>;
+  listSecretNumbers(sessionId: string): Promise<any[]>;
+  listOrdering(periodId: string): Promise<any[]>;
   generate(SessionId: string): Promise<any>;
-  getSchedule(sessionId: string): Promise<Types.ExamSchedule[]>;
-  generate(sessionId: string): Promise<any>;
-  listSeatings(sessionId: string): Promise<Types.SeatingNumber[]>;
-  listSessions(periodId: string): Promise<Types.ExamSession[]>;
-  getSession(sessionId: string): Promise<Types.ExamSession>;
-  createSession(data: any): Promise<Types.ExamSession>;
-  updateSession(sessionId: string, name: string | null, status: string | null, startDate: string | null, endDate: string | null): Promise<Types.ExamSession>;
+  getSchedule(sessionId: string): Promise<any[]>;
+  generate2(sessionId: string): Promise<any>;
+  listSeatings(sessionId: string): Promise<any[]>;
+  listSessions(periodId: string): Promise<any[]>;
+  getSession(sessionId: string): Promise<any>;
+  createSession(data: any): Promise<any>;
+  updateSession(sessionId: string, name: string | null, status: string | null, startDate: string | null, endDate: string | null): Promise<any>;
 }

@@ -8,29 +8,43 @@ use svc_iam::ops;
 #[tauri::command]
 pub async fn iam_audit_list(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::audit::list(&ctx).await.map_err(CommandError::from)?;
+    let result = ops::audit::list().await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn iam_auth_change_password(state: State<'_, Arc<AppState>>, userId: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn iam_auth_login(state: State<'_, Arc<AppState>>, identifier: String, passwordHash: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::auth::change_password(&ctx, &userId, data_parsed).await.map_err(CommandError::from)?;
-    Ok(serde_json::json!({}))
+    let result = ops::auth::login(&identifier, &passwordHash).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn iam_auth_restore_session(state: State<'_, Arc<AppState>>, token: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::auth::restore_session(&token).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn iam_auth_list_sessions(state: State<'_, Arc<AppState>>, userId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::auth::list_sessions(&ctx, &userId).await.map_err(CommandError::from)?;
+    let result = ops::auth::list_sessions(&userId).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn iam_auth_register(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
+    let result = ops::auth::register(data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn iam_role_list_by_user(state: State<'_, Arc<AppState>>, userId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::role::list_by_user(&ctx, &userId).await.map_err(CommandError::from)?;
+    let result = ops::role::list_by_user(&userId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -38,7 +52,14 @@ pub async fn iam_role_list_by_user(state: State<'_, Arc<AppState>>, userId: Stri
 pub async fn iam_role_assign(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::role::assign(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::role::assign(data_parsed).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn iam_role_get_permissions(state: State<'_, Arc<AppState>>, role: Option<String>) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::role::get_permissions(role).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -49,7 +70,7 @@ pub async fn iam_user_list(state: State<'_, Arc<AppState>>, filter: Option<serde
         Some(v) => Some(serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?),
         None => None,
     };
-    let result = ops::user::list(&ctx, filter_parsed).await.map_err(CommandError::from)?;
+    let result = ops::user::list(filter_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -61,21 +82,21 @@ pub async fn iam_user_list_paginated(state: State<'_, Arc<AppState>>, request: s
         Some(v) => Some(serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?),
         None => None,
     };
-    let result = ops::user::list_paginated(&ctx, request_parsed, filter_parsed).await.map_err(CommandError::from)?;
+    let result = ops::user::list_paginated(request_parsed, filter_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn iam_user_get(state: State<'_, Arc<AppState>>, userId: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::user::get(&ctx, &userId).await.map_err(CommandError::from)?;
+    let result = ops::user::get(&userId).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn iam_user_search(state: State<'_, Arc<AppState>>, queryStr: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::user::search(&ctx, &queryStr).await.map_err(CommandError::from)?;
+    let result = ops::user::search(&queryStr).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -83,7 +104,7 @@ pub async fn iam_user_search(state: State<'_, Arc<AppState>>, queryStr: String) 
 pub async fn iam_user_create(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::user::create(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::user::create(data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -91,22 +112,15 @@ pub async fn iam_user_create(state: State<'_, Arc<AppState>>, data: serde_json::
 pub async fn iam_user_update(state: State<'_, Arc<AppState>>, userId: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::user::update(&ctx, &userId, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::user::update(&userId, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
-}
-
-#[tauri::command]
-pub async fn iam_user_delete(state: State<'_, Arc<AppState>>, userId: String) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::user::delete(&ctx, &userId).await.map_err(CommandError::from)?;
-    Ok(serde_json::json!({}))
 }
 
 #[tauri::command]
 pub async fn iam_user_change_role(state: State<'_, Arc<AppState>>, userId: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::user::change_role(&ctx, &userId, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::user::change_role(&userId, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 

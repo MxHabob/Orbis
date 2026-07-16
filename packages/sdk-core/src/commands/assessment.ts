@@ -2,27 +2,26 @@
 import type * as Types from '../types/index.js';
 
 export interface AssessmentCommands {
-  listAttendances(classId: string, date: string): Promise<Types.Attendance[]>;
-  getReport(PeriodId: string, enrollmentId: string): Promise<any>;
+  listAttendances(classId: string, date: string): Promise<any[]>;
+  getReport(PeriodId: string, enrollmentId: string): Promise<Types.AttendanceReport>;
   getAnalytics(periodId: string, classId: string): Promise<any>;
-  record(data: any): Promise<Types.Attendance>;
-  recordBulk(data: any): Promise<Types.Attendance[]>;
-  report(classId: string, startDate: string, endDate: string): Promise<Types.Attendance[]>;
-  listBehaviors(enrollmentId: string): Promise<Types.BehaviorRecord[]>;
-  submitAi(data: any): Promise<Types.BehaviorRecord>;
-  updateBehavior(recordId: string, actionTaken: string | null, status: string | null, resolutionNotes: string | null): Promise<Types.BehaviorRecord>;
-  deleteBehavior(recordId: string): Promise<any>;
-  listGrades(assessmentId: string): Promise<Types.Grade[]>;
-  listPaginated(assessmentId: string, request: any): Promise<Types.Grade>;
-  reportCard(enrollmentId: string, periodId: string): Promise<any>;
-  analytics(periodId: string, classSubjectId: string): Promise<any>;
+  record(data: any): Promise<any>;
+  recordBulk(data: any): Promise<any[]>;
+  report(classId: string, startDate: string, endDate: string): Promise<any[]>;
+  listBehaviors(enrollmentId: string): Promise<any[]>;
+  submitAi(data: any): Promise<any>;
+  updateBehavior(recordId: string, actionTaken: string | null, status: string | null, resolutionNotes: string | null): Promise<any>;
+  listGrades(assessmentId: string): Promise<any[]>;
+  listPaginated(assessmentId: string, request: any): Promise<any>;
+  reportCard(enrollmentId: string, periodId: string): Promise<Types.GradeReportCard>;
+  analytics(periodId: string, classSubjectId: string): Promise<Types.GradeAnalytics>;
   matrix(periodId: string, classSubjectId: string): Promise<any>;
-  submit(data: any): Promise<Types.Grade>;
-  submitBulk(data: any): Promise<Types.Grade[]>;
-  updateGrade(gradeId: string, req: any): Promise<Types.Grade>;
+  submit(data: any): Promise<any>;
+  submitBulk(data: any): Promise<any[]>;
+  updateGrade(gradeId: string, req: any): Promise<any>;
   bulkSubjectEntry(entry: any): Promise<any>;
   upsertCell(data: any): Promise<any>;
-  compileSemester(periodId: string, classId: string): Promise<Types.Grade[]>;
+  compileSemester(periodId: string, classId: string): Promise<any[]>;
   generateSnapshot(studentId: string, periodId: string, classSubjectId: string, policyId: string, scaleId: string, rawScores: any): Promise<any>;
-  executeSnapshotGeneration(studentId: string, periodId: string, classSubjectId: string, policyId: string, scaleId: string, rawScores: any): Promise<Types.StudentAssessmentSnapshot>;
+  executeSnapshotGeneration(studentId: string, periodId: string, classSubjectId: string, policyId: string, scaleId: string, rawScores: any): Promise<any>;
 }

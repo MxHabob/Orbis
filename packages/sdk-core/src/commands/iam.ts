@@ -2,17 +2,19 @@
 import type * as Types from '../types/index.js';
 
 export interface IamCommands {
-  listAudits(): Promise<Types.AuditLog[]>;
-  changePassword(userId: string, data: any): Promise<any>;
-  listSessions(userId: string): Promise<Types.UserSession[]>;
-  listByUser(userId: string): Promise<Types.UserRole[]>;
-  assign(data: any): Promise<Types.UserRole>;
-  listUsers(filter: any | null): Promise<Types.User[]>;
-  listPaginated(request: any, filter: any | null): Promise<Types.User>;
-  getUser(userId: string): Promise<Types.User>;
-  search(queryStr: string): Promise<Types.User[]>;
-  createUser(data: any): Promise<Types.User>;
-  updateUser(userId: string, data: any): Promise<Types.User>;
-  deleteUser(userId: string): Promise<any>;
-  changeRole(userId: string, data: any): Promise<Types.User>;
+  listAudits(): Promise<any[]>;
+  login(identifier: string, passwordHash: string): Promise<any>;
+  restoreSession(token: string): Promise<any>;
+  listSessions(userId: string): Promise<any[]>;
+  register(data: any): Promise<any>;
+  listByUser(userId: string): Promise<any[]>;
+  assign(data: any): Promise<any>;
+  getPermissions(role: string | null): Promise<any[]>;
+  listUsers(filter: any | null): Promise<any[]>;
+  listPaginated(request: any, filter: any | null): Promise<any>;
+  getUser(userId: string): Promise<any>;
+  search(queryStr: string): Promise<any[]>;
+  createUser(data: any): Promise<any>;
+  updateUser(userId: string, data: any): Promise<any>;
+  changeRole(userId: string, data: any): Promise<any>;
 }

@@ -2,11 +2,10 @@
 import type * as Types from '../types/index.js';
 
 export interface Enrollment_workflowCommands {
-  listJobs(): Promise<Types.PromotionJob[]>;
-  getJob(jobId: string): Promise<Types.PromotionJob>;
-  createJob(sourcePeriodId: string, config: string): Promise<Types.PromotionJob>;
-  startDryRun(jobId: string, config: any): Promise<any>;
+  listJobs(): Promise<any[]>;
+  getJob(jobId: string): Promise<any>;
+  createJob(sourcePeriodId: string, config: string): Promise<any>;
+  startDryRun(jobId: string, config: Types.PromotionConfig): Promise<any>;
   execute(jobId: string): Promise<any>;
-  rollback(jobId: string): Promise<any>;
   registerStudent(req: any): Promise<any>;
 }
