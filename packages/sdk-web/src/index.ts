@@ -18,9 +18,9 @@
  * ```
  */
 
-export { commands } from "./commands";
-export { configure, request, http } from "./http";
-export type { HttpClientConfig } from "./http";
+export { commands } from "./commands.js";
+export { configure, request, http } from "./http.js";
+export type { HttpClientConfig } from "./http.js";
 export { OrbisError, extractErrorMessage } from "@orbis/sdk-core";
 export type { OrbisCommands } from "@orbis/sdk-core";
 export type * from "@orbis/sdk-core";

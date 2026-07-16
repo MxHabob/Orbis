@@ -30,8 +30,11 @@ export interface UserRole {
   role: string;
   org_id: string;
   scope_type: string;
-  scope_id?: string | null;
-  is_primary: number;
+  scope_id?: string;
+  valid_from?: string;
+  valid_until?: string;
+  is_primary: boolean;
+  assigned_by?: string;
   assigned_at: string;
 }
 
@@ -58,10 +61,25 @@ export interface Permission {
   id: number;
   code: string;
   name: string;
-  name_ar?: string | null;
+  name_ar?: string;
+  description?: string;
   module: string;
   action: string;
   resource: string;
-  is_system: number;
-  is_active: number;
+  requires_scope: boolean;
+  scope_types?: Record<string, any>;
+  is_system: boolean;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface Person {
+  party_id: string;
+  first_name: string;
+  last_name: string;
+  email?: string;
+  phone?: string;
+  national_id?: string;
+  created_at: string;
+  updated_at: string;
 }

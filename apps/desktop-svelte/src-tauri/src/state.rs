@@ -52,7 +52,7 @@ impl PlatformServices {
         use svc_organization::ops::settings::OrgSettingsProvider;
         use platform_policy::engine::PlatformPolicyEngine;
         use svc_finance::ops::fee_assigner::FinanceFeeAssigner;
-        use infra_integration::notification_sender::LogNotificationSender;
+        use infra_integration::notification_sender::DbNotificationSender;
 
         // Build reactive pipeline with analyzers
         let mut reactive = shared_kernel::reactive::ReactivePipeline::new();
@@ -72,7 +72,7 @@ impl PlatformServices {
             audit: Arc::new(DbAuditLogger::new(db.clone())),
             settings: Arc::new(OrgSettingsProvider::new(db.clone())),
             policy: Arc::new(PlatformPolicyEngine::new(db.clone())),
-            notifier: Arc::new(LogNotificationSender::new()),
+            notifier: Arc::new(DbNotificationSender::new(db.clone())),
             fee_assigner: Arc::new(FinanceFeeAssigner::new(db)),
             period_gate: Arc::new(PeriodGate::new()),
             event_bus,
@@ -322,7 +322,7 @@ impl AppState {
     pub async fn check_tauri_permission(
         &self,
         db: &DatabaseConnection,
-        permission: svc_iam::services::authz::Permission,
+        permission: shared_kernel::traits::Permission,
         context: Option<&svc_iam::services::authz::AuthzContext>,
     ) -> Result<(), shared_kernel::errors::AppError> {
         use sea_orm::{EntityTrait, QueryOrder};

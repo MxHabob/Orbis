@@ -15,7 +15,7 @@
  * ```
  */
 
-import { configure } from "./http";
+import { configure, request } from './http.js';
 
 interface ServerConfig {
   /** API Gateway URL — defaults to ORBIS_API_URL env var. */

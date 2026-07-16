@@ -65,17 +65,30 @@ export interface BehaviorRecord {
 export interface Assessment {
   id: string;
   org_id: string;
-  period_id: string;
+  cycle_id: string;
   class_subject_id: string;
   title: string;
-  title_ar?: string | null;
-  item_type: string;
+  title_ar?: string;
+  description?: string;
+  type: string;
   max_score: number;
+  passing_score?: number;
   weight: number;
   grade_group_name: string;
-  assessment_date?: string | null;
-  is_published: number;
-  is_locked: number;
+  assessment_date?: string;
+  due_date?: string;
+  duration_minutes?: number;
+  is_published: boolean;
+  published_at?: string;
+  published_by?: string;
+  is_locked: boolean;
+  locked_at?: string;
+  locked_by?: string;
+  grading_method?: string;
+  rubric_id?: string;
+  instructions?: string;
+  instructions_ar?: string;
+  attachments?: Record<string, any>;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -127,4 +140,17 @@ export interface GradeAnalytics {
   pass_count: number;
   fail_count: number;
   pass_rate: number;
+}
+export interface AssessmentScheme {
+  id: string;
+  name: string;
+}
+
+export interface Snapshot {
+  id: string;
+}
+
+export interface AssessmentOverride {
+  id: string;
+  status: string;
 }

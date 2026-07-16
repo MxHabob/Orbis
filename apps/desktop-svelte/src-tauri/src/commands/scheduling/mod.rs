@@ -1,1 +1,1 @@
-pub mod thin;
+pub mod auto;

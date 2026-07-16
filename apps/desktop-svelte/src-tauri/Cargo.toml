@@ -53,8 +53,12 @@ chrono = { version = "0.4.38", features = ["serde"] }
 bcrypt = "0.15.1"
 tracing = "0.1"
 platform-policy = { version = "0.1.0", path = "../../api-rust/crates/platform-policy" }
+reqwest = { version = "0.13.4", features = ["json"] }
 
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-updater = "2"
+
+svc-calendar = { path = "../../api-rust/crates/svc-calendar" }
+svc-enrollment-workflow = { path = "../../api-rust/crates/svc-enrollment-workflow" }

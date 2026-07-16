@@ -1,4 +1,4 @@
-export interface AgentCommands {
+﻿export interface AgentCommands {
   listSessions(): Promise<any[]>;
   createSession(type: string): Promise<any>;
   query(
@@ -9,3 +9,4 @@ export interface AgentCommands {
   ): Promise<string>;
   openStandaloneWindow(): Promise<void>;
 }
+

@@ -1,403 +1,192 @@
 /**
- * @orbis/sdk-web — OrbisCommands implementation via HTTP fetch.
- *
- * Mirror of @orbis/sdk-desktop but calls API Gateway endpoints
- * instead of Tauri IPC. Same interface, different transport.
+ * @orbis/sdk-web — OrbisCommands implementation via HTTP API.
  */
 import type { OrbisCommands } from "@orbis/sdk-core";
-import { http } from "./http";
+import { http } from "./http.js";
 
 export const commands: OrbisCommands = {
-  // ═══════════════════════════════════════════════════════════════
-  // ACADEMIC
-  // ═══════════════════════════════════════════════════════════════
   academic: {
-    listClasses: (_orgId, _periodId?) => http.get("/api/classes"),
-    getClass: (classId) => http.get(`/api/classes/${classId}`),
-    createClass: (data) => http.post("/api/classes", data),
-    updateClass: (classId, data) => http.put(`/api/classes/${classId}`, data),
-    deleteClass: (classId) => http.del(`/api/classes/${classId}`),
-    assignTeacher: (classId, teacherId) =>
-      http.post(`/api/classes/${classId}/teacher`, { teacherId }),
-
-    listSubjects: (_orgId) => http.get("/api/subjects"),
-    getSubject: (subjectId) => http.get(`/api/subjects/${subjectId}`),
-    createSubject: (data) => http.post("/api/subjects", data),
-    updateSubject: (subjectId, data) =>
-      http.put(`/api/subjects/${subjectId}`, data),
-    deleteSubject: (subjectId) => http.del(`/api/subjects/${subjectId}`),
-
-    listOrgUnits: (_orgId) => http.get("/api/units"),
-    createOrgUnit: (data) => http.post("/api/units", data),
-    updateOrgUnit: (unitId, data) => http.put(`/api/units/${unitId}`, data),
-    deleteOrgUnit: (unitId) => http.del(`/api/units/${unitId}`),
-
-    listEnrollments: (_orgId, _classId?, _periodId?) =>
-      http.get("/api/enrollments"),
-    getEnrollment: (enrollmentId) =>
-      http.get(`/api/enrollments/${enrollmentId}`),
-    createEnrollment: (data) => http.post("/api/enrollments", data),
-    withdrawEnrollment: (enrollmentId, reason) =>
-      http.post(`/api/enrollments/${enrollmentId}/withdraw`, { reason }),
-    transferEnrollment: (enrollmentId, newClassId) =>
-      http.post(`/api/enrollments/${enrollmentId}/transfer`, {
-        class_id: newClassId,
-      }),
-    checkDuplicate: (studentId, periodId) =>
-      http.get(
-        `/api/enrollments/check-duplicate?student_id=${studentId}&period_id=${periodId}`,
-      ),
-
-    listClassSubjects: (classId, periodId) =>
-      http.get(`/api/class-subjects?class_id=${classId}&period_id=${periodId}`),
-    listTeacherSubjects: (teacherId, periodId) =>
-      http.get(
-        `/api/teacher-subjects?teacher_id=${teacherId}&period_id=${periodId}`,
-      ),
-    createClassSubject: (data) => http.post("/api/class-subjects", data),
-    updateClassSubject: (id, data) =>
-      http.put(`/api/class-subjects/${id}`, data),
-    deleteClassSubject: (id) => http.del(`/api/class-subjects/${id}`),
-
-    listCycles: (_orgId) => http.get("/api/periods"),
-    listPeriodsByYear: (_orgId, periodId) =>
-      http.get(`/api/periods/year/${periodId}`),
-    getCycle: (periodId) => http.get(`/api/periods/${periodId}`),
-    createCycle: (data) => http.post("/api/periods", data),
-    lockCycle: (_orgId, periodId) => http.post(`/api/periods/${periodId}/lock`),
-    unlockPeriod: (_orgId, periodId) =>
-      http.post(`/api/periods/${periodId}/unlock`),
-    togglePeriodEnrollment: (_orgId, periodId, open) =>
-      http.post(
-        `/api/periods/${periodId}/enrollment/${open ? "open" : "close"}`,
-      ),
-    togglePeriodGradeEntry: (_orgId, periodId, open) =>
-      http.post(
-        `/api/periods/${periodId}/grade-entry/${open ? "open" : "close"}`,
-      ),
-
-    listGuardiansByStudent: (studentId) =>
-      http.get(`/api/guardians/${studentId}`),
-    searchGuardians: (query) => http.get(`/api/guardians/search?q=${query}`),
-
-    listDocuments: (ownerId?) =>
-      http.get(`/api/documents${ownerId ? `/${ownerId}` : ""}`),
-
-    listNotifications: (_limit?) => http.get("/api/notifications"),
-    markNotificationRead: (notificationId) =>
-      http.post(`/api/notifications/${notificationId}/read`),
+    listClasses: (periodId: any) => http.post(`/api/academic/list_classes`, { periodId }),
+    getClass: (classId: any) => http.post(`/api/academic/get_class`, { classId }),
+    createClass: (data: any) => http.post(`/api/academic/create_class`, { data }),
+    updateClass: (classId: any, data: any) => http.post(`/api/academic/update_class`, { classId, data }),
+    deleteClass: (classId: any) => http.post(`/api/academic/delete_class`, { classId }),
+    assignTeacher: (classId: any, teacherId: any) => http.post(`/api/academic/assign_teacher`, { classId, teacherId }),
+    listSubjects: () => http.post(`/api/academic/list_subjects`, {}),
+    getSubject: (subjectId: any) => http.post(`/api/academic/get_subject`, { subjectId }),
+    createSubject: (data: any) => http.post(`/api/academic/create_subject`, { data }),
+    updateSubject: (subjectId: any, data: any) => http.post(`/api/academic/update_subject`, { subjectId, data }),
+    deleteSubject: (subjectId: any) => http.post(`/api/academic/delete_subject`, { subjectId }),
+    listEnrollments: (classId: any, periodId: any) => http.post(`/api/academic/list_enrollments`, { classId, periodId }),
+    listEnrollmentsPaginated: (cursor: any, limit: any) => http.post(`/api/academic/list_enrollments_paginated`, { cursor, limit }),
+    getEnrollment: (enrollmentId: any) => http.post(`/api/academic/get_enrollment`, { enrollmentId }),
+    createEnrollment: (data: any) => http.post(`/api/academic/create_enrollment`, { data }),
+    withdrawEnrollment: (enrollmentId: any, reason: any) => http.post(`/api/academic/withdraw_enrollment`, { enrollmentId, reason }),
+    transferEnrollment: (enrollmentId: any, newClassId: any) => http.post(`/api/academic/transfer_enrollment`, { enrollmentId, newClassId }),
+    checkDuplicate: (studentId: any, periodId: any) => http.post(`/api/academic/check_duplicate`, { studentId, periodId }),
+    checkEnrollmentEligibility: (periodId: any, classId: any) => http.post(`/api/academic/check_enrollment_eligibility`, { periodId, classId }),
+    confirmEnrollmentDraft: (enrollmentId: any) => http.post(`/api/academic/confirm_enrollment_draft`, { enrollmentId }),
+    checkPeriodGate: (gateType: any, periodId: any) => http.post(`/api/academic/check_period_gate`, { gateType, periodId }),
+    listClassSubjects: (classId: any, periodId: any) => http.post(`/api/academic/list_class_subjects`, { classId, periodId }),
+    listTeacherSubjects: (teacherId: any, periodId: any) => http.post(`/api/academic/list_teacher_subjects`, { teacherId, periodId }),
+    createClassSubject: (data: any) => http.post(`/api/academic/create_class_subject`, { data }),
+    updateClassSubject: (id: any, data: any) => http.post(`/api/academic/update_class_subject`, { id, data }),
+    deleteClassSubject: (id: any) => http.post(`/api/academic/delete_class_subject`, { id }),
+    listPeriods: () => http.post(`/api/academic/list_periods`, {}),
+    listPeriodsByYear: (periodId: any) => http.post(`/api/academic/list_periods_by_year`, { periodId }),
+    getPeriod: (periodId: any) => http.post(`/api/academic/get_period`, { periodId }),
+    createPeriod: (data: any) => http.post(`/api/academic/create_period`, { data }),
+    lockPeriod: (periodId: any) => http.post(`/api/academic/lock_period`, { periodId }),
+    unlockPeriod: (periodId: any) => http.post(`/api/academic/unlock_period`, { periodId }),
+    togglePeriodEnrollment: (periodId: any, open: any) => http.post(`/api/academic/toggle_period_enrollment`, { periodId, open }),
+    togglePeriodGradeEntry: (periodId: any, open: any) => http.post(`/api/academic/toggle_period_grade_entry`, { periodId, open }),
+    listGuardiansByStudent: (studentId: any) => http.post(`/api/academic/list_guardians_by_student`, { studentId }),
+    searchGuardians: (query: any) => http.post(`/api/academic/search_guardians`, { query }),
+    listDocuments: (ownerId: any) => http.post(`/api/academic/list_documents`, { ownerId }),
+    createDocument: (data: any) => http.post(`/api/academic/create_document`, { data }),
+    deleteDocument: (documentId: any) => http.post(`/api/academic/delete_document`, { documentId }),
+    listNotifications: (limit: any) => http.post(`/api/academic/list_notifications`, { limit }),
+    markNotificationRead: (notificationId: any) => http.post(`/api/academic/mark_notification_read`, { notificationId }),
   },
-
-  // ═══════════════════════════════════════════════════════════════
-  // ASSESSMENT
-  // ═══════════════════════════════════════════════════════════════
   assessment: {
-    listGrades: (periodId, enrollmentId?, classSubjectId?) =>
-      http.get(
-        `/api/grades?period_id=${periodId}${enrollmentId ? `&enrollment_id=${enrollmentId}` : ""}${classSubjectId ? `&class_subject_id=${classSubjectId}` : ""}`,
-      ),
-    submitGrade: (_periodId, data) => http.post("/api/grades", data),
-    submitBulkGrades: (_periodId, grades) =>
-      http.post("/api/grades/bulk", grades),
-    updateGrade: (gradeId, data) => http.put(`/api/grades/${gradeId}`, data),
-    getReportCard: (enrollmentId, periodId) =>
-      http.get(`/api/report-card/${enrollmentId}/${periodId}`),
-    getGradeAnalytics: (periodId, classSubjectId) =>
-      http.get(
-        `/api/grades/analytics?period_id=${periodId}&class_subject_id=${classSubjectId}`,
-      ),
-
-    listAttendance: (_periodId, classId?, date?, _enrollmentId?) =>
-      http.get(`/api/attendance/${classId ?? "all"}/${date ?? "today"}`),
-    recordAttendance: (_periodId, data) => http.post("/api/attendance", data),
-    recordBulkAttendance: (_periodId, data) =>
-      http.post("/api/attendance/bulk", data),
-    getAttendanceReport: (_periodId, enrollmentId) =>
-      http.get(`/api/attendance/report/${enrollmentId}`),
-
-    listBehavior: (_periodId, enrollmentId?) =>
-      http.get(`/api/behavior${enrollmentId ? `/${enrollmentId}` : ""}`),
-    updateBehavior: (recordId, data) =>
-      http.put(`/api/behavior/${recordId}`, data),
-    deleteBehavior: (recordId) => http.del(`/api/behavior/${recordId}`),
-
-    listAssessments: (_periodId, classSubjectId?) =>
-      http.get(
-        `/api/assessments${classSubjectId ? `?class_subject_id=${classSubjectId}` : ""}`,
-      ),
-    createAssessment: (data) => http.post("/api/assessments", data),
-    updateAssessment: (assessmentId, data) =>
-      http.put(`/api/assessments/${assessmentId}`, data),
-    deleteAssessment: (assessmentId) =>
-      http.del(`/api/assessments/${assessmentId}`),
+    getAssessmentScheme: (schemeId: any) => http.post(`/api/assessment/get_assessment_scheme`, { schemeId }),
+    listAssessmentSchemes: () => http.post(`/api/assessment/list_assessment_schemes`, {}),
+    createAssessmentScheme: (data: any) => http.post(`/api/assessment/create_assessment_scheme`, { data }),
+    createSnapshot: (data: any) => http.post(`/api/assessment/create_snapshot`, { data }),
+    getSnapshot: (snapshotId: any) => http.post(`/api/assessment/get_snapshot`, { snapshotId }),
+    requestOverride: (data: any) => http.post(`/api/assessment/request_override`, { data }),
+    listOverrides: () => http.post(`/api/assessment/list_overrides`, {}),
+    listAttendance: (periodId: any, classId: any, date: any, enrollmentId: any) => http.post(`/api/assessment/list_attendance`, { periodId, classId, date, enrollmentId }),
+    recordAttendance: (periodId: any, data: any) => http.post(`/api/assessment/record_attendance`, { periodId, data }),
+    recordBulkAttendance: (periodId: any, data: any) => http.post(`/api/assessment/record_bulk_attendance`, { periodId, data }),
+    getAttendanceReport: (periodId: any, enrollmentId: any) => http.post(`/api/assessment/get_attendance_report`, { periodId, enrollmentId }),
+    listBehavior: (studentId: any) => http.post(`/api/assessment/list_behavior`, { studentId }),
+    updateBehavior: (recordId: any, data: any) => http.post(`/api/assessment/update_behavior`, { recordId, data }),
+    deleteBehavior: (recordId: any) => http.post(`/api/assessment/delete_behavior`, { recordId }),
+    submitBehavior: (data: any) => http.post(`/api/assessment/submit_behavior`, { data }),
   },
-
-  // ═══════════════════════════════════════════════════════════════
-  // FINANCE
-  // ═══════════════════════════════════════════════════════════════
   finance: {
-    listAccounts: () => http.get("/api/ledger-accounts"),
-    listTransactionAccounts: () =>
-      http.get("/api/ledger-accounts?type=transaction"),
-    createAccount: (data) => http.post("/api/ledger-accounts", data),
-    getAccountStatement: (accountId, startDate?, endDate?) =>
-      http.get(
-        `/api/ledger-accounts/${accountId}/statement?start=${startDate ?? ""}&end=${endDate ?? ""}`,
-      ),
-
-    listTreasuries: () => http.get("/api/treasuries"),
-    createTreasury: (data) => http.post("/api/treasuries", data),
-
-    listFeeTemplates: (_orgId) => http.get("/api/fee-templates"),
-    listActiveFeeTemplates: (_orgId) =>
-      http.get("/api/fee-templates?active=true"),
-    createFeeTemplate: (data) => http.post("/api/fee-templates", data),
-    updateFeeTemplate: (templateId, data) =>
-      http.put(`/api/fee-templates/${templateId}`, data),
-    deleteFeeTemplate: (templateId) =>
-      http.del(`/api/fee-templates/${templateId}`),
-
-    listStudentFees: (enrollmentId) =>
-      http.get(`/api/student-fees/${enrollmentId}`),
-    assignStudentFee: (data) => http.post("/api/student-fees", data),
-
-    listPayments: (_enrollmentId?, _feeId?) => http.get("/api/payments"),
-    recordPayment: (data) => http.post("/api/payments", data),
-
-    listDiscountTemplates: (_orgId) => http.get("/api/discount-templates"),
-    createDiscountTemplate: (data) =>
-      http.post("/api/discount-templates", data),
-
-    listCurrencies: () => http.get("/api/currencies"),
-    createCurrency: (data) => http.post("/api/currencies", data),
-    updateCurrency: (_orgId, code, data) =>
-      http.put(`/api/currencies/${code}`, data),
-    deleteCurrency: (_orgId, code) => http.del(`/api/currencies/${code}`),
-    seedDefaultFinancials: (_orgId) =>
-      http.post("/api/currencies/seed-default"),
-
-    listJournalEntries: () => http.get("/api/journal-entries"),
+    listAccounts: () => http.post(`/api/finance/list_accounts`, {}),
+    listTransactionAccounts: () => http.post(`/api/finance/list_transaction_accounts`, {}),
+    createAccount: (data: any) => http.post(`/api/finance/create_account`, { data }),
+    getAccountStatement: (accountId: any, startDate: any, endDate: any) => http.post(`/api/finance/get_account_statement`, { accountId, startDate, endDate }),
+    listTreasuries: () => http.post(`/api/finance/list_treasuries`, {}),
+    createTreasury: (data: any) => http.post(`/api/finance/create_treasury`, { data }),
+    listFeeTemplates: () => http.post(`/api/finance/list_fee_templates`, {}),
+    listActiveFeeTemplates: () => http.post(`/api/finance/list_active_fee_templates`, {}),
+    createFeeTemplate: (data: any) => http.post(`/api/finance/create_fee_template`, { data }),
+    updateFeeTemplate: (templateId: any, data: any) => http.post(`/api/finance/update_fee_template`, { templateId, data }),
+    deleteFeeTemplate: (templateId: any) => http.post(`/api/finance/delete_fee_template`, { templateId }),
+    listStudentFees: (enrollmentId: any) => http.post(`/api/finance/list_student_fees`, { enrollmentId }),
+    listAllStudentFees: () => http.post(`/api/finance/list_all_student_fees`, {}),
+    assignStudentFee: (data: any) => http.post(`/api/finance/assign_student_fee`, { data }),
+    listPayments: () => http.post(`/api/finance/list_payments`, {}),
+    recordPayment: (data: any) => http.post(`/api/finance/record_payment`, { data }),
+    listDiscountTemplates: () => http.post(`/api/finance/list_discount_templates`, {}),
+    updateDiscountTemplate: (id: any, data: any) => http.post(`/api/finance/update_discount_template`, { id, data }),
+    createDiscountTemplate: (data: any) => http.post(`/api/finance/create_discount_template`, { data }),
+    listCurrencies: () => http.post(`/api/finance/list_currencies`, {}),
+    createCurrency: (data: any) => http.post(`/api/finance/create_currency`, { data }),
+    updateCurrency: (code: any, data: any) => http.post(`/api/finance/update_currency`, { code, data }),
+    deleteCurrency: (code: any) => http.post(`/api/finance/delete_currency`, { code }),
+    seedDefaultFinancials: () => http.post(`/api/finance/seed_default_financials`, {}),
+    listJournalEntries: () => http.post(`/api/finance/list_journal_entries`, {}),
+    listFiscalYears: () => http.post(`/api/finance/list_fiscal_years`, {}),
+    createFiscalYear: (data: any) => http.post(`/api/finance/create_fiscal_year`, { data }),
   },
-
-  // ═══════════════════════════════════════════════════════════════
-  // SCHEDULING
-  // ═══════════════════════════════════════════════════════════════
   scheduling: {
-    listTimeSlots: (_periodId) => http.get("/api/time-slots"),
-    createTimeSlot: (data) => http.post("/api/time-slots", data),
-    updateTimeSlot: (slotId, data) =>
-      http.put(`/api/time-slots/${slotId}`, data),
-    deleteTimeSlot: (slotId) => http.del(`/api/time-slots/${slotId}`),
-
-    listLessonsByClass: (periodId, classId) =>
-      http.get(`/api/schedule/${classId}/${periodId}`),
-    listLessonsByTeacher: (periodId, teacherId) =>
-      http.get(`/api/schedule/teacher/${teacherId}/${periodId}`),
-    createLesson: (data) => http.post("/api/lessons", data),
-    updateLesson: (lessonId, data) =>
-      http.put(`/api/lessons/${lessonId}`, data),
-    deleteLesson: (lessonId) => http.del(`/api/lessons/${lessonId}`),
-    checkConflicts: (periodId, teacherId, timeSlotId, dayOfWeek, roomId?) =>
-      http.post("/api/schedule/conflicts", {
-        periodId,
-        teacherId,
-        timeSlotId,
-        dayOfWeek,
-        roomId,
-      }),
-
-    listRooms: () => http.get("/api/rooms"),
-    createRoom: (data) => http.post("/api/rooms", data),
-    updateRoom: (roomId, data) => http.put(`/api/rooms/${roomId}`, data),
-    deleteRoom: (roomId) => http.del(`/api/rooms/${roomId}`),
-
-    startSolver: (periodId, mode?) =>
-      http.post("/api/schedule/solve", { period_id: periodId, mode }),
-    getSolverJob: (jobId) => http.get(`/api/schedule/solve/job/${jobId}`),
-    listSolverJobs: (periodId) => http.get(`/api/schedule/solve/${periodId}`),
-    cancelSolver: (jobId) => http.post(`/api/schedule/solve/${jobId}/cancel`),
-    applySolver: (jobId) => http.post(`/api/schedule/solve/${jobId}/apply`),
+    listTimeSlots: (periodId: any) => http.post(`/api/scheduling/list_time_slots`, { periodId }),
+    createTimeSlot: (data: any) => http.post(`/api/scheduling/create_time_slot`, { data }),
+    updateTimeSlot: (slotId: any, data: any) => http.post(`/api/scheduling/update_time_slot`, { slotId, data }),
+    deleteTimeSlot: (slotId: any) => http.post(`/api/scheduling/delete_time_slot`, { slotId }),
+    listLessonsByClass: (periodId: any, classId: any) => http.post(`/api/scheduling/list_lessons_by_class`, { periodId, classId }),
+    listLessonsByTeacher: (periodId: any, teacherId: any) => http.post(`/api/scheduling/list_lessons_by_teacher`, { periodId, teacherId }),
+    createLesson: (data: any) => http.post(`/api/scheduling/create_lesson`, { data }),
+    updateLesson: (lessonId: any, data: any) => http.post(`/api/scheduling/update_lesson`, { lessonId, data }),
+    deleteLesson: (lessonId: any) => http.post(`/api/scheduling/delete_lesson`, { lessonId }),
+    checkConflicts: (periodId: any, teacherId: any, timeSlotId: any, dayOfWeek: any, roomId: any) => http.post(`/api/scheduling/check_conflicts`, { periodId, teacherId, timeSlotId, dayOfWeek, roomId }),
+    listRooms: () => http.post(`/api/scheduling/list_rooms`, {}),
+    createRoom: (data: any) => http.post(`/api/scheduling/create_room`, { data }),
+    updateRoom: (roomId: any, data: any) => http.post(`/api/scheduling/update_room`, { roomId, data }),
+    deleteRoom: (roomId: any) => http.post(`/api/scheduling/delete_room`, { roomId }),
+    startSolver: (periodId: any, mode: any) => http.post(`/api/scheduling/start_solver`, { periodId, mode }),
+    getSolverJob: (jobId: any) => http.post(`/api/scheduling/get_solver_job`, { jobId }),
+    listSolverJobs: (periodId: any) => http.post(`/api/scheduling/list_solver_jobs`, { periodId }),
+    cancelSolver: (jobId: any) => http.post(`/api/scheduling/cancel_solver`, { jobId }),
+    applySolver: (jobId: any) => http.post(`/api/scheduling/apply_solver`, { jobId }),
   },
-
-  // ═══════════════════════════════════════════════════════════════
-  // EXAM
-  // ═══════════════════════════════════════════════════════════════
   exam: {
-    listSessions: (periodId) => http.get(`/api/exam/sessions/${periodId}`),
-    getSession: (sessionId) =>
-      http.get(`/api/exam/sessions/detail/${sessionId}`),
-    createSession: (data) => http.post("/api/exam/sessions", data),
-    updateSession: (sessionId, data) =>
-      http.put(`/api/exam/sessions/${sessionId}`, data),
-
-    listExamSubjects: (sessionId) =>
-      http.get(`/api/exam/sessions/${sessionId}/subjects`),
-    createExamSubject: (data) => http.post("/api/exam/subjects", data),
-
-    listHalls: () => http.get("/api/exam/halls"),
-    createHall: (data) => http.post("/api/exam/halls", data),
-
-    listSchedule: (sessionId) =>
-      http.get(`/api/exam/sessions/${sessionId}/schedule`),
-    createScheduleEntry: (data) => http.post("/api/exam/schedule", data),
-
-    listSeating: (examSubjectId) =>
-      http.get(`/api/exam/seating/${examSubjectId}`),
-    generateOrdering: (sessionId) =>
-      http.post(`/api/exam/sessions/${sessionId}/seating`),
-    getOrdering: (orgId, periodId) =>
-      http.get(`/api/exam/ordering?orgId=${orgId}&periodId=${periodId}`),
-    rebuildOrdering: (orgId, periodId, strategy) =>
-      http.post(`/api/exam/ordering/rebuild`, { orgId, periodId, strategy }),
-    freezeOrdering: (orgId, periodId, userId) =>
-      http.post(`/api/exam/ordering/freeze`, { orgId, periodId, userId }),
+    listSessions: (periodId: any) => http.post(`/api/exam/list_sessions`, { periodId }),
+    getSession: (sessionId: any) => http.post(`/api/exam/get_session`, { sessionId }),
+    createSession: (data: any) => http.post(`/api/exam/create_session`, { data }),
+    updateSession: (sessionId: any, data: any) => http.post(`/api/exam/update_session`, { sessionId, data }),
+    listExamSubjects: (sessionId: any) => http.post(`/api/exam/list_exam_subjects`, { sessionId }),
+    getSubjects: (sessionId: any) => http.post(`/api/exam/get_subjects`, { sessionId }),
+    createExamSubject: (data: any) => http.post(`/api/exam/create_exam_subject`, { data }),
+    listHalls: () => http.post(`/api/exam/list_halls`, {}),
+    getHalls: (sessionId: any) => http.post(`/api/exam/get_halls`, { sessionId }),
+    createHall: (data: any) => http.post(`/api/exam/create_hall`, { data }),
+    listSchedule: (sessionId: any) => http.post(`/api/exam/list_schedule`, { sessionId }),
+    getSchedules: (sessionId: any) => http.post(`/api/exam/get_schedules`, { sessionId }),
+    createScheduleEntry: (data: any) => http.post(`/api/exam/create_schedule_entry`, { data }),
+    deleteSchedule: (scheduleId: any) => http.post(`/api/exam/delete_schedule`, { scheduleId }),
+    updateScheduleStatus: (scheduleId: any, status: any) => http.post(`/api/exam/update_schedule_status`, { scheduleId, status }),
+    listSeating: (examSubjectId: any) => http.post(`/api/exam/list_seating`, { examSubjectId }),
+    getSeatingNumbers: (sessionId: any) => http.post(`/api/exam/get_seating_numbers`, { sessionId }),
+    generateSeating: (sessionId: any, userId: any) => http.post(`/api/exam/generate_seating`, { sessionId, userId }),
+    generateSecrets: (sessionId: any, userId: any) => http.post(`/api/exam/generate_secrets`, { sessionId, userId }),
+    getProctors: (sessionId: any) => http.post(`/api/exam/get_proctors`, { sessionId }),
+    autoAssignProctors: (sessionId: any, scheduleId: any, data: any) => http.post(`/api/exam/auto_assign_proctors`, { sessionId, scheduleId, data }),
+    allocateHalls: (sessionId: any, data: any) => http.post(`/api/exam/allocate_halls`, { sessionId, data }),
+    listSolveJobs: (sessionId: any) => http.post(`/api/exam/list_solve_jobs`, { sessionId }),
+    startSolve: (userId: any, data: any) => http.post(`/api/exam/start_solve`, { userId, data }),
+    cancelSolve: (jobId: any) => http.post(`/api/exam/cancel_solve`, { jobId }),
+    applySolve: (jobId: any) => http.post(`/api/exam/apply_solve`, { jobId }),
+    getSolveJob: (jobId: any) => http.post(`/api/exam/get_solve_job`, { jobId }),
+    generateOrdering: (sessionId: any) => http.post(`/api/exam/generate_ordering`, { sessionId }),
+    getOrdering: (periodId: any) => http.post(`/api/exam/get_ordering`, { periodId }),
+    rebuildOrdering: (periodId: any, strategy: any) => http.post(`/api/exam/rebuild_ordering`, { periodId, strategy }),
+    freezeOrdering: (periodId: any, userId: any) => http.post(`/api/exam/freeze_ordering`, { periodId, userId }),
   },
-
-  // ═══════════════════════════════════════════════════════════════
-  // IAM
-  // ═══════════════════════════════════════════════════════════════
   iam: {
-    login: (identifier, passwordHash, _ip?) =>
-      http.post("/api/auth/login", { identifier, password: passwordHash }),
-    logout: (_sessionId) => http.post("/api/auth/logout"),
-    changePassword: (userId, newPasswordHash) =>
-      http.post(`/api/users/${userId}/password`, { password: newPasswordHash }),
-    listSessions: (userId) => http.get(`/api/users/${userId}/sessions`),
-
-    listUsers: (_role?, _status?) => http.get("/api/users"),
-    getUser: (userId) => http.get(`/api/users/${userId}`),
-    searchUsers: (query) => http.get(`/api/users?search=${query}`),
-    createUser: (data) => http.post("/api/users", data),
-    updateUser: (userId, data) => http.put(`/api/users/${userId}`, data),
-    deleteUser: (userId) => http.del(`/api/users/${userId}`),
-
-    listUserRoles: (userId) => http.get(`/api/users/${userId}/roles`),
-    assignRole: (data) => http.post("/api/roles/assign", data),
-    revokeRole: (roleId) => http.del(`/api/roles/${roleId}`),
-
-    getRolePermissions: () => http.get("/api/permissions/roles"),
-    saveRolePermissions: (role, rules) =>
-      http.post(`/api/permissions/roles/${role}`, rules),
+    login: (identifier: any, passwordHash: any, ip: any) => http.post(`/api/iam/login`, { identifier, passwordHash, ip }),
+    logout: (sessionId: any) => http.post(`/api/iam/logout`, { sessionId }),
+    changePassword: (PersonId: any, data: any) => http.post(`/api/iam/change_password`, { PersonId, data }),
+    listSessions: (PersonId: any) => http.post(`/api/iam/list_sessions`, { PersonId }),
+    listPersons: (filter: any) => http.post(`/api/iam/list_persons`, { filter }),
+    listPersonsPaginated: (cursor: any, limit: any, filter: any) => http.post(`/api/iam/list_persons_paginated`, { cursor, limit, filter }),
+    getPerson: (PersonId: any) => http.post(`/api/iam/get_person`, { PersonId }),
+    searchPersons: (query: any) => http.post(`/api/iam/search_persons`, { query }),
+    createPerson: (createdBy: any, data: any) => http.post(`/api/iam/create_person`, { createdBy, data }),
+    updatePerson: (PersonId: any, data: any) => http.post(`/api/iam/update_person`, { PersonId, data }),
+    deletePerson: (PersonId: any, role: any) => http.post(`/api/iam/delete_person`, { PersonId, role }),
+    listUserRoles: (PersonId: any) => http.post(`/api/iam/list_user_roles`, { PersonId }),
+    assignRole: (data: any) => http.post(`/api/iam/assign_role`, { data }),
+    revokeRole: (roleId: any) => http.post(`/api/iam/revoke_role`, { roleId }),
+    changeRole: (PersonId: any, data: any) => http.post(`/api/iam/change_role`, { PersonId, data }),
+    saveUserRoles: (PersonId: any, roles: any) => http.post(`/api/iam/save_user_roles`, { PersonId, roles }),
+    getRolePermissions: (role: any) => http.post(`/api/iam/get_role_permissions`, { role }),
+    saveRolePermissions: (role: any, permissions: any) => http.post(`/api/iam/save_role_permissions`, { role, permissions }),
   },
-
-  // ═══════════════════════════════════════════════════════════════
-  // ORGANIZATION
-  // ═══════════════════════════════════════════════════════════════
   organization: {
-    getOrganization: (_orgId) => http.get("/api/organization"),
-    updateOrganization: (_orgId, data) => http.put("/api/organization", data),
-    getSettings: (_orgId) => http.get("/api/organization/settings"),
-    updateSettings: (_orgId, settings) =>
-      http.put("/api/organization/settings", settings),
-    getDashboardStats: (_orgId) => http.get("/api/dashboard"),
-  },
-
-  // ═══════════════════════════════════════════════════════════════
-  // PLATFORM (Web — subset, no desktop-specific features)
-  // ═══════════════════════════════════════════════════════════════
-  platform: {
-    getCurrentYear: (orgId) =>
-      http.get(`/api/academic-years/current?orgId=${orgId}`),
-    listYears: (_orgId) => http.get("/api/academic-years"),
-    switchYear: (periodId) =>
-      http.post(`/api/academic-years/${periodId}/switch`),
-    isYearArchived: (periodId) =>
-      http.get(`/api/academic-years/${periodId}/archived-status`),
-    getAcademicContext: (_orgId) => http.get("/api/academic-context"),
-    getSetupStatus: (_orgId) => http.get("/api/setup-status"),
-
-    listPromotionJobs: (_orgId) => http.get("/api/promotion/jobs"),
-    getPromotionJob: (jobId) => http.get(`/api/promotion/jobs/${jobId}`),
-    getPromotionDetails: (jobId) =>
-      http.get(`/api/promotion/jobs/${jobId}/details`),
-    promotionDryRun: (_orgId, config) =>
-      http.post("/api/promotion/dry-run", config),
-    executePromotion: (jobId) =>
-      http.post(`/api/promotion/jobs/${jobId}/execute`),
-    rollbackPromotion: (jobId, userId) =>
-      http.post(`/api/promotion/jobs/${jobId}/rollback`, { userId }),
-    overridePromotionDecision: (request) =>
-      http.post("/api/promotion/override", request),
-    getPromotionPolicy: (_orgId) => http.get("/api/promotion/policy"),
-
-    listCalendarEvents: (_orgId, periodId) =>
-      http.get(`/api/calendar?period_id=${periodId}`),
-    listPendingCalendarEvents: (_orgId) => http.get("/api/calendar/pending"),
-    getOrgPolicy: (_orgId) => http.get("/api/organization/policy"),
-
-    listOverrideRequests: (_orgId, _params?) => http.get("/api/overrides"),
-    getOverrideRequest: (requestId) => http.get(`/api/overrides/${requestId}`),
-    getPendingApprovals: (_orgId, approverRole) =>
-      http.get(`/api/overrides/pending?role=${approverRole}`),
-    processApproval: (requestId, action) =>
-      http.post(`/api/overrides/${requestId}/approve`, action),
-    cancelOverride: (requestId, userId) =>
-      http.post(`/api/overrides/${requestId}/cancel`, { userId }),
-
-    listDocumentTemplates: (_orgId, _params?) =>
-      http.get("/api/document-templates"),
-    getDocumentTemplate: (_orgId, templateId) =>
-      http.get(`/api/document-templates/${templateId}`),
-
-    // ── AI Autopilot ──────────────────────────────────────────────
-    getAutopilotTasks: (orgId) =>
-      http.get(`/api/autopilot/tasks?orgId=${orgId}`),
-    getAutopilotDiagnostics: (orgId) =>
-      http.get(`/api/autopilot/diagnostics?orgId=${orgId}`),
-    runAutopilotTick: (orgId) => http.post(`/api/autopilot/tick`, { orgId }),
-
-    listAgentSessions: (_orgId) => http.get("/api/agent/sessions"),
-    getAgentSessionLogs: (_orgId, sessionId) =>
-      http.get(`/api/agent/sessions/${sessionId}/logs`),
-    approveAgentAction: (_orgId, actionLogId, approvedBy) =>
-      http.post(`/api/agent/actions/${actionLogId}/approve`, { approvedBy }),
-    rejectAgentAction: (_orgId, actionLogId, rejectedBy, reason) =>
-      http.post(`/api/agent/actions/${actionLogId}/reject`, {
-        rejectedBy,
-        reason,
-      }),
-
-    login: (identifier, password) =>
-      http.post("/api/auth/login", { identifier, password }),
-    logout: (_token) => http.post("/api/auth/logout"),
-
-    importStudents: (_orgId, data) => http.post("/api/import/students", data),
-    importGrades: (_orgId, data) => http.post("/api/import/grades", data),
-    createBulkStudents: (orgId, userId, data) =>
-      http.post("/api/import/students", { students: data }),
-    createBulkGrades: (orgId, userId, periodId, data) =>
-      http.post("/api/import/grades", { grades: data }),
-    exportStudents: (_orgId) => http.get("/api/export/students"),
-    exportGrades: (_orgId) => http.get("/api/export/grades"),
-
-    listAuditLogs: (_orgId) => http.get("/api/audit-logs"),
-    getAllAuditLogs: (orgId) => http.get(`/api/audit-logs?orgId=${orgId}`),
-
-    transitionEnrollmentStatus: (_orgId, enrollmentId, status) =>
-      http.post(`/api/enrollments/${enrollmentId}/status`, { status }),
-
-    createGuardianLink: (data) => http.post("/api/guardians", data),
-    updateGuardianLink: (linkId, data) =>
-      http.put(`/api/guardians/${linkId}`, data),
-
-    listDocumentsByOwner: (_orgId, ownerId) =>
-      http.get(`/api/documents/${ownerId}`),
-  },
-  docforge: {
-    previewDocumentTemplate: (templateJson, contextJson) =>
-      http.post("/api/docforge/preview", { templateJson, contextJson }),
+    getMainOrganization: () => http.post(`/api/organization/get_main_organization`, {}),
+    getOrganization: () => http.post(`/api/organization/get_organization`, {}),
+    updateOrganization: (data: any) => http.post(`/api/organization/update_organization`, { data }),
+    getSettings: () => http.post(`/api/organization/get_settings`, {}),
+    updateSettings: (settings: any) => http.post(`/api/organization/update_settings`, { settings }),
+    getDashboardStats: () => http.post(`/api/organization/get_dashboard_stats`, {}),
+    registerStudent: (data: any) => http.post(`/api/organization/register_student`, { data }),
+    listOrgUnits: () => http.post(`/api/organization/list_org_units`, {}),
+    createOrgUnit: (data: any) => http.post(`/api/organization/create_org_unit`, { data }),
+    updateOrgUnit: (unitId: any, data: any) => http.post(`/api/organization/update_org_unit`, { unitId, data }),
+    deleteOrgUnit: (unitId: any) => http.post(`/api/organization/delete_org_unit`, { unitId }),
   },
   document: {
-    uploadDocument: async (payload) => {
-      const formData = new FormData();
-      formData.append("file", payload.file);
-      formData.append("entity_type", payload.entity_type);
-      formData.append("entity_id", payload.entity_id);
-      formData.append("category", payload.category);
-      formData.append("visibility", payload.visibility);
-      return http.multipartRequest("POST", "/api/documents", formData);
-    },
-    getDocuments: (ownerId) => http.get(`/api/documents/${ownerId}`),
-    deleteDocument: (id) => http.del(`/api/documents/${id}`),
+    uploadDocument: (payload: any) => http.post(`/api/document/upload_document`, { payload }),
+    getDocuments: (params: any) => http.post(`/api/document/get_documents`, { params }),
+    deleteDocument: (id: any) => http.post(`/api/document/delete_document`, { id }),
   },
+
+  agent: {} as any,
+  docforge: {} as any,
 };

@@ -4,7 +4,7 @@
  *
  * Migrated: periods → periods, AcademicPeriodContext → AcademicPeriod.
  */
-import type { AcademicPeriod } from "./academic";
+import type { AcademicPeriod } from "./academic.js";
 
 export interface AcademicYear {
   id: string;
@@ -211,8 +211,12 @@ export interface DocumentTemplate {
   org_id: string;
   name: string;
   entity_type: string;
-  status: string;
-  document_json: string;
+  layout_type: string;
+  content: string;
+  page_size: string;
+  orientation: string;
+  margins: Record<string, any>;
+  is_default: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -314,4 +318,306 @@ export interface CursorPage<T> {
   count: number;
   next_cursor: string | null;
   has_more: boolean;
+}
+
+export interface Party {
+  id: string;
+  party_type: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProcessLog {
+  id: string;
+  saga_id: string;
+  status: string;
+  step_name: string;
+  payload?: Record<string, any>;
+  created_at: string;
+}
+
+export interface UserAccount {
+  id: string;
+  user_id: string;
+  provider: string;
+  provider_account_id: string;
+  provider_email?: string;
+  provider_name?: string;
+  provider_picture?: string;
+  access_token?: string;
+  refresh_token?: string;
+  id_token?: string;
+  expires_at?: string;
+  scope?: string;
+  token_type?: string;
+  meta?: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RolePermission {
+  role: string;
+  permission_id: number;
+  conditions?: Record<string, any>;
+  created_at: string;
+}
+
+export interface UserPermission {
+  id: string;
+  user_id: string;
+  permission_id: number;
+  grant_type: string;
+  conditions?: Record<string, any>;
+  valid_from?: string;
+  valid_until?: string;
+  reason?: string;
+  granted_by?: string;
+  granted_at: string;
+  is_active: boolean;
+}
+
+export interface Verification {
+  id: string;
+  user_id?: string;
+  identifier: string;
+  value: string;
+  type: string;
+  attempts?: number;
+  max_attempts?: number;
+  expires_at: string;
+  used_at?: string;
+  ip_address?: string;
+  user_agent?: string;
+  created_at: string;
+}
+
+export interface NotificationPreference {
+  id: string;
+  user_id: string;
+  notification_type: string;
+  in_app_enabled: boolean;
+  email_enabled: boolean;
+  sms_enabled: boolean;
+  push_enabled: boolean;
+  whatsapp_enabled: boolean;
+  quiet_hours_enabled: boolean;
+  quiet_hours_start?: string;
+  quiet_hours_end?: string;
+  digest_mode: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GradeHistory {
+  id: string;
+  grade_id: string;
+  score?: number;
+  grade_letter?: string;
+  is_absent?: boolean;
+  is_excused?: boolean;
+  comment?: string;
+  changed_by?: string;
+  changed_at: string;
+  change_reason?: string;
+  change_type: string;
+  snapshot?: Record<string, any>;
+  created_at: string;
+}
+
+export interface AttendanceDaily {
+  id: string;
+  org_id: string;
+  cycle_id: string;
+  enrollment_id: string;
+  date: string;
+  status: string;
+  lessons?: Record<string, any>;
+  total_lessons?: number;
+  present_lessons?: number;
+  absent_lessons?: number;
+  late_lessons?: number;
+  excused_lessons?: number;
+  late_minutes?: number;
+  excuse_type?: string;
+  excuse_document?: string;
+  excuse_notes?: string;
+  is_verified: boolean;
+  verified_by?: string;
+  verified_at?: string;
+  marked_by: string;
+  marked_at: string;
+  mark_method?: string;
+  device_id?: string;
+  location?: Record<string, any>;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AttendanceSummary {
+  id: string;
+  enrollment_id: string;
+  cycle_id: string;
+  total_lessons?: number;
+  present_lessons?: number;
+  absent_lessons?: number;
+  late_lessons?: number;
+  excused_lessons?: number;
+  late_minutes?: number;
+  attendance_rate?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LedgerAccount {
+  id: string;
+  org_id: string;
+  code: string;
+  name: string;
+  name_ar?: string;
+  type: string;
+  sub_type?: string;
+  parent_id?: string;
+  path: string;
+  depth: number;
+  currency: string;
+  opening_balance?: number;
+  current_balance?: number;
+  is_bank_account: boolean;
+  is_cash_account: boolean;
+  is_control_account: boolean;
+  external_ref?: Record<string, any>;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaymentPlan {
+  id: string;
+  org_id: string;
+  name: string;
+  name_ar?: string;
+  type: string;
+  schedule: Record<string, any>;
+  eligibility_rules?: Record<string, any>;
+  plan_fees?: Record<string, any>;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StudentDiscount {
+  id: string;
+  enrollment_id: string;
+  discount_template_id: string;
+  applied_amount: number;
+  applied_to_fee_id?: string;
+  status: string;
+  reason?: string;
+  evidence_urls?: Record<string, any>;
+  applied_by?: string;
+  applied_at?: string;
+  approved_by?: string;
+  approved_at?: string;
+  approval_notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TreasuryTransaction {
+  id: string;
+  org_id: string;
+  treasury_id: string;
+  journal_entry_id: string;
+  type: string;
+  category: string;
+  amount: number;
+  currency: string;
+  exchange_rate?: number;
+  reference_type?: string;
+  reference_id?: string;
+  description: string;
+  notes?: string;
+  attachments?: Record<string, any>;
+  created_by?: string;
+  approved_by?: string;
+  approved_at?: string;
+  transaction_date: string;
+  created_at: string;
+}
+
+export interface FinancialEvent {
+  id: string;
+  org_id: string;
+  event_type: string;
+  entity_type: string;
+  entity_id: string;
+  payload: Record<string, any>;
+  sequence_number?: number;
+  aggregate_id?: string;
+  status: string;
+  created_at: string;
+}
+
+export interface SystemLog {
+  id: string;
+  org_id?: string;
+  level: string;
+  category: string;
+  message: string;
+  details?: Record<string, any>;
+  stack_trace?: string;
+  user_id?: string;
+  request_id?: string;
+  endpoint?: string;
+  method?: string;
+  duration_ms?: number;
+  memory_usage_mb?: number;
+  cpu_usage_percent?: number;
+  timestamp: string;
+}
+
+export interface DataTransfer {
+  id: string;
+  org_id: string;
+  type: string;
+  entity_type: string;
+  file_name?: string;
+  file_url?: string;
+  file_size?: number;
+  file_format?: string;
+  total_records?: number;
+  success_records?: number;
+  failed_records?: number;
+  skipped_records?: number;
+  error_log?: Record<string, any>;
+  warning_log?: Record<string, any>;
+  status: string;
+  started_at?: string;
+  completed_at?: string;
+  cancelled_at?: string;
+  cancel_reason?: string;
+  initiated_by?: string;
+  config?: Record<string, any>;
+  mapping?: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReportDefinition {
+  id: string;
+  org_id: string;
+  name: string;
+  name_ar?: string;
+  description?: string;
+  base_entity: string;
+  columns: Record<string, any>;
+  joins?: Record<string, any>;
+  default_filters?: Record<string, any>;
+  group_by?: string;
+  sort_by?: string;
+  is_system: boolean;
+  created_at: string;
+  updated_at: string;
 }

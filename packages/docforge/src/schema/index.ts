@@ -57,8 +57,8 @@ function checkPathExists(schema: DataSchema, path: string[]): boolean {
     
     if (current.type === "object" && current.properties) {
       current = current.properties[part];
-    } else if (current.type === "array" && current.items) {
-      current = current.items;
+    } else if (current.type === "array" && (current as any).items) {
+      current = (current as any).items;
       // In arrays we might be accessing properties of the array items directly in a repeater
     } else {
       return false;

@@ -98,13 +98,27 @@ export interface Enrollment {
 export interface Subject {
   id: string;
   org_id: string;
+  unit_id?: string;
   code: string;
   name: string;
-  name_ar?: string | null;
-  is_core: number;
-  is_elective: number;
-  credit_hours?: number | null;
-  is_active: number;
+  name_ar?: string;
+  name_en?: string;
+  description?: string;
+  short_description?: string;
+  is_core: boolean;
+  is_elective: boolean;
+  credit_hours?: number;
+  requires_lab: boolean;
+  requires_practical: boolean;
+  max_students_per_class?: number;
+  default_grade_groups?: Record<string, any>;
+  prerequisites?: Record<string, any>;
+  learning_outcomes?: Record<string, any>;
+  color?: string;
+  icon?: string;
+  cover_image?: string;
+  sort_order?: number;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -128,10 +142,16 @@ export interface ClassSubject {
   id: string;
   class_id: string;
   subject_id: string;
-  period_id: string;
-  primary_teacher_id?: string | null;
-  weekly_hours?: number | null;
-  is_active: number;
+  cycle_id: string;
+  primary_teacher_id: string;
+  assistant_teacher_id?: string;
+  substitute_teacher_id?: string;
+  grade_groups?: Record<string, any>;
+  weekly_hours?: number;
+  theory_hours?: number;
+  practical_hours?: number;
+  assessment_config?: Record<string, any>;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -141,7 +161,22 @@ export interface StudentGuardian {
   student_id: string;
   guardian_id: string;
   relationship: string;
-  is_primary: number;
+  relationship_ar?: string;
+  is_primary: boolean;
+  is_emergency_contact: boolean;
+  is_authorized_pickup: boolean;
+  can_view_grades: boolean;
+  can_view_attendance: boolean;
+  can_view_behavior: boolean;
+  can_view_finance: boolean;
+  can_view_schedule: boolean;
+  can_receive_notifications: boolean;
+  is_payer: boolean;
+  payment_share_percent?: number;
+  occupation?: string;
+  employer?: string;
+  work_phone?: string;
+  notes?: string;
   created_at: string;
   updated_at: string;
 }

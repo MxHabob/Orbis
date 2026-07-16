@@ -29,9 +29,9 @@ export {
   type AutopilotTask,
   type AgentSession,
   type AgentActionLog,
-} from "./types/platform";
+} from './types/platform.js';
 
-export type * from "./types/index";
+export type * from './types/index.js';
 export {
   type AcademicPeriod,
   type Class,
@@ -42,12 +42,12 @@ export {
   type StudentGuardian,
   type Notification,
   type Organization,
-} from "./types/academic";
+} from './types/academic.js';
 
 export {
   type Document,
   type UploadDocumentPayload,
-} from "./types/document";
+} from './types/document.js';
 
 export {
   type Grade,
@@ -57,7 +57,7 @@ export {
   type GradeReportCard,
   type AttendanceReport,
   type GradeAnalytics,
-} from "./types/assessment";
+} from './types/assessment.js';
 
 export {
   type Payment,
@@ -68,14 +68,14 @@ export {
   type Account,
   type JournalEntry,
   type Currency,
-} from "./types/finance";
+} from './types/finance.js';
 
 export {
   type TimeSlot,
   type ScheduledLesson,
   type Room,
   type SolveJob,
-} from "./types/scheduling";
+} from './types/scheduling.js';
 
 export {
   type ExamSession,
@@ -83,36 +83,36 @@ export {
   type ExamSchedule,
   type ExamHall,
   type SeatingNumber,
-} from "./types/exam";
+} from './types/exam.js';
 
 export {
   type User,
   type UserRole,
   type UserSession,
   type Permission,
-} from "./types/iam";
+} from './types/iam.js';
 
 // ── Commands ────────────────────────────────────────────────────
-export type { OrbisCommands } from "./commands/index";
-export { type AcademicCommands } from "./commands/academic";
-export { type AssessmentCommands } from "./commands/assessment";
-export { type FinanceCommands } from "./commands/finance";
-export { type SchedulingCommands } from "./commands/scheduling";
-export { type ExamCommands } from "./commands/exam";
-export { type IamCommands, type PermissionRule } from "./commands/iam";
-export { type OrganizationCommands } from "./commands/organization";
-export { type DocforgeCommands } from "./commands/docforge";
+export type { OrbisCommands } from './commands/index.js';
+export { type AcademicCommands } from './commands/academic.js';
+export { type AssessmentCommands } from './commands/assessment.js';
+export { type FinanceCommands } from './commands/finance.js';
+export { type SchedulingCommands } from './commands/scheduling.js';
+export { type ExamCommands } from './commands/exam.js';
+export { type IamCommands, type PermissionRule } from './commands/iam.js';
+export { type OrganizationCommands } from './commands/organization.js';
+export { type DocforgeCommands } from './commands/docforge.js';
 
 // ── Errors ──────────────────────────────────────────────────────
-export { OrbisError, extractErrorMessage } from "./errors";
+export { OrbisError, extractErrorMessage } from './errors.js';
 
 // ── Permissions ─────────────────────────────────────────────────
-export { Permissions } from "./permissions";
+export { Permissions } from './permissions.js';
 
 // ── Events ──────────────────────────────────────────────────────
-export { EventTypes } from "./events";
+export { EventTypes } from './events.js';
 
 // ── Shared aliases ──────────────────────────────────────────────
-import type { StudentGuardian as _StudentGuardian } from "./types/academic";
+import type { StudentGuardian as _StudentGuardian } from './types/academic.js';
 export type GuardianLink = _StudentGuardian;
 export type JsonRecord = Record<string, any>;

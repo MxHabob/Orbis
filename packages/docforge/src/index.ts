@@ -103,7 +103,6 @@ export { createFullContext } from "./data";
 export { validateBindings } from "./schema";
 export type { DataSchema, DataSchemaProperty } from "./schema";
 export type {
-  DataSchema,
   DataFieldSchema,
   DataResolver,
   DataFilter,

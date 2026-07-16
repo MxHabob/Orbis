@@ -1,5 +1,5 @@
-/**
- * Docforge command interfaces — document rendering and canvas actions.
+﻿/**
+ * Docforge command interfaces â€” document rendering and canvas actions.
  */
 export interface DocforgeCommands {
   previewDocumentTemplate(
@@ -7,3 +7,4 @@ export interface DocforgeCommands {
     contextJson: string,
   ): Promise<number[]>;
 }
+

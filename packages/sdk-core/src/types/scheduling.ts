@@ -3,16 +3,18 @@
 export interface TimeSlot {
   id: string;
   org_id: string;
-  period_id: string;
+  cycle_id: string;
   slot_number: number;
-  name?: string | null;
-  name_ar?: string | null;
+  name?: string;
+  name_ar?: string;
   start_time: string;
   end_time: string;
   duration_minutes: number;
-  is_break: number;
-  break_type?: string | null;
-  is_active: number;
+  is_break: boolean;
+  break_type?: string;
+  applicable_days?: Record<string, any>;
+  sort_order?: number;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -20,17 +22,31 @@ export interface TimeSlot {
 export interface ScheduledLesson {
   id: string;
   org_id: string;
-  period_id: string;
+  cycle_id: string;
   class_id: string;
   class_subject_id: string;
   subject_id: string;
   teacher_id: string;
-  substitute_teacher_id?: string | null;
+  substitute_teacher_id?: string;
   time_slot_id: string;
   day_of_week: number;
-  room_id?: string | null;
+  room_id?: string;
+  room_name?: string;
   status: string;
-  topic?: string | null;
+  is_substituted: boolean;
+  substitution_reason?: string;
+  topic?: string;
+  topic_ar?: string;
+  objectives?: string;
+  materials?: Record<string, any>;
+  homework?: string;
+  homework_due_date?: string;
+  attendance_taken: boolean;
+  attendance_taken_at?: string;
+  attendance_taken_by?: string;
+  attendance_method?: string;
+  notes?: string;
+  cancellation_reason?: string;
   created_at: string;
   updated_at: string;
 }
