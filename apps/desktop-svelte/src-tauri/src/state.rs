@@ -50,7 +50,7 @@ impl PlatformServices {
         use svc_iam::ops::permission_checker::IamPermissionChecker;
         use svc_iam::ops::audit_logger::DbAuditLogger;
         use svc_organization::ops::settings::OrgSettingsProvider;
-        use svc_organization::ops::policy::OrgPolicyEngine;
+        use platform_policy::engine::PlatformPolicyEngine;
         use svc_finance::ops::fee_assigner::FinanceFeeAssigner;
         use infra_integration::notification_sender::LogNotificationSender;
 
@@ -71,7 +71,7 @@ impl PlatformServices {
             permissions: Arc::new(IamPermissionChecker::new(db.clone())),
             audit: Arc::new(DbAuditLogger::new(db.clone())),
             settings: Arc::new(OrgSettingsProvider::new(db.clone())),
-            policy: Arc::new(OrgPolicyEngine::new(db.clone())),
+            policy: Arc::new(PlatformPolicyEngine::new(db.clone())),
             notifier: Arc::new(LogNotificationSender::new()),
             fee_assigner: Arc::new(FinanceFeeAssigner::new(db)),
             period_gate: Arc::new(PeriodGate::new()),
@@ -84,82 +84,47 @@ impl PlatformServices {
         }
     }
 
-    /// Start the background event subscriber loop.
-    ///
-    /// Subscribes to EventBus and feeds every event through:
-    ///   1. ReactivePipeline (analyzers → DetectedInsight)
-    ///   2. PluginRegistry (plugins react to events)
-    ///   3. Insights are logged (future: persisted to ai_insight table)
+    /// Start the background domain event loop (reactive + plugins + DocForge).
     pub fn start_event_loop(self: &Arc<Self>) {
-        let platform = Arc::clone(self);
-        let mut rx = platform.event_bus.subscribe();
+        shared_kernel::outbox_relay::OutboxRelay::new(
+            self.event_store.db().clone(),
+            self.event_bus.clone(),
+        ).spawn();
 
-        tokio::spawn(async move {
-            tracing::info!("Event loop started — listening for domain events");
-            loop {
-                match rx.recv().await {
-                    Ok(event) => {
-                        // Skip events that are too deep in the chain
-                        if event.is_chain_too_deep() {
-                            tracing::warn!(
-                                event_type = %event.event_type,
-                                depth = event.chain_depth,
-                                "Event chain too deep — skipping"
-                            );
-                            continue;
-                        }
+        shared_kernel::event_loop::DomainEventLoop {
+            event_bus: self.event_bus.clone(),
+            db: self.event_store.db().clone(),
+            reactive: self.reactive.clone(),
+            plugins: self.plugins.clone(),
+            event_store: self.event_store.clone(),
+            projection_handler: Some(docforge_orbis::projection_handler::handler()),
+        }
+        .spawn();
+    }
 
-                        let org_id = &event.org_id;
+    /// Start autopilot background scheduler (15-minute interval).
+    pub fn start_autopilot_scheduler(self: &Arc<Self>) {
+        autopilot::subscriber::AutopilotSubscriber::spawn(
+            self.event_store.db().clone(),
+            self.event_bus.clone(),
+            self.period_gate.clone(),
+        );
 
-                        // 1. Run through reactive pipeline (produces insights)
-                        let db = platform.event_store.db();
-                        let insights = platform.reactive.process(db, org_id, &event).await;
-                        if !insights.is_empty() {
-                            tracing::info!(
-                                event = %event.event_type,
-                                insights = insights.len(),
-                                "Reactive pipeline produced insights"
-                            );
-                            
-                            for insight in insights {
-                                if let Err(e) = platform.event_store.persist_insight(
-                                    org_id,
-                                    &insight.insight_type,
-                                    insight.entity_type.as_deref(),
-                                    insight.entity_id.as_deref(),
-                                    &insight.title,
-                                    insight.title_ar.as_deref(),
-                                    &insight.summary,
-                                    insight.summary_ar.as_deref(),
-                                    &insight.severity,
-                                    insight.confidence,
-                                    insight.suggested_action.as_deref(),
-                                    "reactive_pipeline"
-                                ).await {
-                                    tracing::error!(
-                                        error = %e,
-                                        "Failed to persist AI insight from reactive pipeline"
-                                    );
-                                }
-                            }
-                        }
+        autopilot::scheduler::spawn_scheduler(
+            self.event_store.db().clone(),
+            self.event_bus.clone(),
+            self.period_gate.clone(),
+            std::time::Duration::from_secs(15 * 60),
+        );
+    }
 
-                        // 2. Notify plugins
-                        platform.plugins.dispatch(db, org_id, &event).await;
-                        
-                        // 3. Update DocForge Projections
-                        docforge_orbis::event_handler::handle_domain_event(db, &event).await;
-                    }
-                    Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
-                        tracing::warn!(missed = n, "Event subscriber lagged — missed events");
-                    }
-                    Err(tokio::sync::broadcast::error::RecvError::Closed) => {
-                        tracing::info!("Event bus closed — stopping event loop");
-                        break;
-                    }
-                }
-            }
-        });
+    /// Run global catch-up on startup.
+    pub fn start_autopilot_catch_up(self: &Arc<Self>) {
+        autopilot::resumption::ResumptionService::spawn_catch_up_all(
+            self.event_store.db().clone(),
+            self.event_bus.clone(),
+            self.period_gate.clone(),
+        );
     }
 
 
@@ -214,8 +179,10 @@ impl AppState {
         let event_bus = Arc::new(EventBus::new());
         let platform = Arc::new(PlatformServices::new(db, event_bus));
         
-        // Start background event loop (reactive pipeline + plugins)
+        // Start background event loop + autopilot scheduler + catch-up
         platform.start_event_loop();
+        platform.start_autopilot_scheduler();
+        platform.start_autopilot_catch_up();
         
         Ok(Self {
             provider,

@@ -5,6 +5,7 @@ edition = "2021"
 description = "Orbis Autopilot Engine — automated lifecycle management with 3 execution modes"
 
 [dependencies]
+svc-calendar = { workspace = true }
 # Kernel
 shared-kernel = { workspace = true }
 
@@ -37,3 +38,5 @@ tracing = { workspace = true }
 
 # Error handling
 thiserror = { workspace = true }
+platform-policy = { version = "0.1.0", path = "../platform-policy" }
+async-trait = "0.1.80"

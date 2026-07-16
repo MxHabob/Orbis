@@ -7,7 +7,7 @@ pub async fn students(
     ctx: &ServiceContext,
     data: serde_json::Value,
 ) -> Result<serde_json::Value, AppError> {
-    use crate::ops::student_registration::{register_student, RegisterStudentRequest};
+    use svc_enrollment_workflow::ops::student_registration::{register_student, RegisterStudentRequest};
     
     let students_list = data.get("students")
         .and_then(|v| v.as_array())

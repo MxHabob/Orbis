@@ -65,10 +65,8 @@ pub async fn create_job(
     Ok(created)
 }
 
-fn build_service(ctx: &ServiceContext) -> PromotionService {
-    let query_repo = crate::repository::OrganizationQueryRepo::new(ctx.db.clone());
-    let cmd_repo = crate::repository::OrganizationCommandRepo::new(ctx.db.clone());
-    PromotionService::new(Arc::new(cmd_repo), Arc::new(query_repo))
+fn build_service(_ctx: &ServiceContext) -> PromotionService {
+    PromotionService::new()
 }
 
 /// dry_run(&self, year_db, org_id, user_id, config) → PromotionPreview

@@ -11,7 +11,8 @@ use sea_orm::{DatabaseConnection, EntityTrait, ColumnTrait, QueryFilter};
 use tracing::debug;
 
 use shared_kernel::errors::AppError;
-use svc_organization::entities::{academic_year, academic_period, academic_policy};
+use svc_calendar::entities::{academic_year, academic_period};
+use platform_policy::entities::academic_policy;
 
 /// A task proposed by the evaluator for the planner to create.
 #[derive(Debug, Clone)]
@@ -59,6 +60,24 @@ impl ProposedTask {
             reason,
             risk,
             params: None,
+        }
+    }
+
+    pub fn new_with_params(
+        task_type: &str,
+        target_id: &str,
+        target_type: &str,
+        reason: String,
+        risk: Risk,
+        params: Option<String>,
+    ) -> Self {
+        Self {
+            task_type: task_type.to_string(),
+            target_id: target_id.to_string(),
+            target_type: target_type.to_string(),
+            reason,
+            risk,
+            params,
         }
     }
 }
@@ -285,15 +304,15 @@ impl AcademicEvaluator {
             }
         }
 
-        // ── 4. Promotion suggestion ────────────────────────────────────
+        // ⚡ 4. Promotion dry_run ───────────────────────────────────────────
         for year in &years {
             if year.status == "closing" {
                 tasks.push(ProposedTask::new(
-                    "promotion.suggest",
+                    "promotion.dry_run",
                     &year.id,
                     "academic_year",
-                    format!("Year '{}' is in closing state — consider promotion", year.name),
-                    Risk::Low,
+                    format!("Year '{}' is in closing state — initiating promotion dry-run", year.name),
+                    Risk::Medium,
                 ));
             }
         }

@@ -1,8 +1,35 @@
 //! Finance command repository — write operations.
 
 use crate::entities::{account, treasury, student_fee, payment, fee_template, journal_entry, discount_template, treasury_transaction};
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, DbErr, EntityTrait, ColumnTrait, QueryFilter};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, DbErr, EntityTrait, ColumnTrait, QueryFilter, ConnectionTrait};
 use super::FinanceCommandRepo;
+
+/// Update account balances on any connection (including transactions).
+pub async fn update_account_balance_on<C: ConnectionTrait>(
+    conn: &C,
+    account_id: &str,
+    currency: &str,
+    amount: f64,
+) -> Result<(), DbErr> {
+    let mut current_id = Some(account_id.to_string());
+    while let Some(id) = current_id {
+        let account = account::Entity::find_by_id(id).one(conn).await?;
+        if let Some(account) = account {
+            let mut cb: shared_kernel::currency::CurrencyBalance =
+                serde_json::from_value(account.balances.clone()).unwrap_or_default();
+            cb.add(currency, amount);
+
+            let mut active: account::ActiveModel = account.into();
+            active.balances = Set(serde_json::to_value(&cb).unwrap());
+            active.updated_at = Set(chrono::Utc::now().to_rfc3339());
+            let updated = active.update(conn).await?;
+            current_id = updated.parent_id;
+        } else {
+            break;
+        }
+    }
+    Ok(())
+}
 
 impl FinanceCommandRepo {
     // ── Ledger Accounts ──
@@ -33,25 +60,7 @@ impl FinanceCommandRepo {
     }
 
     pub async fn update_account_balance(&self, account_id: &str, currency: &str, amount: f64) -> Result<(), DbErr> {
-        let mut current_id = Some(account_id.to_string());
-        while let Some(id) = current_id {
-            let account = account::Entity::find_by_id(id)
-                .one(&self.db)
-                .await?;
-            if let Some(account) = account {
-                let mut cb: shared_kernel::currency::CurrencyBalance = serde_json::from_value(account.balances.clone()).unwrap_or_default();
-                cb.add(currency, amount);
-
-                let mut active: account::ActiveModel = account.into();
-                active.balances = Set(serde_json::to_value(&cb).unwrap());
-                active.updated_at = Set(chrono::Utc::now().to_rfc3339());
-                let updated = active.update(&self.db).await?;
-                current_id = updated.parent_id;
-            } else {
-                break;
-            }
-        }
-        Ok(())
+        update_account_balance_on(&self.db, account_id, currency, amount).await
     }
 
     // ── Treasuries ──

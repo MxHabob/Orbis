@@ -5,6 +5,7 @@ edition = "2021"
 description = "Orbis Assessment domain — grades, attendance, behavior records"
 
 [dependencies]
+svc-calendar = { workspace = true }
 shared-kernel = { workspace = true }
 infra-persistence = { workspace = true }
 async-trait = { workspace = true }

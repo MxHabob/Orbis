@@ -16,7 +16,7 @@ use sea_orm::{entity::prelude::*, QueryFilter, QueryOrder, EntityTrait, ColumnTr
 use super::ExamQueryRepo;
 
 use svc_academic::entities::{enrollment, class};
-use svc_organization::entities::academic_period;
+use svc_calendar::entities::academic_period;
 use svc_iam::entities::user;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

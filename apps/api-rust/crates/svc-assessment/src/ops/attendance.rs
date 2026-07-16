@@ -121,7 +121,7 @@ pub async fn record(
     {
         use shared_kernel::period_gate::GateType;
         let verdict = ctx.period_gate
-            .check(&ctx.db, &ctx.org_id, &req.period_id, GateType::Attendance)
+            .check(&ctx.db, &ctx.org_id, &req.period_id, GateType::Attendance, None)
             .await?;
         verdict.enforce()?;
     }
@@ -188,7 +188,7 @@ pub async fn record_bulk(
     {
         use shared_kernel::period_gate::GateType;
         let verdict = ctx.period_gate
-            .check(&ctx.db, &ctx.org_id, &req.period_id, GateType::Attendance)
+            .check(&ctx.db, &ctx.org_id, &req.period_id, GateType::Attendance, None)
             .await?;
         verdict.enforce()?;
     }

@@ -4,6 +4,8 @@ members = [
     "crates/shared-kernel",
     "crates/svc-iam",
     "crates/svc-organization",
+    "crates/svc-calendar",
+    "crates/svc-enrollment-workflow",
     "crates/svc-academic",
     "crates/svc-assessment",
     "crates/svc-scheduling",
@@ -18,6 +20,7 @@ members = [
     "crates/docforge-orbis",
     "crates/api-gateway",
     "crates/svc-document",
+    "crates/platform-policy",
 ]
 
 [workspace.dependencies]
@@ -26,7 +29,7 @@ axum = "0.7.5"
 tokio = { version = "1.38", features = ["full"] }
 
 # Database (SeaORM + SQLite)
-sea-orm = { version = "1.1.0", features = ["sqlx-sqlite", "runtime-tokio-native-tls", "macros"] }
+sea-orm = { version = "1.1.0", features = ["sqlx-sqlite", "sqlx-postgres", "runtime-tokio-native-tls", "macros"] }
 
 # Serialization
 serde = { version = "1.0.204", features = ["derive"] }
@@ -49,6 +52,8 @@ csv = "1.3"
 shared-kernel = { path = "crates/shared-kernel" }
 svc-iam = { path = "crates/svc-iam" }
 svc-organization = { path = "crates/svc-organization" }
+svc-calendar = { path = "crates/svc-calendar" }
+svc-enrollment-workflow = { path = "crates/svc-enrollment-workflow" }
 svc-academic = { path = "crates/svc-academic" }
 svc-assessment = { path = "crates/svc-assessment" }
 svc-scheduling = { path = "crates/svc-scheduling" }

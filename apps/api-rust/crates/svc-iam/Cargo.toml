@@ -18,3 +18,4 @@ tokio = { workspace = true }
 bcrypt = "0.15.1"
 jsonwebtoken = "9.3.0"
 utoipa = { version = "4.2.3", features = ["axum_extras"] }
+platform-policy = { version = "0.1.0", path = "../platform-policy" }

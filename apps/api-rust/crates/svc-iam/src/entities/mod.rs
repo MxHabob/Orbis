@@ -10,3 +10,5 @@ pub mod user_permission;
 pub mod verification;
 pub mod audit_log;
 pub mod notification_preference;
+pub mod party;
+pub mod person;

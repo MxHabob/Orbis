@@ -13,7 +13,7 @@ use shared_kernel::context::ServiceContext;
 use shared_kernel::errors::AppError;
 use shared_kernel::traits::{AuditEntry, Permission};
 
-use crate::entities::{grade, grade_history};
+use crate::entities::grade;
 use crate::services::grade::{
     UpdateGradeRequest, BulkSubjectGradeEntry, BulkSubjectGradeResult,
     UpsertCellRequest, UpsertCellResult, GradeReportCard, GradeAnalytics, GradeMatrixResponse,
@@ -27,37 +27,12 @@ use crate::services::grade::{
 async fn check_period_open(ctx: &ServiceContext, period_id: &str) -> Result<(), AppError> {
     use shared_kernel::period_gate::GateType;
     let verdict = ctx.period_gate
-        .check(&ctx.db, &ctx.org_id, period_id, GateType::GradeEntry)
+        .check(&ctx.db, &ctx.org_id, period_id, GateType::GradeEntry, None)
         .await?;
     verdict.enforce()
 }
 
-async fn save_grade_history(
-    ctx: &ServiceContext,
-    existing: &grade::Model,
-    changed_by: &str,
-    change_reason: Option<String>,
-    change_type: &str,
-) -> Result<(), AppError> {
-    let history = grade_history::Model {
-        id: Uuid::new_v4().to_string(),
-        grade_id: existing.id.clone(),
-        score: Some(existing.score),
-        grade_letter: existing.grade_letter.clone(),
-        is_absent: None,
-        is_excused: None,
-        comment: existing.notes.clone(),
-        change_type: change_type.to_string(),
-        change_reason,
-        changed_by: Some(changed_by.to_string()),
-        changed_at: Utc::now().to_rfc3339(),
-        snapshot: Some(serde_json::to_string(existing).unwrap_or_default()),
-        created_at: Utc::now().to_rfc3339(),
-    };
-    let active: grade_history::ActiveModel = history.into();
-    active.insert(&ctx.db).await?;
-    Ok(())
-}
+
 
 // ── Queries ─────────────────────────────────────────────────────
 
@@ -302,7 +277,7 @@ pub async fn update(
     check_period_open(ctx, &existing.period_id).await?;
 
     // Save history before update
-    save_grade_history(ctx, &existing, ctx.actor.as_str(), req.change_reason.clone(), "update").await?;
+    
 
     let old_data = serde_json::to_value(&existing).ok();
     let percentage = if req.max_score > 0.0 { (req.score / req.max_score) * 100.0 } else { 0.0 };
@@ -348,7 +323,7 @@ pub async fn bulk_subject_entry(
         std::sync::Arc::new(cmd_repo),
         std::sync::Arc::new(query_repo),
     );
-    let result = svc.bulk_subject_grade_entry(&ctx.org_id, ctx.actor.as_str(), entry).await?;
+    let result = svc.bulk_subject_grade_entry(&ctx.org_id, entry).await?;
 
     ctx.audit.log(AuditEntry {
         org_id: ctx.org_id.clone(),
@@ -386,7 +361,7 @@ pub async fn upsert_cell(
         std::sync::Arc::new(cmd_repo),
         std::sync::Arc::new(query_repo),
     );
-    svc.upsert_grade_cell(&ctx.org_id, ctx.actor.as_str(), req).await
+    svc.upsert_grade_cell(&ctx.org_id, req).await
 }
 
 /// Compile semester grades (aggregate all grades into final scores).
@@ -403,5 +378,5 @@ pub async fn compile_semester(
         std::sync::Arc::new(cmd_repo),
         std::sync::Arc::new(query_repo),
     );
-    svc.compile_semester_grades(&ctx.org_id, ctx.actor.as_str(), period_id, class_id, "semester_1").await
+    svc.compile_semester_grades(&ctx.org_id, period_id, class_id, "semester_1").await
 }

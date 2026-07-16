@@ -1,0 +1,18 @@
+[package]
+name = "svc-calendar"
+version = "2.0.0"
+edition = "2021"
+description = "Orbis Calendar domain — academic periods, terms, lock/unlock statuses"
+
+[dependencies]
+shared-kernel = { workspace = true }
+infra-persistence = { workspace = true }
+async-trait = { workspace = true }
+sea-orm = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+tokio = { workspace = true }
+utoipa = { version = "4.2.3", features = ["axum_extras"] }

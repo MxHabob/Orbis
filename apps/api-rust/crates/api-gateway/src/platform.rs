@@ -19,7 +19,7 @@ use shared_kernel::traits::Actor;
 pub use svc_iam::ops::permission_checker::IamPermissionChecker;
 pub use svc_iam::ops::audit_logger::DbAuditLogger;
 pub use svc_organization::ops::settings::OrgSettingsProvider;
-pub use svc_organization::ops::policy::OrgPolicyEngine;
+pub use platform_policy::engine::PlatformPolicyEngine;
 pub use svc_finance::ops::fee_assigner::FinanceFeeAssigner;
 
 /// Platform services container — holds all Arc'd trait implementations.
@@ -43,14 +43,14 @@ pub struct PlatformServices {
 impl PlatformServices {
     /// Build all platform services from a database connection.
     pub fn new(db: DatabaseConnection, event_bus: Arc<EventBus>) -> Self {
-        use infra_integration::notification_sender::LogNotificationSender;
+        use infra_integration::notification_sender::DbNotificationSender;
 
         Self {
             permissions: Arc::new(IamPermissionChecker::new(db.clone())),
             audit: Arc::new(DbAuditLogger::new(db.clone())),
             settings: Arc::new(OrgSettingsProvider::new(db.clone())),
-            policy: Arc::new(OrgPolicyEngine::new(db.clone())),
-            notifier: Arc::new(LogNotificationSender::new()),
+            policy: Arc::new(PlatformPolicyEngine::new(db.clone())),
+            notifier: Arc::new(DbNotificationSender::new(db.clone())),
             fee_assigner: Arc::new(FinanceFeeAssigner::new(db.clone())),
             period_gate: Arc::new(shared_kernel::period_gate::PeriodGate::new()),
             event_bus,

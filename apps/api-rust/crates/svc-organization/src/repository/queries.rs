@@ -1,16 +1,15 @@
 //! Organization query repository — read operations.
 
 use crate::entities::{
-    organization, academic_year, academic_period,
-    academic_policy,
-    promotion_job, promotion_detail,
+    organization,
 };
+use svc_calendar::entities::{academic_year, academic_period, period_template};
+use svc_enrollment_workflow::entities::{promotion_job, promotion_detail};
+
 use sea_orm::{entity::prelude::*, QueryFilter, QueryOrder, EntityTrait, ColumnTrait};
 use super::OrganizationQueryRepo;
 
 impl OrganizationQueryRepo {
-    // ── Organization Queries ────────────────────────────────────
-
     pub async fn get_organization_by_id(&self, id: &str) -> Result<Option<organization::Model>, DbErr> {
         organization::Entity::find()
             .filter(organization::Column::Id.eq(id))
@@ -52,15 +51,6 @@ impl OrganizationQueryRepo {
     }
 
 
-
-    // ── Policy Queries ──────────────────────────────────────────
-
-    pub async fn get_academic_policy(&self, org_id: &str) -> Result<Option<academic_policy::Model>, DbErr> {
-        academic_policy::Entity::find()
-            .filter(academic_policy::Column::OrgId.eq(org_id))
-            .one(&self.db)
-            .await
-    }
 
     // ── Promotion Queries ──
 

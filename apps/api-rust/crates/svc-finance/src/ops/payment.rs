@@ -1,7 +1,7 @@
 //! Payment operations — record payments with double-entry accounting.
 
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, TransactionTrait};
 use uuid::Uuid;
 
 use shared_kernel::context::ServiceContext;
@@ -12,7 +12,6 @@ use shared_kernel::traits::{AuditEntry, Permission};
 use crate::contracts::commands::{CreateJournalEntryCmd, RecordPaymentCmd};
 use crate::contracts::events::event_types;
 use crate::entities::{payment, student_fee, treasury, treasury_transaction, currency};
-use svc_academic::entities::enrollment;
 
 use crate::ops::ledger;
 
@@ -48,15 +47,12 @@ pub async fn record(
         .await?
         .ok_or_else(|| AppError::not_found("student_fee", &fee_id))?;
 
-    let enroll = enrollment::Entity::find_by_id(fee.enrollment_id.clone())
-        .one(&ctx.db)
-        .await?
-        .ok_or_else(|| AppError::not_found("enrollment", &fee.enrollment_id))?;
+    let student_id = infra_persistence::fee_assignment::enrollment_student_id(&ctx.db, &fee.enrollment_id).await?;
 
     let student_account = ledger::get_or_create_sub_account(
         ctx,
         "student",
-        &enroll.student_id,
+        &student_id,
         None,
         None,
     ).await?;
@@ -113,9 +109,6 @@ pub async fn record(
         created_by: Some(ctx.actor.as_str().to_string()),
     };
 
-    let active: payment::ActiveModel = p.into();
-    let payment_record = active.insert(&ctx.db).await?;
-
     let description = format!("Fee payment received via {}: {}", cmd.method, receipt_number);
     let description_ar = Some(format!("سداد رسوم عبر {}: {}", cmd.method, receipt_number));
 
@@ -134,9 +127,22 @@ pub async fn record(
         source_id: Some(payment_id.clone()),
         source_module: Some("finance".to_string()),
     };
-    
-    // ops::ledger::create_journal_entry already updates ledger balances and emits events
-    ledger::create_journal_entry(ctx, je_cmd).await?;
+
+    let fee_net = fee.net_amount;
+    let fee_id_for_status = fee_id.clone();
+
+    let txn = ctx.db.begin().await
+        .map_err(|e| AppError::internal(format!("Failed to start payment transaction: {e}")))?;
+
+    let active: payment::ActiveModel = p.into();
+    let payment_record = active.insert(&txn).await?;
+
+    let created_je = ledger::post_journal_entry(
+        &txn,
+        &ctx.org_id,
+        Some(ctx.actor.as_str()),
+        je_cmd,
+    ).await?;
 
     let tx = treasury_transaction::Model {
         id: Uuid::new_v4().to_string(),
@@ -159,25 +165,24 @@ pub async fn record(
         transaction_date: Utc::now().format("%Y-%m-%d").to_string(),
         created_at: now.clone(),
     };
-    
+
     let tx_active: treasury_transaction::ActiveModel = tx.into();
-    tx_active.insert(&ctx.db).await?;
+    tx_active.insert(&txn).await?;
 
     let current_treasury_bal = trsy.current_balance.unwrap_or(0.0);
     let mut tr_active: treasury::ActiveModel = trsy.into();
     tr_active.current_balance = Set(Some(current_treasury_bal + cmd.amount));
-    tr_active.update(&ctx.db).await?;
+    tr_active.update(&txn).await?;
 
     let payments = payment::Entity::find()
         .filter(payment::Column::OrgId.eq(&ctx.org_id))
-        .filter(payment::Column::FeeId.eq(fee_id.clone()))
-        .all(&ctx.db).await?;
+        .filter(payment::Column::FeeId.eq(fee_id_for_status.clone()))
+        .all(&txn)
+        .await?;
 
-    let total_paid: f64 = payments.iter()
-        .map(|p| p.base_amount)
-        .sum();
+    let total_paid: f64 = payments.iter().map(|p| p.base_amount).sum();
 
-    let new_status = if total_paid >= fee.net_amount {
+    let new_status = if total_paid >= fee_net {
         "paid".to_string()
     } else if total_paid > 0.0 {
         "partially_paid".to_string()
@@ -185,24 +190,49 @@ pub async fn record(
         "unpaid".to_string()
     };
 
-    let mut fee_active: student_fee::ActiveModel = fee.into();
+    let fee_row = student_fee::Entity::find_by_id(fee_id_for_status.clone())
+        .one(&txn)
+        .await?
+        .ok_or_else(|| AppError::not_found("student_fee", &fee_id_for_status))?;
+
+    let mut fee_active: student_fee::ActiveModel = fee_row.into();
     fee_active.status = Set(new_status);
-    fee_active.update(&ctx.db).await?;
+    fee_active.update(&txn).await?;
+
+    txn.commit().await
+        .map_err(|e| AppError::internal(format!("Failed to commit payment transaction: {e}")))?;
 
     ctx.event_bus.publish(EventEnvelope {
         event_type: event_types::PAYMENT_RECORDED.into(),
-        entity_type: "payment".into(), entity_id: payment_id.clone(),
-        org_id: ctx.org_id.clone(), actor: ctx.actor.as_str().into(),
+        entity_type: "payment".into(),
+        entity_id: payment_id.clone(),
+        org_id: ctx.org_id.clone(),
+        actor: ctx.actor.as_str().into(),
         actor_type: ctx.actor.actor_type().into(),
         correlation_id: ctx.correlation_id.clone(),
         payload: serde_json::to_value(&payment_record).unwrap_or_default(),
         chain_depth: 0,
     });
 
+    ctx.event_bus.publish(EventEnvelope {
+        event_type: event_types::JOURNAL_ENTRY_POSTED.into(),
+        entity_type: "journal_entry".into(),
+        entity_id: created_je.id.clone(),
+        org_id: ctx.org_id.clone(),
+        actor: ctx.actor.as_str().into(),
+        actor_type: ctx.actor.actor_type().into(),
+        correlation_id: ctx.correlation_id.clone(),
+        payload: serde_json::to_value(&created_je).unwrap_or_default(),
+        chain_depth: 0,
+    });
+
     ctx.audit.log(AuditEntry {
-        org_id: ctx.org_id.clone(), actor: ctx.actor.clone(),
-        action: "payment.record".into(), entity_type: "payment".into(),
-        entity_id: payment_id.clone(), old_data: None,
+        org_id: ctx.org_id.clone(),
+        actor: ctx.actor.clone(),
+        action: "payment.record".into(),
+        entity_type: "payment".into(),
+        entity_id: payment_id.clone(),
+        old_data: None,
         new_data: Some(serde_json::to_value(&payment_record).unwrap_or_default()),
         correlation_id: ctx.correlation_id.clone(),
     }).await?;

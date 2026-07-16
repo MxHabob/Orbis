@@ -1,0 +1,75 @@
+﻿use chrono::{NaiveDate, Utc};
+use sea_orm::{DatabaseConnection, EntityTrait, ColumnTrait, QueryFilter};
+use tracing::debug;
+
+use shared_kernel::errors::AppError;
+use svc_calendar::entities::{academic_year, academic_period};
+use platform_policy::entities::academic_policy;
+
+/// A task proposed by the evaluator for the planner to create.
+#[derive(Debug, Clone)]
+pub struct ProposedTask {
+    pub task_type: String,
+    pub target_id: String,
+    pub target_type: String,
+    pub reason: String,
+    pub risk: Risk,
+    /// Additional context as JSON
+    pub params: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Risk {
+    Low,
+    Medium,
+    High,
+    Critical,
+}
+
+impl Risk {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Risk::Low => "low",
+            Risk::Medium => "medium",
+            Risk::High => "high",
+            Risk::Critical => "critical",
+        }
+    }
+}
+
+impl ProposedTask {
+    pub fn new(
+        task_type: &str,
+        target_id: &str,
+        target_type: &str,
+        reason: String,
+        risk: Risk,
+    ) -> Self {
+        Self {
+            task_type: task_type.to_string(),
+            target_id: target_id.to_string(),
+            target_type: target_type.to_string(),
+            reason,
+            risk,
+            params: None,
+        }
+    }
+
+    pub fn new_with_params(
+        task_type: &str,
+        target_id: &str,
+        target_type: &str,
+        reason: String,
+        risk: Risk,
+        params: Option<String>,
+    ) -> Self {
+        Self {
+            task_type: task_type.to_string(),
+            target_id: target_id.to_string(),
+            target_type: target_type.to_string(),
+            reason,
+            risk,
+            params,
+        }
+    }
+}

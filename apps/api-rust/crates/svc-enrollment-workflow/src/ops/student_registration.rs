@@ -11,7 +11,7 @@
 //!
 //! If any step fails, ProcessManager compensates all completed steps.
 
-use sea_orm::{ActiveModelTrait, EntityTrait, ColumnTrait, QueryFilter, PaginatorTrait};
+use sea_orm::{ActiveModelTrait, EntityTrait, ColumnTrait, QueryFilter, PaginatorTrait, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
@@ -21,7 +21,7 @@ use shared_kernel::process::{ProcessState, CompensationAction};
 use shared_kernel::traits::{AuditEntry, Permission};
 
 use svc_iam::entities::user;
-use svc_academic::entities::{enrollment, student_guardian};
+use svc_academic::entities::{enrollment, student_guardian, class};
 
 /// Student registration request.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -61,8 +61,11 @@ pub async fn register_student(
         .check(&ctx.actor, Permission::EnrollmentWrite)
         .await?;
 
+    let tx = ctx.db.begin().await.map_err(|e| AppError::internal(format!("Failed to begin transaction: {}", e)))?;
+
     // ── Initialize Process ───────────────────────────────────────
-    let mut process = ProcessState::new(
+    let mut process = ProcessState::start(
+        &ctx.db,
         "student_registration",
         &ctx.org_id,
         &[
@@ -74,48 +77,48 @@ pub async fn register_student(
             "link_guardian",
             "assign_fees",
         ],
-    );
+    ).await?;
 
     // ── Step 1: Validate ─────────────────────────────────────────
-    process.begin_step("validate")?;
+    process.begin_step(&ctx.db, "validate").await?;
     let settings = ctx.settings.get_registration_settings(&ctx.org_id).await?;
     for field in &settings.required_fields {
         match field.as_str() {
             "email" => {
                 if req.email.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true) {
-                    process.fail_step("validate", "Email is required by organization policy");
+                    process.fail_step(&ctx.db, "validate", "Email is required by organization policy").await?;
                     return Err(AppError::validation("Email is required by organization policy"));
                 }
             }
             "phone" => {
                 if req.phone.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true) {
-                    process.fail_step("validate", "Phone is required by organization policy");
+                    process.fail_step(&ctx.db, "validate", "Phone is required by organization policy").await?;
                     return Err(AppError::validation("Phone is required by organization policy"));
                 }
             }
             "national_id" => {
                 if req.national_id.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true) {
-                    process.fail_step("validate", "National ID is required by organization policy");
+                    process.fail_step(&ctx.db, "validate", "National ID is required by organization policy").await?;
                     return Err(AppError::validation("National ID is required by organization policy"));
                 }
             }
             _ => {}
         }
     }
-    process.complete_step("validate", serde_json::json!({"fields_checked": settings.required_fields.len()}))?;
+    process.complete_step(&ctx.db, "validate", serde_json::json!({"fields_checked": settings.required_fields.len()})).await?;
 
     // ── Step 2: Check Duplicates ─────────────────────────────────
-    process.begin_step("check_duplicates")?;
+    process.begin_step(&ctx.db, "check_duplicates").await?;
     if let Some(ref email) = req.email {
         if !email.trim().is_empty() {
             let exists = user::Entity::find()
                 .filter(user::Column::OrgId.eq(&ctx.org_id))
                 .filter(user::Column::Email.eq(email))
-                .one(&ctx.db)
+                .one(&tx)
                 .await?
                 .is_some();
             if exists {
-                process.fail_step("check_duplicates", "Email already registered");
+                process.fail_step(&ctx.db, "check_duplicates", "Email already registered").await?;
                 return Err(AppError::conflict(format!("Email '{}' is already registered", email)));
             }
         }
@@ -125,19 +128,19 @@ pub async fn register_student(
             let exists = user::Entity::find()
                 .filter(user::Column::OrgId.eq(&ctx.org_id))
                 .filter(user::Column::NationalId.eq(nid))
-                .one(&ctx.db)
+                .one(&tx)
                 .await?
                 .is_some();
             if exists {
-                process.fail_step("check_duplicates", "National ID already registered");
+                process.fail_step(&ctx.db, "check_duplicates", "National ID already registered").await?;
                 return Err(AppError::conflict(format!("National ID '{}' is already registered", nid)));
             }
         }
     }
-    process.complete_step("check_duplicates", serde_json::json!({"passed": true}))?;
+    process.complete_step(&ctx.db, "check_duplicates", serde_json::json!({"passed": true})).await?;
 
     // ── Step 3: Create Student User ──────────────────────────────
-    process.begin_step("create_user")?;
+    process.begin_step(&ctx.db, "create_user").await?;
     let student_user_id = uuid::Uuid::new_v4().to_string();
     let now = chrono::Utc::now().to_rfc3339();
     let cost = if cfg!(debug_assertions) { 4 } else { 10 };
@@ -165,41 +168,47 @@ pub async fn register_student(
         ..Default::default()
     };
 
-    match new_user.insert(&ctx.db).await {
+    match new_user.insert(&tx).await {
         Ok(_) => {
-            process.complete_step("create_user", serde_json::json!({"user_id": &student_user_id}))?;
-            process.add_compensation("create_user", CompensationAction::DeleteEntity {
-                entity_type: "users".to_string(),
-                id: student_user_id.clone(),
-            });
+            process.complete_step(&ctx.db, "create_user", serde_json::json!({"user_id": &student_user_id})).await?;
         }
         Err(e) => {
-            process.fail_step("create_user", &e.to_string());
-            process.compensate(&ctx.db).await?;
+            process.fail_step(&ctx.db, "create_user", &e.to_string()).await?;
+            tx.rollback().await.map_err(|e| AppError::internal(format!("Rollback failed: {}", e)))?;
             return Err(AppError::internal(format!("Failed to create student user: {}", e)));
         }
     }
 
     // ── Step 4: Generate Student Number ──────────────────────────
-    process.begin_step("generate_number")?;
+    process.begin_step(&ctx.db, "generate_number").await?;
     let sequence = enrollment::Entity::find()
         .filter(enrollment::Column::OrgId.eq(&ctx.org_id))
-        .count(&ctx.db)
+        .count(&tx)
         .await? + 1;
     let prefix = &settings.student_number_prefix;
     let digits = settings.student_number_digits;
     let student_number = format!("{}{:0width$}", prefix, sequence, width = digits);
-    process.complete_step("generate_number", serde_json::json!({"number": &student_number}))?;
+    process.complete_step(&ctx.db, "generate_number", serde_json::json!({"number": &student_number})).await?;
 
     // ── Step 5: Create Enrollment ────────────────────────────────
-    process.begin_step("create_enrollment")?;
+    process.begin_step(&ctx.db, "create_enrollment").await?;
     let class_id = req.class_id.clone().unwrap_or_default();
     let enrollment_id = uuid::Uuid::new_v4().to_string();
+
+    let class_period_id = if !class_id.is_empty() {
+        class::Entity::find_by_id(class_id.clone())
+            .one(&tx)
+            .await?
+            .map(|c| c.period_id)
+            .unwrap_or_default()
+    } else {
+        String::new()
+    };
 
     let new_enrollment = enrollment::ActiveModel {
         id: sea_orm::ActiveValue::Set(enrollment_id.clone()),
         org_id: sea_orm::ActiveValue::Set(ctx.org_id.clone()),
-        period_id: sea_orm::ActiveValue::Set(String::new()),
+        period_id: sea_orm::ActiveValue::Set(class_period_id.clone()),
         student_id: sea_orm::ActiveValue::Set(student_user_id.clone()),
         class_id: sea_orm::ActiveValue::Set(class_id.clone()),
         student_number: sea_orm::ActiveValue::Set(student_number.clone()),
@@ -211,23 +220,19 @@ pub async fn register_student(
         ..Default::default()
     };
 
-    match new_enrollment.insert(&ctx.db).await {
+    match new_enrollment.insert(&tx).await {
         Ok(_) => {
-            process.complete_step("create_enrollment", serde_json::json!({"enrollment_id": &enrollment_id}))?;
-            process.add_compensation("create_enrollment", CompensationAction::DeleteEntity {
-                entity_type: "enrollments".to_string(),
-                id: enrollment_id.clone(),
-            });
+            process.complete_step(&ctx.db, "create_enrollment", serde_json::json!({"enrollment_id": &enrollment_id})).await?;
         }
         Err(e) => {
-            process.fail_step("create_enrollment", &e.to_string());
-            process.compensate(&ctx.db).await?;
+            process.fail_step(&ctx.db, "create_enrollment", &e.to_string()).await?;
+            tx.rollback().await.map_err(|e| AppError::internal(format!("Rollback failed: {}", e)))?;
             return Err(AppError::internal(format!("Failed to create enrollment: {}", e)));
         }
     }
 
     // ── Step 6: Link Guardian ────────────────────────────────────
-    process.begin_step("link_guardian")?;
+    process.begin_step(&ctx.db, "link_guardian").await?;
     let guardian_linked = if let (Some(ref g_name), Some(ref g_phone)) = (&req.guardian_name, &req.guardian_phone) {
         if !g_name.trim().is_empty() && !g_phone.trim().is_empty() {
             let guardian_id = uuid::Uuid::new_v4().to_string();
@@ -245,7 +250,7 @@ pub async fn register_student(
                 updated_at: sea_orm::ActiveValue::Set(now.clone()),
                 ..Default::default()
             };
-            g_user.insert(&ctx.db).await?;
+            g_user.insert(&tx).await?;
 
             // Create link
             let link = student_guardian::ActiveModel {
@@ -269,12 +274,8 @@ pub async fn register_student(
                 updated_at: sea_orm::ActiveValue::Set(now.clone()),
                 ..Default::default()
             };
-            link.insert(&ctx.db).await?;
+            link.insert(&tx).await?;
 
-            process.add_compensation("link_guardian", CompensationAction::DeleteEntity {
-                entity_type: "users".to_string(),
-                id: guardian_id,
-            });
             true
         } else {
             false
@@ -282,12 +283,17 @@ pub async fn register_student(
     } else {
         false
     };
-    process.complete_step("link_guardian", serde_json::json!({"linked": guardian_linked}))?;
+    process.complete_step(&ctx.db, "link_guardian", serde_json::json!({"linked": guardian_linked})).await?;
 
     // ── Step 7: Assign Mandatory Fees ────────────────────────────
-    process.begin_step("assign_fees")?;
+    process.begin_step(&ctx.db, "assign_fees").await?;
     let fees_assigned = if settings.auto_assign_fees {
-        match ctx.fee_assigner.assign_mandatory_fees(&ctx.org_id, &enrollment_id, &class_id).await {
+        match ctx.fee_assigner.assign_mandatory_fees(
+            &ctx.org_id,
+            &enrollment_id,
+            &class_id,
+            &class_period_id,
+        ).await {
             Ok(ids) => ids.len(),
             Err(e) => {
                 tracing::warn!(error = %e, "Fee assignment failed — continuing without fees");
@@ -297,10 +303,10 @@ pub async fn register_student(
     } else {
         0
     };
-    process.complete_step("assign_fees", serde_json::json!({"count": fees_assigned}))?;
+    process.complete_step(&ctx.db, "assign_fees", serde_json::json!({"count": fees_assigned})).await?;
 
     // ── Complete Process ─────────────────────────────────────────
-    process.complete();
+    process.complete(&ctx.db).await?;
 
     // ── Event Sourcing ───────────────────────────────────────────
     let payload = serde_json::json!({
@@ -353,6 +359,8 @@ pub async fn register_student(
         student_number = %student_number,
         "Student registered successfully"
     );
+
+    tx.commit().await.map_err(|e| AppError::internal(format!("Commit failed: {}", e)))?;
 
     Ok(RegistrationResult {
         user_id: student_user_id,

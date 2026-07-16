@@ -48,6 +48,44 @@ impl EventStore {
         &self.db
     }
 
+    /// Transactionally write an event to the outbox for background delivery.
+    /// Used for critical events where at-least-once delivery is required.
+    pub async fn publish_to_outbox<'a, C>(
+        tx: &'a C,
+        event: &crate::event_bus::EventEnvelope,
+    ) -> Result<(), AppError>
+    where
+        C: sea_orm::ConnectionTrait,
+    {
+        let id = format!("outbox_{}", uuid::Uuid::new_v4().to_string().replace("-", "")).chars().take(24).collect::<String>();
+        let now = chrono::Utc::now().to_rfc3339();
+        
+        // Serialize the envelope completely
+        let payload_str = serde_json::to_string(event)
+            .map_err(|e| AppError::internal(format!("Outbox serialization failed: {}", e)))?;
+
+        let sql = r#"
+            INSERT INTO outbox_events
+                (id, org_id, event_type, payload, created_at)
+            VALUES
+                ($1, $2, $3, $4, $5)
+        "#;
+
+        tx.execute(Statement::from_sql_and_values(
+            DbBackend::Sqlite,
+            sql,
+            vec![
+                id.into(),
+                event.org_id.clone().into(),
+                event.event_type.clone().into(),
+                payload_str.into(),
+                now.into(),
+            ],
+        )).await?;
+
+        Ok(())
+    }
+
     /// Append a new event for an aggregate.
     ///
     /// The `version` is auto-incremented per aggregate (aggregate_type + aggregate_id).

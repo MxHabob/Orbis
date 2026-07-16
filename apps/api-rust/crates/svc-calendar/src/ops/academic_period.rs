@@ -13,6 +13,11 @@ use shared_kernel::traits::{AuditEntry, Permission};
 
 use crate::entities::academic_period;
 
+async fn invalidate_period_gate(ctx: &ServiceContext, period_id: &str) {
+    ctx.period_gate.invalidate_period(period_id).await;
+    ctx.period_gate.invalidate_policy(&ctx.org_id).await;
+}
+
 /// List all periods for the current year.
 pub async fn list(ctx: &ServiceContext) -> Result<Vec<academic_period::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::PeriodRead).await?;
@@ -184,7 +189,9 @@ pub async fn lock(ctx: &ServiceContext, period_id: &str) -> Result<academic_peri
     active.locked_by = Set(Some(ctx.actor.as_str().to_string()));
     active.updated_at = Set(Utc::now().to_rfc3339());
 
-    Ok(active.update(&ctx.db).await?)
+    let updated = active.update(&ctx.db).await?;
+    invalidate_period_gate(ctx, period_id).await;
+    Ok(updated)
 }
 
 pub async fn unlock(ctx: &ServiceContext, period_id: &str) -> Result<academic_period::Model, AppError> {
@@ -197,7 +204,9 @@ pub async fn unlock(ctx: &ServiceContext, period_id: &str) -> Result<academic_pe
     active.locked_by = Set(None);
     active.updated_at = Set(Utc::now().to_rfc3339());
 
-    Ok(active.update(&ctx.db).await?)
+    let updated = active.update(&ctx.db).await?;
+    invalidate_period_gate(ctx, period_id).await;
+    Ok(updated)
 }
 
 pub async fn toggle_enrollment(
@@ -212,7 +221,9 @@ pub async fn toggle_enrollment(
     active.is_enrollment_open = Set(if open { 1 } else { 0 });
     active.updated_at = Set(Utc::now().to_rfc3339());
 
-    Ok(active.update(&ctx.db).await?)
+    let updated = active.update(&ctx.db).await?;
+    invalidate_period_gate(ctx, period_id).await;
+    Ok(updated)
 }
 
 pub async fn toggle_grade_entry(
@@ -227,7 +238,9 @@ pub async fn toggle_grade_entry(
     active.is_grade_entry_open = Set(if open { 1 } else { 0 });
     active.updated_at = Set(Utc::now().to_rfc3339());
 
-    Ok(active.update(&ctx.db).await?)
+    let updated = active.update(&ctx.db).await?;
+    invalidate_period_gate(ctx, period_id).await;
+    Ok(updated)
 }
 
 #[derive(serde::Deserialize)]

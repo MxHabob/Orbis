@@ -1,13 +1,13 @@
 //! Promotion Engine — orchestrates the multi-phase academic promotion workflow.
 
-use std::sync::Arc;
+
 use sea_orm::{DatabaseConnection, ConnectionTrait, ColumnTrait, EntityTrait, QueryFilter, ActiveModelTrait};
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
 use shared_kernel::errors::AppError;
 use crate::entities::{promotion_job, promotion_detail};
-use crate::repository::{OrganizationCommandRepo, OrganizationQueryRepo};
+
 
 use svc_academic::entities::{class, enrollment};
 
@@ -101,13 +101,13 @@ pub struct EnrollmentData {
 }
 
 pub struct PromotionService {
-    pub cmd: Arc<OrganizationCommandRepo>,
-    pub query: Arc<OrganizationQueryRepo>,
+    
+    
 }
 
 impl PromotionService {
-    pub fn new(cmd: Arc<OrganizationCommandRepo>, query: Arc<OrganizationQueryRepo>) -> Self {
-        Self { cmd, query }
+    pub fn new() -> Self {
+        Self {}
     }
 
     /// Phase 1: Dry Run — analyze all students and generate a preview.
@@ -149,7 +149,7 @@ impl PromotionService {
             updated_at: now,
         };
 
-        let job = self.cmd.create_promotion_job(job).await?;
+        let active: promotion_job::ActiveModel = job.into(); let job = active.insert(db).await?;
 
         let enrollments = Self::fetch_enrollment_data(db, org_id, &config.source_period_id).await?;
 
@@ -210,7 +210,7 @@ impl PromotionService {
             });
         }
 
-        self.cmd.create_promotion_details_batch(details).await?;
+        if !details.is_empty() { promotion_detail::Entity::insert_many(details.into_iter().map(Into::<promotion_detail::ActiveModel>::into)).exec(db).await?; }
 
         let total = enrollments.len() as i32;
 
@@ -236,7 +236,7 @@ impl PromotionService {
         updated_job.dry_run_result = Some(summary_json.to_string());
         updated_job.dry_run_at = Some(chrono::Utc::now().to_rfc3339());
         updated_job.updated_at = chrono::Utc::now().to_rfc3339();
-        self.cmd.update_promotion_job(updated_job.clone()).await?;
+        let active: promotion_job::ActiveModel = updated_job.clone().into(); active.update(db).await?;
 
         let preview_details: Vec<PromotionDetailPreview> = enrollments.iter().enumerate().map(|(i, e)| {
             PromotionDetailPreview {
@@ -272,8 +272,7 @@ impl PromotionService {
         db: &DatabaseConnection,
         job_id: &str,
     ) -> Result<PromotionResult, AppError> {
-        let mut job = self.query.get_promotion_job_by_id(job_id).await?
-            .ok_or_else(|| AppError::not_found("promotion_job", job_id))?;
+        let mut job = promotion_job::Entity::find_by_id(job_id).one(db).await?.ok_or_else(|| AppError::not_found("job", job_id))?;
 
         if job.status != "dry_run" && job.status != "confirmed" {
             return Err(AppError::validation(format!("Cannot execute job in status '{}'", job.status)));
@@ -285,11 +284,11 @@ impl PromotionService {
         job.status = "executing".to_string();
         job.started_at = Some(chrono::Utc::now().to_rfc3339());
         job.updated_at = chrono::Utc::now().to_rfc3339();
-        self.cmd.update_promotion_job(job.clone()).await?;
+        let active: promotion_job::ActiveModel = job.clone().into(); active.update(db).await?;
 
         // 1. Create target year
         let now = chrono::Utc::now().to_rfc3339();
-        let target_year = crate::entities::academic_year::Model {
+        let target_year = svc_calendar::entities::academic_year::Model {
             id: uuid::Uuid::new_v4().to_string(),
             org_id: job.org_id.clone(),
             name: config.target_year_name.clone(),
@@ -303,21 +302,22 @@ impl PromotionService {
             locked_at: None,
             locked_by: None,
             lock_reason: None,
+            current_period_id: None,
             archived_at: None,
             archived_by: None,
             notes: None,
             created_at: now.clone(),
-            updated_at: now.clone(),
+            updated_at: now,
         };
 
-        let target_year = self.cmd.create_year(target_year).await?;
+        let active: svc_calendar::entities::academic_year::ActiveModel = target_year.into(); let target_year = active.insert(db).await?;
         
         // 2. Create target classes
         Self::create_target_classes(db, db, &config, &target_year.id).await?;
         info!("🏫 Target classes created");
 
         // 3. Create target enrollments
-        let details = self.query.get_promotion_details(job_id).await?;
+        let details = promotion_detail::Entity::find().filter(promotion_detail::Column::JobId.eq(job_id)).all(db).await?;
         let promoted_details: Vec<_> = details.iter()
             .filter(|d| d.decision == "promoted")
             .collect();
@@ -343,7 +343,7 @@ impl PromotionService {
         final_job.target_period_id = Some(target_year.id.clone());
         final_job.updated_at = chrono::Utc::now().to_rfc3339();
 
-        self.cmd.update_promotion_job(final_job).await?;
+        let active: promotion_job::ActiveModel = final_job.into(); active.update(db).await?;
 
         info!("✅ Promotion completed: {} promoted, {} retained, {} graduated",
               promoted_count, retained_count, graduated_count);
@@ -367,8 +367,7 @@ impl PromotionService {
         job_id: &str,
         user_id: &str,
     ) -> Result<(), AppError> {
-        let mut job = self.query.get_promotion_job_by_id(job_id).await?
-            .ok_or_else(|| AppError::not_found("promotion_job", job_id))?;
+        let mut job = promotion_job::Entity::find_by_id(job_id).one(db).await?.ok_or_else(|| AppError::not_found("job", job_id))?;
 
         if job.status != "completed" {
             return Err(AppError::validation(format!("Cannot rollback job in status '{}'", job.status)));
@@ -388,7 +387,7 @@ impl PromotionService {
             ).await;
             
             // Delete the academic year
-            self.cmd.delete_year(target_period_id).await?;
+            svc_calendar::entities::academic_year::Entity::delete_by_id(target_period_id.to_string()).exec(db).await?;
         }
 
         job.status = "rolled_back".to_string();
@@ -396,7 +395,7 @@ impl PromotionService {
         job.rolled_back_by = Some(user_id.to_string());
         job.rollback_available = 0;
         job.updated_at = chrono::Utc::now().to_rfc3339();
-        self.cmd.update_promotion_job(job).await?;
+        let active: promotion_job::ActiveModel = job.into(); active.update(db).await?;
 
         info!("↩️ Promotion {} rolled back by {}", job_id, user_id);
         Ok(())

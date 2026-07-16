@@ -21,3 +21,4 @@ pub mod batch_multi_up;
 pub mod projection;
 pub mod schema_registry;
 pub mod event_handler;
+pub mod projection_handler;

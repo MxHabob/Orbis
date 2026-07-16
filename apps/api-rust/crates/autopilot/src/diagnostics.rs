@@ -1,9 +1,9 @@
-//! Diagnostics — system health checks and problem detection.
+﻿//! Diagnostics â€” system health checks and problem detection.
 //!
 //! Runs as part of each tick to detect:
-//!   • Tasks stuck in executing state
-//!   • Tasks that have exceeded their deadline
-//!   • Stale autopilot (no tick for too long)
+//!   â€¢ Tasks stuck in executing state
+//!   â€¢ Tasks that have exceeded their deadline
+//!   â€¢ Stale autopilot (no tick for too long)
 
 use chrono::Utc;
 use sea_orm::{DatabaseConnection, EntityTrait, ColumnTrait, QueryFilter};
@@ -68,7 +68,7 @@ impl Diagnostics {
             .filter(autopilot_task::Column::Status.is_in([
                 autopilot_task::status::PENDING,
                 autopilot_task::status::READY,
-                autopilot_task::status::SUGGESTED,
+                autopilot_task::status::REQUIRES_APPROVAL,
             ]))
             .all(db)
             .await?;

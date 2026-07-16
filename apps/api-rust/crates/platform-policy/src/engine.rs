@@ -18,11 +18,11 @@ use crate::entities::academic_policy;
 ///
 /// Evaluates whether specific actions require approval based on org policies.
 /// Supports branch-level policy overrides via `org_unit_id`.
-pub struct OrgPolicyEngine {
+pub struct PlatformPolicyEngine {
     db: sea_orm::DatabaseConnection,
 }
 
-impl OrgPolicyEngine {
+impl PlatformPolicyEngine {
     pub fn new(db: sea_orm::DatabaseConnection) -> Self {
         Self { db }
     }
@@ -64,7 +64,7 @@ impl OrgPolicyEngine {
 }
 
 #[async_trait]
-impl PolicyEngine for OrgPolicyEngine {
+impl PolicyEngine for PlatformPolicyEngine {
     async fn requires_approval(&self, action: &str, org_id: &str) -> Result<bool, AppError> {
         let policy = self.get_policy(org_id).await?;
 

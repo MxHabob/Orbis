@@ -8,159 +8,104 @@ use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
 use shared_kernel::errors::AppError;
 use crate::entities::{role_permission, user};
 
-/// System-wide permission variants.
-///
-/// Each variant maps to a (document_type, action) pair in the
-/// `role_permissions` table. Admin/SuperAdmin bypass all checks.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum Permission {
-    // Organization
-    OrganizationRead, OrganizationWrite,
-    // Users
-    UserRead, UserWrite, UserDelete, UserRoleWrite, UserPasswordWrite,
-    // Academic Period
-    PeriodRead, PeriodWrite, PeriodActivate, PeriodLock, PeriodUnlock, GradeEntryManage,
-    // Org Units
-    OrgUnitRead, OrgUnitWrite, OrgUnitDelete,
-    // Classes
-    ClassRead, ClassWrite, ClassDelete,
-    // Subjects
-    SubjectRead, SubjectWrite, SubjectDelete,
-    // Schedule
-    ScheduleRead, ScheduleWrite, ScheduleDelete,
-    // Assessments
-    AssessmentRead, AssessmentWrite, AssessmentDelete,
-    // Guardians
-    GuardianRead, GuardianWrite, GuardianDelete,
-    // Documents
-    DocumentRead, DocumentWrite, DocumentDelete,
-    // Enrollments
-    EnrollmentRead, EnrollmentWrite, EnrollmentPromote, EnrollmentTransfer,
-    // Grades
-    GradeRead, GradeWrite, GradeAnalytics, GradeReport,
-    // Attendance
-    AttendanceRead, AttendanceWrite, AttendanceAnalytics, AttendanceReport,
-    // Behavior
-    BehaviorRead, BehaviorWrite, BehaviorDelete, BehaviorAI,
-    // Notifications
-    NotificationRead, NotificationWrite,
-    // Dashboard & Audit
-    DashboardRead, AuditRead,
-    // Finance
-    FinanceRead, FinanceWrite,
-    // Import/Export
-    ImportData, ExportData,
-    // Examination
-    ExamSessionRead, ExamSessionWrite, ExamSessionActivate, ExamSessionDelete,
-    SeatingNumberGenerate, SeatingNumberRead,
-    SecretNumberGenerate, SecretNumberRead, SecretNumberReveal,
-    ExamHallRead, ExamHallWrite, ExamHallAllocate,
-    ProctorRead, ProctorAssign,
-    StudentOrderRead, StudentOrderRebuild, StudentOrderFreeze,
-    ExamScheduleRead, ExamScheduleWrite,
-    // Templates
-    TemplateRead, TemplateWrite, TemplatePublish, TemplateDelete,
-    TemplateImport, TemplateExport,
-    TemplateGenerateSingle, TemplateGenerateBatch, TemplateGenerateDownload,
-    TemplateAssetUpload, TemplateAssetDelete,
-    TemplateComponentWrite, TemplateComponentDelete,
-}
+use shared_kernel::traits::Permission;
 
-impl Permission {
-    /// Map a Permission variant to (document_type, action) for database lookup.
-    pub fn to_doc_action(&self) -> (&'static str, &'static str) {
-        match self {
-            Self::OrganizationRead => ("Organization", "read"),
-            Self::OrganizationWrite => ("Organization", "write"),
-            Self::UserRead => ("User", "read"),
-            Self::UserWrite => ("User", "write"),
-            Self::UserDelete => ("User", "delete"),
-            Self::UserRoleWrite => ("User", "role_write"),
-            Self::UserPasswordWrite => ("User", "password_write"),
-            Self::PeriodRead => ("Period", "read"),
-            Self::PeriodWrite => ("Period", "write"),
-            Self::PeriodActivate => ("Period", "activate"),
-            Self::PeriodLock => ("Period", "lock"),
-            Self::PeriodUnlock => ("Period", "unlock"),
-            Self::GradeEntryManage => ("GradeEntry", "manage"),
-            Self::OrgUnitRead => ("OrgUnit", "read"),
-            Self::OrgUnitWrite => ("OrgUnit", "write"),
-            Self::OrgUnitDelete => ("OrgUnit", "delete"),
-            Self::ClassRead => ("Class", "read"),
-            Self::ClassWrite => ("Class", "write"),
-            Self::ClassDelete => ("Class", "delete"),
-            Self::SubjectRead => ("Subject", "read"),
-            Self::SubjectWrite => ("Subject", "write"),
-            Self::SubjectDelete => ("Subject", "delete"),
-            Self::ScheduleRead => ("Schedule", "read"),
-            Self::ScheduleWrite => ("Schedule", "write"),
-            Self::ScheduleDelete => ("Schedule", "delete"),
-            Self::AssessmentRead => ("Assessment", "read"),
-            Self::AssessmentWrite => ("Assessment", "write"),
-            Self::AssessmentDelete => ("Assessment", "delete"),
-            Self::GuardianRead => ("Guardian", "read"),
-            Self::GuardianWrite => ("Guardian", "write"),
-            Self::GuardianDelete => ("Guardian", "delete"),
-            Self::DocumentRead => ("Document", "read"),
-            Self::DocumentWrite => ("Document", "write"),
-            Self::DocumentDelete => ("Document", "delete"),
-            Self::EnrollmentRead => ("Enrollment", "read"),
-            Self::EnrollmentWrite => ("Enrollment", "write"),
-            Self::EnrollmentPromote => ("Enrollment", "promote"),
-            Self::EnrollmentTransfer => ("Enrollment", "transfer"),
-            Self::GradeRead => ("Grade", "read"),
-            Self::GradeWrite => ("Grade", "write"),
-            Self::GradeAnalytics => ("Grade", "analytics"),
-            Self::GradeReport => ("Grade", "report"),
-            Self::AttendanceRead => ("Attendance", "read"),
-            Self::AttendanceWrite => ("Attendance", "write"),
-            Self::AttendanceAnalytics => ("Attendance", "analytics"),
-            Self::AttendanceReport => ("Attendance", "report"),
-            Self::BehaviorRead => ("Behavior", "read"),
-            Self::BehaviorWrite => ("Behavior", "write"),
-            Self::BehaviorDelete => ("Behavior", "delete"),
-            Self::BehaviorAI => ("Behavior", "ai"),
-            Self::NotificationRead => ("Notification", "read"),
-            Self::NotificationWrite => ("Notification", "write"),
-            Self::DashboardRead => ("Dashboard", "read"),
-            Self::AuditRead => ("Audit", "read"),
-            Self::FinanceRead => ("Finance", "read"),
-            Self::FinanceWrite => ("Finance", "write"),
-            Self::ImportData => ("ImportExport", "import"),
-            Self::ExportData => ("ImportExport", "export"),
-            Self::ExamSessionRead => ("Exam", "read"),
-            Self::ExamSessionWrite => ("Exam", "write"),
-            Self::ExamSessionActivate => ("Exam", "activate"),
-            Self::ExamSessionDelete => ("Exam", "delete"),
-            Self::SeatingNumberGenerate => ("Exam", "generate_seating"),
-            Self::SeatingNumberRead => ("Exam", "read_seating"),
-            Self::SecretNumberGenerate => ("Exam", "generate_secret"),
-            Self::SecretNumberRead => ("Exam", "read_secret"),
-            Self::SecretNumberReveal => ("Exam", "reveal_secret"),
-            Self::ExamHallRead => ("Exam", "read_hall"),
-            Self::ExamHallWrite => ("Exam", "write_hall"),
-            Self::ExamHallAllocate => ("Exam", "allocate_hall"),
-            Self::ProctorRead => ("Exam", "read_proctor"),
-            Self::ProctorAssign => ("Exam", "assign_proctor"),
-            Self::StudentOrderRead => ("Exam", "read_order"),
-            Self::StudentOrderRebuild => ("Exam", "rebuild_order"),
-            Self::StudentOrderFreeze => ("Exam", "freeze_order"),
-            Self::ExamScheduleRead => ("Exam", "read_schedule"),
-            Self::ExamScheduleWrite => ("Exam", "write_schedule"),
-            Self::TemplateRead => ("Template", "read"),
-            Self::TemplateWrite => ("Template", "write"),
-            Self::TemplatePublish => ("Template", "publish"),
-            Self::TemplateDelete => ("Template", "delete"),
-            Self::TemplateImport => ("Template", "import"),
-            Self::TemplateExport => ("Template", "export"),
-            Self::TemplateGenerateSingle => ("Template", "generate_single"),
-            Self::TemplateGenerateBatch => ("Template", "generate_batch"),
-            Self::TemplateGenerateDownload => ("Template", "generate_download"),
-            Self::TemplateAssetUpload => ("Template", "asset_upload"),
-            Self::TemplateAssetDelete => ("Template", "asset_delete"),
-            Self::TemplateComponentWrite => ("Template", "component_write"),
-            Self::TemplateComponentDelete => ("Template", "component_delete"),
-        }
+/// Map a Permission variant to (document_type, action) for database lookup.
+pub fn to_doc_action(permission: &Permission) -> (&'static str, &'static str) {
+    match permission {
+        Permission::OrganizationRead => ("Organization", "read"),
+        Permission::OrganizationWrite => ("Organization", "write"),
+            Permission::UserRead => ("User", "read"),
+            Permission::UserWrite => ("User", "write"),
+            Permission::UserDelete => ("User", "delete"),
+            Permission::UserRoleWrite => ("User", "role_write"),
+            Permission::UserPasswordWrite => ("User", "password_write"),
+            Permission::PeriodRead => ("Period", "read"),
+            Permission::PeriodWrite => ("Period", "write"),
+            Permission::PeriodActivate => ("Period", "activate"),
+            Permission::PeriodLock => ("Period", "lock"),
+            Permission::PeriodUnlock => ("Period", "unlock"),
+            Permission::GradeEntryManage => ("GradeEntry", "manage"),
+            Permission::OrgUnitRead => ("OrgUnit", "read"),
+            Permission::OrgUnitWrite => ("OrgUnit", "write"),
+            Permission::OrgUnitDelete => ("OrgUnit", "delete"),
+            Permission::ClassRead => ("Class", "read"),
+            Permission::ClassWrite => ("Class", "write"),
+            Permission::ClassDelete => ("Class", "delete"),
+            Permission::SubjectRead => ("Subject", "read"),
+            Permission::SubjectWrite => ("Subject", "write"),
+            Permission::SubjectDelete => ("Subject", "delete"),
+            Permission::ScheduleRead => ("Schedule", "read"),
+            Permission::ScheduleWrite => ("Schedule", "write"),
+            Permission::ScheduleDelete => ("Schedule", "delete"),
+            Permission::AssessmentRead => ("Assessment", "read"),
+            Permission::AssessmentWrite => ("Assessment", "write"),
+            Permission::AssessmentDelete => ("Assessment", "delete"),
+            Permission::GuardianRead => ("Guardian", "read"),
+            Permission::GuardianWrite => ("Guardian", "write"),
+            Permission::GuardianDelete => ("Guardian", "delete"),
+            Permission::DocumentRead => ("Document", "read"),
+            Permission::DocumentWrite => ("Document", "write"),
+            Permission::DocumentDelete => ("Document", "delete"),
+            Permission::EnrollmentRead => ("Enrollment", "read"),
+            Permission::EnrollmentWrite => ("Enrollment", "write"),
+            Permission::EnrollmentPromote => ("Enrollment", "promote"),
+            Permission::EnrollmentTransfer => ("Enrollment", "transfer"),
+            Permission::GradeRead => ("Grade", "read"),
+            Permission::GradeWrite => ("Grade", "write"),
+            Permission::GradeAnalytics => ("Grade", "analytics"),
+            Permission::GradeReport => ("Grade", "report"),
+            Permission::AttendanceRead => ("Attendance", "read"),
+            Permission::AttendanceWrite => ("Attendance", "write"),
+            Permission::AttendanceAnalytics => ("Attendance", "analytics"),
+            Permission::AttendanceReport => ("Attendance", "report"),
+            Permission::BehaviorRead => ("Behavior", "read"),
+            Permission::BehaviorWrite => ("Behavior", "write"),
+            Permission::BehaviorDelete => ("Behavior", "delete"),
+            Permission::BehaviorAI => ("Behavior", "ai"),
+            Permission::NotificationRead => ("Notification", "read"),
+            Permission::NotificationWrite => ("Notification", "write"),
+            Permission::DashboardRead => ("Dashboard", "read"),
+            Permission::AuditRead => ("Audit", "read"),
+            Permission::FinanceRead => ("Finance", "read"),
+            Permission::FinanceWrite => ("Finance", "write"),
+            Permission::ImportData => ("ImportExport", "import"),
+            Permission::ExportData => ("ImportExport", "export"),
+            Permission::ExamSessionRead => ("Exam", "read"),
+            Permission::ExamSessionWrite => ("Exam", "write"),
+            Permission::ExamSessionActivate => ("Exam", "activate"),
+            Permission::ExamSessionDelete => ("Exam", "delete"),
+            Permission::SeatingNumberGenerate => ("Exam", "generate_seating"),
+            Permission::SeatingNumberRead => ("Exam", "read_seating"),
+            Permission::SecretNumberGenerate => ("Exam", "generate_secret"),
+            Permission::SecretNumberRead => ("Exam", "read_secret"),
+            Permission::SecretNumberReveal => ("Exam", "reveal_secret"),
+            Permission::ExamHallRead => ("Exam", "read_hall"),
+            Permission::ExamHallWrite => ("Exam", "write_hall"),
+            Permission::ExamHallAllocate => ("Exam", "allocate_hall"),
+            Permission::ProctorRead => ("Exam", "read_proctor"),
+            Permission::ProctorAssign => ("Exam", "assign_proctor"),
+            Permission::StudentOrderRead => ("Exam", "read_order"),
+            Permission::StudentOrderRebuild => ("Exam", "rebuild_order"),
+            Permission::StudentOrderFreeze => ("Exam", "freeze_order"),
+            Permission::ExamScheduleRead => ("Exam", "read_schedule"),
+            Permission::ExamScheduleWrite => ("Exam", "write_schedule"),
+            Permission::TemplateRead => ("Template", "read"),
+            Permission::TemplateWrite => ("Template", "write"),
+            Permission::TemplatePublish => ("Template", "publish"),
+            Permission::TemplateDelete => ("Template", "delete"),
+            Permission::TemplateImport => ("Template", "import"),
+            Permission::TemplateExport => ("Template", "export"),
+            Permission::TemplateGenerateSingle => ("Template", "generate_single"),
+            Permission::TemplateGenerateBatch => ("Template", "generate_batch"),
+            Permission::TemplateGenerateDownload => ("Template", "generate_download"),
+            Permission::TemplateAssetUpload => ("Template", "asset_upload"),
+        Permission::TemplateAssetDelete => ("Template", "asset_delete"),
+        Permission::TemplateComponentWrite => ("Template", "component_write"),
+        Permission::TemplateComponentDelete => ("Template", "component_delete"),
+        Permission::PromotionRead => ("Promotion", "read"),
+        Permission::PromotionWrite => ("Promotion", "write"),
+        Permission::PromotionExecute => ("Promotion", "execute"),
     }
 }
 
@@ -209,7 +154,7 @@ impl AuthzService {
         }
 
         // 3. Database rule lookup
-        let (doc_type, action) = permission.to_doc_action();
+        let (doc_type, action) = to_doc_action(&permission);
 
         let rule = role_permission::Entity::find()
             .filter(role_permission::Column::Role.eq(&role))
@@ -225,7 +170,29 @@ impl AuthzService {
             return Err(AppError::unauthorized(format!("Action '{}' not permitted for '{}'", action, doc_type)));
         }
 
-        // 4. Creator-only check
+        // 4. ABAC (Attribute-Based Access Control) Integration
+        if let Some(ctx) = ctx {
+            let mut abac_ctx = platform_policy::abac::PolicyContext::new();
+            abac_ctx.subject_attributes.insert("role".to_string(), role.clone());
+            abac_ctx.subject_attributes.insert("user_id".to_string(), user.id.clone());
+            
+            if let Some(ref target_class_id) = ctx.target_class_id {
+                abac_ctx.resource_attributes.insert("class_id".to_string(), target_class_id.clone());
+            }
+            if let Some(ref target_user_id) = ctx.target_user_id {
+                abac_ctx.resource_attributes.insert("target_user_id".to_string(), target_user_id.clone());
+            }
+            abac_ctx.resource_attributes.insert("doc_type".to_string(), doc_type.to_string());
+
+            // Instantiate a lightweight ABAC engine (in a real app, rules are loaded from DB/Cache)
+            let abac_engine = platform_policy::abac::AbacEngine::new(vec![]);
+            if abac_engine.evaluate(&abac_ctx) == platform_policy::abac::Effect::Deny {
+                // For now, we only log ABAC denials as it's running in shadow mode
+                tracing::debug!("ABAC shadow evaluation: Denied access to {} for {}", doc_type, user.id);
+            }
+        }
+
+        // 5. Creator-only check
         if rule.only_if_creator == 1 {
             let is_creator = ctx
                 .and_then(|c| c.target_user_id.as_ref())

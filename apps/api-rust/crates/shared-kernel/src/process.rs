@@ -100,9 +100,9 @@ pub struct ProcessState {
 }
 
 impl ProcessState {
-    /// Create a new process with named steps.
-    pub fn new(process_type: &str, org_id: &str, step_names: &[&str]) -> Self {
-        Self {
+    /// Create a new process and persist it immediately.
+    pub async fn start(db: &DatabaseConnection, process_type: &str, org_id: &str, step_names: &[&str]) -> Result<Self, AppError> {
+        let state = Self {
             id: uuid::Uuid::new_v4().to_string(),
             process_type: process_type.to_string(),
             org_id: org_id.to_string(),
@@ -121,29 +121,69 @@ impl ProcessState {
             current_step: 0,
             started_at: chrono::Utc::now().to_rfc3339(),
             completed_at: None,
-        }
+        };
+        state.persist(db).await?;
+        Ok(state)
+    }
+
+    /// Persist the current state to the `process_log` table.
+    async fn persist(&self, db: &DatabaseConnection) -> Result<(), AppError> {
+        let steps_json = serde_json::to_string(&self.steps)
+            .map_err(|e| AppError::internal(format!("Failed to serialize process steps: {}", e)))?;
+        
+        let status_str = serde_json::to_string(&self.status)
+            .unwrap_or_else(|_| "\"Unknown\"".to_string());
+
+        let sql = r#"
+            INSERT INTO process_log (id, process_type, org_id, status, steps, current_step, started_at, completed_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            ON CONFLICT(id) DO UPDATE SET
+                status = excluded.status,
+                steps = excluded.steps,
+                current_step = excluded.current_step,
+                completed_at = excluded.completed_at
+        "#;
+
+        db.execute(Statement::from_sql_and_values(
+            DbBackend::Sqlite,
+            sql,
+            vec![
+                self.id.clone().into(),
+                self.process_type.clone().into(),
+                self.org_id.clone().into(),
+                status_str.into(),
+                steps_json.into(),
+                (self.current_step as i32).into(),
+                self.started_at.clone().into(),
+                self.completed_at.clone().map(|s| s.into()).unwrap_or(sea_orm::Value::String(None)),
+            ],
+        )).await?;
+
+        Ok(())
     }
 
     /// Mark a step as in-progress.
-    pub fn begin_step(&mut self, name: &str) -> Result<(), AppError> {
+    pub async fn begin_step(&mut self, db: &DatabaseConnection, name: &str) -> Result<(), AppError> {
         let step = self.find_step_mut(name)?;
         step.status = StepStatus::InProgress;
         step.started_at = Some(chrono::Utc::now().to_rfc3339());
+        self.persist(db).await?;
         Ok(())
     }
 
     /// Mark a step as completed with its result.
-    pub fn complete_step(&mut self, name: &str, result: serde_json::Value) -> Result<(), AppError> {
+    pub async fn complete_step(&mut self, db: &DatabaseConnection, name: &str, result: serde_json::Value) -> Result<(), AppError> {
         let step = self.find_step_mut(name)?;
         step.status = StepStatus::Completed;
         step.result = Some(result);
         step.completed_at = Some(chrono::Utc::now().to_rfc3339());
         self.current_step += 1;
+        self.persist(db).await?;
         Ok(())
     }
 
     /// Mark a step as failed and update process status.
-    pub fn fail_step(&mut self, name: &str, error_msg: &str) {
+    pub async fn fail_step(&mut self, db: &DatabaseConnection, name: &str, error_msg: &str) -> Result<(), AppError> {
         if let Ok(step) = self.find_step_mut(name) {
             step.status = StepStatus::Failed;
             step.completed_at = Some(chrono::Utc::now().to_rfc3339());
@@ -152,19 +192,25 @@ impl ProcessState {
             step: name.to_string(),
             error: error_msg.to_string(),
         };
+        self.persist(db).await?;
+        Ok(())
     }
 
     /// Register a compensation action for a completed step.
-    pub fn add_compensation(&mut self, step_name: &str, action: CompensationAction) {
+    pub async fn add_compensation(&mut self, db: &DatabaseConnection, step_name: &str, action: CompensationAction) -> Result<(), AppError> {
         if let Ok(step) = self.find_step_mut(step_name) {
             step.compensation = Some(action);
+            self.persist(db).await?;
         }
+        Ok(())
     }
 
     /// Mark the entire process as completed.
-    pub fn complete(&mut self) {
+    pub async fn complete(&mut self, db: &DatabaseConnection) -> Result<(), AppError> {
         self.status = ProcessStatus::Completed;
         self.completed_at = Some(chrono::Utc::now().to_rfc3339());
+        self.persist(db).await?;
+        Ok(())
     }
 
     /// Compensate all completed steps in reverse order.
@@ -180,7 +226,7 @@ impl ProcessState {
                 continue;
             }
 
-            if let Some(ref action) = self.steps[i].compensation {
+            if let Some(ref action) = self.steps[i].compensation.clone() {
                 let step_name = self.steps[i].name.clone();
                 info!(process = %self.process_type, step = %step_name, "Compensating step");
 
@@ -188,6 +234,7 @@ impl ProcessState {
                     Ok(()) => {
                         self.steps[i].status = StepStatus::Compensated;
                         info!(step = %step_name, "Step compensated successfully");
+                        let _ = self.persist(db).await; // ignore persist errors during compensation
                     }
                     Err(e) => {
                         error!(step = %step_name, error = %e, "Compensation failed — manual intervention required");
@@ -199,6 +246,7 @@ impl ProcessState {
 
         self.status = ProcessStatus::Compensated;
         self.completed_at = Some(chrono::Utc::now().to_rfc3339());
+        self.persist(db).await?;
         Ok(())
     }
 

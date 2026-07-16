@@ -1,10 +1,10 @@
 //! Organization command repository — write operations.
 
 use crate::entities::{
-    organization, academic_period,
-    academic_policy,
-    promotion_job, promotion_detail,
+    organization,
 };
+use svc_calendar::entities::{academic_year, academic_period, period_template};
+use svc_enrollment_workflow::entities::{promotion_job, promotion_detail};
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, DbErr, EntityTrait};
 use super::OrganizationCommandRepo;
 
@@ -51,17 +51,17 @@ impl OrganizationCommandRepo {
 
     // ── Year Commands ──────────────────────────────────────────
 
-    pub async fn create_year(&self, y: crate::entities::academic_year::Model) -> Result<crate::entities::academic_year::Model, DbErr> {
-        let active: crate::entities::academic_year::ActiveModel = y.into();
+    pub async fn create_year(&self, y: academic_year::Model) -> Result<academic_year::Model, DbErr> {
+        let active: academic_year::ActiveModel = y.into();
         active.insert(&self.db).await
     }
 
-    pub async fn update_year(&self, model: crate::entities::academic_year::ActiveModel) -> Result<crate::entities::academic_year::Model, DbErr> {
+    pub async fn update_year(&self, model: academic_year::ActiveModel) -> Result<academic_year::Model, DbErr> {
         model.update(&self.db).await
     }
 
     pub async fn delete_year(&self, period_id: &str) -> Result<(), DbErr> {
-        crate::entities::academic_year::Entity::delete_by_id(period_id.to_string())
+        academic_year::Entity::delete_by_id(period_id.to_string())
             .exec(&self.db)
             .await?;
         Ok(())
@@ -111,47 +111,6 @@ impl OrganizationCommandRepo {
     }
 
 
-
-    // ── Policy Commands ─────────────────────────────────────────
-
-    pub async fn upsert_academic_policy(&self, p: academic_policy::Model) -> Result<academic_policy::Model, DbErr> {
-        let active = academic_policy::ActiveModel {
-            id: Set(p.id),
-            org_id: Set(p.org_id),
-            org_unit_id: Set(p.org_unit_id),
-            default_grading_system: Set(p.default_grading_system),
-            default_passing_grade: Set(p.default_passing_grade),
-            default_max_grade: Set(p.default_max_grade),
-            enrollment_auto_close: Set(p.enrollment_auto_close),
-            allow_late_enrollment: Set(p.allow_late_enrollment),
-            late_enrollment_approval: Set(p.late_enrollment_approval),
-            grade_entry_auto_close: Set(p.grade_entry_auto_close),
-            allow_grade_edit_after_close: Set(p.allow_grade_edit_after_close),
-            grade_edit_approval: Set(p.grade_edit_approval),
-            passing_score: Set(p.passing_score),
-            min_attendance_rate: Set(p.min_attendance_rate),
-            auto_graduate_final_level: Set(p.auto_graduate_final_level),
-            final_level: Set(p.final_level),
-            exclude_withdrawn: Set(p.exclude_withdrawn),
-            autopilot_mode: Set(p.autopilot_mode),
-            autopilot_enabled: Set(p.autopilot_enabled),
-            max_auto_retries: Set(p.max_auto_retries),
-            pause_on_error: Set(p.pause_on_error),
-            auto_open_enrollment: Set(p.auto_open_enrollment),
-            auto_close_enrollment: Set(p.auto_close_enrollment),
-            auto_open_grade_entry: Set(p.auto_open_grade_entry),
-            auto_close_grade_entry: Set(p.auto_close_grade_entry),
-            auto_lock_periods: Set(p.auto_lock_periods),
-            auto_advance_periods: Set(p.auto_advance_periods),
-            auto_archive_years: Set(p.auto_archive_years),
-            grace_days_after_deadline: Set(p.grace_days_after_deadline),
-            notify_before_deadline_days: Set(p.notify_before_deadline_days),
-            default_template_id: Set(p.default_template_id),
-            created_at: Set(p.created_at),
-            updated_at: Set(p.updated_at),
-        };
-        active.insert(&self.db).await
-    }
 
     // ── Promotion Commands ──
 

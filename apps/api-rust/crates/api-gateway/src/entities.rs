@@ -17,15 +17,15 @@ pub mod organization {
 }
 
 pub mod academic_period {
-    pub use svc_organization::entities::academic_period::*;
+    pub use svc_calendar::entities::academic_period::*;
 }
 
 pub mod academic_year {
-    pub use svc_organization::entities::academic_year::*;
+    pub use svc_calendar::entities::academic_year::*;
 }
 
 pub mod academic_policy {
-    pub use svc_organization::entities::academic_policy::*;
+    pub use platform_policy::entities::academic_policy::*;
 }
 
 pub mod org_unit {
@@ -76,9 +76,6 @@ pub mod solve_job {
     pub use svc_scheduling::entities::solve_job::*;
 }
 
-pub mod assessment {
-    pub use svc_assessment::entities::assessment::*;
-}
 
 pub mod behavior_record {
     pub use svc_assessment::entities::behavior_record::*;

@@ -4,7 +4,7 @@
 //! `academic_policies`). The policy model is the single source of truth.
 
 use shared_kernel::types::ExecutionMode;
-use svc_organization::entities::academic_policy;
+use platform_policy::entities::academic_policy;
 
 /// Runtime-resolved configuration for an autopilot tick.
 ///

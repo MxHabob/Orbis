@@ -5,6 +5,7 @@ edition = "2021"
 description = "Orbis Exam domain — exam sessions, schedules, proctoring, seating/secret numbers, and auto scheduling"
 
 [dependencies]
+svc-calendar = { workspace = true }
 shared-kernel = { workspace = true }
 infra-persistence = { workspace = true }
 infra-scheduler = { workspace = true }

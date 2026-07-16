@@ -3,7 +3,7 @@ use sea_orm::{
     QueryOrder, Set, DbErr, PaginatorTrait,
 };
 
-use crate::entities::academic_year;
+use svc_calendar::entities::academic_year;
 
 /// Repository for academic year operations against the registry database.
 pub struct AcademicYearRepo;

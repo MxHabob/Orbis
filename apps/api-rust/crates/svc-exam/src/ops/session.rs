@@ -51,7 +51,7 @@ pub async fn create(
     {
         use shared_kernel::period_gate::GateType;
         let verdict = ctx.period_gate
-            .check(&ctx.db, &ctx.org_id, &req.period_id, GateType::ExamEntry)
+            .check(&ctx.db, &ctx.org_id, &req.period_id, GateType::ExamEntry, None)
             .await?;
         verdict.enforce()?;
     }

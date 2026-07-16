@@ -13,7 +13,7 @@ pub mod guardian;
 pub mod document;
 pub mod grade;
 pub mod attendance;
-pub mod assessment;
+
 pub mod behavior;
 pub mod dashboard;
 pub mod audit;

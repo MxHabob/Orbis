@@ -240,18 +240,29 @@ impl PeriodGate {
         org_id: &str,
         period_id: &str,
         gate_type: GateType,
+        entity_id: Option<&str>,
     ) -> Result<GateVerdict, AppError> {
         let period = self.load_period(db, period_id).await?;
         let policy = self.load_policy(db, org_id).await?;
         let now = chrono::Utc::now().to_rfc3339();
 
-        match gate_type {
-            GateType::Enrollment => self.evaluate_enrollment(&period, &policy, &now, None),
-            GateType::GradeEntry => self.evaluate_grade_entry(&period, &policy, &now),
-            GateType::Attendance => self.evaluate_attendance(&period, &now),
-            GateType::ExamEntry => self.evaluate_exam_entry(&period, &now),
-            GateType::Assessment => self.evaluate_assessment(&period),
+        let mut verdict = match gate_type {
+            GateType::Enrollment => self.evaluate_enrollment(&period, &policy, &now, None)?,
+            GateType::GradeEntry => self.evaluate_grade_entry(&period, &policy, &now)?,
+            GateType::Attendance => self.evaluate_attendance(&period, &now)?,
+            GateType::ExamEntry => self.evaluate_exam_entry(&period, &now)?,
+            GateType::Assessment => self.evaluate_assessment(&period)?,
+        };
+
+        if verdict.decision == GateDecision::RequiresOverride || verdict.decision == GateDecision::Blocked {
+            if self.check_active_override(db, org_id, gate_type, entity_id).await? {
+                verdict.decision = GateDecision::Allowed;
+                verdict.override_type = Some("active_override".into());
+                verdict.reason = Some("Approved override applied".into());
+            }
         }
+
+        Ok(verdict)
     }
 
     /// Enrollment-specific check that also verifies class capacity.
@@ -261,6 +272,7 @@ impl PeriodGate {
         org_id: &str,
         period_id: &str,
         class_id: &str,
+        entity_id: Option<&str>,
     ) -> Result<GateVerdict, AppError> {
         let period = self.load_period(db, period_id).await?;
         let policy = self.load_policy(db, org_id).await?;
@@ -285,7 +297,60 @@ impl PeriodGate {
             verdict.context.capacity = capacity;
         }
 
+        if verdict.decision == GateDecision::RequiresOverride || verdict.decision == GateDecision::Blocked {
+            if self.check_active_override(db, org_id, GateType::Enrollment, entity_id).await? {
+                verdict.decision = GateDecision::Allowed;
+                verdict.override_type = Some("active_override".into());
+                verdict.reason = Some("Approved override applied".into());
+            }
+        }
+
         Ok(verdict)
+    }
+
+    async fn check_active_override(
+        &self,
+        db: &DatabaseConnection,
+        org_id: &str,
+        gate_type: GateType,
+        entity_id: Option<&str>,
+    ) -> Result<bool, AppError> {
+        let mut sql = r#"
+            SELECT COUNT(*) as count 
+            FROM academic_override_requests 
+            WHERE org_id = $1 
+              AND override_type = $2 
+              AND status = 'approved'
+              AND (expires_at IS NULL OR expires_at > $3)
+        "#.to_string();
+        
+        let now = chrono::Utc::now().to_rfc3339();
+        let mut params = vec![
+            org_id.into(),
+            gate_type.as_str().into(),
+            now.into(),
+        ];
+        
+        if let Some(eid) = entity_id {
+            sql.push_str(" AND (entity_id = $4 OR entity_id = 'GLOBAL')");
+            params.push(eid.into());
+        } else {
+            sql.push_str(" AND entity_id = 'GLOBAL'");
+        }
+        
+        let res = db.query_one(sea_orm::Statement::from_sql_and_values(
+            sea_orm::DatabaseBackend::Sqlite,
+            &sql,
+            params,
+        )).await.map_err(|e| AppError::internal(format!("Failed to query overrides: {}", e)))?;
+        
+        if let Some(row) = res {
+            use sea_orm::QueryResult;
+            let count: i64 = row.try_get("", "count").unwrap_or(0);
+            Ok(count > 0)
+        } else {
+            Ok(false)
+        }
     }
 
     // ── Evaluation Logic ────────────────────────────────────────

@@ -23,3 +23,5 @@ pub mod registry;
 pub mod provider;
 pub mod schemas;
 pub mod bootstrap;
+pub mod schema_migrations;
+pub mod fee_assignment;

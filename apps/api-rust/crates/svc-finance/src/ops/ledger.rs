@@ -1,7 +1,7 @@
 //! Ledger account operations.
 
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, PaginatorTrait, QuerySelect};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, PaginatorTrait, QuerySelect, ConnectionTrait};
 
 use uuid::Uuid;
 use serde::{Deserialize, Serialize};
@@ -455,6 +455,97 @@ pub async fn create_journal_entry(
         new_data: Some(serde_json::to_value(&created_je).unwrap_or_default()),
         correlation_id: ctx.correlation_id.clone(),
     }).await?;
+
+    Ok(created_je)
+}
+
+/// Post a journal entry within any connection (including an open transaction).
+/// Does not emit events or audit — caller handles that after commit.
+pub async fn post_journal_entry<C: ConnectionTrait>(
+    conn: &C,
+    org_id: &str,
+    actor_id: Option<&str>,
+    cmd: CreateJournalEntryCmd,
+) -> Result<journal_entry::Model, AppError> {
+    let child_count_debit = account::Entity::find()
+        .filter(account::Column::ParentId.eq(Some(cmd.debit_account_id.clone())))
+        .count(conn).await?;
+    if child_count_debit > 0 {
+        return Err(AppError::validation("Cannot post journal entries to a control account (debit account has child sub-accounts)"));
+    }
+
+    let child_count_credit = account::Entity::find()
+        .filter(account::Column::ParentId.eq(Some(cmd.credit_account_id.clone())))
+        .count(conn).await?;
+    if child_count_credit > 0 {
+        return Err(AppError::validation("Cannot post journal entries to a control account (credit account has child sub-accounts)"));
+    }
+
+    let debit_account = account::Entity::find_by_id(cmd.debit_account_id.clone())
+        .one(conn).await?
+        .ok_or_else(|| AppError::not_found("account", &cmd.debit_account_id))?;
+
+    let credit_account = account::Entity::find_by_id(cmd.credit_account_id.clone())
+        .one(conn).await?
+        .ok_or_else(|| AppError::not_found("account", &cmd.credit_account_id))?;
+
+    let je_id = Uuid::new_v4().to_string();
+    let now = Utc::now().to_rfc3339();
+    let actor = actor_id.unwrap_or("system");
+
+    let je = journal_entry::Model {
+        id: je_id.clone(),
+        org_id: org_id.to_string(),
+        transaction_ref: cmd.transaction_ref,
+        accounting_date: cmd.accounting_date,
+        fiscal_period_id: cmd.fiscal_period_id,
+        amount: cmd.amount,
+        debit_account_id: cmd.debit_account_id.clone(),
+        credit_account_id: cmd.credit_account_id.clone(),
+        currency: cmd.currency.clone(),
+        exchange_rate: cmd.exchange_rate.or(Some(1.0)),
+        base_currency_amount: Some(cmd.amount * cmd.exchange_rate.unwrap_or(1.0)),
+        source_type: cmd.source_type,
+        source_id: cmd.source_id,
+        source_module: cmd.source_module,
+        description: cmd.description,
+        description_ar: cmd.description_ar,
+        metadata: None,
+        is_reversed: 0,
+        reversed_by: None,
+        reversal_reason: None,
+        is_reconciled: 0,
+        reconciled_at: None,
+        reconciliation_ref: None,
+        status: "posted".to_string(),
+        posted_by: Some(actor.to_string()),
+        posted_at: Some(now.clone()),
+        approved_by: Some(actor.to_string()),
+        approved_at: Some(now.clone()),
+        created_by: Some(actor.to_string()),
+        created_at: now,
+    };
+
+    let active: journal_entry::ActiveModel = je.into();
+    let created_je = active.insert(conn).await?;
+
+    let debit_change = match debit_account.item_type.to_lowercase().as_str() {
+        "asset" | "expense" => cmd.amount,
+        _ => -cmd.amount,
+    };
+
+    crate::repository::commands::update_account_balance_on(
+        conn, &cmd.debit_account_id, &cmd.currency, debit_change,
+    ).await?;
+
+    let credit_change = match credit_account.item_type.to_lowercase().as_str() {
+        "asset" | "expense" => -cmd.amount,
+        _ => cmd.amount,
+    };
+
+    crate::repository::commands::update_account_balance_on(
+        conn, &cmd.credit_account_id, &cmd.currency, credit_change,
+    ).await?;
 
     Ok(created_je)
 }

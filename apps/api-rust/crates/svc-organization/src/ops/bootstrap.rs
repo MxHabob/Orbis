@@ -5,7 +5,7 @@ use tracing::info;
 use shared_kernel::context::ServiceContext;
 use shared_kernel::errors::AppError;
 
-use crate::entities::organization;
+
 use crate::ops::org_unit;
 
 #[derive(Debug, Serialize, Deserialize)]

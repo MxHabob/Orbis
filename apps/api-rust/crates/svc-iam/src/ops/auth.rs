@@ -229,6 +229,7 @@ pub async fn register(
 
     let model = user::Model {
         id: id.clone(),
+        party_id: None,
         org_id,
         email: req.email,
         email_verified: 0,

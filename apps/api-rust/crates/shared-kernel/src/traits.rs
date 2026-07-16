@@ -244,6 +244,7 @@ pub trait FeeAssigner: Send + Sync {
         org_id: &str,
         enrollment_id: &str,
         class_id: &str,
+        period_id: &str,
     ) -> Result<Vec<String>, AppError>;
 }
 

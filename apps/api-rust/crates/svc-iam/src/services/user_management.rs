@@ -57,6 +57,7 @@ impl UserService {
         let now = Utc::now().to_rfc3339();
         let new_user = user::Model {
             id: Uuid::new_v4().to_string(),
+            party_id: None,
             org_id: org_id.to_string(),
             email: email.map(String::from),
             email_verified: 0,

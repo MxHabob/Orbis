@@ -46,7 +46,7 @@ pub mod status {
     pub const COMPLETED: &str = "completed";
     pub const FAILED: &str = "failed";
     pub const SKIPPED: &str = "skipped";
-    pub const SUGGESTED: &str = "suggested";
+    pub const REQUIRES_APPROVAL: &str = "requires_approval";
     pub const APPROVED: &str = "approved";
     pub const CANCELLED: &str = "cancelled";
 }

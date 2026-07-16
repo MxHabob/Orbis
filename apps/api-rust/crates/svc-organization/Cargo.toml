@@ -5,6 +5,8 @@ edition = "2021"
 description = "Orbis Organization domain — organizations, academic periods, calendar, policies, promotions"
 
 [dependencies]
+svc-calendar = { workspace = true }
+svc-enrollment-workflow = { workspace = true }
 shared-kernel = { workspace = true }
 infra-persistence = { workspace = true }
 svc-academic = { workspace = true }

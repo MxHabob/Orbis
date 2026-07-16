@@ -32,7 +32,8 @@ pub async fn autopilot_run_tick(
 ) -> CmdResult<()> {
     use autopilot::engine::AutopilotEngine;
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let engine = AutopilotEngine::new(state.platform.event_bus.clone());
+    let engine = AutopilotEngine::new(state.platform.event_bus.clone())
+        .with_period_gate(state.platform.period_gate.clone());
     engine.tick(&ctx.db, &ctx.org_id, ctx.org_unit_id.as_deref()).await;
     Ok(())
 }

@@ -10,6 +10,7 @@ impl IamCommandRepo {
     pub async fn create_user(&self, u: user::Model) -> Result<user::Model, DbErr> {
         let active_model = user::ActiveModel {
             id: Set(u.id),
+            party_id: Set(u.party_id),
             org_id: Set(u.org_id),
             email: Set(u.email),
             email_verified: Set(u.email_verified),

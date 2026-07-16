@@ -18,6 +18,8 @@ use std::sync::Arc;
 use tokio::sync::broadcast;
 use tracing::{debug, warn};
 
+use serde::{Serialize, Deserialize};
+
 /// Maximum events in the ring buffer before oldest are dropped.
 const CHANNEL_CAPACITY: usize = 1024;
 
@@ -28,7 +30,7 @@ pub const MAX_EVENT_CHAIN_DEPTH: u8 = 5;
 ///
 /// We use a serialized form instead of trait objects because `broadcast::Sender`
 /// requires `Clone`, and trait objects don't implement `Clone` easily.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EventEnvelope {
     pub event_type: String,
     pub entity_type: String,

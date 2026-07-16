@@ -5,7 +5,7 @@
 pub mod grade;
 pub mod attendance;
 pub mod behavior;
-pub mod assessment;
+
 pub mod at_risk_predictor;
 pub mod calc_engine;
 pub mod grade_mapper;

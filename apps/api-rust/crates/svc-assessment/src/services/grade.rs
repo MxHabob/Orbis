@@ -7,12 +7,12 @@ use serde::{Deserialize, Serialize};
 use sea_orm::{EntityTrait, ActiveValue::Set};
 
 use shared_kernel::errors::AppError;
-use crate::entities::{grade, grade_history};
+use crate::entities::grade;
 use crate::params::GradeParams;
 use crate::repository::{AssessmentCommandRepo, AssessmentQueryRepo};
 
 use svc_academic::entities::enrollment;
-use svc_organization::entities::academic_period;
+use svc_calendar::entities::academic_period;
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct CreateGradeRequest {
@@ -234,36 +234,12 @@ impl GradeService {
         Ok(())
     }
 
-    async fn save_grade_history(
-        &self,
-        existing: &grade::Model,
-        changed_by: &str,
-        change_reason: Option<String>,
-        change_type: &str,
-    ) -> Result<(), AppError> {
-        let history = grade_history::Model {
-            id: Uuid::new_v4().to_string(),
-            grade_id: existing.id.clone(),
-            score: Some(existing.score),
-            grade_letter: existing.grade_letter.clone(),
-            is_absent: None,
-            is_excused: None,
-            comment: existing.notes.clone(),
-            changed_by: Some(changed_by.to_string()),
-            changed_at: Utc::now().to_rfc3339(),
-            change_reason,
-            change_type: change_type.to_string(),
-            snapshot: Some(serde_json::to_string(existing).unwrap_or_default()),
-            created_at: Utc::now().to_rfc3339(),
-        };
-        self.cmd.create_grade_history(history).await?;
-        Ok(())
-    }
+
 
     pub async fn submit_grade(
         &self,
         org_id: &str,
-        graded_by: &str,
+        
         req: CreateGradeRequest,
     ) -> Result<grade::Model, AppError> {
         let enrollment = enrollment::Entity::find_by_id(req.enrollment_id.clone())
@@ -298,7 +274,8 @@ impl GradeService {
             exam_type: req.exam_type,
             semester: req.semester,
             notes: req.notes,
-            graded_by: graded_by.to_string(),
+            
+            graded_by: "system".to_string(),
             graded_at: Utc::now().to_rfc3339(),
             is_final: req.is_final.unwrap_or(0),
             created_at: Utc::now().to_rfc3339(),
@@ -311,12 +288,12 @@ impl GradeService {
     pub async fn submit_grades_bulk(
         &self,
         org_id: &str,
-        graded_by: &str,
+        
         req: BulkGradeRequest,
     ) -> Result<Vec<grade::Model>, AppError> {
         let mut results = Vec::new();
         for grade_req in req.grades {
-            let result = self.submit_grade(org_id, graded_by, grade_req).await?;
+            let result = self.submit_grade(org_id, grade_req).await?;
             results.push(result);
         }
         Ok(results)
@@ -325,7 +302,7 @@ impl GradeService {
     pub async fn bulk_subject_grade_entry(
         &self,
         org_id: &str,
-        graded_by: &str,
+        
         req: BulkSubjectGradeEntry,
     ) -> Result<BulkSubjectGradeResult, AppError> {
         self.check_period_open_for_grading(&req.period_id).await?;
@@ -357,7 +334,7 @@ impl GradeService {
 
             match existing {
                 Some(existing_grade) => {
-                    self.save_grade_history(&existing_grade, graded_by, Some("Bulk update".to_string()), "bulk_update").await?;
+                    
 
                     let mut active: grade::ActiveModel = existing_grade.into();
                     active.score = Set(student.score);
@@ -394,12 +371,12 @@ impl GradeService {
                         score: student.score,
                         max_score: req.max_score,
                         weight: req.weight.unwrap_or(1.0),
-                        grade_letter: Some(grade_letter),
-                        grade_points: Some(grade_points),
+                        grade_letter: Some(Self::score_to_grade_letter((student.score / req.max_score) * 100.0)),
+                        grade_points: Some(Self::score_to_grade_points((student.score / req.max_score) * 100.0)),
                         exam_type: req.exam_type.clone(),
                         semester: req.semester.clone(),
                         notes: student.notes.clone(),
-                        graded_by: graded_by.to_string(),
+                        graded_by: "system".to_string(),
                         graded_at: Utc::now().to_rfc3339(),
                         is_final: req.is_final.unwrap_or(0),
                         created_at: Utc::now().to_rfc3339(),
@@ -430,7 +407,7 @@ impl GradeService {
     pub async fn update_grade(
         &self,
         id: &str,
-        graded_by: &str,
+        
         req: UpdateGradeRequest,
     ) -> Result<grade::Model, AppError> {
         if req.score < 0.0 || req.score > req.max_score {
@@ -441,7 +418,7 @@ impl GradeService {
             .ok_or_else(|| AppError::not_found("grade", id))?;
 
         self.check_period_open_for_grading(&existing.period_id).await?;
-        self.save_grade_history(&existing, graded_by, req.change_reason, "update").await?;
+        
 
         let percentage = (req.score / req.max_score) * 100.0;
         let grade_letter = Self::score_to_grade_letter(percentage);
@@ -461,7 +438,7 @@ impl GradeService {
     pub async fn upsert_grade_cell(
         &self,
         org_id: &str,
-        graded_by: &str,
+        
         req: UpsertCellRequest,
     ) -> Result<UpsertCellResult, AppError> {
         if req.score < 0.0 || req.score > req.max_score {
@@ -478,7 +455,7 @@ impl GradeService {
 
         match existing {
             Some(g) => {
-                self.save_grade_history(&g, graded_by, None, "cell_update").await?;
+                
 
                 let mut active: grade::ActiveModel = g.into();
                 active.score = Set(req.score);
@@ -505,7 +482,7 @@ impl GradeService {
                     assessment_id: Some(req.assessment_id),
                     class_subject_id: req.class_subject_id,
                 };
-                let created = self.submit_grade(org_id, graded_by, create_req).await?;
+                let created = self.submit_grade(org_id, create_req).await?;
                 Ok(UpsertCellResult { grade_id: created.id, created: true })
             }
         }
@@ -514,7 +491,6 @@ impl GradeService {
     pub async fn compile_semester_grades(
         &self,
         org_id: &str,
-        _graded_by: &str,
         period_id: &str,
         class_id: &str,
         semester: &str,
@@ -556,7 +532,7 @@ impl GradeService {
     pub async fn get_report_card(
         &self,
         enrollment_id: &str,
-        period_id: &str,
+        period_id: &str
     ) -> Result<GradeReportCard, AppError> {
         let enrollment = enrollment::Entity::find_by_id(enrollment_id.to_string())
             .one(&self.query.db)

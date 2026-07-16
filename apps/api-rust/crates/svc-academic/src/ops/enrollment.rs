@@ -3,7 +3,7 @@
 //! Handles: enroll, withdraw, transfer + duplicate/capacity checks.
 
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, TransactionTrait};
 use uuid::Uuid;
 
 use shared_kernel::context::ServiceContext;
@@ -90,7 +90,7 @@ pub async fn create(
 
     // ── Period Gate: enrollment window + capacity + policy ──
     let verdict = ctx.period_gate
-        .check_enrollment(&ctx.db, &org_id, &req.period_id, &req.class_id)
+        .check_enrollment(&ctx.db, &ctx.org_id, &req.period_id, &req.class_id, None)
         .await?;
 
     match verdict.decision {
@@ -127,13 +127,15 @@ pub async fn create(
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
+    let period_id = req.period_id.clone();
+    let class_id = req.class_id.clone();
 
     let model = enrollment::Model {
         id: id.clone(),
         org_id: org_id.clone(),
         period_id: req.period_id,
         student_id: req.student_id,
-        class_id: req.class_id.clone(),
+        class_id: class_id.clone(),
         student_number: req.student_number,
         status: "active".into(),
         enrollment_date: now.clone(),
@@ -152,13 +154,25 @@ pub async fn create(
     };
 
     let active: enrollment::ActiveModel = model.into();
-    let created = active.insert(&ctx.db).await?;
 
-    // Cross-domain: assign mandatory fees
-    if let Err(e) = ctx.fee_assigner.assign_mandatory_fees(&org_id, &id, &req.class_id).await {
-        tracing::warn!("Fee assignment failed for enrollment {}: {}", id, e);
-        // Non-blocking — enrollment succeeds even if fee assignment fails
-    }
+    let txn = ctx.db.begin().await
+        .map_err(|e| AppError::internal(format!("Failed to start enrollment transaction: {e}")))?;
+
+    let created = active.insert(&txn).await?;
+
+    infra_persistence::fee_assignment::assign_mandatory_fees(
+        &txn,
+        &org_id,
+        &created.id,
+        &class_id,
+        &period_id,
+    )
+    .await?;
+
+    txn.commit().await
+        .map_err(|e| AppError::internal(format!("Failed to commit enrollment transaction: {e}")))?;
+
+    let id = created.id.clone();
 
     // Audit
     ctx.audit.log(AuditEntry {
@@ -403,7 +417,7 @@ pub async fn check_eligibility(
     class_id: &str,
 ) -> Result<shared_kernel::period_gate::GateVerdict, AppError> {
     ctx.period_gate
-        .check_enrollment(&ctx.db, &ctx.org_id, period_id, class_id)
+        .check_enrollment(&ctx.db, &ctx.org_id, period_id, class_id, None)
         .await
 }
 
@@ -502,15 +516,26 @@ pub async fn confirm_draft(
     }
 
     let old_data = serde_json::to_value(&existing).ok();
+
+    let txn = ctx.db.begin().await
+        .map_err(|e| AppError::internal(format!("Failed to start confirm transaction: {e}")))?;
+
     let mut active: enrollment::ActiveModel = existing.into();
     active.status = Set("active".into());
     active.updated_at = Set(Utc::now().to_rfc3339());
-    let confirmed = active.update(&ctx.db).await?;
+    let confirmed = active.update(&txn).await?;
 
-    // Assign fees now that enrollment is confirmed
-    if let Err(e) = ctx.fee_assigner.assign_mandatory_fees(&ctx.org_id, enrollment_id, &confirmed.class_id).await {
-        tracing::warn!("Fee assignment failed for confirmed enrollment {}: {}", enrollment_id, e);
-    }
+    infra_persistence::fee_assignment::assign_mandatory_fees(
+        &txn,
+        &ctx.org_id,
+        enrollment_id,
+        &confirmed.class_id,
+        &confirmed.period_id,
+    )
+    .await?;
+
+    txn.commit().await
+        .map_err(|e| AppError::internal(format!("Failed to commit confirm transaction: {e}")))?;
 
     ctx.audit.log(AuditEntry {
         org_id: ctx.org_id.clone(),

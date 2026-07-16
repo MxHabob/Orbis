@@ -1,15 +1,16 @@
--- ═══════════════════════════════════════════════════════════════
--- Orbis Unified Schema — Single Database Architecture
+﻿-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
+-- Orbis Unified Schema â€” Single Database Architecture
 -- All tables in one database. No registry.db, no year DBs.
--- ═══════════════════════════════════════════════════════════════
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 PRAGMA foreign_keys=ON;
 
--- ══════════════════════════════════════════════════════════════════════════════
--- ── Organizations ──
--- ══════════════════════════════════════════════════════════════════════════════
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
+-- â”€â”€ Organizations â”€â”€
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 
 CREATE TABLE IF NOT EXISTS organizations (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   name TEXT NOT NULL,
   name_ar TEXT,
   slug TEXT UNIQUE,
@@ -40,12 +41,33 @@ CREATE TABLE IF NOT EXISTS organizations (
   updated_at TEXT NOT NULL
 );
 
--- ══════════════════════════════════════════════════════════════════════════════
--- ── Users ──
--- ══════════════════════════════════════════════════════════════════════════════
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
+-- â”€â”€ Users â”€â”€
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
+
+CREATE TABLE IF NOT EXISTS parties (
+  id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
+  party_type TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS persons (
+  id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
+  party_id TEXT NOT NULL REFERENCES parties(id) ON DELETE CASCADE,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  gender TEXT,
+  birth_date TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
 
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   email TEXT,
   email_verified INTEGER NOT NULL DEFAULT 0,
@@ -98,12 +120,13 @@ CREATE TABLE IF NOT EXISTS users (
   FOREIGN KEY (org_id) REFERENCES organizations(id)
 );
 
--- ══════════════════════════════════════════════════════════════════════════════
--- ── Org Units (Branches / Campuses / Divisions) ──
--- ══════════════════════════════════════════════════════════════════════════════
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
+-- â”€â”€ Org Units (Branches / Campuses / Divisions) â”€â”€
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 
 CREATE TABLE IF NOT EXISTS org_units (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   parent_id TEXT,
   name TEXT NOT NULL,
@@ -131,12 +154,13 @@ CREATE TABLE IF NOT EXISTS org_units (
   FOREIGN KEY (parent_id) REFERENCES org_units(id)
 );
 
--- ══════════════════════════════════════════════════════════════════════════════
--- ── Academic Year Management ──
--- ══════════════════════════════════════════════════════════════════════════════
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
+-- â”€â”€ Academic Year Management â”€â”€
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 
 CREATE TABLE IF NOT EXISTS academic_years (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   name TEXT NOT NULL,
   name_ar TEXT,
@@ -150,6 +174,7 @@ CREATE TABLE IF NOT EXISTS academic_years (
   locked_at TEXT,
   locked_by TEXT,
   lock_reason TEXT,
+    current_period_id TEXT,
   archived_at TEXT,
   archived_by TEXT,
   notes TEXT,
@@ -162,12 +187,13 @@ CREATE TABLE IF NOT EXISTS academic_years (
 CREATE INDEX IF NOT EXISTS idx_ay_org ON academic_years(org_id);
 CREATE INDEX IF NOT EXISTS idx_ay_org_status ON academic_years(org_id, status);
 
--- FK: organizations.current_period_id → academic_years.id
+-- FK: organizations.current_period_id â†’ academic_years.id
 -- (enforced at application level since SQLite ALTER TABLE ADD CONSTRAINT is limited)
 
--- ── Academic Periods ──
+-- â”€â”€ Academic Periods â”€â”€
 CREATE TABLE IF NOT EXISTS academic_periods (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   period_id TEXT NOT NULL,
   parent_id TEXT,
@@ -209,10 +235,11 @@ CREATE TABLE IF NOT EXISTS academic_periods (
 CREATE INDEX IF NOT EXISTS idx_ap_period ON academic_periods(period_id);
 CREATE INDEX IF NOT EXISTS idx_ap_org_period ON academic_periods(org_id, period_id);
 
--- ── Academic Policies (unified: grading + enrollment + promotion + autopilot) ──
+-- â”€â”€ Academic Policies (unified: grading + enrollment + promotion + autopilot) â”€â”€
 CREATE TABLE IF NOT EXISTS academic_policies (
   id TEXT PRIMARY KEY,
-  org_id TEXT NOT NULL UNIQUE,
+  party_id TEXT REFERENCES parties(id),
+  org_id TEXT NOT NULL,
   org_unit_id TEXT,
   default_grading_system TEXT NOT NULL DEFAULT 'percentage',
   default_passing_grade INTEGER NOT NULL DEFAULT 50,
@@ -248,9 +275,15 @@ CREATE TABLE IF NOT EXISTS academic_policies (
   FOREIGN KEY (org_id) REFERENCES organizations(id)
 );
 
--- ── Period Templates ──
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ap_org_default
+  ON academic_policies(org_id) WHERE org_unit_id IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ap_org_unit
+  ON academic_policies(org_id, org_unit_id) WHERE org_unit_id IS NOT NULL;
+
+-- â”€â”€ Period Templates â”€â”€
 CREATE TABLE IF NOT EXISTS period_templates (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   name TEXT NOT NULL,
   name_ar TEXT,
@@ -263,12 +296,13 @@ CREATE TABLE IF NOT EXISTS period_templates (
   FOREIGN KEY (org_id) REFERENCES organizations(id)
 );
 
--- ══════════════════════════════════════════════════════════════════════════════
--- ── Classes & Enrollments ──
--- ══════════════════════════════════════════════════════════════════════════════
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
+-- â”€â”€ Classes & Enrollments â”€â”€
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 
 CREATE TABLE IF NOT EXISTS classes (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   unit_id TEXT NOT NULL,
   period_id TEXT NOT NULL,
@@ -294,6 +328,7 @@ CREATE INDEX IF NOT EXISTS idx_classes_org_period ON classes(org_id, period_id);
 
 CREATE TABLE IF NOT EXISTS enrollments (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   period_id TEXT NOT NULL,
   student_id TEXT NOT NULL,
@@ -326,9 +361,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_enr_unique_active
   ON enrollments(student_id, period_id)
   WHERE status != 'withdrawn';
 
--- ── Promotion Jobs ──
+-- â”€â”€ Promotion Jobs â”€â”€
 CREATE TABLE IF NOT EXISTS promotion_jobs (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   source_period_id TEXT NOT NULL,
   target_period_id TEXT,
@@ -360,9 +396,10 @@ CREATE TABLE IF NOT EXISTS promotion_jobs (
 CREATE INDEX IF NOT EXISTS idx_pj_org ON promotion_jobs(org_id);
 CREATE INDEX IF NOT EXISTS idx_pj_status ON promotion_jobs(status);
 
--- ── Promotion Details ──
+-- â”€â”€ Promotion Details â”€â”€
 CREATE TABLE IF NOT EXISTS promotion_details (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   job_id TEXT NOT NULL,
   student_id TEXT NOT NULL,
   student_name TEXT NOT NULL,
@@ -393,9 +430,10 @@ CREATE TABLE IF NOT EXISTS promotion_details (
 CREATE INDEX IF NOT EXISTS idx_pd_job ON promotion_details(job_id);
 CREATE INDEX IF NOT EXISTS idx_pd_student ON promotion_details(student_id);
 
--- ── Academic Override Requests ──
+-- â”€â”€ Academic Override Requests â”€â”€
 CREATE TABLE IF NOT EXISTS academic_override_requests (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   override_type TEXT NOT NULL,
   risk_level TEXT NOT NULL,
@@ -422,12 +460,13 @@ CREATE TABLE IF NOT EXISTS academic_override_requests (
   FOREIGN KEY (org_id) REFERENCES organizations(id)
 );
 
--- ══════════════════════════════════════════════════════════════════════════════
--- ── Grades ──
--- ══════════════════════════════════════════════════════════════════════════════
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
+-- â”€â”€ Grades â”€â”€
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 
 CREATE TABLE IF NOT EXISTS grades (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   enrollment_id TEXT NOT NULL,
   assessment_id TEXT NOT NULL,
   score REAL,
@@ -448,12 +487,13 @@ CREATE TABLE IF NOT EXISTS grades (
 CREATE INDEX IF NOT EXISTS idx_grades_enrollment ON grades(enrollment_id);
 CREATE INDEX IF NOT EXISTS idx_grades_assessment ON grades(assessment_id);
 
--- ══════════════════════════════════════════════════════════════════════════════
--- ── Notifications ──
--- ══════════════════════════════════════════════════════════════════════════════
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
+-- â”€â”€ Notifications â”€â”€
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 
 CREATE TABLE IF NOT EXISTS notifications (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   user_id TEXT NOT NULL,
   title TEXT NOT NULL,
@@ -470,12 +510,13 @@ CREATE TABLE IF NOT EXISTS notifications (
 
 CREATE INDEX IF NOT EXISTS idx_notif_user ON notifications(user_id, is_read);
 
--- ══════════════════════════════════════════════════════════════════════════════
--- ── Audit Log ──
--- ══════════════════════════════════════════════════════════════════════════════
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
+-- â”€â”€ Audit Log â”€â”€
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 
 CREATE TABLE IF NOT EXISTS audit_log (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   user_id TEXT,
   action TEXT NOT NULL,
@@ -493,12 +534,13 @@ CREATE TABLE IF NOT EXISTS audit_log (
 CREATE INDEX IF NOT EXISTS idx_audit_org ON audit_log(org_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_log(entity_type, entity_id);
 
--- ══════════════════════════════════════════════════════════════════════════════
--- ── User Sessions ──
--- ══════════════════════════════════════════════════════════════════════════════
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
+-- â”€â”€ User Sessions â”€â”€
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 
 CREATE TABLE IF NOT EXISTS user_sessions (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   user_id TEXT NOT NULL,
   token TEXT NOT NULL UNIQUE,
   refresh_token TEXT UNIQUE,
@@ -519,12 +561,13 @@ CREATE TABLE IF NOT EXISTS user_sessions (
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- ══════════════════════════════════════════════════════════════════════════════
--- ── IAM & Auth ──
--- ══════════════════════════════════════════════════════════════════════════════
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
+-- â”€â”€ IAM & Auth â”€â”€
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 
 CREATE TABLE IF NOT EXISTS user_accounts (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   user_id TEXT NOT NULL,
   provider TEXT NOT NULL,
   provider_account_id TEXT NOT NULL,
@@ -544,6 +587,7 @@ CREATE TABLE IF NOT EXISTS user_accounts (
 
 CREATE TABLE IF NOT EXISTS user_roles (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   user_id TEXT NOT NULL,
   role TEXT NOT NULL,
   org_id TEXT NOT NULL,
@@ -584,6 +628,7 @@ CREATE TABLE IF NOT EXISTS role_permissions (
 
 CREATE TABLE IF NOT EXISTS user_permissions (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   user_id TEXT NOT NULL,
   permission_id INTEGER NOT NULL,
   grant_type TEXT NOT NULL,
@@ -598,6 +643,7 @@ CREATE TABLE IF NOT EXISTS user_permissions (
 
 CREATE TABLE IF NOT EXISTS verifications (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   user_id TEXT,
   identifier TEXT NOT NULL,
   value TEXT NOT NULL,
@@ -613,6 +659,7 @@ CREATE TABLE IF NOT EXISTS verifications (
 
 CREATE TABLE IF NOT EXISTS notification_preferences (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   user_id TEXT NOT NULL,
   notification_type TEXT NOT NULL,
   in_app_enabled INTEGER NOT NULL,
@@ -630,6 +677,7 @@ CREATE TABLE IF NOT EXISTS notification_preferences (
 
 CREATE TABLE IF NOT EXISTS documents (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   uploaded_by TEXT,
   entity_type TEXT,
@@ -651,6 +699,7 @@ CREATE TABLE IF NOT EXISTS documents (
 
 CREATE TABLE IF NOT EXISTS subjects (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   unit_id TEXT,
   code TEXT NOT NULL,
@@ -679,6 +728,7 @@ CREATE TABLE IF NOT EXISTS subjects (
 
 CREATE TABLE IF NOT EXISTS class_subjects (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   class_id TEXT NOT NULL,
   subject_id TEXT NOT NULL,
   period_id TEXT NOT NULL,
@@ -698,6 +748,7 @@ CREATE TABLE IF NOT EXISTS class_subjects (
 
 CREATE TABLE IF NOT EXISTS student_guardians (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   student_id TEXT NOT NULL,
   guardian_id TEXT NOT NULL,
   relationship TEXT NOT NULL,
@@ -723,6 +774,7 @@ CREATE TABLE IF NOT EXISTS student_guardians (
 
 CREATE TABLE IF NOT EXISTS time_slots (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   period_id TEXT NOT NULL,
   slot_number INTEGER NOT NULL,
@@ -742,6 +794,7 @@ CREATE TABLE IF NOT EXISTS time_slots (
 
 CREATE TABLE IF NOT EXISTS scheduled_lessons (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   period_id TEXT NOT NULL,
   class_id TEXT NOT NULL,
@@ -771,12 +824,13 @@ CREATE TABLE IF NOT EXISTS scheduled_lessons (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
--- ══════════════════════════════════════════════════════════════════════════════
--- ── Enterprise Assessment Engine ──
--- ══════════════════════════════════════════════════════════════════════════════
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
+-- â”€â”€ Enterprise Assessment Engine â”€â”€
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 
 CREATE TABLE IF NOT EXISTS assessment_schemes (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   name TEXT NOT NULL,
   description TEXT,
@@ -786,6 +840,7 @@ CREATE TABLE IF NOT EXISTS assessment_schemes (
 
 CREATE TABLE IF NOT EXISTS assessment_scheme_components (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   scheme_id TEXT NOT NULL,
   name TEXT NOT NULL,
   component_type TEXT NOT NULL,
@@ -799,6 +854,7 @@ CREATE TABLE IF NOT EXISTS assessment_scheme_components (
 
 CREATE TABLE IF NOT EXISTS grade_scales (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   name TEXT NOT NULL,
   "type" TEXT NOT NULL,
@@ -808,6 +864,7 @@ CREATE TABLE IF NOT EXISTS grade_scales (
 
 CREATE TABLE IF NOT EXISTS grade_scale_items (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   scale_id TEXT NOT NULL,
   grade_label TEXT NOT NULL,
   min_score REAL NOT NULL,
@@ -821,6 +878,7 @@ CREATE TABLE IF NOT EXISTS grade_scale_items (
 
 CREATE TABLE IF NOT EXISTS calculation_policies (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   target_period_id TEXT NOT NULL,
   name TEXT NOT NULL,
@@ -836,6 +894,7 @@ CREATE TABLE IF NOT EXISTS calculation_policies (
 
 CREATE TABLE IF NOT EXISTS student_assessment_snapshots (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   student_id TEXT NOT NULL,
   period_id TEXT NOT NULL,
@@ -855,61 +914,10 @@ CREATE TABLE IF NOT EXISTS student_assessment_snapshots (
   updated_at TEXT NOT NULL
 );
 
--- ══════════════════════════════════════════════════════════════════════════════
--- ── Legacy Assessments ──
--- ══════════════════════════════════════════════════════════════════════════════
-
-CREATE TABLE IF NOT EXISTS assessments (
-  id TEXT PRIMARY KEY,
-  org_id TEXT NOT NULL,
-  period_id TEXT NOT NULL,
-  class_subject_id TEXT NOT NULL,
-  title TEXT NOT NULL,
-  title_ar TEXT,
-  description TEXT,
-  "type" TEXT NOT NULL,
-  max_score REAL NOT NULL,
-  passing_score REAL,
-  weight REAL NOT NULL,
-  grade_group_name TEXT NOT NULL,
-  assessment_date TEXT,
-  due_date TEXT,
-  duration_minutes INTEGER,
-  is_published INTEGER NOT NULL,
-  published_at TEXT,
-  published_by TEXT,
-  is_locked INTEGER NOT NULL,
-  locked_at TEXT,
-  locked_by TEXT,
-  grading_method TEXT,
-  rubric_id TEXT,
-  instructions TEXT,
-  instructions_ar TEXT,
-  attachments TEXT,
-  created_by TEXT NOT NULL,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_assessments_cs ON assessments(class_subject_id, period_id);
-
-CREATE TABLE IF NOT EXISTS grade_history (
-  id TEXT PRIMARY KEY,
-  grade_id TEXT NOT NULL,
-  score REAL,
-  grade_letter TEXT,
-  is_absent INTEGER,
-  is_excused INTEGER,
-  comment TEXT,
-  changed_by TEXT,
-  changed_at TEXT NOT NULL,
-  change_reason TEXT,
-  change_type TEXT NOT NULL,
-  snapshot TEXT,
-  created_at TEXT NOT NULL
-);
 
 CREATE TABLE IF NOT EXISTS attendance_daily (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   period_id TEXT NOT NULL,
   enrollment_id TEXT NOT NULL,
@@ -940,6 +948,7 @@ CREATE TABLE IF NOT EXISTS attendance_daily (
 
 CREATE TABLE IF NOT EXISTS attendance_summary (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   enrollment_id TEXT NOT NULL,
   period_id TEXT NOT NULL,
   total_lessons INTEGER,
@@ -953,9 +962,10 @@ CREATE TABLE IF NOT EXISTS attendance_summary (
   updated_at TEXT NOT NULL
 );
 
--- ── Fiscal Years & Periods ──
+-- â”€â”€ Fiscal Years & Periods â”€â”€
 CREATE TABLE IF NOT EXISTS fiscal_years (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   name TEXT NOT NULL,
   start_date TEXT NOT NULL,
@@ -969,6 +979,7 @@ CREATE TABLE IF NOT EXISTS fiscal_years (
 
 CREATE TABLE IF NOT EXISTS fiscal_periods (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   fiscal_period_id TEXT NOT NULL,
   name TEXT NOT NULL,
@@ -982,7 +993,7 @@ CREATE TABLE IF NOT EXISTS fiscal_periods (
   FOREIGN KEY (fiscal_period_id) REFERENCES fiscal_years(id)
 );
 
--- ── Currencies ──
+-- â”€â”€ Currencies â”€â”€
 CREATE TABLE IF NOT EXISTS currencies (
   code TEXT NOT NULL,
   org_id TEXT NOT NULL,
@@ -998,9 +1009,10 @@ CREATE TABLE IF NOT EXISTS currencies (
   PRIMARY KEY (code, org_id)
 );
 
--- ── Accounts (Chart of Accounts) ──
+-- â”€â”€ Accounts (Chart of Accounts) â”€â”€
 CREATE TABLE IF NOT EXISTS accounts (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   code TEXT NOT NULL,
   name TEXT NOT NULL,
@@ -1026,9 +1038,10 @@ CREATE INDEX IF NOT EXISTS idx_accounts_entity ON accounts(entity_type, entity_i
 CREATE INDEX IF NOT EXISTS idx_accounts_parent ON accounts(parent_id);
 CREATE INDEX IF NOT EXISTS idx_accounts_org_code ON accounts(org_id, code);
 
--- ── Journal Entries (Source of Truth for all financial movements) ──
+-- â”€â”€ Journal Entries (Source of Truth for all financial movements) â”€â”€
 CREATE TABLE IF NOT EXISTS journal_entries (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   transaction_ref TEXT NOT NULL,
   accounting_date TEXT NOT NULL,
@@ -1063,9 +1076,10 @@ CREATE INDEX IF NOT EXISTS idx_je_debit ON journal_entries(debit_account_id);
 CREATE INDEX IF NOT EXISTS idx_je_credit ON journal_entries(credit_account_id);
 CREATE INDEX IF NOT EXISTS idx_je_source ON journal_entries(source_type, source_id);
 
--- ── Fee Templates ──
+-- â”€â”€ Fee Templates â”€â”€
 CREATE TABLE IF NOT EXISTS fee_templates (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   name TEXT NOT NULL,
   name_ar TEXT,
@@ -1085,9 +1099,10 @@ CREATE TABLE IF NOT EXISTS fee_templates (
   updated_at TEXT NOT NULL
 );
 
--- ── Discount Templates ──
+-- â”€â”€ Discount Templates â”€â”€
 CREATE TABLE IF NOT EXISTS discount_templates (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   name TEXT NOT NULL,
   code TEXT,
@@ -1106,9 +1121,10 @@ CREATE TABLE IF NOT EXISTS discount_templates (
   updated_at TEXT NOT NULL
 );
 
--- ── Student Fees (Invoice only — balance comes from ledger_accounts) ──
+-- â”€â”€ Student Fees (Invoice only â€” balance comes from ledger_accounts) â”€â”€
 CREATE TABLE IF NOT EXISTS student_fees (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   period_id TEXT NOT NULL,
   enrollment_id TEXT NOT NULL,
@@ -1127,9 +1143,10 @@ CREATE TABLE IF NOT EXISTS student_fees (
 );
 CREATE INDEX IF NOT EXISTS idx_sf_enrollment ON student_fees(enrollment_id);
 
--- ── Payments (Multi-currency, supports students + employees) ──
+-- â”€â”€ Payments (Multi-currency, supports students + employees) â”€â”€
 CREATE TABLE IF NOT EXISTS payments (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   fee_id TEXT,
   enrollment_id TEXT,
@@ -1154,9 +1171,10 @@ CREATE TABLE IF NOT EXISTS payments (
 );
 CREATE INDEX IF NOT EXISTS idx_pay_account ON payments(account_id);
 
--- ── Treasuries ──
+-- â”€â”€ Treasuries â”€â”€
 CREATE TABLE IF NOT EXISTS treasuries (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   unit_id TEXT,
   name TEXT NOT NULL,
@@ -1180,9 +1198,10 @@ CREATE TABLE IF NOT EXISTS treasuries (
   updated_at TEXT NOT NULL
 );
 
--- ── Treasury Transactions ──
+-- â”€â”€ Treasury Transactions â”€â”€
 CREATE TABLE IF NOT EXISTS treasury_transactions (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   treasury_id TEXT NOT NULL,
   journal_entry_id TEXT NOT NULL,
@@ -1205,6 +1224,7 @@ CREATE TABLE IF NOT EXISTS treasury_transactions (
 
 CREATE TABLE IF NOT EXISTS system_log (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT,
   level TEXT NOT NULL,
   category TEXT NOT NULL,
@@ -1223,6 +1243,7 @@ CREATE TABLE IF NOT EXISTS system_log (
 
 CREATE TABLE IF NOT EXISTS data_transfers (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   "type" TEXT NOT NULL,
   entity_type TEXT NOT NULL,
@@ -1250,6 +1271,7 @@ CREATE TABLE IF NOT EXISTS data_transfers (
 
 CREATE TABLE IF NOT EXISTS report_definitions (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   name TEXT NOT NULL,
   name_ar TEXT,
@@ -1267,6 +1289,7 @@ CREATE TABLE IF NOT EXISTS report_definitions (
 
 CREATE TABLE IF NOT EXISTS document_templates (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   name TEXT NOT NULL,
   entity_type TEXT NOT NULL,
@@ -1282,6 +1305,7 @@ CREATE TABLE IF NOT EXISTS document_templates (
 
 CREATE TABLE IF NOT EXISTS rooms (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   name TEXT NOT NULL,
   name_ar TEXT,
@@ -1296,6 +1320,7 @@ CREATE TABLE IF NOT EXISTS rooms (
 
 CREATE TABLE IF NOT EXISTS teacher_availability (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   teacher_id TEXT NOT NULL,
   period_id TEXT NOT NULL,
@@ -1308,6 +1333,7 @@ CREATE TABLE IF NOT EXISTS teacher_availability (
 
 CREATE TABLE IF NOT EXISTS solve_jobs (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   job_type TEXT NOT NULL,
   target_id TEXT NOT NULL,
@@ -1325,13 +1351,14 @@ CREATE TABLE IF NOT EXISTS solve_jobs (
   updated_at TEXT NOT NULL
 );
 
--- ══════════════════════════════════════════════════════════════════════════════
--- ── Examination Management System ──
--- ══════════════════════════════════════════════════════════════════════════════
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
+-- â”€â”€ Examination Management System â”€â”€
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 
--- ── Student Ordering (Centralized Ordering Engine) ──
+-- â”€â”€ Student Ordering (Centralized Ordering Engine) â”€â”€
 CREATE TABLE IF NOT EXISTS student_ordering (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   period_id TEXT NOT NULL,
   enrollment_id TEXT NOT NULL UNIQUE,
@@ -1359,9 +1386,10 @@ CREATE INDEX IF NOT EXISTS idx_so_class_order ON student_ordering(class_id, orde
 CREATE INDEX IF NOT EXISTS idx_so_sort_key ON student_ordering(org_id, period_id, sort_key);
 CREATE INDEX IF NOT EXISTS idx_so_level ON student_ordering(org_id, period_id, level, order_in_level);
 
--- ── Exam Sessions (Examination Cycles) ──
+-- â”€â”€ Exam Sessions (Examination Cycles) â”€â”€
 CREATE TABLE IF NOT EXISTS exam_sessions (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   period_id TEXT NOT NULL,
   name TEXT NOT NULL,
@@ -1388,9 +1416,10 @@ CREATE TABLE IF NOT EXISTS exam_sessions (
 CREATE INDEX IF NOT EXISTS idx_es_org_period ON exam_sessions(org_id, period_id);
 CREATE INDEX IF NOT EXISTS idx_es_status ON exam_sessions(org_id, status);
 
--- ── Exam Subjects ──
+-- â”€â”€ Exam Subjects â”€â”€
 CREATE TABLE IF NOT EXISTS exam_subjects (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   exam_session_id TEXT NOT NULL,
   subject_id TEXT NOT NULL,
   class_subject_id TEXT,
@@ -1412,9 +1441,10 @@ CREATE TABLE IF NOT EXISTS exam_subjects (
 );
 CREATE INDEX IF NOT EXISTS idx_exs_session ON exam_subjects(exam_session_id);
 
--- ── Exam Schedules ──
+-- â”€â”€ Exam Schedules â”€â”€
 CREATE TABLE IF NOT EXISTS exam_schedules (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   exam_session_id TEXT NOT NULL,
   exam_subject_id TEXT NOT NULL,
   exam_date TEXT NOT NULL,
@@ -1433,9 +1463,10 @@ CREATE TABLE IF NOT EXISTS exam_schedules (
 CREATE INDEX IF NOT EXISTS idx_eschd_session ON exam_schedules(exam_session_id);
 CREATE INDEX IF NOT EXISTS idx_eschd_date ON exam_schedules(exam_date);
 
--- ── Seating Numbers ──
+-- â”€â”€ Seating Numbers â”€â”€
 CREATE TABLE IF NOT EXISTS seating_numbers (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   exam_session_id TEXT NOT NULL,
   enrollment_id TEXT NOT NULL,
@@ -1459,9 +1490,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_sn_unique ON seating_numbers(exam_session_
 CREATE UNIQUE INDEX IF NOT EXISTS idx_sn_enrollment ON seating_numbers(exam_session_id, enrollment_id);
 CREATE INDEX IF NOT EXISTS idx_sn_class ON seating_numbers(exam_session_id, class_id);
 
--- ── Secret Numbers ──
+-- â”€â”€ Secret Numbers â”€â”€
 CREATE TABLE IF NOT EXISTS secret_numbers (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   exam_session_id TEXT NOT NULL,
   enrollment_id TEXT NOT NULL,
@@ -1484,9 +1516,10 @@ CREATE TABLE IF NOT EXISTS secret_numbers (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_secn_unique ON secret_numbers(exam_session_id, secret_number);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_secn_enrollment ON secret_numbers(exam_session_id, enrollment_id);
 
--- ── Exam Halls ──
+-- â”€â”€ Exam Halls â”€â”€
 CREATE TABLE IF NOT EXISTS exam_halls (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   exam_session_id TEXT NOT NULL,
   room_id TEXT NOT NULL,
@@ -1504,9 +1537,10 @@ CREATE TABLE IF NOT EXISTS exam_halls (
 );
 CREATE INDEX IF NOT EXISTS idx_eh_session ON exam_halls(exam_session_id);
 
--- ── Exam Hall Allocations ──
+-- â”€â”€ Exam Hall Allocations â”€â”€
 CREATE TABLE IF NOT EXISTS exam_hall_allocations (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   exam_hall_id TEXT NOT NULL,
   exam_session_id TEXT NOT NULL,
   enrollment_id TEXT NOT NULL,
@@ -1519,9 +1553,10 @@ CREATE TABLE IF NOT EXISTS exam_hall_allocations (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_eha_unique ON exam_hall_allocations(exam_session_id, enrollment_id);
 CREATE INDEX IF NOT EXISTS idx_eha_hall ON exam_hall_allocations(exam_hall_id);
 
--- ── Exam Proctors ──
+-- â”€â”€ Exam Proctors â”€â”€
 CREATE TABLE IF NOT EXISTS exam_proctors (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   exam_session_id TEXT NOT NULL,
   exam_schedule_id TEXT NOT NULL,
@@ -1539,9 +1574,10 @@ CREATE TABLE IF NOT EXISTS exam_proctors (
 CREATE INDEX IF NOT EXISTS idx_ep_schedule ON exam_proctors(exam_schedule_id);
 CREATE INDEX IF NOT EXISTS idx_ep_teacher ON exam_proctors(teacher_id);
 
--- ── Teacher Exam Availability ──
+-- â”€â”€ Teacher Exam Availability â”€â”€
 CREATE TABLE IF NOT EXISTS teacher_exam_availability (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   exam_session_id TEXT NOT NULL,
   teacher_id TEXT NOT NULL,
@@ -1554,16 +1590,17 @@ CREATE TABLE IF NOT EXISTS teacher_exam_availability (
 );
 CREATE INDEX IF NOT EXISTS idx_tea_teacher ON teacher_exam_availability(teacher_id, exam_session_id);
 
--- ── Search Optimizations for Students & Guardians ──
+-- â”€â”€ Search Optimizations for Students & Guardians â”€â”€
 CREATE INDEX IF NOT EXISTS idx_users_org_role ON users(org_id, primary_role) WHERE is_deleted = 0;
 CREATE INDEX IF NOT EXISTS idx_users_national_id ON users(national_id);
 CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_student_guardians_student ON student_guardians(student_id);
 CREATE INDEX IF NOT EXISTS idx_student_guardians_guardian ON student_guardians(guardian_id);
--- ── ai_insights ──────────────────────────────────────────
+-- â”€â”€ ai_insights â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 CREATE TABLE IF NOT EXISTS ai_insights (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   insight_type TEXT NOT NULL,
   entity_type TEXT,
@@ -1594,9 +1631,10 @@ CREATE INDEX IF NOT EXISTS idx_ai_org_status ON ai_insights(org_id, status);
 CREATE INDEX IF NOT EXISTS idx_ai_entity ON ai_insights(entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_ai_severity ON ai_insights(severity)
   WHERE status = 'new';
--- ── autopilot_tasks ──────────────────────────────────────────
+-- â”€â”€ autopilot_tasks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 CREATE TABLE IF NOT EXISTS autopilot_tasks (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   calendar_event_id TEXT,
   task_type TEXT NOT NULL,
@@ -1608,7 +1646,7 @@ CREATE TABLE IF NOT EXISTS autopilot_tasks (
   prerequisites TEXT,
   status TEXT NOT NULL DEFAULT 'pending'
     CHECK (status IN ('pending','ready','executing','completed',
-                      'failed','skipped','suggested','approved','cancelled')),
+                      'failed','skipped','requires_approval','approved','cancelled')),
   execution_mode TEXT NOT NULL,
   attempts INTEGER NOT NULL DEFAULT 0,
   last_attempt_at TEXT,
@@ -1627,9 +1665,10 @@ CREATE INDEX IF NOT EXISTS idx_at_org_status ON autopilot_tasks(org_id, status);
 CREATE INDEX IF NOT EXISTS idx_at_scheduled ON autopilot_tasks(scheduled_at)
   WHERE status IN ('pending','ready');
 
--- ── ai_agent_sessions ──────────────────────────────────────────
+-- â”€â”€ ai_agent_sessions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 CREATE TABLE IF NOT EXISTS ai_agent_sessions (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   agent_type TEXT NOT NULL
     CHECK (agent_type IN ('assistant','autopilot','analyst','guardian','external')),
@@ -1650,9 +1689,10 @@ CREATE TABLE IF NOT EXISTS ai_agent_sessions (
 );
 CREATE INDEX IF NOT EXISTS idx_aas_org_status ON ai_agent_sessions(org_id, status);
 
--- ── ai_action_log ──────────────────────────────────────────
+-- â”€â”€ ai_action_log â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 CREATE TABLE IF NOT EXISTS ai_action_log (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   session_id TEXT NOT NULL,
   correlation_id TEXT,
@@ -1684,9 +1724,10 @@ CREATE INDEX IF NOT EXISTS idx_aal_org_date ON ai_action_log(org_id, executed_at
 CREATE INDEX IF NOT EXISTS idx_aal_pending ON ai_action_log(status)
   WHERE status = 'pending';
 
--- ── data_quality_findings ──────────────────────────────────────────
+-- â”€â”€ data_quality_findings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 CREATE TABLE IF NOT EXISTS data_quality_findings (
   id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL,
   rule_code TEXT NOT NULL,
   entity_type TEXT NOT NULL,
@@ -1706,9 +1747,9 @@ CREATE TABLE IF NOT EXISTS data_quality_findings (
 CREATE INDEX IF NOT EXISTS idx_dqf_org_status ON data_quality_findings(org_id, status);
 CREATE INDEX IF NOT EXISTS idx_dqf_entity ON data_quality_findings(entity_type, entity_id);
 
--- ══════════════════════════════════════════════════════════════════════════════
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 -- Performance Indexes for Common Queries
--- ══════════════════════════════════════════════════════════════════════════════
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 
 CREATE INDEX IF NOT EXISTS idx_enrollment_org_period_class
     ON enrollments(org_id, period_id, class_id);
@@ -1722,9 +1763,9 @@ CREATE INDEX IF NOT EXISTS idx_autopilot_org_status
 CREATE INDEX IF NOT EXISTS idx_classes_org_period_covering
     ON classes(org_id, period_id, name, level, capacity);
 
--- ═══════════════════════════════════════════════════════════════
--- ── Domain Events ───────────────────────────────────────────────
--- ═══════════════════════════════════════════════════════════════
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
+-- â”€â”€ Domain Events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 
 CREATE TABLE IF NOT EXISTS domain_events (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1744,7 +1785,7 @@ CREATE INDEX IF NOT EXISTS idx_de_type_time ON domain_events(event_type, created
 CREATE INDEX IF NOT EXISTS idx_de_correlation ON domain_events(correlation_id) WHERE correlation_id != '';
 CREATE INDEX IF NOT EXISTS idx_de_actor ON domain_events(actor_id, created_at);
 
--- ── Process State ───────────────────────────────────────────────
+-- â”€â”€ Process State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 CREATE TABLE IF NOT EXISTS process_log (
     id              TEXT PRIMARY KEY,
     process_type    TEXT NOT NULL,
@@ -1758,12 +1799,13 @@ CREATE TABLE IF NOT EXISTS process_log (
 
 CREATE INDEX IF NOT EXISTS idx_pl_org ON process_log(org_id, process_type, started_at);
 
--- ═══════════════════════════════════════════════════════════════
--- ── CQRS DocForge Projections & Schema Registry ────────────────
--- ═══════════════════════════════════════════════════════════════
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
+-- â”€â”€ CQRS DocForge Projections & Schema Registry â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 
 CREATE TABLE IF NOT EXISTS docforge_projections (
     id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
     org_id TEXT NOT NULL,
     entity_type TEXT NOT NULL, -- e.g., 'student_report_card', 'invoice'
     entity_id TEXT NOT NULL,
@@ -1777,6 +1819,7 @@ CREATE INDEX IF NOT EXISTS idx_docforge_proj_org_entity ON docforge_projections(
 
 CREATE TABLE IF NOT EXISTS docforge_schema_registry (
     id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
     org_id TEXT NOT NULL,
     provider_name TEXT NOT NULL, -- e.g. 'assessment_engine', 'finance'
     schema_payload TEXT NOT NULL, -- JSON Schema
@@ -1786,3 +1829,72 @@ CREATE TABLE IF NOT EXISTS docforge_schema_registry (
 );
 
 CREATE INDEX IF NOT EXISTS idx_docforge_schema_org ON docforge_schema_registry(org_id, provider_name);
+
+-- ??????????????????????????????????????????????????????????????????????
+-- ?? Generic Audit Events Table ??
+-- ??????????????????????????????????????????????????????????????????????
+
+CREATE TABLE IF NOT EXISTS audit_events (
+    id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
+    org_id TEXT NOT NULL,
+    actor_id TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    action TEXT NOT NULL,
+    payload TEXT NOT NULL, -- JSONB payload of the state or diff
+    created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_events_entity ON audit_events(org_id, entity_type, entity_id);
+
+
+-- ??????????????????????????????????????????????????????????????????????
+-- ?? current_students Triggers ??
+-- ??????????????????????????????????????????????????????????????????????
+
+CREATE TRIGGER IF NOT EXISTS enrollments_after_insert
+AFTER INSERT ON enrollments
+BEGIN
+    INSERT INTO current_students (org_id, student_id, period_id, class_id, is_active, updated_at)
+    VALUES (NEW.org_id, NEW.student_id, NEW.period_id, NEW.class_id, NEW.is_active, NEW.updated_at)
+    ON CONFLICT (org_id, student_id, period_id) DO UPDATE SET
+        class_id = excluded.class_id,
+        is_active = excluded.is_active,
+        updated_at = excluded.updated_at;
+END;
+
+CREATE TRIGGER IF NOT EXISTS enrollments_after_update
+AFTER UPDATE ON enrollments
+BEGIN
+    UPDATE current_students
+    SET class_id = NEW.class_id,
+        is_active = NEW.is_active,
+        updated_at = NEW.updated_at
+    WHERE org_id = NEW.org_id AND student_id = NEW.student_id AND period_id = NEW.period_id;
+END;
+
+CREATE TRIGGER IF NOT EXISTS enrollments_after_delete
+AFTER DELETE ON enrollments
+BEGIN
+    DELETE FROM current_students
+    WHERE org_id = OLD.org_id AND student_id = OLD.student_id AND period_id = OLD.period_id;
+END;
+
+
+-- ??????????????????????????????????????????????????????????????????????
+-- ?? Outbox Pattern ??
+-- ??????????????????????????????????????????????????????????????????????
+
+CREATE TABLE IF NOT EXISTS outbox_events (
+    id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
+    org_id TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_outbox_events_created ON outbox_events(created_at);
+
+

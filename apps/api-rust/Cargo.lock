@@ -42,13 +42,6 @@ dependencies = [
  "serde",
  "serde_json",
  "shared-kernel",
- "svc-academic",
- "svc-assessment",
- "svc-exam",
- "svc-finance",
- "svc-iam",
- "svc-organization",
- "svc-scheduling",
  "thiserror 1.0.69",
  "tokio",
  "tracing",
@@ -87,22 +80,27 @@ name = "api-gateway"
 version = "2.0.0"
 dependencies = [
  "async-trait",
+ "autopilot",
  "axum",
  "axum-extra",
  "bcrypt",
  "chrono",
  "csv",
+ "docforge-orbis",
  "infra-integration",
  "infra-persistence",
  "infra-scheduler",
  "jsonwebtoken",
+ "platform-policy",
  "sea-orm",
  "serde",
  "serde_json",
  "shared-kernel",
  "svc-academic",
  "svc-assessment",
+ "svc-calendar",
  "svc-document",
+ "svc-enrollment-workflow",
  "svc-exam",
  "svc-finance",
  "svc-iam",
@@ -112,7 +110,7 @@ dependencies = [
  "tower-http 0.5.2",
  "tracing",
  "tracing-subscriber",
- "utoipa",
+ "utoipa 4.2.3",
  "uuid",
 ]
 
@@ -186,14 +184,17 @@ checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 name = "autopilot"
 version = "2.0.0"
 dependencies = [
+ "async-trait",
  "chrono",
  "infra-persistence",
+ "platform-policy",
  "sea-orm",
  "serde",
  "serde_json",
  "shared-kernel",
  "svc-academic",
  "svc-assessment",
+ "svc-calendar",
  "svc-finance",
  "svc-iam",
  "svc-organization",
@@ -1506,6 +1507,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "reqwest",
+ "sea-orm",
  "serde",
  "serde_json",
  "shared-kernel",
@@ -1540,7 +1542,7 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio",
  "tracing",
- "utoipa",
+ "utoipa 4.2.3",
 ]
 
 [[package]]
@@ -2154,6 +2156,22 @@ name = "plain"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4596b6d070b27117e987119b4dac604f3c58cfb0b191112e24771b2faeac1a6"
+
+[[package]]
+name = "platform-policy"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "shared-kernel",
+ "tokio",
+ "tracing",
+ "utoipa 5.5.0",
+ "uuid",
+]
 
 [[package]]
 name = "png"
@@ -3507,7 +3525,7 @@ dependencies = [
  "svc-iam",
  "tokio",
  "tracing",
- "utoipa",
+ "utoipa 4.2.3",
  "uuid",
 ]
 
@@ -3523,11 +3541,29 @@ dependencies = [
  "serde_json",
  "shared-kernel",
  "svc-academic",
+ "svc-calendar",
  "svc-iam",
  "svc-organization",
  "tokio",
  "tracing",
- "utoipa",
+ "utoipa 4.2.3",
+ "uuid",
+]
+
+[[package]]
+name = "svc-calendar"
+version = "2.0.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "infra-persistence",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "shared-kernel",
+ "tokio",
+ "tracing",
+ "utoipa 4.2.3",
  "uuid",
 ]
 
@@ -3548,6 +3584,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "svc-enrollment-workflow"
+version = "2.0.0"
+dependencies = [
+ "async-trait",
+ "bcrypt",
+ "chrono",
+ "infra-persistence",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "shared-kernel",
+ "svc-academic",
+ "svc-calendar",
+ "svc-iam",
+ "tokio",
+ "tracing",
+ "utoipa 4.2.3",
+ "uuid",
+]
+
+[[package]]
 name = "svc-exam"
 version = "2.0.0"
 dependencies = [
@@ -3559,12 +3616,13 @@ dependencies = [
  "serde_json",
  "shared-kernel",
  "svc-academic",
+ "svc-calendar",
  "svc-iam",
  "svc-organization",
  "svc-scheduling",
  "tokio",
  "tracing",
- "utoipa",
+ "utoipa 4.2.3",
  "uuid",
 ]
 
@@ -3584,7 +3642,7 @@ dependencies = [
  "svc-organization",
  "tokio",
  "tracing",
- "utoipa",
+ "utoipa 4.2.3",
  "uuid",
 ]
 
@@ -3597,13 +3655,14 @@ dependencies = [
  "chrono",
  "infra-persistence",
  "jsonwebtoken",
+ "platform-policy",
  "sea-orm",
  "serde",
  "serde_json",
  "shared-kernel",
  "tokio",
  "tracing",
- "utoipa",
+ "utoipa 4.2.3",
  "uuid",
 ]
 
@@ -3620,10 +3679,12 @@ dependencies = [
  "serde_json",
  "shared-kernel",
  "svc-academic",
+ "svc-calendar",
+ "svc-enrollment-workflow",
  "svc-iam",
  "tokio",
  "tracing",
- "utoipa",
+ "utoipa 4.2.3",
  "uuid",
 ]
 
@@ -3643,7 +3704,7 @@ dependencies = [
  "svc-organization",
  "tokio",
  "tracing",
- "utoipa",
+ "utoipa 4.2.3",
  "uuid",
 ]
 
@@ -4227,7 +4288,19 @@ dependencies = [
  "indexmap",
  "serde",
  "serde_json",
- "utoipa-gen",
+ "utoipa-gen 4.3.1",
+]
+
+[[package]]
+name = "utoipa"
+version = "5.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8bde15df68e80b16c7d16b9616e80770ad158988daa56a27dccd1e55558b0160"
+dependencies = [
+ "indexmap",
+ "serde",
+ "serde_json",
+ "utoipa-gen 5.5.0",
 ]
 
 [[package]]
@@ -4237,6 +4310,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "20c24e8ab68ff9ee746aad22d39b5535601e6416d1b0feeabf78be986a5c4392"
 dependencies = [
  "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "syn 2.0.117",
+]
+
+[[package]]
+name = "utoipa-gen"
+version = "5.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ba0b99ee52df3028635d93840c797102da61f8a7bb3cf751032455895b52ef8"
+dependencies = [
  "proc-macro2",
  "quote",
  "regex",

@@ -31,6 +31,7 @@ pub struct Model {
     pub locked_at: Option<String>,
     pub locked_by: Option<String>,
     pub lock_reason: Option<String>,
+    pub current_period_id: Option<String>,
 
     /// Archive audit trail
     pub archived_at: Option<String>,
@@ -60,23 +61,8 @@ impl Model {
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(
-        belongs_to = "super::organization::Entity",
-        from = "Column::OrgId",
-        to = "super::organization::Column::Id",
-        on_update = "NoAction",
-        on_delete = "NoAction"
-    )]
-    Organization,
-
     #[sea_orm(has_many = "super::academic_period::Entity")]
     AcademicPeriods,
-}
-
-impl Related<super::organization::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Organization.def()
-    }
 }
 
 impl Related<super::academic_period::Entity> for Entity {

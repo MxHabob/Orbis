@@ -1,4 +1,4 @@
-//! Application state for the API Gateway.
+﻿//! Application state for the API Gateway.
 //!
 //! Mirrors the Desktop's AppState but for HTTP context.
 //! Provides `build_context()` to create a `ServiceContext` for any request.
@@ -10,7 +10,7 @@ use shared_kernel::traits::Actor;
 use shared_kernel::event_bus::EventBus;
 use shared_kernel::errors::AppError;
 
-/// Platform services — same as Desktop, shared between both.
+/// Platform services â€” same as Desktop, shared between both.
 pub struct PlatformServices {
     pub permissions: Arc<dyn shared_kernel::traits::PermissionChecker>,
     pub audit: Arc<dyn shared_kernel::traits::AuditLogger>,
@@ -32,9 +32,9 @@ impl PlatformServices {
         use svc_iam::ops::permission_checker::IamPermissionChecker;
         use svc_iam::ops::audit_logger::DbAuditLogger;
         use svc_organization::ops::settings::OrgSettingsProvider;
-        use svc_organization::ops::policy::OrgPolicyEngine;
+        use platform_policy::engine::PlatformPolicyEngine;
         use svc_finance::ops::fee_assigner::FinanceFeeAssigner;
-        use infra_integration::notification_sender::LogNotificationSender;
+        use infra_integration::notification_sender::DbNotificationSender;
 
         let mut reactive = shared_kernel::reactive::ReactivePipeline::new();
         reactive.register(Arc::new(
@@ -52,8 +52,8 @@ impl PlatformServices {
             permissions: Arc::new(IamPermissionChecker::new(db.clone())),
             audit: Arc::new(DbAuditLogger::new(db.clone())),
             settings: Arc::new(OrgSettingsProvider::new(db.clone())),
-            policy: Arc::new(OrgPolicyEngine::new(db.clone())),
-            notifier: Arc::new(LogNotificationSender::new()),
+            policy: Arc::new(PlatformPolicyEngine::new(db.clone())),
+            notifier: Arc::new(DbNotificationSender::new(db.clone())),
             fee_assigner: Arc::new(FinanceFeeAssigner::new(db.clone())),
             period_gate: Arc::new(shared_kernel::period_gate::PeriodGate::new()),
             event_bus,
@@ -85,6 +85,46 @@ impl PlatformServices {
             self.job_queue.clone(),
         )
     }
+
+    pub fn start_event_loop(self: &Arc<Self>) {
+        shared_kernel::outbox_relay::OutboxRelay::new(
+            self.event_store.db().clone(),
+            self.event_bus.clone(),
+        ).spawn();
+
+        shared_kernel::event_loop::DomainEventLoop {
+            event_bus: self.event_bus.clone(),
+            db: self.event_store.db().clone(),
+            reactive: self.reactive.clone(),
+            plugins: self.plugins.clone(),
+            event_store: self.event_store.clone(),
+            projection_handler: Some(docforge_orbis::projection_handler::handler()),
+        }
+        .spawn();
+    }
+
+    pub fn start_autopilot_scheduler(self: &Arc<Self>) {
+        autopilot::subscriber::AutopilotSubscriber::spawn(
+            self.event_store.db().clone(),
+            self.event_bus.clone(),
+            self.period_gate.clone(),
+        );
+
+        autopilot::scheduler::spawn_scheduler(
+            self.event_store.db().clone(),
+            self.event_bus.clone(),
+            self.period_gate.clone(),
+            std::time::Duration::from_secs(15 * 60),
+        );
+    }
+
+    pub fn start_autopilot_catch_up(self: &Arc<Self>) {
+        autopilot::resumption::ResumptionService::spawn_catch_up_all(
+            self.event_store.db().clone(),
+            self.event_bus.clone(),
+            self.period_gate.clone(),
+        );
+    }
 }
 
 /// Shared application state for all Axum handlers.
@@ -99,8 +139,21 @@ impl AppState {
     pub async fn init() -> Result<Self, Box<dyn std::error::Error>> {
         let config = Arc::new(shared_kernel::config::Config::load());
         let db = infra_persistence::connection::connect_db(&config.database_url).await?;
+
+        let baseline_sql = if config.database_url.starts_with("postgres://") || config.database_url.starts_with("postgresql://") {
+            include_str!("../../infra-persistence/src/schemas/schema_baseline_pg.sql")
+        } else {
+            include_str!("../../infra-persistence/src/schemas/schema_baseline.sql")
+        };
+        infra_persistence::migrations::run_sql_migration(&db, baseline_sql).await?;
+        infra_persistence::schema_migrations::run_p0_migrations(&db).await?;
+        infra_persistence::schema_migrations::run_p4_migrations(&db).await?;
+
         let event_bus = Arc::new(EventBus::new());
         let platform = Arc::new(PlatformServices::new(db.clone(), event_bus));
+        platform.start_event_loop();
+        platform.start_autopilot_scheduler();
+        platform.start_autopilot_catch_up();
 
         Ok(Self { db, platform, config })
     }

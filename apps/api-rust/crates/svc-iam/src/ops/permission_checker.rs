@@ -48,8 +48,7 @@ impl PermissionChecker for IamPermissionChecker {
                     .ok_or_else(|| AppError::unauthorized("User not found"))?;
 
                 // Map shared-kernel Permission to domain-iam Permission
-                let iam_permission = map_permission(permission);
-                self.authz.check_permission(&self.db, &user_model, iam_permission, None).await
+                self.authz.check_permission(&self.db, &user_model, permission, None).await
             }
         }
     }
@@ -75,20 +74,10 @@ impl PermissionChecker for IamPermissionChecker {
                     target_org_id: ctx.org_unit_id.clone(),
                 };
 
-                let iam_permission = map_permission(permission);
-                self.authz.check_permission(&self.db, &user_model, iam_permission, Some(&iam_ctx)).await
+                self.authz.check_permission(&self.db, &user_model, permission, Some(&iam_ctx)).await
             }
         }
     }
 }
 
-/// Map shared-kernel Permission to domain-iam Permission.
-///
-/// Both enums have identical variants. This is a temporary bridge
-/// until domain-iam uses shared-kernel's Permission directly.
-fn map_permission(p: Permission) -> crate::services::authz::Permission {
-    // Since both enums have the same variants and layout, we can map by name.
-    // Using serde round-trip as a safe mapping strategy.
-    let json = serde_json::to_string(&p).unwrap_or_default();
-    serde_json::from_str(&json).unwrap_or(crate::services::authz::Permission::OrganizationRead)
-}
+

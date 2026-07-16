@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+﻿use std::path::{Path, PathBuf};
 use sea_orm::DatabaseConnection;
 use tracing::info;
 
@@ -19,11 +19,17 @@ impl DatabaseProvider {
         let url = crate::connection::sqlite_url_rwc(&db_path);
         let db = crate::connection::connect_db(&url).await?;
         
-        info!("✅ Database connected at: {:?}", db_path);
+        info!("✓ Database connected at: {:?}", db_path);
 
         // Run baseline schema
-        let active_baseline_sql = include_str!("schemas/schema_baseline.sql");
-        let _ = crate::migrations::run_sql_migration(&db, active_baseline_sql).await;
+        let active_baseline_sql = if url.starts_with("postgres://") || url.starts_with("postgresql://") {
+            include_str!("schemas/schema_baseline_pg.sql")
+        } else {
+            include_str!("schemas/schema_baseline.sql")
+        };
+        crate::migrations::run_sql_migration(&db, active_baseline_sql).await?;
+        crate::schema_migrations::run_p0_migrations(&db).await?;
+        crate::schema_migrations::run_p4_migrations(&db).await?;
 
         Ok(Self {
             db,

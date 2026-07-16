@@ -131,7 +131,7 @@ pub async fn create(
     let id = Uuid::new_v4().to_string();
 
     let model = user::Model {
-        id: id.clone(), org_id: ctx.org_id.clone(),
+        id: id.clone(), party_id: None, org_id: ctx.org_id.clone(),
         email: req.email, email_verified: 0, email_verified_at: None,
         phone: req.phone, phone_verified: 0, phone_verified_at: None,
         password_hash: req.password_hash, password_changed_at: None, password_expires_at: None,

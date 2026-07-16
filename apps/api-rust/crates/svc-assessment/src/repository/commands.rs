@@ -1,6 +1,6 @@
 //! Assessment command repository — write operations.
 
-use crate::entities::{grade, grade_history, assessment, attendance, attendance_daily, attendance_summary, behavior_record};
+use crate::entities::{grade, attendance, attendance_daily, attendance_summary, behavior_record};
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, DbErr};
 use super::AssessmentCommandRepo;
 
@@ -86,65 +86,7 @@ impl AssessmentCommandRepo {
         active.update(&self.db).await
     }
 
-    pub async fn create_grade_history(&self, gh: grade_history::Model) -> Result<grade_history::Model, DbErr> {
-        let active = grade_history::ActiveModel {
-            id: Set(gh.id),
-            grade_id: Set(gh.grade_id),
-            score: Set(gh.score),
-            grade_letter: Set(gh.grade_letter),
-            is_absent: Set(gh.is_absent),
-            is_excused: Set(gh.is_excused),
-            comment: Set(gh.comment),
-            changed_by: Set(gh.changed_by),
-            changed_at: Set(gh.changed_at),
-            change_reason: Set(gh.change_reason),
-            change_type: Set(gh.change_type),
-            snapshot: Set(gh.snapshot),
-            created_at: Set(gh.created_at),
-        };
-        active.insert(&self.db).await
-    }
 
-    // ── Assessment Commands ─────────────────────────────────────
-
-    pub async fn create_assessment(&self, a: assessment::Model) -> Result<assessment::Model, DbErr> {
-        let active = assessment::ActiveModel {
-            id: Set(a.id),
-            org_id: Set(a.org_id),
-            period_id: Set(a.period_id),
-            class_subject_id: Set(a.class_subject_id),
-            title: Set(a.title),
-            title_ar: Set(a.title_ar),
-            description: Set(a.description),
-            item_type: Set(a.item_type),
-            max_score: Set(a.max_score),
-            passing_score: Set(a.passing_score),
-            weight: Set(a.weight),
-            grade_group_name: Set(a.grade_group_name),
-            assessment_date: Set(a.assessment_date),
-            due_date: Set(a.due_date),
-            duration_minutes: Set(a.duration_minutes),
-            is_published: Set(a.is_published),
-            published_at: Set(a.published_at),
-            published_by: Set(a.published_by),
-            is_locked: Set(a.is_locked),
-            locked_at: Set(a.locked_at),
-            locked_by: Set(a.locked_by),
-            grading_method: Set(a.grading_method),
-            rubric_id: Set(a.rubric_id),
-            instructions: Set(a.instructions),
-            instructions_ar: Set(a.instructions_ar),
-            attachments: Set(a.attachments),
-            created_by: Set(a.created_by),
-            created_at: Set(a.created_at),
-            updated_at: Set(a.updated_at),
-        };
-        active.insert(&self.db).await
-    }
-
-    pub async fn update_assessment(&self, active: assessment::ActiveModel) -> Result<assessment::Model, DbErr> {
-        active.update(&self.db).await
-    }
 
     // ── Attendance Commands ─────────────────────────────────────
 

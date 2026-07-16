@@ -7,7 +7,8 @@ use shared_kernel::errors::AppError;
 pub async fn get_stats(
     ctx: &ServiceContext,
 ) -> Result<serde_json::Value, AppError> {
-    use crate::entities::{academic_year, organization};
+    use crate::entities::organization;
+    use svc_calendar::entities::academic_year;
     use svc_academic::entities::{class, enrollment};
     use svc_iam::entities::user_role;
 

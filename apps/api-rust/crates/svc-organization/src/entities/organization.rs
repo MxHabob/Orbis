@@ -43,33 +43,8 @@ pub struct Model {
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {
-    #[sea_orm(has_many = "super::academic_year::Entity")]
-    AcademicYears,
+pub enum Relation {}
 
-    #[sea_orm(has_many = "super::academic_period::Entity")]
-    AcademicPeriods,
 
-    #[sea_orm(has_one = "super::academic_policy::Entity")]
-    AcademicPolicy,
-}
-
-impl Related<super::academic_year::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::AcademicYears.def()
-    }
-}
-
-impl Related<super::academic_period::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::AcademicPeriods.def()
-    }
-}
-
-impl Related<super::academic_policy::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::AcademicPolicy.def()
-    }
-}
 
 impl ActiveModelBehavior for ActiveModel {}

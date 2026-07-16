@@ -99,9 +99,7 @@ pub async fn start_server(_database_url: &str, port: u16) -> Result<(), Box<dyn 
         .route("/api/attendance", post(handler::attendance::post_attendance))
         .route("/api/attendance/bulk", post(handler::attendance::post_attendance_bulk))
         .route("/api/attendance/report/:class_id", get(handler::attendance::get_attendance_report))
-        // Assessments
-        .route("/api/assessments", get(handler::assessment::get_assessments).post(handler::assessment::post_assessments))
-        .route("/api/assessments/:id", put(handler::assessment::put_assessment).delete(handler::assessment::delete_assessment))
+
         // Behavior
         .route("/api/behavior", post(handler::behavior::post_behavior))
         .route("/api/behavior/:student_id", get(handler::behavior::get_behavior))

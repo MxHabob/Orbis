@@ -10,7 +10,8 @@ use shared_kernel::traits::{AuditEntry, Permission};
 use crate::contracts::commands::{CreateOrganizationCmd, UpdateOrganizationCmd};
 use crate::contracts::responses::OrganizationResponse;
 use crate::contracts::events::event_types;
-use crate::entities::{organization, period_template};
+use crate::entities::organization;
+use svc_calendar::entities::period_template;
 use crate::ops::settings::OrgSettingsProvider;
 
 /// Get organization by ID.
@@ -306,7 +307,7 @@ pub async fn update_settings(
 }
 
 pub async fn check_setup(ctx: &ServiceContext) -> Result<serde_json::Value, AppError> {
-    use crate::entities::academic_year;
+    use svc_calendar::entities::academic_year;
     use svc_academic::entities::class;
     use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, PaginatorTrait};
     

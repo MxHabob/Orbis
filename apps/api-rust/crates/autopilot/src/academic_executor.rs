@@ -1,4 +1,4 @@
-//! AcademicExecutor — performs real state transitions on academic entities.
+//! AcademicExecutor â€” performs real state transitions on academic entities.
 //!
 //! Replaces the old stub executor that only logged `info!()` and returned
 //! fake JSON strings. Every task type now makes actual database changes.
@@ -14,7 +14,9 @@ use tracing::{info, warn};
 
 use shared_kernel::errors::AppError;
 use shared_kernel::event_bus::{EventBus, EventEnvelope};
-use svc_organization::entities::{academic_year, academic_period, organization};
+use shared_kernel::period_gate::PeriodGate;
+use svc_calendar::entities::{academic_year, academic_period};
+use svc_organization::entities::organization;
 
 use crate::entities::autopilot_task;
 
@@ -27,15 +29,16 @@ impl AcademicExecutor {
         db: &DatabaseConnection,
         task: &autopilot_task::Model,
         event_bus: &Arc<EventBus>,
+        period_gate: Option<&Arc<PeriodGate>>,
     ) -> Result<String, AppError> {
         let now = Utc::now().to_rfc3339();
         let target_id = task.target_entity_id.as_deref()
             .ok_or_else(|| AppError::validation("Task missing target_entity_id"))?;
 
-        match task.task_type.as_str() {
-            // ═══════════════════════════════════════════════════════════
+        let result = match task.task_type.as_str() {
+            // â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
             // Year lifecycle
-            // ═══════════════════════════════════════════════════════════
+            // â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 
             "year.activate" => {
                 // Verify no other active year exists for this org
@@ -123,23 +126,31 @@ impl AcademicExecutor {
                 }).to_string())
             }
 
-            // ═══════════════════════════════════════════════════════════
+            // â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
             // Period lifecycle
-            // ═══════════════════════════════════════════════════════════
+            // â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 
             "period.activate" => {
                 let period = Self::load_period(db, target_id).await?;
-                let mut active_model = period.into_active_model();
+                let mut active_model = period.clone().into_active_model();
                 active_model.status = Set("active".to_string());
                 active_model.updated_at = Set(now.clone());
                 active_model.update(db).await?;
+
+                // Update academic_years.current_period_id
+                let year = Self::load_year(db, &period.period_id).await?;
+                let mut year_active = year.into_active_model();
+                year_active.current_period_id = Set(Some(target_id.to_string()));
+                year_active.updated_at = Set(now.clone());
+                year_active.update(db).await?;
 
                 Self::emit(event_bus, "academic.period.activated", "academic_period", target_id, &task.org_id);
                 info!(period_id = target_id, "Period activated");
 
                 Ok(json!({
                     "action": "period_activated",
-                    "period_id": target_id
+                    "period_id": target_id,
+                    "current_period_updated": true
                 }).to_string())
             }
 
@@ -161,12 +172,21 @@ impl AcademicExecutor {
 
             "period.lock" => {
                 let period = Self::load_period(db, target_id).await?;
-                let mut active_model = period.into_active_model();
+                let mut active_model = period.clone().into_active_model();
                 active_model.is_locked = Set(1);
                 active_model.locked_at = Set(Some(now.clone()));
                 active_model.locked_by = Set(Some("autopilot".to_string()));
                 active_model.updated_at = Set(now.clone());
                 active_model.update(db).await?;
+
+                // Clear current_period_id if this was the active one
+                let year = Self::load_year(db, &period.period_id).await?;
+                if year.current_period_id.as_deref() == Some(target_id) {
+                    let mut year_active = year.into_active_model();
+                    year_active.current_period_id = Set(None);
+                    year_active.updated_at = Set(now.clone());
+                    year_active.update(db).await?;
+                }
 
                 Self::emit(event_bus, "academic.period.locked", "academic_period", target_id, &task.org_id);
                 info!(period_id = target_id, "Period locked");
@@ -179,7 +199,7 @@ impl AcademicExecutor {
 
             "period.close" => {
                 let period = Self::load_period(db, target_id).await?;
-                let mut active_model = period.into_active_model();
+                let mut active_model = period.clone().into_active_model();
                 active_model.status = Set("closed".to_string());
                 active_model.is_locked = Set(1);
                 active_model.locked_at = Set(Some(now.clone()));
@@ -187,8 +207,18 @@ impl AcademicExecutor {
                 active_model.updated_at = Set(now.clone());
                 active_model.update(db).await?;
 
+                // Clear current_period_id if this was the active one
+                let year = Self::load_year(db, &period.period_id).await?;
+                if year.current_period_id.as_deref() == Some(target_id) {
+                    let mut year_active = year.into_active_model();
+                    year_active.current_period_id = Set(None);
+                    year_active.updated_at = Set(now.clone());
+                    year_active.update(db).await?;
+                }
+
                 Self::emit(event_bus, "academic.period.closed", "academic_period", target_id, &task.org_id);
-                info!(period_id = target_id, "Period closed");
+                Self::emit(event_bus, "assessment.batch_snapshot_requested", "academic_period", target_id, &task.org_id);
+                info!(period_id = target_id, "Period closed and batch snapshot requested");
 
                 Ok(json!({
                     "action": "period_closed",
@@ -196,9 +226,9 @@ impl AcademicExecutor {
                 }).to_string())
             }
 
-            // ═══════════════════════════════════════════════════════════
+            // â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
             // Enrollment window
-            // ═══════════════════════════════════════════════════════════
+            // â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 
             "enrollment.open" => {
                 let period = Self::load_period(db, target_id).await?;
@@ -232,9 +262,9 @@ impl AcademicExecutor {
                 }).to_string())
             }
 
-            // ═══════════════════════════════════════════════════════════
+            // â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
             // Grade entry window
-            // ═══════════════════════════════════════════════════════════
+            // â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 
             "grade_entry.open" => {
                 let period = Self::load_period(db, target_id).await?;
@@ -268,30 +298,58 @@ impl AcademicExecutor {
                 }).to_string())
             }
 
-            // ═══════════════════════════════════════════════════════════
+            // ════════════════════════════════════════════════════════════════════════════════════════
             // Promotion (advisory — creates insight, doesn't execute)
-            // ═══════════════════════════════════════════════════════════
+            // ════════════════════════════════════════════════════════════════════════════════════════
 
-            "promotion.suggest" => {
+            "promotion.dry_run" => {
                 // This is advisory-only — doesn't auto-promote.
                 // Creates an AI insight suggesting the admin start promotion.
-                info!(period_id = target_id, "Promotion suggested for year");
+                info!(period_id = target_id, "Promotion dry run executed, requires approval");
 
-                Ok(json!({
-                    "action": "promotion_suggested",
-                    "period_id": target_id,
-                    "message": "Year is ready for promotion. Review and initiate manually."
-                }).to_string())
+                Ok("REQUIRES_APPROVAL".to_string())
             }
 
             other => {
                 warn!(task_type = other, "Unknown task type");
                 Err(AppError::validation(format!("Unknown task type: {}", other)))
             }
+        };
+
+        if result.is_ok() {
+            Self::invalidate_gate_after_task(period_gate, &task.task_type, target_id, &task.org_id).await;
+        }
+
+        result
+    }
+
+    async fn invalidate_gate_after_task(
+        period_gate: Option<&Arc<PeriodGate>>,
+        task_type: &str,
+        target_id: &str,
+        org_id: &str,
+    ) {
+        let Some(gate) = period_gate else { return };
+
+        let affects_period = matches!(
+            task_type,
+            "period.activate"
+                | "period.start_grading"
+                | "period.lock"
+                | "period.close"
+                | "enrollment.open"
+                | "enrollment.close"
+                | "grade_entry.open"
+                | "grade_entry.close"
+        );
+
+        if affects_period {
+            gate.invalidate_period(target_id).await;
+            gate.invalidate_policy(org_id).await;
         }
     }
 
-    // ── Helpers ────────────────────────────────────────────────────
+    // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     async fn load_year(
         db: &DatabaseConnection,

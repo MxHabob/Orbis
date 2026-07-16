@@ -1,6 +1,6 @@
 //! Assessment query repository — read operations.
 
-use crate::entities::{grade, assessment, attendance, behavior_record};
+use crate::entities::{grade, attendance, behavior_record};
 use crate::params::{BehaviorParams, GradeParams, AttendanceParams};
 use svc_academic::entities::enrollment;
 use sea_orm::{entity::prelude::*, QueryFilter, QueryOrder, QuerySelect, EntityTrait, ColumnTrait};
@@ -206,23 +206,7 @@ impl AssessmentQueryRepo {
             .await
     }
 
-    // ── Assessment Queries ──────────────────────────────────────
 
-    pub async fn get_assessments(
-        &self,
-        class_subject_id: &str,
-        period_id: &str,
-    ) -> Result<Vec<assessment::Model>, DbErr> {
-        assessment::Entity::find()
-            .filter(assessment::Column::ClassSubjectId.eq(class_subject_id))
-            .filter(assessment::Column::PeriodId.eq(period_id))
-            .all(&self.db)
-            .await
-    }
-
-    pub async fn get_assessment_by_id(&self, id: &str) -> Result<Option<assessment::Model>, DbErr> {
-        assessment::Entity::find_by_id(id.to_string()).one(&self.db).await
-    }
 
     // ── Attendance Queries ──────────────────────────────────────
 

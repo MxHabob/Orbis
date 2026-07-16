@@ -75,25 +75,11 @@ pub enum Relation {
     )]
     AcademicYear,
 
-    #[sea_orm(
-        belongs_to = "super::organization::Entity",
-        from = "Column::OrgId",
-        to = "super::organization::Column::Id",
-        on_update = "NoAction",
-        on_delete = "NoAction"
-    )]
-    Organization,
 }
 
 impl Related<super::academic_year::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::AcademicYear.def()
-    }
-}
-
-impl Related<super::organization::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Organization.def()
     }
 }
 
