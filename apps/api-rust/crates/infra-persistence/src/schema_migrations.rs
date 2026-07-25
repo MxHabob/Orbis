@@ -118,8 +118,8 @@ pub async fn run_p4_migrations(db: &DatabaseConnection) -> Result<(), DbErr> {
         SELECT 
             'person_' || id, 
             'party_' || id, 
-            COALESCE(first_name, 'Unknown'), 
-            COALESCE(last_name, 'Unknown'), 
+            COALESCE(full_name, 'Unknown'), 
+            '', 
             created_at, 
             updated_at 
         FROM users 
