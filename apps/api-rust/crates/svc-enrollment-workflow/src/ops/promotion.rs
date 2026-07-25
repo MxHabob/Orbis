@@ -3,7 +3,7 @@
 use chrono::Utc;
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
 use uuid::Uuid;
-use std::sync::Arc;
+
 
 use shared_kernel::context::ServiceContext;
 use shared_kernel::errors::AppError;

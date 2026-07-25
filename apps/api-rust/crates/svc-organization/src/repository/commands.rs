@@ -3,7 +3,7 @@
 use crate::entities::{
     organization,
 };
-use svc_calendar::entities::{academic_year, academic_period, period_template};
+use svc_calendar::entities::{academic_year, academic_period};
 use svc_enrollment_workflow::entities::{promotion_job, promotion_detail};
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, DbErr, EntityTrait};
 use super::OrganizationCommandRepo;

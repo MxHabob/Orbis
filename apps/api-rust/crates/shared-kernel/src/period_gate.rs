@@ -345,7 +345,6 @@ impl PeriodGate {
         )).await.map_err(|e| AppError::internal(format!("Failed to query overrides: {}", e)))?;
         
         if let Some(row) = res {
-            use sea_orm::QueryResult;
             let count: i64 = row.try_get("", "count").unwrap_or(0);
             Ok(count > 0)
         } else {

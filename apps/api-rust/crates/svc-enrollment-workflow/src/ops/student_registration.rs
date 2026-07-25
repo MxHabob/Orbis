@@ -17,7 +17,7 @@ use tracing::info;
 
 use shared_kernel::context::ServiceContext;
 use shared_kernel::errors::AppError;
-use shared_kernel::process::{ProcessState, CompensationAction};
+use shared_kernel::process::ProcessState;
 use shared_kernel::traits::{AuditEntry, Permission};
 
 use svc_iam::entities::user;

@@ -3,7 +3,7 @@
 //! Uses `AppError` instead of `String` for structured errors.
 //! The Permission enum is a system-wide permission registry.
 
-use serde::{Deserialize, Serialize};
+
 use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
 use shared_kernel::errors::AppError;
 use crate::entities::{role_permission, user};
