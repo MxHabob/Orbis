@@ -30,6 +30,7 @@ async fn migrate_academic_policies_branch_overrides(db: &DatabaseConnection) -> 
         r#"
         CREATE TABLE IF NOT EXISTS academic_policies__p0 (
           id TEXT PRIMARY KEY,
+          party_id TEXT REFERENCES parties(id),
           org_id TEXT NOT NULL,
           org_unit_id TEXT,
           default_grading_system TEXT NOT NULL DEFAULT 'percentage',
