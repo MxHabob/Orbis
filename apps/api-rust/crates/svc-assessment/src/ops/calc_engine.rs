@@ -38,6 +38,9 @@ pub struct CalcEngine {
     pub context: HashMap<String, f64>,
 }
 
+/// Maximum recursion depth for formula evaluation.
+const MAX_DEPTH: usize = 64;
+
 impl CalcEngine {
     pub fn new() -> Self {
         Self {
@@ -50,6 +53,15 @@ impl CalcEngine {
     }
 
     pub fn evaluate(&self, node: &AstNode) -> Result<f64, AppError> {
+        self.evaluate_inner(node, 0)
+    }
+
+    fn evaluate_inner(&self, node: &AstNode, depth: usize) -> Result<f64, AppError> {
+        if depth > MAX_DEPTH {
+            return Err(AppError::validation(format!(
+                "Calculation formula exceeded maximum recursion depth ({})", MAX_DEPTH
+            )));
+        }
         match node {
             AstNode::Literal { value } => Ok(*value),
             AstNode::Variable { name } => {
@@ -60,25 +72,25 @@ impl CalcEngine {
             AstNode::Add { operands } => {
                 let mut sum = 0.0;
                 for op in operands {
-                    sum += self.evaluate(op)?;
+                    sum += self.evaluate_inner(op, depth + 1)?;
                 }
                 Ok(sum)
             }
             AstNode::Subtract { left, right } => {
-                let l = self.evaluate(left)?;
-                let r = self.evaluate(right)?;
+                let l = self.evaluate_inner(left, depth + 1)?;
+                let r = self.evaluate_inner(right, depth + 1)?;
                 Ok(l - r)
             }
             AstNode::Multiply { operands } => {
                 let mut prod = 1.0;
                 for op in operands {
-                    prod *= self.evaluate(op)?;
+                    prod *= self.evaluate_inner(op, depth + 1)?;
                 }
                 Ok(prod)
             }
             AstNode::Divide { left, right } => {
-                let l = self.evaluate(left)?;
-                let r = self.evaluate(right)?;
+                let l = self.evaluate_inner(left, depth + 1)?;
+                let r = self.evaluate_inner(right, depth + 1)?;
                 if r == 0.0 {
                     return Err(AppError::validation("Division by zero in calculation formula"));
                 }
@@ -87,7 +99,7 @@ impl CalcEngine {
             AstNode::Max { operands } => {
                 let mut max_val = f64::NEG_INFINITY;
                 for op in operands {
-                    let val = self.evaluate(op)?;
+                    let val = self.evaluate_inner(op, depth + 1)?;
                     if val > max_val {
                         max_val = val;
                     }
@@ -98,7 +110,7 @@ impl CalcEngine {
             AstNode::Min { operands } => {
                 let mut min_val = f64::INFINITY;
                 for op in operands {
-                    let val = self.evaluate(op)?;
+                    let val = self.evaluate_inner(op, depth + 1)?;
                     if val < min_val {
                         min_val = val;
                     }
@@ -112,14 +124,14 @@ impl CalcEngine {
                 }
                 let mut sum = 0.0;
                 for op in operands {
-                    sum += self.evaluate(op)?;
+                    sum += self.evaluate_inner(op, depth + 1)?;
                 }
                 Ok(sum / operands.len() as f64)
             }
             AstNode::WeightedSum { items } => {
                 let mut sum = 0.0;
                 for item in items {
-                    let val = self.evaluate(&item.node)?;
+                    let val = self.evaluate_inner(&item.node, depth + 1)?;
                     sum += val * item.weight;
                 }
                 Ok(sum)
@@ -136,3 +148,4 @@ pub fn apply_rounding(value: f64, policy: &str) -> f64 {
         _ => value, // "exact" or unknown implies no rounding
     }
 }
+

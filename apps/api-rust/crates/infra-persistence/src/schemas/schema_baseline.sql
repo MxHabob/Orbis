@@ -466,25 +466,35 @@ CREATE TABLE IF NOT EXISTS academic_override_requests (
 CREATE TABLE IF NOT EXISTS grades (
   id TEXT PRIMARY KEY,
   party_id TEXT REFERENCES parties(id),
+  org_id TEXT NOT NULL,
+  period_id TEXT NOT NULL,
   enrollment_id TEXT NOT NULL,
-  assessment_id TEXT NOT NULL,
-  score REAL,
+  assessment_id TEXT,
+  class_subject_id TEXT,
+  subject_name TEXT NOT NULL,
+  subject_name_ar TEXT,
+  score REAL NOT NULL DEFAULT 0,
+  max_score REAL NOT NULL DEFAULT 100,
+  weight REAL NOT NULL DEFAULT 1.0,
   grade_letter TEXT,
-  is_absent INTEGER NOT NULL DEFAULT 0,
-  is_excused INTEGER NOT NULL DEFAULT 0,
-  comment TEXT,
-  entered_by TEXT,
-  entered_at TEXT,
-  is_published INTEGER NOT NULL DEFAULT 0,
-  is_locked INTEGER NOT NULL DEFAULT 0,
+  grade_points REAL,
+  exam_type TEXT NOT NULL DEFAULT 'assignment',
+  semester TEXT NOT NULL DEFAULT '',
+  notes TEXT,
+  graded_by TEXT NOT NULL,
+  graded_at TEXT NOT NULL,
+  is_final INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (enrollment_id) REFERENCES enrollments(id),
-  FOREIGN KEY (assessment_id) REFERENCES assessments(id)
+  FOREIGN KEY (org_id) REFERENCES organizations(id),
+  FOREIGN KEY (period_id) REFERENCES academic_periods(id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_grades_enrollment ON grades(enrollment_id);
 CREATE INDEX IF NOT EXISTS idx_grades_assessment ON grades(assessment_id);
+CREATE INDEX IF NOT EXISTS idx_grades_org_period ON grades(org_id, period_id);
+CREATE INDEX IF NOT EXISTS idx_grades_class_subject ON grades(class_subject_id);
 
 -- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 -- â”€â”€ Notifications â”€â”€
@@ -913,7 +923,34 @@ CREATE TABLE IF NOT EXISTS student_assessment_snapshots (
   updated_at TEXT NOT NULL
 );
 
+-- ── Attendance (per-record, used by ops/attendance) ──
+CREATE TABLE IF NOT EXISTS attendance (
+  id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
+  org_id TEXT NOT NULL,
+  period_id TEXT NOT NULL,
+  enrollment_id TEXT NOT NULL,
+  class_id TEXT NOT NULL,
+  date TEXT NOT NULL,
+  status TEXT NOT NULL,
+  check_in_time TEXT,
+  check_out_time TEXT,
+  period TEXT,
+  subject_name TEXT,
+  recorded_by TEXT NOT NULL,
+  notes TEXT,
+  excuse_type TEXT,
+  excuse_document TEXT,
+  is_excused INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (enrollment_id) REFERENCES enrollments(id),
+  FOREIGN KEY (org_id) REFERENCES organizations(id)
+);
 
+CREATE INDEX IF NOT EXISTS idx_attendance_enr_date ON attendance(enrollment_id, date);
+CREATE INDEX IF NOT EXISTS idx_attendance_class_date ON attendance(class_id, date);
+
+-- ── Attendance Daily (aggregate, used by attendance_daily entity) ──
 CREATE TABLE IF NOT EXISTS attendance_daily (
   id TEXT PRIMARY KEY,
   party_id TEXT REFERENCES parties(id),
@@ -1131,7 +1168,7 @@ CREATE TABLE IF NOT EXISTS student_fees (
   original_amount REAL NOT NULL,
   discount_amount REAL NOT NULL DEFAULT 0,
   net_amount REAL NOT NULL,
-  status TEXT NOT NULL DEFAULT 'active',
+  status TEXT NOT NULL DEFAULT 'pending',
   due_date TEXT NOT NULL,
   discount_details TEXT,
   parent_fee_id TEXT,
@@ -1221,24 +1258,12 @@ CREATE TABLE IF NOT EXISTS treasury_transactions (
   created_at TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS system_log (
-  id TEXT PRIMARY KEY,
-  party_id TEXT REFERENCES parties(id),
-  org_id TEXT,
-  level TEXT NOT NULL,
-  category TEXT NOT NULL,
-  message TEXT NOT NULL,
-  details TEXT,
-  stack_trace TEXT,
-  user_id TEXT,
-  request_id TEXT,
-  endpoint TEXT,
-  method TEXT,
-  duration_ms INTEGER,
-  memory_usage_mb INTEGER,
-  cpu_usage_percent INTEGER,
-  timestamp TEXT NOT NULL
-);
+-- system_log table REMOVED (audit finding A-07):
+-- No code references this table. The application uses:
+--   • `tracing` crate for structured logging
+--   • `domain_events` table for business event sourcing
+--   • `audit_log` + `audit_events` tables for user action auditing
+
 
 CREATE TABLE IF NOT EXISTS data_transfers (
   id TEXT PRIMARY KEY,
@@ -1756,11 +1781,27 @@ CREATE INDEX IF NOT EXISTS idx_enrollment_org_period_class
 CREATE INDEX IF NOT EXISTS idx_attendance_daily_enrollment_period_date
     ON attendance_daily(enrollment_id, period_id, date);
 
-CREATE INDEX IF NOT EXISTS idx_autopilot_org_status
-    ON autopilot_tasks(org_id, status);
+-- (Duplicate index removed — idx_at_org_status already covers this)
 
 CREATE INDEX IF NOT EXISTS idx_classes_org_period_covering
     ON classes(org_id, period_id, name, level, capacity);
+
+-- ── Additional Performance Indexes (Audit P2) ──
+
+CREATE INDEX IF NOT EXISTS idx_sas_student_period
+    ON student_assessment_snapshots(student_id, period_id);
+
+CREATE INDEX IF NOT EXISTS idx_sas_org_period_status
+    ON student_assessment_snapshots(org_id, period_id, status);
+
+CREATE INDEX IF NOT EXISTS idx_class_subjects_class_period
+    ON class_subjects(class_id, period_id);
+
+CREATE INDEX IF NOT EXISTS idx_users_party_id
+    ON users(party_id) WHERE party_id IS NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_sg_unique_pair
+    ON student_guardians(student_id, guardian_id);
 
 -- â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 -- â”€â”€ Domain Events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -1848,15 +1889,87 @@ CREATE TABLE IF NOT EXISTS audit_events (
 CREATE INDEX IF NOT EXISTS idx_audit_events_entity ON audit_events(org_id, entity_type, entity_id);
 
 
--- ??????????????????????????????????????????????????????????????????????
--- ?? current_students Triggers ??
--- ??????????????????????????????????????????????????????????????????????
+-- ══════════════════════════════════════════════════════════════════
+-- ── Behavior Records ──
+-- ══════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS behavior_records (
+  id TEXT PRIMARY KEY,
+  party_id TEXT REFERENCES parties(id),
+  org_id TEXT NOT NULL,
+  period_id TEXT NOT NULL,
+  enrollment_id TEXT NOT NULL,
+  "type" TEXT NOT NULL,
+  severity TEXT NOT NULL,
+  category TEXT,
+  title TEXT NOT NULL,
+  title_ar TEXT,
+  description TEXT NOT NULL,
+  incident_date TEXT NOT NULL,
+  incident_time TEXT,
+  location TEXT,
+  points INTEGER,
+  action_taken TEXT,
+  action_details TEXT,
+  action_completed INTEGER,
+  reported_by TEXT NOT NULL,
+  reviewed_by TEXT,
+  reviewed_at TEXT,
+  witnesses TEXT,
+  parent_notified INTEGER NOT NULL DEFAULT 0,
+  parent_notified_at TEXT,
+  parent_response TEXT,
+  evidence_urls TEXT,
+  status TEXT NOT NULL DEFAULT 'reported',
+  resolution_notes TEXT,
+  resolved_at TEXT,
+  resolved_by TEXT,
+  is_private INTEGER NOT NULL DEFAULT 0,
+  ai_source TEXT,
+  ai_confidence REAL,
+  ai_model_version TEXT,
+  camera_id TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (enrollment_id) REFERENCES enrollments(id),
+  FOREIGN KEY (org_id) REFERENCES organizations(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_behavior_enrollment ON behavior_records(enrollment_id);
+CREATE INDEX IF NOT EXISTS idx_behavior_org_period ON behavior_records(org_id, period_id);
+
+-- ══════════════════════════════════════════════════════════════════
+-- ── Current Students (materialized view for fast lookup) ──
+-- ══════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS current_students (
+  org_id TEXT NOT NULL,
+  student_id TEXT NOT NULL,
+  period_id TEXT NOT NULL,
+  class_id TEXT NOT NULL,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (org_id, student_id, period_id),
+  FOREIGN KEY (student_id) REFERENCES users(id),
+  FOREIGN KEY (class_id) REFERENCES classes(id),
+  FOREIGN KEY (org_id) REFERENCES organizations(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_cs_class ON current_students(class_id);
+CREATE INDEX IF NOT EXISTS idx_cs_period ON current_students(period_id, is_active);
+
+-- ── current_students Triggers ──
+-- Derives is_active from enrollment status (active = 1, others = 0)
 
 CREATE TRIGGER IF NOT EXISTS enrollments_after_insert
 AFTER INSERT ON enrollments
 BEGIN
     INSERT INTO current_students (org_id, student_id, period_id, class_id, is_active, updated_at)
-    VALUES (NEW.org_id, NEW.student_id, NEW.period_id, NEW.class_id, NEW.is_active, NEW.updated_at)
+    VALUES (
+        NEW.org_id, NEW.student_id, NEW.period_id, NEW.class_id,
+        CASE WHEN NEW.status = 'active' THEN 1 ELSE 0 END,
+        NEW.updated_at
+    )
     ON CONFLICT (org_id, student_id, period_id) DO UPDATE SET
         class_id = excluded.class_id,
         is_active = excluded.is_active,
@@ -1868,7 +1981,7 @@ AFTER UPDATE ON enrollments
 BEGIN
     UPDATE current_students
     SET class_id = NEW.class_id,
-        is_active = NEW.is_active,
+        is_active = CASE WHEN NEW.status = 'active' THEN 1 ELSE 0 END,
         updated_at = NEW.updated_at
     WHERE org_id = NEW.org_id AND student_id = NEW.student_id AND period_id = NEW.period_id;
 END;

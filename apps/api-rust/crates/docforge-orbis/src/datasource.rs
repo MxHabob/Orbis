@@ -10,10 +10,15 @@ use async_trait::async_trait;
 use serde_json::{json, Value};
 use sea_orm::{DatabaseConnection, ConnectionTrait};
 
-// ── SQL Utility escaping ──────────────────────────────────────
+// ── Safe Query Helper ─────────────────────────────────────────
 
-fn sql_escape(s: &str) -> String {
-    s.replace('\'', "''")
+/// Build a parameterized SELECT * FROM table WHERE id = ? statement.
+fn select_by_id(db: &DatabaseConnection, table: &str, id: &str) -> sea_orm::Statement {
+    sea_orm::Statement::from_sql_and_values(
+        db.get_database_backend(),
+        &format!("SELECT * FROM {} WHERE id = $1", table),
+        vec![id.into()],
+    )
 }
 
 // ── DataSource Trait ──────────────────────────────────────────
@@ -41,13 +46,8 @@ impl DataSource for EnrollmentDataSource {
     }
 
     async fn resolve(&self, db: &DatabaseConnection, entity_id: &str) -> Result<Value, String> {
-        let escaped_id = sql_escape(entity_id);
-        
         // 1. Fetch enrollment
-        let enroll_stmt = sea_orm::Statement::from_string(
-            sea_orm::DatabaseBackend::Sqlite,
-            format!("SELECT * FROM enrollments WHERE id = '{}'", escaped_id),
-        );
+        let enroll_stmt = select_by_id(db, "enrollments", entity_id);
         let enroll_opt = db.query_one(enroll_stmt).await.map_err(|e| e.to_string())?;
         let enroll = enroll_opt.ok_or_else(|| format!("Enrollment not found: {}", entity_id))?;
         
@@ -55,17 +55,11 @@ impl DataSource for EnrollmentDataSource {
         let class_id: String = enroll.try_get("", "class_id").map_err(|e| e.to_string())?;
         
         // 2. Fetch student user
-        let user_stmt = sea_orm::Statement::from_string(
-            sea_orm::DatabaseBackend::Sqlite,
-            format!("SELECT * FROM users WHERE id = '{}'", sql_escape(&student_id)),
-        );
+        let user_stmt = select_by_id(db, "users", &student_id);
         let user_opt = db.query_one(user_stmt).await.map_err(|e| e.to_string())?;
         
         // 3. Fetch class
-        let class_stmt = sea_orm::Statement::from_string(
-            sea_orm::DatabaseBackend::Sqlite,
-            format!("SELECT * FROM classes WHERE id = '{}'", sql_escape(&class_id)),
-        );
+        let class_stmt = select_by_id(db, "classes", &class_id);
         let class_opt = db.query_one(class_stmt).await.map_err(|e| e.to_string())?;
 
         // Construct JSON context
@@ -154,12 +148,7 @@ impl DataSource for PaymentDataSource {
     }
 
     async fn resolve(&self, db: &DatabaseConnection, entity_id: &str) -> Result<Value, String> {
-        let escaped_id = sql_escape(entity_id);
-        
-        let stmt = sea_orm::Statement::from_string(
-            sea_orm::DatabaseBackend::Sqlite,
-            format!("SELECT * FROM payments WHERE id = '{}'", escaped_id),
-        );
+        let stmt = select_by_id(db, "payments", entity_id);
         let opt = db.query_one(stmt).await.map_err(|e| e.to_string())?;
         let payment = opt.ok_or_else(|| format!("Payment not found: {}", entity_id))?;
 
@@ -205,23 +194,15 @@ impl DataSource for ExamDataSource {
     }
 
     async fn resolve(&self, db: &DatabaseConnection, entity_id: &str) -> Result<Value, String> {
-        let escaped_id = sql_escape(entity_id);
-
         // Fetch seating number record
-        let seat_stmt = sea_orm::Statement::from_string(
-            sea_orm::DatabaseBackend::Sqlite,
-            format!("SELECT * FROM seating_numbers WHERE id = '{}'", escaped_id),
-        );
+        let seat_stmt = select_by_id(db, "seating_numbers", entity_id);
         let seat_opt = db.query_one(seat_stmt).await.map_err(|e| e.to_string())?;
         let seat = seat_opt.ok_or_else(|| format!("Seating allocation record not found: {}", entity_id))?;
 
         let session_id: String = seat.try_get("", "exam_session_id").map_err(|e| e.to_string())?;
         
         // Fetch exam session details
-        let session_stmt = sea_orm::Statement::from_string(
-            sea_orm::DatabaseBackend::Sqlite,
-            format!("SELECT * FROM exam_sessions WHERE id = '{}'", sql_escape(&session_id)),
-        );
+        let session_stmt = select_by_id(db, "exam_sessions", &session_id);
         let session_opt = db.query_one(session_stmt).await.map_err(|e| e.to_string())?;
 
         let mut session_json = json!({});
@@ -277,12 +258,7 @@ impl DataSource for UserDataSource {
     }
 
     async fn resolve(&self, db: &DatabaseConnection, entity_id: &str) -> Result<Value, String> {
-        let escaped_id = sql_escape(entity_id);
-
-        let stmt = sea_orm::Statement::from_string(
-            sea_orm::DatabaseBackend::Sqlite,
-            format!("SELECT * FROM users WHERE id = '{}'", escaped_id),
-        );
+        let stmt = select_by_id(db, "users", entity_id);
         let opt = db.query_one(stmt).await.map_err(|e| e.to_string())?;
         let user = opt.ok_or_else(|| format!("User not found: {}", entity_id))?;
 
@@ -375,15 +351,10 @@ impl DataSource for ProjectionDataSource {
     }
 
     async fn resolve(&self, db: &DatabaseConnection, entity_id: &str) -> Result<Value, String> {
-        let escaped_id = sql_escape(entity_id);
-        let escaped_type = sql_escape(&self.entity_type);
-        
-        let stmt = sea_orm::Statement::from_string(
-            sea_orm::DatabaseBackend::Sqlite,
-            format!(
-                "SELECT data FROM docforge_projections WHERE entity_type = '{}' AND entity_id = '{}'",
-                escaped_type, escaped_id
-            ),
+        let stmt = sea_orm::Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "SELECT data FROM docforge_projections WHERE entity_type = $1 AND entity_id = $2",
+            vec![self.entity_type.clone().into(), entity_id.into()],
         );
         let opt = db.query_one(stmt).await.map_err(|e| e.to_string())?;
         let record = opt.ok_or_else(|| format!("Projection not found for {} - {}", self.entity_type, entity_id))?;

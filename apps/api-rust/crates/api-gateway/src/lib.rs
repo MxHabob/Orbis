@@ -27,7 +27,7 @@ pub async fn start_server(_database_url: &str, port: u16) -> Result<(), Box<dyn 
     let state = AppState::init().await?;
 
     let cors = CorsLayer::new()
-        .allow_origin(tower_http::cors::AllowOrigin::any())
+        .allow_origin(tower_http::cors::AllowOrigin::mirror_request())
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::OPTIONS])
         .allow_headers(vec![
             axum::http::header::AUTHORIZATION,

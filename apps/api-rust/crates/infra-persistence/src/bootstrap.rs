@@ -115,17 +115,32 @@ async fn apply_school_blueprint(db: &DatabaseConnection, org_id: &str, now: &str
     let policy_id = Uuid::new_v4().to_string();
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO academic_policies (id, org_id, grading_system, pass_mark, is_active, created_at, updated_at) VALUES ($1, $2, 'Percentage', 50.0, 1, $3, $4)",
+        "INSERT INTO academic_policies (id, org_id, default_grading_system, default_passing_grade, default_max_grade, created_at, updated_at) VALUES ($1, $2, 'percentage', 50, 100, $3, $4)",
         vec![policy_id.into(), org_id.into(), now.into(), now.into()]
     )).await.map_err(|e| AppError::internal(e.to_string()))?;
 
-    // Seed default period templates
-    let s1_id = Uuid::new_v4().to_string();
-    let s2_id = Uuid::new_v4().to_string();
+    // Seed default period template (2 semesters, 2 quarters each)
+    let tmpl_id = Uuid::new_v4().to_string();
+    let structure = serde_json::json!([
+        {
+            "name": "الفصل الأول", "name_ar": "الفصل الأول", "type": "semester", "weight": 50,
+            "children": [
+                { "name": "الفترة الأولى", "type": "quarter", "weight": 25 },
+                { "name": "الفترة الثانية", "type": "quarter", "weight": 25 }
+            ]
+        },
+        {
+            "name": "الفصل الثاني", "name_ar": "الفصل الثاني", "type": "semester", "weight": 50,
+            "children": [
+                { "name": "الفترة الثالثة", "type": "quarter", "weight": 25 },
+                { "name": "الفترة الرابعة", "type": "quarter", "weight": 25 }
+            ]
+        }
+    ]);
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO period_templates (id, org_id, name, type_name, duration_weeks, is_active) VALUES ($1, $2, 'Semester 1', 'Semester', 16, 1), ($3, $4, 'Semester 2', 'Semester', 16, 1)",
-        vec![s1_id.into(), org_id.into(), s2_id.into(), org_id.into()]
+        "INSERT INTO period_templates (id, org_id, name, name_ar, institution_type, structure, is_default, created_at, updated_at) VALUES ($1, $2, 'School Year', 'العام الدراسي', 'school', $3, 1, $4, $5)",
+        vec![tmpl_id.into(), org_id.into(), structure.to_string().into(), now.into(), now.into()]
     )).await.map_err(|e| AppError::internal(e.to_string()))?;
 
     Ok(())
@@ -136,17 +151,20 @@ async fn apply_university_blueprint(db: &DatabaseConnection, org_id: &str, now: 
     let policy_id = Uuid::new_v4().to_string();
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO academic_policies (id, org_id, grading_system, pass_mark, is_active, created_at, updated_at) VALUES ($1, $2, 'GPA_4_0', 60.0, 1, $3, $4)",
+        "INSERT INTO academic_policies (id, org_id, default_grading_system, default_passing_grade, default_max_grade, created_at, updated_at) VALUES ($1, $2, 'gpa_4_0', 60, 100, $3, $4)",
         vec![policy_id.into(), org_id.into(), now.into(), now.into()]
     )).await.map_err(|e| AppError::internal(e.to_string()))?;
 
-    let fall_id = Uuid::new_v4().to_string();
-    let spring_id = Uuid::new_v4().to_string();
-    let summer_id = Uuid::new_v4().to_string();
+    let tmpl_id = Uuid::new_v4().to_string();
+    let structure = serde_json::json!([
+        { "name": "Fall Semester", "type": "semester", "weight": 40 },
+        { "name": "Spring Semester", "type": "semester", "weight": 40 },
+        { "name": "Summer Term", "type": "term", "weight": 20 }
+    ]);
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO period_templates (id, org_id, name, type_name, duration_weeks, is_active) VALUES ($1, $2, 'Fall Semester', 'Semester', 16, 1), ($3, $4, 'Spring Semester', 'Semester', 16, 1), ($5, $6, 'Summer Term', 'Term', 8, 1)",
-        vec![fall_id.into(), org_id.into(), spring_id.into(), org_id.into(), summer_id.into(), org_id.into()]
+        "INSERT INTO period_templates (id, org_id, name, institution_type, structure, is_default, created_at, updated_at) VALUES ($1, $2, 'University Year', 'university', $3, 1, $4, $5)",
+        vec![tmpl_id.into(), org_id.into(), structure.to_string().into(), now.into(), now.into()]
     )).await.map_err(|e| AppError::internal(e.to_string()))?;
 
     Ok(())
@@ -157,18 +175,21 @@ async fn apply_training_blueprint(db: &DatabaseConnection, org_id: &str, now: &s
     let policy_id = Uuid::new_v4().to_string();
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO academic_policies (id, org_id, grading_system, pass_mark, is_active, created_at, updated_at) VALUES ($1, $2, 'PassFail', 70.0, 1, $3, $4)",
+        "INSERT INTO academic_policies (id, org_id, default_grading_system, default_passing_grade, default_max_grade, created_at, updated_at) VALUES ($1, $2, 'pass_fail', 70, 100, $3, $4)",
         vec![policy_id.into(), org_id.into(), now.into(), now.into()]
     )).await.map_err(|e| AppError::internal(e.to_string()))?;
 
-    let q1_id = Uuid::new_v4().to_string();
-    let q2_id = Uuid::new_v4().to_string();
-    let q3_id = Uuid::new_v4().to_string();
-    let q4_id = Uuid::new_v4().to_string();
+    let tmpl_id = Uuid::new_v4().to_string();
+    let structure = serde_json::json!([
+        { "name": "Q1", "type": "quarter", "weight": 25 },
+        { "name": "Q2", "type": "quarter", "weight": 25 },
+        { "name": "Q3", "type": "quarter", "weight": 25 },
+        { "name": "Q4", "type": "quarter", "weight": 25 }
+    ]);
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO period_templates (id, org_id, name, type_name, duration_weeks, is_active) VALUES ($1, $2, 'Q1', 'Quarter', 12, 1), ($3, $4, 'Q2', 'Quarter', 12, 1), ($5, $6, 'Q3', 'Quarter', 12, 1), ($7, $8, 'Q4', 'Quarter', 12, 1)",
-        vec![q1_id.into(), org_id.into(), q2_id.into(), org_id.into(), q3_id.into(), org_id.into(), q4_id.into(), org_id.into()]
+        "INSERT INTO period_templates (id, org_id, name, institution_type, structure, is_default, created_at, updated_at) VALUES ($1, $2, 'Training Year', 'institute', $3, 1, $4, $5)",
+        vec![tmpl_id.into(), org_id.into(), structure.to_string().into(), now.into(), now.into()]
     )).await.map_err(|e| AppError::internal(e.to_string()))?;
 
     Ok(())
