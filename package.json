@@ -5,7 +5,6 @@
   "workspaces": [
     "packages/*",
     "apps/api-rust",
-    "apps/dashboard",
     "apps/desktop-svelte"
   ],
   "catalog": {
@@ -22,8 +21,6 @@
     "dev": "turbo dev --parallel --continue",
     "test": "turbo test --parallel",
     "dev:api-go": "turbo dev --filter=@orbis/api-go",
-    "dev:dashboard": "turbo dev --filter=@orbis/dashboard",
-    "build:dashboard": "turbo build --filter=@orbis/dashboard",
     "dev:desktop-svelte": "turbo dev --filter=@orbis/desktop-svelte",
     "dev:desktop-svelte:dev": "turbo run tauri:dev --filter=@orbis/desktop-svelte",
     "dev:desktop-svelte:staging": "turbo run tauri:staging --filter=@orbis/desktop-svelte",
