@@ -20,23 +20,23 @@ pub async fn finance_currency_get(state: State<'_, Arc<AppState>>, code: String)
 }
 
 #[tauri::command]
-pub async fn finance_currency_create(state: State<'_, Arc<AppState>>, code: String, name: String, nameAr: Option<String>, symbol: String, symbolPosition: String, decimalPlaces: i32, exchangeRate: f64, isBase: bool) -> CmdResult<serde_json::Value> {
+pub async fn finance_currency_create(state: State<'_, Arc<AppState>>, code: String, name: String, name_ar: Option<String>, symbol: String, symbol_position: String, decimal_places: i32, exchange_rate: f64, is_base: bool) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::currency::create(&ctx, code, name, nameAr, symbol, symbolPosition, decimalPlaces, exchangeRate, isBase).await.map_err(CommandError::from)?;
+    let result = ops::currency::create(&ctx, code, name, name_ar, symbol, symbol_position, decimal_places, exchange_rate, is_base).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn finance_currency_update(state: State<'_, Arc<AppState>>, code: String, exchangeRate: Option<f64>, isActive: Option<bool>) -> CmdResult<serde_json::Value> {
+pub async fn finance_currency_update(state: State<'_, Arc<AppState>>, code: String, exchange_rate: Option<f64>, is_active: Option<bool>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::currency::update(&ctx, &code, exchangeRate, isActive).await.map_err(CommandError::from)?;
+    let result = ops::currency::update(&ctx, &code, exchange_rate, is_active).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn finance_currency_delete(state: State<'_, Arc<AppState>>, code: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::currency::delete(&ctx, &code).await.map_err(CommandError::from)?;
+    ops::currency::delete(&ctx, &code).await.map_err(CommandError::from)?;
     Ok(serde_json::json!({}))
 }
 
@@ -63,16 +63,16 @@ pub async fn finance_discount_create(state: State<'_, Arc<AppState>>, cmd: serde
 }
 
 #[tauri::command]
-pub async fn finance_discount_update(state: State<'_, Arc<AppState>>, templateId: String, name: Option<String>, value: Option<i32>, isActive: Option<bool>) -> CmdResult<serde_json::Value> {
+pub async fn finance_discount_update(state: State<'_, Arc<AppState>>, template_id: String, name: Option<String>, value: Option<i32>, is_active: Option<bool>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::discount::update(&ctx, &templateId, name, value, isActive).await.map_err(CommandError::from)?;
+    let result = ops::discount::update(&ctx, &template_id, name, value, is_active).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn finance_discount_delete(state: State<'_, Arc<AppState>>, templateId: String) -> CmdResult<serde_json::Value> {
+pub async fn finance_discount_delete(state: State<'_, Arc<AppState>>, template_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::discount::delete(&ctx, &templateId).await.map_err(CommandError::from)?;
+    ops::discount::delete(&ctx, &template_id).await.map_err(CommandError::from)?;
     Ok(serde_json::json!({}))
 }
 
@@ -92,10 +92,10 @@ pub async fn finance_fee_template_create(state: State<'_, Arc<AppState>>, cmd: s
 }
 
 #[tauri::command]
-pub async fn finance_fee_template_update(state: State<'_, Arc<AppState>>, templateId: String, cmd: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn finance_fee_template_update(state: State<'_, Arc<AppState>>, template_id: String, cmd: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let cmd_parsed = serde_json::from_value(cmd).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::fee_template::update(&ctx, &templateId, cmd_parsed).await.map_err(CommandError::from)?;
+    let result = ops::fee_template::update(&ctx, &template_id, cmd_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -107,9 +107,9 @@ pub async fn finance_journal_list(state: State<'_, Arc<AppState>>, limit: Option
 }
 
 #[tauri::command]
-pub async fn finance_journal_create(state: State<'_, Arc<AppState>>, debitAccountId: String, creditAccountId: String, amount: f64, currency: String, description: String, descriptionAr: Option<String>, accountingDate: String, fiscalPeriodId: String, sourceType: String, sourceId: Option<String>) -> CmdResult<serde_json::Value> {
+pub async fn finance_journal_create(state: State<'_, Arc<AppState>>, debit_account_id: String, credit_account_id: String, amount: f64, currency: String, description: String, description_ar: Option<String>, accounting_date: String, fiscal_period_id: String, source_type: String, source_id: Option<String>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::journal::create(&ctx, debitAccountId, creditAccountId, amount, currency, description, descriptionAr, accountingDate, fiscalPeriodId, sourceType, sourceId).await.map_err(CommandError::from)?;
+    let result = ops::journal::create(&ctx, debit_account_id, credit_account_id, amount, currency, description, description_ar, accounting_date, fiscal_period_id, source_type, source_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -136,9 +136,9 @@ pub async fn finance_ledger_create_account(state: State<'_, Arc<AppState>>, cmd:
 }
 
 #[tauri::command]
-pub async fn finance_ledger_get_or_create_sub_account(state: State<'_, Arc<AppState>>, entityType: String, entityId: String, entityName: Option<String>, entityNameAr: Option<String>) -> CmdResult<serde_json::Value> {
+pub async fn finance_ledger_get_or_create_sub_account(state: State<'_, Arc<AppState>>, entity_type: String, entity_id: String, entity_name: Option<String>, entity_name_ar: Option<String>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::ledger::get_or_create_sub_account(&ctx, &entityType, &entityId, entityName.as_deref(), entityNameAr.as_deref()).await.map_err(CommandError::from)?;
+    let result = ops::ledger::get_or_create_sub_account(&ctx, &entity_type, &entity_id, entity_name.as_deref(), entity_name_ar.as_deref()).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -158,9 +158,9 @@ pub async fn finance_ledger_get_journal_entries(state: State<'_, Arc<AppState>>,
 }
 
 #[tauri::command]
-pub async fn finance_ledger_get_account_statement(state: State<'_, Arc<AppState>>, accountId: String, startDate: String, endDate: String) -> CmdResult<serde_json::Value> {
+pub async fn finance_ledger_get_account_statement(state: State<'_, Arc<AppState>>, account_id: String, start_date: String, end_date: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::ledger::get_account_statement(&ctx, &accountId, &startDate, &endDate).await.map_err(CommandError::from)?;
+    let result = ops::ledger::get_account_statement(&ctx, &account_id, &start_date, &end_date).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -180,9 +180,9 @@ pub async fn finance_payment_record(state: State<'_, Arc<AppState>>, cmd: serde_
 }
 
 #[tauri::command]
-pub async fn finance_student_fee_list_by_enrollment(state: State<'_, Arc<AppState>>, enrollmentId: String) -> CmdResult<serde_json::Value> {
+pub async fn finance_student_fee_list_by_enrollment(state: State<'_, Arc<AppState>>, enrollment_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::student_fee::list_by_enrollment(&ctx, &enrollmentId).await.map_err(CommandError::from)?;
+    let result = ops::student_fee::list_by_enrollment(&ctx, &enrollment_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 

@@ -20,16 +20,16 @@ pub async fn calendar_academic_period_list_hierarchy(state: State<'_, Arc<AppSta
 }
 
 #[tauri::command]
-pub async fn calendar_academic_period_list_by_year(state: State<'_, Arc<AppState>>, periodId: String) -> CmdResult<serde_json::Value> {
+pub async fn calendar_academic_period_list_by_year(state: State<'_, Arc<AppState>>, period_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::academic_period::list_by_year(&ctx, &periodId).await.map_err(CommandError::from)?;
+    let result = ops::academic_period::list_by_year(&ctx, &period_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn calendar_academic_period_get(state: State<'_, Arc<AppState>>, periodId: String) -> CmdResult<serde_json::Value> {
+pub async fn calendar_academic_period_get(state: State<'_, Arc<AppState>>, period_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::academic_period::get(&ctx, &periodId).await.map_err(CommandError::from)?;
+    let result = ops::academic_period::get(&ctx, &period_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -49,45 +49,45 @@ pub async fn calendar_academic_period_create(state: State<'_, Arc<AppState>>, da
 }
 
 #[tauri::command]
-pub async fn calendar_academic_period_lock(state: State<'_, Arc<AppState>>, periodId: String) -> CmdResult<serde_json::Value> {
+pub async fn calendar_academic_period_lock(state: State<'_, Arc<AppState>>, period_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::academic_period::lock(&ctx, &periodId).await.map_err(CommandError::from)?;
+    let result = ops::academic_period::lock(&ctx, &period_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn calendar_academic_period_unlock(state: State<'_, Arc<AppState>>, periodId: String) -> CmdResult<serde_json::Value> {
+pub async fn calendar_academic_period_unlock(state: State<'_, Arc<AppState>>, period_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::academic_period::unlock(&ctx, &periodId).await.map_err(CommandError::from)?;
+    let result = ops::academic_period::unlock(&ctx, &period_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn calendar_academic_period_toggle_enrollment(state: State<'_, Arc<AppState>>, periodId: String, open: bool) -> CmdResult<serde_json::Value> {
+pub async fn calendar_academic_period_toggle_enrollment(state: State<'_, Arc<AppState>>, period_id: String, open: bool) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::academic_period::toggle_enrollment(&ctx, &periodId, open).await.map_err(CommandError::from)?;
+    let result = ops::academic_period::toggle_enrollment(&ctx, &period_id, open).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn calendar_academic_period_toggle_grade_entry(state: State<'_, Arc<AppState>>, periodId: String, open: bool) -> CmdResult<serde_json::Value> {
+pub async fn calendar_academic_period_toggle_grade_entry(state: State<'_, Arc<AppState>>, period_id: String, open: bool) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::academic_period::toggle_grade_entry(&ctx, &periodId, open).await.map_err(CommandError::from)?;
+    let result = ops::academic_period::toggle_grade_entry(&ctx, &period_id, open).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn calendar_academic_period_update(state: State<'_, Arc<AppState>>, periodId: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn calendar_academic_period_update(state: State<'_, Arc<AppState>>, period_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::academic_period::update(&ctx, &periodId, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::academic_period::update(&ctx, &period_id, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn calendar_academic_period_delete(state: State<'_, Arc<AppState>>, periodId: String) -> CmdResult<serde_json::Value> {
+pub async fn calendar_academic_period_delete(state: State<'_, Arc<AppState>>, period_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::academic_period::delete(&ctx, &periodId).await.map_err(CommandError::from)?;
+    ops::academic_period::delete(&ctx, &period_id).await.map_err(CommandError::from)?;
     Ok(serde_json::json!({}))
 }
 

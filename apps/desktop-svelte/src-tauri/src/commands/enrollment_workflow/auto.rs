@@ -13,38 +13,38 @@ pub async fn enrollment_workflow_promotion_list_jobs(state: State<'_, Arc<AppSta
 }
 
 #[tauri::command]
-pub async fn enrollment_workflow_promotion_get_job(state: State<'_, Arc<AppState>>, jobId: String) -> CmdResult<serde_json::Value> {
+pub async fn enrollment_workflow_promotion_get_job(state: State<'_, Arc<AppState>>, job_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::promotion::get_job(&ctx, &jobId).await.map_err(CommandError::from)?;
+    let result = ops::promotion::get_job(&ctx, &job_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn enrollment_workflow_promotion_create_job(state: State<'_, Arc<AppState>>, sourcePeriodId: String, config: String) -> CmdResult<serde_json::Value> {
+pub async fn enrollment_workflow_promotion_create_job(state: State<'_, Arc<AppState>>, source_period_id: String, config: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::promotion::create_job(&ctx, sourcePeriodId, config).await.map_err(CommandError::from)?;
+    let result = ops::promotion::create_job(&ctx, source_period_id, config).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn enrollment_workflow_promotion_start_dry_run(state: State<'_, Arc<AppState>>, jobId: String, config: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn enrollment_workflow_promotion_start_dry_run(state: State<'_, Arc<AppState>>, job_id: String, config: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let config_parsed = serde_json::from_value(config).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::promotion::start_dry_run(&ctx, &jobId, config_parsed).await.map_err(CommandError::from)?;
+    let result = ops::promotion::start_dry_run(&ctx, &job_id, config_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn enrollment_workflow_promotion_execute(state: State<'_, Arc<AppState>>, jobId: String) -> CmdResult<serde_json::Value> {
+pub async fn enrollment_workflow_promotion_execute(state: State<'_, Arc<AppState>>, job_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::promotion::execute(&ctx, &jobId).await.map_err(CommandError::from)?;
+    let result = ops::promotion::execute(&ctx, &job_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn enrollment_workflow_promotion_rollback(state: State<'_, Arc<AppState>>, jobId: String) -> CmdResult<serde_json::Value> {
+pub async fn enrollment_workflow_promotion_rollback(state: State<'_, Arc<AppState>>, job_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::promotion::rollback(&ctx, &jobId).await.map_err(CommandError::from)?;
+    ops::promotion::rollback(&ctx, &job_id).await.map_err(CommandError::from)?;
     Ok(serde_json::json!({}))
 }
 

@@ -28,45 +28,45 @@ pub async fn academic_class_create(state: State<'_, Arc<AppState>>, data: serde_
 }
 
 #[tauri::command]
-pub async fn academic_class_update(state: State<'_, Arc<AppState>>, classId: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn academic_class_update(state: State<'_, Arc<AppState>>, class_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::class::update(&ctx, &classId, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::class::update(&ctx, &class_id, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn academic_class_delete(state: State<'_, Arc<AppState>>, classId: String) -> CmdResult<serde_json::Value> {
+pub async fn academic_class_delete(state: State<'_, Arc<AppState>>, class_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::class::delete(&ctx, &classId).await.map_err(CommandError::from)?;
+    ops::class::delete(&ctx, &class_id).await.map_err(CommandError::from)?;
     Ok(serde_json::json!({}))
 }
 
 #[tauri::command]
-pub async fn academic_class_assign_teacher(state: State<'_, Arc<AppState>>, classId: String, teacherId: String) -> CmdResult<serde_json::Value> {
+pub async fn academic_class_assign_teacher(state: State<'_, Arc<AppState>>, class_id: String, teacher_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::class::assign_teacher(&ctx, &classId, &teacherId).await.map_err(CommandError::from)?;
+    let result = ops::class::assign_teacher(&ctx, &class_id, &teacher_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn academic_class_list_students(state: State<'_, Arc<AppState>>, classId: String) -> CmdResult<serde_json::Value> {
+pub async fn academic_class_list_students(state: State<'_, Arc<AppState>>, class_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::class::list_students(&ctx, &classId).await.map_err(CommandError::from)?;
+    let result = ops::class::list_students(&ctx, &class_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn academic_class_subject_list(state: State<'_, Arc<AppState>>, classId: String, periodId: Option<String>) -> CmdResult<serde_json::Value> {
+pub async fn academic_class_subject_list(state: State<'_, Arc<AppState>>, class_id: String, period_id: Option<String>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::class_subject::list(&ctx, &classId, periodId.as_deref()).await.map_err(CommandError::from)?;
+    let result = ops::class_subject::list(&ctx, &class_id, period_id.as_deref()).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn academic_class_subject_list_by_teacher(state: State<'_, Arc<AppState>>, teacherId: String, periodId: String) -> CmdResult<serde_json::Value> {
+pub async fn academic_class_subject_list_by_teacher(state: State<'_, Arc<AppState>>, teacher_id: String, period_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::class_subject::list_by_teacher(&ctx, &teacherId, &periodId).await.map_err(CommandError::from)?;
+    let result = ops::class_subject::list_by_teacher(&ctx, &teacher_id, &period_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -89,14 +89,14 @@ pub async fn academic_class_subject_update(state: State<'_, Arc<AppState>>, id: 
 #[tauri::command]
 pub async fn academic_class_subject_delete(state: State<'_, Arc<AppState>>, id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::class_subject::delete(&ctx, &id).await.map_err(CommandError::from)?;
+    ops::class_subject::delete(&ctx, &id).await.map_err(CommandError::from)?;
     Ok(serde_json::json!({}))
 }
 
 #[tauri::command]
-pub async fn academic_document_list(state: State<'_, Arc<AppState>>, ownerId: String) -> CmdResult<serde_json::Value> {
+pub async fn academic_document_list(state: State<'_, Arc<AppState>>, owner_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::document::list(&ctx, &ownerId).await.map_err(CommandError::from)?;
+    let result = ops::document::list(&ctx, &owner_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -116,9 +116,9 @@ pub async fn academic_document_create(state: State<'_, Arc<AppState>>, data: ser
 }
 
 #[tauri::command]
-pub async fn academic_document_delete(state: State<'_, Arc<AppState>>, docId: String) -> CmdResult<serde_json::Value> {
+pub async fn academic_document_delete(state: State<'_, Arc<AppState>>, doc_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::document::delete(&ctx, &docId).await.map_err(CommandError::from)?;
+    ops::document::delete(&ctx, &doc_id).await.map_err(CommandError::from)?;
     Ok(serde_json::json!({}))
 }
 
@@ -153,59 +153,59 @@ pub async fn academic_enrollment_create(state: State<'_, Arc<AppState>>, data: s
 }
 
 #[tauri::command]
-pub async fn academic_enrollment_withdraw(state: State<'_, Arc<AppState>>, enrollmentId: String) -> CmdResult<serde_json::Value> {
+pub async fn academic_enrollment_withdraw(state: State<'_, Arc<AppState>>, enrollment_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::enrollment::withdraw(&ctx, &enrollmentId).await.map_err(CommandError::from)?;
+    let result = ops::enrollment::withdraw(&ctx, &enrollment_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn academic_enrollment_transfer(state: State<'_, Arc<AppState>>, enrollmentId: String, newClassId: String) -> CmdResult<serde_json::Value> {
+pub async fn academic_enrollment_transfer(state: State<'_, Arc<AppState>>, enrollment_id: String, new_class_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::enrollment::transfer(&ctx, &enrollmentId, &newClassId).await.map_err(CommandError::from)?;
+    let result = ops::enrollment::transfer(&ctx, &enrollment_id, &new_class_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn academic_enrollment_check_duplicate(state: State<'_, Arc<AppState>>, nationalId: Option<String>, email: Option<String>, phone: Option<String>) -> CmdResult<serde_json::Value> {
+pub async fn academic_enrollment_check_duplicate(state: State<'_, Arc<AppState>>, national_id: Option<String>, email: Option<String>, phone: Option<String>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::enrollment::check_duplicate(&ctx, nationalId, email, phone).await.map_err(CommandError::from)?;
+    let result = ops::enrollment::check_duplicate(&ctx, national_id, email, phone).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn academic_enrollment_promote(state: State<'_, Arc<AppState>>, enrollmentId: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn academic_enrollment_promote(state: State<'_, Arc<AppState>>, enrollment_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::enrollment::promote(&ctx, &enrollmentId, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::enrollment::promote(&ctx, &enrollment_id, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn academic_enrollment_check_eligibility(state: State<'_, Arc<AppState>>, periodId: String, classId: String) -> CmdResult<serde_json::Value> {
+pub async fn academic_enrollment_check_eligibility(state: State<'_, Arc<AppState>>, period_id: String, class_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::enrollment::check_eligibility(&ctx, &periodId, &classId).await.map_err(CommandError::from)?;
+    let result = ops::enrollment::check_eligibility(&ctx, &period_id, &class_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn academic_enrollment_confirm_draft(state: State<'_, Arc<AppState>>, enrollmentId: String) -> CmdResult<serde_json::Value> {
+pub async fn academic_enrollment_confirm_draft(state: State<'_, Arc<AppState>>, enrollment_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::enrollment::confirm_draft(&ctx, &enrollmentId).await.map_err(CommandError::from)?;
+    let result = ops::enrollment::confirm_draft(&ctx, &enrollment_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn academic_guardian_list_by_student(state: State<'_, Arc<AppState>>, studentId: String) -> CmdResult<serde_json::Value> {
+pub async fn academic_guardian_list_by_student(state: State<'_, Arc<AppState>>, student_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::guardian::list_by_student(&ctx, &studentId).await.map_err(CommandError::from)?;
+    let result = ops::guardian::list_by_student(&ctx, &student_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn academic_guardian_list_by_guardian(state: State<'_, Arc<AppState>>, guardianId: String) -> CmdResult<serde_json::Value> {
+pub async fn academic_guardian_list_by_guardian(state: State<'_, Arc<AppState>>, guardian_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::guardian::list_by_guardian(&ctx, &guardianId).await.map_err(CommandError::from)?;
+    let result = ops::guardian::list_by_guardian(&ctx, &guardian_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -225,17 +225,17 @@ pub async fn academic_guardian_create(state: State<'_, Arc<AppState>>, data: ser
 }
 
 #[tauri::command]
-pub async fn academic_guardian_update(state: State<'_, Arc<AppState>>, linkId: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn academic_guardian_update(state: State<'_, Arc<AppState>>, link_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::guardian::update(&ctx, &linkId, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::guardian::update(&ctx, &link_id, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn academic_guardian_delete(state: State<'_, Arc<AppState>>, linkId: String) -> CmdResult<serde_json::Value> {
+pub async fn academic_guardian_delete(state: State<'_, Arc<AppState>>, link_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::guardian::delete(&ctx, &linkId).await.map_err(CommandError::from)?;
+    ops::guardian::delete(&ctx, &link_id).await.map_err(CommandError::from)?;
     Ok(serde_json::json!({}))
 }
 
@@ -247,9 +247,9 @@ pub async fn academic_notification_list(state: State<'_, Arc<AppState>>) -> CmdR
 }
 
 #[tauri::command]
-pub async fn academic_notification_mark_read(state: State<'_, Arc<AppState>>, notificationId: String) -> CmdResult<serde_json::Value> {
+pub async fn academic_notification_mark_read(state: State<'_, Arc<AppState>>, notification_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::notification::mark_read(&ctx, &notificationId).await.map_err(CommandError::from)?;
+    let result = ops::notification::mark_read(&ctx, &notification_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -276,17 +276,17 @@ pub async fn academic_subject_create(state: State<'_, Arc<AppState>>, data: serd
 }
 
 #[tauri::command]
-pub async fn academic_subject_update(state: State<'_, Arc<AppState>>, subjectId: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn academic_subject_update(state: State<'_, Arc<AppState>>, subject_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::subject::update(&ctx, &subjectId, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::subject::update(&ctx, &subject_id, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn academic_subject_delete(state: State<'_, Arc<AppState>>, subjectId: String) -> CmdResult<serde_json::Value> {
+pub async fn academic_subject_delete(state: State<'_, Arc<AppState>>, subject_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::subject::delete(&ctx, &subjectId).await.map_err(CommandError::from)?;
+    ops::subject::delete(&ctx, &subject_id).await.map_err(CommandError::from)?;
     Ok(serde_json::json!({}))
 }
 

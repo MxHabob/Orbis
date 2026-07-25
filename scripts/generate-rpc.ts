@@ -127,7 +127,7 @@ interface OpFunction {
   opFile: string;
   funcName: string;
   tsFuncName: string;
-  args: { name: string; rustType: string; tsType: string; _wasOptionStr: boolean }[];
+  args: { name: string; rustName: string; rustType: string; tsType: string; _wasOptionStr: boolean }[];
   rustReturnType: string;
   tsReturnType: string;
   isCustom: boolean;
@@ -198,6 +198,7 @@ function parseOps(): OpFunction[] {
           
           args.push({
             name: toCamelCase(argName),
+            rustName: argName,
             rustType: argTypeRaw,
             tsType: mapRustTypeToTs(argTypeRaw),
             _wasOptionStr: wasOptionStr
@@ -206,14 +207,14 @@ function parseOps(): OpFunction[] {
           let isPrimitive = argTypeRaw === "&str" || argTypeRaw === "String" || argTypeRaw.startsWith("Option<String>") || argTypeRaw === "bool" || argTypeRaw === "i32" || argTypeRaw === "u32" || argTypeRaw === "i64" || argTypeRaw === "u64" || argTypeRaw === "f32" || argTypeRaw === "f64" || argTypeRaw.startsWith("Option<bool>") || argTypeRaw.startsWith("Option<i") || argTypeRaw.startsWith("Option<u") || argTypeRaw.startsWith("Option<f");
           if (isPrimitive) {
               if (argTypeRaw === "&str") {
-                  passArgsToBackend.push(`&${toCamelCase(argName)}`);
+                  passArgsToBackend.push(`&${argName}`);
               } else if (argTypeRaw === "Option<String>" && wasOptionStr) {
-                  passArgsToBackend.push(`${toCamelCase(argName)}.as_deref()`);
+                  passArgsToBackend.push(`${argName}.as_deref()`);
               } else {
-                  passArgsToBackend.push(toCamelCase(argName));
+                  passArgsToBackend.push(argName);
               }
           } else {
-              passArgsToBackend.push(`${toCamelCase(argName)}_parsed`);
+              passArgsToBackend.push(`${argName}_parsed`);
           }
         }
         if (skipFunc) continue;
@@ -272,6 +273,7 @@ function parseOps(): OpFunction[] {
                   
                   args.push({
                       name: toCamelCase(argName),
+                      rustName: argName,
                       rustType: argTypeRaw,
                       tsType: mapRustTypeToTs(argTypeRaw),
                       _wasOptionStr: false
@@ -390,22 +392,22 @@ function generateTauriWrappers(ops: OpFunction[]) {
         
         if (isPrimitive) {
           if (a.rustType === "&str") {
-            rsArgs.push(`${a.name}: String`);
+            rsArgs.push(`${a.rustName}: String`);
           } else if (a.rustType === "Option<String>" && a._wasOptionStr) {
-            rsArgs.push(`${a.name}: Option<String>`);
+            rsArgs.push(`${a.rustName}: Option<String>`);
           } else {
-            rsArgs.push(`${a.name}: ${a.rustType}`);
+            rsArgs.push(`${a.rustName}: ${a.rustType}`);
           }
         } else {
           if (a.rustType.startsWith("Option<")) {
-             rsArgs.push(`${a.name}: Option<serde_json::Value>`);
-             deserializeLines += `    let ${a.name}_parsed = match ${a.name} {\n`;
+             rsArgs.push(`${a.rustName}: Option<serde_json::Value>`);
+             deserializeLines += `    let ${a.rustName}_parsed = match ${a.rustName} {\n`;
              deserializeLines += `        Some(v) => Some(serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?),\n`;
              deserializeLines += `        None => None,\n`;
              deserializeLines += `    };\n`;
           } else {
-             rsArgs.push(`${a.name}: serde_json::Value`);
-             deserializeLines += `    let ${a.name}_parsed = serde_json::from_value(${a.name}).map_err(|e| CommandError::new(e.to_string()))?;\n`;
+             rsArgs.push(`${a.rustName}: serde_json::Value`);
+             deserializeLines += `    let ${a.rustName}_parsed = serde_json::from_value(${a.rustName}).map_err(|e| CommandError::new(e.to_string()))?;\n`;
           }
         }
       }
@@ -419,11 +421,11 @@ function generateTauriWrappers(ops: OpFunction[]) {
       rsContent += `#[tauri::command]\npub async fn ${tauriFuncName}(state: State<'_, Arc<AppState>>${rsArgsStr.length > 0 ? ', ' + rsArgsStr : ''}) -> CmdResult<serde_json::Value> {\n`;
       rsContent += `    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;\n`;
       rsContent += deserializeLines;
-      rsContent += `    let result = ops::${op.opFile}::${op.funcName}(${passArgsStr}).await.map_err(CommandError::from)?;\n`;
-      
       if (op.rustReturnType === "()") {
+        rsContent += `    ops::${op.opFile}::${op.funcName}(${passArgsStr}).await.map_err(CommandError::from)?;\n`;
         rsContent += `    Ok(serde_json::json!({}))\n`;
       } else {
+        rsContent += `    let result = ops::${op.opFile}::${op.funcName}(${passArgsStr}).await.map_err(CommandError::from)?;\n`;
         rsContent += `    Ok(serde_json::to_value(result).unwrap())\n`;
       }
       rsContent += `}\n\n`;

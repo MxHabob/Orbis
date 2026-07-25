@@ -6,23 +6,23 @@ use crate::commands::error::{CmdResult, CommandError};
 use svc_scheduling::ops;
 
 #[tauri::command]
-pub async fn scheduling_lesson_list_by_class(state: State<'_, Arc<AppState>>, periodId: String, classId: String) -> CmdResult<serde_json::Value> {
+pub async fn scheduling_lesson_list_by_class(state: State<'_, Arc<AppState>>, period_id: String, class_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::lesson::list_by_class(&ctx, &periodId, &classId).await.map_err(CommandError::from)?;
+    let result = ops::lesson::list_by_class(&ctx, &period_id, &class_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn scheduling_lesson_list_by_teacher(state: State<'_, Arc<AppState>>, periodId: String, teacherId: String) -> CmdResult<serde_json::Value> {
+pub async fn scheduling_lesson_list_by_teacher(state: State<'_, Arc<AppState>>, period_id: String, teacher_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::lesson::list_by_teacher(&ctx, &periodId, &teacherId).await.map_err(CommandError::from)?;
+    let result = ops::lesson::list_by_teacher(&ctx, &period_id, &teacher_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn scheduling_lesson_get(state: State<'_, Arc<AppState>>, lessonId: String) -> CmdResult<serde_json::Value> {
+pub async fn scheduling_lesson_get(state: State<'_, Arc<AppState>>, lesson_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::lesson::get(&ctx, &lessonId).await.map_err(CommandError::from)?;
+    let result = ops::lesson::get(&ctx, &lesson_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -35,24 +35,24 @@ pub async fn scheduling_lesson_create(state: State<'_, Arc<AppState>>, data: ser
 }
 
 #[tauri::command]
-pub async fn scheduling_lesson_update(state: State<'_, Arc<AppState>>, lessonId: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn scheduling_lesson_update(state: State<'_, Arc<AppState>>, lesson_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::lesson::update(&ctx, &lessonId, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::lesson::update(&ctx, &lesson_id, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn scheduling_lesson_delete(state: State<'_, Arc<AppState>>, lessonId: String) -> CmdResult<serde_json::Value> {
+pub async fn scheduling_lesson_delete(state: State<'_, Arc<AppState>>, lesson_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::lesson::delete(&ctx, &lessonId).await.map_err(CommandError::from)?;
+    ops::lesson::delete(&ctx, &lesson_id).await.map_err(CommandError::from)?;
     Ok(serde_json::json!({}))
 }
 
 #[tauri::command]
-pub async fn scheduling_lesson_check_conflicts(state: State<'_, Arc<AppState>>, periodId: String, teacherId: String, timeSlotId: String, dayOfWeek: i32, roomId: Option<String>) -> CmdResult<serde_json::Value> {
+pub async fn scheduling_lesson_check_conflicts(state: State<'_, Arc<AppState>>, period_id: String, teacher_id: String, time_slot_id: String, day_of_week: i32, room_id: Option<String>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::lesson::check_conflicts(&ctx, &periodId, &teacherId, &timeSlotId, dayOfWeek, roomId).await.map_err(CommandError::from)?;
+    let result = ops::lesson::check_conflicts(&ctx, &period_id, &teacher_id, &time_slot_id, day_of_week, room_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -72,59 +72,59 @@ pub async fn scheduling_room_create(state: State<'_, Arc<AppState>>, data: serde
 }
 
 #[tauri::command]
-pub async fn scheduling_room_update(state: State<'_, Arc<AppState>>, roomId: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn scheduling_room_update(state: State<'_, Arc<AppState>>, room_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::room::update(&ctx, &roomId, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::room::update(&ctx, &room_id, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn scheduling_room_delete(state: State<'_, Arc<AppState>>, roomId: String) -> CmdResult<serde_json::Value> {
+pub async fn scheduling_room_delete(state: State<'_, Arc<AppState>>, room_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::room::delete(&ctx, &roomId).await.map_err(CommandError::from)?;
+    ops::room::delete(&ctx, &room_id).await.map_err(CommandError::from)?;
     Ok(serde_json::json!({}))
 }
 
 #[tauri::command]
-pub async fn scheduling_solver_start(state: State<'_, Arc<AppState>>, periodId: String) -> CmdResult<serde_json::Value> {
+pub async fn scheduling_solver_start(state: State<'_, Arc<AppState>>, period_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::solver::start(&ctx, &periodId).await.map_err(CommandError::from)?;
+    let result = ops::solver::start(&ctx, &period_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn scheduling_solver_get_job(state: State<'_, Arc<AppState>>, jobId: String) -> CmdResult<serde_json::Value> {
+pub async fn scheduling_solver_get_job(state: State<'_, Arc<AppState>>, job_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::solver::get_job(&ctx, &jobId).await.map_err(CommandError::from)?;
+    let result = ops::solver::get_job(&ctx, &job_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn scheduling_solver_list_jobs(state: State<'_, Arc<AppState>>, periodId: String) -> CmdResult<serde_json::Value> {
+pub async fn scheduling_solver_list_jobs(state: State<'_, Arc<AppState>>, period_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::solver::list_jobs(&ctx, &periodId).await.map_err(CommandError::from)?;
+    let result = ops::solver::list_jobs(&ctx, &period_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn scheduling_solver_cancel(state: State<'_, Arc<AppState>>, jobId: String) -> CmdResult<serde_json::Value> {
+pub async fn scheduling_solver_cancel(state: State<'_, Arc<AppState>>, job_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::solver::cancel(&ctx, &jobId).await.map_err(CommandError::from)?;
+    let result = ops::solver::cancel(&ctx, &job_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn scheduling_solver_delete_job(state: State<'_, Arc<AppState>>, jobId: String) -> CmdResult<serde_json::Value> {
+pub async fn scheduling_solver_delete_job(state: State<'_, Arc<AppState>>, job_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::solver::delete_job(&ctx, &jobId).await.map_err(CommandError::from)?;
+    ops::solver::delete_job(&ctx, &job_id).await.map_err(CommandError::from)?;
     Ok(serde_json::json!({}))
 }
 
 #[tauri::command]
-pub async fn scheduling_solver_apply(state: State<'_, Arc<AppState>>, jobId: String) -> CmdResult<serde_json::Value> {
+pub async fn scheduling_solver_apply(state: State<'_, Arc<AppState>>, job_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::solver::apply(&ctx, &jobId).await.map_err(CommandError::from)?;
+    let result = ops::solver::apply(&ctx, &job_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -144,17 +144,17 @@ pub async fn scheduling_time_slot_create(state: State<'_, Arc<AppState>>, data: 
 }
 
 #[tauri::command]
-pub async fn scheduling_time_slot_update(state: State<'_, Arc<AppState>>, slotId: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn scheduling_time_slot_update(state: State<'_, Arc<AppState>>, slot_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::time_slot::update(&ctx, &slotId, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::time_slot::update(&ctx, &slot_id, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn scheduling_time_slot_delete(state: State<'_, Arc<AppState>>, slotId: String) -> CmdResult<serde_json::Value> {
+pub async fn scheduling_time_slot_delete(state: State<'_, Arc<AppState>>, slot_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::time_slot::delete(&ctx, &slotId).await.map_err(CommandError::from)?;
+    ops::time_slot::delete(&ctx, &slot_id).await.map_err(CommandError::from)?;
     Ok(serde_json::json!({}))
 }
 
