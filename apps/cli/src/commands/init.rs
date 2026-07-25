@@ -51,6 +51,16 @@ pub async fn execute() -> Result<()> {
     let schema_sql = include_str!("../../../api-rust/crates/infra-persistence/src/schemas/schema_baseline.sql");
     db.execute_unprepared(schema_sql).await?;
 
+    let blueprint_options = vec!["1. School (K-12 / Basic Education)", "2. University (Higher Education / Credit Hours)", "3. Training Center / Institute (Quarterly / Pass-Fail)"];
+    let bp_choice = prompts::prompt_select("Select organization blueprint:", blueprint_options)?;
+    let blueprint = if bp_choice.contains("University") {
+        infra_persistence::bootstrap::BlueprintType::University
+    } else if bp_choice.contains("Training") {
+        infra_persistence::bootstrap::BlueprintType::TrainingCenter
+    } else {
+        infra_persistence::bootstrap::BlueprintType::School
+    };
+
     let hashed_password = hash(&admin_password, DEFAULT_COST).unwrap_or_default();
     let params = infra_persistence::bootstrap::BootstrapParams {
         org_name,
@@ -58,6 +68,7 @@ pub async fn execute() -> Result<()> {
         admin_name,
         admin_username,
         admin_password_hash: hashed_password,
+        blueprint,
     };
     
     let result = infra_persistence::bootstrap::bootstrap_system(&db, params).await?;
