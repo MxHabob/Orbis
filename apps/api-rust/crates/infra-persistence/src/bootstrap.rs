@@ -1,4 +1,4 @@
-use sea_orm::{DatabaseConnection, Statement, ConnectionTrait, DatabaseBackend};
+use sea_orm::{DatabaseConnection, Statement, ConnectionTrait};
 use shared_kernel::event_store::EventStore;
 use shared_kernel::traits::Actor;
 use shared_kernel::errors::AppError;
@@ -40,7 +40,7 @@ pub async fn bootstrap_system(
     // 1. Insert Organization
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO organizations (id, name, slug, is_active, subscription_plan, created_at, updated_at) VALUES (, , , 1, 'basic', , )",
+        "INSERT INTO organizations (id, name, slug, is_active, subscription_plan, created_at, updated_at) VALUES ($1, $2, $3, 1, 'basic', $4, $5)",
         vec![
             org_id.clone().into(),
             params.org_name.clone().into(),
@@ -53,7 +53,7 @@ pub async fn bootstrap_system(
     // 2. Insert Admin User
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO users (id, org_id, email, full_name, password_hash, status, primary_role, created_at, updated_at) VALUES (, , , , , 'active', 'super_admin', , )",
+        "INSERT INTO users (id, org_id, email, full_name, password_hash, status, primary_role, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, 'active', 'super_admin', $6, $7)",
         vec![
             user_id.clone().into(),
             org_id.clone().into(),
@@ -69,7 +69,7 @@ pub async fn bootstrap_system(
     let user_role_id = Uuid::new_v4().to_string();
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO user_roles (id, user_id, role, org_id, scope_type, is_primary, assigned_by, assigned_at) VALUES (, , 'super_admin', , 'global', 1, 'system', )",
+        "INSERT INTO user_roles (id, user_id, role, org_id, scope_type, is_primary, assigned_by, assigned_at) VALUES ($1, $2, 'super_admin', $3, 'global', 1, 'system', $4)",
         vec![
             user_role_id.into(),
             user_id.clone().into(),
@@ -124,8 +124,8 @@ async fn apply_school_blueprint(db: &DatabaseConnection, org_id: &str, now: &str
     let s2_id = Uuid::new_v4().to_string();
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO period_templates (id, org_id, name, type_name, duration_weeks, is_active) VALUES ($1, $2, 'Semester 1', 'Semester', 16, 1), ($3, $2, 'Semester 2', 'Semester', 16, 1)",
-        vec![s1_id.into(), org_id.into(), s2_id.into()]
+        "INSERT INTO period_templates (id, org_id, name, type_name, duration_weeks, is_active) VALUES ($1, $2, 'Semester 1', 'Semester', 16, 1), ($3, $4, 'Semester 2', 'Semester', 16, 1)",
+        vec![s1_id.into(), org_id.into(), s2_id.into(), org_id.into()]
     )).await.map_err(|e| AppError::internal(e.to_string()))?;
 
     Ok(())
@@ -145,8 +145,8 @@ async fn apply_university_blueprint(db: &DatabaseConnection, org_id: &str, now: 
     let summer_id = Uuid::new_v4().to_string();
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO period_templates (id, org_id, name, type_name, duration_weeks, is_active) VALUES ($1, $2, 'Fall Semester', 'Semester', 16, 1), ($3, $2, 'Spring Semester', 'Semester', 16, 1), ($4, $2, 'Summer Term', 'Term', 8, 1)",
-        vec![fall_id.into(), org_id.into(), spring_id.into(), summer_id.into()]
+        "INSERT INTO period_templates (id, org_id, name, type_name, duration_weeks, is_active) VALUES ($1, $2, 'Fall Semester', 'Semester', 16, 1), ($3, $4, 'Spring Semester', 'Semester', 16, 1), ($5, $6, 'Summer Term', 'Term', 8, 1)",
+        vec![fall_id.into(), org_id.into(), spring_id.into(), org_id.into(), summer_id.into(), org_id.into()]
     )).await.map_err(|e| AppError::internal(e.to_string()))?;
 
     Ok(())
@@ -167,8 +167,8 @@ async fn apply_training_blueprint(db: &DatabaseConnection, org_id: &str, now: &s
     let q4_id = Uuid::new_v4().to_string();
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO period_templates (id, org_id, name, type_name, duration_weeks, is_active) VALUES ($1, $2, 'Q1', 'Quarter', 12, 1), ($3, $2, 'Q2', 'Quarter', 12, 1), ($4, $2, 'Q3', 'Quarter', 12, 1), ($5, $2, 'Q4', 'Quarter', 12, 1)",
-        vec![q1_id.into(), org_id.into(), q2_id.into(), q3_id.into(), q4_id.into()]
+        "INSERT INTO period_templates (id, org_id, name, type_name, duration_weeks, is_active) VALUES ($1, $2, 'Q1', 'Quarter', 12, 1), ($3, $4, 'Q2', 'Quarter', 12, 1), ($5, $6, 'Q3', 'Quarter', 12, 1), ($7, $8, 'Q4', 'Quarter', 12, 1)",
+        vec![q1_id.into(), org_id.into(), q2_id.into(), org_id.into(), q3_id.into(), org_id.into(), q4_id.into(), org_id.into()]
     )).await.map_err(|e| AppError::internal(e.to_string()))?;
 
     Ok(())

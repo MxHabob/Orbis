@@ -123,7 +123,7 @@ impl FinanceExecutor {
                 INSERT INTO app_notifications
                     (id, org_id, user_id, title, message, is_read, type_code, created_at)
                 VALUES
-                    (, , , , , 0, 'fee_reminder', )
+                    ($1, $2, $3, $4, $5, 0, 'fee_reminder', $6)
             "#;
 
             let title = "رسالة تذكير بسداد رسوم مستحقة";

@@ -11,19 +11,7 @@ use sea_orm::{ConnectionTrait, DbErr};
 /// - Skips empty statements
 /// - Executes each statement individually
 pub async fn run_sql_migration<C: ConnectionTrait>(db: &C, sql: &str) -> Result<(), DbErr> {
-    for statement in sql.split(';') {
-        let cleaned: String = statement
-            .lines()
-            .map(|line| line.trim())
-            .filter(|line| !line.starts_with("--"))
-            .collect::<Vec<_>>()
-            .join("\n");
-        let stmt = cleaned.trim();
-        if stmt.is_empty() {
-            continue;
-        }
-        db.execute_unprepared(stmt).await?;
-    }
+    db.execute_unprepared(sql).await?;
     Ok(())
 }
 
