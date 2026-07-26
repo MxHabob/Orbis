@@ -554,8 +554,8 @@ export const commands: OrbisCommands = {\n`;
   for (const [domain, domainOps] of Object.entries(byDomain)) {
     content += `  ${domain}: {\n`;
     for (const op of domainOps) {
-      const argsStr = op.args.map(a => `${a.name}: any`).join(", ");
-      const passArgsStr = op.args.map(a => a.name).join(", ");
+      const argsStr = op.args.map(a => `${a.name === "cmd" ? "cmdPayload" : a.name}: any`).join(", ");
+      const passArgsStr = op.args.map(a => `${a.name === "cmd" ? "cmd: cmdPayload" : a.name}`).join(", ");
       const tauriFuncName = op.isCustom ? op.funcName : `${domain}_${op.opFile}_${op.funcName}`;
       
       if (op.tsFuncName.endsWith("Paginated") || op.args.some(a => a.rustType.includes("CursorRequest"))) {

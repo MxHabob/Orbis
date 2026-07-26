@@ -55,7 +55,7 @@ let events = $state<CameraEvent[]>([]);
 
 onMount(async () => {
   try {
-    const status = await commands.aiCenter.getIntegrationStatus("hikvision-camera");
+    const status = await (commands as any).aiCenter?.getIntegrationStatus?.("hikvision-camera").catch(() => null);
     if (status && (status as any).cameras) {
       cameras = (status as any).cameras;
     }

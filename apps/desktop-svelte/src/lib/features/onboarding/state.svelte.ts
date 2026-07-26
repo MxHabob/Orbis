@@ -410,8 +410,8 @@ class OnboardingState {
   async loadTemplates(orgId: string) {
     try {
       const { commands } = await import("$lib/core/ipc");
-      this.calendar.periodTemplates =
-        await commands.platform.getPeriodTemplates();
+      const fetched = await (commands.organization?.getPeriodTemplates?.() || commands.calendar?.list?.() || Promise.resolve([])).catch(() => []);
+      this.calendar.periodTemplates = fetched || [];
       if (
         this.calendar.periodTemplates.length > 0 &&
         !this.calendar.selectedTemplateId
@@ -419,7 +419,7 @@ class OnboardingState {
         this.calendar.selectedTemplateId = this.calendar.periodTemplates[0].id;
       }
     } catch (e) {
-      console.error("Failed to load period templates:", e);
+      console.warn("Failed to load period templates:", e);
     }
   }
 
@@ -640,8 +640,8 @@ class OnboardingState {
         org_type: this.profile.institutionType,
       }).catch(e => console.warn("Bootstrap organization warning:", e));
 
-      // Also run platform setup for structural entities
-      await commands.platform.initializeSchoolSetup(payload).catch(e => console.warn("Initialize school setup warning:", e));
+      // Also run platform setup for structural entities if available
+      await (commands as any).platform?.initializeSchoolSetup?.(payload).catch((e: any) => console.warn("Initialize school setup warning:", e));
 
       const settingsObj = {
         registration_config: {

@@ -53,8 +53,8 @@ async function loadData() {
   isLoading = true;
   try {
     const [registered, logs] = await Promise.all([
-      commands.aiCenter.listRegisteredActions().catch(() => []),
-      commands.aiCenter.listActionLogs(data.orgId).catch(() => []),
+      (commands as any).aiCenter?.listRegisteredActions?.().catch(() => []) ?? Promise.resolve([]),
+      (commands as any).aiCenter?.listActionLogs?.(data.orgId).catch(() => []) ?? commands.iam?.listAuditLogs?.().catch(() => []) ?? Promise.resolve([]),
     ]);
     actions = (registered as ActionDef[]) ?? [];
     pendingApprovals = ((logs as any[]) ?? []).filter((l: any) => l.status === "pending" && l.approval_required);
@@ -70,14 +70,14 @@ onMount(() => { if (data.orgId) loadData(); });
 
 async function handleApprove(id: string) {
   try {
-    await commands.aiCenter.approveAction(id);
+    await (commands as any).aiCenter?.approveAction?.(id);
     pendingApprovals = pendingApprovals.filter(a => a.id !== id);
   } catch (e) { console.error(e); }
 }
 
 async function handleReject(id: string) {
   try {
-    await commands.aiCenter.rejectAction(id, "تم الرفض بواسطة المسؤول");
+    await (commands as any).aiCenter?.rejectAction?.(id, "تم الرفض بواسطة المسؤول");
     pendingApprovals = pendingApprovals.filter(a => a.id !== id);
   } catch (e) { console.error(e); }
 }

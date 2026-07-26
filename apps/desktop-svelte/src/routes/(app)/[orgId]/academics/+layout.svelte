@@ -67,13 +67,6 @@ const navItems = $derived([
     icon: ClipboardList,
   },
   {
-    path: "calendar",
-    label: m.common_calendar_title
-      ? m.common_calendar_title()
-      : "Academic Calendar",
-    icon: CalendarClock,
-  },
-  {
     path: "promotion",
     label: m.common_promo_title(),
     icon: TrendingUp,

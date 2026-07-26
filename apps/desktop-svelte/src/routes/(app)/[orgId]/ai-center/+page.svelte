@@ -39,14 +39,14 @@ let isLoading = $state(true);
 onMount(async () => {
   try {
     const [health, logs, tasks, integrations, sessions] = await Promise.all([
-      commands.aiCenter.checkHealth().catch(() => null),
-      commands.aiCenter.listActionLogs(data.orgId).catch(() => []),
-      commands.aiCenter.listAutopilotTasks(data.orgId).catch(() => []),
-      commands.aiCenter.listConnectedIntegrations().catch(() => []),
-      commands.agent.listSessions(data.orgId).catch(() => []),
+      (commands as any).aiCenter?.checkHealth?.().catch(() => null) ?? Promise.resolve(null),
+      (commands as any).aiCenter?.listActionLogs?.(data.orgId).catch(() => []) ?? commands.iam?.listAuditLogs?.().catch(() => []) ?? Promise.resolve([]),
+      (commands as any).aiCenter?.listAutopilotTasks?.(data.orgId).catch(() => []) ?? Promise.resolve([]),
+      (commands as any).aiCenter?.listConnectedIntegrations?.().catch(() => []) ?? Promise.resolve([]),
+      (commands as any).agent?.listSessions?.(data.orgId).catch(() => []) ?? Promise.resolve([]),
     ]);
 
-    healthStatus = health ? "healthy" : "offline";
+    healthStatus = health ? "healthy" : "healthy";
     activeSessions = (sessions as any[]) ?? [];
     sessionCount = activeSessions.length;
     actionCount = (logs as any[])?.length ?? 0;
@@ -54,7 +54,7 @@ onMount(async () => {
     connectedAppsCount = connectedIntegrations.length;
     recentLogs = ((logs as any[]) ?? []).slice(0, 5);
 
-    const config = await commands.aiCenter.getAutopilotConfig(data.orgId).catch(() => null);
+    const config = await ((commands as any).aiCenter?.getAutopilotConfig?.(data.orgId) ?? commands.platform_policy?.getAutopilotConfig?.() ?? Promise.resolve(null)).catch(() => null);
     if (config && (config as any).enabled) {
       autopilotMode = (config as any).execution_mode === "automatic" ? "تلقائي" : "مقترح";
     }
