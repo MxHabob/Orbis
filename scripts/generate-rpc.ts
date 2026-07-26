@@ -162,7 +162,7 @@ function parseOps(): OpFunction[] {
     if (!fs.existsSync(crateDir)) continue;
 
     const files = fs.readdirSync(crateDir).filter(f => {
-      if (!f.endsWith(".rs") || f === "mod.rs") return false;
+      if (!f.endsWith(".rs") || f === "mod.rs" || f.endsWith("_core.rs")) return false;
       const modContent = fs.readFileSync(path.join(crateDir, "mod.rs"), "utf8");
       return modContent.includes(`pub mod ${f.replace(".rs", "")};`);
     });

@@ -243,9 +243,6 @@ export const commands: OrbisCommands = {
     startDryRun: (jobId: any, config: any) => cmd("enrollment_workflow_promotion_start_dry_run", { jobId, config }),
     execute: (jobId: any) => cmd("enrollment_workflow_promotion_execute", { jobId }),
     rollback: (jobId: any) => cmd("enrollment_workflow_promotion_rollback", { jobId }),
-    dryRun: (orgId: any, userId: any, config: any) => cmd("enrollment_workflow_promotion_core_dry_run", { orgId, userId, config }),
-    execute2: (jobId: any) => cmd("enrollment_workflow_promotion_core_execute", { jobId }),
-    rollback2: (jobId: any, userId: any) => cmd("enrollment_workflow_promotion_core_rollback", { jobId, userId }),
     registerStudent: (req: any) => cmd("enrollment_workflow_student_registration_register_student", { req }),
   },
   platform_policy: {
