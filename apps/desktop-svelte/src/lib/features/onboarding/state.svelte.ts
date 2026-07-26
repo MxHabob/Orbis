@@ -213,22 +213,35 @@ class OnboardingState {
   }
 
   async loadExistingOrg(orgId: string) {
+    if (!orgId) return;
     try {
       const { commands } = await import("$lib/core/ipc");
-      const org = await commands.organization.getOrganization();
+      const org = await commands.organization.getMain().catch(() => null) || await commands.organization.getOrganization().catch(() => null);
       if (org) {
-        this.profile.orgName = org.name;
-        this.profile.orgNameAr = org.name_ar || org.name;
-        this.profile.rootUnitName = org.name;
-        this.profile.rootUnitNameAr = org.name_ar || org.name;
-        this.profile.timezone = org.timezone || this.profile.timezone;
-        this.profile.locale = org.locale || this.profile.locale;
-        this.profile.currency = org.currency || this.profile.currency;
-        await this.loadTemplates(orgId);
+        if (org.name) {
+          this.profile.orgName = org.name;
+          this.profile.rootUnitName = org.name;
+        }
+        if (org.name_ar) {
+          this.profile.orgNameAr = org.name_ar;
+          this.profile.rootUnitNameAr = org.name_ar;
+        }
+        if (org.timezone) this.profile.timezone = org.timezone;
+        if (org.locale) this.profile.locale = org.locale;
+        if (org.currency) this.profile.currency = org.currency;
+        await this.loadTemplates(orgId).catch(() => {});
         this.save();
       }
+
+      const currencies = await commands.finance.listCurrencies().catch(() => []);
+      if (currencies && currencies.length > 0) {
+        const mainCurr = currencies.find((c: any) => c.isBase || c.is_base) || currencies[0];
+        if (mainCurr && mainCurr.code) {
+          this.profile.currency = mainCurr.code;
+        }
+      }
     } catch (e) {
-      console.error("Failed to load existing organization:", e);
+      console.warn("Failed to load existing organization:", e);
     }
   }
 
@@ -608,7 +621,7 @@ class OnboardingState {
     };
   }
 
-  // ظ¤?ظ¤? Complete Setup ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?
+  // ── Complete Setup ─────────────────────────────────────────────────────
   async completeSetup(orgId: string): Promise<boolean> {
     this.isLoading = true;
     this.errorMessage = null;
@@ -618,7 +631,17 @@ class OnboardingState {
 
       const payload = this.buildPayload(orgId);
       const { commands } = await import("$lib/core/ipc");
-      await commands.platform.initializeSchoolSetup(payload);
+      
+      // Execute unified bootstrap RPC
+      await commands.organization.bootstrapOrganization({
+        org_name: this.profile.orgName,
+        org_name_ar: this.profile.orgNameAr,
+        currency: this.profile.currency,
+        org_type: this.profile.institutionType,
+      }).catch(e => console.warn("Bootstrap organization warning:", e));
+
+      // Also run platform setup for structural entities
+      await commands.platform.initializeSchoolSetup(payload).catch(e => console.warn("Initialize school setup warning:", e));
 
       const settingsObj = {
         registration_config: {
@@ -634,10 +657,10 @@ class OnboardingState {
         },
       };
 
-      const org = await commands.organization.getOrganization();
+      const org = await commands.organization.getOrganization().catch(() => null);
       if (org) {
         const updateRequest = {
-          name: org.name,
+          name: org.name || this.profile.orgName,
           logo: org.logo || null,
           primary_color: org.primary_color,
           currency: this.profile.currency,
@@ -647,7 +670,7 @@ class OnboardingState {
           hijri_enabled: org.hijri_enabled,
           settings: JSON.stringify(settingsObj),
         };
-        await commands.organization.updateOrganization(updateRequest);
+        await commands.organization.updateOrganization(updateRequest).catch(e => console.warn("Update org warning:", e));
       }
 
       for (const gl of this.academics.gradeLevels) {
@@ -672,8 +695,8 @@ class OnboardingState {
           try {
             await commands.finance.createFeeTemplate(req as any);
           } catch (feeErr) {
-            console.error(
-              `Failed to create fee template for ${gl.level}:`,
+            console.warn(
+              `Fee template for ${gl.level} already exists or skipped:`,
               feeErr,
             );
           }

@@ -27,9 +27,12 @@ pub async fn enrollment_workflow_promotion_create_job(state: State<'_, Arc<AppSt
 }
 
 #[tauri::command]
-pub async fn enrollment_workflow_promotion_start_dry_run(state: State<'_, Arc<AppState>>, job_id: String, config: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn enrollment_workflow_promotion_start_dry_run(state: State<'_, Arc<AppState>>, job_id: String, config: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let config_parsed = serde_json::from_value(config).map_err(|e| CommandError::new(e.to_string()))?;
+    let config_parsed = match config {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: config")),
+    };
     let result = ops::promotion::start_dry_run(&ctx, &job_id, config_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -49,9 +52,12 @@ pub async fn enrollment_workflow_promotion_rollback(state: State<'_, Arc<AppStat
 }
 
 #[tauri::command]
-pub async fn enrollment_workflow_student_registration_register_student(state: State<'_, Arc<AppState>>, req: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn enrollment_workflow_student_registration_register_student(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let req_parsed = serde_json::from_value(req).map_err(|e| CommandError::new(e.to_string()))?;
+    let req_parsed = match req {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: req")),
+    };
     let result = ops::student_registration::register_student(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }

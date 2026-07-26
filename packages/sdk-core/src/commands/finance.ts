@@ -15,13 +15,13 @@ export interface FinanceCommands {
   listFeeTemplates(): Promise<any>;
   createFeeTemplate(cmd: any): Promise<any>;
   updateFeeTemplate(templateId: string, cmd: any): Promise<any>;
-  listJournals(limit: number | null, offset: number | null): Promise<any>;
-  createJournal(debitAccountId: string, creditAccountId: string, amount: number, currency: string, description: string, descriptionAr: string | null, accountingDate: string, fiscalPeriodId: string, sourceType: string, sourceId: string | null): Promise<any>;
+  listJournalEntries(limit: number | null, offset: number | null): Promise<any>;
+  createJournalEntry(debitAccountId: string, creditAccountId: string, amount: number, currency: string, description: string, descriptionAr: string | null, accountingDate: string, fiscalPeriodId: string, sourceType: string, sourceId: string | null): Promise<any>;
   listAccounts(): Promise<any>;
   listTransactionAccounts(): Promise<any>;
   createAccount(cmd: any): Promise<any>;
   getOrCreateSubAccount(entityType: string, entityId: string, entityName: string | null, entityNameAr: string | null): Promise<any>;
-  createJournalEntry(cmd: any): Promise<any>;
+  createJournalEntry2(cmd: any): Promise<any>;
   getJournalEntries(limit: number | null, offset: number | null): Promise<any>;
   getAccountStatement(accountId: string, startDate: string, endDate: string): Promise<any>;
   listPayments(limit: number | null, offset: number | null): Promise<any>;

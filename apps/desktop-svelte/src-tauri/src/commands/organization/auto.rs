@@ -6,9 +6,12 @@ use crate::commands::error::{CmdResult, CommandError};
 use svc_organization::ops;
 
 #[tauri::command]
-pub async fn organization_bootstrap_bootstrap_organization(state: State<'_, Arc<AppState>>, payload: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn organization_bootstrap_bootstrap_organization(state: State<'_, Arc<AppState>>, payload: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let payload_parsed = serde_json::from_value(payload).map_err(|e| CommandError::new(e.to_string()))?;
+    let payload_parsed = match payload {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: payload")),
+    };
     ops::bootstrap::bootstrap_organization(&ctx, payload_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::json!({}))
 }
@@ -28,17 +31,23 @@ pub async fn organization_bulk_export_grades(state: State<'_, Arc<AppState>>) ->
 }
 
 #[tauri::command]
-pub async fn organization_bulk_import_students(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn organization_bulk_import_students(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
+    let data_parsed = match data {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: data")),
+    };
     let result = ops::bulk_import::students(&ctx, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn organization_bulk_import_grades(state: State<'_, Arc<AppState>>, _data: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn organization_bulk_import_grades(state: State<'_, Arc<AppState>>, _data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let _data_parsed = serde_json::from_value(_data).map_err(|e| CommandError::new(e.to_string()))?;
+    let _data_parsed = match _data {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: _data")),
+    };
     let result = ops::bulk_import::grades(&ctx, _data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -58,17 +67,23 @@ pub async fn organization_organization_get_organization(state: State<'_, Arc<App
 }
 
 #[tauri::command]
-pub async fn organization_organization_create_organization(state: State<'_, Arc<AppState>>, cmd: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn organization_organization_create_organization(state: State<'_, Arc<AppState>>, cmd: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let cmd_parsed = serde_json::from_value(cmd).map_err(|e| CommandError::new(e.to_string()))?;
+    let cmd_parsed = match cmd {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: cmd")),
+    };
     let result = ops::organization::create_organization(&ctx, cmd_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn organization_organization_update_organization(state: State<'_, Arc<AppState>>, cmd: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn organization_organization_update_organization(state: State<'_, Arc<AppState>>, cmd: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let cmd_parsed = serde_json::from_value(cmd).map_err(|e| CommandError::new(e.to_string()))?;
+    let cmd_parsed = match cmd {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: cmd")),
+    };
     let result = ops::organization::update_organization(&ctx, cmd_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -88,9 +103,12 @@ pub async fn organization_organization_get_main(state: State<'_, Arc<AppState>>)
 }
 
 #[tauri::command]
-pub async fn organization_organization_update(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn organization_organization_update(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
+    let data_parsed = match data {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: data")),
+    };
     let result = ops::organization::update(&ctx, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -103,9 +121,12 @@ pub async fn organization_organization_get_settings(state: State<'_, Arc<AppStat
 }
 
 #[tauri::command]
-pub async fn organization_organization_update_settings(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn organization_organization_update_settings(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
+    let data_parsed = match data {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: data")),
+    };
     ops::organization::update_settings(&ctx, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::json!({}))
 }
@@ -153,17 +174,23 @@ pub async fn organization_org_unit_get_children(state: State<'_, Arc<AppState>>,
 }
 
 #[tauri::command]
-pub async fn organization_org_unit_create(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn organization_org_unit_create(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
+    let data_parsed = match data {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: data")),
+    };
     let result = ops::org_unit::create(&ctx, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn organization_org_unit_update(state: State<'_, Arc<AppState>>, unit_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn organization_org_unit_update(state: State<'_, Arc<AppState>>, unit_id: String, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
+    let data_parsed = match data {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: data")),
+    };
     let result = ops::org_unit::update(&ctx, &unit_id, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -204,25 +231,34 @@ pub async fn organization_settings_get_grading_settings(state: State<'_, Arc<App
 }
 
 #[tauri::command]
-pub async fn organization_settings_update_registration_settings(state: State<'_, Arc<AppState>>, cmd: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn organization_settings_update_registration_settings(state: State<'_, Arc<AppState>>, cmd: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let cmd_parsed = serde_json::from_value(cmd).map_err(|e| CommandError::new(e.to_string()))?;
+    let cmd_parsed = match cmd {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: cmd")),
+    };
     let result = ops::settings::update_registration_settings(&ctx, cmd_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn organization_settings_update_finance_settings(state: State<'_, Arc<AppState>>, cmd: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn organization_settings_update_finance_settings(state: State<'_, Arc<AppState>>, cmd: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let cmd_parsed = serde_json::from_value(cmd).map_err(|e| CommandError::new(e.to_string()))?;
+    let cmd_parsed = match cmd {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: cmd")),
+    };
     let result = ops::settings::update_finance_settings(&ctx, cmd_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn organization_settings_update_grading_settings(state: State<'_, Arc<AppState>>, cmd: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn organization_settings_update_grading_settings(state: State<'_, Arc<AppState>>, cmd: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let cmd_parsed = serde_json::from_value(cmd).map_err(|e| CommandError::new(e.to_string()))?;
+    let cmd_parsed = match cmd {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: cmd")),
+    };
     let result = ops::settings::update_grading_settings(&ctx, cmd_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }

@@ -26,7 +26,12 @@ export const commands: OrbisCommands = {
     getPermissions: (role: any) => cmd("iam_role_get_permissions", { role }),
     savePermissions: (role: any, permissions: any) => cmd("iam_role_save_permissions", { role, permissions }),
     listUsers: (filter: any) => cmd("iam_user_list", { filter }),
-    listPaginated: (request: any, filter: any) => cmd("iam_user_list_paginated", { request, filter }),
+    listUsersPaginated: (cursorOrReq?: any, limit?: any) => {
+      const req = (typeof cursorOrReq === "object" && cursorOrReq !== null && !Array.isArray(cursorOrReq))
+        ? cursorOrReq
+        : { cursor: typeof cursorOrReq === "string" ? cursorOrReq : null, limit: typeof limit === "number" ? limit : 50 };
+      return cmd("iam_user_list_paginated", { request: req });
+    },
     getUser: (userId: any) => cmd("iam_user_get", { userId }),
     search: (queryStr: any) => cmd("iam_user_search", { queryStr }),
     createUser: (data: any) => cmd("iam_user_create", { data }),
@@ -88,7 +93,12 @@ export const commands: OrbisCommands = {
     createDocument: (data: any) => cmd("academic_document_create", { data }),
     deleteDocument: (docId: any) => cmd("academic_document_delete", { docId }),
     listEnrollments: () => cmd("academic_enrollment_list", {}),
-    listPaginated: (request: any) => cmd("academic_enrollment_list_paginated", { request }),
+    listEnrollmentsPaginated: (cursorOrReq?: any, limit?: any) => {
+      const req = (typeof cursorOrReq === "object" && cursorOrReq !== null && !Array.isArray(cursorOrReq))
+        ? cursorOrReq
+        : { cursor: typeof cursorOrReq === "string" ? cursorOrReq : null, limit: typeof limit === "number" ? limit : 50 };
+      return cmd("academic_enrollment_list_paginated", { request: req });
+    },
     getEnrollment: (id: any) => cmd("academic_enrollment_get", { id }),
     createEnrollment: (data: any) => cmd("academic_enrollment_create", { data }),
     withdraw: (enrollmentId: any) => cmd("academic_enrollment_withdraw", { enrollmentId }),
@@ -123,7 +133,12 @@ export const commands: OrbisCommands = {
     updateBehavior: (recordId: any, actionTaken: any, status: any, resolutionNotes: any) => cmd("assessment_behavior_update", { recordId, actionTaken, status, resolutionNotes }),
     deleteBehavior: (recordId: any) => cmd("assessment_behavior_delete", { recordId }),
     listGrades: (assessmentId: any) => cmd("assessment_grade_list", { assessmentId }),
-    listPaginated: (assessmentId: any, request: any) => cmd("assessment_grade_list_paginated", { assessmentId, request }),
+    listGradesPaginated: (cursorOrReq?: any, limit?: any) => {
+      const req = (typeof cursorOrReq === "object" && cursorOrReq !== null && !Array.isArray(cursorOrReq))
+        ? cursorOrReq
+        : { cursor: typeof cursorOrReq === "string" ? cursorOrReq : null, limit: typeof limit === "number" ? limit : 50 };
+      return cmd("assessment_grade_list_paginated", { request: req });
+    },
     reportCard: (enrollmentId: any, periodId: any) => cmd("assessment_grade_report_card", { enrollmentId, periodId }),
     analytics: (periodId: any, classSubjectId: any) => cmd("assessment_grade_analytics", { periodId, classSubjectId }),
     matrix: (periodId: any, classSubjectId: any) => cmd("assessment_grade_matrix", { periodId, classSubjectId }),
@@ -173,13 +188,13 @@ export const commands: OrbisCommands = {
     listFeeTemplates: () => cmd("finance_fee_template_list", {}),
     createFeeTemplate: (cmd: any) => cmd("finance_fee_template_create", { cmd }),
     updateFeeTemplate: (templateId: any, cmd: any) => cmd("finance_fee_template_update", { templateId, cmd }),
-    listJournals: (limit: any, offset: any) => cmd("finance_journal_list", { limit, offset }),
-    createJournal: (debitAccountId: any, creditAccountId: any, amount: any, currency: any, description: any, descriptionAr: any, accountingDate: any, fiscalPeriodId: any, sourceType: any, sourceId: any) => cmd("finance_journal_create", { debitAccountId, creditAccountId, amount, currency, description, descriptionAr, accountingDate, fiscalPeriodId, sourceType, sourceId }),
+    listJournalEntries: (limit: any, offset: any) => cmd("finance_journal_list", { limit, offset }),
+    createJournalEntry: (debitAccountId: any, creditAccountId: any, amount: any, currency: any, description: any, descriptionAr: any, accountingDate: any, fiscalPeriodId: any, sourceType: any, sourceId: any) => cmd("finance_journal_create", { debitAccountId, creditAccountId, amount, currency, description, descriptionAr, accountingDate, fiscalPeriodId, sourceType, sourceId }),
     listAccounts: () => cmd("finance_ledger_list_accounts", {}),
     listTransactionAccounts: () => cmd("finance_ledger_list_transaction_accounts", {}),
     createAccount: (cmd: any) => cmd("finance_ledger_create_account", { cmd }),
     getOrCreateSubAccount: (entityType: any, entityId: any, entityName: any, entityNameAr: any) => cmd("finance_ledger_get_or_create_sub_account", { entityType, entityId, entityName, entityNameAr }),
-    createJournalEntry: (cmd: any) => cmd("finance_ledger_create_journal_entry", { cmd }),
+    createJournalEntry2: (cmd: any) => cmd("finance_ledger_create_journal_entry", { cmd }),
     getJournalEntries: (limit: any, offset: any) => cmd("finance_ledger_get_journal_entries", { limit, offset }),
     getAccountStatement: (accountId: any, startDate: any, endDate: any) => cmd("finance_ledger_get_account_statement", { accountId, startDate, endDate }),
     listPayments: (limit: any, offset: any) => cmd("finance_payment_list", { limit, offset }),
@@ -216,7 +231,12 @@ export const commands: OrbisCommands = {
     updateSession: (sessionId: any, name: any, status: any, startDate: any, endDate: any) => cmd("exam_session_update", { sessionId, name, status, startDate, endDate }),
   },
   document: {
-    listDocuments: (ownerId: any, entityType: any, category: any, request: any) => cmd("document_document_list", { ownerId, entityType, category, request }),
+    listDocuments: (cursorOrReq?: any, limit?: any) => {
+      const req = (typeof cursorOrReq === "object" && cursorOrReq !== null && !Array.isArray(cursorOrReq))
+        ? cursorOrReq
+        : { cursor: typeof cursorOrReq === "string" ? cursorOrReq : null, limit: typeof limit === "number" ? limit : 50 };
+      return cmd("document_document_list", { request: req });
+    },
     deleteDocument: (id: any) => cmd("document_document_delete", { id }),
     uploadDocument: (fileName: any, mimeType: any, bytes: any, entityType: any, entityId: any, category: any, visibility: any) => cmd("upload_document", { fileName, mimeType, bytes, entityType, entityId, category, visibility }),
     getDocuments: (ownerId: any, entityType: any, category: any, cursor: any, limit: any) => cmd("get_documents", { ownerId, entityType, category, cursor, limit }),

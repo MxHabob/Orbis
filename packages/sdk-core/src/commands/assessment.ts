@@ -13,7 +13,7 @@ export interface AssessmentCommands {
   updateBehavior(recordId: string, actionTaken: string | null, status: string | null, resolutionNotes: string | null): Promise<any>;
   deleteBehavior(recordId: string): Promise<any>;
   listGrades(assessmentId: string): Promise<any>;
-  listPaginated(assessmentId: string, request: any): Promise<any>;
+  listGradesPaginated(assessmentId: string, request: any): Promise<any>;
   reportCard(enrollmentId: string, periodId: string): Promise<Types.GradeReportCard>;
   analytics(periodId: string, classSubjectId: string): Promise<Types.GradeAnalytics>;
   matrix(periodId: string, classSubjectId: string): Promise<any>;

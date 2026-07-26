@@ -41,9 +41,12 @@ pub async fn exam_exam_subject_list(state: State<'_, Arc<AppState>>, session_id:
 }
 
 #[tauri::command]
-pub async fn exam_exam_subject_add(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn exam_exam_subject_add(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
+    let data_parsed = match data {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: data")),
+    };
     let result = ops::exam_subject::add(&ctx, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -56,9 +59,12 @@ pub async fn exam_hall_list(state: State<'_, Arc<AppState>>) -> CmdResult<serde_
 }
 
 #[tauri::command]
-pub async fn exam_hall_create(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn exam_hall_create(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
+    let data_parsed = match data {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: data")),
+    };
     let result = ops::hall::create(&ctx, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -155,9 +161,12 @@ pub async fn exam_session_get(state: State<'_, Arc<AppState>>, session_id: Strin
 }
 
 #[tauri::command]
-pub async fn exam_session_create(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn exam_session_create(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
+    let data_parsed = match data {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: data")),
+    };
     let result = ops::session::create(&ctx, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }

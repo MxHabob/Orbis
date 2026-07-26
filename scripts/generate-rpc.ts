@@ -137,7 +137,8 @@ interface OpFunction {
 function getEntityName(opFile: string): { singular: string; plural: string } {
   let singular = opFile.charAt(0).toUpperCase() + opFile.slice(1).replace(/_([a-z0-9])/g, g => g[1].toUpperCase());
   
-  if (opFile.startsWith("bulk_export")) singular = "Export";
+  if (opFile === "journal") singular = "JournalEntry";
+  else if (opFile.startsWith("bulk_export")) singular = "Export";
   else if (opFile.startsWith("bulk_import")) singular = "Import";
 
   let plural = singular;
@@ -173,7 +174,7 @@ function parseOps(): OpFunction[] {
       const content = fs.readFileSync(path.join(crateDir, file), "utf8");
       const entity = getEntityName(opFile);
 
-      const fnRegex = /pub\s+async\s+fn\s+([a-zA-Z0-9_]+)\s*\(\s*([\s\S]*?)\)\s*->\s*Result<([^,]+),\s*[^>]+>/g;
+      const fnRegex = /pub\s+async\s+fn\s+([a-zA-Z0-9_]+)\s*\(\s*([\s\S]*?)\)\s*->\s*Result<([\s\S]*?),\s*AppError>/g;
       let match;
       while ((match = fnRegex.exec(content)) !== null) {
         const funcName = match[1];
@@ -242,6 +243,8 @@ function parseOps(): OpFunction[] {
             } else {
                 tsFuncName = `${tsFuncName}${entity.singular}`;
             }
+        } else if (tsFuncName === "listPaginated") {
+            tsFuncName = `list${entity.plural}Paginated`;
         } else if (tsFuncName.startsWith("listBy")) {
             const rest = tsFuncName.replace("listBy", "");
             tsFuncName = `list${entity.plural}By${rest}`;
@@ -444,8 +447,18 @@ function generateTauriWrappers(ops: OpFunction[]) {
              deserializeLines += `        None => None,\n`;
              deserializeLines += `    };\n`;
           } else {
-             rsArgs.push(`${a.rustName}: serde_json::Value`);
-             deserializeLines += `    let ${a.rustName}_parsed = serde_json::from_value(${a.rustName}).map_err(|e| CommandError::new(e.to_string()))?;\n`;
+             rsArgs.push(`${a.rustName}: Option<serde_json::Value>`);
+             if (a.rustType.includes("CursorRequest")) {
+                deserializeLines += `    let ${a.rustName}_parsed = match ${a.rustName} {\n`;
+                deserializeLines += `        Some(v) => serde_json::from_value(v).unwrap_or_default(),\n`;
+                deserializeLines += `        None => shared_kernel::pagination::CursorRequest::default(),\n`;
+                deserializeLines += `    };\n`;
+             } else {
+                deserializeLines += `    let ${a.rustName}_parsed = match ${a.rustName} {\n`;
+                deserializeLines += `        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,\n`;
+                deserializeLines += `        None => return Err(CommandError::new("Missing argument: ${a.rustName}")),\n`;
+                deserializeLines += `    };\n`;
+             }
           }
         }
       }
@@ -544,7 +557,14 @@ export const commands: OrbisCommands = {\n`;
       const passArgsStr = op.args.map(a => a.name).join(", ");
       const tauriFuncName = op.isCustom ? op.funcName : `${domain}_${op.opFile}_${op.funcName}`;
       
-      if (op.args.length > 0) {
+      if (op.tsFuncName.endsWith("Paginated") || op.args.some(a => a.rustType.includes("CursorRequest"))) {
+          content += `    ${op.tsFuncName}: (cursorOrReq?: any, limit?: any) => {\n`;
+          content += `      const req = (typeof cursorOrReq === "object" && cursorOrReq !== null && !Array.isArray(cursorOrReq))\n`;
+          content += `        ? cursorOrReq\n`;
+          content += `        : { cursor: typeof cursorOrReq === "string" ? cursorOrReq : null, limit: typeof limit === "number" ? limit : 50 };\n`;
+          content += `      return cmd("${tauriFuncName}", { request: req });\n`;
+          content += `    },\n`;
+      } else if (op.args.length > 0) {
           content += `    ${op.tsFuncName}: (${argsStr}) => cmd("${tauriFuncName}", { ${passArgsStr} }),\n`;
       } else {
           content += `    ${op.tsFuncName}: () => cmd("${tauriFuncName}", {}),\n`;

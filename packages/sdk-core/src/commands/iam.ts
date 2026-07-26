@@ -17,7 +17,7 @@ export interface IamCommands {
   getPermissions(role: string | null): Promise<any>;
   savePermissions(role: string, permissions: any[]): Promise<any>;
   listUsers(filter: any | null): Promise<any>;
-  listPaginated(request: any, filter: any | null): Promise<any>;
+  listUsersPaginated(request: any, filter: any | null): Promise<any>;
   getUser(userId: string): Promise<any>;
   search(queryStr: string): Promise<any>;
   createUser(data: any): Promise<any>;

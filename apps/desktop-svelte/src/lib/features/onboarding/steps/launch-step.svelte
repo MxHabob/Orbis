@@ -62,10 +62,11 @@ async function handleCompleteSetup() {
     if (success) {
       clearInterval(interval);
       launchProgress = 100;
-      setTimeout(() => {
+      setTimeout(async () => {
         isLaunching = false;
         authStore.markSetupComplete();
-        goto(localizeHref(`/${orgId}`));
+        await authStore.checkSetupStatus();
+        goto(localizeHref(`/${orgId}`), { invalidateAll: true, replaceState: true });
       }, 800); // slight delay for smooth visual transition
     } else {
       clearInterval(interval);

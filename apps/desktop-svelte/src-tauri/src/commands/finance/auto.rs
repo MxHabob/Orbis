@@ -55,9 +55,12 @@ pub async fn finance_discount_list_active(state: State<'_, Arc<AppState>>) -> Cm
 }
 
 #[tauri::command]
-pub async fn finance_discount_create(state: State<'_, Arc<AppState>>, cmd: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn finance_discount_create(state: State<'_, Arc<AppState>>, cmd: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let cmd_parsed = serde_json::from_value(cmd).map_err(|e| CommandError::new(e.to_string()))?;
+    let cmd_parsed = match cmd {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: cmd")),
+    };
     let result = ops::discount::create(&ctx, cmd_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -84,17 +87,23 @@ pub async fn finance_fee_template_list(state: State<'_, Arc<AppState>>) -> CmdRe
 }
 
 #[tauri::command]
-pub async fn finance_fee_template_create(state: State<'_, Arc<AppState>>, cmd: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn finance_fee_template_create(state: State<'_, Arc<AppState>>, cmd: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let cmd_parsed = serde_json::from_value(cmd).map_err(|e| CommandError::new(e.to_string()))?;
+    let cmd_parsed = match cmd {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: cmd")),
+    };
     let result = ops::fee_template::create(&ctx, cmd_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn finance_fee_template_update(state: State<'_, Arc<AppState>>, template_id: String, cmd: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn finance_fee_template_update(state: State<'_, Arc<AppState>>, template_id: String, cmd: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let cmd_parsed = serde_json::from_value(cmd).map_err(|e| CommandError::new(e.to_string()))?;
+    let cmd_parsed = match cmd {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: cmd")),
+    };
     let result = ops::fee_template::update(&ctx, &template_id, cmd_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -128,9 +137,12 @@ pub async fn finance_ledger_list_transaction_accounts(state: State<'_, Arc<AppSt
 }
 
 #[tauri::command]
-pub async fn finance_ledger_create_account(state: State<'_, Arc<AppState>>, cmd: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn finance_ledger_create_account(state: State<'_, Arc<AppState>>, cmd: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let cmd_parsed = serde_json::from_value(cmd).map_err(|e| CommandError::new(e.to_string()))?;
+    let cmd_parsed = match cmd {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: cmd")),
+    };
     let result = ops::ledger::create_account(&ctx, cmd_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -143,9 +155,12 @@ pub async fn finance_ledger_get_or_create_sub_account(state: State<'_, Arc<AppSt
 }
 
 #[tauri::command]
-pub async fn finance_ledger_create_journal_entry(state: State<'_, Arc<AppState>>, cmd: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn finance_ledger_create_journal_entry(state: State<'_, Arc<AppState>>, cmd: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let cmd_parsed = serde_json::from_value(cmd).map_err(|e| CommandError::new(e.to_string()))?;
+    let cmd_parsed = match cmd {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: cmd")),
+    };
     let result = ops::ledger::create_journal_entry(&ctx, cmd_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -172,9 +187,12 @@ pub async fn finance_payment_list(state: State<'_, Arc<AppState>>, limit: Option
 }
 
 #[tauri::command]
-pub async fn finance_payment_record(state: State<'_, Arc<AppState>>, cmd: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn finance_payment_record(state: State<'_, Arc<AppState>>, cmd: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let cmd_parsed = serde_json::from_value(cmd).map_err(|e| CommandError::new(e.to_string()))?;
+    let cmd_parsed = match cmd {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: cmd")),
+    };
     let result = ops::payment::record(&ctx, cmd_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -194,9 +212,12 @@ pub async fn finance_student_fee_list_by_org(state: State<'_, Arc<AppState>>) ->
 }
 
 #[tauri::command]
-pub async fn finance_student_fee_assign(state: State<'_, Arc<AppState>>, cmd: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn finance_student_fee_assign(state: State<'_, Arc<AppState>>, cmd: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let cmd_parsed = serde_json::from_value(cmd).map_err(|e| CommandError::new(e.to_string()))?;
+    let cmd_parsed = match cmd {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: cmd")),
+    };
     let result = ops::student_fee::assign(&ctx, cmd_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -209,9 +230,12 @@ pub async fn finance_treasury_list(state: State<'_, Arc<AppState>>) -> CmdResult
 }
 
 #[tauri::command]
-pub async fn finance_treasury_create(state: State<'_, Arc<AppState>>, cmd: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn finance_treasury_create(state: State<'_, Arc<AppState>>, cmd: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let cmd_parsed = serde_json::from_value(cmd).map_err(|e| CommandError::new(e.to_string()))?;
+    let cmd_parsed = match cmd {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: cmd")),
+    };
     let result = ops::treasury::create(&ctx, cmd_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }

@@ -19,7 +19,7 @@ export interface AcademicCommands {
   createDocument(data: any): Promise<any>;
   deleteDocument(docId: string): Promise<any>;
   listEnrollments(): Promise<any>;
-  listPaginated(request: any): Promise<any>;
+  listEnrollmentsPaginated(request: any): Promise<any>;
   getEnrollment(id: string): Promise<any>;
   createEnrollment(data: any): Promise<any>;
   withdraw(enrollmentId: string): Promise<any>;

@@ -13,9 +13,12 @@ pub async fn platform_policy_academic_policy_get_autopilot_config(state: State<'
 }
 
 #[tauri::command]
-pub async fn platform_policy_academic_policy_update_autopilot_config(state: State<'_, Arc<AppState>>, org_id: String, config: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn platform_policy_academic_policy_update_autopilot_config(state: State<'_, Arc<AppState>>, org_id: String, config: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let config_parsed = serde_json::from_value(config).map_err(|e| CommandError::new(e.to_string()))?;
+    let config_parsed = match config {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: config")),
+    };
     ops::academic_policy::update_autopilot_config(&ctx, &org_id, config_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::json!({}))
 }

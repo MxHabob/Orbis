@@ -41,9 +41,12 @@ pub async fn calendar_academic_period_get_current(state: State<'_, Arc<AppState>
 }
 
 #[tauri::command]
-pub async fn calendar_academic_period_create(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn calendar_academic_period_create(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
+    let data_parsed = match data {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: data")),
+    };
     let result = ops::academic_period::create(&ctx, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
@@ -77,9 +80,12 @@ pub async fn calendar_academic_period_toggle_grade_entry(state: State<'_, Arc<Ap
 }
 
 #[tauri::command]
-pub async fn calendar_academic_period_update(state: State<'_, Arc<AppState>>, period_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn calendar_academic_period_update(state: State<'_, Arc<AppState>>, period_id: String, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
+    let data_parsed = match data {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: data")),
+    };
     let result = ops::academic_period::update(&ctx, &period_id, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }

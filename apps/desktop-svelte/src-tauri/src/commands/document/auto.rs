@@ -6,9 +6,12 @@ use crate::commands::error::{CmdResult, CommandError};
 use svc_document::ops;
 
 #[tauri::command]
-pub async fn document_document_list(state: State<'_, Arc<AppState>>, owner_id: Option<String>, entity_type: Option<String>, category: Option<String>, request: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn document_document_list(state: State<'_, Arc<AppState>>, owner_id: Option<String>, entity_type: Option<String>, category: Option<String>, request: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let request_parsed = serde_json::from_value(request).map_err(|e| CommandError::new(e.to_string()))?;
+    let request_parsed = match request {
+        Some(v) => serde_json::from_value(v).unwrap_or_default(),
+        None => shared_kernel::pagination::CursorRequest::default(),
+    };
     let result = ops::document::list(&ctx, owner_id.as_deref(), entity_type.as_deref(), category.as_deref(), request_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
