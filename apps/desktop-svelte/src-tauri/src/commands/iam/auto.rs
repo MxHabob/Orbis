@@ -13,27 +13,6 @@ pub async fn iam_audit_list(state: State<'_, Arc<AppState>>) -> CmdResult<serde_
 }
 
 #[tauri::command]
-pub async fn iam_auth_login(state: State<'_, Arc<AppState>>, identifier: String, password_hash: String) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::auth::login(&ctx.db, &identifier, &password_hash).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(result).unwrap())
-}
-
-#[tauri::command]
-pub async fn iam_auth_logout(state: State<'_, Arc<AppState>>, token: String) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    ops::auth::logout(&ctx.db, &token).await.map_err(CommandError::from)?;
-    Ok(serde_json::json!({}))
-}
-
-#[tauri::command]
-pub async fn iam_auth_restore_session(state: State<'_, Arc<AppState>>, token: String) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::auth::restore_session(&ctx.db, &token).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(result).unwrap())
-}
-
-#[tauri::command]
 pub async fn iam_auth_change_password(state: State<'_, Arc<AppState>>, user_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
@@ -45,14 +24,6 @@ pub async fn iam_auth_change_password(state: State<'_, Arc<AppState>>, user_id: 
 pub async fn iam_auth_list_sessions(state: State<'_, Arc<AppState>>, user_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::auth::list_sessions(&ctx, &user_id).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(result).unwrap())
-}
-
-#[tauri::command]
-pub async fn iam_auth_register(state: State<'_, Arc<AppState>>, data: serde_json::Value) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = serde_json::from_value(data).map_err(|e| CommandError::new(e.to_string()))?;
-    let result = ops::auth::register(&ctx.db, data_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 

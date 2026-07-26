@@ -24,4 +24,8 @@ export interface IamCommands {
   updateUser(userId: string, data: any): Promise<any>;
   deleteUser(userId: string): Promise<any>;
   changeRole(userId: string, data: any): Promise<any>;
+  iamAuthLogin(identifier: string, passwordHash: string): Promise<any>;
+  iamAuthRestoreSession(token: string): Promise<any>;
+  iamAuthLogout(token: string): Promise<any>;
+  iamAuthRegister(data: any): Promise<any>;
 }

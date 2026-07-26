@@ -1,6 +1,5 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { Label } from "@orbis/ui-svelte/label";
 import {
   Select,
   SelectContent,
@@ -10,6 +9,8 @@ import {
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 
+import { authStore } from "$lib/stores";
+
 let { selectedBranch = $bindable(""), selectedYear = $bindable("") } = $props<{
   selectedBranch?: string;
   selectedYear?: string;
@@ -18,6 +19,12 @@ let { selectedBranch = $bindable(""), selectedYear = $bindable("") } = $props<{
 let academicYears = $state<{ value: string; label: string }[]>([]);
 
 async function loadYears() {
+  if (!authStore.isAuthenticated) {
+    academicYears = [];
+    selectedYear = "";
+    return;
+  }
+
   let orgId = selectedBranch;
 
   try {
@@ -27,27 +34,20 @@ async function loadYears() {
       selectedBranch = org.id;
     }
   } catch (err) {
-    console.warn("Failed to fetch main organization:", err);
+    console.debug("Organization fetch deferred:", err);
   }
 
-  // Use getSetupStatus or fallback to hardcoded default if empty
-  try {
-    if (!orgId) {
-      orgId = "org-sanaa-model"; // Fallback identifier
-    }
-  } catch (err) {
-    console.warn("Failed to fetch main organization:", err);
+  if (!orgId) {
+    orgId = "org-sanaa-model";
   }
 
   try {
     const years = await commands.calendar.listAcademicPeriods();
-    // @ts-ignore - y is typed based on OrbisCommands which might be outdated
     academicYears = years.map((y: any) => ({
       value: y.id,
       label: y.name_ar || y.name,
     }));
     if (academicYears.length > 0) {
-      // @ts-ignore
       const activeYear = years.find((y: any) => y.is_active_in_app);
       if (activeYear) {
         selectedYear = activeYear.id;
@@ -56,7 +56,7 @@ async function loadYears() {
       }
     }
   } catch (err) {
-    console.warn("Failed to load academic years for org:", orgId, err);
+    console.debug("Failed to load academic years for org:", orgId, err);
     academicYears = [];
     selectedYear = "";
   }

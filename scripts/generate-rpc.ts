@@ -277,7 +277,7 @@ function parseOps(): OpFunction[] {
       const customFile = path.join(fullDir, "custom.rs");
       if (fs.existsSync(customFile)) {
           const content = fs.readFileSync(customFile, "utf8");
-          const customFnRegex = /#\[tauri::command\]\s*pub\s+async\s+fn\s+([a-zA-Z0-9_]+)\s*\(\s*([^)]*)\)\s*->\s*CmdResult<([^>]+)>/g;
+          const customFnRegex = /#\[tauri::command\][\s\S]*?pub\s+async\s+fn\s+([a-zA-Z0-9_]+)\s*\(\s*([\s\S]*?)\)\s*->\s*CmdResult<([^>]+)>/g;
           let match;
           while ((match = customFnRegex.exec(content)) !== null) {
               const funcName = match[1];
@@ -400,7 +400,8 @@ function generateTsInterfaces(ops: OpFunction[], knownTypes: Set<string>) {
 }
 
 function generateTauriWrappers(ops: OpFunction[]) {
-  const autoOps = ops.filter(o => !o.isCustom);
+  const customTauriNames = new Set(ops.filter(o => o.isCustom).map(o => o.funcName));
+  const autoOps = ops.filter(o => !o.isCustom && !customTauriNames.has(`${o.domain}_${o.opFile}_${o.funcName}`) && !customTauriNames.has(o.funcName));
   const byDomain = autoOps.reduce((acc, op) => {
     if (!acc[op.domain]) acc[op.domain] = [];
     acc[op.domain].push(op);
@@ -449,7 +450,6 @@ function generateTauriWrappers(ops: OpFunction[]) {
 
       const rsArgsStr = rsArgs.join(", ");
       const passArgsStr = (op as any)._passArgsToBackend.join(", ");
-      console.log(`Generating auto.rs for ${domain} -> ${op.funcName}: passArgsStr = ${passArgsStr}`);
 
       const tauriFuncName = `${domain}_${op.opFile}_${op.funcName}`;
       
@@ -540,7 +540,7 @@ export const commands: OrbisCommands = {\n`;
     for (const op of domainOps) {
       const argsStr = op.args.map(a => `${a.name}: any`).join(", ");
       const passArgsStr = op.args.map(a => a.name).join(", ");
-      const tauriFuncName = `${domain}_${op.opFile}_${op.funcName}`;
+      const tauriFuncName = op.isCustom ? op.funcName : `${domain}_${op.opFile}_${op.funcName}`;
       
       if (op.args.length > 0) {
           content += `    ${op.tsFuncName}: (${argsStr}) => cmd("${tauriFuncName}", { ${passArgsStr} }),\n`;
