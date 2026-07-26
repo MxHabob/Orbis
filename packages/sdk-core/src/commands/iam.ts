@@ -2,7 +2,7 @@
 import type * as Types from '../types/index.js';
 
 export interface IamCommands {
-  listAudits(): Promise<any>;
+  listAuditLogs(): Promise<any>;
   login(identifier: string, passwordHash: string): Promise<any>;
   logout(token: string): Promise<any>;
   restoreSession(token: string): Promise<any>;

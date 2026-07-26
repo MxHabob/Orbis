@@ -136,8 +136,9 @@ interface OpFunction {
 
 function getEntityName(opFile: string): { singular: string; plural: string } {
   let singular = opFile.charAt(0).toUpperCase() + opFile.slice(1).replace(/_([a-z0-9])/g, g => g[1].toUpperCase());
-  
+
   if (opFile === "journal") singular = "JournalEntry";
+  else if (opFile === "audit") singular = "AuditLog";
   else if (opFile.startsWith("bulk_export")) singular = "Export";
   else if (opFile.startsWith("bulk_import")) singular = "Import";
 

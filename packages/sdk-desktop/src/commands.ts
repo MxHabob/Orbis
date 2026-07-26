@@ -11,7 +11,7 @@ async function cmd<T = any>(command: string, args?: Record<string, unknown>): Pr
 
 export const commands: OrbisCommands = {
   iam: {
-    listAudits: () => cmd("iam_audit_list", {}),
+    listAuditLogs: () => cmd("iam_audit_list", {}),
     login: (identifier: any, passwordHash: any) => cmd("iam_auth_login", { identifier, passwordHash }),
     logout: (token: any) => cmd("iam_auth_logout", { token }),
     restoreSession: (token: any) => cmd("iam_auth_restore_session", { token }),
