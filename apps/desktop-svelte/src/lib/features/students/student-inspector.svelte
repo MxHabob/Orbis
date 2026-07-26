@@ -35,10 +35,9 @@ async function fetchStats() {
 
     // Fetch finances
     const [fees, payments] = await Promise.all([
-      commands.finance.listStudentFees(studentId).catch(() => []),
+      commands.finance.listStudentFeesByEnrollment(studentId).catch(() => []),
       commands.finance
-        .listPayments(orgId)
-        .then((list) => list.filter((p: any) => p.enrollment_id === studentId))
+        .listPaymentsByEnrollment(studentId)
         .catch(() => []),
     ]);
 
@@ -53,7 +52,7 @@ async function fetchStats() {
     // Fetch term_grades report card summary
     if (periodId) {
       const report = await commands.assessment
-        .getReportCard(studentId, periodId)
+        .reportCard(studentId, periodId)
         .catch(() => null);
       if (report && Array.isArray(report.term_grades)) {
         const avg =
@@ -134,7 +133,7 @@ $effect(() => {
     <!-- Main Profile Section -->
     <div class="flex-1 overflow-y-auto flex flex-col gap-6 scrollbar-hide p-4 select-none">
       <div class="flex flex-col items-center text-center gap-3">
-        <Avatar class="w-[85%] max-w-[180px] min-w-[120px] aspect-square h-auto rounded-xl animate-fade-in">
+        <Avatar class="w-[85%] max-w-45 min-w-30 aspect-square h-auto rounded-xl animate-fade-in">
           <AvatarImage src={student.avatar ? String(student.avatar) : undefined} alt={student.full_name ? String(student.full_name) : ''} />
           <AvatarFallback class="text-5xl font-bold rounded-xl flex items-center justify-center bg-muted text-muted-foreground">
             {String(student.full_name || student.name_ar || "S").slice(0, 1)}

@@ -9,7 +9,7 @@
  * const { enrollments, classes, periods } = await loadPageBundle({
  *   enrollments: () => commands.academic.listEnrollments(),
  *   classes: () => commands.academic.listClasses(),
- *   periods: () => commands.academic.listPeriods(),
+ *   periods: () => commands.calendar.listAcademicPeriods(),
  * });
  * ```
  */

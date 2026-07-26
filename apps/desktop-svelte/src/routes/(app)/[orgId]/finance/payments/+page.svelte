@@ -290,7 +290,7 @@ async function handleStudentChange(index: number, studentId: string) {
 
   paymentRows[index].isLoadingFees = true;
   try {
-    const list = await commands.finance.listStudentFees(studentId);
+    const list = await commands.finance.listStudentFeesByEnrollment(studentId);
     paymentRows[index].availableFees = list.filter((f) => f.status !== "paid");
   } catch (e) {
     console.error("Failed to load student fees for row:", e);
@@ -354,7 +354,7 @@ async function selectRow(p: any) {
   let rowFees: any[] = [];
   if (enrollId && data.orgId) {
     try {
-      const list = await commands.finance.listStudentFees(enrollId);
+      const list = await commands.finance.listStudentFeesByEnrollment(enrollId);
       rowFees = list.filter(
         (f) => f.status !== "paid" || String(f.id) === String(p.fee_id),
       );

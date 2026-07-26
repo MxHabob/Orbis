@@ -209,7 +209,7 @@ onMount(async () => {
 async function loadPermissions() {
   isLoading = true;
   try {
-    const rawRules: any[] = await commands.iam.getPermissions();
+    const rawRules: any[] = await commands.iam.getPermissions(null);
     rules = (rawRules || []).map((r) => ({
       role: r.role,
       document_type: r.document_type,

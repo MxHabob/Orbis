@@ -40,12 +40,12 @@ async function loadFinance() {
     if (!orgId || !studentId) return;
     const enrollments = await commands.academic.listEnrollments();
     const activeEnrollment = enrollments.find(
-      (e) => e.student_id === studentId,
+      (e: any) => e.student_id === studentId,
     );
     if (activeEnrollment) {
       const [f, p] = await Promise.all([
-        commands.finance.listStudentFees(activeEnrollment.id),
-        commands.finance.listPayments(activeEnrollment.id),
+        commands.finance.listStudentFeesByEnrollment(activeEnrollment.id),
+        commands.finance.listPayments(null, null),
       ]);
       fees = f;
       payments = p;

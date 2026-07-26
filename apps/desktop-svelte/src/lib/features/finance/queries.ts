@@ -100,8 +100,8 @@ export function createStudentFeesQuery(
     get queryFn() {
       return () =>
         isOrgId
-          ? commands.finance.listAllStudentFees(orgOrEnrollmentId())
-          : commands.finance.listStudentFees(orgOrEnrollmentId());
+          ? commands.finance.listStudentFeesByOrg()
+          : commands.finance.listStudentFeesByEnrollment(orgOrEnrollmentId());
     },
     get enabled() {
       return !!orgOrEnrollmentId();
@@ -114,7 +114,7 @@ export function createStudentFeesQuery(
 export function createDiscountTemplatesQuery(orgId: string) {
   return createQuery({
     queryKey: ["discount-templates", orgId],
-    queryFn: () => commands.finance.listDiscountTemplates(),
+    queryFn: () => commands.finance.listDiscounts(),
     staleTime: 5 * 60 * 1000,
   });
 }

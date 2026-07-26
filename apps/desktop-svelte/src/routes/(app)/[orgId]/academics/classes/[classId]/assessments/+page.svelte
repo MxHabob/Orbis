@@ -83,7 +83,7 @@ async function loadFilters() {
   try {
     const [subjectList, periodList] = await Promise.all([
       commands.academic.listSubjects(),
-      commands.academic.listPeriods(),
+      commands.calendar.listAcademicPeriods(),
     ]);
     subjects = subjectList;
     periods = periodList;

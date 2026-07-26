@@ -30,15 +30,12 @@ async function loadAttendance() {
   isLoading = true;
   try {
     if (!orgId || !studentId || !periodId) return;
-    const enrollments = await commands.academic.listEnrollments(
-      undefined,
-      periodId,
-    );
+    const enrollments = await commands.academic.listEnrollments();
     const activeEnrollment = enrollments.find(
-      (e) => e.student_id === studentId,
+      (e: any) => e.student_id === studentId,
     );
     if (activeEnrollment) {
-      report = await commands.assessment.getAttendanceReport(
+      report = await commands.assessment.getReport(
         periodId,
         activeEnrollment.id,
       );

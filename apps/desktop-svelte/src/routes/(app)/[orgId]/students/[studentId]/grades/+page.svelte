@@ -31,15 +31,12 @@ async function loadGrades() {
   isLoading = true;
   try {
     if (!orgId || !studentId || !periodId) return;
-    const enrollments = await commands.academic.listEnrollments(
-      undefined,
-      periodId,
-    );
+    const enrollments = await commands.academic.listEnrollments();
     const activeEnrollment = enrollments.find(
-      (e) => e.student_id === studentId,
+      (e: any) => e.student_id === studentId,
     );
     if (activeEnrollment) {
-      report = await commands.assessment.getReportCard(
+      report = await commands.assessment.reportCard(
         activeEnrollment.id,
         periodId,
       );

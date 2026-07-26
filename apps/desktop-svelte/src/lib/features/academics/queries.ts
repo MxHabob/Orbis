@@ -13,7 +13,7 @@ export function createPeriodsQuery(orgId: () => string) {
     get queryKey() {
       return ["periods", orgId()];
     },
-    queryFn: () => commands.academic.listPeriods(),
+    queryFn: () => commands.calendar.listAcademicPeriods(),
     get enabled() {
       return !!orgId();
     },
@@ -30,7 +30,7 @@ export function createPeriodsByYearQuery(
     get queryKey() {
       return ["periods", orgId(), periodId()];
     },
-    queryFn: () => commands.academic.listPeriodsByYear(periodId()),
+    queryFn: () => commands.calendar.listAcademicPeriodsByYear(periodId()),
     get enabled() {
       return !!orgId() && !!periodId();
     },

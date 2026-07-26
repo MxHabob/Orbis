@@ -122,7 +122,7 @@ async function saveProfile() {
 
     if (role) {
       await commands.iam.changeRole(userId, { role });
-      await commands.iam.saveUserRoles(userId, [role]);
+      await commands.iam.saveForUser(userId, [role]);
     }
 
     toast.success(m.settings_user_detail_saved());

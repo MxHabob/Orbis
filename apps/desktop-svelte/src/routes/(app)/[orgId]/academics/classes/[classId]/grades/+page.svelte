@@ -58,7 +58,7 @@ async function loadData() {
     const [enrollments, subjectList, periodList] = await Promise.all([
       commands.academic.listEnrollments(),
       commands.academic.listSubjects(),
-      commands.academic.listPeriods(),
+      commands.calendar.listAcademicPeriods(),
     ]);
 
     // Filter students for this class

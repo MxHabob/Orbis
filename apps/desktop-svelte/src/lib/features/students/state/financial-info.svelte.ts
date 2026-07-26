@@ -21,8 +21,8 @@ export class FinancialInfoState {
 
   async init() {
     const [feeTpls, discountTpls] = await Promise.all([
-      commands.finance.listFeeTemplates(this.orgId),
-      commands.finance.listDiscountTemplates(this.orgId),
+      commands.finance.listFeeTemplates(),
+      commands.finance.listDiscounts(),
     ]);
     this.feeTemplates = feeTpls || [];
     this.discountTemplates = discountTpls || [];
@@ -57,7 +57,7 @@ export class FinancialInfoState {
 
     if (this.studentId) {
       try {
-        const studentFees = await commands.finance.listStudentFees(
+        const studentFees = await commands.finance.listStudentFeesByEnrollment(
           this.studentId,
         );
         for (const fee of studentFees as any[]) {

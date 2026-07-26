@@ -21,7 +21,7 @@ async function loadYears() {
   let orgId = selectedBranch;
 
   try {
-    const org = await commands.organization.getMainOrganization();
+    const org = await commands.organization.getOrganization();
     if (org && org.id) {
       orgId = org.id;
       selectedBranch = org.id;
@@ -40,7 +40,7 @@ async function loadYears() {
   }
 
   try {
-    const years = await commands.platform.listYears();
+    const years = await commands.calendar.listAcademicPeriods();
     // @ts-ignore - y is typed based on OrbisCommands which might be outdated
     academicYears = years.map((y: any) => ({
       value: y.id,

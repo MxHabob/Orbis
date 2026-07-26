@@ -32,7 +32,7 @@ let treasuriesCount = $state(0);
 async function loadSidebarStats() {
   try {
     const [feeList, treasuryList] = await Promise.all([
-      commands.finance.listStudentFees("").catch(() => []),
+      commands.finance.listStudentFeesByEnrollment("").catch(() => []),
       commands.finance.listTreasuries().catch(() => []),
     ]);
     unpaidFeesCount = feeList.filter(

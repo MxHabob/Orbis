@@ -14,9 +14,7 @@ class WorkflowInboxStore {
 
   async loadCount(): Promise<void> {
     try {
-      const pending = await commands.platform.listOverrideRequests({
-        status: "pending",
-      });
+      const pending = await commands.enrollment_workflow.listJobs();
       this.pendingApprovals = Array.isArray(pending) ? pending.length : 0;
       this.isLoaded = true;
     } catch (e: unknown) {

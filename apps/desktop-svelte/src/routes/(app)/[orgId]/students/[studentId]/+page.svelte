@@ -135,12 +135,12 @@ onMount(async () => {
     if (periodId && studentId) {
       const [gRes, aRes, bRes] = await Promise.all([
         commands.assessment
-          .getReportCard(studentId, periodId)
+          .reportCard(studentId, periodId)
           .catch(() => null),
         commands.assessment
-          .getAttendanceReport(periodId, studentId)
+          .getReport(periodId, studentId)
           .catch(() => null),
-        commands.assessment.listBehavior(studentId).catch(() => []),
+        commands.assessment.listBehaviors(studentId).catch(() => []),
       ]);
       gradesReport = gRes;
       attendanceReport = aRes;
@@ -307,7 +307,7 @@ async function saveStudentDetails(e: Event) {
 
     // If class has changed, invoke transfer command
     if (student.class_id !== classId) {
-      await commands.academic.transferEnrollment(studentId, classId);
+      await commands.academic.transfer(studentId, classId);
     }
 
     // Transition enrollment status if it was draft/pending_review and active switch is checked
@@ -315,7 +315,7 @@ async function saveStudentDetails(e: Event) {
       (student.status === "draft" || student.status === "pending_review") &&
       isActiveState
     ) {
-      await commands.platform.transitionEnrollmentStatus(studentId, "active");
+      await commands.academic.withdraw(studentId);
     }
 
     toast.success(m.common_form_success_update());
@@ -347,8 +347,8 @@ async function saveStudentDetails(e: Event) {
         {#if evaluationLoading}
           <div class="flex flex-col gap-6">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Skeleton class="lg:col-span-2 h-[260px] rounded-xl" />
-              <Skeleton class="h-[260px] rounded-xl" />
+              <Skeleton class="lg:col-span-2 h-65 rounded-xl" />
+              <Skeleton class="h-65 rounded-xl" />
             </div>
             <Skeleton class="h-16 w-full rounded-xl" />
           </div>

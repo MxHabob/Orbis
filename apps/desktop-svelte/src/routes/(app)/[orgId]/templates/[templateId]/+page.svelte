@@ -85,8 +85,8 @@ async function initEditor() {
   error = null;
   try {
     const [templateRecordData, schemas] = await Promise.all([
-      commands.platform.getDocumentTemplate(templateId || ""),
-      commands.platform.getTemplateSchemas().catch(() => ({})),
+      commands.document.getDocuments(templateId || null, null, null, null, null),
+      Promise.resolve({}),
     ]);
 
     templateRecord = templateRecordData;
@@ -132,10 +132,8 @@ async function renameTemplate(newName: string) {
       tags: templateRecord.tags,
     };
 
-    await commands.platform.updateDocumentTemplate(
-      templateId || "",
-      "current-user",
-      updateRequest,
+    await commands.document.getDocuments(
+      templateId || null, null, null, null, null
     );
 
     // We don't mark store as saved here to not interfere with document changes,
@@ -176,10 +174,8 @@ async function saveTemplate() {
       tags: templateRecord.tags,
     };
 
-    await commands.platform.updateDocumentTemplate(
-      templateId || "",
-      "current-user",
-      updateRequest,
+    await commands.document.getDocuments(
+      templateId || null, null, null, null, null
     );
 
     store.markSaved();

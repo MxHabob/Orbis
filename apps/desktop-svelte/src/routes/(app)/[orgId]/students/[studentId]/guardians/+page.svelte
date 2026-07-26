@@ -44,7 +44,7 @@ async function loadData() {
     // Fetch guardian user details in parallel
     const userMap: Record<string, JsonRecord> = {};
     await Promise.all(
-      links.map(async (link) => {
+      links.map(async (link: any) => {
         try {
           const u = await commands.iam.getUser(String(link.guardian_id));
           if (u) userMap[String(link.guardian_id)] = u as unknown as JsonRecord;
@@ -88,7 +88,7 @@ async function handleDelete(link: GuardianLink) {
   });
   if (!confirmed) return;
   try {
-    await commands.platform.deleteGuardianLink(String(link.id));
+    await commands.academic.deleteGuardian(String(link.id));
     guardians = guardians.filter((g) => g.id !== link.id);
     toast.success(m.common_guardians_delete_success());
   } catch (e: unknown) {
@@ -178,7 +178,7 @@ async function handleDelete(link: GuardianLink) {
                 <span class="text-xs font-semibold text-foreground">{m.common_word_fullname()}</span>
                 <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_fullname_desc()}</span>
               </div>
-              <div class="w-full md:w-[480px] shrink-0 text-start font-medium text-sm text-foreground">
+              <div class="w-full md:w-120 shrink-0 text-start font-medium text-sm text-foreground">
                 {user?.full_name ?? user?.name_ar ?? "—"}
               </div>
             </div>
@@ -189,7 +189,7 @@ async function handleDelete(link: GuardianLink) {
                 <span class="text-xs font-semibold text-foreground">{m.common_word_phone()}</span>
                 <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_phone_desc()}</span>
               </div>
-              <div class="w-full md:w-[480px] shrink-0 text-start font-mono text-sm text-foreground" dir="ltr">
+              <div class="w-full md:w-120 shrink-0 text-start font-mono text-sm text-foreground" dir="ltr">
                 {user?.phone ?? user?.phone_number ?? "—"}
               </div>
             </div>
@@ -201,7 +201,7 @@ async function handleDelete(link: GuardianLink) {
                   <span class="text-xs font-semibold text-foreground">{m.common_word_email()}</span>
                   <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_guardians_email_desc()}</span>
                 </div>
-                <div class="w-full md:w-[480px] shrink-0 text-start font-mono text-sm text-foreground" dir="ltr">
+                <div class="w-full md:w-120 shrink-0 text-start font-mono text-sm text-foreground" dir="ltr">
                   {String(user.email)}
                 </div>
               </div>
@@ -213,7 +213,7 @@ async function handleDelete(link: GuardianLink) {
                 <span class="text-xs font-semibold text-foreground">{m.common_bulk_col_guardian_rel()}</span>
                 <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_rel_desc()}</span>
               </div>
-              <div class="w-full md:w-[480px] shrink-0 text-start font-medium text-sm text-foreground">
+              <div class="w-full md:w-120 shrink-0 text-start font-medium text-sm text-foreground">
                 {getRelationLabel(String(link.relationship || ""))}
               </div>
             </div>
@@ -224,7 +224,7 @@ async function handleDelete(link: GuardianLink) {
                 <span class="text-xs font-semibold text-foreground">{m.common_form_guardian_national_id_label()}</span>
                 <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_nid_desc()}</span>
               </div>
-              <div class="w-full md:w-[480px] shrink-0 text-start font-mono text-sm text-foreground">
+              <div class="w-full md:w-120 shrink-0 text-start font-mono text-sm text-foreground">
                 {user?.national_id ?? "—"}
               </div>
             </div>
@@ -235,7 +235,7 @@ async function handleDelete(link: GuardianLink) {
                 <span class="text-xs font-semibold text-foreground">{m.common_guardians_roles_title()}</span>
                 <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_guardians_roles_desc()}</span>
               </div>
-              <div class="w-full md:w-[480px] shrink-0 flex flex-col gap-3">
+              <div class="w-full md:w-120 shrink-0 flex flex-col gap-3">
                 <div class="flex flex-wrap gap-2 justify-start">
                   {#if link.is_primary === 1 || (link as any).is_primary === true}
                     <Badge variant="brand" class="text-[10px]">{m.common_form_guardian_role_primary()}</Badge>

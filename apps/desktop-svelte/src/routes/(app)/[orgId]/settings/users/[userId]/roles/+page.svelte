@@ -45,7 +45,7 @@ async function loadRoles() {
   if (!userId) return;
   isLoading = true;
   try {
-    const userRoles = await commands.iam.listUserRoles(userId);
+    const userRoles = await commands.iam.listRolesByUser(userId);
     const rolesFromDb = userRoles.map((r: any) => r.role);
     
     // Fetch user details to get primary_role as fallback
@@ -59,7 +59,7 @@ async function loadRoles() {
     checkedRoles = rolesFromDb;
     allAvailableRoles = AVAILABLE_ROLES;
   } catch (e) {
-    console.error("Failed to load roles:", e);
+    console.error("Failed to load user roles:", e);
   } finally {
     isLoading = false;
   }
@@ -75,8 +75,8 @@ function unselectAllRoles() {
   checkedRoles = [];
 }
 
-function toggleRole(roleName: string, isChecked: boolean) {
-  if (isChecked) {
+function toggleRole(roleName: string, active: boolean) {
+  if (active) {
     if (!checkedRoles.includes(roleName)) {
       checkedRoles = [...checkedRoles, roleName];
     }
@@ -89,7 +89,7 @@ async function saveRoles() {
   if (!userId) return;
   isSaving = true;
   try {
-    await commands.iam.saveUserRoles(userId, checkedRoles);
+    await commands.iam.saveForUser(userId, checkedRoles);
 
     // Also update primary_role in users table if needed
     if (checkedRoles.length > 0) {

@@ -30,7 +30,7 @@ let selectedTemplate = $state<any | null>(null);
 async function loadTemplates() {
   isLoading = true;
   try {
-    templates = await commands.finance.listDiscountTemplates();
+    templates = await commands.finance.listDiscounts();
   } catch (e) {
     toast.error((e as any)?.message || "Failed to load discount templates");
   } finally {

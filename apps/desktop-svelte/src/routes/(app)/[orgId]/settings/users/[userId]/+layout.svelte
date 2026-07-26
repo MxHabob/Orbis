@@ -109,7 +109,7 @@ async function handleDeleteUser() {
   });
   if (!confirmed) return;
   try {
-    await commands.iam.deleteUser(userId as string, "admin");
+    await commands.iam.deleteUser(userId as string);
     toast.success(m.settings_user_detail_deleted());
     await goto(localizeHref(`/${orgId}/settings/users`));
   } catch (e: unknown) {

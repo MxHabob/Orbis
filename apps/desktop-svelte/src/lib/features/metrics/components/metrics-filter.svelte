@@ -36,7 +36,7 @@ let classes = $state<any[]>([]);
 async function loadOptions() {
   try {
     // Load Terms (Periods of type 'term')
-    const periods = await commands.academic.listPeriods();
+    const periods = await commands.calendar.listAcademicPeriods();
     terms = periods
       ? periods.filter(
           (c) =>

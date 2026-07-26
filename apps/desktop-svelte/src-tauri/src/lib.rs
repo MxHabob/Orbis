@@ -19,7 +19,7 @@ pub mod features;
 pub mod events;
 use state::AppState;
 #[tauri::command]
-fn show_window(window: tauri::Window) -> Result<(), String> {
+fn show_window<R: tauri::Runtime>(window: tauri::WebviewWindow<R>) -> Result<(), String> {
     // Always target the main window specifically, not the calling window
     let app_handle = window.app_handle();
     let main_window = match app_handle.get_webview_window("main") {
@@ -37,7 +37,7 @@ fn show_window(window: tauri::Window) -> Result<(), String> {
     Ok(())
 }
 #[tauri::command]
-async fn open_agent_window(app: tauri::AppHandle) -> Result<(), String> {
+async fn open_agent_window<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<(), String> {
     if let Some(existing) = app.get_webview_window("orbis-agent") {
         existing.show().map_err(|e| e.to_string())?;
         existing.set_focus().map_err(|e| e.to_string())?;
@@ -61,7 +61,7 @@ async fn open_agent_window(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 #[tauri::command]
-async fn check_for_updates(app: tauri::AppHandle) -> Result<(), String> {
+async fn check_for_updates<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<(), String> {
     use tauri_plugin_dialog::{DialogExt, MessageDialogKind, MessageDialogButtons};
     use tauri_plugin_updater::UpdaterExt;
     #[cfg(desktop)]
@@ -149,21 +149,6 @@ pub fn run() {
             }
         })
         .invoke_handler(crate::commands::auto_register::generate_handlers())
-        .invoke_handler(tauri::generate_handler![
-            // Core window & update commands
-            show_window,
-            open_agent_window,
-            check_for_updates,
-            // Document
-            // IAM commands
-            // Academics commands
-            // Assessment commands
-            // Finance commands
-            // Lifeperiod commands
-            // AI commands
-            // Scheduling commands
-            // Exam commands
-        ])
         .setup(move |app| {
             // Add updater plugin conditionally for desktop
             #[cfg(desktop)]

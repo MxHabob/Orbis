@@ -15,7 +15,7 @@ export function createAutopilotConfigQuery(orgId: string | (() => string)) {
     get queryKey() {
       return ["autopilot-config", getOrgId()];
     },
-    queryFn: () => commands.platform.getOrgPolicy(),
+    queryFn: () => commands.platform_policy.getAutopilotConfig(getOrgId()),
     get enabled() {
       return !!getOrgId();
     },
@@ -29,7 +29,7 @@ export function createAutopilotTasksQuery(orgId: string | (() => string)) {
     get queryKey() {
       return ["autopilot-tasks", getOrgId()];
     },
-    queryFn: () => commands.platform.getAutopilotTasks(),
+    queryFn: () => commands.ai.autopilotGetTasks(),
     get enabled() {
       return !!getOrgId();
     },
@@ -45,7 +45,7 @@ export function createAutopilotDiagnosticsQuery(
     get queryKey() {
       return ["autopilot-diagnostics", getOrgId()];
     },
-    queryFn: () => commands.platform.getAutopilotDiagnostics(),
+    queryFn: () => commands.ai.autopilotGetDiagnostics(),
     get enabled() {
       return !!getOrgId();
     },
@@ -62,7 +62,7 @@ export function useConfigureAutopilot() {
       paused: boolean;
       mode: string;
     }) =>
-      commands.platform.updateOrgPolicy(vars.orgId, {
+      commands.platform_policy.updateAutopilotConfig(vars.orgId, {
         autopilot_enabled: vars.isEnabled && !vars.paused ? 1 : 0,
         autopilot_mode: vars.mode,
       }),
@@ -82,7 +82,7 @@ export function useRunAutopilotTick() {
   const queryClient = useQueryClient();
   return createMutation({
     mutationFn: (vars: { orgId: string }) =>
-      commands.platform.runAutopilotTick(vars.orgId),
+      commands.ai.autopilotRunTick(),
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({
         queryKey: ["autopilot-config", vars.orgId],
@@ -103,7 +103,7 @@ export function createAgentSessionsQuery(orgId: string | (() => string)) {
     get queryKey() {
       return ["agent-sessions", getOrgId()];
     },
-    queryFn: () => commands.platform.listAgentSessions(getOrgId()),
+    queryFn: () => commands.ai.agentGetSessions(),
     get enabled() {
       return !!getOrgId();
     },
@@ -123,7 +123,7 @@ export function createAgentSessionLogsQuery(
       return ["agent-session-logs", getOrgId(), getSessionId()];
     },
     queryFn: () =>
-      commands.platform.getAgentSessionLogs(getOrgId(), getSessionId()),
+      commands.ai.agentGetSessionLogs(getSessionId()),
     get enabled() {
       return !!getOrgId() && !!getSessionId();
     },
@@ -139,8 +139,7 @@ export function useApproveAgentAction() {
       actionLogId: string;
       approvedBy: string;
     }) =>
-      commands.platform.approveAgentAction(
-        vars.orgId,
+      commands.ai.agentApproveAction(
         vars.actionLogId,
         vars.approvedBy,
       ),
@@ -164,8 +163,7 @@ export function useRejectAgentAction() {
       rejectedBy: string;
       reason: string;
     }) =>
-      commands.platform.rejectAgentAction(
-        vars.orgId,
+      commands.ai.agentRejectAction(
         vars.actionLogId,
         vars.rejectedBy,
         vars.reason,

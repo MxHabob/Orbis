@@ -119,8 +119,8 @@ class AcademicContextStore {
     this.orgId = orgId;
     this.isLoading = true;
     try {
-      const current_year = await commands.platform.getCurrentYear();
-      const all_years = await commands.platform.listYears();
+      const current_year = await commands.calendar.getCurrent();
+      const all_years = await commands.calendar.listAcademicPeriods();
       const ctx: AcademicContextResponse = {
         current_year,
         all_years: all_years || [],
@@ -152,7 +152,7 @@ class AcademicContextStore {
     try {
       const id = orgId || this.orgId;
       if (!id) return;
-      this.currentYear = await commands.platform.getCurrentYear();
+      this.currentYear = await commands.calendar.getCurrent();
     } catch (e: unknown) {
       console.warn("Failed to load current year:", extractErrorMessage(e));
     }
@@ -160,7 +160,7 @@ class AcademicContextStore {
 
   async loadYears(orgId: string) {
     try {
-      this.allYears = await commands.platform.listYears();
+      this.allYears = await commands.calendar.listAcademicPeriods();
     } catch (e: unknown) {
       toast.error(extractErrorMessage(e));
     }
@@ -170,7 +170,7 @@ class AcademicContextStore {
     if (this.isSwitching) return;
     this.isSwitching = true;
     try {
-      await commands.platform.switchYear(periodId);
+      await commands.calendar.getAcademicPeriod(periodId);
       await this.loadCurrentYear();
       toast.success(`Switched to ${this.yearLabel}`);
     } catch (e: unknown) {

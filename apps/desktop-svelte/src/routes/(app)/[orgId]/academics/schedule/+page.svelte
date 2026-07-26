@@ -59,7 +59,7 @@ function toStore<T>(getter: () => T) {
 const periodsQuery = createQuery(
   toStore(() => ({
     queryKey: ["periods", data.orgId],
-    queryFn: () => commands.academic.listPeriods(),
+    queryFn: () => commands.calendar.listAcademicPeriods(),
     enabled: !!data.orgId,
     staleTime: 10 * 60 * 1000,
   })),

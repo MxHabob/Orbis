@@ -13,7 +13,7 @@ export function createPendingApprovalsQuery(
     get queryKey() {
       return ["pending-approvals", orgId(), approverRole()];
     },
-    queryFn: () => commands.platform.getPendingApprovals(approverRole()),
+    queryFn: () => commands.enrollment_workflow.listJobs(),
     get enabled() {
       return !!orgId() && !!approverRole();
     },
@@ -30,7 +30,7 @@ export function createOverrideRequestsQuery(
       return ["override-requests", orgId(), params ? params() : {}];
     },
     queryFn: () =>
-      commands.platform.listOverrideRequests(params ? params() : undefined),
+      commands.enrollment_workflow.listJobs(),
     get enabled() {
       return !!orgId();
     },
@@ -43,7 +43,7 @@ export function createOverrideDetailQuery(requestId: () => string) {
     get queryKey() {
       return ["override-detail", requestId()];
     },
-    queryFn: () => commands.platform.getOverrideRequest(requestId()),
+    queryFn: () => commands.enrollment_workflow.getJob(requestId()),
     get enabled() {
       return !!requestId();
     },

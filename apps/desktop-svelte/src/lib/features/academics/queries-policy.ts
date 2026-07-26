@@ -10,7 +10,7 @@ export function createPromotionPolicyQuery(orgId: () => string) {
     get queryKey() {
       return ["promotion-policy", orgId()];
     },
-    queryFn: () => commands.platform.getPromotionPolicy(),
+    queryFn: () => commands.platform_policy.getAutopilotConfig(orgId()),
     get enabled() {
       return !!orgId();
     },
@@ -23,7 +23,7 @@ export function createOrgAcademicPolicyQuery(orgId: () => string) {
     get queryKey() {
       return ["org-academic-policy", orgId()];
     },
-    queryFn: () => commands.platform.getOrgPolicy(),
+    queryFn: () => commands.platform_policy.getAutopilotConfig(orgId()),
     get enabled() {
       return !!orgId();
     },

@@ -76,7 +76,7 @@ $effect(() => {
 async function loadPeriodsAndData() {
   isLoading = true;
   try {
-    const resPeriods = await commands.academic.listPeriods();
+    const resPeriods = await commands.calendar.listAcademicPeriods();
     periods = resPeriods || [];
     if (periods.length > 0) {
       currentPeriodId = periods[0].id;

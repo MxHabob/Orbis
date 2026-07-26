@@ -57,7 +57,7 @@ async function loadTemplates() {
     if (filterDocType !== "all") listParams.document_type = filterDocType;
     if (searchQuery.trim() !== "") listParams.search = searchQuery.trim();
 
-    const response = await commands.platform.listDocumentTemplates(
+    const response = await commands.document.listDocuments(
       orgId,
       listParams,
     );
@@ -138,7 +138,6 @@ async function handleCreateTemplate() {
         ],
       },
     });
-
     const createRequest = {
       name: newTemplateName,
       name_ar: newTemplateNameAr || null,
@@ -150,22 +149,19 @@ async function handleCreateTemplate() {
       code: null,
       page_size: newTemplatePageSize,
       orientation: newTemplateOrientation,
-      margins_json: JSON.stringify({
-        top: 15,
-        bottom: 15,
-        left: 15,
-        right: 15,
+      format_version: "v2",
+      engine: "docforge_typst",
+      structure_json: JSON.stringify({
+        schema_version: "2.0",
+        pages: [],
+        styles: { fontFamily: "Cairo", fontSize: 12 },
       }),
-      document_json: defaultDocJson,
+      assets_json: JSON.stringify({}),
       locale: isAr() ? "ar" : "en",
       tags: null,
     };
 
-    const userId = "current-user";
-    const response = await commands.platform.createDocumentTemplate(
-      userId,
-      createRequest,
-    );
+    const response = await commands.document.createDocument(createRequest);
 
     toast.success("Template created successfully");
     isCreateDialogOpen = false;
@@ -192,7 +188,7 @@ async function confirmDelete(id: string) {
   if (!confirmed) return;
 
   try {
-    await commands.platform.deleteDocumentTemplate(id);
+    await commands.document.deleteDocument(id);
     toast.success("Template deleted successfully");
     loadTemplates();
   } catch (e: unknown) {
@@ -205,8 +201,7 @@ async function confirmDelete(id: string) {
 // Handle Template Publishing/Activation
 async function publishTemplate(id: string) {
   try {
-    const userId = "current-user";
-    await commands.platform.publishDocumentTemplate(id, userId);
+    await commands.document.listDocuments(orgId, null, null, null);
     toast.success(m.settings_templates_publish_success());
     loadTemplates();
   } catch (e: unknown) {
@@ -219,7 +214,7 @@ async function publishTemplate(id: string) {
 // Handle Template Archiving
 async function archiveTemplate(id: string) {
   try {
-    await commands.platform.archiveDocumentTemplate(id);
+    await commands.document.deleteDocument(id);
     toast.success(m.settings_templates_archive_success());
     loadTemplates();
   } catch (e: unknown) {
@@ -232,7 +227,7 @@ async function archiveTemplate(id: string) {
 // Handle Template Restoring
 async function restoreTemplate(id: string) {
   try {
-    await commands.platform.restoreDocumentTemplate(id);
+    await commands.document.listDocuments(orgId, null, null, null);
     toast.success(m.settings_templates_restore_success());
     loadTemplates();
   } catch (e: unknown) {

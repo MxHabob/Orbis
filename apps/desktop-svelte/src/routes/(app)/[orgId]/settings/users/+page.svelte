@@ -116,7 +116,7 @@ async function handleAction(event: GridActionEvent) {
     });
     if (confirmed) {
       try {
-        await commands.iam.deleteUser(user.id, "admin");
+        await commands.iam.deleteUser(user.id);
         toast.success("User deleted successfully");
         loadUsers();
       } catch (e) {

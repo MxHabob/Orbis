@@ -23,7 +23,7 @@ class AuthStore {
     this.isLoading = true;
     this.error = null;
     try {
-      const res = await commands.platform.login(email, password);
+      const res = await commands.iam.login(email, password);
       this.user = res.user;
       this.token = res.access_token;
       localStorage.setItem("orbis_token", res.access_token);
@@ -39,7 +39,7 @@ class AuthStore {
 
   async logout() {
     if (this.token) {
-      await commands.platform.logout(this.token).catch(() => {});
+      await commands.iam.logout(this.token).catch(() => {});
     }
     this.user = null;
     this.token = null;
@@ -91,7 +91,7 @@ class AuthStore {
       return;
     }
     try {
-      const status = await commands.platform.getSetupStatus();
+      const status = await commands.organization.checkSetup();
       this.isSetupComplete = status;
       localStorage.setItem("orbis_is_setup_complete", String(status));
     } catch (e) {

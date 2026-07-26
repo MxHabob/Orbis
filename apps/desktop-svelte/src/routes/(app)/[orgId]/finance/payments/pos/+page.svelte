@@ -105,7 +105,7 @@ async function loadStudentData(enrollId: string) {
   isLoadingStudentDetails = true;
   try {
     const [feesList, paymentsList] = await Promise.all([
-      commands.finance.listStudentFees(enrollId),
+      commands.finance.listStudentFeesByEnrollment(enrollId),
       commands.finance.listPayments(),
     ]);
 

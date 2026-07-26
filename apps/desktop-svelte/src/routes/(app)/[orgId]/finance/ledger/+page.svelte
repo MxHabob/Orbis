@@ -141,7 +141,7 @@ async function loadData() {
     const [ledgerList, paymentList, feeList, treasuryList] = await Promise.all([
       commands.finance.listAccounts(),
       commands.finance.listPayments(),
-      commands.finance.listAllStudentFees(),
+      commands.finance.listStudentFeesByOrg(),
       commands.finance.listTreasuries(),
     ]);
 

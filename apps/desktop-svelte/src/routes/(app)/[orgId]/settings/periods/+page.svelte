@@ -85,7 +85,7 @@ async function requestActivate(periodId: string) {
   if (!confirmed) return;
 
   try {
-    await commands.academic.unlockPeriod(periodId);
+    await commands.calendar.unlock(periodId);
     toast.success(m.settings_periods_activate_success());
     loadPeriods();
   } catch (e: unknown) {
@@ -104,7 +104,7 @@ async function requestLock(periodId: string) {
   if (!confirmed) return;
 
   try {
-    await commands.academic.lockPeriod(periodId);
+    await commands.calendar.lock(periodId);
     toast.success(m.settings_periods_lock_success());
     loadPeriods();
   } catch (e: unknown) {
@@ -123,7 +123,7 @@ async function requestDelete(periodId: string) {
   if (!confirmed) return;
 
   try {
-    await commands.academic.deletePeriod(periodId);
+    await commands.calendar.deleteAcademicPeriod(periodId);
     toast.success(m.common_action_delete());
     loadPeriods();
   } catch (e: unknown) {

@@ -21,8 +21,7 @@ export class DocumentInfoState {
     if (!originalStudent || !this.studentId) return;
 
     try {
-      const studentDocs = await commands.platform.listDocumentsByOwner(
-        this.orgId,
+      const studentDocs = await commands.document.listDocuments(
         originalStudent.student_id,
       );
       const submitted = [];

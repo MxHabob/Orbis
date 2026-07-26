@@ -300,7 +300,7 @@ export class StudentFormState {
         await commands.iam.updateUser(targetStudentId, studentUserData);
 
         if (originalStudent.class_id !== this.personal.classId) {
-          await commands.academic.transferEnrollment(
+          await commands.academic.transfer(
             this.orgId,
             this.studentId!,
             this.personal.classId,
@@ -308,7 +308,7 @@ export class StudentFormState {
         }
 
         if (originalStudent.status !== this.registrationStatus) {
-          await commands.platform.transitionEnrollmentStatus(
+          await commands.academic.withdraw(
             this.orgId,
             this.studentId!,
             this.registrationStatus,
@@ -469,7 +469,7 @@ export class StudentFormState {
     }
     this.isDownloadingForm = true;
     try {
-      const templateRecord = await commands.platform.getDocumentTemplate(
+      const templateRecord = await commands.document.getDocuments(
         this.orgId,
         this.selectedTemplateId,
       );

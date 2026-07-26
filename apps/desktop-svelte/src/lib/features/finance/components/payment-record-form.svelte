@@ -104,7 +104,7 @@ async function loadStudentFees(enrollId: string) {
   if (!enrollId || !orgId) return;
   isLoadingFees = true;
   try {
-    const list = await commands.finance.listStudentFees(enrollId);
+    const list = await commands.finance.listStudentFeesByEnrollment(enrollId);
     fees = list.filter((f) => f.status !== "paid");
     if (fees.length > 0) {
       selectedFeeId = String(fees[0].id);

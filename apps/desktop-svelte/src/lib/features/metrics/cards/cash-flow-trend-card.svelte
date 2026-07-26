@@ -36,7 +36,7 @@ async function loadData() {
     if (selectedTerm !== "all") params.period_id = selectedTerm;
 
     const paymentsList = await commands.finance.listPayments();
-    const feesList = await commands.finance.listAllStudentFees();
+    const feesList = await commands.finance.listStudentFeesByOrg();
 
     if (paymentsList && paymentsList.length > 0) {
       const monthsMap: Record<string, { invoiced: number; collected: number }> =
