@@ -49,6 +49,28 @@ pub async fn enrollment_workflow_promotion_rollback(state: State<'_, Arc<AppStat
 }
 
 #[tauri::command]
+pub async fn enrollment_workflow_promotion_core_dry_run(state: State<'_, Arc<AppState>>, org_id: String, user_id: String, config: serde_json::Value) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let config_parsed = serde_json::from_value(config).map_err(|e| CommandError::new(e.to_string()))?;
+    let result = ops::promotion_core::dry_run(&ctx.db, &org_id, &user_id, config_parsed).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn enrollment_workflow_promotion_core_execute(state: State<'_, Arc<AppState>>, job_id: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::promotion_core::execute(&ctx.db, &job_id).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn enrollment_workflow_promotion_core_rollback(state: State<'_, Arc<AppState>>, job_id: String, user_id: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    ops::promotion_core::rollback(&ctx.db, &job_id, &user_id).await.map_err(CommandError::from)?;
+    Ok(serde_json::json!({}))
+}
+
+#[tauri::command]
 pub async fn enrollment_workflow_student_registration_register_student(state: State<'_, Arc<AppState>>, req: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let req_parsed = serde_json::from_value(req).map_err(|e| CommandError::new(e.to_string()))?;

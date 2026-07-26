@@ -173,7 +173,7 @@ function parseOps(): OpFunction[] {
       const content = fs.readFileSync(path.join(crateDir, file), "utf8");
       const entity = getEntityName(opFile);
 
-      const fnRegex = /^pub\s+async\s+fn\s+([a-zA-Z0-9_]+)\s*\(\s*([^)]*)\)\s*->\s*Result<([^,]+),\s*[^>]+>/gm;
+      const fnRegex = /pub\s+async\s+fn\s+([a-zA-Z0-9_]+)\s*\(\s*([\s\S]*?)\)\s*->\s*Result<([^,]+),\s*[^>]+>/g;
       let match;
       while ((match = fnRegex.exec(content)) !== null) {
         const funcName = match[1];
@@ -252,6 +252,8 @@ function parseOps(): OpFunction[] {
             tsFuncName = `export${tsFuncName.charAt(0).toUpperCase() + tsFuncName.slice(1)}`;
         } else if (opFile === "bulk_import") {
             tsFuncName = `import${tsFuncName.charAt(0).toUpperCase() + tsFuncName.slice(1)}`;
+        } else if (opFile === "dashboard" && funcName === "get_stats") {
+            tsFuncName = "getDashboardStats";
         }
 
         ops.push({

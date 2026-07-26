@@ -7,7 +7,7 @@ export interface OrganizationCommands {
   exportGrades(): Promise<any>;
   importStudents(data: any): Promise<any>;
   importGrades(Data: any): Promise<any>;
-  getStats(): Promise<any>;
+  getDashboardStats(): Promise<any>;
   getOrganization(): Promise<any>;
   createOrganization(cmd: any): Promise<any>;
   updateOrganization(cmd: any): Promise<any>;

@@ -87,15 +87,26 @@ pub async fn get(ctx: &ServiceContext, period_id: &str) -> Result<academic_perio
 }
 
 /// Get the current (active) period for the current year.
-pub async fn get_current(ctx: &ServiceContext) -> Result<academic_period::Model, AppError> {
+pub async fn get_current(ctx: &ServiceContext) -> Result<Option<academic_period::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::PeriodRead).await?;
     
-    academic_period::Entity::find()
+    // First try active period for this org
+    let active = academic_period::Entity::find()
         .filter(academic_period::Column::OrgId.eq(&ctx.org_id))
-        .filter(academic_period::Column::PeriodId.eq(&ctx.period_id))
-        .order_by_asc(academic_period::Column::SortOrder)
-        .one(&ctx.db).await?
-        .ok_or_else(|| AppError::not_found("academic_period", "current"))
+        .filter(academic_period::Column::Status.eq("active"))
+        .one(&ctx.db).await?;
+
+    if active.is_some() {
+        return Ok(active);
+    }
+
+    // Fallback to most recent period for this org
+    let latest = academic_period::Entity::find()
+        .filter(academic_period::Column::OrgId.eq(&ctx.org_id))
+        .order_by_desc(academic_period::Column::StartDate)
+        .one(&ctx.db).await?;
+
+    Ok(latest)
 }
 
 #[derive(serde::Deserialize)]
