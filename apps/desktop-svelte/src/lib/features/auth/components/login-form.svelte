@@ -32,7 +32,11 @@ async function handleSubmit(e: SubmitEvent) {
 
   try {
     await authStore.login(email, password);
-    goto(localizeHref(`/${authStore.orgId}`));
+    const targetOrgId = authStore.orgId || "default";
+    await goto(localizeHref(`/${targetOrgId}`), {
+      invalidateAll: true,
+      replaceState: true,
+    });
   } catch (err) {
     error = extractErrorMessage(err) || m.auth_login_failed();
   } finally {

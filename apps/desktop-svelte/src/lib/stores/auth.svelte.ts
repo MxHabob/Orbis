@@ -26,6 +26,7 @@ class AuthStore {
       const res = await commands.iam.login(email, password);
       this.user = res.user;
       this.token = res.access_token;
+      this.restorePromise = null;
       localStorage.setItem("orbis_token", res.access_token);
       localStorage.setItem("orbis_user", JSON.stringify(res.user));
       await this.checkSetupStatus();
@@ -44,6 +45,7 @@ class AuthStore {
     this.user = null;
     this.token = null;
     this.isSetupComplete = null;
+    this.restorePromise = null;
     localStorage.removeItem("orbis_token");
     localStorage.removeItem("orbis_user");
     localStorage.removeItem("orbis_is_setup_complete");
@@ -91,9 +93,11 @@ class AuthStore {
       return;
     }
     try {
-      const status = await commands.organization.checkSetup();
-      this.isSetupComplete = status;
-      localStorage.setItem("orbis_is_setup_complete", String(status));
+      const res = await commands.organization.checkSetup();
+      const isComplete =
+        typeof res === "boolean" ? res : Boolean(res?.setup_completed ?? true);
+      this.isSetupComplete = isComplete;
+      localStorage.setItem("orbis_is_setup_complete", String(isComplete));
     } catch (e) {
       console.error("Error checking setup status:", e);
       const cached = localStorage.getItem("orbis_is_setup_complete");
