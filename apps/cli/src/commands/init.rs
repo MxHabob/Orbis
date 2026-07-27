@@ -161,6 +161,12 @@ pub async fn execute() -> Result<()> {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     output::print_phase_header(5, TOTAL_PHASES, "Initializing System");
 
+    let bp_type_str = match blueprint {
+        infra_persistence::bootstrap::BlueprintType::School => "school",
+        infra_persistence::bootstrap::BlueprintType::University => "university",
+        infra_persistence::bootstrap::BlueprintType::TrainingCenter => "training_center",
+    };
+
     // 5a. Bootstrap organization + admin
     output::print_progress_pending("Creating organization and admin account...");
     let hashed_password = hash(&admin_password, DEFAULT_COST).unwrap_or_default();
@@ -177,13 +183,20 @@ pub async fn execute() -> Result<()> {
     let org_id = result.org_id;
     output::print_progress_ok("Organization and admin account created");
 
-    // 5b. Update organization with additional fields (timezone, currency, name_ar)
+    // 5b. Update organization with additional fields (timezone, currency, name_ar, settings)
     output::print_progress_pending("Updating organization settings...");
+    let settings_json = serde_json::json!({
+        "registration_config": {
+            "institution_type": bp_type_str
+        }
+    }).to_string();
+
     let update_sql = format!(
-        "UPDATE organizations SET name_ar = '{}', timezone = '{}', currency = '{}', locale = 'ar' WHERE id = '{}'",
+        "UPDATE organizations SET name_ar = '{}', timezone = '{}', currency = '{}', locale = 'ar', settings = '{}' WHERE id = '{}'",
         org_name_ar.replace('\'', "''"),
         timezone.replace('\'', "''"),
         currency.replace('\'', "''"),
+        settings_json.replace('\'', "''"),
         org_id
     );
     db.execute_unprepared(&update_sql).await?;

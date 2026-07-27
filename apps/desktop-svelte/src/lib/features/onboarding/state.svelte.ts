@@ -232,21 +232,41 @@ class OnboardingState {
         if (org.currency) this.profile.currency = org.currency;
 
         // Read institution type from org settings (set by CLI blueprint)
+        let detectedType = "";
         if (org.settings) {
           try {
             const settings = typeof org.settings === 'string' ? JSON.parse(org.settings) : org.settings;
             if (settings?.registration_config?.institution_type) {
-              this.selectInstitutionType(settings.registration_config.institution_type);
+              detectedType = settings.registration_config.institution_type;
             }
           } catch { /* settings parsing is optional */ }
         }
 
-        // Read subscription plan to detect institution type from CLI blueprint
-        if (org.subscription_plan && !this.profile.institutionType) {
-          // Blueprint type is stored as part of the org metadata
+        // Fallback: check period templates if not found in settings
+        await this.loadTemplates(orgId).catch(() => {});
+        if (!detectedType && this.calendar.periodTemplates && this.calendar.periodTemplates.length > 0) {
+          const tmpl = this.calendar.periodTemplates.find((t: any) => t.is_default || t.isDefault) || this.calendar.periodTemplates[0];
+          if (tmpl && (tmpl.institution_type || (tmpl as any).institutionType)) {
+            detectedType = tmpl.institution_type || (tmpl as any).institutionType;
+          }
         }
 
-        await this.loadTemplates(orgId).catch(() => {});
+        if (detectedType) {
+          // Normalize alias if needed ("training_center" <-> "institute")
+          if (!INSTITUTION_PROFILES[detectedType]) {
+            if (detectedType === "training_center" && INSTITUTION_PROFILES["institute"]) {
+              detectedType = "institute";
+            } else if (detectedType === "institute" && INSTITUTION_PROFILES["training_center"]) {
+              detectedType = "training_center";
+            }
+          }
+          if (INSTITUTION_PROFILES[detectedType]) {
+            this.selectInstitutionType(detectedType);
+          }
+        } else if (!this.profile.institutionType) {
+          this.selectInstitutionType("school");
+        }
+
         this.save();
       }
 
