@@ -770,15 +770,17 @@ class OnboardingState {
       let rootPeriodId = "";
       try {
         const rootPeriod = await commands.calendar.createAcademicPeriod({
-          name: this.calendar.academicYearName,
-          name_ar: this.calendar.academicYearNameAr,
+          name: this.calendar.academicYearName || "Academic Year",
+          name_ar: this.calendar.academicYearNameAr || "العام الدراسي",
           start_date: this.calendar.startDate,
           end_date: this.calendar.endDate,
           period_type: "year",
+          parent_id: null,
         });
         rootPeriodId = rootPeriod?.id || "";
+        console.log("Root academic period created successfully with ID:", rootPeriodId);
       } catch (e) {
-        console.warn("Root period creation warning:", e);
+        console.error("Root period creation failed:", e);
       }
 
       // Create child periods (Semesters / Quarters) under rootPeriodId
@@ -807,12 +809,15 @@ class OnboardingState {
               createdPeriodsMap[period.id] = created.id;
             }
           } catch (e) {
-            console.warn(`Child period "${period.name}" creation warning:`, e);
+            console.error(`Child period "${period.name}" creation failed:`, e);
           }
         }
       }
 
-      const activePeriodId = rootPeriodId || `period-${new Date(this.calendar.startDate).getFullYear()}-${orgId}`;
+      const activePeriodId = rootPeriodId;
+      if (!activePeriodId) {
+        throw new Error("Failed to create root academic period in database");
+      }
 
       // ── Step 4: Create Classes (الفصول) ───────────────────────────────
       for (const gl of this.academics.gradeLevels) {

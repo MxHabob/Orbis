@@ -49,10 +49,13 @@ pub struct CreateClassPayload {
     pub org_unit_id: String,
     pub period_id: String,
     pub name: String,
+    #[serde(default)]
     pub name_ar: Option<String>,
     pub grade_level: String,
     pub capacity: i32,
+    #[serde(default)]
     pub division: Option<String>,
+    #[serde(default)]
     pub color: Option<String>,
 }
 

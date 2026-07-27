@@ -307,19 +307,20 @@ pub async fn update_settings(
 }
 
 pub async fn check_setup(ctx: &ServiceContext) -> Result<serde_json::Value, AppError> {
-    use svc_calendar::entities::academic_year;
+    use svc_calendar::entities::academic_period;
     use svc_academic::entities::class;
     use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, PaginatorTrait};
     
-    // Check if there are any academic years
-    let periods_count = academic_year::Entity::find()
-        .filter(academic_year::Column::OrgId.eq(&ctx.org_id))
+    // Check if there are any academic periods
+    let periods_count = academic_period::Entity::find()
+        .filter(academic_period::Column::OrgId.eq(&ctx.org_id))
         .count(&ctx.db)
         .await?;
 
     // Check if there are any classes
     let classes_count = class::Entity::find()
         .filter(class::Column::OrgId.eq(&ctx.org_id))
+        .filter(class::Column::IsDeleted.eq(0))
         .count(&ctx.db)
         .await?;
 

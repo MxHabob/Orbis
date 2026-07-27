@@ -112,22 +112,36 @@ pub async fn get_current(ctx: &ServiceContext) -> Result<Option<academic_period:
 #[derive(serde::Deserialize)]
 pub struct CreatePeriodPayload {
     pub name: String,
+    #[serde(default)]
     pub name_ar: Option<String>,
+    #[serde(default)]
     pub code: Option<String>,
     pub period_type: String,
+    #[serde(default)]
     pub parent_id: Option<String>,
     pub start_date: String,
     pub end_date: String,
+    #[serde(default)]
     pub enrollment_start: Option<String>,
+    #[serde(default)]
     pub enrollment_end: Option<String>,
+    #[serde(default)]
     pub grade_entry_start: Option<String>,
+    #[serde(default)]
     pub grade_entry_end: Option<String>,
+    #[serde(default)]
     pub exam_start: Option<String>,
+    #[serde(default)]
     pub exam_end: Option<String>,
+    #[serde(default)]
     pub grading_system: Option<String>,
+    #[serde(default)]
     pub passing_grade: Option<i32>,
+    #[serde(default)]
     pub max_grade: Option<i32>,
+    #[serde(default)]
     pub weight: Option<i32>,
+    #[serde(default)]
     pub sort_order: Option<i32>,
 }
 
@@ -142,11 +156,48 @@ pub async fn create(
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
+    let period_id_val = if !ctx.period_id.is_empty() {
+        ctx.period_id.clone()
+    } else if let Some(ref pid) = req.parent_id {
+        pid.clone()
+    } else {
+        id.clone()
+    };
+
+    // Ensure corresponding entry in academic_years exists to satisfy FK constraint
+    let year_exists = crate::entities::academic_year::Entity::find_by_id(period_id_val.clone())
+        .one(&ctx.db)
+        .await?;
+
+    if year_exists.is_none() {
+        let year_model = crate::entities::academic_year::ActiveModel {
+            id: Set(period_id_val.clone()),
+            org_id: Set(ctx.org_id.clone()),
+            name: Set(req.name.clone()),
+            name_ar: Set(req.name_ar.clone()),
+            start_date: Set(req.start_date.clone()),
+            end_date: Set(req.end_date.clone()),
+            hijri_start: Set(None),
+            hijri_end: Set(None),
+            status: Set("active".to_string()),
+            is_locked: Set(0),
+            locked_at: Set(None),
+            locked_by: Set(None),
+            lock_reason: Set(None),
+            current_period_id: Set(None),
+            archived_at: Set(None),
+            archived_by: Set(None),
+            notes: Set(None),
+            created_at: Set(now.clone()),
+            updated_at: Set(now.clone()),
+        };
+        let _ = year_model.insert(&ctx.db).await?;
+    }
 
     let model = academic_period::ActiveModel {
         id: Set(id.clone()),
         org_id: Set(ctx.org_id.clone()),
-        period_id: Set(ctx.period_id.clone()),
+        period_id: Set(period_id_val),
         parent_id: Set(req.parent_id),
         name: Set(req.name),
         name_ar: Set(req.name_ar),

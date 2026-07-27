@@ -23,12 +23,16 @@ pub async fn list(ctx: &ServiceContext) -> Result<Vec<time_slot::Model>, AppErro
 pub struct CreateTimeSlotPayload {
     pub period_id: String,
     pub slot_number: i32,
+    #[serde(default)]
     pub name: Option<String>,
+    #[serde(default)]
     pub name_ar: Option<String>,
     pub start_time: String,
     pub end_time: String,
     pub duration_minutes: i32,
+    #[serde(default)]
     pub is_break: bool,
+    #[serde(default)]
     pub break_type: Option<String>,
     pub applicable_days: Option<String>,
 }
