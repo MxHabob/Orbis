@@ -21,6 +21,7 @@ import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
 
 import { getLocale } from "$lib/paraglide/runtime";
+import { l } from "$lib/core/i18n";
 import { createEnrollmentsQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
 import { commands, extractErrorMessage } from "$lib/core/ipc";
@@ -56,9 +57,10 @@ let address = $state("");
 let isActiveState = $state(true);
 
 const selectedClassName = $derived(
-  classes.find((c) => String(c.id) === classId)?.name ||
-    classes.find((c) => String(c.id) === classId)?.name_ar ||
-    m.common_form_select_class(),
+  (() => {
+    const cls = classes.find((c: any) => String(c.id) === classId);
+    return cls ? (l(cls.name_ar, cls.name) || String(cls.id)) : m.common_form_select_class();
+  })()
 );
 
 // Date picker options and reactive values
@@ -523,11 +525,11 @@ async function saveStudentDetails(e: Event) {
                   <span>{selectedClassName}</span>
                 </SelectTrigger>
                 <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
-                  {#each classes as cls (cls.id)}
-                    <SelectItem value={String(cls.id)} class="text-xs text-start justify-start cursor-pointer">
-                      {cls.name || cls.name_ar}
-                    </SelectItem>
-                  {/each}
+                    {#each classes as cls (cls.id)}
+                      <SelectItem value={String(cls.id)} class="text-xs text-start justify-start cursor-pointer">
+                        {l(cls.name_ar, cls.name)}
+                      </SelectItem>
+                    {/each}
                 </SelectContent>
               </Select>
             </div>

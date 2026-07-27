@@ -1,5 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
+import { l } from "$lib/core/i18n";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
@@ -195,8 +196,7 @@ async function loadClasses() {
       const nameObj = levelNames[lvl] || { en: lvl, ar: lvl };
       return {
         level: lvl,
-        label:
-          m.common_status_undefined() === "غير محدد" ? nameObj.ar : nameObj.en,
+        label: l(nameObj.ar, nameObj.en),
       };
     });
   } catch (e) {

@@ -49,10 +49,16 @@ pub struct RecordPaymentCmd {
 pub struct CreateFeeTemplateCmd {
     pub name: String,
     pub name_ar: Option<String>,
+    #[serde(default)]
+    pub code: Option<String>,
     pub category: String,
     pub default_amount: f64,
-    pub revenue_account_id: String,
-    pub receivable_account_id: String,
+    #[serde(default)]
+    pub revenue_account_id: Option<String>,
+    #[serde(default)]
+    pub receivable_account_id: Option<String>,
+    #[serde(default)]
+    pub applicable_levels: Option<String>,
     pub frequency: String,
     pub is_mandatory: bool,
 }
@@ -60,7 +66,15 @@ pub struct CreateFeeTemplateCmd {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateFeeTemplateCmd {
     pub name: Option<String>,
+    pub name_ar: Option<String>,
+    pub code: Option<String>,
+    pub category: Option<String>,
     pub default_amount: Option<f64>,
+    pub revenue_account_id: Option<String>,
+    pub receivable_account_id: Option<String>,
+    pub applicable_levels: Option<String>,
+    pub frequency: Option<String>,
+    pub is_mandatory: Option<bool>,
     pub is_active: Option<bool>,
 }
 

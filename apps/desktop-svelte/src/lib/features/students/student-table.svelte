@@ -8,12 +8,12 @@ import * as m from "$lib/paraglide/messages";
 import { DataTable } from "$lib/tables";
 import type { Enrollment } from "$lib/core/ipc";
 
-import { formatDate } from "$lib/core/i18n";
+import { formatDate, l } from "$lib/core/i18n";
 import { createInitials } from "$lib/tables";
 import type { OrbisColumnDef, GridActionEvent } from "@orbis/svelte-grid";
 import { GraduationCap } from "lucide-svelte";
 import { goto } from "$app/navigation";
-import { localizeHref, getLocale } from "$lib/paraglide/runtime";
+import { localizeHref } from "$lib/paraglide/runtime";
 import { studentsStore } from "$lib/features/students";
 
 let {
@@ -37,7 +37,7 @@ let {
 function getClassName(classId: string): string {
   const cls = classes.find((c) => c.id === classId);
   return cls
-    ? String(cls.name || cls.name_ar || classId)
+    ? String(l(cls.name_ar, cls.name) || classId)
     : m.common_status_not_enrolled();
 }
 

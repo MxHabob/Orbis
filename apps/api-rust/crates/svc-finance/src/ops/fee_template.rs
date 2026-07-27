@@ -35,12 +35,12 @@ pub async fn create(
         org_id: ctx.org_id.clone(),
         name: cmd.name,
         name_ar: cmd.name_ar,
-        code: None,
+        code: cmd.code,
         category: cmd.category,
         default_amount: cmd.default_amount,
-        revenue_account_id: cmd.revenue_account_id,
-        receivable_account_id: cmd.receivable_account_id,
-        applicable_levels: None,
+        revenue_account_id: cmd.revenue_account_id.unwrap_or_default(),
+        receivable_account_id: cmd.receivable_account_id.unwrap_or_default(),
+        applicable_levels: cmd.applicable_levels,
         frequency: cmd.frequency,
         installment_config: None,
         late_fee_rules: None,
@@ -87,7 +87,15 @@ pub async fn update(
 
     let mut active: fee_template::ActiveModel = existing.into();
     if let Some(n) = cmd.name { active.name = Set(n); }
+    if let Some(na) = cmd.name_ar { active.name_ar = Set(Some(na)); }
+    if let Some(c) = cmd.code { active.code = Set(Some(c)); }
+    if let Some(cat) = cmd.category { active.category = Set(cat); }
     if let Some(a) = cmd.default_amount { active.default_amount = Set(a); }
+    if let Some(rev) = cmd.revenue_account_id { active.revenue_account_id = Set(rev); }
+    if let Some(rec) = cmd.receivable_account_id { active.receivable_account_id = Set(rec); }
+    if let Some(al) = cmd.applicable_levels { active.applicable_levels = Set(Some(al)); }
+    if let Some(f) = cmd.frequency { active.frequency = Set(f); }
+    if let Some(m) = cmd.is_mandatory { active.is_mandatory = Set(if m { 1 } else { 0 }); }
     if let Some(ia) = cmd.is_active { active.is_active = Set(if ia { 1 } else { 0 }); }
     active.updated_at = Set(Utc::now().to_rfc3339());
 

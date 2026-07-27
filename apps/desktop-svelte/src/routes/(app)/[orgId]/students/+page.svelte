@@ -34,7 +34,7 @@ import PeriodGateAction from "$lib/shared/components/period-gate-action.svelte";
 import OverrideRequestDialog from "$lib/shared/components/override-request-dialog.svelte";
 
 import { localizeHref } from "$lib/paraglide/runtime";
-import { formatNumber } from "$lib/core/i18n";
+import { formatNumber, l } from "$lib/core/i18n";
 import { extractErrorMessage } from "$lib/core/ipc";
 import { debounce } from "$lib/shared/utils/debounce";
 
@@ -151,7 +151,7 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 							...classes.map(cls => {
 								const count = getCountByClass(String(cls.id));
 								return {
-									label: String(cls.name || cls.name_ar || cls.id),
+									label: String(l(cls.name_ar, cls.name) || cls.id),
 									badge: count > 0 ? formatNumber(count) : null,
 									isActive: studentsStore.selectedClassId === cls.id,
 									onclick: () => studentsStore.selectedClassId = String(cls.id)

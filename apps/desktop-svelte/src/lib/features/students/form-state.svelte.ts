@@ -3,6 +3,7 @@ import { goto } from "$app/navigation";
 import { commands } from "$lib/core/ipc";
 import { toast } from "svelte-sonner";
 
+import { l } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
 
 import { PersonalInfoState } from "./state/personal-info.svelte";
@@ -167,32 +168,41 @@ export class StudentFormState {
   }
 
   get selectedClassName() {
-    return (
-      this.classes.find((c) => String(c.id) === this.personal.classId)?.name ||
-      this.classes.find((c) => String(c.id) === this.personal.classId)
-        ?.name_ar ||
-      m.common_form_select_class()
-    );
+    const cls = this.classes.find((c) => String(c.id) === this.personal.classId);
+    if (!cls) return m.common_form_select_class();
+    return l(cls.name_ar, cls.name) || String(cls.id);
   }
 
   get mandatoryFeesList() {
     const level = this.classLevel;
-    if (!level) return [];
+    const classId = this.personal.classId;
     return this.financial.feeTemplates.filter((t) => {
-      if (t.is_mandatory === 0 && t.is_active === 1) {
-        if (t.applicable_levels) {
-          try {
-            const rules = JSON.parse(t.applicable_levels);
-            if (rules.levels && Array.isArray(rules.levels))
-              return rules.levels.includes(level);
-            else if (rules.level) return rules.level === level;
-          } catch {
-            return false;
+      const isMandatory = t.is_mandatory === 1 || t.is_mandatory === true;
+      const isActive = t.is_active === 1 || t.is_active === true;
+      if (!isMandatory || !isActive) return false;
+
+      if (t.applicable_levels) {
+        try {
+          const rules = JSON.parse(t.applicable_levels);
+          let targetLevels: string[] = [];
+          if (Array.isArray(rules)) {
+            targetLevels = rules.map(String);
+          } else if (rules.levels && Array.isArray(rules.levels)) {
+            targetLevels = rules.levels.map(String);
+          } else if (rules.level) {
+            targetLevels = [String(rules.level)];
           }
+
+          if (targetLevels.length > 0) {
+            const matchesLevel = level ? targetLevels.includes(level) : false;
+            const matchesClassId = classId ? targetLevels.includes(classId) : false;
+            return matchesLevel || matchesClassId;
+          }
+        } catch {
+          return false;
         }
-        return true;
       }
-      return false;
+      return true;
     });
   }
 

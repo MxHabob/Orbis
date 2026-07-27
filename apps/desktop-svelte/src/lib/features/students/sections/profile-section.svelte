@@ -12,6 +12,7 @@ import {
 
 import { getLocale } from "$lib/paraglide/runtime";
 import type { StudentFormState } from "../form-state.svelte";
+import { ClassSelect } from "$lib/features/academics";
 
 let { state }: { state: StudentFormState } = $props();
 
@@ -207,18 +208,11 @@ const monthsList = $derived([
         <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_class_desc()}</span>
       </div>
       <div class="w-full md:w-[480px] shrink-0">
-        <Select bind:value={state.personal.classId} type="single">
-          <SelectTrigger class="w-full h-9 text-xs text-start flex items-center justify-between bg-background" id="classSelect">
-            <span>{state.selectedClassName}</span>
-          </SelectTrigger>
-          <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
-            {#each state.classes as cls (cls.id)}
-              <SelectItem value={String(cls.id)} class="text-xs text-start justify-start cursor-pointer">
-                {cls.name || cls.name_ar}
-              </SelectItem>
-            {/each}
-          </SelectContent>
-        </Select>
+        <ClassSelect
+          id="classSelect"
+          bind:value={state.personal.classId}
+          classes={state.classes}
+        />
       </div>
     </div>
 

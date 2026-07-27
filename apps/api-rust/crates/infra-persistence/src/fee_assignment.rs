@@ -29,6 +29,17 @@ pub async fn assign_mandatory_fees<C: ConnectionTrait>(
         return Ok(vec![]);
     }
 
+    let class_level: Option<String> = conn
+        .query_one(Statement::from_sql_and_values(
+            backend,
+            "SELECT level FROM classes WHERE id = ?1",
+            vec![class_id.into()],
+        ))
+        .await
+        .ok()
+        .flatten()
+        .and_then(|row| row.try_get("", "level").ok());
+
     let mut assigned_ids = Vec::new();
     let now = chrono::Utc::now().to_rfc3339();
 
@@ -41,11 +52,36 @@ pub async fn assign_mandatory_fees<C: ConnectionTrait>(
             .map_err(|e| AppError::internal(e.to_string()))?;
         let applicable_levels: Option<String> = row.try_get("", "applicable_levels").ok();
 
-        if let Some(ref levels) = applicable_levels {
-            if !levels.is_empty() && levels != "[]" {
-                let levels_list: Vec<String> = serde_json::from_str(levels).unwrap_or_default();
-                if !levels_list.is_empty() && !levels_list.contains(&class_id.to_string()) {
-                    continue;
+        if let Some(ref levels_raw) = applicable_levels {
+            if !levels_raw.is_empty() && levels_raw != "[]" && levels_raw != "{}" {
+                let mut target_levels: Vec<String> = Vec::new();
+                if let Ok(val) = serde_json::from_str::<serde_json::Value>(levels_raw) {
+                    if let Some(arr) = val.as_array() {
+                        for item in arr {
+                            if let Some(s) = item.as_str() {
+                                target_levels.push(s.to_string());
+                            }
+                        }
+                    } else if let Some(obj) = val.as_object() {
+                        if let Some(arr) = obj.get("levels").and_then(|v| v.as_array()) {
+                            for item in arr {
+                                if let Some(s) = item.as_str() {
+                                    target_levels.push(s.to_string());
+                                }
+                            }
+                        } else if let Some(s) = obj.get("level").and_then(|v| v.as_str()) {
+                            target_levels.push(s.to_string());
+                        }
+                    }
+                }
+
+                if !target_levels.is_empty() {
+                    let matches_class_id = target_levels.contains(&class_id.to_string());
+                    let matches_level = class_level.as_ref().map_or(false, |lvl| target_levels.contains(lvl));
+
+                    if !matches_class_id && !matches_level {
+                        continue;
+                    }
                 }
             }
         }

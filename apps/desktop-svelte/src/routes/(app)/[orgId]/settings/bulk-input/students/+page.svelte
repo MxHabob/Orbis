@@ -5,6 +5,7 @@ paste from Excel, real-time validation, and submit via create_user_in_org + crea
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
+import { l } from "$lib/core/i18n";
 import { goto } from "$app/navigation";
 import { confirmStore } from "$lib/stores";
 import { onMount } from "svelte";
@@ -362,7 +363,7 @@ async function handleSubmit() {
           <SelectContent>
             <SelectItem value="">{m.common_bulk_class_per_row()}</SelectItem>
             {#each classes as cls}
-              <SelectItem value={cls.id}>{cls.name}</SelectItem>
+              <SelectItem value={cls.id}>{l(cls.name_ar, cls.name)}</SelectItem>
             {/each}
           </SelectContent>
         </Select>
