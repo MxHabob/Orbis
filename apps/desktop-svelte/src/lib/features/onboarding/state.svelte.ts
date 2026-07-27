@@ -672,110 +672,8 @@ class OnboardingState {
       const payload = this.buildPayload(orgId);
       const { commands } = await import("$lib/core/ipc");
 
-      // ── Step 1: Create Root Org Unit (if not exists) ────────────────
-      try {
-        const existingUnits = await commands.organization.listOrgUnits().catch(() => []);
-        const hasRoot = existingUnits && existingUnits.length > 0;
-        if (!hasRoot) {
-          await commands.organization.createOrgUnit({
-            name: payload.root_unit_name || this.profile.orgName,
-            name_ar: payload.root_unit_name_ar || this.profile.orgNameAr,
-            unit_type: "root",
-          });
-        }
-      } catch (e) {
-        console.warn("Org unit creation (may already exist):", e);
-      }
-
-      // ── Step 2: Create Academic Year + Periods ──────────────────────
-      for (const period of payload.periods) {
-        try {
-          await commands.calendar.createAcademicPeriod({
-            id: period.id,
-            parent_id: period.parent_id,
-            name: period.name,
-            name_ar: period.name_ar,
-            start_date: period.start_date,
-            end_date: period.end_date,
-            period_type: period.period_type,
-            weight: period.weight,
-            org_id: orgId,
-            is_current: period.parent_id === null, // root period = current year
-          });
-        } catch (e) {
-          console.warn(`Period "${period.name}" creation warning:`, e);
-        }
-      }
-
-      // ── Step 3: Create Rooms ────────────────────────────────────────
-      for (const room of payload.rooms) {
-        try {
-          await commands.scheduling.createRoom({
-            id: room.id,
-            name: room.name,
-            name_ar: room.name_ar,
-            capacity: room.capacity,
-            room_type: room.room_type,
-            building: room.building,
-            floor: room.floor,
-            org_id: orgId,
-          });
-        } catch (e) {
-          console.warn(`Room "${room.name}" creation warning:`, e);
-        }
-      }
-
-      // ── Step 4: Create Time Slots ───────────────────────────────────
-      for (const slot of payload.time_slots) {
-        try {
-          await commands.scheduling.createTimeSlot({
-            name: slot.name,
-            name_ar: slot.name_ar,
-            start_time: slot.start_time,
-            end_time: slot.end_time,
-            org_id: orgId,
-          });
-        } catch (e) {
-          console.warn(`Time slot "${slot.name}" creation warning:`, e);
-        }
-      }
-
-      // ── Step 5: Create Subjects ─────────────────────────────────────
-      for (const subj of payload.subjects) {
-        try {
-          await commands.academic.createSubject({
-            id: subj.id,
-            code: subj.code,
-            name: subj.name,
-            name_ar: subj.name_ar,
-            color: subj.color,
-            icon: subj.icon,
-            sort_order: subj.sort_order,
-            org_id: orgId,
-          });
-        } catch (e) {
-          console.warn(`Subject "${subj.name}" creation warning:`, e);
-        }
-      }
-
-      // ── Step 6: Create Classes ──────────────────────────────────────
-      for (const cls of payload.classes) {
-        try {
-          await commands.academic.createClass({
-            id: cls.id,
-            name: cls.name,
-            name_ar: cls.name_ar,
-            level: cls.level,
-            division: cls.division,
-            color: cls.color,
-            org_id: orgId,
-          });
-        } catch (e) {
-          console.warn(`Class "${cls.name}" creation warning:`, e);
-        }
-      }
-
-      // ── Step 7: Update Organization Settings ────────────────────────
+      // ── Step 1: Update Organization Base Currency, Locale, Timezone ──
+      const chosenCurrency = this.profile.currency || "SAR";
       const settingsObj = {
         registration_config: {
           institution_type: this.profile.institutionType,
@@ -793,20 +691,201 @@ class OnboardingState {
       const org = await commands.organization.getOrganization().catch(() => null);
       if (org) {
         const updateRequest = {
-          name: org.name,
+          name: this.profile.orgName || org.name,
           logo: org.logo || null,
           primary_color: org.primary_color,
-          currency: org.currency || this.profile.currency,
-          timezone: org.timezone || this.profile.timezone,
-          locale: org.locale || this.profile.locale,
+          currency: chosenCurrency, // Force user's selected base currency
+          timezone: this.profile.timezone || org.timezone,
+          locale: this.profile.locale || org.locale,
           date_format: org.date_format,
           hijri_enabled: org.hijri_enabled,
           settings: JSON.stringify(settingsObj),
         };
-        await commands.organization.updateOrganization(updateRequest).catch(e => console.warn("Update org settings warning:", e));
+        await commands.organization.updateOrganization(updateRequest).catch(e => console.warn("Update org warning:", e));
       }
 
-      // ── Step 8: Create Fee Templates ────────────────────────────────
+      // Register/Ensure Base Currency in Finance module
+      try {
+        const currencies = await commands.finance.listCurrencies().catch(() => []);
+        const exists = currencies && currencies.some((c: any) => c.code === chosenCurrency);
+        if (!exists) {
+          const symbol = chosenCurrency === "SAR" ? "ر.س" : chosenCurrency === "USD" ? "$" : chosenCurrency === "YER" ? "ر.ي" : chosenCurrency;
+          await commands.finance.createCurrency(
+            chosenCurrency,
+            chosenCurrency,
+            chosenCurrency,
+            symbol,
+            "after",
+            2,
+            1.0,
+            true, // isBase = true
+          ).catch(e => console.warn("Create currency warning:", e));
+        }
+      } catch (e) {
+        console.warn("Finance currency registration warning:", e);
+      }
+
+      // ── Step 2: Create Organizational Structure (Org Units) ──────────
+      let rootUnitId = "";
+      try {
+        const existingUnits = await commands.organization.listOrgUnits().catch(() => []);
+        const root = existingUnits && existingUnits.find((u: any) => u.unit_type === "root" || u.unitType === "root" || !u.parent_id);
+        if (root) {
+          rootUnitId = root.id;
+        } else {
+          const created = await commands.organization.createOrgUnit({
+            name: this.profile.rootUnitName || this.profile.orgName,
+            name_ar: this.profile.rootUnitNameAr || this.profile.orgNameAr,
+            unit_type: "root",
+          });
+          rootUnitId = created?.id || `unit-${orgId}`;
+        }
+      } catch (e) {
+        console.warn("Root org unit creation warning:", e);
+        rootUnitId = `unit-${orgId}`;
+      }
+
+      // Create Stage org units for enabled grade levels under Root Unit
+      const stageUnitMap: Record<string, string> = {};
+      for (const gl of this.academics.gradeLevels) {
+        if (!gl.enabled) continue;
+        try {
+          const stageUnit = await commands.organization.createOrgUnit({
+            name: gl.name,
+            name_ar: gl.name_ar,
+            parent_id: rootUnitId,
+            unit_type: "stage",
+            code: gl.level,
+          });
+          if (stageUnit?.id) {
+            stageUnitMap[gl.level] = stageUnit.id;
+          }
+        } catch (e) {
+          console.warn(`Stage unit for ${gl.level} warning:`, e);
+          stageUnitMap[gl.level] = rootUnitId;
+        }
+      }
+
+      // ── Step 3: Create Academic Year & Periods ────────────────────────
+      let rootPeriodId = "";
+      try {
+        const rootPeriod = await commands.calendar.createAcademicPeriod({
+          name: this.calendar.academicYearName,
+          name_ar: this.calendar.academicYearNameAr,
+          start_date: this.calendar.startDate,
+          end_date: this.calendar.endDate,
+          period_type: "year",
+        });
+        rootPeriodId = rootPeriod?.id || "";
+      } catch (e) {
+        console.warn("Root period creation warning:", e);
+      }
+
+      // Create child periods (Semesters / Quarters) under rootPeriodId
+      const createdPeriodsMap: Record<string, string> = {};
+      if (rootPeriodId) {
+        createdPeriodsMap["root"] = rootPeriodId;
+
+        // Process child periods from payload
+        for (const period of payload.periods.slice(1)) {
+          try {
+            let parentId = rootPeriodId;
+            if (period.parent_id && createdPeriodsMap[period.parent_id]) {
+              parentId = createdPeriodsMap[period.parent_id];
+            }
+
+            const created = await commands.calendar.createAcademicPeriod({
+              parent_id: parentId,
+              name: period.name,
+              name_ar: period.name_ar,
+              start_date: period.start_date,
+              end_date: period.end_date,
+              period_type: period.period_type,
+              weight: period.weight ? Math.round(Number(period.weight)) : undefined,
+            });
+            if (created?.id && period.id) {
+              createdPeriodsMap[period.id] = created.id;
+            }
+          } catch (e) {
+            console.warn(`Child period "${period.name}" creation warning:`, e);
+          }
+        }
+      }
+
+      const activePeriodId = rootPeriodId || `period-${new Date(this.calendar.startDate).getFullYear()}-${orgId}`;
+
+      // ── Step 4: Create Classes (الفصول) ───────────────────────────────
+      for (const gl of this.academics.gradeLevels) {
+        if (!gl.enabled) continue;
+        const targetOrgUnitId = stageUnitMap[gl.level] || rootUnitId;
+
+        for (const div of gl.divisions) {
+          try {
+            await commands.academic.createClass({
+              org_unit_id: targetOrgUnitId,
+              period_id: activePeriodId,
+              name: `${gl.name} - ${div}`,
+              name_ar: `${gl.name_ar} - الشعبة ${div}`,
+              grade_level: gl.level,
+              capacity: 30,
+              division: div,
+              color: gl.color,
+            });
+          } catch (e) {
+            console.warn(`Class "${gl.name} - ${div}" creation warning:`, e);
+          }
+        }
+      }
+
+      // ── Step 5: Create Time Slots (الحصص اليومية) ─────────────────────
+      for (let i = 0; i < this.academics.timeSlots.length; i++) {
+        const slot = this.academics.timeSlots[i];
+        const duration = calculateDurationMinutes(slot.start_time, slot.end_time);
+        try {
+          await commands.scheduling.createTimeSlot({
+            period_id: activePeriodId,
+            slot_number: i + 1,
+            name: slot.name,
+            name_ar: slot.name_ar,
+            start_time: slot.start_time,
+            end_time: slot.end_time,
+            duration_minutes: duration,
+          });
+        } catch (e) {
+          console.warn(`Time slot "${slot.name}" creation warning:`, e);
+        }
+      }
+
+      // ── Step 6: Create Rooms (القاعات الدراسية) ──────────────────────
+      for (const room of payload.rooms) {
+        try {
+          await commands.scheduling.createRoom({
+            name: room.name,
+            name_ar: room.name_ar,
+            capacity: room.capacity || 30,
+            room_type: room.room_type || "classroom",
+            building: room.building,
+            floor: room.floor,
+          });
+        } catch (e) {
+          console.warn(`Room "${room.name}" creation warning:`, e);
+        }
+      }
+
+      // ── Step 7: Create Subjects (المواد الدراسية) ─────────────────────
+      for (const subj of payload.subjects) {
+        try {
+          await commands.academic.createSubject({
+            code: subj.code,
+            name: subj.name,
+            name_ar: subj.name_ar,
+          });
+        } catch (e) {
+          console.warn(`Subject "${subj.name}" creation warning:`, e);
+        }
+      }
+
+      // ── Step 8: Create Fee Templates (الرسوم) ────────────────────────
       for (const gl of this.academics.gradeLevels) {
         if (!gl.enabled) continue;
         const amount = this.finance.registrationFees[gl.level] || 0;
@@ -829,10 +908,7 @@ class OnboardingState {
           try {
             await commands.finance.createFeeTemplate(req as any);
           } catch (feeErr) {
-            console.warn(
-              `Fee template for ${gl.level} already exists or skipped:`,
-              feeErr,
-            );
+            console.warn(`Fee template for ${gl.level} warning:`, feeErr);
           }
         }
       }
@@ -864,3 +940,12 @@ class OnboardingState {
 }
 
 export const onboardingState = new OnboardingState();
+
+function calculateDurationMinutes(startTime: string, endTime: string): number {
+  if (!startTime || !endTime) return 45;
+  const [h1, m1] = startTime.split(":").map(Number);
+  const [h2, m2] = endTime.split(":").map(Number);
+  const startMins = (h1 || 0) * 60 + (m1 || 0);
+  const endMins = (h2 || 0) * 60 + (m2 || 0);
+  return endMins > startMins ? endMins - startMins : 45;
+}
