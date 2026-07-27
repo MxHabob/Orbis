@@ -83,7 +83,7 @@ async function handleSave(e: Event) {
       settings: null,
     };
 
-    await commands.platform_policy.updateAutopilotConfig(payload);
+    await commands.platform_policy.updateAutopilotConfig(data.orgId, payload);
 
     toast.success(
       m.settings_general_save_success

@@ -1649,7 +1649,7 @@
   "onboarding_toast_fill_subject_fields": "onboarding_toast_fill_subject_fields en",
   "onboarding_toast_subject_added": "onboarding_toast_subject_added en",
   "onboarding_err_active_org": "onboarding_err_active_org en",
-  "onboarding_toast_success": "onboarding_toast_success en",
+  "onboarding_toast_success": "Institution setup initialized successfully!",
   "onboarding_err_unexpected": "onboarding_err_unexpected en",
   "onboarding_toast_error": "onboarding_toast_error en",
   "open": "open en",
