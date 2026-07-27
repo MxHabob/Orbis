@@ -8,10 +8,11 @@ export class ProfileInfoState {
   preventDuplicates = $state<Record<string, boolean>>({});
   requiredDocumentsList = $state<string[]>([]);
 
-  orgName = $state("Sanaa Model School");
-  orgNameAr = $state("مدرسة صنعاء النموذجية");
-  rootUnitName = $state("Sanaa Model School");
-  rootUnitNameAr = $state("مدرسة صنعاء النموذجية");
+  // Dynamic defaults — populated from DB after CLI init, not hardcoded
+  orgName = $state("");
+  orgNameAr = $state("");
+  rootUnitName = $state("");
+  rootUnitNameAr = $state("");
   timezone = $state(detectTimezone());
   locale = $state(detectLocale());
   currency = $state(detectCurrency(detectTimezone()));

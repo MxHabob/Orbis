@@ -218,6 +218,7 @@ class OnboardingState {
       const { commands } = await import("$lib/core/ipc");
       const org = await commands.organization.getMain().catch(() => null) || await commands.organization.getOrganization().catch(() => null);
       if (org) {
+        // Sync org profile from CLI-created data
         if (org.name) {
           this.profile.orgName = org.name;
           this.profile.rootUnitName = org.name;
@@ -229,10 +230,27 @@ class OnboardingState {
         if (org.timezone) this.profile.timezone = org.timezone;
         if (org.locale) this.profile.locale = org.locale;
         if (org.currency) this.profile.currency = org.currency;
+
+        // Read institution type from org settings (set by CLI blueprint)
+        if (org.settings) {
+          try {
+            const settings = typeof org.settings === 'string' ? JSON.parse(org.settings) : org.settings;
+            if (settings?.registration_config?.institution_type) {
+              this.selectInstitutionType(settings.registration_config.institution_type);
+            }
+          } catch { /* settings parsing is optional */ }
+        }
+
+        // Read subscription plan to detect institution type from CLI blueprint
+        if (org.subscription_plan && !this.profile.institutionType) {
+          // Blueprint type is stored as part of the org metadata
+        }
+
         await this.loadTemplates(orgId).catch(() => {});
         this.save();
       }
 
+      // Sync currency from finance module (CLI seeds currencies)
       const currencies = await commands.finance.listCurrencies().catch(() => []);
       if (currencies && currencies.length > 0) {
         const mainCurr = currencies.find((c: any) => c.isBase || c.is_base) || currencies[0];
@@ -531,7 +549,9 @@ class OnboardingState {
 
   // ظ¤?ظ¤? Build Final Payload ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?
   buildPayload(orgId: string): OnboardingPayload {
-    const periodPeriodId = `period-1447-${orgId}`;
+    // Use dynamic year-based ID instead of hardcoded Hijri 1447
+    const yearStart = new Date(this.calendar.startDate).getFullYear();
+    const periodPeriodId = `period-${yearStart}-${orgId}`;
     const startMs = new Date(this.calendar.startDate).getTime();
     const endMs = new Date(this.calendar.endDate).getTime();
     const totalDays = Math.ceil((endMs - startMs) / (1000 * 60 * 60 * 24));
@@ -631,18 +651,111 @@ class OnboardingState {
 
       const payload = this.buildPayload(orgId);
       const { commands } = await import("$lib/core/ipc");
-      
-      // Execute unified bootstrap RPC
-      await commands.organization.bootstrapOrganization({
-        org_name: this.profile.orgName,
-        org_name_ar: this.profile.orgNameAr,
-        currency: this.profile.currency,
-        org_type: this.profile.institutionType,
-      }).catch(e => console.warn("Bootstrap organization warning:", e));
 
-      // Also run platform setup for structural entities if available
-      await (commands as any).platform?.initializeSchoolSetup?.(payload).catch((e: any) => console.warn("Initialize school setup warning:", e));
+      // ── Step 1: Create Root Org Unit (if not exists) ────────────────
+      try {
+        const existingUnits = await commands.organization.listOrgUnits().catch(() => []);
+        const hasRoot = existingUnits && existingUnits.length > 0;
+        if (!hasRoot) {
+          await commands.organization.createOrgUnit({
+            name: payload.root_unit_name || this.profile.orgName,
+            name_ar: payload.root_unit_name_ar || this.profile.orgNameAr,
+            unit_type: "root",
+          });
+        }
+      } catch (e) {
+        console.warn("Org unit creation (may already exist):", e);
+      }
 
+      // ── Step 2: Create Academic Year + Periods ──────────────────────
+      for (const period of payload.periods) {
+        try {
+          await commands.calendar.createAcademicPeriod({
+            id: period.id,
+            parent_id: period.parent_id,
+            name: period.name,
+            name_ar: period.name_ar,
+            start_date: period.start_date,
+            end_date: period.end_date,
+            period_type: period.period_type,
+            weight: period.weight,
+            org_id: orgId,
+            is_current: period.parent_id === null, // root period = current year
+          });
+        } catch (e) {
+          console.warn(`Period "${period.name}" creation warning:`, e);
+        }
+      }
+
+      // ── Step 3: Create Rooms ────────────────────────────────────────
+      for (const room of payload.rooms) {
+        try {
+          await commands.scheduling.createRoom({
+            id: room.id,
+            name: room.name,
+            name_ar: room.name_ar,
+            capacity: room.capacity,
+            room_type: room.room_type,
+            building: room.building,
+            floor: room.floor,
+            org_id: orgId,
+          });
+        } catch (e) {
+          console.warn(`Room "${room.name}" creation warning:`, e);
+        }
+      }
+
+      // ── Step 4: Create Time Slots ───────────────────────────────────
+      for (const slot of payload.time_slots) {
+        try {
+          await commands.scheduling.createTimeSlot({
+            name: slot.name,
+            name_ar: slot.name_ar,
+            start_time: slot.start_time,
+            end_time: slot.end_time,
+            org_id: orgId,
+          });
+        } catch (e) {
+          console.warn(`Time slot "${slot.name}" creation warning:`, e);
+        }
+      }
+
+      // ── Step 5: Create Subjects ─────────────────────────────────────
+      for (const subj of payload.subjects) {
+        try {
+          await commands.academic.createSubject({
+            id: subj.id,
+            code: subj.code,
+            name: subj.name,
+            name_ar: subj.name_ar,
+            color: subj.color,
+            icon: subj.icon,
+            sort_order: subj.sort_order,
+            org_id: orgId,
+          });
+        } catch (e) {
+          console.warn(`Subject "${subj.name}" creation warning:`, e);
+        }
+      }
+
+      // ── Step 6: Create Classes ──────────────────────────────────────
+      for (const cls of payload.classes) {
+        try {
+          await commands.academic.createClass({
+            id: cls.id,
+            name: cls.name,
+            name_ar: cls.name_ar,
+            level: cls.level,
+            division: cls.division,
+            color: cls.color,
+            org_id: orgId,
+          });
+        } catch (e) {
+          console.warn(`Class "${cls.name}" creation warning:`, e);
+        }
+      }
+
+      // ── Step 7: Update Organization Settings ────────────────────────
       const settingsObj = {
         registration_config: {
           institution_type: this.profile.institutionType,
@@ -660,19 +773,20 @@ class OnboardingState {
       const org = await commands.organization.getOrganization().catch(() => null);
       if (org) {
         const updateRequest = {
-          name: org.name || this.profile.orgName,
+          name: org.name,
           logo: org.logo || null,
           primary_color: org.primary_color,
-          currency: this.profile.currency,
-          timezone: this.profile.timezone,
-          locale: this.profile.locale,
+          currency: org.currency || this.profile.currency,
+          timezone: org.timezone || this.profile.timezone,
+          locale: org.locale || this.profile.locale,
           date_format: org.date_format,
           hijri_enabled: org.hijri_enabled,
           settings: JSON.stringify(settingsObj),
         };
-        await commands.organization.updateOrganization(updateRequest).catch(e => console.warn("Update org warning:", e));
+        await commands.organization.updateOrganization(updateRequest).catch(e => console.warn("Update org settings warning:", e));
       }
 
+      // ── Step 8: Create Fee Templates ────────────────────────────────
       for (const gl of this.academics.gradeLevels) {
         if (!gl.enabled) continue;
         const amount = this.finance.registrationFees[gl.level] || 0;

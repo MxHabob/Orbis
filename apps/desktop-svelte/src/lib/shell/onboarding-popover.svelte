@@ -16,26 +16,29 @@ import { goto } from "$app/navigation";
 import { localizeHref } from "$lib/paraglide/runtime";
 
 function handleChecklistItemClick(stepIndex: number) {
-  onboardingState.goToStep(stepIndex + 0);
+  // tasksList index 0 = wizard step 1 (Institution Type), so offset by +1
+  onboardingState.goToStep(stepIndex + 1);
   goto(localizeHref("/onboarding"));
 }
 
-// Onboarding tasks variables
+// Onboarding tasks variables — popover shows 8 tasks (steps 1-8, excluding Welcome and Launch)
 const totalTasks = 8;
 const completedTasks = $derived(
-  authStore.isSetupComplete ? 8 : onboardingState.tasksCompletedCount,
+  authStore.isSetupComplete ? totalTasks : onboardingState.completedSteps.slice(0, 8).filter(Boolean).length,
 );
 const remainingTasks = $derived(totalTasks - completedTasks);
-const progressPercent = $derived((completedTasks / totalTasks) * 100);
+const progressPercent = $derived(totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0);
 
 const activeIndex = $derived(
   authStore.isSetupComplete
     ? -1
     : onboardingState.activeStep > 0
-      ? onboardingState.activeStep - 1
-      : onboardingState.completedSteps.findIndex((step) => !step),
+      ? onboardingState.activeStep - 1  // map wizard step to popover task index
+      : onboardingState.completedSteps.slice(0, 8).findIndex((step) => !step),
 );
 
+// Tasks list must match wizard steps (indices 0..totalSteps-1)
+// Step 0 = Welcome (not shown in popover, only steps 1-9 map to tasks)
 const tasksList = $derived([
   {
     label: m.common_registration_inst_type(),
@@ -151,10 +154,10 @@ const tasksList = $derived([
     side="right"
     align="end"
     sideOffset={12}
-    class="w-[360px] bg-card border border-border shadow-2xl rounded-xl p-0 overflow-hidden z-50 flex flex-col font-sans text-start onboarding-popover-panel relative text-card-foreground"
+    class="w-90 bg-card border border-border shadow-2xl rounded-xl p-0 overflow-hidden z-50 flex flex-col font-sans text-start onboarding-popover-panel relative text-card-foreground"
   >
     <!-- Pointer Bezel/Tail pointing to the sidebar trigger (positions on left in LTR, right in RTL) -->
-    <div class="absolute bottom-[20px] start-[-6px] w-3 h-3 bg-card border-l border-b border-border rotate-45 z-20 rtl:start-auto rtl:end-[-6px] rtl:border-l-0 rtl:border-b-0 rtl:border-r rtl:border-t"></div>
+    <div class="absolute bottom-5 -inset-s-1.5 w-3 h-3 bg-card border-l border-b border-border rotate-45 z-20 rtl:start-auto rtl:end-[-6px] rtl:border-l-0 rtl:border-b-0 rtl:border-r rtl:border-t"></div>
 
     <!-- Header Section -->
     <div class="flex items-center gap-3.5 p-4 border-b border-border bg-card z-10 select-none">

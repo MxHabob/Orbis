@@ -1,12 +1,14 @@
 <!--
-  Step 0 / Step 1: Institution Type Selection
-  Initial selection that populates defaults for the wizard.
+  Step 1: Institution Type Selection
+  If CLI already set the blueprint, this shows as pre-selected (read-only info).
+  User can still change it if needed — it will re-populate defaults.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Card } from "@orbis/ui-svelte/card";
 import { Label } from "@orbis/ui-svelte/label";
 import { Input } from "@orbis/ui-svelte/input";
+import { Badge } from "@orbis/ui-svelte/badge";
 
 import { onboardingState } from "../state.svelte";
 import { INSTITUTION_PROFILES } from "../templates";
@@ -17,6 +19,7 @@ import {
   Presentation,
   Sliders,
   CheckCircle2,
+  Info,
 } from "lucide-svelte";
 
 const profiles = [
@@ -27,12 +30,27 @@ const profiles = [
   { id: "custom", icon: Sliders },
 ];
 
+// Check if institution type was pre-configured by CLI
+let isPreConfigured = $derived(
+  onboardingState.profile.orgName !== "" && onboardingState.profile.institutionType !== ""
+);
+
 function selectProfile(type: string) {
   onboardingState.selectInstitutionType(type);
 }
 </script>
 
 <div class="w-full space-y-6">
+
+  <!-- Pre-configured notice from CLI -->
+  {#if isPreConfigured}
+    <div class="flex items-center gap-3 p-3 rounded-xl border border-primary/20 bg-primary/5 text-primary text-xs font-sans">
+      <Info size={16} class="shrink-0" />
+      <span>
+        {m.common_onboarding_preconfigured_notice?.() ?? "This institution type was configured during system initialization. You can change it if needed."}
+      </span>
+    </div>
+  {/if}
 
   <!-- Profiles Grid -->
   <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
