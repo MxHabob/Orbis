@@ -133,7 +133,7 @@ function handleClose() {
 async function openStandaloneWindow() {
   if (isDesktopApp()) {
     try {
-      await commands.agent.openStandaloneWindow(currentOrgId);
+      await commands.ai.agentOpenStandalone();
       uiStore.setAskOrbis(false);
     } catch (e: unknown) {
       toast.error(m.agent_toast_open_standalone_failed());
@@ -149,10 +149,7 @@ async function openStandaloneWindow() {
 
 async function handleNewChat(agentType: string = "default") {
   try {
-    const newSession = await commands.agent.createSession(
-      currentOrgId,
-      agentType,
-    );
+    const newSession = await commands.ai.agentCreateSession(agentType);
     selectedSessionId = newSession.id;
     messages = [];
   } catch (e: unknown) {
@@ -176,13 +173,11 @@ async function submitMessage(queryText?: string) {
   scrollToBottom();
 
   try {
-    const activeId = effectiveSessionId;
+    let activeId = effectiveSessionId;
     if (!activeId) {
-      const newSession = await commands.agent.createSession(
-        currentOrgId,
-        "greeting",
-      );
+      const newSession = await commands.ai.agentCreateSession("greeting");
       selectedSessionId = newSession.id;
+      activeId = newSession.id;
     }
 
     const assistantMessageId = Math.random().toString();
@@ -191,9 +186,8 @@ async function submitMessage(queryText?: string) {
       { id: assistantMessageId, role: "assistant", content: "" },
     ];
 
-    const response = await commands.agent.query(
-      currentOrgId,
-      effectiveSessionId || "",
+    const response = await commands.ai.agentQuery(
+      activeId,
       text,
       aiContext.context || undefined,
       (chunk) => {

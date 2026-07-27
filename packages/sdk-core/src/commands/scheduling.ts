@@ -2,25 +2,25 @@
 import type * as Types from '../types/index.js';
 
 export interface SchedulingCommands {
-  listLessonsByClass(periodId: string, classId: string): Promise<any>;
-  listLessonsByTeacher(periodId: string, teacherId: string): Promise<any>;
+  listLessonsByClass(periodId: string, classId: string): Promise<any[]>;
+  listLessonsByTeacher(periodId: string, teacherId: string): Promise<any[]>;
   getLesson(lessonId: string): Promise<any>;
   createLesson(data: any): Promise<any>;
   updateLesson(lessonId: string, data: any): Promise<any>;
-  deleteLesson(lessonId: string): Promise<any>;
-  checkConflicts(periodId: string, teacherId: string, timeSlotId: string, dayOfWeek: number, roomId: string | null): Promise<any>;
-  listRooms(): Promise<any>;
+  deleteLesson(lessonId: string): Promise<void>;
+  checkConflicts(periodId: string, teacherId: string, timeSlotId: string, dayOfWeek: number, roomId: string | null): Promise<any[]>;
+  listRooms(): Promise<any[]>;
   createRoom(data: any): Promise<any>;
   updateRoom(roomId: string, data: any): Promise<any>;
-  deleteRoom(roomId: string): Promise<any>;
+  deleteRoom(roomId: string): Promise<void>;
   start(periodId: string): Promise<any>;
   getJob(jobId: string): Promise<any>;
-  listJobs(periodId: string): Promise<any>;
+  listJobs(periodId: string): Promise<any[]>;
   cancel(jobId: string): Promise<any>;
-  deleteJob(jobId: string): Promise<any>;
+  deleteJob(jobId: string): Promise<void>;
   apply(jobId: string): Promise<any>;
-  listTimeSlots(): Promise<any>;
+  listTimeSlots(): Promise<any[]>;
   createTimeSlot(data: any): Promise<any>;
   updateTimeSlot(slotId: string, data: any): Promise<any>;
-  deleteTimeSlot(slotId: string): Promise<any>;
+  deleteTimeSlot(slotId: string): Promise<void>;
 }

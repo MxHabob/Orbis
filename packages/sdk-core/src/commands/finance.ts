@@ -2,33 +2,33 @@
 import type * as Types from '../types/index.js';
 
 export interface FinanceCommands {
-  listCurrencies(): Promise<any>;
+  listCurrencies(): Promise<any[]>;
   getCurrency(code: string): Promise<any>;
   createCurrency(code: string, name: string, nameAr: string | null, symbol: string, symbolPosition: string, decimalPlaces: number, exchangeRate: number, isBase: boolean): Promise<any>;
   updateCurrency(code: string, exchangeRate: number | null, isActive: boolean | null): Promise<any>;
-  deleteCurrency(code: string): Promise<any>;
-  listDiscounts(): Promise<any>;
-  listActive(): Promise<any>;
+  deleteCurrency(code: string): Promise<void>;
+  listDiscounts(): Promise<any[]>;
+  listActive(): Promise<any[]>;
   createDiscount(cmd: any): Promise<any>;
   updateDiscount(templateId: string, name: string | null, value: number | null, isActive: boolean | null): Promise<any>;
-  deleteDiscount(templateId: string): Promise<any>;
-  listFeeTemplates(): Promise<any>;
+  deleteDiscount(templateId: string): Promise<void>;
+  listFeeTemplates(): Promise<any[]>;
   createFeeTemplate(cmd: any): Promise<any>;
   updateFeeTemplate(templateId: string, cmd: any): Promise<any>;
-  listJournalEntries(limit: number | null, offset: number | null): Promise<any>;
+  listJournalEntries(limit: number | null, offset: number | null): Promise<any[]>;
   createJournalEntry(debitAccountId: string, creditAccountId: string, amount: number, currency: string, description: string, descriptionAr: string | null, accountingDate: string, fiscalPeriodId: string, sourceType: string, sourceId: string | null): Promise<any>;
-  listAccounts(): Promise<any>;
-  listTransactionAccounts(): Promise<any>;
+  listAccounts(): Promise<any[]>;
+  listTransactionAccounts(): Promise<any[]>;
   createAccount(cmd: any): Promise<any>;
   getOrCreateSubAccount(entityType: string, entityId: string, entityName: string | null, entityNameAr: string | null): Promise<any>;
   createJournalEntry2(cmd: any): Promise<any>;
-  getJournalEntries(limit: number | null, offset: number | null): Promise<any>;
+  getJournalEntries(limit: number | null, offset: number | null): Promise<any[]>;
   getAccountStatement(accountId: string, startDate: string, endDate: string): Promise<any>;
-  listPayments(limit: number | null, offset: number | null): Promise<any>;
+  listPayments(limit: number | null, offset: number | null): Promise<any[]>;
   record(cmd: any): Promise<any>;
-  listStudentFeesByEnrollment(enrollmentId: string): Promise<any>;
-  listStudentFeesByOrg(): Promise<any>;
+  listStudentFeesByEnrollment(enrollmentId: string): Promise<any[]>;
+  listStudentFeesByOrg(): Promise<any[]>;
   assign(cmd: any): Promise<any>;
-  listTreasuries(): Promise<any>;
+  listTreasuries(): Promise<any[]>;
   createTreasury(cmd: any): Promise<any>;
 }

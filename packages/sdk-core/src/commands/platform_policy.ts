@@ -3,5 +3,5 @@ import type * as Types from '../types/index.js';
 
 export interface Platform_policyCommands {
   getAutopilotConfig(orgId: string): Promise<any>;
-  updateAutopilotConfig(orgId: string, config: any): Promise<any>;
+  updateAutopilotConfig(orgId: string, config: any): Promise<void>;
 }

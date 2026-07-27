@@ -375,7 +375,7 @@ function generateTsInterfaces(ops: OpFunction[], knownTypes: Set<string>) {
       
       for (const op of domainOps) {
         const argsStr = op.args.map(a => `${a.name}: ${formatTsType(a.tsType, knownTypes)}`).join(", ");
-        const retType = formatTsType(op.rustReturnType, knownTypes);
+        const retType = formatTsType(op.tsReturnType, knownTypes);
         content += `  ${op.tsFuncName}(${argsStr}): Promise<${retType}>;\n`;
       }
 

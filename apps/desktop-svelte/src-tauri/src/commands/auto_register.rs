@@ -226,7 +226,6 @@ pub fn generate_handlers<R: tauri::Runtime>() -> impl Fn(tauri::ipc::Invoke<R>) 
         crate::commands::ai::custom::agent_reject_action,
         crate::commands::ai::custom::agent_create_session,
         crate::commands::ai::custom::agent_query,
-        crate::commands::ai::custom::agent_open_standalone,
         crate::commands::ai::custom::ai_get_autopilot_config,
         crate::commands::ai::custom::ai_save_autopilot_config,
     ]

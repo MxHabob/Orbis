@@ -36,8 +36,7 @@ fn show_window<R: tauri::Runtime>(window: tauri::WebviewWindow<R>) -> Result<(),
         .map_err(|e| format!("Failed to set focus: {}", e))?;
     Ok(())
 }
-#[tauri::command]
-async fn open_agent_window<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<(), String> {
+pub(crate) async fn do_open_agent_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Result<(), String> {
     if let Some(existing) = app.get_webview_window("orbis-agent") {
         existing.show().map_err(|e| e.to_string())?;
         existing.set_focus().map_err(|e| e.to_string())?;
@@ -45,7 +44,7 @@ async fn open_agent_window<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Resul
     }
     let main_window = app.get_webview_window("main");
     let mut builder = WebviewWindowBuilder::new(
-        &app,
+        app,
         "orbis-agent",
         WebviewUrl::App("agent".into()),
     )
@@ -59,6 +58,11 @@ async fn open_agent_window<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Resul
     }
     builder.build().map_err(|e| e.to_string())?;
     Ok(())
+}
+
+#[tauri::command]
+async fn open_agent_window<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<(), String> {
+    do_open_agent_window(&app).await
 }
 #[tauri::command]
 async fn check_for_updates<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<(), String> {

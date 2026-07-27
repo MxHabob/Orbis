@@ -140,10 +140,12 @@ pub async fn agent_query(
 }
 
 #[tauri::command]
-pub async fn agent_open_standalone(
-    _state: State<'_, Arc<AppState>>,
+pub async fn agent_open_standalone<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
 ) -> CmdResult<()> {
-    // Logic to open a new tauri window would go here
+    crate::do_open_agent_window(&app)
+        .await
+        .map_err(CommandError::new)?;
     Ok(())
 }
 

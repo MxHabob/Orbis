@@ -2,16 +2,16 @@
 import type * as Types from '../types/index.js';
 
 export interface CalendarCommands {
-  listAcademicPeriods(): Promise<any>;
+  listAcademicPeriods(): Promise<any[]>;
   listHierarchy(): Promise<any>;
-  listAcademicPeriodsByYear(periodId: string): Promise<any>;
+  listAcademicPeriodsByYear(periodId: string): Promise<any[]>;
   getAcademicPeriod(periodId: string): Promise<any>;
-  getCurrent(): Promise<any>;
+  getCurrent(): Promise<any | null>;
   createAcademicPeriod(data: any): Promise<any>;
   lock(periodId: string): Promise<any>;
   unlock(periodId: string): Promise<any>;
   toggleEnrollment(periodId: string, open: boolean): Promise<any>;
   toggleGradeEntry(periodId: string, open: boolean): Promise<any>;
   updateAcademicPeriod(periodId: string, data: any): Promise<any>;
-  deleteAcademicPeriod(periodId: string): Promise<any>;
+  deleteAcademicPeriod(periodId: string): Promise<void>;
 }

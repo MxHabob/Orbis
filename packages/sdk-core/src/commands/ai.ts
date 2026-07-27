@@ -4,14 +4,13 @@ import type * as Types from '../types/index.js';
 export interface AiCommands {
   autopilotGetTasks(): Promise<any>;
   autopilotGetDiagnostics(): Promise<any>;
-  autopilotRunTick(): Promise<any>;
+  autopilotRunTick(): Promise<void>;
   agentGetSessions(): Promise<any>;
   agentGetSessionLogs(sessionId: string): Promise<any>;
-  agentApproveAction(actionLogId: string, approvedBy: string): Promise<any>;
-  agentRejectAction(actionLogId: string, rejectedBy: string, reason: string): Promise<any>;
+  agentApproveAction(actionLogId: string, approvedBy: string): Promise<void>;
+  agentRejectAction(actionLogId: string, rejectedBy: string, reason: string): Promise<void>;
   agentCreateSession(sessionType: string): Promise<any>;
-  agentQuery(sessionId: string, text: string, context: any | null, onChunk: any): Promise<any>;
-  agentOpenStandalone(): Promise<any>;
+  agentQuery(sessionId: string, text: string, context: any | null, onChunk: any): Promise<string>;
   aiGetAutopilotConfig(orgId: string): Promise<any>;
-  aiSaveAutopilotConfig(orgId: string, config: any): Promise<any>;
+  aiSaveAutopilotConfig(orgId: string, config: any): Promise<void>;
 }
