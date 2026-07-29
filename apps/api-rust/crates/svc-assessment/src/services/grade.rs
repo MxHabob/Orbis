@@ -1,4 +1,8 @@
 //! Grade service — student grade submission, bulk entry, semester compilation, and report cards.
+//!
+//! All grade calculations go through [`AssessmentEngine`] which loads
+//! CalculationPolicy + GradeScale for the period, falling back to the
+//! organisation's `academic_policies` defaults when none are configured.
 
 use std::sync::Arc;
 use uuid::Uuid;
@@ -10,6 +14,7 @@ use shared_kernel::errors::AppError;
 use crate::entities::grade;
 use crate::params::GradeParams;
 use crate::repository::{AssessmentCommandRepo, AssessmentQueryRepo};
+use crate::ops::assessment_engine::AssessmentEngine;
 
 use svc_academic::entities::enrollment;
 use svc_calendar::entities::academic_period;
@@ -185,26 +190,11 @@ impl GradeService {
         Self { cmd, query }
     }
 
-    pub fn score_to_grade_letter(percentage: f64) -> String {
-        match percentage as i32 {
-            90..=100 => "ممتاز".to_string(),
-            80..=89  => "جيد جداً".to_string(),
-            70..=79  => "جيد".to_string(),
-            60..=69  => "مقبول".to_string(),
-            50..=59  => "ضعيف".to_string(),
-            _        => "راسب".to_string(),
-        }
-    }
-
-    pub fn score_to_grade_points(percentage: f64) -> f64 {
-        match percentage as i32 {
-            90..=100 => 4.0,
-            80..=89  => 3.5,
-            70..=79  => 3.0,
-            60..=69  => 2.5,
-            50..=59  => 2.0,
-            _        => 0.0,
-        }
+    /// Build an [`AssessmentEngine`] for the given org + period.
+    /// This loads CalculationPolicy + GradeScale from the DB,
+    /// falling back to org-level `academic_policies` defaults.
+    async fn engine_for(&self, org_id: &str, period_id: &str) -> Result<AssessmentEngine, AppError> {
+        AssessmentEngine::for_period(&self.query.db, org_id, period_id).await
     }
 
     pub async fn check_period_open_for_grading(&self, period_id: &str) -> Result<(), AppError> {
@@ -253,9 +243,8 @@ impl GradeService {
             return Err(AppError::validation(format!("Score must be between 0 and {}", req.max_score)));
         }
 
-        let percentage = (req.score / req.max_score) * 100.0;
-        let grade_letter = Self::score_to_grade_letter(percentage);
-        let grade_points = Self::score_to_grade_points(percentage);
+        let engine = self.engine_for(org_id, &enrollment.period_id).await?;
+        let mapped = engine.compute_and_map(req.score, req.max_score)?;
 
         let g = grade::Model {
             id: Uuid::new_v4().to_string(),
@@ -269,8 +258,8 @@ impl GradeService {
             score: req.score,
             max_score: req.max_score,
             weight: req.weight.unwrap_or(1.0),
-            grade_letter: Some(grade_letter),
-            grade_points: Some(grade_points),
+            grade_letter: Some(mapped.grade_letter),
+            grade_points: mapped.grade_points,
             exam_type: req.exam_type,
             semester: req.semester,
             notes: req.notes,
@@ -307,6 +296,9 @@ impl GradeService {
     ) -> Result<BulkSubjectGradeResult, AppError> {
         self.check_period_open_for_grading(&req.period_id).await?;
 
+        // Build engine once for the whole batch (same period)
+        let engine = self.engine_for(org_id, &req.period_id).await?;
+
         let mut result = BulkSubjectGradeResult {
             created: 0,
             updated: 0,
@@ -328,19 +320,22 @@ impl GradeService {
                 None
             };
 
-            let percentage = (student.score / req.max_score) * 100.0;
-            let grade_letter = Self::score_to_grade_letter(percentage);
-            let grade_points = Self::score_to_grade_points(percentage);
+            let mapped = match engine.compute_and_map(student.score, req.max_score) {
+                Ok(m) => m,
+                Err(e) => {
+                    result.failed += 1;
+                    result.errors.push(format!("Student {}: {}", student.enrollment_id, e));
+                    continue;
+                }
+            };
 
             match existing {
                 Some(existing_grade) => {
-                    
-
                     let mut active: grade::ActiveModel = existing_grade.into();
                     active.score = Set(student.score);
                     active.max_score = Set(req.max_score);
-                    active.grade_letter = Set(Some(grade_letter));
-                    active.grade_points = Set(Some(grade_points));
+                    active.grade_letter = Set(Some(mapped.grade_letter));
+                    active.grade_points = Set(mapped.grade_points);
                     active.notes = Set(student.notes.clone());
                     active.updated_at = Set(Utc::now().to_rfc3339());
 
@@ -371,8 +366,8 @@ impl GradeService {
                         score: student.score,
                         max_score: req.max_score,
                         weight: req.weight.unwrap_or(1.0),
-                        grade_letter: Some(Self::score_to_grade_letter((student.score / req.max_score) * 100.0)),
-                        grade_points: Some(Self::score_to_grade_points((student.score / req.max_score) * 100.0)),
+                        grade_letter: Some(mapped.grade_letter.clone()),
+                        grade_points: mapped.grade_points,
                         exam_type: req.exam_type.clone(),
                         semester: req.semester.clone(),
                         notes: student.notes.clone(),
@@ -407,7 +402,7 @@ impl GradeService {
     pub async fn update_grade(
         &self,
         id: &str,
-        
+        org_id: &str,
         req: UpdateGradeRequest,
     ) -> Result<grade::Model, AppError> {
         if req.score < 0.0 || req.score > req.max_score {
@@ -418,17 +413,15 @@ impl GradeService {
             .ok_or_else(|| AppError::not_found("grade", id))?;
 
         self.check_period_open_for_grading(&existing.period_id).await?;
-        
 
-        let percentage = (req.score / req.max_score) * 100.0;
-        let grade_letter = Self::score_to_grade_letter(percentage);
-        let grade_points = Self::score_to_grade_points(percentage);
+        let engine = self.engine_for(org_id, &existing.period_id).await?;
+        let mapped = engine.compute_and_map(req.score, req.max_score)?;
 
         let mut active: grade::ActiveModel = existing.into();
         active.score = Set(req.score);
         active.max_score = Set(req.max_score);
-        active.grade_letter = Set(Some(grade_letter));
-        active.grade_points = Set(Some(grade_points));
+        active.grade_letter = Set(Some(mapped.grade_letter));
+        active.grade_points = Set(mapped.grade_points);
         active.notes = Set(req.notes);
         active.updated_at = Set(Utc::now().to_rfc3339());
 
@@ -447,21 +440,18 @@ impl GradeService {
 
         self.check_period_open_for_grading(&req.period_id).await?;
 
-        let percentage = (req.score / req.max_score) * 100.0;
-        let grade_letter = Self::score_to_grade_letter(percentage);
-        let grade_points = Self::score_to_grade_points(percentage);
+        let engine = self.engine_for(org_id, &req.period_id).await?;
+        let mapped = engine.compute_and_map(req.score, req.max_score)?;
 
         let existing = self.query.find_grade_by_enrollment_assessment(&req.enrollment_id, &req.assessment_id).await?;
 
         match existing {
             Some(g) => {
-                
-
                 let mut active: grade::ActiveModel = g.into();
                 active.score = Set(req.score);
                 active.max_score = Set(req.max_score);
-                active.grade_letter = Set(Some(grade_letter));
-                active.grade_points = Set(Some(grade_points));
+                active.grade_letter = Set(Some(mapped.grade_letter));
+                active.grade_points = Set(mapped.grade_points);
                 active.updated_at = Set(Utc::now().to_rfc3339());
 
                 let updated = self.cmd.update_grade(active).await?;
@@ -531,6 +521,7 @@ impl GradeService {
 
     pub async fn get_report_card(
         &self,
+        org_id: &str,
         enrollment_id: &str,
         period_id: &str
     ) -> Result<GradeReportCard, AppError> {
@@ -549,7 +540,9 @@ impl GradeService {
             .await?
             .ok_or_else(|| AppError::not_found("academic_period", period_id))?;
 
-        let passing_grade = 50.0;
+        // Use the org-level passing grade (from academic_policies) instead of hardcoded 50
+        let passing_grade = AssessmentEngine::get_org_passing_grade(&self.query.db, org_id).await;
+        let engine = self.engine_for(org_id, period_id).await?;
 
         use sea_orm::{QueryFilter, ColumnTrait};
         let grades = grade::Entity::find()
@@ -576,9 +569,14 @@ impl GradeService {
                 .sum();
             let percentage = if sw > 0.0 { (weighted_sum / sw) * 100.0 } else { 0.0 };
 
-            let grade_letter = Self::score_to_grade_letter(percentage);
-            let grade_points = Self::score_to_grade_points(percentage);
-            let passed = percentage >= passing_grade;
+            let mapped = engine.map_score(percentage).unwrap_or_else(|_| crate::ops::assessment_engine::AssessmentResult {
+                grade_letter: "N/A".to_string(),
+                grade_points: Some(0.0),
+                is_passing: false,
+            });
+
+            let passed = mapped.is_passing;
+            let grade_points = mapped.grade_points.unwrap_or(0.0);
 
             if passed { passed_subjects += 1; } else { failed_subjects += 1; }
 
@@ -591,7 +589,7 @@ impl GradeService {
                 final_score: if sw > 0.0 { (weighted_sum / sw) * 100.0 } else { 0.0 },
                 max_score: 100.0,
                 percentage,
-                grade_letter,
+                grade_letter: mapped.grade_letter,
                 grade_points,
                 passed,
             });
@@ -604,7 +602,11 @@ impl GradeService {
             0.0
         };
 
-        let overall_letter = Self::score_to_grade_letter(overall_percentage);
+        let overall_mapped = engine.map_score(overall_percentage).unwrap_or_else(|_| crate::ops::assessment_engine::AssessmentResult {
+            grade_letter: "N/A".to_string(),
+            grade_points: Some(0.0),
+            is_passing: false,
+        });
         subjects.sort_by(|a, b| a.subject_name.cmp(&b.subject_name));
 
         Ok(GradeReportCard {
@@ -615,7 +617,7 @@ impl GradeService {
             subjects,
             overall_percentage: (overall_percentage * 100.0).round() / 100.0,
             overall_gpa: (overall_gpa * 100.0).round() / 100.0,
-            overall_letter,
+            overall_letter: overall_mapped.grade_letter,
             total_subjects: subject_map.len(),
             passed_subjects,
             failed_subjects,
@@ -624,6 +626,7 @@ impl GradeService {
 
     pub async fn get_analytics(
         &self,
+        org_id: &str,
         period_id: &str,
         class_subject_id: &str,
     ) -> Result<GradeAnalytics, AppError> {
@@ -654,6 +657,9 @@ impl GradeService {
             });
         }
 
+        let engine = self.engine_for(org_id, period_id).await?;
+        let passing_grade = AssessmentEngine::get_org_passing_grade(&self.query.db, org_id).await;
+
         let mut percentages: Vec<f64> = grades.iter()
             .map(|g| (g.score / g.max_score) * 100.0)
             .collect();
@@ -672,10 +678,11 @@ impl GradeService {
         let min = percentages.first().copied().unwrap_or(0.0);
         let max = percentages.last().copied().unwrap_or(0.0);
 
-        let pass_count = percentages.iter().filter(|&&p| p >= 50.0).count();
+        let pass_count = percentages.iter().filter(|&&p| p >= passing_grade).count();
         let fail_count = count - pass_count;
         let pass_rate = (pass_count as f64 / count as f64) * 100.0;
 
+        // Build distribution using the engine's GradeMapper
         let mut dist = GradeDistribution {
             excellent: 0,
             very_good: 0,
@@ -685,13 +692,19 @@ impl GradeService {
             fail: 0,
         };
         for &pct in &percentages {
-            match pct as i32 {
-                90..=100 => dist.excellent += 1,
-                80..=89  => dist.very_good += 1,
-                70..=79  => dist.good += 1,
-                60..=69  => dist.acceptable += 1,
-                50..=59  => dist.weak += 1,
-                _        => dist.fail += 1,
+            if let Ok(mapped) = engine.map_score(pct) {
+                // Map the label to distribution buckets
+                let label = mapped.grade_letter.as_str();
+                match label {
+                    "ممتاز" | "A+" | "A" => dist.excellent += 1,
+                    "جيد جداً" | "B+" | "B" => dist.very_good += 1,
+                    "جيد" | "C+" | "C" => dist.good += 1,
+                    "مقبول" | "D+" | "D" => dist.acceptable += 1,
+                    "ضعيف" => dist.weak += 1,
+                    _ => dist.fail += 1,
+                }
+            } else {
+                dist.fail += 1;
             }
         }
 
@@ -709,10 +722,13 @@ impl GradeService {
 
     pub async fn get_grade_matrix(
         &self,
+        org_id: &str,
         period_id: &str,
         class_subject_id: &str,
     ) -> Result<GradeMatrixResponse, AppError> {
         use sea_orm::{QueryFilter, ColumnTrait, EntityTrait};
+
+        let engine = self.engine_for(org_id, period_id).await?;
 
         let class_subject = svc_academic::entities::class_subject::Entity::find_by_id(class_subject_id.to_string())
             .one(&self.query.db)
@@ -769,7 +785,9 @@ impl GradeService {
             }
 
             let percentage = if max_total > 0.0 { (total / max_total) * 100.0 } else { 0.0 };
-            let grade_letter = Self::score_to_grade_letter(percentage);
+            let grade_letter = engine.map_score(percentage)
+                .map(|m| m.grade_letter)
+                .unwrap_or_else(|_| "N/A".to_string());
 
             students.push(StudentGradeRow {
                 enrollment_id: enrollment.id,

@@ -14,6 +14,7 @@ use shared_kernel::errors::AppError;
 use shared_kernel::traits::{AuditEntry, Permission};
 
 use crate::entities::grade;
+use crate::ops::assessment_engine::AssessmentEngine;
 use crate::services::grade::{
     UpdateGradeRequest, BulkSubjectGradeEntry, BulkSubjectGradeResult,
     UpsertCellRequest, UpsertCellResult, GradeReportCard, GradeAnalytics, GradeMatrixResponse,
@@ -32,6 +33,80 @@ async fn check_period_open(ctx: &ServiceContext, period_id: &str) -> Result<(), 
     verdict.enforce()
 }
 
+/// Attempt to enqueue a snapshot generation job after a grade is saved.
+/// If no CalculationPolicy or GradeScale exists yet, this is a no-op (best effort).
+async fn try_enqueue_snapshot(
+    ctx: &ServiceContext,
+    grade: &grade::Model,
+) {
+    use sea_orm::{QueryFilter, ColumnTrait};
+
+    // Find the student_id from the enrollment
+    let enrollment = svc_academic::entities::enrollment::Entity::find_by_id(grade.enrollment_id.clone())
+        .one(&ctx.db)
+        .await;
+    let student_id = match enrollment {
+        Ok(Some(e)) => e.student_id,
+        _ => return, // no enrollment found — skip
+    };
+
+    // Find calculation policy for this period
+    let policy = crate::entities::calculation_policy::Entity::find()
+        .filter(crate::entities::calculation_policy::Column::OrgId.eq(&ctx.org_id))
+        .filter(crate::entities::calculation_policy::Column::TargetPeriodId.eq(&grade.period_id))
+        .one(&ctx.db)
+        .await;
+    let policy = match policy {
+        Ok(Some(p)) => p,
+        _ => return, // no policy configured yet — skip snapshot
+    };
+
+    // Find grade scale for this org
+    let scale = crate::entities::grade_scale::Entity::find()
+        .filter(crate::entities::grade_scale::Column::OrgId.eq(&ctx.org_id))
+        .one(&ctx.db)
+        .await;
+    let scale = match scale {
+        Ok(Some(s)) => s,
+        _ => return, // no scale configured yet — skip snapshot
+    };
+
+    // Build raw_scores from all grades for this enrollment + class_subject + period
+    let class_subject_id = match &grade.class_subject_id {
+        Some(id) => id.clone(),
+        None => return, // no class_subject_id — can't snapshot
+    };
+
+    let all_grades = grade::Entity::find()
+        .filter(grade::Column::EnrollmentId.eq(&grade.enrollment_id))
+        .filter(grade::Column::PeriodId.eq(&grade.period_id))
+        .filter(grade::Column::ClassSubjectId.eq(&class_subject_id))
+        .all(&ctx.db)
+        .await;
+    let all_grades = match all_grades {
+        Ok(g) => g,
+        _ => return,
+    };
+
+    let mut raw_scores = std::collections::HashMap::new();
+    for g in &all_grades {
+        raw_scores.insert(g.exam_type.clone(), g.score);
+    }
+
+    let job = crate::ops::snapshot_job::SnapshotJob {
+        ctx: ctx.clone(),
+        student_id,
+        period_id: grade.period_id.clone(),
+        class_subject_id,
+        policy_id: policy.id,
+        scale_id: scale.id,
+        raw_scores,
+    };
+
+    if let Err(e) = ctx.job_queue.try_enqueue(job) {
+        tracing::warn!(error=%e, "Failed to enqueue snapshot job after grade save");
+    }
+}
 
 
 // ── Queries ─────────────────────────────────────────────────────
@@ -89,7 +164,7 @@ pub async fn report_card(
         std::sync::Arc::new(cmd_repo),
         std::sync::Arc::new(query_repo),
     );
-    svc.get_report_card(enrollment_id, period_id).await
+    svc.get_report_card(&ctx.org_id, enrollment_id, period_id).await
 }
 
 /// Get grade analytics for a class-subject.
@@ -106,7 +181,7 @@ pub async fn analytics(
         std::sync::Arc::new(cmd_repo),
         std::sync::Arc::new(query_repo),
     );
-    svc.get_analytics(period_id, class_subject_id).await
+    svc.get_analytics(&ctx.org_id, period_id, class_subject_id).await
 }
 
 /// Get the grade matrix for a class-subject (grid view).
@@ -123,7 +198,7 @@ pub async fn matrix(
         std::sync::Arc::new(cmd_repo),
         std::sync::Arc::new(query_repo),
     );
-    svc.get_grade_matrix(period_id, class_subject_id).await
+    svc.get_grade_matrix(&ctx.org_id, period_id, class_subject_id).await
 }
 
 // ── Commands ────────────────────────────────────────────────────
@@ -167,6 +242,10 @@ pub async fn submit(
     let id = Uuid::new_v4().to_string();
     let percentage = if req.max_score > 0.0 { (req.score / req.max_score) * 100.0 } else { 0.0 };
 
+    // Use AssessmentEngine instead of hardcoded scale
+    let engine = AssessmentEngine::for_period(&ctx.db, &ctx.org_id, &req.period_id).await?;
+    let mapped = engine.map_score(percentage)?;
+
     let model = grade::Model {
         id: id.clone(),
         org_id: ctx.org_id.clone(),
@@ -179,8 +258,8 @@ pub async fn submit(
         score: req.score,
         max_score: req.max_score,
         weight: req.weight.unwrap_or(1.0),
-        grade_letter: Some(crate::services::grade::GradeService::score_to_grade_letter(percentage)),
-        grade_points: Some(crate::services::grade::GradeService::score_to_grade_points(percentage)),
+        grade_letter: Some(mapped.grade_letter),
+        grade_points: mapped.grade_points,
         exam_type: req.exam_type,
         semester: req.semester,
         notes: req.notes,
@@ -204,6 +283,9 @@ pub async fn submit(
         new_data: Some(serde_json::to_value(&created).unwrap_or_default()),
         correlation_id: ctx.correlation_id.clone(),
     }).await?;
+
+    // Auto-trigger snapshot generation (best-effort, non-blocking)
+    try_enqueue_snapshot(ctx, &created).await;
 
     Ok(created)
 }
@@ -230,6 +312,10 @@ pub async fn submit_bulk(
         let id = Uuid::new_v4().to_string();
         let percentage = if req.max_score > 0.0 { (req.score / req.max_score) * 100.0 } else { 0.0 };
 
+        // Use AssessmentEngine instead of hardcoded scale
+        let engine = AssessmentEngine::for_period(&ctx.db, &ctx.org_id, &req.period_id).await?;
+        let mapped = engine.map_score(percentage)?;
+
         let model = grade::Model {
             id: id.clone(),
             org_id: ctx.org_id.clone(),
@@ -242,8 +328,8 @@ pub async fn submit_bulk(
             score: req.score,
             max_score: req.max_score,
             weight: req.weight.unwrap_or(1.0),
-            grade_letter: Some(crate::services::grade::GradeService::score_to_grade_letter(percentage)),
-            grade_points: Some(crate::services::grade::GradeService::score_to_grade_points(percentage)),
+            grade_letter: Some(mapped.grade_letter),
+            grade_points: mapped.grade_points,
             exam_type: req.exam_type,
             semester: req.semester,
             notes: req.notes,
@@ -256,6 +342,10 @@ pub async fn submit_bulk(
 
         let active: grade::ActiveModel = model.into();
         let created = active.insert(&ctx.db).await?;
+
+        // Auto-trigger snapshot generation for each grade
+        try_enqueue_snapshot(ctx, &created).await;
+
         results.push(created);
     }
     Ok(results)
@@ -282,11 +372,15 @@ pub async fn update(
     let old_data = serde_json::to_value(&existing).ok();
     let percentage = if req.max_score > 0.0 { (req.score / req.max_score) * 100.0 } else { 0.0 };
 
+    // Use AssessmentEngine instead of hardcoded scale
+    let engine = AssessmentEngine::for_period(&ctx.db, &ctx.org_id, &existing.period_id).await?;
+    let mapped = engine.map_score(percentage)?;
+
     let mut active: grade::ActiveModel = existing.into();
     active.score = Set(req.score);
     active.max_score = Set(req.max_score);
-    active.grade_letter = Set(Some(crate::services::grade::GradeService::score_to_grade_letter(percentage)));
-    active.grade_points = Set(Some(crate::services::grade::GradeService::score_to_grade_points(percentage)));
+    active.grade_letter = Set(Some(mapped.grade_letter));
+    active.grade_points = Set(mapped.grade_points);
     if let Some(notes) = req.notes {
         active.notes = Set(Some(notes));
     }
@@ -304,6 +398,9 @@ pub async fn update(
         new_data: Some(serde_json::to_value(&updated).unwrap_or_default()),
         correlation_id: ctx.correlation_id.clone(),
     }).await?;
+
+    // Auto-trigger snapshot regeneration after grade update
+    try_enqueue_snapshot(ctx, &updated).await;
 
     Ok(updated)
 }

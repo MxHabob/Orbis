@@ -152,3 +152,192 @@ pub async fn execute_snapshot_generation(
 
     Ok(inserted)
 }
+
+/// Compute rankings for all student snapshots in a given period + class_subject.
+///
+/// This function:
+/// 1. Fetches all snapshots for the (period, class_subject) pair.
+/// 2. Sorts by `total_score` descending.
+/// 3. Assigns `rank_in_class` (1..N) with tie handling (same score = same rank).
+/// 4. For `rank_in_level`, it fetches all snapshots across all class_subjects
+///    for the same period and computes a cumulative GPA rank.
+pub async fn compute_rankings(
+    ctx: &ServiceContext,
+    period_id: &str,
+    class_subject_id: &str,
+) -> Result<usize, AppError> {
+    use sea_orm::QueryOrder;
+
+    // 1. Fetch all snapshots for this class_subject + period
+    let mut snapshots = student_assessment_snapshot::Entity::find()
+        .filter(student_assessment_snapshot::Column::OrgId.eq(&ctx.org_id))
+        .filter(student_assessment_snapshot::Column::PeriodId.eq(period_id))
+        .filter(student_assessment_snapshot::Column::ClassSubjectId.eq(class_subject_id))
+        .order_by_desc(student_assessment_snapshot::Column::TotalScore)
+        .all(&ctx.db)
+        .await?;
+
+    if snapshots.is_empty() {
+        return Ok(0);
+    }
+
+    // 2. Compute rank_in_class with tie handling
+    let mut rank = 1i32;
+    let mut last_score: Option<f64> = None;
+    let mut same_rank_count = 0i32;
+
+    for snapshot in &mut snapshots {
+        let score = snapshot.total_score.unwrap_or(0.0);
+
+        if let Some(prev) = last_score {
+            if (score - prev).abs() < 0.001 {
+                // Same score → same rank (tie)
+                same_rank_count += 1;
+            } else {
+                rank += same_rank_count;
+                same_rank_count = 1;
+            }
+        } else {
+            same_rank_count = 1;
+        }
+        last_score = Some(score);
+
+        // Update in DB
+        let mut active: student_assessment_snapshot::ActiveModel = snapshot.clone().into();
+        active.rank_in_class = Set(Some(rank));
+        active.updated_at = Set(chrono::Utc::now().to_rfc3339());
+        active.update(&ctx.db).await?;
+    }
+
+    let updated_count = snapshots.len();
+
+    info!(
+        period_id=%period_id,
+        class_subject_id=%class_subject_id,
+        count=%updated_count,
+        "Computed rank_in_class for snapshots"
+    );
+
+    // 3. Compute rank_in_level: aggregate all class_subjects for same period
+    //    Group by student_id, compute average GPA across all subjects, then rank.
+    let all_period_snapshots = student_assessment_snapshot::Entity::find()
+        .filter(student_assessment_snapshot::Column::OrgId.eq(&ctx.org_id))
+        .filter(student_assessment_snapshot::Column::PeriodId.eq(period_id))
+        .all(&ctx.db)
+        .await?;
+
+    // Build per-student average GPA
+    let mut student_gpas: std::collections::HashMap<String, Vec<f64>> = std::collections::HashMap::new();
+    for s in &all_period_snapshots {
+        if let Some(gpa) = s.gpa_points {
+            student_gpas.entry(s.student_id.clone()).or_default().push(gpa);
+        }
+    }
+
+    let mut student_avg: Vec<(String, f64)> = student_gpas
+        .into_iter()
+        .map(|(sid, gpas)| {
+            let avg = gpas.iter().sum::<f64>() / gpas.len() as f64;
+            (sid, avg)
+        })
+        .collect();
+
+    // Sort descending by average GPA
+    student_avg.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+
+    // Assign rank_in_level
+    let mut level_ranks: std::collections::HashMap<String, i32> = std::collections::HashMap::new();
+    let mut level_rank = 1i32;
+    let mut prev_avg: Option<f64> = None;
+    let mut level_tie_count = 0i32;
+
+    for (student_id, avg) in &student_avg {
+        if let Some(prev) = prev_avg {
+            if (avg - prev).abs() < 0.001 {
+                level_tie_count += 1;
+            } else {
+                level_rank += level_tie_count;
+                level_tie_count = 1;
+            }
+        } else {
+            level_tie_count = 1;
+        }
+        prev_avg = Some(*avg);
+        level_ranks.insert(student_id.clone(), level_rank);
+    }
+
+    // Update rank_in_level for snapshots that belong to the requested class_subject
+    for snapshot in &snapshots {
+        if let Some(&r) = level_ranks.get(&snapshot.student_id) {
+            let mut active: student_assessment_snapshot::ActiveModel = snapshot.clone().into();
+            active.rank_in_level = Set(Some(r));
+            active.updated_at = Set(chrono::Utc::now().to_rfc3339());
+            active.update(&ctx.db).await?;
+        }
+    }
+
+    info!(
+        period_id=%period_id,
+        students=%student_avg.len(),
+        "Computed rank_in_level across all class subjects"
+    );
+
+    Ok(updated_count)
+}
+
+/// Apply a Pass/Fail policy to a student's snapshots for a given period.
+///
+/// Uses the `pass_fail_policies` table for the period, falling back to
+/// `academic_policies.default_passing_grade`.
+pub async fn apply_pass_fail_for_student(
+    ctx: &ServiceContext,
+    student_id: &str,
+    period_id: &str,
+) -> Result<bool, AppError> {
+    use crate::entities::pass_fail_policy;
+
+    // Try to load period-specific pass/fail policy
+    let policy = pass_fail_policy::Entity::find()
+        .filter(pass_fail_policy::Column::OrgId.eq(&ctx.org_id))
+        .filter(pass_fail_policy::Column::PeriodId.eq(period_id))
+        .one(&ctx.db)
+        .await?;
+
+    let min_pass = policy.as_ref().map(|p| p.min_passing_score)
+        .unwrap_or(crate::ops::assessment_engine::AssessmentEngine::get_org_passing_grade(&ctx.db, &ctx.org_id).await);
+
+    let requires_all = policy.as_ref().map(|p| p.requires_all_subjects == 1).unwrap_or(false);
+    let max_fail = policy.as_ref().map(|p| p.max_failed_subjects).unwrap_or(0);
+
+    // Load all snapshots for this student in this period
+    let snapshots = student_assessment_snapshot::Entity::find()
+        .filter(student_assessment_snapshot::Column::OrgId.eq(&ctx.org_id))
+        .filter(student_assessment_snapshot::Column::StudentId.eq(student_id))
+        .filter(student_assessment_snapshot::Column::PeriodId.eq(period_id))
+        .all(&ctx.db)
+        .await?;
+
+    let mut failed_count = 0;
+    for s in &snapshots {
+        let score = s.total_score.unwrap_or(0.0);
+        if score < min_pass {
+            failed_count += 1;
+        }
+    }
+
+    let overall_pass = if requires_all {
+        failed_count == 0
+    } else {
+        failed_count <= max_fail
+    };
+
+    info!(
+        student_id=%student_id,
+        period_id=%period_id,
+        failed_count=%failed_count,
+        overall_pass=%overall_pass,
+        "Applied pass/fail policy for student"
+    );
+
+    Ok(overall_pass)
+}

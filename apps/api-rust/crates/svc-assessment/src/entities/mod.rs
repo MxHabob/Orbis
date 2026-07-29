@@ -12,4 +12,5 @@ pub mod assessment_scheme_component;
 pub mod grade_scale;
 pub mod grade_scale_item;
 pub mod calculation_policy;
+pub mod pass_fail_policy;
 pub mod student_assessment_snapshot;
