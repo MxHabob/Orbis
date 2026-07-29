@@ -1831,7 +1831,8 @@ CREATE TABLE IF NOT EXISTS process_log (
     process_type    TEXT NOT NULL,
     org_id          TEXT NOT NULL,
     status          TEXT NOT NULL,
-    steps_json      TEXT NOT NULL,
+    steps           TEXT NOT NULL,
+    current_step    INTEGER NOT NULL DEFAULT 0,
     started_at      TEXT NOT NULL,
     completed_at    TEXT,
     error           TEXT
