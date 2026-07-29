@@ -12,8 +12,26 @@ import { FinancialInfoState } from "./state/financial-info.svelte";
 import { DocumentInfoState } from "./state/document-info.svelte";
 
 export class StudentFormState {
-  requiredFields = $state<Record<string, boolean>>({});
-  activeFields = $state<Record<string, boolean>>({});
+  requiredFields = $state<Record<string, boolean>>({
+    national_id: true,
+    email: false,
+    phone: true,
+    birth_date: true,
+    sex: true,
+    address: false,
+    previous_school: false,
+    documents: false,
+  });
+  activeFields = $state<Record<string, boolean>>({
+    national_id: true,
+    email: true,
+    phone: true,
+    birth_date: true,
+    sex: true,
+    address: true,
+    previous_school: true,
+    documents: true,
+  });
   preventDuplicates = $state<Record<string, boolean>>({});
   registrationStatus = $state("draft");
 
@@ -68,29 +86,43 @@ export class StudentFormState {
               typeof org.settings === "string"
                 ? JSON.parse(org.settings)
                 : (org.settings || {});
-            const regConfig = settings.registration_config || {};
+            const reg = settings.registration || settings.registration_config || {};
 
-            this.document.setRequiredDocuments(
-              regConfig.required_documents || [],
-            );
+            if (Array.isArray(reg.required_documents)) {
+              this.document.setRequiredDocuments(reg.required_documents);
+            }
 
-            if (regConfig.required_fields) {
-              this.requiredFields = {
-                ...this.requiredFields,
-                ...regConfig.required_fields,
-              };
+            if (reg.active_fields) {
+              if (Array.isArray(reg.active_fields)) {
+                const actMap: Record<string, boolean> = {};
+                for (const k of reg.active_fields) actMap[k] = true;
+                this.activeFields = { ...this.activeFields, ...actMap };
+              } else {
+                this.activeFields = { ...this.activeFields, ...reg.active_fields };
+              }
             }
-            if (regConfig.active_fields) {
-              this.activeFields = {
-                ...this.activeFields,
-                ...regConfig.active_fields,
-              };
+
+            if (reg.required_fields) {
+              if (Array.isArray(reg.required_fields)) {
+                const reqMap: Record<string, boolean> = {};
+                for (const k of reg.required_fields) reqMap[k] = true;
+                this.requiredFields = { ...this.requiredFields, ...reqMap };
+              } else {
+                this.requiredFields = { ...this.requiredFields, ...reg.required_fields };
+              }
             }
-            if (regConfig.prevent_duplicates) {
-              this.preventDuplicates = {
-                ...this.preventDuplicates,
-                ...regConfig.prevent_duplicates,
-              };
+
+            if (reg.prevent_duplicates) {
+              if (Array.isArray(reg.prevent_duplicates)) {
+                const dupMap: Record<string, boolean> = {};
+                for (const k of reg.prevent_duplicates) dupMap[k] = true;
+                this.preventDuplicates = { ...this.preventDuplicates, ...dupMap };
+              } else {
+                this.preventDuplicates = {
+                  ...this.preventDuplicates,
+                  ...reg.prevent_duplicates,
+                };
+              }
             }
           } catch (err) {
             console.error("Failed to parse settings JSON:", err);
@@ -273,8 +305,32 @@ export class StudentFormState {
       toast.error(m.common_form_error_class_required());
       return;
     }
-    if (this.requiredFields?.national_id && !this.personal.nationalId.trim()) {
+    if (this.activeFields?.national_id && this.requiredFields?.national_id && !this.personal.nationalId.trim()) {
       toast.error(m.common_form_error_national_id_required());
+      return;
+    }
+    if (this.activeFields?.email && this.requiredFields?.email && !this.personal.email.trim()) {
+      toast.error(`${m.common_form_student_email()} مطلوب`);
+      return;
+    }
+    if (this.activeFields?.phone && this.requiredFields?.phone && !this.personal.phone.trim()) {
+      toast.error(`${m.common_form_student_phone()} مطلوب`);
+      return;
+    }
+    if (this.activeFields?.birth_date && this.requiredFields?.birth_date && !this.personal.birthDate) {
+      toast.error(`${m.common_bulk_col_dob()} مطلوب`);
+      return;
+    }
+    if (this.activeFields?.sex && this.requiredFields?.sex && !this.personal.sex) {
+      toast.error(`${m.common_form_sex()} مطلوب`);
+      return;
+    }
+    if (this.activeFields?.address && this.requiredFields?.address && !this.personal.address.trim()) {
+      toast.error(`${m.common_form_address()} مطلوب`);
+      return;
+    }
+    if (this.activeFields?.previous_school && this.requiredFields?.previous_school && !this.personal.previousSchool.trim()) {
+      toast.error(`${m.common_form_previous_school()} مطلوب`);
       return;
     }
 

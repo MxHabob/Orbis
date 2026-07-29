@@ -111,6 +111,72 @@ const monthsList = $derived([
       </div>
     {/if}
 
+    <!-- Passport Number -->
+    {#if state.activeFields.passport_number}
+      <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+        <div class="flex flex-col gap-1 text-start">
+          <Label for="passportNumber" class="text-xs font-semibold text-foreground">
+            رقم جواز السفر
+            {#if state.requiredFields.passport_number}<span class="text-destructive">*</span>{/if}
+          </Label>
+          <span class="text-[11px] text-muted-foreground leading-relaxed">رقم جواز السفر الخاص بالطلبة الوافدين أو الدوليين</span>
+        </div>
+        <div class="w-full md:w-[480px] shrink-0">
+          <Input 
+            id="passportNumber"
+            type="text" 
+            placeholder="A12345678" 
+            class="h-9 w-full bg-background font-mono" 
+            bind:value={state.personal.passportNumber}
+          />
+        </div>
+      </div>
+    {/if}
+
+    <!-- Nationality -->
+    {#if state.activeFields.nationality}
+      <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+        <div class="flex flex-col gap-1 text-start">
+          <Label for="nationality" class="text-xs font-semibold text-foreground">
+            الجنسية
+            {#if state.requiredFields.nationality}<span class="text-destructive">*</span>{/if}
+          </Label>
+          <span class="text-[11px] text-muted-foreground leading-relaxed">جنسية الطالب الرسمية المدونة بالوثائق</span>
+        </div>
+        <div class="w-full md:w-[480px] shrink-0">
+          <Input 
+            id="nationality"
+            type="text" 
+            placeholder="مثال: يمني، سعودي، مصري..." 
+            class="h-9 w-full bg-background" 
+            bind:value={state.personal.nationality}
+          />
+        </div>
+      </div>
+    {/if}
+
+    <!-- Place of Birth -->
+    {#if state.activeFields.place_of_birth}
+      <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+        <div class="flex flex-col gap-1 text-start">
+          <Label for="placeOfBirth" class="text-xs font-semibold text-foreground">
+            مكان الميلاد
+            {#if state.requiredFields.place_of_birth}<span class="text-destructive">*</span>{/if}
+          </Label>
+          <span class="text-[11px] text-muted-foreground leading-relaxed">المدينة أو المحافظة المدونة في شهادة الميلاد</span>
+        </div>
+        <div class="w-full md:w-[480px] shrink-0">
+          <Input 
+            id="placeOfBirth"
+            type="text" 
+            placeholder="أدخل مكان الميلاد..." 
+            class="h-9 w-full bg-background" 
+            bind:value={state.personal.placeOfBirth}
+          />
+        </div>
+      </div>
+    {/if}
+
     <!-- Birth Date -->
     {#if state.activeFields.birth_date}
       <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
@@ -267,7 +333,7 @@ const monthsList = $derived([
 
     <!-- Student Email -->
     {#if state.activeFields.email}
-      <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
+      <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
         <div class="flex flex-col gap-1 text-start">
           <Label for="email" class="text-xs font-semibold text-foreground">
             {m.common_form_student_email()}
@@ -290,6 +356,72 @@ const monthsList = $derived([
               {state.duplicateWarnings.email}
             </span>
           {/if}
+        </div>
+      </div>
+    {/if}
+
+    <!-- Blood Type -->
+    {#if state.activeFields.blood_type}
+      <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+        <div class="flex flex-col gap-1 text-start">
+          <Label for="bloodType" class="text-xs font-semibold text-foreground">
+            فصيلة الدم
+            {#if state.requiredFields.blood_type}<span class="text-destructive">*</span>{/if}
+          </Label>
+          <span class="text-[11px] text-muted-foreground leading-relaxed">فصيلة دم الطالب للحالات الطبية والإسعافية</span>
+        </div>
+        <div class="w-full md:w-[480px] shrink-0">
+          <Input 
+            id="bloodType"
+            type="text" 
+            placeholder="مثال: O+, A+, B-..." 
+            class="h-9 w-full bg-background font-mono" 
+            bind:value={state.personal.bloodType}
+          />
+        </div>
+      </div>
+    {/if}
+
+    <!-- Emergency Contact -->
+    {#if state.activeFields.emergency_contact}
+      <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+        <div class="flex flex-col gap-1 text-start">
+          <Label for="emergencyContact" class="text-xs font-semibold text-foreground">
+            جهة اتصال للطوارئ (الاسم والهاتف)
+            {#if state.requiredFields.emergency_contact}<span class="text-destructive">*</span>{/if}
+          </Label>
+          <span class="text-[11px] text-muted-foreground leading-relaxed">اسم وتلفون الشخص المسؤول للتواصل في حالات الطوارئ</span>
+        </div>
+        <div class="w-full md:w-[480px] shrink-0">
+          <Input 
+            id="emergencyContact"
+            type="text" 
+            placeholder="الاسم - رقم الهاتف" 
+            class="h-9 w-full bg-background" 
+            bind:value={state.personal.emergencyContact}
+          />
+        </div>
+      </div>
+    {/if}
+
+    <!-- Medical Notes / Conditions -->
+    {#if state.activeFields.medical_notes}
+      <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
+        <div class="flex flex-col gap-1 text-start">
+          <Label for="medicalNotes" class="text-xs font-semibold text-foreground">
+            الملاحظات والبيانات الطبية
+            {#if state.requiredFields.medical_notes}<span class="text-destructive">*</span>{/if}
+          </Label>
+          <span class="text-[11px] text-muted-foreground leading-relaxed">أي حساسية، أمراض مزمنة أو تعليمات صحية خاصة للطالب</span>
+        </div>
+        <div class="w-full md:w-[480px] shrink-0">
+          <Input 
+            id="medicalNotes"
+            type="text" 
+            placeholder="أدخل الملاحظات أو الحالة الطبية إن وجدت..." 
+            class="h-9 w-full bg-background" 
+            bind:value={state.personal.medicalNotes}
+          />
         </div>
       </div>
     {/if}

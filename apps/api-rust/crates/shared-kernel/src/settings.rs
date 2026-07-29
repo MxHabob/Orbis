@@ -10,9 +10,33 @@ use serde::{Deserialize, Serialize};
 /// Controls every aspect of student registration across the platform.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RegistrationSettings {
-    /// Required fields for registration (email, phone, national_id, guardian, birth_date…).
+    /// Institution type ("school", "university", "institute", "training_center", "custom").
+    #[serde(default = "default_institution_type")]
+    pub institution_type: String,
+
+    /// Custom student numbering pattern template (e.g. "STU-{YEAR}-{SEQ}").
+    #[serde(default = "default_number_pattern")]
+    pub student_number_pattern: String,
+
+    /// Academic stages list.
+    #[serde(default = "default_stages")]
+    pub stages: Vec<String>,
+
+    /// Fields active on registration form.
+    #[serde(default = "default_active_fields")]
+    pub active_fields: Vec<String>,
+
+    /// Required fields for registration.
     #[serde(default = "default_required_fields")]
     pub required_fields: Vec<String>,
+
+    /// Fields that prevent duplicate registration.
+    #[serde(default = "default_prevent_duplicates")]
+    pub prevent_duplicates: Vec<String>,
+
+    /// List of required document names.
+    #[serde(default = "default_required_documents")]
+    pub required_documents: Vec<String>,
 
     /// Student number prefix (ST, STU, …).
     #[serde(default = "default_prefix")]
@@ -50,7 +74,13 @@ pub struct RegistrationSettings {
 impl Default for RegistrationSettings {
     fn default() -> Self {
         Self {
+            institution_type: default_institution_type(),
+            student_number_pattern: default_number_pattern(),
+            stages: default_stages(),
+            active_fields: default_active_fields(),
             required_fields: default_required_fields(),
+            prevent_duplicates: default_prevent_duplicates(),
+            required_documents: default_required_documents(),
             student_number_prefix: default_prefix(),
             student_number_digits: default_digits(),
             requires_approval: false,
@@ -171,8 +201,55 @@ pub struct OrgSettings {
 
 // ── Default Helpers ─────────────────────────────────────────────
 
+fn default_institution_type() -> String {
+    "school".to_string()
+}
+
+fn default_number_pattern() -> String {
+    "STU-{YEAR}-{SEQ}".to_string()
+}
+
+fn default_stages() -> Vec<String> {
+    vec!["primary".to_string(), "middle".to_string(), "high".to_string()]
+}
+
+fn default_active_fields() -> Vec<String> {
+    vec![
+        "national_id".to_string(),
+        "email".to_string(),
+        "phone".to_string(),
+        "birth_date".to_string(),
+        "sex".to_string(),
+        "address".to_string(),
+        "nationality".to_string(),
+        "place_of_birth".to_string(),
+        "passport_number".to_string(),
+        "blood_type".to_string(),
+        "emergency_contact".to_string(),
+        "medical_notes".to_string(),
+        "previous_school".to_string(),
+        "documents".to_string(),
+    ]
+}
+
 fn default_required_fields() -> Vec<String> {
-    vec!["email".to_string(), "phone".to_string()]
+    vec![
+        "national_id".to_string(),
+        "phone".to_string(),
+        "birth_date".to_string(),
+        "sex".to_string(),
+    ]
+}
+
+fn default_prevent_duplicates() -> Vec<String> {
+    vec!["national_id".to_string(), "phone".to_string()]
+}
+
+fn default_required_documents() -> Vec<String> {
+    vec![
+        "Birth Certificate".to_string(),
+        "National ID or Passport".to_string(),
+    ]
 }
 
 fn default_prefix() -> String {

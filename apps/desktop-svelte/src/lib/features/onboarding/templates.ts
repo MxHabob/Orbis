@@ -35,6 +35,13 @@ export interface DefaultSubject {
   sort_order: number;
 }
 
+export interface PolicySettings {
+  requires_approval: boolean;
+  allow_no_guardian: boolean;
+  auto_assign_fees: boolean;
+  allow_duplicate_national_id: boolean;
+}
+
 export interface InstitutionProfile {
   type: string;
   name: string;
@@ -50,6 +57,7 @@ export interface InstitutionProfile {
   preventDuplicates: Record<string, boolean>;
   requiredDocuments: string[];
   numberingPattern: string;
+  policySettings?: PolicySettings;
 }
 
 export const INSTITUTION_PROFILES: Record<string, InstitutionProfile> = {
@@ -79,7 +87,11 @@ export const INSTITUTION_PROFILES: Record<string, InstitutionProfile> = {
       birth_date: true,
       sex: true,
       address: true,
-      mother_name: true,
+      nationality: true,
+      place_of_birth: true,
+      blood_type: true,
+      emergency_contact: true,
+      medical_notes: true,
       previous_school: true,
     },
     requiredFields: {
@@ -89,13 +101,23 @@ export const INSTITUTION_PROFILES: Record<string, InstitutionProfile> = {
       birth_date: true,
       sex: true,
       address: false,
-      mother_name: true,
+      nationality: false,
+      place_of_birth: false,
+      blood_type: false,
+      emergency_contact: true,
+      medical_notes: false,
       previous_school: false,
     },
     preventDuplicates: {
       national_id: true,
       email: false,
       phone: true,
+    },
+    policySettings: {
+      requires_approval: false,
+      allow_no_guardian: false,
+      auto_assign_fees: true,
+      allow_duplicate_national_id: false,
     },
     requiredDocuments: [
       "شهادة الميلاد (Birth Certificate)",
@@ -331,7 +353,9 @@ export const INSTITUTION_PROFILES: Record<string, InstitutionProfile> = {
       birth_date: true,
       sex: true,
       address: true,
-      mother_name: false,
+      nationality: true,
+      passport_number: true,
+      place_of_birth: true,
       previous_school: true,
     },
     requiredFields: {
@@ -341,13 +365,21 @@ export const INSTITUTION_PROFILES: Record<string, InstitutionProfile> = {
       birth_date: true,
       sex: true,
       address: true,
-      mother_name: false,
+      nationality: true,
+      passport_number: false,
+      place_of_birth: false,
       previous_school: false,
     },
     preventDuplicates: {
       national_id: true,
       email: true,
       phone: true,
+    },
+    policySettings: {
+      requires_approval: true,
+      allow_no_guardian: true,
+      auto_assign_fees: true,
+      allow_duplicate_national_id: false,
     },
     requiredDocuments: [
       "شهادة الثانوية العامة (High School Certificate)",
@@ -472,7 +504,8 @@ export const INSTITUTION_PROFILES: Record<string, InstitutionProfile> = {
       birth_date: true,
       sex: true,
       address: true,
-      mother_name: false,
+      nationality: true,
+      emergency_contact: true,
       previous_school: false,
     },
     requiredFields: {
@@ -482,13 +515,20 @@ export const INSTITUTION_PROFILES: Record<string, InstitutionProfile> = {
       birth_date: false,
       sex: true,
       address: false,
-      mother_name: false,
+      nationality: false,
+      emergency_contact: false,
       previous_school: false,
     },
     preventDuplicates: {
       national_id: false,
       email: true,
       phone: true,
+    },
+    policySettings: {
+      requires_approval: false,
+      allow_no_guardian: true,
+      auto_assign_fees: true,
+      allow_duplicate_national_id: true,
     },
     requiredDocuments: [
       "صورة الهوية الوطنية (ID Copy)",
@@ -591,7 +631,6 @@ export const INSTITUTION_PROFILES: Record<string, InstitutionProfile> = {
       birth_date: false,
       sex: true,
       address: false,
-      mother_name: false,
       previous_school: false,
     },
     requiredFields: {
@@ -601,7 +640,6 @@ export const INSTITUTION_PROFILES: Record<string, InstitutionProfile> = {
       birth_date: false,
       sex: false,
       address: false,
-      mother_name: false,
       previous_school: false,
     },
     preventDuplicates: {
@@ -609,7 +647,17 @@ export const INSTITUTION_PROFILES: Record<string, InstitutionProfile> = {
       email: true,
       phone: true,
     },
-    requiredDocuments: ["صورة الهوية الوطنية (ID Copy)"],
+    policySettings: {
+      requires_approval: false,
+      allow_no_guardian: true,
+      auto_assign_fees: false,
+      allow_duplicate_national_id: true,
+    },
+    requiredDocuments: [
+      "صورة الهوية الوطنية (ID Copy)",
+      "موافقة جهة العمل (Employer Approval)",
+      "السيرة الذاتية (Resume / CV)",
+    ],
     stages: [
       {
         level: "short_courses",
@@ -706,7 +754,6 @@ export const INSTITUTION_PROFILES: Record<string, InstitutionProfile> = {
       birth_date: true,
       sex: true,
       address: true,
-      mother_name: true,
       previous_school: true,
     },
     requiredFields: {
@@ -716,7 +763,6 @@ export const INSTITUTION_PROFILES: Record<string, InstitutionProfile> = {
       birth_date: true,
       sex: true,
       address: false,
-      mother_name: false,
       previous_school: false,
     },
     preventDuplicates: {

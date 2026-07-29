@@ -4,6 +4,8 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
 import { Checkbox } from "@orbis/ui-svelte/checkbox";
+import { Switch } from "@orbis/ui-svelte/switch";
+import { Badge } from "@orbis/ui-svelte/badge";
 import {
   Select,
   SelectTrigger,
@@ -24,9 +26,11 @@ import {
   TabsTrigger,
   TabsContent,
 } from "@orbis/ui-svelte/tabs";
-import { Save, Plus, Trash2 } from "lucide-svelte";
+import { Save, Plus, Trash2, Sparkles, ShieldCheck, Layers, BookOpen } from "lucide-svelte";
+import { toast } from "svelte-sonner";
 
 import { getLocale } from "$lib/paraglide/runtime";
+import { INSTITUTION_PROFILES } from "$lib/features/onboarding/templates";
 
 let { org, isSaving, onsave } = $props<{
   org: any;
@@ -45,6 +49,12 @@ let requiredDocuments = $state<string[]>([
 ]);
 let documentInput = $state("");
 
+// Policy settings state
+let requiresApproval = $state(false);
+let allowNoGuardian = $state(false);
+let autoAssignFees = $state(true);
+let allowDuplicateNationalId = $state(false);
+
 // Field configurations
 let requiredFields = $state<Record<string, boolean>>({
   national_id: true,
@@ -53,7 +63,12 @@ let requiredFields = $state<Record<string, boolean>>({
   birth_date: true,
   sex: true,
   address: false,
-  mother_name: false,
+  nationality: false,
+  place_of_birth: false,
+  passport_number: false,
+  blood_type: false,
+  emergency_contact: true,
+  medical_notes: false,
   previous_school: false,
   documents: true,
 });
@@ -65,7 +80,12 @@ let activeFields = $state<Record<string, boolean>>({
   birth_date: true,
   sex: true,
   address: true,
-  mother_name: true,
+  nationality: true,
+  place_of_birth: true,
+  passport_number: true,
+  blood_type: true,
+  emergency_contact: true,
+  medical_notes: true,
   previous_school: true,
   documents: true,
 });
@@ -76,31 +96,104 @@ let preventDuplicates = $state<Record<string, boolean>>({
   phone: false,
 });
 
+const SYSTEM_FIELDS = [
+  { key: "national_id", label: m.common_form_profile_nid_label(), supportsDuplicate: true },
+  { key: "email", label: m.common_word_email(), supportsDuplicate: true },
+  { key: "phone", label: m.common_word_phone(), supportsDuplicate: true },
+  { key: "birth_date", label: m.common_bulk_col_dob(), supportsDuplicate: false },
+  { key: "sex", label: m.common_form_sex(), supportsDuplicate: false },
+  { key: "address", label: m.common_word_address(), supportsDuplicate: false },
+  { key: "nationality", label: "الجنسية الرسمية", supportsDuplicate: false },
+  { key: "place_of_birth", label: "مكان الميلاد", supportsDuplicate: false },
+  { key: "passport_number", label: "رقم جواز السفر", supportsDuplicate: false },
+  { key: "blood_type", label: "فصيلة الدم للطوارئ", supportsDuplicate: false },
+  { key: "emergency_contact", label: "جهة الاتصال بالطوارئ", supportsDuplicate: false },
+  { key: "medical_notes", label: "الملاحظات والبيانات الطبية", supportsDuplicate: false },
+  { key: "previous_school", label: m.settings_registration_field_previous_school(), supportsDuplicate: false },
+  { key: "documents", label: m.common_form_tab_documents(), supportsDuplicate: false },
+];
+
 $effect(() => {
   if (org?.settings) {
-    let conf: any = {};
+    let settingsObj: any = {};
     try {
-      conf = JSON.parse(org.settings).registration_config || {};
+      settingsObj = typeof org.settings === "string" ? JSON.parse(org.settings) : (org.settings || {});
     } catch {}
-    institutionType = conf.institution_type || "school";
-    studentNumberPattern = conf.student_number_pattern || "STU-{YEAR}-{SEQ}";
-    rawStages = conf.stages || ["primary", "middle", "high"];
-    requiredDocuments = conf.required_documents || [
-      "Birth Certificate",
-      "National ID or Passport",
-    ];
+    
+    // Single Source of Truth: org.settings.registration (fallback to registration_config if legacy data)
+    const reg = settingsObj.registration || settingsObj.registration_config || {};
 
-    if (conf.required_fields)
-      requiredFields = { ...requiredFields, ...conf.required_fields };
-    if (conf.active_fields)
-      activeFields = { ...activeFields, ...conf.active_fields };
-    if (conf.prevent_duplicates)
-      preventDuplicates = { ...preventDuplicates, ...conf.prevent_duplicates };
+    if (reg.institution_type) institutionType = reg.institution_type;
+    if (reg.student_number_pattern) studentNumberPattern = reg.student_number_pattern;
+    if (Array.isArray(reg.stages)) rawStages = reg.stages;
+    if (Array.isArray(reg.required_documents)) requiredDocuments = reg.required_documents;
+
+    if (reg.active_fields) {
+      if (Array.isArray(reg.active_fields)) {
+        const actMap: Record<string, boolean> = {};
+        for (const k of reg.active_fields) actMap[k] = true;
+        activeFields = { ...activeFields, ...actMap };
+      } else {
+        activeFields = { ...activeFields, ...reg.active_fields };
+      }
+    }
+
+    if (reg.required_fields) {
+      if (Array.isArray(reg.required_fields)) {
+        const reqMap: Record<string, boolean> = {};
+        for (const k of reg.required_fields) reqMap[k] = true;
+        requiredFields = { ...requiredFields, ...reqMap };
+      } else {
+        requiredFields = { ...requiredFields, ...reg.required_fields };
+      }
+    }
+
+    if (reg.prevent_duplicates) {
+      if (Array.isArray(reg.prevent_duplicates)) {
+        const dupMap: Record<string, boolean> = {};
+        for (const k of reg.prevent_duplicates) dupMap[k] = true;
+        preventDuplicates = { ...preventDuplicates, ...dupMap };
+      } else {
+        preventDuplicates = { ...preventDuplicates, ...reg.prevent_duplicates };
+      }
+    }
+
+    const pol = reg.policy_settings || reg;
+    if (pol.requires_approval !== undefined) requiresApproval = !!pol.requires_approval;
+    if (pol.allow_no_guardian !== undefined) allowNoGuardian = !!pol.allow_no_guardian;
+    if (pol.auto_assign_fees !== undefined) autoAssignFees = pol.auto_assign_fees !== false;
+    if (pol.allow_duplicate_national_id !== undefined) allowDuplicateNationalId = !!pol.allow_duplicate_national_id;
   }
 });
 
+const currentProfile = $derived(INSTITUTION_PROFILES[institutionType] || INSTITUTION_PROFILES.school);
+
+function applySmartPreset(type?: string) {
+  const targetType = type || institutionType;
+  const profile = INSTITUTION_PROFILES[targetType];
+  if (!profile) return;
+
+  institutionType = targetType;
+  studentNumberPattern = profile.numberingPattern || "STU-{YEAR}-{SEQ}";
+  rawStages = profile.stages.map((s) => s.name_ar || s.name);
+  requiredDocuments = [...profile.requiredDocuments];
+  activeFields = { ...activeFields, ...profile.activeFields };
+  requiredFields = { ...requiredFields, ...profile.requiredFields };
+  if (profile.preventDuplicates) {
+    preventDuplicates = { ...preventDuplicates, ...profile.preventDuplicates };
+  }
+  if (profile.policySettings) {
+    requiresApproval = profile.policySettings.requires_approval;
+    allowNoGuardian = profile.policySettings.allow_no_guardian;
+    autoAssignFees = profile.policySettings.auto_assign_fees;
+    allowDuplicateNationalId = profile.policySettings.allow_duplicate_national_id;
+  }
+
+  toast.success(`تم تطبيق الإعدادات الموصى بها لـ (${profile.name_ar}) بنجاح`);
+}
+
 function addStage() {
-  const clean = stageInput.trim().toLowerCase();
+  const clean = stageInput.trim();
   if (clean && !rawStages.includes(clean)) {
     rawStages = [...rawStages, clean];
     stageInput = "";
@@ -111,11 +204,11 @@ function removeStage(stage: string) {
   rawStages = rawStages.filter((s) => s !== stage);
 }
 
-function addDocument() {
-  const clean = documentInput.trim();
+function addDocument(docName?: string) {
+  const clean = (docName || documentInput).trim();
   if (clean && !requiredDocuments.includes(clean)) {
     requiredDocuments = [...requiredDocuments, clean];
-    documentInput = "";
+    if (!docName) documentInput = "";
   }
 }
 
@@ -125,14 +218,30 @@ function removeDocument(doc: string) {
 
 function handleSubmit(e: Event) {
   e.preventDefault();
-  onsave({
+
+  const activeFieldsArray = Object.keys(activeFields).filter((k) => activeFields[k]);
+  const requiredFieldsArray = Object.keys(requiredFields).filter((k) => requiredFields[k] && activeFields[k]);
+  const preventDuplicatesArray = Object.keys(preventDuplicates).filter((k) => preventDuplicates[k] && activeFields[k]);
+
+  const registrationSettings = {
     institution_type: institutionType,
     student_number_pattern: studentNumberPattern,
     stages: rawStages,
-    required_fields: requiredFields,
-    active_fields: activeFields,
-    prevent_duplicates: preventDuplicates,
+    active_fields: activeFieldsArray,
+    required_fields: requiredFieldsArray,
+    prevent_duplicates: preventDuplicatesArray,
     required_documents: requiredDocuments,
+    student_number_prefix: studentNumberPattern.split("-")[0] || "STU",
+    student_number_digits: 6,
+    requires_approval: requiresApproval,
+    allow_no_guardian: allowNoGuardian,
+    allow_duplicate_national_id: allowDuplicateNationalId,
+    auto_assign_fees: autoAssignFees,
+    default_fee_template_ids: [],
+  };
+
+  onsave({
+    registration: registrationSettings,
   });
 }
 </script>
@@ -141,6 +250,33 @@ function handleSubmit(e: Event) {
   <div class="max-w-4xl mx-auto p-6 flex flex-col gap-6">
     <form onsubmit={handleSubmit} class="flex flex-col gap-6">
       
+      <!-- Smart Preset Apply Bar -->
+      <div class="p-4 border border-primary/20 bg-primary/5 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+        <div class="flex items-center gap-3">
+          <div class="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
+            <Sparkles class="h-5 w-5" />
+          </div>
+          <div class="flex flex-col gap-0.5 text-start">
+            <span class="text-xs font-bold text-foreground">
+              تطبيق التهيئة الذكية الموصى بها ({currentProfile.name_ar})
+            </span>
+            <span class="text-[11px] text-muted-foreground leading-relaxed">
+              تلقائياً ضبط النمط الأكاديمي، الحقول الموصى بها، المستندات، وسياسات القبول المناسبة للمؤسسة
+            </span>
+          </div>
+        </div>
+        <Button 
+          type="button" 
+          variant="lime" 
+          size="sm" 
+          class="text-xs font-bold px-4 gap-1.5 shrink-0" 
+          onclick={() => applySmartPreset()}
+        >
+          <Sparkles class="h-3.5 w-3.5" />
+          <span>تطبيق إعدادات {currentProfile.name_ar}</span>
+        </Button>
+      </div>
+
       <Tabs value="general" class="w-full">
         <TabsList class="flex justify-start border-b border-border bg-transparent gap-6 rounded-none p-0 h-auto mb-6">
           <TabsTrigger 
@@ -161,10 +297,16 @@ function handleSubmit(e: Event) {
           >
             {m.settings_registration_tab_fields()}
           </TabsTrigger>
+          <TabsTrigger 
+            value="policies" 
+            class="text-xs font-semibold py-2 px-1 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none shadow-none text-muted-foreground data-[state=active]:text-foreground bg-transparent transition-all duration-150 cursor-pointer"
+          >
+            سياسات وقواعد التسجيل
+          </TabsTrigger>
         </TabsList>
 
         <!-- TAB 1: General Settings -->
-        <TabsContent value="general" class="mt-0">
+        <TabsContent value="general" class="mt-0 flex flex-col gap-6">
           <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
             <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
               {m.settings_registration_type_and_numbering()}
@@ -182,7 +324,7 @@ function handleSubmit(e: Event) {
                   </span>
                 </div>
                 <div class="w-full md:w-[320px] shrink-0">
-                  <Select bind:value={institutionType} type="single">
+                  <Select bind:value={institutionType} type="single" onValueChange={(val) => val && applySmartPreset(val)}>
                     <SelectTrigger id="inst_type" class="h-9 text-xs flex justify-between items-center border border-input bg-background w-full">
                       <span>
                         {institutionType === "school" ? m.settings_registration_school() : 
@@ -212,8 +354,34 @@ function handleSubmit(e: Event) {
                   </span>
                 </div>
                 <div class="w-full md:w-[320px] shrink-0">
-                  <Input id="num_pattern" bind:value={studentNumberPattern} class="h-9 text-xs border border-input bg-background w-full" />
+                  <Input id="num_pattern" bind:value={studentNumberPattern} class="h-9 text-xs border border-input bg-background w-full font-mono" />
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Terminology Live Preview Card -->
+          <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
+            <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none flex items-center gap-2">
+              <Layers class="h-3.5 w-3.5 text-primary" />
+              <span>معاينة مصطلحات النظام لمؤسسة ({currentProfile.name_ar})</span>
+            </div>
+            <div class="p-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-start">
+              <div class="flex flex-col p-3 rounded-lg border border-border/60 bg-background/50 gap-1">
+                <span class="text-[10px] text-muted-foreground">المرحلة / المستوى:</span>
+                <span class="text-xs font-bold text-foreground">{currentProfile.terminology.stage_ar}</span>
+              </div>
+              <div class="flex flex-col p-3 rounded-lg border border-border/60 bg-background/50 gap-1">
+                <span class="text-[10px] text-muted-foreground">الصف / القاعة:</span>
+                <span class="text-xs font-bold text-foreground">{currentProfile.terminology.classroom_ar}</span>
+              </div>
+              <div class="flex flex-col p-3 rounded-lg border border-border/60 bg-background/50 gap-1">
+                <span class="text-[10px] text-muted-foreground">المادة / المساق:</span>
+                <span class="text-xs font-bold text-foreground">{currentProfile.terminology.subject_ar}</span>
+              </div>
+              <div class="flex flex-col p-3 rounded-lg border border-border/60 bg-background/50 gap-1">
+                <span class="text-[10px] text-muted-foreground">الدورة / العام:</span>
+                <span class="text-xs font-bold text-foreground">{currentProfile.terminology.calendar_ar}</span>
               </div>
             </div>
           </div>
@@ -224,7 +392,7 @@ function handleSubmit(e: Event) {
           <!-- Academic Stages -->
           <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
             <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-              {m.settings_registration_stages_title()}
+              {m.settings_registration_stages_title()} ({currentProfile.terminology.stage_ar})
             </div>
 
             <div class="flex flex-col px-6 py-4 gap-4">
@@ -244,7 +412,7 @@ function handleSubmit(e: Event) {
                     class="h-9 text-xs flex-1 border border-input bg-background"
                     onkeydown={(e) => e.key === "Enter" && (e.preventDefault(), addStage())}
                   />
-                  <Button type="button" variant="outline" size="sm" class="cursor-pointer font-semibold shrink-0" onclick={addStage}>
+                  <Button type="button" variant="outline" size="sm" class="cursor-pointer font-semibold shrink-0" onclick={() => addStage()}>
                     <Plus size={14} class="me-1.5" />
                     {m.common_onboarding_add()}
                   </Button>
@@ -275,14 +443,39 @@ function handleSubmit(e: Event) {
             </div>
           </div>
 
-          <!-- Required Documents Checklist -->
+          <!-- Required Documents Checklist & Tailored Presets -->
           <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
-            <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-              {m.settings_registration_docs_title()}
+            <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none flex items-center justify-between">
+              <span>{m.settings_registration_docs_title()}</span>
+              <Badge variant="outline" class="text-[10px] font-normal">
+                المقترح لـ {currentProfile.name_ar}
+              </Badge>
             </div>
 
             <div class="flex flex-col px-6 py-4 gap-4">
-              <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <!-- Preset Recommendations Bar -->
+              {#if currentProfile.requiredDocuments.length > 0}
+                <div class="flex flex-col gap-2 p-3 bg-muted/20 border border-border/60 rounded-lg">
+                  <span class="text-[11px] font-semibold text-foreground text-start">
+                    مقترحات مستندات تسجيل لـ ({currentProfile.name_ar}):
+                  </span>
+                  <div class="flex flex-wrap gap-2">
+                    {#each currentProfile.requiredDocuments as recDoc}
+                      {@const isAdded = requiredDocuments.includes(recDoc)}
+                      <button
+                        type="button"
+                        class="text-xs px-2.5 py-1 rounded-md border text-start flex items-center gap-1.5 transition-all cursor-pointer {isAdded ? 'bg-primary/10 border-primary/30 text-primary font-semibold' : 'bg-background hover:bg-accent/40 border-border text-foreground'}"
+                        onclick={() => addDocument(recDoc)}
+                      >
+                        <Plus size={12} class={isAdded ? "hidden" : "inline"} />
+                        <span>{recDoc}</span>
+                      </button>
+                    {/each}
+                  </div>
+                </div>
+              {/if}
+
+              <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2">
                 <div class="flex flex-col gap-1 text-start">
                   <Label class="text-xs font-semibold text-foreground">
                     {m.settings_registration_add_doc_title()}
@@ -298,7 +491,7 @@ function handleSubmit(e: Event) {
                     class="h-9 text-xs flex-1 border border-input bg-background"
                     onkeydown={(e) => e.key === "Enter" && (e.preventDefault(), addDocument())}
                   />
-                  <Button type="button" variant="outline" size="sm" class="cursor-pointer font-semibold shrink-0" onclick={addDocument}>
+                  <Button type="button" variant="outline" size="sm" class="cursor-pointer font-semibold shrink-0" onclick={() => addDocument()}>
                     <Plus size={14} class="me-1.5" />
                     {m.common_onboarding_add()}
                   </Button>
@@ -348,28 +541,20 @@ function handleSubmit(e: Event) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {#each Object.keys(activeFields) as fieldKey}
+                  {#each SYSTEM_FIELDS as sysField (sysField.key)}
                     <TableRow class="border-b border-border/40 hover:bg-muted/5">
                       <TableCell class="py-3 font-semibold text-foreground text-start">
-                        {fieldKey === "national_id" ? m.common_form_profile_nid_label() :
-                         fieldKey === "email" ? m.common_word_email() :
-                         fieldKey === "phone" ? m.common_word_phone() :
-                         fieldKey === "birth_date" ? m.common_bulk_col_dob() :
-                         fieldKey === "sex" ? m.common_form_sex() :
-                         fieldKey === "address" ? m.common_word_address() :
-                         fieldKey === "mother_name" ? m.common_form_mother_name() :
-                         fieldKey === "previous_school" ? m.settings_registration_field_previous_school() :
-                         m.common_form_tab_documents()}
+                        {sysField.label}
                       </TableCell>
                       <TableCell class="py-3 text-center">
                         <Checkbox 
-                          id={`active_${fieldKey}`} 
-                          checked={activeFields[fieldKey]} 
+                          id={`active_${sysField.key}`} 
+                          checked={activeFields[sysField.key] ?? false} 
                           onCheckedChange={(val) => {
-                            activeFields[fieldKey] = !!val;
+                            activeFields[sysField.key] = !!val;
                             if (!val) {
-                              requiredFields[fieldKey] = false;
-                              preventDuplicates[fieldKey] = false;
+                              requiredFields[sysField.key] = false;
+                              preventDuplicates[sysField.key] = false;
                             }
                           }} 
                           class="mx-auto"
@@ -377,20 +562,20 @@ function handleSubmit(e: Event) {
                       </TableCell>
                       <TableCell class="py-3 text-center">
                         <Checkbox 
-                          id={`required_${fieldKey}`} 
-                          checked={requiredFields[fieldKey]} 
-                          disabled={!activeFields[fieldKey]}
-                          onCheckedChange={(val) => requiredFields[fieldKey] = !!val} 
+                          id={`required_${sysField.key}`} 
+                          checked={requiredFields[sysField.key] ?? false} 
+                          disabled={!activeFields[sysField.key]}
+                          onCheckedChange={(val) => requiredFields[sysField.key] = !!val} 
                           class="mx-auto"
                         />
                       </TableCell>
                       <TableCell class="py-3 text-center">
-                        {#if ["national_id", "email", "phone"].includes(fieldKey)}
+                        {#if sysField.supportsDuplicate}
                           <Checkbox 
-                            id={`duplicate_${fieldKey}`} 
-                            checked={preventDuplicates[fieldKey]} 
-                            disabled={!activeFields[fieldKey]}
-                            onCheckedChange={(val) => preventDuplicates[fieldKey] = !!val} 
+                            id={`duplicate_${sysField.key}`} 
+                            checked={preventDuplicates[sysField.key] ?? false} 
+                            disabled={!activeFields[sysField.key]}
+                            onCheckedChange={(val) => preventDuplicates[sysField.key] = !!val} 
                             class="mx-auto"
                           />
                         {:else}
@@ -401,6 +586,98 @@ function handleSubmit(e: Event) {
                   {/each}
                 </TableBody>
               </Table>
+            </div>
+          </div>
+        </TabsContent>
+
+        <!-- TAB 4: Registration Workflow & Policy Rules -->
+        <TabsContent value="policies" class="mt-0">
+          <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
+            <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none flex items-center gap-2">
+              <ShieldCheck class="h-3.5 w-3.5 text-primary" />
+              <span>سياسات وقواعد قبول الطالب والتسجيل</span>
+            </div>
+
+            <div class="flex flex-col">
+              <!-- Admin Approval Rule -->
+              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+                <div class="flex flex-col gap-1 text-start">
+                  <Label for="req_approval" class="text-xs font-semibold text-foreground cursor-pointer">
+                    اشتراط موافقة الإدارة قبل الاعتماد النشط للطالب
+                  </Label>
+                  <span class="text-[11px] text-muted-foreground leading-relaxed">
+                    عند تفعيل هذا الخيار، يتم تقديم الطلبات بحالة (قيد المراجعة) بدلاً من القيد المباشر.
+                  </span>
+                </div>
+                <div class="shrink-0 flex items-center gap-2">
+                  <Switch
+                    id="req_approval"
+                    checked={requiresApproval}
+                    onCheckedChange={(val) => requiresApproval = val}
+                  />
+                  <span class="text-xs font-medium text-muted-foreground">{requiresApproval ? "مفعل" : "معطل"}</span>
+                </div>
+              </div>
+
+              <!-- Allow No Guardian Rule -->
+              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+                <div class="flex flex-col gap-1 text-start">
+                  <Label for="allow_no_g" class="text-xs font-semibold text-foreground cursor-pointer">
+                    السماح بالتسجيل بدون ولي أمر (للبالغين / الجامعات والمراكز)
+                  </Label>
+                  <span class="text-[11px] text-muted-foreground leading-relaxed">
+                    يتيح للطلاب البالغين التسجيل مباشرة دون الحاجة لربط ولي أمر.
+                  </span>
+                </div>
+                <div class="shrink-0 flex items-center gap-2">
+                  <Switch
+                    id="allow_no_g"
+                    checked={allowNoGuardian}
+                    onCheckedChange={(val) => allowNoGuardian = val}
+                  />
+                  <span class="text-xs font-medium text-muted-foreground">{allowNoGuardian ? "مسموح" : "غير مسموح"}</span>
+                </div>
+              </div>
+
+              <!-- Auto Assign Mandatory Fees -->
+              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+                <div class="flex flex-col gap-1 text-start">
+                  <Label for="auto_fees" class="text-xs font-semibold text-foreground cursor-pointer">
+                    الربط التلقائي بالرسوم الإلزامية للمرحلة
+                  </Label>
+                  <span class="text-[11px] text-muted-foreground leading-relaxed">
+                    توليد الرسوم الإلزامية تلقائياً على الطالب المستجد بمجرد قيده في الصف أو المساق.
+                  </span>
+                </div>
+                <div class="shrink-0 flex items-center gap-2">
+                  <Switch
+                    id="auto_fees"
+                    checked={autoAssignFees}
+                    onCheckedChange={(val) => autoAssignFees = val}
+                  />
+                  <span class="text-xs font-medium text-muted-foreground">{autoAssignFees ? "مفعل" : "معطل"}</span>
+                </div>
+              </div>
+
+              <!-- Allow Duplicate National ID -->
+              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b-0 gap-4">
+                <div class="flex flex-col gap-1 text-start">
+                  <Label for="allow_dup_id" class="text-xs font-semibold text-foreground cursor-pointer">
+                    السماح بتكرار الرقم القومي / رقم الهوية
+                  </Label>
+                  <span class="text-[11px] text-muted-foreground leading-relaxed">
+                    السماح بتسجيل أكثر من طالب بنفس رقم الهوية الوطنية (مثل الإخوة في حال استخدام رقم هوية ولي الأمر).
+                  </span>
+                </div>
+                <div class="shrink-0 flex items-center gap-2">
+                  <Switch
+                    id="allow_dup_id"
+                    checked={allowDuplicateNationalId}
+                    onCheckedChange={(val) => allowDuplicateNationalId = val}
+                  />
+                  <span class="text-xs font-medium text-muted-foreground">{allowDuplicateNationalId ? "مسموح" : "ممنوع"}</span>
+                </div>
+              </div>
             </div>
           </div>
         </TabsContent>

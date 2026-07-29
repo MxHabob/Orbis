@@ -23,12 +23,17 @@ export class PersonalInfoState {
   }
 
   // Address and previous school
-  motherName = $state("");
-  motherPhone = $state("");
-  motherJob = $state("");
   previousSchool = $state("");
   district = $state("");
   governorate = $state("");
+
+  // Additional fields
+  nationality = $state("");
+  placeOfBirth = $state("");
+  passportNumber = $state("");
+  bloodType = $state("");
+  emergencyContact = $state("");
+  medicalNotes = $state("");
 
   populate(originalStudent: any) {
     if (!originalStudent) return;
@@ -54,6 +59,15 @@ export class PersonalInfoState {
     this.email = originalStudent.email || "";
     this.phone = originalStudent.phone_number || originalStudent.phone || "";
     this.address = originalStudent.address || "";
+    this.previousSchool = originalStudent.previous_school || originalStudent.previousSchool || "";
+    this.district = originalStudent.district || "";
+    this.governorate = originalStudent.governorate || "";
+    this.nationality = originalStudent.nationality || "";
+    this.placeOfBirth = originalStudent.place_of_birth || "";
+    this.passportNumber = originalStudent.passport_number || "";
+    this.bloodType = originalStudent.blood_type || "";
+    this.emergencyContact = originalStudent.emergency_contact || "";
+    this.medicalNotes = originalStudent.medical_notes || "";
     this.status = originalStudent.status || "active";
   }
 }
