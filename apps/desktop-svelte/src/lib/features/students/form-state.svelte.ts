@@ -332,21 +332,23 @@ export class StudentFormState {
       } else {
         const firstGuardian = this.guardian.linkedGuardians[0];
 
-        const res = await commands.organization.registerStudent(this.orgId, {
-          name: this.personal.nameAr.trim(),
+        const payload = {
+          name: this.personal.nameAr.trim() || this.personal.nameEn.trim() || "طالب جديد",
           email: this.personal.email.trim() || null,
           phone: this.personal.phone.trim() || null,
-          gender: this.personal.sex,
+          gender: this.personal.sex || null,
           birth_date: this.personal.birthDate || null,
           national_id: this.personal.nationalId.trim() || null,
           address: this.personal.address.trim() || null,
-          class_id: this.personal.classId,
+          class_id: this.personal.classId || null,
           guardian_name: firstGuardian ? firstGuardian.full_name.trim() : null,
           guardian_phone: firstGuardian ? firstGuardian.phone.trim() : null,
           guardian_relationship: firstGuardian
             ? firstGuardian.relationship
             : null,
-        });
+        };
+
+        const res = await commands.enrollment_workflow.registerStudent(payload);
         targetStudentId = String(res.user_id);
         targetEnrollmentId = String(res.enrollment_id);
 
