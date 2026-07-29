@@ -20,6 +20,8 @@ import {
   BarChart3,
 } from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
+import ClassSelect from "$lib/features/academics/components/class-select.svelte";
+import SubjectSelect from "$lib/features/academics/components/subject-select.svelte";
 
 import { OrbisGrid } from "@orbis/svelte-grid";
 
@@ -102,34 +104,22 @@ let {
   <!-- Filters Row -->
   <div class="flex items-center gap-3 flex-wrap">
     <!-- Class Selector -->
-    <Select type="single" value={selectedClassId} onValueChange={(v) => { if (v) selectedClassId = v; }}>
-      <SelectTrigger class="min-w-[180px] text-xs h-9" disabled={!selectedPeriodId}>
-        <div class="flex items-center gap-2">
-          <GraduationCap size={12} class="text-muted-foreground shrink-0" />
-          <span class="truncate">{classes.find((c) => String(c.id) === selectedClassId)?.name_ar || classes.find((c) => String(c.id) === selectedClassId)?.name || m.common_control_select_class()}</span>
-        </div>
-      </SelectTrigger>
-      <SelectContent>
-        {#each classes as cls}
-          <SelectItem value={String(cls.id)}>{cls.name_ar || cls.name}</SelectItem>
-        {/each}
-      </SelectContent>
-    </Select>
+    <ClassSelect
+      bind:value={selectedClassId}
+      {classes}
+      disabled={!selectedPeriodId}
+      placeholder={m.common_control_select_class()}
+      class="min-w-[180px] text-xs h-9"
+    />
 
     <!-- Subject Selector -->
-    <Select type="single" value={selectedSubjectId} onValueChange={(v) => { if (v) selectedSubjectId = v; }}>
-      <SelectTrigger class="min-w-[180px] text-xs h-9" disabled={!selectedClassId || subjects.length === 0}>
-        <div class="flex items-center gap-2">
-          <BookOpen size={12} class="text-muted-foreground shrink-0" />
-          <span class="truncate">{subjects.find((s) => String(s.id) === selectedSubjectId)?.name_ar || subjects.find((s) => String(s.id) === selectedSubjectId)?.name || m.common_control_select_subject()}</span>
-        </div>
-      </SelectTrigger>
-      <SelectContent>
-        {#each subjects as sub}
-          <SelectItem value={String(sub.id)}>{sub.name_ar || sub.name}</SelectItem>
-        {/each}
-      </SelectContent>
-    </Select>
+    <SubjectSelect
+      bind:value={selectedSubjectId}
+      {subjects}
+      disabled={!selectedClassId || subjects.length === 0}
+      placeholder={m.common_control_select_subject()}
+      class="min-w-[180px] text-xs h-9"
+    />
   </div>
 
   <!-- Grade Matrix Grid -->

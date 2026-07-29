@@ -1,13 +1,8 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@orbis/ui-svelte/select";
-import { getLocale } from "$lib/paraglide/runtime";
+import ClassSelect from "$lib/features/academics/components/class-select.svelte";
+import TeacherSelect from "$lib/features/academics/components/teacher-select.svelte";
 
 interface Props {
   viewMode: "class" | "teacher";
@@ -49,37 +44,24 @@ let {
     </div>
   </div>
 
-  <!-- Selector Box using Orbis Select to follow agent rules -->
+  <!-- Selector Box -->
   <div class="flex items-center gap-3">
     {#if viewMode === 'class'}
       <span class="text-xs text-muted-foreground">{m.common_schedule_page_sel_class()}</span>
-      <Select type="single" value={selectedClassId} onValueChange={(v) => { if (v) selectedClassId = v; }}>
-        <SelectTrigger class="w-[180px] h-8 text-xs bg-background">
-          {classes.find(c => String(c.id) === selectedClassId)?.name_ar || classes.find(c => String(c.id) === selectedClassId)?.name || m.common_control_select_class()}
-        </SelectTrigger>
-        <SelectContent>
-          {#each classes as cls (cls.id)}
-            <SelectItem value={String(cls.id)}>{cls.name_ar || cls.name}</SelectItem>
-          {/each}
-        </SelectContent>
-      </Select>
+      <ClassSelect
+        bind:value={selectedClassId}
+        {classes}
+        placeholder={m.common_control_select_class()}
+        class="w-[180px] h-8 text-xs bg-background"
+      />
     {:else}
       <span class="text-xs text-muted-foreground">{m.common_schedule_page_sel_teacher()}</span>
-      <Select type="single" value={selectedTeacherId} onValueChange={(v) => { if (v) selectedTeacherId = v; }}>
-        <SelectTrigger class="w-[180px] h-8 text-xs bg-background">
-          {(() => {
-            const teach = teachers.find(t => String(t.id) === selectedTeacherId);
-            return teach ? (getLocale() === "ar" ? (teach.name_ar || teach.full_name) : teach.full_name) : m.common_schedule_page_no_teacher();
-          })()}
-        </SelectTrigger>
-        <SelectContent>
-          {#each teachers as teach (teach.id)}
-            <SelectItem value={String(teach.id)}>
-              {getLocale() === "ar" ? (teach.name_ar || teach.full_name) : teach.full_name}
-            </SelectItem>
-          {/each}
-        </SelectContent>
-      </Select>
+      <TeacherSelect
+        bind:value={selectedTeacherId}
+        {teachers}
+        placeholder={m.common_schedule_page_no_teacher()}
+        class="w-[180px] h-8 text-xs bg-background"
+      />
     {/if}
   </div>
 </div>

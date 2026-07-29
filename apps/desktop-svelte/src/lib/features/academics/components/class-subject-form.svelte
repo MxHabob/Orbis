@@ -23,6 +23,10 @@ import {
   createClassesQuery,
   createSubjectsQuery,
 } from "$lib/features/academics/queries";
+import ClassSelect from "$lib/features/academics/components/class-select.svelte";
+import SubjectSelect from "$lib/features/academics/components/subject-select.svelte";
+import PeriodSelect from "$lib/features/academics/components/period-select.svelte";
+import TeacherSelect from "$lib/features/academics/components/teacher-select.svelte";
 import { createUsersQuery } from "$lib/features/settings/queries";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 
@@ -148,77 +152,45 @@ async function handleSubmit() {
     <!-- Period -->
     <div class="flex flex-col gap-1.5">
       <Label class="text-xs font-semibold text-muted-foreground">{m.common_metrics_period ? m.common_metrics_period() : "Academic Period"} *</Label>
-      <Select type="single" value={periodId} onValueChange={(v) => (periodId = v ?? "")}>
-        <SelectTrigger class="h-9 text-sm">
-          {selectedPeriod
-            ? String(selectedPeriod.name ?? selectedPeriod.name_ar ?? "")
-            : "Select Period"}
-        </SelectTrigger>
-        <SelectContent class="max-h-[250px]">
-          {#each periods as p}
-            <SelectItem value={String(p.id)}>
-              {String(p.name ?? p.name_ar ?? "Unnamed")}
-            </SelectItem>
-          {/each}
-        </SelectContent>
-      </Select>
+      <PeriodSelect
+        bind:value={periodId}
+        {periods}
+        placeholder="Select Period"
+        class="h-9 text-sm"
+      />
     </div>
 
     <!-- Class -->
     <div class="flex flex-col gap-1.5">
       <Label class="text-xs font-semibold text-muted-foreground">{m.common_word_semester()} *</Label>
-      <Select type="single" value={classId} onValueChange={(v) => (classId = v ?? "")}>
-        <SelectTrigger class="h-9 text-sm">
-          {selectedClass
-            ? String(selectedClass.name ?? selectedClass.name_ar ?? "")
-            : m.common_cs_form_select_class()}
-        </SelectTrigger>
-        <SelectContent>
-          {#each classes as cls (cls.id)}
-            <SelectItem value={String(cls.id)}>
-              {String(cls.name ?? cls.name_ar ?? cls.id)}
-            </SelectItem>
-          {/each}
-        </SelectContent>
-      </Select>
+      <ClassSelect
+        bind:value={classId}
+        {classes}
+        placeholder={m.common_cs_form_select_class()}
+        class="h-9 text-sm"
+      />
     </div>
 
     <!-- Subject -->
     <div class="flex flex-col gap-1.5">
       <Label class="text-xs font-semibold text-muted-foreground">{m.common_word_subject()} *</Label>
-      <Select type="single" value={subjectId} onValueChange={(v) => (subjectId = v ?? "")}>
-        <SelectTrigger class="h-9 text-sm">
-          {selectedSubject
-            ? String(selectedSubject.name ?? selectedSubject.name_ar ?? "")
-            : m.common_cs_form_select_subject()}
-        </SelectTrigger>
-        <SelectContent>
-          {#each subjects as subj (subj.id)}
-            <SelectItem value={String(subj.id)}>
-              {String(subj.name ?? subj.name_ar ?? subj.id)}
-            </SelectItem>
-          {/each}
-        </SelectContent>
-      </Select>
+      <SubjectSelect
+        bind:value={subjectId}
+        {subjects}
+        placeholder={m.common_cs_form_select_subject()}
+        class="h-9 text-sm"
+      />
     </div>
 
     <!-- Primary Teacher -->
     <div class="flex flex-col gap-1.5">
       <Label class="text-xs font-semibold text-muted-foreground">{m.common_cs_col_teacher()} *</Label>
-      <Select type="single" value={teacherId} onValueChange={(v) => (teacherId = v ?? "")}>
-        <SelectTrigger class="h-9 text-sm">
-          {selectedTeacher
-            ? String(selectedTeacher.full_name ?? selectedTeacher.email ?? "")
-            : m.common_cs_form_select_teacher()}
-        </SelectTrigger>
-        <SelectContent>
-          {#each teachers as t (t.id)}
-            <SelectItem value={String(t.id)}>
-              {String(t.full_name ?? t.email ?? t.id)}
-            </SelectItem>
-          {/each}
-        </SelectContent>
-      </Select>
+      <TeacherSelect
+        bind:value={teacherId}
+        {teachers}
+        placeholder={m.common_cs_form_select_teacher()}
+        class="h-9 text-sm"
+      />
     </div>
 
     <!-- Weekly Hours -->
