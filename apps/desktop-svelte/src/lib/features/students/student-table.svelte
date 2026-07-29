@@ -13,7 +13,7 @@ import { createInitials } from "$lib/tables";
 import type { OrbisColumnDef, GridActionEvent } from "@orbis/svelte-grid";
 import { GraduationCap } from "lucide-svelte";
 import { goto } from "$app/navigation";
-import { localizeHref } from "$lib/paraglide/runtime";
+import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { studentsStore } from "$lib/features/students";
 
 let {

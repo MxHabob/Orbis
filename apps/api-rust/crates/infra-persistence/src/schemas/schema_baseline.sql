@@ -200,7 +200,7 @@ CREATE TABLE IF NOT EXISTS academic_periods (
   name_ar TEXT,
   code TEXT,
   period_type TEXT NOT NULL
-    CHECK (period_type IN ('year','semester','trimester','quarter','module','block','custom')),
+    CHECK (period_type IN ('year','semester','trimester','quarter','module','block','custom','term','month')),
   start_date TEXT NOT NULL,
   end_date TEXT NOT NULL,
   hijri_start TEXT,

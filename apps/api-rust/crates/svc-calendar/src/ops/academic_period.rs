@@ -21,11 +21,14 @@ async fn invalidate_period_gate(ctx: &ServiceContext, period_id: &str) {
 /// List all periods for the current year.
 pub async fn list(ctx: &ServiceContext) -> Result<Vec<academic_period::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::PeriodRead).await?;
-    Ok(academic_period::Entity::find()
-        .filter(academic_period::Column::OrgId.eq(&ctx.org_id))
-        .filter(academic_period::Column::PeriodId.eq(&ctx.period_id))
-        .order_by_asc(academic_period::Column::SortOrder)
-        .all(&ctx.db).await?)
+    let mut query = academic_period::Entity::find()
+        .filter(academic_period::Column::OrgId.eq(&ctx.org_id));
+
+    if !ctx.period_id.is_empty() {
+        query = query.filter(academic_period::Column::PeriodId.eq(&ctx.period_id));
+    }
+
+    Ok(query.order_by_asc(academic_period::Column::SortOrder).all(&ctx.db).await?)
 }
 
 /// List all years and periods combined into a hierarchical JSON structure.
@@ -48,6 +51,7 @@ pub async fn list_hierarchy(ctx: &ServiceContext) -> Result<serde_json::Value, A
 
     let mut combined: Vec<serde_json::Value> = Vec::new();
 
+    let year_ids: std::collections::HashSet<String> = years.iter().map(|y| y.id.clone()).collect();
     // Add years as root items (parent_id = null)
     for y in years {
         let mut val = serde_json::to_value(y).unwrap_or_default();
@@ -58,9 +62,18 @@ pub async fn list_hierarchy(ctx: &ServiceContext) -> Result<serde_json::Value, A
 
     // Add periods as child items (parent_id = period_id if no parent_id)
     for p in periods {
+        // Skip if this period is already represented in years as a root year
+        if year_ids.contains(&p.id) {
+            continue;
+        }
+
         let mut val = serde_json::to_value(p).unwrap_or_default();
         if val["parent_id"].is_null() {
             val["parent_id"] = val["period_id"].clone();
+        }
+        // Prevent self-referential parent_id
+        if val["parent_id"] == val["id"] {
+            val["parent_id"] = serde_json::Value::Null;
         }
         combined.push(val);
     }
@@ -159,9 +172,22 @@ pub async fn create(
     let period_id_val = if !ctx.period_id.is_empty() {
         ctx.period_id.clone()
     } else if let Some(ref pid) = req.parent_id {
-        pid.clone()
+        if let Ok(Some(parent_period)) = academic_period::Entity::find_by_id(pid.clone()).one(&ctx.db).await {
+            parent_period.period_id
+        } else {
+            pid.clone()
+        }
     } else {
         id.clone()
+    };
+
+    let valid_types = [
+        "year", "semester", "trimester", "quarter", "module", "block", "custom", "term", "month",
+    ];
+    let period_type_val = if valid_types.contains(&req.period_type.as_str()) {
+        req.period_type
+    } else {
+        "custom".to_string()
     };
 
     // Ensure corresponding entry in academic_years exists to satisfy FK constraint
@@ -202,7 +228,7 @@ pub async fn create(
         name: Set(req.name),
         name_ar: Set(req.name_ar),
         code: Set(req.code),
-        period_type: Set(req.period_type),
+        period_type: Set(period_type_val),
         start_date: Set(req.start_date),
         end_date: Set(req.end_date),
         hijri_start: Set(None),

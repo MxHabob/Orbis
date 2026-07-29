@@ -41,8 +41,10 @@ async function loadPeriods() {
   isLoading = true;
   error = null;
   try {
-    const list = await commands.calendar.listAcademicPeriods();
-    periods = list;
+    const list = await (commands.calendar.listHierarchy
+      ? commands.calendar.listHierarchy()
+      : commands.calendar.listAcademicPeriods());
+    periods = list || [];
   } catch (e: unknown) {
     error = extractErrorMessage(e);
     toast.error(extractErrorMessage(e));
@@ -61,7 +63,7 @@ let rootPeriods = $derived(
 );
 
 function getChildren(parentId: string) {
-  return periods.filter((p) => p.parent_id === parentId);
+  return periods.filter((p) => p.parent_id === parentId && p.id !== parentId);
 }
 
 function openCreateSheet() {
@@ -160,9 +162,10 @@ function toggleCollapse(periodId: string) {
   </div>
 
   {#snippet periodNode(node: any, depth: number)}
-    {@const children = getChildren(node.id)}
-    {@const isCollapsed = !!collapsedNodes[node.id]}
-    {@const isRoot = depth === 0}
+    {#if depth <= 10}
+      {@const children = getChildren(node.id)}
+      {@const isCollapsed = !!collapsedNodes[node.id]}
+      {@const isRoot = depth === 0}
     
     <div class="flex flex-col w-full {isRoot ? 'py-4 gap-2 border-b border-border/60' : 'py-2 border-b border-border/20 last:border-b-0'}">
       <!-- Node Header -->
@@ -260,8 +263,7 @@ function toggleCollapse(periodId: string) {
             class="text-[10px] h-7 px-2.5 font-semibold"
             onclick={() => requestDelete(node.id)}
           >
-            {#if isRoot}<Trash2 size={12} class="me-1" />{:else}<Trash2 size={12} />{/if}
-            {#if isRoot}{m.common_action_delete()}{/if}
+            {#if isRoot}<Trash2 size={12} />{:else}<Trash2 size={12} />{/if}
           </Button>
         </div>
       </div>
@@ -283,6 +285,7 @@ function toggleCollapse(periodId: string) {
         </div>
       {/if}
     </div>
+    {/if}
   {/snippet}
 
   <!-- Main Content -->

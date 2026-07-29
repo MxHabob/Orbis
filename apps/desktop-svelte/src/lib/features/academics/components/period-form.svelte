@@ -60,9 +60,11 @@ const gradingLabels = $derived({
 async function loadParentOptions() {
   if (!orgId) return;
   try {
-    const list = await commands.calendar.listAcademicPeriods();
-    periodsList = list.filter(
-      (p: any) => !isEdit || String(p.id) !== String(period.id),
+    const list = await (commands.calendar.listHierarchy
+      ? commands.calendar.listHierarchy()
+      : commands.calendar.listAcademicPeriods());
+    periodsList = (list || []).filter(
+      (p: any) => !isEdit || String(p.id) !== String(period?.id),
     );
   } catch (e) {
     console.error("Failed to load parent periods:", e);
@@ -94,7 +96,7 @@ async function handleSubmit(e: SubmitEvent) {
       name_ar: nameAr || name,
       code: code || undefined,
       period_type: periodType,
-      parent_id: periodType === "term" && parentId ? parentId : undefined,
+      parent_id: periodType !== "year" && parentId ? parentId : undefined,
       start_date: startDate,
       end_date: endDate,
       grading_system: gradingSystem,
@@ -174,7 +176,7 @@ async function handleSubmit(e: SubmitEvent) {
         </Select>
       </div>
 
-      {#if periodType === "term"}
+      {#if periodType !== "year"}
         <div class="flex flex-col gap-2">
           <label for="per_parent" class="text-xs font-semibold text-foreground">
             {m.common_period_form_parent()}

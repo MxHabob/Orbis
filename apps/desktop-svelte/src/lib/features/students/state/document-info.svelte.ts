@@ -13,6 +13,14 @@ export class DocumentInfoState {
     this.studentId = studentId;
   }
 
+  toggleDoc(docId: string) {
+    if (this.submittedDocs.includes(docId)) {
+      this.submittedDocs = this.submittedDocs.filter((d) => d !== docId);
+    } else {
+      this.submittedDocs = [...this.submittedDocs, docId];
+    }
+  }
+
   setRequiredDocuments(docs: string[]) {
     this.orgRequiredDocuments = docs || [];
   }

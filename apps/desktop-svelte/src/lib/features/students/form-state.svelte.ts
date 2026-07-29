@@ -12,6 +12,7 @@ import { FinancialInfoState } from "./state/financial-info.svelte";
 import { DocumentInfoState } from "./state/document-info.svelte";
 
 export class StudentFormState {
+  requiredFields = $state<Record<string, boolean>>({});
   activeFields = $state<Record<string, boolean>>({});
   preventDuplicates = $state<Record<string, boolean>>({});
   registrationStatus = $state("draft");
@@ -63,7 +64,10 @@ export class StudentFormState {
         this.orgName = String(org.name || org.name_ar || "");
         if (org.settings) {
           try {
-            const settings = JSON.parse(org.settings as string);
+            const settings =
+              typeof org.settings === "string"
+                ? JSON.parse(org.settings)
+                : (org.settings || {});
             const regConfig = settings.registration_config || {};
 
             this.document.setRequiredDocuments(
@@ -269,7 +273,7 @@ export class StudentFormState {
       toast.error(m.common_form_error_class_required());
       return;
     }
-    if (this.requiredFields.national_id && !this.personal.nationalId.trim()) {
+    if (this.requiredFields?.national_id && !this.personal.nationalId.trim()) {
       toast.error(m.common_form_error_national_id_required());
       return;
     }

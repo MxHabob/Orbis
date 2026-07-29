@@ -787,6 +787,9 @@ class OnboardingState {
       const createdPeriodsMap: Record<string, string> = {};
       if (rootPeriodId) {
         createdPeriodsMap["root"] = rootPeriodId;
+        if (payload.periods.length > 0 && payload.periods[0].id) {
+          createdPeriodsMap[payload.periods[0].id] = rootPeriodId;
+        }
 
         // Process child periods from payload
         for (const period of payload.periods.slice(1)) {
