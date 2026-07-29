@@ -97,13 +97,13 @@ const classes = $derived($classesQuery.data ?? []);
 const subjects = $derived($subjectsQuery.data ?? []);
 const users = $derived($usersQuery.data ?? []);
 
-// Filter teachers list
+// Filter teachers list - strictly ONLY users with teacher role
 const teachers = $derived(
   users.filter(
     (u: any) =>
       u.primary_role === "teacher" ||
-      u.primary_role === "admin" ||
-      u.primary_role === "super_admin",
+      u.role === "teacher" ||
+      (Array.isArray(u.roles) && u.roles.includes("teacher")),
   ),
 );
 

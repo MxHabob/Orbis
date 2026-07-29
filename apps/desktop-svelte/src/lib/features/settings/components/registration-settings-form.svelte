@@ -113,8 +113,11 @@ const SYSTEM_FIELDS = [
   { key: "documents", label: m.common_form_tab_documents(), supportsDuplicate: false },
 ];
 
+let isInitialized = false;
+
 $effect(() => {
-  if (org?.settings) {
+  if (org?.settings && !isInitialized) {
+    isInitialized = true;
     let settingsObj: any = {};
     try {
       settingsObj = typeof org.settings === "string" ? JSON.parse(org.settings) : (org.settings || {});

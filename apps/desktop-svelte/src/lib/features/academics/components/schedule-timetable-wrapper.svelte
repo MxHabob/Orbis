@@ -73,20 +73,22 @@ let {
     </div>
   </div>
 {:else}
-  <Timetable
-    {timeSlots}
-    {weekdays}
-    {lessons}
-    {draftLessons}
-    {previewDraft}
-    {viewMode}
-    locale={getLocale()}
-    {getSubjectName}
-    {getTeacherName}
-    {getClassName}
-    {getSubjectColor}
-    onCellClick={onCellClick}
-    onDeleteLesson={onDeleteLesson}
-    onMoveLesson={onMoveLesson}
-  />
+  <div class="flex-1 min-h-0 w-full flex flex-col">
+    <Timetable
+      {timeSlots}
+      {weekdays}
+      {lessons}
+      {draftLessons}
+      {previewDraft}
+      {viewMode}
+      locale={getLocale()}
+      {getSubjectName}
+      {getTeacherName}
+      {getClassName}
+      {getSubjectColor}
+      onCellClick={onCellClick}
+      onDeleteLesson={onDeleteLesson}
+      onMoveLesson={onMoveLesson}
+    />
+  </div>
 {/if}

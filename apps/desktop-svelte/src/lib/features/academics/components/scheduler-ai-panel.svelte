@@ -129,11 +129,13 @@ async function adjustSubjectHours(csId: string, delta: number) {
 async function loadSolveJobs() {
   if (!periodId) return;
   try {
-    const list = await commands.scheduling.listSolverJobs(periodId);
-    solveJobs = list;
+    const fn = (commands.scheduling as any).listJobs || (commands.scheduling as any).listSolverJobs;
+    if (!fn) return;
+    const list = await fn(periodId);
+    solveJobs = Array.isArray(list) ? list : [];
 
     // Auto-resume polling if any job is running in background
-    const running = list.find(
+    const running = solveJobs.find(
       (j: any) => j.status === "pending" || j.status === "running",
     );
     if (running) {
@@ -154,15 +156,12 @@ async function triggerSolving() {
   previewDraft = false;
 
   try {
-    const userId = authStore.userId || "desktop_user";
-    const req = {
-      period_id: periodId,
-      mode: solverMode,
-    };
-    const job = await commands.scheduling.startSolver(userId, req);
+    const fn = (commands.scheduling as any).start || (commands.scheduling as any).startSolver;
+    if (!fn) throw new Error("Solver start command not found");
+    const job = await fn(periodId);
     activeJob = job;
     toast.success(m.common_schedule_ai_optimization_started());
-    startPollingJob(String(job.id));
+    if (job?.id) startPollingJob(String(job.id));
   } catch (e) {
     isSolving = false;
     solveError = extractErrorMessage(e);
@@ -182,13 +181,16 @@ async function startPollingJob(jobId: string) {
 
   pollingInterval = setInterval(async () => {
     try {
-      const job = await commands.scheduling.getSolverJob(jobId);
+      const fn = (commands.scheduling as any).getJob || (commands.scheduling as any).getSolverJob;
+      if (!fn) return;
+      const job = await fn(jobId);
       activeJob = job;
 
       if (
-        job.status === "completed" ||
-        job.status === "failed" ||
-        job.status === "cancelled"
+        job &&
+        (job.status === "completed" ||
+          job.status === "failed" ||
+          job.status === "cancelled")
       ) {
         stopPolling();
         isSolving = false;
@@ -223,7 +225,9 @@ function stopPolling() {
 async function cancelSolving() {
   if (!activeJob) return;
   try {
-    const job = await commands.scheduling.cancelSolver(activeJob.id);
+    const fn = (commands.scheduling as any).cancel || (commands.scheduling as any).cancelSolver;
+    if (!fn) return;
+    const job = await fn(activeJob.id);
     activeJob = job;
     stopPolling();
     isSolving = false;
@@ -238,7 +242,9 @@ async function applySolving() {
   if (!activeJob) return;
   try {
     toast.loading(m.common_schedule_ai_applying_timetable());
-    await commands.scheduling.applySolver(activeJob.id);
+    const fn = (commands.scheduling as any).apply || (commands.scheduling as any).applySolver;
+    if (!fn) throw new Error("Apply solver command not found");
+    await fn(activeJob.id);
     activeJob = null;
     previewDraft = false;
     toast.dismiss();

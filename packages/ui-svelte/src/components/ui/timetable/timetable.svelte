@@ -97,20 +97,20 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
 }
 </script>
 
-<!-- Period-Based School Timetable Component with Premium Aesthetics and Design Tokens -->
-<div class="flex-1 w-full border border-border bg-card rounded-2xl flex flex-col overflow-hidden shadow-sm select-none">
+<!-- Period-Based Responsive Timetable Component -->
+<div class="flex-1 w-full h-full min-h-[450px] border border-border bg-card rounded-2xl flex flex-col overflow-auto shadow-sm select-none relative scrollbar-thin">
   
   <div 
-    class="grid gap-px text-xs w-full bg-border"
-    style="grid-template-columns: 145px repeat({weekdays.length}, 1fr);"
+    class="grid gap-px text-xs w-full min-w-[700px] bg-border flex-1"
+    style="grid-template-columns: minmax(130px, 140px) repeat({weekdays.length}, minmax(115px, 1fr));"
     in:fade={{ duration: 150 }}
   >
-    <!-- 1. Header Row -->
-    <div class="bg-card text-muted-foreground p-4 font-bold text-center flex items-center justify-center border-b border-border uppercase text-[10px] tracking-wider">
+    <!-- 1. Header Row (Sticky Top) -->
+    <div class="bg-card text-muted-foreground p-3 md:p-4 font-bold text-center flex items-center justify-center border-b border-border uppercase text-[10px] tracking-wider sticky top-0 start-0 z-30 shadow-xs">
       {locale === "ar" ? "الحصة / الوقت" : "Period / Time"}
     </div>
     {#each weekdays as day (day.value)}
-      <div class="bg-card text-muted-foreground p-4 font-bold text-center flex items-center justify-center border-b border-border uppercase text-[10px] tracking-wider">
+      <div class="bg-card text-muted-foreground p-3 md:p-4 font-bold text-center flex items-center justify-center border-b border-border uppercase text-[10px] tracking-wider sticky top-0 z-20 shadow-xs">
         {day.label}
       </div>
     {/each}
@@ -119,12 +119,12 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
     {#each timeSlots as slot (slot.id)}
       {@const isBreak = slot.is_break === 1 || slot.is_break === true}
 
-      <!-- Row Period Info Column -->
-      <div class="bg-muted/30 border-border p-3 font-semibold text-center flex flex-col justify-center items-center gap-1.5 h-[100px] border-b">
-        <span class="text-[11px] tracking-wide font-extrabold text-foreground">
+      <!-- Row Period Info Column (Sticky Start for Horizontal Scroll) -->
+      <div class="bg-muted/30 border-border p-2.5 font-semibold text-center flex flex-col justify-center items-center gap-1 min-h-[96px] h-full border-b sticky start-0 z-10 backdrop-blur-xs">
+        <span class="text-[11px] tracking-wide font-extrabold text-foreground truncate max-w-[125px]">
           {locale === "ar" ? (slot.name_ar || slot.name) : (slot.name || slot.name_ar)}
         </span>
-        <span class="bg-card border border-border text-muted-foreground text-[9px] font-mono font-bold px-2 py-0.5 rounded flex items-center gap-1">
+        <span class="bg-card border border-border text-muted-foreground text-[9px] font-mono font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0">
           <Clock size={10} class="opacity-70" />
           <span>{slot.start_time} - {slot.end_time}</span>
         </span>
@@ -134,7 +134,7 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
       {#if isBreak}
         <!-- Break row spans across all weekdays -->
         <div 
-          class="bg-muted/50 text-muted-foreground border-b border-border font-extrabold uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 h-[100px]"
+          class="bg-muted/50 text-muted-foreground border-b border-border font-extrabold uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 min-h-[96px] h-full"
           style="grid-column: span {weekdays.length};"
         >
           <span>{locale === "ar" ? "فترة راحة" : "BREAK INTERVAL"}</span>
@@ -148,7 +148,7 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
           <!-- Cell Container -->
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div 
-            class="bg-card border-border p-2.5 text-center align-middle h-[100px] relative flex items-center justify-center transition-all duration-200 border-b hover:bg-muted/40
+            class="bg-card border-border p-2 text-center align-middle min-h-[96px] h-full relative flex items-center justify-center transition-all duration-200 border-b hover:bg-muted/40
               {isDragOver ? 'bg-primary/[0.08] ring-2 ring-primary/40 ring-inset border-dashed' : ''}"
             ondragover={(e) => handleDragOver(e, day.value, slot.id)}
             ondragleave={handleDragLeave}
@@ -171,7 +171,7 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
               <button 
                 type="button"
                 onclick={() => onCellClick(day.value, slot.id)}
-                class="w-full h-full border border-dashed border-transparent hover:border-primary/30 hover:bg-primary/[0.03] rounded-xl flex items-center justify-center text-muted-foreground/0 hover:text-primary transition-all duration-200 cursor-pointer"
+                class="w-full h-full border border-dashed border-transparent hover:border-primary/30 hover:bg-primary/[0.03] rounded-xl flex items-center justify-center text-muted-foreground/0 hover:text-primary transition-all duration-200 cursor-pointer p-2 min-h-[70px]"
                 disabled={viewMode !== "class"}
                 title={locale === "ar" ? "إضافة حصة جديدة" : "Schedule new lesson"}
               >

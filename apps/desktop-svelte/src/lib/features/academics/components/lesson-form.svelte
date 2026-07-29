@@ -206,7 +206,7 @@ async function handleSubmit(e: SubmitEvent) {
 			class="font-semibold"
 			disabled={isSubmitting || !!conflictError}
 		>
-			{isSubmitting ? m.common_state_saving() : m.common_action_save()}
+			{isSubmitting ? m.common_state_saving() : (getLocale() === "ar" ? "حفظ الحصة" : "Save Lesson")}
 		</Button>
 	</div>
 </form>
