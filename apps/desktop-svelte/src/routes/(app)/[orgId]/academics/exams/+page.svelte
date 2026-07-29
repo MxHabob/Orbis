@@ -1,178 +1,409 @@
 <!--
 @component ExamsOverview
-Dashboard overview page for Examination Management.
-Shows stats cards and navigation cards.
+Landing / dashboard overview page for Examination Management.
+Designed with the exact Notion/Linear split layout design pattern of the system.
+Left side: Notion-style interactive database directory list.
+Right side: Linear-style diagnostics panel with Orbis Advisor insights.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { onMount } from "svelte";
+import { readable } from "svelte/store";
 import { Button } from "@orbis/ui-svelte/button";
+import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import { Badge } from "@orbis/ui-svelte/badge";
 import {
   ClipboardList,
-  Calendar,
-  FileText,
+  ShieldCheck,
   Building2,
-  UserCheck,
+  FileText,
   ArrowRight,
-  BarChart3,
-  Users,
+  Sparkles,
+  Milestone,
+  AlertCircle,
+  Plus,
+  Lock,
+  Unlock,
+  Info,
 } from "lucide-svelte";
 import { localizeHref } from "$lib/paraglide/runtime";
-import { fade } from "svelte/transition";
-
-import { ExamsSkeleton } from "$lib/shared/components/skeletons";
+import { createQuery } from "@tanstack/svelte-query";
+import { commands, extractErrorMessage } from "$lib/core/ipc";
+import { academicContext } from "$lib/stores";
+import { createPeriodsQuery } from "$lib/features/academics";
+import SessionCreateSheet from "$lib/features/exams/components/session-create-sheet.svelte";
 
 let { data }: { data: { orgId: string } } = $props();
 
-let isLoading = $state(true);
-let sessionsCount = $state(0);
-let studentsCount = $state(0);
-let hallsCount = $state(0);
-let proctorsCount = $state(0);
+// Modal trigger state
+let isCreateSheetOpen = $state(false);
 
-async function loadOverview() {
-  isLoading = true;
-  try {
-    // TODO: Wire to IPC commands when available
-    sessionsCount = 0;
-    studentsCount = 0;
-    hallsCount = 0;
-    proctorsCount = 0;
-  } catch (e) {
-    console.error("Error loading exams overview:", e);
-  } finally {
-    isLoading = false;
-  }
+// Helper to convert Svelte 5 reactive getters into Svelte Stores
+function toStore<T>(getter: () => T) {
+  return readable<T>(getter(), (set) => {
+    const cleanup = $effect.root(() => {
+      $effect(() => {
+        set(getter());
+      });
+    });
+    return cleanup;
+  });
 }
 
-onMount(() => {
-  if (data.orgId) {
-    loadOverview();
-  }
-});
+// Queries
+const periodsQuery = createPeriodsQuery(() => data.orgId);
+const periods = $derived($periodsQuery.data ?? []);
 
-const stats = $derived([
+// Active academic year & period
+const activeYearName = $derived(academicContext.yearLabelAr);
+const activePeriod = $derived(
+  periods.find((p) => p.status === "active") || periods[0],
+);
+const activePeriodId = $derived(activePeriod ? String(activePeriod.id) : "");
+const activePeriodName = $derived(
+  activePeriod ? activePeriod.name_ar || activePeriod.name : null,
+);
+
+// Grade Entry Status
+const isGradeEntryOpen = $derived(
+  activePeriod
+    ? activePeriod.grade_entry_status === "open" ||
+        activePeriod.is_grade_entry_open === 1
+    : false,
+);
+
+// Exam Sessions Query
+const examSessionsQuery = createQuery(
+  toStore(() => ({
+    queryKey: ["exam-sessions", data.orgId, activePeriodId],
+    queryFn: () => commands.exam.listSessions(activePeriodId),
+    enabled: !!data.orgId && !!activePeriodId,
+    staleTime: 2 * 60 * 1000,
+  })),
+);
+
+const examSessions = $derived(($examSessionsQuery.data as any[]) ?? []);
+
+const isLoading = $derived(
+  $periodsQuery.isLoading || $examSessionsQuery.isLoading,
+);
+
+const error = $derived($periodsQuery.error || $examSessionsQuery.error);
+
+function refetchAll() {
+  $periodsQuery.refetch();
+  $examSessionsQuery.refetch();
+}
+
+// Dynamic KPI Stats
+const kpiStats = $derived([
   {
-    label: m.common_exams_stat_sessions(),
-    value: sessionsCount,
+    label: "الدورات الامتحانية",
+    value: examSessions.length,
+  },
+  {
+    label: "الدورات النشطة",
+    value: examSessions.filter(
+      (s) => s.status === "active" || s.status === "running" || s.status === "ongoing",
+    ).length,
+  },
+  {
+    label: "إدخال الدرجات",
+    value: isGradeEntryOpen ? "مفتوح" : "مقفل",
+  },
+  {
+    label: "جاهزية الكنترول",
+    value: examSessions.length > 0 ? "جاهز" : "معطل",
+  },
+]);
+
+// Notion-style Directory Items
+const directoryItems = $derived([
+  {
+    path: `/${data.orgId}/academics/exams/sessions`,
+    title: m.common_exams_sessions_title ? m.common_exams_sessions_title() : "الدورات الامتحانية والجداول",
+    desc: "إشهار وتخطيط الفترات الامتحانية الفصلية والنهائية، ربط المواد، وتحديد مواعيد الاختبارات.",
     icon: ClipboardList,
-    color: "text-blue-500 bg-blue-500/10",
+    badge: `(${examSessions.length}) دورات`,
   },
   {
-    label: m.common_word_students(),
-    value: studentsCount,
-    icon: Users,
-    color: "text-emerald-500 bg-emerald-500/10",
+    path: `/${data.orgId}/academics/exams/control`,
+    title: "كنترول الامتحانات وأرقام الجلوس",
+    desc: "توليد وتخصيص أرقام الجلوس والأرقام السرية، وتوزيع الكنترول واللجان وترتيب الطلاب.",
+    icon: ShieldCheck,
+    badge: "إدارة الكنترول",
   },
   {
-    label: m.common_exams_stat_halls(),
-    value: hallsCount,
+    path: `/${data.orgId}/academics/exams/sessions`,
+    title: "قاعات الامتحانات وتوزيع المراقبين",
+    desc: "توزيع وتخصيص قاعات الامتحان والمراقبين والملاحظين وإدارة السعة الاستيعابية لكل لجنة.",
     icon: Building2,
-    color: "text-purple-500 bg-purple-500/10",
+    badge: "القاعات واللجان",
   },
   {
-    label: m.common_exams_stat_proctors(),
-    value: proctorsCount,
-    icon: UserCheck,
-    color: "text-amber-500 bg-amber-500/10",
+    path: `/${data.orgId}/academics/exams/reports`,
+    title: m.common_exams_reports_title ? m.common_exams_reports_title() : "التقارير وسجلات نتائج الامتحانات",
+    desc: "طباعة بطاقات الجلوس، كشوفات المناداة، كشوفات رصد الدرجات، ومحاضر سير امتحانات الكنترول.",
+    icon: FileText,
+    badge: "الكشوفات والبطاقات",
   },
 ]);
 
-const cards = $derived([
-  {
-    path: "sessions",
-    title: m.common_exams_sessions_title(),
-    desc: m.common_exams_card_sessions_desc(),
-    icon: ClipboardList,
-    color: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-  },
-  {
-    path: "sessions",
-    title: m.common_exams_card_schedule_title(),
-    desc: m.common_exams_card_schedule_desc(),
-    icon: Calendar,
-    color: "bg-purple-500/10 text-purple-500 border-purple-500/20",
-  },
-  {
-    path: "reports",
-    title: m.common_exams_reports_title(),
-    desc: m.common_exams_card_reports_desc(),
-    icon: FileText,
-    color: "bg-amber-500/10 text-amber-500 border-amber-500/20",
-  },
-]);
+// Advisor Diagnostic Insights
+const advisorInsights = $derived.by(() => {
+  const insights = [];
+
+  // 1. Grade Entry Lock Insight
+  insights.push({
+    id: "grade-lock",
+    text: isGradeEntryOpen
+      ? "باب إدخال الدرجات مفتوح حالياً للمعلمين. يرجى المراجعة قبل الاعتماد وإغلاق الفترة."
+      : "باب إدخال الدرجات مغلق ومحمي بواسطة الكنترول لضمان سرية ونزاهة النتائج.",
+    variant: isGradeEntryOpen ? ("warning" as const) : ("success" as const),
+    icon: isGradeEntryOpen ? Unlock : Lock,
+  });
+
+  // 2. Exam Sessions Insight
+  if (examSessions.length > 0) {
+    insights.push({
+      id: "sessions-active",
+      text: `تم جدولة وإشهار (${examSessions.length}) دورة امتحانية في الفترة الأكاديمية الحالية.`,
+      variant: "success" as const,
+      icon: ClipboardList,
+    });
+  } else {
+    insights.push({
+      id: "sessions-none",
+      text: "لا توجد دورات امتحانية مضافة في هذه الفترة. يمكنك البدء بإنشاء دورة امتحانية جديدة.",
+      variant: "neutral" as const,
+      icon: ClipboardList,
+    });
+  }
+
+  // 3. Control & Seating Insight
+  insights.push({
+    id: "seating-ready",
+    text: "نظام التوليد التلقائي لأرقام الجلوس والأرقام السرية جاهز ومفعل للجان.",
+    variant: "success" as const,
+    icon: ShieldCheck,
+  });
+
+  return insights;
+});
 </script>
 
-<div class="h-full w-full overflow-y-auto scrollbar-hide p-6 flex flex-col gap-6 select-none">
-  {#if isLoading}
-    <ExamsSkeleton />
-  {:else}
-    <!-- Header Banner -->
-    <div
-      class="card-tactile bg-linear-to-br from-card to-card/50 p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-      in:fade={{ duration: 150 }}
-    >
-      <div class="flex items-center gap-4 text-start">
-        <div class="h-12 w-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-          <BarChart3 size={24} />
-        </div>
-        <div class="flex flex-col">
-          <h2 class="text-sm font-bold text-foreground uppercase tracking-wider">
-            {m.common_exams_overview_title()}
-          </h2>
-          <p class="text-[10px] text-muted-foreground mt-0.5 max-w-lg">
-            {m.common_exams_overview_subtitle()}
-          </p>
-        </div>
+<div class="h-full w-full overflow-y-auto bg-background/30 scrollbar-hide p-6 select-none font-sans flex flex-col gap-6">
+  
+  <!-- Sleek Header with Active Year & Term Indicators -->
+  <div class="flex items-center justify-between border-b border-border/40 pb-4">
+    <div class="flex items-center gap-3 text-start">
+      <div class="h-8.5 w-8.5 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold text-xs">
+        <ClipboardList size={18} />
+      </div>
+      <div class="flex flex-col">
+        <h2 class="text-xs font-bold text-foreground tracking-wide uppercase">
+          مركز التقييم وكنترول الامتحانات
+        </h2>
+        <span class="text-[9.5px] text-muted-foreground/90 mt-0.5">
+          إدارة الدورات الامتحانية، اللجان، أرقام الجلوس، والقاعات الدراسية
+        </span>
       </div>
     </div>
 
-    <!-- Stats Row -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" in:fade={{ delay: 50, duration: 200 }}>
-      {#each stats as stat (stat.label)}
-        <div class="card-tactile bg-card p-4 flex items-center gap-3">
-          <div class="h-9 w-9 rounded-lg {stat.color} flex items-center justify-center shrink-0">
-            <stat.icon size={16} />
-          </div>
-          <div class="flex flex-col">
-            <span class="text-lg font-bold text-foreground font-mono">{stat.value}</span>
-            <span class="text-[9px] text-muted-foreground uppercase tracking-wide">{stat.label}</span>
-          </div>
-        </div>
-      {/each}
+    <!-- Active Academic Year & Term Pills -->
+    <div class="flex items-center gap-2">
+      {#if activeYearName}
+        <Badge variant="outline" class="text-[9px] px-2 py-0.5 font-bold flex items-center gap-1.5 border-border/60 bg-card/60">
+          <Milestone size={10} class="text-primary" />
+          <span>{activeYearName}</span>
+        </Badge>
+      {:else}
+        <Badge variant="outline" class="text-[9px] px-2 py-0.5 text-muted-foreground border-dashed">
+          لا يوجد عام دراسي نشط
+        </Badge>
+      {/if}
+      
+      {#if activePeriodName}
+        <Badge variant="outline" class="text-[9px] px-2 py-0.5 font-bold flex items-center gap-1.5 border-border/60 bg-card/60">
+          <span class="h-1.5 w-1.5 rounded-full {isGradeEntryOpen ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}"></span>
+          <span>{activePeriodName}</span>
+        </Badge>
+      {/if}
+
+      <Button 
+        variant="lime" 
+        size="sm" 
+        class="text-[10px] font-bold px-3 h-7.5 rounded-md gap-1.5 cursor-pointer ms-2"
+        onclick={() => isCreateSheetOpen = true}
+      >
+        <Plus size={13} />
+        <span>إضافة دورة</span>
+      </Button>
     </div>
+  </div>
 
-    <!-- Navigation Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" in:fade={{ delay: 100, duration: 200 }}>
-      {#each cards as card (card.title)}
-        <div class="card-tactile bg-card flex flex-col justify-between p-6 h-44 text-start transition-all duration-200 hover:-translate-y-1 relative group">
-          <div class="flex items-start justify-between">
-            <div class="h-10 w-10 rounded-lg border flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105 {card.color}">
-              <card.icon size={20} />
+  {#if isLoading}
+    <!-- Split Layout Loading Skeleton -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
+      <!-- Left Directory List Skeleton -->
+      <div class="lg:col-span-7 xl:col-span-8 flex flex-col gap-3">
+        <Skeleton class="h-4 w-32 mb-2 rounded" />
+        {#each Array(4) as _}
+          <div class="flex items-center justify-between p-3.5 border-b border-border/30">
+            <div class="flex items-center gap-3 w-full">
+              <Skeleton class="h-8.5 w-8.5 rounded-lg" />
+              <div class="flex flex-col gap-1.5 w-2/3">
+                <Skeleton class="h-3 w-28 rounded" />
+                <Skeleton class="h-2.5 w-full rounded" />
+              </div>
             </div>
+            <Skeleton class="h-4 w-12 rounded" />
           </div>
+        {/each}
+      </div>
 
-          <div class="flex flex-col gap-1.5 my-3">
-            <h3 class="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
-              {card.title}
-            </h3>
-            <p class="text-[10px] text-muted-foreground leading-relaxed line-clamp-2">
-              {card.desc}
-            </p>
-          </div>
-
-          <div class="border-t border-border/60 pt-3 flex items-center justify-end">
-            <Button
-              href={localizeHref(`/${data.orgId}/academics/exams/${card.path}`)}
-              variant="ghost"
-              class="text-[10px] font-bold text-primary group-hover:underline h-7.5 px-3 flex items-center gap-1 cursor-pointer"
+      <!-- Right Diagnostics Sidebar Skeleton -->
+      <div class="lg:col-span-5 xl:col-span-4 flex flex-col gap-5 border border-border/50 bg-card/20 rounded-xl p-5">
+        <Skeleton class="h-3 w-40 mb-1 rounded" />
+        <div class="grid grid-cols-2 gap-4 pb-4 border-b border-border/40">
+          {#each Array(4) as _}
+            <div class="flex flex-col gap-1">
+              <Skeleton class="h-2.5 w-16 rounded" />
+              <Skeleton class="h-4 w-8 rounded" />
+            </div>
+          {/each}
+        </div>
+        <Skeleton class="h-3 w-32 mb-1 rounded" />
+        <div class="flex flex-col gap-3">
+          {#each Array(3) as _}
+            <div class="flex items-start gap-2.5">
+              <Skeleton class="h-4 w-4 rounded-full shrink-0" />
+              <Skeleton class="h-3 w-full rounded" />
+            </div>
+          {/each}
+        </div>
+      </div>
+    </div>
+  {:else if error}
+    <div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2">
+      <AlertCircle size={24} />
+      <h3 class="font-semibold text-xs">تعذر تحميل بيانات مركز الامتحانات</h3>
+      <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
+      <Button variant="outline" onclick={refetchAll} class="text-[10px] mt-2 h-8">إعادة المحاولة</Button>
+    </div>
+  {:else}
+    <!-- Main Content Split Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
+      
+      <!-- 1. LEFT COLUMN: Directory Index List (Notion Database style) -->
+      <div class="lg:col-span-7 xl:col-span-8 flex flex-col">
+        <h3 class="text-[10px] font-bold text-muted-foreground/80 tracking-wider uppercase mb-3 text-start">
+          أقسام ووحدات الامتحانات والكنترول
+        </h3>
+        
+        <div class="flex flex-col">
+          {#each directoryItems as item (item.path + item.title)}
+            <a 
+              href={localizeHref(item.path)} 
+              class="group flex items-center justify-between py-2.5 px-3 border-b border-border/30 hover:bg-muted/40 rounded-lg transition-colors duration-150 select-none cursor-pointer"
             >
-              <span>{m.common_exams_open_section()}</span>
-              <ArrowRight size={11} class="transition-transform group-hover:translate-x-1" />
-            </Button>
+              <div class="flex items-center gap-3.5 min-w-0 text-start">
+                <!-- Sleek Monolithic icon box -->
+                <div class="h-8 w-8 rounded-lg bg-muted/65 text-muted-foreground flex items-center justify-center shrink-0 group-hover:bg-primary/10 group-hover:text-primary transition-colors duration-150">
+                  <item.icon size={16} />
+                </div>
+                <div class="flex flex-col min-w-0">
+                  <span class="text-xs font-bold text-foreground group-hover:text-primary transition-colors duration-150">
+                    {item.title}
+                  </span>
+                  <span class="text-[9.5px] text-muted-foreground/90 leading-normal truncate mt-0.5 max-w-sm sm:max-w-md md:max-w-lg">
+                    {item.desc}
+                  </span>
+                </div>
+              </div>
+              
+              <div class="flex items-center gap-2 shrink-0">
+                {#if item.badge}
+                  <span class="text-[8.5px] font-mono font-medium text-muted-foreground/80 bg-muted/50 border border-border/40 px-2 py-0.5 rounded select-none">
+                    {item.badge}
+                  </span>
+                {/if}
+                <ArrowRight 
+                  size={12} 
+                  class="text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity duration-150 rtl:rotate-180" 
+                />
+              </div>
+            </a>
+          {/each}
+        </div>
+      </div>
+
+      <!-- 2. RIGHT COLUMN: Academic Health & Diagnostics (Linear Sidebar style) -->
+      <div class="lg:col-span-5 xl:col-span-4 flex flex-col gap-5 border border-border/50 bg-card/10 rounded-xl p-5 select-none text-start">
+        
+        <!-- Sidebar Section: KPI Summary -->
+        <div>
+          <h4 class="text-[9.5px] font-bold text-muted-foreground/80 tracking-wider uppercase border-b border-border/30 pb-2 mb-3">
+            ملخص مؤشرات الكنترول
+          </h4>
+          
+          <div class="grid grid-cols-2 gap-4 pb-4 border-b border-border/30">
+            {#each kpiStats as stat}
+              <div class="flex flex-col text-start">
+                <span class="text-[9.5px] text-muted-foreground/80">{stat.label}</span>
+                <span class="text-sm font-bold text-foreground font-mono mt-0.5 leading-none">{stat.value}</span>
+              </div>
+            {/each}
           </div>
         </div>
-      {/each}
+
+        <!-- Sidebar Section: Orbis AI Advisor System Diagnostics -->
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center gap-2 text-foreground font-semibold text-[11px] pb-1">
+            <Sparkles size={13} class="text-primary animate-pulse" />
+            <span>تشخيص المساعد الأكاديمي (Orbis Advisor)</span>
+          </div>
+          
+          <div class="flex flex-col gap-2.5">
+            {#each advisorInsights as insight (insight.id)}
+              <div class="flex items-start gap-2.5 p-2 rounded-lg bg-card/30 border border-border/20 text-[10px] leading-relaxed text-muted-foreground">
+                
+                <!-- Status icon or color dot -->
+                <div class="shrink-0 mt-0.5">
+                  {#if insight.variant === 'warning'}
+                    <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                    </span>
+                  {:else if insight.variant === 'success'}
+                    <span class="inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  {:else}
+                    <span class="inline-flex rounded-full h-2 w-2 bg-muted-foreground/40"></span>
+                  {/if}
+                </div>
+
+                <div class="flex flex-col min-w-0">
+                  <span class="text-foreground/90 font-medium">{insight.text}</span>
+                </div>
+              </div>
+            {/each}
+          </div>
+        </div>
+
+        <!-- System Information Footer -->
+        <div class="pt-2 border-t border-border/30 flex items-center gap-2 text-[9px] text-muted-foreground/75">
+          <Info size={11} />
+          <span>System Status: Optimal. Exams Control Active.</span>
+        </div>
+
+      </div>
+
     </div>
   {/if}
 </div>
+
+<!-- Exam Session Creation Side Sheet -->
+<SessionCreateSheet
+  bind:open={isCreateSheetOpen}
+  orgId={data.orgId}
+  onSuccess={refetchAll}
+/>
