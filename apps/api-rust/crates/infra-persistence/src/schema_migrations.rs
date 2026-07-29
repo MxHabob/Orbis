@@ -6,6 +6,7 @@ use tracing::info;
 /// Apply P0 migrations (safe to call on every startup).
 pub async fn run_p0_migrations(db: &DatabaseConnection) -> Result<(), DbErr> {
     migrate_academic_policies_branch_overrides(db).await?;
+    migrate_process_log_schema(db).await?;
     Ok(())
 }
 
@@ -130,5 +131,63 @@ pub async fn run_p4_migrations(db: &DatabaseConnection) -> Result<(), DbErr> {
 
     db.execute_unprepared(migrate_sql).await?;
     info!("P4 migration complete: users migrated to parties and persons");
+    Ok(())
+}
+
+/// Ensure process_log table has steps and current_step columns on existing databases.
+async fn migrate_process_log_schema(db: &DatabaseConnection) -> Result<(), DbErr> {
+    let backend = db.get_database_backend();
+    if backend == sea_orm::DbBackend::Sqlite {
+        let has_steps = db
+            .query_one(Statement::from_string(
+                backend,
+                "SELECT 1 FROM pragma_table_info('process_log') WHERE name = 'steps'",
+            ))
+            .await?;
+
+        if has_steps.is_none() {
+            info!("Applying P0 migration: process_log steps and current_step columns");
+            db.execute_unprepared("PRAGMA foreign_keys=OFF").await?;
+
+            db.execute_unprepared(
+                r#"
+                CREATE TABLE IF NOT EXISTS process_log__p0 (
+                    id              TEXT PRIMARY KEY,
+                    process_type    TEXT NOT NULL,
+                    org_id          TEXT NOT NULL,
+                    status          TEXT NOT NULL,
+                    steps           TEXT NOT NULL,
+                    current_step    INTEGER NOT NULL DEFAULT 0,
+                    started_at      TEXT NOT NULL,
+                    completed_at    TEXT,
+                    error           TEXT
+                )
+                "#,
+            )
+            .await?;
+
+            let has_old = db
+                .query_one(Statement::from_string(
+                    backend,
+                    "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'process_log'",
+                ))
+                .await?;
+
+            if has_old.is_some() {
+                let _ = db
+                    .execute_unprepared(
+                        "INSERT OR IGNORE INTO process_log__p0 (id, process_type, org_id, status, steps, current_step, started_at, completed_at, error) \
+                         SELECT id, process_type, org_id, status, steps_json, 0, started_at, completed_at, error FROM process_log",
+                    )
+                    .await;
+                let _ = db.execute_unprepared("DROP TABLE process_log").await;
+            }
+
+            db.execute_unprepared("ALTER TABLE process_log__p0 RENAME TO process_log").await?;
+            db.execute_unprepared("CREATE INDEX IF NOT EXISTS idx_pl_org ON process_log(org_id, process_type, started_at)").await?;
+            db.execute_unprepared("PRAGMA foreign_keys=ON").await?;
+            info!("P0 migration complete: process_log columns updated");
+        }
+    }
     Ok(())
 }
