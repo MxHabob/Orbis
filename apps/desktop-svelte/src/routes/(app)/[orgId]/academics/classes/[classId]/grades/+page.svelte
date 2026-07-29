@@ -24,7 +24,6 @@ import { getLocale } from "$lib/paraglide/runtime";
 import { DataTable, AvatarCell } from "$lib/tables";
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
 import OverrideRequestDialog from "$lib/shared/components/override-request-dialog.svelte";
-import PeriodStatusBar from "$lib/shared/components/period-status-bar.svelte";
 import { usePeriodGate } from "$lib/shared/utils/use-period-gate";
 
 const orgId = $derived(page.params.orgId);
@@ -395,10 +394,6 @@ async function handleCellEdit(event: any) {
         {students.length}
         {m.common_word_student_single()}
       </Badge>
-
-      {#if selectedSemesterId || activePeriodId}
-        <PeriodStatusBar periodId={selectedSemesterId || activePeriodId} showGates={["grade_entry"]} />
-      {/if}
     </div>
 
     <!-- Actions -->
