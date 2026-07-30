@@ -65,3 +65,33 @@ export function createCalcPolicyQuery(policyId: () => string | undefined) {
     staleTime: 10 * 60 * 1000,
   });
 }
+
+// ── Assessment Schemes ──────────────────────────────────────
+
+/** All assessment schemes for current organization. */
+export function createAssessmentSchemesQuery(orgId: () => string) {
+  return createQuery({
+    get queryKey() {
+      return ["assessment-schemes", orgId()];
+    },
+    queryFn: () => commands.assessment.listAssessmentSchemes(),
+    get enabled() {
+      return !!orgId();
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
+/** Components for a specific assessment scheme. */
+export function createSchemeComponentsQuery(schemeId: () => string | undefined) {
+  return createQuery({
+    get queryKey() {
+      return ["scheme-components", schemeId()];
+    },
+    queryFn: () => commands.assessment.listComponents(schemeId()!),
+    get enabled() {
+      return !!schemeId();
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+}

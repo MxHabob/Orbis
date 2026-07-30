@@ -27,6 +27,7 @@ import {
   Sliders,
   Scale,
   Calculator,
+  Layers,
 } from "lucide-svelte";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
@@ -136,6 +137,11 @@ const navItems = $derived([
     path: "calc-policies",
     label: "سياسات الحساب",
     icon: Calculator,
+  },
+  {
+    path: "assessment-schemes",
+    label: "هياكل التقييم",
+    icon: Layers,
   },
   {
     path: "approvals",

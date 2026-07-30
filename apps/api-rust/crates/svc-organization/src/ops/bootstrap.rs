@@ -226,6 +226,37 @@ pub async fn bootstrap_full(
         ]
     )).await.ok(); // Ignore duplicate currency errors
 
+    // 3h. Chart of Accounts (COA)
+    if let Err(e) = seed_chart_of_accounts(db, &org_id, &payload.currency, &now).await {
+        info!("Note: COA seeding warning: {}", e);
+    }
+
+    // 3i. OrgSettings Initialization
+    let org_settings = serde_json::json!({
+        "registration": {
+            "require_approval": false,
+            "allow_no_guardian": false,
+            "auto_assign_fees": true,
+            "allow_duplicate_national_id": false
+        },
+        "finance": {
+            "default_currency": payload.currency,
+            "tax_rate": 0.0,
+            "auto_invoice_on_enrollment": true
+        },
+        "grading": {
+            "default_grading_system": blueprint.grading_system,
+            "default_passing_grade": blueprint.passing_grade,
+            "default_max_grade": 100.0
+        }
+    });
+
+    db.execute(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "UPDATE organizations SET settings = $1 WHERE id = $2",
+        vec![org_settings.to_string().into(), org_id.clone().into()]
+    )).await.ok();
+
     info!("Bootstrap completed for org_id={} type={}", org_id, payload.org_type);
 
     Ok(BootstrapResult {
@@ -235,6 +266,93 @@ pub async fn bootstrap_full(
         calculation_policy_id: calc_policy_id,
         period_template_id: tmpl_id,
     })
+}
+
+// ── COA Seeding Implementation ──────────────────────────────────
+
+const COA_JSON: &str = include_str!("../../../../../apps/cli/data/educational_chart_of_accounts.json");
+
+#[derive(Deserialize, Debug)]
+struct AccNode {
+    pub code: String,
+    pub name_ar: String,
+    pub name_en: String,
+    #[serde(rename = "type")]
+    pub acc_type: String,
+    pub nature: String,
+    pub level: i32,
+    pub children: Option<Vec<AccNode>>,
+}
+
+#[derive(Deserialize, Debug)]
+struct CoaData {
+    pub accounts: Vec<AccNode>,
+}
+
+fn flatten_acc_nodes(
+    nodes: &[AccNode],
+    org_id: &str,
+    parent_id: Option<&str>,
+    parent_path: &str,
+    depth: i32,
+    currency: &str,
+    now: &str,
+    out: &mut Vec<(String, String, String, String, String, String, Option<String>, String, i32, String, String)>,
+) {
+    for node in nodes {
+        let acc_id = format!("{}-acc-{}", org_id, node.code);
+        let path = if parent_path.is_empty() {
+            node.code.clone()
+        } else {
+            format!("{}.{}", parent_path, node.code)
+        };
+        let db_type = node.acc_type.to_lowercase();
+
+        out.push((
+            acc_id.clone(),
+            org_id.to_string(),
+            node.code.clone(),
+            node.name_en.clone(),
+            node.name_ar.clone(),
+            db_type,
+            parent_id.map(|s| s.to_string()),
+            path.clone(),
+            depth,
+            currency.to_string(),
+            now.to_string(),
+        ));
+
+        if let Some(ref children) = node.children {
+            flatten_acc_nodes(children, org_id, Some(&acc_id), &path, depth + 1, currency, now, out);
+        }
+    }
+}
+
+async fn seed_chart_of_accounts(
+    db: &DatabaseConnection,
+    org_id: &str,
+    currency: &str,
+    now: &str,
+) -> Result<(), AppError> {
+    let coa: CoaData = serde_json::from_str(COA_JSON)
+        .map_err(|e| AppError::internal(format!("Failed to parse COA JSON: {e}")))?;
+
+    let mut rows = Vec::new();
+    flatten_acc_nodes(&coa.accounts, org_id, None, "", 1, currency, now, &mut rows);
+
+    for (id, oid, code, name, name_ar, db_type, parent_id, path, depth, curr, timestamp) in rows {
+        db.execute(Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "INSERT INTO accounts (id, org_id, code, name, name_ar, type, parent_id, path, depth, currency, balances, is_control_account, is_system_account, is_active, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, '{}', 0, 0, 1, $11, $12)",
+            vec![
+                id.into(), oid.into(), code.into(), name.into(), name_ar.into(),
+                db_type.into(), parent_id.into(), path.into(), depth.into(),
+                curr.into(), timestamp.clone().into(), timestamp.into(),
+            ]
+        )).await.map_err(|e| AppError::internal(format!("Failed to seed account {code}: {e}")))?;
+    }
+
+    Ok(())
 }
 
 // ── Internal Blueprint Definitions ──────────────────────────────
