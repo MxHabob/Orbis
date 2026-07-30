@@ -17,7 +17,7 @@ use crate::entities::{grade_scale, grade_scale_item};
 
 /// List all grade scales for the current organization.
 pub async fn list(ctx: &ServiceContext) -> Result<Vec<grade_scale::Model>, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::SettingsRead).await?;
+    ctx.permissions.check(&ctx.actor, Permission::AssessmentRead).await?;
 
     Ok(grade_scale::Entity::find()
         .filter(grade_scale::Column::OrgId.eq(&ctx.org_id))
@@ -27,7 +27,7 @@ pub async fn list(ctx: &ServiceContext) -> Result<Vec<grade_scale::Model>, AppEr
 
 /// Get a single grade scale by ID.
 pub async fn get(ctx: &ServiceContext, scale_id: &str) -> Result<grade_scale::Model, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::SettingsRead).await?;
+    ctx.permissions.check(&ctx.actor, Permission::AssessmentRead).await?;
 
     grade_scale::Entity::find_by_id(scale_id.to_string())
         .one(&ctx.db)
@@ -40,7 +40,7 @@ pub async fn list_items(
     ctx: &ServiceContext,
     scale_id: &str,
 ) -> Result<Vec<grade_scale_item::Model>, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::SettingsRead).await?;
+    ctx.permissions.check(&ctx.actor, Permission::AssessmentRead).await?;
 
     Ok(grade_scale_item::Entity::find()
         .filter(grade_scale_item::Column::ScaleId.eq(scale_id))
@@ -55,7 +55,7 @@ pub async fn create(
     ctx: &ServiceContext,
     data: serde_json::Value,
 ) -> Result<grade_scale::Model, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::SettingsWrite).await?;
+    ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
 
     #[derive(serde::Deserialize)]
     struct Req {
@@ -72,7 +72,7 @@ pub async fn create(
         id: Uuid::new_v4().to_string(),
         org_id: ctx.org_id.clone(),
         name: req.name,
-        r#type: req.scale_type,
+        scale_type: req.scale_type,
         created_at: now.clone(),
         updated_at: now,
     };
@@ -88,7 +88,7 @@ pub async fn update(
     scale_id: &str,
     data: serde_json::Value,
 ) -> Result<grade_scale::Model, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::SettingsWrite).await?;
+    ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
 
     let existing = grade_scale::Entity::find_by_id(scale_id.to_string())
         .one(&ctx.db)
@@ -110,9 +110,10 @@ pub async fn update(
         active.name = Set(name);
     }
     if let Some(t) = req.scale_type {
-        active.r#type = Set(t);
+        active.scale_type = Set(t);
     }
     active.updated_at = Set(Utc::now().to_rfc3339());
+
 
     let updated = active.update(&ctx.db).await?;
     Ok(updated)
@@ -120,7 +121,7 @@ pub async fn update(
 
 /// Delete a grade scale and all its items.
 pub async fn delete(ctx: &ServiceContext, scale_id: &str) -> Result<(), AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::SettingsWrite).await?;
+    ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
 
     // Delete items first
     grade_scale_item::Entity::delete_many()
@@ -142,7 +143,7 @@ pub async fn create_item(
     ctx: &ServiceContext,
     data: serde_json::Value,
 ) -> Result<grade_scale_item::Model, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::SettingsWrite).await?;
+    ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
 
     #[derive(serde::Deserialize)]
     struct Req {
@@ -164,7 +165,7 @@ pub async fn create_item(
         grade_label: req.grade_label,
         min_score: req.min_score,
         max_score: req.max_score,
-        gpa_points: req.gpa_points.unwrap_or(0.0),
+        gpa_points: Some(req.gpa_points.unwrap_or(0.0)),
         is_passing: if req.is_passing { 1 } else { 0 },
         created_at: now.clone(),
         updated_at: now,
@@ -177,10 +178,11 @@ pub async fn create_item(
 
 /// Delete a grade scale item.
 pub async fn delete_item(ctx: &ServiceContext, item_id: &str) -> Result<(), AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::SettingsWrite).await?;
+    ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
 
     grade_scale_item::Entity::delete_by_id(item_id.to_string())
         .exec(&ctx.db)
         .await?;
     Ok(())
 }
+

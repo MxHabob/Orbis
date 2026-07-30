@@ -18,7 +18,7 @@ use crate::entities::{assessment_scheme, assessment_scheme_component};
 
 /// List all assessment schemes for the current organization.
 pub async fn list(ctx: &ServiceContext) -> Result<Vec<assessment_scheme::Model>, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::SettingsRead).await?;
+    ctx.permissions.check(&ctx.actor, Permission::AssessmentRead).await?;
 
     Ok(assessment_scheme::Entity::find()
         .filter(assessment_scheme::Column::OrgId.eq(&ctx.org_id))
@@ -28,7 +28,7 @@ pub async fn list(ctx: &ServiceContext) -> Result<Vec<assessment_scheme::Model>,
 
 /// Get a single assessment scheme by ID.
 pub async fn get(ctx: &ServiceContext, scheme_id: &str) -> Result<assessment_scheme::Model, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::SettingsRead).await?;
+    ctx.permissions.check(&ctx.actor, Permission::AssessmentRead).await?;
 
     assessment_scheme::Entity::find_by_id(scheme_id.to_string())
         .one(&ctx.db)
@@ -41,7 +41,7 @@ pub async fn list_components(
     ctx: &ServiceContext,
     scheme_id: &str,
 ) -> Result<Vec<assessment_scheme_component::Model>, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::SettingsRead).await?;
+    ctx.permissions.check(&ctx.actor, Permission::AssessmentRead).await?;
 
     Ok(assessment_scheme_component::Entity::find()
         .filter(assessment_scheme_component::Column::SchemeId.eq(scheme_id))
@@ -56,7 +56,7 @@ pub async fn create(
     ctx: &ServiceContext,
     data: serde_json::Value,
 ) -> Result<assessment_scheme::Model, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::SettingsWrite).await?;
+    ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
 
     #[derive(serde::Deserialize)]
     struct Req {
@@ -88,7 +88,7 @@ pub async fn update(
     scheme_id: &str,
     data: serde_json::Value,
 ) -> Result<assessment_scheme::Model, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::SettingsWrite).await?;
+    ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
 
     let existing = get(ctx, scheme_id).await?;
     let mut active: assessment_scheme::ActiveModel = existing.into();
@@ -107,7 +107,7 @@ pub async fn update(
 
 /// Delete an assessment scheme and its components.
 pub async fn delete(ctx: &ServiceContext, scheme_id: &str) -> Result<(), AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::SettingsWrite).await?;
+    ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
 
     // Delete components first
     assessment_scheme_component::Entity::delete_many()
@@ -127,7 +127,7 @@ pub async fn create_component(
     ctx: &ServiceContext,
     data: serde_json::Value,
 ) -> Result<assessment_scheme_component::Model, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::SettingsWrite).await?;
+    ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
 
     #[derive(serde::Deserialize)]
     struct Req {
@@ -166,7 +166,7 @@ pub async fn update_component(
     component_id: &str,
     data: serde_json::Value,
 ) -> Result<assessment_scheme_component::Model, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::SettingsWrite).await?;
+    ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
 
     let existing = assessment_scheme_component::Entity::find_by_id(component_id.to_string())
         .one(&ctx.db)
@@ -198,10 +198,11 @@ pub async fn update_component(
 
 /// Delete a scheme component.
 pub async fn delete_component(ctx: &ServiceContext, component_id: &str) -> Result<(), AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::SettingsWrite).await?;
+    ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
 
     assessment_scheme_component::Entity::delete_by_id(component_id.to_string())
         .exec(&ctx.db)
         .await?;
     Ok(())
 }
+

@@ -15,8 +15,8 @@ use shared_kernel::errors::AppError;
 use tracing::warn;
 
 use crate::entities::{calculation_policy, grade_scale, grade_scale_item};
-use crate::ops::calc_engine::{CalcEngine, AstNode, apply_rounding};
-use crate::ops::grade_mapper::{GradeMapper, GradeScaleItemData, GradeResult};
+use crate::ops::calc_engine::apply_rounding;
+use crate::ops::grade_mapper::{GradeMapper, GradeScaleItemData};
 
 // ── Public Result ────────────────────────────────────────────────
 

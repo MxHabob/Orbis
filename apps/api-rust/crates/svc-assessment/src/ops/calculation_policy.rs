@@ -17,7 +17,7 @@ use crate::entities::calculation_policy;
 
 /// List all calculation policies for the current organization.
 pub async fn list(ctx: &ServiceContext) -> Result<Vec<calculation_policy::Model>, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::SettingsRead).await?;
+    ctx.permissions.check(&ctx.actor, Permission::AssessmentRead).await?;
 
     Ok(calculation_policy::Entity::find()
         .filter(calculation_policy::Column::OrgId.eq(&ctx.org_id))
@@ -30,7 +30,7 @@ pub async fn get(
     ctx: &ServiceContext,
     policy_id: &str,
 ) -> Result<calculation_policy::Model, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::SettingsRead).await?;
+    ctx.permissions.check(&ctx.actor, Permission::AssessmentRead).await?;
 
     calculation_policy::Entity::find_by_id(policy_id.to_string())
         .one(&ctx.db)
@@ -45,7 +45,7 @@ pub async fn create(
     ctx: &ServiceContext,
     data: serde_json::Value,
 ) -> Result<calculation_policy::Model, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::SettingsWrite).await?;
+    ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
 
     #[derive(serde::Deserialize)]
     struct Req {
@@ -69,6 +69,8 @@ pub async fn create(
         rule_type: req.rule_type,
         formula_expression: req.formula_expression,
         rounding_policy: req.rounding_policy.unwrap_or_else(|| "round_half_up".into()),
+        valid_from: None,
+        valid_until: None,
         created_at: now.clone(),
         updated_at: now,
     };
@@ -84,7 +86,7 @@ pub async fn update(
     policy_id: &str,
     data: serde_json::Value,
 ) -> Result<calculation_policy::Model, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::SettingsWrite).await?;
+    ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
 
     let existing = calculation_policy::Entity::find_by_id(policy_id.to_string())
         .one(&ctx.db)
@@ -119,10 +121,11 @@ pub async fn update(
 
 /// Delete a calculation policy.
 pub async fn delete(ctx: &ServiceContext, policy_id: &str) -> Result<(), AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::SettingsWrite).await?;
+    ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
 
     calculation_policy::Entity::delete_by_id(policy_id.to_string())
         .exec(&ctx.db)
         .await?;
     Ok(())
 }
+

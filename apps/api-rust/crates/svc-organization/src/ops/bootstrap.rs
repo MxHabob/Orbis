@@ -270,9 +270,10 @@ pub async fn bootstrap_full(
 
 // ── COA Seeding Implementation ──────────────────────────────────
 
-const COA_JSON: &str = include_str!("../../../../../apps/cli/data/educational_chart_of_accounts.json");
+const COA_JSON: &str = include_str!("../../../../../../apps/cli/data/educational_chart_of_accounts.json");
 
 #[derive(Deserialize, Debug)]
+#[allow(dead_code)]
 struct AccNode {
     pub code: String,
     pub name_ar: String,
@@ -345,7 +346,7 @@ async fn seed_chart_of_accounts(
             db.get_database_backend(),
             "INSERT INTO accounts (id, org_id, code, name, name_ar, type, parent_id, path, depth, currency, balances, is_control_account, is_system_account, is_active, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, '{}', 0, 0, 1, $11, $12)",
             vec![
-                id.into(), oid.into(), code.into(), name.into(), name_ar.into(),
+                id.into(), oid.into(), code.clone().into(), name.into(), name_ar.into(),
                 db_type.into(), parent_id.into(), path.into(), depth.into(),
                 curr.into(), timestamp.clone().into(), timestamp.into(),
             ]
