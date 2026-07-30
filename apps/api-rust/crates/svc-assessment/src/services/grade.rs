@@ -541,7 +541,7 @@ impl GradeService {
             .ok_or_else(|| AppError::not_found("academic_period", period_id))?;
 
         // Use the org-level passing grade (from academic_policies) instead of hardcoded 50
-        let passing_grade = AssessmentEngine::get_org_passing_grade(&self.query.db, org_id).await;
+        let _passing_grade = AssessmentEngine::get_org_passing_grade(&self.query.db, org_id).await;
         let engine = self.engine_for(org_id, period_id).await?;
 
         use sea_orm::{QueryFilter, ColumnTrait};
