@@ -13,6 +13,85 @@ pub async fn assessment_assessment_engine_for_period(state: State<'_, Arc<AppSta
 }
 
 #[tauri::command]
+pub async fn assessment_assessment_scheme_list(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::assessment_scheme::list(&ctx).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn assessment_assessment_scheme_get(state: State<'_, Arc<AppState>>, scheme_id: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::assessment_scheme::get(&ctx, &scheme_id).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn assessment_assessment_scheme_list_components(state: State<'_, Arc<AppState>>, scheme_id: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::assessment_scheme::list_components(&ctx, &scheme_id).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn assessment_assessment_scheme_create(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let data_parsed = match data {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: data")),
+    };
+    let result = ops::assessment_scheme::create(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn assessment_assessment_scheme_update(state: State<'_, Arc<AppState>>, scheme_id: String, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let data_parsed = match data {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: data")),
+    };
+    let result = ops::assessment_scheme::update(&ctx, &scheme_id, data_parsed).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn assessment_assessment_scheme_delete(state: State<'_, Arc<AppState>>, scheme_id: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    ops::assessment_scheme::delete(&ctx, &scheme_id).await.map_err(CommandError::from)?;
+    Ok(serde_json::json!({}))
+}
+
+#[tauri::command]
+pub async fn assessment_assessment_scheme_create_component(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let data_parsed = match data {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: data")),
+    };
+    let result = ops::assessment_scheme::create_component(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn assessment_assessment_scheme_update_component(state: State<'_, Arc<AppState>>, component_id: String, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let data_parsed = match data {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: data")),
+    };
+    let result = ops::assessment_scheme::update_component(&ctx, &component_id, data_parsed).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn assessment_assessment_scheme_delete_component(state: State<'_, Arc<AppState>>, component_id: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    ops::assessment_scheme::delete_component(&ctx, &component_id).await.map_err(CommandError::from)?;
+    Ok(serde_json::json!({}))
+}
+
+#[tauri::command]
 pub async fn assessment_attendance_list(state: State<'_, Arc<AppState>>, class_id: String, date: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::attendance::list(&ctx, &class_id, &date).await.map_err(CommandError::from)?;

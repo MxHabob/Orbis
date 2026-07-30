@@ -41,4 +41,5 @@ export type {
   GradeCell,
   GradeMatrixStudent,
   GradeMatrixResponse,
+  GradeScaleItem,
 } from "./definitions/grade-helpers";

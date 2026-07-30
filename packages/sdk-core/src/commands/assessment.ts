@@ -3,6 +3,15 @@ import type * as Types from '../types/index.js';
 
 export interface AssessmentCommands {
   forPeriod(orgId: string, periodId: string): Promise<any>;
+  listAssessmentSchemes(): Promise<any[]>;
+  getAssessmentScheme(schemeId: string): Promise<any>;
+  listComponents(schemeId: string): Promise<any[]>;
+  createAssessmentScheme(data: any): Promise<any>;
+  updateAssessmentScheme(schemeId: string, data: any): Promise<any>;
+  deleteAssessmentScheme(schemeId: string): Promise<void>;
+  createComponent(data: any): Promise<any>;
+  updateComponent(componentId: string, data: any): Promise<any>;
+  deleteComponent(componentId: string): Promise<void>;
   listAttendances(classId: string, date: string): Promise<any[]>;
   getReport(PeriodId: string, enrollmentId: string): Promise<Types.AttendanceReport>;
   getAnalytics(periodId: string, classId: string): Promise<any>;

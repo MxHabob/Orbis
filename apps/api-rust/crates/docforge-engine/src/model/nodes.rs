@@ -313,6 +313,13 @@ pub struct RepeaterProps {
     pub filter: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<u32>,
+    /// Group items by this field path (e.g., "category", "subject.department").
+    /// When set, the repeater emits a group header before each group of items.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub group_by: Option<String>,
+    /// Variable name for the group key value (defaults to "group_key").
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub group_variable: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

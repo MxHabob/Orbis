@@ -44,6 +44,9 @@ pub enum DocforgeError {
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
 
+    #[error("Data source error: {0}")]
+    DataSourceError(String),
+
     #[error("Internal error: {0}")]
     Internal(String),
 }

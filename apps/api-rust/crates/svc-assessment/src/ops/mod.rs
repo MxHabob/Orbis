@@ -15,3 +15,4 @@ pub mod snapshot_job;
 
 pub mod grade_scale;
 pub mod calculation_policy;
+pub mod assessment_scheme;

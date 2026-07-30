@@ -631,3 +631,100 @@ impl DataSource for ReportCardDataSource {
         })
     }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// BRIDGE: docforge-orbis DataSource → docforge-engine DataSource
+//
+// This adapter wraps an Orbis DataSource (which requires &DatabaseConnection)
+// into a docforge-engine DataSource (which is self-contained). By binding a
+// DB connection at construction time, we allow the engine to call resolve_one
+// without knowing about Sea-ORM.
+// ═══════════════════════════════════════════════════════════════
+
+use docforge_engine::plugin::data_source::{
+    DataSource as EngineDataSource,
+    DataContext,
+    DataFilter as EngineDataFilter,
+    DataSchema,
+    DataFieldSchema,
+};
+use docforge_engine::error::DocforgeError;
+
+/// Bridges an Orbis DataSource (DB-aware) to the engine DataSource trait.
+pub struct OrbisDataSourceAdapter {
+    inner: Arc<dyn DataSource>,
+    db: Arc<DatabaseConnection>,
+}
+
+impl OrbisDataSourceAdapter {
+    pub fn new(inner: Arc<dyn DataSource>, db: Arc<DatabaseConnection>) -> Self {
+        Self { inner, db }
+    }
+}
+
+#[async_trait]
+impl EngineDataSource for OrbisDataSourceAdapter {
+    fn entity_type(&self) -> &str {
+        self.inner.entity_type()
+    }
+
+    fn schema(&self) -> &DataSchema {
+        // We leak a static ref since the engine trait returns &DataSchema.
+        // This is safe for long-lived adapters (registered once per request).
+        let orbis_schema = self.inner.schema();
+        let fields = schema_value_to_fields(&orbis_schema);
+        let ds = DataSchema {
+            entity_type: self.inner.entity_type().to_string(),
+            label: self.inner.entity_type().to_string(),
+            label_ar: None,
+            fields,
+        };
+        Box::leak(Box::new(ds))
+    }
+
+    async fn resolve_one(&self, id: &str) -> Result<DataContext, DocforgeError> {
+        self.inner.resolve(&self.db, id).await
+            .map_err(|e| DocforgeError::DataSourceError(e))
+    }
+
+    async fn resolve_many(&self, _filter: &EngineDataFilter) -> Result<Vec<DataContext>, DocforgeError> {
+        // For most Orbis data sources, batch queries are not yet implemented.
+        // Return empty — the engine will fall back to resolve_one per item.
+        Ok(Vec::new())
+    }
+
+    async fn count(&self, _filter: &EngineDataFilter) -> Result<u64, DocforgeError> {
+        Ok(0)
+    }
+
+    fn sample_data(&self) -> DataContext {
+        json!({})
+    }
+}
+
+/// Convert a JSON schema value to engine DataFieldSchema vec.
+fn schema_value_to_fields(val: &Value) -> Vec<DataFieldSchema> {
+    let mut fields = Vec::new();
+    if let Some(obj) = val.as_object() {
+        for (key, v) in obj {
+            let field_type = v.get("type")
+                .and_then(|t| t.as_str())
+                .unwrap_or("string")
+                .to_string();
+            let label = v.get("label")
+                .and_then(|l| l.as_str())
+                .unwrap_or(key.as_str())
+                .to_string();
+            let children = v.get("properties").map(|p| schema_value_to_fields(p))
+                .or_else(|| v.get("items").map(|i| schema_value_to_fields(i)));
+            fields.push(DataFieldSchema {
+                path: key.clone(),
+                field_type,
+                label,
+                label_ar: None,
+                children,
+            });
+        }
+    }
+    fields
+}

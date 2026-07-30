@@ -130,7 +130,7 @@ async function loadGradeMatrix() {
         : [];
     }
 
-    gridSource = transformMatrixToSource(result, getLocale());
+    gridSource = transformMatrixToSource(result, getLocale(), academicContext.gradeScaleItems);
   } catch (e: unknown) {
     toast.error((e as any)?.message || "Error loading grade matrix");
   } finally {
@@ -154,7 +154,7 @@ function handleCellEdit(event: CellEditEvent) {
   const row = { ...updatedSource[rowIndex]! };
   row[field] = newValue;
 
-  recalculateRowTotals(row, assessmentKeys);
+  recalculateRowTotals(row, assessmentKeys, academicContext.gradeScaleItems);
 
   updatedSource[rowIndex] = row;
   gridSource = updatedSource;
