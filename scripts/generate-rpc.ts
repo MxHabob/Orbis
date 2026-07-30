@@ -181,6 +181,7 @@ function parseOps(): OpFunction[] {
         const funcName = match[1];
         const argsStr = match[2];
         const rustReturnType = match[3].trim();
+        if (rustReturnType === "Self" || rustReturnType.endsWith("::Self")) continue;
 
         const argsRaw = argsStr.split(",").map(a => a.trim()).filter(a => a.length > 0);
         const args = [];

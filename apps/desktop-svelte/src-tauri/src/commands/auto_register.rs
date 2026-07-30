@@ -91,7 +91,6 @@ pub fn generate_handlers<R: tauri::Runtime>() -> impl Fn(tauri::ipc::Invoke<R>) 
         crate::commands::academic::auto::academic_subject_create,
         crate::commands::academic::auto::academic_subject_update,
         crate::commands::academic::auto::academic_subject_delete,
-        crate::commands::assessment::auto::assessment_assessment_engine_for_period,
         crate::commands::assessment::auto::assessment_assessment_scheme_list,
         crate::commands::assessment::auto::assessment_assessment_scheme_get,
         crate::commands::assessment::auto::assessment_assessment_scheme_list_components,

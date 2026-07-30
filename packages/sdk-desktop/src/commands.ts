@@ -122,7 +122,6 @@ export const commands: OrbisCommands = {
     deleteSubject: (subjectId: any) => cmd("academic_subject_delete", { subjectId }),
   },
   assessment: {
-    forPeriod: (orgId: any, periodId: any) => cmd("assessment_assessment_engine_for_period", { orgId, periodId }),
     listAssessmentSchemes: () => cmd("assessment_assessment_scheme_list", {}),
     getAssessmentScheme: (schemeId: any) => cmd("assessment_assessment_scheme_get", { schemeId }),
     listComponents: (schemeId: any) => cmd("assessment_assessment_scheme_list_components", { schemeId }),

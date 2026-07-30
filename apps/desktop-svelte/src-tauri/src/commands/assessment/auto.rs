@@ -6,13 +6,6 @@ use crate::commands::error::{CmdResult, CommandError};
 use svc_assessment::ops;
 
 #[tauri::command]
-pub async fn assessment_assessment_engine_for_period(state: State<'_, Arc<AppState>>, org_id: String, period_id: String) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::assessment_engine::for_period(&ctx.db, &org_id, &period_id).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(result).unwrap())
-}
-
-#[tauri::command]
 pub async fn assessment_assessment_scheme_list(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::assessment_scheme::list(&ctx).await.map_err(CommandError::from)?;

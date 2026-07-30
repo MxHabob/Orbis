@@ -2,7 +2,6 @@
 import type * as Types from '../types/index.js';
 
 export interface AssessmentCommands {
-  forPeriod(orgId: string, periodId: string): Promise<any>;
   listAssessmentSchemes(): Promise<any[]>;
   getAssessmentScheme(schemeId: string): Promise<any>;
   listComponents(schemeId: string): Promise<any[]>;
