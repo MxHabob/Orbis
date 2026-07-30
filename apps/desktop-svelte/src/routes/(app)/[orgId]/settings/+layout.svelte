@@ -25,6 +25,8 @@ import {
   Percent,
   CheckSquare,
   Sliders,
+  Scale,
+  Calculator,
 } from "lucide-svelte";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
@@ -124,6 +126,16 @@ const navItems = $derived([
     path: "academic-policy",
     label: m.common_nav_academic_policy(),
     icon: Sliders,
+  },
+  {
+    path: "grade-scales",
+    label: "مقاييس الدرجات",
+    icon: Scale,
+  },
+  {
+    path: "calc-policies",
+    label: "سياسات الحساب",
+    icon: Calculator,
   },
   {
     path: "approvals",

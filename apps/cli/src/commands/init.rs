@@ -183,7 +183,8 @@ pub async fn execute() -> Result<()> {
     let org_id = result.org_id;
     output::print_progress_ok("Organization and admin account created");
 
-    // 5b. Update organization with additional fields (timezone, currency, name_ar, settings)
+    // 5b. Update organization with additional fields (timezone, name_ar, settings)
+    // Note: currency is already set by bootstrap_full via the payload.
     output::print_progress_pending("Updating organization settings...");
     let settings_json = serde_json::json!({
         "registration_config": {
@@ -191,34 +192,38 @@ pub async fn execute() -> Result<()> {
         }
     }).to_string();
 
-    let update_sql = format!(
-        "UPDATE organizations SET name_ar = '{}', timezone = '{}', currency = '{}', locale = 'ar', settings = '{}' WHERE id = '{}'",
-        org_name_ar.replace('\'', "''"),
-        timezone.replace('\'', "''"),
-        currency.replace('\'', "''"),
-        settings_json.replace('\'', "''"),
-        org_id
-    );
-    db.execute_unprepared(&update_sql).await?;
+    db.execute(sea_orm::Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "UPDATE organizations SET name_ar = $1, timezone = $2, locale = 'ar', settings = $3 WHERE id = $4",
+        vec![
+            org_name_ar.clone().into(),
+            timezone.clone().into(),
+            settings_json.into(),
+            org_id.clone().into(),
+        ]
+    )).await?;
     output::print_progress_ok("Organization settings updated");
 
-    // 5c. Seed essential data
-    output::print_progress_pending("Seeding currencies, period templates, chart of accounts...");
-    match seeder::seed_essential_data(&db, &org_id).await {
-        Ok(()) => output::print_progress_ok("Essential data seeded successfully"),
-        Err(e) => output::print_progress_fail(&format!("Some seed data failed: {}", e)),
+    // 5c. Core data (currencies, grade scales, permissions, period templates)
+    //     is created by bootstrap_full(). Only Chart of Accounts needs the seeder.
+    output::print_progress_pending("Seeding Chart of Accounts...");
+    match seeder::seed_chart_of_accounts(&db, &org_id).await {
+        Ok(()) => output::print_progress_ok("Chart of Accounts seeded"),
+        Err(e) => output::print_progress_fail(&format!("COA seeding failed: {}", e)),
     }
 
     // 5d. Store license limits in organization
     output::print_progress_pending("Applying license limits...");
-    let license_sql = format!(
-        "UPDATE organizations SET max_users = {}, max_students = {}, subscription_plan = '{}' WHERE id = '{}'",
-        license_info.max_users,
-        license_info.max_students,
-        license_info.plan.to_string().to_lowercase(),
-        org_id
-    );
-    db.execute_unprepared(&license_sql).await?;
+    db.execute(sea_orm::Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "UPDATE organizations SET max_users = $1, max_students = $2, subscription_plan = $3 WHERE id = $4",
+        vec![
+            (license_info.max_users as i64).into(),
+            (license_info.max_students as i64).into(),
+            license_info.plan.to_string().to_lowercase().into(),
+            org_id.clone().into(),
+        ]
+    )).await?;
     output::print_progress_ok(&format!("License limits applied (Plan: {})", license_info.plan));
 
     // 5e. Desktop download (production only)

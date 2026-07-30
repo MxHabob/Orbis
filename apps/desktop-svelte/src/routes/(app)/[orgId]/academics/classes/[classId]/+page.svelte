@@ -224,7 +224,7 @@ const gridColumns = $derived.by(() => {
 
 const gridSource = $derived.by(() => {
   if (!$gradeMatrixQuery.data) return [];
-  return transformMatrixToSource($gradeMatrixQuery.data as any, getLocale());
+  return transformMatrixToSource($gradeMatrixQuery.data as any, getLocale(), academicContext.gradeScaleItems);
 });
 
 async function handleCellEdit(event: any) {

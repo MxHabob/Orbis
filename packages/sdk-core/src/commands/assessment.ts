@@ -2,6 +2,7 @@
 import type * as Types from '../types/index.js';
 
 export interface AssessmentCommands {
+  forPeriod(orgId: string, periodId: string): Promise<any>;
   listAttendances(classId: string, date: string): Promise<any[]>;
   getReport(PeriodId: string, enrollmentId: string): Promise<Types.AttendanceReport>;
   getAnalytics(periodId: string, classId: string): Promise<any>;
@@ -12,6 +13,11 @@ export interface AssessmentCommands {
   submitAi(data: any): Promise<any>;
   updateBehavior(recordId: string, actionTaken: string | null, status: string | null, resolutionNotes: string | null): Promise<any>;
   deleteBehavior(recordId: string): Promise<void>;
+  listCalculationPolicies(): Promise<any[]>;
+  getCalculationPolicy(policyId: string): Promise<any>;
+  createCalculationPolicy(data: any): Promise<any>;
+  updateCalculationPolicy(policyId: string, data: any): Promise<any>;
+  deleteCalculationPolicy(policyId: string): Promise<void>;
   listGrades(assessmentId: string): Promise<any[]>;
   listGradesPaginated(assessmentId: string, request: any): Promise<any>;
   reportCard(enrollmentId: string, periodId: string): Promise<Types.GradeReportCard>;
@@ -23,6 +29,16 @@ export interface AssessmentCommands {
   bulkSubjectEntry(entry: any): Promise<any>;
   upsertCell(data: any): Promise<any>;
   compileSemester(periodId: string, classId: string): Promise<any[]>;
+  listGradeScales(): Promise<any[]>;
+  getGradeScale(scaleId: string): Promise<any>;
+  listItems(scaleId: string): Promise<any[]>;
+  createGradeScale(data: any): Promise<any>;
+  updateGradeScale(scaleId: string, data: any): Promise<any>;
+  deleteGradeScale(scaleId: string): Promise<void>;
+  createItem(data: any): Promise<any>;
+  deleteItem(itemId: string): Promise<void>;
   generateSnapshot(studentId: string, periodId: string, classSubjectId: string, policyId: string, scaleId: string, rawScores: any): Promise<any>;
   executeSnapshotGeneration(studentId: string, periodId: string, classSubjectId: string, policyId: string, scaleId: string, rawScores: any): Promise<any>;
+  computeRankings(periodId: string, classSubjectId: string): Promise<number>;
+  applyPassFailForStudent(studentId: string, periodId: string): Promise<boolean>;
 }

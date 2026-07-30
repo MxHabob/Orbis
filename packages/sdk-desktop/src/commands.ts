@@ -44,7 +44,7 @@ export const commands: OrbisCommands = {
     iamAuthRegister: (data: any) => cmd("iam_auth_register", { data }),
   },
   organization: {
-    bootstrapOrganization: (payload: any) => cmd("organization_bootstrap_bootstrap_organization", { payload }),
+    bootstrapFull: (payload: any) => cmd("organization_bootstrap_bootstrap_full", { payload }),
     exportStudents: () => cmd("organization_bulk_export_students", {}),
     exportGrades: () => cmd("organization_bulk_export_grades", {}),
     importStudents: (data: any) => cmd("organization_bulk_import_students", { data }),
@@ -122,6 +122,7 @@ export const commands: OrbisCommands = {
     deleteSubject: (subjectId: any) => cmd("academic_subject_delete", { subjectId }),
   },
   assessment: {
+    forPeriod: (orgId: any, periodId: any) => cmd("assessment_assessment_engine_for_period", { orgId, periodId }),
     listAttendances: (classId: any, date: any) => cmd("assessment_attendance_list", { classId, date }),
     getReport: (PeriodId: any, enrollmentId: any) => cmd("assessment_attendance_get_report", { PeriodId, enrollmentId }),
     getAnalytics: (periodId: any, classId: any) => cmd("assessment_attendance_get_analytics", { periodId, classId }),
@@ -132,6 +133,11 @@ export const commands: OrbisCommands = {
     submitAi: (data: any) => cmd("assessment_behavior_submit_ai", { data }),
     updateBehavior: (recordId: any, actionTaken: any, status: any, resolutionNotes: any) => cmd("assessment_behavior_update", { recordId, actionTaken, status, resolutionNotes }),
     deleteBehavior: (recordId: any) => cmd("assessment_behavior_delete", { recordId }),
+    listCalculationPolicies: () => cmd("assessment_calculation_policy_list", {}),
+    getCalculationPolicy: (policyId: any) => cmd("assessment_calculation_policy_get", { policyId }),
+    createCalculationPolicy: (data: any) => cmd("assessment_calculation_policy_create", { data }),
+    updateCalculationPolicy: (policyId: any, data: any) => cmd("assessment_calculation_policy_update", { policyId, data }),
+    deleteCalculationPolicy: (policyId: any) => cmd("assessment_calculation_policy_delete", { policyId }),
     listGrades: (assessmentId: any) => cmd("assessment_grade_list", { assessmentId }),
     listGradesPaginated: (cursorOrReq?: any, limit?: any) => {
       const req = (typeof cursorOrReq === "object" && cursorOrReq !== null && !Array.isArray(cursorOrReq))
@@ -148,8 +154,18 @@ export const commands: OrbisCommands = {
     bulkSubjectEntry: (entry: any) => cmd("assessment_grade_bulk_subject_entry", { entry }),
     upsertCell: (data: any) => cmd("assessment_grade_upsert_cell", { data }),
     compileSemester: (periodId: any, classId: any) => cmd("assessment_grade_compile_semester", { periodId, classId }),
+    listGradeScales: () => cmd("assessment_grade_scale_list", {}),
+    getGradeScale: (scaleId: any) => cmd("assessment_grade_scale_get", { scaleId }),
+    listItems: (scaleId: any) => cmd("assessment_grade_scale_list_items", { scaleId }),
+    createGradeScale: (data: any) => cmd("assessment_grade_scale_create", { data }),
+    updateGradeScale: (scaleId: any, data: any) => cmd("assessment_grade_scale_update", { scaleId, data }),
+    deleteGradeScale: (scaleId: any) => cmd("assessment_grade_scale_delete", { scaleId }),
+    createItem: (data: any) => cmd("assessment_grade_scale_create_item", { data }),
+    deleteItem: (itemId: any) => cmd("assessment_grade_scale_delete_item", { itemId }),
     generateSnapshot: (studentId: any, periodId: any, classSubjectId: any, policyId: any, scaleId: any, rawScores: any) => cmd("assessment_snapshot_generator_generate_snapshot", { studentId, periodId, classSubjectId, policyId, scaleId, rawScores }),
     executeSnapshotGeneration: (studentId: any, periodId: any, classSubjectId: any, policyId: any, scaleId: any, rawScores: any) => cmd("assessment_snapshot_generator_execute_snapshot_generation", { studentId, periodId, classSubjectId, policyId, scaleId, rawScores }),
+    computeRankings: (periodId: any, classSubjectId: any) => cmd("assessment_snapshot_generator_compute_rankings", { periodId, classSubjectId }),
+    applyPassFailForStudent: (studentId: any, periodId: any) => cmd("assessment_snapshot_generator_apply_pass_fail_for_student", { studentId, periodId }),
   },
   scheduling: {
     listLessonsByClass: (periodId: any, classId: any) => cmd("scheduling_lesson_list_by_class", { periodId, classId }),

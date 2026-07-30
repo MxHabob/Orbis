@@ -12,3 +12,6 @@ pub mod calc_engine;
 pub mod grade_mapper;
 pub mod snapshot_generator;
 pub mod snapshot_job;
+
+pub mod grade_scale;
+pub mod calculation_policy;

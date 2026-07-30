@@ -2,7 +2,7 @@
 import type * as Types from '../types/index.js';
 
 export interface OrganizationCommands {
-  bootstrapOrganization(payload: any): Promise<void>;
+  bootstrapFull(payload: any): Promise<any>;
   exportStudents(): Promise<any>;
   exportGrades(): Promise<any>;
   importStudents(data: any): Promise<any>;

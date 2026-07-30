@@ -89,14 +89,41 @@ impl DataSource for EnrollmentDataSource {
             });
         }
 
+        // 4. Fetch latest assessment snapshot for dynamic grade data
+        //    (replaces hardcoded enrollment.final_grade / final_score / final_rank)
+        let snapshot_stmt = sea_orm::Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "SELECT grade_label, total_score, gpa_points, rank_in_class, is_passing FROM student_assessment_snapshots WHERE student_id = $1 ORDER BY updated_at DESC LIMIT 1",
+            vec![student_id.clone().into()],
+        );
+        let snap_opt = db.query_one(snapshot_stmt).await.ok().flatten();
+
+        let (final_grade, final_score, final_rank, final_gpa) = if let Some(snap) = snap_opt {
+            (
+                snap.try_get::<Option<String>>("", "grade_label").unwrap_or_default(),
+                snap.try_get::<Option<f64>>("", "total_score").unwrap_or_default(),
+                snap.try_get::<Option<i32>>("", "rank_in_class").unwrap_or_default(),
+                snap.try_get::<Option<f64>>("", "gpa_points").unwrap_or_default(),
+            )
+        } else {
+            // Fallback to enrollment static fields if no snapshot exists yet
+            (
+                enroll.try_get::<Option<String>>("", "final_grade").unwrap_or_default(),
+                enroll.try_get::<Option<f64>>("", "final_score").ok().flatten(),
+                enroll.try_get::<Option<i32>>("", "final_rank").unwrap_or_default(),
+                None,
+            )
+        };
+
         let ctx = json!({
             "id": entity_id,
             "studentNumber": enroll.try_get::<String>("", "student_number").unwrap_or_default(),
             "status": enroll.try_get::<String>("", "status").unwrap_or_default(),
             "enrollmentDate": enroll.try_get::<String>("", "enrollment_date").unwrap_or_default(),
-            "finalGrade": enroll.try_get::<Option<String>>("", "final_grade").unwrap_or_default(),
-            "finalScore": enroll.try_get::<Option<i32>>("", "final_score").unwrap_or_default(),
-            "finalRank": enroll.try_get::<Option<i32>>("", "final_rank").unwrap_or_default(),
+            "finalGrade": final_grade,
+            "finalScore": final_score,
+            "finalRank": final_rank,
+            "finalGpa": final_gpa,
             "student": student_json,
             "class": class_json,
         });
@@ -112,6 +139,7 @@ impl DataSource for EnrollmentDataSource {
             "finalGrade": { "type": "string", "label": "التقدير النهائي / Final Grade" },
             "finalScore": { "type": "number", "label": "الدرجة النهائية / Final Score" },
             "finalRank": { "type": "number", "label": "الترتيب النهائي / Final Rank" },
+            "finalGpa": { "type": "number", "label": "المعدل التراكمي / Final GPA" },
             "student": {
                 "type": "object",
                 "properties": {
@@ -314,6 +342,8 @@ impl DataSourceRegistry {
         sources.insert("payment".to_string(), Arc::new(PaymentDataSource) as Arc<dyn DataSource>);
         sources.insert("exam".to_string(), Arc::new(ExamDataSource) as Arc<dyn DataSource>);
         sources.insert("user".to_string(), Arc::new(UserDataSource) as Arc<dyn DataSource>);
+        sources.insert("assessment_snapshot".to_string(), Arc::new(AssessmentSnapshotDataSource) as Arc<dyn DataSource>);
+        sources.insert("report_card".to_string(), Arc::new(ReportCardDataSource) as Arc<dyn DataSource>);
         
         DataSourceRegistry { sources }
     }
@@ -370,6 +400,234 @@ impl DataSource for ProjectionDataSource {
         json!({
             "type": "object",
             "description": format!("CQRS Projection for {}", self.entity_type)
+        })
+    }
+}
+
+// ── Assessment Snapshot DataSource ─────────────────────────────
+//
+// Reads from `student_assessment_snapshots` for a single class_subject.
+// Used in certificates and transcripts that show per-subject results.
+
+pub struct AssessmentSnapshotDataSource;
+
+#[async_trait]
+impl DataSource for AssessmentSnapshotDataSource {
+    fn entity_type(&self) -> &str {
+        "assessment_snapshot"
+    }
+
+    async fn resolve(&self, db: &DatabaseConnection, entity_id: &str) -> Result<Value, String> {
+        let stmt = select_by_id(db, "student_assessment_snapshots", entity_id);
+        let opt = db.query_one(stmt).await.map_err(|e| e.to_string())?;
+        let snap = opt.ok_or_else(|| format!("Assessment snapshot not found: {}", entity_id))?;
+
+        let student_id: String = snap.try_get("", "student_id").map_err(|e| e.to_string())?;
+        let period_id: String = snap.try_get("", "period_id").map_err(|e| e.to_string())?;
+        let class_subject_id: String = snap.try_get("", "class_subject_id").map_err(|e| e.to_string())?;
+
+        // Fetch student info
+        let user_stmt = select_by_id(db, "users", &student_id);
+        let user_opt = db.query_one(user_stmt).await.map_err(|e| e.to_string())?;
+
+        let mut student_json = json!({});
+        if let Some(user) = user_opt {
+            student_json = json!({
+                "fullName": user.try_get::<String>("", "full_name").unwrap_or_default(),
+                "nameAr": user.try_get::<Option<String>>("", "name_ar").unwrap_or_default(),
+                "nationalId": user.try_get::<Option<String>>("", "national_id").unwrap_or_default(),
+            });
+        }
+
+        // Fetch period info
+        let period_stmt = select_by_id(db, "academic_periods", &period_id);
+        let period_opt = db.query_one(period_stmt).await.map_err(|e| e.to_string())?;
+        let period_name = period_opt.as_ref()
+            .and_then(|p| p.try_get::<String>("", "name").ok())
+            .unwrap_or_default();
+
+        // Fetch class_subject info
+        let cs_stmt = select_by_id(db, "class_subjects", &class_subject_id);
+        let cs_opt = db.query_one(cs_stmt).await.map_err(|e| e.to_string())?;
+        let subject_name = cs_opt.as_ref()
+            .and_then(|cs| cs.try_get::<Option<String>>("", "subject_name").ok().flatten())
+            .unwrap_or_default();
+
+        Ok(json!({
+            "id": entity_id,
+            "studentId": student_id,
+            "periodId": period_id,
+            "classSubjectId": class_subject_id,
+            "totalScore": snap.try_get::<Option<f64>>("", "total_score").unwrap_or_default(),
+            "gradeLabel": snap.try_get::<Option<String>>("", "grade_label").unwrap_or_default(),
+            "gpaPoints": snap.try_get::<Option<f64>>("", "gpa_points").unwrap_or_default(),
+            "isPassing": snap.try_get::<Option<i32>>("", "is_passing").unwrap_or_default().map(|v| v == 1),
+            "rankInClass": snap.try_get::<Option<i32>>("", "rank_in_class").unwrap_or_default(),
+            "rankInLevel": snap.try_get::<Option<i32>>("", "rank_in_level").unwrap_or_default(),
+            "status": snap.try_get::<String>("", "status").unwrap_or_default(),
+            "student": student_json,
+            "periodName": period_name,
+            "subjectName": subject_name,
+        }))
+    }
+
+    fn schema(&self) -> Value {
+        json!({
+            "totalScore": { "type": "number", "label": "الدرجة الكلية / Total Score" },
+            "gradeLabel": { "type": "string", "label": "التقدير / Grade Label" },
+            "gpaPoints": { "type": "number", "label": "نقاط المعدل / GPA Points" },
+            "isPassing": { "type": "boolean", "label": "ناجح / Is Passing" },
+            "rankInClass": { "type": "number", "label": "الترتيب في الفصل / Rank in Class" },
+            "rankInLevel": { "type": "number", "label": "الترتيب في المستوى / Rank in Level" },
+            "status": { "type": "string", "label": "الحالة / Status" },
+            "student": {
+                "type": "object",
+                "properties": {
+                    "fullName": { "type": "string", "label": "الاسم الكامل / Full Name" },
+                    "nameAr": { "type": "string", "label": "الاسم بالعربية / Name (AR)" },
+                    "nationalId": { "type": "string", "label": "رقم الهوية / National ID" }
+                }
+            },
+            "periodName": { "type": "string", "label": "الفترة الأكاديمية / Period Name" },
+            "subjectName": { "type": "string", "label": "المادة / Subject Name" }
+        })
+    }
+}
+
+// ── Report Card DataSource ────────────────────────────────────
+//
+// Aggregates ALL snapshots for a student in a given period into a
+// full report card. The entity_id is `{enrollment_id}:{period_id}`.
+// Used for generating complete report cards via DocForge templates.
+
+pub struct ReportCardDataSource;
+
+#[async_trait]
+impl DataSource for ReportCardDataSource {
+    fn entity_type(&self) -> &str {
+        "report_card"
+    }
+
+    async fn resolve(&self, db: &DatabaseConnection, entity_id: &str) -> Result<Value, String> {
+        // entity_id format: "{enrollment_id}:{period_id}"
+        let parts: Vec<&str> = entity_id.splitn(2, ':').collect();
+        if parts.len() != 2 {
+            return Err("ReportCard entity_id must be in format 'enrollment_id:period_id'".to_string());
+        }
+        let enrollment_id = parts[0];
+        let period_id = parts[1];
+
+        // Fetch enrollment → student_id
+        let enroll_stmt = select_by_id(db, "enrollments", enrollment_id);
+        let enroll_opt = db.query_one(enroll_stmt).await.map_err(|e| e.to_string())?;
+        let enroll = enroll_opt.ok_or_else(|| format!("Enrollment not found: {}", enrollment_id))?;
+        let student_id: String = enroll.try_get("", "student_id").map_err(|e| e.to_string())?;
+
+        // Fetch student
+        let user_stmt = select_by_id(db, "users", &student_id);
+        let user_opt = db.query_one(user_stmt).await.map_err(|e| e.to_string())?;
+        let mut student_json = json!({});
+        if let Some(user) = user_opt {
+            student_json = json!({
+                "fullName": user.try_get::<String>("", "full_name").unwrap_or_default(),
+                "nameAr": user.try_get::<Option<String>>("", "name_ar").unwrap_or_default(),
+                "nationalId": user.try_get::<Option<String>>("", "national_id").unwrap_or_default(),
+            });
+        }
+
+        // Fetch period
+        let period_stmt = select_by_id(db, "academic_periods", period_id);
+        let period_opt = db.query_one(period_stmt).await.map_err(|e| e.to_string())?;
+        let period_name = period_opt.as_ref()
+            .and_then(|p| p.try_get::<String>("", "name").ok())
+            .unwrap_or_default();
+
+        // Fetch all snapshots for this student in this period
+        let snapshots_stmt = sea_orm::Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "SELECT * FROM student_assessment_snapshots WHERE student_id = $1 AND period_id = $2 ORDER BY class_subject_id",
+            vec![student_id.clone().into(), period_id.into()],
+        );
+        let snapshot_rows = db.query_all(snapshots_stmt).await.map_err(|e| e.to_string())?;
+
+        let mut subjects = Vec::new();
+        let mut total_gpa = 0.0f64;
+        let mut passed_count = 0usize;
+        let mut failed_count = 0usize;
+
+        for row in &snapshot_rows {
+            let total_score = row.try_get::<Option<f64>>("", "total_score").unwrap_or_default().unwrap_or(0.0);
+            let grade_label = row.try_get::<Option<String>>("", "grade_label").unwrap_or_default().unwrap_or_default();
+            let gpa = row.try_get::<Option<f64>>("", "gpa_points").unwrap_or_default().unwrap_or(0.0);
+            let is_passing = row.try_get::<Option<i32>>("", "is_passing").unwrap_or_default().unwrap_or(0) == 1;
+            let rank_class = row.try_get::<Option<i32>>("", "rank_in_class").unwrap_or_default();
+            let cs_id = row.try_get::<String>("", "class_subject_id").unwrap_or_default();
+
+            if is_passing { passed_count += 1; } else { failed_count += 1; }
+            total_gpa += gpa;
+
+            // Resolve subject name from class_subjects
+            let cs_stmt = select_by_id(db, "class_subjects", &cs_id);
+            let cs_opt = db.query_one(cs_stmt).await.ok().flatten();
+            let subject_name = cs_opt.as_ref()
+                .and_then(|cs| cs.try_get::<Option<String>>("", "subject_name").ok().flatten())
+                .unwrap_or_else(|| cs_id.clone());
+
+            subjects.push(json!({
+                "subjectName": subject_name,
+                "totalScore": total_score,
+                "gradeLabel": grade_label,
+                "gpaPoints": gpa,
+                "isPassing": is_passing,
+                "rankInClass": rank_class,
+            }));
+        }
+
+        let subject_count = subjects.len().max(1) as f64;
+        let overall_gpa = total_gpa / subject_count;
+
+        Ok(json!({
+            "enrollmentId": enrollment_id,
+            "periodId": period_id,
+            "periodName": period_name,
+            "student": student_json,
+            "subjects": subjects,
+            "overallGpa": (overall_gpa * 100.0).round() / 100.0,
+            "totalSubjects": subjects.len(),
+            "passedSubjects": passed_count,
+            "failedSubjects": failed_count,
+        }))
+    }
+
+    fn schema(&self) -> Value {
+        json!({
+            "enrollmentId": { "type": "string", "label": "رقم القيد / Enrollment ID" },
+            "periodId": { "type": "string", "label": "الفترة / Period ID" },
+            "periodName": { "type": "string", "label": "اسم الفترة / Period Name" },
+            "student": {
+                "type": "object",
+                "properties": {
+                    "fullName": { "type": "string", "label": "الاسم الكامل / Full Name" },
+                    "nameAr": { "type": "string", "label": "الاسم بالعربية / Name (AR)" },
+                    "nationalId": { "type": "string", "label": "رقم الهوية / National ID" }
+                }
+            },
+            "subjects": {
+                "type": "array",
+                "label": "المواد / Subjects",
+                "items": {
+                    "subjectName": { "type": "string", "label": "اسم المادة / Subject" },
+                    "totalScore": { "type": "number", "label": "الدرجة / Score" },
+                    "gradeLabel": { "type": "string", "label": "التقدير / Grade" },
+                    "gpaPoints": { "type": "number", "label": "نقاط المعدل / GPA" },
+                    "isPassing": { "type": "boolean", "label": "ناجح / Passing" },
+                    "rankInClass": { "type": "number", "label": "الترتيب / Rank" }
+                }
+            },
+            "overallGpa": { "type": "number", "label": "المعدل التراكمي / Overall GPA" },
+            "totalSubjects": { "type": "number", "label": "عدد المواد / Total Subjects" },
+            "passedSubjects": { "type": "number", "label": "المواد الناجحة / Passed" },
+            "failedSubjects": { "type": "number", "label": "المواد الراسبة / Failed" }
         })
     }
 }

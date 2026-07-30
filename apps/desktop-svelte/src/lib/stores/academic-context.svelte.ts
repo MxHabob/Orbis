@@ -25,6 +25,12 @@ class AcademicContextStore {
   isInitialized = $state(false);
   orgId = $state<string>("");
 
+  // ── Assessment Engine State ────────────────────────────────
+  /** Active grade scale items (loaded from the org's default scale). */
+  gradeScaleItems = $state<any[]>([]);
+  /** Active calculation policy for the current period. */
+  activeCalcPolicy = $state<any | null>(null);
+
   private _selectedPeriodId = $state<string>(
     localStorage.getItem("orbis_academic_period_id") ?? "",
   );
@@ -138,6 +144,11 @@ class AcademicContextStore {
         this._selectedPeriodId = this.activePeriod.id;
       }
       this.isInitialized = true;
+
+      // ── Load Assessment Engine data (non-blocking) ─────────
+      this.loadAssessmentConfig().catch((e) =>
+        console.warn("Failed to load assessment config:", e),
+      );
     } catch (e: unknown) {
       console.warn(
         "Failed to resolve academic context:",
@@ -177,6 +188,27 @@ class AcademicContextStore {
       toast.error(extractErrorMessage(e));
     } finally {
       this.isSwitching = false;
+    }
+  }
+
+  /**
+   * Load Assessment Engine configuration (grade scale items + calc policy).
+   * Called after academic context is resolved. Non-blocking.
+   */
+  async loadAssessmentConfig() {
+    try {
+      // Load grade scales → pick the first one → load its items
+      const scales: any[] = await commands.assessment.listGradeScales();
+      if (scales && scales.length > 0) {
+        const items = await commands.assessment.listGradeScaleItems(scales[0].id);
+        this.gradeScaleItems = items || [];
+      }
+
+      // Load calculation policies → pick the first one
+      const policies: any[] = await commands.assessment.listCalculationPolicies();
+      this.activeCalcPolicy = policies?.[0] ?? null;
+    } catch (e) {
+      console.warn("Assessment config load failed:", e);
     }
   }
 

@@ -6,14 +6,14 @@ use crate::commands::error::{CmdResult, CommandError};
 use svc_organization::ops;
 
 #[tauri::command]
-pub async fn organization_bootstrap_bootstrap_organization(state: State<'_, Arc<AppState>>, payload: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn organization_bootstrap_bootstrap_full(state: State<'_, Arc<AppState>>, payload: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let payload_parsed = match payload {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
         None => return Err(CommandError::new("Missing argument: payload")),
     };
-    ops::bootstrap::bootstrap_organization(&ctx, payload_parsed).await.map_err(CommandError::from)?;
-    Ok(serde_json::json!({}))
+    let result = ops::bootstrap::bootstrap_full(&ctx.db, payload_parsed).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]

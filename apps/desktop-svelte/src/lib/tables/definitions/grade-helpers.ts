@@ -28,7 +28,40 @@ export interface GradeMatrixResponse {
   assessment_types: string[];
 }
 
-export function scoreToGradeLetter(percentage: number): string {
+/**
+ * Grade scale item — loaded from backend via listGradeScaleItems().
+ * When provided, replaces all hardcoded thresholds.
+ */
+export interface GradeScaleItem {
+  id: string;
+  scale_id: string;
+  grade_label: string;
+  min_score: number;
+  max_score: number;
+  gpa_points: number;
+  is_passing: number | boolean;
+}
+
+/**
+ * Resolve a percentage to a grade label using dynamic scale items.
+ * Falls back to hardcoded Arabic labels when no items are provided.
+ */
+export function scoreToGradeLetter(
+  percentage: number,
+  scaleItems?: GradeScaleItem[],
+): string {
+  if (scaleItems && scaleItems.length > 0) {
+    // Items are expected sorted by min_score descending
+    const sorted = [...scaleItems].sort((a, b) => b.min_score - a.min_score);
+    for (const item of sorted) {
+      if (percentage >= item.min_score && percentage <= item.max_score) {
+        return item.grade_label;
+      }
+    }
+    // Below all ranges → last item (lowest)
+    return sorted[sorted.length - 1]?.grade_label ?? "—";
+  }
+  // Legacy hardcoded fallback
   if (percentage >= 90) return "ممتاز";
   if (percentage >= 80) return "جيد جداً";
   if (percentage >= 70) return "جيد";
@@ -37,7 +70,25 @@ export function scoreToGradeLetter(percentage: number): string {
   return "راسب";
 }
 
-export function scoreToGradeClass(percentage: number): string {
+/**
+ * Resolve a percentage to a CSS class name using dynamic scale items.
+ * Falls back to hardcoded classes when no items are provided.
+ */
+export function scoreToGradeClass(
+  percentage: number,
+  scaleItems?: GradeScaleItem[],
+): string {
+  if (scaleItems && scaleItems.length > 0) {
+    const sorted = [...scaleItems].sort((a, b) => b.min_score - a.min_score);
+    for (let i = 0; i < sorted.length; i++) {
+      const item = sorted[i];
+      if (percentage >= item.min_score && percentage <= item.max_score) {
+        return item.is_passing ? "grade-passing" : "grade-fail";
+      }
+    }
+    return "grade-fail";
+  }
+  // Legacy hardcoded fallback
   if (percentage >= 90) return "grade-excellent";
   if (percentage >= 80) return "grade-very-good";
   if (percentage >= 70) return "grade-good";
@@ -168,6 +219,7 @@ export function buildGradeColumns(
 export function transformMatrixToSource(
   matrixData: GradeMatrixResponse,
   locale?: string,
+  scaleItems?: GradeScaleItem[],
 ): Record<string, unknown>[] {
   const isAr = locale === "ar";
 
@@ -189,7 +241,7 @@ export function transformMatrixToSource(
       __percentage: `${student.percentage.toFixed(1)}%`,
       __percentageRaw: student.percentage,
       __gradeLetter:
-        student.grade_letter || scoreToGradeLetter(student.percentage),
+        student.grade_letter || scoreToGradeLetter(student.percentage, scaleItems),
     };
 
     for (const grade of student.grades) {
@@ -208,6 +260,7 @@ export function transformMatrixToSource(
 export function recalculateRowTotals(
   row: Record<string, unknown>,
   assessmentKeys: string[],
+  scaleItems?: GradeScaleItem[],
 ): Record<string, unknown> {
   let total = 0;
   let maxTotal = 0;
@@ -233,7 +286,7 @@ export function recalculateRowTotals(
   row.__maxTotal = maxTotal;
   row.__percentage = `${roundedPercentage.toFixed(1)}%`;
   row.__percentageRaw = roundedPercentage;
-  row.__gradeLetter = scoreToGradeLetter(roundedPercentage);
+  row.__gradeLetter = scoreToGradeLetter(roundedPercentage, scaleItems);
 
   return row;
 }

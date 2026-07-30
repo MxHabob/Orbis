@@ -704,26 +704,8 @@ class OnboardingState {
         await commands.organization.updateOrganization(updateRequest).catch(e => console.warn("Update org warning:", e));
       }
 
-      // Register/Ensure Base Currency in Finance module
-      try {
-        const currencies = await commands.finance.listCurrencies().catch(() => []);
-        const exists = currencies && currencies.some((c: any) => c.code === chosenCurrency);
-        if (!exists) {
-          const symbol = chosenCurrency === "SAR" ? "ر.س" : chosenCurrency === "USD" ? "$" : chosenCurrency === "YER" ? "ر.ي" : chosenCurrency;
-          await commands.finance.createCurrency(
-            chosenCurrency,
-            chosenCurrency,
-            chosenCurrency,
-            symbol,
-            "after",
-            2,
-            1.0,
-            true, // isBase = true
-          ).catch(e => console.warn("Create currency warning:", e));
-        }
-      } catch (e) {
-        console.warn("Finance currency registration warning:", e);
-      }
+      // Currency is already created by the backend bootstrap_full().
+      // Only ensure the base currency flag is set if needed.
 
       // ── Step 2: Create Organizational Structure (Org Units) ──────────
       let rootUnitId = "";
