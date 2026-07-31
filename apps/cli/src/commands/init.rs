@@ -114,6 +114,7 @@ pub async fn execute() -> Result<()> {
     let mut institution_type_label;
     let mut timezone;
     let mut currency;
+    let mut language;
 
     let mut admin_name;
     let mut admin_username;
@@ -123,57 +124,60 @@ pub async fn execute() -> Result<()> {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     output::print_phase_header(3, TOTAL_PHASES, "Organization Setup");
 
-        org_name = prompts::prompt_org_name("Organization Name (EN):")?;
-        org_name_ar = prompts::prompt_org_name("Organization Name (AR):")?;
-        let generated_slug = transliterate_arabic_to_ascii(&org_name);
-        org_slug = prompts::prompt_slug("Organization Slug:", &generated_slug)?;
+    org_name = prompts::prompt_org_name("Organization Name (EN):")?;
+    org_name_ar = prompts::prompt_org_name("Organization Name (AR):")?;
+    let generated_slug = transliterate_arabic_to_ascii(&org_name);
+    org_slug = prompts::prompt_slug("Organization Slug:", &generated_slug)?;
 
-        // Institution Type / Blueprint
-        let blueprint_options = vec![
-            "1. School (K-12 / Basic Education)",
-            "2. University (Higher Education / Credit Hours)",
-            "3. Training Center / Institute (Quarterly / Pass-Fail)",
-        ];
-        let bp_choice = prompts::prompt_select("Select institution type:", blueprint_options.clone())?;
-        blueprint = if bp_choice.contains("University") {
-            infra_persistence::bootstrap::BlueprintType::University
-        } else if bp_choice.contains("Training") {
-            infra_persistence::bootstrap::BlueprintType::TrainingCenter
-        } else {
-            infra_persistence::bootstrap::BlueprintType::School
-        };
+    // Institution Type / Blueprint
+    let blueprint_options = vec![
+        "1. School (K-12 / Basic Education)",
+        "2. University (Higher Education / Credit Hours)",
+        "3. Training Center / Institute (Quarterly / Pass-Fail)",
+    ];
+    let bp_choice = prompts::prompt_select("Select institution type:", blueprint_options.clone())?;
+    blueprint = if bp_choice.contains("University") {
+        infra_persistence::bootstrap::BlueprintType::University
+    } else if bp_choice.contains("Training") {
+        infra_persistence::bootstrap::BlueprintType::TrainingCenter
+    } else {
+        infra_persistence::bootstrap::BlueprintType::School
+    };
 
-        institution_type_label = match blueprint {
-            infra_persistence::bootstrap::BlueprintType::University => "University",
-            infra_persistence::bootstrap::BlueprintType::TrainingCenter => "Training Center",
-            _ => "School",
-        };
+    institution_type_label = match blueprint {
+        infra_persistence::bootstrap::BlueprintType::University => "University",
+        infra_persistence::bootstrap::BlueprintType::TrainingCenter => "Training Center",
+        _ => "School",
+    };
 
-        // Auto-detect locale defaults with spinner
-        let (detected_tz, detected_currency) = output::with_spinner(
-            "Detecting system region & timezone settings...",
-            || {
-                let tz = detect_timezone();
-                let curr = detect_currency(&tz);
-                (tz, curr)
-            },
-        );
-        output::print_progress_ok(&format!(
-            "Auto-detected system region — Timezone: {} | Currency: {}",
-            detected_tz, detected_currency
-        ));
+    // Auto-detect locale defaults with spinner
+    let (detected_tz, detected_currency, detected_language) = output::with_spinner(
+        "Detecting system region, timezone & default OS language...",
+        || {
+            let tz = detect_timezone();
+            let curr = detect_currency(&tz);
+            let lang = detect_language();
+            (tz, curr, lang)
+        },
+    );
+    output::print_progress_ok(&format!(
+        "Auto-detected system region — Timezone: {} | Currency: {} | Language: {}",
+        detected_tz, detected_currency, detected_language
+    ));
 
-        timezone = prompts::prompt_text_with_default("Timezone:", &detected_tz)?;
-        let currency_input = prompts::prompt_text_with_default("Base Currency (ISO 4217):", &detected_currency)?;
-        currency = currency_input.trim().to_uppercase();
+    timezone = prompts::prompt_text_with_default("Timezone:", &detected_tz)?;
+    let currency_input = prompts::prompt_text_with_default("Base Currency (ISO 4217):", &detected_currency)?;
+    currency = currency_input.trim().to_uppercase();
+    let language_input = prompts::prompt_text_with_default("Default System Language (ar / en):", &detected_language)?;
+    language = language_input.trim().to_lowercase();
 
-        // Phase 4: Administrator Account
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        output::print_phase_header(4, TOTAL_PHASES, "Administrator Account");
+    // Phase 4: Administrator Account
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    output::print_phase_header(4, TOTAL_PHASES, "Administrator Account");
 
-        admin_name = prompts::prompt_full_name("Admin Full Name:")?;
-        admin_username = prompts::prompt_email("Admin Email:")?;
-        admin_password = prompts::prompt_password_confirmed("Admin Password:")?;
+    admin_name = prompts::prompt_full_name("Admin Full Name:")?;
+    admin_username = prompts::prompt_email("Admin Email:")?;
+    admin_password = prompts::prompt_password_confirmed("Admin Password:")?;
 
     // Review & Edit Loop
     loop {
@@ -184,13 +188,14 @@ pub async fn execute() -> Result<()> {
             ("Institution Type:", institution_type_label),
             ("Timezone:", &timezone),
             ("Base Currency:", &currency),
+            ("Default Language:", &language),
             ("Admin Name:", &admin_name),
             ("Admin Email:", &admin_username),
         ]);
 
         let review_options = vec![
             "1. Confirm & Initialize System (Press Enter to finish)",
-            "2. Edit Organization Setup (Name, Type, Timezone, Currency)",
+            "2. Edit Organization Setup (Name, Type, Timezone, Currency, Language)",
             "3. Edit Administrator Account (Name, Email, Password)",
             "4. Cancel Setup",
         ];
@@ -231,6 +236,8 @@ pub async fn execute() -> Result<()> {
             timezone = prompts::prompt_text_with_default("Timezone:", &timezone)?;
             let c_in = prompts::prompt_text_with_default("Base Currency (ISO 4217):", &currency)?;
             currency = c_in.trim().to_uppercase();
+            let l_in = prompts::prompt_text_with_default("Default System Language (ar / en):", &language)?;
+            language = l_in.trim().to_lowercase();
         }
     }
 
@@ -432,6 +439,36 @@ fn detect_currency(timezone: &str) -> String {
     } else {
         "USD".to_string()
     }
+}
+
+fn detect_language() -> String {
+    if let Ok(lang) = std::env::var("LANG").or_else(|_| std::env::var("LC_ALL")) {
+        let l = lang.to_lowercase();
+        if l.starts_with("ar") {
+            return "ar".to_string();
+        } else if l.starts_with("en") {
+            return "en".to_string();
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(output) = std::process::Command::new("powershell")
+            .args(["-NoProfile", "-Command", "(Get-UICulture).Name"])
+            .output()
+        {
+            if output.status.success() {
+                let win_lang = String::from_utf8_lossy(&output.stdout).trim().to_lowercase();
+                if win_lang.starts_with("ar") {
+                    return "ar".to_string();
+                } else if win_lang.starts_with("en") {
+                    return "en".to_string();
+                }
+            }
+        }
+    }
+
+    "ar".to_string()
 }
 
 fn transliterate_arabic_to_ascii(input: &str) -> String {

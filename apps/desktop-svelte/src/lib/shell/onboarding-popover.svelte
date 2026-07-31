@@ -9,7 +9,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@orbis/ui-svelte";
-import { Check, ChevronRight } from "lucide-svelte";
+import { Check, ChevronRight, Sparkles } from "lucide-svelte";
 import { onboardingState } from "$lib/features/onboarding/state.svelte";
 import { authStore } from "$lib/stores";
 import { goto } from "$app/navigation";
@@ -18,6 +18,11 @@ import { localizeHref } from "$lib/paraglide/runtime";
 function handleChecklistItemClick(stepIndex: number) {
   // tasksList index 0 = wizard step 1 (Institution Type), so offset by +1
   onboardingState.goToStep(stepIndex + 1);
+  goto(localizeHref("/onboarding"));
+}
+
+function handleGoToWelcomeStep() {
+  onboardingState.goToStep(0);
   goto(localizeHref("/onboarding"));
 }
 
@@ -33,12 +38,11 @@ const activeIndex = $derived(
   authStore.isSetupComplete
     ? -1
     : onboardingState.activeStep > 0
-      ? onboardingState.activeStep - 1  // map wizard step to popover task index
+      ? onboardingState.activeStep - 1
       : onboardingState.completedSteps.slice(0, 8).findIndex((step) => !step),
 );
 
-// Tasks list must match wizard steps (indices 0..totalSteps-1)
-// Step 0 = Welcome (not shown in popover, only steps 1-9 map to tasks)
+// Tasks list matching wizard steps
 const tasksList = $derived([
   {
     label: m.common_registration_inst_type(),
@@ -100,12 +104,11 @@ const tasksList = $derived([
                 {...popoverProps}
                 variant="outline"
                 size="icon-sm"
-                class="relative cursor-pointer rounded-[10px] onboarding-popover-trigger"
+                class="relative cursor-pointer rounded-lg onboarding-popover-trigger"
               >
                 <div class="relative size-5 flex items-center justify-center">
                   <!-- Progress Circular Ring SVG -->
                   <svg class="absolute inset-0 size-5 select-none" viewBox="0 0 24 24" width="20" height="20">
-                    <!-- Background track -->
                     <circle
                       cx="12"
                       cy="12"
@@ -113,7 +116,6 @@ const tasksList = $derived([
                       class="stroke-muted/40 fill-none"
                       stroke-width="2.5"
                     />
-                    <!-- Progress highlight rotated around center -->
                     {#if progressPercent > 0}
                       <circle
                         cx="12"
@@ -128,14 +130,12 @@ const tasksList = $derived([
                     {/if}
                   </svg>
                   
-                  <!-- Inner status indicator -->
                   {#if remainingTasks === 0}
                     <Check class="size-3 text-primary stroke-[3px]" />
                   {:else}
                     <span class="text-[8.5px] font-extrabold text-foreground leading-none">
                       {remainingTasks}
                     </span>
-                    <!-- Notification dot badge shifted outside the ring -->
                     <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary border border-background"></span>
                   {/if}
                 </div>
@@ -154,30 +154,66 @@ const tasksList = $derived([
     side="right"
     align="end"
     sideOffset={12}
-    class="w-90 bg-card border border-border shadow-2xl rounded-xl p-0 overflow-hidden z-50 flex flex-col font-sans text-start onboarding-popover-panel relative text-card-foreground"
+    class="w-84 bg-card border border-border shadow-xl rounded-xl p-0 overflow-hidden z-50 flex flex-col font-sans text-start onboarding-popover-panel relative text-card-foreground"
   >
-    <!-- Pointer Bezel/Tail pointing to the sidebar trigger (positions on left in LTR, right in RTL) -->
-    <div class="absolute bottom-5 -inset-s-1.5 w-3 h-3 bg-card border-l border-b border-border rotate-45 z-20 rtl:start-auto rtl:end-[-6px] rtl:border-l-0 rtl:border-b-0 rtl:border-r rtl:border-t"></div>
+    <!-- Pointer Bezel/Tail -->
+    <div class="absolute bottom-5 -inset-s-1.5 w-3 h-3 bg-card border-l border-b border-border rotate-45 z-20 rtl:inset-s-auto rtl:-inset-e-1.5 rtl:border-l-0 rtl:border-b-0 rtl:border-r rtl:border-t"></div>
 
-    <!-- Header Section -->
-    <div class="flex items-center gap-3.5 p-4 border-b border-border bg-card z-10 select-none">
-      <!-- Outer Ring loader SVG -->
-      <svg class="w-8 h-8 transform -rotate-90 text-primary shrink-0" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="9" class="stroke-muted fill-none" stroke-width="2.5" />
-        <circle cx="12" cy="12" r="9" class="stroke-primary fill-none" stroke-width="2.5" stroke-dasharray="56.5" stroke-dashoffset={56.5 - (56.5 * progressPercent) / 100} stroke-linecap="round" />
-      </svg>
-      <div class="flex flex-col">
-        <h4 class="font-bold text-sm text-foreground leading-tight">
-          {m.common_onboarding_progress_label() || 'Getting Started'}
-        </h4>
-        <p class="text-[11px] text-muted-foreground font-semibold mt-0.5 font-sans">
-          {m.common_onboarding_popover_tasks_completed({ completed: completedTasks, total: totalTasks })}
-        </p>
+    <!-- Simple Clean Header Section -->
+    <div class="flex items-center justify-between p-3.5 border-b border-border bg-card z-10 select-none">
+      <div class="flex items-center gap-3">
+        <svg class="size-7 transform -rotate-90 text-primary shrink-0" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" class="stroke-muted/40 fill-none" stroke-width="2.5" />
+          <circle
+            cx="12"
+            cy="12"
+            r="9"
+            class="stroke-primary fill-none transition-all duration-300"
+            stroke-width="2.5"
+            stroke-dasharray="56.5"
+            stroke-dashoffset={56.5 - (56.5 * progressPercent) / 100}
+            stroke-linecap="round"
+          />
+        </svg>
+
+        <div class="flex flex-col">
+          <h4 class="font-bold text-xs text-foreground leading-tight">
+            {m.common_onboarding_progress_label() || 'خطوات التهيئة'}
+          </h4>
+          <p class="text-[10.5px] text-muted-foreground font-medium mt-0.5">
+            {m.common_onboarding_popover_tasks_completed({ completed: completedTasks, total: totalTasks })}
+          </p>
+        </div>
       </div>
     </div>
 
     <!-- Scrollable Checklist Area -->
-    <div class="onboarding-list flex-1 overflow-y-auto max-h-[340px] p-2 flex flex-col gap-0.5 bg-card z-10">
+    <div class="onboarding-list flex-1 overflow-y-auto max-h-85 p-1.5 flex flex-col gap-0.5 bg-card z-10">
+      
+      <!-- Welcome Step (Step 0) -->
+      <button
+        onclick={handleGoToWelcomeStep}
+        class="flex items-center justify-between p-2.5 rounded-lg text-start w-full transition-all cursor-pointer border border-transparent hover:bg-muted/60 text-foreground bg-transparent group"
+      >
+        <div class="flex items-center gap-2.5 flex-1 min-w-0">
+          <div class="shrink-0 size-4 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+            <Sparkles class="size-2.5" />
+          </div>
+          <div class="flex flex-col gap-0.5 flex-1 min-w-0">
+            <span class="text-[11.5px] leading-tight font-bold text-foreground">
+              صفحة الترحيب والتعريف
+            </span>
+            <span class="text-[10px] leading-relaxed text-muted-foreground">
+              العودة للشاشة الرئيسية وتفاصيل التخصيص
+            </span>
+          </div>
+        </div>
+        <ChevronRight size={12} class="text-muted-foreground group-hover:text-foreground rtl:rotate-180 transition-colors" />
+      </button>
+
+      <div class="h-px bg-border/40 my-1 mx-2"></div>
+
+      <!-- Setup Tasks (Steps 1..8) -->
       {#each tasksList as task, idx}
         {@const isCompleted = authStore.isSetupComplete ? true : onboardingState.completedSteps[idx]}
         {@const isActive = !isCompleted && idx === activeIndex}
@@ -189,30 +225,31 @@ const tasksList = $derived([
             }
           }}
           disabled={authStore.isSetupComplete}
-          class="flex items-start justify-between p-3 rounded-lg hover:bg-muted text-start w-full group transition-all duration-150 cursor-pointer text-foreground bg-transparent border-0 font-sans disabled:opacity-100 disabled:hover:bg-transparent"
+          class="flex items-start justify-between p-2.5 rounded-lg text-start w-full transition-all cursor-pointer font-sans disabled:opacity-100 border border-transparent {isActive ? 'bg-muted text-foreground font-semibold' : 'hover:bg-muted/60 text-foreground bg-transparent'}"
         >
-          <div class="flex items-start gap-3 flex-1 min-w-0">
+          <div class="flex items-start gap-2.5 flex-1 min-w-0">
             {#if isCompleted}
-              <div class="mt-0.5 shrink-0 text-muted-foreground">
-                <Check class="w-3.5 h-3.5 stroke-[3px]" />
+              <div class="mt-0.5 shrink-0 size-4 rounded-full text-muted-foreground flex items-center justify-center">
+                <Check class="size-3 stroke-[3px]" />
               </div>
             {:else}
-              <!-- Spacer to align texts of non-completed items -->
-              <div class="w-3.5 h-3.5 shrink-0 mt-0.5"></div>
+              <div class="mt-0.5 shrink-0 size-4 rounded-full border border-muted-foreground/30 flex items-center justify-center text-[9px] font-bold text-muted-foreground {isActive ? 'border-primary text-primary' : ''}">
+                {idx + 1}
+              </div>
             {/if}
             
-            <div class="flex flex-col gap-1 flex-1 min-w-0">
-              <span class="text-[11.5px] leading-tight font-sans {isCompleted ? 'text-muted-foreground line-through decoration-muted-foreground/45 font-normal' : 'text-foreground font-bold'}">
+            <div class="flex flex-col gap-0.5 flex-1 min-w-0">
+              <span class="text-[11.5px] leading-tight font-sans {isCompleted ? 'text-muted-foreground line-through decoration-muted-foreground/45 font-normal' : isActive ? 'text-foreground font-bold' : 'text-foreground font-semibold'}">
                 {task.label}
               </span>
-              <span class="text-[10.5px] leading-relaxed font-sans font-normal {isCompleted ? 'text-muted-foreground/60' : isActive ? 'text-foreground/80' : 'text-muted-foreground/75'}">
+              <span class="text-[10.5px] leading-relaxed font-sans font-normal {isCompleted ? 'text-muted-foreground/60' : 'text-muted-foreground/80'}">
                 {task.desc}
               </span>
             </div>
           </div>
           
           {#if isActive}
-            <div class="mt-1 shrink-0 text-muted-foreground ml-2 rtl:rotate-180">
+            <div class="mt-1 shrink-0 text-foreground ml-2 rtl:rotate-180">
               <ChevronRight size={12} strokeWidth={2.5} />
             </div>
           {/if}
