@@ -44,6 +44,7 @@ import {
 import { fade, slide } from "svelte/transition";
 
 import { l, isAr } from "$lib/core/i18n";
+import AddCurrencyDialog from "$lib/features/settings/components/add-currency-dialog.svelte";
 
 let orgId = $derived((page.params.orgId as string) || "");
 
@@ -61,17 +62,6 @@ let editRateValue = $state<number>(1.0);
 let showAddDialog = $state(false);
 let showEditDialog = $state(false);
 let currencyToDelete = $state<any | null>(null);
-
-// Add form state
-let addCode = $state("");
-let addName = $state("");
-let addNameAr = $state("");
-let addSymbol = $state("");
-let addSymbolPosition = $state("after"); // "before" | "after"
-let addDecimalPlaces = $state(2);
-let addExchangeRate = $state(1.0);
-let addIsBase = $state(false);
-let addIsActive = $state(true);
 
 // Edit form state
 let editCode = $state("");
@@ -104,66 +94,7 @@ onMount(() => {
 });
 
 function openAddDialog() {
-  addCode = "";
-  addName = "";
-  addNameAr = "";
-  addSymbol = "";
-  addSymbolPosition = "after";
-  addDecimalPlaces = 2;
-  addExchangeRate = 1.0;
-  addIsBase = false;
-  addIsActive = true;
   showAddDialog = true;
-}
-
-async function handleAddCurrency(e: Event) {
-  e.preventDefault();
-  if (isSubmitting) return;
-
-  const code = addCode.trim().toUpperCase();
-  if (!code || code.length < 2) {
-    toast.error(m.settings_currencies_invalid_code());
-    return;
-  }
-
-  // Check if code already exists
-  if (currencies.some((c) => c.code === code)) {
-    toast.error(m.settings_currencies_already_exists());
-    return;
-  }
-
-  if (addExchangeRate <= 0) {
-    toast.error(m.settings_currencies_invalid_rate());
-    return;
-  }
-
-  isSubmitting = true;
-  try {
-    const newCurrency = {
-      code,
-      org_id: orgId,
-      name: addName.trim() || code,
-      name_ar: addNameAr.trim() ? addNameAr.trim() : undefined,
-      symbol: addSymbol.trim() || code,
-      symbol_position: addSymbolPosition,
-      decimal_places: addDecimalPlaces,
-      exchange_rate: addExchangeRate,
-      is_base: addIsBase ? 1 : 0,
-      is_active: addIsActive ? 1 : 0,
-      updated_at: new Date().toISOString(),
-    };
-
-    await commands.finance.createCurrency(newCurrency);
-    toast.success(m.settings_currencies_added_success());
-    showAddDialog = false;
-    await loadCurrencies();
-  } catch (e) {
-    console.error("Error creating currency:", e);
-    const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(m.settings_currencies_add_error({ error: errorMsg }));
-  } finally {
-    isSubmitting = false;
-  }
 }
 
 function openEditDialog(c: any) {
@@ -190,17 +121,7 @@ async function handleEditCurrency(e: Event) {
 
   isSubmitting = true;
   try {
-    const updates = {
-      name: editName.trim() || editCode,
-      name_ar: editNameAr.trim() ? editNameAr.trim() : null,
-      symbol: editSymbol.trim() || editCode,
-      symbol_position: editSymbolPosition,
-      decimal_places: editDecimalPlaces,
-      exchange_rate: editExchangeRate,
-      is_active: editIsActive,
-    };
-
-    await commands.finance.updateCurrency(editCode, updates);
+    await commands.finance.updateCurrency(editCode, editExchangeRate, editIsActive);
     toast.success(m.settings_currencies_updated_success());
     showEditDialog = false;
     await loadCurrencies();
@@ -260,9 +181,7 @@ async function saveRateValue(code: string) {
     return;
   }
   try {
-    await commands.finance.updateCurrency(code, {
-      exchange_rate: editRateValue,
-    });
+    await commands.finance.updateCurrency(code, editRateValue, null);
     toast.success(m.settings_currencies_rate_updated_success());
     editingRateCode = null;
     await loadCurrencies();
@@ -478,168 +397,12 @@ let baseCurrencyCode = $derived(
 </div>
 
 <!-- Add Currency Modal -->
-{#if showAddDialog}
-  <div 
-    in:fade={{ duration: 150 }} 
-    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-  >
-    <form 
-      onsubmit={handleAddCurrency}
-      in:slide={{ duration: 200 }} 
-      class="bg-card border border-border rounded-2xl w-full max-w-lg p-6 flex flex-col gap-5 text-start shadow-2xl overflow-y-auto max-h-[90vh]"
-    >
-      <div class="flex flex-col gap-1 border-b border-border/40 pb-3">
-        <h2 class="text-sm font-bold text-foreground flex items-center gap-1.5">
-          <Plus size={16} class="text-primary" />
-          <span>{m.settings_currencies_add_dialog_title()}</span>
-        </h2>
-        <p class="text-[10px] text-muted-foreground">
-          {m.settings_currencies_add_dialog_desc()}
-        </p>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <!-- Currency Code -->
-        <div class="flex flex-col gap-1.5">
-          <label for="add_code" class="text-xs font-semibold text-muted-foreground">
-            {m.settings_currencies_label_code_example()}
-          </label>
-          <Input
-            id="add_code"
-            type="text"
-            bind:value={addCode}
-            placeholder="USD"
-            maxlength={5}
-            required
-            class="uppercase font-mono font-bold"
-          />
-        </div>
-
-        <!-- Symbol -->
-        <div class="flex flex-col gap-1.5">
-          <label for="add_symbol" class="text-xs font-semibold text-muted-foreground">
-            {m.settings_currencies_label_symbol_example()}
-          </label>
-          <Input
-            id="add_symbol"
-            type="text"
-            bind:value={addSymbol}
-            placeholder="$"
-            required
-            class="font-mono font-bold"
-          />
-        </div>
-
-        <!-- Arabic Name -->
-        <div class="flex flex-col gap-1.5">
-          <label for="add_name_ar" class="text-xs font-semibold text-muted-foreground">
-            {m.common_cycle_form_name()}
-          </label>
-          <Input
-            id="add_name_ar"
-            type="text"
-            bind:value={addNameAr}
-            placeholder={m.settings_currencies_name_ar_placeholder()}
-          />
-        </div>
-
-        <!-- English Name -->
-        <div class="flex flex-col gap-1.5">
-          <label for="add_name" class="text-xs font-semibold text-muted-foreground">
-            {m.settings_currencies_label_name_en()}
-          </label>
-          <Input
-            id="add_name"
-            type="text"
-            bind:value={addName}
-            placeholder="e.g., US Dollar"
-            required
-          />
-        </div>
-
-        <!-- Symbol Position -->
-        <div class="flex flex-col gap-1.5">
-          <label for="add_position" class="text-xs font-semibold text-muted-foreground">
-            {m.settings_currencies_label_position()}
-          </label>
-          <Select type="single" value={addSymbolPosition} onValueChange={(v) => (addSymbolPosition = v ?? "before")}>
-            <SelectTrigger class="h-9 w-full text-xs">
-              {addSymbolPosition === "before" ? m.settings_currencies_position_before() : m.settings_currencies_position_after()}
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="before">{m.settings_currencies_position_before()}</SelectItem>
-              <SelectItem value="after">{m.settings_currencies_position_after()}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <!-- Decimal Places -->
-        <div class="flex flex-col gap-1.5">
-          <label for="add_decimals" class="text-xs font-semibold text-muted-foreground">
-            {m.settings_currencies_label_decimals()}
-          </label>
-          <Input
-            id="add_decimals"
-            type="number"
-            bind:value={addDecimalPlaces}
-            min={0}
-            max={8}
-            required
-          />
-        </div>
-
-        <!-- Exchange Rate -->
-        <div class="flex flex-col gap-1.5 md:col-span-2">
-          <label for="add_rate" class="text-xs font-semibold text-muted-foreground flex justify-between">
-            <span>{m.settings_currencies_label_rate_with_base()}</span>
-            <span class="text-xs font-bold text-primary">1 {addCode || 'CUR'} = {addExchangeRate} {baseCurrencyCode}</span>
-          </label>
-          <Input
-            id="add_rate"
-            type="number"
-            step="0.000001"
-            bind:value={addExchangeRate}
-            min={0.000001}
-            required
-            class="font-mono font-bold"
-          />
-        </div>
-      </div>
-
-      <!-- Toggles -->
-      <div class="flex flex-col gap-3 border-t border-border/40 pt-4 mt-2">
-        <div class="flex items-center justify-between">
-          <div class="flex flex-col gap-0.5">
-            <span class="text-xs font-semibold text-foreground">{m.settings_currencies_base_currency()}</span>
-            <span class="text-[9px] text-muted-foreground">
-              {m.settings_currencies_base_currency_desc()}
-            </span>
-          </div>
-          <Switch bind:checked={addIsBase} />
-        </div>
-
-        <div class="flex items-center justify-between border-t border-border/20 pt-3">
-          <div class="flex flex-col gap-0.5">
-            <span class="text-xs font-semibold text-foreground">{m.common_phase_active()}</span>
-            <span class="text-[9px] text-muted-foreground">
-              {m.settings_currencies_active_desc()}
-            </span>
-          </div>
-          <Switch bind:checked={addIsActive} />
-        </div>
-      </div>
-
-      <div class="flex items-center justify-end gap-2 border-t border-border/40 pt-4 mt-2">
-        <Button variant="ghost" class="text-xs h-8 cursor-pointer" onclick={() => showAddDialog = false} type="button">
-          {m.common_action_cancel()}
-        </Button>
-        <Button variant="lime" class="text-xs h-8 font-bold cursor-pointer" type="submit" disabled={isSubmitting}>
-          {isSubmitting ? m.settings_currencies_btn_adding() : m.settings_currencies_btn_add()}
-        </Button>
-      </div>
-    </form>
-  </div>
-{/if}
+<!-- Add Currency Modal -->
+<AddCurrencyDialog
+  bind:open={showAddDialog}
+  existingCurrencies={currencies}
+  onsuccess={loadCurrencies}
+/>
 
 <!-- Edit Currency Modal -->
 {#if showEditDialog}

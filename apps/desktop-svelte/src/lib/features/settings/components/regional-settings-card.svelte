@@ -9,6 +9,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
+import CurrencySettings from "$lib/shared/components/currency-settings.svelte";
 import TimezoneSettings from "$lib/shared/components/timezone-settings.svelte";
 import LocaleSettings from "$lib/shared/components/locale-settings.svelte";
 
@@ -47,25 +48,12 @@ const dateFormats = [
 
   <div class="flex flex-col">
     <!-- Currency -->
-    <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
-      <div class="flex flex-col gap-1 text-start">
-        <Label for="org_currency" class="text-xs font-semibold text-foreground">
-          {m.finance_ledger_currency()}
-        </Label>
-        <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_currency_desc()}</span>
-      </div>
-      <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
-        <Input
-          id="org_currency"
-          type="text"
-          bind:value={currency}
-          placeholder={m.settings_general_currency_placeholder()}
-          class="uppercase font-mono w-full text-start h-9 bg-background"
-          required
-          disabled={isSaving}
-        />
-      </div>
-    </div>
+    <CurrencySettings
+      title={m.finance_ledger_currency()}
+      description={m.settings_general_currency_desc()}
+      bind:currentCurrency={currency}
+      disabled={isSaving}
+    />
 
     <!-- Timezone -->
     <TimezoneSettings

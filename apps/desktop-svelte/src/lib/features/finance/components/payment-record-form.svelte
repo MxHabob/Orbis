@@ -62,29 +62,7 @@ async function loadDropdownData() {
     ]);
     students = studentList;
     treasuries = treasuryList;
-    activeCurrencies =
-      currencyList.length > 0
-        ? currencyList
-        : [
-            {
-              code: "YER",
-              name: "Yemeni Rial",
-              name_ar: "ريال يمني",
-              exchange_rate: 1.0,
-            },
-            {
-              code: "USD",
-              name: "US Dollar",
-              name_ar: "دولار أمريكي",
-              exchange_rate: 250.0,
-            },
-            {
-              code: "SAR",
-              name: "Saudi Riyal",
-              name_ar: "ريال سعودي",
-              exchange_rate: 66.0,
-            },
-          ];
+    activeCurrencies = currencyList;
 
     if (studentList.length > 0) {
       selectedEnrollmentId = String(studentList[0].id);
@@ -298,30 +276,18 @@ async function handleSubmit(e: SubmitEvent) {
 		<label for="pay_currency" class="text-sm font-medium text-foreground">
 			{m.common_payment_label_currency()}
 		</label>
-		<div class="flex gap-3">
-			<Input 
-				id="pay_currency"
-				type="text" 
-				bind:value={currency}
-				placeholder="e.g., YER"
-				class="uppercase font-mono max-w-[100px]"
-				required
-				maxlength={3}
-				disabled={isSubmitting}
-			/>
-			<div class="flex gap-2 items-center flex-wrap">
-				{#each activeCurrencies as curr}
-					<button
-						type="button"
-						class="px-3 py-1.5 rounded border text-xs font-semibold transition-all cursor-pointer {currency.toUpperCase() === curr.code ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-accent text-muted-foreground border-border'}"
-						onclick={() => currency = curr.code}
-						disabled={isSubmitting}
-					>
-						{curr.name_ar || curr.name || curr.code} ({curr.code})
-					</button>
-				{/each}
-			</div>
-		</div>
+		<select 
+			id="pay_currency"
+			bind:value={currency}
+			class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full font-sans"
+			disabled={isLoadingDropdowns || isSubmitting}
+		>
+			{#each activeCurrencies as curr (curr.code)}
+				<option value={curr.code}>
+					{curr.code} - {curr.name_ar || curr.name || curr.code} {curr.symbol ? `(${curr.symbol})` : ''}
+				</option>
+			{/each}
+		</select>
 	</div>
 
 	<!-- Fee Amount -->

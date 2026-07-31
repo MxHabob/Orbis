@@ -1032,7 +1032,7 @@ CREATE TABLE IF NOT EXISTS fiscal_periods (
 -- â”€â”€ Currencies â”€â”€
 CREATE TABLE IF NOT EXISTS currencies (
   code TEXT NOT NULL,
-  org_id TEXT NOT NULL,
+  org_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   name_ar TEXT,
   symbol TEXT NOT NULL,
@@ -1044,6 +1044,8 @@ CREATE TABLE IF NOT EXISTS currencies (
   updated_at TEXT NOT NULL,
   PRIMARY KEY (code, org_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_currencies_org_base ON currencies (org_id, is_base);
 
 -- â”€â”€ Accounts (Chart of Accounts) â”€â”€
 CREATE TABLE IF NOT EXISTS accounts (

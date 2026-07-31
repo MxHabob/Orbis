@@ -20,6 +20,7 @@ pub struct BootstrapParams {
     pub admin_username: String,
     pub admin_password_hash: String,
     pub blueprint: BlueprintType,
+    pub currency: Option<String>,
 }
 
 pub struct BootstrapResult {
@@ -34,21 +35,36 @@ pub async fn bootstrap_system(
     let now = Utc::now().to_rfc3339();
     let org_id = Uuid::new_v4().to_string();
     let user_id = Uuid::new_v4().to_string();
+    let cur = params.currency.clone().unwrap_or_else(|| "SAR".to_string());
 
     info!("Bootstrapping system for organization '{}'", params.org_name);
 
     // 1. Insert Organization
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO organizations (id, name, slug, is_active, subscription_plan, created_at, updated_at) VALUES ($1, $2, $3, 1, 'basic', $4, $5)",
+        "INSERT INTO organizations (id, name, slug, currency, is_active, subscription_plan, created_at, updated_at) VALUES ($1, $2, $3, $4, 1, 'basic', $5, $6)",
         vec![
             org_id.clone().into(),
             params.org_name.clone().into(),
             params.org_slug.clone().into(),
+            cur.clone().into(),
             now.clone().into(),
             now.clone().into()
         ]
     )).await.map_err(|e| AppError::internal(format!("Failed to create organization: {}", e)))?;
+
+    // 1b. Insert Base Currency
+    db.execute(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "INSERT INTO currencies (code, org_id, name, symbol, symbol_position, decimal_places, exchange_rate, is_base, is_active, updated_at) VALUES ($1, $2, $3, $4, 'after', 2, 1.0, 1, 1, $5)",
+        vec![
+            cur.clone().into(),
+            org_id.clone().into(),
+            cur.clone().into(),
+            cur.clone().into(),
+            now.clone().into(),
+        ]
+    )).await.ok();
 
     // 2. Insert Admin User
     db.execute(Statement::from_sql_and_values(

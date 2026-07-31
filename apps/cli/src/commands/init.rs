@@ -177,6 +177,7 @@ pub async fn execute() -> Result<()> {
         admin_username: admin_username.clone(),
         admin_password_hash: hashed_password,
         blueprint,
+        currency: Some(currency.clone()),
     };
 
     let result = infra_persistence::bootstrap::bootstrap_system(&db, params).await?;

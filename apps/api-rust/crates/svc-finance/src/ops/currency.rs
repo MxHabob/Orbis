@@ -17,7 +17,9 @@ pub async fn list(ctx: &ServiceContext) -> Result<Vec<currency::Model>, AppError
 
 pub async fn get(ctx: &ServiceContext, code: &str) -> Result<currency::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceRead).await?;
-    currency::Entity::find_by_id(code.to_string())
+    currency::Entity::find()
+        .filter(currency::Column::OrgId.eq(&ctx.org_id))
+        .filter(currency::Column::Code.eq(code))
         .one(&ctx.db).await?
         .ok_or_else(|| AppError::not_found("currency", code))
 }
@@ -29,6 +31,15 @@ pub async fn create(
     decimal_places: i32, exchange_rate: f64, is_base: bool,
 ) -> Result<currency::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceWrite).await?;
+
+    if is_base {
+        use sea_orm::ConnectionTrait;
+        let stmt = sea_orm::Statement::from_string(
+            ctx.db.get_database_backend(),
+            format!("UPDATE currencies SET is_base = 0 WHERE org_id = '{}'", ctx.org_id),
+        );
+        ctx.db.execute(stmt).await.ok();
+    }
 
     let model = currency::Model {
         code: code.clone(), org_id: ctx.org_id.clone(),

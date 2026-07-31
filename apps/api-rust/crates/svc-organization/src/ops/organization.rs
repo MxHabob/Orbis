@@ -1,6 +1,6 @@
 //! Organization operations — CRUD via ServiceContext.
 
-use sea_orm::{EntityTrait, ColumnTrait, QueryFilter, ActiveModelTrait, ActiveValue::Set};
+use sea_orm::{EntityTrait, ColumnTrait, QueryFilter, ActiveModelTrait, ActiveValue::Set, ConnectionTrait};
 use tracing::info;
 
 use shared_kernel::context::ServiceContext;
@@ -196,7 +196,37 @@ pub async fn update_organization(
     if let Some(name_ar) = cmd.name_ar { active.name_ar = Set(Some(name_ar)); }
     if let Some(tz) = cmd.timezone { active.timezone = Set(tz); }
     if let Some(loc) = cmd.locale { active.locale = Set(loc); }
-    if let Some(cur) = cmd.currency { active.currency = Set(cur); }
+    if let Some(cur) = cmd.currency {
+        active.currency = Set(cur.clone());
+        let db_backend = ctx.db.get_database_backend();
+        let now = chrono::Utc::now().to_rfc3339();
+        
+        let reset_stmt = sea_orm::Statement::from_string(
+            db_backend,
+            format!("UPDATE currencies SET is_base = 0 WHERE org_id = '{}'", ctx.org_id),
+        );
+        ctx.db.execute(reset_stmt).await.ok();
+
+        let update_stmt = sea_orm::Statement::from_string(
+            db_backend,
+            format!(
+                "UPDATE currencies SET is_base = 1, is_active = 1, updated_at = '{}' WHERE org_id = '{}' AND code = '{}'",
+                now, ctx.org_id, cur
+            ),
+        );
+        if let Ok(result) = ctx.db.execute(update_stmt).await {
+            if result.rows_affected() == 0 {
+                let insert_stmt = sea_orm::Statement::from_string(
+                    db_backend,
+                    format!(
+                        "INSERT INTO currencies (code, org_id, name, symbol, symbol_position, decimal_places, exchange_rate, is_base, is_active, updated_at) VALUES ('{}', '{}', '{}', '{}', 'after', 2, 1.0, 1, 1, '{}')",
+                        cur, ctx.org_id, cur, cur, now
+                    ),
+                );
+                ctx.db.execute(insert_stmt).await.ok();
+            }
+        }
+    }
     if let Some(df) = cmd.date_format { active.date_format = Set(Some(df)); }
     if let Some(h) = cmd.hijri_enabled { active.hijri_enabled = Set(if h { 1 } else { 0 }); }
     if let Some(logo) = cmd.logo { active.logo = Set(Some(logo)); }

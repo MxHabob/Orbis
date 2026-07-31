@@ -211,13 +211,12 @@ pub async fn bootstrap_full(
     }
 
     // 3g. Currency
-    let currency_id = Uuid::new_v4().to_string();
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT OR IGNORE INTO currencies (id, org_id, code, name, name_ar, symbol, decimal_places, is_default, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, 1, $8)",
+        "INSERT INTO currencies (code, org_id, name, name_ar, symbol, symbol_position, decimal_places, exchange_rate, is_base, is_active, updated_at) VALUES ($1, $2, $3, $4, $5, 'after', $6, 1.0, 1, 1, $7)",
         vec![
-            currency_id.into(), org_id.clone().into(),
             payload.currency.clone().into(),
+            org_id.clone().into(),
             currency_name(&payload.currency).into(),
             currency_name_ar(&payload.currency).into(),
             currency_symbol(&payload.currency).into(),

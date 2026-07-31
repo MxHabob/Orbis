@@ -6,4 +6,5 @@ export { default as AvatarSettingsCard } from "./components/avatar-settings-card
 export { default as DangerZoneSettingsCard } from "./components/danger-zone-settings-card.svelte";
 export { default as GeneralSettingsForm } from "./components/general-settings-form.svelte";
 export { default as RegistrationSettingsForm } from "./components/registration-settings-form.svelte";
+export { default as AddCurrencyDialog } from "./components/add-currency-dialog.svelte";
 export * from "./queries";
