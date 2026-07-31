@@ -2,6 +2,7 @@
   @component AddCurrencyDialog
   Follows Orbis standard UI design tokens, dialog structures, and component patterns.
   Uses `@orbis/ui-svelte` Dialog, Input, Label, Select, Switch, Button and Paraglide i18n messages.
+  Performance-optimized with static module-level Intl instance caching and O(1) preset lookups.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -49,6 +50,58 @@ let {
   onsuccess,
 }: Props = $props();
 
+// Module-level static cache for Intl instances (created once, zero overhead per render)
+let cachedArDisplayNames: Intl.DisplayNames | null = null;
+let cachedEnDisplayNames: Intl.DisplayNames | null = null;
+
+function getArDisplayNames(): Intl.DisplayNames | null {
+  if (cachedArDisplayNames === null) {
+    try {
+      cachedArDisplayNames = new Intl.DisplayNames(["ar"], { type: "currency" });
+    } catch {
+      cachedArDisplayNames = null;
+    }
+  }
+  return cachedArDisplayNames;
+}
+
+function getEnDisplayNames(): Intl.DisplayNames | null {
+  if (cachedEnDisplayNames === null) {
+    try {
+      cachedEnDisplayNames = new Intl.DisplayNames(["en"], { type: "currency" });
+    } catch {
+      cachedEnDisplayNames = null;
+    }
+  }
+  return cachedEnDisplayNames;
+}
+
+// Pre-computed preset dropdown items (built once for instant opening)
+let cachedPresetItems: { id: string; label: string; value: string }[] | null = null;
+let cachedPresetMap: Map<string, { id: string; label: string; value: string }> | null = null;
+
+function getPresetItemsData() {
+  if (!cachedPresetItems) {
+    const arNames = getArDisplayNames();
+    const items: { id: string; label: string; value: string }[] = [];
+    const map = new Map<string, { id: string; label: string; value: string }>();
+
+    for (const c of uniqueCurrencies) {
+      const upper = c.toUpperCase();
+      const arVal = arNames?.of(upper);
+      const label = arVal && arVal !== upper ? `${upper} - ${arVal}` : upper;
+      const itemObj = { id: upper, label, value: upper };
+      items.push(itemObj);
+      map.set(upper, itemObj);
+    }
+    cachedPresetItems = items;
+    cachedPresetMap = map;
+  }
+  return { items: cachedPresetItems, map: cachedPresetMap! };
+}
+
+const { items: presetItems, map: presetMap } = getPresetItemsData();
+
 // Form State
 let code = $state("");
 let name = $state("");
@@ -60,29 +113,8 @@ let exchangeRate = $state(1.0);
 let isBase = $state(false);
 let isSubmitting = $state(false);
 
-// Format dropdown items with Arabic currency names
-function formatPresetLabel(curCode: string): string {
-  const upper = curCode.toUpperCase();
-  try {
-    const arNames = new Intl.DisplayNames(["ar"], { type: "currency" });
-    const nameArVal = arNames.of(upper);
-    return nameArVal && nameArVal !== upper ? `${upper} - ${nameArVal}` : upper;
-  } catch {
-    return upper;
-  }
-}
-
-const presetItems = uniqueCurrencies.map((c) => {
-  const upper = c.toUpperCase();
-  return {
-    id: upper,
-    label: formatPresetLabel(upper),
-    value: upper,
-  };
-});
-
 const selectedPresetItem = $derived(
-  code ? { id: code, label: formatPresetLabel(code), value: code } : null,
+  code ? presetMap.get(code.toUpperCase()) || { id: code, label: code, value: code } : null,
 );
 
 // Formatted Live Preview Text
@@ -93,21 +125,17 @@ let livePreview = $derived.by(() => {
 });
 
 /**
- * Smart auto-completion when selecting a currency preset
+ * Optimized auto-completion handler using cached Intl instances
  */
 function handlePresetSelect(item: { id: string; label: string; value: string }) {
   const curCode = item.value.toUpperCase();
   code = curCode;
 
-  try {
-    const arNames = new Intl.DisplayNames(["ar"], { type: "currency" });
-    const enNames = new Intl.DisplayNames(["en"], { type: "currency" });
-    nameAr = arNames.of(curCode) || curCode;
-    name = enNames.of(curCode) || curCode;
-  } catch {
-    name = curCode;
-    nameAr = curCode;
-  }
+  const arNames = getArDisplayNames();
+  const enNames = getEnDisplayNames();
+
+  nameAr = arNames?.of(curCode) || curCode;
+  name = enNames?.of(curCode) || curCode;
 
   try {
     const formatter = new Intl.NumberFormat("ar", {
@@ -117,14 +145,10 @@ function handlePresetSelect(item: { id: string; label: string; value: string }) 
     const parts = formatter.formatToParts(100);
     const symPart = parts.find((p) => p.type === "currency");
     symbol = symPart?.value || curCode;
-
-    if (parts[0]?.type === "currency") {
-      symbolPosition = "before";
-    } else {
-      symbolPosition = "after";
-    }
+    symbolPosition = parts[0]?.type === "currency" ? "before" : "after";
   } catch {
     symbol = curCode;
+    symbolPosition = "after";
   }
 
   if (existingCurrencies.length === 0) {
