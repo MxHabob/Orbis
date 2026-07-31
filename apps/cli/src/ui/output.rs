@@ -128,6 +128,30 @@ pub fn print_summary_box(title: &str, items: &[(&str, &str)]) {
     println!();
 }
 
+/// Runs a closure with an animated indicatif spinner.
+pub fn with_spinner<F, T>(message: &str, f: F) -> T
+where
+    F: FnOnce() -> T,
+{
+    use indicatif::{ProgressBar, ProgressStyle};
+    use std::time::Duration;
+
+    let pb = ProgressBar::new_spinner();
+    pb.set_style(
+        ProgressStyle::default_spinner()
+            .tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
+            .template("{spinner:.cyan} {msg}")
+            .unwrap(),
+    );
+    pb.set_message(message.to_string());
+    pb.enable_steady_tick(Duration::from_millis(80));
+
+    let result = f();
+
+    pb.finish_and_clear();
+    result
+}
+
 /// Prints a simple section divider.
 pub fn print_divider() {
     println!("{}", "───────────────────────────────────────────────────────────".truecolor(50, 50, 50));

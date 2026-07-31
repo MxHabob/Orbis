@@ -107,55 +107,132 @@ pub async fn execute() -> Result<()> {
     output::print_progress_ok("Database schema created successfully");
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    let mut org_name;
+    let mut org_name_ar;
+    let mut org_slug;
+    let mut blueprint;
+    let mut institution_type_label;
+    let mut timezone;
+    let mut currency;
+
+    let mut admin_name;
+    let mut admin_username;
+    let mut admin_password;
+
     // Phase 3: Organization Setup
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     output::print_phase_header(3, TOTAL_PHASES, "Organization Setup");
 
-    let org_name = prompts::prompt_org_name("Organization Name (EN):")?;
-    let org_name_ar = prompts::prompt_org_name("Organization Name (AR):")?;
-    let generated_slug = transliterate_arabic_to_ascii(&org_name);
-    let org_slug = prompts::prompt_slug("Organization Slug:", &generated_slug)?;
+        org_name = prompts::prompt_org_name("Organization Name (EN):")?;
+        org_name_ar = prompts::prompt_org_name("Organization Name (AR):")?;
+        let generated_slug = transliterate_arabic_to_ascii(&org_name);
+        org_slug = prompts::prompt_slug("Organization Slug:", &generated_slug)?;
 
-    // Institution Type / Blueprint
-    let blueprint_options = vec![
-        "1. School (K-12 / Basic Education)",
-        "2. University (Higher Education / Credit Hours)",
-        "3. Training Center / Institute (Quarterly / Pass-Fail)",
-    ];
-    let bp_choice = prompts::prompt_select("Select institution type:", blueprint_options)?;
-    let blueprint = if bp_choice.contains("University") {
-        infra_persistence::bootstrap::BlueprintType::University
-    } else if bp_choice.contains("Training") {
-        infra_persistence::bootstrap::BlueprintType::TrainingCenter
-    } else {
-        infra_persistence::bootstrap::BlueprintType::School
-    };
+        // Institution Type / Blueprint
+        let blueprint_options = vec![
+            "1. School (K-12 / Basic Education)",
+            "2. University (Higher Education / Credit Hours)",
+            "3. Training Center / Institute (Quarterly / Pass-Fail)",
+        ];
+        let bp_choice = prompts::prompt_select("Select institution type:", blueprint_options.clone())?;
+        blueprint = if bp_choice.contains("University") {
+            infra_persistence::bootstrap::BlueprintType::University
+        } else if bp_choice.contains("Training") {
+            infra_persistence::bootstrap::BlueprintType::TrainingCenter
+        } else {
+            infra_persistence::bootstrap::BlueprintType::School
+        };
 
-    let institution_type_label = if bp_choice.contains("University") {
-        "University"
-    } else if bp_choice.contains("Training") {
-        "Training Center"
-    } else {
-        "School"
-    };
+        institution_type_label = match blueprint {
+            infra_persistence::bootstrap::BlueprintType::University => "University",
+            infra_persistence::bootstrap::BlueprintType::TrainingCenter => "Training Center",
+            _ => "School",
+        };
 
-    // Auto-detect locale defaults
-    let detected_tz = detect_timezone();
-    let detected_currency = detect_currency(&detected_tz);
-    output::print_info(&format!("Auto-detected system region — Timezone: {} | Currency: {}", detected_tz, detected_currency));
+        // Auto-detect locale defaults with spinner
+        let (detected_tz, detected_currency) = output::with_spinner(
+            "Detecting system region & timezone settings...",
+            || {
+                let tz = detect_timezone();
+                let curr = detect_currency(&tz);
+                (tz, curr)
+            },
+        );
+        output::print_progress_ok(&format!(
+            "Auto-detected system region — Timezone: {} | Currency: {}",
+            detected_tz, detected_currency
+        ));
 
-    let timezone = prompts::prompt_text_with_default("Timezone:", &detected_tz)?;
-    let currency_input = prompts::prompt_text_with_default("Base Currency (ISO 4217):", &detected_currency)?;
-    let currency = currency_input.trim().to_uppercase();
+        timezone = prompts::prompt_text_with_default("Timezone:", &detected_tz)?;
+        let currency_input = prompts::prompt_text_with_default("Base Currency (ISO 4217):", &detected_currency)?;
+        currency = currency_input.trim().to_uppercase();
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Phase 4: Administrator Account
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    output::print_phase_header(4, TOTAL_PHASES, "Administrator Account");
+        // Phase 4: Administrator Account
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        output::print_phase_header(4, TOTAL_PHASES, "Administrator Account");
 
-    let admin_name = prompts::prompt_full_name("Admin Full Name:")?;
-    let admin_username = prompts::prompt_email("Admin Email:")?;
-    let admin_password = prompts::prompt_password_confirmed("Admin Password:")?;
+        admin_name = prompts::prompt_full_name("Admin Full Name:")?;
+        admin_username = prompts::prompt_email("Admin Email:")?;
+        admin_password = prompts::prompt_password_confirmed("Admin Password:")?;
+
+    // Review & Edit Loop
+    loop {
+        output::print_summary_box("Configuration Review", &[
+            ("Organization (EN):", &org_name),
+            ("Organization (AR):", &org_name_ar),
+            ("Slug:", &org_slug),
+            ("Institution Type:", institution_type_label),
+            ("Timezone:", &timezone),
+            ("Base Currency:", &currency),
+            ("Admin Name:", &admin_name),
+            ("Admin Email:", &admin_username),
+        ]);
+
+        let review_options = vec![
+            "1. Confirm & Initialize System (Press Enter to finish)",
+            "2. Edit Organization Setup (Name, Type, Timezone, Currency)",
+            "3. Edit Administrator Account (Name, Email, Password)",
+            "4. Cancel Setup",
+        ];
+
+        let review_choice = prompts::prompt_select("Would you like to proceed or edit any previous step?", review_options)?;
+
+        if review_choice.contains("Confirm") {
+            break;
+        } else if review_choice.contains("Cancel") {
+            return Err(anyhow::anyhow!("Setup wizard cancelled by user."));
+        } else if review_choice.contains("Edit Administrator Account") {
+            output::print_phase_header(4, TOTAL_PHASES, "Administrator Account (Editing)");
+            admin_name = prompts::prompt_text_with_default("Admin Full Name:", &admin_name)?;
+            admin_username = prompts::prompt_text_with_default("Admin Email:", &admin_username)?;
+            println!("  {}", "Re-enter admin password to confirm change:".cyan());
+            admin_password = prompts::prompt_password_confirmed("Admin Password:")?;
+        } else if review_choice.contains("Edit Organization Setup") {
+            output::print_phase_header(3, TOTAL_PHASES, "Organization Setup (Editing)");
+            org_name = prompts::prompt_text_with_default("Organization Name (EN):", &org_name)?;
+            org_name_ar = prompts::prompt_text_with_default("Organization Name (AR):", &org_name_ar)?;
+            let re_slug = transliterate_arabic_to_ascii(&org_name);
+            org_slug = prompts::prompt_text_with_default("Organization Slug:", &re_slug)?;
+
+            let bp_choice = prompts::prompt_select("Select institution type:", blueprint_options.clone())?;
+            blueprint = if bp_choice.contains("University") {
+                infra_persistence::bootstrap::BlueprintType::University
+            } else if bp_choice.contains("Training") {
+                infra_persistence::bootstrap::BlueprintType::TrainingCenter
+            } else {
+                infra_persistence::bootstrap::BlueprintType::School
+            };
+            institution_type_label = match blueprint {
+                infra_persistence::bootstrap::BlueprintType::University => "University",
+                infra_persistence::bootstrap::BlueprintType::TrainingCenter => "Training Center",
+                _ => "School",
+            };
+
+            timezone = prompts::prompt_text_with_default("Timezone:", &timezone)?;
+            let c_in = prompts::prompt_text_with_default("Base Currency (ISO 4217):", &currency)?;
+            currency = c_in.trim().to_uppercase();
+        }
+    }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // Phase 5: Execution
