@@ -165,9 +165,12 @@ function getTypeLabel(t: string) {
       <!-- Scales List (Left Panel) -->
       <div class="flex flex-col gap-2">
         {#each ($scalesQuery.data ?? []) as scale (scale.id)}
-          <button
+          <div
+            role="button"
+            tabindex="0"
             class="text-start w-full px-4 py-3 rounded-lg border transition-all cursor-pointer {selectedScaleId === scale.id ? 'border-primary bg-primary/5 shadow-sm' : 'border-border/40 hover:border-border hover:bg-muted/30'}"
             onclick={() => (selectedScaleId = scale.id)}
+            onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (selectedScaleId = scale.id)}
           >
             <div class="flex items-center justify-between">
               <div class="flex flex-col gap-0.5">
@@ -177,14 +180,14 @@ function getTypeLabel(t: string) {
               <div class="flex items-center gap-1">
                 <button
                   class="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
-                  onclick|stopPropagation={() => handleDeleteScale(scale.id)}
+                  onclick={(e) => { e.stopPropagation(); handleDeleteScale(scale.id); }}
                 >
                   <Trash2 size={12} />
                 </button>
                 <ChevronRight size={14} class="text-muted-foreground" />
               </div>
             </div>
-          </button>
+          </div>
         {:else}
           <div class="text-center py-8 text-muted-foreground text-xs">
             لا توجد مقاييس. أضف مقياس جديد للبدء.

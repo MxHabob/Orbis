@@ -217,9 +217,12 @@ const componentTypes = [
       <!-- Schemes List (Left Panel) -->
       <div class="flex flex-col gap-2">
         {#each ($schemesQuery.data ?? []) as scheme (scheme.id)}
-          <button
+          <div
+            role="button"
+            tabindex="0"
             class="text-start w-full px-4 py-3 rounded-lg border transition-all cursor-pointer {selectedSchemeId === scheme.id ? 'border-primary bg-primary/5 shadow-sm' : 'border-border/40 hover:border-border hover:bg-muted/30'}"
             onclick={() => (selectedSchemeId = scheme.id)}
+            onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (selectedSchemeId = scheme.id)}
           >
             <div class="flex items-center justify-between">
               <div class="flex flex-col gap-0.5">
@@ -231,14 +234,14 @@ const componentTypes = [
               <div class="flex items-center gap-1">
                 <button
                   class="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
-                  onclick|stopPropagation={() => handleDeleteScheme(scheme.id)}
+                  onclick={(e) => { e.stopPropagation(); handleDeleteScheme(scheme.id); }}
                 >
                   <Trash2 size={12} />
                 </button>
                 <ChevronRight size={14} class="text-muted-foreground" />
               </div>
             </div>
-          </button>
+          </div>
         {:else}
           <div class="text-center py-8 text-muted-foreground text-xs">
             لا توجد هياكل تقييم. أضف هيكل جديد للبدء.
