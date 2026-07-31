@@ -1,7 +1,7 @@
 <!--
   @component AddCurrencyDialog
-  A modern, feature-rich modal for adding currencies to the organization.
-  Uses `@orbis/location` and standard `Intl` APIs for smart preset auto-completion.
+  Follows Orbis standard UI design tokens, dialog structures, and component patterns.
+  Uses `@orbis/ui-svelte` Dialog, Input, Label, Select, Switch, Button and Paraglide i18n messages.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -28,7 +28,14 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import { Sparkles, Coins, ArrowRightLeft, Info, Check } from "lucide-svelte";
+import {
+  Sparkles,
+  Coins,
+  ArrowRightLeft,
+  Check,
+  Globe,
+  Loader2,
+} from "lucide-svelte";
 
 interface Props {
   open: boolean;
@@ -53,7 +60,7 @@ let exchangeRate = $state(1.0);
 let isBase = $state(false);
 let isSubmitting = $state(false);
 
-// Smart preset dropdown items
+// Format dropdown items with Arabic currency names
 function formatPresetLabel(curCode: string): string {
   const upper = curCode.toUpperCase();
   try {
@@ -77,6 +84,13 @@ const presetItems = uniqueCurrencies.map((c) => {
 const selectedPresetItem = $derived(
   code ? { id: code, label: formatPresetLabel(code), value: code } : null,
 );
+
+// Formatted Live Preview Text
+let livePreview = $derived.by(() => {
+  const s = symbol.trim() || code.toUpperCase() || "$";
+  const num = (100.0).toFixed(Math.max(0, Math.min(4, decimalPlaces)));
+  return symbolPosition === "before" ? `${s} ${num}` : `${num} ${s}`;
+});
 
 /**
  * Smart auto-completion when selecting a currency preset
@@ -102,11 +116,7 @@ function handlePresetSelect(item: { id: string; label: string; value: string }) 
     });
     const parts = formatter.formatToParts(100);
     const symPart = parts.find((p) => p.type === "currency");
-    if (symPart?.value) {
-      symbol = symPart.value;
-    } else {
-      symbol = curCode;
-    }
+    symbol = symPart?.value || curCode;
 
     if (parts[0]?.type === "currency") {
       symbolPosition = "before";
@@ -117,7 +127,6 @@ function handlePresetSelect(item: { id: string; label: string; value: string }) 
     symbol = curCode;
   }
 
-  // If this is the first currency in the system, suggest making it base
   if (existingCurrencies.length === 0) {
     isBase = true;
     exchangeRate = 1.0;
@@ -185,109 +194,97 @@ async function handleSubmit(e: Event) {
 </script>
 
 <Dialog bind:open onOpenChange={(v) => !v && resetForm()}>
-  <DialogContent class="sm:max-w-[560px] text-start border-border bg-card shadow-2xl p-0 overflow-hidden rounded-xl">
-    <!-- Header with vibrant gradient accent -->
-    <div class="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-6 pt-6 pb-4 border-b border-border/60">
-      <DialogHeader>
-        <div class="flex items-center gap-2.5 mb-1">
-          <div class="p-2 rounded-lg bg-primary/10 text-primary">
-            <Coins class="w-5 h-5" />
-          </div>
-          <DialogTitle class="text-lg font-bold tracking-tight text-foreground">
-            {m.settings_currencies_modal_add_title()}
-          </DialogTitle>
-        </div>
-        <DialogDescription class="text-xs text-muted-foreground leading-relaxed ps-9">
-          {m.settings_currencies_modal_add_desc()}
-        </DialogDescription>
-      </DialogHeader>
-    </div>
+  <DialogContent class="max-w-md">
+    <DialogHeader>
+      <div class="flex items-center justify-between">
+        <DialogTitle class="text-sm font-semibold flex items-center gap-2">
+          <Coins size={16} class="text-primary" />
+          <span>{m.settings_currencies_add_dialog_title()}</span>
+        </DialogTitle>
+        {#if code}
+          <Badge variant="outline" class="font-mono text-[10px] bg-primary/5 text-primary border-primary/20">
+            {livePreview}
+          </Badge>
+        {/if}
+      </div>
+      <DialogDescription class="text-xs text-muted-foreground">
+        {m.settings_currencies_add_dialog_desc()}
+      </DialogDescription>
+    </DialogHeader>
 
-    <form onsubmit={handleSubmit} class="p-6 space-y-5">
-      <!-- Smart Location Selector -->
-      <div class="p-3.5 rounded-lg border border-primary/20 bg-primary/5 space-y-2">
-        <div class="flex items-center gap-1.5 text-xs font-semibold text-primary">
-          <Sparkles class="w-3.5 h-3.5" />
-          <span>{m.common_general_search()} ({m.settings_nav_currencies()})</span>
+    <form onsubmit={handleSubmit} class="flex flex-col gap-4 py-2">
+      <!-- Preset Quick Selection -->
+      <div class="flex flex-col gap-1.5 p-3 rounded-lg border border-border/40 bg-muted/20">
+        <div class="flex items-center gap-1.5 text-xs text-primary font-medium">
+          <Sparkles size={13} />
+          <span>{m.common_header_search()} ({m.settings_nav_currencies()})</span>
         </div>
         <ComboboxDropdown
-          placeholder="اختر عملة للتعبيت السريعة..."
+          placeholder="اختر عملة للتعبيئة السريعة..."
           searchPlaceholder="ابحث باسم العملة أو الرمز (مثال: USD, EUR, YER)..."
           selectedItem={selectedPresetItem}
           items={presetItems}
           onSelect={handlePresetSelect}
-          class="w-full bg-background border-border/80 h-9"
+          class="w-full bg-background border-border/60 text-xs h-8"
         />
-        <span class="text-[10px] text-muted-foreground block">
-          اختيار العملة يقو بملء البيانات تلقائياً، ويمكنك تعديلها بحرية أدناه.
-        </span>
       </div>
 
-      <!-- Currency Code & Names -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div class="space-y-1.5">
-          <Label for="cur-code" class="text-xs font-semibold text-foreground flex items-center justify-between">
-            <span>{m.settings_currencies_col_code()}</span>
-            <span class="text-[10px] text-destructive">*</span>
+      <!-- Currency Code & Symbol -->
+      <div class="grid grid-cols-2 gap-3">
+        <div class="flex flex-col gap-1.5">
+          <Label class="text-xs flex items-center justify-between">
+            <span>{m.common_ledger_col_code()}</span>
+            <span class="text-destructive text-[10px]">*</span>
           </Label>
           <Input
-            id="cur-code"
             bind:value={code}
             placeholder="USD"
-            class="uppercase font-mono text-sm h-9 bg-background"
+            class="text-xs uppercase font-mono h-8"
             required
             disabled={isSubmitting}
           />
         </div>
 
-        <div class="space-y-1.5">
-          <Label for="cur-name-ar" class="text-xs font-semibold text-foreground">
-            {m.settings_currencies_col_name()} (بالعربية)
-          </Label>
+        <div class="flex flex-col gap-1.5">
+          <Label class="text-xs">{m.settings_currencies_col_symbol()}</Label>
           <Input
-            id="cur-name-ar"
-            bind:value={nameAr}
-            placeholder="دولار أمريكي"
-            class="text-sm h-9 bg-background"
-            disabled={isSubmitting}
-          />
-        </div>
-
-        <div class="space-y-1.5">
-          <Label for="cur-name-en" class="text-xs font-semibold text-foreground">
-            الاسم بالإنجليزية
-          </Label>
-          <Input
-            id="cur-name-en"
-            bind:value={name}
-            placeholder="US Dollar"
-            class="text-sm h-9 bg-background"
+            bind:value={symbol}
+            placeholder="$"
+            class="text-xs font-mono h-8"
             disabled={isSubmitting}
           />
         </div>
       </div>
 
-      <!-- Symbol, Position & Decimals -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div class="space-y-1.5">
-          <Label for="cur-symbol" class="text-xs font-semibold text-foreground">
-            {m.settings_currencies_col_symbol()}
-          </Label>
+      <!-- Names Grid -->
+      <div class="grid grid-cols-2 gap-3">
+        <div class="flex flex-col gap-1.5">
+          <Label class="text-xs">{m.common_cycle_form_name()}</Label>
           <Input
-            id="cur-symbol"
-            bind:value={symbol}
-            placeholder="$"
-            class="text-sm h-9 bg-background font-mono"
+            bind:value={nameAr}
+            placeholder="دولار أمريكي"
+            class="text-xs h-8"
             disabled={isSubmitting}
           />
         </div>
 
-        <div class="space-y-1.5">
-          <Label class="text-xs font-semibold text-foreground">
-            موقع الرمز
-          </Label>
+        <div class="flex flex-col gap-1.5">
+          <Label class="text-xs">الاسم بالإنجليزية</Label>
+          <Input
+            bind:value={name}
+            placeholder="US Dollar"
+            class="text-xs h-8"
+            disabled={isSubmitting}
+          />
+        </div>
+      </div>
+
+      <!-- Position, Decimals & Rate -->
+      <div class="grid grid-cols-3 gap-3">
+        <div class="flex flex-col gap-1.5">
+          <Label class="text-xs">موقع الرمز</Label>
           <Select type="single" bind:value={symbolPosition} disabled={isSubmitting}>
-            <SelectTrigger class="h-9 w-full bg-background text-xs">
+            <SelectTrigger class="h-8 w-full text-xs">
               {symbolPosition === "before" ? m.settings_currencies_symbol_position_before() : m.settings_currencies_symbol_position_after()}
             </SelectTrigger>
             <SelectContent>
@@ -297,73 +294,64 @@ async function handleSubmit(e: Event) {
           </Select>
         </div>
 
-        <div class="space-y-1.5">
-          <Label for="cur-decimals" class="text-xs font-semibold text-foreground">
-            الخانة العشرية
-          </Label>
+        <div class="flex flex-col gap-1.5">
+          <Label class="text-xs">الخانات العشرية</Label>
           <Input
-            id="cur-decimals"
             type="number"
             min="0"
             max="4"
             bind:value={decimalPlaces}
-            class="text-sm h-9 bg-background font-mono"
+            class="text-xs font-mono h-8"
             disabled={isSubmitting}
+          />
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+          <Label class="text-xs flex items-center gap-1">
+            <ArrowRightLeft size={12} class="text-muted-foreground" />
+            <span>{m.settings_currencies_col_rate()}</span>
+          </Label>
+          <Input
+            type="number"
+            step="0.0001"
+            min="0.000001"
+            bind:value={exchangeRate}
+            disabled={isBase || isSubmitting}
+            class="text-xs font-mono h-8"
           />
         </div>
       </div>
 
-      <!-- Exchange Rate & Base Currency Toggle -->
-      <div class="p-3.5 rounded-lg border border-border/80 bg-muted/30 space-y-4">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
-          <div class="space-y-1.5">
-            <Label for="cur-rate" class="text-xs font-semibold text-foreground flex items-center gap-1.5">
-              <ArrowRightLeft class="w-3.5 h-3.5 text-muted-foreground" />
-              <span>{m.settings_currencies_col_rate()}</span>
+      <!-- Base Currency Switch -->
+      <div class="flex items-center justify-between p-3 rounded-lg border border-border/40 bg-muted/10">
+        <div class="flex items-center gap-2">
+          <Globe size={14} class="text-muted-foreground" />
+          <div class="flex flex-col gap-0.5">
+            <Label class="text-xs font-medium cursor-pointer">
+              {m.settings_currencies_type_base()}
             </Label>
-            <Input
-              id="cur-rate"
-              type="number"
-              step="0.0001"
-              min="0.000001"
-              bind:value={exchangeRate}
-              disabled={isBase || isSubmitting}
-              class="text-sm h-9 bg-background font-mono"
-            />
-            {#if isBase}
-              <span class="text-[10px] text-muted-foreground block">
-                العملة الأساسية تكون دائماً بسعر صرف 1.00
-              </span>
-            {/if}
-          </div>
-
-          <div class="flex items-center justify-between border-s border-border/60 ps-4 py-1">
-            <div class="flex flex-col gap-0.5 text-start">
-              <Label for="is-base-toggle" class="text-xs font-semibold text-foreground cursor-pointer">
-                {m.settings_currencies_type_base()}
-              </Label>
-              <span class="text-[10px] text-muted-foreground">
-                تعيين كعملة رئيسية للمنظمة
-              </span>
-            </div>
-            <Switch
-              id="is-base-toggle"
-              checked={isBase}
-              onCheckedChange={(val) => {
-                isBase = val;
-                if (val) exchangeRate = 1.0;
-              }}
-              disabled={isSubmitting}
-            />
+            <span class="text-[10px] text-muted-foreground">
+              تعيين كعملة رئيسية للمنظمة والتقارير
+            </span>
           </div>
         </div>
+
+        <Switch
+          checked={isBase}
+          onCheckedChange={(val) => {
+            isBase = val;
+            if (val) exchangeRate = 1.0;
+          }}
+          disabled={isSubmitting}
+        />
       </div>
 
-      <DialogFooter class="pt-2 gap-2 border-t border-border/60">
+      <DialogFooter class="pt-2">
         <Button
           type="button"
           variant="outline"
           size="sm"
+          class="text-xs cursor-pointer"
           onclick={() => {
             open = false;
             resetForm();
@@ -372,8 +360,18 @@ async function handleSubmit(e: Event) {
         >
           {m.common_action_cancel()}
         </Button>
-        <Button type="submit" variant="lime" size="sm" disabled={isSubmitting} class="gap-1.5">
-          <Check class="w-4 h-4" />
+        <Button
+          type="submit"
+          size="sm"
+          variant="lime"
+          disabled={isSubmitting}
+          class="text-xs cursor-pointer gap-1.5 font-bold"
+        >
+          {#if isSubmitting}
+            <Loader2 size={12} class="animate-spin" />
+          {:else}
+            <Check size={12} />
+          {/if}
           <span>{m.settings_currencies_add_btn()}</span>
         </Button>
       </DialogFooter>
