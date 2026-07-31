@@ -142,10 +142,11 @@ pub async fn execute() -> Result<()> {
     // Auto-detect locale defaults
     let detected_tz = detect_timezone();
     let detected_currency = detect_currency(&detected_tz);
-    output::print_info(&format!("Detected timezone: {} | Currency: {}", detected_tz, detected_currency));
+    output::print_info(&format!("Auto-detected system region — Timezone: {} | Currency: {}", detected_tz, detected_currency));
 
     let timezone = prompts::prompt_text_with_default("Timezone:", &detected_tz)?;
-    let currency = prompts::prompt_text_with_default("Base Currency:", &detected_currency)?;
+    let currency_input = prompts::prompt_text_with_default("Base Currency (ISO 4217):", &detected_currency)?;
+    let currency = currency_input.trim().to_uppercase();
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // Phase 4: Administrator Account
@@ -288,6 +289,38 @@ fn detect_timezone() -> String {
             return tz;
         }
     }
+
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(output) = std::process::Command::new("powershell")
+            .args(["-NoProfile", "-Command", "[TimeZoneInfo]::Local.Id"])
+            .output()
+        {
+            if output.status.success() {
+                let win_tz = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                let iana = match win_tz.as_str() {
+                    "Arab Standard Time" => "Asia/Riyadh",
+                    "Arabic Standard Time" => "Asia/Baghdad",
+                    "Arabian Standard Time" => "Asia/Dubai",
+                    "Jordan Standard Time" => "Asia/Amman",
+                    "Egypt Standard Time" => "Africa/Cairo",
+                    "Syria Standard Time" => "Asia/Damascus",
+                    "E. Africa Standard Time" => "Asia/Aden",
+                    "Sudan Standard Time" => "Africa/Khartoum",
+                    "Turkey Standard Time" => "Europe/Istanbul",
+                    "GMT Standard Time" => "Europe/London",
+                    "Eastern Standard Time" => "America/New_York",
+                    "Pacific Standard Time" => "America/Los_Angeles",
+                    "Central Standard Time" => "America/Chicago",
+                    _ => "",
+                };
+                if !iana.is_empty() {
+                    return iana.to_string();
+                }
+            }
+        }
+    }
+
     "Asia/Riyadh".to_string()
 }
 
@@ -295,16 +328,30 @@ fn detect_currency(timezone: &str) -> String {
     let tz_lower = timezone.to_lowercase();
     if tz_lower.contains("riyadh") || tz_lower.contains("saudi") {
         "SAR".to_string()
-    } else if tz_lower.contains("dubai") || tz_lower.contains("uae") || tz_lower.contains("muscat") {
-        "AED".to_string()
-    } else if tz_lower.contains("aden") || tz_lower.contains("yemen") || tz_lower.contains("sanaa") {
+    } else if tz_lower.contains("aden") || tz_lower.contains("sanaa") || tz_lower.contains("yemen") {
         "YER".to_string()
+    } else if tz_lower.contains("dubai") || tz_lower.contains("uae") || tz_lower.contains("abu_dhabi") {
+        "AED".to_string()
     } else if tz_lower.contains("cairo") || tz_lower.contains("egypt") {
         "EGP".to_string()
+    } else if tz_lower.contains("amman") || tz_lower.contains("jordan") {
+        "JOD".to_string()
+    } else if tz_lower.contains("kuwait") {
+        "KWD".to_string()
     } else if tz_lower.contains("doha") || tz_lower.contains("qatar") {
         "QAR".to_string()
-    } else if tz_lower.contains("shanghai") || tz_lower.contains("beijing") {
-        "CNY".to_string()
+    } else if tz_lower.contains("bahrain") {
+        "BHD".to_string()
+    } else if tz_lower.contains("muscat") || tz_lower.contains("oman") {
+        "OMR".to_string()
+    } else if tz_lower.contains("baghdad") || tz_lower.contains("iraq") {
+        "IQD".to_string()
+    } else if tz_lower.contains("istanbul") || tz_lower.contains("turkey") {
+        "TRY".to_string()
+    } else if tz_lower.contains("london") || tz_lower.contains("uk") {
+        "GBP".to_string()
+    } else if tz_lower.contains("europe") {
+        "EUR".to_string()
     } else {
         "USD".to_string()
     }
