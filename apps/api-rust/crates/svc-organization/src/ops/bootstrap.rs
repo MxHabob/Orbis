@@ -210,20 +210,34 @@ pub async fn bootstrap_full(
         )).await.map_err(|e| AppError::internal(format!("Failed to insert permission: {e}")))?;
     }
 
-    // 3g. Currency
-    db.execute(Statement::from_sql_and_values(
-        db.get_database_backend(),
-        "INSERT INTO currencies (code, org_id, name, name_ar, symbol, symbol_position, decimal_places, exchange_rate, is_base, is_active, updated_at) VALUES ($1, $2, $3, $4, $5, 'after', $6, 1.0, 1, 1, $7)",
-        vec![
-            payload.currency.clone().into(),
-            org_id.clone().into(),
-            currency_name(&payload.currency).into(),
-            currency_name_ar(&payload.currency).into(),
-            currency_symbol(&payload.currency).into(),
-            2i32.into(),
-            now.clone().into(),
-        ]
-    )).await.ok(); // Ignore duplicate currency errors
+    // 3g. Currencies
+    let default_currencies = vec!["SAR", "USD", "YER"];
+    let mut currencies_to_insert: Vec<String> = default_currencies.into_iter().map(|s| s.to_string()).collect();
+    
+    if !currencies_to_insert.contains(&payload.currency) {
+        currencies_to_insert.push(payload.currency.clone());
+    }
+
+    for curr_code in currencies_to_insert {
+        let is_base = if curr_code == payload.currency { 1i32 } else { 0i32 };
+        let exchange_rate = if is_base == 1 { 1.0f64 } else { 0.0f64 };
+
+        db.execute(Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "INSERT INTO currencies (code, org_id, name, name_ar, symbol, symbol_position, decimal_places, exchange_rate, is_base, is_active, updated_at) VALUES ($1, $2, $3, $4, $5, 'after', $6, $7, $8, 1, $9)",
+            vec![
+                curr_code.clone().into(),
+                org_id.clone().into(),
+                currency_name(&curr_code).into(),
+                currency_name_ar(&curr_code).into(),
+                currency_symbol(&curr_code).into(),
+                2i32.into(),
+                exchange_rate.into(),
+                is_base.into(),
+                now.clone().into(),
+            ]
+        )).await.ok(); 
+    }
 
     // 3h. Chart of Accounts (COA)
     if let Err(e) = seed_chart_of_accounts(db, &org_id, &payload.currency, &now).await {
