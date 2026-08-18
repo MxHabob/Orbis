@@ -256,7 +256,7 @@ pub async fn execute() -> Result<()> {
         org_type: blueprint,
         currency: currency.clone(),
         timezone: Some(timezone.clone()),
-        country_code: Some("SA".to_string()),
+        locale: Some(language.clone()),
         admin_name: admin_name.clone(),
         admin_username: admin_username.clone(),
         admin_password_hash: hashed_password,

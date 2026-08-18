@@ -27,7 +27,7 @@ pub struct BootstrapPayload {
     pub org_type: String,       // "school" | "university" | "institute"
     pub currency: String,       // ISO 4217 code
     pub timezone: Option<String>,
-    pub country_code: Option<String>,
+    pub locale: Option<String>,
     pub admin_name: String,
     pub admin_username: String,
     pub admin_password_hash: String,
@@ -57,7 +57,7 @@ pub async fn bootstrap_full(
     // ── 1. Organization ────────────────────────────────────────
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO organizations (id, name, name_ar, slug, currency, timezone, country_code, is_active, subscription_plan, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, 1, 'basic', $8, $9)",
+        "INSERT INTO organizations (id, name, name_ar, slug, currency, timezone, locale, is_active, subscription_plan, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, 1, 'basic', $8, $9)",
         vec![
             org_id.clone().into(),
             payload.org_name.clone().into(),
@@ -65,7 +65,7 @@ pub async fn bootstrap_full(
             slug(&payload.org_name).into(),
             payload.currency.clone().into(),
             payload.timezone.clone().unwrap_or_else(|| "Asia/Riyadh".into()).into(),
-            payload.country_code.clone().unwrap_or_else(|| "SA".into()).into(),
+            payload.locale.clone().unwrap_or_else(|| "ar".into()).into(),
             now.clone().into(),
             now.clone().into(),
         ]
