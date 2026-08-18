@@ -7,7 +7,6 @@ use crate::core::config::CliConfig;
 use crate::core::database;
 use crate::core::github;
 use crate::core::license;
-use crate::core::seeder;
 use crate::ui::{output, prompts};
 
 const TOTAL_PHASES: u8 = 6;
@@ -137,16 +136,16 @@ pub async fn execute() -> Result<()> {
     ];
     let bp_choice = prompts::prompt_select("Select institution type:", blueprint_options.clone())?;
     blueprint = if bp_choice.contains("University") {
-        infra_persistence::bootstrap::BlueprintType::University
+        "university".to_string()
     } else if bp_choice.contains("Training") {
-        infra_persistence::bootstrap::BlueprintType::TrainingCenter
+        "training_center".to_string()
     } else {
-        infra_persistence::bootstrap::BlueprintType::School
+        "school".to_string()
     };
 
-    institution_type_label = match blueprint {
-        infra_persistence::bootstrap::BlueprintType::University => "University",
-        infra_persistence::bootstrap::BlueprintType::TrainingCenter => "Training Center",
+    institution_type_label = match blueprint.as_str() {
+        "university" => "University",
+        "training_center" => "Training Center",
         _ => "School",
     };
 
@@ -221,15 +220,15 @@ pub async fn execute() -> Result<()> {
 
             let bp_choice = prompts::prompt_select("Select institution type:", blueprint_options.clone())?;
             blueprint = if bp_choice.contains("University") {
-                infra_persistence::bootstrap::BlueprintType::University
+                "university".to_string()
             } else if bp_choice.contains("Training") {
-                infra_persistence::bootstrap::BlueprintType::TrainingCenter
+                "training_center".to_string()
             } else {
-                infra_persistence::bootstrap::BlueprintType::School
+                "school".to_string()
             };
-            institution_type_label = match blueprint {
-                infra_persistence::bootstrap::BlueprintType::University => "University",
-                infra_persistence::bootstrap::BlueprintType::TrainingCenter => "Training Center",
+            institution_type_label = match blueprint.as_str() {
+                "university" => "University",
+                "training_center" => "Training Center",
                 _ => "School",
             };
 
@@ -246,57 +245,26 @@ pub async fn execute() -> Result<()> {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     output::print_phase_header(5, TOTAL_PHASES, "Initializing System");
 
-    let bp_type_str = match blueprint {
-        infra_persistence::bootstrap::BlueprintType::School => "school",
-        infra_persistence::bootstrap::BlueprintType::University => "university",
-        infra_persistence::bootstrap::BlueprintType::TrainingCenter => "training_center",
-    };
 
-    // 5a. Bootstrap organization + admin
-    output::print_progress_pending("Creating organization and admin account...");
+
+    // 5a. Bootstrap organization + admin + core data
+    output::print_progress_pending("Creating organization, admin account, and core data...");
     let hashed_password = hash(&admin_password, DEFAULT_COST).unwrap_or_default();
-    let params = infra_persistence::bootstrap::BootstrapParams {
+    let payload = svc_organization::ops::bootstrap::BootstrapPayload {
         org_name: org_name.clone(),
-        org_slug: org_slug.clone(),
+        org_name_ar: Some(org_name_ar.clone()),
+        org_type: blueprint,
+        currency: currency.clone(),
+        timezone: Some(timezone.clone()),
+        country_code: Some("SA".to_string()),
         admin_name: admin_name.clone(),
         admin_username: admin_username.clone(),
         admin_password_hash: hashed_password,
-        blueprint,
-        currency: Some(currency.clone()),
     };
 
-    let result = infra_persistence::bootstrap::bootstrap_system(&db, params).await?;
+    let result = svc_organization::ops::bootstrap::bootstrap_full(&db, payload).await?;
     let org_id = result.org_id;
-    output::print_progress_ok("Organization and admin account created");
-
-    // 5b. Update organization with additional fields (timezone, name_ar, settings)
-    // Note: currency is already set by bootstrap_full via the payload.
-    output::print_progress_pending("Updating organization settings...");
-    let settings_json = serde_json::json!({
-        "registration_config": {
-            "institution_type": bp_type_str
-        }
-    }).to_string();
-
-    db.execute(sea_orm::Statement::from_sql_and_values(
-        db.get_database_backend(),
-        "UPDATE organizations SET name_ar = $1, timezone = $2, locale = 'ar', settings = $3 WHERE id = $4",
-        vec![
-            org_name_ar.clone().into(),
-            timezone.clone().into(),
-            settings_json.into(),
-            org_id.clone().into(),
-        ]
-    )).await?;
-    output::print_progress_ok("Organization settings updated");
-
-    // 5c. Core data (currencies, grade scales, permissions, period templates)
-    //     is created by bootstrap_full(). Only Chart of Accounts needs the seeder.
-    output::print_progress_pending("Seeding Chart of Accounts...");
-    match seeder::seed_chart_of_accounts(&db, &org_id).await {
-        Ok(()) => output::print_progress_ok("Chart of Accounts seeded"),
-        Err(e) => output::print_progress_fail(&format!("COA seeding failed: {}", e)),
-    }
+    output::print_progress_ok("Organization, admin account, and core data created successfully");
 
     // 5d. Store license limits in organization
     output::print_progress_pending("Applying license limits...");
