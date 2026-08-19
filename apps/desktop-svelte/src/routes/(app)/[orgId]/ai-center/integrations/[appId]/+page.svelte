@@ -33,11 +33,11 @@ let connectError = $state<string | null>(null);
 // Check current status on load
 $effect(() => {
   if (data.appId) {
-    commands.aiCenter.getIntegrationStatus(data.appId)
-      .then((status: any) => {
+    (commands as any).aiCenter?.getIntegrationStatus?.(data.appId)
+      ?.then((status: any) => {
         isConnected = status?.connected ?? false;
       })
-      .catch(() => { isConnected = false; });
+      ?.catch(() => { isConnected = false; });
   }
 });
 
@@ -54,7 +54,9 @@ async function handleConnect(values: Record<string, unknown>) {
   isConnecting = true;
   connectError = null;
   try {
-    await commands.aiCenter.connectIntegration(data.appId, values);
+    if ((commands as any).aiCenter?.connectIntegration) {
+      await (commands as any).aiCenter.connectIntegration(data.appId, values);
+    }
     isConnected = true;
   } catch (e: any) {
     connectError = e?.message ?? "Connection failed";
@@ -65,7 +67,9 @@ async function handleConnect(values: Record<string, unknown>) {
 
 async function handleDisconnect() {
   try {
-    await commands.aiCenter.disconnectIntegration(data.appId);
+    if ((commands as any).aiCenter?.disconnectIntegration) {
+      await (commands as any).aiCenter.disconnectIntegration(data.appId);
+    }
     isConnected = false;
   } catch (e: any) {
     console.error("[AI Center] Disconnect failed:", e);

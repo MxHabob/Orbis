@@ -63,7 +63,7 @@ pub async fn create(
     let model = calculation_policy::Model {
         id: Uuid::new_v4().to_string(),
         org_id: ctx.org_id.clone(),
-        target_period_id: req.target_period_id.unwrap_or_default(),
+        target_period_id: req.target_period_id,
         name: req.name,
         version: 1,
         rule_type: req.rule_type,
@@ -108,7 +108,7 @@ pub async fn update(
     let old_version = existing.version;
     let mut active: calculation_policy::ActiveModel = existing.into();
     if let Some(name) = req.name { active.name = Set(name); }
-    if let Some(pid) = req.target_period_id { active.target_period_id = Set(pid); }
+    if let Some(pid) = req.target_period_id { active.target_period_id = Set(Some(pid)); }
     if let Some(rt) = req.rule_type { active.rule_type = Set(rt); }
     if let Some(fe) = req.formula_expression { active.formula_expression = Set(fe); }
     if let Some(rp) = req.rounding_policy { active.rounding_policy = Set(rp); }
