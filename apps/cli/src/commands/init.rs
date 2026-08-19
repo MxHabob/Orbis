@@ -270,11 +270,10 @@ pub async fn execute() -> Result<()> {
     output::print_progress_pending("Applying license limits...");
     db.execute(sea_orm::Statement::from_sql_and_values(
         db.get_database_backend(),
-        "UPDATE organizations SET max_users = $1, max_students = $2, subscription_plan = $3 WHERE id = $4",
+        "UPDATE organizations SET max_users = $1, max_students = $2 WHERE id = $3",
         vec![
             (license_info.max_users as i64).into(),
             (license_info.max_students as i64).into(),
-            license_info.plan.to_string().to_lowercase().into(),
             org_id.clone().into(),
         ]
     )).await?;

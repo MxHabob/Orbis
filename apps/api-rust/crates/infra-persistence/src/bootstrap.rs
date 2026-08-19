@@ -110,8 +110,7 @@ pub async fn bootstrap_system(
         "organization.created",
         &json!({
             "name": params.org_name,
-            "slug": params.org_slug,
-            "subscription_plan": "basic"
+            "slug": params.org_slug
         }),
         &system_actor,
         None,
