@@ -241,7 +241,7 @@ CREATE TABLE IF NOT EXISTS grade_scale_items (
 CREATE TABLE IF NOT EXISTS calculation_policies (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL REFERENCES organizations(id),
-  target_period_id TEXT NOT NULL,
+  target_period_id TEXT REFERENCES academic_periods(id),
   name TEXT NOT NULL,
   version INTEGER NOT NULL DEFAULT 1,
   rule_type TEXT NOT NULL,
@@ -256,7 +256,7 @@ CREATE TABLE IF NOT EXISTS calculation_policies (
 CREATE TABLE IF NOT EXISTS pass_fail_policies (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL REFERENCES organizations(id),
-  period_id TEXT NOT NULL REFERENCES academic_periods(id),
+  period_id TEXT REFERENCES academic_periods(id),
   name TEXT NOT NULL,
   min_passing_score REAL NOT NULL,
   requires_all_subjects INTEGER NOT NULL DEFAULT 1,

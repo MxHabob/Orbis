@@ -132,7 +132,7 @@ pub async fn bootstrap_full(
     let pf_id = Uuid::new_v4().to_string();
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO pass_fail_policies (id, org_id, period_id, name, min_passing_score, requires_all_subjects, max_failed_subjects, supplementary_exam_eligible, created_at, updated_at) VALUES ($1, $2, '', $3, $4, $5, $6, $7, $8, $9)",
+        "INSERT INTO pass_fail_policies (id, org_id, period_id, name, min_passing_score, requires_all_subjects, max_failed_subjects, supplementary_exam_eligible, created_at, updated_at) VALUES ($1, $2, NULL, $3, $4, $5, $6, $7, $8, $9)",
         vec![
             pf_id.clone().into(), org_id.clone().into(),
             format!("Default Pass/Fail - {}", blueprint.scale_name).into(),
@@ -172,7 +172,7 @@ pub async fn bootstrap_full(
     });
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO calculation_policies (id, org_id, target_period_id, name, version, rule_type, formula_expression, rounding_policy, created_at, updated_at) VALUES ($1, $2, '', $3, 1, 'weighted_sum', $4, 'round_half_up', $5, $6)",
+        "INSERT INTO calculation_policies (id, org_id, target_period_id, name, version, rule_type, formula_expression, rounding_policy, created_at, updated_at) VALUES ($1, $2, NULL, $3, 1, 'weighted_sum', $4, 'round_half_up', $5, $6)",
         vec![
             calc_policy_id.clone().into(), org_id.clone().into(),
             format!("Default {} Policy", blueprint.scale_name).into(),
@@ -198,14 +198,14 @@ pub async fn bootstrap_full(
 
     // 3f. Default Role Permissions
     for perm in &blueprint.default_permissions {
-        let perm_id = Uuid::new_v4().to_string();
+        let actions_json = serde_json::to_string(&perm.actions).unwrap_or_else(|_| "[]".to_string());
         db.execute(Statement::from_sql_and_values(
             db.get_database_backend(),
-            "INSERT INTO role_permissions (id, org_id, role, permission, is_granted, created_at) VALUES ($1, $2, $3, $4, 1, $5)",
+            "INSERT OR REPLACE INTO role_permissions (role, document_type, level, only_if_creator, actions, created_at) VALUES ($1, $2, 0, 0, $3, $4)",
             vec![
-                perm_id.into(), org_id.clone().into(),
                 perm.role.clone().into(),
-                perm.permission.clone().into(),
+                perm.document_type.clone().into(),
+                actions_json.into(),
                 now.clone().into(),
             ]
         )).await.map_err(|e| AppError::internal(format!("Failed to insert permission: {e}")))?;
@@ -382,7 +382,8 @@ struct GradeItem {
 
 struct RolePermission {
     role: String,
-    permission: String,
+    document_type: String,
+    actions: Vec<String>,
 }
 
 struct InstitutionBlueprint {
@@ -494,34 +495,55 @@ fn institute_blueprint() -> InstitutionBlueprint {
 // ── Shared Defaults ─────────────────────────────────────────────
 
 fn default_role_permissions() -> Vec<RolePermission> {
-    let mut perms = Vec::new();
+    vec![
+        // Teacher
+        RolePermission { role: "teacher".into(), document_type: "Grade".into(), actions: vec!["read".into(), "write".into()] },
+        RolePermission { role: "teacher".into(), document_type: "Attendance".into(), actions: vec!["read".into(), "write".into()] },
+        RolePermission { role: "teacher".into(), document_type: "Assessment".into(), actions: vec!["read".into(), "write".into()] },
+        RolePermission { role: "teacher".into(), document_type: "Class".into(), actions: vec!["read".into()] },
+        RolePermission { role: "teacher".into(), document_type: "Subject".into(), actions: vec!["read".into()] },
+        RolePermission { role: "teacher".into(), document_type: "Schedule".into(), actions: vec!["read".into()] },
+        RolePermission { role: "teacher".into(), document_type: "Exam".into(), actions: vec!["read_schedule".into(), "read_hall".into(), "read_proctor".into()] },
+        RolePermission { role: "teacher".into(), document_type: "Document".into(), actions: vec!["read".into()] },
 
-    // Teacher
-    for p in &["grade.read", "grade.write", "attendance.read", "attendance.write", "student.read", "class.read", "assessment.read", "assessment.write"] {
-        perms.push(RolePermission { role: "teacher".into(), permission: p.to_string() });
-    }
+        // Student
+        RolePermission { role: "student".into(), document_type: "Grade".into(), actions: vec!["read".into()] },
+        RolePermission { role: "student".into(), document_type: "Attendance".into(), actions: vec!["read".into()] },
+        RolePermission { role: "student".into(), document_type: "Schedule".into(), actions: vec!["read".into()] },
+        RolePermission { role: "student".into(), document_type: "Enrollment".into(), actions: vec!["read".into()] },
+        RolePermission { role: "student".into(), document_type: "Exam".into(), actions: vec!["read_schedule".into()] },
 
-    // Student
-    for p in &["grade.read_own", "attendance.read_own", "enrollment.read_own", "schedule.read"] {
-        perms.push(RolePermission { role: "student".into(), permission: p.to_string() });
-    }
+        // Parent
+        RolePermission { role: "parent".into(), document_type: "Grade".into(), actions: vec!["read".into()] },
+        RolePermission { role: "parent".into(), document_type: "Attendance".into(), actions: vec!["read".into()] },
+        RolePermission { role: "parent".into(), document_type: "Schedule".into(), actions: vec!["read".into()] },
+        RolePermission { role: "parent".into(), document_type: "Enrollment".into(), actions: vec!["read".into()] },
+        RolePermission { role: "parent".into(), document_type: "Document".into(), actions: vec!["read".into()] },
 
-    // Parent
-    for p in &["grade.read_children", "attendance.read_children", "enrollment.read_children", "payment.read_own"] {
-        perms.push(RolePermission { role: "parent".into(), permission: p.to_string() });
-    }
+        // Principal
+        RolePermission { role: "principal".into(), document_type: "Organization".into(), actions: vec!["read".into()] },
+        RolePermission { role: "principal".into(), document_type: "User".into(), actions: vec!["read".into(), "write".into()] },
+        RolePermission { role: "principal".into(), document_type: "Period".into(), actions: vec!["read".into(), "write".into(), "activate".into(), "lock".into()] },
+        RolePermission { role: "principal".into(), document_type: "Class".into(), actions: vec!["read".into(), "write".into()] },
+        RolePermission { role: "principal".into(), document_type: "Subject".into(), actions: vec!["read".into(), "write".into()] },
+        RolePermission { role: "principal".into(), document_type: "Schedule".into(), actions: vec!["read".into(), "write".into()] },
+        RolePermission { role: "principal".into(), document_type: "Grade".into(), actions: vec!["read".into(), "write".into(), "analytics".into(), "report".into()] },
+        RolePermission { role: "principal".into(), document_type: "Attendance".into(), actions: vec!["read".into(), "write".into(), "analytics".into()] },
+        RolePermission { role: "principal".into(), document_type: "Assessment".into(), actions: vec!["read".into(), "write".into()] },
+        RolePermission { role: "principal".into(), document_type: "Enrollment".into(), actions: vec!["read".into(), "write".into(), "promote".into(), "transfer".into()] },
+        RolePermission { role: "principal".into(), document_type: "Exam".into(), actions: vec!["read_schedule".into(), "write_schedule".into(), "read_hall".into(), "write_hall".into(), "allocate_hall".into(), "read_proctor".into(), "assign_proctor".into(), "read_order".into(), "rebuild_order".into(), "freeze_order".into()] },
+        RolePermission { role: "principal".into(), document_type: "Document".into(), actions: vec!["read".into(), "write".into()] },
+        RolePermission { role: "principal".into(), document_type: "Template".into(), actions: vec!["read".into(), "write".into(), "generate_single".into(), "generate_batch".into()] },
+        RolePermission { role: "principal".into(), document_type: "Promotion".into(), actions: vec!["read".into(), "write".into(), "execute".into()] },
 
-    // Principal
-    for p in &["grade.read", "grade.write", "grade.analytics", "grade.report", "attendance.read", "attendance.write", "student.read", "student.write", "class.read", "class.write", "staff.read", "settings.read"] {
-        perms.push(RolePermission { role: "principal".into(), permission: p.to_string() });
-    }
-
-    // Staff
-    for p in &["student.read", "student.write", "enrollment.read", "enrollment.write", "payment.read", "payment.write", "class.read"] {
-        perms.push(RolePermission { role: "staff".into(), permission: p.to_string() });
-    }
-
-    perms
+        // Staff
+        RolePermission { role: "staff".into(), document_type: "User".into(), actions: vec!["read".into()] },
+        RolePermission { role: "staff".into(), document_type: "Enrollment".into(), actions: vec!["read".into(), "write".into()] },
+        RolePermission { role: "staff".into(), document_type: "Class".into(), actions: vec!["read".into()] },
+        RolePermission { role: "staff".into(), document_type: "Attendance".into(), actions: vec!["read".into(), "write".into()] },
+        RolePermission { role: "staff".into(), document_type: "Document".into(), actions: vec!["read".into(), "write".into()] },
+        RolePermission { role: "staff".into(), document_type: "Template".into(), actions: vec!["read".into(), "generate_single".into()] },
+    ]
 }
 
 // ── Utility Helpers ─────────────────────────────────────────────
