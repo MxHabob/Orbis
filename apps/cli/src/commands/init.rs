@@ -86,7 +86,7 @@ pub async fn execute() -> Result<()> {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     output::print_phase_header(2, TOTAL_PHASES, "Infrastructure Setup");
 
-    let db_options = vec!["1. SQLite (Recommended for local/offline)", "2. PostgreSQL (Enterprise/Cloud)"];
+    let db_options = vec!["1. SQLite (Recommended for local/offline)", "2. PostgreSQL (Enterprise / Dedicated On-Premise Server)"];
     let db_choice = prompts::prompt_select("Select database provider:", db_options)?;
 
     let config = CliConfig::default();

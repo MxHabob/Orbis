@@ -4,24 +4,24 @@ import type { OrbisApp } from "../types";
 const config: OrbisApp = {
   logo: Logo,
   id: "cloud-storage",
-  name: "Cloud Storage",
-  name_ar: "التخزين السحابي",
+  name: "Storage & Backups",
+  name_ar: "التخزين والنسخ الاحتياطي",
   category: "storage",
   active: true,
-  icon: "Cloud",
-  short_description: "Store documents, backups, and media in Amazon S3, Google Cloud Storage, or MinIO.",
-  short_description_ar: "تخزين المستندات والنسخ الاحتياطية في Amazon S3 أو Google Cloud أو MinIO.",
-  description: `Connect cloud storage for centralized document management and automated backups.
+  icon: "HardDrive",
+  short_description: "Store documents, backups, and media on local filesystem or MinIO / private S3 storage.",
+  short_description_ar: "تخزين المستندات والنسخ الاحتياطية على نظام الملفات المحلي أو وحدات MinIO الخاصة.",
+  description: `Manage document storage and automated backups for your on-premise institution.
 
 **Document Storage**
-Store student photos, scanned documents, report cards, and certificates in the cloud.
+Store student photos, scanned documents, report cards, and certificates locally or on private network storage.
 
 **Automated Backups**
-Schedule automatic database and document backups to cloud storage.
+Schedule automatic database and document backups to secure on-premise or remote backup targets.
 
 **Multiple Providers**
-Support for Amazon S3, Google Cloud Storage, MinIO, and S3-compatible providers.`,
-  features: ["S3-compatible storage", "Automated backups", "Document management", "Pre-signed URLs", "Lifecycle policies"],
+Support for Local Filesystem (Default), MinIO (Private Server), Amazon S3, and Google Cloud Storage.`,
+  features: ["Local filesystem storage", "Private MinIO integration", "Automated backups", "Document management", "Strict access control"],
   settings: [
     { id: "provider", label: "Storage Provider", type: "select", required: true, value: "local", description: "Select cloud storage provider.", options: [{ label: "Local Filesystem", value: "local" }, { label: "Amazon S3", value: "s3" }, { label: "Google Cloud Storage", value: "gcs" }, { label: "MinIO", value: "minio" }] },
     { id: "bucket", label: "Bucket Name", type: "text", required: true, value: "", description: "Storage bucket or container name.", placeholder: "orbis-school-docs" },
