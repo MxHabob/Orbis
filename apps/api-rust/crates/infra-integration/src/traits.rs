@@ -249,3 +249,76 @@ pub trait StorageProvider: Send + Sync {
     /// Gets the direct download URL if applicable (e.g., S3 pre-signed URL)
     fn get_url(&self, bucket: &str, key: &str) -> Option<String>;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// Payment Gateway Provider (Mada, Moyasar, Tabby, Tamara, HyperPay, Stripe, SADAD)
+// ═══════════════════════════════════════════════════════════════
+
+/// Supported payment method types across integrated gateways.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PaymentMethodType {
+    Mada,
+    CreditCard,
+    ApplePay,
+    StcPay,
+    Tabby,
+    Tamara,
+    Sadad,
+    BankTransfer,
+}
+
+/// Payment checkout initiation payload.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PaymentInitiationRequest {
+    pub payment_id: String,
+    pub amount_in_cents: i64,
+    pub currency: String,
+    pub description: String,
+    pub customer_name: Option<String>,
+    pub customer_email: Option<String>,
+    pub customer_phone: Option<String>,
+    pub callback_url: Option<String>,
+    pub metadata: Option<serde_json::Value>,
+}
+
+/// Payment checkout initiation result.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PaymentInitiationResult {
+    pub transaction_id: String,
+    pub payment_url: Option<String>,
+    pub status: PaymentStatus,
+    pub raw_response: Option<serde_json::Value>,
+}
+
+/// Unified transaction status.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PaymentStatus {
+    Initiated,
+    Pending,
+    Paid,
+    Failed,
+    Refunded,
+    Cancelled,
+}
+
+/// Pluggable Payment Gateway Provider trait.
+#[async_trait]
+pub trait PaymentGatewayProvider: Send + Sync {
+    /// Name of the payment provider (e.g., "moyasar", "mada", "tabby", "tamara", "hyperpay", "stripe", "sadad").
+    fn provider_name(&self) -> &str;
+
+    /// List of supported payment methods by this provider.
+    fn supported_methods(&self) -> Vec<PaymentMethodType>;
+
+    /// Initiate an online checkout session / transaction.
+    async fn initiate_payment(&self, req: &PaymentInitiationRequest) -> Result<PaymentInitiationResult, String>;
+
+    /// Verify payment status from provider using transaction ID.
+    async fn verify_payment(&self, transaction_id: &str) -> Result<PaymentStatus, String>;
+
+    /// Issue a refund for a previously captured transaction.
+    async fn refund(&self, transaction_id: &str, amount_in_cents: i64) -> Result<bool, String>;
+}
+

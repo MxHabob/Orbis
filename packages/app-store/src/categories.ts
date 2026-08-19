@@ -21,6 +21,7 @@ export const categories: CategoryDef[] = [
   { id: "storage", name: "Storage", name_ar: "التخزين" },
   { id: "ai-service", name: "AI Services", name_ar: "خدمات الذكاء الاصطناعي" },
   { id: "ai-vision", name: "AI & Computer Vision", name_ar: "الذكاء الاصطناعي و الرؤية الحاسوبية" },
+  { id: "payment-gateway", name: "Payment Gateways", name_ar: "بوابات الدفع الإلكتروني" },
   { id: "automation", name: "Automation", name_ar: "الأتمتة" },
 ];
 

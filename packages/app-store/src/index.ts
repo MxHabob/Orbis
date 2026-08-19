@@ -26,12 +26,29 @@ import mulverseCloud from "./mulverse-cloud/config";
 import cloudStorage from "./cloud-storage/config";
 import ocrService from "./ocr-service/config";
 
+// ── Payment Gateways ────────────────────────────────────────────
+import moyasar from "./moyasar/config";
+import mada from "./mada/config";
+import tabby from "./tabby/config";
+import tamara from "./tamara/config";
+import hyperpay from "./hyperpay/config";
+import stripe from "./stripe/config";
+import sadad from "./sadad/config";
+
 // ── Exported App Collection ─────────────────────────────────────
 
 export const apps: OrbisApp[] = [
   // First & Second Apps
   authen,
   orbisAi,
+  // Payment Gateways
+  moyasar,
+  mada,
+  tabby,
+  tamara,
+  hyperpay,
+  stripe,
+  sadad,
   // AI Providers
   geminiAi,
   // Surveillance

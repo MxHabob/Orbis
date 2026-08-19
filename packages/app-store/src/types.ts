@@ -15,6 +15,7 @@ export type AppCategory =
   | "storage" // StorageProvider trait (local, S3, GCS)
   | "ai-service" // AI capabilities (OCR, STT, TTS)
   | "ai-vision" // AI and Computer Vision (Authen)
+  | "payment-gateway" // Payment Gateways (Mada, Moyasar, Tabby, Tamara, etc.)
   | "automation"; // Webhooks, REST APIs, workflow engines
 
 /** Connection status — mirrors AdapterStatus in infra-integration */
