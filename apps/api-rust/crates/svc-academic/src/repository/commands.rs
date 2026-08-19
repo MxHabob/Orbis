@@ -56,9 +56,6 @@ impl AcademicCommandRepo {
             student_number: Set(e.student_number), status: Set(e.status),
             enrollment_date: Set(e.enrollment_date), enrollment_type: Set(e.enrollment_type),
             withdrawal_date: Set(e.withdrawal_date), withdrawal_reason: Set(e.withdrawal_reason),
-            final_grade: Set(e.final_grade), final_score: Set(e.final_score),
-            final_rank: Set(e.final_rank), is_promoted: Set(e.is_promoted),
-            promotion_decision: Set(e.promotion_decision), promotion_notes: Set(e.promotion_notes),
             meta: Set(e.meta),
             created_at: Set(e.created_at), updated_at: Set(e.updated_at),
         };

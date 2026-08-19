@@ -142,12 +142,6 @@ pub async fn create(
         enrollment_type: enrollment_type.into(),
         withdrawal_date: None,
         withdrawal_reason: None,
-        final_grade: None,
-        final_score: None,
-        final_rank: None,
-        is_promoted: None,
-        promotion_decision: None,
-        promotion_notes: None,
         meta: None,
         created_at: now.clone(),
         updated_at: now,
@@ -374,9 +368,17 @@ pub async fn promote(
     let old_data = serde_json::to_value(&existing).ok();
 
     let mut active: enrollment::ActiveModel = existing.into();
-    active.is_promoted = Set(Some(req.is_promoted));
-    active.promotion_decision = Set(req.promotion_decision);
-    active.promotion_notes = Set(req.promotion_notes);
+    let mut meta_json: serde_json::Value = active.meta.as_ref()
+        .and_then(|m| m.as_ref().map(|s| serde_json::from_str(s).unwrap_or_default()))
+        .unwrap_or_else(|| serde_json::json!({}));
+    meta_json["is_promoted"] = serde_json::json!(req.is_promoted);
+    if let Some(dec) = req.promotion_decision {
+        meta_json["promotion_decision"] = serde_json::json!(dec);
+    }
+    if let Some(notes) = req.promotion_notes {
+        meta_json["promotion_notes"] = serde_json::json!(notes);
+    }
+    active.meta = Set(Some(meta_json.to_string()));
     active.updated_at = Set(Utc::now().to_rfc3339());
 
     let updated = active.update(&ctx.db).await?;
@@ -456,12 +458,6 @@ async fn create_draft(
         enrollment_type: verdict.override_type.clone().unwrap_or_else(|| "override".into()),
         withdrawal_date: None,
         withdrawal_reason: None,
-        final_grade: None,
-        final_score: None,
-        final_rank: None,
-        is_promoted: None,
-        promotion_decision: None,
-        promotion_notes: None,
         meta: Some(serde_json::json!({
             "gate_reason": verdict.reason,
             "override_type": verdict.override_type,
