@@ -1,7 +1,7 @@
 <!--
 @component UserProfilePage
 Profile tab for user detail — personal information, role, and status.
-Extracted from the original monolith TabsContent "profile".
+Follows S.C.R.A.P.S. design tokens, strict localization, and backend schema synchronization.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -23,6 +23,7 @@ import {
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
+import { l } from "$lib/core/i18n";
 
 const orgId = $derived(page.params.orgId);
 const userId = $derived(page.params.userId);
@@ -41,13 +42,15 @@ let role = $state("teacher");
 let isActiveState = $state(true);
 
 const systemRoles = [
-  { value: "super_admin", label: "Super Admin" },
-  { value: "admin", label: "System Admin" },
-  { value: "principal", label: "School Principal" },
-  { value: "teacher", label: "Teacher" },
-  { value: "staff", label: "Staff Member" },
-  { value: "student", label: "Student" },
-  { value: "parent", label: "Parent / Guardian" },
+  { value: "super_admin", labelAr: "مدير عام النظام", labelEn: "Super Administrator" },
+  { value: "admin", labelAr: "مدير النظام", labelEn: "System Administrator" },
+  { value: "principal", labelAr: "مدير المدرسة / المنشأة", labelEn: "School Principal" },
+  { value: "teacher", labelAr: "معلم / هيئة تدريس", labelEn: "Teacher / Faculty" },
+  { value: "registrar", labelAr: "مسجل أكاديمي", labelEn: "Academic Registrar" },
+  { value: "accountant", labelAr: "محاسب مالي", labelEn: "Financial Accountant" },
+  { value: "staff", labelAr: "كادر إداري", labelEn: "Administrative Staff" },
+  { value: "student", labelAr: "طالب", labelEn: "Student" },
+  { value: "guardian", labelAr: "ولي أمر", labelEn: "Parent / Guardian" },
 ];
 
 async function loadUser() {
@@ -66,7 +69,7 @@ async function loadUser() {
       fetched.is_active !== undefined ? Boolean(fetched.is_active) : true;
   } catch (e) {
     console.error("Failed to load user:", e);
-    toast.error(m.settings_user_detail_load_error());
+    toast.error(m.settings_user_detail_load_error ? m.settings_user_detail_load_error() : l("فشل تحميل بيانات المستخدم", "Failed to load user"));
   } finally {
     isLoading = false;
   }
@@ -78,12 +81,12 @@ async function toggleAccountStatus() {
   if (!userId || !user) return;
   const nextState = !isActiveState;
   const confirmMsg = nextState
-    ? m.settings_user_detail_activate_confirm()
-    : m.settings_user_detail_deactivate_confirm();
+    ? (m.settings_user_detail_activate_confirm ? m.settings_user_detail_activate_confirm() : l("هل أنت متأكد من تفعيل الحساب؟", "Activate account?"))
+    : (m.settings_user_detail_deactivate_confirm ? m.settings_user_detail_deactivate_confirm() : l("هل أنت متأكد من تعطيل الحساب؟", "Deactivate account?"));
   const confirmed = await confirmStore.prompt({
-    title: m.common_word_status() + "؟",
+    title: (m.common_word_status ? m.common_word_status() : l("الحالة", "Status")) + "؟",
     description: confirmMsg,
-    confirmText: m.common_word_status(),
+    confirmText: m.common_word_status ? m.common_word_status() : l("تأكيد", "Confirm"),
     variant: nextState ? "default" : "destructive",
   });
   if (!confirmed) return;
@@ -95,11 +98,11 @@ async function toggleAccountStatus() {
     isActiveState = nextState;
     toast.success(
       nextState
-        ? m.settings_user_detail_activate_success()
-        : m.settings_user_detail_deactivate_success(),
+        ? (m.settings_user_detail_activate_success ? m.settings_user_detail_activate_success() : l("تم تفعيل الحساب بنجاح", "Account activated"))
+        : (m.settings_user_detail_deactivate_success ? m.settings_user_detail_deactivate_success() : l("تم تعطيل الحساب بنجاح", "Account deactivated")),
     );
   } catch (e: unknown) {
-    toast.error((e as any)?.message || "Failed");
+    toast.error((e as any)?.message || l("فشل التحديث", "Update failed"));
   } finally {
     isSaving = false;
   }
@@ -122,13 +125,18 @@ async function saveProfile() {
 
     if (role) {
       await commands.iam.changeRole(userId, { role });
-      await commands.iam.saveForUser(userId, [role]);
+      const existingRoles = await commands.iam.listRolesByUser(userId);
+      const roleList = (existingRoles || []).map((r: any) => r.role);
+      if (!roleList.includes(role)) {
+        roleList.unshift(role);
+      }
+      await commands.iam.saveForUser(userId, roleList.length > 0 ? roleList : [role]);
     }
 
-    toast.success(m.settings_user_detail_saved());
-    loadUser();
+    toast.success(m.settings_user_detail_saved ? m.settings_user_detail_saved() : l("تم حفظ البيانات بنجاح", "Profile saved successfully"));
+    await loadUser();
   } catch (e: unknown) {
-    toast.error((e as any)?.message || "Save failed");
+    toast.error((e as any)?.message || l("فشل الحفظ", "Save failed"));
   } finally {
     isSaving = false;
   }
@@ -161,90 +169,94 @@ async function saveProfile() {
       />
       <Label
         for="user_enabled"
-        class="text-xs font-bold text-foreground cursor-pointer select-none"
+        class="text-xs font-semibold text-foreground cursor-pointer select-none"
       >
-        Enabled
+        {l("مفعّل (نشط)", "Enabled")}
       </Label>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <!-- Email -->
-      <div class="flex flex-col gap-1.5 text-start">
-        <Label for="email" class="text-xs font-medium text-muted-foreground">
-          {m.common_word_email()} *
-        </Label>
-        <Input id="email" type="email" bind:value={email} required />
-      </div>
-
       <!-- Full Name -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label
           for="fullName"
           class="text-xs font-medium text-muted-foreground"
         >
-          {m.common_word_fullname()}
+          {m.common_word_fullname ? m.common_word_fullname() : l("الاسم الكامل", "Full Name")} *
         </Label>
-        <Input id="fullName" type="text" bind:value={fullName} />
+        <Input id="fullName" type="text" bind:value={fullName} required />
+      </div>
+
+      <!-- Email -->
+      <div class="flex flex-col gap-1.5 text-start">
+        <Label for="email" class="text-xs font-medium text-muted-foreground">
+          {m.common_word_email ? m.common_word_email() : l("البريد الإلكتروني", "Email")} *
+        </Label>
+        <Input id="email" type="email" bind:value={email} required />
+      </div>
+
+      <!-- Arabic Name -->
+      <div class="flex flex-col gap-1.5 text-start">
+        <Label for="nameAr" class="text-xs font-medium text-muted-foreground">
+          {m.common_form_full_name_ar ? m.common_form_full_name_ar() : l("الاسم بالكامل (عربي)", "Full Name (Arabic)")}
+        </Label>
+        <Input id="nameAr" type="text" bind:value={nameAr} />
       </div>
 
       <!-- Primary Role -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label for="role" class="text-xs font-medium text-muted-foreground">
-          {m.settings_user_detail_label_primary_role()}
+          {m.settings_user_detail_label_primary_role ? m.settings_user_detail_label_primary_role() : l("الدور الرئيسي", "Primary Role")}
         </Label>
         <Select
           type="single"
           value={role}
           onValueChange={(v) => (role = v ?? "")}
         >
-          <SelectTrigger class="h-9 w-full">
-            {systemRoles.find((r) => r.value === role)?.label || role}
+          <SelectTrigger class="h-9 w-full text-xs">
+            {@const selected = systemRoles.find((r) => r.value === role)}
+            {selected ? l(selected.labelAr, selected.labelEn) : role}
           </SelectTrigger>
           <SelectContent>
             {#each systemRoles as r}
-              <SelectItem value={r.value}>{r.label}</SelectItem>
+              <SelectItem value={r.value}>
+                {l(r.labelAr, r.labelEn)}
+              </SelectItem>
             {/each}
           </SelectContent>
         </Select>
       </div>
 
-      <!-- Arabic Name -->
+      <!-- Phone -->
       <div class="flex flex-col gap-1.5 text-start">
-        <Label for="nameAr" class="text-xs font-medium text-muted-foreground">
-          {m.common_form_full_name_ar()}
+        <Label for="phone" class="text-xs font-medium text-muted-foreground">
+          {m.settings_user_detail_label_phone ? m.settings_user_detail_label_phone() : l("رقم الهاتف", "Phone Number")}
         </Label>
-        <Input id="nameAr" type="text" bind:value={nameAr} />
+        <Input id="phone" type="text" bind:value={phone} />
       </div>
 
       <!-- English Name -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label for="nameEn" class="text-xs font-medium text-muted-foreground">
-          {m.settings_user_detail_label_fullname_en()}
+          {m.settings_user_detail_label_fullname_en ? m.settings_user_detail_label_fullname_en() : l("الاسم بالكامل (إنجليزي)", "Full Name (English)")}
         </Label>
         <Input id="nameEn" type="text" bind:value={nameEn} />
       </div>
-
-      <!-- Phone -->
-      <div class="flex flex-col gap-1.5 text-start">
-        <Label for="phone" class="text-xs font-medium text-muted-foreground">
-          {m.settings_user_detail_label_phone()}
-        </Label>
-        <Input id="phone" type="text" bind:value={phone} />
-      </div>
     </div>
 
-    <div class="flex justify-end gap-3 border-t border-border/20 pt-6 mt-4">
+    <!-- Actions Toolbar -->
+    <div class="flex justify-end gap-3 border-t border-border/40 pt-6 mt-4">
       <Button variant="ghost" size="sm" onclick={loadUser}>
-        {m.common_switcher_reset()}
+        {m.common_switcher_reset ? m.common_switcher_reset() : l("إعادة تعيين", "Reset")}
       </Button>
       <Button
         variant="lime"
         size="sm"
-        class="font-bold"
+        class="font-bold px-6"
         onclick={saveProfile}
         disabled={isSaving}
       >
-        {isSaving ? "..." : m.settings_user_detail_btn_save_details()}
+        {isSaving ? "..." : (m.settings_user_detail_btn_save_details ? m.settings_user_detail_btn_save_details() : l("حفظ التعديلات", "Save Changes"))}
       </Button>
     </div>
   </div>

@@ -92,13 +92,21 @@ pub async fn save_for_user(
         .exec(db)
         .await?;
 
+    // Fetch user record to determine the real org_id
+    let user_record = crate::entities::user::Entity::find_by_id(user_id.to_string())
+        .one(db)
+        .await?
+        .ok_or_else(|| AppError::not_found("user", user_id))?;
+
+    let org_id = user_record.org_id;
+
     // Insert new roles
     for r in roles {
         let model = user_role::Model {
             id: Uuid::new_v4().to_string(),
             user_id: user_id.to_string(),
             role: r,
-            org_id: "default".to_string(),
+            org_id: org_id.clone(),
             scope_type: "global".to_string(),
             scope_id: None,
             valid_from: None,
