@@ -2,10 +2,8 @@ export const Logo = () => `
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="90 350 780 300"
-    width="44"
-    height="20"
     fill="none"
-    class="w-10 h-auto"
+    class="h-full w-auto"
   >
     <g transform="translate(295 638)">
       <path d="M129.5-280.8H88.6C69.3-227.2,36.8-138.2,18.9-89.4c-1.8,4.7-4,9.2-6.7,13.5h28.3 c7.7-0.5,14.6-4.8,18.3-11.6c0.6-1,1.2-2.1,1.6-3.2l17.1-46.7l0,0C98.7-195.5,127.4-274.4,129.5-280.8" fill="#929497"/>

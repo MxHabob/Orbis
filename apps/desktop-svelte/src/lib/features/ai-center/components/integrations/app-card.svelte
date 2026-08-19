@@ -25,11 +25,11 @@ let {
   <Card class="p-5 h-full flex flex-col justify-between bg-card border-border/60">
     <div>
       <!-- Top: Icon + UI Badges -->
-      <div class="flex items-start justify-between mb-4">
-        <div class="h-10 w-10 flex items-center justify-center overflow-hidden rounded-lg bg-muted/60 text-foreground">
-          <AppIcon icon={app.icon} logo={app.logo} size={22} />
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <div class="w-12 h-7 flex items-center justify-start text-foreground shrink-0">
+          <AppIcon icon={app.icon} logo={app.logo} size={24} class="w-full h-full [&>svg]:max-w-[48px] [&>svg]:max-h-[26px]" />
         </div>
-        <div class="flex gap-1.5">
+        <div class="flex gap-1.5 flex-wrap justify-end">
           {#if app.status === "connected"}
             <Badge variant="outline" class="text-[10px] font-semibold text-primary border-primary/20 bg-primary/10 px-2 py-0.5">
               {m.ai_center_integrations_status_connected ? m.ai_center_integrations_status_connected() : "Connected"}

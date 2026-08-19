@@ -1,6 +1,7 @@
 <!--
 @component AppIcon
-Renders a Lucide icon by name string. Used in app-card and app-detail.
+Renders a Lucide icon by name string or SVG logo HTML without forced external borders or containers.
+Scales both square and wide landscape logos proportionally and consistently within bounded limits.
 -->
 <script lang="ts">
 import * as icons from "lucide-svelte";
@@ -25,7 +26,7 @@ const logoHtml = $derived(
 );
 </script>
 
-<div class="flex items-center justify-center shrink-0 {className}">
+<div class="flex items-center justify-start shrink-0 [&>svg]:max-w-full [&>svg]:max-h-full [&>svg]:w-auto [&>svg]:h-auto [&>svg]:object-contain {className}">
   {#if logoHtml}
     {@html logoHtml}
   {:else}

@@ -1,11 +1,9 @@
 export const Logo = (id = "tabby") => `
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    viewBox="115 345 770 310"
-    width="44"
-    height="20"
+    viewBox="118 348 764 305"
     fill="none"
-    class="w-10 h-auto"
+    class="h-full w-auto"
   >
     <defs>
       <linearGradient id="${id}-grad" gradientUnits="userSpaceOnUse" x1="119.4118" y1="502" x2="880.5883" y2="502" gradientTransform="matrix(1 0 0 -1 0 1002)">
