@@ -131,7 +131,7 @@ async fn apply_school_blueprint(db: &DatabaseConnection, org_id: &str, now: &str
     let policy_id = Uuid::new_v4().to_string();
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO academic_policies (id, org_id, default_grading_system, default_passing_grade, default_max_grade, created_at, updated_at) VALUES ($1, $2, 'percentage', 50, 100, $3, $4)",
+        "INSERT INTO academic_policies (id, org_id, default_grading_system, default_passing_score, default_max_score, created_at, updated_at) VALUES ($1, $2, 'percentage', 50.0, 100.0, $3, $4)",
         vec![policy_id.into(), org_id.into(), now.into(), now.into()]
     )).await.map_err(|e| AppError::internal(e.to_string()))?;
 
@@ -167,7 +167,7 @@ async fn apply_university_blueprint(db: &DatabaseConnection, org_id: &str, now: 
     let policy_id = Uuid::new_v4().to_string();
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO academic_policies (id, org_id, default_grading_system, default_passing_grade, default_max_grade, created_at, updated_at) VALUES ($1, $2, 'gpa_4_0', 60, 100, $3, $4)",
+        "INSERT INTO academic_policies (id, org_id, default_grading_system, default_passing_score, default_max_score, created_at, updated_at) VALUES ($1, $2, 'gpa_4_0', 60.0, 100.0, $3, $4)",
         vec![policy_id.into(), org_id.into(), now.into(), now.into()]
     )).await.map_err(|e| AppError::internal(e.to_string()))?;
 
@@ -191,7 +191,7 @@ async fn apply_training_blueprint(db: &DatabaseConnection, org_id: &str, now: &s
     let policy_id = Uuid::new_v4().to_string();
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO academic_policies (id, org_id, default_grading_system, default_passing_grade, default_max_grade, created_at, updated_at) VALUES ($1, $2, 'pass_fail', 70, 100, $3, $4)",
+        "INSERT INTO academic_policies (id, org_id, default_grading_system, default_passing_score, default_max_score, created_at, updated_at) VALUES ($1, $2, 'pass_fail', 70.0, 100.0, $3, $4)",
         vec![policy_id.into(), org_id.into(), now.into(), now.into()]
     )).await.map_err(|e| AppError::internal(e.to_string()))?;
 

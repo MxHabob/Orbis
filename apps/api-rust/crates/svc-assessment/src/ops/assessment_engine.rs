@@ -184,7 +184,7 @@ impl AssessmentEngine {
         }
     }
 
-    /// Read the passing grade from `academic_policies` for the org.
+    /// Read the default passing score from `academic_policies` for the org.
     pub async fn get_org_passing_grade(
         db: &DatabaseConnection,
         org_id: &str,
@@ -194,14 +194,14 @@ impl AssessmentEngine {
         let result = db
             .query_one(Statement::from_sql_and_values(
                 db.get_database_backend(),
-                "SELECT default_passing_grade FROM academic_policies WHERE org_id = $1 LIMIT 1",
+                "SELECT default_passing_score FROM academic_policies WHERE org_id = $1 LIMIT 1",
                 vec![org_id.into()],
             ))
             .await;
 
         match result {
             Ok(Some(row)) => row
-                .try_get::<f64>("", "default_passing_grade")
+                .try_get::<f64>("", "default_passing_score")
                 .unwrap_or(50.0),
             _ => 50.0,
         }

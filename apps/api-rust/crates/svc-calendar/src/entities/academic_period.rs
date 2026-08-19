@@ -47,11 +47,9 @@ pub struct Model {
     pub exam_start: Option<String>,
     pub exam_end: Option<String>,
 
-    // Grading config
-    pub grading_system: String,
-    pub passing_grade: Option<i32>,
-    pub max_grade: Option<i32>,
-    pub weight: Option<i32>,
+    // SSOT Policy References
+    pub scale_id: Option<String>,
+    pub pass_fail_policy_id: Option<String>,
 
     // Status
     pub status: String, // planned, active, grading, closed
@@ -60,6 +58,7 @@ pub struct Model {
     pub locked_by: Option<String>,
 
     pub sort_order: Option<i32>,
+    pub metadata: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -74,7 +73,6 @@ pub enum Relation {
         on_delete = "NoAction"
     )]
     AcademicYear,
-
 }
 
 impl Related<super::academic_year::Entity> for Entity {

@@ -100,21 +100,7 @@ pub async fn bootstrap_full(
         _ => school_blueprint(),
     };
 
-    // 3a. Academic Policies
-    let policy_id = Uuid::new_v4().to_string();
-    db.execute(Statement::from_sql_and_values(
-        db.get_database_backend(),
-        "INSERT INTO academic_policies (id, org_id, default_grading_system, default_passing_grade, default_max_grade, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-        vec![
-            policy_id.into(), org_id.clone().into(),
-            blueprint.grading_system.clone().into(),
-            blueprint.passing_grade.into(),
-            100.0f64.into(),
-            now.clone().into(), now.clone().into(),
-        ]
-    )).await.map_err(|e| AppError::internal(format!("Failed to create academic policies: {e}")))?;
-
-    // 3b. Grade Scale + Items
+    // 3a. Grade Scale + Items
     let scale_id = Uuid::new_v4().to_string();
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
@@ -143,7 +129,39 @@ pub async fn bootstrap_full(
         )).await.map_err(|e| AppError::internal(format!("Failed to create grade scale item: {e}")))?;
     }
 
-    // 3c. Default Calculation Policy (simple weighted sum)
+    // 3b. Pass/Fail Policy
+    let pf_id = Uuid::new_v4().to_string();
+    db.execute(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "INSERT INTO pass_fail_policies (id, org_id, period_id, name, min_passing_score, requires_all_subjects, max_failed_subjects, supplementary_exam_eligible, created_at, updated_at) VALUES ($1, $2, '', $3, $4, $5, $6, $7, $8, $9)",
+        vec![
+            pf_id.clone().into(), org_id.clone().into(),
+            format!("Default Pass/Fail - {}", blueprint.scale_name).into(),
+            blueprint.passing_grade.into(),
+            (if blueprint.requires_all_subjects { 1i32 } else { 0 }).into(),
+            blueprint.max_failed_subjects.into(),
+            (if blueprint.supplementary_eligible { 1i32 } else { 0 }).into(),
+            now.clone().into(), now.clone().into(),
+        ]
+    )).await.map_err(|e| AppError::internal(format!("Failed to create pass/fail policy: {e}")))?;
+
+    // 3c. Academic Policies (SSOT reference hub)
+    let policy_id = Uuid::new_v4().to_string();
+    db.execute(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "INSERT INTO academic_policies (id, org_id, default_scale_id, default_pass_fail_policy_id, default_grading_system, default_passing_score, default_max_score, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+        vec![
+            policy_id.into(), org_id.clone().into(),
+            scale_id.clone().into(),
+            pf_id.into(),
+            blueprint.grading_system.clone().into(),
+            blueprint.passing_grade.into(),
+            100.0f64.into(),
+            now.clone().into(), now.clone().into(),
+        ]
+    )).await.map_err(|e| AppError::internal(format!("Failed to create academic policies: {e}")))?;
+
+    // 3d. Default Calculation Policy (simple weighted sum)
     let calc_policy_id = Uuid::new_v4().to_string();
     let formula = serde_json::json!({
         "type": "weighted_sum",
@@ -163,22 +181,6 @@ pub async fn bootstrap_full(
             now.clone().into(), now.clone().into(),
         ]
     )).await.map_err(|e| AppError::internal(format!("Failed to create calculation policy: {e}")))?;
-
-    // 3d. Pass/Fail Policy
-    let pf_id = Uuid::new_v4().to_string();
-    db.execute(Statement::from_sql_and_values(
-        db.get_database_backend(),
-        "INSERT INTO pass_fail_policies (id, org_id, period_id, name, min_passing_score, requires_all_subjects, max_failed_subjects, supplementary_exam_eligible, created_at, updated_at) VALUES ($1, $2, '', $3, $4, $5, $6, $7, $8, $9)",
-        vec![
-            pf_id.into(), org_id.clone().into(),
-            format!("Default Pass/Fail - {}", blueprint.scale_name).into(),
-            blueprint.passing_grade.into(),
-            (if blueprint.requires_all_subjects { 1i32 } else { 0 }).into(),
-            blueprint.max_failed_subjects.into(),
-            (if blueprint.supplementary_eligible { 1i32 } else { 0 }).into(),
-            now.clone().into(), now.clone().into(),
-        ]
-    )).await.map_err(|e| AppError::internal(format!("Failed to create pass/fail policy: {e}")))?;
 
     // 3e. Period Template
     let tmpl_id = Uuid::new_v4().to_string();
@@ -259,8 +261,8 @@ pub async fn bootstrap_full(
         },
         "grading": {
             "default_grading_system": blueprint.grading_system,
-            "default_passing_grade": blueprint.passing_grade,
-            "default_max_grade": 100.0
+            "default_passing_score": blueprint.passing_grade,
+            "default_max_score": 100.0
         }
     });
 

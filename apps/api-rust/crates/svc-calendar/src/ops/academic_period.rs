@@ -147,15 +147,13 @@ pub struct CreatePeriodPayload {
     #[serde(default)]
     pub exam_end: Option<String>,
     #[serde(default)]
-    pub grading_system: Option<String>,
+    pub scale_id: Option<String>,
     #[serde(default)]
-    pub passing_grade: Option<i32>,
-    #[serde(default)]
-    pub max_grade: Option<i32>,
-    #[serde(default)]
-    pub weight: Option<i32>,
+    pub pass_fail_policy_id: Option<String>,
     #[serde(default)]
     pub sort_order: Option<i32>,
+    #[serde(default)]
+    pub metadata: Option<String>,
 }
 
 pub async fn create(
@@ -241,15 +239,14 @@ pub async fn create(
         is_grade_entry_open: Set(0),
         exam_start: Set(req.exam_start),
         exam_end: Set(req.exam_end),
-        grading_system: Set(req.grading_system.unwrap_or_else(|| "percentage".to_string())),
-        passing_grade: Set(req.passing_grade),
-        max_grade: Set(req.max_grade),
-        weight: Set(req.weight),
+        scale_id: Set(req.scale_id),
+        pass_fail_policy_id: Set(req.pass_fail_policy_id),
         status: Set("planned".to_string()),
         is_locked: Set(0),
         locked_at: Set(None),
         locked_by: Set(None),
         sort_order: Set(req.sort_order),
+        metadata: Set(req.metadata),
         created_at: Set(now.clone()),
         updated_at: Set(now),
     };
@@ -338,9 +335,10 @@ pub struct UpdatePeriodPayload {
     pub code: Option<String>,
     pub start_date: Option<String>,
     pub end_date: Option<String>,
-    pub grading_system: Option<String>,
-    pub passing_grade: Option<i32>,
-    pub max_grade: Option<i32>,
+    pub scale_id: Option<String>,
+    pub pass_fail_policy_id: Option<String>,
+    pub sort_order: Option<i32>,
+    pub metadata: Option<String>,
 }
 
 pub async fn update(
@@ -361,9 +359,10 @@ pub async fn update(
     if let Some(code) = req.code { active.code = Set(Some(code)); }
     if let Some(start_date) = req.start_date { active.start_date = Set(start_date); }
     if let Some(end_date) = req.end_date { active.end_date = Set(end_date); }
-    if let Some(gs) = req.grading_system { active.grading_system = Set(gs); }
-    if let Some(pg) = req.passing_grade { active.passing_grade = Set(Some(pg)); }
-    if let Some(mg) = req.max_grade { active.max_grade = Set(Some(mg)); }
+    if let Some(scale_id) = req.scale_id { active.scale_id = Set(Some(scale_id)); }
+    if let Some(pfp_id) = req.pass_fail_policy_id { active.pass_fail_policy_id = Set(Some(pfp_id)); }
+    if let Some(so) = req.sort_order { active.sort_order = Set(Some(so)); }
+    if let Some(meta) = req.metadata { active.metadata = Set(Some(meta)); }
 
     active.updated_at = Set(Utc::now().to_rfc3339());
 

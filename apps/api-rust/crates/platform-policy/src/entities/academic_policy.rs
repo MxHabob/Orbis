@@ -17,10 +17,12 @@ pub struct Model {
     /// Branch-level policy override. NULL = org-wide default.
     pub org_unit_id: Option<String>,
 
-    // ── Grading defaults ──
+    // ── Grading references & defaults (SSOT) ──
+    pub default_scale_id: Option<String>,
+    pub default_pass_fail_policy_id: Option<String>,
     pub default_grading_system: String,
-    pub default_passing_grade: i32,
-    pub default_max_grade: i32,
+    pub default_passing_score: f64,
+    pub default_max_score: f64,
 
     // ── Enrollment policies ──
     pub enrollment_auto_close: i32,
@@ -33,7 +35,6 @@ pub struct Model {
     pub grade_edit_approval: i32,
 
     // ── Promotion policies ──
-    pub passing_score: i32,
     pub min_attendance_rate: f64,
     pub auto_graduate_final_level: i32,
     pub final_level: Option<String>,
