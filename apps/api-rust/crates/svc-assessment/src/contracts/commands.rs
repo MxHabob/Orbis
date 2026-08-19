@@ -99,7 +99,7 @@ pub struct CreateSchemeComponent {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateCalculationPolicy {
-    pub target_period_id: String,
+    pub target_period_id: Option<String>,
     pub name: String,
     pub rule_type: String,
     pub formula_expression: String,
