@@ -16,7 +16,6 @@ pub struct Model {
     pub time_slot_id: String,
     pub day_of_week: i32,
     pub room_id: Option<String>,
-    pub room_name: Option<String>,
     pub status: String,
     pub is_substituted: i32,
     pub substitution_reason: Option<String>,

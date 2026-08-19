@@ -42,12 +42,11 @@ pub async fn bootstrap_system(
     // 1. Insert Organization
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO organizations (id, name, slug, currency, is_active, subscription_plan, created_at, updated_at) VALUES ($1, $2, $3, $4, 1, 'basic', $5, $6)",
+        "INSERT INTO organizations (id, name, slug, is_active, created_at, updated_at) VALUES ($1, $2, $3, 1, $4, $5)",
         vec![
             org_id.clone().into(),
             params.org_name.clone().into(),
             params.org_slug.clone().into(),
-            cur.clone().into(),
             now.clone().into(),
             now.clone().into()
         ]

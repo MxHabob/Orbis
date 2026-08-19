@@ -14,6 +14,16 @@ use crate::entities::organization;
 use svc_calendar::entities::period_template;
 use crate::ops::settings::OrgSettingsProvider;
 
+async fn get_base_currency(db: &sea_orm::DatabaseConnection, org_id: &str) -> String {
+    use sea_orm::{Statement, ConnectionTrait};
+    let row = db.query_one(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "SELECT code FROM currencies WHERE org_id = $1 AND is_base = 1 LIMIT 1",
+        vec![org_id.into()],
+    )).await.ok().flatten();
+    row.and_then(|r| r.try_get::<String>("", "code").ok()).unwrap_or_else(|| "SAR".to_string())
+}
+
 /// Get organization by ID.
 pub async fn get_organization(ctx: &ServiceContext) -> Result<OrganizationResponse, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::OrganizationRead).await?;
@@ -26,6 +36,7 @@ pub async fn get_organization(ctx: &ServiceContext) -> Result<OrganizationRespon
         .ok_or_else(|| AppError::not_found("organization", &ctx.org_id))?;
 
     let settings = OrgSettingsProvider::parse_settings(org.settings.as_deref());
+    let currency = get_base_currency(&ctx.db, &org.id).await;
 
     Ok(OrganizationResponse {
         id: org.id,
@@ -34,7 +45,7 @@ pub async fn get_organization(ctx: &ServiceContext) -> Result<OrganizationRespon
         slug: org.slug.unwrap_or_default(),
         timezone: org.timezone,
         locale: org.locale,
-        currency: org.currency,
+        currency,
         settings,
         is_active: org.is_active == 1,
         is_verified: org.is_verified == 1,
@@ -69,7 +80,6 @@ pub async fn create_organization(
         code: Set(None),
         timezone: Set(cmd.timezone),
         locale: Set(cmd.locale),
-        currency: Set(cmd.currency),
         date_format: Set(Some("DD/MM/YYYY".to_string())),
         hijri_enabled: Set(1),
         max_users: Set(1000),
@@ -77,8 +87,6 @@ pub async fn create_organization(
         max_storage_gb: Set(100),
         settings: Set(Some("{}".to_string())),
         features: Set(Some("{}".to_string())),
-        subscription_plan: Set("free".to_string()),
-        subscription_expires_at: Set(None),
         logo: Set(None),
         favicon: Set(None),
         primary_color: Set(Some("#6366f1".to_string())),
@@ -87,6 +95,7 @@ pub async fn create_organization(
         is_deleted: Set(0),
         deleted_at: Set(None),
         deleted_by: Set(None),
+        metadata: Set(None),
         created_at: Set(now.clone()),
         updated_at: Set(now.clone()),
     };
@@ -161,6 +170,8 @@ pub async fn create_organization(
 
     info!(org_id = %org_id, "Organization created");
 
+    let currency = get_base_currency(&ctx.db, &inserted.id).await;
+
     Ok(OrganizationResponse {
         id: inserted.id,
         name: inserted.name,
@@ -168,7 +179,7 @@ pub async fn create_organization(
         slug: inserted.slug.unwrap_or_default(),
         timezone: inserted.timezone,
         locale: inserted.locale,
-        currency: inserted.currency,
+        currency,
         settings: Default::default(),
         is_active: true,
         is_verified: false,
@@ -197,7 +208,6 @@ pub async fn update_organization(
     if let Some(tz) = cmd.timezone { active.timezone = Set(tz); }
     if let Some(loc) = cmd.locale { active.locale = Set(loc); }
     if let Some(cur) = cmd.currency {
-        active.currency = Set(cur.clone());
         let db_backend = ctx.db.get_database_backend();
         let now = chrono::Utc::now().to_rfc3339();
         
@@ -262,6 +272,7 @@ pub async fn update_organization(
     info!(org_id = %ctx.org_id, "Organization updated");
 
     let settings = OrgSettingsProvider::parse_settings(updated.settings.as_deref());
+    let currency = get_base_currency(&ctx.db, &updated.id).await;
 
     Ok(OrganizationResponse {
         id: updated.id,
@@ -270,7 +281,7 @@ pub async fn update_organization(
         slug: updated.slug.unwrap_or_default(),
         timezone: updated.timezone,
         locale: updated.locale,
-        currency: updated.currency,
+        currency,
         settings,
         is_active: updated.is_active == 1,
         is_verified: updated.is_verified == 1,

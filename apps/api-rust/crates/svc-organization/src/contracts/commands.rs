@@ -9,7 +9,6 @@ pub struct CreateOrganizationCmd {
     pub slug: String,
     pub timezone: String,
     pub locale: String,
-    pub currency: String,
 }
 
 /// Update organization basic info.

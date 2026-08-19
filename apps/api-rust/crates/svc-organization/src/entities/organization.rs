@@ -15,7 +15,6 @@ pub struct Model {
     pub code: Option<String>,
     pub timezone: String,
     pub locale: String,
-    pub currency: String,
     pub date_format: Option<String>,
     pub hijri_enabled: i32,
     pub max_users: i32,
@@ -23,8 +22,6 @@ pub struct Model {
     pub max_storage_gb: i32,
     pub settings: Option<String>,
     pub features: Option<String>,
-    pub subscription_plan: String,
-    pub subscription_expires_at: Option<String>,
     pub logo: Option<String>,
     pub favicon: Option<String>,
     pub primary_color: Option<String>,
@@ -35,16 +32,14 @@ pub struct Model {
     pub deleted_by: Option<String>,
 
     /// FK to the currently active academic year.
-    /// Switching years = UPDATE organizations SET current_period_id = ?
     pub current_period_id: Option<String>,
 
+    pub metadata: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {}
-
-
 
 impl ActiveModelBehavior for ActiveModel {}

@@ -70,7 +70,7 @@ pub async fn create(
         class_id: req.class_id, class_subject_id: req.class_subject_id,
         subject_id: req.subject_id, teacher_id: req.teacher_id,
         substitute_teacher_id: None, time_slot_id: req.time_slot_id, day_of_week: req.day_of_week,
-        room_id: req.room_id, room_name: None, status: "scheduled".into(),
+        room_id: req.room_id, status: "scheduled".into(),
         is_substituted: 0, substitution_reason: None,
         topic: None, topic_ar: None, objectives: None,
         materials: None, homework: None, homework_due_date: None,
