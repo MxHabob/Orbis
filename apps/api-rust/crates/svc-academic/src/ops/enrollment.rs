@@ -367,10 +367,10 @@ pub async fn promote(
     let existing = get(ctx, enrollment_id).await?;
     let old_data = serde_json::to_value(&existing).ok();
 
-    let mut active: enrollment::ActiveModel = existing.into();
-    let mut meta_json: serde_json::Value = active.meta.as_ref()
-        .and_then(|m| m.as_ref().map(|s| serde_json::from_str(s).unwrap_or_default()))
+    let mut meta_json: serde_json::Value = existing.meta.as_deref()
+        .and_then(|s| serde_json::from_str(s).ok())
         .unwrap_or_else(|| serde_json::json!({}));
+    let mut active: enrollment::ActiveModel = existing.into();
     meta_json["is_promoted"] = serde_json::json!(req.is_promoted);
     if let Some(dec) = req.promotion_decision {
         meta_json["promotion_decision"] = serde_json::json!(dec);

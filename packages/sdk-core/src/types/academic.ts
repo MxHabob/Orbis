@@ -72,12 +72,6 @@ export interface Enrollment {
   enrollment_type: string;
   withdrawal_date?: string | null;
   withdrawal_reason?: string | null;
-  final_grade?: string | null;
-  final_score?: number | null;
-  final_rank?: number | null;
-  is_promoted?: number | null;
-  promotion_decision?: string | null;
-  promotion_notes?: string | null;
   meta?: string | null;
   created_at: string;
   updated_at: string;
