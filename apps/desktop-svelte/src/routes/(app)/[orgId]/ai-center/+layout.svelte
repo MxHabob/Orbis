@@ -38,11 +38,6 @@ const navItems = $derived([
     icon: Plug,
   },
   {
-    path: "logs",
-    label: m.ai_center_nav_logs ? m.ai_center_nav_logs() : "السجلات",
-    icon: ScrollText,
-  },
-  {
     path: "permissions",
     label: m.ai_center_nav_permissions ? m.ai_center_nav_permissions() : "الصلاحيات",
     icon: Shield,

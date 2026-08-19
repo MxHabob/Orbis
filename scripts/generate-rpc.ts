@@ -253,6 +253,16 @@ function parseOps(): OpFunction[] {
         } else if (tsFuncName.startsWith("getBy")) {
             const rest = tsFuncName.replace("getBy", "");
             tsFuncName = `get${entity.singular}By${rest}`;
+        } else if (tsFuncName === "listItems") {
+            tsFuncName = `list${entity.singular}Items`;
+        } else if (tsFuncName === "createItem") {
+            tsFuncName = `create${entity.singular}Item`;
+        } else if (tsFuncName === "updateItem") {
+            tsFuncName = `update${entity.singular}Item`;
+        } else if (tsFuncName === "deleteItem") {
+            tsFuncName = `delete${entity.singular}Item`;
+        } else if (tsFuncName === "getItem") {
+            tsFuncName = `get${entity.singular}Item`;
         } else if (opFile === "bulk_export") {
             tsFuncName = `export${tsFuncName.charAt(0).toUpperCase() + tsFuncName.slice(1)}`;
         } else if (opFile === "bulk_import") {

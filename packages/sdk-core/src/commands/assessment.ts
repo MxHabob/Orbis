@@ -39,12 +39,12 @@ export interface AssessmentCommands {
   compileSemester(periodId: string, classId: string): Promise<any[]>;
   listGradeScales(): Promise<any[]>;
   getGradeScale(scaleId: string): Promise<any>;
-  listItems(scaleId: string): Promise<any[]>;
+  listGradeScaleItems(scaleId: string): Promise<any[]>;
   createGradeScale(data: any): Promise<any>;
   updateGradeScale(scaleId: string, data: any): Promise<any>;
   deleteGradeScale(scaleId: string): Promise<void>;
-  createItem(data: any): Promise<any>;
-  deleteItem(itemId: string): Promise<void>;
+  createGradeScaleItem(data: any): Promise<any>;
+  deleteGradeScaleItem(itemId: string): Promise<void>;
   generateSnapshot(studentId: string, periodId: string, classSubjectId: string, policyId: string, scaleId: string, rawScores: any): Promise<any>;
   executeSnapshotGeneration(studentId: string, periodId: string, classSubjectId: string, policyId: string, scaleId: string, rawScores: any): Promise<any>;
   computeRankings(periodId: string, classSubjectId: string): Promise<number>;
