@@ -131,7 +131,7 @@ Follows standard settings layout pattern (section headers, clean two-column grid
     <form onsubmit={handleSave} class="flex flex-col gap-8 w-full">
       <!-- Top Action Bar matching system settings pages -->
       <div
-        class="flex items-center justify-end gap-3 pb-5 border-b border-border/40 w-full select-none"
+        class="flex items-center justify-end gap-3 w-full select-none"
       >
         <Button
           type="submit"

@@ -42,14 +42,7 @@ onMount(() => {
   if (data.orgId) loadTemplates();
 });
 
-// ── Helpers ─────────────────────────────────────────────────────────────
 
-function getMethodLabel(method: string): string {
-  const mLow = String(method).toLowerCase();
-  if (mLow === "percentage")
-    return m.common_dt_method_percentage?.() || "Percentage (%)";
-  return m.common_dt_method_fixed?.() || "Fixed Amount";
-}
 
 function getFormattedValue(tpl: any): string {
   const val = Number(tpl.value || 0);

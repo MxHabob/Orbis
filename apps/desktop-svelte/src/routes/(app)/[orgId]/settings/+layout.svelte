@@ -120,7 +120,7 @@ const navItems = $derived([
   },
   {
     path: "discount-templates",
-    label: m.common_form_summary_discount(),
+    label: m.common_dt_title(),
     icon: Percent,
   },
   {

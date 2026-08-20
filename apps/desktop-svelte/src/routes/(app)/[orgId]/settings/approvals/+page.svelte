@@ -183,8 +183,8 @@ function parseApprovalChain(
   <title>{m.settings_nav_approvals ? m.settings_nav_approvals() : "Approvals"}</title>
 </svelte:head>
 
-<div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide">
-  <div class="max-w-4xl mx-auto p-6 flex flex-col gap-6">
+<div class="h-full w-full overflow-y-auto scrollbar-hide">
+  <div class="max-w-7xl mx-auto p-6 flex flex-col gap-6">
     <!-- Header -->
     <div class="flex items-center gap-3">
       <div class="flex items-center justify-center size-10 rounded-xl bg-primary/10">
