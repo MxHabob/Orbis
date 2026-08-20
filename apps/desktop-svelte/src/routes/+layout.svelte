@@ -5,12 +5,12 @@ import { page } from "$app/state";
 import { locales, localizeHref } from "$lib/paraglide/runtime";
 import { themeStore } from "$lib/stores";
 import { isDesktopApp } from "$lib/core/ipc";
-import { Toaster } from "svelte-sonner";
 import { onMount } from "svelte";
 import { QueryClientProvider } from "@tanstack/svelte-query";
 import { queryClient } from "$lib/core/query/client";
 import "./layout.css";
 import favicon from "$lib/assets/favicon.svg";
+    import { Toaster } from "@orbis/ui-svelte";
 
 let { children } = $props();
 
@@ -36,7 +36,7 @@ onMount(() => {
 	{@render children()}
 </QueryClientProvider>
 
-<Toaster position="bottom-center" expand={true} duration={5000} closeButton={true} />
+<Toaster/>
 
 <!-- Hidden locale links for paraglide -->
 <div style="display:none">
