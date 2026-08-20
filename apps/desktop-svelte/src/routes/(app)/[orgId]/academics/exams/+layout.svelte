@@ -43,7 +43,7 @@ const menuItems = $derived([
 </script>
 
 <div class="h-full w-full bg-background flex flex-col overflow-hidden">
-  <div class="px-6 border-b border-border/20 bg-background/30 shrink-0">
+  <div class="p-2 border-b border-border/20 bg-background/30 shrink-0">
     <SecondaryMenu items={menuItems} {basePath} />
   </div>
   <div class="grow overflow-hidden">

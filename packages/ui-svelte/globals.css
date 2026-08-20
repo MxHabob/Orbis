@@ -313,7 +313,7 @@
    ============================================================ */
 
 @utility btn-tactile {
-  @apply relative inline-flex items-center justify-center gap-2 rounded-md font-medium text-sm transition-all duration-150 ease-out;
+  @apply  inline-flex items-center justify-center gap-2 rounded-md font-medium text-sm transition-all duration-150 ease-out;
   box-shadow:
     0 2px 0 0 var(--btn-shadow, oklch(0.75 0 0)),
     0 1px 3px 0 oklch(0 0 0 / 0.08);

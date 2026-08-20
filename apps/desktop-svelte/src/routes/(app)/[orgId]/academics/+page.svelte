@@ -133,13 +133,6 @@ const directoryItems = $derived([
     badge: m.academics_overview_card_schedule_badge(),
   },
   {
-    path: `/${data.orgId}/academics/calendar`,
-    title: m.common_calendar_title(),
-    desc: m.academics_overview_card_calendar_desc(),
-    icon: CalendarClock,
-    badge: m.academics_overview_card_calendar_badge(),
-  },
-  {
     path: `/${data.orgId}/academics/promotion`,
     title: m.academics_overview_card_promotion_title(),
     desc: m.academics_overview_card_promotion_desc(),

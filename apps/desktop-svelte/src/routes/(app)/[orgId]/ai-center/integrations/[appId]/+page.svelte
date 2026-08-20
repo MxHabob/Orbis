@@ -84,8 +84,8 @@ const activeFeatures = $derived(
 </script>
 
 {#if app}
-  <div class="h-full w-full overflow-y-auto scrollbar-hide flex flex-col bg-background">
-    <div class="px-8 py-6 w-full max-w-none lg:max-w-7xl mx-auto flex-1">
+  <div class="h-full w-full overflow-y-auto scrollbar-hide flex flex-col">
+    <div class="px-8 py-6 w-full max-w-none lg:max-w-8xl mx-auto flex-1">
       <!-- Breadcrumb -->
       <nav class="mb-7">
         <ol class="flex items-center gap-1.5 text-xs">
@@ -113,7 +113,7 @@ const activeFeatures = $derived(
             <div
               class="w-16 h-10 flex items-center justify-start text-foreground shrink-0"
             >
-              <AppIcon icon={app.icon} logo={app.logo} size={32} class="w-full h-full [&>svg]:max-w-[68px] [&>svg]:max-h-[36px]" />
+              <AppIcon icon={app.icon} logo={app.logo} size={32} class="w-full h-full [&>svg]:max-w-17 [&>svg]:max-h-9" />
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2.5 mb-1.5">
@@ -232,7 +232,7 @@ const activeFeatures = $derived(
                       <div
                         class="w-8 h-5 flex items-center justify-start text-foreground shrink-0"
                       >
-                        <AppIcon icon={related.icon} logo={related.logo} size={18} class="w-full h-full [&>svg]:max-w-[28px] [&>svg]:max-h-[18px]" />
+                        <AppIcon icon={related.icon} logo={related.logo} size={18} class="w-full h-full [&>svg]:max-w-7 [&>svg]:max-h-4.5" />
                       </div>
                       <span
                         class="text-xs text-foreground group-hover:text-muted-foreground

@@ -271,7 +271,7 @@ function formatTime(seconds: number): string {
 
 async function deleteSolverJob(jobId: string) {
   try {
-    await commands.scheduling.deleteSolverJob(jobId);
+    await commands.scheduling.deleteJob(jobId);
     toast.success(m.common_schedule_ai_record_deleted());
 
     // Clear state if deleting currently active job
@@ -348,10 +348,10 @@ async function deleteSolverJob(jobId: string) {
 				<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
 					<span>{m.common_schedule_ai_weekly_subject_hours()}</span>
 				</span>
-				<div class="flex flex-col gap-1.5 max-h-[160px] overflow-y-auto pr-1 scrollbar-hide">
+				<div class="flex flex-col gap-1.5 max-h-40 overflow-y-auto pr-1 scrollbar-hide">
 					{#each classSubjects as cs (cs.id)}
 						<div class="flex items-center justify-between p-1.5 text-[9.5px]">
-							<span class="font-bold text-foreground truncate max-w-[130px]" title={getSubjectName(cs.subject_id)}>
+							<span class="font-bold text-foreground truncate max-w-32.5" title={getSubjectName(cs.subject_id)}>
 								{getSubjectName(cs.subject_id)}
 							</span>
 							<div class="flex items-center gap-1.5">
@@ -391,16 +391,16 @@ async function deleteSolverJob(jobId: string) {
 					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
 						{m.common_schedule_ai_opt_mode()}
 					</span>
-					<div class="grid grid-cols-2 p-0.5 rounded-lg bg-muted border border-border/60">
+					<div class="grid grid-cols-2 p-0.5">
 						<Button 
-							variant={solverMode === 'incremental' ? 'secondary' : 'ghost'} 
+							variant={solverMode === 'incremental' ? 'outline' : 'secondary'} 
 							class="text-[10px] font-bold py-1 rounded-md h-7 transition-all duration-150 cursor-pointer"
 							onclick={() => solverMode = 'incremental'}
 						>
 							{m.common_schedule_ai_mode_incremental()}
 						</Button>
 						<Button 
-							variant={solverMode === 'full' ? 'secondary' : 'ghost'} 
+							variant={solverMode === 'full' ? 'outline' : 'secondary'} 
 							class="text-[10px] font-bold py-1 rounded-md h-7 transition-all duration-150 cursor-pointer"
 							onclick={() => solverMode = 'full'}
 						>
@@ -564,7 +564,7 @@ async function deleteSolverJob(jobId: string) {
 						{m.common_schedule_ai_optimization_history()}
 					</span>
 				</div>
-				<div class="flex flex-col gap-1.5 max-h-[140px] overflow-y-auto pr-1 scrollbar-hide">
+				<div class="flex flex-col gap-1.5 max-h-35 overflow-y-auto pr-1 scrollbar-hide">
 					{#each solveJobs.slice(0, 5) as job (job.id)}
 						<div class="flex flex-col p-2 bg-muted/30 border border-border/50 rounded-lg text-[9px] leading-tight select-text">
 							<div class="flex items-center justify-between font-bold text-foreground">
