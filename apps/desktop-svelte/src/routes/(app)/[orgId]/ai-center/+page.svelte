@@ -54,7 +54,7 @@ onMount(async () => {
     connectedAppsCount = connectedIntegrations.length;
     recentLogs = ((logs as any[]) ?? []).slice(0, 5);
 
-    const config = await ((commands as any).aiCenter?.getAutopilotConfig?.(data.orgId) ?? commands.platform_policy?.getAutopilotConfig?.() ?? Promise.resolve(null)).catch(() => null);
+    const config = await ((commands as any).aiCenter?.getAutopilotConfig?.(data.orgId) ?? commands.platform_policy?.getAutopilotConfig(data.orgId) ?? Promise.resolve(null)).catch(() => null);
     if (config && (config as any).enabled) {
       autopilotMode = (config as any).execution_mode === "automatic" ? "تلقائي" : "مقترح";
     }
@@ -74,7 +74,7 @@ const healthConfig = {
 const healthInfo = $derived(healthConfig[healthStatus]);
 </script>
 
-<div class="h-full w-full overflow-y-auto bg-background scrollbar-hide p-6 flex flex-col gap-6 font-sans">
+<div class="h-full w-full overflow-y-auto scrollbar-hide p-6 flex flex-col gap-6 font-sans">
   {#if isLoading}
     <div class="h-64 flex items-center justify-center">
       <div class="flex items-center gap-3 text-muted-foreground text-sm font-medium">
