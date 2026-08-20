@@ -249,37 +249,9 @@ function handleSubmit(e: Event) {
 }
 </script>
 
-<div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide text-start text-foreground" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
-  <div class="max-w-4xl mx-auto p-6 flex flex-col gap-6">
+<div class="h-full w-full overflow-y-auto  scrollbar-hide text-start text-foreground" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
+  <div class="max-w-7xl mx-auto p-6 flex flex-col gap-6">
     <form onsubmit={handleSubmit} class="flex flex-col gap-6">
-      
-      <!-- Smart Preset Apply Bar -->
-      <div class="p-4 border border-primary/20 bg-primary/5 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
-        <div class="flex items-center gap-3">
-          <div class="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
-            <Sparkles class="h-5 w-5" />
-          </div>
-          <div class="flex flex-col gap-0.5 text-start">
-            <span class="text-xs font-bold text-foreground">
-              تطبيق التهيئة الذكية الموصى بها ({currentProfile.name_ar})
-            </span>
-            <span class="text-[11px] text-muted-foreground leading-relaxed">
-              تلقائياً ضبط النمط الأكاديمي، الحقول الموصى بها، المستندات، وسياسات القبول المناسبة للمؤسسة
-            </span>
-          </div>
-        </div>
-        <Button 
-          type="button" 
-          variant="lime" 
-          size="sm" 
-          class="text-xs font-bold px-4 gap-1.5 shrink-0" 
-          onclick={() => applySmartPreset()}
-        >
-          <Sparkles class="h-3.5 w-3.5" />
-          <span>تطبيق إعدادات {currentProfile.name_ar}</span>
-        </Button>
-      </div>
-
       <Tabs value="general" class="w-full">
         <TabsList class="flex justify-start border-b border-border bg-transparent gap-6 rounded-none p-0 h-auto mb-6">
           <TabsTrigger 
@@ -687,7 +659,7 @@ function handleSubmit(e: Event) {
       </Tabs>
 
       <!-- Footer Action Bar -->
-      <div class="flex items-center justify-end gap-3 mt-6 p-4 border border-border bg-card/10 rounded-md select-none">
+      <div class="flex items-center justify-end gap-3 mt-6 p-4 select-none">
         <Button 
           variant="lime" 
           type="submit" 

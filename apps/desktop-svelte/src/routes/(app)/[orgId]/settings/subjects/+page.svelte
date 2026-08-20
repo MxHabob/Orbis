@@ -8,7 +8,6 @@ import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
-import { Input } from "@orbis/ui-svelte/input";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import {
   Plus,
@@ -82,9 +81,7 @@ const filteredSubjects = $derived(
 function getSubjectTheme(nameStr: string) {
   const nameLower = nameStr.toLowerCase();
   if (
-    nameLower.includes("math") ||
-    nameLower.includes("رياض") ||
-    nameLower.includes("حساب")
+    nameLower.includes("math")
   ) {
     return {
       icon: Calculator,
@@ -92,10 +89,7 @@ function getSubjectTheme(nameStr: string) {
     };
   }
   if (
-    nameLower.includes("science") ||
-    nameLower.includes("علوم") ||
-    nameLower.includes("phys") ||
-    nameLower.includes("chem")
+    nameLower.includes("science")
   ) {
     return {
       icon: FlaskConical,
@@ -103,11 +97,7 @@ function getSubjectTheme(nameStr: string) {
     };
   }
   if (
-    nameLower.includes("english") ||
-    nameLower.includes("انجليزي") ||
-    nameLower.includes("lang") ||
-    nameLower.includes("فرنسي") ||
-    nameLower.includes("french")
+    nameLower.includes("english")
   ) {
     return {
       icon: Languages,
@@ -115,10 +105,7 @@ function getSubjectTheme(nameStr: string) {
     };
   }
   if (
-    nameLower.includes("islam") ||
-    nameLower.includes("دين") ||
-    nameLower.includes("قرآن") ||
-    nameLower.includes("تربية اسلامية")
+    nameLower.includes("islam")
   ) {
     return {
       icon: Heart,
@@ -126,9 +113,7 @@ function getSubjectTheme(nameStr: string) {
     };
   }
   if (
-    nameLower.includes("art") ||
-    nameLower.includes("فنية") ||
-    nameLower.includes("رسم")
+    nameLower.includes("art")
   ) {
     return {
       icon: Palette,
@@ -136,9 +121,7 @@ function getSubjectTheme(nameStr: string) {
     };
   }
   if (
-    nameLower.includes("computer") ||
-    nameLower.includes("حاسب") ||
-    nameLower.includes("تقنية")
+    nameLower.includes("computer")
   ) {
     return {
       icon: Atom,
@@ -151,7 +134,7 @@ function getSubjectTheme(nameStr: string) {
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6">
 	<!-- Header & Search Controls -->
-	<div class="flex items-center justify-between gap-4 font-sans border-b border-border/40 pb-5 select-none">
+	<div class="flex items-center justify-between gap-4 font-sans select-none">
 		<!-- Search -->
 		<SearchField
 			placeholder={m.settings_subjects_search_placeholder_custom()}
@@ -160,7 +143,7 @@ function getSubjectTheme(nameStr: string) {
 		/>
 
 		<!-- Add button -->
-		<Button variant="lime" class="text-xs h-9 px-4 font-semibold shrink-0" onclick={() => isModalOpen = true}>
+		<Button variant="lime" class="text-xs px-4 font-semibold shrink-0" onclick={() => isModalOpen = true}>
 			<Plus size={14} class="me-1.5" />
 			{m.common_exams_subjects_add()}
 		</Button>
@@ -181,7 +164,7 @@ function getSubjectTheme(nameStr: string) {
 			<Button variant="outline" class="text-xs" onclick={loadData}>{m.common_retry()}</Button>
 		</div>
 	{:else if filteredSubjects.length === 0}
-		<div class="flex flex-col items-center justify-center py-16 text-muted-foreground border border-border border-dashed rounded-xl gap-4">
+		<div class="flex flex-col items-center justify-center py-16 text-muted-foreground rounded-xl gap-4">
 			<BookOpen size={48} class="text-muted-foreground/30" />
 			<div class="flex flex-col gap-1 text-center">
 				<p class="text-xs font-semibold">{m.common_subjects_empty_title()}</p>
@@ -209,7 +192,7 @@ function getSubjectTheme(nameStr: string) {
 					<!-- Subject Text Info -->
 					<div class="flex flex-col text-start justify-between h-full flex-1 min-w-0">
 						<div class="flex flex-col">
-							<span class="text-xs font-bold text-foreground truncate group-hover:text-primary transition-colors">
+							<span class="text-xs font-bold text-foreground truncate">
 								{sub.name_ar || sub.name || sub.id}
 							</span>
 							{#if sub.name && sub.name_ar}

@@ -95,7 +95,7 @@ function openCreateSheet() {
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-4 scrollbar-hide">
   <div class="flex items-center justify-between gap-4 flex-nowrap shrink-0">
     <h1 class="text-lg font-bold text-foreground truncate">{m.common_nav_rooms()}</h1>
-    <Button variant="lime" class="text-xs h-8 px-4 font-semibold shrink-0" onclick={openCreateSheet}>
+    <Button variant="lime" class="text-xs px-4 font-semibold shrink-0" onclick={openCreateSheet}>
       <Plus size={14} class="me-1.5" />
       {m.common_rooms_add()}
     </Button>
@@ -113,8 +113,6 @@ function openCreateSheet() {
       emptyTitle={m.common_rooms_empty()}
       emptyDescription={m.common_rooms_empty_desc()}
       rtl={getLocale() === "ar"}
-      refreshable
-      onRefresh={loadRooms}
     />
   </div>
 </div>
