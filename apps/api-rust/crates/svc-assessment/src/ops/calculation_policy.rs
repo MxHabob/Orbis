@@ -71,6 +71,7 @@ pub async fn create(
         rounding_policy: req.rounding_policy.unwrap_or_else(|| "round_half_up".into()),
         valid_from: None,
         valid_until: None,
+        is_archived: 0,
         created_at: now.clone(),
         updated_at: now,
     };
@@ -80,7 +81,17 @@ pub async fn create(
     Ok(created)
 }
 
-/// Update a calculation policy.
+/// Update a calculation policy using **copy-on-write** semantics.
+///
+/// Instead of mutating the existing row (which would silently change
+/// the formula behind finalized results), this:
+///
+/// 1. Archives the old row (`is_archived = 1`, `valid_until = now`).
+/// 2. Creates a new row with incremented `version`.
+///
+/// Finalized `TermResult` / `AnnualResult` records that reference
+/// `calculation_policy_id + calculation_version` continue to point
+/// at the archived (immutable) row.
 pub async fn update(
     ctx: &ServiceContext,
     policy_id: &str,
@@ -92,6 +103,12 @@ pub async fn update(
         .one(&ctx.db)
         .await?
         .ok_or_else(|| AppError::not_found("calculation_policy", policy_id))?;
+
+    if existing.is_archived == 1 {
+        return Err(AppError::validation(
+            "Cannot update an archived policy. Create a new policy instead."
+        ));
+    }
 
     #[derive(serde::Deserialize)]
     struct Req {
@@ -105,21 +122,52 @@ pub async fn update(
     let req: Req = serde_json::from_value(data)
         .map_err(|e| AppError::validation(format!("Invalid update payload: {e}")))?;
 
+    let now = Utc::now().to_rfc3339();
     let old_version = existing.version;
-    let mut active: calculation_policy::ActiveModel = existing.into();
-    if let Some(name) = req.name { active.name = Set(name); }
-    if let Some(pid) = req.target_period_id { active.target_period_id = Set(Some(pid)); }
-    if let Some(rt) = req.rule_type { active.rule_type = Set(rt); }
-    if let Some(fe) = req.formula_expression { active.formula_expression = Set(fe); }
-    if let Some(rp) = req.rounding_policy { active.rounding_policy = Set(rp); }
-    active.version = Set(old_version + 1);
-    active.updated_at = Set(Utc::now().to_rfc3339());
 
-    let updated = active.update(&ctx.db).await?;
-    Ok(updated)
+    // ── Step 1: Archive the old row ─────────────────────────────
+    let mut archive: calculation_policy::ActiveModel = existing.clone().into();
+    archive.is_archived = Set(1);
+    archive.valid_until = Set(Some(now.clone()));
+    archive.updated_at = Set(now.clone());
+    archive.update(&ctx.db).await?;
+
+    tracing::info!(
+        policy_id=%policy_id,
+        old_version=%old_version,
+        "Archived calculation policy (copy-on-write)"
+    );
+
+    // ── Step 2: Create a new version ────────────────────────────
+    let new_model = calculation_policy::Model {
+        id: Uuid::new_v4().to_string(),
+        org_id: existing.org_id.clone(),
+        target_period_id: req.target_period_id
+            .or(existing.target_period_id.clone()),
+        name: req.name.unwrap_or_else(|| existing.name.clone()),
+        version: old_version + 1,
+        rule_type: req.rule_type.unwrap_or_else(|| existing.rule_type.clone()),
+        formula_expression: req.formula_expression
+            .unwrap_or_else(|| existing.formula_expression.clone()),
+        rounding_policy: req.rounding_policy
+            .unwrap_or_else(|| existing.rounding_policy.clone()),
+        valid_from: Some(now.clone()),
+        valid_until: None,
+        is_archived: 0,
+        created_at: now.clone(),
+        updated_at: now,
+    };
+
+    let active: calculation_policy::ActiveModel = new_model.into();
+    let created = active.insert(&ctx.db).await?;
+    Ok(created)
 }
 
 /// Delete a calculation policy.
+///
+/// Only non-archived, non-referenced policies can be deleted.
+/// If this policy is referenced by finalized results, it should be
+/// archived instead (via `update()`).
 pub async fn delete(ctx: &ServiceContext, policy_id: &str) -> Result<(), AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
 
@@ -127,5 +175,16 @@ pub async fn delete(ctx: &ServiceContext, policy_id: &str) -> Result<(), AppErro
         .exec(&ctx.db)
         .await?;
     Ok(())
+}
+
+/// List only active (non-archived) policies.
+pub async fn list_active(ctx: &ServiceContext) -> Result<Vec<calculation_policy::Model>, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::AssessmentRead).await?;
+
+    Ok(calculation_policy::Entity::find()
+        .filter(calculation_policy::Column::OrgId.eq(&ctx.org_id))
+        .filter(calculation_policy::Column::IsArchived.eq(0))
+        .all(&ctx.db)
+        .await?)
 }
 

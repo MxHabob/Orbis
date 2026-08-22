@@ -304,6 +304,11 @@ pub async fn submit_bulk(
             .map_err(|e| AppError::validation(format!("Invalid bulk grade payload: {e}")))?
     };
 
+    // Cache AssessmentEngine instances by period_id to avoid N+1 queries.
+    // In the common case (bulk entry for a single period), this reduces
+    // the engine construction from N calls to 1.
+    let mut engine_cache: std::collections::HashMap<String, AssessmentEngine> = std::collections::HashMap::new();
+
     let mut results = Vec::with_capacity(grades.len());
     for req in grades {
         check_period_open(ctx, &req.period_id).await?;
@@ -312,8 +317,14 @@ pub async fn submit_bulk(
         let id = Uuid::new_v4().to_string();
         let percentage = if req.max_score > 0.0 { (req.score / req.max_score) * 100.0 } else { 0.0 };
 
-        // Use AssessmentEngine instead of hardcoded scale
-        let engine = AssessmentEngine::for_period(&ctx.db, &ctx.org_id, &req.period_id).await?;
+        // Reuse cached engine or create a new one
+        let engine = if let Some(cached) = engine_cache.get(&req.period_id) {
+            cached
+        } else {
+            let new_engine = AssessmentEngine::for_period(&ctx.db, &ctx.org_id, &req.period_id).await?;
+            engine_cache.insert(req.period_id.clone(), new_engine);
+            engine_cache.get(&req.period_id).unwrap()
+        };
         let mapped = engine.map_score(percentage)?;
 
         let model = grade::Model {

@@ -7,6 +7,7 @@ use tracing::info;
 pub async fn run_p0_migrations(db: &DatabaseConnection) -> Result<(), DbErr> {
     migrate_academic_policies_branch_overrides(db).await?;
     migrate_process_log_schema(db).await?;
+    migrate_grading_architecture(db).await?;
     Ok(())
 }
 
@@ -189,5 +190,176 @@ async fn migrate_process_log_schema(db: &DatabaseConnection) -> Result<(), DbErr
             info!("P0 migration complete: process_log columns updated");
         }
     }
+    Ok(())
+}
+
+/// P5: Grading architecture — ranking policies, term/annual results, entity extensions.
+/// Idempotent: all CREATE IF NOT EXISTS / column-existence checks.
+async fn migrate_grading_architecture(db: &DatabaseConnection) -> Result<(), DbErr> {
+    let backend = db.get_database_backend();
+
+    // Guard: skip if already applied
+    let has_ranking = db
+        .query_one(Statement::from_string(
+            backend,
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'ranking_policies'",
+        ))
+        .await?;
+
+    if has_ranking.is_some() {
+        return Ok(());
+    }
+
+    info!("Applying P5 migration: grading architecture (ranking, term results, annual results)");
+
+    // ── ranking_policies ────────────────────────────────────────
+    db.execute_unprepared(
+        r#"CREATE TABLE IF NOT EXISTS ranking_policies (
+            id                      TEXT PRIMARY KEY,
+            org_id                  TEXT NOT NULL,
+            period_id               TEXT,
+            name                    TEXT NOT NULL,
+            is_enabled              INTEGER NOT NULL DEFAULT 1,
+            ranking_scope           TEXT NOT NULL DEFAULT 'class',
+            ranking_method          TEXT NOT NULL DEFAULT 'standard',
+            tie_handling            TEXT NOT NULL DEFAULT 'same_rank',
+            include_failed_students INTEGER NOT NULL DEFAULT 0,
+            ranking_metric          TEXT NOT NULL DEFAULT 'total_score',
+            created_at              TEXT NOT NULL,
+            updated_at              TEXT NOT NULL,
+            FOREIGN KEY (org_id) REFERENCES organizations(id)
+        )"#,
+    )
+    .await?;
+
+    db.execute_unprepared(
+        "CREATE INDEX IF NOT EXISTS idx_rp_org ON ranking_policies(org_id)",
+    )
+    .await?;
+
+    db.execute_unprepared(
+        "CREATE INDEX IF NOT EXISTS idx_rp_org_period ON ranking_policies(org_id, period_id)",
+    )
+    .await?;
+
+    // ── term_results ────────────────────────────────────────────
+    db.execute_unprepared(
+        r#"CREATE TABLE IF NOT EXISTS term_results (
+            id                      TEXT PRIMARY KEY,
+            org_id                  TEXT NOT NULL,
+            student_id              TEXT NOT NULL,
+            term_period_id          TEXT NOT NULL,
+            enrollment_id           TEXT NOT NULL,
+            class_subject_id        TEXT NOT NULL,
+            coursework_score        REAL NOT NULL DEFAULT 0,
+            coursework_max          REAL NOT NULL DEFAULT 0,
+            exam_score              REAL NOT NULL DEFAULT 0,
+            exam_max                REAL NOT NULL DEFAULT 0,
+            total_score             REAL NOT NULL DEFAULT 0,
+            total_max               REAL NOT NULL DEFAULT 0,
+            percentage              REAL NOT NULL DEFAULT 0,
+            grade_label             TEXT,
+            gpa_points              REAL,
+            is_passing              INTEGER NOT NULL DEFAULT 0,
+            rank                    INTEGER,
+            rank_scope              TEXT,
+            calculation_policy_id   TEXT,
+            calculation_version     INTEGER NOT NULL DEFAULT 1,
+            policy_snapshot         TEXT,
+            status                  TEXT NOT NULL DEFAULT 'draft',
+            finalized_at            TEXT,
+            finalized_by            TEXT,
+            created_at              TEXT NOT NULL,
+            updated_at              TEXT NOT NULL,
+            FOREIGN KEY (org_id) REFERENCES organizations(id)
+        )"#,
+    )
+    .await?;
+
+    db.execute_unprepared(
+        "CREATE INDEX IF NOT EXISTS idx_tr_student_period ON term_results(org_id, student_id, term_period_id)",
+    )
+    .await?;
+
+    db.execute_unprepared(
+        "CREATE INDEX IF NOT EXISTS idx_tr_enrollment ON term_results(enrollment_id, term_period_id)",
+    )
+    .await?;
+
+    // ── annual_results ──────────────────────────────────────────
+    db.execute_unprepared(
+        r#"CREATE TABLE IF NOT EXISTS annual_results (
+            id                      TEXT PRIMARY KEY,
+            org_id                  TEXT NOT NULL,
+            student_id              TEXT NOT NULL,
+            year_period_id          TEXT NOT NULL,
+            enrollment_id           TEXT NOT NULL,
+            class_subject_id        TEXT NOT NULL,
+            term_scores_json        TEXT NOT NULL DEFAULT '[]',
+            annual_total            REAL NOT NULL DEFAULT 0,
+            annual_max              REAL NOT NULL DEFAULT 0,
+            percentage              REAL NOT NULL DEFAULT 0,
+            grade_label             TEXT,
+            gpa_points              REAL,
+            is_passing              INTEGER NOT NULL DEFAULT 0,
+            rank                    INTEGER,
+            rank_scope              TEXT,
+            calculation_policy_id   TEXT,
+            calculation_version     INTEGER NOT NULL DEFAULT 1,
+            policy_snapshot         TEXT,
+            status                  TEXT NOT NULL DEFAULT 'draft',
+            finalized_at            TEXT,
+            finalized_by            TEXT,
+            created_at              TEXT NOT NULL,
+            updated_at              TEXT NOT NULL,
+            FOREIGN KEY (org_id) REFERENCES organizations(id)
+        )"#,
+    )
+    .await?;
+
+    db.execute_unprepared(
+        "CREATE INDEX IF NOT EXISTS idx_ar_student_year ON annual_results(org_id, student_id, year_period_id)",
+    )
+    .await?;
+
+    // ── ALTER existing tables (add columns if missing) ──────────
+
+    // assessment_schemes.period_id
+    let has_period_id = db
+        .query_one(Statement::from_string(
+            backend,
+            "SELECT 1 FROM pragma_table_info('assessment_schemes') WHERE name = 'period_id'",
+        ))
+        .await?;
+    if has_period_id.is_none() {
+        db.execute_unprepared("ALTER TABLE assessment_schemes ADD COLUMN period_id TEXT")
+            .await?;
+    }
+
+    // assessment_schemes.is_archived
+    let has_archived_as = db
+        .query_one(Statement::from_string(
+            backend,
+            "SELECT 1 FROM pragma_table_info('assessment_schemes') WHERE name = 'is_archived'",
+        ))
+        .await?;
+    if has_archived_as.is_none() {
+        db.execute_unprepared("ALTER TABLE assessment_schemes ADD COLUMN is_archived INTEGER NOT NULL DEFAULT 0")
+            .await?;
+    }
+
+    // calculation_policies.is_archived
+    let has_archived_cp = db
+        .query_one(Statement::from_string(
+            backend,
+            "SELECT 1 FROM pragma_table_info('calculation_policies') WHERE name = 'is_archived'",
+        ))
+        .await?;
+    if has_archived_cp.is_none() {
+        db.execute_unprepared("ALTER TABLE calculation_policies ADD COLUMN is_archived INTEGER NOT NULL DEFAULT 0")
+            .await?;
+    }
+
+    info!("P5 migration complete: grading architecture tables created");
     Ok(())
 }

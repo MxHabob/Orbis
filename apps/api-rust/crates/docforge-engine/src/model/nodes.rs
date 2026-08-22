@@ -205,8 +205,128 @@ pub struct TableNode {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    pub props: serde_json::Value, // Complex props handled as dynamic JSON
+    /// Table props — accepts either the new typed `TableProps` or legacy
+    /// opaque JSON. Old templates continue to work via `serde(untagged)`.
+    pub props: TablePropsWrapper,
 }
+
+/// Backward-compatible wrapper: tries typed `TableProps` first,
+/// falls back to raw `serde_json::Value` for legacy templates.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum TablePropsWrapper {
+    Typed(TableProps),
+    Legacy(serde_json::Value),
+}
+
+/// Typed table properties for structured table rendering.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TableProps {
+    /// Column definitions.
+    pub columns: Vec<TableColumnDef>,
+    /// Data source identifier (e.g. "term_certificate.subjects").
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data_source: Option<String>,
+    /// Static row data (alternative to data_source).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rows: Option<Vec<serde_json::Value>>,
+    /// Whether to show the header row. Default true.
+    #[serde(default = "default_true")]
+    pub show_header: bool,
+    /// Whether to show a totals row.
+    #[serde(default)]
+    pub show_totals: bool,
+    /// Whether to show subtotal rows when grouping.
+    #[serde(default)]
+    pub show_subtotals: bool,
+    /// Field name to group rows by.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub group_by: Option<String>,
+    /// Field name to sort rows by.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sort_by: Option<String>,
+    /// Whether the header repeats on every page.
+    #[serde(default)]
+    pub repeating_header: bool,
+    /// Table-level styling.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub style: Option<TableStyle>,
+    /// Conditional formatting rules.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub conditional_formatting: Option<Vec<ConditionalFormat>>,
+}
+
+/// Column definition for a typed table.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TableColumnDef {
+    /// Unique column identifier.
+    pub id: String,
+    /// Display header text.
+    pub header: String,
+    /// Arabic header text (for bilingual templates).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub header_ar: Option<String>,
+    /// Data field path to bind (e.g. "totalScore", "student.name").
+    pub field: String,
+    /// Column width (e.g. "120px", "20%", "auto").
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub width: Option<String>,
+    /// Text alignment: "left", "center", "right".
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub alignment: Option<String>,
+    /// Display format (e.g. "number:2" for 2 decimal places).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub format: Option<String>,
+    /// Whether the column is visible.
+    #[serde(default = "default_true")]
+    pub is_visible: bool,
+    /// Totals row aggregation: "sum", "average", "count", "min", "max".
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub total_type: Option<String>,
+}
+
+/// Table-level style properties.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TableStyle {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub border_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub border_width: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub header_bg_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub header_text_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub row_bg_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub alt_row_bg_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub font_size: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub row_height: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub padding: Option<f64>,
+}
+
+/// Conditional formatting rule for table cells.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConditionalFormat {
+    /// Field to evaluate.
+    pub field: String,
+    /// Operator: "eq", "neq", "gt", "gte", "lt", "lte", "contains".
+    pub operator: String,
+    /// Value to compare against.
+    pub value: serde_json::Value,
+    /// Style to apply when condition is met.
+    pub style: serde_json::Value,
+}
+
+fn default_true() -> bool { true }
+
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BarcodeNode {

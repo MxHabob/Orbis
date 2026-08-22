@@ -15,6 +15,8 @@ pub struct Model {
     pub rounding_policy: String,
     pub valid_from: Option<String>,
     pub valid_until: Option<String>,
+    /// 0 = active, 1 = archived (superseded by newer version).
+    pub is_archived: i32,
     pub created_at: String,
     pub updated_at: String,
 }

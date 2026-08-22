@@ -344,6 +344,9 @@ impl DataSourceRegistry {
         sources.insert("user".to_string(), Arc::new(UserDataSource) as Arc<dyn DataSource>);
         sources.insert("assessment_snapshot".to_string(), Arc::new(AssessmentSnapshotDataSource) as Arc<dyn DataSource>);
         sources.insert("report_card".to_string(), Arc::new(ReportCardDataSource) as Arc<dyn DataSource>);
+        sources.insert("term_certificate".to_string(), Arc::new(TermCertificateDataSource) as Arc<dyn DataSource>);
+        sources.insert("annual_certificate".to_string(), Arc::new(AnnualCertificateDataSource) as Arc<dyn DataSource>);
+        sources.insert("exam_session".to_string(), Arc::new(ExamSessionDataSource) as Arc<dyn DataSource>);
         
         DataSourceRegistry { sources }
     }
@@ -628,6 +631,399 @@ impl DataSource for ReportCardDataSource {
             "totalSubjects": { "type": "number", "label": "عدد المواد / Total Subjects" },
             "passedSubjects": { "type": "number", "label": "المواد الناجحة / Passed" },
             "failedSubjects": { "type": "number", "label": "المواد الراسبة / Failed" }
+        })
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Term Certificate DataSource
+//
+// Entity ID: "{enrollment_id}:{term_period_id}"
+// Resolves monthly period breakdowns + exam for term certificates.
+// ═══════════════════════════════════════════════════════════════
+
+pub struct TermCertificateDataSource;
+
+#[async_trait]
+impl DataSource for TermCertificateDataSource {
+    fn entity_type(&self) -> &str {
+        "term_certificate"
+    }
+
+    async fn resolve(&self, db: &DatabaseConnection, entity_id: &str) -> Result<Value, String> {
+        let parts: Vec<&str> = entity_id.splitn(2, ':').collect();
+        if parts.len() != 2 {
+            return Err("TermCertificate entity_id must be 'enrollment_id:term_period_id'".into());
+        }
+        let enrollment_id = parts[0];
+        let term_period_id = parts[1];
+
+        // Fetch enrollment → student
+        let enroll_stmt = select_by_id(db, "enrollments", enrollment_id);
+        let enroll = db.query_one(enroll_stmt).await.map_err(|e| e.to_string())?
+            .ok_or_else(|| format!("Enrollment not found: {}", enrollment_id))?;
+        let student_id: String = enroll.try_get("", "student_id").map_err(|e| e.to_string())?;
+        let class_id: String = enroll.try_get("", "class_id").map_err(|e| e.to_string())?;
+
+        // Student info
+        let user_stmt = select_by_id(db, "users", &student_id);
+        let user_opt = db.query_one(user_stmt).await.map_err(|e| e.to_string())?;
+        let mut student_json = json!({});
+        if let Some(user) = user_opt {
+            student_json = json!({
+                "fullName": user.try_get::<String>("", "full_name").unwrap_or_default(),
+                "nameAr": user.try_get::<Option<String>>("", "name_ar").unwrap_or_default(),
+                "nameEn": user.try_get::<Option<String>>("", "name_en").unwrap_or_default(),
+                "nationalId": user.try_get::<Option<String>>("", "national_id").unwrap_or_default(),
+            });
+        }
+
+        // Class info
+        let class_stmt = select_by_id(db, "classes", &class_id);
+        let class_opt = db.query_one(class_stmt).await.map_err(|e| e.to_string())?;
+        let mut class_json = json!({});
+        if let Some(class) = class_opt {
+            class_json = json!({
+                "name": class.try_get::<String>("", "name").unwrap_or_default(),
+                "level": class.try_get::<String>("", "level").unwrap_or_default(),
+            });
+        }
+
+        // Term period info
+        let period_stmt = select_by_id(db, "academic_periods", term_period_id);
+        let period_opt = db.query_one(period_stmt).await.map_err(|e| e.to_string())?;
+        let term_name = period_opt.as_ref()
+            .and_then(|p| p.try_get::<String>("", "name").ok())
+            .unwrap_or_default();
+
+        // Fetch all term_results for this student in this term
+        let tr_stmt = sea_orm::Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "SELECT * FROM term_results WHERE student_id = $1 AND term_period_id = $2 ORDER BY class_subject_id",
+            vec![student_id.clone().into(), term_period_id.into()],
+        );
+        let tr_rows = db.query_all(tr_stmt).await.map_err(|e| e.to_string())?;
+
+        let mut subjects = Vec::new();
+        let mut total_coursework = 0.0f64;
+        let mut total_exam = 0.0f64;
+        let mut total_score_sum = 0.0f64;
+
+        for row in &tr_rows {
+            let cs_id = row.try_get::<String>("", "class_subject_id").unwrap_or_default();
+            let cs_stmt = select_by_id(db, "class_subjects", &cs_id);
+            let cs_opt = db.query_one(cs_stmt).await.ok().flatten();
+            let subject_name = cs_opt.as_ref()
+                .and_then(|cs| cs.try_get::<Option<String>>("", "subject_name").ok().flatten())
+                .unwrap_or_else(|| cs_id.clone());
+
+            let cw = row.try_get::<f64>("", "coursework_score").unwrap_or(0.0);
+            let ex = row.try_get::<f64>("", "exam_score").unwrap_or(0.0);
+            let tot = row.try_get::<f64>("", "total_score").unwrap_or(0.0);
+            let tot_max = row.try_get::<f64>("", "total_max").unwrap_or(50.0);
+            let grade = row.try_get::<Option<String>>("", "grade_label").unwrap_or_default();
+            let rank = row.try_get::<Option<i32>>("", "rank").unwrap_or_default();
+            let passing = row.try_get::<i32>("", "is_passing").unwrap_or(0) == 1;
+
+            total_coursework += cw;
+            total_exam += ex;
+            total_score_sum += tot;
+
+            subjects.push(json!({
+                "subjectName": subject_name,
+                "courseworkScore": cw,
+                "examScore": ex,
+                "totalScore": tot,
+                "totalMax": tot_max,
+                "gradeLabel": grade,
+                "rank": rank,
+                "isPassing": passing,
+            }));
+        }
+
+        let subject_count = subjects.len().max(1) as f64;
+
+        Ok(json!({
+            "enrollmentId": enrollment_id,
+            "termPeriodId": term_period_id,
+            "termName": term_name,
+            "student": student_json,
+            "class": class_json,
+            "subjects": subjects,
+            "totalCoursework": total_coursework,
+            "totalExam": total_exam,
+            "termTotal": total_score_sum,
+            "subjectCount": subjects.len(),
+        }))
+    }
+
+    fn schema(&self) -> Value {
+        json!({
+            "termName": { "type": "string", "label": "اسم الفصل / Term Name" },
+            "student": { "type": "object", "properties": {
+                "fullName": { "type": "string", "label": "الاسم / Full Name" },
+                "nameAr": { "type": "string", "label": "الاسم بالعربية / Name (AR)" },
+                "nationalId": { "type": "string", "label": "رقم الهوية / National ID" }
+            }},
+            "class": { "type": "object", "properties": {
+                "name": { "type": "string", "label": "الفصل / Class" },
+                "level": { "type": "string", "label": "المستوى / Level" }
+            }},
+            "subjects": { "type": "array", "label": "المواد / Subjects", "items": {
+                "subjectName": { "type": "string", "label": "المادة / Subject" },
+                "courseworkScore": { "type": "number", "label": "أعمال السنة / Coursework" },
+                "examScore": { "type": "number", "label": "الاختبار / Exam" },
+                "totalScore": { "type": "number", "label": "المجموع / Total" },
+                "gradeLabel": { "type": "string", "label": "التقدير / Grade" },
+                "rank": { "type": "number", "label": "الترتيب / Rank" },
+                "isPassing": { "type": "boolean", "label": "ناجح / Passing" }
+            }},
+            "totalCoursework": { "type": "number", "label": "مجموع أعمال السنة / Total Coursework" },
+            "totalExam": { "type": "number", "label": "مجموع الاختبارات / Total Exam" },
+            "termTotal": { "type": "number", "label": "مجموع الفصل / Term Total" }
+        })
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Annual Certificate DataSource
+//
+// Entity ID: "{enrollment_id}:{year_period_id}"
+// Resolves multi-term data for annual certificates.
+// ═══════════════════════════════════════════════════════════════
+
+pub struct AnnualCertificateDataSource;
+
+#[async_trait]
+impl DataSource for AnnualCertificateDataSource {
+    fn entity_type(&self) -> &str {
+        "annual_certificate"
+    }
+
+    async fn resolve(&self, db: &DatabaseConnection, entity_id: &str) -> Result<Value, String> {
+        let parts: Vec<&str> = entity_id.splitn(2, ':').collect();
+        if parts.len() != 2 {
+            return Err("AnnualCertificate entity_id must be 'enrollment_id:year_period_id'".into());
+        }
+        let enrollment_id = parts[0];
+        let year_period_id = parts[1];
+
+        // Enrollment + student
+        let enroll = db.query_one(select_by_id(db, "enrollments", enrollment_id))
+            .await.map_err(|e| e.to_string())?
+            .ok_or_else(|| format!("Enrollment not found: {}", enrollment_id))?;
+        let student_id: String = enroll.try_get("", "student_id").map_err(|e| e.to_string())?;
+
+        let user_opt = db.query_one(select_by_id(db, "users", &student_id))
+            .await.map_err(|e| e.to_string())?;
+        let mut student_json = json!({});
+        if let Some(user) = user_opt {
+            student_json = json!({
+                "fullName": user.try_get::<String>("", "full_name").unwrap_or_default(),
+                "nameAr": user.try_get::<Option<String>>("", "name_ar").unwrap_or_default(),
+                "nationalId": user.try_get::<Option<String>>("", "national_id").unwrap_or_default(),
+            });
+        }
+
+        // Annual results
+        let ar_stmt = sea_orm::Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "SELECT * FROM annual_results WHERE student_id = $1 AND year_period_id = $2 ORDER BY class_subject_id",
+            vec![student_id.clone().into(), year_period_id.into()],
+        );
+        let ar_rows = db.query_all(ar_stmt).await.map_err(|e| e.to_string())?;
+
+        let mut subjects = Vec::new();
+        let mut grand_total = 0.0f64;
+        let mut grand_max = 0.0f64;
+
+        for row in &ar_rows {
+            let cs_id = row.try_get::<String>("", "class_subject_id").unwrap_or_default();
+            let cs_opt = db.query_one(select_by_id(db, "class_subjects", &cs_id)).await.ok().flatten();
+            let subject_name = cs_opt.as_ref()
+                .and_then(|cs| cs.try_get::<Option<String>>("", "subject_name").ok().flatten())
+                .unwrap_or_else(|| cs_id.clone());
+
+            let annual_total = row.try_get::<f64>("", "annual_total").unwrap_or(0.0);
+            let annual_max = row.try_get::<f64>("", "annual_max").unwrap_or(100.0);
+            let pct = row.try_get::<f64>("", "percentage").unwrap_or(0.0);
+            let grade = row.try_get::<Option<String>>("", "grade_label").unwrap_or_default();
+            let rank = row.try_get::<Option<i32>>("", "rank").unwrap_or_default();
+            let passing = row.try_get::<i32>("", "is_passing").unwrap_or(0) == 1;
+            let terms_json = row.try_get::<String>("", "term_scores_json").unwrap_or_else(|_| "[]".into());
+
+            grand_total += annual_total;
+            grand_max += annual_max;
+
+            subjects.push(json!({
+                "subjectName": subject_name,
+                "annualTotal": annual_total,
+                "annualMax": annual_max,
+                "percentage": pct,
+                "gradeLabel": grade,
+                "rank": rank,
+                "isPassing": passing,
+                "termBreakdown": serde_json::from_str::<Value>(&terms_json).unwrap_or(json!([])),
+            }));
+        }
+
+        let year_stmt = select_by_id(db, "academic_periods", year_period_id);
+        let year_opt = db.query_one(year_stmt).await.map_err(|e| e.to_string())?;
+        let year_name = year_opt.as_ref()
+            .and_then(|p| p.try_get::<String>("", "name").ok())
+            .unwrap_or_default();
+
+        Ok(json!({
+            "enrollmentId": enrollment_id,
+            "yearPeriodId": year_period_id,
+            "yearName": year_name,
+            "student": student_json,
+            "subjects": subjects,
+            "grandTotal": grand_total,
+            "grandMax": grand_max,
+            "overallPercentage": if grand_max > 0.0 { (grand_total / grand_max * 100.0 * 100.0).round() / 100.0 } else { 0.0 },
+            "subjectCount": subjects.len(),
+        }))
+    }
+
+    fn schema(&self) -> Value {
+        json!({
+            "yearName": { "type": "string", "label": "العام الدراسي / Academic Year" },
+            "student": { "type": "object", "properties": {
+                "fullName": { "type": "string", "label": "الاسم / Full Name" },
+                "nameAr": { "type": "string", "label": "الاسم بالعربية / Name (AR)" },
+                "nationalId": { "type": "string", "label": "رقم الهوية / National ID" }
+            }},
+            "subjects": { "type": "array", "label": "المواد / Subjects", "items": {
+                "subjectName": { "type": "string", "label": "المادة / Subject" },
+                "annualTotal": { "type": "number", "label": "المجموع السنوي / Annual Total" },
+                "percentage": { "type": "number", "label": "النسبة / Percentage" },
+                "gradeLabel": { "type": "string", "label": "التقدير / Grade" },
+                "rank": { "type": "number", "label": "الترتيب / Rank" },
+                "isPassing": { "type": "boolean", "label": "ناجح / Passing" }
+            }},
+            "grandTotal": { "type": "number", "label": "المجموع الكلي / Grand Total" },
+            "overallPercentage": { "type": "number", "label": "النسبة الكلية / Overall %" }
+        })
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Exam Session DataSource (Generic)
+//
+// Entity ID: exam_session_id
+// Generic data source for all exam documents (attendance sheets,
+// committee lists, seating plans, invigilator lists, etc.).
+// Specialized projections are built on top via DocForge templates.
+// ═══════════════════════════════════════════════════════════════
+
+pub struct ExamSessionDataSource;
+
+#[async_trait]
+impl DataSource for ExamSessionDataSource {
+    fn entity_type(&self) -> &str {
+        "exam_session"
+    }
+
+    async fn resolve(&self, db: &DatabaseConnection, entity_id: &str) -> Result<Value, String> {
+        // Fetch session
+        let sess_stmt = select_by_id(db, "exam_sessions", entity_id);
+        let sess = db.query_one(sess_stmt).await.map_err(|e| e.to_string())?
+            .ok_or_else(|| format!("Exam session not found: {}", entity_id))?;
+
+        let session_json = json!({
+            "id": entity_id,
+            "name": sess.try_get::<String>("", "name").unwrap_or_default(),
+            "term": sess.try_get::<Option<String>>("", "term").unwrap_or_default(),
+            "academicYear": sess.try_get::<Option<String>>("", "academic_year").unwrap_or_default(),
+            "startDate": sess.try_get::<Option<String>>("", "start_date").unwrap_or_default(),
+            "endDate": sess.try_get::<Option<String>>("", "end_date").unwrap_or_default(),
+            "status": sess.try_get::<String>("", "status").unwrap_or_default(),
+        });
+
+        // Fetch all halls for this session
+        let halls_stmt = sea_orm::Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "SELECT * FROM exam_halls WHERE session_id = $1 ORDER BY name",
+            vec![entity_id.into()],
+        );
+        let hall_rows = db.query_all(halls_stmt).await.map_err(|e| e.to_string())?;
+        let halls: Vec<Value> = hall_rows.iter().map(|h| json!({
+            "id": h.try_get::<String>("", "id").unwrap_or_default(),
+            "name": h.try_get::<String>("", "name").unwrap_or_default(),
+            "capacity": h.try_get::<Option<i32>>("", "capacity").unwrap_or_default(),
+            "building": h.try_get::<Option<String>>("", "building").unwrap_or_default(),
+            "floor": h.try_get::<Option<String>>("", "floor").unwrap_or_default(),
+        })).collect();
+
+        // Fetch all seating numbers for this session
+        let seats_stmt = sea_orm::Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "SELECT * FROM seating_numbers WHERE exam_session_id = $1 ORDER BY sequence_number",
+            vec![entity_id.into()],
+        );
+        let seat_rows = db.query_all(seats_stmt).await.map_err(|e| e.to_string())?;
+        let students: Vec<Value> = seat_rows.iter().map(|s| json!({
+            "seatingNumber": s.try_get::<String>("", "seating_number").unwrap_or_default(),
+            "sequenceNumber": s.try_get::<i32>("", "sequence_number").unwrap_or(0),
+            "studentNameAr": s.try_get::<Option<String>>("", "student_name_ar").unwrap_or_default(),
+            "level": s.try_get::<String>("", "level").unwrap_or_default(),
+            "division": s.try_get::<Option<String>>("", "division").unwrap_or_default(),
+            "hallId": s.try_get::<Option<String>>("", "hall_id").unwrap_or_default(),
+        })).collect();
+
+        // Fetch proctors/invigilators
+        let proctors_stmt = sea_orm::Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "SELECT p.*, u.full_name, u.name_ar FROM exam_proctors p LEFT JOIN users u ON p.user_id = u.id WHERE p.session_id = $1",
+            vec![entity_id.into()],
+        );
+        let proctor_rows = db.query_all(proctors_stmt).await.unwrap_or_default();
+        let proctors: Vec<Value> = proctor_rows.iter().map(|p| json!({
+            "name": p.try_get::<Option<String>>("", "full_name").unwrap_or_default(),
+            "nameAr": p.try_get::<Option<String>>("", "name_ar").unwrap_or_default(),
+            "role": p.try_get::<Option<String>>("", "role").unwrap_or_default(),
+            "hallId": p.try_get::<Option<String>>("", "hall_id").unwrap_or_default(),
+        })).collect();
+
+        Ok(json!({
+            "session": session_json,
+            "halls": halls,
+            "students": students,
+            "proctors": proctors,
+            "totalStudents": students.len(),
+            "totalHalls": halls.len(),
+            "totalProctors": proctors.len(),
+        }))
+    }
+
+    fn schema(&self) -> Value {
+        json!({
+            "session": { "type": "object", "properties": {
+                "name": { "type": "string", "label": "اسم الدورة / Session Name" },
+                "term": { "type": "string", "label": "الفصل / Term" },
+                "academicYear": { "type": "string", "label": "العام / Year" },
+                "startDate": { "type": "string", "label": "بداية / Start" },
+                "endDate": { "type": "string", "label": "نهاية / End" },
+                "status": { "type": "string", "label": "الحالة / Status" }
+            }},
+            "halls": { "type": "array", "label": "القاعات / Halls", "items": {
+                "name": { "type": "string", "label": "اسم القاعة / Hall" },
+                "capacity": { "type": "number", "label": "السعة / Capacity" },
+                "building": { "type": "string", "label": "المبنى / Building" }
+            }},
+            "students": { "type": "array", "label": "الطلاب / Students", "items": {
+                "seatingNumber": { "type": "string", "label": "رقم الجلوس / Seat" },
+                "studentNameAr": { "type": "string", "label": "الاسم / Name" },
+                "level": { "type": "string", "label": "المستوى / Level" }
+            }},
+            "proctors": { "type": "array", "label": "المراقبون / Proctors", "items": {
+                "name": { "type": "string", "label": "الاسم / Name" },
+                "role": { "type": "string", "label": "الدور / Role" }
+            }},
+            "totalStudents": { "type": "number", "label": "عدد الطلاب / Total Students" },
+            "totalHalls": { "type": "number", "label": "عدد القاعات / Total Halls" },
+            "totalProctors": { "type": "number", "label": "عدد المراقبين / Total Proctors" }
         })
     }
 }

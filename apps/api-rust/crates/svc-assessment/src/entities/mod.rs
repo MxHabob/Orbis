@@ -14,3 +14,6 @@ pub mod grade_scale_item;
 pub mod calculation_policy;
 pub mod pass_fail_policy;
 pub mod student_assessment_snapshot;
+pub mod ranking_policy;
+pub mod term_result;
+pub mod annual_result;

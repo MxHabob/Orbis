@@ -160,7 +160,7 @@ pub async fn bootstrap_full(
         ]
     )).await.map_err(|e| AppError::internal(format!("Failed to create academic policies: {e}")))?;
 
-    // 3d. Default Calculation Policy (simple weighted sum)
+    // 3d. Default Calculation Policy — period-level (simple weighted sum)
     let calc_policy_id = Uuid::new_v4().to_string();
     let formula = serde_json::json!({
         "type": "weighted_sum",
@@ -172,7 +172,7 @@ pub async fn bootstrap_full(
     });
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO calculation_policies (id, org_id, target_period_id, name, version, rule_type, formula_expression, rounding_policy, created_at, updated_at) VALUES ($1, $2, NULL, $3, 1, 'weighted_sum', $4, 'round_half_up', $5, $6)",
+        "INSERT INTO calculation_policies (id, org_id, target_period_id, name, version, rule_type, formula_expression, rounding_policy, is_archived, created_at, updated_at) VALUES ($1, $2, NULL, $3, 1, 'weighted_sum', $4, 'round_half_up', 0, $5, $6)",
         vec![
             calc_policy_id.clone().into(), org_id.clone().into(),
             format!("Default {} Policy", blueprint.scale_name).into(),
@@ -180,6 +180,92 @@ pub async fn bootstrap_full(
             now.clone().into(), now.clone().into(),
         ]
     )).await.map_err(|e| AppError::internal(format!("Failed to create calculation policy: {e}")))?;
+
+    // 3d-ii. Term Calculation Policy (coursework + exam → term total)
+    let term_calc_id = Uuid::new_v4().to_string();
+    let term_formula = serde_json::json!({
+        "type": "add",
+        "left": {
+            "type": "multiply",
+            "left": { "type": "variable", "name": "coursework_avg" },
+            "right": { "type": "literal", "value": blueprint.coursework_weight / 100.0 }
+        },
+        "right": { "type": "variable", "name": "exam" }
+    });
+    db.execute(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "INSERT INTO calculation_policies (id, org_id, target_period_id, name, version, rule_type, formula_expression, rounding_policy, is_archived, created_at, updated_at) VALUES ($1, $2, NULL, $3, 1, 'term', $4, 'round_half_up', 0, $5, $6)",
+        vec![
+            term_calc_id.into(), org_id.clone().into(),
+            format!("Default Term Policy - {}", blueprint.scale_name).into(),
+            term_formula.to_string().into(),
+            now.clone().into(), now.clone().into(),
+        ]
+    )).await.map_err(|e| AppError::internal(format!("Failed to create term calculation policy: {e}")))?;
+
+    // 3d-iii. Annual Calculation Policy (sum of terms)
+    let annual_calc_id = Uuid::new_v4().to_string();
+    let annual_formula = serde_json::json!({
+        "type": "variable",
+        "name": "annual_total"
+    });
+    db.execute(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "INSERT INTO calculation_policies (id, org_id, target_period_id, name, version, rule_type, formula_expression, rounding_policy, is_archived, created_at, updated_at) VALUES ($1, $2, NULL, $3, 1, 'annual', $4, 'round_half_up', 0, $5, $6)",
+        vec![
+            annual_calc_id.into(), org_id.clone().into(),
+            format!("Default Annual Policy - {}", blueprint.scale_name).into(),
+            annual_formula.to_string().into(),
+            now.clone().into(), now.clone().into(),
+        ]
+    )).await.map_err(|e| AppError::internal(format!("Failed to create annual calculation policy: {e}")))?;
+
+    // 3d-iv. Default Assessment Scheme + Components
+    if !blueprint.assessment_components.is_empty() {
+        let scheme_id = Uuid::new_v4().to_string();
+        db.execute(Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "INSERT INTO assessment_schemes (id, org_id, period_id, name, is_archived, created_at, updated_at) VALUES ($1, $2, NULL, $3, 0, $4, $5)",
+            vec![
+                scheme_id.clone().into(), org_id.clone().into(),
+                blueprint.assessment_scheme_name.clone().into(),
+                now.clone().into(), now.clone().into(),
+            ]
+        )).await.map_err(|e| AppError::internal(format!("Failed to create assessment scheme: {e}")))?;
+
+        for comp in &blueprint.assessment_components {
+            let comp_id = Uuid::new_v4().to_string();
+            db.execute(Statement::from_sql_and_values(
+                db.get_database_backend(),
+                "INSERT INTO assessment_scheme_components (id, scheme_id, name, component_type, weight, max_score, passing_score, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+                vec![
+                    comp_id.into(), scheme_id.clone().into(),
+                    comp.name.clone().into(), comp.component_type.clone().into(),
+                    comp.weight.into(), comp.max_score.into(),
+                    comp.passing_score.into(),
+                    now.clone().into(), now.clone().into(),
+                ]
+            )).await.map_err(|e| AppError::internal(format!("Failed to create scheme component: {e}")))?;
+        }
+    }
+
+    // 3d-v. Default Ranking Policy
+    let ranking_id = Uuid::new_v4().to_string();
+    db.execute(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "INSERT INTO ranking_policies (id, org_id, period_id, name, is_enabled, ranking_scope, ranking_method, tie_handling, include_failed_students, ranking_metric, created_at, updated_at) VALUES ($1, $2, NULL, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+        vec![
+            ranking_id.into(), org_id.clone().into(),
+            format!("Default Ranking - {}", blueprint.scale_name).into(),
+            blueprint.ranking_enabled.into(),
+            blueprint.ranking_scope.clone().into(),
+            blueprint.ranking_method.clone().into(),
+            "same_rank".into(),
+            (if blueprint.include_failed_in_ranking { 1i32 } else { 0 }).into(),
+            "total_score".into(),
+            now.clone().into(), now.clone().into(),
+        ]
+    )).await.map_err(|e| AppError::internal(format!("Failed to create ranking policy: {e}")))?;
 
     // 3e. Period Template
     let tmpl_id = Uuid::new_v4().to_string();
@@ -386,6 +472,14 @@ struct RolePermission {
     actions: Vec<String>,
 }
 
+struct AssessmentComponent {
+    name: String,
+    component_type: String,
+    weight: f64,
+    max_score: f64,
+    passing_score: f64,
+}
+
 struct InstitutionBlueprint {
     grading_system: String,
     passing_grade: f64,
@@ -398,6 +492,15 @@ struct InstitutionBlueprint {
     period_template_name_ar: String,
     period_structure: serde_json::Value,
     default_permissions: Vec<RolePermission>,
+    // ── Grading Architecture Presets ─────────────────────────
+    assessment_scheme_name: String,
+    assessment_components: Vec<AssessmentComponent>,
+    coursework_weight: f64,  // e.g. 20.0 (out of 100)
+    exam_weight: f64,        // e.g. 30.0
+    ranking_enabled: i32,
+    ranking_scope: String,
+    ranking_method: String,
+    include_failed_in_ranking: bool,
 }
 
 fn school_blueprint() -> InstitutionBlueprint {
@@ -420,21 +523,39 @@ fn school_blueprint() -> InstitutionBlueprint {
         period_template_name_ar: "العام الدراسي".into(),
         period_structure: serde_json::json!([
             {
-                "name": "الفصل الأول", "name_ar": "الفصل الأول", "type": "semester", "weight": 50,
+                "name": "الفصل الأول", "name_ar": "الفصل الأول", "type": "term", "weight": 50,
                 "children": [
-                    { "name": "الفترة الأولى", "type": "quarter", "weight": 25 },
-                    { "name": "الفترة الثانية", "type": "quarter", "weight": 25 }
+                    { "name": "الشهر الأول", "name_ar": "الشهر الأول", "type": "monthly", "weight": 0 },
+                    { "name": "الشهر الثاني", "name_ar": "الشهر الثاني", "type": "monthly", "weight": 0 },
+                    { "name": "الشهر الثالث", "name_ar": "الشهر الثالث", "type": "monthly", "weight": 0 },
+                    { "name": "اختبار الفصل الأول", "name_ar": "اختبار الفصل الأول", "type": "exam", "weight": 0 }
                 ]
             },
             {
-                "name": "الفصل الثاني", "name_ar": "الفصل الثاني", "type": "semester", "weight": 50,
+                "name": "الفصل الثاني", "name_ar": "الفصل الثاني", "type": "term", "weight": 50,
                 "children": [
-                    { "name": "الفترة الثالثة", "type": "quarter", "weight": 25 },
-                    { "name": "الفترة الرابعة", "type": "quarter", "weight": 25 }
+                    { "name": "الشهر الرابع", "name_ar": "الشهر الرابع", "type": "monthly", "weight": 0 },
+                    { "name": "الشهر الخامس", "name_ar": "الشهر الخامس", "type": "monthly", "weight": 0 },
+                    { "name": "الشهر السادس", "name_ar": "الشهر السادس", "type": "monthly", "weight": 0 },
+                    { "name": "اختبار الفصل الثاني", "name_ar": "اختبار الفصل الثاني", "type": "exam", "weight": 0 }
                 ]
             }
         ]),
         default_permissions: default_role_permissions(),
+        // ── Grading Architecture ────────────────────────────
+        assessment_scheme_name: "المخطط التقييمي الشهري".into(),
+        assessment_components: vec![
+            AssessmentComponent { name: "الواجبات".into(), component_type: "assignment".into(), weight: 20.0, max_score: 20.0, passing_score: 10.0 },
+            AssessmentComponent { name: "الشفهي".into(), component_type: "oral".into(), weight: 20.0, max_score: 20.0, passing_score: 10.0 },
+            AssessmentComponent { name: "الحضور والمشاركة".into(), component_type: "attendance".into(), weight: 20.0, max_score: 20.0, passing_score: 10.0 },
+            AssessmentComponent { name: "الاختبار التحريري".into(), component_type: "written_exam".into(), weight: 40.0, max_score: 40.0, passing_score: 20.0 },
+        ],
+        coursework_weight: 20.0,  // 20 out of 50 term points
+        exam_weight: 30.0,        // 30 out of 50 term points
+        ranking_enabled: 1,
+        ranking_scope: "class".into(),
+        ranking_method: "standard".into(),
+        include_failed_in_ranking: false,
     }
 }
 
@@ -465,6 +586,14 @@ fn university_blueprint() -> InstitutionBlueprint {
             { "name": "Summer Term", "name_ar": "الفصل الصيفي", "type": "term", "weight": 20 }
         ]),
         default_permissions: default_role_permissions(),
+        assessment_scheme_name: "University Assessment".into(),
+        assessment_components: vec![],  // University uses credit-hour GPA, no fixed components
+        coursework_weight: 40.0,
+        exam_weight: 60.0,
+        ranking_enabled: 0,  // Universities typically don't rank
+        ranking_scope: "program".into(),
+        ranking_method: "standard".into(),
+        include_failed_in_ranking: false,
     }
 }
 
@@ -489,6 +618,14 @@ fn institute_blueprint() -> InstitutionBlueprint {
             { "name": "Q4", "name_ar": "الربع الرابع", "type": "quarter", "weight": 25 }
         ]),
         default_permissions: default_role_permissions(),
+        assessment_scheme_name: "Training Assessment".into(),
+        assessment_components: vec![],  // Institutes define their own
+        coursework_weight: 50.0,
+        exam_weight: 50.0,
+        ranking_enabled: 0,
+        ranking_scope: "class".into(),
+        ranking_method: "standard".into(),
+        include_failed_in_ranking: false,
     }
 }
 
