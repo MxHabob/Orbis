@@ -41,12 +41,12 @@ const userActions: ActionItem[] = [
 // ── Data Loading ────────────────────────────────────────────────────────
 const usersQuery = createUsersPaginatedQuery(() => data.orgId);
 const users = $derived(
-  $usersQuery.data?.pages?.flatMap((page: any) => page.items) ?? [],
+  usersQuery.data?.pages?.flatMap((page: any) => page.items) ?? [],
 );
-const isLoading = $derived($usersQuery.isLoading);
+const isLoading = $derived(usersQuery.isLoading);
 
 function loadUsers() {
-  $usersQuery.refetch();
+  usersQuery.refetch();
 }
 
 // ── Filtering ───────────────────────────────────────────────────────────
@@ -189,16 +189,16 @@ async function handleAction(event: GridActionEvent) {
       onRefresh={loadUsers}
       onaction={handleAction}
     />
-    {#if $usersQuery.hasNextPage && selectedRole === 'all' && searchQuery === ''}
+    {#if usersQuery.hasNextPage && selectedRole === 'all' && searchQuery === ''}
       <div class="p-2 border-t border-border flex justify-center bg-card shrink-0">
         <Button 
           variant="outline" 
           size="sm" 
           class="text-xs w-full max-w-md cursor-pointer"
-          disabled={$usersQuery.isFetchingNextPage}
-          onclick={() => $usersQuery.fetchNextPage()}
+          disabled={usersQuery.isFetchingNextPage}
+          onclick={() => usersQuery.fetchNextPage()}
         >
-          {#if $usersQuery.isFetchingNextPage}
+          {#if usersQuery.isFetchingNextPage}
             {m.common_loading()}
           {:else}
             {m.settings_users_load_more()}

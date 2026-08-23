@@ -26,7 +26,7 @@ const logsQuery = createAgentSessionLogsQuery(
   () => orgId,
   () => sessionId,
 );
-const logs = $derived($logsQuery.data ?? []);
+const logs = $derived(logsQuery.data ?? []);
 
 const approveActionMutation = useApproveAgentAction();
 const rejectActionMutation = useRejectAgentAction();
@@ -34,7 +34,7 @@ const rejectActionMutation = useRejectAgentAction();
 async function handleApprove(actionId: string) {
   try {
     toast.promise(
-      $approveActionMutation.mutateAsync({
+      approveActionMutation.mutateAsync({
         orgId,
         actionLogId: actionId,
         approvedBy: "Admin",
@@ -54,7 +54,7 @@ async function handleApprove(actionId: string) {
 async function handleReject(actionId: string) {
   try {
     toast.promise(
-      $rejectActionMutation.mutateAsync({
+      rejectActionMutation.mutateAsync({
         orgId,
         actionLogId: actionId,
         rejectedBy: "Admin",
@@ -90,12 +90,12 @@ async function handleReject(actionId: string) {
 </div>
 
 <div class="flex-1 overflow-y-auto p-4 space-y-3 min-h-0 select-text scrollbar-hide bg-background/50">
-  {#if $logsQuery.isLoading}
+  {#if logsQuery.isLoading}
     <div class="space-y-3">
       <Skeleton class="h-20 w-full rounded-lg" />
       <Skeleton class="h-20 w-full rounded-lg" />
     </div>
-  {:else if $logsQuery.isError}
+  {:else if logsQuery.isError}
     <div class="border border-destructive/20 bg-destructive/5 rounded-lg p-4 text-center space-y-2">
       <p class="text-xs font-semibold text-destructive">
         {m.common_agent_session_logs_load_failed()}

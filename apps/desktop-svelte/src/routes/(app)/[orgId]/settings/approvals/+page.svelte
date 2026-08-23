@@ -69,12 +69,12 @@ const logQuery = createOverrideRequestsQuery(
 );
 
 const pendingItems = $derived(
-  ($pendingQuery.data ?? []) as AcademicOverrideRequest[],
+  (pendingQuery.data ?? []) as AcademicOverrideRequest[],
 );
 const myRequests = $derived(
-  ($myRequestsQuery.data ?? []) as AcademicOverrideRequest[],
+  (myRequestsQuery.data ?? []) as AcademicOverrideRequest[],
 );
-const logItems = $derived(($logQuery.data ?? []) as AcademicOverrideRequest[]);
+const logItems = $derived((logQuery.data ?? []) as AcademicOverrideRequest[]);
 
 // Action state
 let processingId = $state<string | null>(null);
@@ -219,7 +219,7 @@ function parseApprovalChain(
 
       <!-- Pending Tab -->
       <TabsContent value="pending">
-        {#if $pendingQuery.isLoading}
+        {#if pendingQuery.isLoading}
           <div class="flex flex-col gap-3 mt-4">
             {#each Array(3) as _}
               <Skeleton class="h-32 w-full rounded-lg" />
@@ -349,7 +349,7 @@ function parseApprovalChain(
 
       <!-- My Requests Tab -->
       <TabsContent value="mine">
-        {#if $myRequestsQuery.isLoading}
+        {#if myRequestsQuery.isLoading}
           <div class="flex flex-col gap-3 mt-4">
             {#each Array(3) as _}
               <Skeleton class="h-24 w-full rounded-lg" />
@@ -407,7 +407,7 @@ function parseApprovalChain(
 
       <!-- Log Tab -->
       <TabsContent value="log">
-        {#if $logQuery.isLoading}
+        {#if logQuery.isLoading}
           <div class="flex flex-col gap-3 mt-4">
             {#each Array(3) as _}
               <Skeleton class="h-16 w-full rounded-lg" />

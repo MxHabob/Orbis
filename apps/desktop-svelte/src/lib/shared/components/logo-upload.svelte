@@ -44,7 +44,7 @@ $effect(() => {
 let displayUrl = $derived(localPreviewUrl || resolvedLogoUrl);
 
 function triggerFileInput() {
-  if (isLoading || $uploadMutation.isPending) return;
+  if (isLoading || uploadMutation.isPending) return;
   fileInputRef?.click();
 }
 
@@ -59,7 +59,7 @@ function handleFileChange(event: Event) {
   };
   reader.readAsDataURL(file);
 
-  $uploadMutation.mutate(
+  uploadMutation.mutate(
     {
       file,
       entity_type: entityType,
@@ -90,7 +90,7 @@ function handleFileChange(event: Event) {
   role="button"
   tabindex="0"
 >
-  {#if isLoading || $uploadMutation.isPending}
+  {#if isLoading || uploadMutation.isPending}
     <div class="flex items-center justify-center w-full h-full bg-background/50 backdrop-blur-xs">
       <Loader2 class="animate-spin text-primary shrink-0" size={Math.max(16, size / 3)} />
     </div>

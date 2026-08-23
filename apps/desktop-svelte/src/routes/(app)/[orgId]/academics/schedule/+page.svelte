@@ -92,10 +92,10 @@ const usersQuery = createQuery(
   })),
 );
 
-const periods = $derived($periodsQuery.data ?? []);
-const classes = $derived($classesQuery.data ?? []);
-const subjects = $derived($subjectsQuery.data ?? []);
-const users = $derived($usersQuery.data ?? []);
+const periods = $derived(periodsQuery.data ?? []);
+const classes = $derived(classesQuery.data ?? []);
+const subjects = $derived(subjectsQuery.data ?? []);
+const users = $derived(usersQuery.data ?? []);
 
 // Filter teachers list - strictly ONLY users with teacher role
 const teachers = $derived(
@@ -165,7 +165,7 @@ const timeSlotsQuery = createQuery(
   })),
 );
 
-const timeSlots = $derived($timeSlotsQuery.data ?? []);
+const timeSlots = $derived(timeSlotsQuery.data ?? []);
 
 // Schedules logic
 const classScheduleQuery = createQuery(
@@ -206,36 +206,36 @@ const teacherScheduleQuery = createQuery(
 
 const lessons = $derived.by(() => {
   if (viewMode === "class") {
-    return $classScheduleQuery.data ?? [];
+    return classScheduleQuery.data ?? [];
   } else {
-    return $teacherScheduleQuery.data ?? [];
+    return teacherScheduleQuery.data ?? [];
   }
 });
 
 const isLessonsLoading = $derived(
   viewMode === "class"
-    ? $classScheduleQuery.isLoading
-    : $teacherScheduleQuery.isLoading,
+    ? classScheduleQuery.isLoading
+    : teacherScheduleQuery.isLoading,
 );
 
 const isLoading = $derived(
-  $periodsQuery.isLoading ||
-    $classesQuery.isLoading ||
-    $subjectsQuery.isLoading ||
-    $usersQuery.isLoading ||
-    $timeSlotsQuery.isLoading ||
+  periodsQuery.isLoading ||
+    classesQuery.isLoading ||
+    subjectsQuery.isLoading ||
+    usersQuery.isLoading ||
+    timeSlotsQuery.isLoading ||
     isLessonsLoading,
 );
 
 const error = $derived(
-  $periodsQuery.error ||
-    $classesQuery.error ||
-    $subjectsQuery.error ||
-    $usersQuery.error ||
-    $timeSlotsQuery.error ||
+  periodsQuery.error ||
+    classesQuery.error ||
+    subjectsQuery.error ||
+    usersQuery.error ||
+    timeSlotsQuery.error ||
     (viewMode === "class"
-      ? $classScheduleQuery.error
-      : $teacherScheduleQuery.error),
+      ? classScheduleQuery.error
+      : teacherScheduleQuery.error),
 );
 
 // Derived state to map and filter draft assignments for preview

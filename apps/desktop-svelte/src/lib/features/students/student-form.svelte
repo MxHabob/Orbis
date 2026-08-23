@@ -44,8 +44,8 @@ async function handleSave(status?: string) {
 const classesQuery = createClassesQuery(() => orgId);
 
 $effect(() => {
-  if ($classesQuery.data) {
-    state.classes = $classesQuery.data;
+  if (classesQuery.data) {
+    state.classes = classesQuery.data;
   }
 });
 

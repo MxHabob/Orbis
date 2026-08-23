@@ -21,13 +21,13 @@ async function handleDelete(id: string) {
     variant: "destructive",
   });
   if (confirmed) {
-    $deleteMutation.mutate(id);
+    deleteMutation.mutate(id);
   }
 }
 
 // Flatten pages into a single array of documents
 let documents = $derived(
-  $documentsQuery.data?.pages.flatMap((p) => p.items) || [],
+  documentsQuery.data?.pages.flatMap((p) => p.items) || [],
 );
 let groupedDocs = $derived(
   documents.reduce(
@@ -54,7 +54,7 @@ let groupedDocs = $derived(
   </div>
 
   <!-- Loading Skeletons (Uses base Skeleton component styles) -->
-  {#if $documentsQuery.isLoading && documents.length === 0}
+  {#if documentsQuery.isLoading && documents.length === 0}
     <div class="space-y-6">
       <div class="space-y-4">
         <Skeleton class="h-6 w-36 rounded-md" />
@@ -141,16 +141,16 @@ let groupedDocs = $derived(
     {/each}
     
     <!-- Load More -->
-    {#if $documentsQuery.hasNextPage}
+    {#if documentsQuery.hasNextPage}
       <div class="flex justify-center pt-6 pb-4">
         <Button 
           variant="outline" 
           size="sm"
-          disabled={$documentsQuery.isFetchingNextPage}
-          onclick={() => $documentsQuery.fetchNextPage()}
+          disabled={documentsQuery.isFetchingNextPage}
+          onclick={() => documentsQuery.fetchNextPage()}
           class="text-xs gap-2 rounded-xl"
         >
-          {#if $documentsQuery.isFetchingNextPage}
+          {#if documentsQuery.isFetchingNextPage}
             <Loader2 class="h-3.5 w-3.5 animate-spin" />
             <span>{m.settings_archive_loading_more()}</span>
           {:else}

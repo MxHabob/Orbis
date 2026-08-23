@@ -130,9 +130,9 @@ interface AccountResponse {
 // Queries
 const ledgersQuery = createAccountsQuery(() => orgId);
 const ledgers = $derived(
-  ($ledgersQuery.data || []) as unknown as AccountResponse[],
+  (ledgersQuery.data || []) as unknown as AccountResponse[],
 );
-const isLoadingLedgers = $derived($ledgersQuery.isLoading);
+const isLoadingLedgers = $derived(ledgersQuery.isLoading);
 
 // Query for detailed statement
 const statementQuery = createAccountStatementQuery(
@@ -141,12 +141,12 @@ const statementQuery = createAccountStatementQuery(
   () => endDate,
 );
 const statement = $derived(
-  $statementQuery.data as AccountStatement | undefined,
+  statementQuery.data as AccountStatement | undefined,
 );
-const isLoadingStatement = $derived($statementQuery.isLoading);
+const isLoadingStatement = $derived(statementQuery.isLoading);
 const statementError = $derived(
-  $statementQuery.error
-    ? ($statementQuery.error as any).message || String($statementQuery.error)
+  statementQuery.error
+    ? (statementQuery.error as any).message || String(statementQuery.error)
     : null,
 );
 

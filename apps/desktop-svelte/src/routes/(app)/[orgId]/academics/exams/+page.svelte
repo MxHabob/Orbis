@@ -51,7 +51,7 @@ function toStore<T>(getter: () => T) {
 
 // Queries
 const periodsQuery = createPeriodsQuery(() => data.orgId);
-const periods = $derived($periodsQuery.data ?? []);
+const periods = $derived(periodsQuery.data ?? []);
 
 // Active academic year & period
 const activeYearName = $derived(academicContext.yearLabelAr);
@@ -81,17 +81,17 @@ const examSessionsQuery = createQuery(
   })),
 );
 
-const examSessions = $derived(($examSessionsQuery.data as any[]) ?? []);
+const examSessions = $derived((examSessionsQuery.data as any[]) ?? []);
 
 const isLoading = $derived(
-  $periodsQuery.isLoading || $examSessionsQuery.isLoading,
+  periodsQuery.isLoading || examSessionsQuery.isLoading,
 );
 
-const error = $derived($periodsQuery.error || $examSessionsQuery.error);
+const error = $derived(periodsQuery.error || examSessionsQuery.error);
 
 function refetchAll() {
-  $periodsQuery.refetch();
-  $examSessionsQuery.refetch();
+  periodsQuery.refetch();
+  examSessionsQuery.refetch();
 }
 
 // Dynamic KPI Stats

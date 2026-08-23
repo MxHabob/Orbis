@@ -56,7 +56,7 @@ function toStore<T>(getter: () => T) {
 
 // Queries
 const periodsQuery = createPeriodsQuery(() => data.orgId);
-const periods = $derived($periodsQuery.data ?? []);
+const periods = $derived(periodsQuery.data ?? []);
 
 // Active academic year & period
 const activeYearName = $derived(academicContext.yearLabelAr);
@@ -86,7 +86,7 @@ const examSessionsQuery = createQuery(
   })),
 );
 
-const examSessions = $derived(($examSessionsQuery.data as any[]) ?? []);
+const examSessions = $derived((examSessionsQuery.data as any[]) ?? []);
 
 // System Document Templates Query
 const documentTemplatesQuery = createQuery(
@@ -98,13 +98,13 @@ const documentTemplatesQuery = createQuery(
   })),
 );
 
-const documentTemplates = $derived(($documentTemplatesQuery.data as any[]) ?? []);
+const documentTemplates = $derived((documentTemplatesQuery.data as any[]) ?? []);
 
 const isLoading = $derived(
-  $periodsQuery.isLoading || $examSessionsQuery.isLoading || $documentTemplatesQuery.isLoading,
+  periodsQuery.isLoading || examSessionsQuery.isLoading || documentTemplatesQuery.isLoading,
 );
 
-const error = $derived($periodsQuery.error || $examSessionsQuery.error || $documentTemplatesQuery.error);
+const error = $derived(periodsQuery.error || examSessionsQuery.error || documentTemplatesQuery.error);
 
 // Directory list of available exam reports
 const reportItems = $derived([

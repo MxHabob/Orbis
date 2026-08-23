@@ -46,9 +46,9 @@ const classesQuery = createClassesQuery(() => data.orgId);
 
 // Derived data from queries
 const enrollments = $derived(
-  $enrollmentsQuery.data?.pages?.flatMap((page: any) => page.items) ?? [],
+  enrollmentsQuery.data?.pages?.flatMap((page: any) => page.items) ?? [],
 );
-const classes = $derived($classesQuery.data ?? []);
+const classes = $derived(classesQuery.data ?? []);
 const filteredStudents = $derived(studentsStore.filterList(enrollments));
 
 // Capability-based enrollment
@@ -62,9 +62,9 @@ const canRequestLateEnrollment = $derived(
 );
 let showOverrideDialog = $state(false);
 const isLoading = $derived(
-  $enrollmentsQuery.isLoading || $classesQuery.isLoading,
+  enrollmentsQuery.isLoading || classesQuery.isLoading,
 );
-const error = $derived($enrollmentsQuery.error || $classesQuery.error);
+const error = $derived(enrollmentsQuery.error || classesQuery.error);
 
 // Helper to count students matching a criteria
 function getCountByClass(classId: string): number {
@@ -250,7 +250,7 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 					{:else if error}
 						<div class="h-full w-full flex flex-col items-center justify-center p-6 text-center gap-3 bg-card border border-border rounded-lg">
 							<p class="text-xs text-destructive font-semibold">{m.students_load_error({ error: extractErrorMessage(error) })}</p>
-							<Button variant="outline" class="text-xs" onclick={() => { $enrollmentsQuery.refetch(); $classesQuery.refetch(); }}>{m.common_retry()}</Button>
+							<Button variant="outline" class="text-xs" onclick={() => { enrollmentsQuery.refetch(); classesQuery.refetch(); }}>{m.common_retry()}</Button>
 						</div>
 					{:else}
 						<StudentTable
@@ -260,16 +260,16 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 							bind:selectedIds={selectedStudentIds}
 							orgId={data.orgId}
 						/>
-						{#if $enrollmentsQuery.hasNextPage}
+						{#if enrollmentsQuery.hasNextPage}
 							<div class="p-2 border-t border-border flex justify-center bg-card shrink-0">
 								<Button 
 									variant="outline" 
 									size="sm" 
 									class="text-xs w-full max-w-md"
-									disabled={$enrollmentsQuery.isFetchingNextPage}
-									onclick={() => $enrollmentsQuery.fetchNextPage()}
+									disabled={enrollmentsQuery.isFetchingNextPage}
+									onclick={() => enrollmentsQuery.fetchNextPage()}
 								>
-									{#if $enrollmentsQuery.isFetchingNextPage}
+									{#if enrollmentsQuery.isFetchingNextPage}
 										{m.common_loading()}
 									{:else}
 										{m.common_bulk_action_load_more()}

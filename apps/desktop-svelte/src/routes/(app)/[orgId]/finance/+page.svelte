@@ -40,34 +40,34 @@ const treasuriesQuery = createTreasuriesQuery(() => data.orgId);
 const enrollmentsQuery = createEnrollmentsQuery(() => data.orgId);
 const classesQuery = createClassesQuery(() => data.orgId);
 
-const fees = $derived($feesQuery.data ?? []);
-const payments = $derived($paymentsQuery.data ?? []);
-const treasuries = $derived($treasuriesQuery.data ?? []);
-const enrollments = $derived($enrollmentsQuery.data ?? []);
-const classes = $derived($classesQuery.data ?? []);
+const fees = $derived(feesQuery.data ?? []);
+const payments = $derived(paymentsQuery.data ?? []);
+const treasuries = $derived(treasuriesQuery.data ?? []);
+const enrollments = $derived(enrollmentsQuery.data ?? []);
+const classes = $derived(classesQuery.data ?? []);
 
 const isLoading = $derived(
-  $feesQuery.isLoading ||
-    $paymentsQuery.isLoading ||
-    $treasuriesQuery.isLoading ||
-    $enrollmentsQuery.isLoading ||
-    $classesQuery.isLoading,
+  feesQuery.isLoading ||
+    paymentsQuery.isLoading ||
+    treasuriesQuery.isLoading ||
+    enrollmentsQuery.isLoading ||
+    classesQuery.isLoading,
 );
 
 const error = $derived(
-  $feesQuery.error ||
-    $paymentsQuery.error ||
-    $treasuriesQuery.error ||
-    $enrollmentsQuery.error ||
-    $classesQuery.error,
+  feesQuery.error ||
+    paymentsQuery.error ||
+    treasuriesQuery.error ||
+    enrollmentsQuery.error ||
+    classesQuery.error,
 );
 
 function refetchAll() {
-  $feesQuery.refetch();
-  $paymentsQuery.refetch();
-  $treasuriesQuery.refetch();
-  $enrollmentsQuery.refetch();
-  $classesQuery.refetch();
+  feesQuery.refetch();
+  paymentsQuery.refetch();
+  treasuriesQuery.refetch();
+  enrollmentsQuery.refetch();
+  classesQuery.refetch();
 }
 
 // ── Financial KPI Computations ───────────────────────────────────────────

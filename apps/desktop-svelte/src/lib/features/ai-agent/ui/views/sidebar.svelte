@@ -33,7 +33,7 @@ let selectedSessionId = $state<string | null>(null);
 let viewMode = $state<"chat" | "cockpit">("chat");
 
 const sessionsQuery = createAgentSessionsQuery(() => currentOrgId);
-const sessions = $derived($sessionsQuery.data ?? []);
+const sessions = $derived(sessionsQuery.data ?? []);
 
 const effectiveSessionId = $derived(
   selectedSessionId || (sessions.length > 0 ? sessions[0].id : null),

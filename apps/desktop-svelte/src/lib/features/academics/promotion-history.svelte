@@ -45,7 +45,7 @@ let rollbackTarget = $state<PromotionJob | null>(null);
 async function handleRollback() {
   if (!rollbackTarget) return;
   try {
-    await $rollbackMutation.mutateAsync({
+    await rollbackMutation.mutateAsync({
       jobId: rollbackTarget.id,
       userId,
     });
@@ -111,7 +111,7 @@ function statusLabel(status: string) {
     </p>
   </div>
 
-  {#if $jobsQuery.isLoading}
+  {#if jobsQuery.isLoading}
     <div class="space-y-4">
       {#each Array(3) as _}
         <div class="border border-border bg-card p-5 rounded-xl">
@@ -126,7 +126,7 @@ function statusLabel(status: string) {
         </div>
       {/each}
     </div>
-  {:else if ($jobsQuery.data ?? []).length === 0}
+  {:else if (jobsQuery.data ?? []).length === 0}
     <div class="border-2 border-dashed border-border rounded-xl bg-card p-12 text-center flex flex-col items-center justify-center">
       <History class="size-10 text-muted-foreground/40 mb-3" />
       <h3 class="font-bold text-foreground font-serif">{m.common_promo_no_jobs()}</h3>
@@ -134,7 +134,7 @@ function statusLabel(status: string) {
     </div>
   {:else}
     <div class="space-y-4">
-      {#each $jobsQuery.data ?? [] as job}
+      {#each jobsQuery.data ?? [] as job}
         {@const Icon = statusIcon(job.status)}
         <div class="border border-border bg-card p-5 rounded-xl transition-all hover:border-border/80">
           <div class="flex items-center justify-between gap-4">

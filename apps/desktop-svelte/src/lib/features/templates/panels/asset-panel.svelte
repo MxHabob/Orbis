@@ -45,7 +45,7 @@ const deleteMutation = useDeleteDocument();
 
 // Flatten pages into a single array of documents
 let serverAssets = $derived(
-  $documentsQuery.data?.pages.flatMap((p) => p.items) || [],
+  documentsQuery.data?.pages.flatMap((p) => p.items) || [],
 );
 
 // Filter by search query
@@ -88,7 +88,7 @@ async function insertAssetAsImage(doc: any) {
 
 function removeAsset(doc: any) {
   if (confirm(m.template_confirm_delete_asset?.() || "Are you sure?")) {
-    $deleteMutation.mutate(doc.id);
+    deleteMutation.mutate(doc.id);
   }
 }
 
@@ -99,7 +99,7 @@ function handleFileSelect(e: Event) {
   if (!target.files?.length) return;
   const file = target.files[0];
 
-  $uploadMutation.mutate(
+  uploadMutation.mutate(
     {
       file,
       entity_type: "template",
@@ -132,8 +132,8 @@ function triggerUpload() {
       <Badge variant="outline" class="text-[8px]">{filteredAssets.length}</Badge>
       <Tooltip>
         <TooltipTrigger>
-          <Button variant="ghost" size="icon-xs" class="cursor-pointer h-5 w-5" onclick={triggerUpload} disabled={$uploadMutation.isPending}>
-            {#if $uploadMutation.isPending}
+          <Button variant="ghost" size="icon-xs" class="cursor-pointer h-5 w-5" onclick={triggerUpload} disabled={uploadMutation.isPending}>
+            {#if uploadMutation.isPending}
               <Loader2 size={11} class="animate-spin" />
             {:else}
               <Upload size={11} />
@@ -167,7 +167,7 @@ function triggerUpload() {
 
   <!-- Asset Grid -->
   <div class="flex-grow overflow-y-auto scrollbar-hide p-2 flex flex-col gap-2">
-    {#if $documentsQuery.isLoading && serverAssets.length === 0}
+    {#if documentsQuery.isLoading && serverAssets.length === 0}
       <div class="flex justify-center p-4">
         <Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
       </div>
@@ -224,15 +224,15 @@ function triggerUpload() {
         {/each}
       </div>
       
-      {#if $documentsQuery.hasNextPage}
+      {#if documentsQuery.hasNextPage}
         <Button 
           variant="ghost" 
           size="xs" 
           class="w-full text-[10px] mt-2 cursor-pointer"
-          disabled={$documentsQuery.isFetchingNextPage}
-          onclick={() => $documentsQuery.fetchNextPage()}
+          disabled={documentsQuery.isFetchingNextPage}
+          onclick={() => documentsQuery.fetchNextPage()}
         >
-          {#if $documentsQuery.isFetchingNextPage}
+          {#if documentsQuery.isFetchingNextPage}
             <Loader2 class="mr-1 h-3 w-3 animate-spin" /> {m.template_loading?.() || "Loading..."}
           {:else}
             {m.template_load_more?.() || "Load More"}

@@ -25,7 +25,7 @@ let {
 } = $props();
 
 const sessionsQuery = createAgentSessionsQuery(() => orgId);
-const sessions = $derived($sessionsQuery.data ?? []);
+const sessions = $derived(sessionsQuery.data ?? []);
 
 let searchQuery = $state("");
 
@@ -69,12 +69,12 @@ const filteredSessions = $derived(
     
 
     <div class="flex flex-col gap-2 max-h-56 overflow-y-auto scrollbar-hide text-start px-0.5">
-      {#if $sessionsQuery.isLoading}
+      {#if sessionsQuery.isLoading}
         <div class="space-y-2 py-2">
           <Skeleton class="h-10 w-full rounded" />
           <Skeleton class="h-10 w-full rounded" />
         </div>
-      {:else if $sessionsQuery.isError}
+      {:else if sessionsQuery.isError}
         <div class="text-center text-[10px] text-destructive/80 py-4 px-1 leading-relaxed">
           {orgId ? "خدمة الوكيل غير متوفرة حالياً" : "Agent service offline"}
         </div>

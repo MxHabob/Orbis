@@ -112,14 +112,14 @@ const usersQuery = createUsersQuery(() => orgId);
 const enrollmentsQuery = createEnrollmentsQuery(() => orgId);
 
 const allUsers = $derived(
-  (($usersQuery.data as JsonRecord[]) ?? []).filter(
+  ((usersQuery.data as JsonRecord[]) ?? []).filter(
     (u) => String(u.primary_role ?? u.role) === "parent",
   ),
 );
-const enrollments = $derived(($enrollmentsQuery.data as any[]) ?? []);
+const enrollments = $derived((enrollmentsQuery.data as any[]) ?? []);
 
 const isLoading = $derived(
-  $usersQuery.isLoading || $enrollmentsQuery.isLoading,
+  usersQuery.isLoading || enrollmentsQuery.isLoading,
 );
 let isSaving = $state(false);
 

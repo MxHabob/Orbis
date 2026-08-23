@@ -35,11 +35,11 @@ const studentId = $derived(page.params.studentId || ""); // Enrollment ID
 const enrollmentsQuery = createEnrollmentsQuery(() => orgId);
 const classesQuery = createClassesQuery(() => orgId);
 
-const enrollments = $derived($enrollmentsQuery.data ?? []);
-const classes = $derived($classesQuery.data ?? []);
+const enrollments = $derived(enrollmentsQuery.data ?? []);
+const classes = $derived(classesQuery.data ?? []);
 const student = $derived(enrollments.find((s) => s.id === studentId));
 const isLoading = $derived(
-  $enrollmentsQuery.isLoading || $classesQuery.isLoading,
+  enrollmentsQuery.isLoading || classesQuery.isLoading,
 );
 
 let isSaving = $state(false);

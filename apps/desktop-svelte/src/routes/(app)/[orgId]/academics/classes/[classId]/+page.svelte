@@ -226,7 +226,7 @@ const diagnosticIssues = $derived.by(() => {
 
   if (
     studentsCount > 0 &&
-    (!$gradesQuery.data || $gradesQuery.data.length === 0)
+    (!gradesQuery.data || gradesQuery.data.length === 0)
   ) {
     issues.push({
       id: "no-grades",

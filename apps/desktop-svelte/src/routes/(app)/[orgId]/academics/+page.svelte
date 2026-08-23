@@ -46,35 +46,35 @@ const promotionJobsQuery = createPromotionJobsQuery(() => data.orgId);
 const examSessionsQuery = createExamSessionsQuery(() => data.orgId);
 
 // Derived Data
-const classes = $derived($classesQuery.data ?? []);
-const subjects = $derived($subjectsQuery.data ?? []);
-const periods = $derived($periodsQuery.data ?? []);
+const classes = $derived(classesQuery.data ?? []);
+const subjects = $derived(subjectsQuery.data ?? []);
+const periods = $derived(periodsQuery.data ?? []);
 const currentYear = $derived(academicContext.currentYear);
-const promotionJobs = $derived($promotionJobsQuery.data ?? []);
-const examSessions = $derived($examSessionsQuery.data ?? []);
+const promotionJobs = $derived(promotionJobsQuery.data ?? []);
+const examSessions = $derived(examSessionsQuery.data ?? []);
 
 const isLoading = $derived(
-  $classesQuery.isLoading ||
-    $subjectsQuery.isLoading ||
-    $periodsQuery.isLoading ||
-    $promotionJobsQuery.isLoading ||
-    $examSessionsQuery.isLoading,
+  classesQuery.isLoading ||
+    subjectsQuery.isLoading ||
+    periodsQuery.isLoading ||
+    promotionJobsQuery.isLoading ||
+    examSessionsQuery.isLoading,
 );
 
 const error = $derived(
-  $classesQuery.error ||
-    $subjectsQuery.error ||
-    $periodsQuery.error ||
-    $promotionJobsQuery.error ||
-    $examSessionsQuery.error,
+  classesQuery.error ||
+    subjectsQuery.error ||
+    periodsQuery.error ||
+    promotionJobsQuery.error ||
+    examSessionsQuery.error,
 );
 
 function refetchAll() {
-  $classesQuery.refetch();
-  $subjectsQuery.refetch();
-  $periodsQuery.refetch();
-  $promotionJobsQuery.refetch();
-  $examSessionsQuery.refetch();
+  classesQuery.refetch();
+  subjectsQuery.refetch();
+  periodsQuery.refetch();
+  promotionJobsQuery.refetch();
+  examSessionsQuery.refetch();
 }
 
 const activeYearName = $derived(academicContext.yearLabelAr);

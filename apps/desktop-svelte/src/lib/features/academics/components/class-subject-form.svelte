@@ -65,20 +65,20 @@ const classesQuery = createClassesQuery(() => orgId);
 const subjectsQuery = createSubjectsQuery(() => orgId);
 const usersQuery = createUsersQuery(() => orgId);
 
-const periods = $derived(($periodsQuery.data as JsonRecord[]) ?? []);
-const classes = $derived(($classesQuery.data as JsonRecord[]) ?? []);
-const subjects = $derived(($subjectsQuery.data as JsonRecord[]) ?? []);
+const periods = $derived((periodsQuery.data as JsonRecord[]) ?? []);
+const classes = $derived((classesQuery.data as JsonRecord[]) ?? []);
+const subjects = $derived((subjectsQuery.data as JsonRecord[]) ?? []);
 const teachers = $derived(
-  (($usersQuery.data as JsonRecord[]) ?? []).filter(
+  ((usersQuery.data as JsonRecord[]) ?? []).filter(
     (u) => String(u.primary_role ?? u.role) === "teacher",
   ),
 );
 
 const isLoading = $derived(
-  $periodsQuery.isLoading ||
-    $classesQuery.isLoading ||
-    $subjectsQuery.isLoading ||
-    $usersQuery.isLoading,
+  periodsQuery.isLoading ||
+    classesQuery.isLoading ||
+    subjectsQuery.isLoading ||
+    usersQuery.isLoading,
 );
 let isSaving = $state(false);
 

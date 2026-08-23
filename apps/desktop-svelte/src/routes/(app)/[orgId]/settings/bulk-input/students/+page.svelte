@@ -55,7 +55,7 @@ const isRtl = locale === "ar";
 
 const queryClient = useQueryClient();
 const classesQuery = createClassesQuery(() => data.orgId);
-const classes = $derived($classesQuery.data ?? []);
+const classes = $derived(classesQuery.data ?? []);
 
 // ── State ──────────────────────────────────────────────────────────
 let rows = $state<Record<string, unknown>[]>([]);

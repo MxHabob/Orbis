@@ -51,11 +51,11 @@ const enrollmentsQuery = createEnrollmentsQuery(() => orgId);
 const classesQuery = createClassesQuery(() => orgId);
 
 const student = $derived(
-  $enrollmentsQuery.data?.find((s) => s.id === studentId),
+  enrollmentsQuery.data?.find((s) => s.id === studentId),
 );
 const currentClass = $derived(
   student
-    ? $classesQuery.data?.find((c) => String(c.id) === String(student.class_id))
+    ? classesQuery.data?.find((c) => String(c.id) === String(student.class_id))
     : null,
 );
 
