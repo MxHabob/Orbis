@@ -62,6 +62,7 @@ pub async fn create(
     struct Req {
         name: String,
         description: Option<String>,
+        period_id: Option<String>,
     }
 
     let req: Req = serde_json::from_value(data)
@@ -71,8 +72,10 @@ pub async fn create(
     let model = assessment_scheme::Model {
         id: Uuid::new_v4().to_string(),
         org_id: ctx.org_id.clone(),
+        period_id: req.period_id,
         name: req.name,
         description: req.description,
+        is_archived: 0,
         created_at: now.clone(),
         updated_at: now,
     };

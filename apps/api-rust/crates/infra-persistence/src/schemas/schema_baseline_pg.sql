@@ -45,16 +45,40 @@ CREATE TABLE IF NOT EXISTS parties (
 CREATE TABLE IF NOT EXISTS persons (
   id TEXT PRIMARY KEY,
   party_id TEXT NOT NULL REFERENCES parties(id) ON DELETE CASCADE,
+  org_id TEXT REFERENCES organizations(id),
   first_name TEXT NOT NULL,
   last_name TEXT NOT NULL,
+  full_name TEXT,
+  name_ar TEXT,
+  name_en TEXT,
+  father_name TEXT,
+  grandfather_name TEXT,
   gender TEXT,
-  birth_date TEXT,
+  date_of_birth TEXT,
+  place_of_birth TEXT,
+  nationality TEXT,
+  national_id TEXT,
+  passport_number TEXT,
+  address TEXT,
+  city TEXT,
+  country TEXT,
+  postal_code TEXT,
+  phone TEXT,
+  emergency_contact TEXT,
+  blood_type TEXT,
+  allergies TEXT,
+  medical_conditions TEXT,
+  medical_notes TEXT,
+  avatar TEXT,
+  bio TEXT,
+  social_links TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
+  person_id TEXT NOT NULL REFERENCES persons(id),
   party_id TEXT REFERENCES parties(id),
   org_id TEXT NOT NULL REFERENCES organizations(id),
   email TEXT,
@@ -70,26 +94,6 @@ CREATE TABLE IF NOT EXISTS users (
   mfa_secret TEXT,
   mfa_backup_codes TEXT,
   full_name TEXT NOT NULL,
-  name_ar TEXT,
-  name_en TEXT,
-  avatar TEXT,
-  sex TEXT,
-  date_of_birth TEXT,
-  place_of_birth TEXT,
-  nationality TEXT,
-  national_id TEXT,
-  passport_number TEXT,
-  address TEXT,
-  city TEXT,
-  country TEXT,
-  postal_code TEXT,
-  emergency_contact TEXT,
-  blood_type TEXT,
-  allergies TEXT,
-  medical_conditions TEXT,
-  medical_notes TEXT,
-  social_links TEXT,
-  bio TEXT,
   primary_role TEXT NOT NULL DEFAULT 'user',
   status TEXT NOT NULL DEFAULT 'active',
   last_login_at TEXT,
@@ -378,7 +382,7 @@ CREATE TABLE IF NOT EXISTS classes (
   name_ar TEXT,
   level TEXT NOT NULL,
   division TEXT,
-  homeroom_teacher_id TEXT,
+  homeroom_teacher_id TEXT REFERENCES users(id),
   capacity INTEGER,
   current_students INTEGER DEFAULT 0,
   room_id TEXT,
@@ -414,7 +418,7 @@ CREATE TABLE IF NOT EXISTS enrollments (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL REFERENCES organizations(id),
   period_id TEXT NOT NULL REFERENCES academic_periods(id),
-  student_id TEXT NOT NULL REFERENCES users(id),
+  student_id TEXT NOT NULL REFERENCES persons(id),
   class_id TEXT NOT NULL REFERENCES classes(id),
   student_number TEXT UNIQUE,
   status TEXT NOT NULL DEFAULT 'active'
@@ -431,6 +435,9 @@ CREATE TABLE IF NOT EXISTS enrollments (
 CREATE INDEX IF NOT EXISTS idx_enr_org_period ON enrollments(org_id, period_id);
 CREATE INDEX IF NOT EXISTS idx_enr_student ON enrollments(student_id);
 CREATE INDEX IF NOT EXISTS idx_enr_class ON enrollments(class_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_enr_unique_active
+  ON enrollments(org_id, student_id, period_id)
+  WHERE status NOT IN ('withdrawn', 'cancelled');
 
 CREATE TABLE IF NOT EXISTS current_students (
   org_id TEXT NOT NULL REFERENCES organizations(id),
@@ -586,7 +593,7 @@ CREATE INDEX IF NOT EXISTS idx_grades_assessment ON grades(assessment_id);
 CREATE INDEX IF NOT EXISTS idx_grades_org_period ON grades(org_id, period_id);
 CREATE INDEX IF NOT EXISTS idx_grades_class_subject ON grades(class_subject_id);
 
-CREATE TABLE IF NOT EXISTS student_assessment_snapshots (
+CREATE TABLE IF NOT EXISTS period_scores (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL REFERENCES organizations(id),
   student_id TEXT NOT NULL,
@@ -607,8 +614,8 @@ CREATE TABLE IF NOT EXISTS student_assessment_snapshots (
   updated_at TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_sas_student_period ON student_assessment_snapshots(student_id, period_id);
-CREATE INDEX IF NOT EXISTS idx_sas_org_period_status ON student_assessment_snapshots(org_id, period_id, status);
+CREATE INDEX IF NOT EXISTS idx_ps_student_period ON period_scores(student_id, period_id);
+CREATE INDEX IF NOT EXISTS idx_ps_org_period_status ON period_scores(org_id, period_id, status);
 
 -- ── 6. Multi-Tier Attendance & Behavior ────────────────────────
 
@@ -622,7 +629,7 @@ CREATE TABLE IF NOT EXISTS attendance (
   status TEXT NOT NULL,
   check_in_time TEXT,
   check_out_time TEXT,
-  period TEXT,
+  lesson_slot TEXT,
   subject_name TEXT,
   recorded_by TEXT NOT NULL,
   notes TEXT,
@@ -669,7 +676,8 @@ CREATE INDEX IF NOT EXISTS idx_attendance_daily_enrollment_period_date ON attend
 
 CREATE TABLE IF NOT EXISTS attendance_summary (
   id TEXT PRIMARY KEY,
-  enrollment_id TEXT NOT NULL,
+  org_id TEXT NOT NULL REFERENCES organizations(id),
+  enrollment_id TEXT NOT NULL REFERENCES enrollments(id),
   period_id TEXT NOT NULL,
   total_lessons INTEGER,
   present_lessons INTEGER,
@@ -1193,7 +1201,7 @@ CREATE TABLE IF NOT EXISTS discount_templates (
 CREATE TABLE IF NOT EXISTS student_fees (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL REFERENCES organizations(id),
-  period_id TEXT NOT NULL,
+  period_id TEXT NOT NULL REFERENCES academic_periods(id),
   enrollment_id TEXT NOT NULL REFERENCES enrollments(id),
   fee_template_id TEXT NOT NULL REFERENCES fee_templates(id),
   original_amount REAL NOT NULL,

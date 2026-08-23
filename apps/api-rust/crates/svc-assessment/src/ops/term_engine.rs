@@ -29,7 +29,7 @@ use shared_kernel::errors::AppError;
 use tracing::info;
 
 use crate::entities::{
-    calculation_policy, student_assessment_snapshot, term_result,
+    calculation_policy, period_score, term_result,
     grade_scale, grade_scale_item,
 };
 use crate::ops::calc_engine::{CalcEngine, AstNode, apply_rounding};
@@ -89,12 +89,12 @@ pub async fn calculate_term_result(
     // 2. Collect period-level snapshots for this student
     let mut period_scores: Vec<f64> = Vec::new();
     for period_id in &req.grading_period_ids {
-        let snapshots = student_assessment_snapshot::Entity::find()
-            .filter(student_assessment_snapshot::Column::OrgId.eq(&ctx.org_id))
-            .filter(student_assessment_snapshot::Column::StudentId.eq(&req.student_id))
-            .filter(student_assessment_snapshot::Column::PeriodId.eq(period_id))
-            .filter(student_assessment_snapshot::Column::ClassSubjectId.eq(&req.class_subject_id))
-            .order_by_desc(student_assessment_snapshot::Column::UpdatedAt)
+        let snapshots = period_score::Entity::find()
+            .filter(period_score::Column::OrgId.eq(&ctx.org_id))
+            .filter(period_score::Column::StudentId.eq(&req.student_id))
+            .filter(period_score::Column::PeriodId.eq(period_id))
+            .filter(period_score::Column::ClassSubjectId.eq(&req.class_subject_id))
+            .order_by_desc(period_score::Column::UpdatedAt)
             .one(&ctx.db)
             .await?;
 
@@ -312,7 +312,7 @@ async fn find_term_policy(
 }
 
 /// Build a GradeMapper from the org's active grade scale.
-async fn build_grade_mapper(ctx: &ServiceContext) -> Result<GradeMapper, AppError> {
+pub async fn build_grade_mapper(ctx: &ServiceContext) -> Result<GradeMapper, AppError> {
     let scale = grade_scale::Entity::find()
         .filter(grade_scale::Column::OrgId.eq(&ctx.org_id))
         .one(&ctx.db)

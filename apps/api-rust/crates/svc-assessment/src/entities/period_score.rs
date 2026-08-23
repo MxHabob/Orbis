@@ -2,7 +2,7 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize, utoipa::ToSchema)]
-#[sea_orm(table_name = "student_assessment_snapshots")]
+#[sea_orm(table_name = "period_scores")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: String,

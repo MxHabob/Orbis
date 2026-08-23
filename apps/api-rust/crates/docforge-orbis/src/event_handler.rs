@@ -5,8 +5,8 @@ use tracing::{info, error};
 use crate::projection::ProjectionStore;
 
 pub async fn handle_domain_event(db: &DatabaseConnection, event: &EventEnvelope) {
-    if event.event_type == "AssessmentSnapshotCreated" && event.entity_type == "student_assessment_snapshot" {
-        info!("docforge-orbis processing AssessmentSnapshotCreated for {}", event.entity_id);
+    if event.event_type == "PeriodScoreCalculated" && event.entity_type == "period_score" {
+        info!("docforge-orbis processing PeriodScoreCalculated for {}", event.entity_id);
         
         let org_id = &event.org_id;
         let entity_id = &event.entity_id;

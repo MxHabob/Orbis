@@ -3,7 +3,7 @@ use shared_kernel::context::ServiceContext;
 use shared_kernel::errors::AppError;
 use tracing::info;
 
-use crate::entities::{calculation_policy, grade_scale_item, student_assessment_snapshot};
+use crate::entities::{calculation_policy, grade_scale_item, period_score};
 use crate::ops::calc_engine::{CalcEngine, AstNode, apply_rounding};
 use crate::ops::grade_mapper::{GradeMapper, GradeScaleItemData};
 
@@ -43,7 +43,7 @@ pub async fn execute_snapshot_generation(
     policy_id: &str,
     scale_id: &str,
     raw_scores: std::collections::HashMap<String, f64>,
-) -> Result<student_assessment_snapshot::Model, AppError> {
+) -> Result<period_score::Model, AppError> {
     
     // 1. Fetch Policy
     let policy = calculation_policy::Entity::find_by_id(policy_id.to_string())
@@ -88,7 +88,7 @@ pub async fn execute_snapshot_generation(
     let now = chrono::Utc::now().to_rfc3339();
     let snapshot_id = uuid::Uuid::new_v4().to_string();
 
-    let snapshot_am = student_assessment_snapshot::ActiveModel {
+    let snapshot_am = period_score::ActiveModel {
         id: Set(snapshot_id.clone()),
         org_id: Set(ctx.org_id.clone()),
         student_id: Set(student_id.to_string()),
@@ -113,8 +113,8 @@ pub async fn execute_snapshot_generation(
     
     // Fire Domain Event
     let event = shared_kernel::event_bus::EventEnvelope {
-        event_type: "AssessmentSnapshotCreated".to_string(),
-        entity_type: "student_assessment_snapshot".to_string(),
+        event_type: "PeriodScoreCalculated".to_string(),
+        entity_type: "period_score".to_string(),
         entity_id: inserted.id.clone(),
         org_id: ctx.org_id.clone(),
         actor: match &ctx.actor {
@@ -147,7 +147,7 @@ pub async fn execute_snapshot_generation(
         student_id=%student_id,
         class_subject_id=%class_subject_id,
         score=%final_score,
-        "Generated Student Assessment Snapshot"
+        "Generated period score"
     );
 
     Ok(inserted)
@@ -169,11 +169,11 @@ pub async fn compute_rankings(
     use sea_orm::QueryOrder;
 
     // 1. Fetch all snapshots for this class_subject + period
-    let mut snapshots = student_assessment_snapshot::Entity::find()
-        .filter(student_assessment_snapshot::Column::OrgId.eq(&ctx.org_id))
-        .filter(student_assessment_snapshot::Column::PeriodId.eq(period_id))
-        .filter(student_assessment_snapshot::Column::ClassSubjectId.eq(class_subject_id))
-        .order_by_desc(student_assessment_snapshot::Column::TotalScore)
+    let mut snapshots = period_score::Entity::find()
+        .filter(period_score::Column::OrgId.eq(&ctx.org_id))
+        .filter(period_score::Column::PeriodId.eq(period_id))
+        .filter(period_score::Column::ClassSubjectId.eq(class_subject_id))
+        .order_by_desc(period_score::Column::TotalScore)
         .all(&ctx.db)
         .await?;
 
@@ -203,7 +203,7 @@ pub async fn compute_rankings(
         last_score = Some(score);
 
         // Update in DB
-        let mut active: student_assessment_snapshot::ActiveModel = snapshot.clone().into();
+        let mut active: period_score::ActiveModel = snapshot.clone().into();
         active.rank_in_class = Set(Some(rank));
         active.updated_at = Set(chrono::Utc::now().to_rfc3339());
         active.update(&ctx.db).await?;
@@ -215,14 +215,14 @@ pub async fn compute_rankings(
         period_id=%period_id,
         class_subject_id=%class_subject_id,
         count=%updated_count,
-        "Computed rank_in_class for snapshots"
+        "Computed rank_in_class for period scores"
     );
 
     // 3. Compute rank_in_level: aggregate all class_subjects for same period
     //    Group by student_id, compute average GPA across all subjects, then rank.
-    let all_period_snapshots = student_assessment_snapshot::Entity::find()
-        .filter(student_assessment_snapshot::Column::OrgId.eq(&ctx.org_id))
-        .filter(student_assessment_snapshot::Column::PeriodId.eq(period_id))
+    let all_period_snapshots = period_score::Entity::find()
+        .filter(period_score::Column::OrgId.eq(&ctx.org_id))
+        .filter(period_score::Column::PeriodId.eq(period_id))
         .all(&ctx.db)
         .await?;
 
@@ -269,7 +269,7 @@ pub async fn compute_rankings(
     // Update rank_in_level for snapshots that belong to the requested class_subject
     for snapshot in &snapshots {
         if let Some(&r) = level_ranks.get(&snapshot.student_id) {
-            let mut active: student_assessment_snapshot::ActiveModel = snapshot.clone().into();
+            let mut active: period_score::ActiveModel = snapshot.clone().into();
             active.rank_in_level = Set(Some(r));
             active.updated_at = Set(chrono::Utc::now().to_rfc3339());
             active.update(&ctx.db).await?;
@@ -310,10 +310,10 @@ pub async fn apply_pass_fail_for_student(
     let max_fail = policy.as_ref().map(|p| p.max_failed_subjects).unwrap_or(0);
 
     // Load all snapshots for this student in this period
-    let snapshots = student_assessment_snapshot::Entity::find()
-        .filter(student_assessment_snapshot::Column::OrgId.eq(&ctx.org_id))
-        .filter(student_assessment_snapshot::Column::StudentId.eq(student_id))
-        .filter(student_assessment_snapshot::Column::PeriodId.eq(period_id))
+    let snapshots = period_score::Entity::find()
+        .filter(period_score::Column::OrgId.eq(&ctx.org_id))
+        .filter(period_score::Column::StudentId.eq(student_id))
+        .filter(period_score::Column::PeriodId.eq(period_id))
         .all(&ctx.db)
         .await?;
 

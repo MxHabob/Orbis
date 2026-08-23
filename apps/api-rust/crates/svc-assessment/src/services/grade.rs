@@ -762,7 +762,7 @@ impl GradeService {
 
         let mut students = Vec::new();
         for enrollment in enrollments {
-            let student = svc_iam::entities::user::Entity::find_by_id(enrollment.student_id.clone())
+            let student = svc_iam::entities::person::Entity::find_by_id(enrollment.student_id.clone())
                 .one(&self.query.db)
                 .await?
                 .ok_or_else(|| AppError::not_found("student", &enrollment.student_id))?;
@@ -792,7 +792,7 @@ impl GradeService {
             students.push(StudentGradeRow {
                 enrollment_id: enrollment.id,
                 student_id: student.id,
-                student_name: student.full_name,
+                student_name: student.full_name.unwrap_or_else(|| format!("{} {}", student.first_name, student.last_name)),
                 student_name_ar: student.name_ar,
                 grades: cells,
                 total,

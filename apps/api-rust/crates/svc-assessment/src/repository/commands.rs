@@ -101,7 +101,7 @@ impl AssessmentCommandRepo {
             status: Set(att.status),
             check_in_time: Set(att.check_in_time),
             check_out_time: Set(att.check_out_time),
-            period: Set(att.period),
+            lesson_slot: Set(att.lesson_slot),
             subject_name: Set(att.subject_name),
             recorded_by: Set(att.recorded_by),
             notes: Set(att.notes),
@@ -158,6 +158,7 @@ impl AssessmentCommandRepo {
         // Since we don't have direct check, we can check if it exists or use save/insert
         let active = attendance_summary::ActiveModel {
             id: Set(s.id),
+            org_id: Set(s.org_id),
             enrollment_id: Set(s.enrollment_id),
             period_id: Set(s.period_id),
             total_lessons: Set(s.total_lessons),

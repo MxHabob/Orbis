@@ -8,6 +8,7 @@ pub async fn run_p0_migrations(db: &DatabaseConnection) -> Result<(), DbErr> {
     migrate_academic_policies_branch_overrides(db).await?;
     migrate_process_log_schema(db).await?;
     migrate_grading_architecture(db).await?;
+    migrate_p6_schema_corrections(db).await?;
     Ok(())
 }
 
@@ -271,7 +272,9 @@ async fn migrate_grading_architecture(db: &DatabaseConnection) -> Result<(), DbE
             finalized_by            TEXT,
             created_at              TEXT NOT NULL,
             updated_at              TEXT NOT NULL,
-            FOREIGN KEY (org_id) REFERENCES organizations(id)
+            FOREIGN KEY (org_id) REFERENCES organizations(id),
+            FOREIGN KEY (enrollment_id) REFERENCES enrollments(id),
+            FOREIGN KEY (class_subject_id) REFERENCES class_subjects(id)
         )"#,
     )
     .await?;
@@ -312,7 +315,9 @@ async fn migrate_grading_architecture(db: &DatabaseConnection) -> Result<(), DbE
             finalized_by            TEXT,
             created_at              TEXT NOT NULL,
             updated_at              TEXT NOT NULL,
-            FOREIGN KEY (org_id) REFERENCES organizations(id)
+            FOREIGN KEY (org_id) REFERENCES organizations(id),
+            FOREIGN KEY (enrollment_id) REFERENCES enrollments(id),
+            FOREIGN KEY (class_subject_id) REFERENCES class_subjects(id)
         )"#,
     )
     .await?;
@@ -361,5 +366,391 @@ async fn migrate_grading_architecture(db: &DatabaseConnection) -> Result<(), DbE
     }
 
     info!("P5 migration complete: grading architecture tables created");
+    Ok(())
+}
+
+/// P6: Schema corrections from architecture review.
+///
+/// 1. Add `org_id` to `attendance_summary` (tenant isolation fix).
+/// 2. Rename `attendance.period` → `attendance.lesson_slot` (naming collision fix).
+/// 3. Update enrollment uniqueness index to include `org_id` and exclude 'cancelled'.
+///
+/// All operations are idempotent.
+async fn migrate_p6_schema_corrections(db: &DatabaseConnection) -> Result<(), DbErr> {
+    let backend = db.get_database_backend();
+
+    // ── 1. attendance_summary: add org_id if missing ──
+
+    let has_org_id = db
+        .query_one(Statement::from_string(
+            backend,
+            "SELECT 1 FROM pragma_table_info('attendance_summary') WHERE name = 'org_id'",
+        ))
+        .await?;
+
+    if has_org_id.is_none() {
+        info!("P6: Adding org_id to attendance_summary");
+
+        // SQLite cannot add NOT NULL without default to existing table, so we rebuild.
+        db.execute_unprepared(
+            r#"CREATE TABLE IF NOT EXISTS attendance_summary__p6 (
+                id TEXT PRIMARY KEY,
+                org_id TEXT NOT NULL DEFAULT '',
+                enrollment_id TEXT NOT NULL,
+                period_id TEXT NOT NULL,
+                total_lessons INTEGER,
+                present_lessons INTEGER,
+                absent_lessons INTEGER,
+                late_lessons INTEGER,
+                excused_lessons INTEGER,
+                late_minutes INTEGER,
+                attendance_rate REAL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (org_id) REFERENCES organizations(id),
+                FOREIGN KEY (enrollment_id) REFERENCES enrollments(id)
+            )"#,
+        )
+        .await?;
+
+        // Copy existing data, backfilling org_id from enrollments
+        db.execute_unprepared(
+            r#"INSERT OR IGNORE INTO attendance_summary__p6
+               (id, org_id, enrollment_id, period_id, total_lessons, present_lessons,
+                absent_lessons, late_lessons, excused_lessons, late_minutes,
+                attendance_rate, created_at, updated_at)
+               SELECT s.id,
+                      COALESCE(e.org_id, ''),
+                      s.enrollment_id, s.period_id, s.total_lessons, s.present_lessons,
+                      s.absent_lessons, s.late_lessons, s.excused_lessons, s.late_minutes,
+                      s.attendance_rate, s.created_at, s.updated_at
+               FROM attendance_summary s
+               LEFT JOIN enrollments e ON e.id = s.enrollment_id"#,
+        )
+        .await?;
+
+        db.execute_unprepared("DROP TABLE attendance_summary").await?;
+        db.execute_unprepared("ALTER TABLE attendance_summary__p6 RENAME TO attendance_summary")
+            .await?;
+
+        info!("P6: attendance_summary rebuilt with org_id");
+    }
+
+    // ── 2. attendance: rename `period` → `lesson_slot` if needed ──
+
+    let has_lesson_slot = db
+        .query_one(Statement::from_string(
+            backend,
+            "SELECT 1 FROM pragma_table_info('attendance') WHERE name = 'lesson_slot'",
+        ))
+        .await?;
+
+    if has_lesson_slot.is_none() {
+        info!("P6: Renaming attendance.period → attendance.lesson_slot");
+
+        // SQLite cannot rename columns (pre-3.25), so we rebuild the table.
+        db.execute_unprepared(
+            r#"CREATE TABLE IF NOT EXISTS attendance__p6 (
+                id TEXT PRIMARY KEY,
+                org_id TEXT NOT NULL,
+                period_id TEXT NOT NULL,
+                enrollment_id TEXT NOT NULL,
+                class_id TEXT NOT NULL,
+                date TEXT NOT NULL,
+                status TEXT NOT NULL,
+                check_in_time TEXT,
+                check_out_time TEXT,
+                lesson_slot TEXT,
+                subject_name TEXT,
+                recorded_by TEXT NOT NULL,
+                notes TEXT,
+                excuse_type TEXT,
+                excuse_document TEXT,
+                is_excused INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (enrollment_id) REFERENCES enrollments(id),
+                FOREIGN KEY (org_id) REFERENCES organizations(id),
+                FOREIGN KEY (period_id) REFERENCES academic_periods(id)
+            )"#,
+        )
+        .await?;
+
+        // Copy data, mapping old `period` column to new `lesson_slot`
+        db.execute_unprepared(
+            r#"INSERT OR IGNORE INTO attendance__p6
+               (id, org_id, period_id, enrollment_id, class_id, date, status,
+                check_in_time, check_out_time, lesson_slot, subject_name,
+                recorded_by, notes, excuse_type, excuse_document, is_excused, created_at)
+               SELECT id, org_id, period_id, enrollment_id, class_id, date, status,
+                      check_in_time, check_out_time, period, subject_name,
+                      recorded_by, notes, excuse_type, excuse_document, is_excused, created_at
+               FROM attendance"#,
+        )
+        .await?;
+
+        db.execute_unprepared("DROP TABLE attendance").await?;
+        db.execute_unprepared("ALTER TABLE attendance__p6 RENAME TO attendance").await?;
+
+        // Recreate indexes
+        db.execute_unprepared(
+            "CREATE INDEX IF NOT EXISTS idx_attendance_enr_date ON attendance(enrollment_id, date)",
+        )
+        .await?;
+        db.execute_unprepared(
+            "CREATE INDEX IF NOT EXISTS idx_attendance_class_date ON attendance(class_id, date)",
+        )
+        .await?;
+
+        info!("P6: attendance table rebuilt with lesson_slot");
+    }
+
+    // ── 3. Rename student_assessment_snapshots → period_scores ──
+
+    let has_old_table = db
+        .query_one(Statement::from_string(
+            backend,
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'student_assessment_snapshots'",
+        ))
+        .await?;
+
+    if has_old_table.is_some() {
+        info!("P6: Renaming student_assessment_snapshots → period_scores");
+
+        db.execute_unprepared(
+            "ALTER TABLE student_assessment_snapshots RENAME TO period_scores",
+        )
+        .await?;
+
+        // Drop old indexes and recreate with new names
+        db.execute_unprepared("DROP INDEX IF EXISTS idx_sas_student_period").await?;
+        db.execute_unprepared("DROP INDEX IF EXISTS idx_sas_org_period_status").await?;
+        db.execute_unprepared(
+            "CREATE INDEX IF NOT EXISTS idx_ps_student_period ON period_scores(student_id, period_id)",
+        )
+        .await?;
+        db.execute_unprepared(
+            "CREATE INDEX IF NOT EXISTS idx_ps_org_period_status ON period_scores(org_id, period_id, status)",
+        )
+        .await?;
+
+        info!("P6: period_scores table renamed and indexes recreated");
+    }
+
+    // ── 4. Enrollment uniqueness index: update to include org_id ──
+
+    // Drop old index if it exists (the old one was on (student_id, period_id) only)
+    let old_idx = db
+        .query_one(Statement::from_string(
+            backend,
+            "SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = 'idx_enr_unique_active'",
+        ))
+        .await?;
+
+    if old_idx.is_some() {
+        // Drop and recreate with the correct columns
+        db.execute_unprepared("DROP INDEX IF EXISTS idx_enr_unique_active").await?;
+    }
+
+    db.execute_unprepared(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_enr_unique_active ON enrollments(org_id, student_id, period_id) WHERE status NOT IN ('withdrawn', 'cancelled')",
+    )
+    .await?;
+
+    // ── 5. Expand persons table with identity columns ──
+
+    let persons_columns = [
+        ("org_id", "TEXT"),
+        ("full_name", "TEXT"),
+        ("name_ar", "TEXT"),
+        ("name_en", "TEXT"),
+        ("father_name", "TEXT"),
+        ("grandfather_name", "TEXT"),
+        ("date_of_birth", "TEXT"),
+        ("place_of_birth", "TEXT"),
+        ("nationality", "TEXT"),
+        ("national_id", "TEXT"),
+        ("passport_number", "TEXT"),
+        ("address", "TEXT"),
+        ("city", "TEXT"),
+        ("country", "TEXT"),
+        ("postal_code", "TEXT"),
+        ("phone", "TEXT"),
+        ("emergency_contact", "TEXT"),
+        ("blood_type", "TEXT"),
+        ("allergies", "TEXT"),
+        ("medical_conditions", "TEXT"),
+        ("medical_notes", "TEXT"),
+        ("avatar", "TEXT"),
+        ("bio", "TEXT"),
+        ("social_links", "TEXT"),
+    ];
+
+    for (col, col_type) in &persons_columns {
+        let check = format!(
+            "SELECT 1 FROM pragma_table_info('persons') WHERE name = '{}'",
+            col
+        );
+        let exists = db
+            .query_one(Statement::from_string(backend, check))
+            .await?;
+        if exists.is_none() {
+            let alter = format!("ALTER TABLE persons ADD COLUMN {} {}", col, col_type);
+            db.execute_unprepared(&alter).await?;
+        }
+    }
+
+    // Rename birth_date → date_of_birth if old column exists
+    let has_birth_date = db
+        .query_one(Statement::from_string(
+            backend,
+            "SELECT 1 FROM pragma_table_info('persons') WHERE name = 'birth_date'",
+        ))
+        .await?;
+    if has_birth_date.is_some() {
+        // Copy data from birth_date to date_of_birth then leave birth_date (SQLite can't drop columns)
+        db.execute_unprepared("UPDATE persons SET date_of_birth = birth_date WHERE date_of_birth IS NULL AND birth_date IS NOT NULL")
+            .await?;
+    }
+
+    // ── 6. Data Migration: users → persons ──
+
+    // Check if users table still has the old demographic columns
+    let has_sex_col = db
+        .query_one(Statement::from_string(
+            backend,
+            "SELECT 1 FROM pragma_table_info('users') WHERE name = 'sex'",
+        ))
+        .await?;
+
+    if has_sex_col.is_some() {
+        info!("P6: Migrating demographic data from users to persons");
+
+        // Disable foreign keys temporarily for table rebuilds
+        db.execute_unprepared("PRAGMA foreign_keys = OFF").await?;
+
+        // 6.1 Create persons for existing users (using user id as person id)
+        db.execute_unprepared(
+            r#"INSERT OR IGNORE INTO persons 
+               (id, party_id, org_id, first_name, last_name, full_name, gender, date_of_birth,
+                place_of_birth, nationality, national_id, passport_number, address, city, country,
+                postal_code, phone, emergency_contact, blood_type, allergies, medical_conditions,
+                medical_notes, avatar, bio, social_links, created_at, updated_at)
+               SELECT 
+                 u.id, 
+                 COALESCE(u.party_id, (SELECT id FROM parties LIMIT 1)), -- fallback if missing
+                 u.org_id, 
+                 COALESCE(u.name_en, u.full_name), -- fallback first_name
+                 COALESCE(u.name_ar, u.full_name), -- fallback last_name
+                 u.full_name, u.sex, u.date_of_birth,
+                 u.place_of_birth, u.nationality, u.national_id, u.passport_number, u.address, u.city, u.country,
+                 u.postal_code, u.phone, u.emergency_contact, u.blood_type, u.allergies, u.medical_conditions,
+                 u.medical_notes, u.avatar, u.bio, u.social_links, u.created_at, u.updated_at
+               FROM users u"#
+        ).await?;
+
+        // 6.2 Rebuild users table (auth only)
+        db.execute_unprepared(
+            r#"CREATE TABLE IF NOT EXISTS users__p6 (
+                id TEXT PRIMARY KEY,
+                person_id TEXT NOT NULL,
+                party_id TEXT,
+                org_id TEXT NOT NULL,
+                email TEXT,
+                email_verified INTEGER NOT NULL DEFAULT 0,
+                email_verified_at TEXT,
+                phone TEXT,
+                phone_verified INTEGER NOT NULL DEFAULT 0,
+                phone_verified_at TEXT,
+                password_hash TEXT,
+                password_changed_at TEXT,
+                password_expires_at TEXT,
+                mfa_enabled INTEGER NOT NULL DEFAULT 0,
+                mfa_secret TEXT,
+                mfa_backup_codes TEXT,
+                full_name TEXT NOT NULL,
+                primary_role TEXT NOT NULL DEFAULT 'user',
+                status TEXT NOT NULL DEFAULT 'active',
+                last_login_at TEXT,
+                last_login_ip TEXT,
+                login_count INTEGER,
+                failed_logins INTEGER,
+                locked_until TEXT,
+                prefs TEXT NOT NULL DEFAULT '{}',
+                meta TEXT NOT NULL DEFAULT '{}',
+                is_deleted INTEGER NOT NULL DEFAULT 0,
+                deleted_at TEXT,
+                deleted_by TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                created_by TEXT,
+                FOREIGN KEY (person_id) REFERENCES persons(id),
+                FOREIGN KEY (org_id) REFERENCES organizations(id),
+                FOREIGN KEY (party_id) REFERENCES parties(id)
+            )"#,
+        ).await?;
+
+        db.execute_unprepared(
+            r#"INSERT OR IGNORE INTO users__p6
+               (id, person_id, party_id, org_id, email, email_verified, email_verified_at,
+                phone, phone_verified, phone_verified_at, password_hash, password_changed_at,
+                password_expires_at, mfa_enabled, mfa_secret, mfa_backup_codes, full_name,
+                primary_role, status, last_login_at, last_login_ip, login_count, failed_logins,
+                locked_until, prefs, meta, is_deleted, deleted_at, deleted_by, created_at, updated_at, created_by)
+               SELECT 
+                id, id as person_id, party_id, org_id, email, email_verified, email_verified_at,
+                phone, phone_verified, phone_verified_at, password_hash, password_changed_at,
+                password_expires_at, mfa_enabled, mfa_secret, mfa_backup_codes, full_name,
+                primary_role, status, last_login_at, last_login_ip, login_count, failed_logins,
+                locked_until, prefs, meta, is_deleted, deleted_at, deleted_by, created_at, updated_at, created_by
+               FROM users"#
+        ).await?;
+
+        db.execute_unprepared("DROP TABLE users").await?;
+        db.execute_unprepared("ALTER TABLE users__p6 RENAME TO users").await?;
+        info!("P6: users table rebuilt to auth-only structure");
+
+        // 6.3 Rebuild enrollments to point FK to persons instead of users
+        db.execute_unprepared(
+            r#"CREATE TABLE IF NOT EXISTS enrollments__p6 (
+                id TEXT PRIMARY KEY,
+                org_id TEXT NOT NULL,
+                period_id TEXT NOT NULL,
+                student_id TEXT NOT NULL,
+                class_id TEXT NOT NULL,
+                student_number TEXT UNIQUE,
+                status TEXT NOT NULL DEFAULT 'active'
+                    CHECK (status IN ('active','transferred','withdrawn','graduated','suspended')),
+                enrollment_date TEXT NOT NULL,
+                enrollment_type TEXT NOT NULL DEFAULT 'regular',
+                withdrawal_date TEXT,
+                withdrawal_reason TEXT,
+                meta TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (period_id) REFERENCES academic_periods(id),
+                FOREIGN KEY (student_id) REFERENCES persons(id),
+                FOREIGN KEY (class_id) REFERENCES classes(id),
+                FOREIGN KEY (org_id) REFERENCES organizations(id)
+            )"#,
+        ).await?;
+
+        db.execute_unprepared("INSERT OR IGNORE INTO enrollments__p6 SELECT * FROM enrollments").await?;
+        db.execute_unprepared("DROP TABLE enrollments").await?;
+        db.execute_unprepared("ALTER TABLE enrollments__p6 RENAME TO enrollments").await?;
+
+        // Recreate enrollments indexes
+        db.execute_unprepared("CREATE INDEX IF NOT EXISTS idx_enr_org_period ON enrollments(org_id, period_id)").await?;
+        db.execute_unprepared("CREATE INDEX IF NOT EXISTS idx_enr_student ON enrollments(student_id)").await?;
+        db.execute_unprepared("CREATE INDEX IF NOT EXISTS idx_enr_class ON enrollments(class_id)").await?;
+        db.execute_unprepared(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_enr_unique_active ON enrollments(org_id, student_id, period_id) WHERE status NOT IN ('withdrawn', 'cancelled')",
+        ).await?;
+        db.execute_unprepared("CREATE INDEX IF NOT EXISTS idx_enrollment_org_period_class ON enrollments(org_id, period_id, class_id)").await?;
+
+        // Turn foreign keys back on
+        db.execute_unprepared("PRAGMA foreign_keys = ON").await?;
+    }
+
+    info!("P6 migration complete: schema corrections applied");
     Ok(())
 }

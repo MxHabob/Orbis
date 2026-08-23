@@ -412,8 +412,8 @@ impl PromotionService {
             SELECT
                 e.id AS enrollment_id,
                 e.student_id,
-                u.full_name AS student_name,
-                u.name_ar AS student_name_ar,
+                p.full_name AS student_name,
+                p.name_ar AS student_name_ar,
                 e.student_number,
                 e.class_id,
                 c.name AS class_name,
@@ -428,13 +428,13 @@ impl PromotionService {
                     100.0
                 ) AS attendance_rate
             FROM enrollments e
-            JOIN users u ON u.id = e.student_id
+            JOIN persons p ON p.id = e.student_id
             JOIN classes c ON c.id = e.class_id
             WHERE e.org_id = ?1
               AND e.period_id = ?2
               AND e.status = 'active'
               AND e.is_deleted = 0
-            ORDER BY c.level, c.name, u.full_name
+            ORDER BY c.level, c.name, p.full_name
         "#;
 
         let results = db.query_all(

@@ -62,7 +62,7 @@ impl ExamQueryRepo {
 
         let mut rows = Vec::with_capacity(list.len());
         for enr in &list {
-            let student = user::Entity::find_by_id(enr.student_id.clone())
+            let student = svc_iam::entities::person::Entity::find_by_id(enr.student_id.clone())
                 .one(&self.db)
                 .await?;
             let cls = class::Entity::find_by_id(enr.class_id.clone())
@@ -77,7 +77,7 @@ impl ExamQueryRepo {
                     level: c.level.clone(),
                     division: c.division.clone(),
                     student_name_ar: s.name_ar.clone(),
-                    student_sex: s.sex.clone(),
+                    student_sex: s.gender.clone(),
                     academic_number: Some(enr.student_number.clone()),
                 });
             }

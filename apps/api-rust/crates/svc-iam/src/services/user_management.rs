@@ -9,6 +9,7 @@ use chrono::Utc;
 use shared_kernel::errors::AppError;
 use crate::entities::user;
 use crate::repository::{IamCommandRepo, IamQueryRepo};
+use sea_orm::ActiveModelTrait;
 
 /// User management service.
 pub struct UserService {
@@ -55,8 +56,40 @@ impl UserService {
         }
 
         let now = Utc::now().to_rfc3339();
+        // ── 1. Identity Provisioning ──────────────────────────────────
+        // For internal user creation: provision a core identity profile first
+        let person_id = Uuid::new_v4().to_string();
+        
+        let name_parts: Vec<&str> = full_name.split_whitespace().collect();
+        let first_name = name_parts.first().unwrap_or(&"").to_string();
+        let last_name = if name_parts.len() > 1 {
+            name_parts[1..].join(" ")
+        } else {
+            first_name.clone()
+        };
+
+        let person_model = crate::entities::person::Model {
+            id: person_id.clone(),
+            party_id: "".to_string(), // Managed by party/organization domain
+            org_id: Some(org_id.to_string()),
+            first_name,
+            last_name,
+            full_name: Some(full_name.to_string()),
+            name_ar: None, name_en: None, father_name: None, grandfather_name: None,
+            gender: None, date_of_birth: None, place_of_birth: None,
+            nationality: None, national_id: None, passport_number: None,
+            address: None, city: None, country: None, postal_code: None,
+            phone: None, emergency_contact: None,
+            blood_type: None, allergies: None, medical_conditions: None,
+            medical_notes: None, avatar: None, bio: None, social_links: None,
+            created_at: now.clone(), updated_at: now.clone(),
+        };
+        let person_active: crate::entities::person::ActiveModel = person_model.into();
+        person_active.insert(&self.cmd.db).await?;
+
         let new_user = user::Model {
             id: Uuid::new_v4().to_string(),
+            person_id,
             party_id: None,
             org_id: org_id.to_string(),
             email: email.map(String::from),
@@ -72,26 +105,6 @@ impl UserService {
             mfa_secret: None,
             mfa_backup_codes: None,
             full_name: full_name.to_string(),
-            name_ar: None,
-            name_en: None,
-            avatar: None,
-            sex: None,
-            date_of_birth: None,
-            place_of_birth: None,
-            nationality: None,
-            national_id: None,
-            passport_number: None,
-            address: None,
-            city: None,
-            country: None,
-            postal_code: None,
-            emergency_contact: None,
-            blood_type: None,
-            allergies: None,
-            medical_conditions: None,
-            medical_notes: None,
-            social_links: None,
-            bio: None,
             primary_role: role.to_string(),
             status: "active".to_string(),
             last_login_at: None,

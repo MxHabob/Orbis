@@ -299,16 +299,16 @@ pub async fn check_duplicate(
 ) -> Result<Option<enrollment::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::EnrollmentRead).await?;
 
-    let mut user_ids = Vec::new();
+    let mut person_ids = Vec::new();
 
     if let Some(nid) = national_id {
         if !nid.is_empty() {
-            let u = svc_iam::entities::user::Entity::find()
-                .filter(svc_iam::entities::user::Column::NationalId.eq(nid))
+            let p = svc_iam::entities::person::Entity::find()
+                .filter(svc_iam::entities::person::Column::NationalId.eq(nid))
                 .one(&ctx.db)
                 .await?;
-            if let Some(user) = u {
-                user_ids.push(user.id);
+            if let Some(person) = p {
+                person_ids.push(person.id);
             }
         }
     }
@@ -319,29 +319,29 @@ pub async fn check_duplicate(
                 .one(&ctx.db)
                 .await?;
             if let Some(user) = u {
-                user_ids.push(user.id);
+                person_ids.push(user.person_id);
             }
         }
     }
     if let Some(ph) = phone {
         if !ph.is_empty() {
-            let u = svc_iam::entities::user::Entity::find()
-                .filter(svc_iam::entities::user::Column::Phone.eq(ph))
+            let p = svc_iam::entities::person::Entity::find()
+                .filter(svc_iam::entities::person::Column::Phone.eq(ph))
                 .one(&ctx.db)
                 .await?;
-            if let Some(user) = u {
-                user_ids.push(user.id);
+            if let Some(person) = p {
+                person_ids.push(person.id);
             }
         }
     }
 
-    if user_ids.is_empty() {
+    if person_ids.is_empty() {
         return Ok(None);
     }
 
     Ok(enrollment::Entity::find()
         .filter(enrollment::Column::OrgId.eq(&ctx.org_id))
-        .filter(enrollment::Column::StudentId.is_in(user_ids))
+        .filter(enrollment::Column::StudentId.is_in(person_ids))
         .filter(enrollment::Column::Status.ne("withdrawn"))
         .one(&ctx.db)
         .await?)

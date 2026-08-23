@@ -28,7 +28,7 @@ impl AutopilotSubscriber {
                         let trigger_tick = match event.event_type.as_str() {
                             "period.locked" | "period.closed" | "period.activated" => true,
                             "enrollment.created" | "enrollment.updated" | "enrollment.deleted" => true,
-                            "assessment.snapshot_created" => true,
+                            "assessment.period_score_calculated" => true,
                             _ => false,
                         };
 

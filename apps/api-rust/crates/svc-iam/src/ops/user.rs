@@ -88,9 +88,9 @@ pub async fn get(ctx: &ServiceContext, user_id: &str) -> Result<user::Model, App
         .one(&ctx.db).await?
         .ok_or_else(|| AppError::not_found("user", user_id))
 }
-
 pub async fn search(
-    ctx: &ServiceContext, query_str: &str,
+    ctx: &ServiceContext,
+    query_str: &str,
 ) -> Result<Vec<user::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::UserRead).await?;
 
@@ -103,15 +103,14 @@ pub async fn search(
                 .add(user::Column::FullName.contains(&pattern))
                 .add(user::Column::Email.contains(&pattern))
                 .add(user::Column::Phone.contains(&pattern))
-                .add(user::Column::NationalId.contains(&pattern))
         )
         .all(&ctx.db).await?)
 }
 
 #[derive(serde::Deserialize)]
 pub struct CreateUserPayload {
+    pub person_id: Option<String>,
     pub full_name: String,
-    pub name_ar: Option<String>,
     pub email: Option<String>,
     pub phone: Option<String>,
     pub primary_role: String,
@@ -130,19 +129,53 @@ pub async fn create(
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
 
+    // ── 1. Identity Resolution ─────────────────────────────────────
+    // If a person_id is not provided, provision a new core identity profile.
+    let person_id = match req.person_id {
+        Some(pid) => pid,
+        None => {
+            let new_person_id = Uuid::new_v4().to_string();
+            
+            // Split full_name into first and last name for the identity profile
+            let name_parts: Vec<&str> = req.full_name.split_whitespace().collect();
+            let first_name = name_parts.first().unwrap_or(&"").to_string();
+            let last_name = if name_parts.len() > 1 {
+                name_parts[1..].join(" ")
+            } else {
+                first_name.clone()
+            };
+
+            let person_model = crate::entities::person::Model {
+                id: new_person_id.clone(),
+                party_id: "".to_string(),
+                org_id: Some(ctx.org_id.clone()),
+                first_name,
+                last_name,
+                full_name: Some(req.full_name.clone()),
+                name_ar: None,
+                name_en: None, father_name: None, grandfather_name: None,
+                gender: None, date_of_birth: None, place_of_birth: None,
+                nationality: None, national_id: None, passport_number: None,
+                address: None, city: None, country: None, postal_code: None,
+                phone: req.phone.clone(), emergency_contact: None,
+                blood_type: None, allergies: None, medical_conditions: None,
+                medical_notes: None, avatar: None, bio: None, social_links: None,
+                created_at: now.clone(), updated_at: now.clone(),
+            };
+            
+            let person_active: crate::entities::person::ActiveModel = person_model.into();
+            person_active.insert(&ctx.db).await?;
+            
+            new_person_id
+        }
+    };
     let model = user::Model {
-        id: id.clone(), party_id: None, org_id: ctx.org_id.clone(),
+        id: id.clone(), person_id, party_id: None, org_id: ctx.org_id.clone(),
         email: req.email, email_verified: 0, email_verified_at: None,
         phone: req.phone, phone_verified: 0, phone_verified_at: None,
         password_hash: req.password_hash, password_changed_at: None, password_expires_at: None,
         mfa_enabled: 0, mfa_secret: None, mfa_backup_codes: None,
-        full_name: req.full_name, name_ar: req.name_ar, name_en: None, avatar: None,
-        sex: None, date_of_birth: None, place_of_birth: None,
-        nationality: None, national_id: None, passport_number: None,
-        address: None, city: None, country: None, postal_code: None,
-        emergency_contact: None, blood_type: None, allergies: None,
-        medical_conditions: None, medical_notes: None,
-        social_links: None, bio: None,
+        full_name: req.full_name,
         primary_role: req.primary_role, status: "active".into(),
         last_login_at: None, last_login_ip: None,
         login_count: Some(0), failed_logins: Some(0), locked_until: None,
@@ -195,7 +228,6 @@ pub async fn create(
 #[derive(serde::Deserialize)]
 pub struct UpdateUserPayload {
     pub full_name: Option<String>,
-    pub name_ar: Option<String>,
     pub email: Option<String>,
     pub phone: Option<String>,
     pub status: Option<String>,
@@ -213,14 +245,31 @@ pub async fn update(
 
     let existing = get(ctx, user_id).await?;
     let old_data = serde_json::to_value(&existing).ok();
+    
+    // Save person_id before moving existing
+    let person_id = existing.person_id.clone();
+    
     let mut active: user::ActiveModel = existing.into();
 
-    if let Some(n) = req.full_name { active.full_name = Set(n); }
-    if let Some(na) = req.name_ar { active.name_ar = Set(Some(na)); }
+    if let Some(n) = &req.full_name { active.full_name = Set(n.clone()); }
     if let Some(e) = req.email { active.email = Set(Some(e)); }
     if let Some(p) = req.phone { active.phone = Set(Some(p)); }
     if let Some(s) = req.status { active.status = Set(s); }
     active.updated_at = Set(Utc::now().to_rfc3339());
+
+    // Also update the associated person
+    if let Some(person_model) = crate::entities::person::Entity::find_by_id(&person_id)
+        .one(&ctx.db).await? 
+    {
+        let mut person_active: crate::entities::person::ActiveModel = person_model.into();
+        if let Some(n) = &req.full_name {
+            person_active.full_name = Set(Some(n.clone()));
+            person_active.first_name = Set(n.clone());
+            person_active.last_name = Set(n.clone());
+        }
+        person_active.updated_at = Set(Utc::now().to_rfc3339());
+        person_active.update(&ctx.db).await?;
+    }
 
     let updated = active.update(&ctx.db).await?;
 

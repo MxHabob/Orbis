@@ -70,12 +70,45 @@ pub async fn bootstrap_full(
         ]
     )).await.map_err(|e| AppError::internal(format!("Failed to create organization: {e}")))?;
 
+    // ── 1.5 Admin Party & Person ───────────────────────────────
+    let party_id = Uuid::new_v4().to_string();
+    db.execute(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "INSERT INTO parties (id, party_type, created_at, updated_at) VALUES ($1, 'person', $2, $3)",
+        vec![
+            party_id.clone().into(),
+            now.clone().into(),
+            now.clone().into(),
+        ]
+    )).await.map_err(|e| AppError::internal(format!("Failed to create admin party: {e}")))?;
+
+    let person_id = Uuid::new_v4().to_string();
+    let name_parts: Vec<&str> = payload.admin_name.split_whitespace().collect();
+    let first_name = name_parts.first().unwrap_or(&"").to_string();
+    let last_name = if name_parts.len() > 1 { name_parts[1..].join(" ") } else { first_name.clone() };
+
+    db.execute(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "INSERT INTO persons (id, party_id, org_id, first_name, last_name, full_name, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+        vec![
+            person_id.clone().into(),
+            party_id.clone().into(),
+            org_id.clone().into(),
+            first_name.into(),
+            last_name.into(),
+            payload.admin_name.clone().into(),
+            now.clone().into(),
+            now.clone().into(),
+        ]
+    )).await.map_err(|e| AppError::internal(format!("Failed to create admin person: {e}")))?;
+
     // ── 2. Admin User ──────────────────────────────────────────
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO users (id, org_id, email, full_name, password_hash, status, primary_role, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, 'active', 'super_admin', $6, $7)",
+        "INSERT INTO users (id, person_id, org_id, email, full_name, password_hash, status, primary_role, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, 'active', 'super_admin', $7, $8)",
         vec![
             admin_id.clone().into(),
+            person_id.clone().into(),
             org_id.clone().into(),
             payload.admin_username.clone().into(),
             payload.admin_name.clone().into(),

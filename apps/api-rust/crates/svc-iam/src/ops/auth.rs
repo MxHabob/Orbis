@@ -191,7 +191,6 @@ pub async fn list_sessions(
 pub struct RegisterPayload {
     pub org_id: Option<String>,
     pub full_name: String,
-    pub name_ar: Option<String>,
     pub email: Option<String>,
     pub phone: Option<String>,
     pub primary_role: String,
@@ -227,8 +226,41 @@ pub async fn register(
     let id = Uuid::new_v4().to_string();
     let org_id = req.org_id.unwrap_or_else(|| "default".to_string());
 
+    // ── 1. Identity Provisioning ──────────────────────────────────
+    // Self-registration provisions a new core identity profile first.
+    let person_id = Uuid::new_v4().to_string();
+    
+    let name_parts: Vec<&str> = req.full_name.split_whitespace().collect();
+    let first_name = name_parts.first().unwrap_or(&"").to_string();
+    let last_name = if name_parts.len() > 1 {
+        name_parts[1..].join(" ")
+    } else {
+        first_name.clone()
+    };
+
+    let person_model = crate::entities::person::Model {
+        id: person_id.clone(),
+        party_id: "".to_string(), // Managed by party/organization domain
+        org_id: Some(org_id.clone()),
+        first_name,
+        last_name,
+        full_name: Some(req.full_name.clone()),
+        name_ar: None,
+        name_en: None, father_name: None, grandfather_name: None,
+        gender: None, date_of_birth: None, place_of_birth: None,
+        nationality: None, national_id: None, passport_number: None,
+        address: None, city: None, country: None, postal_code: None,
+        phone: req.phone.clone(), emergency_contact: None,
+        blood_type: None, allergies: None, medical_conditions: None,
+        medical_notes: None, avatar: None, bio: None, social_links: None,
+        created_at: now.clone(), updated_at: now.clone(),
+    };
+    let person_active: crate::entities::person::ActiveModel = person_model.into();
+    person_active.insert(db).await?;
+
     let model = user::Model {
         id: id.clone(),
+        person_id,
         party_id: None,
         org_id,
         email: req.email,
@@ -244,26 +276,6 @@ pub async fn register(
         mfa_secret: None,
         mfa_backup_codes: None,
         full_name: req.full_name,
-        name_ar: req.name_ar,
-        name_en: None,
-        avatar: None,
-        sex: None,
-        date_of_birth: None,
-        place_of_birth: None,
-        nationality: None,
-        national_id: None,
-        passport_number: None,
-        address: None,
-        city: None,
-        country: None,
-        postal_code: None,
-        emergency_contact: None,
-        blood_type: None,
-        allergies: None,
-        medical_conditions: None,
-        medical_notes: None,
-        social_links: None,
-        bio: None,
         primary_role: req.primary_role,
         status: "active".into(),
         last_login_at: None,

@@ -107,7 +107,7 @@ pub async fn register_student(
     }
     process.complete_step(&ctx.db, "validate", serde_json::json!({"fields_checked": settings.required_fields.len()})).await?;
 
-    // ── Step 2: Check Duplicates ─────────────────────────────────
+    // ── Step 2: Check for duplicates ─────────────────────────────
     process.begin_step(&ctx.db, "check_duplicates").await?;
     if let Some(ref email) = req.email {
         if !email.trim().is_empty() {
@@ -125,9 +125,9 @@ pub async fn register_student(
     }
     if let Some(ref nid) = req.national_id {
         if !nid.trim().is_empty() {
-            let exists = user::Entity::find()
-                .filter(user::Column::OrgId.eq(&ctx.org_id))
-                .filter(user::Column::NationalId.eq(nid))
+            let exists = svc_iam::entities::person::Entity::find()
+                .filter(svc_iam::entities::person::Column::OrgId.eq(&ctx.org_id))
+                .filter(svc_iam::entities::person::Column::NationalId.eq(nid))
                 .one(&tx)
                 .await?
                 .is_some();
@@ -139,27 +139,46 @@ pub async fn register_student(
     }
     process.complete_step(&ctx.db, "check_duplicates", serde_json::json!({"passed": true})).await?;
 
-    // ── Step 3: Create Student User ──────────────────────────────
+    // ── Step 3: Create Student Person and User ──────────────────────────────
     process.begin_step(&ctx.db, "create_user").await?;
+    let student_person_id = uuid::Uuid::new_v4().to_string();
     let student_user_id = uuid::Uuid::new_v4().to_string();
     let now = chrono::Utc::now().to_rfc3339();
+    
+    // Create Person
+    let new_person = svc_iam::entities::person::ActiveModel {
+        id: sea_orm::ActiveValue::Set(student_person_id.clone()),
+        party_id: sea_orm::ActiveValue::Set("".to_string()),
+        org_id: sea_orm::ActiveValue::Set(Some(ctx.org_id.clone())),
+        first_name: sea_orm::ActiveValue::Set(req.name.clone()),
+        last_name: sea_orm::ActiveValue::Set(req.name.clone()),
+        full_name: sea_orm::ActiveValue::Set(Some(req.name.clone())),
+        name_ar: sea_orm::ActiveValue::Set(Some(req.name.clone())),
+        gender: sea_orm::ActiveValue::Set(req.gender.clone()),
+        date_of_birth: sea_orm::ActiveValue::Set(req.birth_date.clone()),
+        nationality: sea_orm::ActiveValue::Set(req.nationality.clone()),
+        national_id: sea_orm::ActiveValue::Set(req.national_id.clone()),
+        address: sea_orm::ActiveValue::Set(req.address.clone()),
+        phone: sea_orm::ActiveValue::Set(req.phone.clone()),
+        created_at: sea_orm::ActiveValue::Set(now.clone()),
+        updated_at: sea_orm::ActiveValue::Set(now.clone()),
+        ..Default::default()
+    };
+    new_person.insert(&tx).await?;
+
     let cost = if cfg!(debug_assertions) { 4 } else { 10 };
     let password_hash = bcrypt::hash(req.password.as_deref().unwrap_or("123456"), cost)
         .map_err(|e| AppError::internal(format!("Bcrypt hashing failed: {}", e)))?;
 
+    // Create User (Auth only)
     let new_user = user::ActiveModel {
         id: sea_orm::ActiveValue::Set(student_user_id.clone()),
+        person_id: sea_orm::ActiveValue::Set(student_person_id.clone()),
         org_id: sea_orm::ActiveValue::Set(ctx.org_id.clone()),
         email: sea_orm::ActiveValue::Set(req.email.clone()),
         phone: sea_orm::ActiveValue::Set(req.phone.clone()),
         password_hash: sea_orm::ActiveValue::Set(Some(password_hash)),
         full_name: sea_orm::ActiveValue::Set(req.name.clone()),
-        name_ar: sea_orm::ActiveValue::Set(Some(req.name.clone())),
-        sex: sea_orm::ActiveValue::Set(req.gender.clone()),
-        date_of_birth: sea_orm::ActiveValue::Set(req.birth_date.clone()),
-        nationality: sea_orm::ActiveValue::Set(req.nationality.clone()),
-        national_id: sea_orm::ActiveValue::Set(req.national_id.clone()),
-        address: sea_orm::ActiveValue::Set(req.address.clone()),
         primary_role: sea_orm::ActiveValue::Set("student".to_string()),
         status: sea_orm::ActiveValue::Set("active".to_string()),
         created_at: sea_orm::ActiveValue::Set(now.clone()),
@@ -237,13 +256,30 @@ pub async fn register_student(
         if !g_name.trim().is_empty() && !g_phone.trim().is_empty() {
             let guardian_id = uuid::Uuid::new_v4().to_string();
 
-            // Create guardian user
+            // Create guardian person
+            let guardian_person_id = uuid::Uuid::new_v4().to_string();
+            let g_person = svc_iam::entities::person::ActiveModel {
+                id: sea_orm::ActiveValue::Set(guardian_person_id.clone()),
+                party_id: sea_orm::ActiveValue::Set("".to_string()),
+                org_id: sea_orm::ActiveValue::Set(Some(ctx.org_id.clone())),
+                first_name: sea_orm::ActiveValue::Set(g_name.clone()),
+                last_name: sea_orm::ActiveValue::Set(g_name.clone()),
+                full_name: sea_orm::ActiveValue::Set(Some(g_name.clone())),
+                name_ar: sea_orm::ActiveValue::Set(Some(g_name.clone())),
+                phone: sea_orm::ActiveValue::Set(Some(g_phone.clone())),
+                created_at: sea_orm::ActiveValue::Set(now.clone()),
+                updated_at: sea_orm::ActiveValue::Set(now.clone()),
+                ..Default::default()
+            };
+            g_person.insert(&tx).await?;
+
+            // Create guardian user (Auth only)
             let g_user = user::ActiveModel {
                 id: sea_orm::ActiveValue::Set(guardian_id.clone()),
+                person_id: sea_orm::ActiveValue::Set(guardian_person_id.clone()),
                 org_id: sea_orm::ActiveValue::Set(ctx.org_id.clone()),
                 phone: sea_orm::ActiveValue::Set(Some(g_phone.clone())),
                 full_name: sea_orm::ActiveValue::Set(g_name.clone()),
-                name_ar: sea_orm::ActiveValue::Set(Some(g_name.clone())),
                 primary_role: sea_orm::ActiveValue::Set("guardian".to_string()),
                 status: sea_orm::ActiveValue::Set("active".to_string()),
                 created_at: sea_orm::ActiveValue::Set(now.clone()),

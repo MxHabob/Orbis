@@ -15,7 +15,7 @@ pub struct Model {
     pub status: String,
     pub check_in_time: Option<String>,
     pub check_out_time: Option<String>,
-    pub period: Option<String>,
+    pub lesson_slot: Option<String>,
     pub subject_name: Option<String>,
     pub recorded_by: String,
     pub notes: Option<String>,

@@ -89,11 +89,11 @@ impl DataSource for EnrollmentDataSource {
             });
         }
 
-        // 4. Fetch latest assessment snapshot for dynamic grade data
+        // 4. Fetch latest period score for dynamic grade data
         //    (replaces hardcoded enrollment.final_grade / final_score / final_rank)
         let snapshot_stmt = sea_orm::Statement::from_sql_and_values(
             db.get_database_backend(),
-            "SELECT grade_label, total_score, gpa_points, rank_in_class, is_passing FROM student_assessment_snapshots WHERE student_id = $1 ORDER BY updated_at DESC LIMIT 1",
+            "SELECT grade_label, total_score, gpa_points, rank_in_class, is_passing FROM period_scores WHERE student_id = $1 ORDER BY updated_at DESC LIMIT 1",
             vec![student_id.clone().into()],
         );
         let snap_opt = db.query_one(snapshot_stmt).await.ok().flatten();
@@ -342,7 +342,7 @@ impl DataSourceRegistry {
         sources.insert("payment".to_string(), Arc::new(PaymentDataSource) as Arc<dyn DataSource>);
         sources.insert("exam".to_string(), Arc::new(ExamDataSource) as Arc<dyn DataSource>);
         sources.insert("user".to_string(), Arc::new(UserDataSource) as Arc<dyn DataSource>);
-        sources.insert("assessment_snapshot".to_string(), Arc::new(AssessmentSnapshotDataSource) as Arc<dyn DataSource>);
+        sources.insert("period_score".to_string(), Arc::new(PeriodScoreDataSource) as Arc<dyn DataSource>);
         sources.insert("report_card".to_string(), Arc::new(ReportCardDataSource) as Arc<dyn DataSource>);
         sources.insert("term_certificate".to_string(), Arc::new(TermCertificateDataSource) as Arc<dyn DataSource>);
         sources.insert("annual_certificate".to_string(), Arc::new(AnnualCertificateDataSource) as Arc<dyn DataSource>);
@@ -407,23 +407,23 @@ impl DataSource for ProjectionDataSource {
     }
 }
 
-// ── Assessment Snapshot DataSource ─────────────────────────────
+// ── Period Score DataSource ────────────────────────────────────
 //
-// Reads from `student_assessment_snapshots` for a single class_subject.
+// Reads from `period_scores` for a single class_subject.
 // Used in certificates and transcripts that show per-subject results.
 
-pub struct AssessmentSnapshotDataSource;
+pub struct PeriodScoreDataSource;
 
 #[async_trait]
-impl DataSource for AssessmentSnapshotDataSource {
+impl DataSource for PeriodScoreDataSource {
     fn entity_type(&self) -> &str {
-        "assessment_snapshot"
+        "period_score"
     }
 
     async fn resolve(&self, db: &DatabaseConnection, entity_id: &str) -> Result<Value, String> {
-        let stmt = select_by_id(db, "student_assessment_snapshots", entity_id);
+        let stmt = select_by_id(db, "period_scores", entity_id);
         let opt = db.query_one(stmt).await.map_err(|e| e.to_string())?;
-        let snap = opt.ok_or_else(|| format!("Assessment snapshot not found: {}", entity_id))?;
+        let snap = opt.ok_or_else(|| format!("Period score not found: {}", entity_id))?;
 
         let student_id: String = snap.try_get("", "student_id").map_err(|e| e.to_string())?;
         let period_id: String = snap.try_get("", "period_id").map_err(|e| e.to_string())?;
@@ -545,10 +545,10 @@ impl DataSource for ReportCardDataSource {
             .and_then(|p| p.try_get::<String>("", "name").ok())
             .unwrap_or_default();
 
-        // Fetch all snapshots for this student in this period
+        // Fetch all period scores for this student in this period
         let snapshots_stmt = sea_orm::Statement::from_sql_and_values(
             db.get_database_backend(),
-            "SELECT * FROM student_assessment_snapshots WHERE student_id = $1 AND period_id = $2 ORDER BY class_subject_id",
+            "SELECT * FROM period_scores WHERE student_id = $1 AND period_id = $2 ORDER BY class_subject_id",
             vec![student_id.clone().into(), period_id.into()],
         );
         let snapshot_rows = db.query_all(snapshots_stmt).await.map_err(|e| e.to_string())?;

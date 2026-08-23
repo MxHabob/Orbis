@@ -197,7 +197,7 @@ pub fn evaluate_node_tree(node: &TemplateNode, context: &Value) -> Vec<Evaluated
             vec![EvaluatedNode::Table(EvaluatedTable {
                 id: n.id.clone(),
                 name: n.name.clone(),
-                props: n.props.clone(),
+                props: serde_json::to_value(&n.props).unwrap_or(serde_json::Value::Null),
             })]
         }
         TemplateNode::Barcode(n) => {

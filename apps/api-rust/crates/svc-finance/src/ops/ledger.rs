@@ -270,8 +270,12 @@ pub async fn get_or_create_sub_account(
             .one(&ctx.db)
             .await?
             .ok_or_else(|| AppError::not_found("user", entity_id))?;
+        let person = svc_iam::entities::person::Entity::find_by_id(usr.person_id.clone())
+            .one(&ctx.db)
+            .await?
+            .ok_or_else(|| AppError::not_found("person", &usr.person_id))?;
 
-        let ar_name = usr.name_ar.clone().or_else(|| Some(usr.full_name.clone()));
+        let ar_name = person.name_ar.clone().or_else(|| Some(usr.full_name.clone()));
         (
             format!("{} - {}", parent.name, usr.full_name),
             ar_name.map(|ar| format!("{} - {}", parent.name_ar.as_deref().unwrap_or(&parent.name), ar))
