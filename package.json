@@ -10,7 +10,7 @@
   "catalog": {
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.2",
     "date-fns": "^4.1.0"
   },
   "scripts": {
@@ -43,7 +43,7 @@
     "@manypkg/cli": "^0.25.1",
     "@orbis/tsconfig": "workspace:*",
     "turbo": "^2.10.7",
-    "typescript": "^5.9.3"
+    "typescript": "^7.0.2"
   },
   "overrides": {
     "tailwindcss": "4.3.1",
