@@ -48,7 +48,7 @@ import type { AcademicOverrideRequest, ApprovalAction } from "@orbis/sdk-core";
 
 let { data }: { data: { orgId: string } } = $props();
 const orgId = $derived(data?.orgId ?? "");
-const userRole = $derived(authStore.user?.role ?? "viewer");
+const userRole = $derived(authStore.user?.primary_role ?? "viewer");
 const userId = $derived(authStore.userId);
 
 // TanStack Queries

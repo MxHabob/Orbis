@@ -45,7 +45,7 @@ let manualHat = $state<AvatarHat | null>(null);
 const userHat = $derived.by<AvatarHat>(() => {
   if (manualHat !== null) return manualHat;
   const rawRole =
-    authStore.user?.role || authStore.user?.primary_role || "viewer";
+    authStore.user?.primary_role || "viewer";
   const role = String(rawRole).toLowerCase();
   if (role === "admin" || role === "super_admin") return "crown";
   if (role === "teacher") return "graduation";

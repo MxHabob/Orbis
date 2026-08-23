@@ -21,7 +21,7 @@ let { orgId }: { orgId: string } = $props();
 const ACTIONS = $derived.by(() => {
   const phase = academicContext.periodPhase;
   const ro = academicContext.isReadOnly;
-  const role = authStore.user?.role ?? "viewer";
+  const role = authStore.user?.primary_role ?? "viewer";
   const isAdmin = ["admin", "super_admin", "principal"].includes(role);
 
   const actions: Array<{

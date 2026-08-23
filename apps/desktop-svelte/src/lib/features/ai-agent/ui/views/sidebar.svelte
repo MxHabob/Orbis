@@ -84,7 +84,7 @@ const currentSession = $derived(
 );
 
 const userHat = $derived.by(() => {
-  const role = authStore.user?.role || authStore.user?.primary_role || "viewer";
+  const role = authStore.user?.primary_role || "viewer";
   const roleLower = String(role).toLowerCase();
   if (roleLower === "admin" || roleLower === "super_admin") return "crown";
   if (roleLower === "teacher") return "graduation";

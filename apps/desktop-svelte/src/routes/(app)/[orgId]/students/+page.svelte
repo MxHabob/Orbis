@@ -58,7 +58,7 @@ const canCreateStudent = $derived(
 const canRequestLateEnrollment = $derived(
   !academicContext.isReadOnly &&
     !academicContext.canEnroll &&
-    ["admin", "registrar", "super_admin"].includes(authStore.user?.role ?? ""),
+    ["admin", "registrar", "super_admin"].includes(authStore.user?.primary_role ?? ""),
 );
 let showOverrideDialog = $state(false);
 const isLoading = $derived(

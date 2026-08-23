@@ -28,17 +28,17 @@ async function loadData() {
   isLoading = true;
   try {
     const classId = selectedClass !== "all" ? selectedClass : "";
-    const cycleId =
+    const periodId =
       selectedTerm !== "all"
         ? selectedTerm
         : academicContext.effectivePeriodId || "";
 
-    if (!classId || !cycleId) {
+    if (!classId || !periodId) {
       stats = null;
       return;
     }
 
-    const res = await commands.assessment.getGradeAnalytics(classId, cycleId);
+    const res = await commands.assessment.getGradeAnalytics(classId, periodId);
     if (
       res &&
       (res as any).grade_distribution &&
