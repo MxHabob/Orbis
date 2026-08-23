@@ -296,12 +296,22 @@ pub async fn apply_pass_fail_for_student(
 ) -> Result<bool, AppError> {
     use crate::entities::pass_fail_policy;
 
-    // Try to load period-specific pass/fail policy
-    let policy = pass_fail_policy::Entity::find()
+    // Try to load period-specific pass/fail policy, falling back to org-wide policy (period_id IS NULL)
+    let policy = match pass_fail_policy::Entity::find()
         .filter(pass_fail_policy::Column::OrgId.eq(&ctx.org_id))
         .filter(pass_fail_policy::Column::PeriodId.eq(period_id))
         .one(&ctx.db)
-        .await?;
+        .await?
+    {
+        Some(p) => Some(p),
+        None => {
+            pass_fail_policy::Entity::find()
+                .filter(pass_fail_policy::Column::OrgId.eq(&ctx.org_id))
+                .filter(pass_fail_policy::Column::PeriodId.is_null())
+                .one(&ctx.db)
+                .await?
+        }
+    };
 
     let min_pass = policy.as_ref().map(|p| p.min_passing_score)
         .unwrap_or(crate::ops::assessment_engine::AssessmentEngine::get_org_passing_grade(&ctx.db, &ctx.org_id).await);

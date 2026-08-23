@@ -156,6 +156,26 @@ async function handleLanguageChange(newLocale: string) {
         </Select>
       </div>
 
+      {#if onboardingState.calendar.selectedTemplateId}
+        {@const selectedTpl = onboardingState.calendar.periodTemplates.find(t => t.id === onboardingState.calendar.selectedTemplateId)}
+        {#if selectedTpl?.structure && selectedTpl.structure.length > 0}
+          <div class="pt-2">
+            <div class="text-[11px] font-medium text-muted-foreground mb-2 text-start">
+              {getLocale() === "ar" ? "توزيع الفترات والنسب في هذا الهيكل:" : "Period & Weight Distribution:"}
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+              {#each selectedTpl.structure as term}
+                <div class="p-3 bg-muted/40 border border-border rounded-lg flex items-center justify-between text-xs">
+                  <span class="font-medium text-foreground">{getLocale() === "ar" ? term.name_ar : term.name}</span>
+                  <span class="px-2 py-0.5 bg-primary/10 text-primary font-mono font-semibold rounded text-[11px]">
+                    {term.weight}%
+                  </span>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+      {/if}
     </div>
   </div>
 </div>

@@ -48,7 +48,7 @@ export function createExamSubjectsQuery(sessionId: string | (() => string)) {
 /** Create exam session mutation. */
 export function createSessionMutation() {
   const queryClient = useQueryClient();
-  return createMutation({
+  return createMutation(() => ({
     mutationFn: (variables: {
       data: {
         period_id: string;
@@ -64,13 +64,13 @@ export function createSessionMutation() {
         queryKey: ["exam-sessions"],
       });
     },
-  });
+  }));
 }
 
 /** Update exam session mutation. */
 export function updateSessionMutation() {
   const queryClient = useQueryClient();
-  return createMutation({
+  return createMutation(() => ({
     mutationFn: (variables: {
       orgId: string;
       sessionId: string;
@@ -94,13 +94,13 @@ export function updateSessionMutation() {
         queryKey: ["exam-session", variables.sessionId],
       });
     },
-  });
+  }));
 }
 
 /** Add exam subject mutation. */
 export function addExamSubjectMutation() {
   const queryClient = useQueryClient();
-  return createMutation({
+  return createMutation(() => ({
     mutationFn: (variables: {
       sessionId: string;
       data: {
@@ -118,5 +118,5 @@ export function addExamSubjectMutation() {
         queryKey: ["exam-subjects", variables.sessionId],
       });
     },
-  });
+  }));
 }

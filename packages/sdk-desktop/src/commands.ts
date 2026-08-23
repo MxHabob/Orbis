@@ -313,6 +313,8 @@ export const commands: OrbisCommands = {
     registerStudent: (req: any) => cmd("enrollment_workflow_student_registration_register_student", { req }),
   },
   platform_policy: {
+    getAcademicPolicy: (orgId: any) => cmd("platform_policy_academic_policy_get_academic_policy", { orgId }),
+    updateAcademicPolicy: (orgId: any, payload: any) => cmd("platform_policy_academic_policy_update_academic_policy", { orgId, payload }),
     getAutopilotConfig: (orgId: any) => cmd("platform_policy_academic_policy_get_autopilot_config", { orgId }),
     updateAutopilotConfig: (orgId: any, config: any) => cmd("platform_policy_academic_policy_update_autopilot_config", { orgId, config }),
   },

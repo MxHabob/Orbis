@@ -233,7 +233,17 @@ function parseOps(): OpFunction[] {
                   passArgsToBackend.push(argName);
               }
           } else {
-              passArgsToBackend.push(`${argName}_parsed`);
+              if (argTypeRaw.startsWith("&[") || argTypeRaw.startsWith("&mut [") || (argTypeRaw.startsWith("&") && !argTypeRaw.startsWith("&str"))) {
+                  if (argTypeRaw.startsWith("&mut ")) {
+                      passArgsToBackend.push(`&mut ${argName}_parsed`);
+                  } else {
+                      passArgsToBackend.push(`&${argName}_parsed`);
+                  }
+              } else if (argTypeRaw.startsWith("Option<&")) {
+                  passArgsToBackend.push(`${argName}_parsed.as_ref()`);
+              } else {
+                  passArgsToBackend.push(`${argName}_parsed`);
+              }
           }
         }
         if (skipFunc) continue;
@@ -459,8 +469,13 @@ function generateTauriWrappers(ops: OpFunction[]) {
              deserializeLines += `        None => None,\n`;
              deserializeLines += `    };\n`;
           } else {
-             rsArgs.push(`${a.rustName}: Option<serde_json::Value>`);
-             if (a.rustType.includes("CursorRequest")) {
+              rsArgs.push(`${a.rustName}: Option<serde_json::Value>`);
+              if (a.rustType.startsWith("&[") || a.rustType.startsWith("&mut [")) {
+                 deserializeLines += `    let ${a.rustName}_parsed: Vec<_> = match ${a.rustName} {\n`;
+                 deserializeLines += `        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,\n`;
+                 deserializeLines += `        None => return Err(CommandError::new("Missing argument: ${a.rustName}")),\n`;
+                 deserializeLines += `    };\n`;
+              } else if (a.rustType.includes("CursorRequest")) {
                 deserializeLines += `    let ${a.rustName}_parsed = match ${a.rustName} {\n`;
                 deserializeLines += `        Some(v) => serde_json::from_value(v).unwrap_or_default(),\n`;
                 deserializeLines += `        None => shared_kernel::pagination::CursorRequest::default(),\n`;

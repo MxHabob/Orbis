@@ -37,18 +37,6 @@ let { data }: { data: { orgId: string } } = $props();
 // Modal trigger state
 let isCreateSheetOpen = $state(false);
 
-// Helper to convert Svelte 5 reactive getters into Svelte Stores
-function toStore<T>(getter: () => T) {
-  return readable<T>(getter(), (set) => {
-    const cleanup = $effect.root(() => {
-      $effect(() => {
-        set(getter());
-      });
-    });
-    return cleanup;
-  });
-}
-
 // Queries
 const periodsQuery = createPeriodsQuery(() => data.orgId);
 const periods = $derived(periodsQuery.data ?? []);
@@ -72,14 +60,12 @@ const isGradeEntryOpen = $derived(
 );
 
 // Exam Sessions Query
-const examSessionsQuery = createQuery(
-  toStore(() => ({
-    queryKey: ["exam-sessions", data.orgId, activePeriodId],
-    queryFn: () => commands.exam.listSessions(activePeriodId),
-    enabled: !!data.orgId && !!activePeriodId,
-    staleTime: 2 * 60 * 1000,
-  })),
-);
+const examSessionsQuery = createQuery(() => ({
+  queryKey: ["exam-sessions", data.orgId, activePeriodId],
+  queryFn: () => commands.exam.listSessions(activePeriodId),
+  enabled: !!data.orgId && !!activePeriodId,
+  staleTime: 2 * 60 * 1000,
+}));
 
 const examSessions = $derived((examSessionsQuery.data as any[]) ?? []);
 

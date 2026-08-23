@@ -300,20 +300,79 @@ pub async fn bootstrap_full(
         ]
     )).await.map_err(|e| AppError::internal(format!("Failed to create ranking policy: {e}")))?;
 
-    // 3e. Period Template
-    let tmpl_id = Uuid::new_v4().to_string();
-    db.execute(Statement::from_sql_and_values(
-        db.get_database_backend(),
-        "INSERT INTO period_templates (id, org_id, name, name_ar, institution_type, structure, is_default, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, 1, $7, $8)",
-        vec![
-            tmpl_id.clone().into(), org_id.clone().into(),
-            blueprint.period_template_name.clone().into(),
-            blueprint.period_template_name_ar.clone().into(),
-            payload.org_type.clone().into(),
-            serde_json::to_string(&blueprint.period_structure).unwrap().into(),
-            now.clone().into(), now.clone().into(),
-        ]
-    )).await.map_err(|e| AppError::internal(format!("Failed to create period template: {e}")))?;
+    // 3e. Period Templates (Seeding default blueprint and all standard structures)
+    let standard_templates = vec![
+        (
+            Uuid::new_v4().to_string(),
+            "Two Semesters (Fall & Spring)".to_string(),
+            "نظام الفصلين الدراسيين (الترم الأول والثاني)".to_string(),
+            serde_json::json!([
+                { "name": "First Semester", "name_ar": "الفصل الدراسي الأول", "type": "semester", "weight": 50 },
+                { "name": "Second Semester", "name_ar": "الفصل الدراسي الثاني", "type": "semester", "weight": 50 }
+            ]),
+            1i32,
+        ),
+        (
+            Uuid::new_v4().to_string(),
+            "Three Terms / Trimesters".to_string(),
+            "نظام الفصول الثلاثية (3 فصول دراسية)".to_string(),
+            serde_json::json!([
+                { "name": "First Term", "name_ar": "الفصل الدراسي الأول", "type": "term", "weight": 33.33 },
+                { "name": "Second Term", "name_ar": "الفصل الدراسي الثاني", "type": "term", "weight": 33.33 },
+                { "name": "Third Term", "name_ar": "الفصل الدراسي الثالث", "type": "term", "weight": 33.34 }
+            ]),
+            0i32,
+        ),
+        (
+            Uuid::new_v4().to_string(),
+            "Four Quarters".to_string(),
+            "نظام الأرباع السنوية (4 أرباع)".to_string(),
+            serde_json::json!([
+                { "name": "Quarter 1", "name_ar": "الربع الأول", "type": "quarter", "weight": 25 },
+                { "name": "Quarter 2", "name_ar": "الربع الثاني", "type": "quarter", "weight": 25 },
+                { "name": "Quarter 3", "name_ar": "الربع الثالث", "type": "quarter", "weight": 25 },
+                { "name": "Quarter 4", "name_ar": "الربع الرابع", "type": "quarter", "weight": 25 }
+            ]),
+            0i32,
+        ),
+        (
+            Uuid::new_v4().to_string(),
+            "Two Semesters with Monthly Assessment".to_string(),
+            "فصلين دراسيين مع تقييمات شهرية".to_string(),
+            blueprint.period_structure.clone(),
+            0i32,
+        ),
+        (
+            Uuid::new_v4().to_string(),
+            "Full Academic Year (Single Period)".to_string(),
+            "عام دراسي سنوي متصل (بدون تقسيم فصول)".to_string(),
+            serde_json::json!([
+                { "name": "Full Year", "name_ar": "العام الدراسي الكامل", "type": "year", "weight": 100 }
+            ]),
+            0i32,
+        ),
+    ];
+
+    let mut primary_tmpl_id = String::new();
+    for (idx, (t_id, t_name, t_name_ar, t_struct, is_def)) in standard_templates.into_iter().enumerate() {
+        if idx == 0 {
+            primary_tmpl_id = t_id.clone();
+        }
+        db.execute(Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "INSERT INTO period_templates (id, org_id, name, name_ar, institution_type, structure, is_default, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+            vec![
+                t_id.into(), org_id.clone().into(),
+                t_name.into(),
+                t_name_ar.into(),
+                payload.org_type.clone().into(),
+                serde_json::to_string(&t_struct).unwrap().into(),
+                is_def.into(),
+                now.clone().into(), now.clone().into(),
+            ]
+        )).await.map_err(|e| AppError::internal(format!("Failed to create period template: {e}")))?;
+    }
+    let tmpl_id = primary_tmpl_id;
 
     // 3f. Default Role Permissions
     for perm in &blueprint.default_permissions {
@@ -521,7 +580,9 @@ struct InstitutionBlueprint {
     requires_all_subjects: bool,
     max_failed_subjects: i32,
     supplementary_eligible: bool,
+    #[allow(dead_code)]
     period_template_name: String,
+    #[allow(dead_code)]
     period_template_name_ar: String,
     period_structure: serde_json::Value,
     default_permissions: Vec<RolePermission>,

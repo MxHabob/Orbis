@@ -1,7 +1,7 @@
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
-import { INSTITUTION_PROFILES } from "./templates";
+import { INSTITUTION_PROFILES, DEFAULT_PERIOD_TEMPLATES } from "./templates";
 import type {
   OnboardingPayload,
   PeriodTemplateDef,
@@ -444,20 +444,32 @@ class OnboardingState {
     }
   }
 
-  // ظ¤?ظ¤? Step 5: Time Slot Management ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?
+  // ── Step 5: Time Slot Management ──────────────────────────────────────
   async loadTemplates(orgId: string) {
     try {
       const { commands } = await import("$lib/core/ipc");
-      const fetched = await (commands.organization?.getPeriodTemplates?.() || commands.calendar?.list?.() || Promise.resolve([])).catch(() => []);
-      this.calendar.periodTemplates = fetched || [];
+      let fetched: any = null;
+      if (commands.organization?.getPeriodTemplates) {
+        fetched = await commands.organization.getPeriodTemplates().catch(() => null);
+      }
+      if (Array.isArray(fetched) && fetched.length > 0 && fetched.some((t: any) => t.structure)) {
+        this.calendar.periodTemplates = fetched;
+      } else {
+        this.calendar.periodTemplates = DEFAULT_PERIOD_TEMPLATES;
+      }
       if (
         this.calendar.periodTemplates.length > 0 &&
-        !this.calendar.selectedTemplateId
+        (!this.calendar.selectedTemplateId ||
+          !this.calendar.periodTemplates.some((t) => t.id === this.calendar.selectedTemplateId))
       ) {
         this.calendar.selectedTemplateId = this.calendar.periodTemplates[0].id;
       }
     } catch (e) {
       console.warn("Failed to load period templates:", e);
+      this.calendar.periodTemplates = DEFAULT_PERIOD_TEMPLATES;
+      if (!this.calendar.selectedTemplateId) {
+        this.calendar.selectedTemplateId = DEFAULT_PERIOD_TEMPLATES[0].id;
+      }
     }
   }
 

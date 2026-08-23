@@ -250,6 +250,8 @@ pub fn generate_handlers<R: tauri::Runtime>() -> impl Fn(tauri::ipc::Invoke<R>) 
         crate::commands::enrollment_workflow::auto::enrollment_workflow_promotion_execute,
         crate::commands::enrollment_workflow::auto::enrollment_workflow_promotion_rollback,
         crate::commands::enrollment_workflow::auto::enrollment_workflow_student_registration_register_student,
+        crate::commands::platform_policy::auto::platform_policy_academic_policy_get_academic_policy,
+        crate::commands::platform_policy::auto::platform_policy_academic_policy_update_academic_policy,
         crate::commands::platform_policy::auto::platform_policy_academic_policy_get_autopilot_config,
         crate::commands::platform_policy::auto::platform_policy_academic_policy_update_autopilot_config,
         crate::commands::iam::custom::iam_auth_login,

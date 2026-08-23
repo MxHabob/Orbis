@@ -43,7 +43,7 @@ export function createAutopilotDiagnosticsQuery(
 
 export function useConfigureAutopilot() {
   const queryClient = useQueryClient();
-  return createMutation({
+  return createMutation(() => ({
     mutationFn: (vars: {
       orgId: string;
       isEnabled: boolean;
@@ -63,12 +63,12 @@ export function useConfigureAutopilot() {
         queryKey: ["org-policy", vars.orgId],
       });
     },
-  });
+  }));
 }
 
 export function useRunAutopilotTick() {
   const queryClient = useQueryClient();
-  return createMutation({
+  return createMutation(() => ({
     mutationFn: (vars: { orgId: string }) =>
       commands.ai.autopilotRunTick(),
     onSuccess: (_, vars) => {
@@ -82,7 +82,7 @@ export function useRunAutopilotTick() {
         queryKey: ["autopilot-diagnostics", vars.orgId],
       });
     },
-  });
+  }));
 }
 
 export function createAgentSessionsQuery(orgId: string | (() => string)) {
@@ -113,7 +113,7 @@ export function createAgentSessionLogsQuery(
 
 export function useApproveAgentAction() {
   const queryClient = useQueryClient();
-  return createMutation({
+  return createMutation(() => ({
     mutationFn: (vars: {
       orgId: string;
       actionLogId: string;
@@ -131,12 +131,12 @@ export function useApproveAgentAction() {
         queryKey: ["agent-sessions", vars.orgId],
       });
     },
-  });
+  }));
 }
 
 export function useRejectAgentAction() {
   const queryClient = useQueryClient();
-  return createMutation({
+  return createMutation(() => ({
     mutationFn: (vars: {
       orgId: string;
       actionLogId: string;
@@ -156,5 +156,5 @@ export function useRejectAgentAction() {
         queryKey: ["agent-sessions", vars.orgId],
       });
     },
-  });
+  }));
 }

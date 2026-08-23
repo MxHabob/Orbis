@@ -800,3 +800,178 @@ export const INSTITUTION_PROFILES: Record<string, InstitutionProfile> = {
     ],
   },
 };
+
+export const DEFAULT_PERIOD_TEMPLATES: import("./types").PeriodTemplateDef[] = [
+  {
+    id: "template-two-semesters",
+    name: "Two Semesters (Fall & Spring - 50% / 50%)",
+    name_ar: "نظام الفصلين الدراسيين (الترم الأول والثاني - 50% لكل فصل)",
+    structure: [
+      {
+        name: "First Semester",
+        name_ar: "الفصل الدراسي الأول",
+        type: "semester",
+        weight: 50,
+      },
+      {
+        name: "Second Semester",
+        name_ar: "الفصل الدراسي الثاني",
+        type: "semester",
+        weight: 50,
+      },
+    ],
+  },
+  {
+    id: "template-three-terms",
+    name: "Three Terms / Trimesters (33.3% each)",
+    name_ar: "نظام الفصول الثلاثية (ثلاثة فصول دراسية متساوية)",
+    structure: [
+      {
+        name: "First Term",
+        name_ar: "الفصل الدراسي الأول",
+        type: "term",
+        weight: 33.33,
+      },
+      {
+        name: "Second Term",
+        name_ar: "الفصل الدراسي الثاني",
+        type: "term",
+        weight: 33.33,
+      },
+      {
+        name: "Third Term",
+        name_ar: "الفصل الدراسي الثالث",
+        type: "term",
+        weight: 33.34,
+      },
+    ],
+  },
+  {
+    id: "template-four-quarters",
+    name: "Four Quarters (25% each)",
+    name_ar: "نظام الأرباع السنوية (أربعة أرباع - 25% لكل ربع)",
+    structure: [
+      {
+        name: "First Quarter",
+        name_ar: "الربع الأول",
+        type: "quarter",
+        weight: 25,
+      },
+      {
+        name: "Second Quarter",
+        name_ar: "الربع الثاني",
+        type: "quarter",
+        weight: 25,
+      },
+      {
+        name: "Third Quarter",
+        name_ar: "الربع الثالث",
+        type: "quarter",
+        weight: 25,
+      },
+      {
+        name: "Fourth Quarter",
+        name_ar: "الربع الرابع",
+        type: "quarter",
+        weight: 25,
+      },
+    ],
+  },
+  {
+    id: "template-semesters-monthly",
+    name: "Two Semesters with Monthly Assessment",
+    name_ar: "فصلين دراسيين مع تقييمات واختبارات شهرية",
+    structure: [
+      {
+        name: "First Semester",
+        name_ar: "الفصل الدراسي الأول",
+        type: "semester",
+        weight: 50,
+        children: [
+          {
+            name: "Month 1 Assessment",
+            name_ar: "تقييم الشهر الأول",
+            type: "month",
+            weight: 33.33,
+          },
+          {
+            name: "Month 2 Assessment",
+            name_ar: "تقييم الشهر الثاني",
+            type: "month",
+            weight: 33.33,
+          },
+          {
+            name: "Semester 1 Final Exam",
+            name_ar: "امتحان نهاية الفصل الأول",
+            type: "exam",
+            weight: 33.34,
+          },
+        ],
+      },
+      {
+        name: "Second Semester",
+        name_ar: "الفصل الدراسي الثاني",
+        type: "semester",
+        weight: 50,
+        children: [
+          {
+            name: "Month 1 Assessment",
+            name_ar: "تقييم الشهر الأول",
+            type: "month",
+            weight: 33.33,
+          },
+          {
+            name: "Month 2 Assessment",
+            name_ar: "تقييم الشهر الثاني",
+            type: "month",
+            weight: 33.33,
+          },
+          {
+            name: "Semester 2 Final Exam",
+            name_ar: "امتحان نهاية الفصل الثاني",
+            type: "exam",
+            weight: 33.34,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "template-university-summer",
+    name: "Two Semesters + Summer Term",
+    name_ar: "فصلين دراسيين + فصل صيفي (جامعي ومعاهد)",
+    structure: [
+      {
+        name: "Fall Semester",
+        name_ar: "الفصل الدراسي الأول (الخريف)",
+        type: "semester",
+        weight: 45,
+      },
+      {
+        name: "Spring Semester",
+        name_ar: "الفصل الدراسي الثاني (الربيع)",
+        type: "semester",
+        weight: 45,
+      },
+      {
+        name: "Summer Term",
+        name_ar: "الفصل الصيفي",
+        type: "term",
+        weight: 10,
+      },
+    ],
+  },
+  {
+    id: "template-full-year",
+    name: "Full Academic Year (Single Continuous Period)",
+    name_ar: "عام دراسي سنوي متصل (بدون تقسيم فصول)",
+    structure: [
+      {
+        name: "Full Academic Year",
+        name_ar: "العام الدراسي الكامل",
+        type: "year",
+        weight: 100,
+      },
+    ],
+  },
+];

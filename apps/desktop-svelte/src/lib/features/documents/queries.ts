@@ -59,7 +59,7 @@ export function useDocuments(filter: {
   entityType?: string;
   category?: string;
 }) {
-  return createInfiniteQuery({
+  return createInfiniteQuery(() => ({
     queryKey: documentKeys.byFilter(filter),
     queryFn: ({ pageParam }) =>
       commands.document.getDocuments({
@@ -70,8 +70,8 @@ export function useDocuments(filter: {
         limit: 50,
       }),
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) => lastPage.next_cursor,
-  });
+    getNextPageParam: (lastPage: any) => lastPage?.next_cursor,
+  }));
 }
 
 // --- Mutations ---
@@ -79,7 +79,7 @@ export function useDocuments(filter: {
 export function useUploadDocument() {
   const queryClient = useQueryClient();
 
-  return createMutation({
+  return createMutation(() => ({
     mutationFn: (payload: {
       file: File;
       entity_type: string;
@@ -92,16 +92,16 @@ export function useUploadDocument() {
         queryKey: documentKeys.all,
       });
     },
-  });
+  }));
 }
 
 export function useDeleteDocument() {
   const queryClient = useQueryClient();
 
-  return createMutation({
+  return createMutation(() => ({
     mutationFn: (id: string) => commands.document.deleteDocument(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: documentKeys.all });
     },
-  });
+  }));
 }

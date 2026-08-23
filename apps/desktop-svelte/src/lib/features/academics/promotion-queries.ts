@@ -41,45 +41,45 @@ export function createPromotionDetailsQuery(jobId: string | (() => string)) {
 
 export function createDryRunMutation(orgId: string) {
   const queryClient = useQueryClient();
-  return createMutation({
+  return createMutation(() => ({
     mutationFn: (config: PromotionConfig) =>
       commands.enrollment_workflow.startDryRun(config.source_period_id || "", config as any),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["promotionJobs"] });
     },
-  });
+  }));
 }
 
 export function createExecutePromotionMutation() {
   const queryClient = useQueryClient();
-  return createMutation({
+  return createMutation(() => ({
     mutationFn: (jobId: string) => commands.enrollment_workflow.execute(jobId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["promotionJobs"] });
       queryClient.invalidateQueries({ queryKey: ["academicYears"] });
     },
-  });
+  }));
 }
 
 export function createOverrideDecisionMutation() {
   const queryClient = useQueryClient();
-  return createMutation({
+  return createMutation(() => ({
     mutationFn: (request: Record<string, unknown>) =>
       commands.enrollment_workflow.execute((request.jobId as string) || ""),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["promotionDetails"] });
     },
-  });
+  }));
 }
 
 export function createRollbackMutation() {
   const queryClient = useQueryClient();
-  return createMutation({
+  return createMutation(() => ({
     mutationFn: ({ jobId, userId }: { jobId: string; userId: string }) =>
       commands.enrollment_workflow.rollback(jobId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["promotionJobs"] });
       queryClient.invalidateQueries({ queryKey: ["academicYears"] });
     },
-  });
+  }));
 }

@@ -120,11 +120,6 @@ const navGroups = $derived([
         icon: Sliders,
       },
       {
-        path: "pass-fail-policies",
-        label: getLocale() === "ar" ? "سياسات النجاح والرسوب" : "Pass/Fail Policies",
-        icon: CheckSquare,
-      },
-      {
         path: "registration",
         label: m.settings_nav_registration(),
         icon: FileText,
@@ -159,16 +154,16 @@ const navGroups = $derived([
         label: m.common_dt_title(),
         icon: Percent,
       },
-      {
-        path: "fiscal-periods",
-        label: getLocale() === "ar" ? "الفترات المالية" : "Fiscal Periods",
-        icon: Calendar,
-      },
     ],
   },
   {
     title: getLocale() === "ar" ? "العمليات" : "Operations",
     items: [
+      {
+        path: "branches",
+        label: getLocale() === "ar" ? "الفروع" : "Branches",
+        icon: Network,
+      },
       {
         path: "bulk-input",
         label: m.settings_nav_import_export(),
@@ -183,6 +178,11 @@ const navGroups = $derived([
         path: "audit",
         label: m.common_nav_audit(),
         icon: History,
+      },
+      {
+        path: "notifications",
+        label: getLocale() === "ar" ? "الإشعارات" : "Notifications",
+        icon: Bell,
       },
     ],
   },

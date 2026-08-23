@@ -25,7 +25,7 @@ export function createOrganizationQuery(orgId: () => string) {
 /** Update organization details mutation. */
 export function createUpdateOrganizationMutation() {
   const queryClient = useQueryClient();
-  return createMutation({
+  return createMutation(() => ({
     mutationFn: (variables: { orgId: string; request: any }) =>
       commands.organization.updateOrganization(
         variables.orgId,
@@ -36,7 +36,7 @@ export function createUpdateOrganizationMutation() {
         queryKey: ["organization", variables.orgId],
       });
     },
-  });
+  }));
 }
 
 /** Get all users for an organization. */

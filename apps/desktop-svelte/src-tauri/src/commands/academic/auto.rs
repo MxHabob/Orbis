@@ -140,11 +140,11 @@ pub async fn academic_document_delete(state: State<'_, Arc<AppState>>, doc_id: S
 #[tauri::command]
 pub async fn academic_enrollment_enrich_enrollment_models(state: State<'_, Arc<AppState>>, enrollments: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let enrollments_parsed = match enrollments {
+    let enrollments_parsed: Vec<_> = match enrollments {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
         None => return Err(CommandError::new("Missing argument: enrollments")),
     };
-    let result = ops::enrollment::enrich_enrollment_models(&ctx.db, enrollments_parsed).await.map_err(CommandError::from)?;
+    let result = ops::enrollment::enrich_enrollment_models(&ctx.db, &enrollments_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 

@@ -1,4 +1,5 @@
 import type { PeriodTemplateDef } from "../types";
+import { DEFAULT_PERIOD_TEMPLATES } from "../templates";
 
 // Generate dynamic defaults based on current date
 function getDefaultStartDate(): string {
@@ -33,8 +34,8 @@ export class CalendarInfoState {
   academicYearNameAr = $state(getDefaultYearNameAr());
   startDate = $state(getDefaultStartDate());
   endDate = $state(getDefaultEndDate());
-  selectedTemplateId = $state("");
-  periodTemplates = $state<PeriodTemplateDef[]>([]);
+  selectedTemplateId = $state(DEFAULT_PERIOD_TEMPLATES[0].id);
+  periodTemplates = $state<PeriodTemplateDef[]>(DEFAULT_PERIOD_TEMPLATES);
 
   serialize() {
     return {
@@ -56,6 +57,13 @@ export class CalendarInfoState {
     if (data.endDate) this.endDate = data.endDate;
     if (data.selectedTemplateId)
       this.selectedTemplateId = data.selectedTemplateId;
-    if (data.periodTemplates) this.periodTemplates = data.periodTemplates;
+    if (data.periodTemplates && Array.isArray(data.periodTemplates) && data.periodTemplates.length > 0 && data.periodTemplates.some((t: any) => t.structure)) {
+      this.periodTemplates = data.periodTemplates;
+    } else {
+      this.periodTemplates = DEFAULT_PERIOD_TEMPLATES;
+      if (!this.selectedTemplateId || !this.periodTemplates.some(t => t.id === this.selectedTemplateId)) {
+        this.selectedTemplateId = DEFAULT_PERIOD_TEMPLATES[0].id;
+      }
+    }
   }
 }
