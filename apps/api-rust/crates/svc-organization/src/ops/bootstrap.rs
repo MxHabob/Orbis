@@ -529,6 +529,7 @@ struct InstitutionBlueprint {
     assessment_scheme_name: String,
     assessment_components: Vec<AssessmentComponent>,
     coursework_weight: f64,  // e.g. 20.0 (out of 100)
+    #[allow(dead_code)]
     exam_weight: f64,        // e.g. 30.0
     ranking_enabled: i32,
     ranking_scope: String,

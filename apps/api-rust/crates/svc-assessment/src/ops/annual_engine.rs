@@ -20,7 +20,7 @@ use tracing::info;
 
 use crate::entities::{calculation_policy, term_result, annual_result};
 use crate::ops::calc_engine::{CalcEngine, AstNode, apply_rounding};
-use crate::ops::grade_mapper::{GradeMapper, GradeScaleItemData};
+use crate::ops::grade_mapper::GradeMapper;
 
 /// Input for an annual calculation request.
 #[derive(Debug, Clone, serde::Deserialize)]

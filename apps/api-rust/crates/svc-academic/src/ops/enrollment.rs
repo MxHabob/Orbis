@@ -11,10 +11,106 @@ use shared_kernel::errors::AppError;
 use shared_kernel::event_bus::EventEnvelope;
 use shared_kernel::traits::{AuditEntry, Permission};
 
+use std::collections::HashMap;
+use svc_iam::entities::{person, user};
+
 use crate::contracts::events::event_types;
 use crate::entities::{enrollment, class};
 
 // ── Queries ─────────────────────────────────────────────────────
+
+/// Helper to enrich enrollment models with demographics from persons and users.
+pub async fn enrich_enrollment_models(
+    db: &sea_orm::DatabaseConnection,
+    enrollments: &[enrollment::Model],
+) -> Result<Vec<serde_json::Value>, AppError> {
+    if enrollments.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let student_ids: Vec<String> = enrollments.iter().map(|e| e.student_id.clone()).collect();
+
+    // 1. Query persons directly by ID
+    let persons_by_id: HashMap<String, person::Model> = person::Entity::find()
+        .filter(person::Column::Id.is_in(student_ids.clone()))
+        .all(db)
+        .await?
+        .into_iter()
+        .map(|p| (p.id.clone(), p))
+        .collect();
+
+    // 2. Query users directly by ID (for student_ids pointing to user records)
+    let users_by_id: HashMap<String, user::Model> = user::Entity::find()
+        .filter(user::Column::Id.is_in(student_ids.clone()))
+        .all(db)
+        .await?
+        .into_iter()
+        .map(|u| (u.id.clone(), u))
+        .collect();
+
+    // 3. For users found, query their person records if not already fetched
+    let mut missing_person_ids: Vec<String> = Vec::new();
+    for u in users_by_id.values() {
+        if !persons_by_id.contains_key(&u.person_id) {
+            missing_person_ids.push(u.person_id.clone());
+        }
+    }
+
+    let persons_from_users: HashMap<String, person::Model> = if !missing_person_ids.is_empty() {
+        person::Entity::find()
+            .filter(person::Column::Id.is_in(missing_person_ids))
+            .all(db)
+            .await?
+            .into_iter()
+            .map(|p| (p.id.clone(), p))
+            .collect()
+    } else {
+        HashMap::new()
+    };
+
+    let mut enriched = Vec::with_capacity(enrollments.len());
+    for e in enrollments {
+        let mut val = serde_json::to_value(e).unwrap_or_default();
+
+        let person_opt = persons_by_id.get(&e.student_id).or_else(|| {
+            users_by_id
+                .get(&e.student_id)
+                .and_then(|u| persons_by_id.get(&u.person_id).or_else(|| persons_from_users.get(&u.person_id)))
+        });
+
+        let user_opt = users_by_id.get(&e.student_id);
+
+        if let Some(obj) = val.as_object_mut() {
+            let full_name = person_opt
+                .and_then(|p| p.full_name.clone().or_else(|| Some(p.first_name.clone())))
+                .or_else(|| user_opt.map(|u| u.full_name.clone()))
+                .unwrap_or_default();
+
+            let name_ar = person_opt.and_then(|p| p.name_ar.clone());
+            let name_en = person_opt.and_then(|p| p.name_en.clone());
+            let sex = person_opt.and_then(|p| p.gender.clone()).unwrap_or_else(|| "male".into());
+            let birth_date = person_opt.and_then(|p| p.date_of_birth.clone());
+            let phone = person_opt.and_then(|p| p.phone.clone()).or_else(|| user_opt.and_then(|u| u.phone.clone()));
+            let email = user_opt.and_then(|u| u.email.clone());
+            let address = person_opt.and_then(|p| p.address.clone());
+            let national_id = person_opt.and_then(|p| p.national_id.clone());
+
+            obj.insert("full_name".into(), serde_json::Value::String(full_name));
+            obj.insert("name_ar".into(), name_ar.map(serde_json::Value::String).unwrap_or(serde_json::Value::Null));
+            obj.insert("name_en".into(), name_en.map(serde_json::Value::String).unwrap_or(serde_json::Value::Null));
+            obj.insert("sex".into(), serde_json::Value::String(sex));
+            obj.insert("birth_date".into(), birth_date.map(serde_json::Value::String).unwrap_or(serde_json::Value::Null));
+            obj.insert("phone".into(), phone.map(serde_json::Value::String).unwrap_or(serde_json::Value::Null));
+            obj.insert("email".into(), email.map(serde_json::Value::String).unwrap_or(serde_json::Value::Null));
+            obj.insert("address".into(), address.map(serde_json::Value::String).unwrap_or(serde_json::Value::Null));
+            obj.insert("national_id".into(), national_id.map(serde_json::Value::String).unwrap_or(serde_json::Value::Null));
+        }
+
+        enriched.push(val);
+    }
+
+    Ok(enriched)
+}
 
 /// List enrollments, optionally filtered by class and/or period.
 pub async fn list(
@@ -27,6 +123,21 @@ pub async fn list(
         .order_by_asc(enrollment::Column::StudentNumber)
         .all(&ctx.db)
         .await?)
+}
+
+/// List enriched enrollments with demographics.
+pub async fn list_enriched(
+    ctx: &ServiceContext,
+) -> Result<Vec<serde_json::Value>, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::EnrollmentRead).await?;
+
+    let enrollments = enrollment::Entity::find()
+        .filter(enrollment::Column::OrgId.eq(&ctx.org_id))
+        .order_by_asc(enrollment::Column::StudentNumber)
+        .all(&ctx.db)
+        .await?;
+
+    enrich_enrollment_models(&ctx.db, &enrollments).await
 }
 
 /// Paginated enrollment list — cursor-based for high-volume lists.
@@ -50,6 +161,31 @@ pub async fn list_paginated(
     Ok(CursorPage::from_items_with(items, limit, |e| e.id.clone()))
 }
 
+/// Paginated enriched enrollment list.
+pub async fn list_paginated_enriched(
+    ctx: &ServiceContext,
+    request: shared_kernel::pagination::CursorRequest,
+) -> Result<shared_kernel::pagination::CursorPage<serde_json::Value>, AppError> {
+    use shared_kernel::pagination::CursorPage;
+    ctx.permissions.check(&ctx.actor, Permission::EnrollmentRead).await?;
+
+    let limit = request.effective_limit();
+    let mut query = enrollment::Entity::find()
+        .filter(enrollment::Column::OrgId.eq(&ctx.org_id))
+        .order_by_asc(enrollment::Column::Id);
+
+    if let Some(ref cursor) = request.cursor {
+        query = query.filter(enrollment::Column::Id.gt(cursor));
+    }
+
+    let items = query.limit(limit + 1).all(&ctx.db).await?;
+    let enriched_items = enrich_enrollment_models(&ctx.db, &items).await?;
+
+    Ok(CursorPage::from_items_with(enriched_items, limit, |val| {
+        val.get("id").and_then(|v| v.as_str()).unwrap_or_default().to_string()
+    }))
+}
+
 /// Get a single enrollment by ID.
 pub async fn get(ctx: &ServiceContext, id: &str) -> Result<enrollment::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::EnrollmentRead).await?;
@@ -58,6 +194,19 @@ pub async fn get(ctx: &ServiceContext, id: &str) -> Result<enrollment::Model, Ap
         .one(&ctx.db)
         .await?
         .ok_or_else(|| AppError::not_found("enrollment", id))
+}
+
+/// Get a single enriched enrollment by ID with demographic details.
+pub async fn get_enriched(ctx: &ServiceContext, id: &str) -> Result<serde_json::Value, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::EnrollmentRead).await?;
+
+    let enrollment = enrollment::Entity::find_by_id(id.to_string())
+        .one(&ctx.db)
+        .await?
+        .ok_or_else(|| AppError::not_found("enrollment", id))?;
+
+    let enriched = enrich_enrollment_models(&ctx.db, &[enrollment]).await?;
+    enriched.into_iter().next().ok_or_else(|| AppError::not_found("enrollment", id))
 }
 
 // ── Commands ────────────────────────────────────────────────────

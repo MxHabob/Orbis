@@ -22,3 +22,6 @@ tracing = { workspace = true }
 tokio = { workspace = true }
 utoipa = { version = "4.2.3", features = ["axum_extras"] }
 
+[dev-dependencies]
+tempfile = "3"
+

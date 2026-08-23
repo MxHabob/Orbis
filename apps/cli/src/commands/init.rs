@@ -101,8 +101,17 @@ pub async fn execute() -> Result<()> {
     let db = Database::connect(&db_url).await
         .map_err(|e| anyhow!("Failed to connect to database: {}", e))?;
 
-    let schema_sql = include_str!("../../../api-rust/crates/infra-persistence/src/schemas/schema_baseline.sql");
+    let schema_sql = if db_url.starts_with("postgres://") || db_url.starts_with("postgresql://") {
+        include_str!("../../../api-rust/crates/infra-persistence/src/schemas/schema_baseline_pg.sql")
+    } else {
+        include_str!("../../../api-rust/crates/infra-persistence/src/schemas/schema_baseline.sql")
+    };
     db.execute_unprepared(schema_sql).await?;
+    infra_persistence::schema_migrations::run_p0_migrations(&db).await
+        .map_err(|e| anyhow!("Failed running P0 migrations: {}", e))?;
+    infra_persistence::schema_migrations::run_p4_migrations(&db).await
+        .map_err(|e| anyhow!("Failed running P4 migrations: {}", e))?;
+
     output::print_progress_ok("Database schema created successfully");
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

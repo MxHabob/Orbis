@@ -203,8 +203,6 @@ pub async fn calculate_term_results_batch(
     grading_period_ids: Vec<String>,
     exam_period_id: Option<String>,
 ) -> Result<Vec<term_result::Model>, AppError> {
-    use sea_orm::QuerySelect;
-
     // Find all enrollments for this class
     let enrollments = svc_academic::entities::enrollment::Entity::find()
         .filter(svc_academic::entities::enrollment::Column::ClassId.eq(class_id))
@@ -341,7 +339,7 @@ pub async fn build_grade_mapper(ctx: &ServiceContext) -> Result<GradeMapper, App
     }
 
     // Fallback: use AssessmentEngine's default mapper
-    let engine = crate::ops::assessment_engine::AssessmentEngine::for_period(
+    let _engine = crate::ops::assessment_engine::AssessmentEngine::for_period(
         &ctx.db, &ctx.org_id, "",
     ).await?;
     // We just need the mapper to get labels — map 0 to get the structure

@@ -25,3 +25,20 @@ pub mod bootstrap;
 pub mod schema_migrations;
 pub mod fee_assignment;
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_database_provider_init() {
+        let temp_dir = tempfile::tempdir().expect("create temp dir");
+        let provider = provider::DatabaseProvider::init(temp_dir.path())
+            .await
+            .expect("init database provider and run all baseline migrations");
+
+        let db = provider.db();
+        let ping = db.ping().await;
+        assert!(ping.is_ok(), "Database should be reachable and healthy");
+    }
+}
+

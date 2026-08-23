@@ -104,7 +104,7 @@ impl DataQualityMonitor {
                 sql: r#"
                     SELECT id as entity_id, 'email' as field_name, email as current_value
                     FROM users
-                    WHERE org_id = ?org_id AND role = 'student'
+                    WHERE org_id = ?org_id AND primary_role = 'student'
                       AND (email IS NULL OR email = '')
                     LIMIT 50
                 "#.into(),
@@ -112,26 +112,28 @@ impl DataQualityMonitor {
             QualityRule {
                 code: "completeness.student.national_id".into(),
                 description: "Student must have a national ID for official records".into(),
-                entity_type: "user".into(),
+                entity_type: "person".into(),
                 severity: "warning".into(),
                 sql: r#"
-                    SELECT id as entity_id, 'national_id' as field_name, national_id as current_value
-                    FROM users
-                    WHERE org_id = ?org_id AND role = 'student'
-                      AND (national_id IS NULL OR national_id = '')
+                    SELECT p.id as entity_id, 'national_id' as field_name, p.national_id as current_value
+                    FROM persons p
+                    JOIN users u ON u.person_id = p.id
+                    WHERE u.org_id = ?org_id AND u.primary_role = 'student'
+                      AND (p.national_id IS NULL OR p.national_id = '')
                     LIMIT 50
                 "#.into(),
             },
             QualityRule {
                 code: "completeness.student.phone".into(),
                 description: "Student should have a phone number".into(),
-                entity_type: "user".into(),
+                entity_type: "person".into(),
                 severity: "info".into(),
                 sql: r#"
-                    SELECT id as entity_id, 'phone' as field_name, phone as current_value
-                    FROM users
-                    WHERE org_id = ?org_id AND role = 'student'
-                      AND (phone IS NULL OR phone = '')
+                    SELECT p.id as entity_id, 'phone' as field_name, COALESCE(p.phone, u.phone) as current_value
+                    FROM persons p
+                    JOIN users u ON u.person_id = p.id
+                    WHERE u.org_id = ?org_id AND u.primary_role = 'student'
+                      AND ((p.phone IS NULL OR p.phone = '') AND (u.phone IS NULL OR u.phone = ''))
                     LIMIT 50
                 "#.into(),
             },

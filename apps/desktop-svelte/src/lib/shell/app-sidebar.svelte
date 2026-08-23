@@ -93,6 +93,12 @@ const navItems = $derived([
     match: "prefix",
   },
   {
+    href: `/${orgId}/reports`,
+    icon: BarChart3,
+    label: m.common_nav_reports(),
+    match: "prefix",
+  },
+  {
     href: `/${orgId}/templates`,
     icon: FileText,
     label: m.settings_nav_templates(),

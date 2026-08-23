@@ -741,7 +741,7 @@ impl DataSource for TermCertificateDataSource {
             }));
         }
 
-        let subject_count = subjects.len().max(1) as f64;
+        let _subject_count = subjects.len().max(1) as f64;
 
         Ok(json!({
             "enrollmentId": enrollment_id,

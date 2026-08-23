@@ -240,7 +240,7 @@ impl InsightEngine {
         // Check students without email
         let sql = r#"
             SELECT COUNT(*) as count FROM users 
-            WHERE org_id = ?1 AND role = 'student' AND (email IS NULL OR email = '')
+            WHERE org_id = ?1 AND primary_role = 'student' AND (email IS NULL OR email = '')
         "#;
 
         let result = db.query_one(
@@ -276,8 +276,9 @@ impl InsightEngine {
 
         // Check students without national ID
         let sql2 = r#"
-            SELECT COUNT(*) as count FROM users 
-            WHERE org_id = ?1 AND role = 'student' AND (national_id IS NULL OR national_id = '')
+            SELECT COUNT(*) as count FROM persons p
+            JOIN users u ON u.person_id = p.id
+            WHERE u.org_id = ?1 AND u.primary_role = 'student' AND (p.national_id IS NULL OR p.national_id = '')
         "#;
 
         let result2 = db.query_one(

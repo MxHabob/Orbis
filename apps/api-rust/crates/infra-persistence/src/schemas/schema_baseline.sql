@@ -265,6 +265,7 @@ CREATE TABLE IF NOT EXISTS calculation_policies (
   rounding_policy TEXT NOT NULL DEFAULT 'round_half_up',
   valid_from TEXT,
   valid_until TEXT,
+  is_archived INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (org_id) REFERENCES organizations(id),
@@ -618,8 +619,10 @@ CREATE INDEX IF NOT EXISTS idx_pd_student ON promotion_details(student_id);
 CREATE TABLE IF NOT EXISTS assessment_schemes (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
+  period_id TEXT,
   name TEXT NOT NULL,
   description TEXT,
+  is_archived INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (org_id) REFERENCES organizations(id)
@@ -2082,7 +2085,7 @@ CREATE TABLE IF NOT EXISTS report_definitions (
 
 -- ── Search Optimizations ───────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_users_org_role ON users(org_id, primary_role) WHERE is_deleted = 0;
-CREATE INDEX IF NOT EXISTS idx_users_national_id ON users(national_id);
+CREATE INDEX IF NOT EXISTS idx_persons_national_id ON persons(national_id);
 CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_student_guardians_student ON student_guardians(student_id);

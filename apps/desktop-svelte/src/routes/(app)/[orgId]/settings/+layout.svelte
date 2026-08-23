@@ -40,113 +40,151 @@ let { data, children }: { data: { orgId: string }; children: Snippet } =
 
 const basePath = $derived(`/${data.orgId}/settings`);
 
-const navItems = $derived([
+const navGroups = $derived([
   {
-    path: "",
-    label: m.settings_nav_general(),
-    icon: Settings,
-  },
-
-  {
-    path: "notifications",
-    label: m.common_nav_notifications(),
-    icon: Bell,
-  },
-  {
-    path: "users",
-    label: m.settings_nav_users(),
-    icon: Users,
-  },
-  {
-    path: "permissions",
-    label: m.settings_nav_permissions(),
-    icon: Shield,
+    title: getLocale() === "ar" ? "عام" : "General",
+    items: [
+      {
+        path: "",
+        label: m.settings_nav_general(),
+        icon: Settings,
+      },
+      {
+        path: "notifications",
+        label: m.common_nav_notifications(),
+        icon: Bell,
+      },
+    ],
   },
   {
-    path: "periods",
-    label: m.settings_nav_cycles ? m.settings_nav_cycles() : "Academic Periods",
-    icon: Calendar,
+    title: getLocale() === "ar" ? "المؤسسة" : "Organization",
+    items: [
+      {
+        path: "users",
+        label: m.settings_nav_users(),
+        icon: Users,
+      },
+      {
+        path: "permissions",
+        label: m.settings_nav_permissions(),
+        icon: Shield,
+      },
+      {
+        path: "units",
+        label: m.settings_nav_units(),
+        icon: Network,
+      },
+    ],
   },
   {
-    path: "units",
-    label: m.settings_nav_units(),
-    icon: Network,
+    title: getLocale() === "ar" ? "الشؤون الأكاديمية" : "Academic Rules",
+    items: [
+      {
+        path: "periods",
+        label: m.settings_nav_cycles ? m.settings_nav_cycles() : "Academic Periods",
+        icon: Calendar,
+      },
+      {
+        path: "subjects",
+        label: m.common_exams_detail_subjects(),
+        icon: BookOpen,
+      },
+      {
+        path: "rooms",
+        label: m.common_nav_rooms(),
+        icon: MapPin,
+      },
+      {
+        path: "academic-policy",
+        label: m.common_nav_academic_policy(),
+        icon: Sliders,
+      },
+      {
+        path: "assessment-schemes",
+        label: getLocale() === "ar" ? "هياكل التقييم" : "Assessment Schemes",
+        icon: Layers,
+      },
+      {
+        path: "grade-scales",
+        label: getLocale() === "ar" ? "مقاييس الدرجات" : "Grade Scales",
+        icon: Scale,
+      },
+      {
+        path: "calc-policies",
+        label: getLocale() === "ar" ? "سياسات الحساب" : "Calculation Policies",
+        icon: Calculator,
+      },
+      {
+        path: "ranking-policies",
+        label: getLocale() === "ar" ? "سياسات الترتيب" : "Ranking Policies",
+        icon: Sliders,
+      },
+      {
+        path: "pass-fail-policies",
+        label: getLocale() === "ar" ? "سياسات النجاح والرسوب" : "Pass/Fail Policies",
+        icon: CheckSquare,
+      },
+      {
+        path: "registration",
+        label: m.settings_nav_registration(),
+        icon: FileText,
+      },
+      {
+        path: "ordering",
+        label: m.common_nav_ordering(),
+        icon: ListOrdered,
+      },
+      {
+        path: "approvals",
+        label: m.settings_nav_approvals(),
+        icon: CheckSquare,
+      },
+    ],
   },
   {
-    path: "rooms",
-    label: m.common_nav_rooms(),
-    icon: MapPin,
+    title: getLocale() === "ar" ? "المالية" : "Finance",
+    items: [
+      {
+        path: "currencies",
+        label: m.settings_nav_currencies(),
+        icon: Coins,
+      },
+      {
+        path: "fee-templates",
+        label: m.common_breadcrumb_fees(),
+        icon: Receipt,
+      },
+      {
+        path: "discount-templates",
+        label: m.common_dt_title(),
+        icon: Percent,
+      },
+      {
+        path: "fiscal-periods",
+        label: getLocale() === "ar" ? "الفترات المالية" : "Fiscal Periods",
+        icon: Calendar,
+      },
+    ],
   },
   {
-    path: "subjects",
-    label: m.common_exams_detail_subjects(),
-    icon: BookOpen,
-  },
-  {
-    path: "audit",
-    label: m.common_nav_audit(),
-    icon: History,
-  },
-  {
-    path: "bulk-input",
-    label: m.settings_nav_import_export(),
-    icon: FileDown,
-  },
-  {
-    path: "currencies",
-    label: m.settings_nav_currencies(),
-    icon: Coins,
-  },
-  {
-    path: "archive",
-    label: m.settings_nav_archive(),
-    icon: FileText,
-  },
-  {
-    path: "ordering",
-    label: m.common_nav_ordering(),
-    icon: ListOrdered,
-  },
-  {
-    path: "registration",
-    label: m.settings_nav_registration(),
-    icon: FileText,
-  },
-
-  {
-    path: "fee-templates",
-    label: m.common_breadcrumb_fees(),
-    icon: Receipt,
-  },
-  {
-    path: "discount-templates",
-    label: m.common_dt_title(),
-    icon: Percent,
-  },
-  {
-    path: "academic-policy",
-    label: m.common_nav_academic_policy(),
-    icon: Sliders,
-  },
-  {
-    path: "grade-scales",
-    label: "مقاييس الدرجات",
-    icon: Scale,
-  },
-  {
-    path: "calc-policies",
-    label: "سياسات الحساب",
-    icon: Calculator,
-  },
-  {
-    path: "assessment-schemes",
-    label: "هياكل التقييم",
-    icon: Layers,
-  },
-  {
-    path: "approvals",
-    label: m.settings_nav_approvals(),
-    icon: CheckSquare,
+    title: getLocale() === "ar" ? "العمليات" : "Operations",
+    items: [
+      {
+        path: "bulk-input",
+        label: m.settings_nav_import_export(),
+        icon: FileDown,
+      },
+      {
+        path: "archive",
+        label: m.settings_nav_archive(),
+        icon: FileText,
+      },
+      {
+        path: "audit",
+        label: m.common_nav_audit(),
+        icon: History,
+      },
+    ],
   },
 ]);
 </script>
@@ -158,7 +196,7 @@ const navItems = $derived([
   <MainViewport name="settings-workspace" leftWidth={{ default: 240, min: 200 }}>
     {#snippet left()}
       <SidebarNav
-        items={navItems}
+        groups={navGroups}
         {basePath}
         title={m.common_word_settings()}
       />
