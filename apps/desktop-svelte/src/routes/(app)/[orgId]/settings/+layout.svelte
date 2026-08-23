@@ -178,12 +178,7 @@ const navGroups = $derived([
         path: "audit",
         label: m.common_nav_audit(),
         icon: History,
-      },
-      {
-        path: "notifications",
-        label: getLocale() === "ar" ? "الإشعارات" : "Notifications",
-        icon: Bell,
-      },
+      }
     ],
   },
 ]);

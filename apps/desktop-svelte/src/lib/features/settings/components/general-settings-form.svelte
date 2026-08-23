@@ -1,7 +1,5 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { Button } from "@orbis/ui-svelte/button";
-
 import {
   InfoSettingsCard,
   BrandingSettingsCard,
@@ -9,6 +7,7 @@ import {
   AvatarSettingsCard,
   DangerZoneSettingsCard,
 } from "$lib/features/settings";
+import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
 let { org, isSaving, onsave, onsaveavatar, onremove, onlanguagechange } =
   $props<{
@@ -32,8 +31,10 @@ let locale = $state("ar");
 let dateFormat = $state("YYYY-MM-DD");
 let hijriEnabled = $state(false);
 
+let initialValues = $state<any>(null);
+
 $effect(() => {
-  if (org) {
+  if (org && !initialValues) {
     name = org.name || "";
     slug = org.slug || "";
     id = org.id || "";
@@ -44,11 +45,45 @@ $effect(() => {
     locale = org.locale || "ar";
     dateFormat = org.date_format || "YYYY-MM-DD";
     hijriEnabled = org.hijri_enabled === 1;
+
+    initialValues = {
+      name,
+      primaryColor,
+      currency,
+      timezone,
+      locale,
+      dateFormat,
+      hijriEnabled,
+    };
   }
 });
 
-function handleSubmit(e: Event) {
-  e.preventDefault();
+const isDirty = $derived.by(() => {
+  if (!initialValues) return false;
+  return (
+    name !== initialValues.name ||
+    primaryColor !== initialValues.primaryColor ||
+    currency !== initialValues.currency ||
+    timezone !== initialValues.timezone ||
+    locale !== initialValues.locale ||
+    dateFormat !== initialValues.dateFormat ||
+    hijriEnabled !== initialValues.hijriEnabled
+  );
+});
+
+function handleReset() {
+  if (!initialValues) return;
+  name = initialValues.name;
+  primaryColor = initialValues.primaryColor;
+  currency = initialValues.currency;
+  timezone = initialValues.timezone;
+  locale = initialValues.locale;
+  dateFormat = initialValues.dateFormat;
+  hijriEnabled = initialValues.hijriEnabled;
+}
+
+function handleSubmit(e?: Event) {
+  e?.preventDefault();
   onsave({
     name,
     logo: logo || null,
@@ -59,6 +94,17 @@ function handleSubmit(e: Event) {
     date_format: dateFormat,
     hijri_enabled: hijriEnabled ? 1 : 0,
   });
+  if (initialValues) {
+    initialValues = {
+      name,
+      primaryColor,
+      currency,
+      timezone,
+      locale,
+      dateFormat,
+      hijriEnabled,
+    };
+  }
 }
 
 function handleLanguageChange(newLocale: string) {
@@ -80,7 +126,7 @@ function handleSaveAvatar(e: Event) {
 }
 </script>
 
-<div class="h-full w-full overflow-y-auto scrollbar-hide">
+<div class="h-full w-full overflow-y-auto pb-28 scrollbar-hide">
   <div class="max-w-7xl mx-auto p-6 flex flex-col gap-6">
     <form onsubmit={handleSubmit} class="flex flex-col gap-6">
       <InfoSettingsCard
@@ -104,17 +150,6 @@ function handleSaveAvatar(e: Event) {
         {isSaving}
         onLanguageChange={handleLanguageChange}
       />
-
-      <!-- Action Buttons -->
-      <div class="flex justify-end gap-3 pb-8 border-b border-border">
-        <Button
-          type="submit"
-          class="px-6 font-semibold h-9 text-xs"
-          disabled={isSaving}
-        >
-          {isSaving ? m.common_state_saving() : m.settings_action_save_changes()}
-        </Button>
-      </div>
     </form>
 
     <AvatarSettingsCard
@@ -128,4 +163,13 @@ function handleSaveAvatar(e: Event) {
       onremove={onremove}
     />
   </div>
+
+  <!-- Reusable Floating Settings Bottom Bar -->
+  <SettingsBottomBar
+    visible={isDirty}
+    {isSaving}
+    {isDirty}
+    onsave={handleSubmit}
+    onreset={handleReset}
+  />
 </div>

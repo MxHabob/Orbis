@@ -1,7 +1,8 @@
 <!--
   @component AiCenterSettingsPage
-  Comprehensive, premium configuration hub for Orbis AI Center & Autopilot Engine.
-  Adheres strictly to Orbis Design System and uses Paraglide i18n messages (m.*).
+  Full-width, headerless configuration hub for Orbis AI Center & Autopilot Engine.
+  Strictly compliant with @orbis/ui-svelte design tokens (surfaces, typography, spacing, radius).
+  Features a floating SettingsBottomBar that triggers dynamically upon modifications.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -12,9 +13,7 @@ import {
   ShieldAlert,
   SearchCode,
   FileSearch,
-  Loader2,
   Sparkles,
-  Bot,
   Sliders,
   CheckCircle2,
   Lock,
@@ -27,13 +26,13 @@ import {
   UserCheck,
   FileText,
 } from "@lucide/svelte";
-import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Switch } from "@orbis/ui-svelte/switch";
 import { Label } from "@orbis/ui-svelte/label";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Separator } from "@orbis/ui-svelte/separator";
 import { toast } from "svelte-sonner";
+import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -80,6 +79,7 @@ let memorySettings = $state({
 
 let isSaving = $state(false);
 let isLoading = $state(true);
+let initialSnapshot = $state("");
 
 onMount(async () => {
   try {
@@ -90,14 +90,47 @@ onMount(async () => {
   } catch (e) {
     console.warn("[AI Center] aiGetAutopilotConfig fallback:", e);
   } finally {
+    initialSnapshot = JSON.stringify({
+      autopilot: autopilotSettings,
+      safety: safetySettings,
+      insight: insightSettings,
+      memory: memorySettings,
+    });
     isLoading = false;
   }
 });
+
+const currentSnapshot = $derived(
+  JSON.stringify({
+    autopilot: autopilotSettings,
+    safety: safetySettings,
+    insight: insightSettings,
+    memory: memorySettings,
+  })
+);
+
+const isDirty = $derived(
+  Boolean(initialSnapshot && currentSnapshot !== initialSnapshot)
+);
+
+function resetToInitial() {
+  if (!initialSnapshot) return;
+  try {
+    const parsed = JSON.parse(initialSnapshot);
+    Object.assign(autopilotSettings, parsed.autopilot);
+    Object.assign(safetySettings, parsed.safety);
+    Object.assign(insightSettings, parsed.insight);
+    Object.assign(memorySettings, parsed.memory);
+  } catch (e) {
+    console.warn("Reset error:", e);
+  }
+}
 
 async function saveAllSettings() {
   isSaving = true;
   try {
     await commands.ai.aiSaveAutopilotConfig(data.orgId, autopilotSettings);
+    initialSnapshot = currentSnapshot;
     toast.success(m.ai_center_settings_save_success());
   } catch (e) {
     console.warn("[AI Center] save error:", e);
@@ -131,7 +164,7 @@ const executionModes = $derived([
   },
 ]);
 
-// Categorized Workflows for Clean UI
+// Categorized Workflows using Design Tokens
 const workflowCategories = $derived([
   {
     categoryTitle: m.ai_center_settings_cat_admissions(),
@@ -218,53 +251,20 @@ const workflowCategories = $derived([
   <title>{m.ai_center_settings_page_title()} | Orbis</title>
 </svelte:head>
 
-<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide bg-background font-sans max-w-6xl mx-auto">
-  <form onsubmit={(e) => { e.preventDefault(); saveAllSettings(); }} class="flex flex-col gap-8 w-full">
-
-    <!-- Top Action & Overview Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-border">
-      <div class="flex flex-col gap-1 text-start">
-        <div class="flex items-center gap-2">
-          <Bot size={22} class="text-primary" />
-          <h1 class="text-lg font-bold tracking-tight text-foreground">
-            {m.ai_center_settings_page_title()}
-          </h1>
-          <Badge variant="outline" class="text-[10px] uppercase font-mono px-2 py-0.5 border-primary/30 text-primary bg-primary/5">
-            {m.ai_center_settings_badge_engine()}
-          </Badge>
-        </div>
-        <p class="text-xs text-muted-foreground">
-          {m.ai_center_settings_page_desc()}
-        </p>
-      </div>
-
-      <div class="flex items-center gap-3 shrink-0">
-        <Button
-          type="submit"
-          variant="default"
-          size="sm"
-          class="px-6 font-semibold h-9 text-xs cursor-pointer shadow-xs"
-          disabled={isSaving || isLoading}
-        >
-          {#if isSaving}
-            <Loader2 class="size-3.5 animate-spin me-1.5" />
-          {/if}
-          {isSaving ? m.common_state_saving() : m.settings_action_save_changes()}
-        </Button>
-      </div>
-    </div>
+<div class="h-full w-full overflow-y-auto p-6 pb-32 flex flex-col gap-6 scrollbar-hide bg-background font-sans">
+  <form onsubmit={(e) => { e.preventDefault(); saveAllSettings(); }} class="flex flex-col gap-6 w-full">
 
     <!-- ── Section 1: Autopilot Operational Mode ─────────────────── -->
-    <div class="border border-border rounded-xl bg-card overflow-hidden shadow-xs flex flex-col">
-      <div class="bg-muted/40 px-6 py-3.5 border-b border-border flex items-center justify-between">
+    <div class="border border-border rounded-md overflow-hidden flex flex-col">
+      <div class="bg-muted/40 px-6 py-3 border-b border-border flex items-center justify-between">
         <div class="flex items-center gap-2 text-start">
-          <Zap size={16} class="text-primary" />
-          <span class="text-xs font-bold text-foreground tracking-wide uppercase font-serif">
+          <Zap size={15} class="text-primary" />
+          <span class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase font-serif">
             {m.ai_center_settings_section_autopilot_mode()}
           </span>
         </div>
-        <div class="flex items-center gap-2">
-          <span class="text-[11px] font-semibold text-muted-foreground">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xs font-medium text-muted-foreground">
             {autopilotSettings.enabled ? m.ai_center_settings_autopilot_active() : m.ai_center_settings_autopilot_disabled()}
           </span>
           <Switch
@@ -277,11 +277,11 @@ const workflowCategories = $derived([
 
       <div class="p-6 flex flex-col gap-6">
         <!-- Interactive Mode Cards -->
-        <div class="flex flex-col gap-2 text-start">
+        <div class="flex flex-col gap-1 text-start">
           <Label class="text-xs font-semibold text-foreground">
             {m.ai_center_settings_mode_authority_title()}
           </Label>
-          <span class="text-[11px] text-muted-foreground">
+          <span class="text-[11px] text-muted-foreground leading-relaxed">
             {m.ai_center_settings_mode_authority_desc()}
           </span>
         </div>
@@ -294,9 +294,9 @@ const workflowCategories = $derived([
               type="button"
               onclick={() => { autopilotSettings.execution_mode = mode.id as any; }}
               disabled={!autopilotSettings.enabled || isSaving}
-              class="flex flex-col text-start p-4 rounded-xl border transition-all text-start relative cursor-pointer {isSelected ? 'border-primary bg-primary/5 shadow-xs ring-1 ring-primary/30' : 'border-border/70 bg-card hover:border-border hover:bg-muted/20'} {!autopilotSettings.enabled ? 'opacity-50 cursor-not-allowed' : ''}"
+              class="flex flex-col text-start p-4 rounded-xl border transition-all text-start relative cursor-pointer {isSelected ? 'border-primary bg-primary/5 shadow-xs ring-1 ring-primary/30' : 'border-border bg-card hover:border-border/80 hover:bg-muted/30'} {!autopilotSettings.enabled ? 'opacity-50 cursor-not-allowed' : ''}"
             >
-              <div class="flex items-center justify-between w-full mb-2.5">
+              <div class="flex items-center justify-between w-full mb-3">
                 <div class="p-2 rounded-lg {isSelected ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}">
                   <Icon size={16} />
                 </div>
@@ -317,7 +317,7 @@ const workflowCategories = $derived([
         </div>
 
         <!-- Operational Thresholds Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-border/40">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-border">
           <div class="flex flex-col gap-1.5 text-start">
             <Label class="text-xs font-semibold text-foreground">
               {m.ai_center_settings_grace_period_title()}
@@ -331,7 +331,7 @@ const workflowCategories = $derived([
               max="30"
               bind:value={autopilotSettings.grace_days}
               disabled={!autopilotSettings.enabled || isSaving}
-              class="h-9 text-xs font-mono bg-background max-w-xs mt-1"
+              class="h-9 text-xs font-mono bg-background border-border max-w-xs mt-1"
             />
           </div>
 
@@ -348,7 +348,7 @@ const workflowCategories = $derived([
               max="72"
               bind:value={autopilotSettings.notify_before_deadline_hours}
               disabled={!autopilotSettings.enabled || isSaving}
-              class="h-9 text-xs font-mono bg-background max-w-xs mt-1"
+              class="h-9 text-xs font-mono bg-background border-border max-w-xs mt-1"
             />
           </div>
         </div>
@@ -356,26 +356,26 @@ const workflowCategories = $derived([
     </div>
 
     <!-- ── Section 2: Autonomous Workflows ────────────────────────── -->
-    <div class="border border-border rounded-xl bg-card overflow-hidden shadow-xs flex flex-col">
-      <div class="bg-muted/40 px-6 py-3.5 border-b border-border flex items-center gap-2 text-start">
-        <Sliders size={16} class="text-primary" />
-        <span class="text-xs font-bold text-foreground tracking-wide uppercase font-serif">
+    <div class="border border-border rounded-md overflow-hidden flex flex-col">
+      <div class="bg-muted/40 px-6 py-3 border-b border-border flex items-center gap-2 text-start">
+        <Sliders size={15} class="text-primary" />
+        <span class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase font-serif">
           {m.ai_center_settings_section_workflows()}
         </span>
       </div>
 
-      <div class="flex flex-col divide-y divide-border/60">
+      <div class="flex flex-col divide-y divide-border">
         {#each workflowCategories as category}
           <div class="flex flex-col">
             <!-- Category Subheader -->
-            <div class="px-6 py-2.5 bg-muted/20 text-start text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+            <div class="px-6 py-2.5 bg-muted/20 text-start text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/40">
               {category.categoryTitle}
             </div>
 
             <!-- Category Items -->
             {#each category.items as item (item.id)}
               {@const Icon = item.icon}
-              <div class="px-6 py-3.5 flex items-center justify-between gap-4 hover:bg-muted/10 transition-colors">
+              <div class="px-6 py-3.5 flex items-center justify-between gap-4 hover:bg-muted/10 transition-colors border-b border-border last:border-b-0">
                 <div class="flex items-start gap-3 text-start">
                   <div class="p-1.5 rounded-md bg-muted text-muted-foreground shrink-0 mt-0.5">
                     <Icon size={15} />
@@ -410,17 +410,17 @@ const workflowCategories = $derived([
     </div>
 
     <!-- ── Section 3: Safety Gates & Risk Controls ────────────────── -->
-    <div class="border border-border rounded-xl bg-card overflow-hidden shadow-xs flex flex-col">
-      <div class="bg-muted/40 px-6 py-3.5 border-b border-border flex items-center gap-2 text-start">
-        <ShieldAlert size={16} class="text-primary" />
-        <span class="text-xs font-bold text-foreground tracking-wide uppercase font-serif">
+    <div class="border border-border rounded-md overflow-hidden flex flex-col">
+      <div class="bg-muted/40 px-6 py-3 border-b border-border flex items-center gap-2 text-start">
+        <ShieldAlert size={15} class="text-primary" />
+        <span class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase font-serif">
           {m.ai_center_settings_section_safety()}
         </span>
       </div>
 
-      <div class="flex flex-col divide-y divide-border/60">
+      <div class="flex flex-col divide-y divide-border">
         <!-- High Risk Gate -->
-        <div class="px-6 py-4 flex items-center justify-between gap-4">
+        <div class="px-6 py-4 flex items-center justify-between gap-4 hover:bg-muted/10 transition-colors">
           <div class="flex flex-col gap-1 text-start">
             <div class="flex items-center gap-2">
               <span class="text-xs font-semibold text-foreground">
@@ -442,7 +442,7 @@ const workflowCategories = $derived([
         </div>
 
         <!-- Critical Risk Gate -->
-        <div class="px-6 py-4 flex items-center justify-between gap-4">
+        <div class="px-6 py-4 flex items-center justify-between gap-4 hover:bg-muted/10 transition-colors">
           <div class="flex flex-col gap-1 text-start">
             <div class="flex items-center gap-2">
               <span class="text-xs font-semibold text-foreground">
@@ -464,7 +464,7 @@ const workflowCategories = $derived([
         </div>
 
         <!-- Block Irreversible Actions -->
-        <div class="px-6 py-4 flex items-center justify-between gap-4">
+        <div class="px-6 py-4 flex items-center justify-between gap-4 hover:bg-muted/10 transition-colors">
           <div class="flex flex-col gap-1 text-start">
             <span class="text-xs font-semibold text-foreground">
               {m.ai_center_settings_safety_block_irreversible()}
@@ -481,7 +481,7 @@ const workflowCategories = $derived([
         </div>
 
         <!-- Audit Trail -->
-        <div class="px-6 py-4 flex items-center justify-between gap-4">
+        <div class="px-6 py-4 flex items-center justify-between gap-4 hover:bg-muted/10 transition-colors">
           <div class="flex flex-col gap-1 text-start">
             <span class="text-xs font-semibold text-foreground">
               {m.ai_center_settings_safety_audit_trail()}
@@ -500,10 +500,10 @@ const workflowCategories = $derived([
     </div>
 
     <!-- ── Section 4: Insight Engine & Anomaly Detection ─────────── -->
-    <div class="border border-border rounded-xl bg-card overflow-hidden shadow-xs flex flex-col">
-      <div class="bg-muted/40 px-6 py-3.5 border-b border-border flex items-center gap-2 text-start">
-        <SearchCode size={16} class="text-primary" />
-        <span class="text-xs font-bold text-foreground tracking-wide uppercase font-serif">
+    <div class="border border-border rounded-md overflow-hidden flex flex-col">
+      <div class="bg-muted/40 px-6 py-3 border-b border-border flex items-center gap-2 text-start">
+        <SearchCode size={15} class="text-primary" />
+        <span class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase font-serif">
           {m.ai_center_settings_section_insight()}
         </span>
       </div>
@@ -524,7 +524,7 @@ const workflowCategories = $derived([
               max="50"
               bind:value={insightSettings.at_risk_grade_drop_percent}
               disabled={isSaving}
-              class="h-9 text-xs font-mono bg-background mt-1"
+              class="h-9 text-xs font-mono bg-background border-border mt-1"
             />
           </div>
 
@@ -541,7 +541,7 @@ const workflowCategories = $derived([
               max="15"
               bind:value={insightSettings.at_risk_absence_limit_days}
               disabled={isSaving}
-              class="h-9 text-xs font-mono bg-background mt-1"
+              class="h-9 text-xs font-mono bg-background border-border mt-1"
             />
           </div>
 
@@ -558,16 +558,16 @@ const workflowCategories = $derived([
               max="24"
               bind:value={insightSettings.periodic_scan_interval_hours}
               disabled={isSaving}
-              class="h-9 text-xs font-mono bg-background mt-1"
+              class="h-9 text-xs font-mono bg-background border-border mt-1"
             />
           </div>
         </div>
 
-        <Separator class="bg-border/60" />
+        <Separator class="bg-border" />
 
         <!-- Anomaly Toggles -->
-        <div class="flex flex-col divide-y divide-border/40">
-          <div class="py-3 flex items-center justify-between gap-4">
+        <div class="flex flex-col divide-y divide-border">
+          <div class="py-3.5 flex items-center justify-between gap-4">
             <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-semibold text-foreground">
                 {m.ai_center_settings_insight_detect_grade()}
@@ -583,7 +583,7 @@ const workflowCategories = $derived([
             />
           </div>
 
-          <div class="py-3 flex items-center justify-between gap-4">
+          <div class="py-3.5 flex items-center justify-between gap-4">
             <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-semibold text-foreground">
                 {m.ai_center_settings_insight_detect_attendance()}
@@ -603,16 +603,16 @@ const workflowCategories = $derived([
     </div>
 
     <!-- ── Section 5: Explainability & Reasoning Scope ────────────── -->
-    <div class="border border-border rounded-xl bg-card overflow-hidden shadow-xs flex flex-col">
-      <div class="bg-muted/40 px-6 py-3.5 border-b border-border flex items-center gap-2 text-start">
-        <FileSearch size={16} class="text-primary" />
-        <span class="text-xs font-bold text-foreground tracking-wide uppercase font-serif">
+    <div class="border border-border rounded-md overflow-hidden flex flex-col">
+      <div class="bg-muted/40 px-6 py-3 border-b border-border flex items-center gap-2 text-start">
+        <FileSearch size={15} class="text-primary" />
+        <span class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase font-serif">
           {m.ai_center_settings_section_memory()}
         </span>
       </div>
 
       <div class="p-6 flex flex-col gap-6">
-        <div class="flex flex-col divide-y divide-border/40">
+        <div class="flex flex-col divide-y divide-border">
           <div class="pb-4 flex items-center justify-between gap-4">
             <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-semibold text-foreground">
@@ -660,28 +660,21 @@ const workflowCategories = $derived([
               max="30"
               bind:value={memorySettings.rag_context_limit}
               disabled={isSaving}
-              class="h-9 text-xs font-mono bg-background w-full md:w-32"
+              class="h-9 text-xs font-mono bg-background border-border w-full md:w-32"
             />
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Bottom Action Bar -->
-    <div class="flex items-center justify-end gap-3 pt-4 border-t border-border/40 pb-12">
-      <Button
-        type="submit"
-        variant="default"
-        size="sm"
-        class="px-8 font-semibold h-10 text-xs cursor-pointer shadow-xs"
-        disabled={isSaving || isLoading}
-      >
-        {#if isSaving}
-          <Loader2 class="size-3.5 animate-spin me-1.5" />
-        {/if}
-        {isSaving ? m.common_state_saving() : m.settings_action_save_changes()}
-      </Button>
-    </div>
-
   </form>
+
+  <!-- Reusable Floating Settings Bottom Bar (triggers dynamically upon changes) -->
+  <SettingsBottomBar
+    visible={isDirty}
+    {isSaving}
+    {isDirty}
+    onsave={saveAllSettings}
+    onreset={resetToInitial}
+  />
 </div>

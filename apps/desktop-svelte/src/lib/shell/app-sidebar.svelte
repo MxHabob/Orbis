@@ -19,12 +19,10 @@ import {
   Users,
   BookOpen,
   Wallet,
-  BarChart3,
   Settings,
   FileText,
   Brain,
 } from "@lucide/svelte";
-import { authStore } from "$lib/stores";
 import OrgSidebarSwitcher from "./org-sidebar-switcher.svelte";
 import UserSidebarMenu from "./user-sidebar-menu.svelte";
 import OnboardingPopover from "./onboarding-popover.svelte";
@@ -90,12 +88,6 @@ const navItems = $derived([
     href: `/${orgId}/finance`,
     icon: Wallet,
     label: m.common_nav_finance(),
-    match: "prefix",
-  },
-  {
-    href: `/${orgId}/reports`,
-    icon: BarChart3,
-    label: m.common_nav_reports(),
     match: "prefix",
   },
   {
