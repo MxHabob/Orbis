@@ -5,7 +5,7 @@ export interface Enrollment_workflowCommands {
   listJobs(): Promise<any[]>;
   getJob(jobId: string): Promise<any>;
   createJob(sourcePeriodId: string, config: string): Promise<any>;
-  startDryRun(jobId: string, config: Types.PromotionConfig): Promise<any>;
+  startDryRun(jobId: string, config: any): Promise<any>;
   execute(jobId: string): Promise<any>;
   rollback(jobId: string): Promise<void>;
   registerStudent(req: any): Promise<any>;

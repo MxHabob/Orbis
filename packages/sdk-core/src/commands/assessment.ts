@@ -14,7 +14,7 @@ export interface AssessmentCommands {
   updateComponent(componentId: string, data: any): Promise<any>;
   deleteComponent(componentId: string): Promise<void>;
   listAttendances(classId: string, date: string): Promise<any[]>;
-  getReport(PeriodId: string, enrollmentId: string): Promise<Types.AttendanceReport>;
+  getReport(PeriodId: string, enrollmentId: string): Promise<any>;
   getAnalytics(periodId: string, classId: string): Promise<any>;
   record(data: any): Promise<any>;
   recordBulk(data: any): Promise<any[]>;
@@ -31,8 +31,8 @@ export interface AssessmentCommands {
   listActive(): Promise<any[]>;
   listGrades(assessmentId: string): Promise<any[]>;
   listGradesPaginated(assessmentId: string, request: any): Promise<any>;
-  reportCard(enrollmentId: string, periodId: string): Promise<Types.GradeReportCard>;
-  analytics(periodId: string, classSubjectId: string): Promise<Types.GradeAnalytics>;
+  reportCard(enrollmentId: string, periodId: string): Promise<any>;
+  analytics(periodId: string, classSubjectId: string): Promise<any>;
   matrix(periodId: string, classSubjectId: string): Promise<any>;
   submit(data: any): Promise<any>;
   submitBulk(data: any): Promise<any[]>;

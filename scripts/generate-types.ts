@@ -1,0 +1,166 @@
+import * as fs from "fs";
+import * as path from "path";
+
+const WORKSPACE_ROOT = path.resolve(__dirname, "..");
+const API_CRATES_DIR = path.join(WORKSPACE_ROOT, "apps", "api-rust", "crates");
+const SDK_CORE_TYPES_DIR = path.join(WORKSPACE_ROOT, "packages", "sdk-core", "src", "types");
+
+interface Field {
+    name: string;
+    rustType: string;
+    tsType: string;
+    isOptional: boolean;
+}
+
+interface Struct {
+    name: string;
+    fields: Field[];
+}
+
+function toCamelCase(str: string): string {
+    return str.replace(/_([a-z0-9])/g, g => g[1].toUpperCase());
+}
+
+function toPascalCase(str: string): string {
+    const camel = toCamelCase(str);
+    return camel.charAt(0).toUpperCase() + camel.slice(1);
+}
+
+function mapRustTypeToTs(rustType: string): string {
+    let t = rustType.trim();
+    if (t.startsWith("Option<")) {
+        t = t.substring(7, t.length - 1).trim();
+    }
+    
+    if (t === "String" || t === "&str" || t.includes("Date") || t.includes("Time")) return "string";
+    if (t === "bool") return "boolean";
+    if (t === "i32" || t === "i64" || t === "u32" || t === "u64" || t === "f32" || t === "f64" || t === "Decimal" || t === "usize") return "number";
+    if (t === "serde_json::Value") return "any";
+    
+    if (t.startsWith("Vec<")) {
+        const inner = t.substring(4, t.length - 1).trim();
+        return `${mapRustTypeToTs(inner)}[]`;
+    }
+    
+    // Fallback
+    return "any";
+}
+
+function parseRustEntities(): Record<string, Struct[]> {
+    const cratesOutput: Record<string, Struct[]> = {};
+    const crates = fs.readdirSync(API_CRATES_DIR);
+    
+    for (const crate of crates) {
+        if (!crate.startsWith("svc-") && !crate.startsWith("platform-") && !crate.startsWith("shared-")) continue;
+        const entitiesDir = path.join(API_CRATES_DIR, crate, "src", "entities");
+        if (!fs.existsSync(entitiesDir)) continue;
+
+        let domain = crate.replace("svc-", "").replace("platform-", "");
+        if (domain === "enrollment-workflow") domain = "enrollment_workflow";
+        if (domain === "policy") domain = "platform_policy";
+        
+        if (!cratesOutput[domain]) cratesOutput[domain] = [];
+
+        const files = fs.readdirSync(entitiesDir);
+        for (const file of files) {
+            if (!file.endsWith(".rs") || file === "mod.rs") continue;
+            
+            const content = fs.readFileSync(path.join(entitiesDir, file), "utf8");
+            
+            // Sometimes they use #[schema(as = X)] to rename
+            let entityName = toPascalCase(file.replace(".rs", ""));
+            const schemaMatch = content.match(/#\[schema\(as\s*=\s*([A-Za-z0-9_]+)\)\]/);
+            if (schemaMatch) {
+                entityName = schemaMatch[1];
+            }
+            
+            // Find pub struct Model
+            const structMatch = content.indexOf("pub struct Model");
+            if (structMatch === -1) continue;
+            
+            const fields: Field[] = [];
+            const lines = content.substring(structMatch).split("\n");
+            
+            let insideStruct = false;
+            for (const line of lines) {
+                if (line.includes("pub struct Model")) {
+                    insideStruct = true;
+                    continue;
+                }
+                if (insideStruct && line.trim() === "}") {
+                    break;
+                }
+                
+                if (insideStruct) {
+                    const match = line.match(/pub\s+([a-zA-Z0-9_]+):\s*(.+?),/);
+                    if (match) {
+                        const name = match[1];
+                        const rustType = match[2].trim();
+                        const isOptional = rustType.startsWith("Option<");
+                        const tsType = mapRustTypeToTs(rustType);
+                        
+                        fields.push({
+                            name,
+                            rustType,
+                            tsType,
+                            isOptional
+                        });
+                    }
+                }
+            }
+            
+            if (fields.length > 0) {
+                cratesOutput[domain].push({ name: entityName, fields });
+            }
+        }
+    }
+    return cratesOutput;
+}
+
+function generateTypescript() {
+    console.log("Parsing Rust Entities...");
+    const parsedData = parseRustEntities();
+    
+    if (!fs.existsSync(SDK_CORE_TYPES_DIR)) {
+        fs.mkdirSync(SDK_CORE_TYPES_DIR, { recursive: true });
+    }
+
+    let indexExports = "";
+    
+    // Clear out existing handwritten types safely (only .ts files)
+    const existingFiles = fs.readdirSync(SDK_CORE_TYPES_DIR);
+    for (const file of existingFiles) {
+        if (file.endsWith(".ts")) {
+            fs.unlinkSync(path.join(SDK_CORE_TYPES_DIR, file));
+        }
+    }
+
+    for (const [domain, structs] of Object.entries(parsedData)) {
+        if (structs.length === 0) continue;
+        
+        let tsContent = `// AUTO-GENERATED BY scripts/generate-types.ts — DO NOT EDIT DIRECTLY\n\n`;
+        
+        for (const struct of structs) {
+            tsContent += `export interface ${struct.name} {\n`;
+            for (const field of struct.fields) {
+                const opt = field.isOptional ? "?" : "";
+                const nullType = field.isOptional ? " | null" : "";
+                tsContent += `  ${field.name}${opt}: ${field.tsType}${nullType};\n`;
+            }
+            tsContent += `}\n\n`;
+        }
+        
+        const filePath = path.join(SDK_CORE_TYPES_DIR, `${domain}.ts`);
+        fs.writeFileSync(filePath, tsContent);
+        
+        indexExports += `export * from './${domain}.js';\n`;
+    }
+    
+    // Create an index file to export all domain types
+    const indexPath = path.join(SDK_CORE_TYPES_DIR, "index.ts");
+    fs.writeFileSync(indexPath, `// AUTO-GENERATED BY scripts/generate-types.ts — DO NOT EDIT DIRECTLY\n\n${indexExports}`);
+    
+    console.log("Types successfully generated into packages/sdk-core/src/types/");
+}
+
+generateTypescript();
