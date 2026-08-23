@@ -5,7 +5,7 @@ import { authStore } from "$lib/stores";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
-import { Eye, EyeOff, Loader2 } from "lucide-svelte";
+import { Eye, EyeOff, Loader2 } from "@lucide/svelte";
 
 import { localizeHref } from "$lib/paraglide/runtime";
 import { toast } from "svelte-sonner";

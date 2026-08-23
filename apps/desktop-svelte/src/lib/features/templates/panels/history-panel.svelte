@@ -21,7 +21,7 @@ import {
   Clock,
   CheckCircle,
   Circle,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 
 let {

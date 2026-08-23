@@ -10,7 +10,7 @@ import {
   ShieldCheck,
   CalendarClock,
   ClipboardCheck,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 
 import { localizeHref } from "$lib/paraglide/runtime";
 import { academicContext, workflowInbox, authStore } from "$lib/stores";

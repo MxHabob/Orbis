@@ -14,10 +14,10 @@
     "@orbis/tsconfig": "workspace:*",
     "@types/bun": "latest",
     "@types/file-saver": "^2.0.7",
-    "@types/node": "^24.10.1",
+    "@types/node": "^26.2.0",
     "@types/papaparse": "^5.5.2",
     "bun-types": "^1.3.8",
-    "typescript": "^5.9.3"
+    "typescript": "^7.0.2"
   },
   "exports": {
     ".": "./src/index.ts",

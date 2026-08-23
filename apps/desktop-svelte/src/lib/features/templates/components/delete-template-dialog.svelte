@@ -10,7 +10,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@orbis/ui-svelte/alert-dialog";
-import { AlertCircle } from "lucide-svelte";
+import { AlertCircle } from "@lucide/svelte";
 
 interface Props {
   open: boolean;

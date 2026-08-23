@@ -3,7 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui-svelte/button";
-import { ArrowLeft, MoreHorizontal, ChevronDown } from "lucide-svelte";
+import { ArrowLeft, MoreHorizontal, ChevronDown } from "@lucide/svelte";
 import {
   Tabs,
   TabsList,

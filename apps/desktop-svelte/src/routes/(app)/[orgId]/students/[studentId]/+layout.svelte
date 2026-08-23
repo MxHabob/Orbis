@@ -32,7 +32,7 @@ import {
   Users2,
   FileText,
   MoreHorizontal,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { createEnrollmentsQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
 import type { Snippet } from "svelte";

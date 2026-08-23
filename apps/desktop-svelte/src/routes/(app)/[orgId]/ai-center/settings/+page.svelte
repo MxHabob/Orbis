@@ -13,7 +13,7 @@ import {
   SearchCode,
   FileSearch,
   Loader2,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Switch } from "@orbis/ui-svelte/switch";

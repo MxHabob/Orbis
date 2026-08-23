@@ -16,7 +16,7 @@ import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
 import { authStore } from "$lib/stores";
 import { goto } from "$app/navigation";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
-import { Save, User } from "lucide-svelte";
+import { Save, User } from "@lucide/svelte";
 
 let { data }: { data: { orgId: string } } = $props();
 const orgId = $derived(data.orgId);

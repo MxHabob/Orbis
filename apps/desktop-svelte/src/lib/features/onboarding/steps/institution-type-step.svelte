@@ -20,7 +20,7 @@ import {
   Sliders,
   CheckCircle2,
   Info,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 
 const profiles = [
   { id: "school", icon: School },

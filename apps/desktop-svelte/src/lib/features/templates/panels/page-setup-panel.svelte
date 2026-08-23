@@ -9,7 +9,7 @@ import { Label } from "@orbis/ui-svelte/label";
 import { Button } from "@orbis/ui-svelte/button";
 import { Separator } from "@orbis/ui-svelte/separator";
 import ColorPicker from "../shared/color-picker.svelte";
-import { FileText, RotateCcw } from "lucide-svelte";
+import { FileText, RotateCcw } from "@lucide/svelte";
 
 let {
   store,

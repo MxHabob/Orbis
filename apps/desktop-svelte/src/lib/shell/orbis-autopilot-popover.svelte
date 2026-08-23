@@ -20,7 +20,7 @@ import {
   AlertTriangle,
   AlertCircle,
   Settings,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { academicContext } from "$lib/stores";
 
 import { formatDate } from "$lib/core/i18n";

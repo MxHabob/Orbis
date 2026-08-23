@@ -11,7 +11,7 @@ import { commands } from "$lib/core/ipc";
 import type { UserSession } from "$lib/core/ipc";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { Monitor, Smartphone } from "lucide-svelte";
+import { Monitor, Smartphone } from "@lucide/svelte";
 import { fade } from "svelte/transition";
 import { formatDate } from "$lib/core/i18n";
 

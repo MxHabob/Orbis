@@ -12,7 +12,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@orbis/ui-svelte/sheet";
-import { CreditCard } from "lucide-svelte";
+import { CreditCard } from "@lucide/svelte";
 import PaymentRecordForm from "./payment-record-form.svelte";
 
 let {

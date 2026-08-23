@@ -12,7 +12,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@orbis/ui-svelte/sheet";
-import { Calendar } from "lucide-svelte";
+import { Calendar } from "@lucide/svelte";
 import LessonForm from "./lesson-form.svelte";
 
 let {

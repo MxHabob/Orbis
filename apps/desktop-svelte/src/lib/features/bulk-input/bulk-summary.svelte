@@ -12,7 +12,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@orbis/ui-svelte/accordion";
-import { CircleCheck, CircleX, Hash, AlertTriangle } from "lucide-svelte";
+import { CircleCheck, CircleX, Hash, AlertTriangle } from "@lucide/svelte";
 
 interface Props {
   totalFilled: number;

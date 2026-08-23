@@ -12,7 +12,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@orbis/ui-svelte/tooltip";
-import { ZoomIn, ZoomOut, Maximize2, Magnet } from "lucide-svelte";
+import { ZoomIn, ZoomOut, Maximize2, Magnet } from "@lucide/svelte";
 
 let {
   store,

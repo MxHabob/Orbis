@@ -26,7 +26,7 @@ import {
   TabsTrigger,
   TabsContent,
 } from "@orbis/ui-svelte/tabs";
-import { Save, Plus, Trash2, Sparkles, ShieldCheck, Layers, BookOpen } from "lucide-svelte";
+import { Save, Plus, Trash2, Sparkles, ShieldCheck, Layers, BookOpen } from "@lucide/svelte";
 import { toast } from "svelte-sonner";
 
 import { getLocale } from "$lib/paraglide/runtime";

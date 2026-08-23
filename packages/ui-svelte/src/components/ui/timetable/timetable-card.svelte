@@ -1,6 +1,6 @@
 <script lang="ts">
 import { fade } from "svelte/transition";
-import { Trash2 } from "lucide-svelte";
+import { Trash2 } from "@lucide/svelte";
 
 let {
   lesson,

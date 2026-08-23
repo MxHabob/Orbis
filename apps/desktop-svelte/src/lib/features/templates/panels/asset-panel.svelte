@@ -21,7 +21,7 @@ import {
   Trash2,
   Upload,
   Loader2,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import {
   useDocuments,
   useUploadDocument,

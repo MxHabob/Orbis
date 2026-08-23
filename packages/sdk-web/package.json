@@ -25,7 +25,7 @@
   "devDependencies": {
     "@orbis/tsconfig": "workspace:*",
     "@tanstack/react-query": "^5.0.0",
-    "typescript": "^5.9.3"
+    "typescript": "^7.0.2"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

@@ -16,7 +16,7 @@ import {
   Compass,
   BookOpen,
   ClipboardList,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import ArchivedBanner from "$lib/features/academics/archived-banner.svelte";

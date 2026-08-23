@@ -4,7 +4,7 @@ A styled logo uploader with loading indicator, image preview, and hover states.
 -->
 <script lang="ts">
 import { Avatar, AvatarImage, AvatarFallback } from "@orbis/ui-svelte/avatar";
-import { Loader2, Upload } from "lucide-svelte";
+import { Loader2, Upload } from "@lucide/svelte";
 import {
   useUploadDocument,
   resolveDocumentUrl,

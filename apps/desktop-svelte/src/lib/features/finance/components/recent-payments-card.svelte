@@ -2,7 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Card } from "@orbis/ui-svelte";
 import { Button } from "@orbis/ui-svelte/button";
-import { ArrowUpRight } from "lucide-svelte";
+import { ArrowUpRight } from "@lucide/svelte";
 import { formatCurrency } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
 

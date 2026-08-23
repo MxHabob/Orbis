@@ -16,7 +16,7 @@ import {
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
-import { Layout, Globe } from "lucide-svelte";
+import { Layout, Globe } from "@lucide/svelte";
 
 let prefTheme = $state("dark");
 let prefLanguage = $state("ar");

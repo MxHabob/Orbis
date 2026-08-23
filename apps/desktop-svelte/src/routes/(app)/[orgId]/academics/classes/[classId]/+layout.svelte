@@ -34,7 +34,7 @@ import {
   Bell,
   Share2,
   MoreHorizontal,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import type { Snippet } from "svelte";
 
 import { getLocale } from "$lib/paraglide/runtime";

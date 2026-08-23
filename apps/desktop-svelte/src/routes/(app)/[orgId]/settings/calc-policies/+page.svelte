@@ -33,7 +33,7 @@ import {
   Loader2,
   Pencil,
   FlaskConical,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
 
 let { data }: { data: { orgId: string } } = $props();

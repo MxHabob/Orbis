@@ -7,7 +7,7 @@ import DragIndicator from "../components/drag-indicator.svelte";
 
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/core/i18n";
-import { ArrowRight } from "lucide-svelte";
+import { ArrowRight } from "@lucide/svelte";
 
 let {
   orgId,

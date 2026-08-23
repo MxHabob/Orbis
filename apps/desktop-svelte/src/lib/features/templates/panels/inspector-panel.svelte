@@ -23,7 +23,7 @@ import {
 } from "@orbis/ui-svelte/accordion";
 import { Separator } from "@orbis/ui-svelte/separator";
 import { Badge } from "@orbis/ui-svelte/badge";
-import { Sliders } from "lucide-svelte";
+import { Sliders } from "@lucide/svelte";
 
 let {
   store,

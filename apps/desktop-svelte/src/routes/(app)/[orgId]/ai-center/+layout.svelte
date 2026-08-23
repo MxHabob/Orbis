@@ -11,7 +11,7 @@ import {
   Shield,
   Video,
   Plug,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import type { Snippet } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";

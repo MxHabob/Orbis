@@ -21,7 +21,7 @@ import {
   AlertTriangle,
   Clock,
   Radio,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui-svelte/button";
 import AiEmptyState from "$lib/shared/components/ai-empty-state.svelte";

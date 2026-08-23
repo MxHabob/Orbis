@@ -24,7 +24,7 @@ import {
   Lock,
   Unlock,
   Info,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { createQuery } from "@tanstack/svelte-query";
 import { commands, extractErrorMessage } from "$lib/core/ipc";

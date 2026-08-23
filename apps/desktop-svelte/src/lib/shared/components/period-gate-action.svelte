@@ -25,7 +25,7 @@ import { commands } from "$lib/core/ipc";
 import { createQuery } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui-svelte/button";
 import { Badge } from "@orbis/ui-svelte/badge";
-import { Loader2, Lock, Clock, AlertTriangle, Send } from "lucide-svelte";
+import { Loader2, Lock, Clock, AlertTriangle, Send } from "@lucide/svelte";
 import type { GateType, GateVerdict, GateDecision } from "@orbis/sdk-core";
 import type { Snippet } from "svelte";
 

@@ -26,7 +26,7 @@ import {
   Landmark,
   User,
   Users,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 
 const userId = $derived(page.params.userId);
 

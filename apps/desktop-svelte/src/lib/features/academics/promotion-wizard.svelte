@@ -58,7 +58,7 @@ import {
   UserX,
   GraduationCap,
   Ban,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import type {
   PromotionConfig,
   PromotionJob,

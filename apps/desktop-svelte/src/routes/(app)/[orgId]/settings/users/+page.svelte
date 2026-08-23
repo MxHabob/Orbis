@@ -13,7 +13,7 @@ import { toast } from "svelte-sonner";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { getLocale } from "$lib/paraglide/runtime";
 import { l, isAr } from "$lib/core/i18n";
-import { Plus, Users } from "lucide-svelte";
+import { Plus, Users } from "@lucide/svelte";
 
 import type { User } from "$lib/core/ipc";
 import { authStore } from "$lib/stores";

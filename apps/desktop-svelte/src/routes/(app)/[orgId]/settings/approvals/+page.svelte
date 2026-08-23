@@ -43,7 +43,7 @@ import {
   Clock,
   AlertTriangle,
   Loader2,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import type { AcademicOverrideRequest, ApprovalAction } from "@orbis/sdk-core";
 
 let { data }: { data: { orgId: string } } = $props();

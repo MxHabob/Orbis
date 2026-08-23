@@ -33,7 +33,7 @@ import {
   List,
   FolderTree,
   MoreVertical,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import OrgUnitSheet from "$lib/features/academics/components/org-unit-sheet.svelte";
 import { confirmStore } from "$lib/stores";
 

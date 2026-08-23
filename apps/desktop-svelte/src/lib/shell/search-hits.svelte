@@ -1,5 +1,5 @@
 <script lang="ts">
-import { CornerDownLeft } from "lucide-svelte";
+import { CornerDownLeft } from "@lucide/svelte";
 import * as m from "$lib/paraglide/messages";
 
 let {

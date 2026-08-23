@@ -23,7 +23,7 @@ import {
   Settings,
   FileText,
   Brain,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { authStore } from "$lib/stores";
 import OrgSidebarSwitcher from "./org-sidebar-switcher.svelte";
 import UserSidebarMenu from "./user-sidebar-menu.svelte";

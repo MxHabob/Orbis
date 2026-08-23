@@ -6,7 +6,7 @@
 import { goto } from "$app/navigation";
 import { authStore } from "$lib/stores";
 import { onMount } from "svelte";
-import { Loader2 } from "lucide-svelte";
+import { Loader2 } from "@lucide/svelte";
 
 onMount(async () => {
   await authStore.restore();

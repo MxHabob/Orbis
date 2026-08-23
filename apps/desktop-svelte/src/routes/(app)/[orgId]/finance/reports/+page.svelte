@@ -7,7 +7,7 @@ Shows real-time Trial Balance, Income Statement, and Balance Sheet, loaded from 
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
-import { Landmark, FileSpreadsheet, Scale, BarChart3 } from "lucide-svelte";
+import { Landmark, FileSpreadsheet, Scale, BarChart3 } from "@lucide/svelte";
 import { fade } from "svelte/transition";
 import {
   Tabs,

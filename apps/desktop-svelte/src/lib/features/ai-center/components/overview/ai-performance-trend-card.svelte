@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui-svelte";
-import { Activity, ArrowRight, Sparkles } from "lucide-svelte";
+import { Activity, ArrowRight, Sparkles } from "@lucide/svelte";
 import { localizeHref } from "$lib/paraglide/runtime";
 
 let {

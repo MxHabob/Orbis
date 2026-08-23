@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { AlertCircle, RefreshCcw } from "lucide-svelte";
+import { AlertCircle, RefreshCcw } from "@lucide/svelte";
 import { Button } from "@orbis/ui-svelte/button";
 
 let {

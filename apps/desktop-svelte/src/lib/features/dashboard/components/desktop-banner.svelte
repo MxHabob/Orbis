@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { X } from "lucide-svelte";
+import { X } from "@lucide/svelte";
 import { onMount } from "svelte";
 import { fly } from "svelte/transition";
 

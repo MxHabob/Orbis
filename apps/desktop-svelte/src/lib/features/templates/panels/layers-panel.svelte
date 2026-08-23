@@ -25,7 +25,7 @@ import {
   Unlock,
   Plus,
   FileText,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 
 let {
   store,

@@ -26,7 +26,7 @@ import {
   Download,
   RefreshCcw,
   SlidersHorizontal,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import AiEmptyState from "$lib/shared/components/ai-empty-state.svelte";
 import type { Snippet } from "svelte";
 import { DefaultCell } from "../index";

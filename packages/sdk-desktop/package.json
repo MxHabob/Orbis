@@ -13,7 +13,7 @@
   },
   "devDependencies": {
     "@orbis/tsconfig": "workspace:*",
-    "typescript": "^5.9.3"
+    "typescript": "^7.0.2"
   },
   "peerDependencies": {
     "@tauri-apps/api": "^2.0.0"

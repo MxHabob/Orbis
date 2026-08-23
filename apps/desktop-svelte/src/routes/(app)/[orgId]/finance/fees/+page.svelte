@@ -16,7 +16,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import { Plus, Wallet, CheckSquare, HelpCircle } from "lucide-svelte";
+import { Plus, Wallet, CheckSquare, HelpCircle } from "@lucide/svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { fade } from "svelte/transition";

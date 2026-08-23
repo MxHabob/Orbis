@@ -3,7 +3,6 @@
   "include": ["."],
   "exclude": ["node_modules"],
   "compilerOptions": {
-    "baseUrl": ".",
     "typeRoots": ["./node_modules/@types", "../../types"],
     "types": ["bun", "node"]
   }

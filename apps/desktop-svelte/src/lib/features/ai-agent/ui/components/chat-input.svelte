@@ -1,6 +1,6 @@
 <script lang="ts">
 import { Button } from "@orbis/ui-svelte/button";
-import { Plus, ArrowRight, ArrowLeft } from "lucide-svelte";
+import { Plus, ArrowRight, ArrowLeft } from "@lucide/svelte";
 import * as m from "$lib/paraglide/messages";
 
 let {

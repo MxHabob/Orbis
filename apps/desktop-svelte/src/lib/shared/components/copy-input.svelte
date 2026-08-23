@@ -4,7 +4,7 @@ A styled click-to-copy input bar with smooth checkmark state transition.
 -->
 <script lang="ts">
 import { cn } from "@orbis/ui-svelte/utils";
-import { Copy, Check } from "lucide-svelte";
+import { Copy, Check } from "@lucide/svelte";
 
 let {
   value,

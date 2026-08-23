@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Card } from "@orbis/ui-svelte";
-import { Landmark, Wallet } from "lucide-svelte";
+import { Landmark, Wallet } from "@lucide/svelte";
 import { formatCurrency } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
 

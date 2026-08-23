@@ -16,7 +16,7 @@ import { toast } from "svelte-sonner";
 
 import { l, isAr } from "$lib/core/i18n";
 import SearchField from "$lib/shared/components/search-field.svelte";
-import { Plus, RefreshCw, FileText } from "lucide-svelte";
+import { Plus, RefreshCw, FileText } from "@lucide/svelte";
 import { fade } from "svelte/transition";
 
 // Component imports

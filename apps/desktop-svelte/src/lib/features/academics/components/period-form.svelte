@@ -12,7 +12,7 @@ import {
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import { extractErrorMessage } from "$lib/core/ipc";
-import { ChevronRight } from "lucide-svelte";
+import { ChevronRight } from "@lucide/svelte";
 
 let {
   orgId,

@@ -17,7 +17,7 @@ import {
 } from "@orbis/ui-svelte/table";
 import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
-import { ListOrdered, RefreshCw, Lock, Search } from "lucide-svelte";
+import { ListOrdered, RefreshCw, Lock, Search } from "@lucide/svelte";
 
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { authStore } from "$lib/stores";

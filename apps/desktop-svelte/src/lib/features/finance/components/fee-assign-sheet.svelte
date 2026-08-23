@@ -12,7 +12,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@orbis/ui-svelte/sheet";
-import { Wallet } from "lucide-svelte";
+import { Wallet } from "@lucide/svelte";
 import FeeAssignForm from "./fee-assign-form.svelte";
 
 let {

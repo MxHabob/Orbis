@@ -7,7 +7,7 @@ import {
 } from "@orbis/ui-svelte/popover";
 import { Button } from "@orbis/ui-svelte/button";
 import { Badge } from "@orbis/ui-svelte/badge";
-import { Megaphone } from "lucide-svelte";
+import { Megaphone } from "@lucide/svelte";
 import { isDesktopApp } from "$lib/core/ipc";
 
 import { getLocale } from "$lib/paraglide/runtime";

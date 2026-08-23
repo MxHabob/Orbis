@@ -1,7 +1,7 @@
 <script lang="ts">
 import { Button } from "@orbis/ui-svelte/button";
 import { Avatar } from "@orbis/avatar-engine";
-import { X, MoreHorizontal, Columns, Plus } from "lucide-svelte";
+import { X, MoreHorizontal, Columns, Plus } from "@lucide/svelte";
 import ChatHistoryPopover from "./chat-history-popover.svelte";
 
 let {

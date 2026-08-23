@@ -7,7 +7,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Avatar } from "@orbis/avatar-engine";
 import { Badge } from "@orbis/ui-svelte/badge";
-import { CheckCircle2, Building2, Shield, Database } from "lucide-svelte";
+import { CheckCircle2, Building2, Shield, Database } from "@lucide/svelte";
 
 import { onboardingState } from "../state.svelte";
 import { getLocale } from "$lib/paraglide/runtime";

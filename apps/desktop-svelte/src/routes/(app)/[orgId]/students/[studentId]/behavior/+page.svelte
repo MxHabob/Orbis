@@ -13,7 +13,7 @@ import {
   Sparkles,
   BrainCircuit,
   Plus,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { onMount } from "svelte";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";

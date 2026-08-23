@@ -6,7 +6,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Input } from "@orbis/ui-svelte/input";
 import { Button } from "@orbis/ui-svelte/button";
-import { Plus, Trash } from "lucide-svelte";
+import { Plus, Trash } from "@lucide/svelte";
 
 import { onboardingState } from "../state.svelte";
 

@@ -37,7 +37,7 @@ import {
   ChevronRight,
   Calendar,
   AlertCircle,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { formatDate, isAr } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
 

@@ -18,7 +18,7 @@ import {
   Barcode,
   QrCode,
   Frame,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 
 let {
   store,

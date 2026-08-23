@@ -21,7 +21,7 @@ Follows standard settings layout pattern (section headers, clean two-column grid
   import { Separator } from "@orbis/ui-svelte/separator";
   import { toast } from "svelte-sonner";
 
-  import { ShieldAlert, Award, Loader2 } from "lucide-svelte";
+  import { ShieldAlert, Award, Loader2 } from "@lucide/svelte";
   import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
 
   let { data }: { data: { orgId: string } } = $props();

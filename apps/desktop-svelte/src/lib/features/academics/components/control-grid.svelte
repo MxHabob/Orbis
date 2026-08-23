@@ -18,7 +18,7 @@ import {
   BookOpen,
   Info,
   BarChart3,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import ClassSelect from "$lib/features/academics/components/class-select.svelte";
 import SubjectSelect from "$lib/features/academics/components/subject-select.svelte";

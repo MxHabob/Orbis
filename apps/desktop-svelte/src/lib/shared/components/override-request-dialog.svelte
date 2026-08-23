@@ -35,7 +35,7 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Textarea } from "@orbis/ui-svelte/textarea";
 import { Label } from "@orbis/ui-svelte/label";
 import { Badge } from "@orbis/ui-svelte/badge";
-import { Loader2, AlertTriangle, Shield } from "lucide-svelte";
+import { Loader2, AlertTriangle, Shield } from "@lucide/svelte";
 import type { OverrideType, RiskLevel } from "@orbis/sdk-core";
 
 interface Props {

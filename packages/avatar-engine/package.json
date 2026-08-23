@@ -26,6 +26,6 @@
   "devDependencies": {
     "@orbis/tsconfig": "workspace:*",
     "svelte": "^5.56.1",
-    "typescript": "^6.0.3"
+    "typescript": "^7.0.2"
   }
 }

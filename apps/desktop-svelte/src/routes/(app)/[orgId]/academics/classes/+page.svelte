@@ -9,7 +9,7 @@ import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { Plus, Users, GraduationCap, Percent } from "lucide-svelte";
+import { Plus, Users, GraduationCap, Percent } from "@lucide/svelte";
 import { toast } from "svelte-sonner";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";

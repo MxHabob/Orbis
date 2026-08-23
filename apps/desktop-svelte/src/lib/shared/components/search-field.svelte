@@ -6,7 +6,7 @@ and Escape key shortcut to clear the search query.
 <script lang="ts">
 import { Input } from "@orbis/ui-svelte/input";
 import { cn } from "@orbis/ui-svelte/utils";
-import { Search } from "lucide-svelte";
+import { Search } from "@lucide/svelte";
 
 let {
   placeholder = "Search...",

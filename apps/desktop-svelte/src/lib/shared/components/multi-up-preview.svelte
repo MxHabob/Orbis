@@ -7,7 +7,7 @@ import * as m from "$lib/paraglide/messages";
  */
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Button } from "@orbis/ui-svelte/button";
-import { ChevronLeft, ChevronRight } from "lucide-svelte";
+import { ChevronLeft, ChevronRight } from "@lucide/svelte";
 
 import { getLocale } from "$lib/paraglide/runtime";
 

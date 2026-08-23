@@ -23,7 +23,7 @@ import {
   AlertCircle,
   Sparkles,
   Info,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { localizeHref } from "$lib/paraglide/runtime";
 
 import {

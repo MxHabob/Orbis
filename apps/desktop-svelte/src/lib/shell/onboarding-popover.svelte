@@ -9,7 +9,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@orbis/ui-svelte";
-import { Check, ChevronRight, Sparkles } from "lucide-svelte";
+import { Check, ChevronRight, Sparkles } from "@lucide/svelte";
 import { onboardingState } from "$lib/features/onboarding/state.svelte";
 import { authStore } from "$lib/stores";
 import { goto } from "$app/navigation";

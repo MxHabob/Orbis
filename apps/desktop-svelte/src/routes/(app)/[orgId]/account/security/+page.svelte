@@ -7,7 +7,7 @@ import type { UserSession } from "$lib/core/ipc";
 import { toast } from "svelte-sonner";
 
 import { AccountPasswordCard, AccountSessionsCard } from "$lib/features/auth";
-import { Smartphone, Monitor } from "lucide-svelte";
+import { Smartphone, Monitor } from "@lucide/svelte";
 
 let isUpdating = $state(false);
 let currentPassword = $state("");

@@ -32,7 +32,7 @@ import {
   ExternalLink,
   X,
   Paperclip,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { onMount } from "svelte";
 import { toast } from "svelte-sonner";
 import { createEnrollmentsQuery } from "$lib/features/students";

@@ -31,7 +31,7 @@ import {
   ChevronDown,
   ArrowUp,
   ArrowDown,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 
 let {
   store,

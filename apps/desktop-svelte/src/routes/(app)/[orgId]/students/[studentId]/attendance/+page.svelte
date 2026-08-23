@@ -6,7 +6,7 @@ Attendance stats + log history using OrbisGrid.
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { commands } from "$lib/core/ipc";
-import { Calendar, UserCheck, Ban, Clock } from "lucide-svelte";
+import { Calendar, UserCheck, Ban, Clock } from "@lucide/svelte";
 import { onMount } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 

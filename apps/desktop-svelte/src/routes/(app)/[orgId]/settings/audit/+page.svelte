@@ -20,7 +20,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@orbis/ui-svelte/dialog";
-import { History, Info } from "lucide-svelte";
+import { History, Info } from "@lucide/svelte";
 import { l, isAr } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
 

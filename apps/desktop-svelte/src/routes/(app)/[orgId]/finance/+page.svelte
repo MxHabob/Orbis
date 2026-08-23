@@ -9,7 +9,7 @@ directly inside the cards' headers.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { AlertCircle } from "lucide-svelte";
+import { AlertCircle } from "@lucide/svelte";
 
 import { extractErrorMessage } from "$lib/core/ipc";
 

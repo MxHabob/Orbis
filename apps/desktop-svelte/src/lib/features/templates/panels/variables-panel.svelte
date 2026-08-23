@@ -32,7 +32,7 @@ import {
   ChevronDown,
   ChevronRight,
   Copy,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 
 let {
   store,

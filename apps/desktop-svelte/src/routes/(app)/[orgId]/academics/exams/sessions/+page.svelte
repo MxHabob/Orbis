@@ -18,7 +18,7 @@ import {
   Users,
   ArrowRight,
   ClipboardList,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 
 import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
 import SessionCreateSheet from "$lib/features/exams/components/session-create-sheet.svelte";

@@ -21,7 +21,7 @@ import {
   Moon,
   Search,
   Bell,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 
 import WhatsNewPopover from "./whats-new-popover.svelte";

@@ -2,7 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { AlertCircle } from "lucide-svelte";
+import { AlertCircle } from "@lucide/svelte";
 
 import { formatDate } from "$lib/core/i18n";
 

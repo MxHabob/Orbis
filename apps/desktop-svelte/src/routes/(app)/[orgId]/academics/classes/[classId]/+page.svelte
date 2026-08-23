@@ -37,7 +37,7 @@ import {
   FileText,
   AlertCircle,
   BookOpen,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { fade } from "svelte/transition";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 

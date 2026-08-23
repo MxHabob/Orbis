@@ -7,7 +7,7 @@ import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
-import { GraduationCap, Award, Calendar, RefreshCcw } from "lucide-svelte";
+import { GraduationCap, Award, Calendar, RefreshCcw } from "@lucide/svelte";
 import { onMount } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 

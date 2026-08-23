@@ -28,7 +28,7 @@ import {
   AlertCircle,
   Download,
   Info,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { academicContext } from "$lib/stores";
 import { createPeriodsQuery } from "$lib/features/academics";
 import { createQuery } from "@tanstack/svelte-query";

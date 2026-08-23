@@ -6,7 +6,7 @@ import { commands } from "$lib/core/ipc";
 import DragIndicator from "../components/drag-indicator.svelte";
 
 import { localizeHref } from "$lib/paraglide/runtime";
-import { ArrowRight } from "lucide-svelte";
+import { ArrowRight } from "@lucide/svelte";
 
 let {
   orgId,

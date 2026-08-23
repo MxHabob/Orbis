@@ -20,7 +20,7 @@ import {
   Heart,
   Award,
   Search,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
 import SearchField from "$lib/shared/components/search-field.svelte";

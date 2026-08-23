@@ -9,7 +9,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@orbis/ui-svelte/popover";
-import { History } from "lucide-svelte";
+import { History } from "@lucide/svelte";
 import SearchField from "$lib/shared/components/search-field.svelte";
 import { createAgentSessionsQuery } from "$lib/features/ai/queries";
 import { formatDate } from "$lib/core/i18n";

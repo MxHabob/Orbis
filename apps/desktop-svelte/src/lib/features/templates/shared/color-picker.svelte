@@ -14,7 +14,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@orbis/ui-svelte/popover";
-import { Pipette } from "lucide-svelte";
+import { Pipette } from "@lucide/svelte";
 
 let {
   value = "#000000",

@@ -6,7 +6,7 @@ import { Button } from "@orbis/ui-svelte/button";
 import { toast } from "svelte-sonner";
 import { l } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
-import { Plus, DoorOpen } from "lucide-svelte";
+import { Plus, DoorOpen } from "@lucide/svelte";
 import RoomCreateSheet from "$lib/features/academics/components/room-create-sheet.svelte";
 
 import { DataTable } from "$lib/tables";

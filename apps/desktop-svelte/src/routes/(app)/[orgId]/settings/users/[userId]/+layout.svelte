@@ -25,7 +25,7 @@ import {
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
 import { toast } from "svelte-sonner";
-import { Trash2 } from "lucide-svelte";
+import { Trash2 } from "@lucide/svelte";
 import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import MainViewport from "$lib/shell/main-viewport.svelte";

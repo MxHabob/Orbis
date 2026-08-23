@@ -7,7 +7,7 @@ import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { commands } from "$lib/core/ipc";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { CreditCard, Wallet, CheckCircle2, AlertCircle } from "lucide-svelte";
+import { CreditCard, Wallet, CheckCircle2, AlertCircle } from "@lucide/svelte";
 import { onMount } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 

@@ -50,7 +50,7 @@ import {
   Minus,
   Plus,
   Group,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 
 let {
   store,

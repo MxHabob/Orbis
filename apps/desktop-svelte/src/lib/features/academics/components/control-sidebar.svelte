@@ -12,7 +12,7 @@ import {
   RefreshCw,
   BarChart3,
   Users,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 
 import { formatNumber } from "$lib/core/i18n";

@@ -19,7 +19,7 @@ import {
   AlertCircle,
   Check,
   X,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { Button } from "@orbis/ui-svelte/button";
 
 let { data }: { data: { orgId: string } } = $props();

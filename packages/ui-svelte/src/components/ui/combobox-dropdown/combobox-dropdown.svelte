@@ -7,7 +7,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "../popover/index.js";
 import { Input } from "../input/index.js";
 import { Button } from "../button/index.js";
 import { cn } from "../../../utils.js";
-import { Check, ChevronsUpDown, Search } from "lucide-svelte";
+import { Check, ChevronsUpDown, Search } from "@lucide/svelte";
 
 interface ComboboxItem {
   id: string;

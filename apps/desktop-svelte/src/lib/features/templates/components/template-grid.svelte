@@ -18,7 +18,7 @@ import {
   Archive,
   RefreshCw,
   CheckCircle,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 
 import { l } from "$lib/core/i18n";
 

@@ -42,7 +42,7 @@ import {
   CheckCircle2,
   FileText,
   LayoutGrid,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 
 import {
   computeMultiUpLayout,

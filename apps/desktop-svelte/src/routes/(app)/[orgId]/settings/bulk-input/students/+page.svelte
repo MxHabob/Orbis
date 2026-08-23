@@ -23,7 +23,7 @@ import {
 } from "@orbis/ui-svelte/popover";
 import { Checkbox } from "@orbis/ui-svelte/checkbox";
 import { Label } from "@orbis/ui-svelte/label";
-import { ArrowLeft, Upload, Columns3, Trash2, Info } from "lucide-svelte";
+import { ArrowLeft, Upload, Columns3, Trash2, Info } from "@lucide/svelte";
 import { toast } from "svelte-sonner";
 
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";

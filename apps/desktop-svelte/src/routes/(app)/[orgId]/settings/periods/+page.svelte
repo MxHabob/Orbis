@@ -19,7 +19,7 @@ import {
   ChevronDown,
   Award,
   Trash2,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import PeriodCreateSheet from "$lib/features/academics/components/period-create-sheet.svelte";
 import { confirmStore } from "$lib/stores";
 

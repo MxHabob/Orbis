@@ -19,7 +19,7 @@ import {
   ImageIcon,
   Wrench,
   Settings2,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 
 let {
   store,

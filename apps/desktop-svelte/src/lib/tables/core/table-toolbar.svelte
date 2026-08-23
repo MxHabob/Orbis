@@ -6,7 +6,7 @@
 <script lang="ts">
 import { Input } from "@orbis/ui-svelte/input";
 import { Button } from "@orbis/ui-svelte/button";
-import { Search, Download, RefreshCcw, X } from "lucide-svelte";
+import { Search, Download, RefreshCcw, X } from "@lucide/svelte";
 import type { Snippet } from "svelte";
 
 interface Props {

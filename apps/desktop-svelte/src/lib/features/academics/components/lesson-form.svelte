@@ -10,7 +10,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import { ShieldAlert, Calendar } from "lucide-svelte";
+import { ShieldAlert, Calendar } from "@lucide/svelte";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";

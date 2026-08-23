@@ -36,7 +36,7 @@ import {
   Trash,
   XCircle,
   Printer,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 
 import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
 import SubjectAddSheet from "$lib/features/exams/components/subject-add-sheet.svelte";

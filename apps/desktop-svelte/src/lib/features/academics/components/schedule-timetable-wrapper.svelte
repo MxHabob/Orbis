@@ -4,7 +4,7 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Timetable } from "@orbis/ui-svelte/timetable";
 import { getLocale } from "$lib/paraglide/runtime";
-import { Clock } from "lucide-svelte";
+import { Clock } from "@lucide/svelte";
 
 import ErrorState from "$lib/shared/components/error-state.svelte";
 

@@ -15,7 +15,7 @@ import {
 import { Badge } from "@orbis/ui-svelte/badge";
 import AttendanceTrendsCard from "$lib/features/metrics/cards/attendance-trends-card.svelte";
 import GradeDistributionCard from "$lib/features/metrics/cards/grade-distribution-card.svelte";
-import { BrainCircuit } from "lucide-svelte";
+import { BrainCircuit } from "@lucide/svelte";
 import { onMount } from "svelte";
 import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";

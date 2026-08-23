@@ -28,7 +28,7 @@ import {
   Twitter,
   Github,
   Lock,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 
 function openUrl(url: string) {
   window.open(url, "_blank");

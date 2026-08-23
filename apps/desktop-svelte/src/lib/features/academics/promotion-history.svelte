@@ -32,7 +32,7 @@ import {
   Clock,
   Loader2,
   AlertTriangle,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import type { PromotionJob } from "@orbis/sdk-core";
 
 let { orgId, userId }: { orgId: string; userId: string } = $props();

@@ -1,6 +1,6 @@
 <script lang="ts">
 import { fade } from "svelte/transition";
-import { Plus, Clock } from "lucide-svelte";
+import { Plus, Clock } from "@lucide/svelte";
 import TimetableCard from "./timetable-card.svelte";
 
 let {

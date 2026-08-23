@@ -40,7 +40,7 @@ import {
   ArrowDownLeft,
   TrendingUp,
   FileSpreadsheet,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
 import * as m from "$lib/paraglide/messages";

@@ -43,7 +43,7 @@ import {
   Printer,
   ChevronLeft,
   ChevronRight,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
 

@@ -6,7 +6,7 @@ Wraps wizard and history sub-routes.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
-import { TrendingUp, History } from "lucide-svelte";
+import { TrendingUp, History } from "@lucide/svelte";
 import type { Snippet } from "svelte";
 
 let { data, children }: { data: { orgId: string }; children: Snippet } =

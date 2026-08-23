@@ -4,7 +4,7 @@ import { cn, type WithoutChild } from "../../../utils.js";
 import {
   ChevronDown as ChevronDownIcon,
   ChevronUp as ChevronUpIcon,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 
 let {
   ref = $bindable(null),

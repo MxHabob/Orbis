@@ -17,7 +17,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import { Users, ClipboardList, Download, RefreshCcw } from "lucide-svelte";
+import { Users, ClipboardList, Download, RefreshCcw } from "@lucide/svelte";
 import { toast } from "svelte-sonner";
 
 import { getLocale } from "$lib/paraglide/runtime";

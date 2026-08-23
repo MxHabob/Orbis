@@ -4,7 +4,7 @@ Renders a Lucide icon by name string or SVG logo HTML without forced external bo
 Scales both square and wide landscape logos proportionally and consistently within bounded limits.
 -->
 <script lang="ts">
-import * as icons from "lucide-svelte";
+import * as icons from "@lucide/svelte";
 
 let {
   icon,

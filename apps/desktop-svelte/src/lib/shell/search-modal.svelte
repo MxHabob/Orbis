@@ -24,7 +24,7 @@ import {
   Shield,
   ArrowRightLeft,
   Wallet,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 
 let searchQuery = $state("");
 let inputEl = $state<HTMLInputElement | null>(null);

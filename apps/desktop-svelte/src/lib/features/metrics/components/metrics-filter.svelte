@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@orbis/ui-svelte/dropdown-menu";
-import { Filter, ChevronDown } from "lucide-svelte";
+import { Filter, ChevronDown } from "@lucide/svelte";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 

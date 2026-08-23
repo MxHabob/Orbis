@@ -7,7 +7,7 @@ import * as m from "$lib/paraglide/messages";
  */
 import type { EditorStore } from "../stores/editor-store.svelte";
 import { Button } from "@orbis/ui-svelte/button";
-import { X } from "lucide-svelte";
+import { X } from "@lucide/svelte";
 
 // Panels
 import AssetPanel from "../panels/asset-panel.svelte";
@@ -23,7 +23,7 @@ import {
   TabsTrigger,
   TabsContent,
 } from "@orbis/ui-svelte/tabs";
-import { Layers, Variable, History, Search } from "lucide-svelte";
+import { Layers, Variable, History, Search } from "@lucide/svelte";
 import { Input } from "@orbis/ui-svelte/input";
 
 let {

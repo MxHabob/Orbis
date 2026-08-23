@@ -11,7 +11,7 @@ import type { Enrollment } from "$lib/core/ipc";
 import { formatDate, l } from "$lib/core/i18n";
 import { createInitials } from "$lib/tables";
 import type { OrbisColumnDef, GridActionEvent } from "@orbis/svelte-grid";
-import { GraduationCap } from "lucide-svelte";
+import { GraduationCap } from "@lucide/svelte";
 import { goto } from "$app/navigation";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { studentsStore } from "$lib/features/students";

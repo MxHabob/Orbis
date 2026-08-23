@@ -8,7 +8,7 @@ import {
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { confirmStore } from "$lib/stores";
-import { Trash2, File, Image as ImageIcon, Loader2, ExternalLink } from "lucide-svelte";
+import { Trash2, File, Image as ImageIcon, Loader2, ExternalLink } from "@lucide/svelte";
 import type { Document } from "@orbis/sdk-core";
 
 const documentsQuery = useDocuments({ ownerId: "all" });

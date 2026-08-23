@@ -38,7 +38,7 @@ import {
   CheckSquare,
   Square,
   FileText,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";

@@ -3,7 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
 import { page } from "$app/state";
 import { Button } from "@orbis/ui-svelte/button";
-import { Sparkles } from "lucide-svelte";
+import { Sparkles } from "@lucide/svelte";
 
 import {
   Tooltip,

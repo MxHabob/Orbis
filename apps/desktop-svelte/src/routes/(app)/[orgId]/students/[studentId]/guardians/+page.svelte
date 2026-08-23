@@ -11,7 +11,7 @@ import { toast } from "svelte-sonner";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Badge } from "@orbis/ui-svelte/badge";
-import { Plus, Users2, Edit2, Trash2 } from "lucide-svelte";
+import { Plus, Users2, Edit2, Trash2 } from "@lucide/svelte";
 import { commands } from "$lib/core/ipc";
 import type { GuardianLink, JsonRecord } from "@orbis/sdk-core";
 import GuardianLinkSheet from "$lib/features/students/components/guardian-link-sheet.svelte";

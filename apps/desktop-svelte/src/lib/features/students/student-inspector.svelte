@@ -5,7 +5,7 @@ import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte";
 import { Badge } from "@orbis/ui-svelte/badge";
-import { X, ExternalLink, CreditCard, Award } from "lucide-svelte";
+import { X, ExternalLink, CreditCard, Award } from "@lucide/svelte";
 
 import { localizeHref } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate, formatPercent } from "$lib/core/i18n";

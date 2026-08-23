@@ -16,7 +16,7 @@ import {
   Printer,
   Upload,
   ShieldAlert,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import {
   studentsStore,
   createEnrollmentsPaginatedQuery,

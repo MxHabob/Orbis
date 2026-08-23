@@ -8,7 +8,7 @@ import * as m from "$lib/paraglide/messages";
 import { Dialog, DialogContent } from "@orbis/ui-svelte/dialog";
 import { Button } from "@orbis/ui-svelte";
 
-import { Check } from "lucide-svelte";
+import { Check } from "@lucide/svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 
 let { open = $bindable(false) }: { open: boolean } = $props();

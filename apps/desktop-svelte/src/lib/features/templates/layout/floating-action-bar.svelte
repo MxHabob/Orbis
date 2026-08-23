@@ -22,7 +22,7 @@ import {
   ArrowUpToLine,
   ArrowDownToLine,
   MoreHorizontal,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 
 let {
   store,

@@ -34,7 +34,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@orbis/ui-svelte/alert-dialog";
-import { Plus, Trash } from "lucide-svelte";
+import { Plus, Trash } from "@lucide/svelte";
 
 import { onboardingState } from "../state.svelte";
 

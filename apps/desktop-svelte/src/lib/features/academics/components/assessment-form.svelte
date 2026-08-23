@@ -11,7 +11,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import { Award } from "lucide-svelte";
+import { Award } from "@lucide/svelte";
 import { toast } from "svelte-sonner";
 
 let {

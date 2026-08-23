@@ -26,7 +26,7 @@ import {
   Keyboard,
   X,
   Plus,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { matchStudent } from "$lib/shared/utils/search";
 import { formatCurrency, formatDate } from "$lib/core/i18n";

@@ -13,7 +13,7 @@ import {
 } from "@orbis/ui-svelte/card";
 import { Input } from "@orbis/ui-svelte/input";
 import { Button } from "@orbis/ui-svelte/button";
-import { Loader2 } from "lucide-svelte";
+import { Loader2 } from "@lucide/svelte";
 
 let {
   title = "Display Name",

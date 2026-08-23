@@ -5,7 +5,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
-import { ArrowRight, ArrowLeft } from "lucide-svelte";
+import { ArrowRight, ArrowLeft } from "@lucide/svelte";
 
 let {
   activeStep,

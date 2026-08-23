@@ -42,7 +42,7 @@ import {
   Group,
   Save,
   Eye,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import * as m from "$lib/paraglide/messages";
 
 let {

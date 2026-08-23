@@ -11,7 +11,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@orbis/ui-svelte/accordion";
-import { CircleCheck, CircleX, Hash } from "lucide-svelte";
+import { CircleCheck, CircleX, Hash } from "@lucide/svelte";
 
 interface Props {
   totalFilledRows: number;

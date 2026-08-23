@@ -18,7 +18,7 @@ import {
   ArrowRight,
   ShieldAlert,
   Sparkles,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { localizeHref } from "$lib/paraglide/runtime";
 import AiPerformanceTrendCard from "$lib/features/ai-center/components/overview/ai-performance-trend-card.svelte";

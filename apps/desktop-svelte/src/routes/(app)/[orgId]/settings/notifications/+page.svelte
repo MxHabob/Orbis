@@ -5,7 +5,7 @@ import { Switch } from "@orbis/ui-svelte/switch";
 import { Button } from "@orbis/ui-svelte/button";
 import { toast } from "svelte-sonner";
 
-import { Bell, Mail } from "lucide-svelte";
+import { Bell, Mail } from "@lucide/svelte";
 
 let isSaving = $state(false);
 

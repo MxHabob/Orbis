@@ -25,7 +25,7 @@ import {
   Calendar,
   Trash2,
   AlertCircle,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
 import AssessmentCreateSheet from "$lib/features/academics/components/assessment-create-sheet.svelte";

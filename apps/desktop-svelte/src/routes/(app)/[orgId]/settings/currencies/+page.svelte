@@ -40,7 +40,7 @@ import {
   Sparkles,
   Globe,
   Info,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 import { fade, slide } from "svelte/transition";
 
 import { l, isAr } from "$lib/core/i18n";

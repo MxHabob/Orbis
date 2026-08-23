@@ -19,7 +19,7 @@ import {
   Layers,
   Group,
   Ungroup,
-} from "lucide-svelte";
+} from "@lucide/svelte";
 
 let {
   store,

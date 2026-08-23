@@ -6,7 +6,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
 import { Progress } from "@orbis/ui-svelte/progress";
-import { Sparkles } from "lucide-svelte";
+import { Sparkles } from "@lucide/svelte";
 import { Avatar } from "@orbis/avatar-engine";
 
 import { onboardingState } from "../state.svelte";

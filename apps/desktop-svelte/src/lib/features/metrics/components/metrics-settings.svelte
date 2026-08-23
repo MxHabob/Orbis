@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
-import { Settings, Check } from "lucide-svelte";
+import { Settings, Check } from "@lucide/svelte";
 import MetricsFilter from "./metrics-filter.svelte";
 
 let {

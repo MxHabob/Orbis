@@ -7,7 +7,7 @@ import * as m from "$lib/paraglide/messages";
 import { Input } from "@orbis/ui-svelte/input";
 import { Checkbox } from "@orbis/ui-svelte/checkbox";
 import { Button } from "@orbis/ui-svelte/button";
-import { Plus } from "lucide-svelte";
+import { Plus } from "@lucide/svelte";
 
 import { onboardingState } from "../state.svelte";
 
