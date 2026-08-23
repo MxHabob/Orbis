@@ -24,10 +24,10 @@ const menuItems = $derived([
 </script>
 
 <div
-  class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide"
+  class="h-full w-full overflow-y-auto scrollbar-hide"
   dir={getLocale() === "ar" ? "rtl" : "ltr"}
 >
-  <div class="max-w-6xl mx-auto p-6 flex flex-col gap-6">
+  <div class="w-full p-6 flex flex-col gap-6">
     <!-- Secondary Navigation -->
     <SecondaryMenu items={menuItems} {basePath} />
 
