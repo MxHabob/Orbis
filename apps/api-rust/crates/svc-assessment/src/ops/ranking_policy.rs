@@ -151,7 +151,7 @@ pub struct RankEntry {
 }
 
 /// A computed ranking result.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct RankResult {
     pub student_id: String,
     pub rank: Option<i32>,

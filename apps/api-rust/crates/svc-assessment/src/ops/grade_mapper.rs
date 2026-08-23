@@ -1,5 +1,6 @@
 use shared_kernel::errors::AppError;
 
+#[derive(serde::Serialize)]
 pub struct GradeScaleItemData {
     pub label: String,
     pub min_score: f64,
@@ -8,10 +9,12 @@ pub struct GradeScaleItemData {
     pub is_passing: bool,
 }
 
+#[derive(serde::Serialize)]
 pub struct GradeMapper {
     pub items: Vec<GradeScaleItemData>,
 }
 
+#[derive(serde::Serialize)]
 pub struct GradeResult {
     pub label: String,
     pub gpa_points: Option<f64>,
