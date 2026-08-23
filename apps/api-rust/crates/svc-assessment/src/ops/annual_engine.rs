@@ -23,7 +23,7 @@ use crate::ops::calc_engine::{CalcEngine, AstNode, apply_rounding};
 use crate::ops::grade_mapper::{GradeMapper, GradeScaleItemData};
 
 /// Input for an annual calculation request.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Deserialize)]
 pub struct AnnualCalcRequest {
     pub student_id: String,
     pub enrollment_id: String,
