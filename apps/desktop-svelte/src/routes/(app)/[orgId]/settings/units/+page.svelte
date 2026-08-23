@@ -33,6 +33,11 @@ import {
   List,
   FolderTree,
   MoreVertical,
+  Layers,
+  Users,
+  GraduationCap,
+  BookOpen,
+  DoorOpen,
 } from "@lucide/svelte";
 import OrgUnitSheet from "$lib/features/academics/components/org-unit-sheet.svelte";
 import { confirmStore } from "$lib/stores";
@@ -77,11 +82,18 @@ onMount(() => {
   }
 });
 
-// Auto-expand parents on initial data load
+// Auto-expand parents and root nodes on initial data load
 $effect(() => {
   if (units.length > 0 && !initializedExpanded) {
-    const parentIds = new Set(units.map((u) => u.parent_id).filter(Boolean));
-    expandedIds = new Set(parentIds);
+    const parentIds = new Set<string>();
+    for (const u of units) {
+      if (u.parent_id) {
+        parentIds.add(String(u.parent_id));
+      } else {
+        parentIds.add(String(u.id));
+      }
+    }
+    expandedIds = parentIds;
     initializedExpanded = true;
   }
 });
@@ -291,14 +303,23 @@ function getUnitTypeBadgeClass(typeStr: string): string {
   switch (String(typeStr).toLowerCase()) {
     case "branch":
       return "bg-sky-500/10 text-sky-500 border-sky-500/20";
-    case "building":
-      return "bg-teal-500/10 text-teal-500 border-teal-500/20";
+    case "stage":
+      return "bg-purple-500/10 text-purple-500 border-purple-500/20";
+    case "section":
+      return "bg-pink-500/10 text-pink-500 border-pink-500/20";
+    case "college":
+      return "bg-indigo-500/10 text-indigo-500 border-indigo-500/20";
     case "department":
       return "bg-amber-500/10 text-amber-500 border-amber-500/20";
+    case "program":
+      return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+    case "building":
+      return "bg-teal-500/10 text-teal-500 border-teal-500/20";
+    case "facility":
     case "classroom":
       return "bg-lime-500/10 text-lime-500 border-lime-500/20";
     case "office":
-      return "bg-indigo-500/10 text-indigo-500 border-indigo-500/20";
+      return "bg-blue-500/10 text-blue-500 border-blue-500/20";
     default:
       return "bg-slate-500/10 text-slate-500 border-slate-500/20";
   }
@@ -307,17 +328,52 @@ function getUnitTypeBadgeClass(typeStr: string): string {
 function getUnitTypeIcon(typeStr: string) {
   switch (String(typeStr).toLowerCase()) {
     case "branch":
-      return MapPin;
-    case "building":
-      return Building2;
+      return School;
+    case "stage":
+      return Layers;
+    case "section":
+      return Users;
+    case "college":
+      return GraduationCap;
     case "department":
       return Network;
+    case "program":
+      return BookOpen;
+    case "building":
+      return Building2;
+    case "facility":
     case "classroom":
-      return School;
+      return DoorOpen;
     case "office":
       return Briefcase;
     default:
       return Box;
+  }
+}
+
+function getUnitTypeLabel(typeStr: string): string {
+  switch (String(typeStr).toLowerCase()) {
+    case "branch":
+      return "فرع / مجمع";
+    case "stage":
+      return "مرحلة دراسية";
+    case "section":
+      return "قسم / مسار";
+    case "college":
+      return "كلية / معهد";
+    case "department":
+      return "قسم إداري / أكاديمي";
+    case "program":
+      return "مسار تدريبي";
+    case "building":
+      return "مبنى";
+    case "facility":
+    case "classroom":
+      return "قاعة / معمل";
+    case "office":
+      return "مكتب";
+    default:
+      return typeStr || "وحدة";
   }
 }
 
@@ -453,12 +509,12 @@ function escapeHtml(text: string): string {
         <Table>
           <TableHeader>
             <TableRow class="hover:bg-transparent">
-              <TableHead class="text-start text-xs font-bold text-muted-foreground">Code</TableHead>
-              <TableHead class="text-start text-xs font-bold text-muted-foreground">Name</TableHead>
-              <TableHead class="text-start text-xs font-bold text-muted-foreground">Type</TableHead>
-              <TableHead class="text-start text-xs font-bold text-muted-foreground">Capacity</TableHead>
-              <TableHead class="text-start text-xs font-bold text-muted-foreground">Location</TableHead>
-              <TableHead class="text-end text-xs font-bold text-muted-foreground px-6">Actions</TableHead>
+              <TableHead class="text-start text-xs font-bold text-muted-foreground">{isAr() ? "الرمز" : "Code"}</TableHead>
+              <TableHead class="text-start text-xs font-bold text-muted-foreground">{isAr() ? "الوحدة التنظيمية" : "Name"}</TableHead>
+              <TableHead class="text-start text-xs font-bold text-muted-foreground">{isAr() ? "النوع" : "Type"}</TableHead>
+              <TableHead class="text-start text-xs font-bold text-muted-foreground">{isAr() ? "السعة" : "Capacity"}</TableHead>
+              <TableHead class="text-start text-xs font-bold text-muted-foreground">{isAr() ? "الموقع والمبنى" : "Location"}</TableHead>
+              <TableHead class="text-end text-xs font-bold text-muted-foreground px-6">{isAr() ? "الإجراءات" : "Actions"}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -527,8 +583,8 @@ function escapeHtml(text: string): string {
                   
                   <!-- Unit Type -->
                   <TableCell>
-                    <span class="px-2 py-0.5 rounded border text-[9px] font-bold tracking-wide uppercase {getUnitTypeBadgeClass(node.unit.unit_type)}">
-                      {node.unit.unit_type}
+                    <span class="px-2 py-0.5 rounded border text-[9px] font-semibold {getUnitTypeBadgeClass(node.unit.unit_type)}">
+                      {getUnitTypeLabel(node.unit.unit_type)}
                     </span>
                   </TableCell>
                   
@@ -629,8 +685,8 @@ function escapeHtml(text: string): string {
                   
                   <!-- Unit Type -->
                   <TableCell>
-                    <span class="px-2 py-0.5 rounded border text-[9px] font-bold tracking-wide uppercase {getUnitTypeBadgeClass(unit.unit_type)}">
-                      {unit.unit_type}
+                    <span class="px-2 py-0.5 rounded border text-[9px] font-semibold {getUnitTypeBadgeClass(unit.unit_type)}">
+                      {getUnitTypeLabel(unit.unit_type)}
                     </span>
                   </TableCell>
                   

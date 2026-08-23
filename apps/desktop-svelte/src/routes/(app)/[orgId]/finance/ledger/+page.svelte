@@ -50,6 +50,7 @@ let ledgers = $state<any[]>([]);
 let payments = $state<any[]>([]);
 let fees = $state<any[]>([]);
 let treasuries = $state<any[]>([]);
+let dbCurrencies = $state<any[]>([]);
 let isLoading = $state(true);
 let error = $state<string | null>(null);
 let isAddDialogOpen = $state(false);
@@ -138,17 +139,19 @@ async function loadData() {
   isLoading = true;
   error = null;
   try {
-    const [ledgerList, paymentList, feeList, treasuryList] = await Promise.all([
+    const [ledgerList, paymentList, feeList, treasuryList, currencyList] = await Promise.all([
       commands.finance.listAccounts(),
       commands.finance.listPayments(),
       commands.finance.listStudentFeesByOrg(),
       commands.finance.listTreasuries(),
+      commands.finance.listCurrencies().catch(() => []),
     ]);
 
     ledgers = ledgerList;
     payments = paymentList;
     fees = feeList;
     treasuries = treasuryList;
+    dbCurrencies = currencyList || [];
 
     if (ledgerList.length > 0) {
       selectedAccountId = ledgerList[0].id as string;
@@ -1160,13 +1163,19 @@ function exitPage() {
             <span>{m.common_ledger_currency()}</span>
             <select
               bind:value={selectedCurrency}
-              class="bg-background text-foreground border border-border rounded-md px-2.5 py-1 text-[11px] outline-none focus:ring-1 focus:ring-ring font-sans w-full"
+              class="bg-background text-foreground border border-border rounded-md px-2.5 py-1 text-[11px] outline-none focus:ring-1 focus:ring-ring font-sans w-full cursor-pointer"
             >
               <option value="all">&lt;&lt;كافة العملات&gt;&gt;</option>
-              <option value="YER">YER (ريال يمني)</option>
-              <option value="SAR">SAR (سعودي)</option>
-              <option value="USD">USD (دولار)</option>
-              <option value="AED">AED (درهم)</option>
+              {#if dbCurrencies.length > 0}
+                {#each dbCurrencies as c}
+                  <option value={c.code}>{c.code} {c.name_ar ? `(${c.name_ar})` : c.name ? `(${c.name})` : ""}</option>
+                {/each}
+              {:else}
+                <option value="YER">YER (ريال يمني)</option>
+                <option value="SAR">SAR (ريال سعودي)</option>
+                <option value="USD">USD (دولار أمريكي)</option>
+                <option value="AED">AED (درهم إماراتي)</option>
+              {/if}
             </select>
           </div>
 

@@ -398,28 +398,32 @@ class OnboardingState {
     roomType: string,
     floor: number,
   ) {
-    if (!name || !nameAr) {
-      toast.error(m.onboarding_toast_fill_room_fields());
+    const finalNameAr = (nameAr || name || "").trim();
+    const finalNameEn = (name || nameAr || "").trim();
+    if (!finalNameAr && !finalNameEn) {
+      toast.error("يرجى إدخال اسم القاعة أو المرفق");
       return false;
     }
     const id = `room-${Date.now()}`;
     this.facilities.rooms.push({
       id,
-      name,
-      name_ar: nameAr,
-      capacity,
-      room_type: roomType,
-      building: this.facilities.activeBuildingTab,
-      floor,
+      name: finalNameEn,
+      name_ar: finalNameAr,
+      capacity: Number(capacity) || 30,
+      room_type: roomType || "classroom",
+      building: this.facilities.activeBuildingTab || "المبنى الرئيسي",
+      floor: Number(floor) || 1,
     });
     this.facilities.rooms = [...this.facilities.rooms];
-    toast.success(m.onboarding_toast_room_added());
+    toast.success("تمت إضافة القاعة بنجاح");
+    this.save();
     return true;
   }
 
   removeRoom(id: string) {
     this.facilities.rooms = this.facilities.rooms.filter((r) => r.id !== id);
-    toast.success(m.onboarding_toast_room_deleted());
+    toast.success("تم حذف القاعة");
+    this.save();
   }
 
   // ظ¤?ظ¤? Step 4: Grade/Division Management ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?
@@ -739,24 +743,18 @@ class OnboardingState {
         rootUnitId = `unit-${orgId}`;
       }
 
-      // Create Stage org units for enabled grade levels under Root Unit
-      const stageUnitMap: Record<string, string> = {};
-      for (const gl of this.academics.gradeLevels) {
-        if (!gl.enabled) continue;
+      // Create Building org units under Root Unit
+      for (const bldName of this.facilities.buildings) {
+        if (!bldName || !bldName.trim()) continue;
         try {
-          const stageUnit = await commands.organization.createOrgUnit({
-            name: gl.name,
-            name_ar: gl.name_ar,
+          await commands.organization.createOrgUnit({
+            name: bldName.trim(),
+            name_ar: bldName.trim(),
             parent_id: rootUnitId,
-            unit_type: "stage",
-            code: gl.level,
+            unit_type: "building",
           });
-          if (stageUnit?.id) {
-            stageUnitMap[gl.level] = stageUnit.id;
-          }
         } catch (e) {
-          console.warn(`Stage unit for ${gl.level} warning:`, e);
-          stageUnitMap[gl.level] = rootUnitId;
+          console.warn(`Building unit "${bldName}" creation warning:`, e);
         }
       }
 
@@ -819,7 +817,7 @@ class OnboardingState {
       // ── Step 4: Create Classes (الفصول) ───────────────────────────────
       for (const gl of this.academics.gradeLevels) {
         if (!gl.enabled) continue;
-        const targetOrgUnitId = stageUnitMap[gl.level] || rootUnitId;
+        const targetOrgUnitId = rootUnitId;
 
         for (const div of gl.divisions) {
           try {

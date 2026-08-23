@@ -150,8 +150,19 @@ const statementError = $derived(
     : null,
 );
 
+let dbCurrencies = $state<any[]>([]);
+
 // Setup onMount
-onMount(() => {
+onMount(async () => {
+  try {
+    const list = await commands.finance.listCurrencies();
+    if (Array.isArray(list)) {
+      dbCurrencies = list;
+    }
+  } catch (e) {
+    console.warn("Failed to load currencies:", e);
+  }
+
   // Query param auto-selection
   const qAccountId = page.url.searchParams.get("accountId");
   if (qAccountId) {
@@ -807,10 +818,16 @@ function handleWindowClick(event: MouseEvent) {
                 class="bg-background text-foreground border border-border rounded-md px-3 h-8.5 text-xs outline-none focus:ring-1 focus:ring-ring cursor-pointer"
               >
                 <option value="all">{m.finance_statement_all_currencies()}</option>
-                <option value="YER">YER (ريال يمني)</option>
-                <option value="SAR">SAR (سعودي)</option>
-                <option value="USD">USD (دولار)</option>
-                <option value="AED">AED (درهم)</option>
+                {#if dbCurrencies.length > 0}
+                  {#each dbCurrencies as c}
+                    <option value={c.code}>{c.code} {c.name_ar ? `(${c.name_ar})` : c.name ? `(${c.name})` : ""}</option>
+                  {/each}
+                {:else}
+                  <option value="YER">YER (ريال يمني)</option>
+                  <option value="SAR">SAR (ريال سعودي)</option>
+                  <option value="USD">USD (دولار أمريكي)</option>
+                  <option value="AED">AED (درهم إماراتي)</option>
+                {/if}
               </select>
             </div>
 

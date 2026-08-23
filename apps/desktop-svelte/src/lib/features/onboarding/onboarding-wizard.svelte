@@ -13,7 +13,7 @@ import OnboardingFooter from "./onboarding-footer.svelte";
 import WelcomeStep from "./steps/welcome-step.svelte";
 import InstitutionTypeStep from "./steps/institution-type-step.svelte";
 import AcademicCalendarStep from "./steps/academic-calendar-step.svelte";
-import BuildingsRoomsStep from "./steps/buildings-rooms-step.svelte";
+import FacilitiesRoomsStep from "./steps/facilities-rooms-step.svelte";
 import GradesClassesStep from "./steps/grades-classes-step.svelte";
 import TimeSlotsStep from "./steps/time-slots-step.svelte";
 import SubjectsStep from "./steps/subjects-step.svelte";
@@ -39,7 +39,7 @@ import LaunchStep from "./steps/launch-step.svelte";
     {:else if onboardingState.activeStep === 2}
       <AcademicCalendarStep />
     {:else if onboardingState.activeStep === 3}
-      <BuildingsRoomsStep />
+      <FacilitiesRoomsStep />
     {:else if onboardingState.activeStep === 4}
       <GradesClassesStep />
     {:else if onboardingState.activeStep === 5}

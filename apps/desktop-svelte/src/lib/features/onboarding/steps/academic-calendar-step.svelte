@@ -16,6 +16,7 @@ import {
 import { onboardingState } from "../state.svelte";
 import LocaleSettings from "$lib/shared/components/locale-settings.svelte";
 import TimezoneSettings from "$lib/shared/components/timezone-settings.svelte";
+import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
 import { getLocale, setLocale } from "$lib/paraglide/runtime";
 
 async function handleLanguageChange(newLocale: string) {
@@ -56,38 +57,11 @@ async function handleLanguageChange(newLocale: string) {
       />
 
       <!-- Currency -->
-      <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 last:border-b-0">
-        <div class="flex flex-col gap-1 text-start">
-          <Label for="onboarding_currency" class="text-xs font-semibold text-foreground">
-            {m.finance_ledger_currency()}
-          </Label>
-          <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_currency_desc()}</span>
-        </div>
-        <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
-          <Select type="single" bind:value={onboardingState.profile.currency}>
-            <SelectTrigger id="onboarding_currency" class="h-9 text-xs uppercase font-mono bg-background text-end" style="direction: ltr;">
-              {#if onboardingState.profile.currency === "YER"}ريال يمني (YER)
-              {:else if onboardingState.profile.currency === "SAR"}ريال سعودي (SAR)
-              {:else if onboardingState.profile.currency === "AED"}درهم إماراتي (AED)
-              {:else if onboardingState.profile.currency === "EGP"}جنيه مصري (EGP)
-              {:else if onboardingState.profile.currency === "USD"}دولار أمريكي (USD)
-              {:else if onboardingState.profile.currency === "EUR"}يورو (EUR)
-              {:else if onboardingState.profile.currency === "GBP"}جنيه إسترليني (GBP)
-              {:else}{onboardingState.profile.currency || m.settings_general_currency_placeholder()}
-              {/if}
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="YER">ريال يمني (YER)</SelectItem>
-              <SelectItem value="SAR">ريال سعودي (SAR)</SelectItem>
-              <SelectItem value="AED">درهم إماراتي (AED)</SelectItem>
-              <SelectItem value="EGP">جنيه مصري (EGP)</SelectItem>
-              <SelectItem value="USD">دولار أمريكي (USD)</SelectItem>
-              <SelectItem value="EUR">يورو (EUR)</SelectItem>
-              <SelectItem value="GBP">جنيه إسترليني (GBP)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      <CurrencySelector
+        title={m.finance_ledger_currency()}
+        description={m.settings_general_currency_desc()}
+        bind:currentCurrency={onboardingState.profile.currency}
+      />
     </div>
   </div>
 

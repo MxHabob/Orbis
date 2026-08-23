@@ -95,10 +95,13 @@ pub struct CreateOrgUnitPayload {
     pub parent_id: Option<String>,
     pub unit_type: Option<String>,
     pub code: Option<String>,
+    pub head_id: Option<String>,
     pub capacity: Option<i32>,
     pub room_number: Option<String>,
     pub floor: Option<i32>,
     pub building: Option<String>,
+    pub data_isolation: Option<String>,
+    pub sort_order: Option<i32>,
 }
 
 /// Create a new org unit.
@@ -113,11 +116,15 @@ pub async fn create(
 
     // Calculate depth and path based on parent
     let (depth, path) = if let Some(ref parent_id) = req.parent_id {
-        let parent = org_unit::Entity::find_by_id(parent_id.clone())
-            .one(&ctx.db)
-            .await?
-            .ok_or_else(|| AppError::not_found("org_unit", parent_id))?;
-        (parent.depth + 1, format!("{}/{}", parent.path, parent_id))
+        if parent_id.is_empty() {
+            (0, "/".into())
+        } else {
+            let parent = org_unit::Entity::find_by_id(parent_id.clone())
+                .one(&ctx.db)
+                .await?
+                .ok_or_else(|| AppError::not_found("org_unit", parent_id))?;
+            (parent.depth + 1, format!("{}/{}", parent.path, parent_id))
+        }
     } else {
         (0, "/".into())
     };
@@ -125,27 +132,33 @@ pub async fn create(
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
 
+    let parent_id = if req.parent_id.as_deref() == Some("") {
+        None
+    } else {
+        req.parent_id
+    };
+
     let model = org_unit::Model {
         id: id.clone(),
         org_id: ctx.org_id.clone(),
-        parent_id: req.parent_id,
+        parent_id,
         path,
         depth,
         name: req.name,
         name_ar: req.name_ar,
         code: req.code,
         unit_type: req.unit_type.unwrap_or_else(|| "department".into()),
-        head_id: None,
+        head_id: req.head_id,
         capacity: req.capacity,
         room_number: req.room_number,
         floor: req.floor,
         building: req.building,
         settings: None,
         local_policies: None,
-        data_isolation: "shared".into(),
+        data_isolation: req.data_isolation.unwrap_or_else(|| "shared".into()),
         children_count: 0,
         descendant_count: 0,
-        sort_order: None,
+        sort_order: req.sort_order,
         is_active: 1,
         created_at: now.clone(),
         updated_at: now,
@@ -187,8 +200,18 @@ pub async fn create(
 
 #[derive(serde::Deserialize)]
 pub struct UpdateOrgUnitPayload {
-    pub name: String,
+    pub name: Option<String>,
     pub name_ar: Option<String>,
+    pub parent_id: Option<String>,
+    pub unit_type: Option<String>,
+    pub code: Option<String>,
+    pub head_id: Option<String>,
+    pub capacity: Option<i32>,
+    pub room_number: Option<String>,
+    pub floor: Option<i32>,
+    pub building: Option<String>,
+    pub data_isolation: Option<String>,
+    pub sort_order: Option<i32>,
 }
 
 /// Update an org unit.
@@ -209,8 +232,56 @@ pub async fn update(
 
     let old_data = serde_json::to_value(&existing).ok();
     let mut active: org_unit::ActiveModel = existing.into();
-    active.name = Set(req.name);
-    active.name_ar = Set(req.name_ar);
+
+    if let Some(name) = req.name {
+        active.name = Set(name);
+    }
+    if req.name_ar.is_some() {
+        active.name_ar = Set(req.name_ar);
+    }
+    if req.code.is_some() {
+        active.code = Set(req.code);
+    }
+    if let Some(ut) = req.unit_type {
+        active.unit_type = Set(ut);
+    }
+    if let Some(ref pid) = req.parent_id {
+        if pid.is_empty() {
+            active.parent_id = Set(None);
+            active.depth = Set(0);
+            active.path = Set("/".into());
+        } else {
+            let parent = org_unit::Entity::find_by_id(pid.clone())
+                .one(&ctx.db)
+                .await?
+                .ok_or_else(|| AppError::not_found("org_unit", pid))?;
+            active.parent_id = Set(Some(pid.clone()));
+            active.depth = Set(parent.depth + 1);
+            active.path = Set(format!("{}/{}", parent.path, pid));
+        }
+    }
+    if req.head_id.is_some() {
+        active.head_id = Set(req.head_id);
+    }
+    if req.capacity.is_some() {
+        active.capacity = Set(req.capacity);
+    }
+    if req.room_number.is_some() {
+        active.room_number = Set(req.room_number);
+    }
+    if req.floor.is_some() {
+        active.floor = Set(req.floor);
+    }
+    if req.building.is_some() {
+        active.building = Set(req.building);
+    }
+    if let Some(di) = req.data_isolation {
+        active.data_isolation = Set(di);
+    }
+    if req.sort_order.is_some() {
+        active.sort_order = Set(req.sort_order);
+    }
+
     active.updated_at = Set(Utc::now().to_rfc3339());
 
     let updated = active.update(&ctx.db).await?;

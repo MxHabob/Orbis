@@ -9,7 +9,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import CurrencySettings from "$lib/shared/components/currency-settings.svelte";
+import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
 import TimezoneSettings from "$lib/shared/components/timezone-settings.svelte";
 import LocaleSettings from "$lib/shared/components/locale-settings.svelte";
 
@@ -48,7 +48,7 @@ const dateFormats = [
 
   <div class="flex flex-col">
     <!-- Currency -->
-    <CurrencySettings
+    <CurrencySelector
       title={m.finance_ledger_currency()}
       description={m.settings_general_currency_desc()}
       bind:currentCurrency={currency}

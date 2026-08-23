@@ -390,7 +390,9 @@ pub async fn bootstrap_full(
     }
 
     // 3g. Currencies
-    let default_currencies = vec!["SAR", "USD", "YER"];
+    let default_currencies = vec![
+        "SAR", "YER", "USD", "AED", "KWD", "QAR", "BHD", "OMR", "EGP", "JOD", "IQD", "LYD", "DZD", "MAD", "TND", "SDG", "TRY", "EUR", "GBP"
+    ];
     let mut currencies_to_insert: Vec<String> = default_currencies.into_iter().map(|s| s.to_string()).collect();
     
     if !currencies_to_insert.contains(&payload.currency) {
@@ -714,7 +716,7 @@ fn institute_blueprint() -> InstitutionBlueprint {
         ]),
         default_permissions: default_role_permissions(),
         assessment_scheme_name: "Training Assessment".into(),
-        assessment_components: vec![],  // Institutes define their own
+        assessment_components: vec![],
         coursework_weight: 50.0,
         exam_weight: 50.0,
         ranking_enabled: 0,
@@ -792,13 +794,21 @@ fn slug(name: &str) -> String {
 fn currency_name(code: &str) -> String {
     match code {
         "SAR" => "Saudi Riyal".into(),
+        "YER" => "Yemeni Rial".into(),
         "AED" => "UAE Dirham".into(),
         "KWD" => "Kuwaiti Dinar".into(),
-        "QAR" => "Qatari Riyal".into(),
+        "QAR" => "Qatari Rial".into(),
         "BHD" => "Bahraini Dinar".into(),
         "OMR" => "Omani Rial".into(),
         "EGP" => "Egyptian Pound".into(),
         "JOD" => "Jordanian Dinar".into(),
+        "IQD" => "Iraqi Dinar".into(),
+        "LYD" => "Libyan Dinar".into(),
+        "DZD" => "Algerian Dinar".into(),
+        "MAD" => "Moroccan Dirham".into(),
+        "TND" => "Tunisian Dinar".into(),
+        "SDG" => "Sudanese Pound".into(),
+        "TRY" => "Turkish Lira".into(),
         "USD" => "US Dollar".into(),
         "EUR" => "Euro".into(),
         "GBP" => "British Pound".into(),
@@ -809,6 +819,7 @@ fn currency_name(code: &str) -> String {
 fn currency_name_ar(code: &str) -> String {
     match code {
         "SAR" => "ريال سعودي".into(),
+        "YER" => "ريال يمني".into(),
         "AED" => "درهم إماراتي".into(),
         "KWD" => "دينار كويتي".into(),
         "QAR" => "ريال قطري".into(),
@@ -816,6 +827,13 @@ fn currency_name_ar(code: &str) -> String {
         "OMR" => "ريال عماني".into(),
         "EGP" => "جنيه مصري".into(),
         "JOD" => "دينار أردني".into(),
+        "IQD" => "دينار عراقي".into(),
+        "LYD" => "دينار ليبي".into(),
+        "DZD" => "دينار جزائري".into(),
+        "MAD" => "درهم مغربي".into(),
+        "TND" => "دينار تونسي".into(),
+        "SDG" => "جنيه سوداني".into(),
+        "TRY" => "ليرة تركية".into(),
         "USD" => "دولار أمريكي".into(),
         "EUR" => "يورو".into(),
         "GBP" => "جنيه إسترليني".into(),
@@ -826,6 +844,7 @@ fn currency_name_ar(code: &str) -> String {
 fn currency_symbol(code: &str) -> String {
     match code {
         "SAR" => "ر.س".into(),
+        "YER" => "ر.ي".into(),
         "AED" => "د.إ".into(),
         "KWD" => "د.ك".into(),
         "QAR" => "ر.ق".into(),
@@ -833,6 +852,13 @@ fn currency_symbol(code: &str) -> String {
         "OMR" => "ر.ع".into(),
         "EGP" => "ج.م".into(),
         "JOD" => "د.أ".into(),
+        "IQD" => "د.ع".into(),
+        "LYD" => "د.ل".into(),
+        "DZD" => "د.ج".into(),
+        "MAD" => "د.م".into(),
+        "TND" => "د.ت".into(),
+        "SDG" => "ج.س".into(),
+        "TRY" => "₺".into(),
         "USD" => "$".into(),
         "EUR" => "€".into(),
         "GBP" => "£".into(),
