@@ -138,7 +138,25 @@ pub async fn academic_document_delete(state: State<'_, Arc<AppState>>, doc_id: S
 }
 
 #[tauri::command]
+pub async fn academic_enrollment_enrich_enrollment_models(state: State<'_, Arc<AppState>>, enrollments: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let enrollments_parsed = match enrollments {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: enrollments")),
+    };
+    let result = ops::enrollment::enrich_enrollment_models(&ctx.db, enrollments_parsed).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
 pub async fn academic_enrollment_list(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::enrollment::list(&ctx).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn academic_enrollment_list_enriched(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::enrollment::list_enriched(&ctx).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
@@ -151,12 +169,30 @@ pub async fn academic_enrollment_list_paginated(state: State<'_, Arc<AppState>>,
         Some(v) => serde_json::from_value(v).unwrap_or_default(),
         None => shared_kernel::pagination::CursorRequest::default(),
     };
+    let result = ops::enrollment::list_paginated(&ctx, request_parsed).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn academic_enrollment_list_paginated_enriched(state: State<'_, Arc<AppState>>, request: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let request_parsed = match request {
+        Some(v) => serde_json::from_value(v).unwrap_or_default(),
+        None => shared_kernel::pagination::CursorRequest::default(),
+    };
     let result = ops::enrollment::list_paginated_enriched(&ctx, request_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
 pub async fn academic_enrollment_get(state: State<'_, Arc<AppState>>, id: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::enrollment::get(&ctx, &id).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn academic_enrollment_get_enriched(state: State<'_, Arc<AppState>>, id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::enrollment::get_enriched(&ctx, &id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())

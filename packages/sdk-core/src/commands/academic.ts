@@ -18,9 +18,13 @@ export interface AcademicCommands {
   getDocument(id: string): Promise<any>;
   createDocument(data: any): Promise<any>;
   deleteDocument(docId: string): Promise<void>;
+  enrichEnrollmentModels(enrollments: any): Promise<any[]>;
   listEnrollments(): Promise<any[]>;
+  listEnriched(): Promise<any[]>;
   listEnrollmentsPaginated(request: any): Promise<any>;
+  listPaginatedEnriched(request: any): Promise<any>;
   getEnrollment(id: string): Promise<any>;
+  getEnriched(id: string): Promise<any>;
   createEnrollment(data: any): Promise<any>;
   withdraw(enrollmentId: string): Promise<any>;
   transfer(enrollmentId: string, newClassId: string): Promise<any>;

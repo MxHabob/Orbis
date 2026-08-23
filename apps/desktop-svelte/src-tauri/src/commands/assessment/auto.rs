@@ -12,7 +12,7 @@ pub async fn assessment_annual_engine_calculate_annual_result(state: State<'_, A
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
         None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::annual_engine::calculate_annual_result(&ctx, &req_parsed).await.map_err(CommandError::from)?;
+    let result = ops::annual_engine::calculate_annual_result(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -503,7 +503,7 @@ pub async fn assessment_term_engine_calculate_term_result(state: State<'_, Arc<A
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
         None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::term_engine::calculate_term_result(&ctx, &req_parsed).await.map_err(CommandError::from)?;
+    let result = ops::term_engine::calculate_term_result(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 

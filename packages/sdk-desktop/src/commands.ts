@@ -92,14 +92,23 @@ export const commands: OrbisCommands = {
     getDocument: (id: any) => cmd("academic_document_get", { id }),
     createDocument: (data: any) => cmd("academic_document_create", { data }),
     deleteDocument: (docId: any) => cmd("academic_document_delete", { docId }),
+    enrichEnrollmentModels: (enrollments: any) => cmd("academic_enrollment_enrich_enrollment_models", { enrollments }),
     listEnrollments: () => cmd("academic_enrollment_list", {}),
+    listEnriched: () => cmd("academic_enrollment_list_enriched", {}),
     listEnrollmentsPaginated: (cursorOrReq?: any, limit?: any) => {
       const req = (typeof cursorOrReq === "object" && cursorOrReq !== null && !Array.isArray(cursorOrReq))
         ? cursorOrReq
         : { cursor: typeof cursorOrReq === "string" ? cursorOrReq : null, limit: typeof limit === "number" ? limit : 50 };
       return cmd("academic_enrollment_list_paginated", { request: req });
     },
+    listPaginatedEnriched: (cursorOrReq?: any, limit?: any) => {
+      const req = (typeof cursorOrReq === "object" && cursorOrReq !== null && !Array.isArray(cursorOrReq))
+        ? cursorOrReq
+        : { cursor: typeof cursorOrReq === "string" ? cursorOrReq : null, limit: typeof limit === "number" ? limit : 50 };
+      return cmd("academic_enrollment_list_paginated_enriched", { request: req });
+    },
     getEnrollment: (id: any) => cmd("academic_enrollment_get", { id }),
+    getEnriched: (id: any) => cmd("academic_enrollment_get_enriched", { id }),
     createEnrollment: (data: any) => cmd("academic_enrollment_create", { data }),
     withdraw: (enrollmentId: any) => cmd("academic_enrollment_withdraw", { enrollmentId }),
     transfer: (enrollmentId: any, newClassId: any) => cmd("academic_enrollment_transfer", { enrollmentId, newClassId }),
