@@ -46,8 +46,8 @@ Follows standard settings layout pattern (section headers, clean two-column grid
 
   // Sync database record to local form state
   $effect(() => {
-    if ($policyQuery.data) {
-      const d = $policyQuery.data as any;
+    if (policyQuery.data) {
+      const d = policyQuery.data as any;
       form = {
         default_grading_system: d.default_grading_system || "percentage",
         default_passing_grade: d.default_passing_grade ?? 50,
@@ -108,11 +108,11 @@ Follows standard settings layout pattern (section headers, clean two-column grid
 <div
   class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide bg-background"
 >
-  {#if $policyQuery.isLoading}
+  {#if policyQuery.isLoading}
     <div class="w-full">
       <SettingsFormSkeleton />
     </div>
-  {:else if $policyQuery.error}
+  {:else if policyQuery.error}
     <div class="w-full text-center py-12 text-destructive">
       <p>
         {m.settings_policy_load_error
@@ -122,7 +122,7 @@ Follows standard settings layout pattern (section headers, clean two-column grid
       <Button
         variant="outline"
         class="mt-4 cursor-pointer"
-        onclick={() => $policyQuery.refetch()}
+        onclick={() => policyQuery.refetch()}
       >
         إعادة المحاولة
       </Button>

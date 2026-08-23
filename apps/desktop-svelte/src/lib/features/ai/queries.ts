@@ -11,46 +11,34 @@ import { commands } from "$lib/core/ipc";
 
 export function createAutopilotConfigQuery(orgId: string | (() => string)) {
   const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
-  return createQuery({
-    get queryKey() {
-      return ["autopilot-config", getOrgId()];
-    },
+  return createQuery(() => ({
+    queryKey: ["autopilot-config", getOrgId()],
     queryFn: () => commands.platform_policy.getAutopilotConfig(getOrgId()),
-    get enabled() {
-      return !!getOrgId();
-    },
+    enabled: !!getOrgId(),
     staleTime: 5 * 60 * 1000,
-  });
+  }));
 }
 
 export function createAutopilotTasksQuery(orgId: string | (() => string)) {
   const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
-  return createQuery({
-    get queryKey() {
-      return ["autopilot-tasks", getOrgId()];
-    },
+  return createQuery(() => ({
+    queryKey: ["autopilot-tasks", getOrgId()],
     queryFn: () => commands.ai.autopilotGetTasks(),
-    get enabled() {
-      return !!getOrgId();
-    },
+    enabled: !!getOrgId(),
     staleTime: 2 * 60 * 1000,
-  });
+  }));
 }
 
 export function createAutopilotDiagnosticsQuery(
   orgId: string | (() => string),
 ) {
   const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
-  return createQuery({
-    get queryKey() {
-      return ["autopilot-diagnostics", getOrgId()];
-    },
+  return createQuery(() => ({
+    queryKey: ["autopilot-diagnostics", getOrgId()],
     queryFn: () => commands.ai.autopilotGetDiagnostics(),
-    get enabled() {
-      return !!getOrgId();
-    },
+    enabled: !!getOrgId(),
     staleTime: 1 * 60 * 1000,
-  });
+  }));
 }
 
 export function useConfigureAutopilot() {
@@ -99,16 +87,12 @@ export function useRunAutopilotTick() {
 
 export function createAgentSessionsQuery(orgId: string | (() => string)) {
   const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
-  return createQuery({
-    get queryKey() {
-      return ["agent-sessions", getOrgId()];
-    },
+  return createQuery(() => ({
+    queryKey: ["agent-sessions", getOrgId()],
     queryFn: () => commands.ai.agentGetSessions(),
-    get enabled() {
-      return !!getOrgId();
-    },
+    enabled: !!getOrgId(),
     staleTime: 2 * 60 * 1000,
-  });
+  }));
 }
 
 export function createAgentSessionLogsQuery(
@@ -118,17 +102,13 @@ export function createAgentSessionLogsQuery(
   const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
   const getSessionId =
     typeof sessionId === "function" ? sessionId : () => sessionId;
-  return createQuery({
-    get queryKey() {
-      return ["agent-session-logs", getOrgId(), getSessionId()];
-    },
+  return createQuery(() => ({
+    queryKey: ["agent-session-logs", getOrgId(), getSessionId()],
     queryFn: () =>
       commands.ai.agentGetSessionLogs(getSessionId()),
-    get enabled() {
-      return !!getOrgId() && !!getSessionId();
-    },
+    enabled: !!getOrgId() && !!getSessionId(),
     staleTime: 1 * 60 * 1000,
-  });
+  }));
 }
 
 export function useApproveAgentAction() {

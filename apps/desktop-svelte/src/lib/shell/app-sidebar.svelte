@@ -65,7 +65,7 @@ const fallbackName = $derived.by(() => {
   return "Orbis School";
 });
 
-const orgNameDisplay = $derived($orgQuery.data?.name || fallbackName);
+const orgNameDisplay = $derived(orgQuery.data?.name || fallbackName);
 
 const navItems = $derived([
   {

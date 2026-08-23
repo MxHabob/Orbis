@@ -17,11 +17,11 @@ let orgId = $derived(page.params.orgId as string);
 const orgQuery = createOrganizationQuery(() => orgId);
 const updateOrgMutation = createUpdateOrganizationMutation();
 
-let isLoading = $derived($orgQuery.isLoading);
-let isSaving = $derived($updateOrgMutation.isPending);
+let isLoading = $derived(orgQuery.isLoading);
+let isSaving = $derived(updateOrgMutation.isPending);
 
 async function handleSave(registrationConfig: any) {
-  const org = $orgQuery.data;
+  const org = orgQuery.data;
   if (!orgId || !org) return;
 
   let settingsObj: Record<string, any> = {};
@@ -47,7 +47,7 @@ async function handleSave(registrationConfig: any) {
     settings: JSON.stringify(settingsObj),
   };
 
-  $updateOrgMutation.mutate(
+  updateOrgMutation.mutate(
     { orgId, request },
     {
       onSuccess: () => {
@@ -69,10 +69,10 @@ async function handleSave(registrationConfig: any) {
 
 {#if isLoading}
   <SettingsFormSkeleton />
-{:else if $orgQuery.data}
-  {#key $orgQuery.data}
+{:else if orgQuery.data}
+  {#key orgQuery.data}
     <RegistrationSettingsForm
-      org={$orgQuery.data}
+      org={orgQuery.data}
       {isSaving}
       onsave={handleSave}
     />

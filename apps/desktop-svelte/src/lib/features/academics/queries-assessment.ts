@@ -10,88 +10,64 @@ import { commands } from "$lib/core/ipc";
 
 /** All grade scales for the current organization. */
 export function createGradeScalesQuery(orgId: () => string) {
-  return createQuery({
-    get queryKey() {
-      return ["grade-scales", orgId()];
-    },
+  return createQuery(() => ({
+    queryKey: ["grade-scales", orgId()],
     queryFn: () => commands.assessment.listGradeScales(),
-    get enabled() {
-      return !!orgId();
-    },
+    enabled: !!orgId(),
     staleTime: 10 * 60 * 1000,
-  });
+  }));
 }
 
 /** Items for a specific grade scale. */
 export function createGradeScaleItemsQuery(scaleId: () => string | undefined) {
-  return createQuery({
-    get queryKey() {
-      return ["grade-scale-items", scaleId()];
-    },
+  return createQuery(() => ({
+    queryKey: ["grade-scale-items", scaleId()],
     queryFn: () => commands.assessment.listGradeScaleItems(scaleId()!),
-    get enabled() {
-      return !!scaleId();
-    },
+    enabled: !!scaleId(),
     staleTime: 10 * 60 * 1000,
-  });
+  }));
 }
 
 // ── Calculation Policies ────────────────────────────────────
 
 /** All calculation policies for the current organization. */
 export function createCalcPoliciesQuery(orgId: () => string) {
-  return createQuery({
-    get queryKey() {
-      return ["calc-policies", orgId()];
-    },
+  return createQuery(() => ({
+    queryKey: ["calc-policies", orgId()],
     queryFn: () => commands.assessment.listCalculationPolicies(),
-    get enabled() {
-      return !!orgId();
-    },
+    enabled: !!orgId(),
     staleTime: 10 * 60 * 1000,
-  });
+  }));
 }
 
 /** Single calculation policy by ID. */
 export function createCalcPolicyQuery(policyId: () => string | undefined) {
-  return createQuery({
-    get queryKey() {
-      return ["calc-policy", policyId()];
-    },
+  return createQuery(() => ({
+    queryKey: ["calc-policy", policyId()],
     queryFn: () => commands.assessment.getCalcPolicy(policyId()!),
-    get enabled() {
-      return !!policyId();
-    },
+    enabled: !!policyId(),
     staleTime: 10 * 60 * 1000,
-  });
+  }));
 }
 
 // ── Assessment Schemes ──────────────────────────────────────
 
 /** All assessment schemes for current organization. */
 export function createAssessmentSchemesQuery(orgId: () => string) {
-  return createQuery({
-    get queryKey() {
-      return ["assessment-schemes", orgId()];
-    },
+  return createQuery(() => ({
+    queryKey: ["assessment-schemes", orgId()],
     queryFn: () => commands.assessment.listAssessmentSchemes(),
-    get enabled() {
-      return !!orgId();
-    },
+    enabled: !!orgId(),
     staleTime: 10 * 60 * 1000,
-  });
+  }));
 }
 
 /** Components for a specific assessment scheme. */
 export function createSchemeComponentsQuery(schemeId: () => string | undefined) {
-  return createQuery({
-    get queryKey() {
-      return ["scheme-components", schemeId()];
-    },
+  return createQuery(() => ({
+    queryKey: ["scheme-components", schemeId()],
     queryFn: () => commands.assessment.listComponents(schemeId()!),
-    get enabled() {
-      return !!schemeId();
-    },
+    enabled: !!schemeId(),
     staleTime: 10 * 60 * 1000,
-  });
+  }));
 }

@@ -18,7 +18,7 @@ export function usePeriodGate(
   periodId: () => string,
   classId?: () => string | undefined,
 ) {
-  const query = createQuery({
+  const query = createQuery(() => ({
     queryKey: ["period-gate", gateType, periodId(), classId?.() ?? ""],
     queryFn: async (): Promise<GateVerdict> => {
       if (gateType === "enrollment" && classId?.()) {
@@ -32,7 +32,7 @@ export function usePeriodGate(
     staleTime: 30_000,
     refetchOnWindowFocus: true,
     enabled: !!periodId(),
-  });
+  }));
 
   return {
     get data() {

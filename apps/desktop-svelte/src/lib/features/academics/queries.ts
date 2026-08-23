@@ -9,16 +9,12 @@ import { commands } from "$lib/core/ipc";
 
 /** All academic periods for current year. */
 export function createPeriodsQuery(orgId: () => string) {
-  return createQuery({
-    get queryKey() {
-      return ["periods", orgId()];
-    },
+  return createQuery(() => ({
+    queryKey: ["periods", orgId()],
     queryFn: () => commands.calendar.listAcademicPeriods(),
-    get enabled() {
-      return !!orgId();
-    },
+    enabled: !!orgId(),
     staleTime: 10 * 60 * 1000,
-  });
+  }));
 }
 
 /** Periods for a specific year (cross-year queries). */
@@ -26,44 +22,32 @@ export function createPeriodsByYearQuery(
   orgId: () => string,
   periodId: () => string,
 ) {
-  return createQuery({
-    get queryKey() {
-      return ["periods", orgId(), periodId()];
-    },
+  return createQuery(() => ({
+    queryKey: ["periods", orgId(), periodId()],
     queryFn: () => commands.calendar.listAcademicPeriodsByYear(periodId()),
-    get enabled() {
-      return !!orgId() && !!periodId();
-    },
+    enabled: !!orgId() && !!periodId(),
     staleTime: 10 * 60 * 1000,
-  });
+  }));
 }
 
 /** Classes for an organization. */
 export function createClassesQuery(orgId: () => string) {
-  return createQuery({
-    get queryKey() {
-      return ["classes", orgId()];
-    },
+  return createQuery(() => ({
+    queryKey: ["classes", orgId()],
     queryFn: () => commands.academic.listClasses(),
-    get enabled() {
-      return !!orgId();
-    },
+    enabled: !!orgId(),
     staleTime: 5 * 60 * 1000,
-  });
+  }));
 }
 
 /** Subjects for an organization. */
 export function createSubjectsQuery(orgId: () => string) {
-  return createQuery({
-    get queryKey() {
-      return ["subjects", orgId()];
-    },
+  return createQuery(() => ({
+    queryKey: ["subjects", orgId()],
     queryFn: () => commands.academic.listSubjects(),
-    get enabled() {
-      return !!orgId();
-    },
+    enabled: !!orgId(),
     staleTime: 10 * 60 * 1000,
-  });
+  }));
 }
 
 /** Class subjects / assignments. */
@@ -71,16 +55,12 @@ export function createClassSubjectsQuery(
   classId: () => string | undefined,
   periodId: () => string | undefined,
 ) {
-  return createQuery({
-    get queryKey() {
-      return ["class-subjects", classId(), periodId()];
-    },
+  return createQuery(() => ({
+    queryKey: ["class-subjects", classId(), periodId()],
     queryFn: () => commands.academic.listClassSubjects(classId()!, periodId()!),
-    get enabled() {
-      return !!classId() && !!periodId();
-    },
+    enabled: !!classId() && !!periodId(),
     staleTime: 5 * 60 * 1000,
-  });
+  }));
 }
 
 /** Assessments for a class-subject. */
@@ -90,20 +70,16 @@ export function createAssessmentsQuery(
     classSubjectId?: string;
   },
 ) {
-  return createQuery({
-    get queryKey() {
-      return ["assessments", params().periodId, params().classSubjectId];
-    },
+  return createQuery(() => ({
+    queryKey: ["assessments", params().periodId, params().classSubjectId],
     queryFn: () =>
       commands.assessment.listAssessments(
         params().periodId!,
         params().classSubjectId,
       ),
-    get enabled() {
-      return !!params().periodId;
-    },
+    enabled: !!params().periodId,
     staleTime: 2 * 60 * 1000,
-  });
+  }));
 }
 
 /** Time slots for an academic year. */
@@ -111,16 +87,12 @@ export function createTimeSlotsQuery(
   orgId: () => string | undefined,
   periodId: () => string | undefined,
 ) {
-  return createQuery({
-    get queryKey() {
-      return ["time-slots", orgId(), periodId()];
-    },
+  return createQuery(() => ({
+    queryKey: ["time-slots", orgId(), periodId()],
     queryFn: () => commands.scheduling.listTimeSlots(periodId()!),
-    get enabled() {
-      return !!orgId() && !!periodId();
-    },
+    enabled: !!orgId() && !!periodId(),
     staleTime: 10 * 60 * 1000,
-  });
+  }));
 }
 
 /** Class schedule lessons. */
@@ -129,17 +101,13 @@ export function createClassScheduleQuery(
   periodId: () => string | undefined,
   classId: () => string | undefined,
 ) {
-  return createQuery({
-    get queryKey() {
-      return ["class-schedule", orgId(), periodId(), classId()];
-    },
+  return createQuery(() => ({
+    queryKey: ["class-schedule", orgId(), periodId(), classId()],
     queryFn: () =>
       commands.scheduling.listLessonsByClass(periodId()!, classId()!),
-    get enabled() {
-      return !!orgId() && !!periodId() && !!classId();
-    },
+    enabled: !!orgId() && !!periodId() && !!classId(),
     staleTime: 2 * 60 * 1000,
-  });
+  }));
 }
 
 /** Teacher schedule lessons. */
@@ -148,15 +116,11 @@ export function createTeacherScheduleQuery(
   periodId: () => string | undefined,
   teacherId: () => string | undefined,
 ) {
-  return createQuery({
-    get queryKey() {
-      return ["teacher-schedule", orgId(), periodId(), teacherId()];
-    },
+  return createQuery(() => ({
+    queryKey: ["teacher-schedule", orgId(), periodId(), teacherId()],
     queryFn: () =>
       commands.scheduling.listLessonsByTeacher(periodId()!, teacherId()!),
-    get enabled() {
-      return !!orgId() && !!periodId() && !!teacherId();
-    },
+    enabled: !!orgId() && !!periodId() && !!teacherId(),
     staleTime: 2 * 60 * 1000,
-  });
+  }));
 }

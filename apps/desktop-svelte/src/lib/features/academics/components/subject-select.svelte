@@ -45,7 +45,7 @@ const selectedSubject = $derived(
 const displayLabel = $derived(
   value === "all" || value === "" || !value
     ? showAllOption
-      ? allOptionLabel || (m.common_filter_all_subjects ? m.common_filter_all_subjects() : "جميع المواد")
+      ? allOptionLabel || "جميع المواد"
       : placeholder || (m.common_cs_form_select_subject ? m.common_cs_form_select_subject() : "اختر المادة...")
     : selectedSubject
       ? getSubjectLabel(selectedSubject)
@@ -79,7 +79,7 @@ function handleValueChange(newVal: string | undefined) {
         value="all"
         class="text-xs text-start justify-start cursor-pointer"
       >
-        {allOptionLabel || (m.common_filter_all_subjects ? m.common_filter_all_subjects() : "جميع المواد")}
+        {allOptionLabel || "جميع المواد"}
       </SelectItem>
     {/if}
     {#each subjects as subj (subj.id)}

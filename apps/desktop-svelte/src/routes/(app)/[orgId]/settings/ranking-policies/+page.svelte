@@ -39,12 +39,12 @@ let { data }: { data: { orgId: string } } = $props();
 const orgId = $derived(data.orgId);
 const queryClient = useQueryClient();
 
-const policiesQuery = createQuery({
+const policiesQuery = createQuery(() => ({
   queryKey: ["ranking-policies", orgId],
   queryFn: () => commands.assessment.listRankingPolicies(),
-});
+}));
 
-const policies = $derived($policiesQuery.data ?? []);
+const policies = $derived(policiesQuery.data ?? []);
 
 // ── Create / Edit Dialog ─────────────────────────────────────
 let showDialog = $state(false);
@@ -146,7 +146,7 @@ async function handleDelete(id: string) {
   </div>
 
   <!-- Content -->
-  {#if $policiesQuery.isLoading}
+  {#if policiesQuery.isLoading}
     <SettingsFormSkeleton />
   {:else if policies.length === 0}
     <div class="flex flex-col items-center justify-center p-12 text-center rounded-xl border border-dashed border-border bg-card/50">

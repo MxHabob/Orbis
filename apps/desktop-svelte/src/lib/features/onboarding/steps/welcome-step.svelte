@@ -66,7 +66,7 @@ let hasOrgData = $derived(onboardingState.profile.orgName !== "" || onboardingSt
           {/if}
           <Badge variant="outline" class="flex items-center gap-1.5 text-[10px] py-1 px-2.5 text-emerald-500 border-emerald-500/30">
             <CheckCircle2 size={11} />
-            <span>{m.common_onboarding_cli_configured?.() ?? "System Ready"}</span>
+            <span>جاهز للاستخدام</span>
           </Badge>
         </div>
       {/if}

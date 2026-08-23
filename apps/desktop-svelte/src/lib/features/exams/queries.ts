@@ -13,38 +13,36 @@ import type { ExamSession, ExamSubject } from "@orbis/sdk-core";
 
 /** Get all exam sessions for a period. */
 export function createExamSessionsQuery(periodId: () => string | undefined) {
-  return createQuery({
-    get queryKey() {
-      return ["exam-sessions", periodId()];
-    },
+  return createQuery(() => ({
+    queryKey: ["exam-sessions", periodId()],
     queryFn: () =>
       commands.exam.listSessions(periodId()!) as Promise<ExamSession[]>,
-    get enabled() {
-      return !!periodId();
-    },
+    enabled: !!periodId(),
     staleTime: 5 * 60 * 1000,
-  });
+  }));
 }
 
 /** Get a single exam session. */
-export function createExamSessionQuery(sessionId: string) {
-  return createQuery({
-    queryKey: ["exam-session", sessionId],
-    queryFn: () => commands.exam.getSession(sessionId) as Promise<ExamSession>,
-    enabled: !!sessionId,
+export function createExamSessionQuery(sessionId: string | (() => string)) {
+  const getSessionId = typeof sessionId === "function" ? sessionId : () => sessionId;
+  return createQuery(() => ({
+    queryKey: ["exam-session", getSessionId()],
+    queryFn: () => commands.exam.getSession(getSessionId()) as Promise<ExamSession>,
+    enabled: !!getSessionId(),
     staleTime: 5 * 60 * 1000,
-  });
+  }));
 }
 
 /** Get exam subjects. */
-export function createExamSubjectsQuery(sessionId: string) {
-  return createQuery({
-    queryKey: ["exam-subjects", sessionId],
+export function createExamSubjectsQuery(sessionId: string | (() => string)) {
+  const getSessionId = typeof sessionId === "function" ? sessionId : () => sessionId;
+  return createQuery(() => ({
+    queryKey: ["exam-subjects", getSessionId()],
     queryFn: () =>
-      commands.exam.listExamSubjects(sessionId) as Promise<ExamSubject[]>,
-    enabled: !!sessionId,
+      commands.exam.listExamSubjects(getSessionId()) as Promise<ExamSubject[]>,
+    enabled: !!getSessionId(),
     staleTime: 5 * 60 * 1000,
-  });
+  }));
 }
 
 /** Create exam session mutation. */

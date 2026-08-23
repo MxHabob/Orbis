@@ -18,7 +18,6 @@ import {
   Activity,
   RefreshCw,
   AlertTriangle,
-  AlertCircle,
   Settings,
 } from "@lucide/svelte";
 import { academicContext } from "$lib/stores";
@@ -38,13 +37,13 @@ let { orgId = "" }: { orgId?: string } = $props();
 
 // Autopilot Queries
 const configQuery = createAutopilotConfigQuery(() => orgId);
-const config = $derived($configQuery.data);
+const config = $derived(configQuery.data);
 
 const tasksQuery = createAutopilotTasksQuery(() => orgId);
-const tasks = $derived($tasksQuery.data ?? []);
+const tasks = $derived(tasksQuery.data ?? []);
 
 const diagnosticsQuery = createAutopilotDiagnosticsQuery(() => orgId);
-const diagnostics = $derived($diagnosticsQuery.data);
+const diagnostics = $derived(diagnosticsQuery.data);
 
 // Mutations
 const runTickMutation = useRunAutopilotTick();
@@ -96,7 +95,7 @@ function getPhaseLabel(phase: string) {
 async function handleRunTick() {
   if (!orgId) return;
   try {
-    toast.promise($runTickMutation.mutateAsync({ orgId }), {
+    await toast.promise(runTickMutation.mutateAsync({ orgId }), {
       loading: m.common_autopilot_popover_tick_running(),
       success: () => m.common_autopilot_popover_run_tick(),
       error: (e) =>
@@ -106,8 +105,6 @@ async function handleRunTick() {
     toast.error(extractErrorMessage(e));
   }
 }
-
-const phaseLabel = $derived(getPhaseLabel(academicContext.periodPhase));
 </script>
 
 <Popover>
@@ -217,7 +214,7 @@ const phaseLabel = $derived(getPhaseLabel(academicContext.periodPhase));
     <!-- Planned Tasks List -->
     <AutopilotSuggestions 
       {tasks} 
-      isLoading={$tasksQuery.isLoading} 
+      isLoading={tasksQuery.isLoading} 
       {config} 
       {getTaskTypeLabel} 
     />
@@ -229,10 +226,10 @@ const phaseLabel = $derived(getPhaseLabel(academicContext.periodPhase));
         size="sm"
         class="w-full text-[10px] h-8 font-semibold cursor-pointer flex items-center justify-center gap-1.5"
         onclick={handleRunTick}
-        disabled={$runTickMutation.isPending}
+        disabled={runTickMutation.isPending}
       >
-        <RefreshCw size={12} class={$runTickMutation.isPending ? "animate-spin" : ""} />
-        {#if $runTickMutation.isPending}
+        <RefreshCw size={12} class={runTickMutation.isPending ? "animate-spin" : ""} />
+        {#if runTickMutation.isPending}
           {m.common_autopilot_popover_tick_running()}
         {:else}
           {m.common_autopilot_popover_run_tick()}

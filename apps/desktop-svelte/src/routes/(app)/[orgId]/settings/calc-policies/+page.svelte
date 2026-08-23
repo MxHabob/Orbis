@@ -40,10 +40,10 @@ let { data }: { data: { orgId: string } } = $props();
 const orgId = $derived(data.orgId);
 const queryClient = useQueryClient();
 
-const policiesQuery = createQuery({
+const policiesQuery = createQuery(() => ({
   queryKey: ["calc-policies", orgId],
   queryFn: () => commands.assessment.listCalculationPolicies(),
-});
+}));
 
 // ── Create / Edit Dialog ─────────────────────────────────────
 let showDialog = $state(false);
@@ -142,12 +142,12 @@ function getRoundingLabel(r: string) {
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide bg-background">
-  {#if $policiesQuery.isLoading}
+  {#if policiesQuery.isLoading}
     <SettingsFormSkeleton />
-  {:else if $policiesQuery.error}
+  {:else if policiesQuery.error}
     <div class="w-full text-center py-12 text-destructive">
       <p>فشل تحميل سياسات الحساب</p>
-      <Button variant="outline" class="mt-4 cursor-pointer" onclick={() => $policiesQuery.refetch()}>
+      <Button variant="outline" class="mt-4 cursor-pointer" onclick={() => policiesQuery.refetch()}>
         إعادة المحاولة
       </Button>
     </div>
@@ -166,7 +166,7 @@ function getRoundingLabel(r: string) {
 
     <!-- Policies Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-      {#each ($policiesQuery.data ?? []) as policy (policy.id)}
+      {#each (policiesQuery.data ?? []) as policy (policy.id)}
         <div class="border border-border/40 rounded-lg p-5 hover:border-border hover:shadow-sm transition-all group">
           <div class="flex items-start justify-between mb-3">
             <div class="flex items-center gap-2">
@@ -234,7 +234,7 @@ function getRoundingLabel(r: string) {
 
       <div class="flex flex-col gap-1.5">
         <Label class="text-xs">صيغة الحساب</Label>
-        <Textarea bind:value={form.formula_expression} class="text-xs font-mono min-h-[60px]" placeholder="SUM(score * weight) / SUM(weight)" />
+        <Textarea bind:value={form.formula_expression} class="text-xs font-mono min-h-15" placeholder="SUM(score * weight) / SUM(weight)" />
       </div>
 
       <div class="flex flex-col gap-1.5">

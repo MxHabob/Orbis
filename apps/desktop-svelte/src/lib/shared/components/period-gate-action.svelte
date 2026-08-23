@@ -70,7 +70,7 @@ let {
   blocked,
 }: Props = $props();
 
-const gateQuery = createQuery({
+const gateQuery = createQuery(() => ({
   queryKey: ["period-gate", gateType, periodId, classId ?? ""],
   queryFn: async () => {
     if (gateType === "enrollment" && classId) {
@@ -81,9 +81,9 @@ const gateQuery = createQuery({
   staleTime: 30_000,
   refetchOnWindowFocus: true,
   enabled: !!periodId,
-});
+}));
 
-let verdict = $derived($gateQuery.data as GateVerdict | undefined);
+let verdict = $derived(gateQuery.data as GateVerdict | undefined);
 let decision = $derived(verdict?.decision ?? "allowed");
 let reason = $derived(verdict?.reason ?? "");
 
@@ -95,7 +95,7 @@ const decisionColors: Record<GateDecision, string> = {
 };
 </script>
 
-{#if $gateQuery.isLoading}
+{#if gateQuery.isLoading}
   <Button {size} disabled>
     <Loader2 class="mr-2 h-4 w-4 animate-spin" />
     جارِ التحقق...

@@ -5,11 +5,12 @@ import { createQuery } from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
 
 /** Dashboard statistics for the overview page. */
-export function createDashboardStatsQuery(orgId: string) {
-  return createQuery({
-    queryKey: ["dashboard-stats", orgId],
+export function createDashboardStatsQuery(orgId: string | (() => string)) {
+  const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
+  return createQuery(() => ({
+    queryKey: ["dashboard-stats", getOrgId()],
     queryFn: () => commands.organization.getDashboardStats(),
-    enabled: !!orgId,
+    enabled: !!getOrgId(),
     staleTime: 3 * 60 * 1000, // 3 minutes
-  });
+  }));
 }

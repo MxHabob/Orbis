@@ -46,7 +46,7 @@ const selectedTeacher = $derived(
 const displayLabel = $derived(
   value === "all" || value === "" || !value
     ? showAllOption
-      ? allOptionLabel || (m.common_filter_all_teachers ? m.common_filter_all_teachers() : "جميع المعلمين")
+      ? allOptionLabel || "جميع المعلمين"
       : placeholder || (m.common_cs_form_select_teacher ? m.common_cs_form_select_teacher() : "اختر المعلم...")
     : selectedTeacher
       ? getTeacherLabel(selectedTeacher)
@@ -80,7 +80,7 @@ function handleValueChange(newVal: string | undefined) {
         value="all"
         class="text-xs text-start justify-start cursor-pointer"
       >
-        {allOptionLabel || (m.common_filter_all_teachers ? m.common_filter_all_teachers() : "جميع المعلمين")}
+        {allOptionLabel || "جميع المعلمين"}
       </SelectItem>
     {/if}
     {#each teachers as t (t.id)}

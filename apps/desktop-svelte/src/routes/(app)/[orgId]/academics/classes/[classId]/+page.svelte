@@ -49,68 +49,48 @@ const periodId = $derived(academicContext.effectivePeriodId);
 const rtl = $derived(getLocale() === "ar");
 
 // ── TanStack Queries ──────────────────────────────────────────────────────────
-const enrollmentsQuery = createQuery({
-  get queryKey() {
-    return ["enrollments", orgId];
-  },
+const enrollmentsQuery = createQuery(() => ({
+  queryKey: ["enrollments", orgId],
   queryFn: () => commands.academic.listEnrollments(),
-  get enabled() {
-    return !!orgId;
-  },
+  enabled: !!orgId,
   staleTime: 5 * 60 * 1000,
-});
+}));
 
-const classSubjectsQuery = createQuery({
-  get queryKey() {
-    return ["class-subjects", classId, orgId];
-  },
+const classSubjectsQuery = createQuery(() => ({
+  queryKey: ["class-subjects", classId, orgId],
   queryFn: () => commands.academic.listClassSubjects(classId, orgId),
-  get enabled() {
-    return !!classId && !!orgId;
-  },
+  enabled: !!classId && !!orgId,
   staleTime: 5 * 60 * 1000,
-});
+}));
 
-const assessmentsQuery = createQuery({
-  get queryKey() {
-    return ["assessments", classId, periodId];
-  },
+const assessmentsQuery = createQuery(() => ({
+  queryKey: ["assessments", classId, periodId],
   queryFn: () =>
     commands.assessment.listAssessments(periodId || "").catch(() => []),
-  get enabled() {
-    return !!classId && !!periodId && !!orgId;
-  },
+  enabled: !!classId && !!periodId && !!orgId,
   staleTime: 5 * 60 * 1000,
-});
+}));
 
 // Dynamic class attendance analytics
-const attendanceQuery = createQuery({
-  get queryKey() {
-    return ["attendance-analytics", orgId, classId, periodId];
-  },
+const attendanceQuery = createQuery(() => ({
+  queryKey: ["attendance-analytics", orgId, classId, periodId],
   queryFn: () =>
     commands.assessment
       .listAttendance(orgId, periodId || "", classId)
       .catch(() => []),
-  get enabled() {
-    return !!orgId && !!classId && !!periodId;
-  },
+  enabled: !!orgId && !!classId && !!periodId,
   staleTime: 5 * 60 * 1000,
-});
+}));
 
-const gradesQuery = createQuery({
-  get queryKey() {
-    return ["grades", periodId];
-  },
+const gradesQuery = createQuery(() => ({
+  queryKey: ["grades", periodId],
   queryFn: () => commands.assessment.listGrades(periodId || "").catch(() => []),
-  get enabled() {
-    return !!periodId;
-  },
+  enabled: !!periodId,
   staleTime: 5 * 60 * 1000,
-});
+}));
 
 const filteredStudents = $derived(
-  (($enrollmentsQuery.data || []) as any[]).filter(
+  ((enrollmentsQuery.data || []) as any[]).filter(
     (s: any) => String(s.class_id) === classId,
   ),
 );
@@ -118,16 +98,16 @@ const filteredStudents = $derived(
 const studentsCount = $derived(filteredStudents.length);
 const subjectsCount = $derived(
   new Set(
-    (($classSubjectsQuery.data || []) as any[]).map((cs: any) =>
+    ((classSubjectsQuery.data || []) as any[]).map((cs: any) =>
       String(cs.subject_id),
     ),
   ).size,
 );
 
 const assessmentsCount = $derived.by(() => {
-  const allAssessments = ($assessmentsQuery.data || []) as any[];
+  const allAssessments = (assessmentsQuery.data || []) as any[];
   const classSubjectIds = new Set(
-    (($classSubjectsQuery.data || []) as any[]).map((cs: any) => cs.id),
+    ((classSubjectsQuery.data || []) as any[]).map((cs: any) => cs.id),
   );
   return allAssessments.filter((a: any) =>
     classSubjectIds.has(a.class_subject_id),
@@ -135,7 +115,7 @@ const assessmentsCount = $derived.by(() => {
 });
 
 const attendanceRate = $derived.by(() => {
-  const list = ($attendanceQuery.data || []) as any[];
+  const list = (attendanceQuery.data || []) as any[];
   if (list.length === 0) return 100;
   const presentCount = list.filter(
     (r: any) =>
@@ -148,7 +128,7 @@ const attendanceRate = $derived.by(() => {
 });
 
 const avgGradeScore = $derived.by(() => {
-  const list = $gradesQuery.data || [];
+  const list = (gradesQuery.data || []) as any[];
   const studentIds = new Set(filteredStudents.map((s: any) => s.id));
   const classGrades = list.filter((g) => studentIds.has(g.enrollment_id));
   if (classGrades.length === 0) return 0;
@@ -161,29 +141,29 @@ const classHealthIndex = $derived(
 );
 
 const isLoading = $derived(
-  $enrollmentsQuery.isLoading ||
-    $classSubjectsQuery.isLoading ||
-    $assessmentsQuery.isLoading ||
-    $gradesQuery.isLoading ||
-    $attendanceQuery.isLoading,
+  enrollmentsQuery.isLoading ||
+    classSubjectsQuery.isLoading ||
+    assessmentsQuery.isLoading ||
+    gradesQuery.isLoading ||
+    attendanceQuery.isLoading,
 );
 
 const error = $derived(
-  $enrollmentsQuery.error ||
-    $classSubjectsQuery.error ||
-    $assessmentsQuery.error ||
-    $gradesQuery.error ||
-    $attendanceQuery.error,
+  enrollmentsQuery.error ||
+    classSubjectsQuery.error ||
+    assessmentsQuery.error ||
+    gradesQuery.error ||
+    attendanceQuery.error,
 );
 
 function refetchAll() {
-  $enrollmentsQuery.refetch();
-  $classSubjectsQuery.refetch();
-  $assessmentsQuery.refetch();
-  $gradesQuery.refetch();
-  $attendanceQuery.refetch();
+  enrollmentsQuery.refetch();
+  classSubjectsQuery.refetch();
+  assessmentsQuery.refetch();
+  gradesQuery.refetch();
+  attendanceQuery.refetch();
   if (selectedSubjectId) {
-    $gradeMatrixQuery.refetch();
+    gradeMatrixQuery.refetch();
   }
 }
 
@@ -191,16 +171,14 @@ function refetchAll() {
 let selectedSubjectId = $state<string>("");
 
 $effect(() => {
-  const subjects = ($classSubjectsQuery.data || []) as any[];
+  const subjects = (classSubjectsQuery.data || []) as any[];
   if (subjects.length > 0 && !selectedSubjectId) {
     selectedSubjectId = String(subjects[0].subject_id || subjects[0].id);
   }
 });
 
-const gradeMatrixQuery = createQuery({
-  get queryKey() {
-    return ["grade-matrix", orgId, periodId, classId, selectedSubjectId];
-  },
+const gradeMatrixQuery = createQuery(() => ({
+  queryKey: ["grade-matrix", orgId, periodId, classId, selectedSubjectId],
   queryFn: () =>
     (commands.assessment as any).getGradeMatrix(
       orgId,
@@ -208,23 +186,21 @@ const gradeMatrixQuery = createQuery({
       classId,
       selectedSubjectId,
     ),
-  get enabled() {
-    return !!orgId && !!periodId && !!classId && !!selectedSubjectId;
-  },
+  enabled: !!orgId && !!periodId && !!classId && !!selectedSubjectId,
   staleTime: 2 * 60 * 1000,
-});
+}));
 
 const gridColumns = $derived.by(() => {
-  if (!$gradeMatrixQuery.data) return [];
-  return buildGradeColumns($gradeMatrixQuery.data as any, {
+  if (!gradeMatrixQuery.data) return [];
+  return buildGradeColumns(gradeMatrixQuery.data as any, {
     readonly: true,
     locale: getLocale(),
   });
 });
 
 const gridSource = $derived.by(() => {
-  if (!$gradeMatrixQuery.data) return [];
-  return transformMatrixToSource($gradeMatrixQuery.data as any, getLocale(), academicContext.gradeScaleItems);
+  if (!gradeMatrixQuery.data) return [];
+  return transformMatrixToSource(gradeMatrixQuery.data as any, getLocale(), academicContext.gradeScaleItems);
 });
 
 async function handleCellEdit(event: any) {
@@ -262,7 +238,7 @@ const diagnosticIssues = $derived.by(() => {
     });
   }
 
-  const failingRecords = ($gradesQuery.data || []).filter(
+  const failingRecords = (gradesQuery.data || []).filter(
     (g) => g.score !== null && g.score < 50,
   );
   if (failingRecords.length > 0) {
@@ -364,15 +340,15 @@ function handleTriggerAction(issue: any) {
                       <BookOpen size={11} class="text-muted-foreground shrink-0" />
                       <span class="truncate">
                         {
-                          (($classSubjectsQuery.data || []) as any[]).find((s: any) => String(s.subject_id || s.id) === selectedSubjectId)?.subject_name_ar || 
-                          (($classSubjectsQuery.data || []) as any[]).find((s: any) => String(s.subject_id || s.id) === selectedSubjectId)?.subject_name || 
+                          ((classSubjectsQuery.data || []) as any[]).find((s: any) => String(s.subject_id || s.id) === selectedSubjectId)?.subject_name_ar || 
+                          ((classSubjectsQuery.data || []) as any[]).find((s: any) => String(s.subject_id || s.id) === selectedSubjectId)?.subject_name || 
                           (m.common_control_select_subject ? m.common_control_select_subject() : "Select Subject")
                         }
                       </span>
                     </div>
                   </SelectTrigger>
                   <SelectContent>
-                    {#each (($classSubjectsQuery.data || []) as any[]) as sub}
+                    {#each ((classSubjectsQuery.data || []) as any[]) as sub}
                       <SelectItem value={String(sub.subject_id || sub.id)}>{sub.subject_name_ar || sub.subject_name}</SelectItem>
                     {/each}
                   </SelectContent>
@@ -380,7 +356,7 @@ function handleTriggerAction(issue: any) {
               </div>
 
               <div class="border border-border/60 rounded-xl overflow-hidden h-[260px]">
-                {#if $gradeMatrixQuery.isLoading}
+                {#if gradeMatrixQuery.isLoading}
                   <div class="h-full flex flex-col gap-2 p-2">
                     {#each Array(5) as _}
                       <Skeleton class="h-8 w-full rounded-lg animate-pulse" />

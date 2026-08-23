@@ -47,7 +47,7 @@ function selectProfile(type: string) {
     <div class="flex items-center gap-3 p-3 rounded-xl border border-primary/20 bg-primary/5 text-primary text-xs font-sans">
       <Info size={16} class="shrink-0" />
       <span>
-        {m.common_onboarding_preconfigured_notice?.() ?? "This institution type was configured during system initialization. You can change it if needed."}
+        تم ضبط نوع المؤسسة مسبقاً أثناء تهيئة النظام. يمكنك تغييره إذا لزم الأمر.
       </span>
     </div>
   {/if}

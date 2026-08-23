@@ -36,21 +36,21 @@ const orgId = $derived(data.orgId);
 const queryClient = useQueryClient();
 
 // ── Queries ──────────────────────────────────────────────────
-const scalesQuery = createQuery({
+const scalesQuery = createQuery(() => ({
   queryKey: ["grade-scales", orgId],
   queryFn: () => commands.assessment.listGradeScales(),
-});
+}));
 
 let selectedScaleId = $state<string | null>(null);
 const selectedScale = $derived(
-  ($scalesQuery.data as any[] | undefined)?.find((s: any) => s.id === selectedScaleId) ?? null,
+  scalesQuery.data?.find((s: any) => s.id === selectedScaleId) ?? null,
 );
 
-const itemsQuery = createQuery({
+const itemsQuery = createQuery(() => ({
   queryKey: ["grade-scale-items", selectedScaleId],
   queryFn: () => (selectedScaleId ? commands.assessment.listGradeScaleItems(selectedScaleId) : []),
-  enabled: () => !!selectedScaleId,
-});
+  enabled: !!selectedScaleId,
+}));
 
 // ── Create Scale Dialog ──────────────────────────────────────
 let showCreateDialog = $state(false);
@@ -139,12 +139,12 @@ function getTypeLabel(t: string) {
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide bg-background">
-  {#if $scalesQuery.isLoading}
+  {#if scalesQuery.isLoading}
     <SettingsFormSkeleton />
-  {:else if $scalesQuery.error}
+  {:else if scalesQuery.error}
     <div class="w-full text-center py-12 text-destructive">
       <p>فشل تحميل مقاييس الدرجات</p>
-      <Button variant="outline" class="mt-4 cursor-pointer" onclick={() => $scalesQuery.refetch()}>
+      <Button variant="outline" class="mt-4 cursor-pointer" onclick={() => scalesQuery.refetch()}>
         إعادة المحاولة
       </Button>
     </div>
@@ -164,7 +164,7 @@ function getTypeLabel(t: string) {
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <!-- Scales List (Left Panel) -->
       <div class="flex flex-col gap-2">
-        {#each ($scalesQuery.data ?? []) as scale (scale.id)}
+        {#each scalesQuery.data ?? [] as scale (scale.id)}
           <div
             role="button"
             tabindex="0"
@@ -213,7 +213,7 @@ function getTypeLabel(t: string) {
 
             <Separator class="mb-4 bg-border/40" />
 
-            {#if $itemsQuery.isLoading}
+            {#if itemsQuery.isLoading}
               <div class="flex items-center justify-center py-8">
                 <Loader2 size={20} class="animate-spin text-muted-foreground" />
               </div>
@@ -231,7 +231,7 @@ function getTypeLabel(t: string) {
                     </tr>
                   </thead>
                   <tbody>
-                    {#each ($itemsQuery.data ?? []) as item (item.id)}
+                    {#each itemsQuery.data ?? [] as item (item.id)}
                       <tr class="border-b border-border/20 hover:bg-muted/20 transition-colors">
                         <td class="py-2.5 font-semibold text-foreground">{item.grade_label}</td>
                         <td class="py-2.5 text-center font-mono">{item.min_score}</td>

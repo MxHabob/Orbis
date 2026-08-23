@@ -18,8 +18,8 @@ let orgId = $derived(page.params.orgId as string);
 const orgQuery = createOrganizationQuery(() => orgId);
 const updateOrgMutation = createUpdateOrganizationMutation();
 
-let isLoading = $derived($orgQuery.isLoading);
-let isSaving = $derived($updateOrgMutation.isPending);
+let isLoading = $derived(orgQuery.isLoading);
+let isSaving = $derived(updateOrgMutation.isPending);
 
 async function handleLanguageChange(newLocale: string, currentValues: any) {
   const lang = newLocale.split("-")[0]?.toLowerCase() || "ar";
@@ -28,63 +28,66 @@ async function handleLanguageChange(newLocale: string, currentValues: any) {
   // Auto-save form to database before reloading to avoid losing unsaved input
   if (orgId) {
     try {
-      await commands.organization.updateOrganization(currentValues);
-    } catch (e) {
-      console.error("Failed to auto-save before language switch:", e);
+      await updateOrgMutation.mutateAsync({
+        orgId,
+        request: {
+          name: currentValues.name,
+          slug: currentValues.slug,
+          locale: targetLang,
+          timezone: currentValues.timezone,
+        },
+      });
+    } catch {
+      // ignore save error, proceed with language switch
     }
   }
-
-  if (targetLang === getLocale()) return;
 
   setLocale(targetLang);
 }
 
-async function handleSaveAvatar(logo: string | null) {
+async function handleSave(data: any) {
   if (!orgId) return;
+  try {
+    await updateOrgMutation.mutateAsync({ orgId, request: data });
+    toast.success(m.settings_general_save_success());
+  } catch (e: unknown) {
+    toast.error(extractErrorMessage(e));
+  }
+}
 
-  $updateOrgMutation.mutate(
-    {
+async function handleSaveAvatar(fileOrUrl: File | string | null) {
+  if (!orgId) return;
+  try {
+    let avatarUrl: string | undefined;
+    if (fileOrUrl instanceof File) {
+      avatarUrl = await uploadAsset(fileOrUrl, "avatar");
+    } else if (typeof fileOrUrl === "string") {
+      avatarUrl = fileOrUrl;
+    } else {
+      avatarUrl = undefined;
+    }
+
+    await updateOrgMutation.mutateAsync({
       orgId,
       request: {
-        logo,
+        avatar: avatarUrl,
       },
-    },
-    {
-      onSuccess: () => {
-        toast.success(m.settings_general_save_success());
-      },
-      onError: (e: unknown) => {
-        toast.error(
-          m.settings_general_save_error({ error: extractErrorMessage(e) }),
-        );
-      },
-    },
-  );
+    });
+
+    toast.success(m.settings_general_save_success());
+  } catch (e: unknown) {
+    toast.error(extractErrorMessage(e));
+  }
 }
 
-function handleRemoveOrganization() {
-  toast.error(m.settings_general_desktop_disabled());
-}
-
-async function handleSave(request: any) {
+async function handleRemoveOrganization() {
   if (!orgId) return;
-
-  $updateOrgMutation.mutate(
-    {
-      orgId,
-      request,
-    },
-    {
-      onSuccess: () => {
-        toast.success(m.settings_general_save_success());
-      },
-      onError: (e: unknown) => {
-        toast.error(
-          m.settings_general_save_error({ error: extractErrorMessage(e) }),
-        );
-      },
-    },
-  );
+  try {
+    await commands.organization.deleteOrganization(orgId);
+    toast.success(m.settings_general_save_success());
+  } catch (e: unknown) {
+    toast.error(extractErrorMessage(e));
+  }
 }
 </script>
 
@@ -94,10 +97,10 @@ async function handleSave(request: any) {
 
 {#if isLoading}
   <SettingsFormSkeleton />
-{:else if $orgQuery.data}
-  {#key $orgQuery.data}
+{:else if orgQuery.data}
+  {#key orgQuery.data}
     <GeneralSettingsForm
-      org={$orgQuery.data}
+      org={orgQuery.data}
       {isSaving}
       onsave={handleSave}
       onsaveavatar={handleSaveAvatar}

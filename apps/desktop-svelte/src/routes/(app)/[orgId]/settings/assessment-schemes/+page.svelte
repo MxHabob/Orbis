@@ -36,25 +36,25 @@ const orgId = $derived(data.orgId);
 const queryClient = useQueryClient();
 
 // ── Queries ──────────────────────────────────────────────────
-const schemesQuery = createQuery({
+const schemesQuery = createQuery(() => ({
   queryKey: ["assessment-schemes", orgId],
   queryFn: () => commands.assessment.listAssessmentSchemes(),
-});
+}));
 
 let selectedSchemeId = $state<string | null>(null);
 const selectedScheme = $derived(
-  ($schemesQuery.data as any[] | undefined)?.find((s: any) => s.id === selectedSchemeId) ?? null,
+  (schemesQuery.data as any[] | undefined)?.find((s: any) => s.id === selectedSchemeId) ?? null,
 );
 
-const componentsQuery = createQuery({
+const componentsQuery = createQuery(() => ({
   queryKey: ["scheme-components", selectedSchemeId],
   queryFn: () => (selectedSchemeId ? commands.assessment.listComponents(selectedSchemeId) : []),
-  enabled: () => !!selectedSchemeId,
-});
+  enabled: !!selectedSchemeId,
+}));
 
 // ── Weight summary ───────────────────────────────────────────
 const totalWeight = $derived(
-  (($componentsQuery.data ?? []) as any[]).reduce((sum: number, c: any) => sum + (c.weight || 0), 0),
+  ((componentsQuery.data ?? []) as any[]).reduce((sum: number, c: any) => sum + (c.weight || 0), 0),
 );
 
 // ── Create Scheme Dialog ─────────────────────────────────────
@@ -191,12 +191,12 @@ const componentTypes = [
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide bg-background">
-  {#if $schemesQuery.isLoading}
+  {#if schemesQuery.isLoading}
     <SettingsFormSkeleton />
-  {:else if $schemesQuery.error}
+  {:else if schemesQuery.error}
     <div class="w-full text-center py-12 text-destructive">
       <p>فشل تحميل هياكل التقييم</p>
-      <Button variant="outline" class="mt-4 cursor-pointer" onclick={() => $schemesQuery.refetch()}>
+      <Button variant="outline" class="mt-4 cursor-pointer" onclick={() => schemesQuery.refetch()}>
         إعادة المحاولة
       </Button>
     </div>
@@ -216,7 +216,7 @@ const componentTypes = [
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <!-- Schemes List (Left Panel) -->
       <div class="flex flex-col gap-2">
-        {#each ($schemesQuery.data ?? []) as scheme (scheme.id)}
+        {#each (schemesQuery.data ?? []) as scheme (scheme.id)}
           <div
             role="button"
             tabindex="0"
@@ -274,15 +274,15 @@ const componentTypes = [
 
             <Separator class="mb-4 bg-border/40" />
 
-            {#if $componentsQuery.isLoading}
+            {#if componentsQuery.isLoading}
               <div class="flex items-center justify-center py-8">
                 <Loader2 size={20} class="animate-spin text-muted-foreground" />
               </div>
             {:else}
               <!-- Weight visual bar -->
-              {#if ($componentsQuery.data ?? []).length > 0}
+              {#if (componentsQuery.data ?? []).length > 0}
                 <div class="flex rounded-md overflow-hidden h-3 mb-5 bg-muted/30">
-                  {#each ($componentsQuery.data ?? []) as comp, i}
+                  {#each (componentsQuery.data ?? []) as comp, i}
                     {@const colors = [
                       "bg-blue-500", "bg-emerald-500", "bg-amber-500",
                       "bg-purple-500", "bg-rose-500", "bg-cyan-500",
@@ -309,7 +309,7 @@ const componentTypes = [
                     </tr>
                   </thead>
                   <tbody>
-                    {#each ($componentsQuery.data ?? []) as comp, i (comp.id)}
+                    {#each (componentsQuery.data ?? []) as comp, i (comp.id)}
                       {@const colors = [
                         "bg-blue-500", "bg-emerald-500", "bg-amber-500",
                         "bg-purple-500", "bg-rose-500", "bg-cyan-500",

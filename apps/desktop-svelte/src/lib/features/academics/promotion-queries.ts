@@ -11,34 +11,32 @@ import { commands } from "$lib/core/ipc";
 import type { PromotionConfig } from "@orbis/sdk-core";
 
 export function createPromotionJobsQuery(orgId: () => string) {
-  return createQuery({
-    get queryKey() {
-      return ["promotion-jobs", orgId()];
-    },
+  return createQuery(() => ({
+    queryKey: ["promotion-jobs", orgId()],
     queryFn: () => commands.enrollment_workflow.listJobs(),
-    get enabled() {
-      return !!orgId();
-    },
+    enabled: !!orgId(),
     staleTime: 60 * 1000,
-  });
+  }));
 }
 
-export function createPromotionJobQuery(jobId: string) {
-  return createQuery({
-    queryKey: ["promotionJobs", "detail", jobId],
-    queryFn: () => commands.enrollment_workflow.getJob(jobId),
-    enabled: !!jobId,
+export function createPromotionJobQuery(jobId: string | (() => string)) {
+  const getJobId = typeof jobId === "function" ? jobId : () => jobId;
+  return createQuery(() => ({
+    queryKey: ["promotionJobs", "detail", getJobId()],
+    queryFn: () => commands.enrollment_workflow.getJob(getJobId()),
+    enabled: !!getJobId(),
     staleTime: 30 * 1000,
-  });
+  }));
 }
 
-export function createPromotionDetailsQuery(jobId: string) {
-  return createQuery({
-    queryKey: ["promotionDetails", jobId],
-    queryFn: () => commands.enrollment_workflow.getJob(jobId),
-    enabled: !!jobId,
+export function createPromotionDetailsQuery(jobId: string | (() => string)) {
+  const getJobId = typeof jobId === "function" ? jobId : () => jobId;
+  return createQuery(() => ({
+    queryKey: ["promotionDetails", getJobId()],
+    queryFn: () => commands.enrollment_workflow.getJob(getJobId()),
+    enabled: !!getJobId(),
     staleTime: 30 * 1000,
-  });
+  }));
 }
 
 export function createDryRunMutation(orgId: string) {
