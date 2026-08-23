@@ -122,6 +122,8 @@ export const commands: OrbisCommands = {
     deleteSubject: (subjectId: any) => cmd("academic_subject_delete", { subjectId }),
   },
   assessment: {
+    calculateAnnualResult: (req: any) => cmd("assessment_annual_engine_calculate_annual_result", { req }),
+    finalizeAnnualResult: (resultId: any, actor: any) => cmd("assessment_annual_engine_finalize_annual_result", { resultId, actor }),
     listAssessmentSchemes: () => cmd("assessment_assessment_scheme_list", {}),
     getAssessmentScheme: (schemeId: any) => cmd("assessment_assessment_scheme_get", { schemeId }),
     listComponents: (schemeId: any) => cmd("assessment_assessment_scheme_list_components", { schemeId }),
@@ -146,6 +148,7 @@ export const commands: OrbisCommands = {
     createCalculationPolicy: (data: any) => cmd("assessment_calculation_policy_create", { data }),
     updateCalculationPolicy: (policyId: any, data: any) => cmd("assessment_calculation_policy_update", { policyId, data }),
     deleteCalculationPolicy: (policyId: any) => cmd("assessment_calculation_policy_delete", { policyId }),
+    listActive: () => cmd("assessment_calculation_policy_list_active", {}),
     listGrades: (assessmentId: any) => cmd("assessment_grade_list", { assessmentId }),
     listGradesPaginated: (cursorOrReq?: any, limit?: any) => {
       const req = (typeof cursorOrReq === "object" && cursorOrReq !== null && !Array.isArray(cursorOrReq))
@@ -170,10 +173,21 @@ export const commands: OrbisCommands = {
     deleteGradeScale: (scaleId: any) => cmd("assessment_grade_scale_delete", { scaleId }),
     createGradeScaleItem: (data: any) => cmd("assessment_grade_scale_create_item", { data }),
     deleteGradeScaleItem: (itemId: any) => cmd("assessment_grade_scale_delete_item", { itemId }),
+    listRankingPolicies: () => cmd("assessment_ranking_policy_list", {}),
+    getRankingPolicy: (policyId: any) => cmd("assessment_ranking_policy_get", { policyId }),
+    createRankingPolicy: (data: any) => cmd("assessment_ranking_policy_create", { data }),
+    updateRankingPolicy: (policyId: any, data: any) => cmd("assessment_ranking_policy_update", { policyId, data }),
+    deleteRankingPolicy: (policyId: any) => cmd("assessment_ranking_policy_delete", { policyId }),
+    resolveRankingPolicy: (periodId: any) => cmd("assessment_ranking_policy_resolve_ranking_policy", { periodId }),
+    computeTermRankings: (termPeriodId: any, classSubjectId: any) => cmd("assessment_ranking_policy_compute_term_rankings", { termPeriodId, classSubjectId }),
     generateSnapshot: (studentId: any, periodId: any, classSubjectId: any, policyId: any, scaleId: any, rawScores: any) => cmd("assessment_snapshot_generator_generate_snapshot", { studentId, periodId, classSubjectId, policyId, scaleId, rawScores }),
     executeSnapshotGeneration: (studentId: any, periodId: any, classSubjectId: any, policyId: any, scaleId: any, rawScores: any) => cmd("assessment_snapshot_generator_execute_snapshot_generation", { studentId, periodId, classSubjectId, policyId, scaleId, rawScores }),
     computeRankings: (periodId: any, classSubjectId: any) => cmd("assessment_snapshot_generator_compute_rankings", { periodId, classSubjectId }),
     applyPassFailForStudent: (studentId: any, periodId: any) => cmd("assessment_snapshot_generator_apply_pass_fail_for_student", { studentId, periodId }),
+    calculateTermResult: (req: any) => cmd("assessment_term_engine_calculate_term_result", { req }),
+    calculateTermResultsBatch: (termPeriodId: any, classId: any, gradingPeriodIds: any, examPeriodId: any) => cmd("assessment_term_engine_calculate_term_results_batch", { termPeriodId, classId, gradingPeriodIds, examPeriodId }),
+    finalizeTermResult: (resultId: any, actor: any) => cmd("assessment_term_engine_finalize_term_result", { resultId, actor }),
+    buildGradeMapper: () => cmd("assessment_term_engine_build_grade_mapper", {}),
   },
   scheduling: {
     listLessonsByClass: (periodId: any, classId: any) => cmd("scheduling_lesson_list_by_class", { periodId, classId }),

@@ -6,6 +6,24 @@ use crate::commands::error::{CmdResult, CommandError};
 use svc_assessment::ops;
 
 #[tauri::command]
+pub async fn assessment_annual_engine_calculate_annual_result(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let req_parsed = match req {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: req")),
+    };
+    let result = ops::annual_engine::calculate_annual_result(&ctx, req_parsed).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn assessment_annual_engine_finalize_annual_result(state: State<'_, Arc<AppState>>, result_id: String, actor: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::annual_engine::finalize_annual_result(&ctx, &result_id, &actor).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
 pub async fn assessment_assessment_scheme_list(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::assessment_scheme::list(&ctx).await.map_err(CommandError::from)?;
@@ -210,6 +228,13 @@ pub async fn assessment_calculation_policy_delete(state: State<'_, Arc<AppState>
 }
 
 #[tauri::command]
+pub async fn assessment_calculation_policy_list_active(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::calculation_policy::list_active(&ctx).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
 pub async fn assessment_grade_list(state: State<'_, Arc<AppState>>, assessment_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::grade::list(&ctx, &assessment_id).await.map_err(CommandError::from)?;
@@ -379,6 +404,63 @@ pub async fn assessment_grade_scale_delete_item(state: State<'_, Arc<AppState>>,
 }
 
 #[tauri::command]
+pub async fn assessment_ranking_policy_list(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::ranking_policy::list(&ctx).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn assessment_ranking_policy_get(state: State<'_, Arc<AppState>>, policy_id: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::ranking_policy::get(&ctx, &policy_id).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn assessment_ranking_policy_create(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let data_parsed = match data {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: data")),
+    };
+    let result = ops::ranking_policy::create(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn assessment_ranking_policy_update(state: State<'_, Arc<AppState>>, policy_id: String, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let data_parsed = match data {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: data")),
+    };
+    let result = ops::ranking_policy::update(&ctx, &policy_id, data_parsed).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn assessment_ranking_policy_delete(state: State<'_, Arc<AppState>>, policy_id: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    ops::ranking_policy::delete(&ctx, &policy_id).await.map_err(CommandError::from)?;
+    Ok(serde_json::json!({}))
+}
+
+#[tauri::command]
+pub async fn assessment_ranking_policy_resolve_ranking_policy(state: State<'_, Arc<AppState>>, period_id: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::ranking_policy::resolve_ranking_policy(&ctx, &period_id).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn assessment_ranking_policy_compute_term_rankings(state: State<'_, Arc<AppState>>, term_period_id: String, class_subject_id: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::ranking_policy::compute_term_rankings(&ctx, &term_period_id, &class_subject_id).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
 pub async fn assessment_snapshot_generator_generate_snapshot(state: State<'_, Arc<AppState>>, student_id: String, period_id: String, class_subject_id: String, policy_id: String, scale_id: String, raw_scores: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let raw_scores_parsed = match raw_scores {
@@ -411,6 +493,42 @@ pub async fn assessment_snapshot_generator_compute_rankings(state: State<'_, Arc
 pub async fn assessment_snapshot_generator_apply_pass_fail_for_student(state: State<'_, Arc<AppState>>, student_id: String, period_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::snapshot_generator::apply_pass_fail_for_student(&ctx, &student_id, &period_id).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn assessment_term_engine_calculate_term_result(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let req_parsed = match req {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: req")),
+    };
+    let result = ops::term_engine::calculate_term_result(&ctx, req_parsed).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn assessment_term_engine_calculate_term_results_batch(state: State<'_, Arc<AppState>>, term_period_id: String, class_id: String, grading_period_ids: Option<serde_json::Value>, exam_period_id: Option<String>) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let grading_period_ids_parsed = match grading_period_ids {
+        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
+        None => return Err(CommandError::new("Missing argument: grading_period_ids")),
+    };
+    let result = ops::term_engine::calculate_term_results_batch(&ctx, &term_period_id, &class_id, grading_period_ids_parsed, exam_period_id).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn assessment_term_engine_finalize_term_result(state: State<'_, Arc<AppState>>, result_id: String, actor: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::term_engine::finalize_term_result(&ctx, &result_id, &actor).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn assessment_term_engine_build_grade_mapper(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::term_engine::build_grade_mapper(&ctx).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 

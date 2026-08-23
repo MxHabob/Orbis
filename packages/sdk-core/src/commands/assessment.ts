@@ -2,6 +2,8 @@
 import type * as Types from '../types/index.js';
 
 export interface AssessmentCommands {
+  calculateAnnualResult(req: any): Promise<any>;
+  finalizeAnnualResult(resultId: string, actor: string): Promise<any>;
   listAssessmentSchemes(): Promise<any[]>;
   getAssessmentScheme(schemeId: string): Promise<any>;
   listComponents(schemeId: string): Promise<any[]>;
@@ -26,6 +28,7 @@ export interface AssessmentCommands {
   createCalculationPolicy(data: any): Promise<any>;
   updateCalculationPolicy(policyId: string, data: any): Promise<any>;
   deleteCalculationPolicy(policyId: string): Promise<void>;
+  listActive(): Promise<any[]>;
   listGrades(assessmentId: string): Promise<any[]>;
   listGradesPaginated(assessmentId: string, request: any): Promise<any>;
   reportCard(enrollmentId: string, periodId: string): Promise<Types.GradeReportCard>;
@@ -45,8 +48,19 @@ export interface AssessmentCommands {
   deleteGradeScale(scaleId: string): Promise<void>;
   createGradeScaleItem(data: any): Promise<any>;
   deleteGradeScaleItem(itemId: string): Promise<void>;
+  listRankingPolicies(): Promise<any[]>;
+  getRankingPolicy(policyId: string): Promise<any>;
+  createRankingPolicy(data: any): Promise<any>;
+  updateRankingPolicy(policyId: string, data: any): Promise<any>;
+  deleteRankingPolicy(policyId: string): Promise<void>;
+  resolveRankingPolicy(periodId: string): Promise<any>;
+  computeTermRankings(termPeriodId: string, classSubjectId: string): Promise<any[]>;
   generateSnapshot(studentId: string, periodId: string, classSubjectId: string, policyId: string, scaleId: string, rawScores: any): Promise<any>;
   executeSnapshotGeneration(studentId: string, periodId: string, classSubjectId: string, policyId: string, scaleId: string, rawScores: any): Promise<any>;
   computeRankings(periodId: string, classSubjectId: string): Promise<number>;
   applyPassFailForStudent(studentId: string, periodId: string): Promise<boolean>;
+  calculateTermResult(req: any): Promise<any>;
+  calculateTermResultsBatch(termPeriodId: string, classId: string, gradingPeriodIds: string[], examPeriodId: string | null): Promise<any[]>;
+  finalizeTermResult(resultId: string, actor: string): Promise<any>;
+  buildGradeMapper(): Promise<any>;
 }
