@@ -28,6 +28,7 @@ impl DatabaseProvider {
             include_str!("schemas/schema_baseline.sql")
         };
         crate::migrations::run_sql_migration(&db, active_baseline_sql).await?;
+        crate::schema_migrations::run_postgres_security_migrations(&db).await?;
         crate::schema_migrations::run_p0_migrations(&db).await?;
         crate::schema_migrations::run_p4_migrations(&db).await?;
 

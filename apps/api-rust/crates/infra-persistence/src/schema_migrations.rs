@@ -20,6 +20,39 @@ pub async fn run_p0_migrations(db: &DatabaseConnection) -> Result<(), DbErr> {
     Ok(())
 }
 
+/// Enable RLS on every table exposed through the public schema.
+///
+/// No policies are created here intentionally: the application connects as
+/// the database owner, while PostgREST roles remain deny-by-default until
+/// policies are defined for their authentication model.
+pub async fn run_postgres_security_migrations(db: &DatabaseConnection) -> Result<(), DbErr> {
+    if db.get_database_backend() != sea_orm::DbBackend::Postgres {
+        return Ok(());
+    }
+
+    db.execute_unprepared(
+        r#"
+        DO $$
+        DECLARE
+            table_name text;
+        BEGIN
+            FOR table_name IN
+                SELECT tablename
+                FROM pg_catalog.pg_tables
+                WHERE schemaname = 'public'
+            LOOP
+                EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', table_name);
+            END LOOP;
+        END
+        $$;
+        "#,
+    )
+    .await?;
+
+    info!("PostgreSQL security migration complete: RLS enabled on public tables");
+    Ok(())
+}
+
 /// Replace org_id UNIQUE with partial unique indexes so branch overrides work.
 async fn migrate_academic_policies_branch_overrides(db: &DatabaseConnection) -> Result<(), DbErr> {
     let row = db
