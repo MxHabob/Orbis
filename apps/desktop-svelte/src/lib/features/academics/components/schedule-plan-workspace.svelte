@@ -1,6 +1,6 @@
 <!--
-@component SchedulerAiPanel
-Highly-customizable, resizable sidebar panel for managing AI Timetable optimization (Timefold solver).
+@component SchedulePlanWorkspace
+Responsive workspace for preparing and reviewing an institution's timetable plan.
 Includes constraints tuning, direct weekly subjects hours management, polling, and draft preview mode.
 -->
 <script lang="ts">
@@ -22,28 +22,23 @@ import {
   History,
   Trash2,
 } from "@lucide/svelte";
-import { authStore } from "$lib/stores/auth.svelte";
 import Resizer from "$lib/shell/resizer.svelte";
 
 let {
-  orgId,
   periodId,
   selectedClassId,
-  selectedTeacherId,
-  viewMode,
   previewDraft = $bindable(false),
   activeJob = $bindable(null),
   subjects = [],
+	standalone = false,
   onApply,
 }: {
-  orgId: string;
   periodId: string;
   selectedClassId: string;
-  selectedTeacherId: string;
-  viewMode: "class" | "teacher";
   previewDraft: boolean;
   activeJob: any;
   subjects: any[];
+	standalone?: boolean;
   onApply: () => void;
 } = $props();
 
@@ -57,13 +52,8 @@ const defaultValue = 20;
 // School Scheduling Customizations State
 let classSubjects = $state<any[]>([]);
 let isUpdatingSubjectHours = $state(false);
-let minimizeStudentGaps = $state(true);
-let minimizeTeacherGaps = $state(true);
-let strictRoomCapacity = $state(true);
-
 // Solver State
 let isSolving = $state(false);
-let solverMode = $state<"full" | "incremental">("incremental");
 let solveJobs = $state<any[]>([]);
 let solveError = $state<string | null>(null);
 let pollingInterval = $state<any>(null);
@@ -287,29 +277,32 @@ async function deleteSolverJob(jobId: string) {
     toast.error(extractErrorMessage(e));
   }
 }
+
 </script>
 
-<div 
+<div
 	bind:this={panelEl}
-	style="width: {preferredWidth}rem; min-width: {preferredWidth > 3 ? minWidth : 3}rem; max-width: {maxWidth}rem;"
-	class="relative shrink-0 bg-card/65 backdrop-blur-md select-none transition-all duration-200 border-s border-border/80 flex flex-col"
-	class:p-4={preferredWidth > 3}
-	class:gap-4={preferredWidth > 3}
+	style={standalone ? undefined : `width: ${preferredWidth}rem; min-width: ${preferredWidth > 3 ? minWidth : 3}rem; max-width: ${maxWidth}rem;`}
+	class="relative bg-card/65 backdrop-blur-md select-none transition-all duration-200 border-border/80 flex flex-col {standalone ? 'w-full h-full min-h-0 overflow-y-auto rounded-xl border p-4 sm:p-6 lg:p-8' : 'shrink-0 border-s'}"
+	class:p-4={!standalone && preferredWidth > 3}
+	class:gap-4={!standalone && preferredWidth > 3}
 	in:fade={{ duration: 250 }}
 >
-	<!-- Resizer Component inside the sidebar (always rendered so we can drag it open) -->
-	<Resizer
-		viewport={panelEl}
-		direction="left"
-		minWidth={minWidth}
-		maxWidth={maxWidth}
-		defaultValue={defaultValue}
-		collapsedWidth={3}
-		persistId="scheduler-sidebar-width"
-		onWidth={(w) => preferredWidth = w}
-	/>
+	{#if !standalone}
+		<Resizer
+			viewport={panelEl}
+			direction="left"
+			minWidth={minWidth}
+			maxWidth={maxWidth}
+			defaultValue={defaultValue}
+			collapsedWidth={3}
+			persistId="scheduler-sidebar-width"
+			onWidth={(w) => preferredWidth = w}
+		/>
+	{/if}
 
-	{#if preferredWidth <= 3}
+	{#if !standalone && preferredWidth <= 3}
+
 		<!-- Collapsed vertical strip -->
 		<div class="h-full w-full flex flex-col items-center py-4 bg-card/30 select-none">
 			<Button
@@ -342,7 +335,7 @@ async function deleteSolverJob(jobId: string) {
 			</Badge>
 		</div>
 
-		<!-- Direct Weekly Load Editor section -->
+		<!-- Weekly teaching load editor -->
 		{#if classSubjects.length > 0}
 			<div class="flex flex-col gap-2.5 pb-2.5" in:fade={{ duration: 150 }}>
 				<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
@@ -386,57 +379,6 @@ async function deleteSolverJob(jobId: string) {
 		<!-- Settings / Controls -->
 		{#if !activeJob || activeJob.status === 'completed' || activeJob.status === 'failed' || activeJob.status === 'cancelled'}
 			<div class="flex flex-col gap-3.5" in:fade={{ duration: 150 }}>
-				<!-- Solver Mode -->
-				<div class="flex flex-col gap-1.5">
-					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-						{m.common_schedule_ai_opt_mode()}
-					</span>
-					<div class="grid grid-cols-2 p-0.5">
-						<Button 
-							variant={solverMode === 'incremental' ? 'outline' : 'secondary'} 
-							class="text-[10px] font-bold py-1 rounded-md h-7 transition-all duration-150 cursor-pointer"
-							onclick={() => solverMode = 'incremental'}
-						>
-							{m.common_schedule_ai_mode_incremental()}
-						</Button>
-						<Button 
-							variant={solverMode === 'full' ? 'outline' : 'secondary'} 
-							class="text-[10px] font-bold py-1 rounded-md h-7 transition-all duration-150 cursor-pointer"
-							onclick={() => solverMode = 'full'}
-						>
-							{m.common_schedule_ai_mode_full()}
-						</Button>
-					</div>
-					<p class="text-[9px] text-muted-foreground leading-normal mt-0.5">
-						{solverMode === 'incremental' ? m.common_schedule_ai_desc_incremental() : m.common_schedule_ai_desc_full()}
-					</p>
-				</div>
-
-				<!-- AI Constraints Config -->
-				<div class="flex flex-col gap-2.5 bg-muted/40 p-2.5 rounded-lg border border-border/60">
-					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-						{m.common_schedule_ai_constraints_config()}
-					</span>
-					<div class="flex items-center justify-between py-0.5">
-						<Label class="text-[9px] font-semibold text-foreground cursor-pointer" for="min-student-gaps">
-							{m.common_schedule_ai_min_student_gaps()}
-						</Label>
-						<Checkbox id="min-student-gaps" checked={minimizeStudentGaps} onCheckedChange={(v) => minimizeStudentGaps = Boolean(v)} />
-					</div>
-					<div class="flex items-center justify-between py-0.5">
-						<Label class="text-[9px] font-semibold text-foreground cursor-pointer" for="min-teacher-gaps">
-							{m.common_schedule_ai_min_teacher_gaps()}
-						</Label>
-						<Checkbox id="min-teacher-gaps" checked={minimizeTeacherGaps} onCheckedChange={(v) => minimizeTeacherGaps = Boolean(v)} />
-					</div>
-					<div class="flex items-center justify-between py-0.5">
-						<Label class="text-[9px] font-semibold text-foreground cursor-pointer" for="strict-capacity">
-							{m.common_schedule_ai_strict_room_capacity()}
-						</Label>
-						<Checkbox id="strict-capacity" checked={strictRoomCapacity} onCheckedChange={(v) => strictRoomCapacity = Boolean(v)} />
-					</div>
-				</div>
-
 				<Button 
 					class="w-full text-xs font-semibold flex items-center justify-center gap-1.5 py-1.5 h-9" 
 					onclick={triggerSolving}

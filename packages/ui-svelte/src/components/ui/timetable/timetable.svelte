@@ -15,6 +15,7 @@ let {
   getTeacherName,
   getClassName,
   getSubjectColor,
+  class: className = "",
   onCellClick,
   onDeleteLesson,
   onMoveLesson,
@@ -30,6 +31,7 @@ let {
   getTeacherName: (id: string) => string;
   getClassName: (id: string) => string;
   getSubjectColor: (id: string) => string;
+  class?: string;
   onCellClick: (day: number, slotId: string) => void;
   onDeleteLesson: (id: string) => void;
   onMoveLesson: (lesson: any, targetDay: number, targetSlotId: string) => void;
@@ -97,12 +99,12 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
 }
 </script>
 
-<!-- Period-Based Responsive Timetable Component -->
-<div class="flex-1 w-full h-full min-h-[450px] border border-border bg-card rounded-2xl flex flex-col overflow-auto shadow-sm select-none relative scrollbar-thin">
+<!-- Reusable responsive timetable board -->
+<div class="flex-1 min-h-0 min-w-0 w-full h-full border border-border bg-card rounded-xl flex flex-col overflow-auto shadow-sm select-none relative scrollbar-thin {className}">
   
   <div 
-    class="grid gap-px text-xs w-full min-w-[700px] bg-border flex-1"
-    style="grid-template-columns: minmax(130px, 140px) repeat({weekdays.length}, minmax(115px, 1fr));"
+    class="grid gap-px text-xs w-full min-w-max bg-border flex-1"
+    style="grid-template-columns: minmax(108px, 0.9fr) repeat({weekdays.length}, minmax(112px, 1fr));"
     in:fade={{ duration: 150 }}
   >
     <!-- 1. Header Row (Sticky Top) -->

@@ -5,15 +5,17 @@ import { page } from "$app/state";
 import { confirmStore } from "$lib/stores";
 import { commands } from "$lib/core/ipc";
 import { toast } from "svelte-sonner";
-import { getLocale } from "$lib/paraglide/runtime";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import { goto } from "$app/navigation";
+import { WandSparkles } from "@lucide/svelte";
+import { Button } from "@orbis/ui-svelte/button";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import LessonCreateSheet from "$lib/features/academics/components/lesson-create-sheet.svelte";
-import SchedulerAiPanel from "$lib/features/academics/components/scheduler-ai-panel.svelte";
 
 // Component imports
 import {
   ScheduleFilterControls,
-  ScheduleTimetableWrapper,
+  ScheduleBoard,
 } from "$lib/features/academics";
 
 let { data }: { data: { orgId: string } } = $props();
@@ -346,9 +348,24 @@ function openScheduler(day: number, slotId: string) {
 }
 </script>
 
-<div class="h-full w-full flex flex-col lg:flex-row items-stretch overflow-hidden">
-  <!-- Main Schedule Panel Column -->
-  <div class="flex-1 min-w-0 w-full flex flex-col p-6 gap-6 overflow-y-auto">
+
+<div class="h-full w-full flex flex-col items-stretch overflow-hidden">
+  <div class="flex-1 min-h-0 min-w-0 w-full flex flex-col p-4 sm:p-6 gap-4 sm:gap-6 overflow-y-auto">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
+      <div class="text-start">
+        <h1 class="text-lg sm:text-xl font-bold text-foreground">{m.common_exams_detail_schedule()}</h1>
+        <p class="text-xs text-muted-foreground mt-1">{m.common_schedule_page_view_by()}</p>
+      </div>
+      <Button
+        variant="default"
+        class="w-full sm:w-auto h-9 text-xs font-semibold gap-2 cursor-pointer"
+        onclick={() => goto(localizeHref(`/${data.orgId}/academics/schedule/prepare`))}
+      >
+        <WandSparkles size={14} />
+        {m.common_schedule_ai_auto_scheduler()}
+      </Button>
+    </div>
+
     <!-- Timetable Header Filter Controls -->
     <ScheduleFilterControls
       bind:viewMode
@@ -359,7 +376,7 @@ function openScheduler(day: number, slotId: string) {
     />
 
     <!-- Timetable Grid Content -->
-    <ScheduleTimetableWrapper
+    <ScheduleBoard
       {isLoading}
       error={error?.message || null}
       {timeSlots}
@@ -378,21 +395,6 @@ function openScheduler(day: number, slotId: string) {
       onRetry={refetchLessons}
     />
   </div>
-
-  <!-- AI Auto-Scheduler Sidebar Panel (Fixed Side) -->
-  {#if !isLoading && !error}
-    <SchedulerAiPanel
-      orgId={data.orgId}
-      periodId={activePeriodId}
-      selectedClassId={selectedClassId}
-      selectedTeacherId={selectedTeacherId}
-      viewMode={viewMode}
-      {subjects}
-      bind:previewDraft={previewDraft}
-      bind:activeJob={activeJob}
-      onApply={refetchLessons}
-    />
-  {/if}
 </div>
 
 <!-- Lesson Scheduling Side Sheet -->
