@@ -109,7 +109,7 @@ function handleForgotPassword() {
 	</div>
 
 	<!-- Actions Bar -->
-	<div class="flex items-center gap-4 pt-2">
+	<div class="flex flex-wrap items-center gap-3 sm:gap-4 pt-2">
 		<Button
 			type="submit"
 			variant="default"
