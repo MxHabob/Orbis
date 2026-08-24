@@ -71,6 +71,7 @@ impl AssessmentCommandRepo {
             grade_letter: Set(g.grade_letter),
             grade_points: Set(g.grade_points),
             exam_type: Set(g.exam_type),
+            component_id: Set(g.component_id),
             semester: Set(g.semester),
             notes: Set(g.notes),
             graded_by: Set(g.graded_by),

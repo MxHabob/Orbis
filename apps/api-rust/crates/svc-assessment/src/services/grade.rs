@@ -33,6 +33,7 @@ pub struct CreateGradeRequest {
     pub is_final: Option<i32>,
     pub assessment_id: Option<String>,
     pub class_subject_id: Option<String>,
+    pub component_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
@@ -261,6 +262,7 @@ impl GradeService {
             grade_letter: Some(mapped.grade_letter),
             grade_points: mapped.grade_points,
             exam_type: req.exam_type,
+            component_id: req.component_id,
             semester: req.semester,
             notes: req.notes,
             
@@ -369,6 +371,7 @@ impl GradeService {
                         grade_letter: Some(mapped.grade_letter.clone()),
                         grade_points: mapped.grade_points,
                         exam_type: req.exam_type.clone(),
+                        component_id: None,
                         semester: req.semester.clone(),
                         notes: student.notes.clone(),
                         graded_by: "system".to_string(),
@@ -471,6 +474,7 @@ impl GradeService {
                     is_final: Some(0),
                     assessment_id: Some(req.assessment_id),
                     class_subject_id: req.class_subject_id,
+                    component_id: None,
                 };
                 let created = self.submit_grade(org_id, create_req).await?;
                 Ok(UpsertCellResult { grade_id: created.id, created: true })

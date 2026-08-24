@@ -11,11 +11,25 @@ pub enum AstNode {
     /// A variable representing a component score
     Variable { name: String },
     /// Addition of multiple nodes
-    Add { operands: Vec<AstNode> },
+    Add {
+        #[serde(default)]
+        operands: Vec<AstNode>,
+        #[serde(default)]
+        left: Option<Box<AstNode>>,
+        #[serde(default)]
+        right: Option<Box<AstNode>>,
+    },
     /// Subtraction of two nodes
     Subtract { left: Box<AstNode>, right: Box<AstNode> },
     /// Multiplication of multiple nodes
-    Multiply { operands: Vec<AstNode> },
+    Multiply {
+        #[serde(default)]
+        operands: Vec<AstNode>,
+        #[serde(default)]
+        left: Option<Box<AstNode>>,
+        #[serde(default)]
+        right: Option<Box<AstNode>>,
+    },
     /// Division of two nodes
     Divide { left: Box<AstNode>, right: Box<AstNode> },
     /// Maximum value among operands
@@ -69,9 +83,16 @@ impl CalcEngine {
                     AppError::validation(format!("Variable '{}' not found in evaluation context", name))
                 })
             }
-            AstNode::Add { operands } => {
+            AstNode::Add { operands, left, right } => {
+                let mut ops = operands.clone();
+                if let Some(l) = left {
+                    ops.insert(0, *l.clone());
+                }
+                if let Some(r) = right {
+                    ops.push(*r.clone());
+                }
                 let mut sum = 0.0;
-                for op in operands {
+                for op in &ops {
                     sum += self.evaluate_inner(op, depth + 1)?;
                 }
                 Ok(sum)
@@ -81,9 +102,16 @@ impl CalcEngine {
                 let r = self.evaluate_inner(right, depth + 1)?;
                 Ok(l - r)
             }
-            AstNode::Multiply { operands } => {
+            AstNode::Multiply { operands, left, right } => {
+                let mut ops = operands.clone();
+                if let Some(l) = left {
+                    ops.insert(0, *l.clone());
+                }
+                if let Some(r) = right {
+                    ops.push(*r.clone());
+                }
                 let mut prod = 1.0;
-                for op in operands {
+                for op in &ops {
                     prod *= self.evaluate_inner(op, depth + 1)?;
                 }
                 Ok(prod)
@@ -142,10 +170,10 @@ impl CalcEngine {
 
 pub fn apply_rounding(value: f64, policy: &str) -> f64 {
     match policy {
-        "round_up" => value.ceil(),
-        "round_down" => value.floor(),
-        "round_half_up" => value.round(),
-        _ => value, // "exact" or unknown implies no rounding
+        "round_up" | "ceiling" => value.ceil(),
+        "round_down" | "floor" | "truncate" => value.floor(),
+        "round_half_up" | "round_half_down" => value.round(),
+        _ => value,
     }
 }
 

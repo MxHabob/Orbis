@@ -2,6 +2,8 @@
 import type * as Types from '../types/index.js';
 
 export interface AssessmentCommands {
+  listAnnualResults(yearPeriodId: string, classSubjectId: string | null): Promise<any[]>;
+  getResult(resultId: string): Promise<any>;
   calculateAnnualResult(req: any): Promise<any>;
   finalizeAnnualResult(resultId: string, actor: string): Promise<any>;
   listAssessmentSchemes(): Promise<any[]>;
@@ -13,6 +15,7 @@ export interface AssessmentCommands {
   createComponent(data: any): Promise<any>;
   updateComponent(componentId: string, data: any): Promise<any>;
   deleteComponent(componentId: string): Promise<void>;
+  listComponentsForClassSubject(classSubjectId: string, periodId: string): Promise<any[]>;
   listAttendances(classId: string, date: string): Promise<any[]>;
   getReport(PeriodId: string, enrollmentId: string): Promise<any>;
   getAnalytics(periodId: string, classId: string): Promise<any>;
@@ -30,6 +33,7 @@ export interface AssessmentCommands {
   deleteCalculationPolicy(policyId: string): Promise<void>;
   listActive(): Promise<any[]>;
   listGrades(assessmentId: string): Promise<any[]>;
+  listGradesByPeriodAndClassSubject(periodId: string, classSubjectId: string): Promise<any[]>;
   listGradesPaginated(assessmentId: string, request: any): Promise<any>;
   reportCard(enrollmentId: string, periodId: string): Promise<any>;
   analytics(periodId: string, classSubjectId: string): Promise<any>;
@@ -55,10 +59,24 @@ export interface AssessmentCommands {
   deleteRankingPolicy(policyId: string): Promise<void>;
   resolveRankingPolicy(periodId: string): Promise<any>;
   computeTermRankings(termPeriodId: string, classSubjectId: string): Promise<any[]>;
+  childPeriods(orgId: string, parentId: string): Promise<any[]>;
+  gradingChildIds(orgId: string, parentId: string): Promise<string[]>;
+  examChildId(orgId: string, parentId: string): Promise<string | null>;
+  termChildIds(orgId: string, yearPeriodId: string): Promise<string[]>;
+  resolveSchemeId(orgId: string, classSubjectId: string, periodId: string): Promise<string | null>;
+  schemeComponents(schemeId: string): Promise<any[]>;
+  resolveCalcPolicy(orgId: string, periodId: string, ruleType: string): Promise<any | null>;
+  resolveScaleId(orgId: string, periodId: string): Promise<string | null>;
+  mapperForScale(scaleId: string): Promise<any>;
+  resolveMapper(orgId: string, periodId: string): Promise<any>;
   generateSnapshot(studentId: string, periodId: string, classSubjectId: string, policyId: string, scaleId: string, rawScores: any): Promise<any>;
   executeSnapshotGeneration(studentId: string, periodId: string, classSubjectId: string, policyId: string, scaleId: string, rawScores: any): Promise<any>;
   computeRankings(periodId: string, classSubjectId: string): Promise<number>;
   applyPassFailForStudent(studentId: string, periodId: string): Promise<boolean>;
+  listPeriodScores(periodId: string, classSubjectId: string | null): Promise<any[]>;
+  listOverallResults(periodId: string): Promise<any[]>;
+  listTermResults(termPeriodId: string, classSubjectId: string | null): Promise<any[]>;
+  getResult2(resultId: string): Promise<any>;
   calculateTermResult(req: any): Promise<any>;
   calculateTermResultsBatch(termPeriodId: string, classId: string, gradingPeriodIds: string[], examPeriodId: string | null): Promise<any[]>;
   finalizeTermResult(resultId: string, actor: string): Promise<any>;

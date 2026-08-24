@@ -14,7 +14,7 @@ use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, DatabaseConnection};
 use shared_kernel::errors::AppError;
 use tracing::warn;
 
-use crate::entities::{calculation_policy, grade_scale, grade_scale_item};
+use crate::entities::{grade_scale, grade_scale_item};
 use crate::ops::calc_engine::apply_rounding;
 use crate::ops::grade_mapper::{GradeMapper, GradeScaleItemData};
 
@@ -48,18 +48,22 @@ impl AssessmentEngine {
         org_id: &str,
         period_id: &str,
     ) -> Result<Self, AppError> {
-        // Try to find a period-specific CalculationPolicy
-        let policy = calculation_policy::Entity::find()
-            .filter(calculation_policy::Column::OrgId.eq(org_id))
-            .filter(calculation_policy::Column::TargetPeriodId.eq(period_id))
-            .one(db)
-            .await?;
+        let policy = crate::ops::resolution::resolve_calc_policy(
+            db,
+            org_id,
+            period_id,
+            "weighted_sum",
+        )
+        .await?;
 
-        // Try to find a GradeScale for this org
-        let scale = grade_scale::Entity::find()
-            .filter(grade_scale::Column::OrgId.eq(org_id))
-            .one(db)
-            .await?;
+        let scale = if let Ok(Some(id)) = crate::ops::resolution::resolve_scale_id(db, org_id, period_id).await {
+            grade_scale::Entity::find_by_id(id).one(db).await?
+        } else {
+            grade_scale::Entity::find()
+                .filter(grade_scale::Column::OrgId.eq(org_id))
+                .one(db)
+                .await?
+        };
 
         let rounding_policy = policy
             .as_ref()

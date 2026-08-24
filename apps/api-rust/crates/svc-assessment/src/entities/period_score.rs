@@ -8,6 +8,7 @@ pub struct Model {
     pub id: String,
     pub org_id: String,
     pub student_id: String,
+    pub enrollment_id: Option<String>,
     pub period_id: String,
     pub class_subject_id: String,
     pub total_score: Option<f64>,

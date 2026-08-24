@@ -17,6 +17,7 @@ pub struct Model {
     pub theory_hours: Option<i32>,
     pub practical_hours: Option<i32>,
     pub assessment_config: Option<String>,
+    pub scheme_id: Option<String>,
     pub is_active: i32,
     pub created_at: String,
     pub updated_at: String,

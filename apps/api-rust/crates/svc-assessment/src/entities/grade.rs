@@ -20,6 +20,7 @@ pub struct Model {
     pub grade_letter: Option<String>,
     pub grade_points: Option<f64>,
     pub exam_type: String,
+    pub component_id: Option<String>,
     pub semester: String,
     pub notes: Option<String>,
     pub graded_by: String,

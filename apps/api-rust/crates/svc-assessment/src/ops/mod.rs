@@ -21,3 +21,4 @@ pub mod term_engine;
 pub mod annual_engine;
 pub mod ranking_policy;
 pub mod ordinal;
+pub mod resolution;

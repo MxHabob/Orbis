@@ -76,7 +76,9 @@ impl AcademicCommandRepo {
             substitute_teacher_id: Set(cs.substitute_teacher_id),
             grade_groups: Set(cs.grade_groups), weekly_hours: Set(cs.weekly_hours),
             theory_hours: Set(cs.theory_hours), practical_hours: Set(cs.practical_hours),
-            assessment_config: Set(cs.assessment_config), is_active: Set(cs.is_active),
+            assessment_config: Set(cs.assessment_config),
+            scheme_id: Set(cs.scheme_id),
+            is_active: Set(cs.is_active),
             created_at: Set(cs.created_at), updated_at: Set(cs.updated_at),
         };
         active.insert(&self.db).await

@@ -3,7 +3,7 @@ use shared_kernel::context::ServiceContext;
 use shared_kernel::errors::AppError;
 use tracing::info;
 
-use crate::entities::{calculation_policy, grade_scale_item, period_score};
+use crate::entities::{calculation_policy, grade_scale_item, period_overall_result, period_score};
 use crate::ops::calc_engine::{CalcEngine, AstNode, apply_rounding};
 use crate::ops::grade_mapper::{GradeMapper, GradeScaleItemData};
 
@@ -72,44 +72,88 @@ pub async fn execute_snapshot_generation(
 
     let mapper = GradeMapper::new(mapper_items);
 
-    // 3. Evaluate via CalcEngine
     let mut engine = CalcEngine::new();
-    for (key, val) in raw_scores {
-        engine.set_variable(&key, val);
+    for (key, val) in &raw_scores {
+        engine.set_variable(key, *val);
+    }
+    if let Ok(Some(sid)) = crate::ops::resolution::resolve_scheme_id(&ctx.db, &ctx.org_id, class_subject_id, period_id).await {
+        if let Ok(comps) = crate::ops::resolution::scheme_components(&ctx.db, &sid).await {
+            for c in comps {
+                if !engine.context.contains_key(&c.component_type) {
+                    engine.set_variable(&c.component_type, 0.0);
+                }
+            }
+        }
     }
 
     let raw_total = engine.evaluate(&ast)?;
     let final_score = apply_rounding(raw_total, &policy.rounding_policy);
-
-    // 4. Map Grade
     let mapped_grade = mapper.map_score(final_score)?;
 
-    // 5. Create Snapshot
-    let now = chrono::Utc::now().to_rfc3339();
-    let snapshot_id = uuid::Uuid::new_v4().to_string();
-
-    let snapshot_am = period_score::ActiveModel {
-        id: Set(snapshot_id.clone()),
-        org_id: Set(ctx.org_id.clone()),
-        student_id: Set(student_id.to_string()),
-        period_id: Set(period_id.to_string()),
-        class_subject_id: Set(class_subject_id.to_string()),
-        total_score: Set(Some(final_score)),
-        grade_label: Set(Some(mapped_grade.label)),
-        gpa_points: Set(mapped_grade.gpa_points),
-        is_passing: Set(Some(if mapped_grade.is_passing { 1 } else { 0 })),
-        rank_in_class: Set(None), // Calculated later in batch processing
-        rank_in_level: Set(None),
-        calculation_version: Set(policy.version),
-        status: Set("official".to_string()),
-        approved_at: Set(None),
-        approved_by: Set(None),
-        metadata: Set(None),
-        created_at: Set(now.clone()),
-        updated_at: Set(now.clone()),
+    let enrollment_id = {
+        let mut found = None;
+        if let Ok(Some(cs)) = svc_academic::entities::class_subject::Entity::find_by_id(class_subject_id.to_string()).one(&ctx.db).await {
+            if let Ok(Some(enr)) = svc_academic::entities::enrollment::Entity::find()
+                .filter(svc_academic::entities::enrollment::Column::StudentId.eq(student_id))
+                .filter(svc_academic::entities::enrollment::Column::ClassId.eq(&cs.class_id))
+                .filter(svc_academic::entities::enrollment::Column::Status.eq("active"))
+                .one(&ctx.db)
+                .await
+            {
+                found = Some(enr.id);
+            }
+        }
+        found
     };
 
-    let inserted = snapshot_am.insert(&ctx.db).await?;
+    let now = chrono::Utc::now().to_rfc3339();
+    let existing = period_score::Entity::find()
+        .filter(period_score::Column::OrgId.eq(&ctx.org_id))
+        .filter(period_score::Column::StudentId.eq(student_id))
+        .filter(period_score::Column::PeriodId.eq(period_id))
+        .filter(period_score::Column::ClassSubjectId.eq(class_subject_id))
+        .one(&ctx.db)
+        .await?;
+
+    let inserted = if let Some(ex) = existing {
+        if ex.status == "finalized" {
+            return Err(AppError::validation("Period score is finalized and cannot be recalculated"));
+        }
+        let mut active: period_score::ActiveModel = ex.into();
+        active.enrollment_id = Set(enrollment_id.clone());
+        active.total_score = Set(Some(final_score));
+        active.grade_label = Set(Some(mapped_grade.label.clone()));
+        active.gpa_points = Set(mapped_grade.gpa_points);
+        active.is_passing = Set(Some(if mapped_grade.is_passing { 1 } else { 0 }));
+        active.calculation_version = Set(policy.version);
+        active.status = Set("official".to_string());
+        active.updated_at = Set(now);
+        active.update(&ctx.db).await?
+    } else {
+        period_score::ActiveModel {
+            id: Set(uuid::Uuid::new_v4().to_string()),
+            org_id: Set(ctx.org_id.clone()),
+            student_id: Set(student_id.to_string()),
+            enrollment_id: Set(enrollment_id),
+            period_id: Set(period_id.to_string()),
+            class_subject_id: Set(class_subject_id.to_string()),
+            total_score: Set(Some(final_score)),
+            grade_label: Set(Some(mapped_grade.label.clone())),
+            gpa_points: Set(mapped_grade.gpa_points),
+            is_passing: Set(Some(if mapped_grade.is_passing { 1 } else { 0 })),
+            rank_in_class: Set(None),
+            rank_in_level: Set(None),
+            calculation_version: Set(policy.version),
+            status: Set("official".to_string()),
+            approved_at: Set(None),
+            approved_by: Set(None),
+            metadata: Set(None),
+            created_at: Set(now.clone()),
+            updated_at: Set(now.clone()),
+        }
+        .insert(&ctx.db)
+        .await?
+    };
     
     // Fire Domain Event
     let event = shared_kernel::event_bus::EventEnvelope {
@@ -166,14 +210,11 @@ pub async fn compute_rankings(
     period_id: &str,
     class_subject_id: &str,
 ) -> Result<usize, AppError> {
-    use sea_orm::QueryOrder;
-
-    // 1. Fetch all snapshots for this class_subject + period
-    let mut snapshots = period_score::Entity::find()
+    let policy = crate::ops::ranking_policy::resolve_ranking_policy(ctx, period_id).await?;
+    let snapshots = period_score::Entity::find()
         .filter(period_score::Column::OrgId.eq(&ctx.org_id))
         .filter(period_score::Column::PeriodId.eq(period_id))
         .filter(period_score::Column::ClassSubjectId.eq(class_subject_id))
-        .order_by_desc(period_score::Column::TotalScore)
         .all(&ctx.db)
         .await?;
 
@@ -181,45 +222,34 @@ pub async fn compute_rankings(
         return Ok(0);
     }
 
-    // 2. Compute rank_in_class with tie handling
-    let mut rank = 1i32;
-    let mut last_score: Option<f64> = None;
-    let mut same_rank_count = 0i32;
-
-    for snapshot in &mut snapshots {
-        let score = snapshot.total_score.unwrap_or(0.0);
-
-        if let Some(prev) = last_score {
-            if (score - prev).abs() < 0.001 {
-                // Same score → same rank (tie)
-                same_rank_count += 1;
-            } else {
-                rank += same_rank_count;
-                same_rank_count = 1;
+    let metric = policy.ranking_metric.as_str();
+    let entries: Vec<crate::ops::ranking_policy::RankEntry> = snapshots
+        .iter()
+        .map(|s| {
+            let score = match metric {
+                "gpa" => s.gpa_points.unwrap_or(0.0),
+                "percentage" => s.total_score.unwrap_or(0.0),
+                _ => s.total_score.unwrap_or(0.0),
+            };
+            crate::ops::ranking_policy::RankEntry {
+                student_id: s.student_id.clone(),
+                score,
+                is_passing: s.is_passing.unwrap_or(0) == 1,
             }
-        } else {
-            same_rank_count = 1;
-        }
-        last_score = Some(score);
+        })
+        .collect();
 
-        // Update in DB
-        let mut active: period_score::ActiveModel = snapshot.clone().into();
-        active.rank_in_class = Set(Some(rank));
-        active.updated_at = Set(chrono::Utc::now().to_rfc3339());
-        active.update(&ctx.db).await?;
+    let rankings = crate::ops::ranking_policy::compute_rankings_with_policy(&entries, &policy);
+    let now = chrono::Utc::now().to_rfc3339();
+    for rr in &rankings {
+        if let Some(snap) = snapshots.iter().find(|s| s.student_id == rr.student_id) {
+            let mut active: period_score::ActiveModel = snap.clone().into();
+            active.rank_in_class = Set(rr.rank);
+            active.updated_at = Set(now.clone());
+            active.update(&ctx.db).await?;
+        }
     }
 
-    let updated_count = snapshots.len();
-
-    info!(
-        period_id=%period_id,
-        class_subject_id=%class_subject_id,
-        count=%updated_count,
-        "Computed rank_in_class for period scores"
-    );
-
-    // 3. Compute rank_in_level: aggregate all class_subjects for same period
-    //    Group by student_id, compute average GPA across all subjects, then rank.
     let all_period_snapshots = period_score::Entity::find()
         .filter(period_score::Column::OrgId.eq(&ctx.org_id))
         .filter(period_score::Column::PeriodId.eq(period_id))
@@ -282,7 +312,7 @@ pub async fn compute_rankings(
         "Computed rank_in_level across all class subjects"
     );
 
-    Ok(updated_count)
+    Ok(snapshots.len())
 }
 
 /// Apply a Pass/Fail policy to a student's snapshots for a given period.
@@ -349,5 +379,80 @@ pub async fn apply_pass_fail_for_student(
         "Applied pass/fail policy for student"
     );
 
+    let enrollment_id = snapshots
+        .iter()
+        .find_map(|s| s.enrollment_id.clone())
+        .unwrap_or_default();
+    let avg = if snapshots.is_empty() {
+        0.0
+    } else {
+        snapshots.iter().map(|s| s.total_score.unwrap_or(0.0)).sum::<f64>() / snapshots.len() as f64
+    };
+    let decision = if overall_pass { "passed" } else { "failed" };
+    let now = chrono::Utc::now().to_rfc3339();
+    let existing_overall = period_overall_result::Entity::find()
+        .filter(period_overall_result::Column::OrgId.eq(&ctx.org_id))
+        .filter(period_overall_result::Column::StudentId.eq(student_id))
+        .filter(period_overall_result::Column::PeriodId.eq(period_id))
+        .one(&ctx.db)
+        .await?;
+    if let Some(ex) = existing_overall {
+        let mut active: period_overall_result::ActiveModel = ex.into();
+        active.enrollment_id = Set(enrollment_id);
+        active.passed = Set(if overall_pass { 1 } else { 0 });
+        active.failed_subject_count = Set(failed_count as i32);
+        active.policy_id = Set(policy.as_ref().map(|p| p.id.clone()));
+        active.decision = Set(decision.to_string());
+        active.percentage = Set(Some(avg));
+        active.updated_at = Set(now);
+        active.update(&ctx.db).await?;
+    } else {
+        period_overall_result::ActiveModel {
+            id: Set(uuid::Uuid::new_v4().to_string()),
+            org_id: Set(ctx.org_id.clone()),
+            student_id: Set(student_id.to_string()),
+            enrollment_id: Set(enrollment_id),
+            period_id: Set(period_id.to_string()),
+            passed: Set(if overall_pass { 1 } else { 0 }),
+            failed_subject_count: Set(failed_count as i32),
+            policy_id: Set(policy.as_ref().map(|p| p.id.clone())),
+            decision: Set(decision.to_string()),
+            percentage: Set(Some(avg)),
+            created_at: Set(now.clone()),
+            updated_at: Set(now),
+        }
+        .insert(&ctx.db)
+        .await?;
+    }
+
     Ok(overall_pass)
+}
+
+pub async fn list_period_scores(
+    ctx: &ServiceContext,
+    period_id: &str,
+    class_subject_id: Option<&str>,
+) -> Result<Vec<period_score::Model>, AppError> {
+    use shared_kernel::traits::Permission;
+    ctx.permissions.check(&ctx.actor, Permission::GradeRead).await?;
+    let mut q = period_score::Entity::find()
+        .filter(period_score::Column::OrgId.eq(&ctx.org_id))
+        .filter(period_score::Column::PeriodId.eq(period_id));
+    if let Some(cs) = class_subject_id {
+        q = q.filter(period_score::Column::ClassSubjectId.eq(cs));
+    }
+    Ok(q.all(&ctx.db).await?)
+}
+
+pub async fn list_overall_results(
+    ctx: &ServiceContext,
+    period_id: &str,
+) -> Result<Vec<period_overall_result::Model>, AppError> {
+    use shared_kernel::traits::Permission;
+    ctx.permissions.check(&ctx.actor, Permission::GradeRead).await?;
+    Ok(period_overall_result::Entity::find()
+        .filter(period_overall_result::Column::OrgId.eq(&ctx.org_id))
+        .filter(period_overall_result::Column::PeriodId.eq(period_id))
+        .all(&ctx.db)
+        .await?)
 }

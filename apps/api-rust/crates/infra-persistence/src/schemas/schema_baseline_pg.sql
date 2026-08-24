@@ -410,6 +410,7 @@ CREATE TABLE IF NOT EXISTS class_subjects (
   theory_hours INTEGER,
   practical_hours INTEGER,
   assessment_config TEXT,
+  scheme_id TEXT,
   is_active INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
@@ -582,6 +583,7 @@ CREATE TABLE IF NOT EXISTS grades (
   grade_letter TEXT,
   grade_points REAL,
   exam_type TEXT NOT NULL DEFAULT 'assignment',
+  component_id TEXT,
   semester TEXT NOT NULL DEFAULT '',
   notes TEXT,
   graded_by TEXT NOT NULL,
@@ -600,6 +602,7 @@ CREATE TABLE IF NOT EXISTS period_scores (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL REFERENCES organizations(id),
   student_id TEXT NOT NULL,
+  enrollment_id TEXT,
   period_id TEXT NOT NULL REFERENCES academic_periods(id),
   class_subject_id TEXT NOT NULL,
   total_score REAL,
@@ -619,6 +622,99 @@ CREATE TABLE IF NOT EXISTS period_scores (
 
 CREATE INDEX IF NOT EXISTS idx_ps_student_period ON period_scores(student_id, period_id);
 CREATE INDEX IF NOT EXISTS idx_ps_org_period_status ON period_scores(org_id, period_id, status);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ps_unique_offering ON period_scores(org_id, student_id, period_id, class_subject_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_grades_unique_component ON grades(enrollment_id, class_subject_id, period_id, component_id) WHERE component_id IS NOT NULL AND class_subject_id IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS ranking_policies (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL REFERENCES organizations(id),
+  period_id TEXT,
+  name TEXT NOT NULL,
+  is_enabled INTEGER NOT NULL DEFAULT 1,
+  ranking_scope TEXT NOT NULL DEFAULT 'class',
+  ranking_method TEXT NOT NULL DEFAULT 'standard',
+  tie_handling TEXT NOT NULL DEFAULT 'same_rank',
+  include_failed_students INTEGER NOT NULL DEFAULT 0,
+  ranking_metric TEXT NOT NULL DEFAULT 'total_score',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS term_results (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL REFERENCES organizations(id),
+  student_id TEXT NOT NULL,
+  term_period_id TEXT NOT NULL,
+  enrollment_id TEXT NOT NULL REFERENCES enrollments(id),
+  class_subject_id TEXT NOT NULL REFERENCES class_subjects(id),
+  coursework_score REAL NOT NULL DEFAULT 0,
+  coursework_max REAL NOT NULL DEFAULT 0,
+  exam_score REAL NOT NULL DEFAULT 0,
+  exam_max REAL NOT NULL DEFAULT 0,
+  total_score REAL NOT NULL DEFAULT 0,
+  total_max REAL NOT NULL DEFAULT 0,
+  percentage REAL NOT NULL DEFAULT 0,
+  grade_label TEXT,
+  gpa_points REAL,
+  is_passing INTEGER NOT NULL DEFAULT 0,
+  rank INTEGER,
+  rank_scope TEXT,
+  calculation_policy_id TEXT,
+  calculation_version INTEGER NOT NULL DEFAULT 1,
+  policy_snapshot TEXT,
+  status TEXT NOT NULL DEFAULT 'draft',
+  finalized_at TEXT,
+  finalized_by TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_tr_unique_offering ON term_results(enrollment_id, term_period_id, class_subject_id);
+
+CREATE TABLE IF NOT EXISTS annual_results (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL REFERENCES organizations(id),
+  student_id TEXT NOT NULL,
+  year_period_id TEXT NOT NULL,
+  enrollment_id TEXT NOT NULL REFERENCES enrollments(id),
+  class_subject_id TEXT NOT NULL REFERENCES class_subjects(id),
+  term_scores_json TEXT NOT NULL DEFAULT '[]',
+  annual_total REAL NOT NULL DEFAULT 0,
+  annual_max REAL NOT NULL DEFAULT 0,
+  percentage REAL NOT NULL DEFAULT 0,
+  grade_label TEXT,
+  gpa_points REAL,
+  is_passing INTEGER NOT NULL DEFAULT 0,
+  rank INTEGER,
+  rank_scope TEXT,
+  calculation_policy_id TEXT,
+  calculation_version INTEGER NOT NULL DEFAULT 1,
+  policy_snapshot TEXT,
+  status TEXT NOT NULL DEFAULT 'draft',
+  finalized_at TEXT,
+  finalized_by TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ar_unique_offering ON annual_results(enrollment_id, year_period_id, class_subject_id);
+
+CREATE TABLE IF NOT EXISTS period_overall_results (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL REFERENCES organizations(id),
+  student_id TEXT NOT NULL,
+  enrollment_id TEXT NOT NULL REFERENCES enrollments(id),
+  period_id TEXT NOT NULL,
+  passed INTEGER NOT NULL DEFAULT 0,
+  failed_subject_count INTEGER NOT NULL DEFAULT 0,
+  policy_id TEXT,
+  decision TEXT NOT NULL DEFAULT 'failed',
+  percentage REAL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_por_unique_student_period ON period_overall_results(org_id, student_id, period_id);
 
 -- ── 6. Multi-Tier Attendance & Behavior ────────────────────────
 

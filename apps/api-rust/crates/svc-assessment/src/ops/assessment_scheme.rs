@@ -209,3 +209,23 @@ pub async fn delete_component(ctx: &ServiceContext, component_id: &str) -> Resul
     Ok(())
 }
 
+/// Resolve scheme components for a class offering (class_subject → period → org default).
+pub async fn list_components_for_class_subject(
+    ctx: &ServiceContext,
+    class_subject_id: &str,
+    period_id: &str,
+) -> Result<Vec<assessment_scheme_component::Model>, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::GradeRead).await?;
+    let scheme_id = crate::ops::resolution::resolve_scheme_id(
+        &ctx.db,
+        &ctx.org_id,
+        class_subject_id,
+        period_id,
+    )
+    .await?;
+    match scheme_id {
+        Some(sid) => crate::ops::resolution::scheme_components(&ctx.db, &sid).await,
+        None => Ok(Vec::new()),
+    }
+}
+

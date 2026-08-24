@@ -31,7 +31,8 @@ const classId = $derived(page.params.classId);
 
 // Data state
 let students = $state<any[]>([]);
-let assessments = $state<any[]>([]);
+let components = $state<any[]>([]);
+let classSubjectId = $state<string>("");
 let subjects = $state<any[]>([]);
 let periods = $state<any[]>([]);
 let isLoading = $state(true);
@@ -48,7 +49,7 @@ const gate = usePeriodGate(
 );
 let showOverrideDialog = $state(false);
 
-// Grade entries: { [studentId_assessmentId]: score }
+// Grade entries: { [enrollmentId_componentId]: score }
 let gradeEntries = $state<Record<string, string>>({});
 
 async function loadData() {
@@ -95,59 +96,79 @@ async function loadData() {
   }
 }
 
-// Load assessments when subject/semester changes
-async function loadAssessments() {
-  if (!classId || !selectedSubjectId) return;
-  try {
-    const list = await commands.assessment.listAssessments(
-      selectedSemesterId || activePeriodId || "",
-      selectedSubjectId || undefined,
-    );
-    assessments = list;
+function enrollmentIdOf(student: any): string {
+  return String(student.id || student.enrollment_id || "");
+}
 
-    // Initialize grade entries (try to load existing grades)
+async function loadGradebook() {
+  if (!classId || !selectedSubjectId) return;
+  const period = selectedSemesterId || activePeriodId || "";
+  if (!period) return;
+
+  try {
+    const offerings = await commands.academic.listClassSubjects(classId, null);
+    const offering =
+      offerings.find(
+        (cs) =>
+          String(cs.subject_id) === selectedSubjectId &&
+          String(cs.period_id) === period,
+      ) ||
+      offerings.find(
+        (cs) =>
+          String(cs.subject_id) === selectedSubjectId &&
+          String(cs.period_id) === activePeriodId,
+      ) ||
+      offerings.find((cs) => String(cs.subject_id) === selectedSubjectId);
+
+    classSubjectId = offering ? String(offering.id) : "";
+    if (!classSubjectId) {
+      components = [];
+      gradeEntries = {};
+      return;
+    }
+
+    const list = await commands.assessment.listComponentsForClassSubject(
+      classSubjectId,
+      period,
+    );
+    components = list;
+
     const initialEntries: Record<string, string> = {};
     for (const student of students) {
-      for (const assessment of list) {
-        const key = `${student.id}_${assessment.id}`;
-        initialEntries[key] = "";
+      for (const component of list) {
+        initialEntries[`${enrollmentIdOf(student)}_${component.id}`] = "";
       }
     }
 
-    // Load existing grades if API supports it
-    try {
-      const period = selectedSemesterId || activePeriodId || "";
-      const existingGrades = await commands.assessment
-        .listGrades(period)
-        .catch(() => []);
+    const existingGrades = await commands.assessment
+      .listGradesByPeriodAndClassSubject(period, classSubjectId)
+      .catch(() => []);
 
-      for (const grade of existingGrades) {
-        const key = `${grade.enrollment_id}_${grade.assessment_id}`;
-        if (key in initialEntries) {
-          initialEntries[key] = String(grade.score ?? "");
-        }
+    for (const grade of existingGrades) {
+      const key = `${grade.enrollment_id}_${grade.component_id}`;
+      if (key in initialEntries) {
+        initialEntries[key] = String(grade.score ?? "");
       }
-    } catch {
-      // Grades API may not exist yet
     }
 
     gradeEntries = initialEntries;
   } catch (e) {
-    console.error("Error loading assessments:", e);
-    assessments = [];
+    console.error("Error loading gradebook:", e);
+    components = [];
+    classSubjectId = "";
   }
 }
 
 $effect(() => {
-  if (classId && selectedSubjectId) {
-    loadAssessments();
+  if (classId && selectedSubjectId && (selectedSemesterId || activePeriodId)) {
+    void loadGradebook();
   }
 });
 
 onMount(loadData);
 
 const maxTotal = $derived(
-  assessments.reduce((sum, a) => sum + (Number(a.max_score) || 0), 0),
+  components.reduce((sum, c) => sum + (Number(c.max_score) || 0), 0),
 );
 
 const rtl = $derived(getLocale() === "ar");
@@ -182,10 +203,10 @@ const gridColumns = $derived.by(() => {
     },
   ];
 
-  for (const assessment of assessments) {
+  for (const component of components) {
     cols.push({
-      prop: `score_${assessment.id}`,
-      name: `${assessment.title_ar || assessment.title || assessment.item_type || "التقييم"} (/${assessment.max_score})`,
+      prop: `score_${component.id}`,
+      name: `${component.name || component.component_type || "مكون"} (/${component.max_score})`,
       size: 110,
 
       readonly: !gate.isAllowed,
@@ -196,13 +217,13 @@ const gridColumns = $derived.by(() => {
       cellProperties: () => ({ class: "cell-number-input" }),
       editorConfig: {
         min: 0,
-        max: Number(assessment.max_score),
+        max: Number(component.max_score),
         step: 0.5,
       },
     });
   }
 
-  if (assessments.length > 0) {
+  if (components.length > 0) {
     cols.push({
       prop: "__total",
       name: `${m.common_grades_col_total()} (/${maxTotal})`,
@@ -231,7 +252,7 @@ const gridColumns = $derived.by(() => {
 
 const gridSource = $derived.by(() => {
   return students.map((student, idx) => {
-    const studentId = String(student.id || student.student_id);
+    const studentId = enrollmentIdOf(student);
     const row: Record<string, any> = {
       __rowIndex: idx + 1,
       student_id: studentId,
@@ -241,11 +262,11 @@ const gridSource = $derived.by(() => {
     };
 
     let total = 0;
-    for (const assessment of assessments) {
-      const key = `${studentId}_${assessment.id}`;
+    for (const component of components) {
+      const key = `${studentId}_${component.id}`;
       const val = gradeEntries[key];
       const score = val !== "" && val != null ? Number(val) : null;
-      row[`score_${assessment.id}`] = score;
+      row[`score_${component.id}`] = score;
       if (score !== null && !isNaN(score)) {
         total += score;
       }
@@ -260,20 +281,20 @@ async function handleCellEdit(event: any) {
   if (rowIndex < 0 || rowIndex >= students.length) return;
 
   const student = students[rowIndex];
-  const studentId = String(student.id || student.student_id);
+  const studentId = enrollmentIdOf(student);
 
   if (prop.startsWith("score_")) {
-    const assessmentId = prop.replace("score_", "");
-    const assessment = assessments.find((a) => String(a.id) === assessmentId);
-    if (!assessment) return;
+    const componentId = prop.replace("score_", "");
+    const component = components.find((c) => String(c.id) === componentId);
+    if (!component) return;
 
     let val = newValue;
     if (val !== null && val !== undefined && val !== "") {
       const numVal = Number(val);
       if (isNaN(numVal) || numVal < 0) {
         val = "0";
-      } else if (numVal > Number(assessment.max_score)) {
-        val = String(assessment.max_score);
+      } else if (numVal > Number(component.max_score)) {
+        val = String(component.max_score);
       } else {
         val = String(numVal);
       }
@@ -281,13 +302,18 @@ async function handleCellEdit(event: any) {
       val = "";
     }
 
-    const key = `${studentId}_${assessmentId}`;
+    const key = `${studentId}_${componentId}`;
     const oldVal = gradeEntries[key];
     if (oldVal === val) return; // No change
 
     gradeEntries[key] = val;
 
-    // Real-time autosave
+    if (!classSubjectId) {
+      gradeEntries[key] = oldVal;
+      toast.error(m.academics_grades_error_save());
+      return;
+    }
+
     try {
       const selectedSubject = subjects.find(
         (s) => String(s.id) === selectedSubjectId,
@@ -295,23 +321,26 @@ async function handleCellEdit(event: any) {
       const semesterObj = semesters.find(
         (s) => String(s.id) === selectedSemesterId,
       );
+      const period = selectedSemesterId || activePeriodId || "";
 
-      const request = {
-        enrollment_id: student.id,
+      await commands.assessment.submit({
+        period_id: period,
+        enrollment_id: studentId,
         subject_name: selectedSubject?.name || "Subject",
+        subject_name_ar: selectedSubject?.name_ar ?? null,
         score: val === "" ? 0 : Number(val),
-        max_score: Number(assessment.max_score),
-        exam_type: assessment.item_type || assessment.type || "exam",
+        max_score: Number(component.max_score),
+        weight: Number(component.weight ?? 1),
+        exam_type: component.component_type || "coursework",
         semester: semesterObj?.name || "Semester",
-      };
-
-      await commands.assessment.submitGrade(
-        selectedSemesterId || activePeriodId || "",
-        request,
-      );
+        notes: null,
+        is_final: 0,
+        assessment_id: null,
+        class_subject_id: classSubjectId,
+        component_id: componentId,
+      });
       toast.success(m.academics_grades_saved());
     } catch (e: unknown) {
-      // Revert in-memory value if backend save fails
       gradeEntries[key] = oldVal;
       toast.error((e as any)?.message || m.academics_grades_error_save());
     }
@@ -412,7 +441,7 @@ async function handleCellEdit(event: any) {
         variant="outline"
         size="sm"
         class="h-8 text-xs gap-1.5"
-        onclick={loadAssessments}
+        onclick={loadGradebook}
       >
         <RefreshCcw size={12} />
       </Button>
@@ -420,7 +449,7 @@ async function handleCellEdit(event: any) {
   </div>
 
   <!-- Info banner when no assessments exist -->
-  {#if assessments.length === 0 && selectedSubjectId && !isLoading}
+  {#if components.length === 0 && selectedSubjectId && !isLoading}
     <div
       class="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/30 text-xs text-muted-foreground shrink-0"
     >

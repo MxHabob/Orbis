@@ -50,25 +50,31 @@ async fn try_enqueue_snapshot(
         _ => return, // no enrollment found — skip
     };
 
-    // Find calculation policy for this period
-    let policy = crate::entities::calculation_policy::Entity::find()
-        .filter(crate::entities::calculation_policy::Column::OrgId.eq(&ctx.org_id))
-        .filter(crate::entities::calculation_policy::Column::TargetPeriodId.eq(&grade.period_id))
-        .one(&ctx.db)
-        .await;
-    let policy = match policy {
+    let policy = match crate::ops::resolution::resolve_calc_policy(
+        &ctx.db,
+        &ctx.org_id,
+        &grade.period_id,
+        "period",
+    )
+    .await
+    {
         Ok(Some(p)) => p,
-        _ => return, // no policy configured yet — skip snapshot
+        _ => match crate::ops::resolution::resolve_calc_policy(
+            &ctx.db,
+            &ctx.org_id,
+            &grade.period_id,
+            "weighted_sum",
+        )
+        .await
+        {
+            Ok(Some(p)) => p,
+            _ => return,
+        },
     };
 
-    // Find grade scale for this org
-    let scale = crate::entities::grade_scale::Entity::find()
-        .filter(crate::entities::grade_scale::Column::OrgId.eq(&ctx.org_id))
-        .one(&ctx.db)
-        .await;
-    let scale = match scale {
-        Ok(Some(s)) => s,
-        _ => return, // no scale configured yet — skip snapshot
+    let scale_id = match crate::ops::resolution::resolve_scale_id(&ctx.db, &ctx.org_id, &grade.period_id).await {
+        Ok(Some(id)) => id,
+        _ => return,
     };
 
     // Build raw_scores from all grades for this enrollment + class_subject + period
@@ -90,6 +96,15 @@ async fn try_enqueue_snapshot(
 
     let mut raw_scores = std::collections::HashMap::new();
     for g in &all_grades {
+        if let Some(cid) = &g.component_id {
+            if let Ok(Some(comp)) = crate::entities::assessment_scheme_component::Entity::find_by_id(cid.clone())
+                .one(&ctx.db)
+                .await
+            {
+                raw_scores.insert(comp.component_type.clone(), g.score);
+                continue;
+            }
+        }
         raw_scores.insert(g.exam_type.clone(), g.score);
     }
 
@@ -99,7 +114,7 @@ async fn try_enqueue_snapshot(
         period_id: grade.period_id.clone(),
         class_subject_id,
         policy_id: policy.id,
-        scale_id: scale.id,
+        scale_id,
         raw_scores,
     };
 
@@ -122,6 +137,23 @@ pub async fn list(
         .filter(grade::Column::OrgId.eq(&ctx.org_id))
         .filter(grade::Column::AssessmentId.eq(assessment_id))
         .order_by_asc(grade::Column::SubjectName)
+        .all(&ctx.db)
+        .await?)
+}
+
+/// List grades for a period + class_subject (gradebook cells).
+pub async fn list_by_period_and_class_subject(
+    ctx: &ServiceContext,
+    period_id: &str,
+    class_subject_id: &str,
+) -> Result<Vec<grade::Model>, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::GradeRead).await?;
+
+    Ok(grade::Entity::find()
+        .filter(grade::Column::OrgId.eq(&ctx.org_id))
+        .filter(grade::Column::PeriodId.eq(period_id))
+        .filter(grade::Column::ClassSubjectId.eq(class_subject_id))
+        .order_by_asc(grade::Column::EnrollmentId)
         .all(&ctx.db)
         .await?)
 }
@@ -218,6 +250,7 @@ pub struct CreateGradePayload {
     pub is_final: Option<i32>,
     pub assessment_id: Option<String>,
     pub class_subject_id: Option<String>,
+    pub component_id: Option<String>,
 }
 
 #[derive(serde::Deserialize)]
@@ -226,26 +259,52 @@ pub struct SubmitBulkPayload {
     pub grades: Vec<CreateGradePayload>,
 }
 
-/// Submit a single grade.
-pub async fn submit(
+async fn find_existing_component_grade(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    req: &CreateGradePayload,
+) -> Result<Option<grade::Model>, AppError> {
+    let (Some(cs), Some(comp)) = (req.class_subject_id.as_ref(), req.component_id.as_ref()) else {
+        return Ok(None);
+    };
+    Ok(grade::Entity::find()
+        .filter(grade::Column::OrgId.eq(&ctx.org_id))
+        .filter(grade::Column::EnrollmentId.eq(&req.enrollment_id))
+        .filter(grade::Column::ClassSubjectId.eq(cs))
+        .filter(grade::Column::PeriodId.eq(&req.period_id))
+        .filter(grade::Column::ComponentId.eq(comp))
+        .one(&ctx.db)
+        .await?)
+}
+
+async fn persist_grade(
+    ctx: &ServiceContext,
+    req: CreateGradePayload,
+    engine: &AssessmentEngine,
 ) -> Result<grade::Model, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::GradeWrite).await?;
-
-    let req: CreateGradePayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid grade payload: {e}")))?;
-
     check_period_open(ctx, &req.period_id).await?;
 
     let now = Utc::now().to_rfc3339();
-    let id = Uuid::new_v4().to_string();
     let percentage = if req.max_score > 0.0 { (req.score / req.max_score) * 100.0 } else { 0.0 };
-
-    // Use AssessmentEngine instead of hardcoded scale
-    let engine = AssessmentEngine::for_period(&ctx.db, &ctx.org_id, &req.period_id).await?;
     let mapped = engine.map_score(percentage)?;
 
+    if let Some(existing) = find_existing_component_grade(ctx, &req).await? {
+        let mut active: grade::ActiveModel = existing.into();
+        active.score = Set(req.score);
+        active.max_score = Set(req.max_score);
+        active.weight = Set(req.weight.unwrap_or(1.0));
+        active.grade_letter = Set(Some(mapped.grade_letter));
+        active.grade_points = Set(mapped.grade_points);
+        active.exam_type = Set(req.exam_type);
+        active.notes = Set(req.notes);
+        active.graded_by = Set(ctx.actor.as_str().to_string());
+        active.graded_at = Set(now.clone());
+        active.updated_at = Set(now);
+        let updated = active.update(&ctx.db).await?;
+        try_enqueue_snapshot(ctx, &updated).await;
+        return Ok(updated);
+    }
+
+    let id = Uuid::new_v4().to_string();
     let model = grade::Model {
         id: id.clone(),
         org_id: ctx.org_id.clone(),
@@ -261,6 +320,7 @@ pub async fn submit(
         grade_letter: Some(mapped.grade_letter),
         grade_points: mapped.grade_points,
         exam_type: req.exam_type,
+        component_id: req.component_id,
         semester: req.semester,
         notes: req.notes,
         graded_by: ctx.actor.as_str().to_string(),
@@ -272,22 +332,35 @@ pub async fn submit(
 
     let active: grade::ActiveModel = model.into();
     let created = active.insert(&ctx.db).await?;
+    try_enqueue_snapshot(ctx, &created).await;
+    Ok(created)
+}
+
+/// Submit a single grade (upsert when component + offering is set).
+pub async fn submit(
+    ctx: &ServiceContext,
+    data: serde_json::Value,
+) -> Result<grade::Model, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::GradeWrite).await?;
+
+    let req: CreateGradePayload = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid grade payload: {e}")))?;
+
+    let engine = AssessmentEngine::for_period(&ctx.db, &ctx.org_id, &req.period_id).await?;
+    let saved = persist_grade(ctx, req, &engine).await?;
 
     ctx.audit.log(AuditEntry {
         org_id: ctx.org_id.clone(),
         actor: ctx.actor.clone(),
         action: "grade.submit".into(),
         entity_type: "grade".into(),
-        entity_id: id,
+        entity_id: saved.id.clone(),
         old_data: None,
-        new_data: Some(serde_json::to_value(&created).unwrap_or_default()),
+        new_data: Some(serde_json::to_value(&saved).unwrap_or_default()),
         correlation_id: ctx.correlation_id.clone(),
     }).await?;
 
-    // Auto-trigger snapshot generation (best-effort, non-blocking)
-    try_enqueue_snapshot(ctx, &created).await;
-
-    Ok(created)
+    Ok(saved)
 }
 
 /// Submit multiple grades at once.
@@ -311,53 +384,13 @@ pub async fn submit_bulk(
 
     let mut results = Vec::with_capacity(grades.len());
     for req in grades {
-        check_period_open(ctx, &req.period_id).await?;
-
-        let now = Utc::now().to_rfc3339();
-        let id = Uuid::new_v4().to_string();
-        let percentage = if req.max_score > 0.0 { (req.score / req.max_score) * 100.0 } else { 0.0 };
-
-        // Reuse cached engine or create a new one
-        let engine = if let Some(cached) = engine_cache.get(&req.period_id) {
-            cached
-        } else {
+        if !engine_cache.contains_key(&req.period_id) {
             let new_engine = AssessmentEngine::for_period(&ctx.db, &ctx.org_id, &req.period_id).await?;
             engine_cache.insert(req.period_id.clone(), new_engine);
-            engine_cache.get(&req.period_id).unwrap()
-        };
-        let mapped = engine.map_score(percentage)?;
-
-        let model = grade::Model {
-            id: id.clone(),
-            org_id: ctx.org_id.clone(),
-            period_id: req.period_id,
-            enrollment_id: req.enrollment_id,
-            assessment_id: req.assessment_id,
-            class_subject_id: req.class_subject_id,
-            subject_name: req.subject_name,
-            subject_name_ar: req.subject_name_ar,
-            score: req.score,
-            max_score: req.max_score,
-            weight: req.weight.unwrap_or(1.0),
-            grade_letter: Some(mapped.grade_letter),
-            grade_points: mapped.grade_points,
-            exam_type: req.exam_type,
-            semester: req.semester,
-            notes: req.notes,
-            graded_by: ctx.actor.as_str().to_string(),
-            graded_at: now.clone(),
-            is_final: req.is_final.unwrap_or(0),
-            created_at: now.clone(),
-            updated_at: now,
-        };
-
-        let active: grade::ActiveModel = model.into();
-        let created = active.insert(&ctx.db).await?;
-
-        // Auto-trigger snapshot generation for each grade
-        try_enqueue_snapshot(ctx, &created).await;
-
-        results.push(created);
+        }
+        let engine = engine_cache.get(&req.period_id).unwrap();
+        let saved = persist_grade(ctx, req, engine).await?;
+        results.push(saved);
     }
     Ok(results)
 }

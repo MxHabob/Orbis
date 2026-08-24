@@ -193,16 +193,28 @@ pub async fn bootstrap_full(
         ]
     )).await.map_err(|e| AppError::internal(format!("Failed to create academic policies: {e}")))?;
 
-    // 3d. Default Calculation Policy — period-level (simple weighted sum)
+    // 3d. Default Calculation Policy — period-level (from scheme components when present)
     let calc_policy_id = Uuid::new_v4().to_string();
-    let formula = serde_json::json!({
-        "type": "weighted_sum",
-        "items": [
-            { "node": { "type": "variable", "name": "midterm" }, "weight": 0.3 },
-            { "node": { "type": "variable", "name": "final" }, "weight": 0.5 },
-            { "node": { "type": "variable", "name": "classwork" }, "weight": 0.2 }
-        ]
-    });
+    let formula = if blueprint.assessment_components.is_empty() {
+        serde_json::json!({
+            "type": "weighted_sum",
+            "items": [
+                { "node": { "type": "variable", "name": "midterm" }, "weight": 0.3 },
+                { "node": { "type": "variable", "name": "final" }, "weight": 0.5 },
+                { "node": { "type": "variable", "name": "classwork" }, "weight": 0.2 }
+            ]
+        })
+    } else {
+        let weight_total: f64 = blueprint.assessment_components.iter().map(|c| c.weight).sum();
+        let denom = if weight_total > 0.0 { weight_total } else { 1.0 };
+        let items: Vec<serde_json::Value> = blueprint.assessment_components.iter().map(|c| {
+            serde_json::json!({
+                "node": { "type": "variable", "name": c.component_type },
+                "weight": c.weight / denom
+            })
+        }).collect();
+        serde_json::json!({ "type": "weighted_sum", "items": items })
+    };
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
         "INSERT INTO calculation_policies (id, org_id, target_period_id, name, version, rule_type, formula_expression, rounding_policy, is_archived, created_at, updated_at) VALUES ($1, $2, NULL, $3, 1, 'weighted_sum', $4, 'round_half_up', 0, $5, $6)",
@@ -218,12 +230,16 @@ pub async fn bootstrap_full(
     let term_calc_id = Uuid::new_v4().to_string();
     let term_formula = serde_json::json!({
         "type": "add",
-        "left": {
-            "type": "multiply",
-            "left": { "type": "variable", "name": "coursework_avg" },
-            "right": { "type": "literal", "value": blueprint.coursework_weight / 100.0 }
-        },
-        "right": { "type": "variable", "name": "exam" }
+        "operands": [
+            {
+                "type": "multiply",
+                "operands": [
+                    { "type": "variable", "name": "coursework_avg" },
+                    { "type": "literal", "value": blueprint.coursework_weight / 100.0 }
+                ]
+            },
+            { "type": "variable", "name": "exam" }
+        ]
     });
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
@@ -609,8 +625,7 @@ fn school_blueprint() -> InstitutionBlueprint {
             GradeItem { label: "ممتاز".into(),   min_score: 90.0, max_score: 100.0, gpa_points: 4.0, is_passing: true },
             GradeItem { label: "جيد جداً".into(), min_score: 80.0, max_score: 89.99, gpa_points: 3.5, is_passing: true },
             GradeItem { label: "جيد".into(),      min_score: 70.0, max_score: 79.99, gpa_points: 3.0, is_passing: true },
-            GradeItem { label: "مقبول".into(),    min_score: 60.0, max_score: 69.99, gpa_points: 2.5, is_passing: true },
-            GradeItem { label: "ضعيف".into(),    min_score: 50.0, max_score: 59.99, gpa_points: 2.0, is_passing: false },
+            GradeItem { label: "مقبول".into(),    min_score: 50.0, max_score: 69.99, gpa_points: 2.5, is_passing: true },
             GradeItem { label: "راسب".into(),    min_score: 0.0,  max_score: 49.99, gpa_points: 0.0, is_passing: false },
         ],
         requires_all_subjects: false,

@@ -412,7 +412,7 @@ impl PromotionService {
             SELECT
                 e.id AS enrollment_id,
                 e.student_id,
-                p.full_name AS student_name,
+                COALESCE(p.full_name, '') AS student_name,
                 p.name_ar AS student_name_ar,
                 e.student_number,
                 e.class_id,
@@ -420,11 +420,17 @@ impl PromotionService {
                 c.level,
                 c.division,
                 e.status,
-                e.final_score,
+                CAST(COALESCE(
+                    (SELECT AVG(ar.percentage) FROM annual_results ar
+                     WHERE ar.enrollment_id = e.id AND ar.status != 'draft'),
+                    (SELECT por.percentage FROM period_overall_results por
+                     WHERE por.enrollment_id = e.id AND por.period_id = e.period_id),
+                    0
+                ) AS INTEGER) AS final_score,
                 COALESCE(
-                    (SELECT CAST(SUM(CASE WHEN a.status = 'present' THEN 1 ELSE 0 END) AS FLOAT)
+                    (SELECT CAST(SUM(CASE WHEN a.status IN ('present', 'late') THEN 1 ELSE 0 END) AS FLOAT)
                      / NULLIF(COUNT(*), 0) * 100
-                     FROM attendance a WHERE a.student_id = e.student_id),
+                     FROM attendance a WHERE a.enrollment_id = e.id),
                     100.0
                 ) AS attendance_rate
             FROM enrollments e
@@ -433,7 +439,6 @@ impl PromotionService {
             WHERE e.org_id = ?1
               AND e.period_id = ?2
               AND e.status = 'active'
-              AND e.is_deleted = 0
             ORDER BY c.level, c.name, p.full_name
         "#;
 

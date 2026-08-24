@@ -20,14 +20,14 @@ pub async fn list(
 ) -> Result<Vec<class_subject::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ClassRead).await?;
 
-    let cid = period_id.unwrap_or("default");
-
-    Ok(class_subject::Entity::find()
+    let mut query = class_subject::Entity::find()
         .filter(class_subject::Column::ClassId.eq(class_id))
-        .filter(class_subject::Column::PeriodId.eq(cid))
-        .filter(class_subject::Column::IsActive.eq(1))
-        .all(&ctx.db)
-        .await?)
+        .filter(class_subject::Column::IsActive.eq(1));
+    if let Some(pid) = period_id.filter(|s| !s.is_empty()) {
+        query = query.filter(class_subject::Column::PeriodId.eq(pid));
+    }
+
+    Ok(query.all(&ctx.db).await?)
 }
 
 /// List subjects assigned to a teacher in a period.
@@ -55,6 +55,7 @@ pub struct CreateClassSubjectPayload {
     pub period_id: String,
     pub primary_teacher_id: Option<String>,
     pub weekly_hours: Option<i32>,
+    pub scheme_id: Option<String>,
 }
 
 /// Assign a subject to a class with a teacher.
@@ -83,6 +84,7 @@ pub async fn create(
         theory_hours: None,
         practical_hours: None,
         assessment_config: None,
+        scheme_id: req.scheme_id,
         is_active: 1,
         created_at: now.clone(),
         updated_at: now,
@@ -109,6 +111,7 @@ pub async fn create(
 pub struct UpdateClassSubjectPayload {
     pub primary_teacher_id: Option<String>,
     pub weekly_hours: Option<i32>,
+    pub scheme_id: Option<String>,
 }
 
 /// Update a class-subject assignment (teacher, hours, etc.).
@@ -133,6 +136,9 @@ pub async fn update(
     }
     if let Some(hrs) = req.weekly_hours {
         active.weekly_hours = Set(Some(hrs));
+    }
+    if let Some(sid) = req.scheme_id {
+        active.scheme_id = Set(Some(sid));
     }
     active.updated_at = Set(Utc::now().to_rfc3339());
 

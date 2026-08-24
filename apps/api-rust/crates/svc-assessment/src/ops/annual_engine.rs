@@ -11,16 +11,17 @@
 //! (rule_type = "annual"). No formulas are hard-coded.
 
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
 use uuid::Uuid;
 
 use shared_kernel::context::ServiceContext;
 use shared_kernel::errors::AppError;
+use shared_kernel::traits::Permission;
 use tracing::info;
 
-use crate::entities::{calculation_policy, term_result, annual_result};
-use crate::ops::calc_engine::{CalcEngine, AstNode, apply_rounding};
-use crate::ops::grade_mapper::GradeMapper;
+use crate::entities::{annual_result, calculation_policy, term_result};
+use crate::ops::calc_engine::{apply_rounding, AstNode, CalcEngine};
+use crate::ops::resolution;
 
 /// Input for an annual calculation request.
 #[derive(Debug, Clone, serde::Deserialize)]
@@ -30,7 +31,31 @@ pub struct AnnualCalcRequest {
     pub year_period_id: String,
     pub class_subject_id: String,
     /// IDs of the term-level periods within this year.
+    #[serde(default)]
     pub term_period_ids: Vec<String>,
+}
+
+pub async fn list_annual_results(
+    ctx: &ServiceContext,
+    year_period_id: &str,
+    class_subject_id: Option<&str>,
+) -> Result<Vec<annual_result::Model>, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::GradeRead).await?;
+    let mut q = annual_result::Entity::find()
+        .filter(annual_result::Column::OrgId.eq(&ctx.org_id))
+        .filter(annual_result::Column::YearPeriodId.eq(year_period_id));
+    if let Some(cs) = class_subject_id {
+        q = q.filter(annual_result::Column::ClassSubjectId.eq(cs));
+    }
+    Ok(q.order_by_asc(annual_result::Column::StudentId).all(&ctx.db).await?)
+}
+
+pub async fn get_result(ctx: &ServiceContext, result_id: &str) -> Result<annual_result::Model, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::GradeRead).await?;
+    annual_result::Entity::find_by_id(result_id.to_string())
+        .one(&ctx.db)
+        .await?
+        .ok_or_else(|| AppError::not_found("annual_result", result_id))
 }
 
 /// Calculate the annual result by combining term results.
@@ -39,11 +64,17 @@ pub async fn calculate_annual_result(
     req: &AnnualCalcRequest,
 ) -> Result<annual_result::Model, AppError> {
     // 1. Find all term results for this student + class_subject
+    let term_period_ids = if req.term_period_ids.is_empty() {
+        resolution::term_child_ids(&ctx.db, &ctx.org_id, &req.year_period_id).await?
+    } else {
+        req.term_period_ids.clone()
+    };
+
     let mut term_scores: Vec<serde_json::Value> = Vec::new();
     let mut annual_total = 0.0f64;
     let mut annual_max = 0.0f64;
 
-    for term_period_id in &req.term_period_ids {
+    for term_period_id in &term_period_ids {
         let term = term_result::Entity::find()
             .filter(term_result::Column::OrgId.eq(&ctx.org_id))
             .filter(term_result::Column::StudentId.eq(&req.student_id))
@@ -96,7 +127,7 @@ pub async fn calculate_annual_result(
     };
 
     // 3. Grade mapping
-    let mapper = build_grade_mapper_annual(ctx).await?;
+    let mapper = resolution::resolve_mapper(&ctx.db, &ctx.org_id, &req.year_period_id).await?;
     let grade_result = mapper.map_score(percentage)?;
 
     // 4. Policy snapshot
@@ -112,6 +143,37 @@ pub async fn calculate_annual_result(
 
     // 5. Persist
     let now = Utc::now().to_rfc3339();
+    let existing = annual_result::Entity::find()
+        .filter(annual_result::Column::OrgId.eq(&ctx.org_id))
+        .filter(annual_result::Column::StudentId.eq(&req.student_id))
+        .filter(annual_result::Column::YearPeriodId.eq(&req.year_period_id))
+        .filter(annual_result::Column::ClassSubjectId.eq(&req.class_subject_id))
+        .one(&ctx.db)
+        .await?;
+
+    if let Some(ex) = existing {
+        if ex.status == "finalized" {
+            return Err(AppError::validation("Annual result is finalized and cannot be recalculated"));
+        }
+        let mut active: annual_result::ActiveModel = ex.into();
+        active.enrollment_id = Set(req.enrollment_id.clone());
+        active.term_scores_json = Set(serde_json::to_string(&term_scores).unwrap_or_else(|_| "[]".to_string()));
+        active.annual_total = Set(final_total);
+        active.annual_max = Set(annual_max);
+        active.percentage = Set(percentage);
+        active.grade_label = Set(Some(grade_result.label.clone()));
+        active.gpa_points = Set(grade_result.gpa_points);
+        active.is_passing = Set(if grade_result.is_passing { 1 } else { 0 });
+        active.calculation_policy_id = Set(policy.as_ref().map(|p| p.id.clone()));
+        active.calculation_version = Set(policy.as_ref().map(|p| p.version).unwrap_or(1));
+        active.policy_snapshot = Set(policy_snapshot.clone());
+        active.status = Set("official".to_string());
+        active.updated_at = Set(now);
+        let updated = active.update(&ctx.db).await?;
+        info!(student_id=%req.student_id, year_period_id=%req.year_period_id, annual_total=%final_total, "Updated annual result");
+        return Ok(updated);
+    }
+
     let result_model = annual_result::ActiveModel {
         id: Set(Uuid::new_v4().to_string()),
         org_id: Set(ctx.org_id.clone()),
@@ -206,9 +268,4 @@ async fn find_annual_policy(
         .ok_or_else(|| AppError::validation(
             "No annual calculation policy configured."
         ))
-}
-
-async fn build_grade_mapper_annual(ctx: &ServiceContext) -> Result<GradeMapper, AppError> {
-    // Reuse the term engine's mapper builder
-    super::term_engine::build_grade_mapper(ctx).await
 }
