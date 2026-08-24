@@ -37,13 +37,13 @@ const modes = [
 ] as const;
 </script>
 
-<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 shrink-0 select-none">
-  <div class="flex items-center gap-3">
-    <div class="flex p-0.5">
+<div class="flex min-w-0 flex-col gap-2 shrink-0 select-none sm:flex-row sm:items-center">
+  <div class="flex min-w-0 items-center overflow-x-auto border-b border-border sm:border-b-0">
+    <div class="flex min-w-max">
       {#each modes as mode}
         <Button
-          variant="secondary"
-          class="text-[10px] font-bold px-3 py-1.5 h-8 rounded-md transition-all duration-150 cursor-pointer {viewMode === mode.value ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:bg-transparent'}"
+          variant="ghost"
+          class="h-8 rounded-none border-b-2 px-3 text-[10px] font-semibold transition-all duration-150 {viewMode === mode.value ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}"
           onclick={() => viewMode = mode.value}
         >{mode.label}</Button>
       {/each}
@@ -51,30 +51,30 @@ const modes = [
   </div>
 
   <!-- Selector Box -->
-  <div class="flex items-center gap-3">
+  <div class="flex items-center gap-2">
     {#if viewMode === 'class'}
       <ClassSelect
         bind:value={selectedClassId}
         {classes}
         placeholder={m.common_control_select_class()}
-        class="w-45 h-8 text-xs bg-background"
+        class="h-8 w-44 bg-card text-[11px]"
       />
     {:else if viewMode === 'teacher'}
       <TeacherSelect
         bind:value={selectedTeacherId}
         {teachers}
         placeholder={m.common_schedule_page_no_teacher()}
-        class="w-45 h-8 text-xs bg-background"
+        class="h-8 w-44 bg-card text-[11px]"
       />
     {:else if viewMode === 'subject'}
-      <select bind:value={selectedSubjectId} class="h-8 w-45 rounded-md border border-border bg-background px-2 text-xs">
+      <select bind:value={selectedSubjectId} class="h-8 w-44 rounded-md border border-border bg-card px-2 text-[11px]">
         <option value="">Select subject</option>
         {#each subjects as subject (subject.id)}
           <option value={String(subject.id)}>{subject.name_ar || subject.name}</option>
         {/each}
       </select>
     {:else if viewMode === 'room'}
-      <select bind:value={selectedRoomId} class="h-8 w-45 rounded-md border border-border bg-background px-2 text-xs">
+      <select bind:value={selectedRoomId} class="h-8 w-44 rounded-md border border-border bg-card px-2 text-[11px]">
         <option value="">Select room</option>
         {#each rooms as room (room.id)}
           <option value={String(room.id)}>{room.name_ar || room.name}</option>

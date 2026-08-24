@@ -189,15 +189,15 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
 </script>
 
 <!-- Reusable responsive timetable board -->
-<div class="flex-1 min-h-0 min-w-0 w-full h-full border border-border bg-card rounded-lg flex flex-col overflow-auto shadow-sm select-none relative scrollbar-thin {className}">
+<div class="schedule-board flex-1 min-h-0 min-w-0 w-full h-full border-y border-border bg-card flex flex-col overflow-auto select-none relative scrollbar-thin {className}">
   
   <div 
-    class="grid gap-px text-xs w-full min-w-180 bg-border flex-1"
-    style="grid-template-columns: minmax(108px, 0.9fr) repeat({weekdays.length}, minmax(112px, 1fr));"
+    class="schedule-grid grid gap-px text-xs w-full min-w-180 bg-border flex-1"
+    style="grid-template-columns: minmax(84px, 0.72fr) repeat({weekdays.length}, minmax(132px, 1fr));"
     in:fade={{ duration: 150 }}
   >
     <!-- 1. Header Row (Sticky Top) -->
-    <div class="bg-muted/60 text-foreground p-2.5 md:p-3 font-bold text-center flex items-center justify-center gap-1 border-b border-border text-[10px] sticky top-0 inset-s-0 z-30 shadow-xs">
+    <div class="bg-muted/40 text-muted-foreground p-2 md:p-2.5 font-semibold text-center flex items-center justify-center gap-1 border-b border-border text-[9px] sticky top-0 inset-s-0 z-30">
       <span>{locale === "ar" ? "الحصة" : "Period"}</span>
       {#if onAddTimeSlot}
           <button type="button" class="rounded p-1 text-muted-foreground hover:bg-primary/10 hover:text-primary" onclick={startSlotAdd} aria-label={locale === "ar" ? "إضافة حصة" : "Add period"} title={locale === "ar" ? "إضافة حصة" : "Add period"}>
@@ -206,7 +206,7 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
       {/if}
     </div>
     {#each weekdays as day (day.value)}
-      <div class="bg-muted/60 text-foreground p-2.5 md:p-3 font-bold text-center flex items-center justify-center border-b border-border text-[10px] sticky top-0 z-20 shadow-xs">
+      <div class="bg-muted/40 text-foreground p-2 md:p-2.5 font-semibold text-center flex items-center justify-center border-b border-border text-[10px] sticky top-0 z-20">
         {day.label}
       </div>
     {/each}
@@ -231,7 +231,7 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
       {@const isBreak = slot.is_break === 1 || slot.is_break === true}
 
       <!-- Row Period Info Column (Sticky Start for Horizontal Scroll) -->
-      <div class="bg-muted/30 border-border p-2 font-semibold text-center flex flex-col justify-center items-center gap-1 min-h-24 h-full border-b sticky inset-s-0 z-10 backdrop-blur-xs">
+      <div class="bg-muted/25 border-border p-1.5 font-semibold text-center flex flex-col justify-center items-center gap-1 min-h-24 h-full border-b sticky inset-s-0 z-10">
         {#if editingSlotId === String(slot.id)}
           <input class="h-7 w-full rounded border border-border bg-background px-1 text-[10px]" bind:value={draftNameAr} aria-label="اسم الحصة" />
           <div class="flex w-full gap-1">
@@ -286,7 +286,7 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
           <!-- Cell Container -->
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div 
-            class="{isAvailable ? 'bg-card hover:bg-muted/40' : 'bg-muted/20'} border-border p-1.5 text-center align-middle min-h-24 h-full relative flex items-center justify-center transition-colors duration-150 border-b
+            class="{isAvailable ? 'bg-card hover:bg-muted/30' : 'bg-muted/20 schedule-unavailable'} border-border p-1.5 text-center align-middle min-h-24 h-full relative flex items-center justify-center transition-colors duration-150 border-b
               {isDragOver ? 'bg-primary/8 ring-2 ring-primary/40 ring-inset border-dashed' : ''}"
             ondragover={(e) => handleDragOver(e, day.value, slot.id)}
             ondragleave={handleDragLeave}
@@ -331,3 +331,19 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
     {/each}
   </div>
 </div>
+
+<style>
+  .schedule-grid > :global(*) {
+    min-width: 0;
+  }
+
+  .schedule-unavailable {
+    background-image: repeating-linear-gradient(-45deg, transparent, transparent 7px, color-mix(in srgb, var(--color-muted-foreground) 8%, transparent) 7px, color-mix(in srgb, var(--color-muted-foreground) 8%, transparent) 9px);
+  }
+
+  @media (max-width: 640px) {
+    .schedule-grid {
+      min-width: 680px;
+    }
+  }
+</style>

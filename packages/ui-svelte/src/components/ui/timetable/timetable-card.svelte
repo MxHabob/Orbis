@@ -28,6 +28,8 @@ let {
 
 const isDraft = $derived(!!lesson.isDraft);
 const subjectName = $derived(getSubjectName(lesson.subject_id));
+const hasConflict = $derived(Boolean(lesson.conflict || lesson.conflict_type || lesson.has_conflict));
+const statusLabel = $derived(lesson.status || lesson.lesson_status || "");
 
 // Format times nicely
 const timeStr = $derived(
@@ -43,10 +45,12 @@ const timeStr = $derived(
   {ondragstart}
   dir={locale === "ar" ? "rtl" : "ltr"}
   style="--subject-color: {subjectColor};"
-  class="relative overflow-hidden w-full h-full min-h-20 p-2 flex flex-col items-stretch justify-center gap-1 select-none transition-all duration-150 rounded-md border-s-4
+  class="relative overflow-hidden w-full h-full min-h-20 p-2 flex flex-col items-stretch justify-center gap-1 select-none transition-all duration-150 rounded-[3px] border-s-4
     {isDraft 
       ? 'bg-muted/40 border-muted-foreground/30 border-dashed opacity-80 text-muted-foreground animate-pulse-draft' 
-      : 'bg-card border-border text-foreground cursor-grab active:cursor-grabbing hover:bg-accent/5'}"
+      : hasConflict
+        ? 'bg-destructive/8 border-destructive text-foreground cursor-grab active:cursor-grabbing'
+        : 'bg-card border-border text-foreground cursor-grab active:cursor-grabbing hover:bg-accent/5'}"
   style:border-inline-start-color="{isDraft ? 'var(--color-muted-foreground)' : 'var(--subject-color)'}"
   style:background-color={!isDraft ? `color-mix(in srgb, ${subjectColor} 14%, var(--color-card))` : undefined}
   in:fade={{ duration: 150 }}
@@ -75,6 +79,11 @@ const timeStr = $derived(
   <span class="font-bold text-[10px] leading-tight text-start line-clamp-2 pe-3">
     {subjectName}
   </span>
+  {#if hasConflict || statusLabel}
+    <span class="flex items-center gap-1 text-[8px] font-semibold leading-none {hasConflict ? 'text-destructive' : 'text-muted-foreground'}">
+      {hasConflict ? "Conflict" : statusLabel}
+    </span>
+  {/if}
   <span class="text-[8px] leading-tight text-start text-muted-foreground line-clamp-1">
     {viewMode === "class" ? getTeacherName(lesson.teacher_id) : getClassName(lesson.class_id)}
     {#if lesson.room_name || lesson.room}

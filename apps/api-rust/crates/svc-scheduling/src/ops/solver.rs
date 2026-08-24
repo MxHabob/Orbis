@@ -1,7 +1,7 @@
 //! Schedule solver operations — AI/constraint-based schedule generation.
 
 use chrono::Utc;
-use sea_orm::{ActiveValue::Set, ColumnTrait, EntityTrait, ModelTrait, QueryFilter, QueryOrder};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, ModelTrait, QueryFilter, QueryOrder};
 
 use shared_kernel::context::ServiceContext;
 use shared_kernel::errors::AppError;

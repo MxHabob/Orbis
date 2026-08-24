@@ -6,10 +6,11 @@ import { commands } from "$lib/core/ipc";
 import { toast } from "svelte-sonner";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { goto } from "$app/navigation";
-import { WandSparkles } from "@lucide/svelte";
+import { ArrowLeft, ChevronLeft, ChevronRight, Search, WandSparkles } from "@lucide/svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import LessonCreateSheet from "$lib/features/academics/components/lesson-create-sheet.svelte";
+import PeriodSelect from "$lib/features/academics/components/period-select.svelte";
 
 // Component imports
 import {
@@ -28,6 +29,7 @@ let selectedTeacherId = $state<string>("");
 let viewMode = $state<"whole" | "class" | "teacher" | "subject" | "room">("class");
 let selectedSubjectId = $state<string>("");
 let selectedRoomId = $state<string>("");
+let searchTerm = $state("");
 
 // Scheduling Sheet Trigger State
 let isModalOpen = $state(false);
@@ -498,8 +500,35 @@ function openLessonEditor(lesson: any) {
 
 
 <div class="h-full w-full flex flex-col items-stretch overflow-hidden">
-  <div class="flex-1 min-h-0 min-w-0 w-full flex flex-col p-4 sm:p-6 gap-4 sm:gap-6 overflow-y-auto">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
+  <div class="flex-1 min-h-0 min-w-0 w-full flex flex-col overflow-y-auto bg-background">
+    <header class="shrink-0 border-b border-border/70 bg-card px-4 py-3 sm:px-7 sm:py-4">
+      <div class="mx-auto flex w-full max-w-7xl flex-col gap-3">
+        <button type="button" class="flex w-fit items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground" onclick={() => goto(localizeHref(`/${data.orgId}/academics`))}>
+          <ArrowLeft size={13} class="rtl:rotate-180" />
+          <span>{m.common_action_back()}</span>
+        </button>
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div class="flex min-w-0 items-center gap-3">
+            <div class="h-8 w-1 rounded-full bg-primary"></div>
+            <div class="min-w-0 text-start">
+              <h1 class="truncate text-xl font-bold tracking-tight text-foreground sm:text-2xl">Scheduler</h1>
+              <p class="mt-0.5 text-[11px] text-muted-foreground">Weekly timetable and lesson assignments</p>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <PeriodSelect bind:value={activePeriodId} periods={periods} class="h-8 w-44 text-[11px]" />
+            <div class="flex items-center rounded-md border border-border bg-background">
+              <Button variant="ghost" size="icon-xs" class="h-7 w-7 rounded-none" aria-label="Previous week"><ChevronLeft size={13} /></Button>
+              <span class="border-x border-border px-2 text-[10px] font-medium text-muted-foreground">Week 1 · 23 Dec 24 - 29 Dec 24</span>
+              <Button variant="ghost" size="icon-xs" class="h-7 w-7 rounded-none" aria-label="Next week"><ChevronRight size={13} /></Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto flex w-full max-w-7xl min-h-0 flex-1 flex-col gap-3 p-4 sm:p-6">
+      <div class="flex flex-col gap-3 shrink-0 lg:flex-row lg:items-center lg:justify-between">
       <ScheduleFilterControls
         bind:viewMode
         bind:selectedClassId
@@ -511,23 +540,29 @@ function openLessonEditor(lesson: any) {
         {subjects}
         {rooms}
       />
-      <Button
-        variant="default"
-        class="w-full sm:w-auto h-9 text-xs font-semibold gap-2 cursor-pointer"
-        onclick={() => goto(localizeHref(`/${data.orgId}/academics/schedule/prepare`))}
-      >
-        <WandSparkles size={14} />
-        {m.common_schedule_ai_auto_scheduler()}
-      </Button>
-    </div>
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <label class="relative min-w-0 sm:w-64">
+            <Search size={13} class="pointer-events-none absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input bind:value={searchTerm} class="h-8 w-full rounded-md border border-border bg-card ps-8 pe-3 text-[11px] outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-primary" placeholder="Search by teacher or subject" aria-label="Search by teacher or subject" />
+          </label>
+          <Button variant="default" class="h-8 gap-1.5 text-[11px] font-semibold" onclick={() => goto(localizeHref(`/${data.orgId}/academics/schedule/prepare`))}>
+            <WandSparkles size={13} />
+            {m.common_schedule_ai_auto_scheduler()}
+          </Button>
+        </div>
+      </div>
 
-    <!-- Timetable Grid Content -->
-    <ScheduleBoard
+      <ScheduleBoard
       {isLoading}
       error={error?.message || null}
       {timeSlots}
       {weekdays}
-      {lessons}
+      lessons={lessons.filter((lesson: any) => {
+        const query = searchTerm.trim().toLowerCase();
+        if (!query) return true;
+        return [getSubjectName(lesson.subject_id), getTeacherName(lesson.teacher_id), getClassName(lesson.class_id)]
+          .some((value) => value.toLowerCase().includes(query));
+      })}
       draftLessons={draftLessonsInGrid}
       {previewDraft}
       {viewMode}
@@ -544,7 +579,8 @@ function openLessonEditor(lesson: any) {
       onDeleteTimeSlot={(slot) => deleteTimeSlot(slot)}
       onSaveTimeSlot={saveTimeSlot}
       onRetry={refetchLessons}
-    />
+      />
+    </main>
   </div>
 </div>
 
