@@ -1,6 +1,5 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { readable } from "svelte/store";
 import { page } from "$app/state";
 import { confirmStore } from "$lib/stores";
 import { commands } from "$lib/core/ipc";
