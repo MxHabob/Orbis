@@ -1,6 +1,12 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui-svelte/select";
 import ClassSelect from "$lib/features/academics/components/class-select.svelte";
 import TeacherSelect from "$lib/features/academics/components/teacher-select.svelte";
 
@@ -67,19 +73,35 @@ const modes = [
         class="h-8 w-44 bg-card text-[11px]"
       />
     {:else if viewMode === 'subject'}
-      <select bind:value={selectedSubjectId} class="h-8 w-44 rounded-md border border-border bg-card px-2 text-[11px]">
-        <option value="">Select subject</option>
-        {#each subjects as subject (subject.id)}
-          <option value={String(subject.id)}>{subject.name_ar || subject.name}</option>
-        {/each}
-      </select>
+      <Select
+        type="single"
+        value={selectedSubjectId}
+        onValueChange={(value) => selectedSubjectId = value ?? ""}
+      >
+        <SelectTrigger class="h-8 w-44 bg-card text-[11px]">
+          <span class="truncate">{subjects.find((subject) => String(subject.id) === selectedSubjectId)?.name_ar || subjects.find((subject) => String(subject.id) === selectedSubjectId)?.name || "Select subject"}</span>
+        </SelectTrigger>
+        <SelectContent class="max-h-56 overflow-y-auto text-start">
+          {#each subjects as subject (subject.id)}
+            <SelectItem value={String(subject.id)} class="text-[11px]">{subject.name_ar || subject.name}</SelectItem>
+          {/each}
+        </SelectContent>
+      </Select>
     {:else if viewMode === 'room'}
-      <select bind:value={selectedRoomId} class="h-8 w-44 rounded-md border border-border bg-card px-2 text-[11px]">
-        <option value="">Select room</option>
-        {#each rooms as room (room.id)}
-          <option value={String(room.id)}>{room.name_ar || room.name}</option>
-        {/each}
-      </select>
+      <Select
+        type="single"
+        value={selectedRoomId}
+        onValueChange={(value) => selectedRoomId = value ?? ""}
+      >
+        <SelectTrigger class="h-8 w-44 bg-card text-[11px]">
+          <span class="truncate">{rooms.find((room) => String(room.id) === selectedRoomId)?.name_ar || rooms.find((room) => String(room.id) === selectedRoomId)?.name || "Select room"}</span>
+        </SelectTrigger>
+        <SelectContent class="max-h-56 overflow-y-auto text-start">
+          {#each rooms as room (room.id)}
+            <SelectItem value={String(room.id)} class="text-[11px]">{room.name_ar || room.name}</SelectItem>
+          {/each}
+        </SelectContent>
+      </Select>
     {/if}
   </div>
 </div>
