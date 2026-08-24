@@ -28,6 +28,7 @@ import SubjectSelect from "$lib/features/academics/components/subject-select.sve
 import PeriodSelect from "$lib/features/academics/components/period-select.svelte";
 import TeacherSelect from "$lib/features/academics/components/teacher-select.svelte";
 import { createUsersQuery } from "$lib/features/settings/queries";
+import { createAssessmentSchemesQuery } from "$lib/features/academics/queries-assessment";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 
 let {
@@ -50,6 +51,7 @@ let subjectId = $state("");
 let teacherId = $state("");
 let weeklyHours = $state(4);
 let periodId = $state("");
+let schemeId = $state("");
 
 $effect(() => {
   classId = editData ? String(editData.class_id ?? "") : "";
@@ -57,6 +59,7 @@ $effect(() => {
   teacherId = editData ? String(editData.primary_teacher_id ?? "") : "";
   weeklyHours = editData ? Number(editData.weekly_hours ?? 4) : 4;
   periodId = editData ? String(editData.period_id ?? "") : "";
+  schemeId = editData ? String((editData as any).scheme_id ?? "") : "";
 });
 
 // TanStack Queries
@@ -64,6 +67,7 @@ const periodsQuery = createPeriodsQuery(() => orgId);
 const classesQuery = createClassesQuery(() => orgId);
 const subjectsQuery = createSubjectsQuery(() => orgId);
 const usersQuery = createUsersQuery(() => orgId);
+const schemesQuery = createAssessmentSchemesQuery(() => orgId);
 
 const periods = $derived((periodsQuery.data as JsonRecord[]) ?? []);
 const classes = $derived((classesQuery.data as JsonRecord[]) ?? []);
@@ -73,6 +77,7 @@ const teachers = $derived(
     (u) => String(u.primary_role ?? u.role) === "teacher",
   ),
 );
+const schemes = $derived((schemesQuery.data as JsonRecord[]) ?? []);
 
 const isLoading = $derived(
   periodsQuery.isLoading ||
@@ -106,6 +111,7 @@ async function handleSubmit() {
       period_id: periodId,
       primary_teacher_id: teacherId,
       weekly_hours: weeklyHours,
+      scheme_id: schemeId || null,
     };
 
     if (isEditMode && editData?.id) {
@@ -204,6 +210,32 @@ async function handleSubmit() {
         oninput={(e) => (weeklyHours = parseInt((e.target as HTMLInputElement).value) || 4)}
         class="h-9 text-sm"
       />
+    </div>
+
+    <!-- Assessment scheme (optional; falls back to period/org default) -->
+    <div class="flex flex-col gap-1.5">
+      <Label class="text-xs font-semibold text-muted-foreground">Assessment scheme</Label>
+      <Select
+        type="single"
+        value={schemeId || "__default__"}
+        onValueChange={(v) => (schemeId = v === "__default__" ? "" : (v ?? ""))}
+      >
+        <SelectTrigger class="h-9 text-sm">
+          {schemeId
+            ? String(
+                schemes.find((s) => String(s.id) === schemeId)?.name ?? schemeId,
+              )
+            : "Default"}
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="__default__">Default</SelectItem>
+          {#each schemes as scheme (scheme.id)}
+            <SelectItem value={String(scheme.id)}>
+              {scheme.name || scheme.id}
+            </SelectItem>
+          {/each}
+        </SelectContent>
+      </Select>
     </div>
 
     <!-- Actions -->
