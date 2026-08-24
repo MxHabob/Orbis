@@ -37,6 +37,7 @@ async function handleSubmit(e: SubmitEvent) {
       name: name || nameAr,
       name_ar: nameAr || name,
       code: code || "",
+	color: color || null,
     };
     await commands.academic.createSubject(request);
     toast.success(m.common_subject_toast_success());

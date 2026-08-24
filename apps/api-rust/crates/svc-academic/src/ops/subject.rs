@@ -43,6 +43,7 @@ pub struct CreateSubjectPayload {
     pub code: String,
     pub name: String,
     pub name_ar: Option<String>,
+    pub color: Option<String>,
 }
 
 /// Create a new subject.
@@ -77,7 +78,7 @@ pub async fn create(
         default_grade_groups: None,
         prerequisites: None,
         learning_outcomes: None,
-        color: None,
+        color: req.color,
         icon: None,
         cover_image: None,
         sort_order: None,
@@ -121,6 +122,7 @@ pub struct UpdateSubjectPayload {
     pub name_ar: Option<String>,
     pub code: String,
     pub category: Option<String>,
+    pub color: Option<String>,
 }
 
 /// Update a subject.
@@ -141,6 +143,7 @@ pub async fn update(
     active.name = Set(req.name);
     active.name_ar = Set(req.name_ar);
     active.code = Set(req.code);
+    active.color = Set(req.color);
     if let Some(cat) = req.category {
         active.description = Set(Some(cat));
     }

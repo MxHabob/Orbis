@@ -48,6 +48,7 @@ const timeStr = $derived(
       ? 'bg-muted/40 border-muted-foreground/30 border-dashed opacity-80 text-muted-foreground animate-pulse-draft' 
       : 'bg-card border-border text-foreground cursor-grab active:cursor-grabbing hover:bg-accent/5'}"
   style:border-inline-start-color="{isDraft ? 'var(--color-muted-foreground)' : 'var(--subject-color)'}"
+  style:background-color={!isDraft ? `color-mix(in srgb, ${subjectColor} 14%, var(--color-card))` : undefined}
   in:fade={{ duration: 150 }}
 >
   {#if onDelete && !isDraft}

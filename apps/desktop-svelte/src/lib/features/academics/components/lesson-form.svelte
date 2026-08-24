@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { commands } from "$lib/core/ipc";
+import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { SheetHeader, SheetTitle } from "@orbis/ui-svelte/sheet";
@@ -14,6 +14,7 @@ import { ShieldAlert, Calendar } from "@lucide/svelte";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
+import { createClassSubjectsQuery } from "$lib/features/academics/queries";
 
 let {
   orgId,
@@ -49,17 +50,47 @@ let formRoom = $state(lesson?.room_id || "");
 let formDayOfWeek = $state(lesson?.day_of_week || dayOfWeek);
 let formTimeSlotId = $state(lesson?.time_slot_id || timeSlotId);
 
+const classSubjectsQuery = createClassSubjectsQuery(
+  () => classId,
+  () => periodId,
+);
+const classSubjects = $derived(classSubjectsQuery.data ?? []);
+const linkedSubjectIds = $derived(
+  new Set(classSubjects.map((item: any) => String(item.subject_id))),
+);
+const availableSubjects = $derived(
+  subjects.filter((subject: any) => linkedSubjectIds.has(String(subject.id))),
+);
+const linkedTeacherIds = $derived(
+  new Set(
+    classSubjects
+      .filter((item: any) => !formSubjectId || String(item.subject_id) === String(formSubjectId))
+      .map((item: any) => String(item.primary_teacher_id || item.teacher_id))
+      .filter((id: string) => id && id !== "undefined"),
+  ),
+);
+const availableTeachers = $derived(
+  teachers.filter((teacher: any) => linkedTeacherIds.has(String(teacher.id))),
+);
+const selectedClassSubject = $derived(
+  classSubjects.find((item: any) => String(item.subject_id) === String(formSubjectId)),
+);
+
 // Conflict state
 let conflictError = $state<string | null>(null);
 let isCheckingConflict = $state(false);
 
-const weekdays = $derived([
-  { value: 1, label: m.common_schedule_page_day_sun() },
-  { value: 2, label: m.common_schedule_page_day_mon() },
-  { value: 3, label: m.common_schedule_page_day_tue() },
-  { value: 4, label: m.common_schedule_page_day_wed() },
-  { value: 5, label: m.common_schedule_page_day_thu() },
-]);
+const weekdays = $derived(
+  Array.from({ length: 7 }, (_, index) => {
+    const day = index + 1;
+    return {
+      value: day,
+      label: new Intl.DateTimeFormat(getLocale(), { weekday: "long" }).format(
+        new Date(Date.UTC(2023, 0, day)),
+      ),
+    };
+  }),
+);
 
 const isEditing = $derived(!!lesson?.id);
 
@@ -114,11 +145,20 @@ async function handleSubmit(e: SubmitEvent) {
     toast.error(m.common_lesson_toast_error_subject());
     return;
   }
+  if (!selectedClassSubject) {
+    toast.error("المادة غير مرتبطة بهذا الصف في الفترة المحددة");
+    return;
+  }
+  if (!formTeacherId) {
+    toast.error("لا يوجد معلم مرتبط بالمادة المحددة لهذا الصف");
+    return;
+  }
   isSubmitting = true;
   try {
     const request = {
       period_id: periodId,
       class_id: classId,
+      class_subject_id: selectedClassSubject.id,
       subject_id: formSubjectId,
       teacher_id: formTeacherId || undefined,
       time_slot_id: formTimeSlotId,
@@ -145,7 +185,11 @@ async function handleSubmit(e: SubmitEvent) {
 
     onSuccess();
   } catch (e) {
-    toast.error(m.common_lesson_toast_error());
+    const errorMessage = extractErrorMessage(e);
+    toast.error(m.common_lesson_toast_error(), {
+      description: errorMessage,
+      duration: 7000,
+    });
   } finally {
     isSubmitting = false;
   }
@@ -192,12 +236,12 @@ async function handleSubmit(e: SubmitEvent) {
 			<label for="sched_sub" class="text-sm font-medium text-foreground">
 				{m.common_lesson_label_subject()}
 			</label>
-      <Select type="single" value={formSubjectId} onValueChange={(v) => (formSubjectId = v ?? "")} disabled={isEditing}>
+      <Select type="single" value={formSubjectId} onValueChange={(v) => (formSubjectId = v ?? "")} disabled={isEditing || availableSubjects.length === 0}>
 				<SelectTrigger class="h-9 text-sm w-full">
 					{subjects.find(sub => String(sub.id) === formSubjectId)?.name_ar || subjects.find(sub => String(sub.id) === formSubjectId)?.name || m.common_lesson_option_select_subject()}
 				</SelectTrigger>
 				<SelectContent>
-					{#each subjects as sub (sub.id)}
+                    {#each availableSubjects as sub (sub.id)}
 						<SelectItem value={String(sub.id)}>{sub.name_ar || sub.name}</SelectItem>
 					{/each}
 				</SelectContent>
@@ -209,13 +253,13 @@ async function handleSubmit(e: SubmitEvent) {
 			<label for="sched_teach" class="text-sm font-medium text-foreground">
 				{m.common_lesson_label_teacher()}
 			</label>
-			<Select type="single" value={formTeacherId} onValueChange={(v) => (formTeacherId = v ?? "")}>
+      <Select type="single" value={formTeacherId} onValueChange={(v) => (formTeacherId = v ?? "")} disabled={availableTeachers.length === 0}>
 				<SelectTrigger class="h-9 text-sm w-full">
 					{teachers.find(teach => String(teach.id) === formTeacherId) ? (getLocale() === "ar" ? (teachers.find(teach => String(teach.id) === formTeacherId).name_ar || teachers.find(teach => String(teach.id) === formTeacherId).full_name) : teachers.find(teach => String(teach.id) === formTeacherId).full_name) : m.common_lesson_option_no_teacher()}
 				</SelectTrigger>
 				<SelectContent>
 					<SelectItem value="">{m.common_lesson_option_no_teacher()}</SelectItem>
-					{#each teachers as teach (teach.id)}
+                    {#each availableTeachers as teach (teach.id)}
 						<SelectItem value={String(teach.id)}>{getLocale() === "ar" ? (teach.name_ar || teach.full_name) : teach.full_name}</SelectItem>
 					{/each}
 				</SelectContent>

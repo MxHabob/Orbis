@@ -33,11 +33,13 @@ import { Skeleton } from "@orbis/ui-svelte/skeleton";
 
 let {
   orgId,
+  fixedClassId = "",
   editData,
   onSuccess,
   onCancel,
 }: {
   orgId: string;
+  fixedClassId?: string;
   editData?: ClassSubject | null;
   onSuccess?: () => void;
   onCancel?: () => void;
@@ -54,7 +56,7 @@ let periodId = $state("");
 let schemeId = $state("");
 
 $effect(() => {
-  classId = editData ? String(editData.class_id ?? "") : "";
+  classId = fixedClassId || (editData ? String(editData.class_id ?? "") : "");
   subjectId = editData ? String(editData.subject_id ?? "") : "";
   teacherId = editData ? String(editData.primary_teacher_id ?? "") : "";
   weeklyHours = editData ? Number(editData.weekly_hours ?? 4) : 4;
@@ -166,16 +168,18 @@ async function handleSubmit() {
       />
     </div>
 
-    <!-- Class -->
-    <div class="flex flex-col gap-1.5">
-      <Label class="text-xs font-semibold text-muted-foreground">{m.common_word_semester()} *</Label>
-      <ClassSelect
-        bind:value={classId}
-        {classes}
-        placeholder={m.common_cs_form_select_class()}
-        class="h-9 text-sm"
-      />
-    </div>
+    {#if !fixedClassId}
+      <!-- Class -->
+      <div class="flex flex-col gap-1.5">
+        <Label class="text-xs font-semibold text-muted-foreground">{m.common_word_semester()} *</Label>
+        <ClassSelect
+          bind:value={classId}
+          {classes}
+          placeholder={m.common_cs_form_select_class()}
+          class="h-9 text-sm"
+        />
+      </div>
+    {/if}
 
     <!-- Subject -->
     <div class="flex flex-col gap-1.5">

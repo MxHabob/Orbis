@@ -11,11 +11,13 @@ import type { ClassSubject } from "@orbis/sdk-core";
 let {
   open = $bindable(false),
   orgId,
+  classId = "",
   editData,
   onSuccess,
 }: {
   open?: boolean;
   orgId: string;
+  classId?: string;
   editData?: ClassSubject | null;
   onSuccess?: () => void;
 } = $props();
@@ -42,6 +44,7 @@ function handleSuccess() {
     <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
       <ClassSubjectForm
         {orgId}
+        fixedClassId={classId}
         {editData}
         onSuccess={handleSuccess}
         onCancel={() => (open = false)}

@@ -415,7 +415,13 @@ function getClassName(classId: string) {
 
 function getSubjectColor(subjectId: string) {
   const sub = subjects.find((s) => String(s.id) === String(subjectId)) as any;
-  return sub ? sub.color : "#9ca3af";
+  const savedColor = sub?.color || sub?.color_hex || sub?.accent_color;
+  if (savedColor) return savedColor;
+
+  const hash = String(subjectId)
+    .split("")
+    .reduce((total, character) => (total * 31 + character.charCodeAt(0)) >>> 0, 0);
+  return `hsl(${hash % 360} 65% 52%)`;
 }
 
 function openScheduler(day: number, slotId: string) {

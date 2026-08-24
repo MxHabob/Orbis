@@ -159,6 +159,7 @@ const rtl = $derived(getLocale() === "ar");
   bind:open={sheetOpen}
   
   orgId={orgId}
+  classId={classId}
   editData={editTarget}
   onSuccess={onSheetSuccess}
 />
