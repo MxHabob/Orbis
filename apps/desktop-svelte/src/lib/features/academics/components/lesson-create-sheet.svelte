@@ -24,6 +24,7 @@ let {
   lesson = null,
   subjects = [],
   teachers = [],
+  rooms = [],
   onSuccess,
 }: {
   open: boolean;
@@ -36,6 +37,7 @@ let {
   lesson?: any | null;
   subjects: any[];
   teachers: any[];
+  rooms: any[];
   onSuccess: () => void;
 } = $props();
 
@@ -53,6 +55,7 @@ let {
       {lesson}
 			{subjects} 
 			{teachers} 
+      {rooms}
 			onSuccess={() => {
 				open = false;
 				onSuccess();

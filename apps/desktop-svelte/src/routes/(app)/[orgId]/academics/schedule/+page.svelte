@@ -596,5 +596,6 @@ function openLessonEditor(lesson: any) {
   lesson={activeLesson}
   {subjects}
   {teachers}
+  {rooms}
   onSuccess={refetchLessons}
 />

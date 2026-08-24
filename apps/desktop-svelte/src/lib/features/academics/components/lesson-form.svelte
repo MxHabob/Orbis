@@ -26,6 +26,7 @@ let {
   lesson = null,
   subjects = [],
   teachers = [],
+  rooms = [],
   onSuccess,
   onCancel,
 }: {
@@ -38,6 +39,7 @@ let {
   lesson?: any | null;
   subjects: any[];
   teachers: any[];
+  rooms: any[];
   onSuccess: () => void;
   onCancel: () => void;
 } = $props();
@@ -127,8 +129,11 @@ async function checkScheduleConflict() {
       formDayOfWeek,
       formRoom || null,
     );
-    if (conflicts && conflicts.length > 0) {
-      const first = conflicts[0] as any;
+    const relevantConflicts = (conflicts ?? []).filter(
+      (conflict: any) => !lesson?.id || String(conflict.id) !== String(lesson.id),
+    );
+    if (relevantConflicts.length > 0) {
+      const first = relevantConflicts[0] as any;
       conflictError = m.common_lesson_sheet_conflict_err({
         type: String(first.conflict_type || ""),
       });
@@ -267,17 +272,28 @@ async function handleSubmit(e: SubmitEvent) {
 			</Select>
 		</div>
 
-		<!-- Room Number -->
+    <!-- Room Selector -->
 		<div class="flex flex-col gap-2 text-start">
 			<label for="sched_room" class="text-sm font-medium text-foreground">
 				{m.common_lesson_label_room()}
 			</label>
-			<Input 
-				id="sched_room"
-				type="text" 
-				bind:value={formRoom}
-				placeholder="e.g., Room 104"
-			/>
+      <Select type="single" value={formRoom} onValueChange={(v) => (formRoom = v ?? "")}>
+        <SelectTrigger id="sched_room" class="h-9 text-sm w-full">
+          {rooms.find((room) => String(room.id) === String(formRoom))
+            ? (getLocale() === "ar"
+              ? (rooms.find((room) => String(room.id) === String(formRoom)).name_ar || rooms.find((room) => String(room.id) === String(formRoom)).name)
+              : rooms.find((room) => String(room.id) === String(formRoom)).name)
+            : (getLocale() === "ar" ? "اختر الغرفة (اختياري)" : "Select room (optional)")}
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="">{getLocale() === "ar" ? "بدون غرفة" : "No room"}</SelectItem>
+          {#each rooms as room (room.id)}
+            <SelectItem value={String(room.id)}>
+              {getLocale() === "ar" ? (room.name_ar || room.name) : room.name}
+            </SelectItem>
+          {/each}
+        </SelectContent>
+      </Select>
 		</div>
 	</div>
 
