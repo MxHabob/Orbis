@@ -97,6 +97,8 @@ pub async fn create(
 #[derive(serde::Deserialize)]
 pub struct UpdateLessonRequest {
     pub teacher_id: Option<String>,
+    pub time_slot_id: Option<String>,
+    pub day_of_week: Option<i32>,
     pub room_id: Option<String>,
     pub topic: Option<String>,
     pub status: Option<String>,
@@ -115,6 +117,8 @@ pub async fn update(
     let mut active: scheduled_lesson::ActiveModel = existing.into();
 
     if let Some(tid) = req.teacher_id { active.teacher_id = Set(tid); }
+    if let Some(slot_id) = req.time_slot_id { active.time_slot_id = Set(slot_id); }
+    if let Some(day) = req.day_of_week { active.day_of_week = Set(day); }
     if let Some(rid) = req.room_id { active.room_id = Set(Some(rid)); }
     if let Some(t) = req.topic { active.topic = Set(Some(t)); }
     if let Some(s) = req.status { active.status = Set(s); }
