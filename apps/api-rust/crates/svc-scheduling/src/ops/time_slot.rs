@@ -99,6 +99,7 @@ pub async fn create(
 #[derive(serde::Deserialize)]
 pub struct UpdateTimeSlotPayload {
     pub name: Option<String>,
+    pub name_ar: Option<String>,
     pub start_time: Option<String>,
     pub end_time: Option<String>,
 }
@@ -123,6 +124,7 @@ pub async fn update(
 
     let mut active: time_slot::ActiveModel = existing.into();
     if let Some(n) = req.name { active.name = Set(Some(n)); }
+    if let Some(n) = req.name_ar { active.name_ar = Set(Some(n)); }
     if let Some(s) = req.start_time { active.start_time = Set(s); }
     if let Some(e) = req.end_time { active.end_time = Set(e); }
     active.updated_at = Set(Utc::now().to_rfc3339());

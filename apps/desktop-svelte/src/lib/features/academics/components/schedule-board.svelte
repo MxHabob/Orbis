@@ -25,6 +25,10 @@ interface Props {
   onDeleteLesson: (id: string) => void;
   onEditLesson?: (lesson: any) => void;
   onMoveLesson: (lesson: any, day: number, slotId: string) => void;
+  onAddTimeSlot?: () => void;
+  onEditTimeSlot?: (slot: any) => void;
+  onDeleteTimeSlot?: (slot: any) => void;
+  onSaveTimeSlot?: (slot: any | null, data: any) => void;
   onRetry: () => void;
 }
 
@@ -45,6 +49,10 @@ let {
   onDeleteLesson,
   onEditLesson,
   onMoveLesson,
+  onAddTimeSlot,
+  onEditTimeSlot,
+  onDeleteTimeSlot,
+  onSaveTimeSlot,
   onRetry,
 }: Props = $props();
 </script>
@@ -92,6 +100,10 @@ let {
       onDeleteLesson={onDeleteLesson}
       onEditLesson={onEditLesson}
       onMoveLesson={onMoveLesson}
+      onAddTimeSlot={onAddTimeSlot}
+      onEditTimeSlot={onEditTimeSlot}
+      onDeleteTimeSlot={onDeleteTimeSlot}
+      onSaveTimeSlot={onSaveTimeSlot}
     />
   </div>
 {/if}

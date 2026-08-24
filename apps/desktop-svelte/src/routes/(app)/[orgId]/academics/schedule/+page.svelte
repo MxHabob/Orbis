@@ -340,6 +340,58 @@ function refetchLessons() {
   });
 }
 
+function refetchTimeSlots() {
+  queryClient.invalidateQueries({
+    queryKey: ["time-slots", data.orgId, activePeriodId],
+  });
+}
+
+async function deleteTimeSlot(slot: any) {
+  const confirmed = await confirmStore.prompt({
+    title: m.common_action_delete() + "؟",
+    description: "سيتم حذف الفترة من الجدول.",
+    confirmText: m.common_action_delete(),
+    variant: "destructive",
+  });
+  if (!confirmed) return;
+  try {
+    await commands.scheduling.deleteTimeSlot(String(slot.id));
+    toast.success("تم حذف الفترة");
+    refetchTimeSlots();
+  } catch (error) {
+    toast.error(error instanceof Error ? error.message : "تعذر حذف الفترة");
+  }
+}
+
+async function saveTimeSlot(slot: any | null, slotData: any) {
+  if (slotData.duration_minutes <= 0) {
+    toast.error("يجب أن يكون وقت النهاية بعد وقت البداية");
+    return;
+  }
+  try {
+    if (slot) {
+      await commands.scheduling.updateTimeSlot(String(slot.id), slotData);
+      toast.success("تم تعديل الفترة");
+    } else {
+      const slotNumber = timeSlots.reduce(
+        (highest, item) => Math.max(highest, Number(item.slot_number) || 0),
+        0,
+      ) + 1;
+      await commands.scheduling.createTimeSlot({
+        period_id: activePeriodId,
+        slot_number: slotNumber,
+        ...slotData,
+        is_break: false,
+        applicable_days: "1,2,3,4,5",
+      });
+      toast.success("تمت إضافة الحصة");
+    }
+    refetchTimeSlots();
+  } catch (error) {
+    toast.error(error instanceof Error ? error.message : "تعذر حفظ الفترة");
+  }
+}
+
 function getSubjectName(subjectId: string) {
   const sub = subjects.find((s) => String(s.id) === String(subjectId));
   return sub
@@ -389,10 +441,13 @@ function openLessonEditor(lesson: any) {
 <div class="h-full w-full flex flex-col items-stretch overflow-hidden">
   <div class="flex-1 min-h-0 min-w-0 w-full flex flex-col p-4 sm:p-6 gap-4 sm:gap-6 overflow-y-auto">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
-      <div class="text-start">
-        <h1 class="text-lg sm:text-xl font-bold text-foreground">{m.common_exams_detail_schedule()}</h1>
-        <p class="text-xs text-muted-foreground mt-1">{m.common_schedule_page_view_by()}</p>
-      </div>
+      <ScheduleFilterControls
+        bind:viewMode
+        bind:selectedClassId
+        bind:selectedTeacherId
+        {classes}
+        {teachers}
+      />
       <Button
         variant="default"
         class="w-full sm:w-auto h-9 text-xs font-semibold gap-2 cursor-pointer"
@@ -402,15 +457,6 @@ function openLessonEditor(lesson: any) {
         {m.common_schedule_ai_auto_scheduler()}
       </Button>
     </div>
-
-    <!-- Timetable Header Filter Controls -->
-    <ScheduleFilterControls
-      bind:viewMode
-      bind:selectedClassId
-      bind:selectedTeacherId
-      {classes}
-      {teachers}
-    />
 
     <!-- Timetable Grid Content -->
     <ScheduleBoard
@@ -430,6 +476,10 @@ function openLessonEditor(lesson: any) {
       onDeleteLesson={handleDeleteLesson}
       onEditLesson={openLessonEditor}
       onMoveLesson={handleMoveLesson}
+      onAddTimeSlot={() => {}}
+      onEditTimeSlot={() => {}}
+      onDeleteTimeSlot={(slot) => deleteTimeSlot(slot)}
+      onSaveTimeSlot={saveTimeSlot}
       onRetry={refetchLessons}
     />
   </div>

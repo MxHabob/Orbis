@@ -1,6 +1,6 @@
 <script lang="ts">
 import { fade } from "svelte/transition";
-import { Plus, Clock } from "@lucide/svelte";
+import { Plus, Clock, Pencil, Trash2, Save, X } from "@lucide/svelte";
 import TimetableCard from "./timetable-card.svelte";
 
 let {
@@ -20,6 +20,10 @@ let {
   onDeleteLesson,
   onEditLesson,
   onMoveLesson,
+  onAddTimeSlot,
+  onEditTimeSlot,
+  onDeleteTimeSlot,
+  onSaveTimeSlot,
 }: {
   timeSlots: any[];
   weekdays: any[];
@@ -37,7 +41,61 @@ let {
   onDeleteLesson: (id: string) => void;
   onEditLesson?: (lesson: any) => void;
   onMoveLesson: (lesson: any, targetDay: number, targetSlotId: string) => void;
+  onAddTimeSlot?: () => void;
+  onEditTimeSlot?: (slot: any) => void;
+  onDeleteTimeSlot?: (slot: any) => void;
+  onSaveTimeSlot?: (slot: any | null, data: any) => void;
 } = $props();
+
+let editingSlotId = $state<string | null>(null);
+let isAddingSlot = $state(false);
+let draftNameAr = $state("");
+let draftName = $state("");
+let draftStartTime = $state("");
+let draftEndTime = $state("");
+
+function startSlotEdit(slot: any) {
+  editingSlotId = String(slot.id);
+  isAddingSlot = false;
+  draftNameAr = slot.name_ar || "";
+  draftName = slot.name || "";
+  draftStartTime = String(slot.start_time || "").slice(0, 5);
+  draftEndTime = String(slot.end_time || "").slice(0, 5);
+}
+
+function startSlotAdd() {
+  editingSlotId = null;
+  isAddingSlot = true;
+  const nextNumber = timeSlots.reduce((highest, slot) => Math.max(highest, Number(slot.slot_number) || 0), 0) + 1;
+  draftNameAr = `الحصة ${nextNumber}`;
+  draftName = `Period ${nextNumber}`;
+  draftStartTime = "";
+  draftEndTime = "";
+}
+
+function cancelSlotEdit() {
+  editingSlotId = null;
+  isAddingSlot = false;
+}
+
+function saveSlotEdit() {
+  if (!draftNameAr.trim() || !draftStartTime || !draftEndTime || !onSaveTimeSlot) return;
+  onSaveTimeSlot(
+    editingSlotId ? timeSlots.find((slot) => String(slot.id) === editingSlotId) : null,
+    {
+      name: draftName.trim() || draftNameAr.trim(),
+      name_ar: draftNameAr.trim(),
+      start_time: draftStartTime,
+      end_time: draftEndTime,
+      duration_minutes: (() => {
+        const [startHour, startMinute] = draftStartTime.split(":").map(Number);
+        const [endHour, endMinute] = draftEndTime.split(":").map(Number);
+        return endHour * 60 + endMinute - (startHour * 60 + startMinute);
+      })(),
+    },
+  );
+  cancelSlotEdit();
+}
 
 // Retrieve lesson (real or draft) inside a grid cell
 function getLessonInCell(day: number, slotId: string) {
@@ -139,8 +197,13 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
     in:fade={{ duration: 150 }}
   >
     <!-- 1. Header Row (Sticky Top) -->
-    <div class="bg-muted/60 text-foreground p-2.5 md:p-3 font-bold text-center flex items-center justify-center border-b border-border text-[10px] sticky top-0 inset-s-0 z-30 shadow-xs">
-      {locale === "ar" ? "الحصة" : "Period"}
+    <div class="bg-muted/60 text-foreground p-2.5 md:p-3 font-bold text-center flex items-center justify-center gap-1 border-b border-border text-[10px] sticky top-0 inset-s-0 z-30 shadow-xs">
+      <span>{locale === "ar" ? "الحصة" : "Period"}</span>
+      {#if onAddTimeSlot}
+          <button type="button" class="rounded p-1 text-muted-foreground hover:bg-primary/10 hover:text-primary" onclick={startSlotAdd} aria-label={locale === "ar" ? "إضافة حصة" : "Add period"} title={locale === "ar" ? "إضافة حصة" : "Add period"}>
+          <Plus size={13} />
+        </button>
+      {/if}
     </div>
     {#each weekdays as day (day.value)}
       <div class="bg-muted/60 text-foreground p-2.5 md:p-3 font-bold text-center flex items-center justify-center border-b border-border text-[10px] sticky top-0 z-20 shadow-xs">
@@ -149,18 +212,59 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
     {/each}
 
     <!-- 2. Rows (Periods & Breaks) -->
+    {#if isAddingSlot}
+      <div class="bg-muted/30 border-border p-2 flex flex-col gap-1 justify-center border-b sticky inset-s-0 z-10">
+        <input class="h-7 w-full rounded border border-border bg-background px-1 text-[10px]" bind:value={draftNameAr} placeholder="اسم الحصة" aria-label="اسم الحصة" />
+        <div class="flex gap-1">
+          <input class="h-6 min-w-0 w-1/2 rounded border border-border bg-background px-1 text-[9px]" bind:value={draftStartTime} type="time" aria-label="وقت البداية" />
+          <input class="h-6 min-w-0 w-1/2 rounded border border-border bg-background px-1 text-[9px]" bind:value={draftEndTime} type="time" aria-label="وقت النهاية" />
+        </div>
+        <div class="flex justify-center gap-1">
+          <button type="button" class="rounded p-1 text-primary hover:bg-primary/10" onclick={saveSlotEdit} aria-label="حفظ"><Save size={12} /></button>
+          <button type="button" class="rounded p-1 text-muted-foreground hover:text-destructive" onclick={cancelSlotEdit} aria-label="إلغاء"><X size={12} /></button>
+        </div>
+      </div>
+      <div class="bg-muted/20 border-b border-border" style="grid-column: span {weekdays.length};"></div>
+    {/if}
+
     {#each orderedTimeSlots as slot (slot.id)}
       {@const isBreak = slot.is_break === 1 || slot.is_break === true}
 
       <!-- Row Period Info Column (Sticky Start for Horizontal Scroll) -->
       <div class="bg-muted/30 border-border p-2 font-semibold text-center flex flex-col justify-center items-center gap-1 min-h-24 h-full border-b sticky inset-s-0 z-10 backdrop-blur-xs">
-        <span class="text-[10px] tracking-wide font-bold text-foreground truncate max-w-31.25">
-          {locale === "ar" ? (slot.name_ar || slot.name) : (slot.name || slot.name_ar)}
-        </span>
-        <span class="text-muted-foreground text-[9px] font-mono font-medium flex items-center gap-1 shrink-0">
-          <Clock size={10} class="opacity-70" />
-          <span dir="ltr" class="tabular-nums">{slot.start_time} - {slot.end_time}</span>
-        </span>
+        {#if editingSlotId === String(slot.id)}
+          <input class="h-7 w-full rounded border border-border bg-background px-1 text-[10px]" bind:value={draftNameAr} aria-label="اسم الحصة" />
+          <div class="flex w-full gap-1">
+            <input class="h-6 min-w-0 w-1/2 rounded border border-border bg-background px-1 text-[9px]" bind:value={draftStartTime} type="time" aria-label="وقت البداية" />
+            <input class="h-6 min-w-0 w-1/2 rounded border border-border bg-background px-1 text-[9px]" bind:value={draftEndTime} type="time" aria-label="وقت النهاية" />
+          </div>
+          <span class="flex items-center gap-1">
+            <button type="button" class="rounded p-1 text-primary hover:bg-primary/10" onclick={saveSlotEdit} aria-label="حفظ"><Save size={12} /></button>
+            <button type="button" class="rounded p-1 text-muted-foreground hover:text-destructive" onclick={cancelSlotEdit} aria-label="إلغاء"><X size={12} /></button>
+          </span>
+        {:else}
+          <span class="text-[10px] tracking-wide font-bold text-foreground truncate max-w-31.25">
+            {locale === "ar" ? (slot.name_ar || slot.name) : (slot.name || slot.name_ar)}
+          </span>
+          <span class="text-muted-foreground text-[9px] font-mono font-medium flex items-center gap-1 shrink-0">
+            <Clock size={10} class="opacity-70" />
+            <span dir="ltr" class="tabular-nums">{slot.start_time} - {slot.end_time}</span>
+          </span>
+        {/if}
+        {#if (onEditTimeSlot || onDeleteTimeSlot) && editingSlotId !== String(slot.id)}
+          <span class="flex items-center gap-0.5">
+            {#if onEditTimeSlot}
+              <button type="button" class="rounded p-1 text-muted-foreground hover:bg-primary/10 hover:text-primary" onclick={() => { startSlotEdit(slot); onEditTimeSlot?.(slot); }} aria-label={locale === "ar" ? "تعديل الفترة" : "Edit period"} title={locale === "ar" ? "تعديل الفترة" : "Edit period"}>
+                <Pencil size={11} />
+              </button>
+            {/if}
+            {#if onDeleteTimeSlot}
+              <button type="button" class="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" onclick={() => onDeleteTimeSlot?.(slot)} aria-label={locale === "ar" ? "حذف الفترة" : "Delete period"} title={locale === "ar" ? "حذف الفترة" : "Delete period"}>
+                <Trash2 size={11} />
+              </button>
+            {/if}
+          </span>
+        {/if}
       </div>
 
       <!-- Rows Data Columns -->

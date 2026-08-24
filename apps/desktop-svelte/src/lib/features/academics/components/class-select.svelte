@@ -30,35 +30,15 @@ let {
   onchange?: (val: string | null) => void;
 } = $props();
 
-const GRADE_LEVEL_NAMES: Record<string, { en: string; ar: string }> = {
-  kg1: { en: "KG 1", ar: "روضة أولى" },
-  kg2: { en: "KG 2", ar: "روضة ثانية" },
-  grade1: { en: "Grade 1", ar: "الصف الأول" },
-  grade2: { en: "Grade 2", ar: "الصف الثاني" },
-  grade3: { en: "Grade 3", ar: "الصف الثالث" },
-  grade4: { en: "Grade 4", ar: "الصف الرابع" },
-  grade5: { en: "Grade 5", ar: "الصف الخامس" },
-  grade6: { en: "Grade 6", ar: "الصف السادس" },
-  grade7: { en: "Grade 7", ar: "الصف السابع" },
-  grade8: { en: "Grade 8", ar: "الصف الثامن" },
-  grade9: { en: "Grade 9", ar: "الصف التاسع" },
-  grade10: { en: "Grade 10", ar: "الصف العاشر" },
-  grade11: { en: "Grade 11", ar: "الصف الحادي عشر" },
-  grade12: { en: "Grade 12", ar: "الصف الثاني عشر" },
-};
-
-function formatGradeLevel(level?: string | null): string {
-  if (!level) return "";
-  const key = String(level).trim().toLowerCase();
-  const found = GRADE_LEVEL_NAMES[key];
-  return found ? l(found.ar, found.en) : String(level);
-}
-
 function getClassLabel(cls: any) {
   if (!cls) return "";
   const name = l(cls.name_ar || cls.nameAr, cls.name || cls.nameEn);
   if (name) return name;
-  if (cls.level) return formatGradeLevel(cls.level);
+  const level = l(
+    cls.grade_level_ar || cls.level_ar,
+    cls.grade_level || cls.level,
+  );
+  if (level) return level;
   return String(cls.id || "");
 }
 
