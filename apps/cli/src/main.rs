@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 use colored::*;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
+use sea_orm::{ConnectionTrait, Database, DbBackend, Statement, TransactionTrait};
 
 pub mod commands;
 pub mod core;
@@ -115,31 +116,116 @@ async fn handle_reset_database() {
     match confirm {
         Ok(true) => {
             ui::output::print_warning("Wiping database...");
-            let config = core::config::CliConfig::default();
-            let path = config
-                .db_url
-                .replace("sqlite://", "")
-                .replace("?mode=rwc", "")
-                .replace("?mode=ro", "");
-            if std::path::Path::new(&path).exists() {
-                if let Err(e) = std::fs::remove_file(&path) {
-                    ui::output::print_error(&format!("Failed to delete database: {}", e));
-                } else {
-                    ui::output::print_success(
-                        "Database reset successfully. You can now re-initialize the system.",
-                    );
+            let db_url = match std::env::var("DATABASE_URL") {
+                Ok(url) if !url.trim().is_empty() => url,
+                _ => {
+                    let provider = inquire::Select::new(
+                        "Select database to reset:",
+                        vec!["SQLite", "PostgreSQL"],
+                    )
+                    .prompt();
+
+                    match provider {
+                        Ok("PostgreSQL") => match inquire::Text::new(
+                            "Enter PostgreSQL Connection String:",
+                        )
+                        .prompt()
+                        {
+                            Ok(url) => url,
+                            Err(e) => {
+                                ui::output::print_error(&format!("Reset cancelled: {e}"));
+                                return;
+                            }
+                        },
+                        Ok("SQLite") => core::config::CliConfig::default().db_url,
+                        Ok(_) | Err(_) => {
+                            println!("{}", "[-] Reset cancelled.".dimmed());
+                            return;
+                        }
+                    }
+                }
+            };
+
+            if is_postgres_url(&db_url) {
+                let postgres_confirm = inquire::Confirm::new(
+                    "PostgreSQL data will be permanently deleted, while tables and the database remain. Continue?",
+                )
+                .with_default(false)
+                .prompt();
+
+                if !matches!(postgres_confirm, Ok(true)) {
+                    println!("{}", "[-] Reset cancelled.".dimmed());
+                    return;
+                }
+
+                match reset_postgres(&db_url).await {
+                    Ok(()) => ui::output::print_success(
+                        "PostgreSQL data reset successfully. You can now re-initialize the system.",
+                    ),
+                    Err(e) => ui::output::print_error(&format!("Failed to reset PostgreSQL: {e}")),
                 }
             } else {
-                ui::output::print_warning(&format!(
-                    "Database file not found, nothing to reset. Path attempted: {}",
-                    path
-                ));
+                let path = sqlite_path(&db_url);
+                if std::path::Path::new(&path).exists() {
+                    if let Err(e) = std::fs::remove_file(&path) {
+                        ui::output::print_error(&format!("Failed to delete database: {}", e));
+                    } else {
+                        ui::output::print_success(
+                            "Database reset successfully. You can now re-initialize the system.",
+                        );
+                    }
+                } else {
+                    ui::output::print_warning(&format!(
+                        "Database file not found, nothing to reset. Path attempted: {}",
+                        path
+                    ));
+                }
             }
         }
         _ => {
             println!("{}", "[-] Reset cancelled.".dimmed());
         }
     }
+}
+
+fn is_postgres_url(url: &str) -> bool {
+    url.starts_with("postgres://") || url.starts_with("postgresql://")
+}
+
+fn sqlite_path(url: &str) -> String {
+    url.replace("sqlite://", "")
+        .replace("?mode=rwc", "")
+        .replace("?mode=ro", "")
+}
+
+async fn reset_postgres(url: &str) -> Result<()> {
+    let db = Database::connect(url).await?;
+    let txn = db.begin().await?;
+    let tables = txn
+        .query_all(Statement::from_string(
+            DbBackend::Postgres,
+            "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE' ORDER BY table_name"
+                .to_string(),
+        ))
+        .await?;
+
+    let table_names: Vec<String> = tables
+        .into_iter()
+        .map(|row| row.try_get::<String>("", "table_name"))
+        .collect::<Result<_, _>>()?;
+
+    if !table_names.is_empty() {
+        let qualified_tables = table_names
+            .iter()
+            .map(|name| format!("\"public\".\"{}\"", name.replace('"', "\"\"")))
+            .collect::<Vec<_>>()
+            .join(", ");
+        txn.execute_unprepared(&format!("TRUNCATE TABLE {qualified_tables} RESTART IDENTITY CASCADE"))
+            .await?;
+    }
+
+    txn.commit().await.map_err(|e| anyhow!(e))?;
+    Ok(())
 }
 
 #[tokio::main]

@@ -10,7 +10,7 @@
 //! academic_policies, grade_scales, calculation_policies, pass_fail_policies,
 //! period_templates, default_permissions, currencies, and chart_of_accounts.
 
-use sea_orm::{DatabaseConnection, Statement, ConnectionTrait};
+use sea_orm::{ConnectionTrait, DatabaseConnection, Statement, TransactionTrait};
 use shared_kernel::errors::AppError;
 use uuid::Uuid;
 use chrono::Utc;
@@ -46,6 +46,26 @@ pub struct BootstrapResult {
 /// Main entry point — creates everything from a single call.
 pub async fn bootstrap_full(
     db: &DatabaseConnection,
+    payload: BootstrapPayload,
+) -> Result<BootstrapResult, AppError> {
+    let txn = db
+        .begin()
+        .await
+        .map_err(|e| AppError::internal(format!("Failed to begin bootstrap transaction: {e}")))?;
+
+    match bootstrap_full_inner(&txn, payload).await {
+        Ok(result) => {
+            txn.commit()
+                .await
+                .map_err(|e| AppError::internal(format!("Failed to commit bootstrap transaction: {e}")))?;
+            Ok(result)
+        }
+        Err(error) => Err(error),
+    }
+}
+
+async fn bootstrap_full_inner<C: ConnectionTrait>(
+    db: &C,
     payload: BootstrapPayload,
 ) -> Result<BootstrapResult, AppError> {
     let now = Utc::now().to_rfc3339();
@@ -395,7 +415,7 @@ pub async fn bootstrap_full(
         let actions_json = serde_json::to_string(&perm.actions).unwrap_or_else(|_| "[]".to_string());
         db.execute(Statement::from_sql_and_values(
             db.get_database_backend(),
-            "INSERT OR REPLACE INTO role_permissions (role, document_type, level, only_if_creator, actions, created_at) VALUES ($1, $2, 0, 0, $3, $4)",
+            "INSERT INTO role_permissions (role, document_type, level, only_if_creator, actions, created_at) VALUES ($1, $2, 0, 0, $3, $4) ON CONFLICT (role, document_type) DO UPDATE SET level = EXCLUDED.level, only_if_creator = EXCLUDED.only_if_creator, actions = EXCLUDED.actions, created_at = EXCLUDED.created_at",
             vec![
                 perm.role.clone().into(),
                 perm.document_type.clone().into(),
@@ -539,8 +559,8 @@ fn flatten_acc_nodes(
     }
 }
 
-async fn seed_chart_of_accounts(
-    db: &DatabaseConnection,
+async fn seed_chart_of_accounts<C: ConnectionTrait>(
+    db: &C,
     org_id: &str,
     currency: &str,
     now: &str,

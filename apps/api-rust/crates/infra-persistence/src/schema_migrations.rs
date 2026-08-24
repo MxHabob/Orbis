@@ -5,6 +5,13 @@ use tracing::info;
 
 /// Apply P0 migrations (safe to call on every startup).
 pub async fn run_p0_migrations(db: &DatabaseConnection) -> Result<(), DbErr> {
+    // P0 is the legacy SQLite schema-repair bundle. PostgreSQL uses the
+    // dedicated baseline schema and must not execute SQLite catalog queries.
+    if db.get_database_backend() == sea_orm::DbBackend::Postgres {
+        info!("Skipping SQLite-only P0 migrations for PostgreSQL");
+        return Ok(());
+    }
+
     migrate_academic_policies_branch_overrides(db).await?;
     migrate_process_log_schema(db).await?;
     migrate_grading_architecture(db).await?;
