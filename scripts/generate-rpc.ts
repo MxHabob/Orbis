@@ -612,6 +612,10 @@ function main() {
   console.log("Parsing Commands...");
   const ops = parseOps();
   console.log(`Found ${ops.length} ops.`);
+  const schedulingLessonOps = ops
+    .filter(op => op.domain === "scheduling" && op.opFile === "lesson")
+    .map(op => op.funcName);
+  console.log(`Scheduling lesson ops: ${schedulingLessonOps.join(", ")}`);
   
   console.log("Generating TS Interfaces...");
   generateTsInterfaces(ops, knownTypes);

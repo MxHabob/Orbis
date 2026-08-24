@@ -56,9 +56,9 @@ pub async fn scheduling_lesson_delete(state: State<'_, Arc<AppState>>, lesson_id
 }
 
 #[tauri::command]
-pub async fn scheduling_lesson_check_conflicts(state: State<'_, Arc<AppState>>, period_id: String, teacher_id: String, time_slot_id: String, day_of_week: i32, room_id: Option<String>) -> CmdResult<serde_json::Value> {
+pub async fn scheduling_lesson_check_conflicts(state: State<'_, Arc<AppState>>, period_id: String, class_id: String, teacher_id: String, time_slot_id: String, day_of_week: i32, room_id: Option<String>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::lesson::check_conflicts(&ctx, &period_id, &teacher_id, &time_slot_id, day_of_week, room_id).await.map_err(CommandError::from)?;
+    let result = ops::lesson::check_conflicts(&ctx, &period_id, &class_id, &teacher_id, &time_slot_id, day_of_week, room_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 

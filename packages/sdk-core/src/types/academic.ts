@@ -34,6 +34,7 @@ export interface ClassSubject {
   theory_hours?: number | null;
   practical_hours?: number | null;
   assessment_config?: string | null;
+  scheme_id?: string | null;
   is_active: number;
   created_at: string;
   updated_at: string;

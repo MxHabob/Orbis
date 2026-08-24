@@ -8,7 +8,7 @@ export interface SchedulingCommands {
   createLesson(data: any): Promise<any>;
   updateLesson(lessonId: string, data: any): Promise<any>;
   deleteLesson(lessonId: string): Promise<void>;
-  checkConflicts(periodId: string, teacherId: string, timeSlotId: string, dayOfWeek: number, roomId: string | null): Promise<any[]>;
+  checkConflicts(periodId: string, classId: string, teacherId: string, timeSlotId: string, dayOfWeek: number, roomId: string | null): Promise<any[]>;
   listRooms(): Promise<any[]>;
   createRoom(data: any): Promise<any>;
   updateRoom(roomId: string, data: any): Promise<any>;

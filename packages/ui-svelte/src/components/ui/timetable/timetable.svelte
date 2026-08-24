@@ -30,7 +30,7 @@ let {
   lessons: any[];
   draftLessons: any[];
   previewDraft: boolean;
-  viewMode: "class" | "teacher";
+  viewMode: "whole" | "class" | "teacher" | "subject" | "room";
   locale: string;
   getSubjectName: (id: string) => string;
   getTeacherName: (id: string) => string;
@@ -97,17 +97,17 @@ function saveSlotEdit() {
   cancelSlotEdit();
 }
 
-// Retrieve lesson (real or draft) inside a grid cell
-function getLessonInCell(day: number, slotId: string) {
+// Retrieve lessons (real or draft) inside a grid cell
+function getLessonsInCell(day: number, slotId: string) {
   if (previewDraft) {
-    const draft = draftLessons.find(
+    const drafts = draftLessons.filter(
       (l: any) =>
         Number(l.day_of_week) === day &&
         String(l.time_slot_id) === String(slotId),
     );
-    if (draft) return draft;
+    if (drafts.length > 0) return drafts;
   }
-  return lessons.find(
+  return lessons.filter(
     (l: any) =>
       Number(l.day_of_week) === day &&
       String(l.time_slot_id) === String(slotId),
@@ -279,7 +279,7 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
         </div>
       {:else}
         {#each weekdays as day (day.value)}
-          {@const lesson = getLessonInCell(day.value, slot.id)}
+          {@const cellLessons = getLessonsInCell(day.value, slot.id)}
           {@const isAvailable = isSlotAvailable(slot, day.value)}
           {@const isDragOver = dragOverCell?.day === day.value && dragOverCell?.slotId === slot.id}
           
@@ -294,30 +294,36 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
           >
             {#if !isAvailable}
               <span class="text-[9px] text-muted-foreground/40">-</span>
-            {:else if lesson}
-              <TimetableCard 
-                {lesson} 
-                {viewMode} 
-                {locale} 
-                {getSubjectName} 
-                {getTeacherName} 
-                {getClassName} 
-                subjectColor={getSubjectColor(lesson.subject_id)}
-                onDelete={onDeleteLesson}
-                onEdit={onEditLesson}
-                ondragstart={(e) => handleDragStart(e, lesson)}
-              />
             {:else}
-              <!-- Empty Cell Add Trigger (Class Mode only) -->
-              <button 
-                type="button"
-                onclick={() => onCellClick(day.value, slot.id)}
-                class="w-full h-full border border-dashed border-transparent hover:border-primary/30 hover:bg-primary/3 rounded-md flex items-center justify-center text-muted-foreground/0 hover:text-primary transition-all duration-200 cursor-pointer p-2 min-h-17.5"
-                disabled={viewMode !== "class" || !isAvailable}
-                title={locale === "ar" ? "إضافة حصة جديدة" : "Schedule new lesson"}
-              >
-                <Plus size={16} class="transition-transform duration-200 hover:scale-110" />
-              </button>
+              {#if cellLessons.length > 0}
+                <div class="flex w-full h-full min-h-20 flex-col gap-1">
+                  {#each cellLessons as lesson (lesson.id)}
+                    <TimetableCard
+                      {lesson}
+                      {viewMode}
+                      {locale}
+                      {getSubjectName}
+                      {getTeacherName}
+                      {getClassName}
+                      subjectColor={getSubjectColor(lesson.subject_id)}
+                      onDelete={onDeleteLesson}
+                      onEdit={onEditLesson}
+                      ondragstart={(e) => handleDragStart(e, lesson)}
+                    />
+                  {/each}
+                </div>
+              {:else}
+                <!-- Empty Cell Add Trigger (Class Mode only) -->
+                <button
+                  type="button"
+                  onclick={() => onCellClick(day.value, slot.id)}
+                  class="w-full h-full border border-dashed border-transparent hover:border-primary/30 hover:bg-primary/3 rounded-md flex items-center justify-center text-muted-foreground/0 hover:text-primary transition-all duration-200 cursor-pointer p-2 min-h-17.5"
+                  disabled={viewMode !== "class" || !isAvailable}
+                  title={locale === "ar" ? "إضافة حصة جديدة" : "Schedule new lesson"}
+                >
+                  <Plus size={16} class="transition-transform duration-200 hover:scale-110" />
+                </button>
+              {/if}
             {/if}
           </div>
         {/each}

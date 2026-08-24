@@ -121,6 +121,7 @@ async function checkScheduleConflict() {
   try {
     const conflicts = await commands.scheduling.checkConflicts(
       periodId,
+      classId,
       formTeacherId || "no_teacher",
       formTimeSlotId,
       formDayOfWeek,

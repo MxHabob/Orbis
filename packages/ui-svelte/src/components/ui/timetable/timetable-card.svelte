@@ -15,7 +15,7 @@ let {
   onEdit,
 }: {
   lesson: any;
-  viewMode: "class" | "teacher";
+  viewMode: "whole" | "class" | "teacher" | "subject" | "room";
   locale: string;
   getSubjectName: (id: string) => string;
   getTeacherName: (id: string) => string;

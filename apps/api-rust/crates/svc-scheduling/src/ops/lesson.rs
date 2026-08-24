@@ -1,7 +1,7 @@
 //! Lesson operations — scheduled class periods.
 
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, ModelTrait, QueryFilter, QueryOrder, Condition};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Condition};
 use uuid::Uuid;
 
 use shared_kernel::context::ServiceContext;
@@ -9,6 +9,8 @@ use shared_kernel::errors::AppError;
 use shared_kernel::traits::{AuditEntry, Permission};
 
 use crate::entities::scheduled_lesson;
+use svc_academic::entities::{class, class_subject, subject};
+use crate::entities::{room, time_slot};
 
 pub async fn list_by_class(
     ctx: &ServiceContext, period_id: &str, class_id: &str,
@@ -18,6 +20,7 @@ pub async fn list_by_class(
         .filter(scheduled_lesson::Column::OrgId.eq(&ctx.org_id))
         .filter(scheduled_lesson::Column::PeriodId.eq(period_id))
         .filter(scheduled_lesson::Column::ClassId.eq(class_id))
+        .filter(scheduled_lesson::Column::Status.ne("cancelled"))
         .order_by_asc(scheduled_lesson::Column::DayOfWeek)
         .all(&ctx.db).await?)
 }
@@ -30,7 +33,49 @@ pub async fn list_by_teacher(
         .filter(scheduled_lesson::Column::OrgId.eq(&ctx.org_id))
         .filter(scheduled_lesson::Column::PeriodId.eq(period_id))
         .filter(scheduled_lesson::Column::TeacherId.eq(teacher_id))
+        .filter(scheduled_lesson::Column::Status.ne("cancelled"))
         .order_by_asc(scheduled_lesson::Column::DayOfWeek)
+        .all(&ctx.db).await?)
+}
+
+pub async fn list_by_period(
+    ctx: &ServiceContext, period_id: &str,
+) -> Result<Vec<scheduled_lesson::Model>, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::ScheduleRead).await?;
+    Ok(scheduled_lesson::Entity::find()
+        .filter(scheduled_lesson::Column::OrgId.eq(&ctx.org_id))
+        .filter(scheduled_lesson::Column::PeriodId.eq(period_id))
+        .filter(scheduled_lesson::Column::Status.ne("cancelled"))
+        .order_by_asc(scheduled_lesson::Column::DayOfWeek)
+        .order_by_asc(scheduled_lesson::Column::TimeSlotId)
+        .all(&ctx.db).await?)
+}
+
+pub async fn list_by_subject(
+    ctx: &ServiceContext, period_id: &str, subject_id: &str,
+) -> Result<Vec<scheduled_lesson::Model>, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::ScheduleRead).await?;
+    Ok(scheduled_lesson::Entity::find()
+        .filter(scheduled_lesson::Column::OrgId.eq(&ctx.org_id))
+        .filter(scheduled_lesson::Column::PeriodId.eq(period_id))
+        .filter(scheduled_lesson::Column::SubjectId.eq(subject_id))
+        .filter(scheduled_lesson::Column::Status.ne("cancelled"))
+        .order_by_asc(scheduled_lesson::Column::DayOfWeek)
+        .order_by_asc(scheduled_lesson::Column::TimeSlotId)
+        .all(&ctx.db).await?)
+}
+
+pub async fn list_by_room(
+    ctx: &ServiceContext, period_id: &str, room_id: &str,
+) -> Result<Vec<scheduled_lesson::Model>, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::ScheduleRead).await?;
+    Ok(scheduled_lesson::Entity::find()
+        .filter(scheduled_lesson::Column::OrgId.eq(&ctx.org_id))
+        .filter(scheduled_lesson::Column::PeriodId.eq(period_id))
+        .filter(scheduled_lesson::Column::RoomId.eq(room_id))
+        .filter(scheduled_lesson::Column::Status.ne("cancelled"))
+        .order_by_asc(scheduled_lesson::Column::DayOfWeek)
+        .order_by_asc(scheduled_lesson::Column::TimeSlotId)
         .all(&ctx.db).await?)
 }
 
@@ -61,6 +106,21 @@ pub async fn create(
 
     let req: CreateLessonRequest = serde_json::from_value(data)
         .map_err(|e| AppError::validation(format!("Invalid create lesson payload: {e}")))?;
+
+    validate_placement(ctx, &req.period_id, &req.class_id, &req.class_subject_id, &req.subject_id, &req.teacher_id, &req.time_slot_id, req.room_id.as_deref()).await?;
+    let conflicts = check_conflicts_for_placement(
+        ctx,
+        &req.period_id,
+        &req.class_id,
+        &req.teacher_id,
+        &req.time_slot_id,
+        req.day_of_week,
+        req.room_id.as_deref(),
+        None,
+    ).await?;
+    if !conflicts.is_empty() {
+        return Err(AppError::conflict(format!("Schedule conflict with lesson {}", conflicts[0].id)));
+    }
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
@@ -114,6 +174,26 @@ pub async fn update(
         .map_err(|e| AppError::validation(format!("Invalid update lesson payload: {e}")))?;
 
     let existing = get(ctx, lesson_id).await?;
+    let teacher_id = req.teacher_id.as_deref().unwrap_or(&existing.teacher_id);
+    let time_slot_id = req.time_slot_id.as_deref().unwrap_or(&existing.time_slot_id);
+    let day_of_week = req.day_of_week.unwrap_or(existing.day_of_week);
+    let room_id = req.room_id.as_deref().or(existing.room_id.as_deref());
+
+    validate_placement(ctx, &existing.period_id, &existing.class_id, &existing.class_subject_id, &existing.subject_id, teacher_id, time_slot_id, room_id).await?;
+    let conflicts = check_conflicts_for_placement(
+        ctx,
+        &existing.period_id,
+        &existing.class_id,
+        teacher_id,
+        time_slot_id,
+        day_of_week,
+        room_id,
+        Some(lesson_id),
+    ).await?;
+    if !conflicts.is_empty() {
+        return Err(AppError::conflict(format!("Schedule conflict with lesson {}", conflicts[0].id)));
+    }
+
     let mut active: scheduled_lesson::ActiveModel = existing.into();
 
     if let Some(tid) = req.teacher_id { active.teacher_id = Set(tid); }
@@ -130,19 +210,108 @@ pub async fn update(
 pub async fn delete(ctx: &ServiceContext, lesson_id: &str) -> Result<(), AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleDelete).await?;
     let existing = get(ctx, lesson_id).await?;
-    existing.delete(&ctx.db).await?;
+    let mut active: scheduled_lesson::ActiveModel = existing.into();
+    active.status = Set("cancelled".into());
+    active.updated_at = Set(Utc::now().to_rfc3339());
+    active.update(&ctx.db).await?;
     Ok(())
+}
+
+async fn validate_placement(
+    ctx: &ServiceContext,
+    period_id: &str,
+    class_id: &str,
+    class_subject_id: &str,
+    subject_id: &str,
+    teacher_id: &str,
+    time_slot_id: &str,
+    room_id: Option<&str>,
+) -> Result<(), AppError> {
+    let class_record = class::Entity::find_by_id(class_id.to_string())
+        .one(&ctx.db).await?
+        .ok_or_else(|| AppError::not_found("class", class_id))?;
+    if class_record.period_id != period_id {
+        return Err(AppError::validation("Class does not belong to the selected period"));
+    }
+
+    let class_subject_record = class_subject::Entity::find_by_id(class_subject_id.to_string())
+        .one(&ctx.db).await?
+        .ok_or_else(|| AppError::not_found("class_subject", class_subject_id))?;
+    if class_subject_record.period_id != period_id || class_subject_record.class_id != class_id {
+        return Err(AppError::validation("Class subject does not belong to the selected class and period"));
+    }
+    if class_subject_record.subject_id != subject_id {
+        return Err(AppError::validation("Subject does not match the class subject"));
+    }
+    if class_subject_record.primary_teacher_id != teacher_id
+        && class_subject_record.assistant_teacher_id.as_deref() != Some(teacher_id)
+        && class_subject_record.substitute_teacher_id.as_deref() != Some(teacher_id)
+    {
+        return Err(AppError::validation("Teacher is not assigned to the class subject"));
+    }
+
+    let subject_exists = subject::Entity::find_by_id(subject_id.to_string()).one(&ctx.db).await?.is_some();
+    if !subject_exists {
+        return Err(AppError::not_found("subject", subject_id));
+    }
+
+    let slot = time_slot::Entity::find_by_id(time_slot_id.to_string())
+        .one(&ctx.db).await?
+        .ok_or_else(|| AppError::not_found("time_slot", time_slot_id))?;
+    if slot.period_id != period_id || slot.is_active == 0 {
+        return Err(AppError::validation("Time slot does not belong to the selected period"));
+    }
+
+    if let Some(rid) = room_id {
+        let room_record = room::Entity::find_by_id(rid.to_string()).one(&ctx.db).await?
+            .ok_or_else(|| AppError::not_found("room", rid))?;
+        if room_record.org_id != ctx.org_id || room_record.is_active == 0 {
+            return Err(AppError::validation("Room is not active for this organization"));
+        }
+    }
+    Ok(())
+}
+
+async fn check_conflicts_for_placement(
+    ctx: &ServiceContext,
+    period_id: &str,
+    class_id: &str,
+    teacher_id: &str,
+    time_slot_id: &str,
+    day_of_week: i32,
+    room_id: Option<&str>,
+    exclude_id: Option<&str>,
+) -> Result<Vec<scheduled_lesson::Model>, AppError> {
+    let mut condition = Condition::any()
+        .add(scheduled_lesson::Column::TeacherId.eq(teacher_id))
+        .add(scheduled_lesson::Column::ClassId.eq(class_id));
+    if let Some(rid) = room_id {
+        condition = condition.add(scheduled_lesson::Column::RoomId.eq(rid));
+    }
+
+    let mut query = scheduled_lesson::Entity::find()
+        .filter(scheduled_lesson::Column::OrgId.eq(&ctx.org_id))
+        .filter(scheduled_lesson::Column::PeriodId.eq(period_id))
+        .filter(scheduled_lesson::Column::TimeSlotId.eq(time_slot_id))
+        .filter(scheduled_lesson::Column::DayOfWeek.eq(day_of_week))
+        .filter(scheduled_lesson::Column::Status.ne("cancelled"))
+        .filter(condition);
+    if let Some(id) = exclude_id {
+        query = query.filter(scheduled_lesson::Column::Id.ne(id));
+    }
+    Ok(query.all(&ctx.db).await?)
 }
 
 /// Check for scheduling conflicts (same teacher or room at same time/day).
 pub async fn check_conflicts(
-    ctx: &ServiceContext, period_id: &str, teacher_id: &str,
+    ctx: &ServiceContext, period_id: &str, class_id: &str, teacher_id: &str,
     time_slot_id: &str, day_of_week: i32, room_id: Option<String>,
 ) -> Result<Vec<scheduled_lesson::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleRead).await?;
 
     let mut condition = Condition::any()
-        .add(scheduled_lesson::Column::TeacherId.eq(teacher_id));
+        .add(scheduled_lesson::Column::TeacherId.eq(teacher_id))
+        .add(scheduled_lesson::Column::ClassId.eq(class_id));
 
     if let Some(rid) = room_id {
         condition = condition.add(scheduled_lesson::Column::RoomId.eq(rid));
@@ -153,6 +322,7 @@ pub async fn check_conflicts(
         .filter(scheduled_lesson::Column::PeriodId.eq(period_id))
         .filter(scheduled_lesson::Column::TimeSlotId.eq(time_slot_id))
         .filter(scheduled_lesson::Column::DayOfWeek.eq(day_of_week))
+        .filter(scheduled_lesson::Column::Status.ne("cancelled"))
         .filter(condition)
         .all(&ctx.db).await?)
 }

@@ -1,60 +1,56 @@
 //! Schedule solver operations — AI/constraint-based schedule generation.
 
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, ModelTrait, QueryFilter, QueryOrder};
-use uuid::Uuid;
+use sea_orm::{ActiveValue::Set, ColumnTrait, EntityTrait, ModelTrait, QueryFilter, QueryOrder};
 
 use shared_kernel::context::ServiceContext;
 use shared_kernel::errors::AppError;
-use shared_kernel::traits::{AuditEntry, Permission};
+use shared_kernel::traits::Permission;
 
 use crate::entities::solve_job;
+use crate::repository::{SchedulingCommandRepo, SchedulingQueryRepo};
+use crate::services::{schedule::ScheduleService, solver::{StartSolveRequest, TimetableSolverService}};
+use infra_scheduler::RemoteTimefoldSolver;
 
 pub async fn start(
     ctx: &ServiceContext, period_id: &str,
-) -> Result<solve_job::Model, AppError> {
+) -> Result<crate::services::solver::SolveJobResponse, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleWrite).await?;
 
-    let now = Utc::now().to_rfc3339();
-    let id = Uuid::new_v4().to_string();
+    let query_repo = std::sync::Arc::new(SchedulingQueryRepo::new(ctx.db.clone()));
+    let cmd_repo = std::sync::Arc::new(SchedulingCommandRepo::new(ctx.db.clone()));
+    let schedule_service = std::sync::Arc::new(ScheduleService::new(cmd_repo.clone(), query_repo.clone()));
+    let solver_url = std::env::var("SOLVER_SERVICE_URL")
+        .ok()
+        .filter(|url| !url.is_empty())
+        .unwrap_or_else(|| "http://localhost:8081".to_string());
+    let solver = std::sync::Arc::new(RemoteTimefoldSolver::new(solver_url));
+    let service = TimetableSolverService::new(cmd_repo, query_repo, schedule_service, solver);
 
-    let model = solve_job::Model {
-        id: id.clone(), org_id: ctx.org_id.clone(),
-        job_type: "schedule".into(), target_id: period_id.to_string(),
-        mode: None, status: "pending".into(),
-        problem_snapshot: None, best_solution: None, score: None,
-        items_created: 0, error_message: None,
-        created_by: Some(ctx.actor.as_str().to_string()),
-        started_at: None, completed_at: None,
-        created_at: now.clone(), updated_at: now,
-    };
-
-    let active: solve_job::ActiveModel = model.into();
-    let created = active.insert(&ctx.db).await?;
-
-    ctx.audit.log(AuditEntry {
-        org_id: ctx.org_id.clone(), actor: ctx.actor.clone(),
-        action: "schedule_solve.start".into(), entity_type: "solve_job".into(),
-        entity_id: id, old_data: None,
-        new_data: Some(serde_json::to_value(&created).unwrap_or_default()),
-        correlation_id: ctx.correlation_id.clone(),
-    }).await?;
-
-    Ok(created)
+    service.start_schedule_solve(
+        &ctx.org_id,
+        ctx.actor.as_str(),
+        StartSolveRequest { period_id: period_id.to_string(), mode: Default::default() },
+    ).await
 }
 
 pub async fn get_job(ctx: &ServiceContext, job_id: &str) -> Result<solve_job::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleRead).await?;
-    solve_job::Entity::find_by_id(job_id.to_string())
+    let job = solve_job::Entity::find_by_id(job_id.to_string())
         .one(&ctx.db).await?
         .ok_or_else(|| AppError::not_found("solve_job", job_id))
+        ?;
+    if job.org_id != ctx.org_id {
+        return Err(AppError::not_found("solve_job", job_id));
+    }
+    Ok(job)
 }
 
 pub async fn list_jobs(ctx: &ServiceContext, period_id: &str) -> Result<Vec<solve_job::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleRead).await?;
     Ok(solve_job::Entity::find()
         .filter(solve_job::Column::OrgId.eq(&ctx.org_id))
-        .filter(solve_job::Column::JobType.eq("schedule"))
+        .filter(solve_job::Column::JobType.eq("timetable"))
         .filter(solve_job::Column::TargetId.eq(period_id))
         .order_by_desc(solve_job::Column::CreatedAt)
         .all(&ctx.db).await?)
@@ -64,6 +60,12 @@ pub async fn cancel(ctx: &ServiceContext, job_id: &str) -> Result<solve_job::Mod
     ctx.permissions.check(&ctx.actor, Permission::ScheduleWrite).await?;
 
     let existing = get_job(ctx, job_id).await?;
+    let solver_url = std::env::var("SOLVER_SERVICE_URL")
+        .ok()
+        .filter(|url| !url.is_empty())
+        .unwrap_or_else(|| "http://localhost:8081".to_string());
+    let solver = RemoteTimefoldSolver::new(solver_url);
+    let _ = infra_scheduler::ScheduleSolver::cancel(&solver, job_id).await;
     let mut active: solve_job::ActiveModel = existing.into();
     active.status = Set("cancelled".into());
     active.updated_at = Set(Utc::now().to_rfc3339());
@@ -94,7 +96,11 @@ pub async fn apply(ctx: &ServiceContext, job_id: &str) -> Result<solve_job::Mode
         cmd_repo.clone(),
         query_repo.clone(),
     ));
-    let scheduler = std::sync::Arc::new(infra_scheduler::NoOpScheduleSolver);
+    let solver_url = std::env::var("SOLVER_SERVICE_URL")
+        .ok()
+        .filter(|url| !url.is_empty())
+        .unwrap_or_else(|| "http://localhost:8081".to_string());
+    let scheduler = std::sync::Arc::new(RemoteTimefoldSolver::new(solver_url));
     let svc = crate::services::solver::TimetableSolverService::new(
         cmd_repo.clone(),
         query_repo.clone(),

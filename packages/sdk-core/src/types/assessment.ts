@@ -185,6 +185,7 @@ export interface Grade {
   grade_letter?: string | null;
   grade_points?: number | null;
   exam_type: string;
+  component_id?: string | null;
   semester: string;
   notes?: string | null;
   graded_by: string;
@@ -229,10 +230,26 @@ export interface PassFailPolicy {
   updated_at: string;
 }
 
+export interface PeriodOverallResult {
+  id: string;
+  org_id: string;
+  student_id: string;
+  enrollment_id: string;
+  period_id: string;
+  passed: number;
+  failed_subject_count: number;
+  policy_id?: string | null;
+  decision: string;
+  percentage?: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface PeriodScore {
   id: string;
   org_id: string;
   student_id: string;
+  enrollment_id?: string | null;
   period_id: string;
   class_subject_id: string;
   total_score?: number | null;

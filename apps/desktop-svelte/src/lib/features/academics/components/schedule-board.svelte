@@ -16,7 +16,7 @@ interface Props {
   lessons: any[];
   draftLessons: any[];
   previewDraft: boolean;
-  viewMode: "class" | "teacher";
+  viewMode: "whole" | "class" | "teacher" | "subject" | "room";
   getSubjectName: (id: string) => string;
   getTeacherName: (id: string) => string;
   getClassName: (id: string) => string;

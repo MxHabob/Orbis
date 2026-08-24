@@ -25,7 +25,9 @@ const queryClient = useQueryClient();
 let activePeriodId = $state<string>("");
 let selectedClassId = $state<string>("");
 let selectedTeacherId = $state<string>("");
-let viewMode = $state<"class" | "teacher">("class");
+let viewMode = $state<"whole" | "class" | "teacher" | "subject" | "room">("class");
+let selectedSubjectId = $state<string>("");
+let selectedRoomId = $state<string>("");
 
 // Scheduling Sheet Trigger State
 let isModalOpen = $state(false);
@@ -65,10 +67,18 @@ const usersQuery = createQuery(() => ({
   staleTime: 5 * 60 * 1000,
 }));
 
+const roomsQuery = createQuery(() => ({
+  queryKey: ["rooms", data.orgId],
+  queryFn: () => commands.scheduling.listRooms(),
+  enabled: !!data.orgId,
+  staleTime: 10 * 60 * 1000,
+}));
+
 const periods = $derived(periodsQuery.data ?? []);
 const classes = $derived(classesQuery.data ?? []);
 const subjects = $derived(subjectsQuery.data ?? []);
 const users = $derived(usersQuery.data ?? []);
+const rooms = $derived(roomsQuery.data ?? []);
 
 // Filter teachers list - strictly ONLY users with teacher role
 const teachers = $derived(
@@ -175,12 +185,38 @@ const teacherScheduleQuery = createQuery(() => ({
   staleTime: 2 * 60 * 1000,
 }));
 
+const wholeScheduleQuery = createQuery(() => ({
+  queryKey: ["whole-schedule", data.orgId, activePeriodId],
+  queryFn: async () => {
+    const schedules = await Promise.all(
+      classes.map((item: any) =>
+        commands.scheduling.listLessonsByClass(activePeriodId, String(item.id)),
+      ),
+    );
+    return schedules.flat();
+  },
+  enabled:
+    !!data.orgId &&
+    !!activePeriodId &&
+    classes.length > 0 &&
+    (viewMode === "whole" || viewMode === "subject" || viewMode === "room"),
+  staleTime: 2 * 60 * 1000,
+}));
+
 const lessons = $derived.by(() => {
   if (viewMode === "class") {
     return classScheduleQuery.data ?? [];
-  } else {
+  } else if (viewMode === "teacher") {
     return teacherScheduleQuery.data ?? [];
   }
+  const all = wholeScheduleQuery.data ?? [];
+  if (viewMode === "subject") {
+    return all.filter((lesson: any) => String(lesson.subject_id) === selectedSubjectId);
+  }
+  if (viewMode === "room") {
+    return all.filter((lesson: any) => String(lesson.room_id) === selectedRoomId);
+  }
+  return all;
 });
 
 const weekdays = $derived.by(() => {
@@ -218,7 +254,9 @@ const weekdays = $derived.by(() => {
 const isLessonsLoading = $derived(
   viewMode === "class"
     ? classScheduleQuery.isLoading
-    : teacherScheduleQuery.isLoading,
+    : viewMode === "teacher"
+      ? teacherScheduleQuery.isLoading
+      : wholeScheduleQuery.isLoading,
 );
 
 const isLoading = $derived(
@@ -226,6 +264,7 @@ const isLoading = $derived(
     classesQuery.isLoading ||
     subjectsQuery.isLoading ||
     usersQuery.isLoading ||
+    roomsQuery.isLoading ||
     timeSlotsQuery.isLoading ||
     isLessonsLoading,
 );
@@ -235,10 +274,13 @@ const error = $derived(
     classesQuery.error ||
     subjectsQuery.error ||
     usersQuery.error ||
+    roomsQuery.error ||
     timeSlotsQuery.error ||
     (viewMode === "class"
       ? classScheduleQuery.error
-      : teacherScheduleQuery.error),
+      : viewMode === "teacher"
+        ? teacherScheduleQuery.error
+        : wholeScheduleQuery.error),
 );
 
 // Derived state to map and filter draft assignments for preview
@@ -251,9 +293,17 @@ const draftLessonsInGrid = $derived.by(() => {
       .filter((a: any) => {
         if (viewMode === "class") {
           return String(a.class_id) === String(selectedClassId);
-        } else {
+        }
+        if (viewMode === "teacher") {
           return String(a.teacher_id) === String(selectedTeacherId);
         }
+        if (viewMode === "subject") {
+          return String(a.subject_id) === String(selectedSubjectId);
+        }
+        if (viewMode === "room") {
+          return String(a.room_id) === String(selectedRoomId);
+        }
+        return true;
       })
       .map((a: any) => ({
         id: a.id,
@@ -280,6 +330,7 @@ async function handleMoveLesson(
     toast.loading(m.academics_schedule_checking_for_conflicts());
     const conflicts = await commands.scheduling.checkConflicts(
       activePeriodId,
+      lesson.class_id,
       lesson.teacher_id,
       targetSlotId,
       targetDay,
@@ -336,6 +387,9 @@ function refetchLessons() {
       activePeriodId,
       selectedTeacherId,
     ],
+  });
+  queryClient.invalidateQueries({
+    queryKey: ["whole-schedule", data.orgId, activePeriodId],
   });
 }
 
@@ -450,8 +504,12 @@ function openLessonEditor(lesson: any) {
         bind:viewMode
         bind:selectedClassId
         bind:selectedTeacherId
+        bind:selectedSubjectId
+        bind:selectedRoomId
         {classes}
         {teachers}
+        {subjects}
+        {rooms}
       />
       <Button
         variant="default"
