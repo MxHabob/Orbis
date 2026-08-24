@@ -1,6 +1,6 @@
 <script lang="ts">
 import { fade } from "svelte/transition";
-import { Trash2 } from "@lucide/svelte";
+import { Pencil, Trash2 } from "@lucide/svelte";
 
 let {
   lesson,
@@ -12,6 +12,7 @@ let {
   subjectColor = "#a855f7",
   ondragstart,
   onDelete,
+  onEdit,
 }: {
   lesson: any;
   viewMode: "class" | "teacher";
@@ -22,6 +23,7 @@ let {
   subjectColor?: string;
   ondragstart?: (e: DragEvent) => void;
   onDelete?: (id: string) => void;
+  onEdit?: (lesson: any) => void;
 } = $props();
 
 const isDraft = $derived(!!lesson.isDraft);
@@ -36,88 +38,52 @@ const timeStr = $derived(
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div 
+<div
   draggable={!isDraft}
   {ondragstart}
+  dir={locale === "ar" ? "rtl" : "ltr"}
   style="--subject-color: {subjectColor};"
-  class="relative overflow-hidden w-full h-full p-2.5 flex flex-row items-stretch justify-between gap-2.5 select-none transition-all duration-150 rounded-xl border
+  class="relative overflow-hidden w-full h-full min-h-20 p-2 flex flex-col items-stretch justify-center gap-1 select-none transition-all duration-150 rounded-md border-s-4
     {isDraft 
       ? 'bg-muted/40 border-muted-foreground/30 border-dashed opacity-80 text-muted-foreground animate-pulse-draft' 
-      : 'bg-card border-border text-foreground cursor-grab active:cursor-grabbing hover:bg-accent/5 hover:border-border/80'}"
+      : 'bg-card border-border text-foreground cursor-grab active:cursor-grabbing hover:bg-accent/5'}"
+  style:border-inline-start-color="{isDraft ? 'var(--color-muted-foreground)' : 'var(--subject-color)'}"
   in:fade={{ duration: 150 }}
 >
-  
-  <!-- Flex layout places children according to language direction -->
-  {#if locale === "ar"}
-    <!-- RTL Layout: Text on Right, Color Square on Left -->
-    <div class="flex-grow flex flex-col justify-center items-start text-start gap-0.5 min-w-0">
-      <span class="font-bold text-[11px] md:text-[11.5px] leading-tight text-foreground tracking-wide line-clamp-2">
-        {subjectName}
-      </span>
-      {#if timeStr}
-        <span class="text-[9px] md:text-[9.5px] font-semibold text-muted-foreground opacity-80 leading-none font-mono">
-          {timeStr}
-        </span>
-      {/if}
-      <span class="text-[8px] md:text-[8.5px] text-muted-foreground opacity-60 line-clamp-1 mt-0.5">
-        {viewMode === "class" ? getTeacherName(lesson.teacher_id) : getClassName(lesson.class_id)}
-        {#if lesson.room_name || lesson.room}
-          • {lesson.room_name || lesson.room}
-        {/if}
-      </span>
-    </div>
-    {#if onDelete && !isDraft}
-      <div class="flex items-center shrink-0 self-center px-1">
-        <button 
-          type="button" 
-          onclick={(e) => { e.stopPropagation(); onDelete(lesson.id); }}
-          class="text-muted-foreground/60 hover:text-destructive p-1 rounded hover:bg-muted/60 transition-all cursor-pointer flex items-center justify-center"
-          title={locale === "ar" ? "حذف الحصة" : "Delete lesson"}
-        >
-          <Trash2 size={12} />
-        </button>
-      </div>
+  {#if onDelete && !isDraft}
+    <button
+      type="button"
+      onclick={(e) => { e.stopPropagation(); onDelete(lesson.id); }}
+      class="absolute inset-e-1 top-1 text-muted-foreground/50 hover:text-destructive p-0.5 rounded transition-colors cursor-pointer"
+      title={locale === "ar" ? "حذف الحصة" : "Delete lesson"}
+    >
+      <Trash2 size={11} />
+    </button>
+  {/if}
+  {#if onEdit && !isDraft}
+    <button
+      type="button"
+      onclick={(e) => { e.stopPropagation(); onEdit(lesson); }}
+      class="absolute inset-e-6 top-1 text-muted-foreground/50 hover:text-primary p-0.5 rounded transition-colors cursor-pointer"
+      title={locale === "ar" ? "تعديل الحصة" : "Edit lesson"}
+    >
+      <Pencil size={11} />
+    </button>
+  {/if}
+
+  <span class="font-bold text-[10px] leading-tight text-start line-clamp-2 pe-3">
+    {subjectName}
+  </span>
+  <span class="text-[8px] leading-tight text-start text-muted-foreground line-clamp-1">
+    {viewMode === "class" ? getTeacherName(lesson.teacher_id) : getClassName(lesson.class_id)}
+    {#if lesson.room_name || lesson.room}
+      · {lesson.room_name || lesson.room}
     {/if}
-    <!-- Color block styled as a button-like square -->
-    <div 
-      class="w-3.5 h-3.5 rounded shadow-[0_1.5px_3px_rgba(0,0,0,0.1)] border border-black/10 dark:border-white/10 shrink-0 self-center" 
-      style="background-color: var(--subject-color); opacity: {isDraft ? 0.5 : 1};"
-    ></div>
-  {:else}
-    <!-- LTR Layout: Color Square on Left, Text on Right -->
-    <!-- Color block styled as a button-like square -->
-    <div 
-      class="w-3.5 h-3.5 rounded shadow-[0_1.5px_3px_rgba(0,0,0,0.1)] border border-black/10 dark:border-white/10 shrink-0 self-center" 
-      style="background-color: var(--subject-color); opacity: {isDraft ? 0.5 : 1};"
-    ></div>
-    {#if onDelete && !isDraft}
-      <div class="flex items-center shrink-0 self-center px-1">
-        <button 
-          type="button" 
-          onclick={(e) => { e.stopPropagation(); onDelete(lesson.id); }}
-          class="text-muted-foreground/60 hover:text-destructive p-1 rounded hover:bg-muted/60 transition-all cursor-pointer flex items-center justify-center"
-          title={locale === "ar" ? "حذف الحصة" : "Delete lesson"}
-        >
-          <Trash2 size={12} />
-        </button>
-      </div>
-    {/if}
-    <div class="flex-grow flex flex-col justify-center items-start text-start gap-0.5 min-w-0">
-      <span class="font-bold text-[11px] md:text-[11.5px] leading-tight text-foreground tracking-wide line-clamp-2">
-        {subjectName}
-      </span>
-      {#if timeStr}
-        <span class="text-[9px] md:text-[9.5px] font-semibold text-muted-foreground opacity-80 leading-none font-mono">
-          {timeStr}
-        </span>
-      {/if}
-      <span class="text-[8px] md:text-[8.5px] text-muted-foreground opacity-60 line-clamp-1 mt-0.5">
-        {viewMode === "class" ? getTeacherName(lesson.teacher_id) : getClassName(lesson.class_id)}
-        {#if lesson.room_name || lesson.room}
-          • {lesson.room_name || lesson.room}
-        {/if}
-      </span>
-    </div>
+  </span>
+  {#if timeStr}
+    <span dir="ltr" class="text-[8px] font-mono text-start text-muted-foreground/80 leading-none tabular-nums">
+      {timeStr}
+    </span>
   {/if}
 
 </div>

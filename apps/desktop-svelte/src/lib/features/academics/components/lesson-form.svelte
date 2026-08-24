@@ -21,6 +21,8 @@ let {
   classId,
   dayOfWeek,
   timeSlotId,
+  timeSlots = [],
+  lesson = null,
   subjects = [],
   teachers = [],
   onSuccess,
@@ -31,6 +33,8 @@ let {
   classId: string;
   dayOfWeek: number;
   timeSlotId: string;
+  timeSlots?: any[];
+  lesson?: any | null;
   subjects: any[];
   teachers: any[];
   onSuccess: () => void;
@@ -39,9 +43,11 @@ let {
 
 // Form state
 let isSubmitting = $state(false);
-let formSubjectId = $state("");
-let formTeacherId = $state("");
-let formRoom = $state("");
+let formSubjectId = $state(lesson?.subject_id || "");
+let formTeacherId = $state(lesson?.teacher_id || "");
+let formRoom = $state(lesson?.room_id || "");
+let formDayOfWeek = $state(lesson?.day_of_week || dayOfWeek);
+let formTimeSlotId = $state(lesson?.time_slot_id || timeSlotId);
 
 // Conflict state
 let conflictError = $state<string | null>(null);
@@ -55,6 +61,21 @@ const weekdays = $derived([
   { value: 5, label: m.common_schedule_page_day_thu() },
 ]);
 
+const isEditing = $derived(!!lesson?.id);
+
+$effect(() => {
+  if (lesson?.id) {
+    formSubjectId = lesson.subject_id || "";
+    formTeacherId = lesson.teacher_id || "";
+    formRoom = lesson.room_id || "";
+    formDayOfWeek = lesson.day_of_week || dayOfWeek;
+    formTimeSlotId = lesson.time_slot_id || timeSlotId;
+  } else {
+    formDayOfWeek = dayOfWeek;
+    formTimeSlotId = timeSlotId;
+  }
+});
+
 // Check conflict when teacher, room or subject selection changes
 $effect(() => {
   if (formTeacherId || formRoom || formSubjectId) {
@@ -63,19 +84,17 @@ $effect(() => {
 });
 
 async function checkScheduleConflict() {
-  if (!formSubjectId || !classId || !timeSlotId) return;
+  if (!formSubjectId || !classId || !formTimeSlotId) return;
   isCheckingConflict = true;
   conflictError = null;
   try {
-    const conflicts = await commands.scheduling.checkConflicts({
-      orgId,
+    const conflicts = await commands.scheduling.checkConflicts(
       periodId,
-      timeSlotId,
-      dayOfWeek,
-      teacherId: formTeacherId || "no_teacher",
-      classId,
-      roomId: formRoom || undefined,
-    });
+      formTeacherId || "no_teacher",
+      formTimeSlotId,
+      formDayOfWeek,
+      formRoom || null,
+    );
     if (conflicts && conflicts.length > 0) {
       const first = conflicts[0] as any;
       conflictError = m.common_lesson_sheet_conflict_err({
@@ -102,12 +121,21 @@ async function handleSubmit(e: SubmitEvent) {
       class_id: classId,
       subject_id: formSubjectId,
       teacher_id: formTeacherId || undefined,
-      time_slot_id: timeSlotId,
-      day_of_week: dayOfWeek,
-      room: formRoom || undefined,
+      time_slot_id: formTimeSlotId,
+      day_of_week: formDayOfWeek,
+      room_id: formRoom || undefined,
     };
-    await commands.scheduling.createLesson(request);
-    toast.success(m.common_lesson_toast_success());
+    if (isEditing) {
+      await commands.scheduling.updateLesson(lesson.id, {
+        teacher_id: formTeacherId || undefined,
+        time_slot_id: formTimeSlotId,
+        day_of_week: formDayOfWeek,
+        room_id: formRoom || undefined,
+      });
+    } else {
+      await commands.scheduling.createLesson(request);
+    }
+    toast.success(isEditing ? "تم تعديل الحصة بنجاح" : m.common_lesson_toast_success());
 
     // Reset fields
     formSubjectId = "";
@@ -128,11 +156,29 @@ async function handleSubmit(e: SubmitEvent) {
 	<SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
 		<SheetTitle class="text-xl font-bold text-foreground flex items-center gap-2">
 			<Calendar size={18} class="text-primary" />
-			<span>{m.common_lesson_sheet_title()}</span>
+      <span>{isEditing ? "تعديل الحصة" : m.common_lesson_sheet_title()}</span>
 		</SheetTitle>
 	</SheetHeader>
 
 	<div class="flex-1 overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
+    {#if isEditing}
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-start">
+        <div class="flex flex-col gap-2">
+          <label for="sched_day" class="text-sm font-medium text-foreground">اليوم</label>
+          <Select type="single" value={String(formDayOfWeek)} onValueChange={(value) => { formDayOfWeek = Number(value); }}>
+            <SelectTrigger id="sched_day" class="h-9 text-sm w-full">{weekdays.find((day) => day.value === formDayOfWeek)?.label}</SelectTrigger>
+            <SelectContent>{#each weekdays as day}<SelectItem value={String(day.value)}>{day.label}</SelectItem>{/each}</SelectContent>
+          </Select>
+        </div>
+        <div class="flex flex-col gap-2">
+          <label for="sched_slot" class="text-sm font-medium text-foreground">الفترة</label>
+          <Select type="single" value={formTimeSlotId} onValueChange={(value) => { formTimeSlotId = value ?? ""; }}>
+            <SelectTrigger id="sched_slot" class="h-9 text-sm w-full">{timeSlots.find((slot) => String(slot.id) === formTimeSlotId)?.name_ar || formTimeSlotId}</SelectTrigger>
+            <SelectContent>{#each timeSlots.filter((slot) => !slot.is_break) as slot}<SelectItem value={String(slot.id)}>{slot.name_ar || slot.name} ({slot.start_time} - {slot.end_time})</SelectItem>{/each}</SelectContent>
+          </Select>
+        </div>
+      </div>
+    {/if}
 		<!-- Conflict Warning Box -->
 		{#if conflictError}
 			<div class="alert-brand-warning flex items-start gap-2.5 p-3 rounded-lg text-xs text-start bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0" transition:fade>
@@ -146,7 +192,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<label for="sched_sub" class="text-sm font-medium text-foreground">
 				{m.common_lesson_label_subject()}
 			</label>
-			<Select type="single" value={formSubjectId} onValueChange={(v) => (formSubjectId = v ?? "")}>
+      <Select type="single" value={formSubjectId} onValueChange={(v) => (formSubjectId = v ?? "")} disabled={isEditing}>
 				<SelectTrigger class="h-9 text-sm w-full">
 					{subjects.find(sub => String(sub.id) === formSubjectId)?.name_ar || subjects.find(sub => String(sub.id) === formSubjectId)?.name || m.common_lesson_option_select_subject()}
 				</SelectTrigger>

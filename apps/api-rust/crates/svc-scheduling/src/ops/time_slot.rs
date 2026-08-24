@@ -15,8 +15,31 @@ pub async fn list(ctx: &ServiceContext) -> Result<Vec<time_slot::Model>, AppErro
     Ok(time_slot::Entity::find()
         .filter(time_slot::Column::OrgId.eq(&ctx.org_id))
         .filter(time_slot::Column::IsActive.eq(1))
-        .order_by_asc(time_slot::Column::SortOrder)
+        .order_by_asc(time_slot::Column::StartTime)
+        .order_by_asc(time_slot::Column::EndTime)
         .all(&ctx.db).await?)
+}
+
+fn parse_time(value: &str) -> Result<i32, AppError> {
+    let mut parts = value.split(':');
+    let hour = parts.next().and_then(|part| part.parse::<i32>().ok());
+    let minute = parts.next().and_then(|part| part.parse::<i32>().ok());
+    if parts.next().is_some() || hour.is_none() || minute.is_none() {
+        return Err(AppError::validation("Time must use HH:MM format"));
+    }
+    let hour = hour.unwrap();
+    let minute = minute.unwrap();
+    if !(0..24).contains(&hour) || !(0..60).contains(&minute) {
+        return Err(AppError::validation("Time must be a valid clock time"));
+    }
+    Ok(hour * 60 + minute)
+}
+
+fn validate_time_range(start: &str, end: &str) -> Result<(), AppError> {
+    if parse_time(end)? <= parse_time(start)? {
+        return Err(AppError::validation("End time must be after start time"));
+    }
+    Ok(())
 }
 
 #[derive(serde::Deserialize)]
@@ -45,6 +68,7 @@ pub async fn create(
 
     let req: CreateTimeSlotPayload = serde_json::from_value(data)
         .map_err(|e| AppError::validation(format!("Invalid create time slot payload: {e}")))?;
+    validate_time_range(&req.start_time, &req.end_time)?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
@@ -92,6 +116,10 @@ pub async fn update(
     let existing = time_slot::Entity::find_by_id(slot_id.to_string())
         .one(&ctx.db).await?
         .ok_or_else(|| AppError::not_found("time_slot", slot_id))?;
+
+    let start_time = req.start_time.as_deref().unwrap_or(&existing.start_time);
+    let end_time = req.end_time.as_deref().unwrap_or(&existing.end_time);
+    validate_time_range(start_time, end_time)?;
 
     let mut active: time_slot::ActiveModel = existing.into();
     if let Some(n) = req.name { active.name = Set(Some(n)); }

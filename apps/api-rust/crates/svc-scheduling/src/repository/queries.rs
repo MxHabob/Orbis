@@ -17,7 +17,8 @@ impl SchedulingQueryRepo {
             .filter(time_slot::Column::OrgId.eq(org_id))
             .filter(time_slot::Column::PeriodId.eq(period_id))
             .filter(time_slot::Column::IsActive.eq(1))
-            .order_by_asc(time_slot::Column::SortOrder)
+            .order_by_asc(time_slot::Column::StartTime)
+            .order_by_asc(time_slot::Column::EndTime)
             .order_by_asc(time_slot::Column::SlotNumber)
             .all(&self.db)
             .await

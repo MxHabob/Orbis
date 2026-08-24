@@ -32,18 +32,11 @@ let viewMode = $state<"class" | "teacher">("class");
 let isModalOpen = $state(false);
 let activeDay = $state<number>(1); // 1 = Sunday
 let activeSlotId = $state<string>("");
+let activeLesson = $state<any | null>(null);
 
 // Solver & AI Scheduling State
 let activeJob = $state<any>(null);
 let previewDraft = $state(false);
-
-const weekdays = $derived([
-  { value: 1, label: m.common_schedule_page_day_sun() },
-  { value: 2, label: m.common_schedule_page_day_mon() },
-  { value: 3, label: m.common_schedule_page_day_tue() },
-  { value: 4, label: m.common_schedule_page_day_wed() },
-  { value: 5, label: m.common_schedule_page_day_thu() },
-]);
 
 const periodsQuery = createQuery(() => ({
   queryKey: ["periods", data.orgId],
@@ -68,7 +61,7 @@ const subjectsQuery = createQuery(() => ({
 
 const usersQuery = createQuery(() => ({
   queryKey: ["users", data.orgId],
-  queryFn: () => commands.iam.listUsers(),
+  queryFn: () => commands.iam.listUsers(null),
   enabled: !!data.orgId,
   staleTime: 5 * 60 * 1000,
 }));
@@ -139,12 +132,16 @@ $effect(() => {
 // Time Slots logic
 const timeSlotsQuery = createQuery(() => ({
   queryKey: ["time-slots", data.orgId, activePeriodId],
-  queryFn: () => commands.scheduling.listTimeSlots(activePeriodId),
+  queryFn: () => commands.scheduling.listTimeSlots(),
   enabled: !!data.orgId && !!activePeriodId,
   staleTime: 10 * 60 * 1000,
 }));
 
-const timeSlots = $derived(timeSlotsQuery.data ?? []);
+const timeSlots = $derived(
+  (timeSlotsQuery.data ?? []).filter(
+    (slot: any) => String(slot.period_id) === String(activePeriodId),
+  ),
+);
 
 // Schedules logic
 const classScheduleQuery = createQuery(() => ({
@@ -185,6 +182,38 @@ const lessons = $derived.by(() => {
   } else {
     return teacherScheduleQuery.data ?? [];
   }
+});
+
+const weekdays = $derived.by(() => {
+  const configuredDays = new Set<number>();
+
+  for (const slot of timeSlots) {
+    if (!slot.applicable_days) continue;
+    for (const value of String(slot.applicable_days).split(",")) {
+      const day = Number(value.trim());
+      if (Number.isInteger(day) && day >= 1 && day <= 7) {
+        configuredDays.add(day);
+      }
+    }
+  }
+
+  for (const lesson of lessons) {
+    const day = Number(lesson.day_of_week);
+    if (Number.isInteger(day) && day >= 1 && day <= 7) {
+      configuredDays.add(day);
+    }
+  }
+
+  const days = configuredDays.size > 0 ? [...configuredDays] : [1, 2, 3, 4, 5];
+  const locale = getLocale();
+
+  const weekOrder = [7, 1, 2, 3, 4, 5, 6];
+  return days.sort((a, b) => weekOrder.indexOf(a) - weekOrder.indexOf(b)).map((day) => ({
+    value: day,
+    label: new Intl.DateTimeFormat(locale, { weekday: "short" }).format(
+      new Date(Date.UTC(2023, 0, day)),
+    ),
+  }));
 });
 
 const isLessonsLoading = $derived(
@@ -344,6 +373,14 @@ function openScheduler(day: number, slotId: string) {
   }
   activeDay = day;
   activeSlotId = slotId;
+  activeLesson = null;
+  isModalOpen = true;
+}
+
+function openLessonEditor(lesson: any) {
+  activeLesson = lesson;
+  activeDay = Number(lesson.day_of_week);
+  activeSlotId = String(lesson.time_slot_id);
   isModalOpen = true;
 }
 </script>
@@ -391,6 +428,7 @@ function openScheduler(day: number, slotId: string) {
       {getSubjectColor}
       onCellClick={openScheduler}
       onDeleteLesson={handleDeleteLesson}
+      onEditLesson={openLessonEditor}
       onMoveLesson={handleMoveLesson}
       onRetry={refetchLessons}
     />
@@ -405,6 +443,8 @@ function openScheduler(day: number, slotId: string) {
   classId={selectedClassId}
   dayOfWeek={activeDay}
   timeSlotId={activeSlotId}
+  timeSlots={timeSlots}
+  lesson={activeLesson}
   {subjects}
   {teachers}
   onSuccess={refetchLessons}

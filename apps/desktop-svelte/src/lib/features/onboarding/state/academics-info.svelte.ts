@@ -3,6 +3,7 @@ import type { GradeLevel, TimeSlot, Subject } from "../types";
 export class AcademicsInfoState {
   gradeLevels = $state<GradeLevel[]>([]);
   divisionInput = $state<Record<string, string>>({});
+  workingDays = $state<number[]>([1, 2, 3, 4, 5]);
   timeSlots = $state<TimeSlot[]>([]);
   subjects = $state<Subject[]>([]);
 
@@ -28,6 +29,7 @@ export class AcademicsInfoState {
     return {
       gradeLevels: this.gradeLevels,
       divisionInput: this.divisionInput,
+      workingDays: this.workingDays,
       timeSlots: this.timeSlots,
       subjects: this.subjects,
     };
@@ -37,7 +39,14 @@ export class AcademicsInfoState {
     if (!data) return;
     if (data.gradeLevels) this.gradeLevels = data.gradeLevels;
     if (data.divisionInput) this.divisionInput = data.divisionInput;
-    if (data.timeSlots) this.timeSlots = data.timeSlots;
+    if (data.workingDays) this.workingDays = data.workingDays;
+    if (data.timeSlots) {
+      this.timeSlots = data.timeSlots.map((slot: TimeSlot) => ({
+        ...slot,
+        is_break: slot.is_break ?? false,
+        applicable_days: [...(slot.applicable_days ?? this.workingDays)],
+      }));
+    }
     if (data.subjects) this.subjects = data.subjects;
   }
 }

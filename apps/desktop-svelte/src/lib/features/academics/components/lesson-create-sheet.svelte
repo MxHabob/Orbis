@@ -22,6 +22,8 @@ let {
   classId,
   dayOfWeek,
   timeSlotId,
+  timeSlots = [],
+  lesson = null,
   subjects = [],
   teachers = [],
   onSuccess,
@@ -32,6 +34,8 @@ let {
   classId: string;
   dayOfWeek: number;
   timeSlotId: string;
+  timeSlots?: any[];
+  lesson?: any | null;
   subjects: any[];
   teachers: any[];
   onSuccess: () => void;
@@ -48,12 +52,14 @@ const weekdays = $derived([
 
 <Sheet bind:open>
 	<SheetContent class="flex flex-col h-full sm:max-w-md overflow-hidden p-0 gap-0">
-		<LessonForm 
+    <LessonForm
 			{orgId} 
 			{periodId} 
 			{classId} 
 			{dayOfWeek} 
 			{timeSlotId} 
+      {timeSlots}
+      {lesson}
 			{subjects} 
 			{teachers} 
 			onSuccess={() => {

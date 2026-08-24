@@ -122,6 +122,12 @@ import { onboardingState } from "../state.svelte";
             {m.common_onboarding_review_slots_value({ count: onboardingState.academics.totalSlots })}
           </span>
         </div>
+        <div class="flex justify-between py-1 border-b border-border/30 md:col-span-2">
+          <span class="text-muted-foreground">أيام الدراسة</span>
+          <span class="font-bold text-foreground">
+            {onboardingState.academics.workingDays.length} أيام / {onboardingState.academics.timeSlots.filter((slot) => slot.is_break).length} استراحات
+          </span>
+        </div>
       </div>
     </div>
 

@@ -40,6 +40,9 @@ export interface TimeSlot {
   name_ar: string;
   start_time: string;
   end_time: string;
+  is_break: boolean;
+  break_type?: "recess" | "lunch" | "prayer" | "custom";
+  applicable_days: number[];
 }
 
 export interface Subject {

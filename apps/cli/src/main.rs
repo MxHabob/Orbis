@@ -38,6 +38,7 @@ enum MenuChoice {
     Backup,
     License,
     ResetDatabase,
+    SeedDefaultData,
     Exit,
 }
 
@@ -101,8 +102,19 @@ fn build_menu(status: &core::database::SystemStatus) -> Vec<MenuItem> {
         push("Reset Database (Wipe All Data)", MenuChoice::ResetDatabase);
     }
 
+    if is_development_environment() {
+        push("Create Default Development Data", MenuChoice::SeedDefaultData);
+    }
+
     push("Exit", MenuChoice::Exit);
     items
+}
+
+fn is_development_environment() -> bool {
+    matches!(
+        std::env::var("APP_ENV").unwrap_or_else(|_| "development".to_string()).to_lowercase().as_str(),
+        "development" | "dev"
+    )
 }
 
 /// Handles the "Reset Database" action with confirmation.
@@ -303,6 +315,11 @@ async fn main() -> Result<()> {
                             }
                             MenuChoice::ResetDatabase => {
                                 handle_reset_database().await;
+                            }
+                            MenuChoice::SeedDefaultData => {
+                                if let Err(e) = commands::dev_seed::execute().await {
+                                    ui::output::print_error(&e.to_string());
+                                }
                             }
                             MenuChoice::Exit => break,
                         }

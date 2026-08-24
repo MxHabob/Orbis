@@ -23,6 +23,7 @@ interface Props {
   getSubjectColor: (id: string) => string;
   onCellClick: (day: number, slotId: string) => void;
   onDeleteLesson: (id: string) => void;
+  onEditLesson?: (lesson: any) => void;
   onMoveLesson: (lesson: any, day: number, slotId: string) => void;
   onRetry: () => void;
 }
@@ -42,6 +43,7 @@ let {
   getSubjectColor,
   onCellClick,
   onDeleteLesson,
+  onEditLesson,
   onMoveLesson,
   onRetry,
 }: Props = $props();
@@ -88,6 +90,7 @@ let {
       {getSubjectColor}
       onCellClick={onCellClick}
       onDeleteLesson={onDeleteLesson}
+      onEditLesson={onEditLesson}
       onMoveLesson={onMoveLesson}
     />
   </div>

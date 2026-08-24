@@ -9,6 +9,7 @@ import type {
   PeriodEntry,
   ClassEntry,
   SubjectEntry,
+  Room,
 } from "./types";
 import { getDefaultBuildings } from "./utils";
 
@@ -109,11 +110,15 @@ class OnboardingState {
       }));
 
       // Default time slots
+      this.academics.workingDays = [1, 2, 3, 4, 5];
       this.academics.timeSlots = profile.timeSlots.map((t) => ({
         name: t.name,
         name_ar: t.name_ar,
         start_time: t.start_time,
         end_time: t.end_time,
+        is_break: t.is_break ?? false,
+        break_type: t.break_type,
+        applicable_days: [...(t.applicable_days ?? this.academics.workingDays)],
       }));
 
       // Default subjects
@@ -135,7 +140,7 @@ class OnboardingState {
       this.finance.registrationFees = fees;
 
       // Dynamic room list prefix mapping
-      const roomsList = [];
+      const roomsList: Room[] = [];
       const bldName =
         this.facilities.buildings.length > 0
           ? this.facilities.buildings[0]
@@ -246,8 +251,8 @@ class OnboardingState {
         await this.loadTemplates(orgId).catch(() => {});
         if (!detectedType && this.calendar.periodTemplates && this.calendar.periodTemplates.length > 0) {
           const tmpl = this.calendar.periodTemplates.find((t: any) => t.is_default || t.isDefault) || this.calendar.periodTemplates[0];
-          if (tmpl && (tmpl.institution_type || (tmpl as any).institutionType)) {
-            detectedType = tmpl.institution_type || (tmpl as any).institutionType;
+          if (tmpl && ((tmpl as any).institution_type || (tmpl as any).institutionType)) {
+            detectedType = (tmpl as any).institution_type || (tmpl as any).institutionType;
           }
         }
 
@@ -540,6 +545,11 @@ class OnboardingState {
     nameAr: string,
     startTime: string,
     endTime: string,
+    options: {
+      isBreak?: boolean;
+      breakType?: "recess" | "lunch" | "prayer" | "custom";
+      applicableDays?: number[];
+    } = {},
   ) {
     if (!name || !nameAr) {
       toast.error(m.onboarding_toast_fill_period_name());
@@ -550,6 +560,9 @@ class OnboardingState {
       name_ar: nameAr,
       start_time: startTime,
       end_time: endTime,
+      is_break: options.isBreak ?? false,
+      break_type: options.breakType,
+      applicable_days: [...(options.applicableDays ?? this.academics.workingDays)],
     });
     this.academics.timeSlots = [...this.academics.timeSlots];
     toast.success(m.onboarding_toast_period_added());
@@ -850,6 +863,9 @@ class OnboardingState {
             start_time: slot.start_time,
             end_time: slot.end_time,
             duration_minutes: duration,
+            is_break: slot.is_break,
+            break_type: slot.break_type,
+            applicable_days: slot.applicable_days.join(","),
           });
         } catch (e) {
           console.warn(`Time slot "${slot.name}" creation warning:`, e);

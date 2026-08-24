@@ -18,6 +18,7 @@ let {
   class: className = "",
   onCellClick,
   onDeleteLesson,
+  onEditLesson,
   onMoveLesson,
 }: {
   timeSlots: any[];
@@ -34,6 +35,7 @@ let {
   class?: string;
   onCellClick: (day: number, slotId: string) => void;
   onDeleteLesson: (id: string) => void;
+  onEditLesson?: (lesson: any) => void;
   onMoveLesson: (lesson: any, targetDay: number, targetSlotId: string) => void;
 } = $props();
 
@@ -53,6 +55,35 @@ function getLessonInCell(day: number, slotId: string) {
       String(l.time_slot_id) === String(slotId),
   );
 }
+
+function isSlotAvailable(slot: any, day: number): boolean {
+  if (!slot.applicable_days) return true;
+  const days = String(slot.applicable_days)
+    .split(",")
+    .map((value) => Number(value.trim()))
+    .filter((value) => Number.isInteger(value));
+  return days.length === 0 || days.includes(day);
+}
+
+function timeToMinutes(value: unknown): number {
+  const match = String(value ?? "").match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return Number.MAX_SAFE_INTEGER;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function getChronologicalTime(value: unknown): number {
+  const minutes = timeToMinutes(value);
+  if (minutes !== Number.MAX_SAFE_INTEGER) return minutes;
+  return Number.MAX_SAFE_INTEGER;
+}
+
+const orderedTimeSlots = $derived(
+  [...timeSlots].sort((first, second) => {
+    const startDifference = getChronologicalTime(first.start_time) - getChronologicalTime(second.start_time);
+    if (startDifference !== 0) return startDifference;
+    return getChronologicalTime(first.end_time) - getChronologicalTime(second.end_time);
+  }),
+);
 
 // Drag and Drop handlers
 let draggedLesson = $state<any>(null);
@@ -100,35 +131,35 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
 </script>
 
 <!-- Reusable responsive timetable board -->
-<div class="flex-1 min-h-0 min-w-0 w-full h-full border border-border bg-card rounded-xl flex flex-col overflow-auto shadow-sm select-none relative scrollbar-thin {className}">
+<div class="flex-1 min-h-0 min-w-0 w-full h-full border border-border bg-card rounded-lg flex flex-col overflow-auto shadow-sm select-none relative scrollbar-thin {className}">
   
   <div 
-    class="grid gap-px text-xs w-full min-w-max bg-border flex-1"
+    class="grid gap-px text-xs w-full min-w-180 bg-border flex-1"
     style="grid-template-columns: minmax(108px, 0.9fr) repeat({weekdays.length}, minmax(112px, 1fr));"
     in:fade={{ duration: 150 }}
   >
     <!-- 1. Header Row (Sticky Top) -->
-    <div class="bg-card text-muted-foreground p-3 md:p-4 font-bold text-center flex items-center justify-center border-b border-border uppercase text-[10px] tracking-wider sticky top-0 start-0 z-30 shadow-xs">
-      {locale === "ar" ? "الحصة / الوقت" : "Period / Time"}
+    <div class="bg-muted/60 text-foreground p-2.5 md:p-3 font-bold text-center flex items-center justify-center border-b border-border text-[10px] sticky top-0 inset-s-0 z-30 shadow-xs">
+      {locale === "ar" ? "الحصة" : "Period"}
     </div>
     {#each weekdays as day (day.value)}
-      <div class="bg-card text-muted-foreground p-3 md:p-4 font-bold text-center flex items-center justify-center border-b border-border uppercase text-[10px] tracking-wider sticky top-0 z-20 shadow-xs">
+      <div class="bg-muted/60 text-foreground p-2.5 md:p-3 font-bold text-center flex items-center justify-center border-b border-border text-[10px] sticky top-0 z-20 shadow-xs">
         {day.label}
       </div>
     {/each}
 
     <!-- 2. Rows (Periods & Breaks) -->
-    {#each timeSlots as slot (slot.id)}
+    {#each orderedTimeSlots as slot (slot.id)}
       {@const isBreak = slot.is_break === 1 || slot.is_break === true}
 
       <!-- Row Period Info Column (Sticky Start for Horizontal Scroll) -->
-      <div class="bg-muted/30 border-border p-2.5 font-semibold text-center flex flex-col justify-center items-center gap-1 min-h-[96px] h-full border-b sticky start-0 z-10 backdrop-blur-xs">
-        <span class="text-[11px] tracking-wide font-extrabold text-foreground truncate max-w-[125px]">
+      <div class="bg-muted/30 border-border p-2 font-semibold text-center flex flex-col justify-center items-center gap-1 min-h-24 h-full border-b sticky inset-s-0 z-10 backdrop-blur-xs">
+        <span class="text-[10px] tracking-wide font-bold text-foreground truncate max-w-31.25">
           {locale === "ar" ? (slot.name_ar || slot.name) : (slot.name || slot.name_ar)}
         </span>
-        <span class="bg-card border border-border text-muted-foreground text-[9px] font-mono font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0">
+        <span class="text-muted-foreground text-[9px] font-mono font-medium flex items-center gap-1 shrink-0">
           <Clock size={10} class="opacity-70" />
-          <span>{slot.start_time} - {slot.end_time}</span>
+          <span dir="ltr" class="tabular-nums">{slot.start_time} - {slot.end_time}</span>
         </span>
       </div>
 
@@ -136,27 +167,30 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
       {#if isBreak}
         <!-- Break row spans across all weekdays -->
         <div 
-          class="bg-muted/50 text-muted-foreground border-b border-border font-extrabold uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 min-h-[96px] h-full"
+          class="bg-muted/50 text-muted-foreground border-b border-border font-bold text-[10px] flex items-center justify-center gap-2 min-h-24 h-full"
           style="grid-column: span {weekdays.length};"
         >
           <span>{locale === "ar" ? "فترة راحة" : "BREAK INTERVAL"}</span>
-          <span class="text-[9px] font-mono font-bold opacity-80">({slot.start_time} - {slot.end_time})</span>
+          <span dir="ltr" class="text-[9px] font-mono font-bold opacity-80 tabular-nums">({slot.start_time} - {slot.end_time})</span>
         </div>
       {:else}
         {#each weekdays as day (day.value)}
           {@const lesson = getLessonInCell(day.value, slot.id)}
+          {@const isAvailable = isSlotAvailable(slot, day.value)}
           {@const isDragOver = dragOverCell?.day === day.value && dragOverCell?.slotId === slot.id}
           
           <!-- Cell Container -->
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div 
-            class="bg-card border-border p-2 text-center align-middle min-h-[96px] h-full relative flex items-center justify-center transition-all duration-200 border-b hover:bg-muted/40
-              {isDragOver ? 'bg-primary/[0.08] ring-2 ring-primary/40 ring-inset border-dashed' : ''}"
+            class="{isAvailable ? 'bg-card hover:bg-muted/40' : 'bg-muted/20'} border-border p-1.5 text-center align-middle min-h-24 h-full relative flex items-center justify-center transition-colors duration-150 border-b
+              {isDragOver ? 'bg-primary/8 ring-2 ring-primary/40 ring-inset border-dashed' : ''}"
             ondragover={(e) => handleDragOver(e, day.value, slot.id)}
             ondragleave={handleDragLeave}
             ondrop={(e) => handleDrop(e, day.value, slot.id)}
           >
-            {#if lesson}
+            {#if !isAvailable}
+              <span class="text-[9px] text-muted-foreground/40">-</span>
+            {:else if lesson}
               <TimetableCard 
                 {lesson} 
                 {viewMode} 
@@ -166,6 +200,7 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
                 {getClassName} 
                 subjectColor={getSubjectColor(lesson.subject_id)}
                 onDelete={onDeleteLesson}
+                onEdit={onEditLesson}
                 ondragstart={(e) => handleDragStart(e, lesson)}
               />
             {:else}
@@ -173,8 +208,8 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
               <button 
                 type="button"
                 onclick={() => onCellClick(day.value, slot.id)}
-                class="w-full h-full border border-dashed border-transparent hover:border-primary/30 hover:bg-primary/[0.03] rounded-xl flex items-center justify-center text-muted-foreground/0 hover:text-primary transition-all duration-200 cursor-pointer p-2 min-h-[70px]"
-                disabled={viewMode !== "class"}
+                class="w-full h-full border border-dashed border-transparent hover:border-primary/30 hover:bg-primary/3 rounded-md flex items-center justify-center text-muted-foreground/0 hover:text-primary transition-all duration-200 cursor-pointer p-2 min-h-17.5"
+                disabled={viewMode !== "class" || !isAvailable}
                 title={locale === "ar" ? "إضافة حصة جديدة" : "Schedule new lesson"}
               >
                 <Plus size={16} class="transition-transform duration-200 hover:scale-110" />
