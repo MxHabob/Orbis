@@ -231,7 +231,7 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
       {@const isBreak = slot.is_break === 1 || slot.is_break === true}
 
       <!-- Row Period Info Column (Sticky Start for Horizontal Scroll) -->
-      <div class="bg-muted/25 border-border p-1.5 font-semibold text-center flex flex-col justify-center items-center gap-1 min-h-24 h-full border-b sticky inset-s-0 z-10">
+      <div class="bg-muted/25 border-border p-1.5 font-semibold text-center flex flex-col justify-center items-center gap-1 {isBreak ? 'min-h-10' : 'min-h-24'} h-full border-b sticky inset-s-0 z-10">
         {#if editingSlotId === String(slot.id)}
           <input class="h-7 w-full rounded border border-border bg-background px-1 text-[10px]" bind:value={draftNameAr} aria-label="اسم الحصة" />
           <div class="flex w-full gap-1">
@@ -243,9 +243,11 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
             <button type="button" class="rounded p-1 text-muted-foreground hover:text-destructive" onclick={cancelSlotEdit} aria-label="إلغاء"><X size={12} /></button>
           </span>
         {:else}
-          <span class="text-[10px] tracking-wide font-bold text-foreground truncate max-w-31.25">
-            {locale === "ar" ? (slot.name_ar || slot.name) : (slot.name || slot.name_ar)}
-          </span>
+          {#if !isBreak}
+            <span class="text-[10px] tracking-wide font-bold text-foreground truncate max-w-31.25">
+              {locale === "ar" ? (slot.name_ar || slot.name) : (slot.name || slot.name_ar)}
+            </span>
+          {/if}
           <span class="text-muted-foreground text-[9px] font-mono font-medium flex items-center gap-1 shrink-0">
             <Clock size={10} class="opacity-70" />
             <span dir="ltr" class="tabular-nums">{slot.start_time} - {slot.end_time}</span>
@@ -270,11 +272,11 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
       <!-- Rows Data Columns -->
       {#if isBreak}
         <!-- Break row spans across all weekdays -->
-        <div 
-          class="bg-muted/50 text-muted-foreground border-b border-border font-bold text-[10px] flex items-center justify-center gap-2 min-h-24 h-full"
+        <div
+          class="bg-muted/50 text-muted-foreground border-b border-border font-bold text-[10px] flex items-center justify-center gap-2 min-h-10 h-full"
           style="grid-column: span {weekdays.length};"
         >
-          <span>{locale === "ar" ? "فترة راحة" : "BREAK INTERVAL"}</span>
+          <span>{locale === "ar" ? "استراحة" : "BREAK"}</span>
           <span dir="ltr" class="text-[9px] font-mono font-bold opacity-80 tabular-nums">({slot.start_time} - {slot.end_time})</span>
         </div>
       {:else}
