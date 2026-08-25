@@ -8,7 +8,6 @@ import {
   BookOpen,
   BarChart3,
   ShieldCheck,
-  CalendarClock,
   ClipboardCheck,
 } from "@lucide/svelte";
 
@@ -56,12 +55,6 @@ const ACTIONS = $derived.by(() => {
       icon: ShieldCheck,
       href: `/${orgId}/academics/control`,
       show: phase === "grade_entry" || phase === "exams",
-    },
-    {
-      label: m.common_calendar_title ? m.common_calendar_title() : "Calendar",
-      icon: CalendarClock,
-      href: `/${orgId}/academics/calendar`,
-      show: isAdmin,
     },
     {
       label: m.common_action_view_reports(),

@@ -481,10 +481,10 @@ class OnboardingState {
     const gl = this.academics.gradeLevels.find((g) => g.level === level);
     if (!gl) return;
 
-    const input = this.academics.divisionInput[level]?.trim().toUpperCase();
+    const input = this.academics.divisionInput[level]?.trim();
     const nextLetter = String.fromCharCode(65 + gl.divisions.length);
-    const text = input || nextLetter;
-    if (!/^[A-Z]$/.test(text) || gl.divisions.includes(text)) {
+    const text = input ? input.replace(/\s+/g, " ") : nextLetter;
+    if (!/^[A-Za-z][A-Za-z0-9 -]*$/.test(text) || gl.divisions.includes(text)) {
       toast.error(m.onboarding_toast_invalid_division());
       return;
     }
@@ -499,13 +499,24 @@ class OnboardingState {
 
   renameDivision(level: string, index: number, value: string) {
     const gl = this.academics.gradeLevels.find((g) => g.level === level);
-    const normalized = value.trim().toUpperCase();
-    if (!gl || !/^[A-Z]$/.test(normalized)) return;
+    const trimmed = value.trim();
+    const normalized = /^[A-Za-z][A-Za-z0-9 -]*$/.test(trimmed)
+      ? trimmed.replace(/\s+/g, " ")
+      : "";
+    if (!gl || !normalized) return;
     if (gl.divisions.some((division, divisionIndex) => divisionIndex !== index && division === normalized)) {
       toast.error(m.onboarding_toast_invalid_division());
       return;
     }
     gl.divisions[index] = normalized;
+    this.academics.gradeLevels = [...this.academics.gradeLevels];
+    this.save();
+  }
+
+  addNamedDivision(level: string, name: "Boys" | "Girls") {
+    const gl = this.academics.gradeLevels.find((g) => g.level === level);
+    if (!gl || gl.divisions.includes(name)) return;
+    gl.divisions.push(name);
     this.academics.gradeLevels = [...this.academics.gradeLevels];
     this.save();
   }
