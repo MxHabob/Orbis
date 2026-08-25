@@ -58,6 +58,7 @@ let mappedColumns = $derived.by(() => {
       id,
       header,
       width,
+      flexgrow: col.flexgrow ?? 1,
       sort: col.sort !== false,
       resize: col.resize !== false,
     };

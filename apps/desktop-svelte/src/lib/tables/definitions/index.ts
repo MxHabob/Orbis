@@ -204,12 +204,12 @@ export const rooms = {
     } = {},
   ): OrbisColumnDef[] => [
     idx(labels.idx),
-    nameCol("name", labels.name || "Room", 160),
-    text("building", labels.building || "Building", 120),
-    text("floor", labels.floor || "Floor", 80),
-    num("capacity", labels.capacity || "Capacity", 90),
-    text("room_type", labels.type || "Type", 100),
-    status("status", labels.status || "Status", 90),
+    { ...nameCol("name", labels.name || "Room", 160), flexgrow: 2 },
+    { ...text("building", labels.building || "Building", 120), flexgrow: 2 },
+    { ...text("floor", labels.floor || "Floor", 80), flexgrow: 1 },
+    { ...num("capacity", labels.capacity || "Capacity", 90), flexgrow: 1 },
+    { ...text("room_type", labels.type || "Type", 100), flexgrow: 1.5 },
+    { ...status("status", labels.status || "Status", 90), flexgrow: 1 },
   ],
 };
 
