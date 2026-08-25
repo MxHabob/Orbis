@@ -53,7 +53,13 @@ pub(crate) async fn do_open_agent_window<R: tauri::Runtime>(app: &tauri::AppHand
     .resizable(true)
     .shadow(true)
     .decorations(true)
-    .visible(false);
+    .visible(false)
+    .on_page_load(|webview, payload| {
+        if payload.event() == tauri::webview::PageLoadEvent::Finished {
+            let _ = webview.show();
+            let _ = webview.set_focus();
+        }
+    });
     if let Some(ref main) = main_window {
         builder = builder.parent(main).map_err(|e| e.to_string())?;
     }
