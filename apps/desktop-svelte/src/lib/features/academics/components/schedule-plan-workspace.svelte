@@ -16,6 +16,7 @@ import { fade } from "svelte/transition";
 import {
   Square,
   Trash2,
+	Sparkles,
 } from "@lucide/svelte";
 import Resizer from "$lib/shell/resizer.svelte";
 
@@ -327,17 +328,11 @@ async function deleteSolverJob(jobId: string) {
 					{m.common_schedule_ai_auto_scheduler()}
 				</span>
 			</div>
-			<Badge variant="brand" class="text-[9px] uppercase tracking-wider">
-				Orbis AI v1.0
-			</Badge>
 		</div>
 
 		<!-- Weekly teaching load editor -->
 		{#if classSubjects.length > 0}
 			<div class="flex flex-col gap-2.5 pb-2.5" in:fade={{ duration: 150 }}>
-				<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-					<span>{m.common_schedule_ai_weekly_subject_hours()}</span>
-				</span>
 				<div class="flex flex-col gap-1.5 max-h-40 overflow-y-auto pr-1 scrollbar-hide">
 					{#each classSubjects as cs (cs.id)}
 						<div class="flex items-center justify-between p-1.5 text-[9.5px]">
@@ -381,6 +376,7 @@ async function deleteSolverJob(jobId: string) {
 					onclick={triggerSolving}
 					disabled={isSolving}
 				>
+					<Sparkles size={14} />
 					<span>{m.common_schedule_ai_run_optimizer()}</span>
 				</Button>
 			</div>
@@ -457,7 +453,7 @@ async function deleteSolverJob(jobId: string) {
 					<Label class="text-[10px] font-bold text-foreground cursor-pointer" for="preview-draft">
 						{m.common_schedule_ai_preview_draft()}
 					</Label>
-					<Checkbox id="preview-draft" checked={previewDraft} onCheckedChange={(v) => previewDraft = Boolean(v)} />
+					<Checkbox id="preview-draft" checked={previewDraft} onCheckedChange={(v: boolean) => previewDraft = v} />
 				</div>
 
 				<!-- Apply / Discard Actions -->

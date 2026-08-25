@@ -127,7 +127,9 @@ function backToSchedule() {
 }
 </script>
 
-<div class="h-full w-full overflow-hidden bg-background" dir="auto">
+<div
+  class="h-full w-full overflow-hidden"
+>
   <div class="flex h-full min-h-0 flex-col overflow-auto scrollbar-hide lg:flex-row">
     <aside
       bind:this={sidebarEl}
@@ -149,14 +151,20 @@ function backToSchedule() {
         <Button variant="ghost" size="icon" class="h-8 w-8" onclick={backToSchedule} aria-label={m.common_action_back()}>
           <ArrowLeft size={15} class="rtl:rotate-180" />
         </Button>
-        <div class="text-xs font-bold">مخطط الجدولة</div>
+        <div class="text-xs font-bold">
+          {m.academics_schedule_prepare_title()}
+        </div>
       </div>
       <div class="mb-4 space-y-3">
         <div><p class="mb-1 text-[10px] font-semibold text-muted-foreground">{m.common_word_semester()}</p><PeriodSelect bind:value={activePeriodId} periods={periods} disabled={isLoading} /></div>
         <div><p class="mb-1 text-[10px] font-semibold text-muted-foreground">{m.common_schedule_page_sel_class()}</p><ClassSelect bind:value={selectedClassId} classes={classes} disabled={isLoading} /></div>
         <div class="flex items-center justify-between border-t border-border pt-3 text-[10px] text-muted-foreground">
-          <span title="عدد الدروس">{lessons.length} دروس</span>
-          <span title="عدد الفترات">{timeSlots.length} فترات</span>
+          <span title={m.academics_schedule_prepare_lessons_count({ count: lessons.length })}>
+            {m.academics_schedule_prepare_lessons_count({ count: lessons.length })}
+          </span>
+          <span title={m.academics_schedule_prepare_periods_count({ count: timeSlots.length })}>
+            {m.academics_schedule_prepare_periods_count({ count: timeSlots.length })}
+          </span>
         </div>
       </div>
       <div class="border-t border-border pt-4">
@@ -165,7 +173,7 @@ function backToSchedule() {
     </aside>
 
     <main class="flex min-h-130 min-w-0 flex-1 flex-col overflow-hidden bg-background p-3 sm:p-4">
-      <ScheduleBoard fitViewport={true} isLoading={isBoardLoading} error={lessonsQuery.error ? String(lessonsQuery.error) : null} {timeSlots} {weekdays} {lessons} draftLessons={[]} previewDraft={false} viewMode="class" getSubjectName={(id) => subjects.find((s: any) => String(s.id) === String(id))?.name_ar || subjects.find((s: any) => String(s.id) === String(id))?.name || "Subject"} getTeacherName={() => ""} getClassName={() => ""} getRoomName={(id) => rooms.find((room: any) => String(room.id) === String(id))?.name_ar || rooms.find((room: any) => String(room.id) === String(id))?.name || ""} {getSubjectColor} onCellClick={() => {}} onDeleteLesson={() => {}} onMoveLesson={() => {}} onRetry={() => lessonsQuery.refetch()} />
+      <ScheduleBoard fitViewport={true} isLoading={isBoardLoading} error={lessonsQuery.error ? String(lessonsQuery.error) : null} {timeSlots} {weekdays} {lessons} draftLessons={[]} previewDraft={false} viewMode="class" getSubjectName={(id) => subjects.find((s: any) => String(s.id) === String(id))?.name_ar || subjects.find((s: any) => String(s.id) === String(id))?.name || m.common_schedule_page_unknown_subject()} getTeacherName={() => ""} getClassName={() => ""} getRoomName={(id) => rooms.find((room: any) => String(room.id) === String(id))?.name_ar || rooms.find((room: any) => String(room.id) === String(id))?.name || ""} {getSubjectColor} onCellClick={() => {}} onDeleteLesson={() => {}} onMoveLesson={() => {}} onRetry={() => lessonsQuery.refetch()} />
     </main>
   </div>
 </div>

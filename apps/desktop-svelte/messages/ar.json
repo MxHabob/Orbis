@@ -1,4 +1,7 @@
 {
+  "academics_schedule_prepare_title": "مخطط الجدولة",
+  "academics_schedule_prepare_lessons_count": "{count} دروس",
+  "academics_schedule_prepare_periods_count": "{count} فترات",
   "academics_class_overview_advisor_desc": "تحليل تشخيصي وتوصيات مباشرة لهذا الصف في الوقت الفعلي.",
   "academics_class_overview_diagnostic": "تشغيل التشخيص",
   "academics_class_overview_resolve": "تأكيد الحل",
