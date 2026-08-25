@@ -135,7 +135,7 @@ async function handleLanguageChange(newLocale: string) {
         {#if selectedTpl?.structure && selectedTpl.structure.length > 0}
           <div class="pt-2">
             <div class="text-[11px] font-medium text-muted-foreground mb-2 text-start">
-              {getLocale() === "ar" ? "توزيع الفترات والنسب في هذا الهيكل:" : "Period & Weight Distribution:"}
+              {m.common_onboarding_period_distribution()}
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
               {#each selectedTpl.structure as term}

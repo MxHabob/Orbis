@@ -108,7 +108,7 @@ async function handleSubmit(e: SubmitEvent) {
 					id="code"
 					type="text" 
 					bind:value={code}
-					placeholder="e.g., G1-A"
+					placeholder={m.academics_class_placeholder_code()}
 				/>
 			</div>
 
@@ -121,7 +121,7 @@ async function handleSubmit(e: SubmitEvent) {
 					id="grade"
 					type="text" 
 					bind:value={gradeLevel}
-					placeholder="e.g., 1"
+					placeholder={m.academics_class_placeholder_grade()}
 				/>
 			</div>
 		</div>

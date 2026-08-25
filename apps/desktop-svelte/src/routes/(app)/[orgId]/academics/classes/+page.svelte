@@ -14,6 +14,7 @@ import { MetricProgress } from "@orbis/ui-svelte";
 import { Plus, Users, GraduationCap } from "@lucide/svelte";
 import { toast } from "svelte-sonner";
 import { localizeHref } from "$lib/paraglide/runtime";
+import { l } from "$lib/core/i18n/locale";
 import { fade } from "svelte/transition";
 import ClassCreateSheet from "$lib/features/academics/components/class-create-sheet.svelte";
 
@@ -97,21 +98,21 @@ const pageLoading = $derived(
 	{#if !pageLoading && !error && classes.length > 0}
 		<div class="grid grid-cols-1 gap-3 sm:grid-cols-3" in:fade={{ duration: 200 }}>
 			<div class="rounded-lg border border-border/70 bg-card p-3">
-				<MetricProgress variant="single" value={totalClassesCount} showProgress={false} tone="primary">
+		        <MetricProgress variant="single" value={totalClassesCount} showProgress={false} tone="primary">
 					{#snippet title()}{m.common_classes_total_classes()}{/snippet}
-					{#snippet metadata()}إجمالي الفصول{/snippet}
+							{#snippet metadata()}{m.common_classes_total_classes()}{/snippet}
 				</MetricProgress>
 			</div>
 			<div class="rounded-lg border border-border/70 bg-card p-3">
 				<MetricProgress variant="single" value={totalStudentsCount} showProgress={false} tone="success">
 					{#snippet title()}{m.common_classes_enrolled_students()}{/snippet}
-					{#snippet metadata()}الطلاب المسجلون{/snippet}
+					{#snippet metadata()}{m.common_classes_enrolled_students()}{/snippet}
 				</MetricProgress>
 			</div>
 			<div class="rounded-lg border border-border/70 bg-card p-3">
 				<MetricProgress variant="single" value={averageClassSize} showProgress={false} tone="warning">
 					{#snippet title()}{m.common_classes_avg_size()}{/snippet}
-					{#snippet metadata()}متوسط عدد الطلاب{/snippet}
+					{#snippet metadata()}{m.common_classes_avg_size()}{/snippet}
 				</MetricProgress>
 			</div>
 		</div>
@@ -164,6 +165,7 @@ const pageLoading = $derived(
 		<div class="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" in:fade={{ duration: 250 }}>
 			{#each classes as cls (cls.id)}
 				{@const metric = getClassMetric(String(cls.id))}
+				{@const displayName = l(cls.name_ar, cls.name) || m.common_classes_value_unavailable()}
 				{@const count = Number(metric?.active_students || 0)}
 				{@const limit = Number(metric?.capacity || cls.capacity || 0)}
 				{@const ratio = Number(metric?.utilization_rate || 0)}
@@ -175,14 +177,14 @@ const pageLoading = $derived(
 					<div class="flex items-start justify-between">
 						<div class="flex flex-col text-start">
 							<span class="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
-								{cls.name_ar || cls.name || cls.id}
+								{displayName}
 							</span>
 							{#if cls.name && cls.name_ar}
 								<span class="text-[9px] text-muted-foreground font-mono">{cls.name}</span>
 							{/if}
 						</div>
 						<div class="px-1.5 py-0.5 rounded text-[9px] font-mono border border-border bg-background text-muted-foreground">
-							{cls.code || `CLASS-${String(cls.id).slice(0, 3).toUpperCase()}`}
+							{cls.code || m.common_classes_code_unavailable()}
 						</div>
 					</div>
 
@@ -205,14 +207,14 @@ const pageLoading = $derived(
 						</div>
 					</div>
 					<div class="flex items-center justify-between text-[9px] text-muted-foreground">
-						<span>الحضور {Math.round(Number(metric?.attendance_rate || 0))}%</span>
-						<span>{Number(metric?.subject_count || 0)} مواد</span>
+						<span>{m.common_classes_attendance({ rate: Math.round(Number(metric?.attendance_rate || 0)) })}</span>
+						<span>{m.common_classes_subjects_count({ count: Number(metric?.subject_count || 0) })}</span>
 					</div>
 
 					<!-- Class Footer -->
 					<div class="flex items-center justify-between border-t border-border/60 pt-2 text-[9px] text-muted-foreground">
 						<span>
-							{m.common_classes_grade_level_label({ level: cls.grade_level || 'N/A' })}
+							{m.common_classes_grade_level_label({ level: cls.level || m.common_classes_value_unavailable() })}
 						</span>
 						{#if ratio >= 100}
 							<span class="text-destructive font-bold uppercase text-[8px] tracking-wider px-1 py-0.2 rounded border border-destructive/20 bg-destructive/5">

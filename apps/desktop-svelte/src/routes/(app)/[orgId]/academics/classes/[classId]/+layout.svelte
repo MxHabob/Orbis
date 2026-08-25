@@ -38,6 +38,7 @@ import {
 import type { Snippet } from "svelte";
 
 import { getLocale } from "$lib/paraglide/runtime";
+import { l } from "$lib/core/i18n/locale";
 
 let { children }: { children: Snippet } = $props();
 
@@ -49,6 +50,9 @@ let studentsCount = $state(0);
 let isLoading = $state(true);
 
 let selectedPriority = $state("high");
+const classDisplayName = $derived(
+  classData ? l(classData.name_ar, classData.name) : "",
+);
 
 async function loadClassData() {
   if (!orgId || !classId) return;
@@ -105,8 +109,8 @@ const menuItems = $derived([
   <div class="flex flex-wrap items-center gap-2 select-none">
     {#if classData}
       <AskOrbisButton
-        query={m.academics_class_evaluation_ai_ask_orbis_query({ name: classData.name || classData.name_ar || "" })}
-        label={m.academics_class_evaluation_ask_orbis_btn({ name: classData.name || classData.name_ar || "" })}
+        query={m.academics_class_evaluation_ai_ask_orbis_query({ name: classDisplayName })}
+        label={m.academics_class_evaluation_ask_orbis_btn({ name: classDisplayName })}
         variant="outline"
         size="sm"
         class="h-8 text-[11px]"
@@ -190,7 +194,7 @@ const menuItems = $derived([
       <h1
         class="text-lg font-bold tracking-tight text-foreground truncate shrink min-w-0 font-sans"
       >
-        {classData.name_ar || classData.name || classId}
+        {classDisplayName || classId}
       </h1>
       <Badge
         variant="secondary"
@@ -202,12 +206,12 @@ const menuItems = $derived([
       <div class="w-24 shrink-0 flex items-center">
         <CapacityIndicator current={studentsCount} max={classData.capacity ?? 30} size="sm" />
       </div>
-      {#if classData.grade_level}
+      {#if classData.level}
         <Badge
           variant="outline"
           class="text-[9px] py-0 px-1.5 h-4.5 rounded shrink-0 font-sans"
         >
-          {classData.grade_level}
+          {classData.level}
         </Badge>
       {/if}
     {:else}
