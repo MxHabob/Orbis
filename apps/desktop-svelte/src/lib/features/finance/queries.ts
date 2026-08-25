@@ -97,11 +97,11 @@ export function createDiscountTemplatesQuery(orgId: string) {
 }
 
 /** Currencies query. */
-export function createCurrenciesQuery(orgId: string) {
+export function createCurrenciesQuery(orgId: () => string) {
   return createQuery(() => ({
-    queryKey: ["currencies", orgId],
+    queryKey: ["currencies", orgId()],
     queryFn: () => commands.finance.listCurrencies(),
-    enabled: !!orgId,
+    enabled: !!orgId(),
     staleTime: 10 * 60 * 1000,
   }));
 }
