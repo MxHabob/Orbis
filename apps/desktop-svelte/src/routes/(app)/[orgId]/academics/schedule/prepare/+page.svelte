@@ -6,14 +6,22 @@ import { Button } from "@orbis/ui-svelte/button";
 import PeriodSelect from "$lib/features/academics/components/period-select.svelte";
 import ClassSelect from "$lib/features/academics/components/class-select.svelte";
 import SchedulePlanWorkspace from "$lib/features/academics/components/schedule-plan-workspace.svelte";
+import ScheduleBoard from "$lib/features/academics/components/schedule-board.svelte";
+import Resizer from "$lib/shell/resizer.svelte";
 import { commands } from "$lib/core/ipc";
-import { localizeHref } from "$lib/paraglide/runtime";
-import { ArrowLeft, ArrowRight, CalendarDays, GraduationCap } from "@lucide/svelte";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import {
+  ArrowLeft,
+} from "@lucide/svelte";
 
 let { data }: { data: { orgId: string } } = $props();
 
 let activePeriodId = $state("");
 let selectedClassId = $state("");
+let sidebarEl = $state<HTMLElement | undefined>(undefined);
+let sidebarWidth = $state(18);
+const sidebarMinWidth = 16;
+const sidebarMaxWidth = 26;
 
 const periodsQuery = createQuery(() => ({
   queryKey: ["periods", data.orgId],
@@ -34,9 +42,48 @@ const subjectsQuery = createQuery(() => ({
   staleTime: 10 * 60 * 1000,
 }));
 
+const timeSlotsQuery = createQuery(() => ({
+  queryKey: ["time-slots", data.orgId, activePeriodId],
+  queryFn: () => commands.scheduling.listTimeSlots(),
+  enabled: !!data.orgId && !!activePeriodId,
+  staleTime: 10 * 60 * 1000,
+}));
+
+const lessonsQuery = createQuery(() => ({
+  queryKey: ["prepare-schedule", data.orgId, activePeriodId, selectedClassId],
+  queryFn: () => commands.scheduling.listLessonsByClass(activePeriodId, selectedClassId),
+  enabled: !!data.orgId && !!activePeriodId && !!selectedClassId,
+  staleTime: 2 * 60 * 1000,
+}));
+
 const periods = $derived(periodsQuery.data ?? []);
 const classes = $derived(classesQuery.data ?? []);
 const subjects = $derived(subjectsQuery.data ?? []);
+const timeSlots = $derived(
+  (timeSlotsQuery.data ?? []).filter(
+    (slot: any) => String(slot.period_id) === String(activePeriodId),
+  ),
+);
+const lessons = $derived(lessonsQuery.data ?? []);
+const weekdays = $derived.by(() => {
+  const configuredDays = new Set<number>();
+  for (const slot of timeSlots) {
+    for (const value of String(slot.applicable_days ?? "").split(",")) {
+      const day = Number(value.trim());
+      if (Number.isInteger(day) && day >= 1 && day <= 7) configuredDays.add(day);
+    }
+  }
+  for (const lesson of lessons) {
+    const day = Number(lesson.day_of_week);
+    if (Number.isInteger(day) && day >= 1 && day <= 7) configuredDays.add(day);
+  }
+  const days = configuredDays.size > 0 ? [...configuredDays] : [1, 2, 3, 4, 5];
+  const weekOrder = [7, 1, 2, 3, 4, 5, 6];
+  return days.sort((a, b) => weekOrder.indexOf(a) - weekOrder.indexOf(b)).map((day) => ({
+    value: day,
+    label: new Intl.DateTimeFormat(getLocale(), { weekday: "short" }).format(new Date(Date.UTC(2023, 0, day))),
+  }));
+});
 
 $effect(() => {
   if (periods.length > 0 && !activePeriodId) {
@@ -55,63 +102,64 @@ const isLoading = $derived(
   periodsQuery.isLoading || classesQuery.isLoading || subjectsQuery.isLoading,
 );
 
+const isBoardLoading = $derived(isLoading || timeSlotsQuery.isLoading || lessonsQuery.isLoading);
+
 function backToSchedule() {
   goto(localizeHref(`/${data.orgId}/academics/schedule`));
 }
 </script>
 
 <div class="h-full w-full overflow-hidden bg-background" dir="auto">
-  <div class="h-full w-full overflow-y-auto p-4 sm:p-6 lg:p-8">
-    <div class="mx-auto flex w-full max-w-7xl flex-col gap-5">
-      <header class="flex flex-col gap-4 border-b border-border/70 pb-5 sm:flex-row sm:items-start sm:justify-between">
-        <div class="flex items-start gap-3 text-start">
-          <Button variant="outline" size="icon" class="h-9 w-9 shrink-0 cursor-pointer" onclick={backToSchedule} aria-label={m.common_action_back()}>
-            <ArrowLeft size={15} class="rtl:rotate-180" />
-          </Button>
-          <div>
-            <div class="mb-1 flex items-center gap-2 text-primary">
-              <CalendarDays size={16} />
-              <span class="text-[10px] font-bold uppercase tracking-wider">{m.common_schedule_ai_auto_scheduler()}</span>
-            </div>
-            <h1 class="text-xl font-bold tracking-tight text-foreground sm:text-2xl">{m.common_schedule_ai_auto_scheduler()}</h1>
-          </div>
-        </div>
-        <Button variant="ghost" class="h-9 shrink-0 cursor-pointer text-xs" onclick={backToSchedule}>
-          <ArrowRight size={14} class="rtl:rotate-180" />
-          {m.common_action_back()}
+  <div class="flex h-full min-h-0 flex-col overflow-auto scrollbar-hide lg:flex-row">
+    <aside
+      bind:this={sidebarEl}
+      class="planner-sidebar relative w-full shrink-0 border-b border-border bg-muted/10 p-3 text-start sm:p-4 lg:border-b-0 lg:border-e lg:p-4 lg:overflow-y-auto scrollbar-hide"
+      style={`--planner-sidebar-width: ${sidebarWidth}rem;`}
+    >
+      <Resizer
+        viewport={sidebarEl}
+        direction="right"
+        minWidth={sidebarMinWidth}
+        maxWidth={sidebarMaxWidth}
+        defaultValue={18}
+        collapseThreshold={sidebarMinWidth}
+        collapsedWidth={sidebarMinWidth}
+        persistId="schedule-prepare-sidebar-width"
+        onWidth={(width) => (sidebarWidth = width)}
+      />
+      <div class="mb-4 flex items-center gap-2">
+        <Button variant="ghost" size="icon" class="h-8 w-8" onclick={backToSchedule} aria-label={m.common_action_back()}>
+          <ArrowLeft size={15} class="rtl:rotate-180" />
         </Button>
-      </header>
-
-      <section class="grid grid-cols-1 gap-3 md:grid-cols-2" aria-label={m.common_schedule_ai_auto_scheduler()}>
-        <div class="flex items-center gap-3 rounded-lg border border-border/70 bg-card p-3">
-          <CalendarDays size={17} class="text-primary" />
-          <div class="min-w-0 flex-1 text-start">
-            <span class="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{m.common_word_semester()}</span>
-            <PeriodSelect bind:value={activePeriodId} periods={periods} class="mt-1" disabled={isLoading} />
-          </div>
+        <div class="text-xs font-bold">مخطط الجدولة</div>
+      </div>
+      <div class="mb-4 space-y-3">
+        <div><p class="mb-1 text-[10px] font-semibold text-muted-foreground">{m.common_word_semester()}</p><PeriodSelect bind:value={activePeriodId} periods={periods} disabled={isLoading} /></div>
+        <div><p class="mb-1 text-[10px] font-semibold text-muted-foreground">{m.common_schedule_page_sel_class()}</p><ClassSelect bind:value={selectedClassId} classes={classes} disabled={isLoading} /></div>
+        <div class="flex items-center justify-between border-t border-border pt-3 text-[10px] text-muted-foreground">
+          <span title="عدد الدروس">{lessons.length} دروس</span>
+          <span title="عدد الفترات">{timeSlots.length} فترات</span>
         </div>
-        <div class="flex items-center gap-3 rounded-lg border border-border/70 bg-card p-3">
-          <GraduationCap size={17} class="text-brand-lime" />
-          <div class="min-w-0 flex-1 text-start">
-            <span class="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{m.common_schedule_page_sel_class()}</span>
-            <ClassSelect bind:value={selectedClassId} classes={classes} class="mt-1" disabled={isLoading} />
-          </div>
-        </div>
-      </section>
+      </div>
+      <div class="border-t border-border pt-4">
+        <SchedulePlanWorkspace periodId={activePeriodId} selectedClassId={selectedClassId} {subjects} standalone={true} embedded={true} previewDraft={false} activeJob={null} onApply={() => lessonsQuery.refetch()} />
+      </div>
+    </aside>
 
-      {#if isLoading}
-        <div class="min-h-96 animate-pulse rounded-xl border border-border bg-card/60"></div>
-      {:else}
-        <SchedulePlanWorkspace
-          periodId={activePeriodId}
-          selectedClassId={selectedClassId}
-          {subjects}
-          standalone={true}
-          previewDraft={false}
-          activeJob={null}
-          onApply={() => {}}
-        />
-      {/if}
-    </div>
+    <main class="flex min-h-130 min-w-0 flex-1 flex-col overflow-hidden bg-background p-3 sm:p-4">
+      <ScheduleBoard fitViewport={true} isLoading={isBoardLoading} error={lessonsQuery.error ? String(lessonsQuery.error) : null} {timeSlots} {weekdays} {lessons} draftLessons={[]} previewDraft={false} viewMode="class" getSubjectName={(id) => subjects.find((s: any) => String(s.id) === String(id))?.name_ar || subjects.find((s: any) => String(s.id) === String(id))?.name || "Subject"} getTeacherName={() => ""} getClassName={() => ""} getSubjectColor={(id) => subjects.find((s: any) => String(s.id) === String(id))?.color || "var(--primary)"} onCellClick={() => {}} onDeleteLesson={() => {}} onMoveLesson={() => {}} onRetry={() => lessonsQuery.refetch()} />
+    </main>
   </div>
 </div>
+
+<style>
+  .planner-sidebar {
+    width: 100%;
+  }
+
+  @media (min-width: 1024px) {
+    .planner-sidebar {
+      width: var(--planner-sidebar-width);
+    }
+  }
+</style>

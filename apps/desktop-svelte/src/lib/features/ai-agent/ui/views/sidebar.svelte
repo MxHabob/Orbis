@@ -6,13 +6,10 @@ Allows users to ask questions, select prompt suggestions, and collapse/resize.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { uiStore, authStore, aiContext } from "$lib/stores";
-import { Button } from "@orbis/ui-svelte/button";
-
 import { fly } from "svelte/transition";
 import { getLocale } from "$lib/paraglide/runtime";
 import { isDesktopApp } from "$lib/core/ipc";
 import { toast } from "svelte-sonner";
-import ChatHistoryPopover from "../components/chat-history-popover.svelte";
 import ChatInput from "../components/chat-input.svelte";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";

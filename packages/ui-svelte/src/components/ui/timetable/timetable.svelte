@@ -15,6 +15,7 @@ let {
   getTeacherName,
   getClassName,
   getSubjectColor,
+  fitViewport = false,
   class: className = "",
   onCellClick,
   onDeleteLesson,
@@ -36,6 +37,7 @@ let {
   getTeacherName: (id: string) => string;
   getClassName: (id: string) => string;
   getSubjectColor: (id: string) => string;
+  fitViewport?: boolean;
   class?: string;
   onCellClick: (day: number, slotId: string) => void;
   onDeleteLesson: (id: string) => void;
@@ -189,11 +191,11 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
 </script>
 
 <!-- Reusable responsive timetable board -->
-<div class="schedule-board flex-1 min-h-0 min-w-0 w-full h-full border-y border-border bg-card flex flex-col overflow-auto select-none relative scrollbar-thin {className}">
+<div class="schedule-board flex-1 min-h-0 min-w-0 w-full h-full border-y border-border bg-card flex flex-col {fitViewport ? 'overflow-hidden' : 'overflow-auto'} select-none relative scrollbar-thin {className}">
   
   <div 
-    class="schedule-grid grid gap-px text-xs w-full min-w-180 bg-border flex-1"
-    style="grid-template-columns: minmax(84px, 0.72fr) repeat({weekdays.length}, minmax(132px, 1fr));"
+    class="schedule-grid grid gap-px text-xs w-full bg-border flex-1 {fitViewport ? 'min-w-0' : 'min-w-180'}"
+    style="grid-template-columns: {fitViewport ? `minmax(58px, 0.55fr) repeat(${weekdays.length}, minmax(0, 1fr))` : `minmax(84px, 0.72fr) repeat(${weekdays.length}, minmax(132px, 1fr))`};"
     in:fade={{ duration: 150 }}
   >
     <!-- 1. Header Row (Sticky Top) -->

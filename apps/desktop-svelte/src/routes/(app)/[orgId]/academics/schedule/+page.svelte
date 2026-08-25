@@ -501,9 +501,9 @@ function openLessonEditor(lesson: any) {
 
 
 <div class="h-full w-full flex flex-col items-stretch overflow-hidden">
-  <div class="flex-1 min-h-0 min-w-0 w-full flex flex-col overflow-y-auto">
-    <main class="mx-auto flex w-full min-h-0 flex-1 flex-col gap-3 p-4 sm:p-6">
-      <div class="flex flex-col gap-3 shrink-0 lg:flex-row lg:items-center lg:justify-between">
+  <div class="flex-1 min-h-0 min-w-0 w-full flex flex-col overflow-y-auto scrollbar-hide">
+    <main class="mx-auto flex w-full min-h-0 flex-1 flex-col gap-3 p-3 sm:p-4">
+      <div class="flex min-w-0 flex-col gap-3 shrink-0 lg:flex-row lg:items-center lg:justify-between">
       <ScheduleFilterControls
         bind:viewMode
         bind:selectedClassId
@@ -515,12 +515,12 @@ function openLessonEditor(lesson: any) {
         {subjects}
         {rooms}
       />
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <label class="relative min-w-0 sm:w-64">
+        <div class="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center lg:flex-1 lg:justify-end">
+          <label class="relative min-w-0 sm:w-64 lg:max-w-64 lg:flex-1">
             <Search size={13} class="pointer-events-none absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input bind:value={searchTerm} class="h-8  ps-8 pe-3 text-[11px]" placeholder="Search by teacher or subject" aria-label="Search by teacher or subject" />
           </label>
-          <Button variant="default" class="h-8 gap-1.5 text-[11px] font-semibold" onclick={() => goto(localizeHref(`/${data.orgId}/academics/schedule/prepare`))}>
+          <Button variant="default" class="h-8 shrink-0 gap-1.5 text-[11px] font-semibold" onclick={() => goto(localizeHref(`/${data.orgId}/academics/schedule/prepare`))}>
             <WandSparkles size={13} />
             {m.common_schedule_ai_auto_scheduler()}
           </Button>
@@ -528,6 +528,7 @@ function openLessonEditor(lesson: any) {
       </div>
 
       <ScheduleBoard
+      fitViewport={true}
       {isLoading}
       error={error?.message || null}
       {timeSlots}

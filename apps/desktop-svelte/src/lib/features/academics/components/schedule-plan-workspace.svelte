@@ -14,12 +14,7 @@ import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
 import {
-  Cpu,
-  Clock,
   Square,
-  CheckCircle2,
-  AlertCircle,
-  History,
   Trash2,
 } from "@lucide/svelte";
 import Resizer from "$lib/shell/resizer.svelte";
@@ -31,6 +26,7 @@ let {
   activeJob = $bindable(null),
   subjects = [],
 	standalone = false,
+	embedded = false,
   onApply,
 }: {
   periodId: string;
@@ -39,6 +35,7 @@ let {
   activeJob: any;
   subjects: any[];
 	standalone?: boolean;
+	embedded?: boolean;
   onApply: () => void;
 } = $props();
 
@@ -283,7 +280,7 @@ async function deleteSolverJob(jobId: string) {
 <div
 	bind:this={panelEl}
 	style={standalone ? undefined : `width: ${preferredWidth}rem; min-width: ${preferredWidth > 3 ? minWidth : 3}rem; max-width: ${maxWidth}rem;`}
-	class="relative bg-card/65 backdrop-blur-md select-none transition-all duration-200 border-border/80 flex flex-col {standalone ? 'w-full h-full min-h-0 overflow-y-auto rounded-xl border p-4 sm:p-6 lg:p-8' : 'shrink-0 border-s'}"
+	class="relative select-none transition-all duration-200 flex flex-col {embedded ? 'w-full min-h-0' : standalone ? 'w-full h-full min-h-0 overflow-y-auto rounded-xl border border-border/80 bg-card/65 p-4 sm:p-6 lg:p-8 backdrop-blur-md' : 'shrink-0 border-s border-border/80 bg-card/65 backdrop-blur-md'}"
 	class:p-4={!standalone && preferredWidth > 3}
 	class:gap-4={!standalone && preferredWidth > 3}
 	in:fade={{ duration: 250 }}
@@ -384,7 +381,6 @@ async function deleteSolverJob(jobId: string) {
 					onclick={triggerSolving}
 					disabled={isSolving}
 				>
-					<Cpu size={13} />
 					<span>{m.common_schedule_ai_run_optimizer()}</span>
 				</Button>
 			</div>
@@ -404,7 +400,6 @@ async function deleteSolverJob(jobId: string) {
 
 				<!-- Time counter -->
 				<div class="flex items-center gap-2 text-xs font-semibold font-mono bg-background px-3 py-1.5 rounded border border-border/60 justify-center">
-					<Clock size={12} class="text-amber-500 animate-spin" style="animation-duration: 3s" />
 					<span>{formatTime(timeElapsed)}</span>
 				</div>
 
@@ -434,9 +429,9 @@ async function deleteSolverJob(jobId: string) {
 
 		<!-- Draft Preview Mode Controls -->
 		{#if activeJob && activeJob.status === 'completed'}
-			<div class="bg-purple-500/5 border border-purple-500/20 rounded-lg p-3.5 flex flex-col gap-3" in:fade={{ duration: 150 }}>
+			<div class="bg-primary/5 border border-primary/20 rounded-lg p-3.5 flex flex-col gap-3" in:fade={{ duration: 150 }}>
 				<div class="flex items-center justify-between">
-					<span class="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">
+					<span class="text-[10px] font-bold text-primary uppercase tracking-wider">
 						{m.common_schedule_ai_proposed_solution()}
 					</span>
 					<Badge variant="brand" class="text-[9px] font-mono font-bold uppercase tracking-wider">
@@ -472,7 +467,6 @@ async function deleteSolverJob(jobId: string) {
 						class="flex-1 text-xs font-semibold py-1.5 h-8 flex items-center justify-center gap-1"
 						onclick={applySolving}
 					>
-						<CheckCircle2 size={11} />
 						<span>{m.common_schedule_ai_apply_table()}</span>
 					</Button>
 					<Button 
@@ -489,7 +483,6 @@ async function deleteSolverJob(jobId: string) {
 		<!-- Error Panel -->
 		{#if solveError}
 			<div class="bg-destructive/5 border border-destructive/20 rounded-lg p-3 flex items-start gap-2 text-destructive text-[10px]" in:fade={{ duration: 150 }}>
-				<AlertCircle size={14} class="shrink-0 mt-0.5" />
 				<div class="flex flex-col gap-1">
 					<span class="font-bold">{m.common_schedule_ai_optimizer_error()}</span>
 					<span class="leading-normal">{solveError}</span>
@@ -501,7 +494,6 @@ async function deleteSolverJob(jobId: string) {
 		{#if solveJobs.length > 0}
 			<div class="flex flex-col gap-2 mt-2" in:fade={{ duration: 150 }}>
 				<div class="flex items-center gap-1.5 pb-1 border-b border-border/60">
-					<History size={12} class="text-muted-foreground" />
 					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
 						{m.common_schedule_ai_optimization_history()}
 					</span>

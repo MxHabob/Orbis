@@ -30,6 +30,7 @@ interface Props {
   onDeleteTimeSlot?: (slot: any) => void;
   onSaveTimeSlot?: (slot: any | null, data: any) => void;
   onRetry: () => void;
+  fitViewport?: boolean;
 }
 
 let {
@@ -54,6 +55,7 @@ let {
   onDeleteTimeSlot,
   onSaveTimeSlot,
   onRetry,
+  fitViewport = false,
 }: Props = $props();
 </script>
 
@@ -96,6 +98,7 @@ let {
       {getTeacherName}
       {getClassName}
       {getSubjectColor}
+      fitViewport={fitViewport}
       onCellClick={onCellClick}
       onDeleteLesson={onDeleteLesson}
       onEditLesson={onEditLesson}

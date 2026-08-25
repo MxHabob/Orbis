@@ -43,13 +43,13 @@ const modes = [
 ] as const;
 </script>
 
-<div class="flex min-w-0 flex-col gap-2 shrink-0 select-none sm:flex-row sm:items-center">
-  <div class="flex min-w-0 items-center overflow-x-auto border-b border-border sm:border-b-0">
-    <div class="flex min-w-max">
+<div class="flex min-w-0 flex-col gap-2 shrink-0 select-none sm:flex-row sm:flex-wrap sm:items-center">
+  <div class="flex min-w-0 items-center overflow-hidden border-b border-border sm:border-b-0">
+    <div class="flex min-w-0 flex-wrap">
       {#each modes as mode}
         <Button
           variant="ghost"
-          class="h-8 rounded-none border-b-2 px-3 text-[10px] font-semibold transition-all duration-150 {viewMode === mode.value ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}"
+          class="h-8 min-w-0 flex-1 rounded-none border-b-2 px-2 text-[10px] font-semibold transition-all duration-150 sm:px-3 {viewMode === mode.value ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}"
           onclick={() => viewMode = mode.value}
         >{mode.label}</Button>
       {/each}
