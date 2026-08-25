@@ -163,7 +163,7 @@ function getFallbackLabel(
 				{/if}
 				<Resizer
 					viewport={leftDiv}
-					direction="right"
+					direction="end"
 					minWidth={leftMinWidth}
 					maxWidth={leftMaxWidth}
 					defaultValue={pxToRem(leftWidth.default)}
@@ -189,7 +189,7 @@ function getFallbackLabel(
 			>
 				<Resizer
 					viewport={rightDiv}
-					direction="left"
+					direction="start"
 					minWidth={rightMinWidth}
 					maxWidth={rightMaxWidth}
 					defaultValue={pxToRem(rightWidth.default)}

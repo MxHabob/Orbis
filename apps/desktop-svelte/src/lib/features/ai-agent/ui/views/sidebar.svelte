@@ -30,7 +30,7 @@ let selectedSessionId = $state<string | null>(null);
 let viewMode = $state<"chat" | "cockpit">("chat");
 
 const sessionsQuery = createAgentSessionsQuery(() => currentOrgId);
-const sessions = $derived(sessionsQuery.data ?? []);
+const sessions = $derived<any[]>(sessionsQuery.data ?? []);
 
 const effectiveSessionId = $derived(
   selectedSessionId || (sessions.length > 0 ? sessions[0].id : null),
@@ -77,7 +77,7 @@ let isThinking = $state(false);
 let chatContainer = $state<HTMLDivElement>();
 
 const currentSession = $derived(
-  sessions.find((s) => s.id === effectiveSessionId),
+  sessions.find((s: any) => s.id === effectiveSessionId),
 );
 
 const userHat = $derived.by(() => {
@@ -189,7 +189,7 @@ async function submitMessage(queryText?: string) {
       activeId,
       text,
       aiContext.context || undefined,
-      (chunk) => {
+      (chunk: string) => {
         const msgIndex = messages.findIndex((m) => m.id === assistantMessageId);
         if (msgIndex !== -1) {
           messages[msgIndex].content = chunk;
@@ -241,7 +241,7 @@ function handleLinkClick(e: MouseEvent | null, href: string) {
   {#if !isStandalone}
     <Resizer
       viewport={sidebarDiv}
-      direction={isRtl ? "left" : "right"}
+      direction="start"
       {minWidth}
       {maxWidth}
       defaultValue={pxToRem(425)}

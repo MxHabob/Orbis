@@ -138,7 +138,7 @@ function backToSchedule() {
     >
       <Resizer
         viewport={sidebarEl}
-        direction="right"
+        direction="end"
         minWidth={sidebarMinWidth}
         maxWidth={sidebarMaxWidth}
         defaultValue={18}

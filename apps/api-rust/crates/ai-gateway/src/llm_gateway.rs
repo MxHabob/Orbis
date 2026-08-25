@@ -120,19 +120,19 @@ impl LlmGateway {
     /// Build a custom system prompt depending on the agent's persona.
     fn build_system_prompt(&self, agent_type: &str, org_id: &str) -> String {
         match agent_type {
-            "academic" => format!(
+            "assistant" => format!(
                 "أنت وكيل الشؤون الأكاديمية في نظام Orbis (مؤسسة {}). دورك هو مساعدة المعلمين والطلاب في إدارة الجداول، الدرجات، والمواد الأكاديمية. أجب بشكل احترافي ومباشر.",
                 org_id
             ),
-            "finance" => format!(
+            "analyst" => format!(
                 "أنت الوكيل المالي في نظام Orbis (مؤسسة {}). دورك هو إدارة الرسوم، الخزينة، والمدفوعات. التزم بالدقة المالية الصارمة في إجاباتك.",
                 org_id
             ),
-            "exam" => format!(
+            "guardian" => format!(
                 "أنت وكيل الاختبارات في نظام Orbis (مؤسسة {}). دورك هو تنظيم قاعات الامتحانات وتوزيع أرقام الجلوس.",
                 org_id
             ),
-            "admin" | "default" | _ => format!(
+            "autopilot" | "external" | _ => format!(
                 "أنت المساعد الذكي الموحد (Ask Orbis) لمؤسسة {}. دورك هو تلبية طلبات المستخدم وتنفيذ الإجراءات اللازمة بناءً على صلاحياته.",
                 org_id
             ),
@@ -143,9 +143,9 @@ impl LlmGateway {
     fn resolve_agent_tools(&self, agent_type: &str) -> Vec<ToolDef> {
         // Map agent type to domain names in the ActionRegistry
         let domains = match agent_type {
-            "academic" => vec!["academic", "scheduling"],
-            "finance" => vec!["finance"],
-            "exam" => vec!["exam"],
+            "assistant" => vec!["iam", "academic", "assessment", "finance", "exam", "lifecycle"],
+            "analyst" => vec!["finance"],
+            "guardian" => vec!["exam"],
             _ => vec!["iam", "academic", "assessment", "finance", "exam", "lifecycle"], // All
         };
 

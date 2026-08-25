@@ -37,6 +37,17 @@ pub mod agent_type {
     pub const ANALYST: &str = "analyst";
     pub const GUARDIAN: &str = "guardian";
     pub const EXTERNAL: &str = "external";
+
+    pub fn canonical(value: &str) -> &'static str {
+        match value {
+            "finance" | ANALYST => ANALYST,
+            "exam" | GUARDIAN => GUARDIAN,
+            "autopilot" => AUTOPILOT,
+            "external" => EXTERNAL,
+            "academic" | "default" | "greeting" | ASSISTANT => ASSISTANT,
+            _ => ASSISTANT,
+        }
+    }
 }
 
 /// Session status constants.

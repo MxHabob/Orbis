@@ -9,7 +9,7 @@ Inspired by GitButler's Resizer component.
 ```svelte
 <Resizer
   viewport={panelEl}
-  direction="right"
+  direction="end"
   minWidth={16}
   maxWidth={40}
   defaultValue={24}
@@ -31,7 +31,7 @@ let {
   collapsedWidth = 3,
 }: {
   viewport: HTMLElement | undefined;
-  direction: "left" | "right";
+  direction: "start" | "end";
   minWidth: number;
   maxWidth: number;
   defaultValue: number;
@@ -81,20 +81,13 @@ function onPointerDown(e: PointerEvent) {
   viewport.classList.add("resizer-dragging");
 }
 
-function isRtl(): boolean {
-  return document.documentElement.dir === "rtl";
-}
-
 function onPointerMove(e: PointerEvent) {
   if (!isDragging || !viewport) return;
 
-  const effectiveDirection = isRtl()
-    ? direction === "left"
-      ? "right"
-      : "left"
-    : direction;
-  const delta =
-    effectiveDirection === "right" ? e.clientX - startX : startX - e.clientX;
+  const pageDirection = getComputedStyle(viewport).direction;
+  const isStartEdge = direction === "start";
+  const growsTowardRight = pageDirection === "rtl" ? !isStartEdge : isStartEdge;
+  const delta = growsTowardRight ? e.clientX - startX : startX - e.clientX;
   const newWidthPx = startWidth + delta;
   const newWidthRem = pxToRem(newWidthPx);
 
@@ -150,8 +143,8 @@ function onDoubleClick() {
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
 	class="resizer"
-	class:right={direction === 'right'}
-	class:left={direction === 'left'}
+  class:start={direction === 'start'}
+  class:end={direction === 'end'}
 	class:dragging={isDragging}
 	class:cursor-col-resize={isDragging}
 	onpointerdown={onPointerDown}
@@ -175,11 +168,11 @@ function onDoubleClick() {
 		cursor: ew-resize !important;
 	}
 
-	.resizer.right {
-		inset-inline-end: -5px;
+  .resizer.end {
+    inset-inline-end: -5px;
 	}
 
-	.resizer.left {
+  .resizer.start {
 		inset-inline-start: -5px;
 	}
 

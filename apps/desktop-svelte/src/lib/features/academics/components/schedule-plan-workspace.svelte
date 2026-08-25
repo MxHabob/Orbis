@@ -289,7 +289,7 @@ async function deleteSolverJob(jobId: string) {
 	{#if !standalone}
 		<Resizer
 			viewport={panelEl}
-			direction="left"
+			direction="start"
 			minWidth={minWidth}
 			maxWidth={maxWidth}
 			defaultValue={defaultValue}
