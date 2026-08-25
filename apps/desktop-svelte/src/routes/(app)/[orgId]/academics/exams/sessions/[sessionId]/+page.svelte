@@ -257,59 +257,56 @@ async function loadSession() {
   try {
     session = await commands.exam.getSession(sessionId as string);
 
-    // Load subjects
-    try {
-      subjects = await commands.exam.getSubjects(sessionId);
-    } catch (err) {
-      console.error("Failed to load subjects", err);
-    }
+		const [
+			loadedSubjects,
+			loadedSchedules,
+			loadedSeatingNumbers,
+			loadedHalls,
+			loadedProctors,
+			loadedRooms,
+			[classList, subjectList],
+		] = await Promise.all([
+			commands.exam.getSubjects(sessionId).catch((err: unknown) => {
+				console.error("Failed to load subjects", err);
+				return [];
+			}),
+			commands.exam.getSchedules(sessionId).catch((err: unknown) => {
+				console.error("Failed to load schedules", err);
+				return [];
+			}),
+			commands.exam.getSeatingNumbers(sessionId).catch((err: unknown) => {
+				console.error("Failed to load seating numbers", err);
+				return [];
+			}),
+			commands.exam.getHalls(sessionId).catch((err: unknown) => {
+				console.error("Failed to load halls", err);
+				return [];
+			}),
+			commands.exam.getProctors(sessionId).catch((err: unknown) => {
+				console.error("Failed to load proctors", err);
+				return [];
+			}),
+			commands.scheduling.listRooms().catch((err: unknown) => {
+				console.error("Failed to load school rooms", err);
+				return [];
+			}),
+			Promise.all([
+				commands.academic.listClasses(),
+				commands.academic.listSubjects(),
+			]).catch((err: unknown) => {
+				console.error("Failed to load classes/subjects catalogs", err);
+				return [[], []];
+			}),
+		]);
 
-    // Load schedules
-    try {
-      schedules = await commands.exam.getSchedules(sessionId);
-    } catch (err) {
-      console.error("Failed to load schedules", err);
-    }
-
-    // Load seating numbers
-    try {
-      seatingNumbers = await commands.exam.getSeatingNumbers(sessionId);
-    } catch (err) {
-      console.error("Failed to load seating numbers", err);
-    }
-
-    // Load halls
-    try {
-      halls = await commands.exam.getHalls(sessionId);
-    } catch (err) {
-      console.error("Failed to load halls", err);
-    }
-
-    // Load proctors
-    try {
-      proctors = await commands.exam.getProctors(sessionId);
-    } catch (err) {
-      console.error("Failed to load proctors", err);
-    }
-
-    // Load school rooms catalog
-    try {
-      rooms = await commands.scheduling.listRooms();
-    } catch (err) {
-      console.error("Failed to load school rooms", err);
-    }
-
-    // Load school classes & subjects catalogs
-    try {
-      const [classList, subjectList] = await Promise.all([
-        commands.academic.listClasses(),
-        commands.academic.listSubjects(),
-      ]);
-      classes = classList;
-      schoolSubjects = subjectList;
-    } catch (err) {
-      console.error("Failed to load classes/subjects catalogs", err);
-    }
+		subjects = loadedSubjects;
+		schedules = loadedSchedules;
+		seatingNumbers = loadedSeatingNumbers;
+		halls = loadedHalls;
+		proctors = loadedProctors;
+		rooms = loadedRooms;
+		classes = classList;
+		schoolSubjects = subjectList;
 
     // Load active solve jobs for exams
     await loadSolveJobs();
