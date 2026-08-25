@@ -8,7 +8,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from "@orbis/ui-svelte/dialog";
 import {
@@ -44,28 +43,25 @@ let {
 </script>
 
 <Dialog bind:open={open}>
-  <DialogContent class="sm:max-w-[480px] text-start">
-    <DialogHeader>
+  <DialogContent class="sm:max-w-120 text-start">
+    <DialogHeader class="gap-0">
       <DialogTitle>{m.settings_templates_create_btn()}</DialogTitle>
-      <DialogDescription>
-        {m.template_desc_new_template()}
-      </DialogDescription>
     </DialogHeader>
 
-    <div class="flex flex-col gap-4 py-2">
+    <div class="flex flex-col gap-3 py-1">
       <div class="flex flex-col gap-2">
         <Label for="name-en" class="text-xs font-semibold text-muted-foreground">{m.template_label_name_en()}</Label>
-        <Input id="name-en" bind:value={name} placeholder="e.g. Student Certificate" />
+        <Input id="name-en" bind:value={name} placeholder={m.template_placeholder_name_en()} />
       </div>
 
       <div class="flex flex-col gap-2">
         <Label for="name-ar" class="text-xs font-semibold text-muted-foreground">{m.template_label_name_ar()}</Label>
-        <Input id=m.template_placeholder_name_ar() />
+        <Input id="name-ar" bind:value={nameAr} placeholder={m.template_placeholder_name_ar()} />
       </div>
 
       <div class="flex flex-col gap-2">
         <Label for="desc" class="text-xs font-semibold text-muted-foreground">{m.template_label_desc()}</Label>
-        <Input id=m.template_placeholder_desc() />
+        <Input id="desc" bind:value={desc} placeholder={m.template_placeholder_description()} />
       </div>
 
       <div class="grid grid-cols-2 gap-4">
@@ -107,13 +103,13 @@ let {
           <Label class="text-xs font-semibold text-muted-foreground">{m.template_label_page_size()}</Label>
           <Select type="single" bind:value={pageSize}>
             <SelectTrigger>
-              {({ A4: "A4 (210 x 297 mm)", A5: "A5 (148 x 210 mm)", Letter: "Letter (8.5 x 11 in)", Custom: "Custom" } as any)[pageSize]}
+              {({ A4: m.template_size_a4(), A5: m.template_size_a5(), Letter: m.template_size_letter(), Custom: m.template_size_custom_label() } as any)[pageSize]}
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="A4">A4 (210 x 297 mm)</SelectItem>
-              <SelectItem value="A5">A5 (148 x 210 mm)</SelectItem>
-              <SelectItem value="Letter">Letter (8.5 x 11 in)</SelectItem>
-              <SelectItem value="Custom">Custom</SelectItem>
+              <SelectItem value="A4">{m.template_size_a4()}</SelectItem>
+              <SelectItem value="A5">{m.template_size_a5()}</SelectItem>
+              <SelectItem value="Letter">{m.template_size_letter()}</SelectItem>
+              <SelectItem value="Custom">{m.template_size_custom_label()}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -135,7 +131,7 @@ let {
 
     <DialogFooter class="gap-2">
       <Button variant="outline" size="sm" onclick={() => (open = false)}>{m.common_action_cancel()}</Button>
-      <Button variant="lime" size="sm" onclick={onsubmit}>{m.common_form_btn_create()}</Button>
+      <Button variant="default" size="sm" onclick={onsubmit}>{m.common_form_btn_create()}</Button>
     </DialogFooter>
   </DialogContent>
 </Dialog>
