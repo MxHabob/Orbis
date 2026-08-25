@@ -927,27 +927,95 @@
               span {weekdays.length + 1};
           "
         >
-          <span>
-            {locale === "ar"
-              ? "استراحة"
-              : "BREAK"}
-          </span>
+          {#if editingSlotId === String(slot.id)}
+            <input
+              class="
+                h-6
+                w-28
+                rounded
+                border
+                border-border
+                bg-background
+                px-1
+                text-[9px]
+                text-foreground
+              "
+              bind:value={draftNameAr}
+              aria-label="اسم الاستراحة"
+            />
 
-          <span
-            dir="ltr"
-            class="
-              tabular-nums
-              font-mono
-              text-[9px]
-              font-bold
-              opacity-80
-            "
-          >
-            ({slot.start_time} -
-            {slot.end_time})
-          </span>
+            <input
+              class="
+                h-6
+                rounded
+                border
+                border-border
+                bg-background
+                px-1
+                text-[9px]
+                text-foreground
+              "
+              bind:value={draftStartTime}
+              type="time"
+              aria-label="وقت البداية"
+            />
 
-          {#if onEditTimeSlot || onDeleteTimeSlot}
+            <input
+              class="
+                h-6
+                rounded
+                border
+                border-border
+                bg-background
+                px-1
+                text-[9px]
+                text-foreground
+              "
+              bind:value={draftEndTime}
+              type="time"
+              aria-label="وقت النهاية"
+            />
+
+            <button
+              type="button"
+              class="rounded p-1 text-primary hover:bg-primary/10"
+              onclick={saveSlotEdit}
+              aria-label="حفظ"
+            >
+              <Save size={11} />
+            </button>
+
+            <button
+              type="button"
+              class="rounded p-1 text-muted-foreground hover:bg-muted"
+              onclick={cancelSlotEdit}
+              aria-label="إلغاء"
+            >
+              <X size={11} />
+            </button>
+          {:else}
+            <span>
+              {locale === "ar"
+                ? "استراحة"
+                : "BREAK"}
+            </span>
+
+            <span
+              dir="ltr"
+              class="
+                tabular-nums
+                font-mono
+                text-[9px]
+                font-bold
+                opacity-80
+              "
+            >
+              ({slot.start_time} -
+              {slot.end_time})
+            </span>
+          {/if}
+
+          {#if editingSlotId !== String(slot.id) && (onEditTimeSlot || onDeleteTimeSlot)}
             <span
               class="
                 flex
@@ -967,9 +1035,7 @@
                   variant="secondary"
                   size="icon-xs"
                   onclick={() =>
-                    onEditTimeSlot?.(
-                      slot,
-                    )}
+                    startSlotEdit(slot)}
                   aria-label={
                     locale === "ar"
                       ? "تعديل الاستراحة"
