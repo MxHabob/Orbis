@@ -11,4 +11,5 @@ pub mod calendar;
 pub mod enrollment_workflow;
 pub mod platform_policy;
 pub mod ai;
+pub mod docforge;
 pub mod auto_register;

@@ -353,4 +353,10 @@ export const commands: OrbisCommands = {
     aiGetAutopilotConfig: (orgId: any) => cmd("ai_get_autopilot_config", { orgId }),
     aiSaveAutopilotConfig: (orgId: any, config: any) => cmd("ai_save_autopilot_config", { orgId, config }),
   },
+  docforge: {
+    createTemplate: (request: any) => cmd("create_template", { request }),
+    getTemplate: (templateId: any) => cmd("get_template", { templateId }),
+    deleteTemplate: (templateId: any) => cmd("delete_template", { templateId }),
+    listTemplates: (request: any) => cmd("list_templates", { request }),
+  },
 };

@@ -52,15 +52,12 @@ async function loadTemplates() {
   if (!orgId) return;
   loading = true;
   try {
-    const listParams: any = {};
+    const listParams: any = { org_id: orgId };
     if (filterEntityType !== "all") listParams.entity_type = filterEntityType;
     if (filterDocType !== "all") listParams.document_type = filterDocType;
     if (searchQuery.trim() !== "") listParams.search = searchQuery.trim();
 
-    const response = await commands.document.listDocuments(
-      orgId,
-      listParams,
-    );
+    const response = await commands.docforge.listTemplates(listParams);
     templates = response || [];
   } catch (e: unknown) {
     console.error("Failed to load templates:", e);
@@ -149,19 +146,12 @@ async function handleCreateTemplate() {
       code: null,
       page_size: newTemplatePageSize,
       orientation: newTemplateOrientation,
-      format_version: "v2",
-      engine: "docforge_typst",
-      structure_json: JSON.stringify({
-        schema_version: "2.0",
-        pages: [],
-        styles: { fontFamily: "Cairo", fontSize: 12 },
-      }),
-      assets_json: JSON.stringify({}),
+      document_json: defaultDocJson,
       locale: isAr() ? "ar" : "en",
       tags: null,
     };
 
-    const response = await commands.document.createDocument(createRequest);
+    const response = await commands.docforge.createTemplate(createRequest);
 
     toast.success("Template created successfully");
     isCreateDialogOpen = false;
@@ -188,7 +178,7 @@ async function confirmDelete(id: string) {
   if (!confirmed) return;
 
   try {
-    await commands.document.deleteDocument(id);
+    await commands.docforge.deleteTemplate(id);
     toast.success("Template deleted successfully");
     loadTemplates();
   } catch (e: unknown) {
