@@ -1633,6 +1633,8 @@
   "settings_periods_lock_success": "تم قفل الفترة بنجاح",
   "settings_periods_no_terms": "لا توجد فصول دراسية مسجلة لهذه السنة.",
   "settings_action_save_changes": "حفظ التغييرات",
+  "settings_action_discard_changes": "تجاهل التغييرات",
+  "settings_unsaved_changes": "لديك تغييرات غير محفوظة",
   "students_filter_panel": "لوحة التصفية",
   "students_clear_filters": "مسح التصفية",
   "students_search_placeholder": "البحث بالاسم، الرقم الأكاديمي...",

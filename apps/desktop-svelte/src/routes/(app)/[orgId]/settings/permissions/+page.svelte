@@ -1,7 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { fade, slide } from "svelte/transition";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
@@ -33,8 +32,8 @@ import { toast } from "svelte-sonner";
 import { commands } from "$lib/core/ipc";
 import { goto } from "$app/navigation";
 import SearchField from "$lib/shared/components/search-field.svelte";
+import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 import {
-  Shield,
   Search,
   Plus,
   Trash2,
@@ -538,37 +537,14 @@ function toggleAction(ruleIndex: number, action: string) {
   </div>
   </div>
 
-  <!-- Floating Save Changes Banner -->
-  {#if hasUnsavedChanges}
-    <div 
-      in:slide={{ duration: 250 }} 
-      out:slide={{ duration: 200 }} 
-      class="absolute bottom-6 left-1/2 -translate-x-1/2 w-11/12 max-w-2xl z-50 rounded-2xl border border-border bg-card/95 backdrop-blur-xl shadow-2xl p-4 flex items-center justify-between gap-4"
-    >
-      <div class="flex items-center gap-3 text-start">
-        <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-          <Shield size={16} />
-        </div>
-        <div class="flex flex-col">
-          <span class="text-xs font-bold text-foreground">
-            {m.settings_permissions_unsaved_title()}
-          </span>
-          <span class="text-[10px] text-muted-foreground mt-0.5">
-            {m.settings_permissions_unsaved_desc()}
-          </span>
-        </div>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <Button variant="ghost" size="sm" class="text-xs" onclick={discardChanges} disabled={isLoading}>
-          {m.common_td_undo()}
-        </Button>
-        <Button variant="lime" size="sm" class="text-xs font-bold" onclick={saveChanges} disabled={isLoading}>
-          {isLoading ? m.common_state_saving() : m.settings_action_save_changes()}
-        </Button>
-      </div>
-    </div>
-  {/if}
+  <SettingsBottomBar
+    visible={hasUnsavedChanges}
+    isDirty={hasUnsavedChanges}
+    isSaving={isLoading}
+    message={m.settings_permissions_unsaved_title()}
+    onsave={saveChanges}
+    onreset={discardChanges}
+  />
 </div>
 
 <!-- Create Custom Rule Modal -->

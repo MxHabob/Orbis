@@ -1634,6 +1634,8 @@
   "settings_periods_lock_success": "Period locked successfully",
   "settings_periods_no_terms": "No academic terms registered for this year.",
   "settings_action_save_changes": "Save Changes",
+  "settings_action_discard_changes": "Discard Changes",
+  "settings_unsaved_changes": "You have unsaved changes",
   "students_filter_panel": "Filter Panel",
   "students_clear_filters": "Clear Filters",
   "students_search_placeholder": "Search by name, academic number...",

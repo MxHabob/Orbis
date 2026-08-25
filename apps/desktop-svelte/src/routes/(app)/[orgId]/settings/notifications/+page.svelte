@@ -2,12 +2,13 @@
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { Switch } from "@orbis/ui-svelte/switch";
-import { Button } from "@orbis/ui-svelte/button";
 import { toast } from "svelte-sonner";
+import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
 import { Bell, Mail } from "@lucide/svelte";
 
 let isSaving = $state(false);
+let initialSnapshot = $state("");
 
 // Preferences state
 let prefs = $state({
@@ -38,18 +39,33 @@ onMount(() => {
       console.error("Failed to parse notifications preferences:", e);
     }
   }
+  initialSnapshot = JSON.stringify(prefs);
 });
 
-async function handleSave(e: Event) {
-  e.preventDefault();
+const currentSnapshot = $derived(JSON.stringify(prefs));
+const isDirty = $derived(
+  Boolean(initialSnapshot && currentSnapshot !== initialSnapshot),
+);
+
+function handleReset() {
+  if (!initialSnapshot) return;
+  try {
+    prefs = JSON.parse(initialSnapshot);
+  } catch (e) {
+    console.error("Failed to reset notifications preferences:", e);
+  }
+}
+
+async function handleSave(e?: Event) {
+  e?.preventDefault();
   isSaving = true;
-
-  // Simulate delay for premium feel
-  await new Promise((resolve) => setTimeout(resolve, 600));
-
-  localStorage.setItem("orbis_notification_preferences", JSON.stringify(prefs));
-  toast.success(m.settings_general_save_success());
-  isSaving = false;
+  try {
+    localStorage.setItem("orbis_notification_preferences", currentSnapshot);
+    initialSnapshot = currentSnapshot;
+    toast.success(m.settings_general_save_success());
+  } finally {
+    isSaving = false;
+  }
 }
 </script>
 
@@ -57,19 +73,8 @@ async function handleSave(e: Event) {
   <title>{m.common_nav_notifications()} | Orbis</title>
 </svelte:head>
 
-<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
+<div class="h-full w-full overflow-y-auto p-6 pb-28 flex flex-col gap-6 scrollbar-hide">
     <form onsubmit={handleSave} class="flex flex-col gap-10">
-      <!-- Header Actions -->
-      <div class="flex items-center justify-end gap-3 pb-5 border-b border-border/40 w-full select-none font-sans">
-        <Button
-          type="submit"
-          variant="lime"
-          class="px-6 font-semibold h-9 text-xs"
-          disabled={isSaving}
-        >
-          {isSaving ? m.common_state_saving() : m.settings_action_save_changes()}
-        </Button>
-      </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
         <!-- In-App Notifications -->
         <div class="flex flex-col gap-6 text-start">
@@ -200,4 +205,11 @@ async function handleSave(e: Event) {
         </div>
       </div>
     </form>
+    <SettingsBottomBar
+      visible={isDirty}
+      {isDirty}
+      {isSaving}
+      onsave={handleSave}
+      onreset={handleReset}
+    />
 </div>
