@@ -94,9 +94,16 @@ pub async fn agent_create_session(
     session_type: String,
 ) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let agent_type = match session_type.as_str() {
+        "default" | "greeting" | "academic" => "assistant",
+        "finance" => "analyst",
+        "exam" => "guardian",
+        "assistant" | "autopilot" | "analyst" | "guardian" | "external" => session_type.as_str(),
+        _ => "assistant",
+    };
     let req = ai_gateway::agent::CreateSessionRequest {
         org_id: ctx.org_id.clone(),
-        agent_type: session_type,
+        agent_type: agent_type.to_string(),
         agent_version: None,
         acting_as_user_id: ctx.actor.as_str().to_string(),
         acting_as_role: "admin".to_string(),
