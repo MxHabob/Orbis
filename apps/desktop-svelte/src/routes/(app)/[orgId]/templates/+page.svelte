@@ -191,7 +191,7 @@ async function confirmDelete(id: string) {
 // Handle Template Publishing/Activation
 async function publishTemplate(id: string) {
   try {
-    await commands.document.listDocuments(orgId, null, null, null);
+    await commands.docforge.publishTemplate(id);
     toast.success(m.settings_templates_publish_success());
     loadTemplates();
   } catch (e: unknown) {
@@ -204,7 +204,7 @@ async function publishTemplate(id: string) {
 // Handle Template Archiving
 async function archiveTemplate(id: string) {
   try {
-    await commands.document.deleteDocument(id);
+    await commands.docforge.archiveTemplate(id);
     toast.success(m.settings_templates_archive_success());
     loadTemplates();
   } catch (e: unknown) {
@@ -217,7 +217,7 @@ async function archiveTemplate(id: string) {
 // Handle Template Restoring
 async function restoreTemplate(id: string) {
   try {
-    await commands.document.listDocuments(orgId, null, null, null);
+    await commands.docforge.restoreTemplate(id);
     toast.success(m.settings_templates_restore_success());
     loadTemplates();
   } catch (e: unknown) {

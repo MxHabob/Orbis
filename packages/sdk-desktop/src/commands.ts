@@ -356,6 +356,10 @@ export const commands: OrbisCommands = {
   docforge: {
     createTemplate: (request: any) => cmd("create_template", { request }),
     getTemplate: (templateId: any) => cmd("get_template", { templateId }),
+    updateTemplate: (templateId: any, request: any) => cmd("update_template", { templateId, request }),
+    publishTemplate: (templateId: any) => cmd("publish_template", { templateId }),
+    archiveTemplate: (templateId: any) => cmd("archive_template", { templateId }),
+    restoreTemplate: (templateId: any) => cmd("restore_template", { templateId }),
     deleteTemplate: (templateId: any) => cmd("delete_template", { templateId }),
     listTemplates: (request: any) => cmd("list_templates", { request }),
   },

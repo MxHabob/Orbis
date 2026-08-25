@@ -132,9 +132,7 @@ async function renameTemplate(newName: string) {
       tags: templateRecord.tags,
     };
 
-    await commands.document.getDocuments(
-      templateId || null, null, null, null, null
-    );
+    await commands.docforge.updateTemplate(templateId || "", updateRequest);
 
     // We don't mark store as saved here to not interfere with document changes,
     // though the document is technically saved. If it was dirty, it's now saved.
@@ -154,7 +152,7 @@ async function renameTemplate(newName: string) {
 // ── Save ─────────────────────────────────────────────────────
 
 async function saveTemplate() {
-  if (!templateRecord || !store.isDirty) return;
+  if (!templateRecord || !store.isDirty || isSaving) return;
   isSaving = true;
   try {
     const docJson = serializeDocument(store.document);
@@ -174,9 +172,7 @@ async function saveTemplate() {
       tags: templateRecord.tags,
     };
 
-    await commands.document.getDocuments(
-      templateId || null, null, null, null, null
-    );
+    await commands.docforge.updateTemplate(templateId || "", updateRequest);
 
     store.markSaved();
     toast.success(
@@ -321,7 +317,10 @@ function goBack() {
 // ── Lifeperiod ────────────────────────────────────────────────
 
 onMount(() => {
-  initEditor();
+  store.setAutoSaveCallback(() => {
+    void saveTemplate();
+  });
+  void initEditor();
   window.addEventListener("keydown", handleKeydown);
   return () => {
     window.removeEventListener("keydown", handleKeydown);

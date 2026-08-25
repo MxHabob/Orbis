@@ -4,6 +4,10 @@ import type * as Types from '../types/index.js';
 export interface DocforgeCommands {
   createTemplate(request: any | null): Promise<any>;
   getTemplate(templateId: string): Promise<any>;
+  updateTemplate(templateId: string, request: any | null): Promise<any>;
+  publishTemplate(templateId: string): Promise<any>;
+  archiveTemplate(templateId: string): Promise<any>;
+  restoreTemplate(templateId: string): Promise<any>;
   deleteTemplate(templateId: string): Promise<any>;
   listTemplates(request: any | null): Promise<any>;
 }

@@ -146,8 +146,9 @@ function copyVariableTag(varName: string) {
 
 function addVariable() {
   if (!newVarName.trim() || !newVarSource.trim()) return;
+  const previousVariables = { ...store.document.variables };
   const updatedVars = {
-    ...store.document.variables,
+    ...previousVariables,
     [newVarName.trim()]: {
       source: newVarSource.trim(),
       type: newVarType as any,
@@ -159,7 +160,7 @@ function addVariable() {
     description: `Add variable ${newVarName}`,
     descriptionAr: `إضافة متغير ${newVarName}`,
     execute: (doc) => ({ ...doc, variables: updatedVars }),
-    undo: (doc) => ({ ...doc, variables: store.document.variables }),
+    undo: (doc) => ({ ...doc, variables: previousVariables }),
   });
   newVarName = "";
   newVarSource = "";
@@ -286,7 +287,7 @@ function handleDragStart(e: DragEvent, varName: string) {
       <div class="flex items-center gap-1.5">
         <select
           bind:value={newVarType}
-          class="h-6 text-[10px] rounded border border-border bg-background px-1.5 flex-grow"
+          class="h-6 text-[10px] rounded border border-border bg-background px-1.5 grow"
         >
           <option value="string">String</option>
           <option value="number">Number</option>
@@ -325,7 +326,7 @@ function handleDragStart(e: DragEvent, varName: string) {
             <GripVertical size={9} class="text-muted-foreground/30 group-hover:text-muted-foreground shrink-0" />
 
             <!-- Type icon -->
-            <svelte:component this={TypeIconComp} size={11} class="shrink-0 text-muted-foreground" />
+            <TypeIconComp size={11} class="shrink-0 text-muted-foreground" />
 
             <!-- Variable info -->
             <div class="flex flex-col grow min-w-0">

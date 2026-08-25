@@ -56,6 +56,101 @@ pub async fn get_template(
 }
 
 #[tauri::command]
+pub async fn update_template(
+    state: State<'_, Arc<AppState>>,
+    template_id: String,
+    request: Option<serde_json::Value>,
+) -> CmdResult<serde_json::Value> {
+    let ctx = state
+        .build_guarded_context()
+        .await
+        .map_err(CommandError::from)?;
+    let request = request
+        .ok_or_else(|| CommandError::new("Missing template update request"))
+        .and_then(|value| {
+            serde_json::from_value::<docforge_orbis::template_service::UpdateTemplateRequest>(value)
+                .map_err(|error| CommandError::new(format!("Invalid template update request: {error}")))
+        })?;
+
+    let template = docforge_orbis::template_service::TemplateService::update(
+        &ctx.db,
+        &ctx.org_id,
+        &template_id,
+        ctx.actor.as_str(),
+        request,
+    )
+    .await
+    .map_err(CommandError::from)?;
+
+    serde_json::to_value(template)
+        .map_err(|error| CommandError::new(format!("Failed to serialize template: {error}")))
+}
+
+#[tauri::command]
+pub async fn publish_template(
+    state: State<'_, Arc<AppState>>,
+    template_id: String,
+) -> CmdResult<serde_json::Value> {
+    let ctx = state
+        .build_guarded_context()
+        .await
+        .map_err(CommandError::from)?;
+    let template = docforge_orbis::template_service::TemplateService::publish(
+        &ctx.db,
+        &ctx.org_id,
+        &template_id,
+        ctx.actor.as_str(),
+    )
+    .await
+    .map_err(CommandError::from)?;
+
+    serde_json::to_value(template)
+        .map_err(|error| CommandError::new(format!("Failed to serialize template: {error}")))
+}
+
+#[tauri::command]
+pub async fn archive_template(
+    state: State<'_, Arc<AppState>>,
+    template_id: String,
+) -> CmdResult<serde_json::Value> {
+    let ctx = state
+        .build_guarded_context()
+        .await
+        .map_err(CommandError::from)?;
+    let template = docforge_orbis::template_service::TemplateService::archive(
+        &ctx.db,
+        &ctx.org_id,
+        &template_id,
+    )
+    .await
+    .map_err(CommandError::from)?;
+
+    serde_json::to_value(template)
+        .map_err(|error| CommandError::new(format!("Failed to serialize template: {error}")))
+}
+
+#[tauri::command]
+pub async fn restore_template(
+    state: State<'_, Arc<AppState>>,
+    template_id: String,
+) -> CmdResult<serde_json::Value> {
+    let ctx = state
+        .build_guarded_context()
+        .await
+        .map_err(CommandError::from)?;
+    let template = docforge_orbis::template_service::TemplateService::restore(
+        &ctx.db,
+        &ctx.org_id,
+        &template_id,
+    )
+    .await
+    .map_err(CommandError::from)?;
+
+    serde_json::to_value(template)
+        .map_err(|error| CommandError::new(format!("Failed to serialize template: {error}")))
+}
+
+#[tauri::command]
 pub async fn delete_template(
     state: State<'_, Arc<AppState>>,
     template_id: String,

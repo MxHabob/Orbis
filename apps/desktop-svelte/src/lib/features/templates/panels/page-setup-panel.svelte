@@ -32,15 +32,7 @@ const pageSizes = [
 ];
 
 function updatePageSetup(updates: Record<string, unknown>) {
-  // Direct mutation of the document meta (the store tracks dirty state)
-  const newMeta = {
-    ...store.document.meta,
-    pageSetup: {
-      ...store.document.meta.pageSetup,
-      ...updates,
-    },
-  };
-  (store.document as any).meta = newMeta;
+  store.updatePageSetup(updates as any);
 }
 
 function updateMargin(side: string, value: number) {

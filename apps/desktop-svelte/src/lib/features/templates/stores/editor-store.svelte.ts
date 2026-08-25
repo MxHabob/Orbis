@@ -385,6 +385,24 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     viewport = { ...viewport, panX: x, panY: y };
   }
 
+  function updatePageSetup(updates: Partial<PageSetup>): void {
+    const previous = { ...document.meta.pageSetup };
+    const next = { ...previous, ...updates };
+    executeCommand({
+      type: "update-page-setup",
+      description: "Update page setup",
+      descriptionAr: "تحديث إعدادات الصفحة",
+      execute: (doc) => ({
+        ...doc,
+        meta: { ...doc.meta, pageSetup: next },
+      }),
+      undo: (doc) => ({
+        ...doc,
+        meta: { ...doc.meta, pageSetup: previous },
+      }),
+    });
+  }
+
   // ── Save ─────────────────────────────────────────────────
 
   function markSaved(): void {
@@ -664,6 +682,7 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     zoomOut,
     zoomToFit,
     setPan,
+    updatePageSetup,
 
     // Save
     markSaved,

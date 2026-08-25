@@ -296,6 +296,10 @@ pub fn generate_handlers<R: tauri::Runtime>() -> impl Fn(tauri::ipc::Invoke<R>) 
         crate::commands::ai::custom::ai_save_autopilot_config,
         crate::commands::docforge::custom::create_template,
         crate::commands::docforge::custom::get_template,
+        crate::commands::docforge::custom::update_template,
+        crate::commands::docforge::custom::publish_template,
+        crate::commands::docforge::custom::archive_template,
+        crate::commands::docforge::custom::restore_template,
         crate::commands::docforge::custom::delete_template,
         crate::commands::docforge::custom::list_templates,
     ]
