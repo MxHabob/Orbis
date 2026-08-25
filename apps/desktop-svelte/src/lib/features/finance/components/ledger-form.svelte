@@ -11,14 +11,10 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@orbis/ui-svelte/tabs";
 import { ComboboxDropdown } from "@orbis/ui-svelte/combobox-dropdown";
+import { SheetFooter } from "@orbis/ui-svelte/sheet";
 import { toast } from "svelte-sonner";
+import { BookOpen, Landmark, Users, Info, Check, Loader2 } from "@lucide/svelte";
 
 let {
   orgId,
@@ -36,7 +32,7 @@ let {
 let ledgers = $state<any[]>([]);
 let currencies = $state<any[]>([]);
 let isLoading = $state(true);
-let activeTab = $state<"gl" | "cash_account" | "entity">(defaultTab);
+let activeTab = $state<"gl" | "cash_account" | "entity">("gl");
 let isSubmitting = $state(false);
 
 // GL Account States
@@ -44,20 +40,16 @@ let glParentId = $state("");
 let glNameAr = $state("");
 let glNameEn = $state("");
 let glAccountType = $state("asset");
-let glOpeningBalance = $state("0");
 
 // Cash and bank account state
 let trNameAr = $state("");
 let trNameEn = $state("");
 let trType = $state<"cash" | "bank">("cash");
-let trBankName = $state("");
-let trAccountNumber = $state("");
 
 // Entity States
 let enType = $state<"vendor" | "partner" | "employee">("vendor");
 let enNameAr = $state("");
 let enNameEn = $state("");
-let enOpeningBalance = $state("0");
 
 // Load Chart of Accounts & Currencies
 async function loadFormData() {
@@ -79,6 +71,7 @@ async function loadFormData() {
 
 onMount(() => {
   if (orgId) {
+    activeTab = defaultTab;
     loadFormData();
   }
 });
@@ -149,7 +142,6 @@ async function handleSubmit(e: SubmitEvent) {
         name_ar: glNameAr || glNameEn,
         item_type: glAccountType,
         currency: "", // Backend will inherit parent currency
-        opening_balance: parseFloat(glOpeningBalance) || 0.0,
         parent_id: glParentId,
         sub_type: undefined,
       };
@@ -161,7 +153,6 @@ async function handleSubmit(e: SubmitEvent) {
       glParentId = "";
       glNameAr = "";
       glNameEn = "";
-      glOpeningBalance = "0";
     } else if (activeTab === "cash_account") {
       if (!trNameAr && !trNameEn) {
         toast.error(m.common_cash_account_name_required());
@@ -176,7 +167,6 @@ async function handleSubmit(e: SubmitEvent) {
         currency: baseCurrency,
         code: "",
         sub_type: trType,
-        opening_balance: 0,
         parent_id: undefined,
       };
 
@@ -186,8 +176,6 @@ async function handleSubmit(e: SubmitEvent) {
       // Reset
       trNameAr = "";
       trNameEn = "";
-      trBankName = "";
-      trAccountNumber = "";
     } else if (activeTab === "entity") {
       if (!enNameAr && !enNameEn) {
         toast.error("يرجى إدخال اسم الكيان المالي");
@@ -201,7 +189,6 @@ async function handleSubmit(e: SubmitEvent) {
         name_ar: enNameAr || enNameEn,
         item_type: "", // Backend resolves from parent
         currency: "", // Backend resolves from parent
-        opening_balance: parseFloat(enOpeningBalance) || 0.0,
         parent_id: undefined, // Backend resolves from sub_type
         sub_type: enType,
       };
@@ -212,7 +199,6 @@ async function handleSubmit(e: SubmitEvent) {
       // Reset
       enNameAr = "";
       enNameEn = "";
-      enOpeningBalance = "0";
     }
 
     onSuccess();
@@ -226,23 +212,38 @@ async function handleSubmit(e: SubmitEvent) {
 }
 </script>
 
-<div class="flex-1 flex flex-col h-full overflow-hidden">
-  <Tabs defaultPreset={activeTab} class="w-full flex-1 flex flex-col overflow-hidden" onValueChange={(v) => handleTabChange(v as any)}>
-    <TabsList class="grid w-full grid-cols-3 select-none shrink-0 mb-4 bg-muted/60 p-1 rounded-lg">
-      <TabsTrigger value="gl" class="text-xs font-semibold py-1.5 cursor-pointer rounded-md transition-all">
-        {m.common_ledger_tab_gl()}
-      </TabsTrigger>
-      <TabsTrigger value="cash_account" class="text-xs font-semibold py-1.5 cursor-pointer rounded-md transition-all">
-        {m.common_ledger_tab_cash_account()}
-      </TabsTrigger>
-      <TabsTrigger value="entity" class="text-xs font-semibold py-1.5 cursor-pointer rounded-md transition-all">
-        {m.common_ledger_tab_entity()}
-      </TabsTrigger>
-    </TabsList>
+<div class="flex h-full flex-col overflow-hidden">
+  <form onsubmit={handleSubmit} class="flex min-h-full flex-col gap-5 px-1">
+    <div class="flex flex-col gap-1.5 text-start">
+      <Label for="account_type" class="text-xs font-bold text-foreground">
+        {m.common_ledger_label_type()}
+      </Label>
+      <Select type="single" value={activeTab} onValueChange={(value) => handleTabChange(value as typeof activeTab)}>
+        <SelectTrigger id="account_type" class="h-9 w-full text-xs text-start">
+          <span class="flex items-center gap-2">
+            {#if activeTab === "gl"}
+              <BookOpen size={15} class="shrink-0 text-primary" />
+              {m.common_ledger_tab_gl()}
+            {:else if activeTab === "cash_account"}
+              <Landmark size={15} class="shrink-0 text-primary" />
+              {m.common_ledger_tab_cash_account()}
+            {:else}
+              <Users size={15} class="shrink-0 text-primary" />
+              {m.common_ledger_tab_entity()}
+            {/if}
+          </span>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="gl" class="text-xs cursor-pointer">{m.common_ledger_tab_gl()}</SelectItem>
+          <SelectItem value="cash_account" class="text-xs cursor-pointer">{m.common_ledger_tab_cash_account()}</SelectItem>
+          <SelectItem value="entity" class="text-xs cursor-pointer">{m.common_ledger_tab_entity()}</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
 
-    <form onsubmit={handleSubmit} class="flex-1 overflow-y-auto px-1 flex flex-col gap-5 scrollbar-hide">
+    {#if activeTab === "gl"}
       <!-- GL Account Form Content -->
-      <TabsContent value="gl" class="flex flex-col gap-4 mt-0 animate-in fade-in-50 duration-150">
+      <div class="flex flex-col gap-4 animate-in fade-in-50 duration-150">
         <!-- Parent Account Select -->
         <div class="flex flex-col gap-1.5 text-start">
           <Label class="text-xs font-bold text-foreground">
@@ -255,7 +256,6 @@ async function handleSubmit(e: SubmitEvent) {
             items={parentItems}
             onSelect={handleParentSelect}
             class="w-full text-xs"
-            disabled={isSubmitting || isLoading}
           />
         </div>
 
@@ -303,24 +303,11 @@ async function handleSubmit(e: SubmitEvent) {
           </div>
         {/if}
 
-        <!-- Opening Balance -->
-        <div class="flex flex-col gap-1.5 text-start">
-          <Label for="gl_open_bal" class="text-xs font-bold text-foreground">
-            {m.common_ledger_label_opening_balance()}
-          </Label>
-          <Input
-            id="gl_open_bal"
-            type="number"
-            step="any"
-            bind:value={glOpeningBalance}
-            placeholder="0.00"
-            disabled={isSubmitting}
-          />
-        </div>
-      </TabsContent>
+      </div>
 
+    {:else if activeTab === "cash_account"}
       <!-- Treasury Form Content -->
-      <TabsContent value="cash_account" class="flex flex-col gap-4 mt-0 animate-in fade-in-50 duration-150">
+      <div class="flex flex-col gap-4 animate-in fade-in-50 duration-150">
         <!-- Treasury Names -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="flex flex-col gap-1.5 text-start">
@@ -369,41 +356,16 @@ async function handleSubmit(e: SubmitEvent) {
           </Select>
         </div>
 
-        <!-- Dynamic Bank inputs -->
-        {#if trType === "bank"}
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-150">
-            <div class="flex flex-col gap-1.5 text-start">
-              <Label for="tr_bank_name" class="text-xs font-bold text-foreground">
-                {m.common_ledger_label_bank_name()}
-              </Label>
-              <Input
-                id="tr_bank_name"
-                type="text"
-                bind:value={trBankName}
-                placeholder={m.common_ledger_placeholder_bank_name()}
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-            <div class="flex flex-col gap-1.5 text-start">
-              <Label for="tr_acc_num" class="text-xs font-bold text-foreground">
-                {m.common_ledger_label_account_number()}
-              </Label>
-              <Input
-                id="tr_acc_num"
-                type="text"
-                bind:value={trAccountNumber}
-                placeholder={m.common_ledger_placeholder_account_number()}
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-          </div>
-        {/if}
-      </TabsContent>
+        <div class="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5 text-[11px] text-muted-foreground">
+          <Info size={14} class="shrink-0 text-primary" />
+          <span>{m.common_ledger_label_type()}: <strong class="text-foreground">asset</strong> · {m.common_ledger_col_code()}: <strong class="font-mono text-foreground">{baseCurrency}</strong></span>
+        </div>
 
+      </div>
+
+    {:else}
       <!-- Entity Form Content -->
-      <TabsContent value="entity" class="flex flex-col gap-4 mt-0 animate-in fade-in-50 duration-150">
+      <div class="flex flex-col gap-4 animate-in fade-in-50 duration-150">
         <!-- Entity Type Selection -->
         <div class="flex flex-col gap-1.5 text-start">
           <Label class="text-xs font-bold text-foreground">
@@ -453,42 +415,33 @@ async function handleSubmit(e: SubmitEvent) {
           </div>
         </div>
 
-        <!-- Opening Balance -->
-        <div class="flex flex-col gap-1.5 text-start">
-          <Label for="en_open_bal" class="text-xs font-bold text-foreground">
-            {m.common_ledger_label_opening_balance()}
-          </Label>
-          <Input
-            id="en_open_bal"
-            type="number"
-            step="any"
-            bind:value={enOpeningBalance}
-            placeholder="0.00"
-            disabled={isSubmitting}
-          />
-        </div>
-      </TabsContent>
+      </div>
+    {/if}
 
       <!-- Form Actions (Footer) -->
-      <div class="flex gap-3 justify-end mt-auto pt-6 border-t border-border/50 shrink-0">
+      <SheetFooter class="mt-auto flex shrink-0 flex-row justify-end gap-3 border-t border-border/50 px-0 pb-0 pt-5">
         <Button
           type="button"
-          variant="ghost"
           onclick={onCancel}
           disabled={isSubmitting}
-          class="text-xs h-9"
+          variant="outline"
+          class="text-xs h-8 cursor-pointer"
         >
           {m.common_action_cancel()}
         </Button>
         <Button
           type="submit"
           variant="lime"
-          class="font-bold text-xs h-9 px-5"
+          class="font-bold text-xs h-8 px-4 cursor-pointer gap-1.5"
           disabled={isSubmitting || (activeTab === "gl" && !glParentId)}
         >
-          {isSubmitting ? m.common_loading() : m.common_ledger_btn_add_account()}
+          {#if isSubmitting}
+            <Loader2 size={13} class="animate-spin" />
+          {:else}
+            <Check size={13} />
+          {/if}
+          <span>{isSubmitting ? m.common_loading() : m.common_ledger_btn_add_account()}</span>
         </Button>
-      </div>
-    </form>
-  </Tabs>
+      </SheetFooter>
+  </form>
 </div>

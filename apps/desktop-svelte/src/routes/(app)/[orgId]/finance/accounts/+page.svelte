@@ -9,13 +9,7 @@ import { Plus, Landmark, RefreshCw, WalletCards } from "@lucide/svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@orbis/ui-svelte/dialog";
+import LedgerCreateSheet from "$lib/features/finance/components/ledger-create-sheet.svelte";
 
 import { DataTable } from "$lib/tables";
 import {
@@ -121,9 +115,9 @@ const treasuryCols = $derived(
 const rtl = $derived(getLocale() === "ar");
 </script>
 
-<div class="h-full w-full overflow-y-auto bg-background p-5 md:p-8 font-sans" dir={rtl ? "rtl" : "ltr"}>
-  <div class="max-w-6xl mx-auto flex flex-col gap-7" in:fade={{ duration: 180 }}>
-    <header class="flex justify-end">
+<div class="flex h-full min-h-0 w-full flex-col overflow-hidden bg-background p-6 font-sans" dir={rtl ? "rtl" : "ltr"}>
+  <div class="flex min-h-0 w-full flex-1 flex-col gap-7" in:fade={{ duration: 180 }}>
+    <header class="flex shrink-0 justify-end">
       <Button variant="outline" class="h-9 px-3 text-xs font-bold shrink-0" onclick={() => { isAddDialogOpen = true; }}>
         <Plus size={14} class="me-1.5" />
         {m.finance_new_cash_account_button()}
@@ -148,23 +142,11 @@ const rtl = $derived(getLocale() === "ar");
     {#if isLoading}
       <div class="border border-border bg-card rounded-lg p-5"><Skeleton class="h-72 w-full rounded-md" /></div>
     {:else}
-      <div class="min-h-82.5">
+        <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
           <DataTable columns={treasuryCols} source={treasurySource} emptyIcon={Landmark} emptyTitle={m.finance_no_ledgers()} {rtl} refreshable onRefresh={loadData} />
       </div>
     {/if}
   </div>
 </div>
 
-<Dialog bind:open={isAddDialogOpen}>
-  <DialogContent class="max-w-xl text-start select-none h-[80vh] flex flex-col p-6 bg-card border-border/80">
-    <DialogHeader class="shrink-0 mb-4 text-start">
-      <DialogTitle class="text-base font-extrabold text-foreground">{m.common_ledger_dialog_add_title()}</DialogTitle>
-      <DialogDescription class="text-[11px] text-muted-foreground leading-relaxed">{m.common_ledger_dialog_add_desc()}</DialogDescription>
-    </DialogHeader>
-    {#if isAddDialogOpen}
-      {#await import("$lib/features/finance/components/ledger-form.svelte") then { default: LedgerForm }}
-        <LedgerForm orgId={data.orgId} onSuccess={handleSuccess} onCancel={() => isAddDialogOpen = false} defaultTab="gl" />
-      {/await}
-    {/if}
-  </DialogContent>
-</Dialog>
+<LedgerCreateSheet bind:open={isAddDialogOpen} orgId={data.orgId} onSuccess={handleSuccess} />
