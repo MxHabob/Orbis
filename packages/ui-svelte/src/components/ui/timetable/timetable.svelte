@@ -416,7 +416,7 @@
     select-none
     flex-col
     border-y
-    border-border
+    border-border/60
     bg-card
     scrollbar-thin
     {fitViewport
@@ -432,7 +432,7 @@
       w-full
       flex-1
       gap-px
-      bg-border/60
+      bg-border/35
       text-xs
       {fitViewport
         ? 'min-w-0'
@@ -460,13 +460,13 @@
         justify-center
         gap-1
         border-b
-        border-border
-        bg-muted/40
+        border-primary/20
+        bg-primary/10
         p-2
         text-center
         text-[9px]
         font-semibold
-        text-muted-foreground
+        text-foreground
       "
     >
       <span>
@@ -481,7 +481,7 @@
           class="
             rounded
             p-1
-            text-muted-foreground
+            text-primary
             transition-colors
           "
           onclick={startSlotAdd}
@@ -511,8 +511,8 @@
           items-center
           justify-center
           border-b
-          border-border
-          bg-muted/40
+          border-primary/20
+          bg-primary/10
           p-2
           text-center
           text-[10px]
@@ -632,7 +632,7 @@
       </div>
 
       <div
-        class="border-b border-border bg-muted/20"
+        class="border-b border-border/50 bg-muted/20"
         style="
           grid-column:
             span {weekdays.length};
@@ -668,8 +668,8 @@
           justify-center
           gap-1
           border-b
-          border-border
-          bg-muted/25
+          border-border/50
+          bg-muted/45
           {isBreak ? 'p-1' : 'p-1.5'}
           text-center
           font-semibold
@@ -682,7 +682,7 @@
               w-full
               rounded
               border
-              border-border
+              border-border/50
               bg-background
               px-1
               text-[10px]
@@ -1179,10 +1179,6 @@
 
   .schedule-grid > :global(*) {
     min-width: 0;
-  }
-
-  .schedule-grid > :global(.sticky) {
-    background-color: var(--color-card);
   }
 
   /* ==========================================================================
