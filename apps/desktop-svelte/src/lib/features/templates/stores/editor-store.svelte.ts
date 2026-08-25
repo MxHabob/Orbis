@@ -924,6 +924,96 @@ function createDefaultNode(
         positionMode: "absolute",
       } as any;
 
+    case "Grid":
+      return {
+        ...base,
+        type: "Grid",
+        children: [],
+        props: { columns: ["1fr", "1fr"], gap: 4, ...overrides },
+        position: { x: 10, y: 10, width: "100%", height: 50 },
+        positionMode: "absolute",
+      } as any;
+
+    case "Repeater":
+      return {
+        ...base,
+        type: "Repeater",
+        children: [],
+        props: {
+          dataSource: "items",
+          itemVariable: "item",
+          indexVariable: "index",
+          layout: "vertical",
+          gap: 2,
+          ...overrides,
+        },
+        position: { x: 10, y: 10, width: "100%", height: 60 },
+        positionMode: "flow",
+      } as any;
+
+    case "Conditional":
+      return {
+        ...base,
+        type: "Conditional",
+        children: [],
+        props: { condition: "status == 'active'", ...overrides },
+        position: { x: 10, y: 10, width: "100%", height: 30 },
+        positionMode: "flow",
+      } as any;
+
+    case "ComponentRef":
+      return {
+        ...base,
+        type: "ComponentRef",
+        props: { componentId: "", ...overrides },
+        position: { x: 10, y: 10, width: "100%", height: 30 },
+        positionMode: "flow",
+      } as any;
+
+    case "PageBreak":
+      return { ...base, type: "PageBreak", ...overrides } as any;
+
+    case "Header":
+      return {
+        ...base,
+        type: "Header",
+        props: { height: 20, ...overrides },
+        children: [],
+        positionMode: "flow",
+      } as any;
+
+    case "Footer":
+      return {
+        ...base,
+        type: "Footer",
+        props: { height: 15, showPageNumber: true, ...overrides },
+        children: [],
+        positionMode: "flow",
+      } as any;
+
+    case "Watermark":
+      return {
+        ...base,
+        type: "Watermark",
+        props: {
+          watermarkType: "text",
+          text: "DRAFT",
+          opacity: 0.15,
+          rotation: -35,
+          fontSize: 48,
+          ...overrides,
+        },
+        positionMode: "absolute",
+      } as any;
+
+    case "Spacer":
+      return {
+        ...base,
+        type: "Spacer",
+        props: { height: 10, ...overrides },
+        positionMode: "flow",
+      } as any;
+
     default:
       return {
         ...base,

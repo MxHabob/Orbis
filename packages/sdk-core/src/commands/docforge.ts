@@ -10,4 +10,10 @@ export interface DocforgeCommands {
   restoreTemplate(templateId: string): Promise<any>;
   deleteTemplate(templateId: string): Promise<any>;
   listTemplates(request: any | null): Promise<any>;
+  listDataSchemas(): Promise<Record<string, unknown>>;
+  previewMultiUp(templateId: string, entityIds: string[], multiUpConfig: string): Promise<number[]>;
+  startMultiUpPrint(templateId: string, entityIds: string[], multiUpConfig: string): Promise<{ jobId: string }>;
+  getMultiUpPrintStatus(jobId: string): Promise<any>;
+  listTemplateVersions(templateId: string): Promise<any[]>;
+  revertTemplateVersion(templateId: string, version: number): Promise<any>;
 }

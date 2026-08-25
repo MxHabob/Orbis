@@ -13,6 +13,7 @@ import {
   SelectItem,
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
+import { createDocument } from "@docforge/core";
 
 import { l, isAr } from "$lib/core/i18n";
 import SearchField from "$lib/shared/components/search-field.svelte";
@@ -29,6 +30,7 @@ import { confirmStore } from "$lib/stores";
 
 // State runes
 let templates = $state<any[]>([]);
+let dataSchemas = $state<Record<string, any>>({});
 let loading = $state(true);
 let searchQuery = $state("");
 let filterEntityType = $state("all");
@@ -41,8 +43,7 @@ let newTemplateNameAr = $state("");
 let newTemplateDesc = $state("");
 let newTemplateEntityType = $state("enrollment");
 let newTemplateDocType = $state("CERTIFICATE");
-let newTemplatePageSize = $state("A4");
-let newTemplateOrientation = $state("portrait");
+let newTemplatePreset = $state("blank");
 
 // Dynamic parameters from route
 const orgId: string = $derived(page.params.orgId ?? "");
@@ -57,8 +58,12 @@ async function loadTemplates() {
     if (filterDocType !== "all") listParams.document_type = filterDocType;
     if (searchQuery.trim() !== "") listParams.search = searchQuery.trim();
 
-    const response = await commands.docforge.listTemplates(listParams);
+    const [response, schemas] = await Promise.all([
+      commands.docforge.listTemplates(listParams),
+      commands.docforge.listDataSchemas(),
+    ]);
     templates = response || [];
+    dataSchemas = schemas || {};
   } catch (e: unknown) {
     console.error("Failed to load templates:", e);
     const msg = (e as any)?.message || "Failed to load templates";
@@ -83,6 +88,94 @@ onMount(() => {
 });
 
 // Handle Template Creation
+function getDefaultPageSetup() {
+  if (newTemplateDocType === "ID_CARD") return { size: "ID_CARD", orientation: "landscape" };
+  if (newTemplateDocType === "EXAM_CARD") return { size: "A5", orientation: "portrait" };
+  if (newTemplateDocType === "RECEIPT") return { size: "A4", orientation: "portrait" };
+  return { size: "A4", orientation: "portrait" };
+}
+
+function buildInitialDocument() {
+  const document = createDocument(
+    newTemplateDocType,
+    newTemplateEntityType,
+    isAr() ? "ar" : "en",
+  );
+  document.meta.name = newTemplateName;
+  document.meta.nameAr = newTemplateNameAr || undefined;
+  const pageSetup = getDefaultPageSetup();
+  document.meta.pageSetup.size = pageSetup.size as any;
+  document.meta.pageSetup.orientation = pageSetup.orientation as any;
+
+  const schema = dataSchemas[newTemplateEntityType] ?? {};
+  for (const [field, definition] of Object.entries(schema)) {
+    const type = (definition as any)?.type;
+    if (["string", "number", "boolean", "date", "image", "array"].includes(type)) {
+      document.variables[field] = {
+        source: field,
+        type,
+        label: field,
+        labelAr: (definition as any)?.label,
+      } as any;
+    }
+  }
+
+  const text = (id: string, content: string, y: number, fontSize: number) => ({
+    type: "Text",
+    id,
+    props: {
+      content,
+      fontSize,
+      fontFamily: "Tahoma",
+      fontWeight: fontSize >= 20 ? "bold" : "normal",
+      textAlign: "center",
+      direction: "rtl",
+    },
+    position: { x: 15, y, width: "100%", height: 18 },
+    positionMode: "absolute",
+  });
+
+  const page = document.pages[0]!;
+  if (newTemplatePreset === "certificate") {
+    page.children = [
+      { type: "Header", id: "header", props: { height: 25 }, children: [text("header-text", "$org.name_ar", 8, 18)] },
+      text("title", newTemplateNameAr || newTemplateName, 65, 26),
+      text("student", "{{student.nameAr}}", 110, 20),
+      { type: "Footer", id: "footer", props: { height: 15, showPageNumber: true }, children: [text("footer-text", "{{student.nationalId}}", 270, 10)] },
+    ] as any;
+  } else if (newTemplatePreset === "transcript") {
+    page.children = [
+      text("title", newTemplateNameAr || newTemplateName, 15, 22),
+      {
+        type: "Table",
+        id: "results-table",
+        props: {
+          dataSource: "subjects",
+          columns: [
+            { header: "المادة", field: "nameAr", width: "40%" },
+            { header: "الدرجة", field: "score", width: "30%" },
+            { header: "التقدير", field: "grade", width: "30%" },
+          ],
+          showHeader: true,
+          showGrid: true,
+          direction: "rtl",
+        },
+        position: { x: 15, y: 55, width: "100%", height: 100 },
+        positionMode: "absolute",
+      },
+    ] as any;
+  } else if (newTemplatePreset === "receipt") {
+    page.children = [
+      text("title", newTemplateNameAr || newTemplateName, 20, 22),
+      text("payer", "{{payerName}}", 70, 16),
+      text("amount", "{{amount | number:'0.00'}} {{currency}}", 110, 24),
+      { type: "QRCode", id: "receipt-qr", props: { data: "{{receiptNumber}}", size: 25, errorCorrection: "M" }, position: { x: 85, y: 160, width: 25, height: 25 }, positionMode: "absolute" },
+    ] as any;
+  }
+
+  return document;
+}
+
 async function handleCreateTemplate() {
   if (!newTemplateName.trim()) {
     toast.error("Template name in English is required");
@@ -90,51 +183,8 @@ async function handleCreateTemplate() {
   }
 
   try {
-    const defaultDocJson = JSON.stringify({
-      version: "1.0",
-      meta: {
-        name: newTemplateName,
-        nameAr: newTemplateNameAr || null,
-        documentType: newTemplateDocType,
-        entityType: newTemplateEntityType,
-        locale: isAr() ? "ar" : "en",
-        pageSetup: {
-          size: newTemplatePageSize,
-          orientation: newTemplateOrientation,
-          margins: { top: 15, bottom: 15, left: 15, right: 15 },
-          unit: "mm",
-        },
-      },
-      variables: {},
-      assets: {},
-      root: {
-        type: "Page",
-        id: "page-root",
-        children: [
-          {
-            type: "Frame",
-            id: "content-root",
-            props: {
-              layout: "vertical",
-              gap: 10,
-            },
-            children: [
-              {
-                type: "Text",
-                id: "main-title",
-                props: {
-                  content: newTemplateNameAr || newTemplateName,
-                  fontSize: 24,
-                  fontFamily: "Tahoma",
-                  fontWeight: "bold",
-                  textAlign: "center",
-                },
-              },
-            ],
-          },
-        ],
-      },
-    });
+    const pageSetup = getDefaultPageSetup();
+    const defaultDocJson = JSON.stringify(buildInitialDocument());
     const createRequest = {
       name: newTemplateName,
       name_ar: newTemplateNameAr || null,
@@ -144,8 +194,8 @@ async function handleCreateTemplate() {
       entity_type: newTemplateEntityType,
       category_id: null,
       code: null,
-      page_size: newTemplatePageSize,
-      orientation: newTemplateOrientation,
+      page_size: pageSetup.size,
+      orientation: pageSetup.orientation,
       document_json: defaultDocJson,
       locale: isAr() ? "ar" : "en",
       tags: null,
@@ -305,7 +355,7 @@ async function restoreTemplate(id: string) {
   bind:desc={newTemplateDesc}
   bind:entityType={newTemplateEntityType}
   bind:docType={newTemplateDocType}
-  bind:pageSize={newTemplatePageSize}
-  bind:orientation={newTemplateOrientation}
+  bind:preset={newTemplatePreset}
+  schemas={dataSchemas}
   onsubmit={handleCreateTemplate}
 />

@@ -302,5 +302,11 @@ pub fn generate_handlers<R: tauri::Runtime>() -> impl Fn(tauri::ipc::Invoke<R>) 
         crate::commands::docforge::custom::restore_template,
         crate::commands::docforge::custom::delete_template,
         crate::commands::docforge::custom::list_templates,
+        crate::commands::docforge::custom::list_data_schemas,
+        crate::commands::docforge::custom::preview_multi_up,
+        crate::commands::docforge::custom::start_multi_up_print,
+        crate::commands::docforge::custom::get_multi_up_print_status,
+        crate::commands::docforge::custom::list_template_versions,
+        crate::commands::docforge::custom::revert_template_version,
     ]
 }

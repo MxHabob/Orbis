@@ -384,5 +384,11 @@ export const commands: OrbisCommands = {
     restoreTemplate: (templateId: any) => cmd("restore_template", { templateId }),
     deleteTemplate: (templateId: any) => cmd("delete_template", { templateId }),
     listTemplates: (request: any) => cmd("list_templates", { request }),
+    listDataSchemas: () => cmd("list_data_schemas", {}),
+    previewMultiUp: (templateId: any, entityIds: any, multiUpConfig: any) => cmd("preview_multi_up", { templateId, entityIds, multiUpConfig }),
+    startMultiUpPrint: (templateId: any, entityIds: any, multiUpConfig: any) => cmd("start_multi_up_print", { templateId, entityIds, multiUpConfig }),
+    getMultiUpPrintStatus: (jobId: any) => cmd("get_multi_up_print_status", { jobId }),
+    listTemplateVersions: (templateId: any) => cmd("list_template_versions", { templateId }),
+    revertTemplateVersion: (templateId: any, version: any) => cmd("revert_template_version", { templateId, version }),
   },
 };

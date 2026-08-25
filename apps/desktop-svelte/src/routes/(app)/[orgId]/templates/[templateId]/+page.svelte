@@ -86,7 +86,7 @@ async function initEditor() {
   try {
     const [templateRecordData, schemas] = await Promise.all([
       commands.docforge.getTemplate(templateId || ""),
-      Promise.resolve({}),
+      commands.docforge.listDataSchemas(),
     ]);
 
     templateRecord = templateRecordData;

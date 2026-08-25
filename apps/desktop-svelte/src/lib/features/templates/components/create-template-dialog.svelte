@@ -24,8 +24,8 @@ interface Props {
   desc: string;
   entityType: string;
   docType: string;
-  pageSize: string;
-  orientation: string;
+  preset: string;
+  schemas?: Record<string, any>;
   onsubmit: () => void;
 }
 
@@ -36,10 +36,79 @@ let {
   desc = $bindable(),
   entityType = $bindable(),
   docType = $bindable(),
-  pageSize = $bindable(),
-  orientation = $bindable(),
+  preset = $bindable(),
+  schemas = {},
   onsubmit,
 }: Props = $props();
+
+const entityLabels: Record<string, string> = {
+  enrollment: m.template_entity_student_reg(),
+  payment: m.template_entity_receipts(),
+  exam: m.template_entity_seat_numbers(),
+  user: m.template_entity_id_cards(),
+  organization: m.template_entity_school(),
+  period_score: m.template_entity_period_score(),
+  report_card: m.template_entity_report_card(),
+  term_certificate: m.template_entity_term_certificate(),
+  annual_certificate: m.template_entity_annual_certificate(),
+  exam_session: m.template_entity_exam_session(),
+};
+
+const entityDocuments: Record<string, string[]> = {
+  enrollment: ["CERTIFICATE", "ID_CARD", "REPORT"],
+  payment: ["RECEIPT", "REPORT"],
+  exam: ["EXAM_CARD", "REPORT"],
+  user: ["ID_CARD", "CERTIFICATE", "REPORT"],
+  organization: ["CERTIFICATE", "REPORT"],
+  period_score: ["REPORT", "TRANSCRIPT"],
+  report_card: ["REPORT", "TRANSCRIPT"],
+  term_certificate: ["CERTIFICATE", "TERM_CERTIFICATE"],
+  annual_certificate: ["CERTIFICATE", "ANNUAL_CERTIFICATE"],
+  exam_session: ["EXAM_CARD", "REPORT"],
+};
+
+const allEntities = $derived(
+  Array.from(new Set([...Object.keys(entityLabels), ...Object.keys(schemas)])),
+);
+const availableDocumentTypes = $derived(entityDocuments[entityType] ?? ["CUSTOM"]);
+const schemaFieldCount = $derived(
+  Object.keys(schemas[entityType] ?? {}).filter((key) => key !== "type" && key !== "description").length,
+);
+
+$effect(() => {
+  if (!availableDocumentTypes.includes(docType)) {
+    docType = availableDocumentTypes[0] ?? "CUSTOM";
+  }
+});
+
+$effect(() => {
+  const presetByDocument: Record<string, string> = {
+    CERTIFICATE: "certificate",
+    TERM_CERTIFICATE: "certificate",
+    ANNUAL_CERTIFICATE: "certificate",
+    REPORT: "transcript",
+    TRANSCRIPT: "transcript",
+    RECEIPT: "receipt",
+  };
+  if (presetByDocument[docType]) {
+    preset = presetByDocument[docType];
+  }
+});
+
+function documentLabel(type: string) {
+  const labels: Record<string, string> = {
+    CERTIFICATE: m.template_doc_certificate(),
+    ID_CARD: m.template_doc_id_card(),
+    RECEIPT: m.template_doc_receipt(),
+    EXAM_CARD: m.template_doc_seating(),
+    REPORT: m.template_doc_report(),
+    TRANSCRIPT: m.template_doc_transcript(),
+    TERM_CERTIFICATE: m.template_doc_term_certificate(),
+    ANNUAL_CERTIFICATE: m.template_doc_annual_certificate(),
+    CUSTOM: m.template_doc_custom(),
+  };
+  return labels[type] ?? type;
+}
 </script>
 
 <Dialog bind:open={open}>
@@ -69,63 +138,43 @@ let {
           <Label class="text-xs font-semibold text-muted-foreground">{m.template_label_entity()}</Label>
           <Select type="single" bind:value={entityType}>
             <SelectTrigger>
-              {({ enrollment: m.template_entity_student_reg(), payment: m.template_entity_receipts(), exam: m.template_entity_seat_numbers(), user: m.template_entity_id_cards(), organization: m.template_entity_school() } as any)[entityType]}
+              {entityLabels[entityType] ?? entityType}
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="enrollment">{m.template_entity_student_reg()}</SelectItem>
-              <SelectItem value="payment">{m.template_entity_receipts()}</SelectItem>
-              <SelectItem value="exam">{m.template_entity_seat_numbers()}</SelectItem>
-              <SelectItem value="user">{m.template_entity_id_cards()}</SelectItem>
-              <SelectItem value="organization">{m.template_entity_school()}</SelectItem>
+              {#each allEntities as value (value)}
+                <SelectItem value={value}>{entityLabels[value] ?? value}</SelectItem>
+              {/each}
             </SelectContent>
           </Select>
+          <span class="text-[10px] text-muted-foreground">{m.template_available_fields({ count: String(schemaFieldCount) })}</span>
         </div>
 
         <div class="flex flex-col gap-2">
           <Label class="text-xs font-semibold text-muted-foreground">{m.template_label_doc_type()}</Label>
           <Select type="single" bind:value={docType}>
             <SelectTrigger>
-              {({ CERTIFICATE: m.template_doc_certificate(), ID_CARD: m.template_doc_id_card(), RECEIPT: m.template_doc_receipt(), EXAM_CARD: m.template_doc_seating(), REPORT: m.template_doc_report() } as any)[docType]}
+              {documentLabel(docType)}
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="CERTIFICATE">{m.template_doc_certificate()}</SelectItem>
-              <SelectItem value="ID_CARD">{m.template_doc_id_card()}</SelectItem>
-              <SelectItem value="RECEIPT">{m.template_doc_receipt()}</SelectItem>
-              <SelectItem value="EXAM_CARD">{m.template_doc_seating()}</SelectItem>
-              <SelectItem value="REPORT">{m.template_doc_report()}</SelectItem>
+              {#each availableDocumentTypes as value (value)}
+                <SelectItem value={value}>{documentLabel(value)}</SelectItem>
+              {/each}
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-4">
-        <div class="flex flex-col gap-2">
-          <Label class="text-xs font-semibold text-muted-foreground">{m.template_label_page_size()}</Label>
-          <Select type="single" bind:value={pageSize}>
-            <SelectTrigger>
-              {({ A4: m.template_size_a4(), A5: m.template_size_a5(), Letter: m.template_size_letter(), Custom: m.template_size_custom_label() } as any)[pageSize]}
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="A4">{m.template_size_a4()}</SelectItem>
-              <SelectItem value="A5">{m.template_size_a5()}</SelectItem>
-              <SelectItem value="Letter">{m.template_size_letter()}</SelectItem>
-              <SelectItem value="Custom">{m.template_size_custom_label()}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div class="flex flex-col gap-2">
-          <Label class="text-xs font-semibold text-muted-foreground">{m.template_label_orientation()}</Label>
-          <Select type="single" bind:value={orientation}>
-            <SelectTrigger>
-              {({ portrait: m.template_orientation_portrait(), landscape: m.template_orientation_landscape() } as any)[orientation]}
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="portrait">{m.template_orientation_portrait()}</SelectItem>
-              <SelectItem value="landscape">{m.template_orientation_landscape()}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      <div class="flex flex-col gap-2">
+        <Label class="text-xs font-semibold text-muted-foreground">{m.template_label_preset()}</Label>
+        <Select type="single" bind:value={preset}>
+          <SelectTrigger>{preset === "blank" ? m.template_preset_blank() : preset === "certificate" ? m.template_preset_certificate() : preset === "transcript" ? m.template_preset_transcript() : m.template_preset_receipt()}</SelectTrigger>
+          <SelectContent>
+            <SelectItem value="blank">{m.template_preset_blank()}</SelectItem>
+            <SelectItem value="certificate">{m.template_preset_certificate()}</SelectItem>
+            <SelectItem value="transcript">{m.template_preset_transcript()}</SelectItem>
+            <SelectItem value="receipt">{m.template_preset_receipt()}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
 

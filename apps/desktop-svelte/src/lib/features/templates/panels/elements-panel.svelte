@@ -18,6 +18,15 @@ import {
   Barcode,
   QrCode,
   Frame,
+  Grid3X3,
+  Repeat2,
+  GitBranch,
+  Component,
+  FileDown,
+  PanelTop,
+  PanelBottom,
+  Stamp,
+  MoveVertical,
 } from "@lucide/svelte";
 
 let {
@@ -110,13 +119,24 @@ const elements: ElementItem[] = [
     labelAr: m.template_element_frame(),
     category: "layout",
   },
+  { id: "grid", type: "Grid", icon: Grid3X3, label: "Grid", labelAr: "شبكة", category: "layout" },
+  { id: "repeater", type: "Repeater", icon: Repeat2, label: "Repeater", labelAr: "مكرر", category: "logic" },
+  { id: "conditional", type: "Conditional", icon: GitBranch, label: "Conditional", labelAr: "شرط", category: "logic" },
+  { id: "component", type: "ComponentRef", icon: Component, label: "Component", labelAr: "مكوّن", category: "layout" },
+  { id: "page-break", type: "PageBreak", icon: FileDown, label: "Page Break", labelAr: "فاصل صفحة", category: "flow" },
+  { id: "header", type: "Header", icon: PanelTop, label: "Header", labelAr: "رأس الصفحة", category: "flow" },
+  { id: "footer", type: "Footer", icon: PanelBottom, label: "Footer", labelAr: "تذييل الصفحة", category: "flow" },
+  { id: "watermark", type: "Watermark", icon: Stamp, label: "Watermark", labelAr: "علامة مائية", category: "basic" },
+  { id: "spacer", type: "Spacer", icon: MoveVertical, label: "Spacer", labelAr: "مسافة", category: "layout" },
 ];
 
 const categories = [
-  { id: m.template_category_basic() },
-  { id: m.template_category_shapes() },
-  { id: m.template_category_data() },
-  { id: m.template_category_layout() },
+  { id: "basic", label: m.template_category_basic() },
+  { id: "shapes", label: m.template_category_shapes() },
+  { id: "data", label: m.template_category_data() },
+  { id: "layout", label: m.template_category_layout() },
+  { id: "logic", label: m.template_category_logic() },
+  { id: "flow", label: m.template_category_flow() },
 ];
 
 const filteredElements = $derived(
@@ -146,7 +166,7 @@ function handleDragStart(e: DragEvent, item: ElementItem) {
   <!-- Search -->
   <div class="px-3 py-2">
     <div class="relative">
-      <Search size={12} class="absolute start-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+      <Search size={12} class="absolute inset-s-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
       <Input
         type="text"
         placeholder=m.template_search_elements()
@@ -172,7 +192,7 @@ function handleDragStart(e: DragEvent, item: ElementItem) {
                 ondragstart={(e) => handleDragStart(e, item)}
               >
                 <div class="element-icon">
-                  <svelte:component this={item.icon} size={20} strokeWidth={1.5} />
+                  <item.icon size={20} strokeWidth={1.5} />
                 </div>
                 <span class="element-label">{item.labelAr}</span>
               </div>

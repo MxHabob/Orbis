@@ -319,7 +319,7 @@ const textSegments = $derived(
         {/each}
       {/if}
 
-    {:else if node.type === "Frame" || node.type === "Grid"}
+    {:else if node.type === "Frame" || node.type === "Grid" || node.type === "Repeater" || node.type === "Conditional" || node.type === "Header" || node.type === "Footer"}
       <!-- Container: render border then children -->
       {#if nodeProps.backgroundColor || nodeProps.borderColor}
         <rect
@@ -340,6 +340,28 @@ const textSegments = $derived(
           <svelte:self node={child} {store} {pageSizePx} />
         {/each}
       {/if}
+
+    {:else if node.type === "PageBreak"}
+      <line x1="0" y1="0" x2={w} y2="0" stroke="#f59e0b" stroke-width="1" stroke-dasharray="6,3" />
+      <text x="4" y="10" fill="#b45309" font-size="8">Page break</text>
+
+    {:else if node.type === "Watermark"}
+      <text
+        x={w / 2}
+        y={h / 2}
+        text-anchor="middle"
+        dominant-baseline="central"
+        fill={nodeProps.color || "#64748b"}
+        opacity={nodeProps.opacity ?? 0.15}
+        font-size={nodeProps.fontSize || 48}
+        transform="rotate({nodeProps.rotation || -35} {w / 2} {h / 2})"
+      >{nodeProps.text || "WATERMARK"}</text>
+
+    {:else if node.type === "ComponentRef"}
+      <rect width={w} height={h} fill="#eff6ff" stroke="#60a5fa" stroke-width="1" stroke-dasharray="4,2" />
+      <text x={w / 2} y={h / 2} text-anchor="middle" dominant-baseline="central" fill="#2563eb" font-size="8">
+        Component: {nodeProps.componentId || "未選択"}
+      </text>
 
     {:else}
       <!-- Unknown node type fallback -->

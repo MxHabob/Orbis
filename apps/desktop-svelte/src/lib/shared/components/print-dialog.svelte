@@ -84,6 +84,7 @@ let activeTab = $state("preview");
 let batchProgress = $state(0);
 let isBatchProcessing = $state(false);
 let batchStatusText = $state("");
+let batchJobId = $state<string | null>(null);
 
 // Multi-Up config (initialized when template is selected)
 let multiUpConfig = $state<MultiUpConfig>(createDefaultMultiUpConfig(90, 50));
@@ -117,8 +118,12 @@ async function loadTemplates() {
   if (!entityType || !orgId) return;
   loadingTemplates = true;
   try {
-    const list: any[] = [];
-    templates = list || [];
+    const list = await commands.docforge.listTemplates({
+      org_id: orgId,
+      entity_type: entityType,
+      status: "published",
+    });
+    templates = Array.isArray(list) ? list : [];
     if (templates.length > 0) {
       selectedTemplateId = templates[0].id;
       updateConfigFromTemplate(templates[0]);
@@ -135,11 +140,22 @@ function updateConfigFromTemplate(template: any) {
   // Extract template dimensions from document JSON
   try {
     const doc = JSON.parse(template.document_json);
-    const pageSetup = doc?.meta?.page_setup;
+    const pageSetup = doc?.meta?.pageSetup ?? doc?.meta?.page_setup;
     if (pageSetup) {
-      const w = pageSetup.width_mm || 90;
-      const h = pageSetup.height_mm || 50;
+      const dimensions: Record<string, [number, number]> = {
+        A4: [210, 297],
+        A3: [297, 420],
+        A5: [148, 210],
+        Letter: [216, 279],
+        Legal: [216, 356],
+        ID_CARD: [85.6, 53.98],
+        BADGE: [86, 54],
+      };
+      const [presetWidth, presetHeight] = dimensions[pageSetup.size] ?? [90, 50];
+      const w = pageSetup.width ?? pageSetup.width_mm ?? presetWidth;
+      const h = pageSetup.height ?? pageSetup.height_mm ?? presetHeight;
       multiUpConfig = createDefaultMultiUpConfig(w, h);
+      multiUpConfig.sheetOrientation = pageSetup.orientation ?? "portrait";
       // Set fill order based on locale
       multiUpConfig.fillOrder = isRtl ? "rtl-ttb" : "ltr-ttb";
     }
@@ -156,6 +172,7 @@ $effect(() => {
     pdfUrl = null;
     batchProgress = 0;
     isBatchProcessing = false;
+    batchJobId = null;
     previewPage = 1;
     activeTab = "preview";
   }
@@ -232,22 +249,41 @@ async function handlePrintAction() {
 
     try {
       const configJson = JSON.stringify(multiUpConfig);
-      throw new Error("Batch multi-up processing is no longer supported.");
-      batchProgress = 100;
-      batchStatusText = m.common_print_multi_up_complete();
-      toast.success(
-        m.common_print_multi_up_complete_detail({
-          count: String(entityIds.length),
-        }),
+      const started = await commands.docforge.startMultiUpPrint(
+        selectedTemplateId,
+        entityIds,
+        configJson,
       );
+      batchJobId = started.jobId;
 
-      setTimeout(() => {
-        isBatchProcessing = false;
-      }, 1500);
+      while (batchJobId) {
+        const status = await commands.docforge.getMultiUpPrintStatus(batchJobId);
+        const total = Number(status.totalRecords ?? entityIds.length);
+        const processed = Number(status.processedRecords ?? 0);
+        batchProgress = total > 0 ? Math.round((processed / total) * 100) : 0;
+        batchStatusText = status.status || m.common_print_multi_up_processing();
+
+        if (["completed", "failed", "cancelled"].includes(status.status)) {
+          if (status.status === "completed") {
+            batchProgress = 100;
+            toast.success(
+              m.common_print_multi_up_complete_detail({
+                count: String(entityIds.length),
+              }),
+            );
+          } else if (status.errorMessage) {
+            throw new Error(status.errorMessage);
+          }
+          break;
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
     } catch (e: unknown) {
       const msg = (e as any)?.message || "Batch print failed";
       toast.error(msg);
       isBatchProcessing = false;
+      batchJobId = null;
     }
   }
 }
