@@ -66,11 +66,11 @@ const averageClassSize = $derived(
 );
 </script>
 
-<div class="h-full w-full min-w-0 overflow-y-auto overflow-x-hidden scrollbar-hide p-3 sm:p-4 flex flex-col gap-4">
+<div class="h-full w-full min-w-0 overflow-y-auto overflow-x-hidden scrollbar-hide bg-background p-3 sm:p-4 flex flex-col gap-4">
 	<!-- KPI Metrics Summary -->
 	{#if !isLoading && !error && classes.length > 0}
-		<div class="grid grid-cols-1 md:grid-cols-3 gap-4" in:fade={{ duration: 200 }}>
-			<div class="card-tactile bg-card/40 flex items-center justify-between p-4">
+		<div class="grid grid-cols-1 gap-3 sm:grid-cols-3" in:fade={{ duration: 200 }}>
+			<div class="flex items-center justify-between rounded-lg border border-border/70 bg-card p-3">
 				<div class="flex flex-col gap-1 text-start">
 					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
 						{m.common_classes_total_classes()}
@@ -82,7 +82,7 @@ const averageClassSize = $derived(
 				</div>
 			</div>
 
-			<div class="card-tactile bg-card/40 flex items-center justify-between p-4">
+			<div class="flex items-center justify-between rounded-lg border border-border/70 bg-card p-3">
 				<div class="flex flex-col gap-1 text-start">
 					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
 						{m.common_classes_enrolled_students()}
@@ -94,7 +94,7 @@ const averageClassSize = $derived(
 				</div>
 			</div>
 
-			<div class="card-tactile bg-card/40 flex items-center justify-between p-4">
+			<div class="flex items-center justify-between rounded-lg border border-border/70 bg-card p-3">
 				<div class="flex flex-col gap-1 text-start">
 					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
 						{m.common_classes_avg_size()}
@@ -109,8 +109,8 @@ const averageClassSize = $derived(
 	{/if}
 
 	<!-- Header Area -->
-	<div class="flex min-w-0 flex-wrap items-center justify-between gap-3 font-sans">
-		<h2 class="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
+		<div class="flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-border/70 pb-3 font-sans">
+			<h2 class="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-foreground">
 			<span>{m.common_card_active_classes()}</span>
 			{#if !isLoading}
 				<span class="text-[10px] px-1.5 py-0.5 rounded bg-muted font-mono text-muted-foreground">
@@ -119,7 +119,7 @@ const averageClassSize = $derived(
 			{/if}
 		</h2>
 
-		<Button variant="lime" class="text-xs h-9 px-3" onclick={() => isModalOpen = true}>
+		<Button variant="default" class="h-8 px-3 text-xs" onclick={() => isModalOpen = true}>
 			<Plus size={14} class={m.academics_classes_mr_1_5()} />
 			{m.common_classes_new_class()}
 		</Button>
@@ -146,7 +146,7 @@ const averageClassSize = $derived(
 				<p class="text-xs font-semibold">{m.common_classes_empty_title()}</p>
 				<p class="text-[10px] text-muted-foreground/80">{m.common_classes_empty_desc()}</p>
 			</div>
-			<Button variant="lime" class="text-xs mt-2" onclick={() => isModalOpen = true}>
+			<Button variant="default" class="text-xs mt-2" onclick={() => isModalOpen = true}>
 				{m.common_classes_add_class()}
 			</Button>
 		</div>
@@ -159,7 +159,7 @@ const averageClassSize = $derived(
 				{@const ratio = Math.min(100, Math.round((count / limit) * 100))}
 				<a
 					href={localizeHref(`/${data.orgId}/academics/classes/${cls.id}`)}
-					 class="card-tactile min-w-0 bg-card flex flex-col justify-between h-36 p-3 sm:p-4 select-none relative group transition-all duration-150 hover:border-primary/30 cursor-pointer no-underline"
+					class="group relative flex min-h-36 min-w-0 flex-col justify-between rounded-lg border border-border/70 bg-card p-3 no-underline transition-colors duration-150 hover:border-primary/40 select-none sm:p-4"
 				>
 					<!-- Class Header -->
 					<div class="flex items-start justify-between">
