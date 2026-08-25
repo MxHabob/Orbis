@@ -145,6 +145,7 @@ export const commands: OrbisCommands = {
     updateComponent: (componentId: any, data: any) => cmd("assessment_assessment_scheme_update_component", { componentId, data }),
     deleteComponent: (componentId: any) => cmd("assessment_assessment_scheme_delete_component", { componentId }),
     listComponentsForClassSubject: (classSubjectId: any, periodId: any) => cmd("assessment_assessment_scheme_list_components_for_class_subject", { classSubjectId, periodId }),
+    classMetrics: (periodId: any) => cmd("assessment_attendance_class_metrics", { periodId }),
     listAttendances: (classId: any, date: any) => cmd("assessment_attendance_list", { classId, date }),
     getReport: (PeriodId: any, enrollmentId: any) => cmd("assessment_attendance_get_report", { PeriodId, enrollmentId }),
     getAnalytics: (periodId: any, classId: any) => cmd("assessment_attendance_get_analytics", { periodId, classId }),
@@ -219,6 +220,9 @@ export const commands: OrbisCommands = {
   scheduling: {
     listLessonsByClass: (periodId: any, classId: any) => cmd("scheduling_lesson_list_by_class", { periodId, classId }),
     listLessonsByTeacher: (periodId: any, teacherId: any) => cmd("scheduling_lesson_list_by_teacher", { periodId, teacherId }),
+    listLessonsByPeriod: (periodId: any) => cmd("scheduling_lesson_list_by_period", { periodId }),
+    listLessonsBySubject: (periodId: any, subjectId: any) => cmd("scheduling_lesson_list_by_subject", { periodId, subjectId }),
+    listLessonsByRoom: (periodId: any, roomId: any) => cmd("scheduling_lesson_list_by_room", { periodId, roomId }),
     getLesson: (lessonId: any) => cmd("scheduling_lesson_get", { lessonId }),
     createLesson: (data: any) => cmd("scheduling_lesson_create", { data }),
     updateLesson: (lessonId: any, data: any) => cmd("scheduling_lesson_update", { lessonId, data }),

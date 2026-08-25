@@ -16,6 +16,7 @@ export interface AssessmentCommands {
   updateComponent(componentId: string, data: any): Promise<any>;
   deleteComponent(componentId: string): Promise<void>;
   listComponentsForClassSubject(classSubjectId: string, periodId: string): Promise<any[]>;
+  classMetrics(periodId: string): Promise<any[]>;
   listAttendances(classId: string, date: string): Promise<any[]>;
   getReport(PeriodId: string, enrollmentId: string): Promise<any>;
   getAnalytics(periodId: string, classId: string): Promise<any>;

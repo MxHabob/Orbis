@@ -545,6 +545,7 @@ function openLessonEditor(lesson: any) {
       {getSubjectName}
       {getTeacherName}
       {getClassName}
+      getRoomName={(id) => rooms.find((room: any) => String(room.id) === String(id))?.name_ar || rooms.find((room: any) => String(room.id) === String(id))?.name || ""}
       {getSubjectColor}
       onCellClick={openScheduler}
       onDeleteLesson={handleDeleteLesson}

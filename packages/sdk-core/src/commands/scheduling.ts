@@ -4,6 +4,9 @@ import type * as Types from '../types/index.js';
 export interface SchedulingCommands {
   listLessonsByClass(periodId: string, classId: string): Promise<any[]>;
   listLessonsByTeacher(periodId: string, teacherId: string): Promise<any[]>;
+  listLessonsByPeriod(periodId: string): Promise<any[]>;
+  listLessonsBySubject(periodId: string, subjectId: string): Promise<any[]>;
+  listLessonsByRoom(periodId: string, roomId: string): Promise<any[]>;
   getLesson(lessonId: string): Promise<any>;
   createLesson(data: any): Promise<any>;
   updateLesson(lessonId: string, data: any): Promise<any>;

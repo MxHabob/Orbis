@@ -124,6 +124,13 @@ pub async fn assessment_assessment_scheme_list_components_for_class_subject(stat
 }
 
 #[tauri::command]
+pub async fn assessment_attendance_class_metrics(state: State<'_, Arc<AppState>>, period_id: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::attendance::class_metrics(&ctx, &period_id).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
 pub async fn assessment_attendance_list(state: State<'_, Arc<AppState>>, class_id: String, date: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::attendance::list(&ctx, &class_id, &date).await.map_err(CommandError::from)?;

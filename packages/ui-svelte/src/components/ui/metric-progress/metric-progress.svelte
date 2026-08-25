@@ -18,6 +18,7 @@ let {
   action,
   value = 0,
   max = 100,
+  showProgress = true,
   segments = [],
   tone = "primary",
   class: className,
@@ -28,6 +29,7 @@ let {
   action?: Snippet;
   value?: number;
   max?: number;
+  showProgress?: boolean;
   segments?: readonly MetricSegment[];
   tone?: MetricTone;
   class?: string;
@@ -96,13 +98,17 @@ function toneClass(segmentTone: MetricTone): string {
         </div>
         {#if action}<div class="shrink-0">{@render action()}</div>{/if}
       </div>
-      <div class="flex items-center justify-between gap-3 text-[10px] text-muted-foreground">
-        <span class="font-mono text-sm font-semibold text-foreground">{Math.round(percentage)}%</span>
-        <span>{value} / {max}</span>
-      </div>
-      <div class="h-2 w-full overflow-hidden rounded-full bg-muted/50">
-        <div class={cn("h-full rounded-full transition-[width] duration-300", toneClass(tone))} style={`width: ${percentage}%`}></div>
-      </div>
+      {#if showProgress}
+        <div class="flex items-center justify-between gap-3 text-[10px] text-muted-foreground">
+          <span class="font-mono text-sm font-semibold text-foreground">{Math.round(percentage)}%</span>
+          <span>{value} / {max}</span>
+        </div>
+        <div class="h-2 w-full overflow-hidden rounded-full bg-muted/50">
+          <div class={cn("h-full rounded-full transition-[width] duration-300", toneClass(tone))} style={`width: ${percentage}%`}></div>
+        </div>
+      {:else}
+        <span class="font-mono text-2xl font-semibold leading-none text-foreground">{value}</span>
+      {/if}
     </div>
   {/if}
 </div>

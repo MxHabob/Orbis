@@ -90,8 +90,8 @@ function saveSlotEdit() {
       start_time: draftStartTime,
       end_time: draftEndTime,
       duration_minutes: (() => {
-        const [startHour, startMinute] = draftStartTime.split(":").map(Number);
-        const [endHour, endMinute] = draftEndTime.split(":").map(Number);
+        const [startHour = 0, startMinute = 0] = draftStartTime.split(":").map(Number);
+        const [endHour = 0, endMinute = 0] = draftEndTime.split(":").map(Number);
         return endHour * 60 + endMinute - (startHour * 60 + startMinute);
       })(),
     },
@@ -290,7 +290,7 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
           <!-- Cell Container -->
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div 
-            class="{isAvailable ? 'bg-card hover:bg-muted/30' : 'bg-muted/20 schedule-unavailable'} border-border p-1.5 text-center align-middle min-h-24 h-full relative flex items-center justify-center transition-colors duration-150 border-b
+            class="{isAvailable ? 'bg-card hover:bg-muted/30' : 'bg-muted/20 schedule-unavailable'} border-border p-0 text-center align-middle min-h-24 h-full relative flex items-center justify-center transition-colors duration-150 border-b
               {isDragOver ? 'bg-primary/8 ring-2 ring-primary/40 ring-inset border-dashed' : ''}"
             ondragover={(e) => handleDragOver(e, day.value, slot.id)}
             ondragleave={handleDragLeave}
@@ -300,10 +300,11 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
               <span class="text-[9px] text-muted-foreground/40">-</span>
             {:else}
               {#if cellLessons.length > 0}
-                <div class="flex w-full h-full min-h-20 flex-col gap-1">
+                <div class="flex w-full h-full min-h-20 flex-col gap-0">
                   {#each cellLessons as lesson (lesson.id)}
                     <TimetableCard
                       {lesson}
+                      timeSlot={slot}
                       {viewMode}
                       {locale}
                       {getSubjectName}

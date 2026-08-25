@@ -20,6 +20,27 @@ pub async fn scheduling_lesson_list_by_teacher(state: State<'_, Arc<AppState>>, 
 }
 
 #[tauri::command]
+pub async fn scheduling_lesson_list_by_period(state: State<'_, Arc<AppState>>, period_id: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::lesson::list_by_period(&ctx, &period_id).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn scheduling_lesson_list_by_subject(state: State<'_, Arc<AppState>>, period_id: String, subject_id: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::lesson::list_by_subject(&ctx, &period_id, &subject_id).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn scheduling_lesson_list_by_room(state: State<'_, Arc<AppState>>, period_id: String, room_id: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::lesson::list_by_room(&ctx, &period_id, &room_id).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
 pub async fn scheduling_lesson_get(state: State<'_, Arc<AppState>>, lesson_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::lesson::get(&ctx, &lesson_id).await.map_err(CommandError::from)?;

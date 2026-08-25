@@ -41,6 +41,12 @@ const subjectsQuery = createQuery(() => ({
   enabled: !!data.orgId,
   staleTime: 10 * 60 * 1000,
 }));
+const roomsQuery = createQuery(() => ({
+  queryKey: ["rooms", data.orgId],
+  queryFn: () => commands.scheduling.listRooms(),
+  enabled: !!data.orgId,
+  staleTime: 10 * 60 * 1000,
+}));
 
 const timeSlotsQuery = createQuery(() => ({
   queryKey: ["time-slots", data.orgId, activePeriodId],
@@ -59,6 +65,7 @@ const lessonsQuery = createQuery(() => ({
 const periods = $derived(periodsQuery.data ?? []);
 const classes = $derived(classesQuery.data ?? []);
 const subjects = $derived(subjectsQuery.data ?? []);
+const rooms = $derived(roomsQuery.data ?? []);
 const timeSlots = $derived(
   (timeSlotsQuery.data ?? []).filter(
     (slot: any) => String(slot.period_id) === String(activePeriodId),
@@ -99,7 +106,7 @@ $effect(() => {
 });
 
 const isLoading = $derived(
-  periodsQuery.isLoading || classesQuery.isLoading || subjectsQuery.isLoading,
+  periodsQuery.isLoading || classesQuery.isLoading || subjectsQuery.isLoading || roomsQuery.isLoading,
 );
 
 const isBoardLoading = $derived(isLoading || timeSlotsQuery.isLoading || lessonsQuery.isLoading);
@@ -158,7 +165,7 @@ function backToSchedule() {
     </aside>
 
     <main class="flex min-h-130 min-w-0 flex-1 flex-col overflow-hidden bg-background p-3 sm:p-4">
-      <ScheduleBoard fitViewport={true} isLoading={isBoardLoading} error={lessonsQuery.error ? String(lessonsQuery.error) : null} {timeSlots} {weekdays} {lessons} draftLessons={[]} previewDraft={false} viewMode="class" getSubjectName={(id) => subjects.find((s: any) => String(s.id) === String(id))?.name_ar || subjects.find((s: any) => String(s.id) === String(id))?.name || "Subject"} getTeacherName={() => ""} getClassName={() => ""} {getSubjectColor} onCellClick={() => {}} onDeleteLesson={() => {}} onMoveLesson={() => {}} onRetry={() => lessonsQuery.refetch()} />
+      <ScheduleBoard fitViewport={true} isLoading={isBoardLoading} error={lessonsQuery.error ? String(lessonsQuery.error) : null} {timeSlots} {weekdays} {lessons} draftLessons={[]} previewDraft={false} viewMode="class" getSubjectName={(id) => subjects.find((s: any) => String(s.id) === String(id))?.name_ar || subjects.find((s: any) => String(s.id) === String(id))?.name || "Subject"} getTeacherName={() => ""} getClassName={() => ""} getRoomName={(id) => rooms.find((room: any) => String(room.id) === String(id))?.name_ar || rooms.find((room: any) => String(room.id) === String(id))?.name || ""} {getSubjectColor} onCellClick={() => {}} onDeleteLesson={() => {}} onMoveLesson={() => {}} onRetry={() => lessonsQuery.refetch()} />
     </main>
   </div>
 </div>

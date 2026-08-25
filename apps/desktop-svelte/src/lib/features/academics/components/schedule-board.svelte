@@ -20,6 +20,7 @@ interface Props {
   getSubjectName: (id: string) => string;
   getTeacherName: (id: string) => string;
   getClassName: (id: string) => string;
+  getRoomName?: (id: string) => string;
   getSubjectColor: (id: string) => string;
   onCellClick: (day: number, slotId: string) => void;
   onDeleteLesson: (id: string) => void;
@@ -45,6 +46,7 @@ let {
   getSubjectName,
   getTeacherName,
   getClassName,
+  getRoomName,
   getSubjectColor,
   onCellClick,
   onDeleteLesson,
@@ -97,6 +99,7 @@ let {
       {getSubjectName}
       {getTeacherName}
       {getClassName}
+      {getRoomName}
       {getSubjectColor}
       fitViewport={fitViewport}
       onCellClick={onCellClick}

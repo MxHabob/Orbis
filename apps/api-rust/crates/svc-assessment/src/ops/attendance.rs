@@ -2,6 +2,7 @@
 
 use chrono::Utc;
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
+use std::collections::HashMap;
 use uuid::Uuid;
 
 use shared_kernel::context::ServiceContext;
@@ -13,6 +14,120 @@ use crate::params::AttendanceParams;
 use crate::services::attendance::{
     AttendanceReport, AttendanceAnalytics,
 };
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+pub struct ClassMetrics {
+    pub class_id: String,
+    pub active_students: usize,
+    pub capacity: usize,
+    pub utilization_rate: f64,
+    pub attendance_rate: f64,
+    pub present_count: usize,
+    pub absent_count: usize,
+    pub late_count: usize,
+    pub excused_count: usize,
+    pub at_risk_students: usize,
+    pub subject_count: usize,
+    pub weekly_hours: i32,
+}
+
+/// Aggregate class health metrics for one academic period.
+/// Loads each source once to avoid one request/query per class.
+pub async fn class_metrics(
+    ctx: &ServiceContext,
+    period_id: &str,
+) -> Result<Vec<ClassMetrics>, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::AttendanceAnalytics).await?;
+
+    let classes = svc_academic::entities::class::Entity::find()
+        .filter(svc_academic::entities::class::Column::OrgId.eq(&ctx.org_id))
+        .filter(svc_academic::entities::class::Column::PeriodId.eq(period_id))
+        .filter(svc_academic::entities::class::Column::IsDeleted.eq(0))
+        .filter(svc_academic::entities::class::Column::IsActive.eq(1))
+        .all(&ctx.db)
+        .await?;
+
+    let enrollments = svc_academic::entities::enrollment::Entity::find()
+        .filter(svc_academic::entities::enrollment::Column::OrgId.eq(&ctx.org_id))
+        .filter(svc_academic::entities::enrollment::Column::PeriodId.eq(period_id))
+        .filter(svc_academic::entities::enrollment::Column::Status.eq("active"))
+        .all(&ctx.db)
+        .await?;
+
+    let attendance_records = attendance::Entity::find()
+        .filter(attendance::Column::OrgId.eq(&ctx.org_id))
+        .filter(attendance::Column::PeriodId.eq(period_id))
+        .all(&ctx.db)
+        .await?;
+
+    let class_subjects = svc_academic::entities::class_subject::Entity::find()
+        .filter(svc_academic::entities::class_subject::Column::PeriodId.eq(period_id))
+        .filter(svc_academic::entities::class_subject::Column::IsActive.eq(1))
+        .all(&ctx.db)
+        .await?;
+
+    let mut enrollment_counts = HashMap::<String, usize>::new();
+    for enrollment in &enrollments {
+        *enrollment_counts.entry(enrollment.class_id.clone()).or_default() += 1;
+    }
+
+    let mut attendance_totals = HashMap::<String, (usize, usize, usize, usize, usize)>::new();
+    let mut absences_by_enrollment = HashMap::<String, usize>::new();
+    for record in &attendance_records {
+        let entry = attendance_totals.entry(record.class_id.clone()).or_default();
+        entry.0 += 1;
+        match record.status.as_str() {
+            "present" => entry.1 += 1,
+            "absent" => {
+                entry.2 += 1;
+                *absences_by_enrollment.entry(record.enrollment_id.clone()).or_default() += 1;
+            }
+            "late" => entry.3 += 1,
+            "excused" | "sick" => entry.4 += 1,
+            _ => {}
+        }
+    }
+
+    let mut subjects_by_class = HashMap::<String, (usize, i32)>::new();
+    for class_subject in class_subjects {
+        let entry = subjects_by_class.entry(class_subject.class_id).or_default();
+        entry.0 += 1;
+        entry.1 += class_subject.weekly_hours.unwrap_or(0);
+    }
+
+    let at_risk_by_class = enrollments.iter().fold(HashMap::<String, usize>::new(), |mut result, enrollment| {
+        if absences_by_enrollment.get(&enrollment.id).copied().unwrap_or(0) >= 5 {
+            *result.entry(enrollment.class_id.clone()).or_default() += 1;
+        }
+        result
+    });
+
+    Ok(classes.into_iter().map(|class| {
+        let active_students = enrollment_counts.get(&class.id).copied().unwrap_or(0);
+        let capacity = class.capacity.unwrap_or(0).max(0) as usize;
+        let (total, present, absent, late, excused) = attendance_totals.get(&class.id).copied().unwrap_or_default();
+        let attended = present + late;
+        let attendance_rate = if total > 0 { (attended as f64 / total as f64) * 100.0 } else { 0.0 };
+        let utilization_rate = if capacity > 0 { (active_students as f64 / capacity as f64 * 100.0).min(100.0) } else { 0.0 };
+        let (subject_count, weekly_hours) = subjects_by_class.get(&class.id).copied().unwrap_or_default();
+
+        let class_id = class.id.clone();
+        ClassMetrics {
+            class_id: class_id.clone(),
+            active_students,
+            capacity,
+            utilization_rate: (utilization_rate * 100.0).round() / 100.0,
+            attendance_rate: (attendance_rate * 100.0).round() / 100.0,
+            present_count: present,
+            absent_count: absent,
+            late_count: late,
+            excused_count: excused,
+            at_risk_students: at_risk_by_class.get(&class_id).copied().unwrap_or(0),
+            subject_count,
+            weekly_hours,
+        }
+    }).collect())
+}
 
 // ── Queries ─────────────────────────────────────────────────────
 
