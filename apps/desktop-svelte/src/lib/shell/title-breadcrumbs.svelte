@@ -109,10 +109,10 @@ const breadcrumbs = $derived.by(() => {
         label: m.finance_layout_nav_payments(),
         href: `/${currentOrgId}/finance/payments`,
       });
-    } else if (pathname.includes("/treasuries")) {
+    } else if (pathname.includes("/accounts")) {
       items.push({
         label: m.finance_layout_nav_cash_accounts(),
-        href: `/${currentOrgId}/finance/treasuries`,
+        href: `/${currentOrgId}/finance/accounts`,
       });
     } else if (pathname.includes("/journal-entries")) {
       items.push({

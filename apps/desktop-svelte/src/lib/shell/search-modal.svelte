@@ -165,7 +165,7 @@ const systemPages = $derived([
     title: m.finance_layout_nav_cash_accounts
       ? m.finance_layout_nav_cash_accounts()
       : "Disbursals",
-    path: `/${currentOrgId}/finance/treasuries`,
+    path: `/${currentOrgId}/finance/accounts`,
     icon: Wallet,
   },
   {

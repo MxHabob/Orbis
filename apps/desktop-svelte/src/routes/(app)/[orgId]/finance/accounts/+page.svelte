@@ -1,4 +1,4 @@
-<!-- Cash and bank accounts management page. -->
+<!-- General ledger account management page. -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
@@ -26,7 +26,7 @@ import {
 let { data }: { data: { orgId: string } } = $props();
 
 // ── State ──────────────────────────────────────────────────────────────
-let cashAccounts = $state<any[]>([]);
+let childAccounts = $state<any[]>([]);
 let baseCurrency = $state("YER");
 let isLoading = $state(true);
 let isAddDialogOpen = $state(false);
@@ -42,10 +42,10 @@ async function loadData() {
   isLoading = true;
   try {
     const [accounts, currencies] = await Promise.all([
-      commands.finance.listAccounts().then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type))),
+      commands.finance.listAccounts().then((accounts) => accounts.filter((account: any) => !accounts.some((candidate: any) => candidate.parent_id === account.id))),
       commands.finance.listCurrencies(),
     ]);
-    cashAccounts = accounts;
+    childAccounts = accounts;
     const base = currencies.find((c: any) => c.is_base === 1);
     if (base) baseCurrency = base.code;
   } catch (e) {
@@ -62,25 +62,42 @@ onMount(() => {
 // ── Helpers ─────────────────────────────────────────────────────────────
 
 const totalBalance = $derived(
-  cashAccounts.reduce((sum, account) => sum + Number(account.balances?.[baseCurrency] || 0), 0),
+  childAccounts.reduce((sum, account) => sum + Number(account.balances?.[baseCurrency] || 0), 0),
 );
 
-const activeAccountCount = $derived(cashAccounts.length);
+const activeAccountCount = $derived(childAccounts.length);
 
-function getTreasuryTypeLabel(t: string) {
-  const low = String(t).toLowerCase();
-  if (low === "bank") return m.common_cash_account_type_bank();
-  return m.common_cash_account_type_cash();
+function getAccountTypeLabel(account: any) {
+  const type = String(account.type || account.item_type || account.sub_type || "asset").toLowerCase();
+  const managedTypes: Record<string, string> = {
+    partner: getLocale() === "ar" ? "شريك" : "Partner",
+    investor: getLocale() === "ar" ? "مستثمر" : "Investor",
+    participant: getLocale() === "ar" ? "مشارك" : "Participant",
+    shareholder: getLocale() === "ar" ? "مساهم" : "Shareholder",
+    member: getLocale() === "ar" ? "عضو" : "Member",
+    supplier: getLocale() === "ar" ? "مورد" : "Supplier",
+    vendor: getLocale() === "ar" ? "مورد" : "Supplier",
+    customer: getLocale() === "ar" ? "عميل" : "Customer",
+    employee: getLocale() === "ar" ? "موظف" : "Employee",
+    cash: getLocale() === "ar" ? "صندوق" : "Cash",
+    bank: getLocale() === "ar" ? "بنك" : "Bank",
+  };
+  if (managedTypes[type]) return managedTypes[type];
+  if (type === "liability") return m.finance_type_liability();
+  if (type === "equity") return "Equity";
+  if (type === "revenue") return m.finance_type_revenue();
+  if (type === "expense") return m.finance_type_expense();
+  return m.finance_type_asset();
 }
 
 // ── Grid Sources ────────────────────────────────────────────────────────
 
 const treasurySource = $derived(
   withIndex(
-    cashAccounts.map((account) => ({
+    childAccounts.map((account) => ({
       ...account,
       name: account.name_ar || account.name || "—",
-      treasury_type: getTreasuryTypeLabel(account.sub_type),
+      treasury_type: getAccountTypeLabel(account),
       balance: formatCurrency(
         Number(account.balances?.[account.currency] || 0),
         account.currency || baseCurrency,
@@ -132,7 +149,7 @@ const rtl = $derived(getLocale() === "ar");
       <div class="border border-border bg-card rounded-lg p-5"><Skeleton class="h-72 w-full rounded-md" /></div>
     {:else}
       <div class="min-h-82.5">
-        <DataTable columns={treasuryCols} source={treasurySource} emptyIcon={Landmark} emptyTitle={m.finance_no_cash_accounts()} {rtl} refreshable onRefresh={loadData} />
+          <DataTable columns={treasuryCols} source={treasurySource} emptyIcon={Landmark} emptyTitle={m.finance_no_ledgers()} {rtl} refreshable onRefresh={loadData} />
       </div>
     {/if}
   </div>
@@ -146,7 +163,7 @@ const rtl = $derived(getLocale() === "ar");
     </DialogHeader>
     {#if isAddDialogOpen}
       {#await import("$lib/features/finance/components/ledger-form.svelte") then { default: LedgerForm }}
-        <LedgerForm orgId={data.orgId} onSuccess={handleSuccess} onCancel={() => isAddDialogOpen = false} defaultTab="cash_account" />
+        <LedgerForm orgId={data.orgId} onSuccess={handleSuccess} onCancel={() => isAddDialogOpen = false} defaultTab="gl" />
       {/await}
     {/if}
   </DialogContent>

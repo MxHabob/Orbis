@@ -24,7 +24,7 @@ import CashFlowTrendCard from "$lib/features/metrics/cards/cash-flow-trend-card.
 import LateStudentsCard from "$lib/features/finance/components/late-students-card.svelte";
 import CollectionRateCard from "$lib/features/finance/components/collection-rate-card.svelte";
 import RecentPaymentsCard from "$lib/features/finance/components/recent-payments-card.svelte";
-import TreasuryBalancesCard from "$lib/features/finance/components/treasury-balances-card.svelte";
+import AccountBalancesCard from "$lib/features/finance/components/account-balances-card.svelte";
 import { Button } from "@orbis/ui-svelte";
 import { FinanceSkeleton } from "$lib/shared/components/skeletons";
 import ErrorState from "$lib/shared/components/error-state.svelte";
@@ -217,7 +217,7 @@ const recentPayments = $derived.by(() => {
       <!-- 3. Bottom Section: Recent Payments & Treasuries list -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <RecentPaymentsCard {recentPayments} orgId={data.orgId} />
-        <TreasuryBalancesCard {treasuries} orgId={data.orgId} />
+        <AccountBalancesCard {treasuries} orgId={data.orgId} />
       </div>
       
     </div>
