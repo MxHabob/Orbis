@@ -83,22 +83,26 @@ function refetchAll() {
 // Dynamic KPI Stats
 const kpiStats = $derived([
   {
-    label: "الدورات الامتحانية",
+    label: m.academics_exams_center_kpi_sessions(),
     value: examSessions.length,
   },
   {
-    label: "الدورات النشطة",
+    label: m.academics_exams_center_kpi_active(),
     value: examSessions.filter(
       (s) => s.status === "active" || s.status === "running" || s.status === "ongoing",
     ).length,
   },
   {
-    label: "إدخال الدرجات",
-    value: isGradeEntryOpen ? "مفتوح" : "مقفل",
+    label: m.academics_exams_center_kpi_grades(),
+    value: isGradeEntryOpen
+      ? m.academics_exams_center_open()
+      : m.academics_exams_center_locked(),
   },
   {
-    label: "جاهزية الكنترول",
-    value: examSessions.length > 0 ? "جاهز" : "معطل",
+    label: m.academics_exams_center_kpi_control(),
+    value: examSessions.length > 0
+      ? m.academics_exams_center_ready()
+      : m.academics_exams_center_disabled(),
   },
 ]);
 
@@ -106,31 +110,31 @@ const kpiStats = $derived([
 const directoryItems = $derived([
   {
     path: `/${data.orgId}/academics/exams/sessions`,
-    title: m.common_exams_sessions_title ? m.common_exams_sessions_title() : "الدورات الامتحانية والجداول",
-    desc: "إشهار وتخطيط الفترات الامتحانية الفصلية والنهائية، ربط المواد، وتحديد مواعيد الاختبارات.",
+    title: m.common_exams_sessions_title(),
+    desc: m.academics_exams_center_sessions_desc(),
     icon: ClipboardList,
-    badge: `(${examSessions.length}) دورات`,
+    badge: m.academics_exams_center_sessions_badge({ count: examSessions.length }),
   },
   {
     path: `/${data.orgId}/academics/exams/control`,
-    title: "كنترول الامتحانات وأرقام الجلوس",
-    desc: "توليد وتخصيص أرقام الجلوس والأرقام السرية، وتوزيع الكنترول واللجان وترتيب الطلاب.",
+    title: m.academics_exams_center_control_title(),
+    desc: m.academics_exams_center_control_desc(),
     icon: ShieldCheck,
-    badge: "إدارة الكنترول",
+    badge: m.academics_exams_center_control_badge(),
   },
   {
     path: `/${data.orgId}/academics/exams/sessions`,
-    title: "قاعات الامتحانات وتوزيع المراقبين",
-    desc: "توزيع وتخصيص قاعات الامتحان والمراقبين والملاحظين وإدارة السعة الاستيعابية لكل لجنة.",
+    title: m.academics_exams_center_halls_title(),
+    desc: m.academics_exams_center_halls_desc(),
     icon: Building2,
-    badge: "القاعات واللجان",
+    badge: m.academics_exams_center_halls_badge(),
   },
   {
     path: `/${data.orgId}/academics/exams/reports`,
-    title: m.common_exams_reports_title ? m.common_exams_reports_title() : "التقارير وسجلات نتائج الامتحانات",
-    desc: "طباعة بطاقات الجلوس، كشوفات المناداة، كشوفات رصد الدرجات، ومحاضر سير امتحانات الكنترول.",
+    title: m.academics_exams_center_reports_title(),
+    desc: m.academics_exams_center_reports_desc(),
     icon: FileText,
-    badge: "الكشوفات والبطاقات",
+    badge: m.academics_exams_center_reports_badge(),
   },
 ]);
 
@@ -142,8 +146,8 @@ const advisorInsights = $derived.by(() => {
   insights.push({
     id: "grade-lock",
     text: isGradeEntryOpen
-      ? "باب إدخال الدرجات مفتوح حالياً للمعلمين. يرجى المراجعة قبل الاعتماد وإغلاق الفترة."
-      : "باب إدخال الدرجات مغلق ومحمي بواسطة الكنترول لضمان سرية ونزاهة النتائج.",
+      ? m.academics_exams_center_grade_open_insight()
+      : m.academics_exams_center_grade_locked_insight(),
     variant: isGradeEntryOpen ? ("warning" as const) : ("success" as const),
     icon: isGradeEntryOpen ? Unlock : Lock,
   });
@@ -152,14 +156,14 @@ const advisorInsights = $derived.by(() => {
   if (examSessions.length > 0) {
     insights.push({
       id: "sessions-active",
-      text: `تم جدولة وإشهار (${examSessions.length}) دورة امتحانية في الفترة الأكاديمية الحالية.`,
+      text: m.academics_exams_center_sessions_active_insight({ count: examSessions.length }),
       variant: "success" as const,
       icon: ClipboardList,
     });
   } else {
     insights.push({
       id: "sessions-none",
-      text: "لا توجد دورات امتحانية مضافة في هذه الفترة. يمكنك البدء بإنشاء دورة امتحانية جديدة.",
+      text: m.academics_exams_center_sessions_empty_insight(),
       variant: "neutral" as const,
       icon: ClipboardList,
     });
@@ -168,7 +172,7 @@ const advisorInsights = $derived.by(() => {
   // 3. Control & Seating Insight
   insights.push({
     id: "seating-ready",
-    text: "نظام التوليد التلقائي لأرقام الجلوس والأرقام السرية جاهز ومفعل للجان.",
+    text: m.academics_exams_center_seating_ready_insight(),
     variant: "success" as const,
     icon: ShieldCheck,
   });
@@ -187,10 +191,10 @@ const advisorInsights = $derived.by(() => {
       </div>
       <div class="flex flex-col">
         <h2 class="text-xs font-bold text-foreground tracking-wide uppercase">
-          مركز التقييم وكنترول الامتحانات
+          {m.academics_exams_center_title()}
         </h2>
         <span class="text-[9.5px] text-muted-foreground/90 mt-0.5">
-          إدارة الدورات الامتحانية، اللجان، أرقام الجلوس، والقاعات الدراسية
+          {m.academics_exams_center_description()}
         </span>
       </div>
     </div>
@@ -204,7 +208,7 @@ const advisorInsights = $derived.by(() => {
         </Badge>
       {:else}
         <Badge variant="outline" class="text-[9px] px-2 py-0.5 text-muted-foreground border-dashed">
-          لا يوجد عام دراسي نشط
+          {m.academics_exams_center_no_active_year()}
         </Badge>
       {/if}
       
@@ -216,13 +220,13 @@ const advisorInsights = $derived.by(() => {
       {/if}
 
       <Button 
-        variant="lime" 
+        variant="default" 
         size="sm" 
         class="text-[10px] font-bold px-3 h-7.5 rounded-md gap-1.5 cursor-pointer ms-2"
         onclick={() => isCreateSheetOpen = true}
       >
         <Plus size={13} />
-        <span>إضافة دورة</span>
+        <span>{m.academics_exams_center_add_session()}</span>
       </Button>
     </div>
   </div>
@@ -272,9 +276,9 @@ const advisorInsights = $derived.by(() => {
   {:else if error}
     <div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2">
       <AlertCircle size={24} />
-      <h3 class="font-semibold text-xs">تعذر تحميل بيانات مركز الامتحانات</h3>
+      <h3 class="font-semibold text-xs">{m.academics_exams_center_error_title()}</h3>
       <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
-      <Button variant="outline" onclick={refetchAll} class="text-[10px] mt-2 h-8">إعادة المحاولة</Button>
+      <Button variant="outline" onclick={refetchAll} class="text-[10px] mt-2 h-8">{m.academics_exams_center_retry()}</Button>
     </div>
   {:else}
     <!-- Main Content Split Layout -->
@@ -283,7 +287,7 @@ const advisorInsights = $derived.by(() => {
       <!-- 1. LEFT COLUMN: Directory Index List (Notion Database style) -->
       <div class="lg:col-span-7 xl:col-span-8 flex flex-col">
         <h3 class="text-[10px] font-bold text-muted-foreground/80 tracking-wider uppercase mb-3 text-start">
-          أقسام ووحدات الامتحانات والكنترول
+          {m.academics_exams_center_directory_title()}
         </h3>
         
         <div class="flex flex-col">
@@ -329,7 +333,7 @@ const advisorInsights = $derived.by(() => {
         <!-- Sidebar Section: KPI Summary -->
         <div>
           <h4 class="text-[9.5px] font-bold text-muted-foreground/80 tracking-wider uppercase border-b border-border/30 pb-2 mb-3">
-            ملخص مؤشرات الكنترول
+            {m.academics_exams_center_kpi_control()}
           </h4>
           
           <div class="grid grid-cols-2 gap-4 pb-4 border-b border-border/30">
@@ -346,7 +350,7 @@ const advisorInsights = $derived.by(() => {
         <div class="flex flex-col gap-3">
           <div class="flex items-center gap-2 text-foreground font-semibold text-[11px] pb-1">
             <Sparkles size={13} class="text-primary animate-pulse" />
-            <span>تشخيص المساعد الأكاديمي (Orbis Advisor)</span>
+            <span>{m.academics_exams_center_advisor()}</span>
           </div>
           
           <div class="flex flex-col gap-2.5">
@@ -378,7 +382,7 @@ const advisorInsights = $derived.by(() => {
         <!-- System Information Footer -->
         <div class="pt-2 border-t border-border/30 flex items-center gap-2 text-[9px] text-muted-foreground/75">
           <Info size={11} />
-          <span>System Status: Optimal. Exams Control Active.</span>
+          <span>{m.academics_exams_center_system_status()}</span>
         </div>
 
       </div>
