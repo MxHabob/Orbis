@@ -1,173 +1,157 @@
 <script lang="ts">
-import { fade } from "svelte/transition";
-import { Pencil, Trash2, Users, MapPin } from "@lucide/svelte";
+  import { fade } from "svelte/transition";
+  import { GripVertical, MapPin, Pencil, Trash2, Users } from "@lucide/svelte";
+  import { Button } from "@orbis/ui-svelte/button";
 
-let {
-  lesson,
-  timeSlot,
-  viewMode = "class",
-  locale = "ar",
-  getSubjectName,
-  getTeacherName,
-  getClassName,
-  getRoomName,
-  subjectColor = "var(--color-primary)",
-  ondragstart,
-  onDelete,
-  onEdit,
-}: {
-  lesson: any;
-  timeSlot?: any;
-  viewMode: "whole" | "class" | "teacher" | "subject" | "room";
-  locale: string;
-  getSubjectName: (id: string) => string;
-  getTeacherName: (id: string) => string;
-  getClassName: (id: string) => string;
-  getRoomName?: (id: string) => string;
-  subjectColor?: string;
-  ondragstart?: (e: DragEvent) => void;
-  onDelete?: (id: string) => void;
-  onEdit?: (lesson: any) => void;
-} = $props();
+  let {
+    lesson,
+    timeSlot,
+    viewMode = "class",
+    locale = "ar",
+    getSubjectName,
+    getTeacherName,
+    getClassName,
+    getRoomName,
+    subjectColor = "var(--color-primary)",
+    ondragstart,
+    onDelete,
+    onEdit,
+  }: {
+    lesson: any;
+    timeSlot?: any;
+    viewMode: "whole" | "class" | "teacher" | "subject" | "room";
+    locale: string;
+    getSubjectName: (id: string) => string;
+    getTeacherName: (id: string) => string;
+    getClassName: (id: string) => string;
+    getRoomName?: (id: string) => string;
+    subjectColor?: string;
+    ondragstart?: (event: DragEvent) => void;
+    onDelete?: (id: string) => void;
+    onEdit?: (lesson: any) => void;
+  } = $props();
 
-const isDraft = $derived(!!lesson.isDraft);
-const subjectName = $derived(getSubjectName(lesson.subject_id));
-const hasConflict = $derived(Boolean(lesson.conflict || lesson.conflict_type || lesson.has_conflict));
-const statusLabel = $derived(lesson.status || lesson.lesson_status || "");
-const roomName = $derived(
-  lesson.room_name || getRoomName?.(lesson.room_id) || lesson.room || "",
-);
+  const isDraft = $derived(Boolean(lesson.isDraft));
+  const hasConflict = $derived(Boolean(lesson.conflict || lesson.conflict_type || lesson.has_conflict));
+  const statusLabel = $derived(lesson.status || lesson.lesson_status || "");
+  const subjectName = $derived(lesson.subject_name || lesson.subjectName || getSubjectName(lesson.subject_id) || "");
+  const teacherName = $derived(lesson.teacher_name || lesson.teacherName || getTeacherName(lesson.teacher_id) || "");
+  const className = $derived(lesson.class_name || lesson.className || getClassName(lesson.class_id) || "");
+  const roomName = $derived(lesson.room_name || lesson.roomName || getRoomName?.(lesson.room_id) || lesson.room || "");
 
-// Format times nicely
-const timeStr = $derived(
-  lesson.time_slot_start && lesson.time_slot_end
-    ? `${lesson.time_slot_start} - ${lesson.time_slot_end}`
-    : timeSlot?.start_time && timeSlot?.end_time
-      ? `${timeSlot.start_time} - ${timeSlot.end_time}`
-    : "",
-);
+  function formatTime(value: string): string {
+    if (!value) return "";
+    const match = value.match(/^(\d{1,2})(?::(\d{2}))?/);
+    if (!match) return value;
+    let hour = Number(match[1]);
+    const minute = match[2];
+    const period = hour >= 12 ? "PM" : "AM";
+    hour = hour % 12 || 12;
+    return minute && minute !== "00" ? `${hour}:${minute} ${period}` : `${hour} ${period}`;
+  }
+
+  const timeLabel = $derived.by(() => {
+    const start = lesson.time_slot_start || timeSlot?.start_time || "";
+    const end = lesson.time_slot_end || timeSlot?.end_time || "";
+    return start && end ? `${formatTime(start)} - ${formatTime(end)}` : "";
+  });
+
+  function preventCardDrag(event: DragEvent) {
+    event.preventDefault();
+  }
+
+  function startLessonDrag(event: DragEvent) {
+    event.stopPropagation();
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+    ondragstart?.(event);
+  }
+
+  function handleEdit(event: MouseEvent) {
+    event.stopPropagation();
+    onEdit?.(lesson);
+  }
+
+  function handleDelete(event: MouseEvent) {
+    event.stopPropagation();
+    onDelete?.(lesson.id);
+  }
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
-  draggable={!isDraft}
-  {ondragstart}
+<article
   dir="auto"
-  style="--subject-color: {subjectColor};"
-  class="lesson-card relative self-center overflow-hidden w-full h-full min-h-20 flex flex-col items-stretch select-none transition-all duration-150 rounded-lg
-    {isDraft 
-      ? 'bg-muted/40 text-muted-foreground animate-pulse-draft' 
-      : hasConflict
-        ? 'bg-destructive/10 text-foreground cursor-grab active:cursor-grabbing'
-        : 'text-foreground cursor-grab active:cursor-grabbing'}"
-  in:fade={{ duration: 150 }}
+  ondragstart={preventCardDrag}
+  style={`--subject-color: ${subjectColor};`}
+  class="group relative flex h-full min-h-20 min-w-0 w-full flex-col overflow-hidden rounded-md border border-primary-foreground/20 bg-(--subject-color) text-primary-foreground select-none {hasConflict ? 'border-destructive' : ''} {isDraft ? 'border-dashed' : ''}"
+  in:fade={{ duration: 120 }}
+  aria-label={subjectName}
 >
-  <div
-    class="lesson-card-body relative flex min-h-0 flex-1 flex-col justify-start gap-1 p-2 text-start"
-    style:background-color={!isDraft && !hasConflict ? `color-mix(in srgb, ${subjectColor} 72%, var(--color-card))` : undefined}
-  >
-    {#if onDelete && !isDraft}
-      <button
-        type="button"
-        onclick={(e) => { e.stopPropagation(); onDelete(lesson.id); }}
-        class="absolute inset-s-1 top-1 text-foreground/60 hover:text-destructive p-0.5 rounded transition-colors cursor-pointer"
-        title={locale === "ar" ? "حذف الحصة" : "Delete lesson"}
+  <div class="relative flex min-h-0 flex-1 flex-col overflow-hidden px-2 pb-1.5 pt-2 text-start">
+    {#if !isDraft}
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <span
+        draggable="true"
+        ondragstart={startLessonDrag}
+        class="absolute inset-e-1 top-1 z-20 flex h-5 w-5 cursor-grab items-center justify-center rounded-sm text-primary-foreground/75 active:cursor-grabbing"
+        role="button"
+        tabindex="0"
+        aria-label={locale === "ar" ? "سحب الحصة" : "Drag lesson"}
+        title={locale === "ar" ? "اسحب من هنا لنقل الحصة" : "Drag here to move lesson"}
       >
-        <Trash2 size={11} />
-      </button>
-    {/if}
-    {#if onEdit && !isDraft}
-      <button
-        type="button"
-        onclick={(e) => { e.stopPropagation(); onEdit(lesson); }}
-        class="absolute inset-s-6 top-1 text-foreground/60 hover:text-primary p-0.5 rounded transition-colors cursor-pointer"
-        title={locale === "ar" ? "تعديل الحصة" : "Edit lesson"}
-      >
-        <Pencil size={11} />
-      </button>
+        <GripVertical size={13} strokeWidth={2.5} />
+      </span>
     {/if}
 
-    <span class="lesson-subject ps-7 font-bold text-[11px] leading-tight text-end line-clamp-2">
+    <div class="min-w-0 truncate pe-5 text-start text-[11px] font-bold leading-tight" title={subjectName}>
       {subjectName}
-    </span>
-    {#if hasConflict || statusLabel}
-      <span class="lesson-status text-[8px] font-semibold leading-none {hasConflict ? 'text-destructive' : 'text-foreground/70'}">
-        {hasConflict ? "Conflict" : statusLabel}
-      </span>
-    {/if}
-    <div class="lesson-meta flex min-w-0 flex-col gap-0.5 text-[9px] leading-tight text-foreground/75">
-      <span class="flex min-w-0 items-center gap-1 truncate">
-        <Users size={9} class="shrink-0 opacity-70" />
-        <span class="truncate">{viewMode === "class" ? getTeacherName(lesson.teacher_id) : getClassName(lesson.class_id)}</span>
-      </span>
+    </div>
+
+    <div class="mt-1 flex min-h-0 flex-1 flex-col gap-0.5 overflow-hidden text-[9px] leading-tight text-primary-foreground/80">
+      {#if viewMode === "class" && teacherName}
+        <span class="flex min-w-0 items-center gap-1" title={teacherName}>
+          <Users size={9} strokeWidth={2} class="shrink-0 text-primary-foreground/70" />
+          <span class="truncate">{teacherName}</span>
+        </span>
+      {:else if className}
+        <span class="flex min-w-0 items-center gap-1" title={className}>
+          <Users size={9} strokeWidth={2} class="shrink-0 text-primary-foreground/70" />
+          <span class="truncate">{className}</span>
+        </span>
+      {/if}
+
       {#if roomName}
-        <span class="lesson-room flex min-w-0 items-center gap-1 truncate">
-          <MapPin size={9} class="shrink-0 opacity-70" />
+        <span class="flex min-w-0 items-center gap-1" title={roomName}>
+          <MapPin size={9} strokeWidth={2} class="shrink-0 text-primary-foreground/70" />
           <span class="truncate">{roomName}</span>
         </span>
       {/if}
+
+      {#if hasConflict || statusLabel}
+        <span class="truncate text-[8px] text-primary-foreground">
+          {hasConflict ? (locale === "ar" ? "تعارض" : "Conflict") : statusLabel}
+        </span>
+      {/if}
     </div>
+
+    {#if (onDelete || onEdit) && !isDraft}
+      <div class="absolute inset-s-1 bottom-1 z-30 flex items-center gap-1 opacity-0 pointer-events-none transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100" dir="rtl">
+        {#if onEdit}
+          <Button variant="secondary" size="icon-xs" onclick={handleEdit} title={locale === "ar" ? "تعديل الحصة" : "Edit lesson"}>
+            <Pencil size={9} strokeWidth={2.5}  />
+          </Button>
+        {/if}
+        {#if onDelete}
+          <Button variant="destructive" size="icon-xs" onclick={handleDelete} title={locale === "ar" ? "حذف الحصة" : "Delete lesson"}>
+            <Trash2 size={9} />
+          </Button>
+        {/if}
+      </div>
+    {/if}
   </div>
-  {#if timeStr}
-    <div
-      class="lesson-time shrink-0 px-2 py-1.5 text-center text-[9px] font-mono font-bold leading-none text-foreground/80 tabular-nums"
-      style:background-color={!isDraft && !hasConflict ? `color-mix(in srgb, ${subjectColor} 18%, var(--color-card))` : undefined}
-      dir="ltr"
-    >
-      {timeStr}
+
+  {#if timeLabel}
+    <div class="flex h-7 min-h-7 items-center justify-center overflow-hidden border-t border-primary-foreground/20 bg-primary-foreground/15 px-1.5 text-[10px] font-bold leading-none text-primary-foreground whitespace-nowrap" dir="ltr" aria-label={timeLabel}>
+      <span class="max-w-full truncate">{timeLabel}</span>
     </div>
   {/if}
-
-</div>
-
-<style>
-  .lesson-card {
-    container-type: inline-size;
-    max-width: none;
-  }
-
-  @container (max-width: 112px) {
-    .lesson-card-body {
-      padding: 0.35rem;
-      gap: 0.25rem;
-    }
-
-    .lesson-meta {
-      font-size: 7px;
-    }
-
-    .lesson-room {
-      display: none;
-    }
-
-    .lesson-time {
-      padding-inline: 0.25rem;
-      font-size: 7px;
-    }
-  }
-
-  @container (min-width: 180px) {
-    .lesson-card-body {
-      padding: 0.65rem;
-      gap: 0.35rem;
-    }
-
-    .lesson-meta {
-      font-size: 9px;
-    }
-
-    .lesson-time {
-      padding-block: 0.35rem;
-      font-size: 9px;
-    }
-  }
-
-  .animate-pulse-draft {
-    animation: draft-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
-  @keyframes draft-pulse {
-    0%, 100% { opacity: 0.8; }
-    50% { opacity: 0.4; }
-  }
-</style>
+</article>
