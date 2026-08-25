@@ -257,7 +257,7 @@ pub async fn execute() -> Result<()> {
 
 
     // 5a. Bootstrap organization + admin + core data
-    output::print_progress_pending("Creating organization, admin account, and core data...");
+    output::print_progress_pending("Creating organization, admin account, chart of accounts, and cash/bank accounts...");
     let hashed_password = hash(&admin_password, DEFAULT_COST).unwrap_or_default();
     let payload = svc_organization::ops::bootstrap::BootstrapPayload {
         org_name: org_name.clone(),
@@ -273,7 +273,7 @@ pub async fn execute() -> Result<()> {
 
     let result = svc_organization::ops::bootstrap::bootstrap_full(&db, payload).await?;
     let org_id = result.org_id;
-    output::print_progress_ok("Organization, admin account, and core data created successfully");
+    output::print_progress_ok("Organization, chart of accounts, and cash/bank accounts created successfully");
 
     // 5d. Store license limits in organization
     output::print_progress_pending("Applying license limits...");

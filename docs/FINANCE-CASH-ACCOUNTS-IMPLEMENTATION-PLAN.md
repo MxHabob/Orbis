@@ -115,8 +115,8 @@ This table contains identity and reconciliation metadata only. It must not conta
 
 - [x] Replace the baseline schema with the account-only model.
 - [ ] Drop and recreate development databases from the new baseline.
-- [ ] Reseed the chart of accounts, including cash parent `110101` and bank parent `110102`.
-- [ ] Verify that no runtime code expects the removed treasury tables.
+- [x] Reseed the chart of accounts, including the shared cash/bank parent `1101`, cash account `110101`, and bank accounts `110102`/`110103`.
+- [x] Verify that no runtime code expects the removed treasury tables.
 
 **Acceptance:** a fresh database contains no `treasuries` or `treasury_transactions` tables and cash/bank accounts are created through `createAccount`.
 

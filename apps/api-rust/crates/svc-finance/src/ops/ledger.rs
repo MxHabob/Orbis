@@ -17,6 +17,7 @@ use crate::contracts::events::event_types;
 use crate::entities::{account, currency, journal_entry};
 
 mod parent_account_code {
+    pub const CASH_AND_BANKS: &str = "1101";
     pub const STUDENT: &str = "110301";
     pub const GUARDIAN: &str = "110308";
     pub const EMPLOYEE: &str = "210401";
@@ -29,8 +30,7 @@ mod parent_account_code {
 
 fn parent_code_for_sub_type(sub_type: &str) -> Option<&'static str> {
     match sub_type.to_lowercase().as_str() {
-        "cash" => Some(parent_account_code::TREASURY_CASH),
-        "bank" => Some(parent_account_code::TREASURY_BANK),
+        "cash" | "bank" => Some(parent_account_code::CASH_AND_BANKS),
         "vendor" => Some(parent_account_code::VENDOR),
         "partner" => Some(parent_account_code::PARTNER),
         "employee" => Some(parent_account_code::EMPLOYEE),
@@ -225,8 +225,7 @@ pub async fn create_account(
     if let Some(ref sub_type) = cmd.sub_type {
         let normalized_sub_type = sub_type.to_lowercase();
         let expected_parent = match normalized_sub_type.as_str() {
-            "cash" => Some(parent_account_code::TREASURY_CASH),
-            "bank" => Some(parent_account_code::TREASURY_BANK),
+            "cash" | "bank" => Some(parent_account_code::CASH_AND_BANKS),
             _ => None,
         };
         if let (Some(expected_code), Some(actual_parent)) = (expected_parent, parent.as_ref()) {

@@ -62,6 +62,7 @@ pub async fn record(
 
     if cash_account.item_type != "asset"
         || !matches!(cash_account.sub_type.as_deref(), Some("cash") | Some("bank"))
+        || cash_account.is_control_account != 0
         || cash_account.is_active != 1
     {
         return Err(AppError::validation("Selected account must be an active cash or bank account"));

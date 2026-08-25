@@ -574,11 +574,17 @@ async fn seed_chart_of_accounts<C: ConnectionTrait>(
     for (id, oid, code, name, name_ar, db_type, parent_id, path, depth, curr, timestamp) in rows {
         db.execute(Statement::from_sql_and_values(
             db.get_database_backend(),
-            "INSERT INTO accounts (id, org_id, code, name, name_ar, type, parent_id, path, depth, currency, balances, is_control_account, is_system_account, is_active, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, '{}', 0, 0, 1, $11, $12)",
+            "INSERT INTO accounts (id, org_id, code, name, name_ar, type, sub_type, parent_id, path, depth, currency, balances, is_control_account, is_system_account, is_active, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, '{}', CASE WHEN $3 = '1101' THEN 1 ELSE 0 END, 0, 1, $12, $13)",
             vec![
                 id.into(), oid.into(), code.clone().into(), name.into(), name_ar.into(),
-                db_type.into(), parent_id.into(), path.into(), depth.into(),
-                curr.into(), timestamp.clone().into(), timestamp.into(),
+                db_type.into(),
+                match code.as_str() {
+                    "110101" => Some("cash"),
+                    "110102" | "110103" => Some("bank"),
+                    _ => None,
+                }.into(),
+                parent_id.into(), path.into(), depth.into(), curr.into(),
+                timestamp.clone().into(), timestamp.into(),
             ]
         )).await.map_err(|e| AppError::internal(format!("Failed to seed account {code}: {e}")))?;
     }
