@@ -133,6 +133,7 @@ async function openStandaloneWindow() {
       await commands.ai.agentOpenStandalone();
       uiStore.setAskOrbis(false);
     } catch (e: unknown) {
+      console.error("Failed to open Ask Orbis standalone window:", e);
       toast.error(m.agent_toast_open_standalone_failed());
     }
   } else {
@@ -150,6 +151,7 @@ async function handleNewChat(agentType: string = "default") {
     selectedSessionId = newSession.id;
     messages = [];
   } catch (e: unknown) {
+    console.error("Failed to create Ask Orbis session:", e);
     toast.error(m.agent_toast_new_chat_failed());
   }
 }
@@ -204,6 +206,7 @@ async function submitMessage(queryText?: string) {
       messages[finalMsgIndex].content = response;
     }
   } catch (e: unknown) {
+    console.error("Ask Orbis query failed:", e);
     messages = [
       ...messages,
       {

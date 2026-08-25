@@ -11,6 +11,7 @@ export interface AiCommands {
   agentRejectAction(actionLogId: string, rejectedBy: string, reason: string): Promise<void>;
   agentCreateSession(sessionType: string): Promise<any>;
   agentQuery(sessionId: string, text: string, context: any | null, onChunk: any): Promise<string>;
+  agentOpenStandalone(): Promise<void>;
   aiGetAutopilotConfig(orgId: string): Promise<any>;
   aiSaveAutopilotConfig(orgId: string, config: any): Promise<void>;
 }

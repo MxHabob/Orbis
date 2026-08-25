@@ -372,6 +372,7 @@ export const commands: OrbisCommands = {
     agentRejectAction: (actionLogId: any, rejectedBy: any, reason: any) => cmd("agent_reject_action", { actionLogId, rejectedBy, reason }),
     agentCreateSession: (sessionType: any) => cmd("agent_create_session", { sessionType }),
     agentQuery: (sessionId: any, text: any, context: any, onChunk: any) => cmd("agent_query", { sessionId, text, context, onChunk }),
+    agentOpenStandalone: () => cmd("agent_open_standalone", {}),
     aiGetAutopilotConfig: (orgId: any) => cmd("ai_get_autopilot_config", { orgId }),
     aiSaveAutopilotConfig: (orgId: any, config: any) => cmd("ai_save_autopilot_config", { orgId, config }),
   },
