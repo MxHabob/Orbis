@@ -180,7 +180,7 @@ pub async fn list_templates(
         .build_guarded_context()
         .await
         .map_err(CommandError::from)?;
-    let mut params = request
+    let params = request
         .map(|value| {
             serde_json::from_value::<docforge_orbis::template_service::ListTemplatesParams>(value)
                 .map_err(|error| CommandError::new(format!("Invalid template filters: {error}")))

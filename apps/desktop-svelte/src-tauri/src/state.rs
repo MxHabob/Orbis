@@ -47,6 +47,14 @@ pub struct PlatformServices {
 impl PlatformServices {
     /// Build all platform services from a database connection.
     pub fn new(db: DatabaseConnection, event_bus: Arc<EventBus>) -> Self {
+        Self::new_with_storage(db, event_bus, "app_data/storage")
+    }
+
+    pub fn new_with_storage(
+        db: DatabaseConnection,
+        event_bus: Arc<EventBus>,
+        storage_path: impl AsRef<Path>,
+    ) -> Self {
         use svc_iam::ops::permission_checker::IamPermissionChecker;
         use svc_iam::ops::audit_logger::DbAuditLogger;
         use svc_organization::ops::settings::OrgSettingsProvider;
@@ -65,7 +73,7 @@ impl PlatformServices {
 
         let db_for_store = db.clone();
         
-        let storage = infra_integration::adapters::storage::local::LocalStorageProvider::new("app_data/storage");
+        let storage = infra_integration::adapters::storage::local::LocalStorageProvider::new(storage_path);
 
         Self {
             permissions: Arc::new(IamPermissionChecker::new(db.clone())),
@@ -177,7 +185,11 @@ impl AppState {
         // Initialize platform services with the active database
         let db = provider.db();
         let event_bus = Arc::new(EventBus::new());
-        let platform = Arc::new(PlatformServices::new(db, event_bus));
+        let platform = Arc::new(PlatformServices::new_with_storage(
+            db,
+            event_bus,
+            app_data_dir.join("storage"),
+        ));
         
         // Start background event loop + autopilot scheduler + catch-up
         platform.start_event_loop();

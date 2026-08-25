@@ -75,6 +75,7 @@ async function handleAssetDragStart(e: DragEvent, doc: any) {
 
 async function insertAssetAsImage(doc: any) {
   const srcUrl = await resolveDocumentUrl(doc.url);
+  store.addAsset(doc.id, "image");
   store.addElement("Image", {
     assetRef: doc.id,
     src: srcUrl || "",
@@ -103,12 +104,15 @@ function handleFileSelect(e: Event) {
     {
       file,
       entity_type: "template",
-      entity_id: "shared", // Can be shared across templates
+      entity_id: store.document.meta.id || "shared",
       category: "image",
       visibility: "private",
     },
     {
-      onSuccess: () => {
+      onSuccess: (uploaded: any) => {
+        if (uploaded?.id) {
+          store.addAsset(uploaded.id, "image");
+        }
         if (fileInput) fileInput.value = "";
       },
     },
@@ -155,7 +159,7 @@ function triggerUpload() {
   <!-- Search -->
   <div class="px-2 py-1.5 border-b border-border/30">
     <div class="relative">
-      <Search size={11} class="absolute start-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+      <Search size={11} class="absolute inset-s-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
       <Input
         type="text"
         placeholder={m.template_search_placeholder()}
@@ -166,7 +170,7 @@ function triggerUpload() {
   </div>
 
   <!-- Asset Grid -->
-  <div class="flex-grow overflow-y-auto scrollbar-hide p-2 flex flex-col gap-2">
+  <div class="grow overflow-y-auto scrollbar-hide p-2 flex flex-col gap-2">
     {#if documentsQuery.isLoading && serverAssets.length === 0}
       <div class="flex justify-center p-4">
         <Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
@@ -188,7 +192,7 @@ function triggerUpload() {
             ondragstart={(e) => handleAssetDragStart(e, doc)}
           >
             <!-- Thumbnail -->
-            <div class="aspect-[4/3] bg-muted/20 flex items-center justify-center overflow-hidden">
+            <div class="aspect-4/3 bg-muted/20 flex items-center justify-center overflow-hidden">
               {#await resolveDocumentUrl(doc.url)}
                 <Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
               {:then srcUrl}
@@ -212,7 +216,7 @@ function triggerUpload() {
             </div>
 
             <!-- Hover Actions -->
-            <div class="absolute top-1 end-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5">
+            <div class="absolute top-1 inset-e-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5">
               <button type="button" class="p-0.5 rounded bg-background/80 hover:bg-accent cursor-pointer" onclick={() => insertAssetAsImage(doc)}>
                 <Plus size={10} class="text-primary" />
               </button>

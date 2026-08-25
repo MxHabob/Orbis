@@ -70,6 +70,7 @@ function handleClick(e: MouseEvent) {
 // ── Inline Text Editing ──────────────────────────────────────
 const isEditing = $derived(store.editingNodeId === node.id);
 let editEl: HTMLDivElement | undefined = $state();
+let editingContent = $state("");
 
 $effect(() => {
   if (isEditing && editEl && document.activeElement !== editEl) {
@@ -87,16 +88,21 @@ function handleDoubleClick(e: MouseEvent) {
   if (node.type !== "Text") return;
   e.stopPropagation();
   e.preventDefault();
+  editingContent = nodeProps.content || "";
   store.editingNodeId = node.id;
+}
+
+function handleEditInput(e: InputEvent) {
+  editingContent = (e.currentTarget as HTMLDivElement).textContent || "";
 }
 
 function commitEdit() {
   if (!isEditing || !editEl) return;
-  const newContent = editEl.innerText || "";
+  const newContent = editingContent;
   if (newContent !== nodeProps.content) {
-    store.updateSelectedProps({
+    store.updateNodeProps(node.id, {
       props: { ...nodeProps, content: newContent },
-    } as any);
+    });
   }
   store.editingNodeId = null;
 }
@@ -168,6 +174,7 @@ const textSegments = $derived(
             xmlns="http://www.w3.org/1999/xhtml"
             bind:this={editEl}
             contenteditable="true"
+            oninput={handleEditInput}
             onblur={commitEdit}
             onkeydown={handleEditKeydown}
             style="
@@ -192,7 +199,7 @@ const textSegments = $derived(
               background: rgba(255,255,255,0.95);
               cursor: text;
             "
-          >{nodeProps.content || ""}</div>
+          >{editingContent}</div>
         {:else}
           <!-- Display mode -->
           <div

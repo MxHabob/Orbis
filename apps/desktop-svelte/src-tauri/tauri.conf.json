@@ -16,6 +16,10 @@
       "csp": null,
       "dangerousDisableAssetCspModification": true,
       "freezePrototype": false,
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["$APPDATA/**"]
+      },
       "capabilities": ["default", "desktop-capability"]
     }
   },

@@ -8,7 +8,7 @@ use uuid::Uuid;
 use tokio::time::sleep;
 use tracing::{error, info, warn};
 use serde::{Deserialize, Serialize};
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, TransactionTrait};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, TransactionTrait};
 
 use shared_kernel::errors::AppError;
 use crate::entities::{scheduled_lesson, solve_job};

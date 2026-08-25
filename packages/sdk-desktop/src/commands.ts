@@ -307,8 +307,30 @@ export const commands: OrbisCommands = {
       return cmd("document_document_list", { request: req });
     },
     deleteDocument: (id: any) => cmd("document_document_delete", { id }),
-    uploadDocument: (fileName: any, mimeType: any, bytes: any, entityType: any, entityId: any, category: any, visibility: any) => cmd("upload_document", { fileName, mimeType, bytes, entityType, entityId, category, visibility }),
-    getDocuments: (ownerId: any, entityType: any, category: any, cursor: any, limit: any) => cmd("get_documents", { ownerId, entityType, category, cursor, limit }),
+    uploadDocument: async (request: any) => {
+      const bytes = Array.from(new Uint8Array(await request.file.arrayBuffer()));
+      return cmd("upload_document", {
+        fileName: request.file.name,
+        mimeType: request.file.type || "application/octet-stream",
+        bytes,
+        entityType: request.entity_type,
+        entityId: request.entity_id,
+        category: request.category,
+        visibility: request.visibility,
+      });
+    },
+    getDocuments: (requestOrOwnerId: any, entityType?: any, category?: any, cursor?: any, limit?: any) => {
+      if (requestOrOwnerId && typeof requestOrOwnerId === "object" && !Array.isArray(requestOrOwnerId)) {
+        return cmd("get_documents", {
+          ownerId: requestOrOwnerId.ownerId ?? null,
+          entityType: requestOrOwnerId.entityType ?? null,
+          category: requestOrOwnerId.category ?? null,
+          cursor: requestOrOwnerId.cursor ?? null,
+          limit: requestOrOwnerId.limit ?? 50,
+        });
+      }
+      return cmd("get_documents", { ownerId: requestOrOwnerId, entityType, category, cursor, limit });
+    },
     storageDeleteDocument: (id: any) => cmd("storage_delete_document", { id }),
   },
   calendar: {

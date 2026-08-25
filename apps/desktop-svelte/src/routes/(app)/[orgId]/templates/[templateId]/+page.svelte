@@ -93,6 +93,7 @@ async function initEditor() {
     store.setSystemSchemas(schemas);
 
     const doc = deserializeDocument(templateRecord.document_json);
+    doc.meta = { ...doc.meta, id: templateId || templateRecord.id };
     store.loadDocument(doc);
     isLoading = false;
   } catch (e: unknown) {

@@ -290,6 +290,25 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     }
   }
 
+  function updateNodeProps(nodeId: string, props: Record<string, unknown>): void {
+    executeCommand(new UpdatePropsCommand(nodeId, props, findNode(document, nodeId)?.name));
+  }
+
+  function addAsset(assetId: string, type: "image" | "logo" | "signature" | "stamp" = "image"): void {
+    if (!assetId || document.assets[assetId]) return;
+    const previousAssets = { ...document.assets };
+    executeCommand({
+      type: "add-asset",
+      description: "Add asset",
+      descriptionAr: "إضافة أصل",
+      execute: (doc) => ({
+        ...doc,
+        assets: { ...previousAssets, [assetId]: { assetId, type } },
+      }),
+      undo: (doc) => ({ ...doc, assets: previousAssets }),
+    });
+  }
+
   function moveNodes(updates: { id: string; x: number; y: number }[]): void {
     if (updates.length === 0) return;
     if (updates.length === 1) {
@@ -599,6 +618,8 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     // Nodes
     addElement,
     updateSelectedProps,
+    updateNodeProps,
+    addAsset,
     moveNodes,
     resizeSelected,
     deleteSelected,

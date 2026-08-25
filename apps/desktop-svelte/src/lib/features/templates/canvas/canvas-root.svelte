@@ -238,11 +238,13 @@ function handleDrop(e: DragEvent) {
   const assetRef = e.dataTransfer.getData("application/x-docforge-asset");
   if (assetRef) {
     const asset = store.document.assets[assetRef];
+    const assetUrl = e.dataTransfer.getData("text/uri-list");
+    store.addAsset(assetRef, "image");
     store.addElement(
       "Image",
       {
         assetRef,
-        src: (asset as any)?.url || "",
+        src: assetUrl || (asset as any)?.url || "",
         width: 40,
         height: 30,
         fit: "contain",
@@ -257,7 +259,7 @@ function handleDrop(e: DragEvent) {
 
 <div
   bind:this={containerEl}
-  class="relative flex-grow overflow-hidden bg-muted/20 select-none"
+  class="relative grow overflow-hidden bg-muted/20 select-none"
   role="application"
   aria-label="Template Canvas"
 >
