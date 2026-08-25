@@ -16,6 +16,60 @@ use crate::contracts::commands::{CreateLedgerAccountCmd, CreateJournalEntryCmd};
 use crate::contracts::events::event_types;
 use crate::entities::{account, journal_entry};
 
+mod parent_account_code {
+    pub const STUDENT: &str = "110301";
+    pub const GUARDIAN: &str = "110308";
+    pub const EMPLOYEE: &str = "210401";
+    pub const VENDOR: &str = "210106";
+    pub const PARTNER: &str = "310101";
+    pub const TREASURY_CASH: &str = "110101";
+    pub const TREASURY_BANK: &str = "110102";
+    pub const BRANCH: &str = "110604";
+}
+
+fn parent_code_for_sub_type(sub_type: &str) -> Option<&'static str> {
+    match sub_type.to_lowercase().as_str() {
+        "vendor" => Some(parent_account_code::VENDOR),
+        "partner" => Some(parent_account_code::PARTNER),
+        "employee" => Some(parent_account_code::EMPLOYEE),
+        "student" => Some(parent_account_code::STUDENT),
+        "guardian" => Some(parent_account_code::GUARDIAN),
+        _ => None,
+    }
+}
+
+fn parent_code_for_entity(entity_type: &str) -> Option<&'static str> {
+    match entity_type {
+        "student" => Some(parent_account_code::STUDENT),
+        "employee" => Some(parent_account_code::EMPLOYEE),
+        "treasury_cash" => Some(parent_account_code::TREASURY_CASH),
+        "treasury_bank" => Some(parent_account_code::TREASURY_BANK),
+        "vendor" => Some(parent_account_code::VENDOR),
+        "partner" => Some(parent_account_code::PARTNER),
+        "guardian" => Some(parent_account_code::GUARDIAN),
+        "branch" => Some(parent_account_code::BRANCH),
+        _ => None,
+    }
+}
+
+async fn find_control_account(
+    ctx: &ServiceContext,
+    code: &str,
+) -> Result<account::Model, AppError> {
+    account::Entity::find()
+        .filter(account::Column::OrgId.eq(&ctx.org_id))
+        .filter(account::Column::Code.eq(code))
+        .filter(account::Column::IsActive.eq(1))
+        .one(&ctx.db)
+        .await?
+        .ok_or_else(|| {
+            AppError::validation(format!(
+                "Parent control account '{}' not found in chart of accounts. Did you run seeding?",
+                code
+            ))
+        })
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct LedgerAccountResponse {
     pub id: String,
@@ -135,20 +189,10 @@ pub async fn create_account(
             Some(p)
         }
     } else if let Some(ref sub_type) = cmd.sub_type {
-        let parent_code = match sub_type.to_lowercase().as_str() {
-            "vendor" => "210106",
-            "partner" => "310101",
-            "employee" => "210401",
-            "student" => "110301",
-            "guardian" => "110308",
-            _ => return Err(AppError::validation(format!("Unsupported sub_type for auto parent: {}", sub_type))),
-        };
-        let parent_id = format!("{}-acc-{}", ctx.org_id, parent_code);
-        let p = account::Entity::find_by_id(parent_id.clone())
-            .one(&ctx.db).await?
-            .ok_or_else(|| AppError::validation(format!(
-                "Parent control account '{}' not found. Did you seed default financials?", parent_code
-            )))?;
+        let parent_code = parent_code_for_sub_type(sub_type).ok_or_else(|| {
+            AppError::validation(format!("Unsupported sub_type for auto parent: {}", sub_type))
+        })?;
+        let p = find_control_account(ctx, parent_code).await?;
         Some(p)
     } else {
         None
@@ -236,17 +280,9 @@ pub async fn get_or_create_sub_account(
 ) -> Result<account::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceWrite).await?;
 
-    let parent_code = match entity_type {
-        "student" => "110301",
-        "employee" => "210401",
-        "treasury_cash" => "110101",
-        "treasury_bank" => "110102",
-        "vendor" => "210106",
-        "partner" => "310101",
-        "guardian" => "110308",
-        "branch" => "110604",
-        _ => return Err(AppError::validation(format!("Unsupported sub-ledger entity type: {}", entity_type))),
-    };
+    let parent_code = parent_code_for_entity(entity_type).ok_or_else(|| {
+        AppError::validation(format!("Unsupported sub-ledger entity type: {}", entity_type))
+    })?;
 
     if let Some(existing) = account::Entity::find()
         .filter(account::Column::OrgId.eq(&ctx.org_id))
@@ -258,12 +294,7 @@ pub async fn get_or_create_sub_account(
         return Ok(existing);
     }
 
-    let parent_id = format!("{}-acc-{}", ctx.org_id, parent_code);
-    let parent = account::Entity::find_by_id(parent_id.clone())
-        .one(&ctx.db).await?
-        .ok_or_else(|| AppError::validation(format!(
-            "Parent control account '{}' not found in chart of accounts. Did you run seeding?", parent_code
-        )))?;
+    let parent = find_control_account(ctx, parent_code).await?;
 
     let (resolved_name, resolved_name_ar) = if entity_type == "student" || entity_type == "employee" || entity_type == "guardian" {
         let usr = user::Entity::find_by_id(entity_id.to_string())
