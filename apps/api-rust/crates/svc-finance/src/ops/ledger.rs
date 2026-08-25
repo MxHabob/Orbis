@@ -14,7 +14,7 @@ use svc_iam::entities::user;
 
 use crate::contracts::commands::{CreateLedgerAccountCmd, CreateJournalEntryCmd};
 use crate::contracts::events::event_types;
-use crate::entities::{account, journal_entry};
+use crate::entities::{account, currency, journal_entry};
 
 mod parent_account_code {
     pub const STUDENT: &str = "110301";
@@ -29,6 +29,8 @@ mod parent_account_code {
 
 fn parent_code_for_sub_type(sub_type: &str) -> Option<&'static str> {
     match sub_type.to_lowercase().as_str() {
+        "cash" => Some(parent_account_code::TREASURY_CASH),
+        "bank" => Some(parent_account_code::TREASURY_BANK),
         "vendor" => Some(parent_account_code::VENDOR),
         "partner" => Some(parent_account_code::PARTNER),
         "employee" => Some(parent_account_code::EMPLOYEE),
@@ -179,6 +181,28 @@ pub async fn create_account(
 ) -> Result<account::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceWrite).await?;
 
+    if let Some(ref sub_type) = cmd.sub_type {
+        let normalized_sub_type = sub_type.to_lowercase();
+        if matches!(normalized_sub_type.as_str(), "cash" | "bank") {
+            if cmd.item_type.to_lowercase() != "asset" {
+                return Err(AppError::validation("Cash and bank accounts must be assets"));
+            }
+            if cmd.currency.trim().len() != 3 {
+                return Err(AppError::validation("Cash and bank accounts require a three-letter currency code"));
+            }
+            let currency_exists = currency::Entity::find()
+                .filter(currency::Column::OrgId.eq(&ctx.org_id))
+                .filter(currency::Column::Code.eq(cmd.currency.trim().to_uppercase()))
+                .filter(currency::Column::IsActive.eq(1))
+                .one(&ctx.db)
+                .await?
+                .is_some();
+            if !currency_exists {
+                return Err(AppError::validation(format!("Currency {} is not active", cmd.currency)));
+            }
+        }
+    }
+
     let parent = if let Some(ref pid) = cmd.parent_id {
         if pid.is_empty() {
             None
@@ -197,6 +221,20 @@ pub async fn create_account(
     } else {
         None
     };
+
+    if let Some(ref sub_type) = cmd.sub_type {
+        let normalized_sub_type = sub_type.to_lowercase();
+        let expected_parent = match normalized_sub_type.as_str() {
+            "cash" => Some(parent_account_code::TREASURY_CASH),
+            "bank" => Some(parent_account_code::TREASURY_BANK),
+            _ => None,
+        };
+        if let (Some(expected_code), Some(actual_parent)) = (expected_parent, parent.as_ref()) {
+            if actual_parent.code != expected_code {
+                return Err(AppError::validation(format!("{} accounts must be under parent account {}", normalized_sub_type, expected_code)));
+            }
+        }
+    }
 
     let final_code = if cmd.code.is_empty() {
         if let Some(ref p) = parent {

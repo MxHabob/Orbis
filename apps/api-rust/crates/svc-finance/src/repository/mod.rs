@@ -1,4 +1,4 @@
-//! Finance repository — CQRS split for ledger, templates, student fees, payments, and treasuries.
+//! Finance repository — CQRS split for ledger, templates, student fees, and payments.
 
 pub mod commands;
 pub mod queries;

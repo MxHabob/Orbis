@@ -6,10 +6,13 @@ import { createQuery } from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
 
 /** Treasuries for an organization. */
-export function createTreasuriesQuery(orgId: () => string) {
+export function createCashAccountsQuery(orgId: () => string) {
   return createQuery(() => ({
-    queryKey: ["treasuries", orgId()],
-    queryFn: () => commands.finance.listTreasuries(),
+    queryKey: ["cash-accounts", orgId()],
+    queryFn: () =>
+      commands.finance
+        .listAccounts()
+        .then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type))),
     enabled: !!orgId(),
     staleTime: 5 * 60 * 1000,
   }));
@@ -19,7 +22,7 @@ export function createTreasuriesQuery(orgId: () => string) {
 export function createPaymentsQuery(orgId: () => string) {
   return createQuery(() => ({
     queryKey: ["payments", orgId()],
-    queryFn: () => commands.finance.listPayments(),
+    queryFn: () => commands.finance.listPayments(null, null),
     enabled: !!orgId(),
     staleTime: 2 * 60 * 1000,
   }));

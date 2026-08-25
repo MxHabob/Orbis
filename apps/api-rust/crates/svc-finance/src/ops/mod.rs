@@ -4,7 +4,6 @@
 
 pub mod fee_assigner;
 pub mod ledger;
-pub mod treasury;
 pub mod fee_template;
 pub mod student_fee;
 pub mod payment;

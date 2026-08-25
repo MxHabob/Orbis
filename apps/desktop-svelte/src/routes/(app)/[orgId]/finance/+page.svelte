@@ -15,7 +15,7 @@ import { extractErrorMessage } from "$lib/core/ipc";
 
 import {
   createStudentFeesQuery,
-  createTreasuriesQuery,
+  createCashAccountsQuery,
   createPaymentsQuery,
 } from "$lib/features/finance";
 import { createEnrollmentsQuery } from "$lib/features/students";
@@ -36,7 +36,7 @@ import { fade } from "svelte/transition";
 // TanStack Queries
 const feesQuery = createStudentFeesQuery(() => data.orgId);
 const paymentsQuery = createPaymentsQuery(() => data.orgId);
-const treasuriesQuery = createTreasuriesQuery(() => data.orgId);
+const treasuriesQuery = createCashAccountsQuery(() => data.orgId);
 const enrollmentsQuery = createEnrollmentsQuery(() => data.orgId);
 const classesQuery = createClassesQuery(() => data.orgId);
 

@@ -1,7 +1,7 @@
 //! Finance query repository — read operations.
 
-use crate::entities::{account, treasury, student_fee, payment, fee_template, journal_entry, discount_template, currency};
-use crate::params::{FeeTemplateParams, StudentFeeParams, PaymentParams, TreasuryParams, LedgerAccountParams};
+use crate::entities::{account, student_fee, payment, fee_template, journal_entry, discount_template, currency};
+use crate::params::{FeeTemplateParams, StudentFeeParams, PaymentParams, LedgerAccountParams};
 use sea_orm::{entity::prelude::*, QueryFilter, QueryOrder, EntityTrait, ColumnTrait};
 use super::FinanceQueryRepo;
 
@@ -52,24 +52,23 @@ impl FinanceQueryRepo {
         Ok(child_count == 0)
     }
 
-    // ── Treasuries ──
+    // ── Cash and bank accounts ──
 
-    pub async fn get_treasuries(&self, org_id: &str, params: TreasuryParams) -> Result<Vec<treasury::Model>, DbErr> {
-        let mut query = treasury::Entity::find()
-            .filter(treasury::Column::OrgId.eq(org_id));
+    pub async fn get_cash_accounts(&self, org_id: &str, item_type: Option<String>, is_active: Option<i32>) -> Result<Vec<account::Model>, DbErr> {
+        let mut query = account::Entity::find()
+            .filter(account::Column::OrgId.eq(org_id));
 
-        if let Some(ref itype) = params.item_type {
-            query = query.filter(treasury::Column::ItemType.eq(itype));
+        if let Some(ref itype) = item_type {
+            query = query.filter(account::Column::SubType.eq(itype));
         }
-        if let Some(active) = params.is_active {
-            query = query.filter(treasury::Column::IsActive.eq(active));
+        if let Some(active) = is_active {
+            query = query.filter(account::Column::IsActive.eq(active));
         }
 
-        query.all(&self.db).await
-    }
-
-    pub async fn get_treasury_by_id(&self, id: &str) -> Result<Option<treasury::Model>, DbErr> {
-        treasury::Entity::find_by_id(id.to_string()).one(&self.db).await
+        query.filter(account::Column::ItemType.eq("asset"))
+            .filter(account::Column::SubType.is_in(["cash", "bank"]))
+            .order_by_asc(account::Column::Name)
+            .all(&self.db).await
     }
 
     // ── Student Fees ──
@@ -107,8 +106,8 @@ impl FinanceQueryRepo {
         if let Some(ref fee_id) = params.fee_id {
             query = query.filter(payment::Column::FeeId.eq(fee_id));
         }
-        if let Some(ref treasury_id) = params.treasury_id {
-            query = query.filter(payment::Column::TreasuryId.eq(treasury_id));
+        if let Some(ref cash_account_id) = params.cash_account_id {
+            query = query.filter(payment::Column::CashAccountId.eq(cash_account_id));
         }
 
         query.order_by_desc(payment::Column::PaidAt).all(&self.db).await

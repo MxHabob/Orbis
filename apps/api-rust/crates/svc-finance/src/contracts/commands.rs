@@ -40,7 +40,7 @@ pub struct RecordPaymentCmd {
     pub currency: String,
     pub exchange_rate: f64,
     pub method: String,
-    pub treasury_id: Option<String>,
+    pub cash_account_id: String,
     pub payer_name: Option<String>,
     pub notes: Option<String>,
 }
@@ -83,15 +83,6 @@ pub struct AssignFeeCmd {
     pub enrollment_id: String,
     pub fee_template_id: String,
     pub amount_override: Option<f64>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreateTreasuryCmd {
-    pub name: String,
-    pub name_ar: Option<String>,
-    pub code: String,
-    pub treasury_type: String,
-    pub account_id: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

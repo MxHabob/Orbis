@@ -9,7 +9,6 @@ use shared_kernel::errors::AppError;
 pub trait Validate {
     fn validate(&self) -> Result<(), AppError>;
 }
-
 /// Helper to validate strings.
 pub fn validate_string_length(val: &str, min: usize, max: usize, field_name: &str) -> Result<(), AppError> {
     let len = val.trim().chars().count();
@@ -44,7 +43,6 @@ impl Validate for CreateFeeTemplateCmd {
         Ok(())
     }
 }
-
 impl Validate for UpdateFeeTemplateCmd {
     fn validate(&self) -> Result<(), AppError> {
         if let Some(ref n) = self.name {
@@ -93,12 +91,3 @@ impl Validate for RecordPaymentCmd {
     }
 }
 
-impl Validate for CreateTreasuryCmd {
-    fn validate(&self) -> Result<(), AppError> {
-        validate_string_length(&self.name, 3, 100, "Treasury Name")?;
-        if self.treasury_type != "bank" && self.treasury_type != "cash" {
-            return Err(AppError::validation("Treasury type must be 'bank' or 'cash'"));
-        }
-        Ok(())
-    }
-}

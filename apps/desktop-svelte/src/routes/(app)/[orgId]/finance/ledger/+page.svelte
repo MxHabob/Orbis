@@ -143,7 +143,7 @@ async function loadData() {
       commands.finance.listAccounts(),
       commands.finance.listPayments(),
       commands.finance.listStudentFeesByOrg(),
-      commands.finance.listTreasuries(),
+      commands.finance.listAccounts().then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type))),
       commands.finance.listCurrencies().catch(() => []),
     ]);
 
@@ -499,8 +499,7 @@ const ledgerTransactions = $derived.by(() => {
       });
     } else {
       // Check if this is the treasury ledger account
-      const treasury = treasuries.find((t) => t.account_id === acc.id);
-      if (treasury && pay.treasury_id === treasury.id) {
+      if (pay.cash_account_id === acc.id) {
         // Debit Treasury
         list.push({
           date: String(pay.paid_at || "2026-06-22").split("T")[0],

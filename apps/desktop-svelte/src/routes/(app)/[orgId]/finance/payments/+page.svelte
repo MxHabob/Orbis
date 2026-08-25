@@ -175,7 +175,7 @@ async function loadData() {
   try {
     const [paymentsList, treasuriesList, studentsList] = await Promise.all([
       commands.finance.listPayments(),
-      commands.finance.listTreasuries(),
+      commands.finance.listAccounts().then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type))),
       commands.academic.listEnrollments(),
     ]);
 
@@ -333,10 +333,7 @@ async function selectRow(p: any) {
     : p.created_at
       ? p.created_at.split("T")[0]
       : "";
-  treasuryId =
-    p.treasury_id ||
-    treasuries.find((t) => t.name === p.treasury_name)?.id ||
-    "";
+  treasuryId = p.cash_account_id || "";
   paymentMethod = p.payment_method || "Cash";
   currency = p.currency || "YER";
   checkInfo = p.check_info || "";
@@ -462,7 +459,7 @@ async function handleAdd() {
           notes:
             row.notes ||
             `سداد رسوم الطالب ${getStudentName(row.studentEnrollmentId)} - ${fee?.notes || m.finance_payments_tuition_fees()}`,
-          treasury_id: treasuryId,
+          cash_account_id: treasuryId,
           currency: currency.trim().toUpperCase(),
         };
         await commands.finance.recordPayment({
@@ -496,7 +493,7 @@ async function handleAdd() {
           amount: feeAmount,
           currency,
           payment_method: paymentMethod,
-          treasury_id: treasuryId,
+          cash_account_id: treasuryId,
           treasury_name:
             treasuries.find((t) => t.id === treasuryId)?.name ||
             m.finance_payments_collections_treasury(),

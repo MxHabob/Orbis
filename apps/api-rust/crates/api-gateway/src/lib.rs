@@ -114,7 +114,6 @@ pub async fn start_server(_database_url: &str, port: u16) -> Result<(), Box<dyn 
         .route("/api/student-fees/:enrollment_id", get(handler::finance::get_student_fees))
         .route("/api/student-fees", post(handler::finance::post_assign_fee))
         .route("/api/payments", get(handler::finance::get_payments).post(handler::finance::post_payment))
-        .route("/api/treasuries", get(handler::finance::get_treasuries))
         .route("/api/ledger-accounts", get(handler::finance::get_ledger_accounts))
         // Schedule
         .route("/api/schedule/:class_id/:period_id", get(handler::schedule::get_class_schedule))

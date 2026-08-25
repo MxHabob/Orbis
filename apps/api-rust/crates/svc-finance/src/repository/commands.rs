@@ -1,6 +1,6 @@
 //! Finance command repository — write operations.
 
-use crate::entities::{account, treasury, student_fee, payment, fee_template, journal_entry, discount_template, treasury_transaction};
+use crate::entities::{account, student_fee, payment, fee_template, journal_entry, discount_template};
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, DbErr, EntityTrait, ColumnTrait, QueryFilter, ConnectionTrait};
 use super::FinanceCommandRepo;
 
@@ -63,50 +63,6 @@ impl FinanceCommandRepo {
         update_account_balance_on(&self.db, account_id, currency, amount).await
     }
 
-    // ── Treasuries ──
-
-    pub async fn create_treasury(&self, t: treasury::Model) -> Result<treasury::Model, DbErr> {
-        let active = treasury::ActiveModel {
-            id: Set(t.id),
-            org_id: Set(t.org_id),
-            unit_id: Set(t.unit_id),
-            name: Set(t.name),
-            name_ar: Set(t.name_ar),
-            code: Set(t.code),
-            item_type: Set(t.item_type),
-            account_id: Set(t.account_id),
-            bank_name: Set(t.bank_name),
-            bank_branch: Set(t.bank_branch),
-            account_number: Set(t.account_number),
-            account_name: Set(t.account_name),
-            iban: Set(t.iban),
-            swift_code: Set(t.swift_code),
-            opening_balance: Set(t.opening_balance),
-            current_balance: Set(t.current_balance),
-            currency: Set(t.currency),
-            authorized_users: Set(t.authorized_users),
-            is_default: Set(t.is_default),
-            is_active: Set(t.is_active),
-            created_at: Set(t.created_at),
-            updated_at: Set(t.updated_at),
-        };
-        active.insert(&self.db).await
-    }
-
-    pub async fn update_treasury_balance(&self, treasury_id: &str, amount: f64) -> Result<(), DbErr> {
-        let t = treasury::Entity::find_by_id(treasury_id.to_string())
-            .one(&self.db)
-            .await?;
-        if let Some(t) = t {
-            let current = t.current_balance.unwrap_or(0.0);
-            let mut active: treasury::ActiveModel = t.into();
-            active.current_balance = Set(Some(current + amount));
-            active.updated_at = Set(chrono::Utc::now().to_rfc3339());
-            active.update(&self.db).await?;
-        }
-        Ok(())
-    }
-
     // ── Student Fees ──
 
     pub async fn create_student_fee(&self, sf: student_fee::Model) -> Result<student_fee::Model, DbErr> {
@@ -161,7 +117,7 @@ impl FinanceCommandRepo {
             reference: Set(p.reference),
             receipt_number: Set(p.receipt_number),
             journal_entry_id: Set(p.journal_entry_id),
-            treasury_id: Set(p.treasury_id),
+            cash_account_id: Set(p.cash_account_id),
             payer_name: Set(p.payer_name),
             payer_phone: Set(p.payer_phone),
             payment_type: Set(p.payment_type),
@@ -326,30 +282,4 @@ impl FinanceCommandRepo {
         Ok(result.rows_affected)
     }
 
-    // ── Treasury Transactions ──
-
-    pub async fn create_treasury_transaction(&self, tx: treasury_transaction::Model) -> Result<treasury_transaction::Model, DbErr> {
-        let active = treasury_transaction::ActiveModel {
-            id: Set(tx.id),
-            org_id: Set(tx.org_id),
-            treasury_id: Set(tx.treasury_id),
-            journal_entry_id: Set(tx.journal_entry_id),
-            item_type: Set(tx.item_type),
-            category: Set(tx.category),
-            amount: Set(tx.amount),
-            currency: Set(tx.currency),
-            exchange_rate: Set(tx.exchange_rate),
-            reference_type: Set(tx.reference_type),
-            reference_id: Set(tx.reference_id),
-            description: Set(tx.description),
-            notes: Set(tx.notes),
-            attachments: Set(tx.attachments),
-            created_by: Set(tx.created_by),
-            approved_by: Set(tx.approved_by),
-            approved_at: Set(tx.approved_at),
-            transaction_date: Set(tx.transaction_date),
-            created_at: Set(tx.created_at),
-        };
-        active.insert(&self.db).await
-    }
 }

@@ -17,13 +17,7 @@ pub struct StudentFeeParams {
 pub struct PaymentParams {
     pub enrollment_id: Option<String>,
     pub fee_id: Option<String>,
-    pub treasury_id: Option<String>,
-}
-
-#[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]
-pub struct TreasuryParams {
-    pub item_type: Option<String>,
-    pub is_active: Option<i32>,
+    pub cash_account_id: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]

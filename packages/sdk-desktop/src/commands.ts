@@ -271,8 +271,6 @@ export const commands: OrbisCommands = {
     listStudentFeesByEnrollment: (enrollmentId: any) => cmd("finance_student_fee_list_by_enrollment", { enrollmentId }),
     listStudentFeesByOrg: () => cmd("finance_student_fee_list_by_org", {}),
     assign: (cmdPayload: any) => cmd("finance_student_fee_assign", { cmd: cmdPayload }),
-    listTreasuries: () => cmd("finance_treasury_list", {}),
-    createTreasury: (cmdPayload: any) => cmd("finance_treasury_create", { cmd: cmdPayload }),
   },
   exam: {
     listExamSchedules: (sessionId: any) => cmd("exam_exam_schedule_list", { sessionId }),

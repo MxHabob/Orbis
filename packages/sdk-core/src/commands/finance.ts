@@ -29,6 +29,4 @@ export interface FinanceCommands {
   listStudentFeesByEnrollment(enrollmentId: string): Promise<any[]>;
   listStudentFeesByOrg(): Promise<any[]>;
   assign(cmd: any): Promise<any>;
-  listTreasuries(): Promise<any[]>;
-  createTreasury(cmd: any): Promise<any>;
 }

@@ -11,7 +11,7 @@ use shared_kernel::traits::{AuditEntry, Permission};
 
 use crate::contracts::commands::{CreateJournalEntryCmd, RecordPaymentCmd};
 use crate::contracts::events::event_types;
-use crate::entities::{payment, student_fee, treasury, treasury_transaction, currency};
+use crate::entities::{account, payment, student_fee, currency};
 
 use crate::ops::ledger;
 
@@ -40,8 +40,6 @@ pub async fn record(
     ctx.permissions.check(&ctx.actor, Permission::FinanceWrite).await?;
 
     let fee_id = cmd.fee_id.ok_or_else(|| AppError::validation("fee_id is required"))?;
-    let treasury_id = cmd.treasury_id.ok_or_else(|| AppError::validation("treasury_id is required"))?;
-
     let fee = student_fee::Entity::find_by_id(fee_id.clone())
         .one(&ctx.db)
         .await?
@@ -57,10 +55,17 @@ pub async fn record(
         None,
     ).await?;
 
-    let trsy = treasury::Entity::find_by_id(treasury_id.clone())
+    let cash_account = account::Entity::find_by_id(cmd.cash_account_id.clone())
         .one(&ctx.db)
         .await?
-        .ok_or_else(|| AppError::not_found("treasury", &treasury_id))?;
+        .ok_or_else(|| AppError::not_found("cash_account", &cmd.cash_account_id))?;
+
+    if cash_account.item_type != "asset"
+        || !matches!(cash_account.sub_type.as_deref(), Some("cash") | Some("bank"))
+        || cash_account.is_active != 1
+    {
+        return Err(AppError::validation("Selected account must be an active cash or bank account"));
+    }
 
     if cmd.amount <= 0.0 {
         return Err(AppError::validation("Payment amount must be greater than zero"));
@@ -98,7 +103,7 @@ pub async fn record(
         reference: None,
         receipt_number: Some(receipt_number.clone()),
         journal_entry_id: Some(journal_entry_id.clone()),
-        treasury_id: Some(treasury_id.clone()),
+        cash_account_id: cmd.cash_account_id.clone(),
         payer_name: cmd.payer_name.clone(),
         payer_phone: None,
         payment_type: "receipt".to_string(),
@@ -117,7 +122,7 @@ pub async fn record(
         accounting_date: Utc::now().format("%Y-%m-%d").to_string(),
         fiscal_period_id: fee.period_id.clone(),
         amount: cmd.amount,
-        debit_account_id: trsy.account_id.clone(),
+        debit_account_id: cash_account.id.clone(),
         credit_account_id: student_account.id.clone(),
         currency: cmd.currency.clone(),
         exchange_rate: Some(exchange_rate),
@@ -143,36 +148,6 @@ pub async fn record(
         Some(ctx.actor.as_str()),
         je_cmd,
     ).await?;
-
-    let tx = treasury_transaction::Model {
-        id: Uuid::new_v4().to_string(),
-        org_id: ctx.org_id.clone(),
-        treasury_id: treasury_id.clone(),
-        journal_entry_id: journal_entry_id.clone(),
-        item_type: "inflow".to_string(),
-        category: "tuition".to_string(),
-        amount: cmd.amount,
-        currency: cmd.currency.clone(),
-        exchange_rate: Some(exchange_rate),
-        reference_type: Some("payment".to_string()),
-        reference_id: Some(payment_id.clone()),
-        description: "Tuition payment for student fee".to_string(),
-        notes: cmd.notes.clone(),
-        attachments: None,
-        created_by: Some(ctx.actor.as_str().to_string()),
-        approved_by: Some(ctx.actor.as_str().to_string()),
-        approved_at: Some(now.clone()),
-        transaction_date: Utc::now().format("%Y-%m-%d").to_string(),
-        created_at: now.clone(),
-    };
-
-    let tx_active: treasury_transaction::ActiveModel = tx.into();
-    tx_active.insert(&txn).await?;
-
-    let current_treasury_bal = trsy.current_balance.unwrap_or(0.0);
-    let mut tr_active: treasury::ActiveModel = trsy.into();
-    tr_active.current_balance = Set(Some(current_treasury_bal + cmd.amount));
-    tr_active.update(&txn).await?;
 
     let payments = payment::Entity::find()
         .filter(payment::Column::OrgId.eq(&ctx.org_id))

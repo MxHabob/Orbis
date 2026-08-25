@@ -33,7 +33,10 @@ async function loadSidebarStats() {
   try {
     const [feeList, treasuryList] = await Promise.all([
       commands.finance.listStudentFeesByEnrollment("").catch(() => []),
-      commands.finance.listTreasuries().catch(() => []),
+      commands.finance
+        .listAccounts()
+        .then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type)))
+        .catch(() => []),
     ]);
     unpaidFeesCount = feeList.filter(
       (f) => f.status === "unpaid" || f.status === "partially_paid",

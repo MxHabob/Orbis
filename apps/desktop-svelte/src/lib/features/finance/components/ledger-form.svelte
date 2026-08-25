@@ -172,15 +172,15 @@ async function handleSubmit(e: SubmitEvent) {
       const request = {
         name: trNameEn || trNameAr,
         name_ar: trNameAr || trNameEn,
-        item_type: trType,
+        item_type: "asset",
         currency: baseCurrency, // Default treasury to base currency
-        bank_name: trType === "bank" ? trBankName.trim() || null : null,
-        account_number:
-          trType === "bank" ? trAccountNumber.trim() || null : null,
-        account_id: undefined,
+        code: "",
+        sub_type: trType,
+        opening_balance: 0,
+        parent_id: undefined,
       };
 
-      await commands.finance.createTreasury(request);
+      await commands.finance.createAccount(request);
       toast.success("تم إنشاء الصندوق/البنك بنجاح");
 
       // Reset

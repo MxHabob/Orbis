@@ -226,8 +226,6 @@ pub fn generate_handlers<R: tauri::Runtime>() -> impl Fn(tauri::ipc::Invoke<R>) 
         crate::commands::finance::auto::finance_student_fee_list_by_enrollment,
         crate::commands::finance::auto::finance_student_fee_list_by_org,
         crate::commands::finance::auto::finance_student_fee_assign,
-        crate::commands::finance::auto::finance_treasury_list,
-        crate::commands::finance::auto::finance_treasury_create,
         crate::commands::exam::auto::exam_exam_schedule_list,
         crate::commands::exam::auto::exam_exam_schedule_create,
         crate::commands::exam::auto::exam_exam_schedule_update,

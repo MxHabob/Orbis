@@ -49,7 +49,7 @@ async function loadData() {
   isLoading = true;
   try {
     const [tList, lList, cList] = await Promise.all([
-      commands.finance.listTreasuries(),
+      commands.finance.listAccounts().then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type))),
       commands.finance.listTransactionAccounts(),
       commands.finance.listCurrencies(),
     ]);

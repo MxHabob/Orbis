@@ -1482,7 +1482,7 @@ CREATE TABLE IF NOT EXISTS payments (
   reference TEXT,
   receipt_number TEXT,
   journal_entry_id TEXT,
-  treasury_id TEXT,
+  cash_account_id TEXT NOT NULL,
   payer_name TEXT,
   payer_phone TEXT,
   payment_type TEXT NOT NULL DEFAULT 'receipt',
@@ -1495,56 +1495,6 @@ CREATE TABLE IF NOT EXISTS payments (
 );
 
 CREATE INDEX IF NOT EXISTS idx_pay_account ON payments(account_id);
-
-CREATE TABLE IF NOT EXISTS treasuries (
-  id TEXT PRIMARY KEY,
-  org_id TEXT NOT NULL,
-  unit_id TEXT,
-  name TEXT NOT NULL,
-  name_ar TEXT,
-  code TEXT,
-  "type" TEXT NOT NULL,
-  ledger_account_id TEXT NOT NULL,
-  bank_name TEXT,
-  bank_branch TEXT,
-  account_number TEXT,
-  account_name TEXT,
-  iban TEXT,
-  swift_code TEXT,
-  opening_balance REAL DEFAULT 0,
-  current_balance REAL DEFAULT 0,
-  currency TEXT NOT NULL,
-  authorized_users TEXT,
-  is_default INTEGER NOT NULL DEFAULT 0,
-  is_active INTEGER NOT NULL DEFAULT 1,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
-  FOREIGN KEY (org_id) REFERENCES organizations(id)
-);
-
-CREATE TABLE IF NOT EXISTS treasury_transactions (
-  id TEXT PRIMARY KEY,
-  org_id TEXT NOT NULL,
-  treasury_id TEXT NOT NULL,
-  journal_entry_id TEXT NOT NULL,
-  "type" TEXT NOT NULL,
-  category TEXT NOT NULL,
-  amount REAL NOT NULL,
-  currency TEXT NOT NULL,
-  exchange_rate REAL,
-  reference_type TEXT,
-  reference_id TEXT,
-  description TEXT NOT NULL,
-  notes TEXT,
-  attachments TEXT,
-  created_by TEXT,
-  approved_by TEXT,
-  approved_at TEXT,
-  transaction_date TEXT NOT NULL,
-  created_at TEXT NOT NULL,
-  FOREIGN KEY (treasury_id) REFERENCES treasuries(id),
-  FOREIGN KEY (org_id) REFERENCES organizations(id)
-);
 
 -- ── 10. IAM, Security & User Sessions ──────────────────────────
 

@@ -222,21 +222,3 @@ pub async fn finance_student_fee_assign(state: State<'_, Arc<AppState>>, cmd: Op
     Ok(serde_json::to_value(result).unwrap())
 }
 
-#[tauri::command]
-pub async fn finance_treasury_list(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::treasury::list(&ctx).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(result).unwrap())
-}
-
-#[tauri::command]
-pub async fn finance_treasury_create(state: State<'_, Arc<AppState>>, cmd: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let cmd_parsed = match cmd {
-        Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: cmd")),
-    };
-    let result = ops::treasury::create(&ctx, cmd_parsed).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(result).unwrap())
-}
-

@@ -57,7 +57,9 @@ async function loadDropdownData() {
   try {
     const [studentList, treasuryList, currencyList] = await Promise.all([
       commands.academic.listEnrollments(),
-      commands.finance.listTreasuries(),
+			commands.finance
+				.listAccounts()
+				.then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type))),
       commands.finance.listCurrencies(),
     ]);
     students = studentList;
@@ -164,7 +166,7 @@ async function handleSubmit(e: SubmitEvent) {
             : "card",
       reference: referenceNumber || undefined,
       notes: notes || undefined,
-      treasury_id: selectedTreasuryId,
+	cash_account_id: selectedTreasuryId,
       currency: currency.trim().toUpperCase(),
     };
     await commands.finance.recordPayment(createdBy, request);

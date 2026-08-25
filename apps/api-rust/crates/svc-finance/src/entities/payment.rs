@@ -18,7 +18,7 @@ pub struct Model {
     pub reference: Option<String>,
     pub receipt_number: Option<String>,
     pub journal_entry_id: Option<String>,
-    pub treasury_id: Option<String>,
+    pub cash_account_id: String,
     pub payer_name: Option<String>,
     pub payer_phone: Option<String>,
     pub payment_type: String,

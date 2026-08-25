@@ -78,7 +78,7 @@ async function loadData() {
   try {
     const [studentList, treasuryList] = await Promise.all([
       commands.academic.listEnrollments(),
-      commands.finance.listTreasuries(),
+      commands.finance.listAccounts().then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type))),
     ]);
     students = studentList;
     treasuries = treasuryList;
@@ -199,7 +199,7 @@ async function handlePaymentSubmit(e: SubmitEvent) {
             : "card",
       reference: referenceNumber || undefined,
       notes: notes || undefined,
-      treasury_id: selectedTreasuryId,
+      cash_account_id: selectedTreasuryId,
       currency: currency.trim().toUpperCase(),
     };
 

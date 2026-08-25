@@ -38,13 +38,6 @@ pub async fn post_payment(State(state): State<AppState>, AuthenticatedUser(user)
     ok!(r)
 }
 
-#[utoipa::path(get, path = "/api/treasuries")]
-pub async fn get_treasuries(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let ctx = state.build_context(&user.org_id, &user.id);
-    let r = ops::treasury::list(&ctx).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
-    ok!(r)
-}
-
 #[utoipa::path(get, path = "/api/payments")]
 pub async fn get_payments(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let ctx = state.build_context(&user.org_id, &user.id);

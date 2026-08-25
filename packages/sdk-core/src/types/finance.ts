@@ -147,7 +147,7 @@ export interface Payment {
   reference?: string | null;
   receipt_number?: string | null;
   journal_entry_id?: string | null;
-  treasury_id?: string | null;
+  cash_account_id: string;
   payer_name?: string | null;
   payer_phone?: string | null;
   payment_type: string;
@@ -177,50 +177,21 @@ export interface StudentFee {
   updated_at: string;
 }
 
-export interface Treasury {
+export interface CashAccount {
   id: string;
   org_id: string;
-  unit_id?: string | null;
   name: string;
   name_ar?: string | null;
   code?: string | null;
   item_type: string;
-  account_id: string;
-  bank_name?: string | null;
-  bank_branch?: string | null;
-  account_number?: string | null;
-  account_name?: string | null;
-  iban?: string | null;
-  swift_code?: string | null;
-  opening_balance?: number | null;
-  current_balance?: number | null;
+  sub_type?: string | null;
+  parent_id?: string | null;
   currency: string;
-  authorized_users?: string | null;
-  is_default: number;
+  balances: Record<string, number>;
+  is_control_account: number;
+  is_system_account: number;
   is_active: number;
   created_at: string;
   updated_at: string;
-}
-
-export interface TreasuryTransaction {
-  id: string;
-  org_id: string;
-  treasury_id: string;
-  journal_entry_id: string;
-  item_type: string;
-  category: string;
-  amount: number;
-  currency: string;
-  exchange_rate?: number | null;
-  reference_type?: string | null;
-  reference_id?: string | null;
-  description: string;
-  notes?: string | null;
-  attachments?: string | null;
-  created_by?: string | null;
-  approved_by?: string | null;
-  approved_at?: string | null;
-  transaction_date: string;
-  created_at: string;
 }
 

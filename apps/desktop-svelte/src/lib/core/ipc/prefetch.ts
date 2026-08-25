@@ -26,8 +26,11 @@ export function prefetchRouteData(route: string, orgId: string) {
 
     case "finance":
       queryClient.prefetchQuery({
-        queryKey: ["treasuries", orgId],
-        queryFn: () => commands.finance.listTreasuries(),
+        queryKey: ["cash-accounts", orgId],
+        queryFn: () =>
+          commands.finance
+            .listAccounts()
+            .then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type))),
         staleTime: 5 * 60 * 1000,
       });
       break;
