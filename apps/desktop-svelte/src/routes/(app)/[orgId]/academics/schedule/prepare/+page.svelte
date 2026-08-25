@@ -104,6 +104,17 @@ const isLoading = $derived(
 
 const isBoardLoading = $derived(isLoading || timeSlotsQuery.isLoading || lessonsQuery.isLoading);
 
+function getSubjectColor(subjectId: string) {
+  const subject = subjects.find((item: any) => String(item.id) === String(subjectId));
+  const savedColor = subject?.color || subject?.color_hex || subject?.accent_color;
+  if (savedColor) return savedColor;
+
+  const hash = String(subjectId)
+    .split("")
+    .reduce((total, character) => (total * 31 + character.charCodeAt(0)) >>> 0, 0);
+  return `hsl(${hash % 360} 65% 52%)`;
+}
+
 function backToSchedule() {
   goto(localizeHref(`/${data.orgId}/academics/schedule`));
 }
@@ -147,7 +158,7 @@ function backToSchedule() {
     </aside>
 
     <main class="flex min-h-130 min-w-0 flex-1 flex-col overflow-hidden bg-background p-3 sm:p-4">
-      <ScheduleBoard fitViewport={true} isLoading={isBoardLoading} error={lessonsQuery.error ? String(lessonsQuery.error) : null} {timeSlots} {weekdays} {lessons} draftLessons={[]} previewDraft={false} viewMode="class" getSubjectName={(id) => subjects.find((s: any) => String(s.id) === String(id))?.name_ar || subjects.find((s: any) => String(s.id) === String(id))?.name || "Subject"} getTeacherName={() => ""} getClassName={() => ""} getSubjectColor={(id) => subjects.find((s: any) => String(s.id) === String(id))?.color || "var(--primary)"} onCellClick={() => {}} onDeleteLesson={() => {}} onMoveLesson={() => {}} onRetry={() => lessonsQuery.refetch()} />
+      <ScheduleBoard fitViewport={true} isLoading={isBoardLoading} error={lessonsQuery.error ? String(lessonsQuery.error) : null} {timeSlots} {weekdays} {lessons} draftLessons={[]} previewDraft={false} viewMode="class" getSubjectName={(id) => subjects.find((s: any) => String(s.id) === String(id))?.name_ar || subjects.find((s: any) => String(s.id) === String(id))?.name || "Subject"} getTeacherName={() => ""} getClassName={() => ""} {getSubjectColor} onCellClick={() => {}} onDeleteLesson={() => {}} onMoveLesson={() => {}} onRetry={() => lessonsQuery.refetch()} />
     </main>
   </div>
 </div>
