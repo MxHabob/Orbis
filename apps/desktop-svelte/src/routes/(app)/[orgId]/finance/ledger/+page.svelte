@@ -87,16 +87,23 @@ let accountNameQuery = $state("");
 let isCodeDropdownOpen = $state(false);
 let isNameDropdownOpen = $state(false);
 
+const parentAccountIds = $derived(
+  new Set(ledgers.filter((account) => account.parent_id).map((account) => account.parent_id)),
+);
+const leafLedgers = $derived(
+  ledgers.filter((account) => !parentAccountIds.has(account.id)),
+);
+
 const searchedAccountsByCode = $derived.by(() => {
   const q = accountCodeQuery.toLowerCase().trim();
-  if (!q) return ledgers;
-  return ledgers.filter((l) => String(l.code).includes(q));
+  if (!q) return leafLedgers;
+  return leafLedgers.filter((l) => String(l.code).includes(q));
 });
 
 const searchedAccountsByName = $derived.by(() => {
   const q = accountNameQuery.toLowerCase().trim();
-  if (!q) return ledgers;
-  return ledgers.filter(
+  if (!q) return leafLedgers;
+  return leafLedgers.filter(
     (l) =>
       String(l.name_ar || "")
         .toLowerCase()
@@ -153,16 +160,17 @@ async function loadData() {
     treasuries = treasuryList;
     dbCurrencies = currencyList || [];
 
-    if (ledgerList.length > 0) {
-      selectedAccountId = ledgerList[0].id as string;
-      accountCodeQuery = String(ledgerList[0].code);
+    const leafAccounts = ledgerList.filter((account: any) => !ledgerList.some((candidate: any) => candidate.parent_id === account.id));
+    if (leafAccounts.length > 0) {
+      selectedAccountId = leafAccounts[0].id as string;
+      accountCodeQuery = String(leafAccounts[0].code);
       accountNameQuery =
-        (ledgerList[0].name_ar as string) || (ledgerList[0].name as string);
+        (leafAccounts[0].name_ar as string) || (leafAccounts[0].name as string);
     }
 
     // Default select all accounts in tree selection
     const allIds = new Set<string>();
-    ledgerList.forEach((acc) => allIds.add(acc.id));
+    leafAccounts.forEach((acc: any) => allIds.add(acc.id));
     selectedTreeAccountIds = allIds;
   } catch (e) {
     console.error("Error loading ledger data:", e);
@@ -188,6 +196,7 @@ const calculatedLedgerRows = $derived.by(() => {
       name: acc.name,
       name_ar: acc.name_ar || acc.name,
       item_type: acc.type || acc.item_type || "asset",
+      is_control_account: acc.is_control_account || 0,
       parent_id: acc.parent_id,
       balances,
       notes: acc.sub_type || "",
@@ -207,6 +216,10 @@ const calculatedLedgerRows = $derived.by(() => {
 const selectedAccountRow = $derived.by(() => {
   return calculatedLedgerRows.find((r) => r.id === selectedAccountId);
 });
+
+const selectableLedgerRows = $derived(
+  calculatedLedgerRows.filter((row) => !parentAccountIds.has(row.id) && row.is_control_account !== 1),
+);
 
 // Arabic spelling helper
 function arabicNumberToWords(num: number): string {
@@ -743,12 +756,13 @@ function getAccountCheckboxState(
 
 // Active filtered rows to display in the main ledger table
 const filteredLedgerRows = $derived.by(() => {
-  return calculatedLedgerRows.filter((row) => {
+  return selectableLedgerRows.filter((row) => {
     // 1. Account Filtering by Tab Mode
     if (activeTab === "single") {
       if (row.id !== selectedAccountId) return false;
     } else if (activeTab === "all") {
       if (!selectedTreeAccountIds.has(row.id)) return false;
+      if (parentAccountIds.has(row.id)) return false;
     }
 
     // 2. Currency Filter
@@ -1632,7 +1646,7 @@ function exitPage() {
                     <TableCell class="border-r border-border/60 text-center text-muted-foreground/40">-</TableCell>
                     <TableCell class="border-r border-border/60 text-center text-foreground uppercase tracking-wider text-[9px]">{m.finance_ledger_grand_total()}</TableCell>
                     <TableCell class="border-r border-border/60 text-center text-muted-foreground/40">-</TableCell>
-                    <TableCell class="text-start text-muted-foreground font-sans text-[9px] px-3 font-medium text-primary">
+                    <TableCell class="text-start font-sans text-[9px] px-3 font-medium text-primary">
                       {m.finance_ledger_net_detailed_account_ledger_balance()}
                     </TableCell>
                   </TableRow>

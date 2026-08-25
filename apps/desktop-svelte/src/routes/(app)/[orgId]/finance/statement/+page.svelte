@@ -34,7 +34,6 @@ import {
   CheckSquare,
   Square,
   FileText,
-  ClipboardList,
   Search,
   ArrowUpRight,
   ArrowDownLeft,
@@ -678,28 +677,15 @@ function handleWindowClick(event: MouseEvent) {
 
   <!-- ════ Main Section: Master View / Details View ════ -->
   <div class="flex-1 flex flex-col overflow-hidden bg-background p-6">
-    <!-- Header Title -->
-    <div class="flex items-center justify-between pb-4 select-none border-b border-border print:hidden">
-      <div class="flex flex-col gap-1 text-start">
-        <h1 class="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
-          <ClipboardList class="text-primary animate-pulse" size={18} />
-          <span>{m.finance_statement_unified_statement()}</span>
-        </h1>
-        <p class="text-[11px] text-muted-foreground">
-          استعراض ومراجعة كافة الأرصدة والعمليات المالية للحسابات العامة والفرعية والطرفية بدقة عالية
-        </p>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <Button variant="outline" size="sm" onclick={exportToCsv} class="h-8 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer">
-          <FileSpreadsheet size={13} />
-          <span>{m.finance_statement_export_csv()}</span>
-        </Button>
-        <Button variant="outline" size="sm" onclick={handlePrint} class="h-8 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer">
-          <Printer size={13} />
-          <span>{m.finance_statement_print()}</span>
-        </Button>
-      </div>
+    <div class="flex items-center justify-end gap-2 pb-3 select-none border-b border-border print:hidden">
+      <Button variant="outline" size="sm" onclick={exportToCsv} class="h-8 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer">
+        <FileSpreadsheet size={13} />
+        <span>{m.finance_statement_export_csv()}</span>
+      </Button>
+      <Button variant="outline" size="sm" onclick={handlePrint} class="h-8 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer">
+        <Printer size={13} />
+        <span>{m.finance_statement_print()}</span>
+      </Button>
     </div>
 
     <!-- Filter Control Box -->
@@ -1220,7 +1206,7 @@ function handleWindowClick(event: MouseEvent) {
                       <TableCell class="text-end font-bold font-mono text-rose-500 whitespace-nowrap">
                         {item.credit ? formatCurrency(item.credit, statement.currency) : "-"}
                       </TableCell>
-                      <TableCell class="text-end font-bold font-mono text-foreground whitespace-nowrap font-extrabold">
+                      <TableCell class="text-end font-extrabold font-mono text-foreground whitespace-nowrap">
                         {formatCurrency(item.running_balance, statement.currency)}
                       </TableCell>
                     </TableRow>

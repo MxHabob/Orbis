@@ -129,7 +129,7 @@ pub async fn list_accounts(ctx: &ServiceContext) -> Result<Vec<LedgerAccountResp
         .order_by_asc(account::Column::Code)
         .all(&ctx.db).await?;
 
-    let mut result: Vec<LedgerAccountResponse> = accounts.into_iter().filter(|acc| acc.depth < 4).map(|acc| {
+    let mut result: Vec<LedgerAccountResponse> = accounts.into_iter().map(|acc| {
         let balances: shared_kernel::currency::CurrencyBalance = serde_json::from_value(acc.balances.clone()).unwrap_or_default();
         LedgerAccountResponse {
             id: acc.id, org_id: acc.org_id, code: acc.code,
@@ -158,7 +158,7 @@ pub async fn list_transaction_accounts(ctx: &ServiceContext) -> Result<Vec<Ledge
         .order_by_asc(account::Column::Code)
         .all(&ctx.db).await?;
 
-    let mut result: Vec<LedgerAccountResponse> = accounts.into_iter().filter(|acc| acc.depth < 4).map(|acc| {
+    let mut result: Vec<LedgerAccountResponse> = accounts.into_iter().map(|acc| {
         let balances: shared_kernel::currency::CurrencyBalance = serde_json::from_value(acc.balances.clone()).unwrap_or_default();
         LedgerAccountResponse {
             id: acc.id, org_id: acc.org_id, code: acc.code,

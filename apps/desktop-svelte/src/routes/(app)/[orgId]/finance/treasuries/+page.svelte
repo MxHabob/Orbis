@@ -106,19 +106,7 @@ const rtl = $derived(getLocale() === "ar");
 
 <div class="h-full w-full overflow-y-auto bg-background p-5 md:p-8 font-sans" dir={rtl ? "rtl" : "ltr"}>
   <div class="max-w-6xl mx-auto flex flex-col gap-7" in:fade={{ duration: 180 }}>
-    <header class="flex flex-col md:flex-row md:items-end justify-between gap-5">
-      <div class="text-start">
-        <div class="flex items-center gap-2 text-primary text-[10px] font-bold uppercase tracking-[0.18em] mb-2">
-          <WalletCards size={14} />
-          <span>{m.finance_layout_panel_title()}</span>
-        </div>
-        <h1 class="text-2xl md:text-3xl font-black text-foreground tracking-tight">
-          {m.finance_page_title()}
-        </h1>
-        <p class="text-xs text-muted-foreground mt-2 max-w-2xl">
-          {m.finance_page_subtitle()}
-        </p>
-      </div>
+    <header class="flex justify-end">
       <Button variant="outline" class="h-9 px-3 text-xs font-bold shrink-0" onclick={() => { isAddDialogOpen = true; }}>
         <Plus size={14} class="me-1.5" />
         {m.finance_new_cash_account_button()}

@@ -196,18 +196,6 @@ const totalEquity = $derived.by(() => {
 </script>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 font-sans bg-background/50">
-  <!-- Header Title -->
-  <div class="text-start select-none flex items-center justify-between">
-    <div>
-      <h2 class="text-lg font-extrabold text-foreground tracking-tight">
-        {m.reports_finance_title ? m.reports_finance_title() : "التقارير المالية والتحليلية"}
-      </h2>
-      <p class="text-xs text-muted-foreground mt-0.5">
-        عرض ومطابقة ميزان المراجعة، قائمة الدخل، والميزانية العمومية للكيان التعليمي
-      </p>
-    </div>
-  </div>
-
   <Tabs value="all" class="w-full">
     <TabsList class="grid w-full grid-cols-4 select-none mb-6">
       <TabsTrigger value="overview" class="text-xs font-semibold flex items-center gap-1.5 cursor-pointer">

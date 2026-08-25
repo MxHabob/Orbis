@@ -145,17 +145,7 @@ const rtl = $derived(getLocale() === "ar");
 </script>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 font-sans">
-  <!-- Header Bar & Action -->
-  <div class="flex items-center justify-between gap-4 shrink-0 select-none">
-    <div class="text-start">
-      <h2 class="text-sm font-bold text-foreground uppercase tracking-wider">
-        {m.finance_fees_page_title()}
-      </h2>
-      <p class="text-[10px] text-muted-foreground mt-0.5">
-        {m.finance_fees_page_subtitle()}
-      </p>
-    </div>
-
+  <div class="flex items-center justify-end gap-4 shrink-0 select-none">
     <Button 
       variant="lime" 
       class="text-xs h-8 px-3 shrink-0" 
