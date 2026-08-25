@@ -14,12 +14,18 @@ let {
   title = m.finance_ledger_currency(),
   description = m.settings_general_currency_desc(),
   currentCurrency = $bindable("SAR"),
+  includeAll = false,
+  allLabel = "All currencies",
+  compact = false,
   disabled = false,
   onchange,
 }: {
   title?: string;
   description?: string;
   currentCurrency?: string;
+  includeAll?: boolean;
+  allLabel?: string;
+  compact?: boolean;
   disabled?: boolean;
   onchange?: (currency: string) => void;
 } = $props();
@@ -41,7 +47,7 @@ onMount(async () => {
 });
 
 const items = $derived.by(() => {
-  return dbCurrencies.map((c) => {
+  const currencyItems = dbCurrencies.map((c) => {
     const codeUpper = (c.code || "").toUpperCase();
     const symbolStr = c.symbol ? ` (${c.symbol})` : "";
     const nameStr = c.name_ar || c.name || "";
@@ -51,6 +57,10 @@ const items = $derived.by(() => {
       value: codeUpper,
     };
   });
+
+  return includeAll
+    ? [{ id: "all", label: allLabel, value: "all" }, ...currencyItems]
+    : currencyItems;
 });
 
 const selectedItem = $derived.by(() => {
@@ -73,14 +83,16 @@ function handleSelect(item: { id: string; label: string; value: string }) {
 }
 </script>
 
-<div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4 last:border-b-0">
+<div class={compact ? "flex flex-col gap-1" : "px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4 last:border-b-0"}>
   <div class="flex flex-col gap-1 text-start">
-    <Label class="text-xs font-semibold text-foreground">
+    <Label class={compact ? "text-[9px] font-bold text-muted-foreground" : "text-xs font-semibold text-foreground"}>
       {title}
     </Label>
-    <span class="text-[11px] text-muted-foreground leading-relaxed">{description}</span>
+    {#if description}
+      <span class="text-[11px] text-muted-foreground leading-relaxed">{description}</span>
+    {/if}
   </div>
-  <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+  <div class={compact ? "w-full" : "w-full md:w-120 shrink-0 flex items-center justify-end"}>
     <ComboboxDropdown
       placeholder={isLoading ? "Loading currencies..." : "Select currency..."}
       searchPlaceholder="Search currency..."

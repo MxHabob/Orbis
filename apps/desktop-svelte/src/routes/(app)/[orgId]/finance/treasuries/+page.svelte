@@ -131,20 +131,9 @@ const rtl = $derived(getLocale() === "ar");
     {#if isLoading}
       <div class="border border-border bg-card rounded-lg p-5"><Skeleton class="h-72 w-full rounded-md" /></div>
     {:else}
-      <section class="border border-border bg-card rounded-lg overflow-hidden">
-        <div class="px-5 py-4 border-b border-border flex items-center justify-between gap-4">
-          <div class="text-start">
-            <h2 class="text-sm font-bold text-foreground">{m.finance_cash_accounts_title()}</h2>
-            <p class="text-[10px] text-muted-foreground mt-1">{m.finance_page_subtitle()}</p>
-          </div>
-          <Button variant="ghost" size="icon" class="h-8 w-8" title={m.common_control_refresh()} onclick={loadData}>
-            <RefreshCw size={14} />
-          </Button>
-        </div>
-        <div class="min-h-82.5">
-          <DataTable columns={treasuryCols} source={treasurySource} emptyIcon={Landmark} emptyTitle={m.finance_no_cash_accounts()} {rtl} refreshable onRefresh={loadData} />
-        </div>
-      </section>
+      <div class="min-h-82.5">
+        <DataTable columns={treasuryCols} source={treasurySource} emptyIcon={Landmark} emptyTitle={m.finance_no_cash_accounts()} {rtl} refreshable onRefresh={loadData} />
+      </div>
     {/if}
   </div>
 </div>

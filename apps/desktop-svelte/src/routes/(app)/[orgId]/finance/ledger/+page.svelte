@@ -20,6 +20,10 @@ import {
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import { DataTable } from "$lib/tables";
+import type { OrbisColumnDef } from "@orbis/svelte-grid";
+import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
+import AccountTree from "$lib/features/finance/components/account-tree.svelte";
 import {
   Dialog,
   DialogContent,
@@ -29,19 +33,13 @@ import {
 } from "@orbis/ui-svelte/dialog";
 import {
   Printer,
-  ChevronRight,
-  ChevronDown,
   RotateCw,
   LogOut,
-  Folder,
   FolderOpen,
-  CheckSquare,
-  Square,
-  FileText,
 } from "@lucide/svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
-import { fade, slide } from "svelte/transition";
+import { fade } from "svelte/transition";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -49,7 +47,6 @@ let { data }: { data: { orgId: string } } = $props();
 let ledgers = $state<any[]>([]);
 let payments = $state<any[]>([]);
 let fees = $state<any[]>([]);
-let treasuries = $state<any[]>([]);
 let dbCurrencies = $state<any[]>([]);
 let isLoading = $state(true);
 let error = $state<string | null>(null);
@@ -66,20 +63,12 @@ let selectedAccountId = $state<string>("");
 let selectedCurrency = $state<string>("all");
 let periodFilter = $state<string>("all");
 let customStartDate = $state<string>(new Date().toISOString().split("T")[0]);
+let searchQuery = $state("");
 let movementFilter = $state<string>("all"); // 'all' or 'active' (with movements)
 let debtorCreditorFilter = $state<string>("all"); // 'all', 'debtor', 'creditor'
 
 // Tree state
-let expandedCategories = $state<Record<string, boolean>>({
-  asset: true,
-  liability: false,
-  expense: false,
-  revenue: false,
-  equity: false,
-});
-let expandedAccounts = $state<Record<string, boolean>>({});
 let selectedTreeAccountIds = $state<Set<string>>(new Set());
-let isCoadTreeExpanded = $state(true);
 
 // Synced inputs for dual-combobox
 let accountCodeQuery = $state("");
@@ -146,18 +135,16 @@ async function loadData() {
   isLoading = true;
   error = null;
   try {
-    const [ledgerList, paymentList, feeList, treasuryList, currencyList] = await Promise.all([
+    const [ledgerList, paymentList, feeList, currencyList] = await Promise.all([
       commands.finance.listAccounts(),
       commands.finance.listPayments(null, null),
       commands.finance.listStudentFeesByOrg(),
-      commands.finance.listAccounts().then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type))),
       commands.finance.listCurrencies().catch(() => []),
     ]);
 
     ledgers = ledgerList;
     payments = paymentList;
     fees = feeList;
-    treasuries = treasuryList;
     dbCurrencies = currencyList || [];
 
     const leafAccounts = ledgerList.filter((account: any) => !ledgerList.some((candidate: any) => candidate.parent_id === account.id));
@@ -220,6 +207,48 @@ const selectedAccountRow = $derived.by(() => {
 const selectableLedgerRows = $derived(
   calculatedLedgerRows.filter((row) => !parentAccountIds.has(row.id) && row.is_control_account !== 1),
 );
+
+const activeCurrencies = $derived(
+  dbCurrencies
+    .map((currency) => ({
+      code: String(currency.code || "").toUpperCase(),
+      name: currency.name_ar || currency.name || currency.code,
+    }))
+    .filter((currency) => currency.code),
+);
+
+const ledgerGridColumns = $derived.by((): OrbisColumnDef[] => {
+  const currencyColumns = activeCurrencies.flatMap((currency) => [
+    {
+      id: `${currency.code}_debit`,
+      prop: `${currency.code}_debit`,
+      header: `${currency.name} - ${m.common_ledger_col_debit()}`,
+      name: `${currency.name} - ${m.common_ledger_col_debit()}`,
+      width: 120,
+      size: 120,
+      readonly: true,
+      cellClass: "orbis-cell-number",
+    },
+    {
+      id: `${currency.code}_credit`,
+      prop: `${currency.code}_credit`,
+      header: `${currency.name} - Credit`,
+      name: `${currency.name} - Credit`,
+      width: 120,
+      size: 120,
+      readonly: true,
+      cellClass: "orbis-cell-number",
+    },
+  ]);
+
+  return [
+    { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true },
+    { id: "name_ar", prop: "name_ar", header: m.common_ledger_col_name(), name: m.common_ledger_col_name(), width: 220, size: 220, readonly: true },
+    { id: "code", prop: "code", header: m.common_ledger_col_code(), name: m.common_ledger_col_code(), width: 100, size: 100, readonly: true, cellClass: "font-mono" },
+    ...currencyColumns,
+    { id: "notes", prop: "notes", header: m.common_year_notes(), name: m.common_year_notes(), width: 180, size: 180, readonly: true },
+  ];
+});
 
 // Arabic spelling helper
 function arabicNumberToWords(num: number): string {
@@ -356,8 +385,6 @@ const currencySummaryRows = $derived.by(() => {
   if (!row) return [];
 
   const list = [];
-  const normalBalance = ["asset", "expense"].includes(row.item_type) ? 1 : -1;
-
   for (const [currency, balanceVal] of Object.entries(row.balances)) {
     const balance = Number(balanceVal);
     if (balance === 0) continue;
@@ -372,7 +399,6 @@ const currencySummaryRows = $derived.by(() => {
             ? 144.1
             : 1.0;
 
-    const isDebitType = normalBalance === 1;
     // If account is Asset (Debit normal), a positive balance means debit.
     // If Liability (Credit normal), a positive balance means credit.
     // In our backend schema, positive usually means debit and negative means credit, or vice versa depending on normal balance flag.
@@ -533,7 +559,6 @@ const ledgerTransactions = $derived.by(() => {
   list.sort((a, b) => a.date.localeCompare(b.date));
 
   // Compute running balance
-  let runningBalance = 0;
   const isDebitNormal =
     acc.item_type === "asset" || acc.item_type === "expense";
 
@@ -584,6 +609,10 @@ const detailedTotals = $derived.by(() => {
     balance_label: netBalance >= 0 ? "له" : "عليه",
   };
 });
+
+const totals = $derived({ debY: 0, credY: 0, debS: 0, credS: 0, debU: 0, credU: 0, debA: 0, credA: 0 });
+const tableA2Rows = $derived<any[]>([]);
+const tableA2Totals = $derived({ debit: 0, credit: 0, balance: 0, balance_label: "له" });
 
 // Categorized tree representation of all accounts (used for Custom Selection sidebar)
 const treeCategories = $derived.by(() => {
@@ -665,98 +694,14 @@ const treeCategories = $derived.by(() => {
   return Object.values(cats);
 });
 
-// Tree selection helpers
-function toggleCategorySelect(catId: string, accounts: any[]) {
-  const categoryFlatAccounts = calculatedLedgerRows.filter(
-    (r) => String(r.item_type).toLowerCase() === catId,
-  );
-  const isAllSelected = categoryFlatAccounts.every((a) =>
-    selectedTreeAccountIds.has(a.id),
-  );
-  const newSet = new Set(selectedTreeAccountIds);
-
-  if (isAllSelected) {
-    categoryFlatAccounts.forEach((a) => newSet.delete(a.id));
-  } else {
-    categoryFlatAccounts.forEach((a) => newSet.add(a.id));
-  }
-  selectedTreeAccountIds = newSet;
-}
-
-function toggleAccountSelect(accId: string) {
-  const newSet = new Set(selectedTreeAccountIds);
-  if (newSet.has(accId)) {
-    newSet.delete(accId);
-  } else {
-    newSet.add(accId);
-  }
-  selectedTreeAccountIds = newSet;
-}
-
-function toggleCategoryExpand(catId: string) {
-  expandedCategories = {
-    ...expandedCategories,
-    [catId]: !expandedCategories[catId],
-  };
-}
-
-function toggleAccountExpand(accountId: string) {
-  expandedAccounts = {
-    ...expandedAccounts,
-    [accountId]: !expandedAccounts[accountId],
-  };
-}
-
-function toggleParentAccountSelect(node: any) {
-  const newSet = new Set(selectedTreeAccountIds);
-  const descendants: string[] = [];
-  function getDescendants(n: any) {
-    descendants.push(n.id);
-    if (n.children) {
-      n.children.forEach(getDescendants);
-    }
-  }
-  getDescendants(node);
-
-  const areAllDescendantsSelected = descendants.every((id) =>
-    selectedTreeAccountIds.has(id),
-  );
-
-  if (areAllDescendantsSelected) {
-    descendants.forEach((id) => newSet.delete(id));
-  } else {
-    descendants.forEach((id) => newSet.add(id));
-  }
-  selectedTreeAccountIds = newSet;
-}
-
-function getAccountCheckboxState(
-  node: any,
-): "checked" | "partial" | "unchecked" {
-  const descendants: string[] = [];
-  function getDescendants(n: any) {
-    descendants.push(n.id);
-    if (n.children) {
-      n.children.forEach(getDescendants);
-    }
-  }
-  getDescendants(node);
-
-  const selectedCount = descendants.filter((id) =>
-    selectedTreeAccountIds.has(id),
-  ).length;
-  if (selectedCount === descendants.length) {
-    return "checked";
-  } else if (selectedCount > 0) {
-    return "partial";
-  } else {
-    return "unchecked";
-  }
-}
-
 // Active filtered rows to display in the main ledger table
 const filteredLedgerRows = $derived.by(() => {
   return selectableLedgerRows.filter((row) => {
+    const query = searchQuery.toLowerCase().trim();
+    if (query && !String(row.name_ar || row.name).toLowerCase().includes(query) && !String(row.code).toLowerCase().includes(query)) {
+      return false;
+    }
+
     // 1. Account Filtering by Tab Mode
     if (activeTab === "single") {
       if (row.id !== selectedAccountId) return false;
@@ -813,89 +758,27 @@ const filteredLedgerRows = $derived.by(() => {
   });
 });
 
-// Sum totals for footer
-const totals = $derived.by(() => {
-  let debY = 0,
-    credY = 0;
-  let debS = 0,
-    credS = 0;
-  let debU = 0,
-    credU = 0;
-  let debA = 0,
-    credA = 0;
+const ledgerGridSource = $derived(
+  filteredLedgerRows.map((row, index) => {
+    const source: Record<string, unknown> = {
+      __idx: index + 1,
+      name_ar: row.name_ar,
+      code: row.code,
+      notes: row.notes || "-",
+    };
 
-  for (const r of filteredLedgerRows) {
-    debY += r.debit_yer;
-    credY += r.credit_yer;
-    debS += r.debit_sar;
-    credS += r.credit_sar;
-    debU += r.debit_usd;
-    credU += r.credit_usd;
-    debA += r.debit_aed;
-    credA += r.credit_aed;
-  }
-
-  return {
-    debY,
-    credY,
-    debS,
-    credS,
-    debU,
-    credU,
-    debA,
-    credA,
-  };
-});
-
-// Derived rows for Table A2 (All Accounts, Specific Currency)
-const tableA2Rows = $derived.by(() => {
-  if (activeTab !== "all" || selectedCurrency === "all") return [];
-  const curr = selectedCurrency.toUpperCase();
-  return filteredLedgerRows.map((row) => {
-    let deb = 0,
-      cred = 0;
-    if (curr === "YER") {
-      deb = row.debit_yer;
-      cred = row.credit_yer;
-    } else if (curr === "SAR") {
-      deb = row.debit_sar;
-      cred = row.credit_sar;
-    } else if (curr === "USD") {
-      deb = row.debit_usd;
-      cred = row.credit_usd;
-    } else if (curr === "AED") {
-      deb = row.debit_aed;
-      cred = row.credit_aed;
+    for (const currency of activeCurrencies) {
+      const values = row as Record<string, unknown>;
+      const code = currency.code.toLowerCase();
+      const debit = Number(values[`debit_${code}`] || 0);
+      const credit = Number(values[`credit_${code}`] || 0);
+      source[`${currency.code}_debit`] = debit ? formatCurrency(debit, currency.code) : "-";
+      source[`${currency.code}_credit`] = credit ? formatCurrency(credit, currency.code) : "-";
     }
 
-    const isDebitNormal =
-      row.item_type === "asset" || row.item_type === "expense";
-    let bal = isDebitNormal ? deb - cred : cred - deb;
-    return {
-      ...row,
-      debit: deb,
-      credit: cred,
-      balance: Math.abs(bal),
-      balance_label: bal >= 0 ? "له" : "عليه",
-    };
-  });
-});
-
-const tableA2Totals = $derived.by(() => {
-  let deb = 0,
-    cred = 0;
-  for (const r of tableA2Rows) {
-    deb += r.debit;
-    cred += r.credit;
-  }
-  const diff = deb - cred;
-  return {
-    debit: deb,
-    credit: cred,
-    balance: Math.abs(diff),
-    balance_label: diff >= 0 ? "له" : "عليه",
-  };
-});
+    return source;
+  }),
+);
 
 function handlePrint() {
   window.print();
@@ -908,171 +791,15 @@ function exitPage() {
 
 <svelte:window onclick={handleWindowClick} />
 
+<div class="finance-ledger-page h-full w-full overflow-hidden bg-background text-foreground">
   <!-- Main Filter Controls Box -->
   <div class="p-5 bg-card/15 border-b border-border/80 grid grid-cols-1 lg:grid-cols-4 gap-6 shrink-0 no-print select-none text-start">
     
     <!-- Right Side (Renders on right in RTL): Accounts Tree Selection Box (spans 1 column) -->
-    <div 
-      class="bg-background border border-border rounded-lg p-3 flex flex-col overflow-hidden shadow-sm lg:col-span-1 self-start font-sans"
-      style="height: 220px; max-height: 220px;"
-    >
-      <!-- Scrollable Tree content -->
-      <div class="flex-1 overflow-y-auto flex flex-col gap-2.5 text-[10px]">
-        {#snippet renderNodes(nodes: any[], depth: number)}
-          {#each nodes as node (node.id)}
-            {@const isParent = node.children && node.children.length > 0}
-            {@const isExpanded = expandedAccounts[node.id] !== false}
-            {@const state = getAccountCheckboxState(node)}
-            <div class="flex flex-col gap-1 select-none" style="{m.finance_ledger_padding_left()}: {depth * 10}px">
-              <div class="flex items-center justify-between hover:bg-accent/10 px-1.5 py-0.5 rounded text-[9px] text-muted-foreground hover:text-foreground w-full text-start">
-                <button
-                  type="button"
-                  onclick={() => isParent ? toggleAccountExpand(node.id) : toggleAccountSelect(node.id)}
-                  class="truncate flex-1 font-medium text-start flex items-center gap-1 text-[9px] text-foreground"
-                >
-                  {#if isParent}
-                    {#if isExpanded}
-                      <ChevronDown size={10} class="text-muted-foreground shrink-0" />
-                      <FolderOpen size={10} class="text-primary/80 shrink-0" />
-                    {:else}
-                      <ChevronRight size={10} class="text-muted-foreground {getLocale() === 'ar' ? 'rotate-180' : ''} shrink-0" />
-                      <Folder size={10} class="text-primary/80 shrink-0" />
-                    {/if}
-                  {:else}
-                    <FileText size={10} class="text-muted-foreground/60 shrink-0" />
-                  {/if}
-                  <span class="truncate">{node.name_ar}</span>
-                </button>
-                <div class="flex items-center gap-1.5 shrink-0">
-                  <span class="font-mono text-[8px] font-bold bg-muted/30 px-1 rounded border border-border/20">{node.code}</span>
-                  <button
-                    type="button"
-                    onclick={() => isParent ? toggleParentAccountSelect(node) : toggleAccountSelect(node.id)}
-                    class="p-0.5 text-muted-foreground hover:text-foreground shrink-0"
-                  >
-                    {#if state === 'checked'}
-                      <CheckSquare size={10} class="text-primary" />
-                    {:else if state === 'partial'}
-                      <div class="h-2.5 w-2.5 bg-primary/20 border border-primary rounded flex items-center justify-center">
-                        <span class="h-0.5 w-0.5 bg-primary rounded-sm"></span>
-                      </div>
-                    {:else}
-                      <Square size={10} />
-                    {/if}
-                  </button>
-                </div>
-              </div>
-              {#if isParent && isExpanded}
-                <div class="border-r border-border/40 mr-1.5 my-0.5" transition:slide={{ duration: 150 }}>
-                  {@render renderNodes(node.children, depth + 1)}
-                </div>
-              {/if}
-            </div>
-          {/each}
-        {/snippet}
-
-        <!-- Top level Root Node: الشجرة المحاسبية -->
-        <div class="flex flex-col gap-1">
-          <!-- Root Row -->
-          <div class="flex items-center justify-between hover:bg-accent/15 px-1.5 py-0.5 rounded cursor-pointer font-bold">
-            <button
-              type="button"
-              class="flex items-center gap-1 text-foreground hover:text-primary flex-1 text-start"
-              onclick={() => isCoadTreeExpanded = !isCoadTreeExpanded}
-            >
-              {#if isCoadTreeExpanded}
-                <ChevronDown size={12} class="text-muted-foreground" />
-                <FolderOpen size={12} class="text-primary" />
-              {:else}
-                <ChevronRight size={12} class="text-muted-foreground {getLocale() === "ar" ? "rotate-180" : ""}" />
-                <Folder size={12} class="text-primary" />
-              {/if}
-              <span>{m.finance_ledger_chart_of_accounts()}</span>
-            </button>
-
-            <!-- Chart of Accounts Checkbox -->
-            <button
-              type="button"
-              onclick={() => {
-                const newSet = new Set<string>();
-                if (selectedTreeAccountIds.size < calculatedLedgerRows.length) {
-                  calculatedLedgerRows.forEach((r) => newSet.add(r.id));
-                }
-                selectedTreeAccountIds = newSet;
-              }}
-              class="text-muted-foreground hover:text-foreground shrink-0 p-0.5"
-            >
-              {#if selectedTreeAccountIds.size === calculatedLedgerRows.length}
-                <CheckSquare size={12} class="text-primary" />
-              {:else if selectedTreeAccountIds.size > 0}
-                <div class="h-3 w-3 bg-primary/20 border border-primary rounded flex items-center justify-center">
-                  <span class="h-1 w-1 bg-primary rounded-sm"></span>
-                </div>
-              {:else}
-                <Square size={12} />
-              {/if}
-            </button>
-          </div>
-
-          <!-- Categories List (Indented under Chart of Accounts) -->
-          {#if isCoadTreeExpanded}
-            <div class="border-r border-border/40 mr-1.5 my-0.5 flex flex-col gap-2" transition:slide={{ duration: 150 }}>
-              {#each treeCategories as cat (cat.id)}
-                {@const catFlatAccounts = calculatedLedgerRows.filter(r => String(r.item_type).toLowerCase() === cat.id)}
-                <div class="flex flex-col gap-1 ps-2">
-                  <!-- Category Header Row -->
-                  <div class="flex items-center justify-between hover:bg-accent/15 px-1.5 py-0.5 rounded cursor-pointer font-bold">
-                    <button
-                      type="button"
-                      class="flex items-center gap-1 text-foreground hover:text-primary flex-1 text-start"
-                      onclick={() => toggleCategoryExpand(cat.id)}
-                    >
-                      {#if expandedCategories[cat.id]}
-                        <ChevronDown size={12} class="text-muted-foreground" />
-                        <FolderOpen size={12} class="text-primary" />
-                      {:else}
-                        <ChevronRight size={12} class="text-muted-foreground {getLocale() === "ar" ? "rotate-180" : ""}" />
-                        <Folder size={12} class="text-primary" />
-                      {/if}
-                      <span>{getLocale() === "ar" ? cat.name_ar : cat.name_en}</span>
-                    </button>
-
-                    <!-- Category Checkbox -->
-                    <button
-                      type="button"
-                      onclick={() => toggleCategorySelect(cat.id, cat.accounts)}
-                      class="text-muted-foreground hover:text-foreground shrink-0 p-0.5"
-                    >
-                      {#if catFlatAccounts.every((a) => selectedTreeAccountIds.has(a.id))}
-                        <CheckSquare size={12} class="text-primary" />
-                      {:else if catFlatAccounts.some((a) => selectedTreeAccountIds.has(a.id))}
-                        <div class="h-3 w-3 bg-primary/20 border border-primary rounded flex items-center justify-center">
-                          <span class="h-1 w-1 bg-primary rounded-sm"></span>
-                        </div>
-                      {:else}
-                        <Square size={12} />
-                      {/if}
-                    </button>
-                  </div>
-
-                  <!-- Children Accounts (Visible when Expanded) -->
-                  {#if expandedCategories[cat.id]}
-                    <div class="border-r border-border/40 mr-2 my-0.5" transition:slide={{ duration: 150 }}>
-                      {#if cat.accounts.length === 0}
-                        <span class="text-[8px] text-muted-foreground ps-2 py-0.5">{m.finance_ledger_no_accounts_added()}</span>
-                      {:else}
-                        {@render renderNodes(cat.accounts, 0)}
-                      {/if}
-                    </div>
-                  {/if}
-                </div>
-              {/each}
-            </div>
-          {/if}
-        </div>
-      </div>
-    </div>
-
+    <AccountTree
+      categories={treeCategories}
+      bind:selectedIds={selectedTreeAccountIds}
+    />
     <!-- Left Side (Renders on left in RTL): Filter inputs (spans 3 columns) -->
     <div class="lg:col-span-3 flex flex-col gap-4 justify-between bg-card/5 border border-border/50 rounded-xl p-4 shadow-inner">
       
@@ -1137,7 +864,7 @@ function exitPage() {
           </div>
 
           <!-- Code Search Combobox (shrunk) -->
-          <div class="flex flex-col gap-1 text-[9px] font-bold text-muted-foreground combobox-container relative w-1/4 max-w-[160px] min-w-[100px]">
+          <div class="flex flex-col gap-1 text-[9px] font-bold text-muted-foreground combobox-container relative w-1/4 max-w-40 min-w-25">
             <span>{m.finance_ledger_account_code()}</span>
             <div class="relative">
               <input
@@ -1172,25 +899,15 @@ function exitPage() {
         <!-- Row 2: Currency, Date, and Period Selectors -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <!-- Currency Selector -->
-          <div class="flex flex-col gap-1 text-[9px] font-bold text-muted-foreground">
-            <span>{m.common_ledger_currency()}</span>
-            <select
-              bind:value={selectedCurrency}
-              class="bg-background text-foreground border border-border rounded-md px-2.5 py-1 text-[11px] outline-none focus:ring-1 focus:ring-ring font-sans w-full cursor-pointer"
-            >
-              <option value="all">&lt;&lt;كافة العملات&gt;&gt;</option>
-              {#if dbCurrencies.length > 0}
-                {#each dbCurrencies as c}
-                  <option value={c.code}>{c.code} {c.name_ar ? `(${c.name_ar})` : c.name ? `(${c.name})` : ""}</option>
-                {/each}
-              {:else}
-                <option value="YER">YER (ريال يمني)</option>
-                <option value="SAR">SAR (ريال سعودي)</option>
-                <option value="USD">USD (دولار أمريكي)</option>
-                <option value="AED">AED (درهم إماراتي)</option>
-              {/if}
-            </select>
-          </div>
+          <CurrencySelector
+            title={m.common_ledger_currency()}
+            description=""
+            currentCurrency={selectedCurrency}
+            includeAll={true}
+            allLabel={m.common_ledger_all_currencies()}
+            compact={true}
+            onchange={(currency) => selectedCurrency = currency}
+          />
 
           <!-- Date picker -->
           <div class="flex flex-col gap-1 text-[9px] font-bold text-muted-foreground">
@@ -1226,7 +943,7 @@ function exitPage() {
     <!-- Exit button on the left -->
     <Button
       variant="ghost"
-      class="text-xs h-9 px-5 border border-border flex items-center gap-2 bg-gradient-to-b hover:from-muted/20 hover:to-muted/30 font-bold text-red-500 hover:text-red-600 rounded-md shadow-sm"
+      class="text-xs h-9 px-5 border border-border flex items-center gap-2 font-bold text-red-500 hover:text-red-600 rounded-md"
       onclick={exitPage}
     >
       <LogOut size={13} class={getLocale() === "ar" ? 'rotate-180' : ''} />
@@ -1238,7 +955,7 @@ function exitPage() {
       <!-- Add Account / Treasury -->
       <Button
         variant="ghost"
-        class="text-xs h-9 px-4 border border-border flex items-center gap-2 bg-gradient-to-b hover:from-muted/20 hover:to-muted/30 font-bold rounded-md shadow-sm text-primary"
+        class="text-xs h-9 px-4 border border-border flex items-center gap-2 font-bold rounded-md text-primary"
         onclick={() => isAddDialogOpen = true}
       >
         <FolderOpen size={13} />
@@ -1248,7 +965,7 @@ function exitPage() {
       <!-- 1. Print Selected -->
       <Button
         variant="ghost"
-        class="text-xs h-9 px-4 border border-border flex items-center gap-2 bg-gradient-to-b hover:from-muted/20 hover:to-muted/30 font-bold rounded-md shadow-sm"
+        class="text-xs h-9 px-4 border border-border flex items-center gap-2 font-bold rounded-md"
         onclick={handlePrint}
       >
         <Printer size={13} />
@@ -1258,7 +975,7 @@ function exitPage() {
       <!-- 2. Print -->
       <Button
         variant="ghost"
-        class="text-xs h-9 px-4 border border-border flex items-center gap-2 bg-gradient-to-b hover:from-muted/20 hover:to-muted/30 font-bold rounded-md shadow-sm"
+        class="text-xs h-9 px-4 border border-border flex items-center gap-2 font-bold rounded-md"
         onclick={handlePrint}
       >
         <Printer size={13} />
@@ -1268,7 +985,7 @@ function exitPage() {
       <!-- 3. View / Show (Main Green Action) -->
       <Button
         variant="lime"
-        class="text-xs h-9 px-6 flex items-center gap-2 font-black bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-md shadow-md shadow-emerald-500/10 min-w-28 justify-center"
+        class="text-xs h-9 px-6 flex items-center gap-2 font-black bg-primary text-primary-foreground hover:bg-primary/90 rounded-md min-w-28 justify-center"
         onclick={loadData}
         disabled={isLoading}
       >
@@ -1309,9 +1026,27 @@ function exitPage() {
         </div>
       {:else}
         {#if activeTab === "all"}
-          {#if selectedCurrency === "all"}
+          <DataTable
+            title={m.common_ledger_title()}
+            subtitle={m.common_ledger_all_currencies()}
+            columns={ledgerGridColumns}
+            source={ledgerGridSource}
+            loading={isLoading}
+            searchable={true}
+            searchValue={searchQuery}
+            onSearch={(query) => searchQuery = query}
+            searchPlaceholder={m.finance_fees_search_placeholder()}
+            refreshable={true}
+            onRefresh={loadData}
+            exportable={true}
+            rtl={getLocale() === "ar"}
+            height="100%"
+            rowSize={38}
+            theme="compact"
+          />
+          {#if false}
             <!-- Excel Grid Sheet Ledger -->
-            <div class="border border-border rounded-xl bg-card/30 overflow-hidden min-w-[900px] print-table" in:fade={{ duration: 150 }}>
+            <div class="border border-border rounded-xl bg-card/30 overflow-hidden min-w-225 print-table" in:fade={{ duration: 150 }}>
               <Table class="border-collapse w-full">
                 <TableHeader class="bg-card">
                   <!-- Top Currency Header Row -->
@@ -1431,9 +1166,9 @@ function exitPage() {
                 </tfoot>
               </Table>
             </div>
-          {:else}
+          {:else if false}
             <!-- Table A2: Single-currency Ledger Grid for All Accounts -->
-            <div class="border border-border rounded-xl bg-card/30 overflow-hidden min-w-[900px] print-table" in:fade={{ duration: 150 }}>
+            <div class="border border-border rounded-xl bg-card/30 overflow-hidden min-w-225 print-table" in:fade={{ duration: 150 }}>
               <Table class="border-collapse w-full">
                 <TableHeader class="bg-card">
                   <TableRow class="hover:bg-transparent border-b border-border/80 text-[10px] font-bold text-foreground">
@@ -1489,7 +1224,7 @@ function exitPage() {
           {/if}
         {:else}
           <!-- Single Account View Swapped Layout -->
-          <div class="border border-border rounded-xl bg-card/30 overflow-hidden min-w-[900px] print-table" in:fade={{ duration: 150 }}>
+          <div class="border border-border rounded-xl bg-card/30 overflow-hidden min-w-225 print-table" in:fade={{ duration: 150 }}>
             {#if selectedCurrency === "all"}
               <!-- Table B: Currency Summary Grid -->
               <Table class="border-collapse w-full">
@@ -1680,47 +1415,5 @@ function exitPage() {
   </Dialog>
 
 </div>
+</div>
 
-<style>
-/* Print Friendly Layout Override */
-@media print {
-  :global(.no-print) {
-    display: none !important;
-  }
-  :global(.print-only) {
-    display: block !important;
-  }
-  :global(body) {
-    background: white !important;
-    color: black !important;
-  }
-  .print-full-width {
-    width: 100% !important;
-    max-width: 100% !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    overflow: visible !important;
-  }
-  .print-table {
-    border: 1px solid #000 !important;
-    border-radius: 0 !important;
-    width: 100% !important;
-    box-shadow: none !important;
-    background: white !important;
-  }
-  :global(.print-table table) {
-    border-collapse: collapse !important;
-    width: 100% !important;
-  }
-  :global(.print-table th), :global(.print-table td) {
-    border: 1px solid #000 !important;
-    padding: 4px 6px !important;
-    color: #000 !important;
-    background: transparent !important;
-  }
-  :global(.print-table tfoot td) {
-    border-top: 2px solid #000 !important;
-    font-weight: bold !important;
-  }
-}
-</style>
