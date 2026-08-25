@@ -4,8 +4,13 @@ import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
-import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { Plus, Landmark, RefreshCw, WalletCards } from "@lucide/svelte";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
+import { Plus, Landmark } from "@lucide/svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
@@ -24,6 +29,10 @@ let childAccounts = $state<any[]>([]);
 let baseCurrency = $state("YER");
 let isLoading = $state(true);
 let isAddDialogOpen = $state(false);
+let searchQuery = $state("");
+let accountTypeFilter = $state("all");
+let accountSubtypeFilter = $state("all");
+let currencyFilter = $state("all");
 
 function handleSuccess() {
   isAddDialogOpen = false;
@@ -55,12 +64,6 @@ onMount(() => {
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
-const totalBalance = $derived(
-  childAccounts.reduce((sum, account) => sum + Number(account.balances?.[baseCurrency] || 0), 0),
-);
-
-const activeAccountCount = $derived(childAccounts.length);
-
 function getAccountTypeLabel(account: any) {
   const type = String(account.type || account.item_type || account.sub_type || "asset").toLowerCase();
   const managedTypes: Record<string, string> = {
@@ -86,19 +89,36 @@ function getAccountTypeLabel(account: any) {
 
 // ── Grid Sources ────────────────────────────────────────────────────────
 
+const availableCurrencies = $derived(
+  [...new Set(childAccounts.map((account) => account.currency || baseCurrency))].sort(),
+);
+
 const treasurySource = $derived(
   withIndex(
-    childAccounts.map((account) => ({
-      ...account,
-      name: account.name_ar || account.name || "—",
-      treasury_type: getAccountTypeLabel(account),
-      balance: formatCurrency(
-        Number(account.balances?.[account.currency] || 0),
-        account.currency || baseCurrency,
-      ),
-      currency_code: account.currency || baseCurrency,
-      status: "active",
-    })),
+    childAccounts
+      .filter((account) => {
+        const query = searchQuery.trim().toLowerCase();
+        const name = String(account.name_ar || account.name || "").toLowerCase();
+        const code = String(account.code || "").toLowerCase();
+        const type = String(account.item_type || account.type || "").toLowerCase();
+        const subtype = String(account.sub_type || "").toLowerCase();
+        const currency = String(account.currency || baseCurrency).toUpperCase();
+        return (!query || name.includes(query) || code.includes(query)) &&
+          (accountTypeFilter === "all" || type === accountTypeFilter) &&
+          (accountSubtypeFilter === "all" || subtype === accountSubtypeFilter) &&
+          (currencyFilter === "all" || currency === currencyFilter);
+      })
+      .map((account) => ({
+        ...account,
+        name: account.name_ar || account.name || "—",
+        treasury_type: getAccountTypeLabel(account),
+        balance: formatCurrency(
+          Number(account.balances?.[account.currency] || 0),
+          account.currency || baseCurrency,
+        ),
+        currency_code: account.currency || baseCurrency,
+        status: account.is_active === 1 ? "active" : "inactive",
+      })),
   ),
 );
 
@@ -113,6 +133,29 @@ const treasuryCols = $derived(
 );
 
 const rtl = $derived(getLocale() === "ar");
+
+function exportAccounts() {
+  const rows = treasurySource.map((account) => [
+    account.code,
+    account.name,
+    account.treasury_type,
+    account.balance,
+    account.currency_code,
+    account.status,
+  ]);
+  const csv = [
+    ["Code", "Name", "Type", "Balance", "Currency", "Status"],
+    ...rows,
+  ]
+    .map((row) => row.map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`).join(","))
+    .join("\n");
+  const url = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "orbis-accounts.csv";
+  link.click();
+  URL.revokeObjectURL(url);
+}
 </script>
 
 <div class="flex h-full min-h-0 w-full flex-col overflow-hidden bg-background p-6 font-sans" dir={rtl ? "rtl" : "ltr"}>
@@ -124,28 +167,61 @@ const rtl = $derived(getLocale() === "ar");
       </Button>
     </header>
 
-    <section class="grid grid-cols-1 sm:grid-cols-3 gap-3" aria-label={m.finance_cash_accounts_title()}>
-      <div class="border border-border bg-card p-4 rounded-lg flex items-center gap-3">
-        <div class="h-9 w-9 rounded-md bg-primary/10 text-primary flex items-center justify-center"><Landmark size={17} /></div>
-        <div><p class="text-[10px] text-muted-foreground">{m.finance_cash_accounts_title()}</p><p class="text-xl font-black text-foreground">{activeAccountCount}</p></div>
-      </div>
-      <div class="border border-border bg-card p-4 rounded-lg flex items-center gap-3">
-        <div class="h-9 w-9 rounded-md bg-emerald-500/10 text-emerald-500 flex items-center justify-center"><WalletCards size={17} /></div>
-        <div><p class="text-[10px] text-muted-foreground">{m.finance_total_cash_assets({ balance: "" }).replace(/: $/, "")}</p><p class="text-base font-black text-foreground font-mono">{formatCurrency(totalBalance, baseCurrency)}</p></div>
-      </div>
-      <div class="border border-border bg-card p-4 rounded-lg flex items-center gap-3">
-        <div class="h-9 w-9 rounded-md bg-sky-500/10 text-sky-500 flex items-center justify-center"><RefreshCw size={17} /></div>
-        <div><p class="text-[10px] text-muted-foreground">{m.finance_col_balance()}</p><p class="text-xs font-bold text-foreground">{baseCurrency}</p></div>
-      </div>
-    </section>
-
-    {#if isLoading}
-      <div class="border border-border bg-card rounded-lg p-5"><Skeleton class="h-72 w-full rounded-md" /></div>
-    {:else}
-        <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <DataTable columns={treasuryCols} source={treasurySource} emptyIcon={Landmark} emptyTitle={m.finance_no_ledgers()} {rtl} refreshable onRefresh={loadData} />
-      </div>
-    {/if}
+    <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <DataTable
+        columns={treasuryCols}
+        source={treasurySource}
+        loading={isLoading}
+        searchable
+        searchPlaceholder="ابحث باسم الحساب أو رقمه..."
+        bind:searchValue={searchQuery}
+        emptyIcon={Landmark}
+        emptyTitle={m.finance_no_ledgers()}
+        {rtl}
+        refreshable
+        onRefresh={loadData}
+        exportable
+        onExport={exportAccounts}
+      >
+        {#snippet actions()}
+          <Select type="single" value={accountTypeFilter} onValueChange={(value) => (accountTypeFilter = value ?? "all")}>
+            <SelectTrigger class="h-8 w-28 bg-card text-xs">
+              {accountTypeFilter === "all" ? "كل الأنواع" : getAccountTypeLabel({ item_type: accountTypeFilter })}
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">كل الأنواع</SelectItem>
+              <SelectItem value="asset">{m.finance_type_asset()}</SelectItem>
+              <SelectItem value="liability">{m.finance_type_liability()}</SelectItem>
+              <SelectItem value="equity">حقوق الملكية</SelectItem>
+              <SelectItem value="revenue">{m.finance_type_revenue()}</SelectItem>
+              <SelectItem value="expense">{m.finance_type_expense()}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select type="single" value={accountSubtypeFilter} onValueChange={(value) => (accountSubtypeFilter = value ?? "all")}>
+            <SelectTrigger class="h-8 w-28 bg-card text-xs">
+              {accountSubtypeFilter === "all" ? "كل التصنيفات" : accountSubtypeFilter === "cash" ? "صندوق" : accountSubtypeFilter === "bank" ? "بنك" : accountSubtypeFilter}
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">كل التصنيفات</SelectItem>
+              <SelectItem value="cash">صندوق</SelectItem>
+              <SelectItem value="bank">بنك</SelectItem>
+              <SelectItem value="vendor">مورد</SelectItem>
+              <SelectItem value="partner">شريك</SelectItem>
+              <SelectItem value="employee">موظف</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select type="single" value={currencyFilter} onValueChange={(value) => (currencyFilter = value ?? "all")}>
+            <SelectTrigger class="h-8 w-24 bg-card text-xs">{currencyFilter === "all" ? "كل العملات" : currencyFilter}</SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">كل العملات</SelectItem>
+              {#each availableCurrencies as currency}
+                <SelectItem value={currency}>{currency}</SelectItem>
+              {/each}
+            </SelectContent>
+          </Select>
+        {/snippet}
+      </DataTable>
+    </div>
   </div>
 </div>
 
