@@ -55,21 +55,21 @@ let newRoomName = $state("");
 let newRoomNameAr = $state("");
 let newRoomCapacity = $state(30);
 let newRoomType = $state("classroom");
-let newRoomFloor = $state(1);
+let newRoomFloor = $state(0);
 
 const roomTypeOptions = [
-  { value: "classroom", label: "فصل / قاعة دراسية (Classroom)" },
-  { value: "lecture_hall", label: "مدرج / قاعة محاضرات (Lecture Hall)" },
-  { value: "computer_lab", label: "معمل حاسب آلي (Computer Lab)" },
-  { value: "science_lab", label: "مختبر علمي (Science Lab)" },
-  { value: "workshop", label: "ورشة عمل / تدريب (Workshop)" },
-  { value: "library", label: "مكتبة / مصادر تعلم (Library)" },
-  { value: "studio", label: "استوديو / قاعة افتراضية (Studio)" },
-  { value: "activity_hall", label: "صالة أنشطة / متعددة الأغراض (Hall)" },
+  { value: "classroom", label: () => m.common_onboarding_room_type_classroom() },
+  { value: "lecture_hall", label: () => m.common_onboarding_room_type_lecture_hall() },
+  { value: "computer_lab", label: () => m.common_onboarding_room_type_computer() },
+  { value: "science_lab", label: () => m.common_onboarding_room_type_science() },
+  { value: "workshop", label: () => m.common_onboarding_room_type_workshop() },
+  { value: "library", label: () => m.common_onboarding_room_type_library() },
+  { value: "studio", label: () => m.common_onboarding_room_type_studio() },
+  { value: "activity_hall", label: () => m.common_onboarding_room_type_hall() },
 ];
 
 function getRoomTypeLabel(type: string) {
-  return roomTypeOptions.find(o => o.value === type)?.label || type;
+  return roomTypeOptions.find(o => o.value === type)?.label() || type;
 }
 
 function handleAddRoom() {
@@ -109,6 +109,11 @@ function handleRemoveBuilding(bname: string) {
   isDeleteDialogOpen = true;
 }
 
+function handleAddDefaultRooms() {
+  const building = onboardingState.facilities.activeBuildingTab;
+  if (building) onboardingState.addDefaultRoomsToBuilding(building);
+}
+
 function confirmRemoveBuilding() {
   if (buildingToDelete) {
     onboardingState.removeBuilding(buildingToDelete);
@@ -123,10 +128,10 @@ function confirmRemoveBuilding() {
   <div class="flex flex-col gap-1">
     <h3 class="text-sm font-bold text-foreground flex items-center gap-2">
       <Building2 size={18} class="text-primary" />
-      المباني والمرافق والقاعات التعليمية
+      {m.common_onboarding_facilities_title()}
     </h3>
     <p class="text-xs text-muted-foreground">
-      تحديد المباني والمجمعات والمرافق (فصول، قاعات، معامل ومختبرات) مع طاقتها الاستيعابية وتوزيع الطوابق.
+      {m.common_onboarding_facilities_desc()}
     </p>
   </div>
 
@@ -146,7 +151,7 @@ function confirmRemoveBuilding() {
             <Building2 size={14} class="text-primary" />
             <span>{bld}</span>
             <Badge variant="secondary" class="text-[10px] px-1.5 py-0">
-              {onboardingState.facilities.rooms.filter((r) => r.building === bld).length} مرافق
+              {onboardingState.facilities.rooms.filter((r) => r.building === bld).length} {m.common_onboarding_rooms_count_suffix()}
             </Badge>
           </div>
         </TabsTrigger>
@@ -158,7 +163,7 @@ function confirmRemoveBuilding() {
         onclick={handleAddBuilding}
       >
         <Plus size={14} />
-        إضافة مبنى / مقر جديد
+        {m.common_onboarding_add_building()}
       </Button>
     </TabsList>
 
@@ -169,10 +174,14 @@ function confirmRemoveBuilding() {
           <div class="flex items-center gap-2">
             <DoorOpen size={15} class="text-primary" />
             <h4 class="text-xs font-bold text-foreground">
-              قاعات ومرافق ({bld})
+              {m.common_onboarding_building_rooms({ building: bld })}
             </h4>
           </div>
-          {#if onboardingState.facilities.buildings.length > 1}
+          <div class="flex items-center gap-2">
+            <Button variant="outline" size="sm" class="h-8 px-3 text-xs flex gap-1.5 items-center rounded-lg cursor-pointer" onclick={handleAddDefaultRooms}>
+              <Sparkles size={13} />
+              <span>{m.common_onboarding_room_reset_defaults()}</span>
+            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -180,21 +189,21 @@ function confirmRemoveBuilding() {
               onclick={() => handleRemoveBuilding(bld)}
             >
               <Trash2 size={13} />
-              <span>حذف المبنى</span>
+              <span>{m.common_onboarding_delete_building()}</span>
             </Button>
-          {/if}
+          </div>
         </div>
 
         <!-- Rooms / Facilities Table -->
         <div class="w-full overflow-x-auto scrollbar-hide border border-border/60 rounded-xl bg-card shadow-2xs">
-          <div class="min-w-[760px] divide-y divide-border/40">
+          <div class="min-w-190 divide-y divide-border/40">
             <!-- Header Row -->
             <div class="grid grid-cols-[1.5fr_1.5fr_1.8fr_1fr_1fr_auto] gap-3 p-3.5 bg-muted/30 text-xs font-semibold text-muted-foreground select-none text-start">
-              <span>الاسم بالعربية</span>
-              <span>الاسم بالإنجليزية</span>
-              <span>نوع المرفق / القاعة</span>
-              <span>الطابق</span>
-              <span>السعة (طلاب)</span>
+              <span>{m.common_onboarding_rooms_table_name_ar()}</span>
+              <span>{m.common_onboarding_rooms_table_name_en()}</span>
+              <span>{m.common_onboarding_room_type()}</span>
+              <span>{m.common_onboarding_rooms_table_floor()}</span>
+              <span>{m.common_onboarding_room_capacity()}</span>
               <span class="w-8"></span>
             </div>
 
@@ -203,14 +212,14 @@ function confirmRemoveBuilding() {
               <!-- Arabic Name -->
               <Input
                 bind:value={newRoomNameAr}
-                placeholder="مثال: قاعة 101"
+                placeholder={m.common_onboarding_rooms_placeholder_ar()}
                 class="h-8 text-xs font-sans bg-background"
               />
 
               <!-- English Name -->
               <Input
                 bind:value={newRoomName}
-                placeholder="e.g. Room 101"
+                placeholder={m.common_onboarding_rooms_placeholder_en()}
                 class="h-8 text-xs font-mono bg-background"
                 style="direction: ltr;"
               />
@@ -221,25 +230,13 @@ function confirmRemoveBuilding() {
                   {getRoomTypeLabel(newRoomType)}
                 </SelectTrigger>
                 <SelectContent class="text-xs">
-                  {#each roomTypeOptions as opt}
-                    <SelectItem value={opt.value}>{opt.label}</SelectItem>
+                    {#each roomTypeOptions as opt}
+                    <SelectItem value={opt.value}>{opt.label()}</SelectItem>
                   {/each}
                 </SelectContent>
               </Select>
 
-              <!-- Floor Select -->
-              <Select type="single" value={String(newRoomFloor)} onValueChange={(v) => (newRoomFloor = Number(v ?? "1") || 1)}>
-                <SelectTrigger class="h-8 text-xs bg-background font-mono">
-                  الطابق {newRoomFloor}
-                </SelectTrigger>
-                <SelectContent class="text-xs">
-                  <SelectItem value="0">الطابق الأرضي</SelectItem>
-                  <SelectItem value="1">الطابق الأول</SelectItem>
-                  <SelectItem value="2">الطابق الثاني</SelectItem>
-                  <SelectItem value="3">الطابق الثالث</SelectItem>
-                  <SelectItem value="4">الطابق الرابع</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input type="number" bind:value={newRoomFloor} min="0" step="1" placeholder={m.common_onboarding_room_floor_placeholder()} class="h-8 text-xs text-center font-mono bg-background" />
 
               <!-- Capacity Input -->
               <Input
@@ -256,7 +253,7 @@ function confirmRemoveBuilding() {
                 size="icon-sm"
                 class="h-8 w-8 rounded-lg cursor-pointer"
                 onclick={handleAddRoom}
-                title="إضافة القاعة"
+                  title={m.common_onboarding_add_room()}
               >
                 <Plus size={14} />
               </Button>
@@ -287,24 +284,12 @@ function confirmRemoveBuilding() {
                   </SelectTrigger>
                   <SelectContent class="text-xs">
                     {#each roomTypeOptions as opt}
-                      <SelectItem value={opt.value}>{opt.label}</SelectItem>
+                    <SelectItem value={opt.value}>{opt.label()}</SelectItem>
                     {/each}
                   </SelectContent>
                 </Select>
 
-                <!-- Floor Select -->
-                <Select type="single" value={String(rm.floor)} onValueChange={(v) => { if (v) { rm.floor = Number(v); onboardingState.save(); } }}>
-                  <SelectTrigger class="h-8 text-xs font-mono">
-                    الطابق {rm.floor}
-                  </SelectTrigger>
-                  <SelectContent class="text-xs">
-                    <SelectItem value="0">الطابق الأرضي</SelectItem>
-                    <SelectItem value="1">الطابق الأول</SelectItem>
-                    <SelectItem value="2">الطابق الثاني</SelectItem>
-                    <SelectItem value="3">الطابق الثالث</SelectItem>
-                    <SelectItem value="4">الطابق الرابع</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input type="number" bind:value={rm.floor} min="0" step="1" placeholder={m.common_onboarding_room_floor_placeholder()} class="h-8 text-xs text-center font-mono" onchange={() => onboardingState.save()} />
 
                 <!-- Capacity Input -->
                 <Input
@@ -322,14 +307,14 @@ function confirmRemoveBuilding() {
                   size="icon-sm"
                   class="text-muted-foreground hover:text-destructive h-8 w-8 hover:bg-destructive/10 cursor-pointer"
                   onclick={() => onboardingState.removeRoom(rm.id)}
-                  title="حذف"
+                  title={m.common_onboarding_delete_room()}
                 >
                   <Trash2 size={13} />
                 </Button>
               </div>
             {:else}
               <div class="p-8 text-center text-xs text-muted-foreground">
-                لا توجد قاعات مسجلة في هذا المبنى. استخدم الصف بالأعلى لإضافة قاعات ومرافق.
+                {m.common_onboarding_no_rooms_in_building()}
               </div>
             {/each}
           </div>
@@ -342,14 +327,14 @@ function confirmRemoveBuilding() {
   <Dialog bind:open={isAddDialogOpen}>
     <DialogContent class="max-w-md w-full min-w-0">
       <DialogHeader>
-        <DialogTitle class="text-sm">إضافة مبنى أو مجمع جديد</DialogTitle>
+        <DialogTitle class="text-sm">{m.common_onboarding_add_building_dialog_title()}</DialogTitle>
       </DialogHeader>
       <div class="flex flex-col gap-3 py-2">
         <div class="flex flex-col gap-1.5">
-          <Label class="text-xs">اسم المبنى / المقر</Label>
+          <Label class="text-xs">{m.common_onboarding_add_building_name()}</Label>
           <Input
             bind:value={newBuildingName}
-            placeholder="مثال: مبنى المرحلة الابتدائية أو كلية العلوم"
+            placeholder={m.common_onboarding_add_building_placeholder()}
             class="text-xs"
             autofocus
             onkeydown={(e) => { if (e.key === "Enter") confirmAddBuilding(); }}
@@ -358,10 +343,10 @@ function confirmRemoveBuilding() {
       </div>
       <DialogFooter class="flex items-center justify-end w-full pt-2">
         <Button variant="outline" size="sm" class="text-xs cursor-pointer" onclick={() => (isAddDialogOpen = false)}>
-          إلغاء
+          {m.common_action_cancel()}
         </Button>
         <Button size="sm" class="text-xs cursor-pointer" onclick={confirmAddBuilding} disabled={!newBuildingName.trim()}>
-          إضافة المبنى
+          {m.common_onboarding_add_building()}
         </Button>
       </DialogFooter>
     </DialogContent>
@@ -371,15 +356,15 @@ function confirmRemoveBuilding() {
   <AlertDialog bind:open={isDeleteDialogOpen}>
     <AlertDialogContent class="max-w-sm">
       <AlertDialogHeader>
-        <AlertDialogTitle class="text-sm">حذف المبنى</AlertDialogTitle>
+        <AlertDialogTitle class="text-sm">{m.common_onboarding_delete_building()}</AlertDialogTitle>
         <AlertDialogDescription class="text-xs leading-relaxed">
-          هل أنت متأكد من حذف المبنى ({buildingToDelete}) وجميع القاعات والمرافق التابعة له؟
+          {m.common_onboarding_delete_building_desc({ building: buildingToDelete })}
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter class="flex items-center justify-end gap-2 pt-2">
-        <AlertDialogCancel class="text-xs cursor-pointer">إلغاء</AlertDialogCancel>
+        <AlertDialogCancel class="text-xs cursor-pointer">{m.common_action_cancel()}</AlertDialogCancel>
         <AlertDialogAction class="text-xs bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer" onclick={confirmRemoveBuilding}>
-          تأكيد الحذف
+          {m.common_onboarding_confirm_delete()}
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>

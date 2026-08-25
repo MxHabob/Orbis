@@ -11,13 +11,18 @@ import type {
   SubjectEntry,
   Room,
 } from "./types";
-import { getDefaultBuildings } from "./utils";
 
 import { ProfileInfoState } from "./state/profile-info.svelte";
 import { CalendarInfoState } from "./state/calendar-info.svelte";
 import { FacilitiesInfoState } from "./state/facilities-info.svelte";
 import { AcademicsInfoState } from "./state/academics-info.svelte";
 import { FinanceInfoState } from "./state/finance-info.svelte";
+
+function formatTime(totalMinutes: number): string {
+  const hours = Math.floor(totalMinutes / 60).toString().padStart(2, "0");
+  const minutes = (totalMinutes % 60).toString().padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
 
 class OnboardingState {
   // Wizard navigation
@@ -111,15 +116,41 @@ class OnboardingState {
 
       // Default time slots
       this.academics.workingDays = [1, 2, 3, 4, 5];
-      this.academics.timeSlots = profile.timeSlots.map((t) => ({
-        name: t.name,
-        name_ar: t.name_ar,
-        start_time: t.start_time,
-        end_time: t.end_time,
-        is_break: t.is_break ?? false,
-        break_type: t.break_type,
-        applicable_days: [...(t.applicable_days ?? this.academics.workingDays)],
-      }));
+      const defaultLessonNames = [
+        ["1st Period", "الحصة الأولى"],
+        ["2nd Period", "الحصة الثانية"],
+        ["3rd Period", "الحصة الثالثة"],
+        ["4th Period", "الحصة الرابعة"],
+        ["5th Period", "الحصة الخامسة"],
+        ["6th Period", "الحصة السادسة"],
+        ["7th Period", "الحصة السابعة"],
+      ];
+      const defaultSlots = [];
+      let currentMinutes = 8 * 60;
+      for (let index = 0; index < 7; index++) {
+        if (index === 3) {
+          defaultSlots.push({
+            name: "Break",
+            name_ar: "استراحة",
+            start_time: formatTime(currentMinutes),
+            end_time: formatTime(currentMinutes + 20),
+            is_break: true,
+            break_type: "recess" as const,
+            applicable_days: [...this.academics.workingDays],
+          });
+          currentMinutes += 20;
+        }
+        defaultSlots.push({
+          name: defaultLessonNames[index][0],
+          name_ar: defaultLessonNames[index][1],
+          start_time: formatTime(currentMinutes),
+          end_time: formatTime(currentMinutes + 40),
+          is_break: false,
+          applicable_days: [...this.academics.workingDays],
+        });
+        currentMinutes += 40;
+      }
+      this.academics.timeSlots = defaultSlots;
 
       // Default subjects
       this.academics.subjects = profile.subjects.map((s) => ({
@@ -138,27 +169,6 @@ class OnboardingState {
         fees[s.level] = 0;
       });
       this.finance.registrationFees = fees;
-
-      // Dynamic room list prefix mapping
-      const roomsList: Room[] = [];
-      const bldName =
-        this.facilities.buildings.length > 0
-          ? this.facilities.buildings[0]
-          : getDefaultBuildings()[0];
-
-      profile.stages.slice(0, 5).forEach((stg, sIdx) => {
-        roomsList.push({
-          id: `room-b1-f1-${sIdx + 1}`,
-          name: `${profile.terminology.classroom} 1-0${sIdx + 1}`,
-          name_ar: `${profile.terminology.classroom_ar} 1-0${sIdx + 1}`,
-          capacity: 30,
-          room_type: "classroom",
-          building: bldName,
-          floor: 1,
-        });
-      });
-      this.facilities.rooms = roomsList;
-      this.facilities.activeBuildingTab = bldName;
 
       this.save();
     }
@@ -272,6 +282,45 @@ class OnboardingState {
           this.selectInstitutionType("school");
         }
 
+        const units = await commands.organization.listOrgUnits().catch(() => []);
+        const rootUnit = (units || []).find(
+          (unit: any) =>
+            !unit.parent_id &&
+            ["root", "organization"].includes(unit.unit_type || unit.unitType),
+        );
+        const buildingUnits = (units || []).filter((unit: any) => {
+          const unitType = unit.unit_type || unit.unitType;
+          const isRootChild = rootUnit?.id && unit.parent_id === rootUnit.id;
+          return unitType === "building" || unitType === "branch" || unitType === "campus" || isRootChild;
+        });
+        if (buildingUnits.length > 0) {
+          this.facilities.buildings = buildingUnits
+            .map((unit: any) => String(unit.name || unit.name_ar || "").trim())
+            .filter(Boolean);
+          this.facilities.activeBuildingTab = this.facilities.buildings[0] || "";
+        }
+
+        const rooms = await commands.scheduling.listRooms().catch(() => []);
+        if (rooms.length > 0) {
+          this.facilities.rooms = (rooms || []).map((room: any): Room => ({
+            id: String(room.id),
+            name: String(room.name || room.name_ar || ""),
+            name_ar: String(room.name_ar || room.name || ""),
+            capacity: Number(room.capacity) || 0,
+            room_type: String(room.room_type || "classroom"),
+            building: String(room.building || ""),
+            floor: Number(room.floor) || 0,
+          }));
+          for (const room of this.facilities.rooms) {
+            if (room.building && !this.facilities.buildings.includes(room.building)) {
+              this.facilities.buildings.push(room.building);
+            }
+          }
+          if (!this.facilities.activeBuildingTab) {
+            this.facilities.activeBuildingTab = this.facilities.buildings[0] || "";
+          }
+        }
+
         this.save();
       }
 
@@ -322,7 +371,6 @@ class OnboardingState {
   }
 
   removeBuilding(name: string): boolean {
-    if (this.facilities.buildings.length <= 1) return false;
     const idx = this.facilities.buildings.indexOf(name);
     if (idx === -1) return false;
 
@@ -331,7 +379,7 @@ class OnboardingState {
       (r) => r.building !== name,
     );
     if (this.facilities.activeBuildingTab === name) {
-      this.facilities.activeBuildingTab = this.facilities.buildings[0];
+      this.facilities.activeBuildingTab = this.facilities.buildings[0] || "";
     }
     this.save();
     return true;
@@ -358,18 +406,7 @@ class OnboardingState {
         floor: 1,
       });
     }
-    for (let i = 11; i <= 20; i++) {
-      defaultList.push({
-        id: `room-${bldName}-${i}-${tsSuffix}`,
-        name: `${terminology.classroom} 1-${i}`,
-        name_ar: `${terminology.classroom_ar} 1-${i}`,
-        capacity: 30,
-        room_type: "classroom",
-        building: bldName,
-        floor: 2,
-      });
-    }
-    for (let i = 1; i <= 3; i++) {
+    for (let i = 1; i <= 1; i++) {
       defaultList.push({
         id: `room-${bldName}-lab-comp-${i}-${tsSuffix}`,
         name: `Computer Lab 1-${i}`,
@@ -380,13 +417,21 @@ class OnboardingState {
         floor: 2,
       });
     }
-    for (let i = 1; i <= 2; i++) {
+    const additionalRooms = [
+      ["lecture_hall", "Lecture Hall", "قاعة محاضرات", 60],
+      ["science_lab", "Science Lab", "مختبر علمي", 25],
+      ["workshop", "Workshop", "ورشة عمل", 25],
+      ["library", "Library", "مكتبة", 40],
+      ["studio", "Studio", "استوديو", 25],
+      ["activity_hall", "Activity Hall", "صالة أنشطة", 60],
+    ] as const;
+    for (const [roomType, name, nameAr, capacity] of additionalRooms) {
       defaultList.push({
-        id: `room-${bldName}-lab-chem-${i}-${tsSuffix}`,
-        name: `Chemistry Lab 1-${i}`,
-        name_ar: `مختبر كيمياء 1-${i}`,
-        capacity: 25,
-        room_type: "chemistry_lab",
+        id: `room-${bldName}-${roomType}-${tsSuffix}`,
+        name,
+        name_ar: nameAr,
+        capacity,
+        room_type: roomType,
         building: bldName,
         floor: 1,
       });
@@ -416,8 +461,8 @@ class OnboardingState {
       name_ar: finalNameAr,
       capacity: Number(capacity) || 30,
       room_type: roomType || "classroom",
-      building: this.facilities.activeBuildingTab || "المبنى الرئيسي",
-      floor: Number(floor) || 1,
+      building: this.facilities.activeBuildingTab,
+      floor: Number(floor) || 0,
     });
     this.facilities.rooms = [...this.facilities.rooms];
     toast.success("تمت إضافة القاعة بنجاح");
@@ -433,15 +478,36 @@ class OnboardingState {
 
   // ظ¤?ظ¤? Step 4: Grade/Division Management ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?
   addDivision(level: string) {
-    const text = this.academics.divisionInput[level]?.trim();
-    if (!text) return;
     const gl = this.academics.gradeLevels.find((g) => g.level === level);
-    if (gl && !gl.divisions.includes(text)) {
-      gl.divisions.push(text);
+    if (!gl) return;
+
+    const input = this.academics.divisionInput[level]?.trim().toUpperCase();
+    const nextLetter = String.fromCharCode(65 + gl.divisions.length);
+    const text = input || nextLetter;
+    if (!/^[A-Z]$/.test(text) || gl.divisions.includes(text)) {
+      toast.error(m.onboarding_toast_invalid_division());
+      return;
+    }
+
+    gl.divisions.push(text);
+    {
       this.academics.gradeLevels = [...this.academics.gradeLevels];
       this.academics.divisionInput[level] = "";
       toast.success(m.onboarding_toast_division_added());
     }
+  }
+
+  renameDivision(level: string, index: number, value: string) {
+    const gl = this.academics.gradeLevels.find((g) => g.level === level);
+    const normalized = value.trim().toUpperCase();
+    if (!gl || !/^[A-Z]$/.test(normalized)) return;
+    if (gl.divisions.some((division, divisionIndex) => divisionIndex !== index && division === normalized)) {
+      toast.error(m.onboarding_toast_invalid_division());
+      return;
+    }
+    gl.divisions[index] = normalized;
+    this.academics.gradeLevels = [...this.academics.gradeLevels];
+    this.save();
   }
 
   removeDivision(level: string, div: string) {
@@ -738,9 +804,14 @@ class OnboardingState {
 
       // ── Step 2: Create Organizational Structure (Org Units) ──────────
       let rootUnitId = "";
+      let existingUnits: any[] = [];
       try {
-        const existingUnits = await commands.organization.listOrgUnits().catch(() => []);
-        const root = existingUnits && existingUnits.find((u: any) => u.unit_type === "root" || u.unitType === "root" || !u.parent_id);
+        existingUnits = await commands.organization.listOrgUnits().catch(() => []);
+        const root = existingUnits?.find(
+          (u: any) =>
+            (u.unit_type === "root" || u.unitType === "root") &&
+            !u.parent_id,
+        );
         if (root) {
           rootUnitId = root.id;
         } else {
@@ -749,25 +820,94 @@ class OnboardingState {
             name_ar: this.profile.rootUnitNameAr || this.profile.orgNameAr,
             unit_type: "root",
           });
-          rootUnitId = created?.id || `unit-${orgId}`;
+          rootUnitId = created?.id || "";
+        }
+        if (!rootUnitId) {
+          throw new Error(m.onboarding_err_root_unit_creation());
         }
       } catch (e) {
-        console.warn("Root org unit creation warning:", e);
-        rootUnitId = `unit-${orgId}`;
+        throw new Error(
+          `${m.onboarding_err_root_unit_creation()}: ${e instanceof Error ? e.message : String(e)}`,
+        );
       }
 
-      // Create Building org units under Root Unit
+      // Create the facilities tree under the main organizational unit.
+      const buildingUnitIds: Record<string, string> = {};
       for (const bldName of this.facilities.buildings) {
         if (!bldName || !bldName.trim()) continue;
         try {
-          await commands.organization.createOrgUnit({
-            name: bldName.trim(),
-            name_ar: bldName.trim(),
-            parent_id: rootUnitId,
-            unit_type: "building",
-          });
+          const normalizedBuildingName = bldName.trim().toLowerCase();
+          const existingBuilding = existingUnits?.find(
+            (unit: any) =>
+              unit.parent_id === rootUnitId &&
+              (unit.unit_type === "building" || unit.unitType === "building") &&
+              String(unit.name || "").trim().toLowerCase() === normalizedBuildingName,
+          );
+          const building = existingBuilding || await commands.organization.createOrgUnit({
+              name: bldName.trim(),
+              name_ar: bldName.trim(),
+              parent_id: rootUnitId,
+              unit_type: "building",
+            });
+          if (!building?.id) continue;
+          buildingUnitIds[bldName] = building.id;
+          if (!existingBuilding) existingUnits = [...existingUnits, building];
         } catch (e) {
           console.warn(`Building unit "${bldName}" creation warning:`, e);
+        }
+      }
+
+      const floorUnitIds: Record<string, string> = {};
+      for (const room of this.facilities.rooms) {
+        const buildingId = buildingUnitIds[room.building];
+        if (!buildingId) continue;
+
+        const floor = Number(room.floor) || 0;
+        const floorKey = `${room.building}:${floor}`;
+        if (!floorUnitIds[floorKey]) {
+          const floorName = `Floor ${floor}`;
+          const existingFloor = existingUnits?.find(
+            (unit: any) =>
+              unit.parent_id === buildingId &&
+              (unit.unit_type === "floor" || unit.unitType === "floor") &&
+              Number(unit.floor) === floor,
+          );
+          const floorUnit = existingFloor || await commands.organization.createOrgUnit({
+              name: floorName,
+              name_ar: `الطابق ${floor}`,
+              parent_id: buildingId,
+              unit_type: "floor",
+              building: room.building,
+              floor,
+            });
+          if (!floorUnit?.id) continue;
+          floorUnitIds[floorKey] = floorUnit.id;
+          if (!existingFloor) existingUnits = [...existingUnits, floorUnit];
+        }
+
+        const floorUnitId = floorUnitIds[floorKey];
+        const roomExists = existingUnits?.some(
+          (unit: any) =>
+            unit.parent_id === floorUnitId &&
+            (unit.unit_type === "room" || unit.unitType === "room") &&
+            String(unit.name || "").trim() === String(room.name || room.name_ar).trim(),
+        );
+        if (roomExists) continue;
+
+        try {
+          const roomUnit = await commands.organization.createOrgUnit({
+            name: room.name || room.name_ar,
+            name_ar: room.name_ar || room.name,
+            parent_id: floorUnitId,
+            unit_type: "room",
+            capacity: Number(room.capacity) || 0,
+            room_number: room.name || room.name_ar,
+            building: room.building,
+            floor,
+          });
+          if (roomUnit?.id) existingUnits = [...existingUnits, roomUnit];
+        } catch (e) {
+          console.warn(`Room unit "${room.name}" creation warning:`, e);
         }
       }
 

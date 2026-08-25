@@ -48,12 +48,16 @@ import { onboardingState } from "../state.svelte";
               {m.common_onboarding_associated_divisions({ division: onboardingState.divisionLabel })}
             </Label>
 
-            <div class="flex flex-wrap gap-1.5 min-h-[32px] p-2 bg-muted/20 rounded-lg border border-border/60">
-              {#each gl.divisions as div}
+            <div class="flex flex-wrap gap-1.5 min-h-8 p-2 bg-muted/20 rounded-lg border border-border/60">
+              {#each gl.divisions as div, divisionIndex}
                 <Badge variant="secondary" class="bg-card border-border/60 text-foreground text-xs px-2 py-0.5 flex gap-1 items-center font-sans">
-                  <span>
-                    {onboardingState.divisionLabel} {div}
-                  </span>
+                  <Input
+                    value={div}
+                    maxlength="1"
+                    aria-label={`${onboardingState.divisionLabel} ${div}`}
+                    class="h-6 w-8 border-0 bg-transparent p-0 text-center text-xs font-mono uppercase focus-visible:ring-0"
+                    onchange={(event) => onboardingState.renameDivision(gl.level, divisionIndex, event.currentTarget.value)}
+                  />
                   <button
                     onclick={() => onboardingState.removeDivision(gl.level, div)}
                     class="hover:text-destructive font-bold ml-0.5 mr-0.5 text-[10px] cursor-pointer"
@@ -73,7 +77,10 @@ import { onboardingState } from "../state.svelte";
             <!-- Quick Add Division Form -->
             <div class="flex gap-2">
               <Input
-                placeholder={m.common_onboarding_add_division_placeholder({ division: onboardingState.divisionLabel })}
+                placeholder={m.common_onboarding_add_division_placeholder({ division: "A, B, C..." })}
+                maxlength="1"
+                pattern="[A-Za-z]"
+                onkeydown={(event) => { if (event.key === "Enter") onboardingState.addDivision(gl.level); }}
                 bind:value={onboardingState.academics.divisionInput[gl.level]}
                 class="text-xs h-8"
               />

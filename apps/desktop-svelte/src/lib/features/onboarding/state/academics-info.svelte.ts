@@ -37,7 +37,21 @@ export class AcademicsInfoState {
 
   deserialize(data: any) {
     if (!data) return;
-    if (data.gradeLevels) this.gradeLevels = data.gradeLevels;
+    if (data.gradeLevels) {
+      const arabicDivisionLetters: Record<string, string> = {
+        "أ": "A",
+        "ب": "B",
+        "ج": "C",
+        "د": "D",
+        "هـ": "E",
+      };
+      this.gradeLevels = data.gradeLevels.map((gradeLevel: GradeLevel) => ({
+        ...gradeLevel,
+        divisions: gradeLevel.divisions.map(
+          (division) => arabicDivisionLetters[division] || division,
+        ),
+      }));
+    }
     if (data.divisionInput) this.divisionInput = data.divisionInput;
     if (data.workingDays) this.workingDays = data.workingDays;
     if (data.timeSlots) {

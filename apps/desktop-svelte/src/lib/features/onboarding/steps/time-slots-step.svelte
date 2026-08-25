@@ -1,21 +1,30 @@
-<!--
-  Step 5: Daily Time Slots Setup
-  Add, remove, and list school daily periods/lessons.
--->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Input } from "@orbis/ui-svelte/input";
 import { Button } from "@orbis/ui-svelte/button";
-import { Plus, Trash, CalendarDays } from "@lucide/svelte";
+import { CalendarDays, Plus, Trash2 } from "@lucide/svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 
 import { onboardingState } from "../state.svelte";
+import type { TimeSlot } from "../types";
 
 let newSlotName = $state("");
 let newSlotNameAr = $state("");
 let newSlotStart = $state("12:15");
 let newSlotEnd = $state("13:00");
-let newSlotType = $state("lesson");
+let newSlotType = $state<"lesson" | "break">("lesson");
+let newBreakType = $state<"recess" | "lunch" | "prayer" | "custom">("recess");
+
+const dayLabels = $derived(
+  [7, 1, 2, 3, 4, 5, 6].map((day) => ({
+    value: day,
+    label: new Intl.DateTimeFormat(getLocale(), { weekday: "short" }).format(
+      new Date(Date.UTC(2023, 0, day)),
+    ),
+  })),
+);
+
+const newSlotDuration = $derived(getDuration(newSlotStart, newSlotEnd));
 
 function getDuration(start: string, end: string) {
   const [startHour, startMinute] = start.split(":").map(Number);
@@ -23,32 +32,18 @@ function getDuration(start: string, end: string) {
   return endHour * 60 + endMinute - (startHour * 60 + startMinute);
 }
 
-function validateSlotTime(slot: { start_time: string; end_time: string }) {
+function validateSlotTime(slot: TimeSlot) {
   if (getDuration(slot.start_time, slot.end_time) > 0) return;
   slot.end_time = slot.start_time;
   onboardingState.academics.timeSlots = [...onboardingState.academics.timeSlots];
   onboardingState.save();
 }
 
-const newSlotDuration = $derived(getDuration(newSlotStart, newSlotEnd));
-
-const dayLabels = $derived(
-  [7, 1, 2, 3, 4, 5, 6].map((day) => {
-    return {
-      value: day,
-      label: new Intl.DateTimeFormat(getLocale(), { weekday: "short" }).format(
-        new Date(Date.UTC(2023, 0, day)),
-      ),
-    };
-  }),
-);
-
 function toggleWorkingDay(day: number) {
   const current = onboardingState.academics.workingDays;
+  if (current.includes(day) && current.length === 1) return;
   const next = current.includes(day)
-    ? current.length === 1
-      ? current
-      : current.filter((value) => value !== day)
+    ? current.filter((value) => value !== day)
     : [...current, day].sort((a, b) => a - b);
 
   for (const slot of onboardingState.academics.timeSlots) {
@@ -58,57 +53,47 @@ function toggleWorkingDay(day: number) {
     if (followsGlobalDays) slot.applicable_days = [...next];
   }
 
-  if (current.includes(day)) {
-    if (current.length === 1) return;
-    onboardingState.academics.workingDays = next;
-  } else {
-    onboardingState.academics.workingDays = next;
-  }
+  onboardingState.academics.workingDays = next;
   onboardingState.academics.timeSlots = [...onboardingState.academics.timeSlots];
   onboardingState.save();
 }
 
-function toggleSlotDay(slot: any, day: number) {
+function toggleSlotDay(slot: TimeSlot, day: number) {
   const current = slot.applicable_days ?? onboardingState.academics.workingDays;
-  if (current.includes(day)) {
-    if (current.length === 1) return;
-    slot.applicable_days = current.filter((value: number) => value !== day);
-  } else {
-    slot.applicable_days = [...current, day].sort((a: number, b: number) => a - b);
-  }
+  if (current.includes(day) && current.length === 1) return;
+  slot.applicable_days = current.includes(day)
+    ? current.filter((value) => value !== day)
+    : [...current, day].sort((a, b) => a - b);
   onboardingState.academics.timeSlots = [...onboardingState.academics.timeSlots];
   onboardingState.save();
 }
 
-function handleAddTimeSlot() {
-  if (newSlotDuration <= 0) return;
-  const success = onboardingState.addTimeSlot(
-    newSlotName,
-    newSlotNameAr,
-    newSlotStart,
-    newSlotEnd,
-    {
-      isBreak: newSlotType !== "lesson",
-      breakType: newSlotType === "lesson" ? undefined : newSlotType as "recess" | "lunch" | "prayer" | "custom",
-    },
-  );
-  if (success) {
+function handleAddSlot() {
+  if (!newSlotName.trim() || !newSlotNameAr.trim() || newSlotDuration <= 0) return;
+  const isBreak = newSlotType === "break";
+  if (onboardingState.addTimeSlot(newSlotName, newSlotNameAr, newSlotStart, newSlotEnd, {
+    isBreak,
+    breakType: isBreak ? newBreakType : undefined,
+  })) {
     newSlotName = "";
     newSlotNameAr = "";
     newSlotType = "lesson";
   }
 }
+
+function removeSlot(slot: TimeSlot) {
+  const index = onboardingState.academics.timeSlots.indexOf(slot);
+  if (index >= 0) onboardingState.removeTimeSlot(index);
+}
 </script>
 
-<div class="w-full space-y-6">
-  <div class="rounded-xl border border-border bg-card p-4 text-start">
+<div class="w-full space-y-5 text-start">
+  <section class="rounded-xl border border-border bg-card p-4">
     <div class="flex items-start gap-3">
       <CalendarDays size={18} class="mt-0.5 shrink-0 text-primary" />
       <div class="min-w-0 flex-1">
-        <h3 class="text-sm font-bold text-foreground">أيام الدراسة</h3>
-        <p class="mt-1 text-xs leading-relaxed text-muted-foreground">
-          اختر أيام العمل الفعلية للمؤسسة. يمكن تخصيص أيام كل فترة بشكل مستقل.
-        </p>
+        <h3 class="text-sm font-bold text-foreground">{m.common_onboarding_working_days_title()}</h3>
+        <p class="mt-1 text-xs leading-relaxed text-muted-foreground">{m.common_onboarding_working_days_desc()}</p>
         <div class="mt-3 flex flex-wrap gap-2">
           {#each dayLabels as day (day.value)}
             <button
@@ -116,127 +101,76 @@ function handleAddTimeSlot() {
               class="rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer {onboardingState.academics.workingDays.includes(day.value) ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-background text-muted-foreground hover:bg-muted'}"
               aria-pressed={onboardingState.academics.workingDays.includes(day.value)}
               onclick={() => toggleWorkingDay(day.value)}
-            >
-              {day.label}
-            </button>
+            >{day.label}</button>
           {/each}
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- Time Slots List (Clean, borderless list of rows) -->
-  <div class="w-full overflow-x-auto scrollbar-hide border border-border/60 rounded-2xl bg-card shadow-sm">
-    <div class="min-w-280 divide-y divide-border/60">
-      <!-- Header Row -->
-      <div class="sticky top-0 z-10 grid grid-cols-[60px_2fr_2fr_1.5fr_1.5fr_1fr_1.5fr_2fr_auto] gap-3 border-b border-border bg-muted/90 p-3 text-xs font-semibold text-muted-foreground backdrop-blur-sm select-none text-start items-center">
-        <span class="text-center">{m.common_onboarding_schedule_col_num()}</span>
-        <span>{m.common_onboarding_schedule_name_ar()}</span>
-        <span>{m.common_onboarding_schedule_name_en()}</span>
-        <span>{m.common_onboarding_schedule_col_start()}</span>
-        <span>{m.common_onboarding_schedule_col_end()}</span>
-        <span class="text-center">{m.common_onboarding_schedule_col_duration()}</span>
-        <span class="text-center">نوع الفترة</span>
-        <span class="text-center">أيام التطبيق</span>
-        <span class="w-8"></span>
+  <section class="rounded-xl border border-border bg-card p-4 space-y-4">
+    <div class="flex items-center justify-between gap-3 border-b border-border pb-3">
+      <div>
+        <h3 class="text-sm font-bold text-foreground">{m.common_onboarding_schedule_title()}</h3>
+        <p class="mt-1 text-xs text-muted-foreground">{m.common_onboarding_schedule_desc()}</p>
       </div>
+      <span class="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">{onboardingState.academics.timeSlots.length}</span>
+    </div>
 
-      <!-- Inline Add Time Slot Row -->
-      <div class="grid grid-cols-[60px_2fr_2fr_1.5fr_1.5fr_1fr_1.5fr_2fr_auto] gap-3 border-b border-primary/20 bg-primary/5 px-4 py-3 items-center text-start">
-        <!-- Number indicator -->
-        <span class="text-center text-xs font-mono text-muted-foreground/60">+</span>
-
-        <!-- Name Ar -->
-        <Input bind:value={newSlotNameAr} placeholder={m.common_onboarding_schedule_name_ar()} class="h-8 text-xs font-bold font-sans bg-background/50 border-dashed border-border/80" />
-
-        <!-- Name En -->
-        <Input bind:value={newSlotName} placeholder={m.common_onboarding_schedule_name_en()} class="h-8 text-xs text-left font-sans bg-background/50 border-dashed border-border/80" style="direction: ltr;" />
-
-        <!-- Start Time -->
-        <Input type="time" bind:value={newSlotStart} class="h-8 text-xs font-mono bg-background/50 border-dashed border-border/80" />
-
-        <!-- End Time -->
-        <Input type="time" bind:value={newSlotEnd} class="h-8 text-xs font-mono bg-background/50 border-dashed border-border/80" />
-
-        <!-- Duration indicator -->
-        <span class="text-center text-xs text-muted-foreground/60 font-sans">
-          {newSlotDuration > 0 ? m.common_titlebar_timer_minutes({ minutes: newSlotDuration }) : "—"}
-        </span>
-
-        <select bind:value={newSlotType} class="h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground">
-          <option value="lesson">حصة دراسية</option>
-          <option value="recess">استراحة</option>
-          <option value="lunch">غداء</option>
-          <option value="prayer">صلاة</option>
-          <option value="custom">مخصص</option>
+    <div class="grid grid-cols-1 gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3 sm:grid-cols-2 lg:grid-cols-4">
+      <Input bind:value={newSlotNameAr} placeholder={m.common_onboarding_schedule_name_ar()} class="h-9 text-xs" />
+      <Input bind:value={newSlotName} placeholder={m.common_onboarding_schedule_name_en()} class="h-9 text-xs text-left" style="direction: ltr;" />
+      <Input type="time" bind:value={newSlotStart} class="h-9 text-xs font-mono" />
+      <Input type="time" bind:value={newSlotEnd} class="h-9 text-xs font-mono" />
+      <select bind:value={newSlotType} class="h-9 rounded-md border border-border bg-background px-2 text-xs text-foreground">
+        <option value="lesson">{m.common_onboarding_lesson_type()}</option>
+        <option value="break">{m.common_onboarding_break_type()}</option>
+      </select>
+      {#if newSlotType === "break"}
+        <select bind:value={newBreakType} class="h-9 rounded-md border border-border bg-background px-2 text-xs text-foreground sm:col-span-2">
+          <option value="recess">{m.common_onboarding_break_recess()}</option>
+          <option value="lunch">{m.common_onboarding_break_lunch()}</option>
+          <option value="prayer">{m.common_onboarding_break_prayer()}</option>
+          <option value="custom">{m.common_onboarding_break_custom()}</option>
         </select>
+      {/if}
+      <Button class="h-9 gap-1.5 text-xs sm:col-span-2 lg:col-span-1" onclick={handleAddSlot} disabled={!newSlotName.trim() || !newSlotNameAr.trim() || newSlotDuration <= 0}>
+        <Plus size={14} /> {m.common_onboarding_add_period()}
+      </Button>
+    </div>
 
-        <span class="text-center text-[10px] text-muted-foreground">أيام العمل</span>
-
-        <!-- Add Button -->
-        <div class="flex justify-center items-center">
-          <Button variant="default" size="icon-sm" class="h-8 w-8 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90" onclick={handleAddTimeSlot} disabled={newSlotDuration <= 0} title="إضافة الفترة">
-            <Plus size={14} />
-          </Button>
-        </div>
-      </div>
-
-      <!-- Slot Rows -->
-      {#each onboardingState.academics.timeSlots as slot, idx}
-        {@const dur = getDuration(slot.start_time, slot.end_time)}
-        <div class="grid grid-cols-[60px_2fr_2fr_1.5fr_1.5fr_1fr_1.5fr_2fr_auto] gap-3 px-4 py-3 items-center hover:bg-muted/10 transition-colors text-start">
-          <!-- Number -->
-          <span class="text-center text-xs font-mono text-muted-foreground">{idx + 1}</span>
-
-          <!-- Name Ar -->
-          <Input bind:value={slot.name_ar} class="h-8 text-xs font-bold font-sans" onchange={() => onboardingState.save()} />
-
-          <!-- Name En -->
-          <Input bind:value={slot.name} class="h-8 text-xs text-left font-sans" style="direction: ltr;" onchange={() => onboardingState.save()} />
-
-          <!-- Start Time -->
-          <Input type="time" bind:value={slot.start_time} class="h-8 text-xs font-mono" onchange={() => { validateSlotTime(slot); onboardingState.save(); }} />
-
-          <!-- End Time -->
-          <Input type="time" bind:value={slot.end_time} class="h-8 text-xs font-mono" onchange={() => { validateSlotTime(slot); onboardingState.save(); }} />
-
-          <!-- Duration -->
-          <div class="text-center">
-            <span class="text-xs bg-muted text-muted-foreground border border-border px-2 py-0.5 rounded font-sans">
-              {m.common_titlebar_timer_minutes({ minutes: dur })}
-            </span>
+    <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+      {#each onboardingState.academics.timeSlots as slot, index (slot.name + slot.start_time + index)}
+        {@const duration = getDuration(slot.start_time, slot.end_time)}
+        <article class="rounded-lg border border-border/70 bg-background p-3 space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <span class="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">{index + 1}</span>
+            <span class="text-xs font-mono text-muted-foreground">{m.common_titlebar_timer_minutes({ minutes: duration })}</span>
+            <button type="button" class="ms-auto text-muted-foreground hover:text-destructive cursor-pointer" aria-label={m.common_onboarding_delete_period()} onclick={() => removeSlot(slot)}><Trash2 size={14} /></button>
           </div>
-
-          <select bind:value={slot.break_type} class="h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground" onchange={() => { slot.is_break = !!slot.break_type; onboardingState.save(); }}>
-            <option value="">حصة دراسية</option>
-            <option value="recess">استراحة</option>
-            <option value="lunch">غداء</option>
-            <option value="prayer">صلاة</option>
-            <option value="custom">مخصص</option>
-          </select>
-
-          <div class="flex flex-wrap justify-center gap-1">
+          <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <Input bind:value={slot.name_ar} class="h-8 text-xs font-bold" onchange={() => onboardingState.save()} />
+            <Input bind:value={slot.name} class="h-8 text-xs text-left" style="direction: ltr;" onchange={() => onboardingState.save()} />
+            <Input type="time" bind:value={slot.start_time} class="h-8 text-xs font-mono" onchange={() => { validateSlotTime(slot); onboardingState.save(); }} />
+            <Input type="time" bind:value={slot.end_time} class="h-8 text-xs font-mono" onchange={() => { validateSlotTime(slot); onboardingState.save(); }} />
+          </div>
+          {#if slot.is_break}
+            <select bind:value={slot.break_type} class="h-8 w-full rounded-md border border-border bg-background px-2 text-xs text-foreground" onchange={() => { slot.is_break = true; onboardingState.save(); }}>
+              <option value="recess">{m.common_onboarding_break_recess()}</option>
+              <option value="lunch">{m.common_onboarding_break_lunch()}</option>
+              <option value="prayer">{m.common_onboarding_break_prayer()}</option>
+              <option value="custom">{m.common_onboarding_break_custom()}</option>
+            </select>
+          {/if}
+          <div class="flex flex-wrap gap-1">
             {#each dayLabels as day (day.value)}
-              <button
-                type="button"
-                class="h-6 min-w-6 rounded border px-1 text-[9px] font-semibold cursor-pointer {(slot.applicable_days ?? onboardingState.academics.workingDays).includes(day.value) ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-muted/30 text-muted-foreground'}"
-                aria-label={day.label}
-                aria-pressed={(slot.applicable_days ?? onboardingState.academics.workingDays).includes(day.value)}
-                onclick={() => toggleSlotDay(slot, day.value)}
-              >
-                {day.label}
-              </button>
+              <button type="button" class="rounded border px-2 py-1 text-[10px] font-semibold cursor-pointer {(slot.applicable_days ?? onboardingState.academics.workingDays).includes(day.value) ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-muted/30 text-muted-foreground'}" aria-pressed={(slot.applicable_days ?? onboardingState.academics.workingDays).includes(day.value)} onclick={() => toggleSlotDay(slot, day.value)}>{day.label}</button>
             {/each}
           </div>
-
-          <!-- Actions -->
-          <div class="flex justify-center items-center">
-            <Button variant="ghost" size="icon-sm" class="text-muted-foreground hover:text-destructive h-8 w-8 hover:bg-destructive/10" onclick={() => onboardingState.removeTimeSlot(idx)}>
-              <Trash size={14} />
-            </Button>
-          </div>
-        </div>
+        </article>
+      {:else}
+        <div class="rounded-lg border border-dashed border-border p-8 text-center text-xs text-muted-foreground md:col-span-2">{m.common_onboarding_no_periods()}</div>
       {/each}
     </div>
-  </div>
+  </section>
 </div>
