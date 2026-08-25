@@ -1,7 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
-import { onMount } from "svelte";
 import { goto } from "$app/navigation";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
@@ -75,13 +74,6 @@ async function loadTemplates() {
 
 // React to query changes
 $effect(() => {
-  if (orgId) {
-    loadTemplates();
-  }
-});
-
-// Trigger load on mounting
-onMount(() => {
   if (orgId) {
     loadTemplates();
   }
