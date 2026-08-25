@@ -52,7 +52,8 @@ pub(crate) async fn do_open_agent_window<R: tauri::Runtime>(app: &tauri::AppHand
     .inner_size(420.0, 650.0)
     .resizable(true)
     .shadow(true)
-    .decorations(true);
+    .decorations(true)
+    .visible(false);
     if let Some(ref main) = main_window {
         builder = builder.parent(main).map_err(|e| e.to_string())?;
     }
