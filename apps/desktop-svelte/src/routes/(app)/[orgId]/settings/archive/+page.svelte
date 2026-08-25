@@ -2,20 +2,33 @@
 import * as m from "$lib/paraglide/messages";
 import {
   useDocuments,
+  useUploadDocument,
   useDeleteDocument,
   resolveDocumentUrl,
 } from "$lib/features/documents/queries";
+import { page } from "$app/state";
 import { Button } from "@orbis/ui-svelte/button";
+import { Input } from "@orbis/ui-svelte/input";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import ArchivePreviewSheet from "$lib/features/documents/archive-preview-sheet.svelte";
 import { confirmStore } from "$lib/stores";
-import { Trash2, File, Image as ImageIcon, Loader2, ExternalLink } from "@lucide/svelte";
+import { Trash2, File, Image as ImageIcon, Loader2, Upload, RefreshCw, Download, Search } from "@lucide/svelte";
 import type { Documents } from "@orbis/sdk-core";
+    import { toast } from "svelte-sonner";
 
 const documentsQuery = useDocuments({ ownerId: "all" });
+const uploadMutation = useUploadDocument();
 const deleteMutation = useDeleteDocument();
+const orgId = $derived(page.params.orgId ?? "");
+let fileInput: HTMLInputElement | undefined = $state();
+let searchQuery = $state("");
+let isPreviewOpen = $state(false);
+let selectedDocument = $state<Documents | null>(null);
+let selectedDocumentUrl = $state("");
 
 async function handleDelete(id: string) {
   const confirmed = await confirmStore.prompt({
+    description: m.common_docs_delete_confirm(),
     title: m.common_docs_delete_confirm(),
     confirmText: m.common_action_delete(),
     variant: "destructive",
@@ -27,19 +40,61 @@ async function handleDelete(id: string) {
 
 // Flatten pages into a single array of documents
 let documents = $derived(
-  documentsQuery.data?.pages.flatMap((p) => p.items) || [],
+  (documentsQuery.data?.pages.flatMap((p) => p.items) || []).filter((doc) => {
+    const query = searchQuery.trim().toLowerCase();
+    return !query || doc.name.toLowerCase().includes(query) || doc.category.toLowerCase().includes(query);
+  }),
 );
 let groupedDocs = $derived(
   documents.reduce(
-    (acc: Record<string, Document[]>, doc: Document) => {
+    (acc: Record<string, Documents[]>, doc: Documents) => {
       const cat = doc.category || "uncategorized";
       if (!acc[cat]) acc[cat] = [];
       acc[cat].push(doc);
       return acc;
     },
-    {} as Record<string, Document[]>,
+    {} as Record<string, Documents[]>,
   ),
 );
+let groupedEntries = $derived(
+  Object.entries(groupedDocs) as [string, Documents[]][],
+);
+
+function openFilePicker() {
+  fileInput?.click();
+}
+
+async function openPreview(doc: Documents) {
+  selectedDocument = doc;
+  selectedDocumentUrl = await resolveDocumentUrl(doc.url);
+  isPreviewOpen = true;
+}
+
+function handleFileSelect(event: Event) {
+  const target = event.currentTarget as HTMLInputElement;
+  const file = target.files?.[0];
+  if (!file) return;
+
+  uploadMutation.mutate(
+    {
+      file,
+      entity_type: "archive",
+      entity_id: orgId || "organization",
+      category: "archive",
+      visibility: "private",
+    },
+    {
+      onSuccess: () => {
+        toast.success(m.common_docs_upload_success());
+        target.value = "";
+      },
+      onError: (error) => {
+        toast.error((error as any)?.message || "Failed to upload file");
+        target.value = "";
+      },
+    },
+  );
+}
 </script>
 
 <div class="flex flex-col gap-6 p-6 h-full overflow-auto scrollbar-hide">
@@ -50,6 +105,20 @@ let groupedDocs = $derived(
       <p class="text-xs text-muted-foreground mt-1">
         {m.settings_archive_desc()}
       </p>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="relative hidden sm:block w-52">
+        <Search size={13} class="absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <Input bind:value={searchQuery} placeholder={m.common_header_search()} class="h-8 ps-8 text-xs" />
+      </div>
+      <Button variant="outline" size="icon-sm" onclick={() => documentsQuery.refetch()} disabled={documentsQuery.isFetching} title={m.common_control_refresh()}>
+        <RefreshCw size={14} class={documentsQuery.isFetching ? "animate-spin" : ""} />
+      </Button>
+      <Button variant="default" size="sm" onclick={openFilePicker} disabled={uploadMutation.isPending}>
+        {#if uploadMutation.isPending}<Loader2 size={14} class="me-1.5 animate-spin" />{:else}<Upload size={14} class="me-1.5" />{/if}
+        {m.common_docs_btn_upload()}
+      </Button>
+      <input bind:this={fileInput} type="file" class="hidden" onchange={handleFileSelect} />
     </div>
   </div>
 
@@ -82,16 +151,27 @@ let groupedDocs = $derived(
       </div>
       <h3 class="text-base font-semibold text-foreground">{m.settings_archive_empty_title()}</h3>
       <p class="text-xs text-muted-foreground max-w-sm mt-1">{m.settings_archive_empty_desc()}</p>
+      <Button variant="outline" size="sm" class="mt-3" onclick={openFilePicker} disabled={uploadMutation.isPending}>
+        <Upload size={14} class="me-1.5" />
+        {m.common_docs_btn_upload()}
+      </Button>
     </div>
   {:else}
     <!-- Document Groups -->
-    {#each Object.entries(groupedDocs) as [category, docs]}
+    {#each groupedEntries as [category, docs]}
       <div class="space-y-4">
         <h2 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/40 pb-2">{category}</h2>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {#each docs as doc}
             <div class="group relative flex flex-col items-center p-2.5 rounded-xl border border-border/40 bg-card hover:border-primary/40 hover:shadow-md transition-all duration-200">
-              <div class="w-full aspect-square rounded-lg bg-muted/30 flex items-center justify-center overflow-hidden mb-2 relative">
+              <!-- svelte-ignore a11y_no_static_element_interactions -->
+              <div
+                class="w-full aspect-square rounded-lg bg-muted/30 flex items-center justify-center overflow-hidden mb-2 relative cursor-pointer"
+                role="button"
+                tabindex="0"
+                onclick={() => openPreview(doc)}
+                onkeydown={(event) => event.key === "Enter" && openPreview(doc)}
+              >
                 {#if doc.mime_type?.startsWith("image/")}
                   {#await resolveDocumentUrl(doc.url)}
                     <Skeleton class="w-full h-full rounded-lg" />
@@ -107,12 +187,11 @@ let groupedDocs = $derived(
                   {#await resolveDocumentUrl(doc.url) then srcUrl}
                     <a
                       href={srcUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      download={doc.name}
                       class="p-2 bg-background/90 hover:bg-background rounded-lg text-foreground shadow-sm transition-all hover:scale-105"
-                      title={m.settings_archive_action_view()}
+                      title={m.settings_archive_action_download()}
                     >
-                      <ExternalLink class="h-3.5 w-3.5" />
+                      <Download class="h-3.5 w-3.5" />
                     </a>
                   {/await}
                   <Button
@@ -161,3 +240,10 @@ let groupedDocs = $derived(
     {/if}
   {/if}
 </div>
+
+<ArchivePreviewSheet
+  bind:open={isPreviewOpen}
+  document={selectedDocument}
+  url={selectedDocumentUrl}
+  ondelete={handleDelete}
+/> 
