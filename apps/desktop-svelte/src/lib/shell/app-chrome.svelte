@@ -25,6 +25,7 @@ import type { Snippet } from "svelte";
 import { slide } from "svelte/transition";
 import { page } from "$app/state";
 import { onMount } from "svelte";
+import AskOrbisSidebar from "$lib/features/ai-agent/ui/views/sidebar.svelte";
 
 let {
   orgId,
@@ -67,11 +68,9 @@ function handleKeyDown(e: KeyboardEvent) {
 			</div>
 		</div>
 		{#if uiStore.showAskOrbis}
-			{#await import("$lib/features/ai-agent/ui/views/sidebar.svelte") then { default: AskOrbisSidebar }}
-				{#key page.url.searchParams.get("ask_orbis")}
-					<AskOrbisSidebar />
-				{/key}
-			{/await}
+			{#key page.url.searchParams.get("ask_orbis")}
+				<AskOrbisSidebar />
+			{/key}
 		{/if}
 	</div>
 </div>
