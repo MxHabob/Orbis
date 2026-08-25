@@ -9,6 +9,7 @@ import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import { MetricProgress } from "@orbis/ui-svelte";
 import { Plus, Users, GraduationCap, Percent } from "@lucide/svelte";
 import { toast } from "svelte-sonner";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
@@ -70,40 +71,23 @@ const averageClassSize = $derived(
 	<!-- KPI Metrics Summary -->
 	{#if !isLoading && !error && classes.length > 0}
 		<div class="grid grid-cols-1 gap-3 sm:grid-cols-3" in:fade={{ duration: 200 }}>
-			<div class="flex items-center justify-between rounded-lg border border-border/70 bg-card p-3">
-				<div class="flex flex-col gap-1 text-start">
-					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-						{m.common_classes_total_classes()}
-					</span>
-					<span class="text-2xl font-bold text-foreground font-mono">{totalClassesCount}</span>
-				</div>
-				<div class="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-					<GraduationCap size={20} />
-				</div>
+			<div class="rounded-lg border border-border/70 bg-card p-3">
+				<MetricProgress variant="single" value={totalClassesCount} max={Math.max(totalClassesCount, 1)} tone="primary">
+					{#snippet title()}{m.common_classes_total_classes()}{/snippet}
+					{#snippet metadata()}إجمالي الفصول{/snippet}
+				</MetricProgress>
 			</div>
-
-			<div class="flex items-center justify-between rounded-lg border border-border/70 bg-card p-3">
-				<div class="flex flex-col gap-1 text-start">
-					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-						{m.common_classes_enrolled_students()}
-					</span>
-					<span class="text-2xl font-bold text-foreground font-mono">{totalStudentsCount}</span>
-				</div>
-				<div class="h-10 w-10 rounded-lg bg-brand-lime/10 flex items-center justify-center text-brand-lime">
-					<Users size={20} />
-				</div>
+			<div class="rounded-lg border border-border/70 bg-card p-3">
+				<MetricProgress variant="single" value={totalStudentsCount} max={Math.max(totalStudentsCount, 1)} tone="success">
+					{#snippet title()}{m.common_classes_enrolled_students()}{/snippet}
+					{#snippet metadata()}الطلاب المسجلون{/snippet}
+				</MetricProgress>
 			</div>
-
-			<div class="flex items-center justify-between rounded-lg border border-border/70 bg-card p-3">
-				<div class="flex flex-col gap-1 text-start">
-					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-						{m.common_classes_avg_size()}
-					</span>
-					<span class="text-2xl font-bold text-foreground font-mono">{averageClassSize}</span>
-				</div>
-				<div class="h-10 w-10 rounded-lg bg-brand-pink/10 flex items-center justify-center text-brand-pink">
-					<Percent size={18} />
-				</div>
+			<div class="rounded-lg border border-border/70 bg-card p-3">
+				<MetricProgress variant="single" value={averageClassSize} max={Math.max(averageClassSize, 1)} tone="warning">
+					{#snippet title()}{m.common_classes_avg_size()}{/snippet}
+					{#snippet metadata()}متوسط عدد الطلاب{/snippet}
+				</MetricProgress>
 			</div>
 		</div>
 	{/if}

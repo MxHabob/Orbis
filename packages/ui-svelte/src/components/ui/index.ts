@@ -59,6 +59,7 @@ export { Input } from "./input/index.js";
 export { Label } from "./label/index.js";
 export { Popover, PopoverTrigger, PopoverContent } from "./popover/index.js";
 export { Progress } from "./progress/index.js";
+export { MetricProgress } from "./metric-progress/index.js";
 export { ScrollArea, Scrollbar } from "./scroll-area/index.js";
 export {
   Select,
