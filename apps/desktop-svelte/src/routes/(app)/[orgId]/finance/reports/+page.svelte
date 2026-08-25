@@ -196,7 +196,7 @@ const totalEquity = $derived.by(() => {
 </script>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 font-sans bg-background/50">
-  <Tabs value="all" class="w-full">
+  <Tabs value="overview" class="w-full">
     <TabsList class="grid w-full grid-cols-4 select-none mb-6">
       <TabsTrigger value="overview" class="text-xs font-semibold flex items-center gap-1.5 cursor-pointer">
         <BarChart3 size={13} />
@@ -266,11 +266,11 @@ const totalEquity = $derived.by(() => {
         </div>
       {:else}
         <div class="border border-border rounded-xl overflow-hidden bg-card shadow-sm">
-          <div class="max-h-[500px] overflow-y-auto">
+          <div class="max-h-125 overflow-y-auto">
             <Table>
               <TableHeader class="bg-muted/40 font-bold sticky top-0 z-10">
                 <TableRow>
-                  <TableHead class="text-start text-xs w-[120px]">{m.finance_ledger_account_code()}</TableHead>
+                  <TableHead class="text-start text-xs w-30">{m.finance_ledger_account_code()}</TableHead>
                   <TableHead class="text-start text-xs">{m.common_ledger_col_name()}</TableHead>
                   {#each activeCurrencies as c}
                     <TableHead class="text-end text-xs text-emerald-600">{m.common_ledger_col_debit()} {c.code}</TableHead>
