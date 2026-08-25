@@ -66,7 +66,7 @@ const averageClassSize = $derived(
 );
 </script>
 
-<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6">
+<div class="h-full w-full min-w-0 overflow-y-auto overflow-x-hidden scrollbar-hide p-3 sm:p-4 flex flex-col gap-4">
 	<!-- KPI Metrics Summary -->
 	{#if !isLoading && !error && classes.length > 0}
 		<div class="grid grid-cols-1 md:grid-cols-3 gap-4" in:fade={{ duration: 200 }}>
@@ -109,7 +109,7 @@ const averageClassSize = $derived(
 	{/if}
 
 	<!-- Header Area -->
-	<div class="flex items-center justify-between font-sans">
+	<div class="flex min-w-0 flex-wrap items-center justify-between gap-3 font-sans">
 		<h2 class="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
 			<span>{m.common_card_active_classes()}</span>
 			{#if !isLoading}
@@ -152,14 +152,14 @@ const averageClassSize = $derived(
 		</div>
 	{:else}
 		<!-- Classes Grid — each card links to class detail -->
-		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" in:fade={{ duration: 250 }}>
+		<div class="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" in:fade={{ duration: 250 }}>
 			{#each classes as cls (cls.id)}
 				{@const count = getStudentCount(String(cls.id))}
 				{@const limit = Number(cls.capacity || 30)}
 				{@const ratio = Math.min(100, Math.round((count / limit) * 100))}
 				<a
 					href={localizeHref(`/${data.orgId}/academics/classes/${cls.id}`)}
-					class="card-tactile bg-card flex flex-col justify-between h-36 p-4 select-none relative group transition-all duration-150 hover:border-primary/30 cursor-pointer no-underline"
+					 class="card-tactile min-w-0 bg-card flex flex-col justify-between h-36 p-3 sm:p-4 select-none relative group transition-all duration-150 hover:border-primary/30 cursor-pointer no-underline"
 				>
 					<!-- Class Header -->
 					<div class="flex items-start justify-between">
