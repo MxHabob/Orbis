@@ -1,1240 +1,261 @@
-<!--
-@component UnifiedFinanceStatementPage
-Consolidated Statement of Account (كشف الحساب الموحد)
-Offers "All Accounts" (Trial Balance / Ledger List) and "Single Account" (Detailed Transaction Statement).
-Uses hierarchical COA Tree sidebar for leaf account filtering and recursive aggregate calculation.
--->
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { page } from "$app/state";
 import { goto } from "$app/navigation";
-import { fade, slide } from "svelte/transition";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@orbis/ui-svelte/table";
+import { commands } from "$lib/core/ipc";
+import { getLocale } from "$lib/paraglide/runtime";
+import { formatCurrency } from "$lib/core/i18n";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
+import { ComboboxDropdown } from "@orbis/ui-svelte/combobox-dropdown";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { Card } from "@orbis/ui-svelte/card";
-import { Badge } from "@orbis/ui-svelte/badge";
-import { Avatar, AvatarFallback } from "@orbis/ui-svelte/avatar";
-import {
-  Printer,
-  ChevronRight,
-  ChevronDown,
-  RotateCw,
-  LogOut,
-  Folder,
-  FolderOpen,
-  CheckSquare,
-  Square,
-  FileText,
-  Search,
-  ArrowUpRight,
-  ArrowDownLeft,
-  TrendingUp,
-  FileSpreadsheet,
-} from "@lucide/svelte";
-import { getLocale } from "$lib/paraglide/runtime";
-import { formatCurrency, formatDate } from "$lib/core/i18n";
-import * as m from "$lib/paraglide/messages";
-import {
-  createAccountsQuery,
-  createAccountStatementQuery,
-} from "$lib/features/finance";
+import { DataTable } from "$lib/tables";
+import type { OrbisColumnDef } from "@orbis/svelte-grid";
+import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
+import AccountTree from "$lib/features/finance/components/account-tree.svelte";
+import { ArrowLeft, ArrowRight } from "@lucide/svelte";
 
 let { data }: { data: { orgId: string } } = $props();
-const orgId = $derived(data.orgId);
 
-// Core page state
-let activeTab = $state<"all" | "single">("all");
-let selectedAccountId = $state<string>("");
-let selectedCurrency = $state<string>("all");
-let movementFilter = $state<string>("all"); // 'all' or 'active' (with movements)
-let searchQuery = $state<string>("");
+let accounts = $state<any[]>([]);
+let currencies = $state<any[]>([]);
+let payments = $state<any[]>([]);
+let isLoading = $state(true);
+let error = $state<string | null>(null);
+let activeView = $state<"all" | "single">("all");
+let selectedAccountId = $state("");
+let selectedCurrency = $state("all");
+let selectedIds = $state<Set<string>>(new Set());
+let searchQuery = $state("");
+let period = $state("all");
+let movementFilter = $state<"all" | "active">("all");
+let balanceFilter = $state<"all" | "debit" | "credit">("all");
+let asOfDate = $state("");
 
-// Date Range filters
-let startDate = $state<string>(
-  new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-);
-let endDate = $state<string>(new Date().toISOString().split("T")[0]);
-
-// Sidebar tree expanded states
-let expandedCategories = $state<Record<string, boolean>>({
-  asset: true,
-  liability: false,
-  expense: false,
-  revenue: false,
-  equity: false,
-});
-let expandedAccounts = $state<Record<string, boolean>>({});
-let isCoadTreeExpanded = $state(true);
-
-// Synced inputs for comboboxes in Single Account tab
-let accountCodeQuery = $state("");
-let accountNameQuery = $state("");
-let isCodeDropdownOpen = $state(false);
-let isNameDropdownOpen = $state(false);
-
-interface AccountStatement {
-  account_id: string;
-  account_name: string;
-  account_code: string;
-  currency: string;
-  start_date: string;
-  end_date: string;
-  opening_balance: number;
-  closing_balance: number;
-  items: Array<{
-    id: string;
-    date: string;
-    reference: string;
-    description: string;
-    description_ar: string | null;
-    debit?: number;
-    credit?: number;
-    running_balance: number;
-  }>;
-}
-
-interface AccountResponse {
-  id: string;
-  org_id: string;
-  code: string;
-  name: string;
-  name_ar?: string | null;
-  item_type: string;
-  sub_type?: string | null;
-  parent_id?: string | null;
-  path: string;
-  depth: number;
-  currency: string;
-  opening_balance?: number | null;
-  current_balance?: number | null;
-  debit_yer: number;
-  credit_yer: number;
-  debit_sar: number;
-  credit_sar: number;
-  debit_usd: number;
-  credit_usd: number;
-  debit_aed: number;
-  credit_aed: number;
-}
-
-// Queries
-const ledgersQuery = createAccountsQuery(() => orgId);
-const ledgers = $derived(
-  (ledgersQuery.data || []) as unknown as AccountResponse[],
-);
-const isLoadingLedgers = $derived(ledgersQuery.isLoading);
-
-// Query for detailed statement
-const statementQuery = createAccountStatementQuery(
-  () => selectedAccountId,
-  () => startDate,
-  () => endDate,
-);
-const statement = $derived(
-  statementQuery.data as AccountStatement | undefined,
-);
-const isLoadingStatement = $derived(statementQuery.isLoading);
-const statementError = $derived(
-  statementQuery.error
-    ? (statementQuery.error as any).message || String(statementQuery.error)
-    : null,
-);
-
-let dbCurrencies = $state<any[]>([]);
-
-// Setup onMount
-onMount(async () => {
+async function loadData() {
+  isLoading = true;
+  error = null;
   try {
-    const list = await commands.finance.listCurrencies();
-    if (Array.isArray(list)) {
-      dbCurrencies = list;
-    }
-  } catch (e) {
-    console.warn("Failed to load currencies:", e);
+    const [accountList, currencyList, paymentList] = await Promise.all([
+      commands.finance.listAccounts(),
+      commands.finance.listCurrencies().catch(() => []),
+      commands.finance.listPayments(null, null).catch(() => []),
+    ]);
+    accounts = accountList || [];
+    currencies = currencyList || [];
+    payments = paymentList || [];
+
+    const leaves = accounts.filter((account) => !accounts.some((candidate) => candidate.parent_id === account.id));
+    selectedIds = new Set(leaves.map((account) => account.id));
+    if (!selectedAccountId && leaves[0]) selectedAccountId = leaves[0].id;
+  } catch (cause) {
+    error = cause instanceof Error ? cause.message : String(cause);
+  } finally {
+    isLoading = false;
   }
-
-  // Query param auto-selection
-  const qAccountId = page.url.searchParams.get("accountId");
-  if (qAccountId) {
-    selectedAccountId = qAccountId;
-    activeTab = "single";
-  }
-});
-
-// Reactively sync combobox inputs when selectedAccountId changes
-$effect(() => {
-  if (selectedAccountId && ledgers.length > 0) {
-    const acc = ledgers.find((l) => l.id === selectedAccountId);
-    if (acc) {
-      accountCodeQuery = String(acc.code);
-      accountNameQuery = acc.name_ar || acc.name;
-    }
-  } else {
-    accountCodeQuery = "";
-    accountNameQuery = "";
-  }
-});
-
-// Combobox search lists
-const searchedAccountsByCode = $derived.by(() => {
-  const q = accountCodeQuery.toLowerCase().trim();
-  if (!q) return ledgers;
-  return ledgers.filter((l) => String(l.code).includes(q));
-});
-
-const searchedAccountsByName = $derived.by(() => {
-  const q = accountNameQuery.toLowerCase().trim();
-  if (!q) return ledgers;
-  return ledgers.filter(
-    (l) =>
-      String(l.name_ar || "")
-        .toLowerCase()
-        .includes(q) ||
-      String(l.name || "")
-        .toLowerCase()
-        .includes(q),
-  );
-});
-
-// Select account handler
-function selectAccount(acc: any) {
-  selectedAccountId = acc.id;
-  accountCodeQuery = String(acc.code);
-  accountNameQuery = acc.name_ar || acc.name;
-  isCodeDropdownOpen = false;
-  isNameDropdownOpen = false;
 }
 
-// Tree and leaf calculation logic
-const parentIds = $derived(
-  new Set(ledgers.map((l) => l.parent_id).filter(Boolean) as string[]),
+onMount(() => {
+  if (data.orgId) loadData();
+});
+
+function buildTree(items: any[]): any[] {
+  const nodes = new Map(items.map((account) => [account.id, { ...account, children: [] }]));
+  const roots: any[] = [];
+  for (const account of items) {
+    const node = nodes.get(account.id);
+    const parent = account.parent_id ? nodes.get(account.parent_id) : undefined;
+    if (parent) parent.children.push(node);
+    else roots.push(node);
+  }
+  return roots;
+}
+
+const treeCategories = $derived.by(() => {
+  const definitions = [
+    ["asset", "الأصول", "Assets"],
+    ["liability", "الخصوم", "Liabilities"],
+    ["equity", "حقوق الملكية", "Equity"],
+    ["revenue", "الإيرادات", "Revenue"],
+    ["expense", "المصروفات", "Expenses"],
+  ];
+  return definitions.map(([id, name_ar, name_en]) => ({
+    id,
+    name_ar,
+    name_en,
+    accounts: buildTree(accounts.filter((account) => String(account.type || account.item_type || "asset").toLowerCase() === id)),
+  }));
+});
+
+const activeCurrencies = $derived(
+  currencies
+    .map((currency) => ({ code: String(currency.code || "").toUpperCase(), name: currency.name_ar || currency.name || currency.code }))
+    .filter((currency) => currency.code),
 );
 
-const leafAccounts = $derived(ledgers.filter((l) => !parentIds.has(l.id)));
+const visibleCurrencies = $derived(
+  selectedCurrency === "all" ? activeCurrencies : activeCurrencies.filter((currency) => currency.code === selectedCurrency),
+);
 
-// Get leaf accounts recursively under any selected node
-const selectedLeafAccounts = $derived.by(() => {
-  if (!selectedAccountId) return leafAccounts;
-  const selectedAcc = ledgers.find((l) => l.id === selectedAccountId);
-  if (!selectedAcc) return leafAccounts;
+const leafAccounts = $derived(accounts.filter((account) => !accounts.some((candidate) => candidate.parent_id === account.id)));
+const accountItems = $derived(leafAccounts.map((account) => ({
+  id: account.id,
+  value: account.id,
+  label: `${account.code} - ${account.name_ar || account.name || "-"}`,
+})));
+const selectedAccountItem = $derived(accountItems.find((item) => item.value === selectedAccountId));
 
-  // If selected account itself is a leaf account
-  if (!parentIds.has(selectedAcc.id)) {
-    return [selectedAcc];
-  }
+function balanceFor(account: any, code: string) {
+  return Number(account.balances?.[code] || account.balances?.[code.toUpperCase()] || 0);
+}
 
-  // Find all descendant IDs recursively
-  function getDescendantIds(parentId: string): string[] {
-    const descendants: string[] = [];
-    for (const a of ledgers) {
-      if (a.parent_id === parentId) {
-        descendants.push(a.id);
-        descendants.push(...getDescendantIds(a.id));
+function accountRows() {
+  const query = searchQuery.trim().toLowerCase();
+  return accounts
+    .filter((account) => !accounts.some((candidate) => candidate.parent_id === account.id))
+    .filter((account) => selectedIds.has(account.id))
+    .filter((account) => !query || String(account.name_ar || account.name || "").toLowerCase().includes(query) || String(account.code || "").includes(query))
+    .filter((account) => activeView === "all" || account.id === selectedAccountId)
+    .filter((account) => {
+      const balances = visibleCurrencies.map((currency) => balanceFor(account, currency.code));
+      const hasMovement = balances.some((balance) => balance !== 0);
+      const isDebit = balances.some((balance) => balance > 0);
+      const isCredit = balances.some((balance) => balance < 0);
+      return (movementFilter === "all" || hasMovement) &&
+        (balanceFilter === "all" || (balanceFilter === "debit" ? isDebit : isCredit));
+    })
+    .map((account, index) => {
+      const row: Record<string, unknown> = {
+        __idx: index + 1,
+        account_name: account.name_ar || account.name || "-",
+        account_code: account.code || "-",
+        account_type: account.type || account.item_type || "-",
+      };
+      for (const currency of visibleCurrencies) {
+        const balance = balanceFor(account, currency.code);
+        row[`${currency.code}_debit`] = balance > 0 ? formatCurrency(balance, currency.code) : "-";
+        row[`${currency.code}_credit`] = balance < 0 ? formatCurrency(Math.abs(balance), currency.code) : "-";
       }
-    }
-    return descendants;
-  }
-
-  const childIds = getDescendantIds(selectedAcc.id);
-  return leafAccounts.filter(
-    (l) => childIds.includes(l.id) || l.id === selectedAcc.id,
-  );
-});
-
-// Filter rows for "All Accounts" list
-const filteredLedgerRows = $derived.by(() => {
-  let rows = selectedLeafAccounts;
-
-  // Apply search query
-  const q = searchQuery.toLowerCase().trim();
-  if (q) {
-    rows = rows.filter(
-      (r) =>
-        String(r.code).includes(q) ||
-        String(r.name || "")
-          .toLowerCase()
-          .includes(q) ||
-        String(r.name_ar || "")
-          .toLowerCase()
-          .includes(q),
-    );
-  }
-
-  // Apply movement filter
-  if (movementFilter === "active") {
-    rows = rows.filter(
-      (r) =>
-        (r.debit_yer || 0) > 0 ||
-        (r.credit_yer || 0) > 0 ||
-        (r.debit_sar || 0) > 0 ||
-        (r.credit_sar || 0) > 0 ||
-        (r.debit_usd || 0) > 0 ||
-        (r.credit_usd || 0) > 0 ||
-        (r.debit_aed || 0) > 0 ||
-        (r.credit_aed || 0) > 0,
-    );
-  }
-
-  return rows;
-});
-
-// Calculate totals for "All Accounts"
-const allAccountsTotals = $derived.by(() => {
-  let debY = 0,
-    credY = 0;
-  let debS = 0,
-    credS = 0;
-  let debU = 0,
-    credU = 0;
-  let debA = 0,
-    credA = 0;
-
-  for (const r of filteredLedgerRows) {
-    debY += r.debit_yer || 0;
-    credY += r.credit_yer || 0;
-    debS += r.debit_sar || 0;
-    credS += r.credit_sar || 0;
-    debU += r.debit_usd || 0;
-    credU += r.credit_usd || 0;
-    debA += r.debit_aed || 0;
-    credA += r.credit_aed || 0;
-  }
-
-  return { debY, credY, debS, credS, debU, credU, debA, credA };
-});
-
-// Detailed transactions statement derived state
-const statementTotals = $derived.by(() => {
-  if (!statement || !statement.items) return { debit: 0, credit: 0 };
-  let debit = 0;
-  let credit = 0;
-  for (const item of statement.items) {
-    if (item.debit) debit += item.debit;
-    if (item.credit) credit += item.credit;
-  }
-  return { debit, credit };
-});
-
-// Filter transactions in single account
-const filteredItems = $derived.by(() => {
-  if (!statement || !statement.items) return [];
-  const q = searchQuery.toLowerCase().trim();
-  if (!q) return statement.items;
-  return statement.items.filter(
-    (item: any) =>
-      String(item.reference || "")
-        .toLowerCase()
-        .includes(q) ||
-      String(item.description || "")
-        .toLowerCase()
-        .includes(q) ||
-      String(item.description_ar || "")
-        .toLowerCase()
-        .includes(q),
-  );
-});
-
-// COA Tree structure builder
-const treeAccounts = $derived.by(() => {
-  const map: Record<string, any> = {};
-  for (const acc of ledgers) {
-    map[acc.id] = { ...acc, children: [] };
-  }
-
-  const roots: any[] = [];
-  for (const acc of ledgers) {
-    const node = map[acc.id];
-    if (acc.parent_id && map[acc.parent_id]) {
-      map[acc.parent_id].children.push(node);
-    } else {
-      roots.push(node);
-    }
-  }
-
-  // Sort roots by code (e.g. 1, 2, 3, 4, 5)
-  roots.sort((a, b) => String(a.code).localeCompare(String(b.code)));
-  return roots;
-});
-
-// Tree selection actions
-function selectTreeAccount(accId: string) {
-  selectedAccountId = accId;
+      return row;
+    });
 }
 
-function toggleCategoryExpand(catId: string) {
-  expandedCategories[catId] = !expandedCategories[catId];
+function statementRows() {
+  const account = accounts.find((item) => item.id === selectedAccountId);
+  if (!account) return [];
+  const query = searchQuery.trim().toLowerCase();
+  const currency = selectedCurrency === "all" ? String(account.currency || activeCurrencies[0]?.code || "YER").toUpperCase() : selectedCurrency;
+  const rows = payments
+    .filter((payment) => payment.cash_account_id === selectedAccountId || payment.account_id === selectedAccountId || payment.ledger_account_id === selectedAccountId)
+    .filter((payment) => String(payment.currency || currency).toUpperCase() === currency)
+    .map((payment) => ({
+      date: String(payment.paid_at || payment.created_at || "").split("T")[0] || "-",
+      reference: payment.receipt_number || payment.reference || payment.id?.slice(0, 8) || "-",
+      description: payment.notes || payment.payer_name || "Payment",
+      debit: Number(payment.amount || 0),
+      credit: 0,
+    }))
+    .filter((row) => !query || `${row.date} ${row.reference} ${row.description}`.toLowerCase().includes(query))
+    .sort((first, second) => first.date.localeCompare(second.date));
+
+  let running = Number(account.opening_balance || 0);
+  return rows.map((row, index) => {
+    running += row.debit - row.credit;
+    return {
+      __idx: index + 1,
+      date: row.date,
+      reference: row.reference,
+      description: row.description,
+      debit: row.debit ? formatCurrency(row.debit, currency) : "-",
+      credit: row.credit ? formatCurrency(row.credit, currency) : "-",
+      balance: formatCurrency(Math.abs(running), currency),
+    };
+  });
 }
 
-function toggleAccountExpand(accId: string) {
-  expandedAccounts[accId] = !expandedAccounts[accId];
-}
-
-// Arabic Number-to-Words spelling helper
-function arabicNumberToWords(num: number): string {
-  if (num === 0) return "صفر";
-
-  const integerPart = Math.floor(num);
-  const decimalPart = Math.round((num - integerPart) * 100);
-
-  const ones = [
-    "",
-    "واحد",
-    "اثنان",
-    "ثلاثة",
-    "أربعة",
-    "خمسة",
-    "ستة",
-    "سبعة",
-    "ثمانية",
-    "تسعة",
-    "عشرة",
-    "أحد عشر",
-    "اثنا عشر",
-    "ثلاثة عشر",
-    "أربعة عشر",
-    "خمسة عشر",
-    "ستة عشر",
-    "سبعة عشر",
-    "ثمانية عشر",
-    "تسعة عشر",
+const source = $derived(activeView === "single" ? statementRows() : accountRows());
+const columns = $derived.by((): OrbisColumnDef[] => {
+  if (activeView === "single") {
+    return [
+      { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true },
+      { id: "date", prop: "date", header: "Date", name: "Date", width: 115, size: 115, readonly: true },
+      { id: "reference", prop: "reference", header: "Reference", name: "Reference", width: 125, size: 125, readonly: true, cellClass: "font-mono" },
+      { id: "description", prop: "description", header: "Description", name: "Description", width: 260, size: 260, readonly: true },
+      { id: "debit", prop: "debit", header: "Debit", name: "Debit", width: 130, size: 130, readonly: true, cellClass: "orbis-cell-number" },
+      { id: "credit", prop: "credit", header: "Credit", name: "Credit", width: 130, size: 130, readonly: true, cellClass: "orbis-cell-number" },
+      { id: "balance", prop: "balance", header: "Running balance", name: "Running balance", width: 145, size: 145, readonly: true, cellClass: "orbis-cell-number" },
+    ];
+  }
+  const currencyColumns = visibleCurrencies.flatMap((currency) => [
+    { id: `${currency.code}_debit`, prop: `${currency.code}_debit`, header: `${currency.name} - Debit`, name: `${currency.name} - Debit`, width: 125, size: 125, readonly: true, cellClass: "orbis-cell-number" },
+    { id: `${currency.code}_credit`, prop: `${currency.code}_credit`, header: `${currency.name} - Credit`, name: `${currency.name} - Credit`, width: 125, size: 125, readonly: true, cellClass: "orbis-cell-number" },
+  ]);
+  return [
+    { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true },
+    { id: "account_name", prop: "account_name", header: m.common_ledger_col_name(), name: m.common_ledger_col_name(), width: 220, size: 220, readonly: true },
+    { id: "account_code", prop: "account_code", header: m.common_ledger_col_code(), name: m.common_ledger_col_code(), width: 105, size: 105, readonly: true, cellClass: "font-mono" },
+    ...currencyColumns,
+    { id: "account_type", prop: "account_type", header: "Type", name: "Type", width: 110, size: 110, readonly: true },
   ];
-  const tens = [
-    "",
-    "",
-    "عشرون",
-    "ثلاثون",
-    "أربعون",
-    "خمسون",
-    "ستون",
-    "سبعون",
-    "ثمانون",
-    "تسعون",
-  ];
-  const hundreds = [
-    "",
-    "مائة",
-    "مائتان",
-    "ثلاثمائة",
-    "أربعمائة",
-    "خمسمائة",
-    "ستمائة",
-    "سبعمائة",
-    "ثمانمائة",
-    "تسعمائة",
-  ];
-
-  function convertGroup(n: number): string {
-    let parts = [];
-    const h = Math.floor(n / 100);
-    const remainder = n % 100;
-
-    if (h > 0) parts.push(hundreds[h]);
-
-    if (remainder > 0) {
-      if (remainder < 20) {
-        parts.push(ones[remainder]);
-      } else {
-        const o = remainder % 10;
-        const t = Math.floor(remainder / 10);
-        if (o > 0) {
-          parts.push(`${ones[o]} و ${tens[t]}`);
-        } else {
-          parts.push(tens[t]);
-        }
-      }
-    }
-    return parts.join(" و ");
-  }
-
-  let parts = [];
-  let temp = integerPart;
-
-  const billions = Math.floor(temp / 1000000000);
-  temp %= 1000000000;
-  if (billions > 0) {
-    parts.push(
-      billions === 1
-        ? "مليار"
-        : billions === 2
-          ? "ملياران"
-          : `${convertGroup(billions)} مليارات`,
-    );
-  }
-
-  const millions = Math.floor(temp / 1000000);
-  temp %= 1000000;
-  if (millions > 0) {
-    parts.push(
-      millions === 1
-        ? "مليون"
-        : millions === 2
-          ? "مليونان"
-          : `${convertGroup(millions)} ملايين`,
-    );
-  }
-
-  const thousands = Math.floor(temp / 1000);
-  temp %= 1000;
-  if (thousands > 0) {
-    parts.push(
-      thousands === 1
-        ? "ألف"
-        : thousands === 2
-          ? "ألفان"
-          : `${convertGroup(thousands)} آلاف`,
-    );
-  }
-
-  if (temp > 0) {
-    parts.push(convertGroup(temp));
-  }
-
-  let arabicString = parts.join(" و ");
-
-  if (decimalPart > 0) {
-    arabicString += ` و ${convertGroup(decimalPart)} جزءاً من المائة`;
-  }
-
-  return arabicString;
-}
-
-// Derived text for running balance spelling
-const runningBalanceText = $derived.by(() => {
-  if (!statement) return "";
-  const net = statement.closing_balance;
-  const word = arabicNumberToWords(Math.abs(net));
-  const prefix = net >= 0 ? "الرصيد لكم: " : "الرصيد عليكم: ";
-  return prefix + word;
 });
 
-// CSV Export
-function exportToCsv() {
-  let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // UTF-8 BOM for Excel Arabic support
-
-  if (activeTab === "all") {
-    csvContent +=
-      "كود الحساب,اسم الحساب,مدين يمني,دائن يمني,مدين سعودي,دائن سعودي,مدين دولار,دائن دولار,مدين درهم,دائن درهم\n";
-    for (const r of filteredLedgerRows) {
-      csvContent += `="${r.code}","${r.name_ar || r.name}",${r.debit_yer},${r.credit_yer},${r.debit_sar},${r.credit_sar},${r.debit_usd},${r.credit_usd},${r.debit_aed},${r.credit_aed}\n`;
-    }
-  } else {
-    if (!statement) return;
-    csvContent += `كشف حساب تفصيلي للحساب: ${statement.account_code} - ${statement.account_name}\n`;
-    csvContent += `الفترة من: ${startDate} إلى: ${endDate}\n\n`;
-    csvContent += "التاريخ,المرجع,البيان,مدين,دائن,الرصيد التراكمي\n";
-    csvContent += `${statement.start_date},OPENING,رصيد أول المدة الافتتاحي,-,-,${statement.opening_balance}\n`;
-    for (const item of filteredItems) {
-      csvContent += `"${item.date}","${item.reference}","${item.description_ar || item.description}",${item.debit || 0},${item.credit || 0},${item.running_balance}\n`;
-    }
-  }
-
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute(
-    "download",
-    activeTab === "all"
-      ? "ledger_all_accounts.csv"
-      : `statement_${statement?.account_code || "account"}.csv`,
-  );
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
-
-function handlePrint() {
-  window.print();
+function selectAccount(account: any) {
+  selectedAccountId = account.id;
+  activeView = "single";
 }
 
 function exitPage() {
-  goto(`/${orgId}/finance`);
-}
-
-function handleWindowClick(event: MouseEvent) {
-  const target = event.target as HTMLElement;
-  if (!target.closest(".combobox-container")) {
-    isCodeDropdownOpen = false;
-    isNameDropdownOpen = false;
-  }
+  goto(`/${data.orgId}/finance`);
 }
 </script>
 
-<svelte:window onclick={handleWindowClick} />
-
-<div class="h-full w-full flex overflow-hidden bg-background">
-  <!-- ════ Right Sidebar: Accounts Hierarchical Tree Selector (RTL default) ════ -->
-  <div class="w-80 border-r border-border bg-card/40 flex flex-col shrink-0 select-none print:hidden">
-    <div class="p-4 border-b border-border flex items-center justify-between">
-      <h3 class="text-xs font-bold text-foreground">{m.finance_statement_chart_guide()}</h3>
-      <Button variant="ghost" size="xs" onclick={() => isCoadTreeExpanded = !isCoadTreeExpanded}>
-        {isCoadTreeExpanded ? "طي الكل" : "عرض الكل"}
-      </Button>
-    </div>
-
-    <div class="flex-1 overflow-y-auto p-3 text-xs">
-      {#if isLoadingLedgers}
-        <div class="flex flex-col gap-2.5">
-          {#each Array(8) as _}
-            <Skeleton class="h-6 w-full rounded" />
-          {/each}
+<div class="flex h-full min-h-0 w-full flex-col overflow-hidden bg-background text-foreground">
+  <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-6 lg:flex-row">
+    <aside class="flex w-full shrink-0 flex-col gap-3 lg:w-64">
+      <AccountTree categories={treeCategories} bind:selectedIds={selectedIds} />
+      <div class="flex flex-col gap-3 border-t border-border/70 pt-3">
+        <div class="flex flex-col gap-1"><CurrencySelector title={m.common_ledger_currency()} description="" compact includeAll allLabel={m.common_ledger_all_currencies()} currentCurrency={selectedCurrency} onchange={(currency) => selectedCurrency = currency} /></div>
+        <div class="grid grid-cols-2 gap-2">
+          <label class="flex flex-col gap-1 text-[9px] font-bold text-muted-foreground">Period
+            <select bind:value={period} class="h-8 rounded-md border border-border bg-card px-2 text-xs text-foreground"><option value="all">All periods</option><option value="day">Today</option><option value="month">This month</option><option value="year">This year</option></select>
+          </label>
+          <label class="flex flex-col gap-1 text-[9px] font-bold text-muted-foreground">As of
+            <Input type="date" bind:value={asOfDate} class="h-8 px-2 text-xs" />
+          </label>
         </div>
-      {:else}
-        <!-- Recursive snippet for nodes -->
-        {#snippet renderNodes(nodes: any[], depth: number)}
-          {#each nodes as node (node.id)}
-            {@const isParent = parentIds.has(node.id)}
-            {@const isExpanded = expandedAccounts[node.id]}
-            {@const isSelected = selectedAccountId === node.id}
-            
-            <div class="flex flex-col">
-              <div
-                class="flex items-center justify-between hover:bg-muted/40 px-2 py-1.5 rounded-lg gap-2 cursor-pointer transition-colors {isSelected ? 'bg-primary/10 text-primary font-bold border border-primary/20' : 'text-foreground'}"
-                style="margin-inline-start: {depth * 10}px"
-                onclick={() => selectTreeAccount(node.id)}
-                role="button"
-                tabindex="0"
-                onkeydown={(e) => e.key === 'Enter' && selectTreeAccount(node.id)}
-              >
-                <div class="flex items-center gap-1.5 min-w-0">
-                  {#if isParent}
-                    <button
-                      type="button"
-                      onclick={(e) => {
-                        e.stopPropagation();
-                        toggleAccountExpand(node.id);
-                      }}
-                      class="p-0.5 text-muted-foreground hover:text-foreground"
-                    >
-                      {#if isExpanded}
-                        <ChevronDown size={11} />
-                      {:else}
-                        <ChevronRight size={11} class={getLocale() === "ar" ? "rotate-180" : ""} />
-                      {/if}
-                    </button>
-                    <FolderOpen size={11} class="text-primary/75 shrink-0" />
-                  {:else}
-                    <span class="w-3.5 shrink-0"></span>
-                    <FileText size={11} class="text-muted-foreground shrink-0" />
-                  {/if}
-                  <span class="truncate font-semibold text-[11px]">{node.name_ar || node.name}</span>
-                </div>
-                <span class="font-mono text-[9px] text-muted-foreground bg-muted/60 px-1 py-0.5 rounded border border-border/40 shrink-0 select-text">{node.code}</span>
-              </div>
+        <label class="flex items-center justify-between gap-2 text-[10px] text-muted-foreground">Show active accounts
+          <input type="checkbox" checked={movementFilter === "active"} onchange={(event) => movementFilter = (event.currentTarget as HTMLInputElement).checked ? "active" : "all"} class="accent-primary" />
+        </label>
+        <select bind:value={balanceFilter} class="h-8 rounded-md border border-border bg-card px-2 text-xs text-foreground"><option value="all">All balances</option><option value="debit">Debit balances</option><option value="credit">Credit balances</option></select>
+      </div>
+      <Button variant="ghost" class="justify-start text-xs text-muted-foreground" onclick={exitPage}>{#if getLocale() === "ar"}<ArrowRight size={14} class="me-2" />{:else}<ArrowLeft size={14} class="me-2" />{/if}Back to finance</Button>
+    </aside>
 
-              {#if isParent && isExpanded}
-                <div class="flex flex-col">
-                  {@render renderNodes(node.children, depth + 1)}
-                </div>
-              {/if}
-            </div>
-          {/each}
-        {/snippet}
-
-        <!-- Tree root -->
-        <div class="flex flex-col gap-1.5">
-          <div class="flex items-center justify-between hover:bg-muted/40 px-2 py-1.5 rounded-lg font-bold cursor-pointer">
-            <button
-              type="button"
-              class="flex items-center gap-1.5 text-foreground hover:text-primary flex-1 text-start"
-              onclick={() => isCoadTreeExpanded = !isCoadTreeExpanded}
-            >
-              {#if isCoadTreeExpanded}
-                <ChevronDown size={12} class="text-muted-foreground" />
-                <FolderOpen size={12} class="text-primary" />
-              {:else}
-                <ChevronRight size={12} class="text-muted-foreground {getLocale() === 'ar' ? 'rotate-180' : ''}" />
-                <Folder size={12} class="text-primary" />
-              {/if}
-              <span>{m.finance_ledger_chart_of_accounts()}</span>
-            </button>
-            <button
-              type="button"
-              onclick={() => { selectedAccountId = ""; }}
-              class="text-[9px] font-bold text-muted-foreground hover:text-primary px-1.5 py-0.5 bg-muted/60 rounded border border-border/40 shrink-0"
-            >
-              إلغاء التحديد
-            </button>
-          </div>
-
-          {#if isCoadTreeExpanded}
-            <div class="flex flex-col gap-1 mt-1 ps-2 border-r border-border/40 mr-1">
-              {@render renderNodes(treeAccounts, 0)}
-            </div>
-          {/if}
+    <main class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <div class="mb-3 flex shrink-0 items-center justify-between gap-3">
+        <div class="flex items-center gap-1 rounded-md border border-border bg-card p-1">
+          <button type="button" class="rounded px-3 py-1.5 text-xs font-semibold transition-colors {activeView === 'all' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}" onclick={() => activeView = "all"}>All accounts</button>
+          <button type="button" class="rounded px-3 py-1.5 text-xs font-semibold transition-colors {activeView === 'single' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}" onclick={() => activeView = "single"}>Single account</button>
         </div>
-      {/if}
-    </div>
-  </div>
-
-  <!-- ════ Main Section: Master View / Details View ════ -->
-  <div class="flex-1 flex flex-col overflow-hidden bg-background p-6">
-    <div class="flex items-center justify-end gap-2 pb-3 select-none border-b border-border print:hidden">
-      <Button variant="outline" size="sm" onclick={exportToCsv} class="h-8 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer">
-        <FileSpreadsheet size={13} />
-        <span>{m.finance_statement_export_csv()}</span>
-      </Button>
-      <Button variant="outline" size="sm" onclick={handlePrint} class="h-8 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer">
-        <Printer size={13} />
-        <span>{m.finance_statement_print()}</span>
-      </Button>
-    </div>
-
-    <!-- Filter Control Box -->
-    <div class="bg-muted/20 border border-border/50 rounded-xl p-4 mt-4 mb-4 flex flex-col gap-4 select-none print:hidden">
-      <div class="flex items-center justify-between border-b border-border/40 pb-3">
-        <!-- Tabs selector -->
-        <div class="flex border border-border bg-muted/40 rounded-lg p-0.5 text-[11px] font-bold">
-          <button
-            onclick={() => activeTab = "all"}
-            class="px-5 py-1.5 rounded-md transition-all duration-150 {activeTab === 'all' ? 'bg-primary text-primary-foreground shadow font-bold' : 'text-muted-foreground hover:text-foreground font-semibold'}"
-          >
-            كافة الحسابات (All Leaf Accounts)
-          </button>
-          <button
-            onclick={() => activeTab = "single"}
-            class="px-5 py-1.5 rounded-md transition-all duration-150 {activeTab === 'single' ? 'bg-primary text-primary-foreground shadow font-bold' : 'text-muted-foreground hover:text-foreground font-semibold'}"
-          >
-            حساب واحد (Single Account Statement)
-          </button>
-        </div>
-
-        <span class="text-[10px] text-muted-foreground/80 font-bold bg-muted/50 border border-border/40 px-3 py-1 rounded-md">
-          {activeTab === 'all' ? 'عرض كشف الميزان التفصيلي' : 'كشف حساب تفصيلي جاري'}
-        </span>
+        {#if activeView === "single"}
+          <ComboboxDropdown
+            class="w-64"
+            placeholder="Search account..."
+            searchPlaceholder="Search by account name or code..."
+            items={accountItems}
+            selectedItem={selectedAccountItem}
+            onSelect={(item) => selectAccount(accounts.find((account) => account.id === item.value))}
+          />
+        {/if}
       </div>
 
-      <!-- Filters depending on Tab selection -->
-      <div class="flex flex-col gap-3">
-        {#if activeTab === "single"}
-          <!-- Combobox row for Single account select -->
-          <div class="flex flex-wrap gap-4 items-center">
-            <!-- Account name search combobox -->
-            <div class="flex-1 min-w-[200px] flex flex-col gap-1 text-[10px] font-bold text-muted-foreground combobox-container relative">
-              <span>{m.finance_statement_search_ledger()}</span>
-              <div class="relative">
-                <input
-                  type="text"
-                  placeholder="اكتب الاسم للبحث وتحديد الحساب..."
-                  bind:value={accountNameQuery}
-                  onfocus={() => isNameDropdownOpen = true}
-                  disabled={isLoadingLedgers}
-                  class="w-full bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-ring disabled:opacity-50 text-start cursor-pointer"
-                />
-                {#if isNameDropdownOpen && !isLoadingLedgers}
-                  <div class="absolute z-50 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded-md shadow-lg flex flex-col p-1 text-[10px]" transition:fade={{ duration: 80 }}>
-                    {#if searchedAccountsByName.length === 0}
-                      <span class="text-[10px] text-muted-foreground p-2 text-center">{m.finance_statement_no_match()}</span>
-                    {:else}
-                      {#each searchedAccountsByName as acc (acc.id)}
-                        <button
-                          type="button"
-                          onclick={() => selectAccount(acc)}
-                          class="w-full text-start px-2 py-1.5 rounded hover:bg-accent hover:text-accent-foreground {selectedAccountId === acc.id ? 'bg-primary/10 text-primary font-bold' : 'text-foreground'}"
-                        >
-                          {acc.code} - {acc.name_ar || acc.name}
-                        </button>
-                      {/each}
-                    {/if}
-                  </div>
-                {/if}
-              </div>
-            </div>
-
-            <!-- Account code search combobox -->
-            <div class="w-32 flex flex-col gap-1 text-[10px] font-bold text-muted-foreground combobox-container relative">
-              <span>{m.finance_ledger_account_code()}</span>
-              <div class="relative">
-                <input
-                  type="text"
-                  placeholder="كود..."
-                  bind:value={accountCodeQuery}
-                  onfocus={() => isCodeDropdownOpen = true}
-                  disabled={isLoadingLedgers}
-                  class="w-full bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs font-mono outline-none focus:ring-1 focus:ring-ring disabled:opacity-50 text-start cursor-pointer"
-                />
-                {#if isCodeDropdownOpen && !isLoadingLedgers}
-                  <div class="absolute z-50 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded-md shadow-lg flex flex-col p-1 text-[10px]" transition:fade={{ duration: 80 }}>
-                    {#if searchedAccountsByCode.length === 0}
-                      <span class="text-[10px] text-muted-foreground p-2 text-center">{m.finance_statement_none()}</span>
-                    {:else}
-                      {#each searchedAccountsByCode as acc (acc.id)}
-                        <button
-                          type="button"
-                          onclick={() => selectAccount(acc)}
-                          class="w-full text-start px-2 py-1.5 rounded hover:bg-accent hover:text-accent-foreground font-mono {selectedAccountId === acc.id ? 'bg-primary/10 text-primary font-bold' : 'text-foreground'}"
-                        >
-                          {acc.code}
-                        </button>
-                      {/each}
-                    {/if}
-                  </div>
-                {/if}
-              </div>
-            </div>
-
-            <!-- Date Selectors -->
-            <div class="flex items-center gap-2">
-              <div class="flex flex-col gap-1 text-[10px] font-bold text-muted-foreground">
-                <span>{m.common_year_start_date()}</span>
-                <Input type="date" bind:value={startDate} class="h-8 text-xs w-[130px]" />
-              </div>
-              <div class="flex flex-col gap-1 text-[10px] font-bold text-muted-foreground">
-                <span>{m.common_year_end_date()}</span>
-                <Input type="date" bind:value={endDate} class="h-8 text-xs w-[130px]" />
-              </div>
-            </div>
-          </div>
-        {:else}
-          <!-- All accounts filter row -->
-          <div class="flex flex-wrap gap-4 items-center">
-            <!-- Currency selector filter -->
-            <div class="w-48 flex flex-col gap-1 text-[10px] font-bold text-muted-foreground">
-              <span>{m.finance_statement_active_currency()}</span>
-              <select
-                bind:value={selectedCurrency}
-                class="bg-background text-foreground border border-border rounded-md px-3 h-8.5 text-xs outline-none focus:ring-1 focus:ring-ring cursor-pointer"
-              >
-                <option value="all">{m.finance_statement_all_currencies()}</option>
-                {#if dbCurrencies.length > 0}
-                  {#each dbCurrencies as c}
-                    <option value={c.code}>{c.code} {c.name_ar ? `(${c.name_ar})` : c.name ? `(${c.name})` : ""}</option>
-                  {/each}
-                {:else}
-                  <option value="YER">YER (ريال يمني)</option>
-                  <option value="SAR">SAR (ريال سعودي)</option>
-                  <option value="USD">USD (دولار أمريكي)</option>
-                  <option value="AED">AED (درهم إماراتي)</option>
-                {/if}
-              </select>
-            </div>
-
-            <!-- Movement status filter -->
-            <div class="w-48 flex flex-col gap-1 text-[10px] font-bold text-muted-foreground">
-              <span>{m.finance_statement_display_accounts()}</span>
-              <select
-                bind:value={movementFilter}
-                class="bg-background text-foreground border border-border rounded-md px-3 h-8.5 text-xs outline-none focus:ring-1 focus:ring-ring cursor-pointer"
-              >
-                <option value="all">{m.common_ledger_tab_all()}</option>
-                <option value="active">{m.finance_statement_accounts_with_transactions()}</option>
-              </select>
-            </div>
-
-            <!-- Live instant search -->
-            <div class="grow flex flex-col gap-1 text-[10px] font-bold text-muted-foreground min-w-[200px]">
-              <span>{m.finance_statement_quick_search()}</span>
-              <div class="relative">
-                <Search class="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="ابحث برقم الحساب أو الاسم..."
-                  bind:value={searchQuery}
-                  class="pl-8.5 h-8.5 text-xs"
-                />
-              </div>
-            </div>
-          </div>
-        {/if}
-      </div>
-    </div>
-
-    <!-- Print-only Title Info -->
-    <div class="hidden print:flex flex-col gap-1.5 text-center pb-6 border-b border-border/80 select-none">
-      <h2 class="text-xl font-bold">{m.finance_statement_unified_financial()}</h2>
-      <p class="text-xs font-semibold text-muted-foreground">
-        {#if activeTab === "all"}
-          كشف ميزان المراجعة والأستاذ لكافة الحسابات الطرفية
-        {:else if statement}
-          الحساب: {statement.account_code} - {statement.account_name} | الفترة: {formatDate(statement.start_date)} إلى {formatDate(statement.end_date)}
-        {/if}
-      </p>
-    </div>
-
-    <!-- ════ Main Content Area ════ -->
-    <div class="flex-1 overflow-y-auto py-2">
-      {#if activeTab === "all"}
-        <!-- ════ TAB: ALL ACCOUNTS ════ -->
-        {#if isLoadingLedgers}
-          <div class="flex flex-col gap-3">
-            {#each Array(6) as _}
-              <Skeleton class="h-10 w-full rounded" />
-            {/each}
-          </div>
-        {:else if filteredLedgerRows.length === 0}
-          <div class="border border-dashed border-border rounded-2xl p-16 flex flex-col items-center justify-center text-center gap-2 select-none my-8">
-            <ClipboardList size={30} class="text-muted-foreground/60 mb-2" />
-            <h3 class="text-sm font-bold text-foreground">{m.finance_statement_no_filtered_accounts()}</h3>
-            <p class="text-xs text-muted-foreground max-w-xs leading-relaxed">
-              لم نجد أي حساب طرفي مسجل أسفل العقدة المحددة يطابق الكلمة المدخلة في البحث.
-            </p>
-          </div>
-        {:else}
-          <!-- Check if Selected Currency is ALL or specific currency -->
-          {#if selectedCurrency === "all"}
-            <!-- Multi-Currency Trial Balance Excel Grid Layout -->
-            <div class="border border-border/60 rounded-xl overflow-hidden bg-card/10 shadow-sm print:border-none print:shadow-none min-w-[850px] overflow-x-auto">
-              <Table class="border-collapse w-full">
-                <TableHeader class="bg-muted/40 select-none print:bg-transparent">
-                  <TableRow class="hover:bg-transparent border-b border-border/80 text-[10px] font-bold text-foreground">
-                    <TableHead class="w-10 border-l border-border/40 text-center font-bold font-mono">#</TableHead>
-                    <TableHead colspan={2} class="border-l border-border/40 text-center bg-primary/5 text-primary">ريال يمني (YER)</TableHead>
-                    <TableHead colspan={2} class="border-l border-border/40 text-center bg-emerald-500/5 text-emerald-600">سعودي (SAR)</TableHead>
-                    <TableHead colspan={2} class="border-l border-border/40 text-center bg-blue-500/5 text-blue-600">دولار (USD)</TableHead>
-                    <TableHead colspan={2} class="border-l border-border/40 text-center bg-purple-500/5 text-purple-600">درهم (AED)</TableHead>
-                    <TableHead class="text-start border-l border-border/40">{m.finance_statement_terminal_account()}</TableHead>
-                    <TableHead class="text-center border-l border-border/40 w-24">{m.common_ledger_col_code()}</TableHead>
-                    <TableHead class="text-center w-16">{m.common_audit_col_action()}</TableHead>
-                  </TableRow>
-                  <TableRow class="hover:bg-transparent border-b border-border/80 text-[9px] font-bold">
-                    <TableHead class="border-l border-border/40"></TableHead>
-                    <TableHead class="text-center border-l border-border/20 text-red-500 w-20">{m.common_ledger_col_debit()}</TableHead>
-                    <TableHead class="text-center border-l border-border/40 text-emerald-500 w-20">{m.finance_reports_credit()}</TableHead>
-                    <TableHead class="text-center border-l border-border/20 text-red-500 w-20">{m.common_ledger_col_debit()}</TableHead>
-                    <TableHead class="text-center border-l border-border/40 text-emerald-500 w-20">{m.finance_reports_credit()}</TableHead>
-                    <TableHead class="text-center border-l border-border/20 text-red-500 w-20">{m.common_ledger_col_debit()}</TableHead>
-                    <TableHead class="text-center border-l border-border/40 text-emerald-500 w-20">{m.finance_reports_credit()}</TableHead>
-                    <TableHead class="text-center border-l border-border/20 text-red-500 w-20">{m.common_ledger_col_debit()}</TableHead>
-                    <TableHead class="text-center border-l border-border/40 text-emerald-500 w-20">{m.finance_reports_credit()}</TableHead>
-                    <TableHead class="border-l border-border/40"></TableHead>
-                    <TableHead class="border-l border-border/40"></TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {#each filteredLedgerRows as row, idx (row.id)}
-                    <TableRow class="hover:bg-muted/20 border-b border-border/30 text-[11px] leading-normal font-semibold">
-                      <TableCell class="border-l border-border/40 text-center text-muted-foreground font-mono select-none">{idx + 1}</TableCell>
-                      
-                      <!-- YER -->
-                      <TableCell class="border-l border-border/20 text-center font-mono {row.debit_yer > 0 ? 'text-foreground font-extrabold' : 'text-muted-foreground/30'}">
-                        {row.debit_yer > 0 ? formatCurrency(row.debit_yer, "").replace(/YER|SAR|USD|AED/g, "") : "0"}
-                      </TableCell>
-                      <TableCell class="border-l border-border/40 text-center font-mono {row.credit_yer > 0 ? 'text-foreground font-extrabold' : 'text-muted-foreground/30'}">
-                        {row.credit_yer > 0 ? formatCurrency(row.credit_yer, "").replace(/YER|SAR|USD|AED/g, "") : "0"}
-                      </TableCell>
-
-                      <!-- SAR -->
-                      <TableCell class="border-l border-border/20 text-center font-mono {row.debit_sar > 0 ? 'text-foreground font-extrabold' : 'text-muted-foreground/30'}">
-                        {row.debit_sar > 0 ? formatCurrency(row.debit_sar, "").replace(/YER|SAR|USD|AED/g, "") : "0"}
-                      </TableCell>
-                      <TableCell class="border-l border-border/40 text-center font-mono {row.credit_sar > 0 ? 'text-foreground font-extrabold' : 'text-muted-foreground/30'}">
-                        {row.credit_sar > 0 ? formatCurrency(row.credit_sar, "").replace(/YER|SAR|USD|AED/g, "") : "0"}
-                      </TableCell>
-
-                      <!-- USD -->
-                      <TableCell class="border-l border-border/20 text-center font-mono {row.debit_usd > 0 ? 'text-foreground font-extrabold' : 'text-muted-foreground/30'}">
-                        {row.debit_usd > 0 ? formatCurrency(row.debit_usd, "").replace(/YER|SAR|USD|AED/g, "") : "0"}
-                      </TableCell>
-                      <TableCell class="border-l border-border/40 text-center font-mono {row.credit_usd > 0 ? 'text-foreground font-extrabold' : 'text-muted-foreground/30'}">
-                        {row.credit_usd > 0 ? formatCurrency(row.credit_usd, "").replace(/YER|SAR|USD|AED/g, "") : "0"}
-                      </TableCell>
-
-                      <!-- AED -->
-                      <TableCell class="border-l border-border/20 text-center font-mono {row.debit_aed > 0 ? 'text-foreground font-extrabold' : 'text-muted-foreground/30'}">
-                        {row.debit_aed > 0 ? formatCurrency(row.debit_aed, "").replace(/YER|SAR|USD|AED/g, "") : "0"}
-                      </TableCell>
-                      <TableCell class="border-l border-border/40 text-center font-mono {row.credit_aed > 0 ? 'text-foreground font-extrabold' : 'text-muted-foreground/30'}">
-                        {row.credit_aed > 0 ? formatCurrency(row.credit_aed, "").replace(/YER|SAR|USD|AED/g, "") : "0"}
-                      </TableCell>
-
-                      <!-- Meta info -->
-                      <TableCell class="border-l border-border/40 text-start font-bold text-foreground truncate max-w-[180px]">{row.name_ar || row.name}</TableCell>
-                      <TableCell class="border-l border-border/40 text-center font-mono text-muted-foreground font-bold">{row.code}</TableCell>
-                      
-                      <!-- Drill down button -->
-                      <TableCell class="text-center print:hidden">
-                        <Button
-                          variant="ghost"
-                          size="xs"
-                          class="h-6 w-12 text-[10px] text-primary hover:underline hover:bg-primary/5 cursor-pointer font-bold shrink-0 p-0"
-                          onclick={() => {
-                            selectedAccountId = row.id;
-                            activeTab = "single";
-                          }}
-                        >
-                          تفاصيل
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  {/each}
-                </TableBody>
-
-                <!-- Grid Totals Footer -->
-                <tfoot>
-                  <TableRow class="bg-muted/40 hover:bg-transparent font-bold font-mono text-[11px] border-t-2 border-border/80">
-                    <TableCell class="border-l border-border/40 text-center text-foreground">∑</TableCell>
-                    
-                    <!-- YER -->
-                    <TableCell class="border-l border-border/20 text-center text-red-500 font-extrabold">
-                      {allAccountsTotals.debY > 0 ? formatCurrency(allAccountsTotals.debY, "").replace(/YER|SAR|USD|AED/g, "") : "0"}
-                    </TableCell>
-                    <TableCell class="border-l border-border/40 text-center text-emerald-500 font-extrabold">
-                      {allAccountsTotals.credY > 0 ? formatCurrency(allAccountsTotals.credY, "").replace(/YER|SAR|USD|AED/g, "") : "0"}
-                    </TableCell>
-
-                    <!-- SAR -->
-                    <TableCell class="border-l border-border/20 text-center text-red-500 font-extrabold">
-                      {allAccountsTotals.debS > 0 ? formatCurrency(allAccountsTotals.debS, "").replace(/YER|SAR|USD|AED/g, "") : "0"}
-                    </TableCell>
-                    <TableCell class="border-l border-border/40 text-center text-emerald-500 font-extrabold">
-                      {allAccountsTotals.credS > 0 ? formatCurrency(allAccountsTotals.credS, "").replace(/YER|SAR|USD|AED/g, "") : "0"}
-                    </TableCell>
-
-                    <!-- USD -->
-                    <TableCell class="border-l border-border/20 text-center text-red-500 font-extrabold">
-                      {allAccountsTotals.debU > 0 ? formatCurrency(allAccountsTotals.debU, "").replace(/YER|SAR|USD|AED/g, "") : "0"}
-                    </TableCell>
-                    <TableCell class="border-l border-border/40 text-center text-emerald-500 font-extrabold">
-                      {allAccountsTotals.credU > 0 ? formatCurrency(allAccountsTotals.credU, "").replace(/YER|SAR|USD|AED/g, "") : "0"}
-                    </TableCell>
-
-                    <!-- AED -->
-                    <TableCell class="border-l border-border/20 text-center text-red-500 font-extrabold">
-                      {allAccountsTotals.debA > 0 ? formatCurrency(allAccountsTotals.debA, "").replace(/YER|SAR|USD|AED/g, "") : "0"}
-                    </TableCell>
-                    <TableCell class="border-l border-border/40 text-center text-emerald-500 font-extrabold">
-                      {allAccountsTotals.credA > 0 ? formatCurrency(allAccountsTotals.credA, "").replace(/YER|SAR|USD|AED/g, "") : "0"}
-                    </TableCell>
-
-                    <TableCell class="border-l border-border/40 text-start text-foreground uppercase tracking-wider text-[10px] font-bold">{m.finance_ledger_grand_total()}</TableCell>
-                    <TableCell class="border-l border-border/40 text-center font-bold font-mono">-</TableCell>
-                    <TableCell class="text-center print:hidden">-</TableCell>
-                  </TableRow>
-                </tfoot>
-              </Table>
-            </div>
-          {:else}
-            <!-- Specific Single Currency Selected: simpler layout -->
-            <div class="border border-border/60 rounded-xl overflow-hidden bg-card/10 shadow-sm print:border-none print:shadow-none w-full">
-              <Table class="border-collapse w-full">
-                <TableHeader class="bg-muted/40 select-none print:bg-transparent">
-                  <TableRow class="hover:bg-transparent border-b border-border/80 text-[10px] font-bold text-foreground">
-                    <TableHead class="w-10 border-l border-border/40 text-center font-bold font-mono">#</TableHead>
-                    <TableHead class="text-center border-l border-border/40 w-32">{m.common_ledger_label_opening_balance()}</TableHead>
-                    <TableHead class="text-center border-l border-border/40 text-red-500 w-32">{m.finance_statement_transaction_debit()}</TableHead>
-                    <TableHead class="text-center border-l border-border/40 text-emerald-500 w-32">{m.finance_statement_transaction_credit()}</TableHead>
-                    <TableHead class="text-center border-l border-border/40 w-32">{m.finance_col_balance()}</TableHead>
-                    <TableHead class="text-start border-l border-border/40">{m.common_ledger_col_name()}</TableHead>
-                    <TableHead class="text-center border-l border-border/40 w-32">{m.common_ledger_col_code()}</TableHead>
-                    <TableHead class="text-center w-20">{m.common_audit_col_action()}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {#each filteredLedgerRows as row, idx (row.id)}
-                    {@const isDebitType = row.item_type === "asset" || row.item_type === "expense"}
-                    {@const ob = row.currency === selectedCurrency ? (row.opening_balance || 0) : 0}
-                    {@const deb = selectedCurrency === "YER" ? row.debit_yer : selectedCurrency === "SAR" ? row.debit_sar : selectedCurrency === "USD" ? row.debit_usd : row.debit_aed}
-                    {@const cred = selectedCurrency === "YER" ? row.credit_yer : selectedCurrency === "SAR" ? row.credit_sar : selectedCurrency === "USD" ? row.credit_usd : row.credit_aed}
-                    {@const bal = ob + (isDebitType ? (deb - cred) : (cred - deb))}
-                    
-                    <TableRow class="hover:bg-muted/20 border-b border-border/30 text-[11px] font-semibold">
-                      <TableCell class="border-l border-border/40 text-center text-muted-foreground font-mono select-none">{idx + 1}</TableCell>
-                      <TableCell class="border-l border-border/40 text-center font-mono">{formatCurrency(ob, selectedCurrency)}</TableCell>
-                      <TableCell class="border-l border-border/40 text-center font-mono text-red-500">{deb > 0 ? formatCurrency(deb, selectedCurrency) : "0"}</TableCell>
-                      <TableCell class="border-l border-border/40 text-center font-mono text-emerald-500">{cred > 0 ? formatCurrency(cred, selectedCurrency) : "0"}</TableCell>
-                      <TableCell class="border-l border-border/40 text-center font-mono font-extrabold">{formatCurrency(bal, selectedCurrency)}</TableCell>
-                      <TableCell class="border-l border-border/40 text-start font-bold text-foreground">{row.name_ar || row.name}</TableCell>
-                      <TableCell class="border-l border-border/40 text-center font-mono text-muted-foreground font-bold">{row.code}</TableCell>
-                      <TableCell class="text-center print:hidden">
-                        <Button
-                          variant="ghost"
-                          size="xs"
-                          class="h-6 w-12 text-[10px] text-primary hover:underline hover:bg-primary/5 cursor-pointer font-bold shrink-0 p-0"
-                          onclick={() => {
-                            selectedAccountId = row.id;
-                            activeTab = "single";
-                          }}
-                        >
-                          تفاصيل
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  {/each}
-                </TableBody>
-              </Table>
-            </div>
-          {/if}
-        {/if}
+      {#if error}
+        <div class="flex flex-1 flex-col items-center justify-center gap-3 text-center"><p class="text-sm font-semibold text-destructive">{m.finance_error_loading()}</p><p class="max-w-md text-xs text-muted-foreground">{error}</p><Button variant="outline" size="sm" onclick={loadData}>{m.common_retry()}</Button></div>
+      {:else if isLoading}
+        <div class="flex flex-col gap-2">{#each Array(7) as _}<Skeleton class="h-9 w-full" />{/each}</div>
       {:else}
-        <!-- ════ TAB: SINGLE ACCOUNT ════ -->
-        {#if isLoadingStatement}
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            {#each Array(4) as _}
-              <Skeleton class="h-20 rounded-xl" />
-            {/each}
-          </div>
-          <div class="flex flex-col gap-3">
-            {#each Array(6) as _}
-              <Skeleton class="h-10 w-full rounded" />
-            {/each}
-          </div>
-        {:else if statementError}
-          <div in:fade={{ duration: 150 }} class="border border-destructive/20 bg-destructive/10 text-destructive rounded-xl p-4 flex items-center gap-3 text-sm text-start print:hidden">
-            <div class="font-bold">{m.finance_statement_error_loading()}</div>
-            <div>{statementError}</div>
-          </div>
-        {:else if !statement}
-          <div class="border border-dashed border-border/80 rounded-2xl p-16 flex flex-col items-center justify-center text-center gap-3 select-none my-8">
-            <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-1 shrink-0">
-              <ClipboardList size={22} />
-            </div>
-            <h3 class="text-sm font-bold text-foreground">{m.finance_statement_select_terminal()}</h3>
-            <p class="text-[11px] text-muted-foreground max-w-xs leading-relaxed">
-              اختر أي حساب من الشجرة الدفترية الجانبية أو اكتب في قائمة البحث للوصول المباشر إلى مستندات وقيود الحساب وحركته التراكمية.
-            </p>
-          </div>
-        {:else}
-          <!-- Single Account Summary Cards -->
-          <div in:slide={{ duration: 200 }} class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 select-none">
-            <!-- Card 1: Opening Balance -->
-            <div class="border border-border/60 bg-card/25 p-4 rounded-2xl text-start flex flex-col justify-between hover:border-primary/30 transition-all duration-200">
-              <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.common_ledger_label_opening_balance()}</span>
-              <div class="flex items-baseline gap-1 mt-2">
-                <span class="text-lg font-extrabold font-mono text-foreground">
-                  {formatCurrency(statement.opening_balance, statement.currency)}
-                </span>
-              </div>
-              <span class="text-[9px] text-muted-foreground mt-1">{m.finance_statement_before_date()}{formatDate(statement.start_date)}</span>
-            </div>
-
-            <!-- Card 2: Total Debits -->
-            <div class="border border-border/60 bg-card/25 p-4 rounded-2xl text-start flex flex-col justify-between hover:border-emerald-500/30 transition-all duration-200">
-              <div class="flex items-center justify-between w-full">
-                <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.finance_statement_total_transactions_debit()}</span>
-                <div class="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
-                  <ArrowDownLeft size={10} />
-                </div>
-              </div>
-              <div class="flex items-baseline gap-1 mt-2">
-                <span class="text-lg font-extrabold font-mono text-emerald-500">
-                  {formatCurrency(statementTotals.debit, statement.currency)}
-                </span>
-              </div>
-              <span class="text-[9px] text-muted-foreground mt-1">{m.finance_statement_total_debit_recorded()}</span>
-            </div>
-
-            <!-- Card 3: Total Credits -->
-            <div class="border border-border/60 bg-card/25 p-4 rounded-2xl text-start flex flex-col justify-between hover:border-rose-500/30 transition-all duration-200">
-              <div class="flex items-center justify-between w-full">
-                <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.finance_statement_total_transactions_credit()}</span>
-                <div class="w-5 h-5 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 shrink-0">
-                  <ArrowUpRight size={10} />
-                </div>
-              </div>
-              <div class="flex items-baseline gap-1 mt-2">
-                <span class="text-lg font-extrabold font-mono text-rose-500">
-                  {formatCurrency(statementTotals.credit, statement.currency)}
-                </span>
-              </div>
-              <span class="text-[9px] text-muted-foreground mt-1">{m.finance_statement_total_credit_recorded()}</span>
-            </div>
-
-            <!-- Card 4: Closing Balance -->
-            <div class="border-2 border-primary bg-primary/5 p-4 rounded-2xl text-start flex flex-col justify-between shadow-sm relative overflow-hidden">
-              <div class="flex items-center justify-between w-full">
-                <span class="text-[10px] font-bold text-primary uppercase tracking-wider">{m.finance_statement_closing_balance()}</span>
-                <TrendingUp size={12} class="text-primary shrink-0" />
-              </div>
-              <div class="flex items-baseline gap-1 mt-2">
-                <span class="text-xl font-extrabold font-mono text-primary">
-                  {formatCurrency(statement.closing_balance, statement.currency)}
-                </span>
-              </div>
-              <span class="text-[9px] text-primary/80 mt-1">{m.finance_statement_actual_net_balance()}</span>
-            </div>
-          </div>
-
-          <!-- Spelling helper bar for accounting audit -->
-          <div class="mb-4 bg-muted/30 border border-border/40 p-2.5 rounded-lg text-xs font-bold text-foreground text-start select-text flex items-center gap-2">
-            <span class="text-primary">{m.finance_statement_balance_note()}</span>
-            <span>{runningBalanceText}</span>
-          </div>
-
-          <!-- Statement Transactions Table -->
-          {#if filteredItems.length === 0}
-            <div class="border border-dashed border-border/80 rounded-2xl p-12 flex flex-col items-center justify-center text-center gap-2 select-none">
-              <h4 class="text-xs font-bold text-muted-foreground">{m.finance_statement_no_entries()}</h4>
-              <p class="text-[10px] text-muted-foreground/80">
-                لم تسجل أي حركة ترحيل على هذا الحساب خلال الفترة المحددة.
-              </p>
-            </div>
-          {:else}
-            <div in:fade={{ duration: 150 }} class="border border-border/60 rounded-xl overflow-hidden bg-card/10 shadow-sm print:border-none print:shadow-none w-full">
-              <Table class="border-collapse w-full">
-                <TableHeader class="bg-muted/40 select-none print:bg-transparent">
-                  <TableRow class="hover:bg-transparent border-b border-border/80 text-[11px] font-bold text-foreground">
-                    <TableHead class="text-start">{m.common_overview_date()}</TableHead>
-                    <TableHead class="text-start">{m.finance_statement_reference()}</TableHead>
-                    <TableHead class="text-start">{m.finance_statement_detailed_desc()}</TableHead>
-                    <TableHead class="text-end text-emerald-500 w-28">{m.finance_journal_print_debit()}</TableHead>
-                    <TableHead class="text-end text-rose-500 w-28">{m.finance_journal_print_credit()}</TableHead>
-                    <TableHead class="text-end w-32">{m.finance_col_balance()}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <!-- Opening balance row inside statement table -->
-                  <TableRow class="bg-muted/10 font-bold hover:bg-muted/10 transition-colors text-[11px]">
-                    <TableCell class="text-start text-muted-foreground font-mono">{formatDate(statement.start_date)}</TableCell>
-                    <TableCell class="text-start text-muted-foreground font-mono">OPENING</TableCell>
-                    <TableCell class="text-start text-muted-foreground font-bold">{m.finance_statement_opening_balance_before()}</TableCell>
-                    <TableCell class="text-end font-mono">-</TableCell>
-                    <TableCell class="text-end font-mono">-</TableCell>
-                    <TableCell class="text-end font-bold font-mono text-foreground">
-                      {formatCurrency(statement.opening_balance, statement.currency)}
-                    </TableCell>
-                  </TableRow>
-
-                  {#each filteredItems as item (item.id)}
-                    <TableRow class="hover:bg-muted/20 border-b border-border/30 text-[11px] font-semibold">
-                      <TableCell class="text-start text-muted-foreground font-mono whitespace-nowrap">{formatDate(item.date)}</TableCell>
-                      <TableCell class="text-start font-mono text-foreground font-bold whitespace-nowrap">{item.reference}</TableCell>
-                      <TableCell class="text-start text-foreground max-w-xs md:max-w-md break-words font-medium">
-                        {item.description_ar || item.description}
-                      </TableCell>
-                      <TableCell class="text-end font-bold font-mono text-emerald-500 whitespace-nowrap">
-                        {item.debit ? formatCurrency(item.debit, statement.currency) : "-"}
-                      </TableCell>
-                      <TableCell class="text-end font-bold font-mono text-rose-500 whitespace-nowrap">
-                        {item.credit ? formatCurrency(item.credit, statement.currency) : "-"}
-                      </TableCell>
-                      <TableCell class="text-end font-extrabold font-mono text-foreground whitespace-nowrap">
-                        {formatCurrency(item.running_balance, statement.currency)}
-                      </TableCell>
-                    </TableRow>
-                  {/each}
-                </TableBody>
-              </Table>
-            </div>
-          {/if}
-        {/if}
+        <DataTable columns={columns} source={source} searchable searchValue={searchQuery} onSearch={(query) => searchQuery = query} searchPlaceholder="Search account by name or code..." refreshable onRefresh={loadData} exportable rtl={getLocale() === "ar"} height="100%" rowSize={38} theme="compact" />
       {/if}
-    </div>
+    </main>
   </div>
 </div>
-
-<style>
-@media print {
-  :global(body) {
-    background-color: white !important;
-    color: black !important;
-  }
-  :global(main) {
-    background-color: white !important;
-  }
-  .print\:hidden {
-    display: none !important;
-  }
-  .print\:flex {
-    display: flex !important;
-  }
-}
-</style>
