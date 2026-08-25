@@ -29,14 +29,14 @@ let {
   orgId: string;
   onSuccess: () => void;
   onCancel: () => void;
-  defaultTab?: "gl" | "treasury" | "entity";
+  defaultTab?: "gl" | "cash_account" | "entity";
 } = $props();
 
 // Global data state
 let ledgers = $state<any[]>([]);
 let currencies = $state<any[]>([]);
 let isLoading = $state(true);
-let activeTab = $state<"gl" | "treasury" | "entity">(defaultTab);
+let activeTab = $state<"gl" | "cash_account" | "entity">(defaultTab);
 let isSubmitting = $state(false);
 
 // GL Account States
@@ -46,7 +46,7 @@ let glNameEn = $state("");
 let glAccountType = $state("asset");
 let glOpeningBalance = $state("0");
 
-// Treasury States
+// Cash and bank account state
 let trNameAr = $state("");
 let trNameEn = $state("");
 let trType = $state<"cash" | "bank">("cash");
@@ -119,7 +119,7 @@ function handleParentSelect(item: {
 }
 
 // Reset form fields on tab change
-function handleTabChange(tab: "gl" | "treasury" | "entity") {
+function handleTabChange(tab: "gl" | "cash_account" | "entity") {
   activeTab = tab;
 }
 
@@ -162,9 +162,9 @@ async function handleSubmit(e: SubmitEvent) {
       glNameAr = "";
       glNameEn = "";
       glOpeningBalance = "0";
-    } else if (activeTab === "treasury") {
+    } else if (activeTab === "cash_account") {
       if (!trNameAr && !trNameEn) {
-        toast.error("يرجى إدخال اسم الخزينة / البنك");
+        toast.error(m.common_cash_account_name_required());
         isSubmitting = false;
         return;
       }
@@ -173,7 +173,7 @@ async function handleSubmit(e: SubmitEvent) {
         name: trNameEn || trNameAr,
         name_ar: trNameAr || trNameEn,
         item_type: "asset",
-        currency: baseCurrency, // Default treasury to base currency
+        currency: baseCurrency,
         code: "",
         sub_type: trType,
         opening_balance: 0,
@@ -181,7 +181,7 @@ async function handleSubmit(e: SubmitEvent) {
       };
 
       await commands.finance.createAccount(request);
-      toast.success("تم إنشاء الصندوق/البنك بنجاح");
+      toast.success(m.common_cash_account_created());
 
       // Reset
       trNameAr = "";
@@ -232,8 +232,8 @@ async function handleSubmit(e: SubmitEvent) {
       <TabsTrigger value="gl" class="text-xs font-semibold py-1.5 cursor-pointer rounded-md transition-all">
         {m.common_ledger_tab_gl()}
       </TabsTrigger>
-      <TabsTrigger value="treasury" class="text-xs font-semibold py-1.5 cursor-pointer rounded-md transition-all">
-        {m.common_ledger_tab_treasury()}
+      <TabsTrigger value="cash_account" class="text-xs font-semibold py-1.5 cursor-pointer rounded-md transition-all">
+        {m.common_ledger_tab_cash_account()}
       </TabsTrigger>
       <TabsTrigger value="entity" class="text-xs font-semibold py-1.5 cursor-pointer rounded-md transition-all">
         {m.common_ledger_tab_entity()}
@@ -320,7 +320,7 @@ async function handleSubmit(e: SubmitEvent) {
       </TabsContent>
 
       <!-- Treasury Form Content -->
-      <TabsContent value="treasury" class="flex flex-col gap-4 mt-0 animate-in fade-in-50 duration-150">
+      <TabsContent value="cash_account" class="flex flex-col gap-4 mt-0 animate-in fade-in-50 duration-150">
         <!-- Treasury Names -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="flex flex-col gap-1.5 text-start">
@@ -331,7 +331,7 @@ async function handleSubmit(e: SubmitEvent) {
               id="tr_name_ar"
               type="text"
               bind:value={trNameAr}
-              placeholder="مثال: خزينة الإدارة العامة"
+              placeholder="مثال: الصندوق الرئيسي أو الحساب البنكي الرئيسي"
               required={!trNameEn}
               disabled={isSubmitting}
             />
@@ -354,17 +354,17 @@ async function handleSubmit(e: SubmitEvent) {
         <!-- Treasury Type -->
         <div class="flex flex-col gap-1.5 text-start">
           <Label class="text-xs font-bold text-foreground">
-            {m.common_ledger_label_treasury_type()}
+            {m.common_ledger_label_cash_account_type()}
           </Label>
           <Select bind:value={trType} type="single">
             <SelectTrigger class="w-full text-xs text-start flex items-center justify-between bg-background">
               <span class="truncate">
-                {trType === "cash" ? m.common_ledger_type_cash() : m.common_treasury_type_bank()}
+                {trType === "cash" ? m.common_ledger_type_cash() : m.common_cash_account_type_bank()}
               </span>
             </SelectTrigger>
             <SelectContent class="text-start">
               <SelectItem value="cash" class="text-xs cursor-pointer">{m.common_ledger_type_cash()}</SelectItem>
-              <SelectItem value="bank" class="text-xs cursor-pointer">{m.common_treasury_type_bank()}</SelectItem>
+              <SelectItem value="bank" class="text-xs cursor-pointer">{m.common_cash_account_type_bank()}</SelectItem>
             </SelectContent>
           </Select>
         </div>

@@ -66,9 +66,10 @@ const trialBalanceRows = $derived.by(() => {
     const balances: Record<string, { debit: number; credit: number }> = {};
     activeCurrencies.forEach((c) => {
       const code = c.code.toLowerCase();
+      const amount = Number(l.balances?.[c.code] || l.balances?.[code] || 0);
       balances[code] = {
-        debit: l[`debit_${code}`] || 0.0,
-        credit: l[`credit_${code}`] || 0.0,
+        debit: amount > 0 ? amount : 0,
+        credit: amount < 0 ? Math.abs(amount) : 0,
       };
     });
 
@@ -82,12 +83,11 @@ const trialBalanceRows = $derived.by(() => {
 
 // Helper to determine net balance depending on account type nature
 function getNetBalance(acc: any, currencyCode: string): number {
-  const isDebitNature =
-    acc.item_type === "asset" || acc.item_type === "expense";
-  const code = currencyCode.toLowerCase();
-  const debit = Number(acc[`debit_${code}`] || 0.0);
-  const credit = Number(acc[`credit_${code}`] || 0.0);
-  return isDebitNature ? debit - credit : credit - debit;
+  return Number(
+    acc.balances?.[currencyCode] ||
+      acc.balances?.[currencyCode.toUpperCase()] ||
+      0,
+  );
 }
 
 // 2. Income Statement (Revenue & Expenses)

@@ -440,7 +440,7 @@ export const journalEntries = {
   ],
 };
 
-export const treasuries = {
+export const cashAccounts = {
   columns: (
     labels: {
       idx?: string;
@@ -452,7 +452,7 @@ export const treasuries = {
     } = {},
   ): OrbisColumnDef[] => [
     idx(labels.idx),
-    nameCol("name", labels.name || "Treasury", 200),
+    nameCol("name", labels.name || "Cash Account", 200),
     text("treasury_type", labels.type || "Type", 110),
     num("balance", labels.balance || "Balance", 120),
     text("currency_code", labels.currency || "Currency", 90),

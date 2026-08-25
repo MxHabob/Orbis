@@ -1,15 +1,11 @@
-<!--
-@component TreasuriesManagementPage
-Split administration page: Treasuries (left) + Ledger Accounts (right).
-Both use OrbisGrid via DataTable.
--->
+<!-- Cash and bank accounts management page. -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { Plus, Landmark, Layers } from "@lucide/svelte";
+import { Plus, Landmark, RefreshCw, WalletCards } from "@lucide/svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
@@ -23,19 +19,16 @@ import {
 
 import { DataTable } from "$lib/tables";
 import {
-  treasuries as tDef,
-  ledger as lDef,
+  cashAccounts as tDef,
   withIndex,
 } from "$lib/tables/definitions";
 
 let { data }: { data: { orgId: string } } = $props();
 
 // ── State ──────────────────────────────────────────────────────────────
-let treasuries = $state<any[]>([]);
-let ledgers = $state<any[]>([]);
+let cashAccounts = $state<any[]>([]);
 let baseCurrency = $state("YER");
 let isLoading = $state(true);
-let activeTabType = $state<"gl" | "treasury" | "entity">("gl");
 let isAddDialogOpen = $state(false);
 
 function handleSuccess() {
@@ -48,14 +41,12 @@ function handleSuccess() {
 async function loadData() {
   isLoading = true;
   try {
-    const [tList, lList, cList] = await Promise.all([
+    const [accounts, currencies] = await Promise.all([
       commands.finance.listAccounts().then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type))),
-      commands.finance.listTransactionAccounts(),
       commands.finance.listCurrencies(),
     ]);
-    treasuries = tList;
-    ledgers = lList;
-    const base = cList.find((c: any) => c.is_base === 1);
+    cashAccounts = accounts;
+    const base = currencies.find((c: any) => c.is_base === 1);
     if (base) baseCurrency = base.code;
   } catch (e) {
     console.error("Error:", e);
@@ -71,48 +62,31 @@ onMount(() => {
 // ── Helpers ─────────────────────────────────────────────────────────────
 
 const totalBalance = $derived(
-  treasuries.reduce((sum, t) => sum + Number(t.balance || 0), 0),
+  cashAccounts.reduce((sum, account) => sum + Number(account.balances?.[baseCurrency] || 0), 0),
 );
+
+const activeAccountCount = $derived(cashAccounts.length);
 
 function getTreasuryTypeLabel(t: string) {
   const low = String(t).toLowerCase();
-  if (low === "bank") return m.common_treasury_type_bank();
-  return m.common_treasury_type_cash();
-}
-
-function getLedgerTypeLabel(t: string) {
-  const low = String(t).toLowerCase();
-  if (low === "revenue") return m.finance_type_revenue();
-  if (low === "expense") return m.finance_type_expense();
-  if (low === "asset") return m.finance_type_asset();
-  if (low === "liability") return m.finance_type_liability();
-  return t;
+  if (low === "bank") return m.common_cash_account_type_bank();
+  return m.common_cash_account_type_cash();
 }
 
 // ── Grid Sources ────────────────────────────────────────────────────────
 
 const treasurySource = $derived(
   withIndex(
-    treasuries.map((t) => ({
-      ...t,
-      name: t.name_ar || t.name || "—",
-      treasury_type: getTreasuryTypeLabel(t.treasury_type),
+    cashAccounts.map((account) => ({
+      ...account,
+      name: account.name_ar || account.name || "—",
+      treasury_type: getTreasuryTypeLabel(account.sub_type),
       balance: formatCurrency(
-        Number(t.balance || 0),
-        t.currency || baseCurrency,
+        Number(account.balances?.[account.currency] || 0),
+        account.currency || baseCurrency,
       ),
-      currency_code: t.currency || baseCurrency,
+      currency_code: account.currency || baseCurrency,
       status: "active",
-    })),
-  ),
-);
-
-const ledgerSource = $derived(
-  withIndex(
-    ledgers.map((l) => ({
-      ...l,
-      name: l.name_ar || l.name || "—",
-      account_type: getLedgerTypeLabel(l.account_type),
     })),
   ),
 );
@@ -127,113 +101,75 @@ const treasuryCols = $derived(
   }),
 );
 
-const ledgerCols = $derived(
-  lDef.columns({
-    idx: "#",
-    code: m.common_ledger_col_code(),
-    name: m.common_col_name(),
-    type: m.common_word_type(),
-  }),
-);
-
 const rtl = $derived(getLocale() === "ar");
 </script>
 
-<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 font-sans">
-  <!-- Header -->
-  <div class="text-start select-none">
-    <h2 class="text-sm font-bold text-foreground uppercase tracking-wider">
-      {m.finance_page_title()}
-    </h2>
-    <p class="text-[10px] text-muted-foreground mt-0.5">
-      {m.finance_page_subtitle()}
-    </p>
+<div class="h-full w-full overflow-y-auto bg-background p-5 md:p-8 font-sans" dir={rtl ? "rtl" : "ltr"}>
+  <div class="max-w-6xl mx-auto flex flex-col gap-7" in:fade={{ duration: 180 }}>
+    <header class="flex flex-col md:flex-row md:items-end justify-between gap-5">
+      <div class="text-start">
+        <div class="flex items-center gap-2 text-primary text-[10px] font-bold uppercase tracking-[0.18em] mb-2">
+          <WalletCards size={14} />
+          <span>{m.finance_layout_panel_title()}</span>
+        </div>
+        <h1 class="text-2xl md:text-3xl font-black text-foreground tracking-tight">
+          {m.finance_page_title()}
+        </h1>
+        <p class="text-xs text-muted-foreground mt-2 max-w-2xl">
+          {m.finance_page_subtitle()}
+        </p>
+      </div>
+      <Button variant="outline" class="h-9 px-3 text-xs font-bold shrink-0" onclick={() => { isAddDialogOpen = true; }}>
+        <Plus size={14} class="me-1.5" />
+        {m.finance_new_cash_account_button()}
+      </Button>
+    </header>
+
+    <section class="grid grid-cols-1 sm:grid-cols-3 gap-3" aria-label={m.finance_cash_accounts_title()}>
+      <div class="border border-border bg-card p-4 rounded-lg flex items-center gap-3">
+        <div class="h-9 w-9 rounded-md bg-primary/10 text-primary flex items-center justify-center"><Landmark size={17} /></div>
+        <div><p class="text-[10px] text-muted-foreground">{m.finance_cash_accounts_title()}</p><p class="text-xl font-black text-foreground">{activeAccountCount}</p></div>
+      </div>
+      <div class="border border-border bg-card p-4 rounded-lg flex items-center gap-3">
+        <div class="h-9 w-9 rounded-md bg-emerald-500/10 text-emerald-500 flex items-center justify-center"><WalletCards size={17} /></div>
+        <div><p class="text-[10px] text-muted-foreground">{m.finance_total_cash_assets({ balance: "" }).replace(/: $/, "")}</p><p class="text-base font-black text-foreground font-mono">{formatCurrency(totalBalance, baseCurrency)}</p></div>
+      </div>
+      <div class="border border-border bg-card p-4 rounded-lg flex items-center gap-3">
+        <div class="h-9 w-9 rounded-md bg-sky-500/10 text-sky-500 flex items-center justify-center"><RefreshCw size={17} /></div>
+        <div><p class="text-[10px] text-muted-foreground">{m.finance_col_balance()}</p><p class="text-xs font-bold text-foreground">{baseCurrency}</p></div>
+      </div>
+    </section>
+
+    {#if isLoading}
+      <div class="border border-border bg-card rounded-lg p-5"><Skeleton class="h-72 w-full rounded-md" /></div>
+    {:else}
+      <section class="border border-border bg-card rounded-lg overflow-hidden">
+        <div class="px-5 py-4 border-b border-border flex items-center justify-between gap-4">
+          <div class="text-start">
+            <h2 class="text-sm font-bold text-foreground">{m.finance_cash_accounts_title()}</h2>
+            <p class="text-[10px] text-muted-foreground mt-1">{m.finance_page_subtitle()}</p>
+          </div>
+          <Button variant="ghost" size="icon" class="h-8 w-8" title={m.common_control_refresh()} onclick={loadData}>
+            <RefreshCw size={14} />
+          </Button>
+        </div>
+        <div class="min-h-82.5">
+          <DataTable columns={treasuryCols} source={treasurySource} emptyIcon={Landmark} emptyTitle={m.finance_no_cash_accounts()} {rtl} refreshable onRefresh={loadData} />
+        </div>
+      </section>
+    {/if}
   </div>
-
-  {#if isLoading}
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <Skeleton class="h-80 w-full rounded-xl" />
-      <Skeleton class="h-80 w-full rounded-xl" />
-    </div>
-  {:else}
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Treasuries Section -->
-      <div class="bg-card/45 border border-border rounded-xl p-5 flex flex-col gap-4 text-start">
-        <div class="flex items-center justify-between border-b border-border/60 pb-3 select-none">
-          <div class="flex flex-col">
-            <h3 class="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-              <Landmark size={13} class="text-primary" />
-              <span>{m.finance_vaults_title()}</span>
-            </h3>
-            <span class="text-[8px] text-muted-foreground mt-0.5">
-              {m.finance_total_cash_assets({ balance: formatCurrency(totalBalance, baseCurrency) })}
-            </span>
-          </div>
-          <Button variant="outline" class="text-[10px] h-7 px-2" onclick={() => { activeTabType = "treasury"; isAddDialogOpen = true; }}>
-            <Plus size={12} class="me-1" />
-            {m.finance_new_treasury_button()}
-          </Button>
-        </div>
-        <div class="flex-1 min-h-0" style="height: 300px">
-          <DataTable
-            columns={treasuryCols}
-            source={treasurySource}
-            emptyIcon={Landmark}
-            emptyTitle={m.finance_no_treasuries()}
-            {rtl}
-          />
-        </div>
-      </div>
-
-      <!-- Ledger Accounts Section -->
-      <div class="bg-card/45 border border-border rounded-xl p-5 flex flex-col gap-4 text-start">
-        <div class="flex items-center justify-between border-b border-border/60 pb-3 select-none">
-          <div class="flex flex-col">
-            <h3 class="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-              <Layers size={13} class="text-primary" />
-              <span>{m.finance_ledger_chart_title()}</span>
-            </h3>
-            <span class="text-[8px] text-muted-foreground mt-0.5">
-              {m.finance_ledger_accounts_count({ count: ledgers.length })}
-            </span>
-          </div>
-          <Button variant="outline" class="text-[10px] h-7 px-2" onclick={() => { activeTabType = "gl"; isAddDialogOpen = true; }}>
-            <Plus size={12} class="me-1" />
-            {m.finance_new_ledger_button()}
-          </Button>
-        </div>
-        <div class="flex-1 min-h-0" style="height: 300px">
-          <DataTable
-            columns={ledgerCols}
-            source={ledgerSource}
-            emptyIcon={Layers}
-            emptyTitle={m.finance_no_ledgers()}
-            {rtl}
-          />
-        </div>
-      </div>
-    </div>
-  {/if}
 </div>
 
 <Dialog bind:open={isAddDialogOpen}>
   <DialogContent class="max-w-xl text-start select-none h-[80vh] flex flex-col p-6 bg-card border-border/80">
     <DialogHeader class="shrink-0 mb-4 text-start">
-      <DialogTitle class="text-base font-extrabold text-foreground">
-        {m.common_ledger_dialog_add_title()}
-      </DialogTitle>
-      <DialogDescription class="text-[11px] text-muted-foreground leading-relaxed">
-        {m.common_ledger_dialog_add_desc()}
-      </DialogDescription>
+      <DialogTitle class="text-base font-extrabold text-foreground">{m.common_ledger_dialog_add_title()}</DialogTitle>
+      <DialogDescription class="text-[11px] text-muted-foreground leading-relaxed">{m.common_ledger_dialog_add_desc()}</DialogDescription>
     </DialogHeader>
     {#if isAddDialogOpen}
       {#await import("$lib/features/finance/components/ledger-form.svelte") then { default: LedgerForm }}
-        <LedgerForm
-          orgId={data.orgId}
-          onSuccess={handleSuccess}
-          onCancel={() => isAddDialogOpen = false}
-          defaultTab={activeTabType}
-        />
+        <LedgerForm orgId={data.orgId} onSuccess={handleSuccess} onCancel={() => isAddDialogOpen = false} defaultTab="cash_account" />
       {/await}
     {/if}
   </DialogContent>

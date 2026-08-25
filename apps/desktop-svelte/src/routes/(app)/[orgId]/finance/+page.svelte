@@ -90,7 +90,7 @@ const collectionRate = $derived(
 
 const treasuryAssets = $derived(
   treasuries.reduce(
-    (sum, t: any) => sum + Number(t.balance || t.current_balance || 0),
+    (sum, t: any) => sum + Number(t.balances?.[t.currency] || 0),
     0,
   ),
 );

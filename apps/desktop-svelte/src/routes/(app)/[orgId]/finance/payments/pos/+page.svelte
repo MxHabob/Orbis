@@ -106,7 +106,7 @@ async function loadStudentData(enrollId: string) {
   try {
     const [feesList, paymentsList] = await Promise.all([
       commands.finance.listStudentFeesByEnrollment(enrollId),
-      commands.finance.listPayments(),
+      commands.finance.listPayments(null, null),
     ]);
 
     // Unpaid/Partially paid fees
@@ -173,7 +173,7 @@ async function handlePaymentSubmit(e: SubmitEvent) {
     return;
   }
   if (!selectedTreasuryId) {
-    toast.error(m.common_payment_toast_error_treasury());
+    toast.error(m.common_payment_toast_error_cash_account());
     return;
   }
   if (!amount || amount <= 0) {
@@ -603,7 +603,7 @@ onMount(() => {
           <!-- Treasury Select -->
           <div class="flex flex-col gap-2">
             <label for="pos_treasury" class="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              {m.common_payment_label_treasury()}
+              {m.common_payment_label_cash_account()}
             </label>
             <select 
               id="pos_treasury"

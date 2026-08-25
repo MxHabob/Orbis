@@ -174,7 +174,7 @@ async function loadData() {
   error = null;
   try {
     const [paymentsList, treasuriesList, studentsList] = await Promise.all([
-      commands.finance.listPayments(),
+      commands.finance.listPayments(null, null),
       commands.finance.listAccounts().then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type))),
       commands.academic.listEnrollments(),
     ]);
@@ -496,7 +496,7 @@ async function handleAdd() {
           cash_account_id: treasuryId,
           treasury_name:
             treasuries.find((t) => t.id === treasuryId)?.name ||
-            m.finance_payments_collections_treasury(),
+            m.finance_payments_collections_cash_account(),
           student_name: getStudentName(row.studentEnrollmentId),
           student_number:
             students.find((s) => String(s.id) === row.studentEnrollmentId)
@@ -637,7 +637,7 @@ const filteredPayments = $derived.by(() => {
         <div class="flex flex-wrap items-center gap-4">
           <!-- Treasury select -->
           <div class="flex flex-col gap-1 text-start">
-            <Label class="text-[9px] font-bold text-muted-foreground">{m.common_ledger_tab_treasury()}</Label>
+            <Label class="text-[9px] font-bold text-muted-foreground">{m.common_ledger_tab_cash_account()}</Label>
             <Select type="single" bind:value={treasuryId}>
               <SelectTrigger class="h-8 text-xs bg-background/50 w-48 border-border/60 cursor-pointer text-start">
                 {treasuryItems.find(t => t.value === treasuryId)?.label || "اختر الصندوق..."}
@@ -647,7 +647,7 @@ const filteredPayments = $derived.by(() => {
                   <SelectItem value={tr.value}>{tr.label}</SelectItem>
                 {/each}
                 {#if treasuryItems.length === 0}
-                  <SelectItem value="">{m.finance_payments_collections_treasury_full()}</SelectItem>
+                  <SelectItem value="">{m.finance_payments_collections_cash_account_full()}</SelectItem>
                 {/if}
               </SelectContent>
             </Select>
@@ -1073,7 +1073,7 @@ const filteredPayments = $derived.by(() => {
                 <TableHead class="text-start font-bold text-xs">{m.finance_fees_col_method()}</TableHead>
                 <TableHead class="text-end font-bold text-xs text-emerald-500">{m.common_ft_col_amount()}</TableHead>
                 <TableHead class="text-center font-bold text-xs">{m.finance_ledger_currency()}</TableHead>
-                <TableHead class="text-start font-bold text-xs">{m.common_ledger_tab_treasury()}</TableHead>
+                <TableHead class="text-start font-bold text-xs">{m.common_ledger_tab_cash_account()}</TableHead>
                 <TableHead class="text-start font-bold text-xs">{m.finance_payments_customer_account()}</TableHead>
                 <TableHead class="text-start font-bold text-xs">{m.common_year_notes()}</TableHead>
               </TableRow>
@@ -1100,7 +1100,7 @@ const filteredPayments = $derived.by(() => {
                       {formatCurrency(Number(p.amount || 0), p.currency || 'YER')}
                     </TableCell>
                     <TableCell class="text-center text-[11px] font-semibold font-mono">{p.currency || 'YER'}</TableCell>
-                    <TableCell class="text-start text-[11px] text-foreground max-w-[150px] truncate">{cleanAccountName(p.treasury_name) || m.finance_payments_collections_treasury()}</TableCell>
+                    <TableCell class="text-start text-[11px] text-foreground max-w-[150px] truncate">{cleanAccountName(p.cash_account_name) || treasuries.find((t) => t.id === p.cash_account_id)?.name || m.finance_payments_collections_cash_account()}</TableCell>
                     <TableCell class="text-start text-[11px] text-foreground font-semibold max-w-[180px] truncate">{p.student_name || '-'}</TableCell>
                     <TableCell class="text-start text-[11px] text-muted-foreground max-w-[200px] truncate">{p.notes || '-'}</TableCell>
                   </TableRow>
@@ -1153,7 +1153,7 @@ const filteredPayments = $derived.by(() => {
         </h1>
         <div class="text-end text-xs text-zinc-600">
           <p>{m.finance_journal_date_label()}{formatDate(paymentDate)}</p>
-          <p>{m.finance_payments_treasury_label()}{selectedPayment.treasury_name || m.finance_payments_collections_treasury()}</p>
+          <p>{m.finance_payments_cash_account_label()}{selectedPayment.cash_account_name || treasuries.find((t) => t.id === selectedPayment.cash_account_id)?.name || m.finance_payments_collections_cash_account()}</p>
         </div>
       </div>
 
@@ -1195,7 +1195,7 @@ const filteredPayments = $derived.by(() => {
             <th class="p-2 text-start">{m.common_overview_date()}</th>
             <th class="p-2 text-start">{m.finance_fees_col_method()}</th>
             <th class="p-2 text-end">{m.common_ft_col_amount()}</th>
-            <th class="p-2 text-start">{m.common_ledger_tab_treasury()}</th>
+            <th class="p-2 text-start">{m.common_ledger_tab_cash_account()}</th>
             <th class="p-2 text-start">{m.finance_payments_customer_account()}</th>
             <th class="p-2 text-start">{m.common_calendar_field_description()}</th>
           </tr>
@@ -1208,7 +1208,7 @@ const filteredPayments = $derived.by(() => {
                 <td class="p-2">{formatDate(p.payment_date || p.created_at)}</td>
                 <td class="p-2">{getMethodLabel(p.payment_method)}</td>
                 <td class="p-2 text-end font-mono">{formatCurrency(p.amount, p.currency)}</td>
-                <td class="p-2">{p.treasury_name || m.finance_payments_collections_treasury()}</td>
+                <td class="p-2">{p.cash_account_name || treasuries.find((t) => t.id === p.cash_account_id)?.name || m.finance_payments_collections_cash_account()}</td>
                 <td class="p-2">{p.student_name || '-'}</td>
                 <td class="p-2">{p.notes || '-'}</td>
               </tr>

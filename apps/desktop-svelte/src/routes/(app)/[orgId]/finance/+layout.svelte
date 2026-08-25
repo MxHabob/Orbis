@@ -74,7 +74,7 @@ const navItems = $derived([
 
   {
     path: "treasuries",
-    label: m.finance_layout_nav_treasuries(),
+    label: m.finance_layout_nav_cash_accounts(),
     icon: Landmark,
     badge: treasuriesCount > 0 ? treasuriesCount : null,
   },

@@ -141,7 +141,7 @@ async function loadData() {
   try {
     const [ledgerList, paymentList, feeList, treasuryList, currencyList] = await Promise.all([
       commands.finance.listAccounts(),
-      commands.finance.listPayments(),
+      commands.finance.listPayments(null, null),
       commands.finance.listStudentFeesByOrg(),
       commands.finance.listAccounts().then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type))),
       commands.finance.listCurrencies().catch(() => []),
@@ -191,14 +191,14 @@ const calculatedLedgerRows = $derived.by(() => {
       parent_id: acc.parent_id,
       balances,
       notes: acc.sub_type || "",
-      debit_yer: balances.YER?.debit || 0,
-      credit_yer: balances.YER?.credit || 0,
-      debit_usd: balances.USD?.debit || 0,
-      credit_usd: balances.USD?.credit || 0,
-      debit_sar: balances.SAR?.debit || 0,
-      credit_sar: balances.SAR?.credit || 0,
-      debit_aed: balances.AED?.debit || 0,
-      credit_aed: balances.AED?.credit || 0,
+      debit_yer: Number(balances.YER || 0) > 0 ? Number(balances.YER) : 0,
+      credit_yer: Number(balances.YER || 0) < 0 ? Math.abs(Number(balances.YER)) : 0,
+      debit_usd: Number(balances.USD || 0) > 0 ? Number(balances.USD) : 0,
+      credit_usd: Number(balances.USD || 0) < 0 ? Math.abs(Number(balances.USD)) : 0,
+      debit_sar: Number(balances.SAR || 0) > 0 ? Number(balances.SAR) : 0,
+      credit_sar: Number(balances.SAR || 0) < 0 ? Math.abs(Number(balances.SAR)) : 0,
+      debit_aed: Number(balances.AED || 0) > 0 ? Number(balances.AED) : 0,
+      credit_aed: Number(balances.AED || 0) < 0 ? Math.abs(Number(balances.AED)) : 0,
     };
   });
 });

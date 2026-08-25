@@ -140,7 +140,7 @@ async function handleSubmit(e: SubmitEvent) {
     return;
   }
   if (!selectedTreasuryId) {
-    toast.error(m.common_payment_toast_error_treasury());
+	toast.error(m.common_payment_toast_error_cash_account());
     return;
   }
   if (!amount || amount <= 0) {
@@ -238,7 +238,7 @@ async function handleSubmit(e: SubmitEvent) {
 	<!-- Treasury Account Select -->
 	<div class="flex flex-col gap-2 text-start">
 		<label for="pay_treasury" class="text-sm font-medium text-foreground">
-			{m.common_payment_label_treasury()}
+			{m.common_payment_label_cash_account()}
 		</label>
 		<select 
 			id="pay_treasury"

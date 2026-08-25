@@ -111,7 +111,7 @@ const breadcrumbs = $derived.by(() => {
       });
     } else if (pathname.includes("/treasuries")) {
       items.push({
-        label: m.finance_layout_nav_treasuries(),
+        label: m.finance_layout_nav_cash_accounts(),
         href: `/${currentOrgId}/finance/treasuries`,
       });
     } else if (pathname.includes("/journal-entries")) {
