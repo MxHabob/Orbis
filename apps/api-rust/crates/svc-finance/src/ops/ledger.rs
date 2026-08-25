@@ -143,7 +143,7 @@ pub async fn create_account(
             "guardian" => "110308",
             _ => return Err(AppError::validation(format!("Unsupported sub_type for auto parent: {}", sub_type))),
         };
-        let parent_id = format!("{}_{}", ctx.org_id, parent_code);
+        let parent_id = format!("{}-acc-{}", ctx.org_id, parent_code);
         let p = account::Entity::find_by_id(parent_id.clone())
             .one(&ctx.db).await?
             .ok_or_else(|| AppError::validation(format!(
@@ -258,7 +258,7 @@ pub async fn get_or_create_sub_account(
         return Ok(existing);
     }
 
-    let parent_id = format!("{}_{}", ctx.org_id, parent_code);
+    let parent_id = format!("{}-acc-{}", ctx.org_id, parent_code);
     let parent = account::Entity::find_by_id(parent_id.clone())
         .one(&ctx.db).await?
         .ok_or_else(|| AppError::validation(format!(

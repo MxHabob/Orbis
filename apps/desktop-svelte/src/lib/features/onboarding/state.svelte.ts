@@ -902,6 +902,15 @@ class OnboardingState {
       }
 
       // ── Step 8: Create Fee Templates (الرسوم) ────────────────────────
+      const revenueAccountCode =
+        this.profile.institutionType === "university"
+          ? "4101"
+          : this.profile.institutionType === "training_center" ||
+              this.profile.institutionType === "institute"
+            ? "4105"
+            : "4103";
+      const receivableAccountCode = "110301";
+
       for (const gl of this.academics.gradeLevels) {
         if (!gl.enabled) continue;
         const amount = this.finance.registrationFees[gl.level] || 0;
@@ -912,8 +921,8 @@ class OnboardingState {
             code: `REG_${gl.level.toUpperCase()}`,
             category: "tuition",
             default_amount: Number(amount),
-            revenue_account_id: `${orgId}_tuition_revenue`,
-            receivable_account_id: `${orgId}_student_receivable_control`,
+            revenue_account_id: `${orgId}-acc-${revenueAccountCode}`,
+            receivable_account_id: `${orgId}-acc-${receivableAccountCode}`,
             applicable_levels: JSON.stringify({ levels: [gl.level] }),
             frequency: "once",
             installment_config: null,
