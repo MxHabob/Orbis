@@ -12,6 +12,15 @@ import { FinancialInfoState } from "./state/financial-info.svelte";
 import { DocumentInfoState } from "./state/document-info.svelte";
 
 export class StudentFormState {
+  orgId: string;
+  studentId?: string;
+  isEditMode = $state(false);
+  personal: PersonalInfoState;
+  guardian: GuardianState;
+  financial: FinancialInfoState;
+  document: DocumentInfoState;
+  originalStudent: any = null;
+
   requiredFields = $state<Record<string, boolean>>({
     national_id: true,
     email: false,
@@ -67,17 +76,11 @@ export class StudentFormState {
 
   async init() {
     try {
-      await this.financial.init();
+      const [org] = await Promise.all([
+        commands.organization.getOrganization(this.orgId),
+        this.financial.init(),
+      ]);
 
-      try {
-        const classesList = await commands.academic.listClasses(this.orgId);
-        this.classes = Array.isArray(classesList) ? classesList : [];
-      } catch (err) {
-        console.error("Failed to load classes:", err);
-      }
-
-      // Load organization settings
-      const org = await commands.organization.getOrganization(this.orgId);
       if (org) {
         this.orgName = String(org.name || org.name_ar || "");
         if (org.settings) {
@@ -164,7 +167,11 @@ export class StudentFormState {
       }
     } catch (e: any) {
       console.error("Failed to initialize student form state:", e);
-      toast.error("فشل تهيئة نموذج الطالب: " + (e.message || String(e)));
+      toast.error(
+        m.common_form_initialization_error({
+          error: e.message || String(e),
+        }),
+      );
     }
   }
 

@@ -3,36 +3,13 @@ import * as m from "$lib/paraglide/messages";
 import { Label } from "@orbis/ui-svelte/label";
 import { Input } from "@orbis/ui-svelte/input";
 import { Button } from "@orbis/ui-svelte/button";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@orbis/ui-svelte/select";
 
-import { getLocale } from "$lib/paraglide/runtime";
 import type { StudentFormState } from "../form-state.svelte";
 import { ClassSelect } from "$lib/features/academics";
+import DateOfBirthField from "../components/date-of-birth-field.svelte";
 
 let { state }: { state: StudentFormState } = $props();
 
-const currentYear = new Date().getFullYear();
-const yearsList = Array.from({ length: 47 }, (_, i) => currentYear - i);
-const daysList = Array.from({ length: 31 }, (_, i) => String(i + 1));
-const monthsList = $derived([
-  { value: "1", label: m.common_form_month_1() },
-  { value: "2", label: m.common_form_month_2() },
-  { value: "3", label: m.common_form_month_3() },
-  { value: "4", label: m.common_form_month_4() },
-  { value: "5", label: m.common_form_month_5() },
-  { value: "6", label: m.common_form_month_6() },
-  { value: "7", label: m.common_form_month_7() },
-  { value: "8", label: m.common_form_month_8() },
-  { value: "9", label: m.common_form_month_9() },
-  { value: "10", label: m.common_form_month_10() },
-  { value: "11", label: m.common_form_month_11() },
-  { value: "12", label: m.common_form_month_12() },
-]);
 </script>
 
 <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
@@ -50,7 +27,7 @@ const monthsList = $derived([
         </Label>
         <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_name_ar_desc()}</span>
       </div>
-      <div class="w-full md:w-[480px] shrink-0">
+      <div class="w-full md:w-120 shrink-0">
         <Input 
           id="nameAr"
           type="text" 
@@ -70,7 +47,7 @@ const monthsList = $derived([
         </Label>
         <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_name_en_desc()}</span>
       </div>
-      <div class="w-full md:w-[480px] shrink-0">
+      <div class="w-full md:w-120 shrink-0">
         <Input 
           id="nameEn"
           type="text" 
@@ -93,7 +70,7 @@ const monthsList = $derived([
           </Label>
           <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_nid_desc()}</span>
         </div>
-        <div class="w-full md:w-[480px] shrink-0 flex flex-col gap-1">
+        <div class="w-full md:w-120 shrink-0 flex flex-col gap-1">
           <Input 
             id="nationalId"
             type="text" 
@@ -116,16 +93,16 @@ const monthsList = $derived([
       <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
         <div class="flex flex-col gap-1 text-start">
           <Label for="passportNumber" class="text-xs font-semibold text-foreground">
-            رقم جواز السفر
+            {m.common_form_passport_number()}
             {#if state.requiredFields.passport_number}<span class="text-destructive">*</span>{/if}
           </Label>
-          <span class="text-[11px] text-muted-foreground leading-relaxed">رقم جواز السفر الخاص بالطلبة الوافدين أو الدوليين</span>
+          <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_passport_number_desc()}</span>
         </div>
-        <div class="w-full md:w-[480px] shrink-0">
+        <div class="w-full md:w-120 shrink-0">
           <Input 
             id="passportNumber"
             type="text" 
-            placeholder="A12345678" 
+            placeholder={m.common_form_passport_number_placeholder()}
             class="h-9 w-full bg-background font-mono" 
             bind:value={state.personal.passportNumber}
           />
@@ -138,16 +115,16 @@ const monthsList = $derived([
       <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
         <div class="flex flex-col gap-1 text-start">
           <Label for="nationality" class="text-xs font-semibold text-foreground">
-            الجنسية
+            {m.common_form_nationality()}
             {#if state.requiredFields.nationality}<span class="text-destructive">*</span>{/if}
           </Label>
-          <span class="text-[11px] text-muted-foreground leading-relaxed">جنسية الطالب الرسمية المدونة بالوثائق</span>
+          <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_nationality_desc()}</span>
         </div>
-        <div class="w-full md:w-[480px] shrink-0">
+        <div class="w-full md:w-120 shrink-0">
           <Input 
             id="nationality"
             type="text" 
-            placeholder="مثال: يمني، سعودي، مصري..." 
+            placeholder={m.common_form_nationality_placeholder()}
             class="h-9 w-full bg-background" 
             bind:value={state.personal.nationality}
           />
@@ -160,16 +137,16 @@ const monthsList = $derived([
       <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
         <div class="flex flex-col gap-1 text-start">
           <Label for="placeOfBirth" class="text-xs font-semibold text-foreground">
-            مكان الميلاد
+            {m.common_form_place_of_birth()}
             {#if state.requiredFields.place_of_birth}<span class="text-destructive">*</span>{/if}
           </Label>
-          <span class="text-[11px] text-muted-foreground leading-relaxed">المدينة أو المحافظة المدونة في شهادة الميلاد</span>
+          <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_place_of_birth_desc()}</span>
         </div>
-        <div class="w-full md:w-[480px] shrink-0">
+        <div class="w-full md:w-120 shrink-0">
           <Input 
             id="placeOfBirth"
             type="text" 
-            placeholder="أدخل مكان الميلاد..." 
+            placeholder={m.common_form_place_of_birth_placeholder()}
             class="h-9 w-full bg-background" 
             bind:value={state.personal.placeOfBirth}
           />
@@ -187,48 +164,13 @@ const monthsList = $derived([
           </Label>
           <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_dob_desc()}</span>
         </div>
-        <div class="w-full md:w-[480px] shrink-0 grid grid-cols-3 gap-2" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
-          <!-- Day -->
-          <Select bind:value={state.personal.birthDay} type="single">
-            <SelectTrigger class="w-full h-9 text-xs text-start flex items-center justify-between bg-background px-2" id="birthDaySelect">
-              <span class="truncate">{state.personal.birthDay || m.common_form_day()}</span>
-            </SelectTrigger>
-            <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
-              {#each daysList as dy}
-                <SelectItem value={dy} class="text-xs text-start justify-start cursor-pointer">
-                  {dy}
-                </SelectItem>
-              {/each}
-            </SelectContent>
-          </Select>
-
-          <!-- Month -->
-          <Select bind:value={state.personal.birthMonth} type="single">
-            <SelectTrigger class="w-full h-9 text-xs text-start flex items-center justify-between bg-background px-2" id="birthMonthSelect">
-              <span class="truncate">{monthsList.find(m => m.value === state.personal.birthMonth)?.label || m.common_form_month()}</span>
-            </SelectTrigger>
-            <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
-              {#each monthsList as mo}
-                <SelectItem value={mo.value} class="text-xs text-start justify-start cursor-pointer">
-                  {mo.label}
-                </SelectItem>
-              {/each}
-            </SelectContent>
-          </Select>
-
-          <!-- Year -->
-          <Select bind:value={state.personal.birthYear} type="single">
-            <SelectTrigger class="w-full h-9 text-xs text-start flex items-center justify-between bg-background px-2" id="birthYearSelect">
-              <span class="truncate">{state.personal.birthYear || m.common_form_year()}</span>
-            </SelectTrigger>
-            <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
-              {#each yearsList as yr}
-                <SelectItem value={String(yr)} class="text-xs text-start justify-start cursor-pointer">
-                  {yr}
-                </SelectItem>
-              {/each}
-            </SelectContent>
-          </Select>
+        <div class="w-full md:w-120 shrink-0">
+          <DateOfBirthField
+            bind:day={state.personal.birthDay}
+            bind:month={state.personal.birthMonth}
+            bind:year={state.personal.birthYear}
+            idPrefix="student-birth"
+          />
         </div>
       </div>
     {/if}
@@ -243,7 +185,7 @@ const monthsList = $derived([
           </Label>
           <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_sex_desc()}</span>
         </div>
-        <div class="w-full md:w-[480px] shrink-0 flex gap-2 items-center">
+        <div class="w-full md:w-120 shrink-0 flex gap-2 items-center">
           <Button
             variant="ghost"
             type="button"
@@ -273,7 +215,7 @@ const monthsList = $derived([
         </Label>
         <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_class_desc()}</span>
       </div>
-      <div class="w-full md:w-[480px] shrink-0">
+      <div class="w-full md:w-120 shrink-0">
         <ClassSelect
           id="classSelect"
           bind:value={state.personal.classId}
@@ -290,7 +232,7 @@ const monthsList = $derived([
         </Label>
         <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_number_desc()}</span>
       </div>
-      <div class="w-full md:w-[480px] shrink-0">
+      <div class="w-full md:w-120 shrink-0">
         <Input 
           id="studentNumber"
           type="text" 
@@ -312,7 +254,7 @@ const monthsList = $derived([
           </Label>
           <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_phone_desc()}</span>
         </div>
-        <div class="w-full md:w-[480px] shrink-0 flex flex-col gap-1">
+        <div class="w-full md:w-120 shrink-0 flex flex-col gap-1">
           <Input 
             id="phone"
             type="tel" 
@@ -341,7 +283,7 @@ const monthsList = $derived([
           </Label>
           <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_email_desc()}</span>
         </div>
-        <div class="w-full md:w-[480px] shrink-0 flex flex-col gap-1">
+        <div class="w-full md:w-120 shrink-0 flex flex-col gap-1">
           <Input 
             id="email"
             type="email" 
@@ -370,7 +312,7 @@ const monthsList = $derived([
           </Label>
           <span class="text-[11px] text-muted-foreground leading-relaxed">فصيلة دم الطالب للحالات الطبية والإسعافية</span>
         </div>
-        <div class="w-full md:w-[480px] shrink-0">
+        <div class="w-full md:w-120 shrink-0">
           <Input 
             id="bloodType"
             type="text" 
@@ -392,7 +334,7 @@ const monthsList = $derived([
           </Label>
           <span class="text-[11px] text-muted-foreground leading-relaxed">اسم وتلفون الشخص المسؤول للتواصل في حالات الطوارئ</span>
         </div>
-        <div class="w-full md:w-[480px] shrink-0">
+        <div class="w-full md:w-120 shrink-0">
           <Input 
             id="emergencyContact"
             type="text" 
@@ -414,7 +356,7 @@ const monthsList = $derived([
           </Label>
           <span class="text-[11px] text-muted-foreground leading-relaxed">أي حساسية، أمراض مزمنة أو تعليمات صحية خاصة للطالب</span>
         </div>
-        <div class="w-full md:w-[480px] shrink-0">
+        <div class="w-full md:w-120 shrink-0">
           <Input 
             id="medicalNotes"
             type="text" 

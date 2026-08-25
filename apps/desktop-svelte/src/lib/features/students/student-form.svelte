@@ -1,9 +1,9 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { onMount } from "svelte";
+import { onMount, untrack } from "svelte";
 import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui-svelte/button";
-import { ArrowLeft, MoreHorizontal, ChevronDown } from "@lucide/svelte";
+import { ArrowLeft, MoreHorizontal, ChevronDown, Save } from "@lucide/svelte";
 import {
   Tabs,
   TabsList,
@@ -32,7 +32,7 @@ import DocumentsSection from "./sections/documents-section.svelte";
 let { studentId, orgId }: { studentId?: string; orgId: string } = $props();
 
 // Instantiate the form state manager
-const state = new StudentFormState(orgId || "", studentId);
+const state = untrack(() => new StudentFormState(orgId || "", studentId));
 const queryClient = useQueryClient();
 
 async function handleSave(status?: string) {
@@ -61,18 +61,39 @@ onMount(async () => {
 });
 </script>
 
-<div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide text-foreground text-start" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
-  <div class="max-w-6xl mx-auto p-6 flex flex-col gap-6">
-    
+<div class="h-full w-full overflow-y-auto scrollbar-hide text-foreground text-start">
+  <div class="w-full max-w-none p-6 flex flex-col gap-6">
+    <Tabs value="profile" class="w-full">
     <!-- Header: Simple Back button and Actions dropdown -->
-    <div class="flex items-center justify-between gap-4 flex-nowrap shrink-0 border-b border-border/60 pb-3 mb-2 select-none">
-      <Button 
-        variant="secondary" 
-        class="text-xs h-8 px-2 gap-1.5 shrink-0"
-        onclick={() => goto(localizeHref(`/${orgId}/students`))}
-      >
-        <ArrowLeft class="h-4 w-4 rtl:rotate-180" />
-      </Button>
+    <div class="sticky top-0 z-20 flex items-center justify-between gap-4 flex-nowrap shrink-0 border-b border-border/60 bg-background/95 pb-3 pt-1 mb-2 backdrop-blur-sm select-none">
+      <div class="flex min-w-0 items-center gap-3">
+        <Button
+          variant="secondary"
+          size="icon-sm"
+          class="shrink-0"
+          onclick={() => goto(localizeHref(`/${orgId}/students`))}
+          aria-label={m.common_action_cancel()}
+        >
+          <ArrowLeft class="h-4 w-4 rtl:rotate-180" />
+        </Button>
+        <TabsList class="flex max-w-[calc(100vw-8rem)] justify-start gap-4 overflow-x-auto border-0 bg-transparent rounded-none p-0 h-auto scrollbar-hide">
+          <TabsTrigger value="profile" class="shrink-0 text-xs font-semibold py-2 px-1 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none shadow-none text-muted-foreground data-[state=active]:text-foreground bg-transparent transition-all duration-150 cursor-pointer">
+            {m.common_breadcrumb_student_profile()}
+          </TabsTrigger>
+          <TabsTrigger value="family" class="shrink-0 text-xs font-semibold py-2 px-1 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none shadow-none text-muted-foreground data-[state=active]:text-foreground bg-transparent transition-all duration-150 cursor-pointer">
+            {m.common_form_tab_family()}
+          </TabsTrigger>
+          <TabsTrigger value="location" class="shrink-0 text-xs font-semibold py-2 px-1 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none shadow-none text-muted-foreground data-[state=active]:text-foreground bg-transparent transition-all duration-150 cursor-pointer">
+            {m.common_form_tab_location()}
+          </TabsTrigger>
+          <TabsTrigger value="financials" class="shrink-0 text-xs font-semibold py-2 px-1 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none shadow-none text-muted-foreground data-[state=active]:text-foreground bg-transparent transition-all duration-150 cursor-pointer">
+            {m.common_form_tab_financials()}
+          </TabsTrigger>
+          <TabsTrigger value="documents" class="shrink-0 text-xs font-semibold py-2 px-1 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none shadow-none text-muted-foreground data-[state=active]:text-foreground bg-transparent transition-all duration-150 cursor-pointer">
+            {m.common_form_tab_documents()}
+          </TabsTrigger>
+        </TabsList>
+      </div>
 
       <div class="flex items-center gap-2">
         <!-- Segmented Print Template Selector & Actions Dropdown -->
@@ -89,7 +110,7 @@ onMount(async () => {
               </div>
             </div>
           </DropdownMenuTrigger>
-          <DropdownMenuContent class="p-1 min-w-[180px] text-start" align="end">
+          <DropdownMenuContent class="p-1 min-w-45 text-start" align="end">
             {#each state.availableTemplates as tpl}
               <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center justify-between gap-1.5" onclick={async () => { state.selectedTemplateId = tpl.id; await state.handleDownloadRegistrationForm(); }}>
                 <span>{tpl.name_ar || tpl.name}</span>
@@ -111,41 +132,6 @@ onMount(async () => {
         </DropdownMenu>
       </div>
     </div>
-
-    <!-- Tabs Interface (Clean minimal design matching Organization Settings layout style) -->
-    <Tabs value="profile" class="w-full">
-      <TabsList class="flex justify-start border-b border-border bg-transparent gap-6 rounded-none p-0 h-auto mb-6">
-        <TabsTrigger 
-          value="profile" 
-          class="text-xs font-semibold py-2 px-1 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none shadow-none text-muted-foreground data-[state=active]:text-foreground bg-transparent transition-all duration-150 cursor-pointer"
-        >
-          {m.common_breadcrumb_student_profile()}
-        </TabsTrigger>
-        <TabsTrigger 
-          value="family" 
-          class="text-xs font-semibold py-2 px-1 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none shadow-none text-muted-foreground data-[state=active]:text-foreground bg-transparent transition-all duration-150 cursor-pointer"
-        >
-          {m.common_form_tab_family()}
-        </TabsTrigger>
-        <TabsTrigger 
-          value="location" 
-          class="text-xs font-semibold py-2 px-1 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none shadow-none text-muted-foreground data-[state=active]:text-foreground bg-transparent transition-all duration-150 cursor-pointer"
-        >
-          {m.common_form_tab_location()}
-        </TabsTrigger>
-        <TabsTrigger 
-          value="financials" 
-          class="text-xs font-semibold py-2 px-1 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none shadow-none text-muted-foreground data-[state=active]:text-foreground bg-transparent transition-all duration-150 cursor-pointer"
-        >
-          {m.common_form_tab_financials()}
-        </TabsTrigger>
-        <TabsTrigger 
-          value="documents" 
-          class="text-xs font-semibold py-2 px-1 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none shadow-none text-muted-foreground data-[state=active]:text-foreground bg-transparent transition-all duration-150 cursor-pointer"
-        >
-          {m.common_form_tab_documents()}
-        </TabsTrigger>
-      </TabsList>
 
       <!-- TAB 1: Student Profile -->
       <TabsContent value="profile" class="mt-0">
@@ -174,7 +160,7 @@ onMount(async () => {
     </Tabs>
 
     <!-- Footer Action Bar (Sleek minimalist style) -->
-    <div class="flex items-center justify-end gap-3 mt-6 p-4 border border-border bg-card/10 rounded-md select-none">
+    <div class="sticky bottom-0 z-20 flex items-center justify-end gap-3 mt-6 p-3 border-t border-border bg-background/95 backdrop-blur-sm select-none">
       <Button 
         variant="outline" 
         class="text-xs h-9 px-4 cursor-pointer font-semibold shrink-0" 
@@ -183,6 +169,28 @@ onMount(async () => {
       >
         {m.common_action_cancel()}
       </Button>
+
+      {#if state.isEditMode}
+        <Button
+          variant="default"
+          class="h-9 px-4 text-xs font-semibold"
+          onclick={() => handleSave(state.registrationStatus)}
+          disabled={state.isSaving}
+        >
+          <Save class="me-1.5 h-4 w-4" />
+          {state.isSaving ? m.common_state_saving() : m.settings_action_save_changes()}
+        </Button>
+      {:else}
+        <Button
+          variant="default"
+          class="h-9 px-4 text-xs font-semibold"
+          onclick={() => handleSave("draft")}
+          disabled={state.isSaving}
+        >
+          <Save class="me-1.5 h-4 w-4" />
+          {state.isSaving ? m.common_state_saving() : m.common_form_btn_create()}
+        </Button>
+      {/if}
 
       <!-- Separate dropdown button for changing status -->
       <DropdownMenu>
@@ -195,7 +203,7 @@ onMount(async () => {
             <ChevronDown class="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent class="p-1 min-w-[160px] text-start" align="end">
+        <DropdownMenuContent class="p-1 min-w-40 text-start" align="end">
           {#if !state.isEditMode}
             <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => handleSave("draft")}>
               {m.common_action_save()}
