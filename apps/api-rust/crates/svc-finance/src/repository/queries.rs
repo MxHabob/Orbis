@@ -67,6 +67,8 @@ impl FinanceQueryRepo {
 
         query.filter(account::Column::ItemType.eq("asset"))
             .filter(account::Column::SubType.is_in(["cash", "bank"]))
+            .filter(account::Column::IsControlAccount.eq(0))
+            .filter(account::Column::IsActive.eq(1))
             .order_by_asc(account::Column::Name)
             .all(&self.db).await
     }

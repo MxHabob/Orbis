@@ -78,7 +78,7 @@ async function loadData() {
   try {
     const [studentList, treasuryList] = await Promise.all([
       commands.academic.listEnrollments(),
-      commands.finance.listAccounts().then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type))),
+      commands.finance.listAccounts().then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type) && account.is_active === 1 && account.is_control_account !== 1)),
     ]);
     students = studentList;
     treasuries = treasuryList;
@@ -203,11 +203,7 @@ async function handlePaymentSubmit(e: SubmitEvent) {
       currency: currency.trim().toUpperCase(),
     };
 
-    await commands.finance.recordPayment({
-      ...request,
-      exchange_rate: 1,
-      account_id: "", // Let backend resolve if needed via fee_id
-    } as any);
+    await commands.finance.record({ ...request, exchange_rate: undefined });
     toast.success(m.common_payment_toast_success());
 
     // Clean form elements

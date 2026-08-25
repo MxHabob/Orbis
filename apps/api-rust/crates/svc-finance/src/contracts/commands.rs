@@ -35,12 +35,11 @@ pub struct CreateJournalEntryCmd {
 pub struct RecordPaymentCmd {
     pub fee_id: Option<String>,
     pub enrollment_id: Option<String>,
-    pub account_id: String,
+    pub cash_account_id: String,
     pub amount: f64,
     pub currency: String,
-    pub exchange_rate: f64,
+    pub exchange_rate: Option<f64>,
     pub method: String,
-    pub cash_account_id: String,
     pub payer_name: Option<String>,
     pub notes: Option<String>,
 }

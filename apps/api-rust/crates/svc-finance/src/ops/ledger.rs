@@ -1,7 +1,7 @@
 //! Ledger account operations.
 
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, PaginatorTrait, QuerySelect, ConnectionTrait};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, PaginatorTrait, QuerySelect, ConnectionTrait, TransactionTrait};
 
 use uuid::Uuid;
 use serde::{Deserialize, Serialize};
@@ -434,86 +434,20 @@ pub async fn create_journal_entry(
     cmd: CreateJournalEntryCmd,
 ) -> Result<journal_entry::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceWrite).await?;
-
-    let child_count_debit = account::Entity::find()
-        .filter(account::Column::ParentId.eq(Some(cmd.debit_account_id.clone())))
-        .count(&ctx.db).await?;
-    if child_count_debit > 0 {
-        return Err(AppError::validation("Cannot post journal entries to a control account (debit account has child sub-accounts)"));
-    }
-
-    let child_count_credit = account::Entity::find()
-        .filter(account::Column::ParentId.eq(Some(cmd.credit_account_id.clone())))
-        .count(&ctx.db).await?;
-    if child_count_credit > 0 {
-        return Err(AppError::validation("Cannot post journal entries to a control account (credit account has child sub-accounts)"));
-    }
-
-    let debit_account = account::Entity::find_by_id(cmd.debit_account_id.clone())
-        .one(&ctx.db).await?
-        .ok_or_else(|| AppError::not_found("account", &cmd.debit_account_id))?;
-
-    let credit_account = account::Entity::find_by_id(cmd.credit_account_id.clone())
-        .one(&ctx.db).await?
-        .ok_or_else(|| AppError::not_found("account", &cmd.credit_account_id))?;
-
-    let je_id = Uuid::new_v4().to_string();
-    let now = Utc::now().to_rfc3339();
-
-    let je = journal_entry::Model {
-        id: je_id.clone(),
-        org_id: ctx.org_id.clone(),
-        transaction_ref: cmd.transaction_ref,
-        accounting_date: cmd.accounting_date,
-        fiscal_period_id: cmd.fiscal_period_id,
-        amount: cmd.amount,
-        debit_account_id: cmd.debit_account_id.clone(),
-        credit_account_id: cmd.credit_account_id.clone(),
-        currency: cmd.currency.clone(),
-        exchange_rate: cmd.exchange_rate.or(Some(1.0)),
-        base_currency_amount: Some(cmd.amount * cmd.exchange_rate.unwrap_or(1.0)),
-        source_type: cmd.source_type,
-        source_id: cmd.source_id,
-        source_module: cmd.source_module,
-        description: cmd.description,
-        description_ar: cmd.description_ar,
-        metadata: None,
-        is_reversed: 0,
-        reversed_by: None,
-        reversal_reason: None,
-        is_reconciled: 0,
-        reconciled_at: None,
-        reconciliation_ref: None,
-        status: "posted".to_string(),
-        posted_by: Some(ctx.actor.as_str().to_string()),
-        posted_at: Some(now.clone()),
-        approved_by: Some(ctx.actor.as_str().to_string()),
-        approved_at: Some(now.clone()),
-        created_by: Some(ctx.actor.as_str().to_string()),
-        created_at: now.clone(),
-    };
-
-    let active: journal_entry::ActiveModel = je.into();
-    let created_je = active.insert(&ctx.db).await?;
-
-    let debit_change = match debit_account.item_type.to_lowercase().as_str() {
-        "asset" | "expense" => cmd.amount,
-        _ => -cmd.amount,
-    };
-    
-    let repo = crate::repository::FinanceCommandRepo::new(ctx.db.clone());
-    repo.update_account_balance(&cmd.debit_account_id, &cmd.currency, debit_change).await?;
-
-    let credit_change = match credit_account.item_type.to_lowercase().as_str() {
-        "asset" | "expense" => -cmd.amount,
-        _ => cmd.amount,
-    };
-    
-    repo.update_account_balance(&cmd.credit_account_id, &cmd.currency, credit_change).await?;
+    let txn = ctx.db.begin().await
+        .map_err(|e| AppError::internal(format!("Failed to start journal transaction: {e}")))?;
+    let created_je = post_journal_entry(
+        &txn,
+        &ctx.org_id,
+        Some(ctx.actor.as_str()),
+        cmd,
+    ).await?;
+    txn.commit().await
+        .map_err(|e| AppError::internal(format!("Failed to commit journal transaction: {e}")))?;
 
     ctx.event_bus.publish(EventEnvelope {
         event_type: event_types::JOURNAL_ENTRY_POSTED.into(),
-        entity_type: "journal_entry".into(), entity_id: je_id.clone(),
+        entity_type: "journal_entry".into(), entity_id: created_je.id.clone(),
         org_id: ctx.org_id.clone(), actor: ctx.actor.as_str().into(),
         actor_type: ctx.actor.actor_type().into(), correlation_id: ctx.correlation_id.clone(),
         payload: serde_json::to_value(&created_je).unwrap_or_default(),
@@ -523,7 +457,7 @@ pub async fn create_journal_entry(
     ctx.audit.log(AuditEntry {
         org_id: ctx.org_id.clone(), actor: ctx.actor.clone(),
         action: "journal_entry.post".into(), entity_type: "journal_entry".into(),
-        entity_id: je_id, old_data: None,
+        entity_id: created_je.id.clone(), old_data: None,
         new_data: Some(serde_json::to_value(&created_je).unwrap_or_default()),
         correlation_id: ctx.correlation_id.clone(),
     }).await?;
@@ -540,6 +474,7 @@ pub async fn post_journal_entry<C: ConnectionTrait>(
     cmd: CreateJournalEntryCmd,
 ) -> Result<journal_entry::Model, AppError> {
     let child_count_debit = account::Entity::find()
+        .filter(account::Column::OrgId.eq(org_id))
         .filter(account::Column::ParentId.eq(Some(cmd.debit_account_id.clone())))
         .count(conn).await?;
     if child_count_debit > 0 {
@@ -547,6 +482,7 @@ pub async fn post_journal_entry<C: ConnectionTrait>(
     }
 
     let child_count_credit = account::Entity::find()
+        .filter(account::Column::OrgId.eq(org_id))
         .filter(account::Column::ParentId.eq(Some(cmd.credit_account_id.clone())))
         .count(conn).await?;
     if child_count_credit > 0 {
@@ -554,12 +490,28 @@ pub async fn post_journal_entry<C: ConnectionTrait>(
     }
 
     let debit_account = account::Entity::find_by_id(cmd.debit_account_id.clone())
+        .filter(account::Column::OrgId.eq(org_id))
         .one(conn).await?
         .ok_or_else(|| AppError::not_found("account", &cmd.debit_account_id))?;
 
     let credit_account = account::Entity::find_by_id(cmd.credit_account_id.clone())
+        .filter(account::Column::OrgId.eq(org_id))
         .one(conn).await?
         .ok_or_else(|| AppError::not_found("account", &cmd.credit_account_id))?;
+
+    if debit_account.is_active != 1 || credit_account.is_active != 1 {
+        return Err(AppError::validation("Journal entries require active accounts"));
+    }
+    let currency_is_active = currency::Entity::find()
+        .filter(currency::Column::OrgId.eq(org_id))
+        .filter(currency::Column::Code.eq(cmd.currency.to_uppercase()))
+        .filter(currency::Column::IsActive.eq(1))
+        .one(conn)
+        .await?
+        .is_some();
+    if !currency_is_active {
+        return Err(AppError::validation(format!("Currency {} is not active", cmd.currency)));
+    }
 
     let je_id = Uuid::new_v4().to_string();
     let now = Utc::now().to_rfc3339();

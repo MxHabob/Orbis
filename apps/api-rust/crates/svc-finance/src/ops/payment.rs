@@ -41,6 +41,7 @@ pub async fn record(
 
     let fee_id = cmd.fee_id.ok_or_else(|| AppError::validation("fee_id is required"))?;
     let fee = student_fee::Entity::find_by_id(fee_id.clone())
+        .filter(student_fee::Column::OrgId.eq(&ctx.org_id))
         .one(&ctx.db)
         .await?
         .ok_or_else(|| AppError::not_found("student_fee", &fee_id))?;
@@ -56,6 +57,7 @@ pub async fn record(
     ).await?;
 
     let cash_account = account::Entity::find_by_id(cmd.cash_account_id.clone())
+        .filter(account::Column::OrgId.eq(&ctx.org_id))
         .one(&ctx.db)
         .await?
         .ok_or_else(|| AppError::not_found("cash_account", &cmd.cash_account_id))?;

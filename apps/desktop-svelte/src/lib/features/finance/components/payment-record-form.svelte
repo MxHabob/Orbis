@@ -1,7 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/core/ipc";
-import { authStore } from "$lib/stores";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { toast } from "svelte-sonner";
@@ -154,7 +153,6 @@ async function handleSubmit(e: SubmitEvent) {
 
   isSubmitting = true;
   try {
-    const createdBy = authStore.userId || authStore.user?.id || "unknown";
     const request = {
       fee_id: selectedFeeId,
       amount: Number(amount),
@@ -166,10 +164,10 @@ async function handleSubmit(e: SubmitEvent) {
             : "card",
       reference: referenceNumber || undefined,
       notes: notes || undefined,
-	cash_account_id: selectedTreasuryId,
+      cash_account_id: selectedTreasuryId,
       currency: currency.trim().toUpperCase(),
     };
-    await commands.finance.recordPayment(createdBy, request);
+	await commands.finance.record({ ...request, exchange_rate: undefined });
     toast.success(m.common_payment_toast_success());
 
     // Reset form

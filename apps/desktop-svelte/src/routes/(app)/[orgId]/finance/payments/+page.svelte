@@ -175,7 +175,7 @@ async function loadData() {
   try {
     const [paymentsList, treasuriesList, studentsList] = await Promise.all([
       commands.finance.listPayments(null, null),
-      commands.finance.listAccounts().then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type))),
+      commands.finance.listAccounts().then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type) && account.is_active === 1 && account.is_control_account !== 1)),
       commands.academic.listEnrollments(),
     ]);
 
@@ -462,11 +462,7 @@ async function handleAdd() {
           cash_account_id: treasuryId,
           currency: currency.trim().toUpperCase(),
         };
-        await commands.finance.recordPayment({
-          ...request,
-          exchange_rate: 1,
-          account_id: "",
-        } as any);
+        await commands.finance.record({ ...request, exchange_rate: undefined });
       }
     }
 
@@ -474,49 +470,8 @@ async function handleAdd() {
     await loadData();
     clearForm();
   } catch (e) {
-    console.error(
-      "Backend recordPayment failed, falling back to local simulation:",
-      e,
-    );
-
-    // Simulated local additions
-    for (const row of paymentRows) {
-      for (const feeId of row.selectedFees) {
-        const feeAmount = row.feeAmounts[feeId];
-        const fee = row.availableFees.find((f) => String(f.id) === feeId);
-
-        const newPayment = {
-          id: Math.random().toString(36).substring(2, 9),
-          receipt_number: randomRef,
-          payment_date: paymentDate,
-          created_at: new Date().toISOString(),
-          amount: feeAmount,
-          currency,
-          payment_method: paymentMethod,
-          cash_account_id: treasuryId,
-          treasury_name:
-            treasuries.find((t) => t.id === treasuryId)?.name ||
-            m.finance_payments_collections_cash_account(),
-          student_name: getStudentName(row.studentEnrollmentId),
-          student_number:
-            students.find((s) => String(s.id) === row.studentEnrollmentId)
-              ?.student_number || "",
-          check_info: checkInfo,
-          notes:
-            row.notes ||
-            `سداد رسوم الطالب ${getStudentName(row.studentEnrollmentId)} - ${fee?.notes || m.finance_payments_tuition_fees()}`,
-          reference_number: newRefNum,
-          prints_count: 0,
-          user: "U78",
-          branch: "المركز الرئيسي",
-          fee_id: feeId,
-        };
-        payments = [newPayment, ...payments];
-      }
-    }
-
-    toast.success(`تم إضافة سندات القبض محلياً برقم ${randomRef}`);
-    clearForm();
+    console.error("Backend payment recording failed:", e);
+    toast.error(e instanceof Error ? e.message : String(e));
   }
 }
 
@@ -526,10 +481,7 @@ function handleVoid() {
     return;
   }
 
-  const deletedNum = receiptNumber;
-  payments = payments.filter((p) => p.id !== selectedPayment.id);
-  toast.success(`تم إلغاء وعكس السند رقم ${deletedNum} بنجاح`);
-  clearForm();
+  toast.error("إلغاء السند يتطلب إنشاء قيد عكسي من النظام المحاسبي");
 }
 
 function handlePrintList() {
