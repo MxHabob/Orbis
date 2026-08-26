@@ -63,6 +63,13 @@ pub async fn academic_class_list_students(state: State<'_, Arc<AppState>>, class
 }
 
 #[tauri::command]
+pub async fn academic_class_list_enriched_students(state: State<'_, Arc<AppState>>, class_id: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::class::list_enriched_students(&ctx, &class_id).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
 pub async fn academic_class_subject_list(state: State<'_, Arc<AppState>>, class_id: String, period_id: Option<String>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::class_subject::list(&ctx, &class_id, period_id.as_deref()).await.map_err(CommandError::from)?;

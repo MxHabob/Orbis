@@ -32,7 +32,7 @@
 
   onMount(loadSubject);
 
-  const basePath = $derived(`/${orgId}/academics/classes/${classId}/subjects/${classSubjectId}`);
+  const basePath = $derived(`/${orgId}/academics/classes/${classId}/curriculum/${classSubjectId}`);
   const links = $derived([
     { path: "", label: isArabic ? "ملخص المادة" : "Subject overview", icon: BookOpen },
     { path: "assessment-scheme", label: isArabic ? "نظام التقييم" : "Assessment scheme", icon: ClipboardCheck },

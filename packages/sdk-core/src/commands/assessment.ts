@@ -16,7 +16,7 @@ export interface AssessmentCommands {
   updateComponent(componentId: string, data: any): Promise<any>;
   deleteComponent(componentId: string): Promise<void>;
   listComponentsForClassSubject(classSubjectId: string, periodId: string): Promise<any[]>;
-  classMetrics(periodId: string): Promise<any[]>;
+  classMetrics(periodId: string, classId: string | null): Promise<any[]>;
   listAttendances(classId: string, date: string): Promise<any[]>;
   getReport(PeriodId: string, enrollmentId: string): Promise<any>;
   getAnalytics(periodId: string, classId: string): Promise<any>;
@@ -77,6 +77,7 @@ export interface AssessmentCommands {
   listPeriodScores(periodId: string, classSubjectId: string | null): Promise<any[]>;
   listOverallResults(periodId: string): Promise<any[]>;
   listTermResults(termPeriodId: string, classSubjectId: string | null): Promise<any[]>;
+  listTermResultsEnriched(termPeriodId: string, classSubjectId: string | null): Promise<any[]>;
   getResult2(resultId: string): Promise<any>;
   calculateTermResult(req: any): Promise<any>;
   calculateTermResultsBatch(termPeriodId: string, classId: string, gradingPeriodIds: string[], examPeriodId: string | null): Promise<any[]>;

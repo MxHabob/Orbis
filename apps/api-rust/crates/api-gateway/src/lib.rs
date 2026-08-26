@@ -70,6 +70,7 @@ pub async fn start_server(_database_url: &str, port: u16) -> Result<(), Box<dyn 
         .route("/api/classes", get(handler::class::get_classes).post(handler::class::post_classes))
         .route("/api/classes/:id", put(handler::class::put_class).delete(handler::class::delete_class))
         .route("/api/classes/:id/students", get(handler::class::get_class_students))
+        .route("/api/classes/:id/students/enriched", get(handler::class::get_class_students_enriched))
         // Subjects
         .route("/api/subjects", get(handler::subject::get_subjects).post(handler::subject::post_subjects))
         .route("/api/subjects/:id", put(handler::subject::put_subject).delete(handler::subject::delete_subject))

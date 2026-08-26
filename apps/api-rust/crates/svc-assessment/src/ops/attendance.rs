@@ -36,35 +36,44 @@ pub struct ClassMetrics {
 pub async fn class_metrics(
     ctx: &ServiceContext,
     period_id: &str,
+    class_id: Option<&str>,
 ) -> Result<Vec<ClassMetrics>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AttendanceAnalytics).await?;
 
-    let classes = svc_academic::entities::class::Entity::find()
+    let mut classes_query = svc_academic::entities::class::Entity::find()
         .filter(svc_academic::entities::class::Column::OrgId.eq(&ctx.org_id))
         .filter(svc_academic::entities::class::Column::PeriodId.eq(period_id))
         .filter(svc_academic::entities::class::Column::IsDeleted.eq(0))
-        .filter(svc_academic::entities::class::Column::IsActive.eq(1))
-        .all(&ctx.db)
-        .await?;
+        .filter(svc_academic::entities::class::Column::IsActive.eq(1));
+    if let Some(c_id) = class_id {
+        classes_query = classes_query.filter(svc_academic::entities::class::Column::Id.eq(c_id));
+    }
+    let classes = classes_query.all(&ctx.db).await?;
 
-    let enrollments = svc_academic::entities::enrollment::Entity::find()
+    let mut enrollments_query = svc_academic::entities::enrollment::Entity::find()
         .filter(svc_academic::entities::enrollment::Column::OrgId.eq(&ctx.org_id))
         .filter(svc_academic::entities::enrollment::Column::PeriodId.eq(period_id))
-        .filter(svc_academic::entities::enrollment::Column::Status.eq("active"))
-        .all(&ctx.db)
-        .await?;
+        .filter(svc_academic::entities::enrollment::Column::Status.eq("active"));
+    if let Some(c_id) = class_id {
+        enrollments_query = enrollments_query.filter(svc_academic::entities::enrollment::Column::ClassId.eq(c_id));
+    }
+    let enrollments = enrollments_query.all(&ctx.db).await?;
 
-    let attendance_records = attendance::Entity::find()
+    let mut attendance_query = attendance::Entity::find()
         .filter(attendance::Column::OrgId.eq(&ctx.org_id))
-        .filter(attendance::Column::PeriodId.eq(period_id))
-        .all(&ctx.db)
-        .await?;
+        .filter(attendance::Column::PeriodId.eq(period_id));
+    if let Some(c_id) = class_id {
+        attendance_query = attendance_query.filter(attendance::Column::ClassId.eq(c_id));
+    }
+    let attendance_records = attendance_query.all(&ctx.db).await?;
 
-    let class_subjects = svc_academic::entities::class_subject::Entity::find()
+    let mut class_subjects_query = svc_academic::entities::class_subject::Entity::find()
         .filter(svc_academic::entities::class_subject::Column::PeriodId.eq(period_id))
-        .filter(svc_academic::entities::class_subject::Column::IsActive.eq(1))
-        .all(&ctx.db)
-        .await?;
+        .filter(svc_academic::entities::class_subject::Column::IsActive.eq(1));
+    if let Some(c_id) = class_id {
+        class_subjects_query = class_subjects_query.filter(svc_academic::entities::class_subject::Column::ClassId.eq(c_id));
+    }
+    let class_subjects = class_subjects_query.all(&ctx.db).await?;
 
     let mut enrollment_counts = HashMap::<String, usize>::new();
     for enrollment in &enrollments {

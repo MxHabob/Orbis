@@ -9,6 +9,7 @@ export interface AcademicCommands {
   deleteClass(classId: string): Promise<void>;
   assignTeacher(classId: string, teacherId: string): Promise<any>;
   listStudents(classId: string): Promise<any[]>;
+  listEnrichedStudents(classId: string): Promise<any[]>;
   listClassSubjects(classId: string, periodId: string | null): Promise<any[]>;
   listClassSubjectsByTeacher(teacherId: string, periodId: string): Promise<any[]>;
   createClassSubject(data: any): Promise<any>;

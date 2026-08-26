@@ -15,6 +15,8 @@ use crate::entities::{
 use crate::ops::calc_engine::{apply_rounding, AstNode, CalcEngine};
 use crate::ops::grade_mapper::{GradeMapper, GradeScaleItemData};
 use crate::ops::resolution;
+use svc_iam::entities::{person, user};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct TermCalcRequest {
@@ -67,6 +69,74 @@ pub async fn list_term_results(
         q = q.filter(term_result::Column::ClassSubjectId.eq(cs));
     }
     Ok(q.order_by_asc(term_result::Column::StudentId).all(&ctx.db).await?)
+}
+
+pub async fn list_term_results_enriched(
+    ctx: &ServiceContext,
+    term_period_id: &str,
+    class_subject_id: Option<&str>,
+) -> Result<Vec<serde_json::Value>, AppError> {
+    let results = list_term_results(ctx, term_period_id, class_subject_id).await?;
+    if results.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let student_ids: Vec<String> = results.iter().map(|r| r.student_id.clone()).collect();
+    
+    let persons_by_id: HashMap<String, person::Model> = person::Entity::find()
+        .filter(person::Column::Id.is_in(student_ids.clone()))
+        .all(&ctx.db)
+        .await?
+        .into_iter()
+        .map(|p| (p.id.clone(), p))
+        .collect();
+
+    let users_by_id: HashMap<String, user::Model> = user::Entity::find()
+        .filter(user::Column::Id.is_in(student_ids.clone()))
+        .all(&ctx.db)
+        .await?
+        .into_iter()
+        .map(|u| (u.id.clone(), u))
+        .collect();
+        
+    let mut missing_person_ids = Vec::new();
+    for u in users_by_id.values() {
+        if !persons_by_id.contains_key(&u.person_id) {
+            missing_person_ids.push(u.person_id.clone());
+        }
+    }
+    
+    let persons_from_users: HashMap<String, person::Model> = if !missing_person_ids.is_empty() {
+        person::Entity::find()
+            .filter(person::Column::Id.is_in(missing_person_ids))
+            .all(&ctx.db)
+            .await?
+            .into_iter()
+            .map(|p| (p.id.clone(), p))
+            .collect()
+    } else {
+        HashMap::new()
+    };
+
+    let mut enriched = Vec::with_capacity(results.len());
+    for r in results {
+        let mut val = serde_json::to_value(&r).unwrap_or_default();
+        let person_opt = persons_by_id.get(&r.student_id).or_else(|| {
+            users_by_id.get(&r.student_id).and_then(|u| persons_by_id.get(&u.person_id).or_else(|| persons_from_users.get(&u.person_id)))
+        });
+        let user_opt = users_by_id.get(&r.student_id);
+
+        if let Some(obj) = val.as_object_mut() {
+            let full_name = person_opt
+                .and_then(|p| p.full_name.clone().or_else(|| Some(p.first_name.clone())))
+                .or_else(|| user_opt.map(|u| u.full_name.clone()))
+                .unwrap_or_default();
+            obj.insert("student_name".into(), serde_json::Value::String(full_name.clone()));
+            obj.insert("full_name".into(), serde_json::Value::String(full_name));
+        }
+        enriched.push(val);
+    }
+    Ok(enriched)
 }
 
 pub async fn get_result(ctx: &ServiceContext, result_id: &str) -> Result<term_result::Model, AppError> {

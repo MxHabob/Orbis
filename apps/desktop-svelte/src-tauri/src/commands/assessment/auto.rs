@@ -124,9 +124,9 @@ pub async fn assessment_assessment_scheme_list_components_for_class_subject(stat
 }
 
 #[tauri::command]
-pub async fn assessment_attendance_class_metrics(state: State<'_, Arc<AppState>>, period_id: String) -> CmdResult<serde_json::Value> {
+pub async fn assessment_attendance_class_metrics(state: State<'_, Arc<AppState>>, period_id: String, class_id: Option<String>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::attendance::class_metrics(&ctx, &period_id).await.map_err(CommandError::from)?;
+    let result = ops::attendance::class_metrics(&ctx, &period_id, class_id.as_deref()).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -619,6 +619,13 @@ pub async fn assessment_snapshot_generator_list_overall_results(state: State<'_,
 pub async fn assessment_term_engine_list_term_results(state: State<'_, Arc<AppState>>, term_period_id: String, class_subject_id: Option<String>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::term_engine::list_term_results(&ctx, &term_period_id, class_subject_id.as_deref()).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn assessment_term_engine_list_term_results_enriched(state: State<'_, Arc<AppState>>, term_period_id: String, class_subject_id: Option<String>) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::term_engine::list_term_results_enriched(&ctx, &term_period_id, class_subject_id.as_deref()).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 

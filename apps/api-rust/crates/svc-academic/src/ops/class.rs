@@ -266,3 +266,11 @@ pub async fn list_students(
         .all(&ctx.db)
         .await?)
 }
+
+pub async fn list_enriched_students(
+    ctx: &ServiceContext,
+    class_id: &str,
+) -> Result<Vec<serde_json::Value>, AppError> {
+    let enrollments = list_students(ctx, class_id).await?;
+    crate::ops::enrollment::enrich_enrollment_models(&ctx.db, &enrollments).await
+}

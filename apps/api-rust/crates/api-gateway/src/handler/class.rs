@@ -38,3 +38,10 @@ pub async fn get_class_students(State(state): State<AppState>, Path(id): Path<St
     let r = ops::class::list_students(&ctx, &id).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(r)
 }
+
+#[utoipa::path(get, path = "/api/classes/{id}/students/enriched")]
+pub async fn get_class_students_enriched(State(state): State<AppState>, Path(id): Path<String>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let ctx = state.build_context(&user.org_id, &user.id);
+    let r = ops::class::list_enriched_students(&ctx, &id).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
+    ok!(r)
+}

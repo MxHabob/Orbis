@@ -91,16 +91,11 @@ const menuItems = $derived([
     icon: UserRound,
   },
   {
-    path: "subjects",
+    path: "curriculum",
     label: m.academics_class_detail_tab_subjects
       ? m.academics_class_detail_tab_subjects()
       : "المواد",
     icon: BookOpen,
-  },
-  {
-    path: "teachers",
-    label: m.common_year_teachers ? m.common_year_teachers() : "المعلمون",
-    icon: BookUser,
   },
 ]);
 </script>

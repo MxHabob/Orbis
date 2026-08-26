@@ -13,7 +13,7 @@
   const classId = $derived(String(page.params.classId || ""));
   const classSubjectId = $derived(String(page.params.classSubjectId || ""));
   const isArabic = $derived(getLocale() === "ar");
-  let students = $state<any[]>([]);
+  
   let results = $state<any[]>([]);
   let terms = $state<any[]>([]);
   let selectedTermId = $state("");
@@ -21,7 +21,6 @@
   let isCalculating = $state(false);
   let error = $state("");
 
-  const studentByEnrollment = $derived(new Map(students.map((student) => [String(student.id), student])));
   const passedCount = $derived(results.filter((result) => result.is_passing).length);
 
   function label(period: any): string {
@@ -29,13 +28,12 @@
   }
 
   function studentName(result: any): string {
-    const student = studentByEnrollment.get(String(result.enrollment_id));
-    return student?.full_name || student?.name_ar || student?.name || result.student_id || "-";
+    return result.student_name || result.student_id || "-";
   }
 
   async function loadResults() {
     results = selectedTermId
-      ? await commands.assessment.listTermResults(selectedTermId, classSubjectId || null)
+      ? await commands.assessment.listTermResultsEnriched(selectedTermId, classSubjectId || null)
       : [];
   }
 
@@ -43,13 +41,11 @@
     isLoading = true;
     error = "";
     try {
-      const [periodList, enrollmentList, classList] = await Promise.all([
+      const [periodList, classList] = await Promise.all([
         commands.calendar.listAcademicPeriods(),
-        commands.academic.listEnrollments(),
         commands.academic.listClasses(),
       ]);
       const classData = classList.find((item: any) => String(item.id) === classId);
-      students = enrollmentList.filter((item: any) => String(item.class_id) === classId);
       const yearId = classData?.period_id || periodList.find((item: any) => item.period_type === "year" && item.status === "active")?.id;
       terms = periodList.filter((item: any) => String(item.parent_id) === String(yearId) && (item.period_type === "term" || item.period_type === "semester"));
       selectedTermId = terms.some((term) => String(term.id) === selectedTermId) ? selectedTermId : String(terms[0]?.id || yearId || "");

@@ -4,8 +4,7 @@ import type * as Types from '../types/index.js';
 export interface DocumentCommands {
   listDocuments(ownerId: string | null, entityType: string | null, category: string | null, request: any): Promise<any>;
   deleteDocument(id: string): Promise<void>;
-  uploadDocument(request: { file: File; entity_type: string; entity_id: string; category: string; visibility: string }): Promise<any>;
-  getDocuments(request: { ownerId?: string; entityType?: string; category?: string; cursor?: string; limit?: number } | null): Promise<any>;
+  uploadDocument(fileName: string, mimeType: string, bytes: any[], entityType: string, entityId: string, category: string, visibility: string): Promise<any>;
   getDocuments(ownerId: string | null, entityType: string | null, category: string | null, cursor: string | null, limit: number | null): Promise<any>;
   storageDeleteDocument(id: string): Promise<any>;
 }

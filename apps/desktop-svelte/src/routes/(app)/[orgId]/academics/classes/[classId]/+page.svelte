@@ -22,14 +22,6 @@ import { toast } from "svelte-sonner";
 import AttendanceTrendsCard from "$lib/features/metrics/cards/attendance-trends-card.svelte";
 import GradeDistributionCard from "$lib/features/metrics/cards/grade-distribution-card.svelte";
 import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@orbis/ui-svelte/select";
-import { OrbisGrid } from "@orbis/svelte-grid";
-import { buildGradeColumns, transformMatrixToSource } from "$lib/tables";
-import {
   AlertTriangle,
   Activity,
   Sparkles,
@@ -49,167 +41,59 @@ const periodId = $derived(academicContext.effectivePeriodId);
 const rtl = $derived(getLocale() === "ar");
 
 // ── TanStack Queries ──────────────────────────────────────────────────────────
-const enrollmentsQuery = createQuery(() => ({
-  queryKey: ["enrollments", orgId],
-  queryFn: () => commands.academic.listEnrollments(),
-  enabled: !!orgId,
+const studentsQuery = createQuery(() => ({
+  queryKey: ["class-students-enriched", classId],
+  queryFn: () => commands.academic.listEnrichedStudents(classId).catch(() => []),
+  enabled: !!classId,
   staleTime: 5 * 60 * 1000,
 }));
 
 const classSubjectsQuery = createQuery(() => ({
-  queryKey: ["class-subjects", classId, orgId],
-  queryFn: async () => {
-    const classes = await commands.academic.listClasses();
-    const classData = classes.find((item: any) => String(item.id) === classId);
-    return commands.academic.listClassSubjects(classId, String(classData?.period_id || ""));
-  },
-  enabled: !!classId && !!orgId,
+  queryKey: ["class-subjects", classId, periodId],
+  queryFn: () => commands.academic.listClassSubjects(classId, periodId).catch(() => []),
+  enabled: !!classId && !!periodId,
   staleTime: 5 * 60 * 1000,
 }));
 
-const assessmentsQuery = createQuery(() => ({
-  queryKey: ["assessments", classId, periodId],
-  queryFn: () => commands.assessment.listAssessmentSchemes().catch(() => []),
-  enabled: !!classId && !!periodId && !!orgId,
+const classMetricsQuery = createQuery(() => ({
+  queryKey: ["class-metrics", classId, periodId],
+  queryFn: () => commands.assessment.classMetrics(periodId, classId).catch(() => []),
+  enabled: !!classId && !!periodId,
   staleTime: 5 * 60 * 1000,
 }));
 
-// Dynamic class attendance analytics
-const attendanceQuery = createQuery(() => ({
-  queryKey: ["attendance-analytics", orgId, classId, periodId],
-  queryFn: () => {
-    const year = new Date().getFullYear();
-    return commands.assessment
-      .report(classId, `${year}-01-01`, `${year}-12-31`)
-      .catch(() => []);
-  },
-  enabled: !!orgId && !!classId && !!periodId,
-  staleTime: 5 * 60 * 1000,
-}));
-
-const gradesQuery = createQuery(() => ({
-  queryKey: ["grades", periodId],
-  queryFn: () => commands.assessment.listGrades(periodId || "").catch(() => []),
-  enabled: !!periodId,
-  staleTime: 5 * 60 * 1000,
-}));
-
-const filteredStudents = $derived(
-  ((enrollmentsQuery.data || []) as any[]).filter(
-    (s: any) => String(s.class_id) === classId,
-  ),
-);
-
+const filteredStudents = $derived((studentsQuery.data || []) as any[]);
 const studentsCount = $derived(filteredStudents.length);
 const subjectsCount = $derived(
-  new Set(
-    ((classSubjectsQuery.data || []) as any[]).map((cs: any) =>
-      String(cs.subject_id),
-    ),
-  ).size,
+  new Set(((classSubjectsQuery.data || []) as any[]).map((cs: any) => String(cs.subject_id))).size
 );
-
-const assessmentsCount = $derived.by(() => {
-  const allAssessments = (assessmentsQuery.data || []) as any[];
-  const classSubjectIds = new Set(
-    ((classSubjectsQuery.data || []) as any[]).map((cs: any) => cs.id),
-  );
-  return allAssessments.filter((a: any) =>
-    classSubjectIds.has(a.class_subject_id),
-  ).length;
-});
 
 const attendanceRate = $derived.by(() => {
-  const list = (attendanceQuery.data || []) as any[];
-  if (list.length === 0) return 100;
-  const presentCount = list.filter(
-    (r: any) =>
-      r.status === "present" ||
-      r.status === "late" ||
-      String(r.status).toLowerCase().includes("present") ||
-      String(r.status).includes("حاضر"),
-  ).length;
-  return Math.round((presentCount / list.length) * 100);
+  const metrics = (classMetricsQuery.data || []) as any[];
+  if (metrics.length === 0) return 100;
+  const m = metrics[0];
+  if (!m || !m.total_attendance_records || m.total_attendance_records === 0) return 100;
+  return Math.round((m.present_records / m.total_attendance_records) * 100);
 });
 
-const avgGradeScore = $derived.by(() => {
-  const list = (gradesQuery.data || []) as any[];
-  const studentIds = new Set(filteredStudents.map((s: any) => s.id));
-  const classGrades = list.filter((g) => studentIds.has(g.enrollment_id));
-  if (classGrades.length === 0) return 0;
-  const sum = classGrades.reduce((acc, curr) => acc + (curr.score || 0), 0);
-  return Math.round(sum / classGrades.length);
-});
-
-const classHealthIndex = $derived(
-  Math.min(100, Math.round(attendanceRate * 0.6 + avgGradeScore * 0.4)),
-);
+const classHealthIndex = $derived(Math.min(100, Math.round(attendanceRate)));
 
 const isLoading = $derived(
-  enrollmentsQuery.isLoading ||
-    classSubjectsQuery.isLoading ||
-    assessmentsQuery.isLoading ||
-    gradesQuery.isLoading ||
-    attendanceQuery.isLoading,
+  studentsQuery.isLoading ||
+  classSubjectsQuery.isLoading ||
+  classMetricsQuery.isLoading
 );
 
 const error = $derived(
-  enrollmentsQuery.error ||
-    classSubjectsQuery.error ||
-    assessmentsQuery.error ||
-    gradesQuery.error ||
-    attendanceQuery.error,
+  studentsQuery.error ||
+  classSubjectsQuery.error ||
+  classMetricsQuery.error
 );
 
 function refetchAll() {
-  enrollmentsQuery.refetch();
+  studentsQuery.refetch();
   classSubjectsQuery.refetch();
-  assessmentsQuery.refetch();
-  gradesQuery.refetch();
-  attendanceQuery.refetch();
-  if (selectedSubjectId) {
-    gradeMatrixQuery.refetch();
-  }
-}
-
-// ── Subject & Grade Matrix Selection ──
-let selectedSubjectId = $state<string>("");
-
-$effect(() => {
-  const subjects = (classSubjectsQuery.data || []) as any[];
-  if (subjects.length > 0 && !selectedSubjectId) {
-    selectedSubjectId = String(subjects[0].subject_id || subjects[0].id);
-  }
-});
-
-const gradeMatrixQuery = createQuery(() => ({
-  queryKey: ["grade-matrix", orgId, periodId, classId, selectedSubjectId],
-  queryFn: () =>
-    (commands.assessment as any).getGradeMatrix(
-      orgId,
-      periodId,
-      classId,
-      selectedSubjectId,
-    ),
-  enabled: !!orgId && !!periodId && !!classId && !!selectedSubjectId,
-  staleTime: 2 * 60 * 1000,
-}));
-
-const gridColumns = $derived.by(() => {
-  if (!gradeMatrixQuery.data) return [];
-  return buildGradeColumns(gradeMatrixQuery.data as any, {
-    readonly: true,
-    locale: getLocale(),
-  });
-});
-
-const gridSource = $derived.by(() => {
-  if (!gradeMatrixQuery.data) return [];
-  return transformMatrixToSource(gradeMatrixQuery.data as any, getLocale(), academicContext.gradeScaleItems);
-});
-
-async function handleCellEdit(event: any) {
-  // Readonly preview by default in overview
+  classMetricsQuery.refetch();
 }
 
 // Dynamic diagnostic alerts using real query states
@@ -226,36 +110,6 @@ const diagnosticIssues = $derived.by(() => {
       desc: m.academics_class_overview_no_students_desc(),
       priority: "critical",
       actionText: m.academics_class_overview_view_students(),
-    });
-  }
-
-  if (
-    studentsCount > 0 &&
-    (!gradesQuery.data || gradesQuery.data.length === 0)
-  ) {
-    issues.push({
-      id: "no-grades",
-      type: "academic",
-      title: m.academics_class_overview_no_grades_title(),
-      desc: m.academics_class_overview_no_grades_desc(),
-      priority: "medium",
-      actionText: m.academics_class_overview_record_grades(),
-    });
-  }
-
-  const failingRecords = (gradesQuery.data || []).filter(
-    (g) => g.score !== null && g.score < 50,
-  );
-  if (failingRecords.length > 0) {
-    issues.push({
-      id: "low-performance",
-      type: "academic",
-      title: m.academics_class_overview_low_performance_title(),
-      desc: m.academics_class_overview_low_performance_desc({
-        count: String(failingRecords.length),
-      }),
-      priority: "high",
-      actionText: m.academics_class_overview_view_grades(),
     });
   }
 
@@ -321,68 +175,8 @@ function handleTriggerAction(issue: any) {
       <!-- ── 5. Main Double Column Layout: Left Stack Trace / Right Sidebar ── -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 font-sans">
         
-        <!-- LEFT: Sentry Stack Trace Wrapper embedding Class Grade Matrix (70%) -->
+        <!-- LEFT: Sentry Stack Trace Wrapper embedding Class Alerts (70%) -->
         <div class="lg:col-span-2 flex flex-col gap-6">
-          
-          <!-- Stack Trace mock section: represents classroom grades spreadsheet matrix -->
-          <div class="border border-border bg-card/60 rounded-xl overflow-hidden shadow-sm text-start">
-            <div class="flex items-center justify-between bg-muted/20 border-b border-border/40 p-3 select-none">
-              <span class="font-mono text-xs font-bold text-foreground">
-                Gradebook preview: {m.academics_class_overview_grade_matrix_sheet()}
-              </span>
-              <span class="bg-primary/10 border border-primary/20 text-primary text-[8px] font-extrabold uppercase py-0.5 px-2.5 rounded font-sans">
-                {m.academics_class_overview_grade_matrix_preview()}
-              </span>
-            </div>
-
-            <!-- Subject Selector & Embedded Grade Matrix spreadsheet grid -->
-            <div class="p-3 flex flex-col gap-3 font-sans">
-              <div class="flex items-center gap-2 select-none">
-                <span class="text-[10px] text-muted-foreground font-bold">{m.common_word_subject()}:</span>
-                <Select type="single" value={selectedSubjectId} onValueChange={(v) => { if (v) selectedSubjectId = v; }}>
-                  <SelectTrigger class="w-45 text-xs h-7.5 bg-background">
-                    <div class="flex items-center gap-1.5 min-w-0">
-                      <BookOpen size={11} class="text-muted-foreground shrink-0" />
-                      <span class="truncate">
-                        {
-                          ((classSubjectsQuery.data || []) as any[]).find((s: any) => String(s.subject_id || s.id) === selectedSubjectId)?.subject_name_ar || 
-                          ((classSubjectsQuery.data || []) as any[]).find((s: any) => String(s.subject_id || s.id) === selectedSubjectId)?.subject_name || 
-                          (m.common_control_select_subject ? m.common_control_select_subject() : "Select Subject")
-                        }
-                      </span>
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {#each ((classSubjectsQuery.data || []) as any[]) as sub}
-                      <SelectItem value={String(sub.subject_id || sub.id)}>{sub.subject_name_ar || sub.subject_name}</SelectItem>
-                    {/each}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div class="border border-border/60 rounded-xl overflow-hidden h-65">
-                {#if gradeMatrixQuery.isLoading}
-                  <div class="h-full flex flex-col gap-2 p-2">
-                    {#each Array(5) as _}
-                      <Skeleton class="h-8 w-full rounded-lg animate-pulse" />
-                    {/each}
-                  </div>
-                {:else if gridSource.length > 0}
-                  <OrbisGrid
-                    columns={gridColumns}
-                    source={gridSource}
-                    height="100%"
-                    rtl={rtl}
-                    readonly={true}
-                  />
-                {:else}
-                  <div class="h-full flex items-center justify-center text-xs text-muted-foreground font-sans">
-                    {m.academics_class_overview_no_grades()}
-                  </div>
-                {/if}
-              </div>
-            </div>
-          </div>
 
           <!-- Alert / Issues list card (like Sentry Events details) -->
           <Card class="p-5 bg-card border border-border/60 flex flex-col justify-between shadow-sm text-start card-tactile transition-all duration-200">
@@ -443,20 +237,6 @@ function handleTriggerAction(issue: any) {
             <div class="flex flex-col gap-2 mb-4 text-[10px] leading-relaxed">
               <div class="flex gap-2 p-2 rounded-lg bg-background/50 border border-border/30">
                 <span class="text-primary font-bold">1.</span>
-                {#if avgGradeScore === 0}
-                  <span>{m.academics_class_overview_advisor_grades_none()}</span>
-                {:else if avgGradeScore < 50}
-                  <span>{m.academics_class_overview_advisor_grades_critical({ average: String(avgGradeScore) })}</span>
-                {:else if avgGradeScore < 70}
-                  <span>{m.academics_class_overview_advisor_grades_low({ average: String(avgGradeScore) })}</span>
-                {:else if avgGradeScore < 85}
-                  <span>{m.academics_class_overview_advisor_grades_medium({ average: String(avgGradeScore) })}</span>
-                {:else}
-                  <span>{m.academics_class_overview_advisor_grades_high({ average: String(avgGradeScore) })}</span>
-                {/if}
-              </div>
-              <div class="flex gap-2 p-2 rounded-lg bg-background/50 border border-border/30">
-                <span class="text-primary font-bold">2.</span>
                 {#if attendanceRate === 0}
                   <span>{m.academics_class_overview_advisor_attendance_none()}</span>
                 {:else if attendanceRate < 80}
