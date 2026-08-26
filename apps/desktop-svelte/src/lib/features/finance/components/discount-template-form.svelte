@@ -12,6 +12,12 @@ import {
   SelectItem,
 } from "@orbis/ui-svelte/select";
 import * as Sheet from "@orbis/ui-svelte/sheet";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@orbis/ui-svelte/accordion";
 import { toast } from "svelte-sonner";
 
 let {
@@ -182,7 +188,11 @@ async function handleSubmit() {
     </Sheet.Title>
   </Sheet.Header>
 
-  <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5 scrollbar-hide">
+  <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
+    <Accordion type="multiple" value={["details", "options"]} class="flex flex-col gap-4">
+      <AccordionItem value="details" class="rounded-lg border border-border/50 px-4">
+        <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_dt_form_name ? m.common_dt_form_name() : "Discount details"}</AccordionTrigger>
+        <AccordionContent>
     <!-- Name -->
     <div class="flex flex-col gap-1.5 text-start">
       <Label for="dt_form_name" class="text-xs font-semibold text-muted-foreground">
@@ -280,6 +290,13 @@ async function handleSubmit() {
       />
     </div>
 
+        </AccordionContent>
+      </AccordionItem>
+
+      <AccordionItem value="options" class="rounded-lg border border-border/50 px-4">
+        <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_dt_form_auto_apply ? m.common_dt_form_auto_apply() : "Application options"}</AccordionTrigger>
+        <AccordionContent>
+
     <!-- Options Checkboxes Grid -->
     <div class="grid grid-cols-2 gap-4 mt-2 bg-muted/20 p-4 rounded-lg border border-border/30">
       <!-- Auto Apply -->
@@ -334,6 +351,9 @@ async function handleSubmit() {
         </Label>
       </div>
     </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   </div>
 
   <!-- Form Actions -->

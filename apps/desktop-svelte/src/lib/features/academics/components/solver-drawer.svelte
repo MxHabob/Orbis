@@ -4,7 +4,6 @@
     SheetContent,
     SheetHeader,
     SheetTitle,
-    SheetDescription,
     SheetFooter,
   } from "@orbis/ui-svelte/sheet";
   import { Button } from "@orbis/ui-svelte/button";
@@ -127,11 +126,6 @@
           <SheetTitle>
             {isArabic ? "المجدول الذكي (AI Solver)" : "AI Schedule Generator"}
           </SheetTitle>
-          <SheetDescription>
-            {isArabic
-              ? "توليد وتوزيع الحصص تلقائياً وفقاً للقيود وتوافر المعلمين والقاعات."
-              : "Generate optimal timetables avoiding teacher and room conflicts."}
-          </SheetDescription>
         </div>
       </div>
     </SheetHeader>

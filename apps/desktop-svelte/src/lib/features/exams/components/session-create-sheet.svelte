@@ -10,7 +10,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
 } from "@orbis/ui-svelte/sheet";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
@@ -128,9 +127,6 @@ async function handleSubmit() {
       <SheetTitle class="text-lg font-bold text-foreground">
         {isEdit ? m.common_action_edit() : m.common_exams_create_title()}
       </SheetTitle>
-      <SheetDescription class="text-xs text-muted-foreground mt-1">
-        {m.common_exams_card_sessions_desc()}
-      </SheetDescription>
     </SheetHeader>
 
     <div class="flex-1 overflow-y-auto py-4 flex flex-col gap-4 px-1">

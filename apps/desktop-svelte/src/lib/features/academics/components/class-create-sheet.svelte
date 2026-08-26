@@ -9,7 +9,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
 } from "@orbis/ui-svelte/sheet";
 import ClassForm from "./class-form.svelte";
 import * as m from "$lib/paraglide/messages";

@@ -4,7 +4,6 @@
     SheetContent,
     SheetHeader,
     SheetTitle,
-    SheetDescription,
     SheetFooter,
   } from "@orbis/ui-svelte/sheet";
   import { Button } from "@orbis/ui-svelte/button";
@@ -156,11 +155,6 @@
       <SheetTitle>
         {isArabic ? "إدارة جدول الحصص والأجراس" : "Time Slots & Bell Schedule"}
       </SheetTitle>
-      <SheetDescription>
-        {isArabic
-          ? "تحديد مواعيد الحصص الدراسية وفترات الاستراحة للفترة الأكاديمية."
-          : "Configure instructional periods and breaks for this academic term."}
-      </SheetDescription>
     </SheetHeader>
 
     <div class="mt-4 flex-1 flex flex-col gap-4">

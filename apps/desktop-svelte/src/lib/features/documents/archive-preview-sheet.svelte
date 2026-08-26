@@ -96,7 +96,10 @@ function endPan(event: PointerEvent) {
 </script>
 
 <Sheet bind:open>
-  <SheetContent class="flex h-full flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl lg:max-w-275">
+  <SheetContent
+    contentClass="sm:max-w-5xl lg:max-w-275"
+    class="flex h-full flex-col gap-0 overflow-hidden p-0"
+  >
     {#if document}
       <div class="relative min-h-0 grow overflow-auto bg-muted/20 p-6">
         {#if isImage}

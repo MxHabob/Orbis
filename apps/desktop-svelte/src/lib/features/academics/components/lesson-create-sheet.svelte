@@ -9,7 +9,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
 } from "@orbis/ui-svelte/sheet";
 import LessonForm from "./lesson-form.svelte";
 

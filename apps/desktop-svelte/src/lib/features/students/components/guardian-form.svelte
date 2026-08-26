@@ -26,6 +26,12 @@ import { createUsersQuery } from "$lib/features/settings/queries";
 import { createEnrollmentsQuery } from "$lib/features/students/queries";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { debounce } from "$lib/shared/utils/debounce";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@orbis/ui-svelte/accordion";
 
 let {
   orgId,
@@ -355,6 +361,10 @@ async function handleSubmit() {
         </div>
       </div>
     {:else}
+      <Accordion type="multiple" value={["contact", "permissions"]} class="flex flex-col gap-4">
+        <AccordionItem value="contact" class="rounded-lg border border-border/50 px-4">
+          <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_word_fullname()}</AccordionTrigger>
+          <AccordionContent>
       <!-- User Search + Select (only show in create mode) -->
       {#if !isEditMode}
         <div class="flex flex-col gap-1.5">
@@ -502,6 +512,13 @@ async function handleSubmit() {
         />
       </div>
 
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="permissions" class="rounded-lg border border-border/50 px-4">
+          <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.students_guardian_permissions()}</AccordionTrigger>
+          <AccordionContent>
+
       <!-- Permissions and Financial Responsibility -->
       <div class="flex flex-col gap-3 p-4 rounded-lg bg-muted/20 border border-border/30">
         <p class="text-xs font-bold text-foreground">{m.students_guardian_permissions()}</p>
@@ -533,6 +550,9 @@ async function handleSubmit() {
           </div>
         {/if}
       </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     {/if}
   </div>
 

@@ -4,7 +4,6 @@
     SheetContent,
     SheetHeader,
     SheetTitle,
-    SheetDescription,
     SheetFooter,
   } from "@orbis/ui-svelte/sheet";
   import { Button } from "@orbis/ui-svelte/button";
@@ -22,6 +21,12 @@
   import { toast } from "svelte-sonner";
   import { getLocale } from "$lib/paraglide/runtime";
   import { createClassSubjectsQuery } from "$lib/features/academics/queries";
+  import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+  } from "@orbis/ui-svelte/accordion";
 
   interface Props {
     open: boolean;
@@ -264,11 +269,6 @@
           ? (isArabic ? "تعديل الحصة المجدولة" : "Edit Scheduled Lesson")
           : (isArabic ? "جدولة حصة جديدة" : "Schedule New Lesson")}
       </SheetTitle>
-      <SheetDescription>
-        {isArabic
-          ? "حدد الفصل، المادة، المعلم، القاعة، والفترة الزمنية للحصة."
-          : "Specify the class, subject, teacher, room, and time slot."}
-      </SheetDescription>
     </SheetHeader>
 
     <!-- Conflict Warning Banner -->
@@ -286,7 +286,11 @@
       </div>
     {/if}
 
-    <form onsubmit={handleSubmit} class="mt-0 min-h-0 flex-1 overflow-y-auto scrollbar-hide px-6 py-5 flex flex-col gap-5">
+    <form onsubmit={handleSubmit} class="mt-0 min-h-0 flex-1 overflow-y-auto scrollbar-hide px-6 py-5">
+      <Accordion type="multiple" value={["placement", "content"]} class="flex flex-col gap-4">
+        <AccordionItem value="placement" class="rounded-lg border border-border/50 px-4">
+          <AccordionTrigger class="text-sm font-semibold hover:no-underline">{isArabic ? "بيانات الجدولة" : "Lesson placement"}</AccordionTrigger>
+          <AccordionContent>
       <!-- Class Selector -->
       <div class="space-y-1.5">
         <Label for="class-select" class="text-xs font-semibold">{isArabic ? "الفصل الدراسي" : "Class"} *</Label>
@@ -429,6 +433,13 @@
         </div>
       </div>
 
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="content" class="rounded-lg border border-border/50 px-4">
+          <AccordionTrigger class="text-sm font-semibold hover:no-underline">{isArabic ? "محتوى الحصة" : "Lesson content"}</AccordionTrigger>
+          <AccordionContent>
+
       <!-- Topic / Homework / Notes (Optional) -->
       <div class="space-y-1.5">
         <Label for="lesson-topic" class="text-xs font-semibold">{isArabic ? "موضوع الدرس" : "Lesson Topic"}</Label>
@@ -444,6 +455,10 @@
         <Label for="lesson-notes" class="text-xs font-semibold">{isArabic ? "ملاحظات إضافية" : "Notes"}</Label>
         <Textarea id="lesson-notes" bind:value={notes} rows={2} placeholder={isArabic ? "أي تعليمات أو ملاحظات خاصة..." : "Notes..."} class="text-xs" />
       </div>
+
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
 
       <SheetFooter class="sticky bottom-0 mt-0 flex items-center justify-between gap-2 border-t border-border/60 bg-background pt-4">
         {#if lesson?.id}

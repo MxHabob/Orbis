@@ -13,6 +13,12 @@ import {
   SelectItem,
 } from "@orbis/ui-svelte/select";
 import * as Sheet from "@orbis/ui-svelte/sheet";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@orbis/ui-svelte/accordion";
 import { toast } from "svelte-sonner";
 
 let {
@@ -288,7 +294,11 @@ async function handleSubmit() {
     </Sheet.Title>
   </Sheet.Header>
 
-  <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5 scrollbar-hide">
+  <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
+    <Accordion type="multiple" value={["details", "applicability"]} class="flex flex-col gap-4">
+      <AccordionItem value="details" class="rounded-lg border border-border/50 px-4">
+        <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_ft_sheet_create_title ? m.common_ft_sheet_create_title() : "Fee details"}</AccordionTrigger>
+        <AccordionContent>
     <!-- Name (Arabic) -->
     <div class="flex flex-col gap-1.5 text-start">
       <Label for="ft_form_name_ar" class="text-xs font-semibold text-muted-foreground">
@@ -386,6 +396,13 @@ async function handleSubmit() {
       />
     </div>
 
+        </AccordionContent>
+      </AccordionItem>
+
+      <AccordionItem value="applicability" class="rounded-lg border border-border/50 px-4">
+        <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_status_undefined() === "غير محدد" ? "الصفوف والإعدادات" : "Applicability and settings"}</AccordionTrigger>
+        <AccordionContent>
+
     <!-- Grade Level Applicability -->
     <div class="flex flex-col gap-3 p-4 bg-muted/20 rounded-lg border border-border/30">
       <span class="text-xs font-bold text-foreground text-start">
@@ -466,6 +483,9 @@ async function handleSubmit() {
         </Label>
       </div>
     </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   </div>
 
   <!-- Actions -->

@@ -4,7 +4,7 @@ import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
-import { SheetHeader, SheetTitle, SheetDescription } from "@orbis/ui-svelte/sheet";
+import { SheetHeader, SheetTitle } from "@orbis/ui-svelte/sheet";
 import {
   Select,
   SelectTrigger,
@@ -25,6 +25,12 @@ import {
   BookOpen,
 } from "@lucide/svelte";
 import { onMount, untrack } from "svelte";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@orbis/ui-svelte/accordion";
 
 let {
   orgId,
@@ -147,12 +153,13 @@ async function handleSubmit(e: SubmitEvent) {
       <Building2 size={18} class="text-primary" />
       {isEdit ? "تعديل الوحدة التنظيمية" : "إضافة وحدة تنظيمية جديدة"}
     </SheetTitle>
-    <SheetDescription class="text-xs text-muted-foreground">
-      تحديد الهيكل الإداري أو الأكاديمي أو المكاني للفرع/القسم داخل المؤسسة.
-    </SheetDescription>
   </SheetHeader>
 
-  <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5 scrollbar-hide">
+  <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
+    <Accordion type="multiple" value={["structure", "access", "location"]} class="flex flex-col gap-4">
+      <AccordionItem value="structure" class="rounded-lg border border-border/50 px-4">
+        <AccordionTrigger class="text-sm font-semibold hover:no-underline">الهيكل التنظيمي</AccordionTrigger>
+        <AccordionContent>
     <!-- Names (Arabic & English) -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="flex flex-col gap-1.5 text-start">
@@ -258,6 +265,13 @@ async function handleSubmit(e: SubmitEvent) {
       </div>
     </div>
 
+        </AccordionContent>
+      </AccordionItem>
+
+      <AccordionItem value="access" class="rounded-lg border border-border/50 px-4">
+        <AccordionTrigger class="text-sm font-semibold hover:no-underline">نطاق البيانات والصلاحيات</AccordionTrigger>
+        <AccordionContent>
+
     <!-- Data Isolation -->
     <div class="flex flex-col gap-1.5 text-start border-t border-border/30 pt-3">
       <Label class="text-xs font-semibold">نطاق عزل البيانات والصلاحيات (Data Isolation)</Label>
@@ -272,6 +286,13 @@ async function handleSubmit(e: SubmitEvent) {
         </SelectContent>
       </Select>
     </div>
+
+        </AccordionContent>
+      </AccordionItem>
+
+      <AccordionItem value="location" class="rounded-lg border border-border/50 px-4">
+        <AccordionTrigger class="text-sm font-semibold hover:no-underline">الموقع والطاقة الاستيعابية</AccordionTrigger>
+        <AccordionContent>
 
     <!-- Location & Capacity (Optional / Conditional) -->
     <div class="border-t border-border/30 pt-3 flex flex-col gap-3">
@@ -295,6 +316,9 @@ async function handleSubmit(e: SubmitEvent) {
         </div>
       </div>
     </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   </div>
 
   <!-- Actions -->

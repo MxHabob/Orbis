@@ -10,7 +10,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
 } from "@orbis/ui-svelte/sheet";
 import { CreditCard } from "@lucide/svelte";
 import PaymentRecordForm from "./payment-record-form.svelte";
@@ -33,9 +32,6 @@ let {
 				<CreditCard size={18} class="text-primary" />
 				<span>{m.common_payment_sheet_title()}</span>
 			</SheetTitle>
-			<SheetDescription class="text-sm text-muted-foreground mt-1">
-				{m.common_payment_sheet_subtitle()}
-			</SheetDescription>
 		</SheetHeader>
 
 		<PaymentRecordForm 

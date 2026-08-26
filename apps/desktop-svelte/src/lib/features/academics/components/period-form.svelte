@@ -13,6 +13,12 @@ import {
 import { toast } from "svelte-sonner";
 import { extractErrorMessage } from "$lib/core/ipc";
 import { ChevronRight } from "@lucide/svelte";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@orbis/ui-svelte/accordion";
 
 let {
   orgId,
@@ -128,7 +134,11 @@ async function handleSubmit(e: SubmitEvent) {
     </SheetTitle>
   </SheetHeader>
 
-  <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5 scrollbar-hide text-start">
+  <div class="flex-1 overflow-y-auto p-6 scrollbar-hide text-start">
+    <Accordion type="multiple" value={["identity", "schedule", "grading"]} class="flex flex-col gap-4">
+      <AccordionItem value="identity" class="rounded-lg border border-border/50 px-4">
+        <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_user_form_name_en()}</AccordionTrigger>
+        <AccordionContent>
     <!-- Names (Arabic & English) -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="flex flex-col gap-2">
@@ -216,6 +226,13 @@ async function handleSubmit(e: SubmitEvent) {
       {/if}
     </div>
 
+        </AccordionContent>
+      </AccordionItem>
+
+      <AccordionItem value="schedule" class="rounded-lg border border-border/50 px-4">
+        <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_year_start_date()} / {m.common_year_end_date()}</AccordionTrigger>
+        <AccordionContent>
+
     <!-- Dates -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="flex flex-col gap-2">
@@ -244,6 +261,13 @@ async function handleSubmit(e: SubmitEvent) {
         />
       </div>
     </div>
+
+        </AccordionContent>
+      </AccordionItem>
+
+      <AccordionItem value="grading" class="rounded-lg border border-border/50 px-4">
+        <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_cycle_form_grading()}</AccordionTrigger>
+        <AccordionContent>
 
     <!-- Grading configs -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -290,6 +314,9 @@ async function handleSubmit(e: SubmitEvent) {
         />
       </div>
     </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   </div>
 
   <!-- Actions -->

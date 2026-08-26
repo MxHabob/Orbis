@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createQuery } from "@tanstack/svelte-query";
   import { commands } from "$lib/core/ipc";
-  import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@orbis/ui-svelte/sheet";
+  import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui-svelte/sheet";
   import { Badge } from "@orbis/ui-svelte/badge";
   import { Button } from "@orbis/ui-svelte/button";
   import { Skeleton } from "@orbis/ui-svelte/skeleton";
@@ -29,9 +29,6 @@
           <Settings2 size={18} class="text-primary" />
           Assessment Configuration
         </SheetTitle>
-        <SheetDescription class="text-xs">
-          View the assessment components and weights assigned to this subject.
-        </SheetDescription>
       </SheetHeader>
     </div>
 

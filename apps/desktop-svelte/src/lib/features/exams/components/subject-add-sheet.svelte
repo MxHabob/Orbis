@@ -20,6 +20,12 @@ import {
   SelectItem,
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@orbis/ui-svelte/accordion";
 
 import { commands } from "$lib/core/ipc";
 
@@ -154,7 +160,11 @@ async function handleSubmit() {
         </SheetTitle>
       </SheetHeader>
 
-      <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-4 scrollbar-hide">
+      <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
+        <Accordion type="multiple" value={["subject", "assessment"]} class="flex flex-col gap-4">
+          <AccordionItem value="subject" class="rounded-lg border border-border/50 px-4">
+            <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.exams_subject_new_details()}</AccordionTrigger>
+            <AccordionContent>
         <!-- Mode Selection Tabs -->
         <div class="flex bg-muted/40 p-0.5 rounded-lg border border-border/40 text-[10px] font-medium shrink-0">
           <button
@@ -218,6 +228,13 @@ async function handleSubmit() {
           </div>
         {/if}
 
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="assessment" class="rounded-lg border border-border/50 px-4">
+            <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_exams_subjects_score()} / {m.common_bulk_col_exam_type()}</AccordionTrigger>
+            <AccordionContent>
+
         <div class="border-t border-border/40 my-1"></div>
 
         <!-- Max Score -->
@@ -253,6 +270,9 @@ async function handleSubmit() {
             </SelectContent>
           </Select>
         </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </div>
 
       <!-- Footer -->

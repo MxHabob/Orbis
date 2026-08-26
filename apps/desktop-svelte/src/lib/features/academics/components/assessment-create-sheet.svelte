@@ -9,7 +9,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
 } from "@orbis/ui-svelte/sheet";
 import { Award } from "@lucide/svelte";
 import AssessmentForm from "./assessment-form.svelte";

@@ -10,7 +10,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
 } from "@orbis/ui-svelte/sheet";
 import { Wallet } from "@lucide/svelte";
 import FeeAssignForm from "./fee-assign-form.svelte";
@@ -33,9 +32,6 @@ let {
 				<Wallet size={18} class="text-primary" />
 				<span>{m.common_fee_sheet_title()}</span>
 			</SheetTitle>
-			<SheetDescription class="text-sm text-muted-foreground mt-1">
-				{m.common_fee_sheet_subtitle()}
-			</SheetDescription>
 		</SheetHeader>
 
 		<FeeAssignForm 
