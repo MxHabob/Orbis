@@ -33,13 +33,13 @@
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       onclick={() => onDaySelect?.(day.value)}
-      class="flex-1 min-w-0 h-10 flex items-center justify-between px-3 border-e border-border/40 transition-colors last:border-e-0 {day.isToday
+      class="flex-1 min-w-0 h-10 flex items-center justify-center gap-2 px-3 border-e border-border/40 text-center transition-colors last:border-e-0 {day.isToday
         ? 'bg-primary/5 font-bold'
         : isSelected
           ? 'bg-accent/40 font-bold'
           : 'hover:bg-muted/30 font-medium'}"
     >
-      <div class="flex items-center gap-1.5 min-w-0 truncate">
+      <div class="flex items-center justify-center gap-1.5 min-w-0 truncate">
         <span class="text-xs truncate text-foreground {day.isToday ? 'text-primary' : ''}">
           {day.label}
         </span>

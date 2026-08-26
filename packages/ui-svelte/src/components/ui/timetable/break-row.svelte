@@ -35,17 +35,17 @@
 </script>
 
 <div
-  class="flex min-h-[38px] w-full items-center justify-center gap-2 border-b border-border/40 bg-muted/30 px-4 text-xs font-semibold text-muted-foreground/90 transition-colors select-none"
+  class="flex min-h-[38px] w-full items-center justify-center gap-2 border-b border-border/40 bg-primary/5 px-4 text-xs font-semibold text-muted-foreground/90 transition-colors select-none"
   style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.015) 10px, rgba(0,0,0,0.015) 20px);"
 >
   {#if slot.break_type === "lunch"}
-    <Utensils size={13} class="text-amber-600 dark:text-amber-400" />
+    <Utensils size={13} class="text-primary" />
   {:else if slot.break_type === "prayer"}
-    <Moon size={13} class="text-emerald-600 dark:text-emerald-400" />
+    <Moon size={13} class="text-primary" />
   {:else if slot.break_type === "morning"}
-    <Sun size={13} class="text-amber-500" />
+    <Sun size={13} class="text-primary" />
   {:else}
-    <Coffee size={13} class="text-amber-600 dark:text-amber-400" />
+    <Coffee size={13} class="text-primary" />
   {/if}
 
   <span class="tracking-wide text-foreground/80">{breakName}</span>

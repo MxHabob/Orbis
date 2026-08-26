@@ -31,7 +31,7 @@
     getTeacherName,
     getClassName,
     getRoomName,
-    subjectColor = "oklch(0.58 0.1 285)",
+    subjectColor = "var(--primary)",
     compact = false,
     hasConflict = false,
     conflictMessage = "",

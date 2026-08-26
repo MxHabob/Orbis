@@ -29,14 +29,14 @@
   {#each timeSlots as slot (slot.id)}
     {@const isBreak = Boolean(slot.is_break)}
     <div
-      class="flex flex-col justify-center border-b border-border/40 px-2 transition-colors {isBreak
-        ? 'bg-amber-500/5 min-h-[38px]'
+      class="flex flex-col items-center justify-center border-b border-border/40 px-2 text-center transition-colors {isBreak
+        ? 'bg-primary/5 min-h-[38px]'
         : compact
           ? 'min-h-[64px]'
           : 'min-h-[84px]'}"
     >
       {#if isBreak}
-        <div class="flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+        <div class="flex items-center justify-center gap-1 text-[10px] font-semibold text-primary">
           <Coffee size={11} class="shrink-0" />
           <span class="truncate">{slot.name_ar || slot.name || (isArabic ? "استراحة" : "Break")}</span>
         </div>
@@ -44,8 +44,8 @@
           {formatTime(slot.start_time)}
         </span>
       {:else}
-        <div class="flex items-center justify-between gap-1">
-          <span class="text-[10px] font-bold text-foreground">
+        <div class="flex items-center justify-center gap-1">
+          <span class="text-[10px] font-bold text-center text-foreground">
             {slot.name_ar || slot.name || (isArabic ? `الحصة ${slot.slot_number}` : `Period ${slot.slot_number}`)}
           </span>
           {#if slot.duration_minutes}

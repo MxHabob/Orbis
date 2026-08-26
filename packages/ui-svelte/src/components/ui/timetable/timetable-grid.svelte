@@ -43,7 +43,7 @@
     getTeacherName = (id) => id,
     getClassName = (id) => id,
     getRoomName = (id) => id,
-    getSubjectColor = () => "oklch(0.58 0.1 285)",
+    getSubjectColor = () => "var(--primary)",
     onCellClick,
     onDeleteLesson,
     onEditLesson,
@@ -158,7 +158,7 @@
                   ondragover={(e) => handleDragOver(e, day.value, String(slot.id))}
                   ondragleave={handleDragLeave}
                   ondrop={(e) => handleDrop(e, day.value, String(slot.id))}
-                  class="group relative flex-1 min-w-0 border-e border-border/40 p-1 transition-colors last:border-e-0 flex flex-col gap-1 {isOver
+                  class="group relative flex-1 min-w-0 border-e border-border/40 p-1 text-center transition-colors last:border-e-0 flex flex-col gap-1 {isOver
                     ? 'bg-primary/10 ring-2 ring-primary ring-inset'
                     : 'hover:bg-muted/20'}"
                 >

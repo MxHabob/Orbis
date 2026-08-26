@@ -110,8 +110,7 @@
   function getSubjectColor(subjectId: string): string {
     const sub = subjects.find((s) => String(s.id) === String(subjectId)) as any;
     if (sub?.color) return sub.color;
-    const hash = String(subjectId).split("").reduce((acc, ch) => (acc * 31 + ch.charCodeAt(0)) >>> 0, 0);
-    return `hsl(${hash % 360} 70% 50%)`;
+    return "var(--primary)";
   }
 
   const isLoading = $derived(scheduleQuery.isLoading || timeSlotsQuery.isLoading);
