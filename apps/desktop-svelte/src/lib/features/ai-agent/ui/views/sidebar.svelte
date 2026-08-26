@@ -295,7 +295,6 @@ function handleLinkClick(e: MouseEvent | null, href: string) {
       bind:value={inputValue}
       isThinking={isThinking}
       messagesLength={messages.length}
-      isRtl={isRtl}
       onsubmit={submitMessage}
       onnewchat={handleNewChat}
     />

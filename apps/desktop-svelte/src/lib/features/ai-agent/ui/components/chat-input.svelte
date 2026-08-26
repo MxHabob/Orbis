@@ -188,11 +188,7 @@ function handleCommandSelect(agentType: string) {
           class="h-8 w-8 rounded-full shadow-sm bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 disabled:bg-muted transition-all duration-200"
           size="icon"
         >
-          {#if isRtl}
-            <ArrowLeft class="h-4 w-4" />
-          {:else}
-            <ArrowRight class="h-4 w-4" />
-          {/if}
+          <ArrowLeft class="h-4 w-4" />
         </Button>
       </div>
     </div>

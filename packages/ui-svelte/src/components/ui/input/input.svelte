@@ -31,7 +31,7 @@ let {
 		bind:this={ref}
 		data-slot={dataSlot}
 		class={cn(
-			"input-sunken dark:bg-input/30 disabled:bg-input/50 dark:disabled:bg-input/80 h-8 rounded-md px-2.5 py-1 text-base file:h-6 file:text-sm file:font-medium md:text-sm file:text-foreground placeholder:text-muted-foreground w-full min-w-0 outline-none file:inline-flex file:border-0 file:bg-transparent disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
+			"input-sunken dark:bg-input/30 disabled:bg-input/50 dark:disabled:bg-input/80 h-8 rounded-md px-2.5 py-1 text-sm file:h-6 file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground w-full min-w-0 outline-none file:inline-flex file:border-0 file:bg-transparent disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
 			className
 		)}
 		type="file"
@@ -44,7 +44,7 @@ let {
 		bind:this={ref}
 		data-slot={dataSlot}
 		class={cn(
-			"input-sunken dark:bg-input/30 disabled:bg-input/50 dark:disabled:bg-input/80 h-8 rounded-md px-2.5 py-1 text-base file:h-6 file:text-sm file:font-medium md:text-sm file:text-foreground placeholder:text-muted-foreground w-full min-w-0 outline-none file:inline-flex file:border-0 file:bg-transparent disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
+			"input-sunken dark:bg-input/30 disabled:bg-input/50 dark:disabled:bg-input/80 h-8 rounded-md px-2.5 py-1 text-sm file:h-6 file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground w-full min-w-0 outline-none file:inline-flex file:border-0 file:bg-transparent disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
 			className
 		)}
 		{type}
