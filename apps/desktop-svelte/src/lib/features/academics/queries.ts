@@ -73,10 +73,12 @@ export function createAssessmentsQuery(
   return createQuery(() => ({
     queryKey: ["assessments", params().periodId, params().classSubjectId],
     queryFn: () =>
-      commands.assessment.listAssessments(
-        params().periodId!,
-        params().classSubjectId,
-      ),
+      params().classSubjectId
+        ? commands.assessment.listComponentsForClassSubject(
+            params().classSubjectId,
+            params().periodId!,
+          )
+        : commands.assessment.listAssessmentSchemes(),
     enabled: !!params().periodId,
     staleTime: 2 * 60 * 1000,
   }));

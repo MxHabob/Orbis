@@ -14,7 +14,7 @@ let {
 } = $props();
 </script>
 
-<Card class="p-5 bg-card border border-border/60 flex flex-col justify-between text-start relative overflow-hidden shadow-sm min-h-[315px] h-full transition-all duration-200 card-tactile">
+<Card class="p-5 bg-card border border-border/60 flex flex-col justify-between text-start relative overflow-hidden shadow-sm min-h-78.75 h-full transition-all duration-200 card-tactile">
   <div class="flex items-center justify-between w-full select-none text-[9px] font-bold text-muted-foreground/80 mb-3.5">
     <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
       <span class="h-1.5 w-1.5 rounded-full bg-brand-lime animate-pulse"></span>
@@ -22,7 +22,7 @@ let {
     </div>
   </div>
 
-  <div class="flex flex-col gap-2 mt-2 w-full flex-grow">
+  <div class="flex flex-col gap-2 mt-2 w-full grow">
     {#if treasuries.length === 0}
       <div class="py-8 text-center text-muted-foreground text-xs select-none">
         {m.finance_overview_no_cash_accounts()}
@@ -35,7 +35,7 @@ let {
               <Landmark size={12} />
             </div>
             <div class="flex flex-col min-w-0">
-              <span class="font-bold text-foreground truncate max-w-[130px] text-[10px]">{t.name_ar || t.name}</span>
+              <span class="font-bold text-foreground truncate max-w-32.5 text-[10px]">{t.name_ar || t.name}</span>
               <span class="text-[8px] text-muted-foreground font-mono select-none">
                 {t.sub_type === "bank" ? "حساب بنكي" : "خزينة نقدية"}
               </span>

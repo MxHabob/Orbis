@@ -25,6 +25,7 @@
     getClassName,
     getRoomName,
     getSubjectColor,
+    compact = false,
     fitViewport = false,
     class: className = "",
     onCellClick,
@@ -48,6 +49,7 @@
     getClassName: (id: string) => string;
     getRoomName?: (id: string) => string;
     getSubjectColor: (id: string) => string;
+    compact?: boolean;
     fitViewport?: boolean;
     class?: string;
     onCellClick: (day: number, slotId: string) => void;
@@ -420,7 +422,7 @@
     bg-card
     scrollbar-thin
     {fitViewport
-      ? 'overflow-hidden'
+      ? 'overflow-hidden fit-viewport'
       : 'overflow-auto'}
     {className}
   "
@@ -430,6 +432,7 @@
       schedule-grid
       grid
       w-full
+      min-h-0
       flex-1
       gap-px
       bg-border/35
@@ -443,6 +446,10 @@
         {fitViewport
           ? `minmax(64px, 0.55fr) repeat(${weekdays.length}, minmax(0, 1fr))`
           : `minmax(96px, 0.55fr) repeat(${weekdays.length}, minmax(150px, 1fr))`};
+      grid-template-rows:
+        {fitViewport
+          ? `auto repeat(${orderedTimeSlots.length + (isAddingSlot ? 1 : 0)}, minmax(0, 1fr))`
+          : 'none'};
     "
     in:fade={{ duration: 150 }}
   >
@@ -662,7 +669,11 @@
           z-10
           flex
           h-full
-          {isBreak ? 'min-h-6' : 'min-h-24'}
+          {fitViewport
+            ? 'min-h-0'
+            : isBreak
+              ? 'min-h-6'
+              : 'min-h-24'}
           flex-col
           items-center
           justify-center
@@ -1115,7 +1126,7 @@
               relative
               flex
               h-full
-              min-h-24
+              {fitViewport ? 'min-h-0' : 'min-h-24'}
               items-center
               justify-center
               border-b
@@ -1163,7 +1174,7 @@
                    items-center keeps cards narrow and centered.
                    ============================================================ -->
 
-<div class="flex w-full h-full min-h-20 flex-col gap-1">
+<div class="flex w-full h-full {fitViewport ? 'min-h-0' : 'min-h-20'} flex-col gap-1">
   {#each cellLessons as lesson (lesson.id)}
     <TimetableCard
       {lesson}
@@ -1175,6 +1186,7 @@
       {getClassName}
       {getRoomName}
       subjectColor={getSubjectColor(lesson.subject_id)}
+      compact={fitViewport}
       onDelete={onDeleteLesson}
       onEdit={onEditLesson}
       ondragstart={(e) => handleDragStart(e, lesson)}

@@ -38,16 +38,14 @@ async function loadData() {
       return;
     }
 
-    const res = await commands.assessment.getGradeAnalytics(classId, periodId);
-    if (
-      res &&
-      (res as any).grade_distribution &&
-      Object.values((res as any).grade_distribution).some((v) => Number(v) > 0)
-    ) {
-      stats = res;
-    } else {
-      stats = null;
+    const scores = await commands.assessment.listPeriodScores(periodId, null);
+    const gradeDistribution: Record<string, number> = {};
+    for (const score of scores) {
+      const label = String(score.grade_label || "").toUpperCase();
+      const key = label.replace("+", "_plus").replace("-", "_minus").toLowerCase();
+      gradeDistribution[key] = (gradeDistribution[key] || 0) + 1;
     }
+    stats = { grade_distribution: gradeDistribution };
   } catch (e) {
     console.error("Error loading grade analytics:", e);
     stats = null;
@@ -135,9 +133,9 @@ function handleMouseLeave() {
 }
 </script>
 
-<div class="card-tactile h-full relative group min-h-[235px] p-4 flex flex-col justify-between font-sans shadow-sm border border-border/60 bg-card">
+<div class="card-tactile h-full relative group min-h-58.75 p-4 flex flex-col justify-between font-sans shadow-sm border border-border/60 bg-card">
   {#if isLoading}
-    <div class="flex-grow w-full relative flex items-center justify-center">
+    <div class="grow w-full relative flex items-center justify-center">
       <Skeleton class="h-full w-full rounded-lg animate-pulse" />
     </div>
   {:else}
@@ -157,7 +155,7 @@ function handleMouseLeave() {
     <!-- Main Content Area: Full Width HTML Chart -->
     <div 
       role="presentation"
-      class="flex-grow relative w-full h-[160px] select-none mt-2 flex flex-col justify-between" 
+      class="grow relative w-full h-40 select-none mt-2 flex flex-col justify-between" 
       onmouseleave={handleMouseLeave}
     >
       <!-- Grid Lines and Y-Axis Counts -->
@@ -168,7 +166,7 @@ function handleMouseLeave() {
             <span class="w-8 text-end text-[8px] font-bold text-muted-foreground/80 font-mono pr-2 select-none">
               {tickVal}
             </span>
-            <div class="flex-grow border-t border-dashed border-border/40"></div>
+            <div class="grow border-t border-dashed border-border/40"></div>
           </div>
         {/each}
       </div>
@@ -181,7 +179,7 @@ function handleMouseLeave() {
       >
         {#each bars as bar, idx}
           {@const isActive = hoveredIndex === idx}
-          <div class="flex-grow flex flex-col items-center justify-end h-full relative group/col">
+          <div class="grow flex flex-col items-center justify-end h-full relative group/col">
             <!-- Active slice highlight background -->
             {#if isActive && stats}
               <div class="absolute inset-x-1 top-0 bottom-0 bg-foreground/5 rounded-md pointer-events-none"></div>
@@ -204,7 +202,7 @@ function handleMouseLeave() {
             {/if}
 
             <!-- X-Axis Label Centered Under Bars -->
-            <div class="absolute bottom-[-24px] text-[8px] font-bold text-muted-foreground/90 font-mono select-none">
+            <div class="absolute -bottom-6 text-[8px] font-bold text-muted-foreground/90 font-mono select-none">
               {bar.name}
             </div>
           </div>
@@ -215,7 +213,7 @@ function handleMouseLeave() {
       {#if hoveredIndex !== null && tooltipPos && stats}
         {@const activeBar = bars[hoveredIndex]}
         <div
-          class="absolute z-30 p-2 text-[10px] font-sans border bg-card border-border text-foreground rounded-lg shadow-xl pointer-events-none transition-all duration-100 flex flex-col gap-0.5 min-w-[100px] text-start"
+          class="absolute z-30 p-2 text-[10px] font-sans border bg-card border-border text-foreground rounded-lg shadow-xl pointer-events-none transition-all duration-100 flex flex-col gap-0.5 min-w-25 text-start"
           style="left: {tooltipPos.x + 12}px; top: {tooltipPos.y - 50}px;"
         >
           <span class="text-muted-foreground font-bold border-b border-border/40 pb-0.5 mb-1">{m.reports_grade_label({ grade: activeBar.name })}</span>
@@ -227,7 +225,7 @@ function handleMouseLeave() {
       {#if !stats}
         <div class="absolute inset-0 flex flex-col items-center justify-center text-center select-none p-4 gap-1.5 backdrop-blur-[3.5px] bg-background/35 z-10 transition-all duration-300 rounded-xl">
           <span class="font-bold text-xs text-foreground/90">{m.reports_grades_empty_title()}</span>
-          <span class="text-[10px] text-muted-foreground max-w-[280px] leading-relaxed">
+          <span class="text-[10px] text-muted-foreground max-w-70 leading-relaxed">
             {m.reports_grades_empty_desc()}
           </span>
         </div>

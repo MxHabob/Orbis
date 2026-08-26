@@ -182,7 +182,7 @@ export class StudentFormState {
   ) {
     if (!value.trim() || !this.preventDuplicates[field]) return;
     try {
-      const duplicates = await commands.iam.searchUsers(value);
+      const duplicates = await commands.iam.search(value);
       if (duplicates && duplicates.length > 0) {
         const match = duplicates[0];
         this.duplicateWarnings = {

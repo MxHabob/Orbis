@@ -98,6 +98,11 @@ const selectedTeacher = $derived(
   teachers.find((t) => String(t.id) === teacherId),
 );
 const selectedPeriod = $derived(periods.find((c) => String(c.id) === periodId));
+const availablePeriods = $derived(
+  fixedClassId && selectedClass?.period_id
+    ? periods.filter((period) => String(period.id) === String(selectedClass.period_id))
+    : periods,
+);
 
 async function handleSubmit() {
   if (!classId || !subjectId || !teacherId || !periodId) {
@@ -162,7 +167,7 @@ async function handleSubmit() {
       <Label class="text-xs font-semibold text-muted-foreground">{m.common_metrics_period ? m.common_metrics_period() : "Academic Period"} *</Label>
       <PeriodSelect
         bind:value={periodId}
-        {periods}
+        periods={availablePeriods}
         placeholder="Select Period"
         class="h-9 text-sm"
       />

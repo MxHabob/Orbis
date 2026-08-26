@@ -190,9 +190,9 @@ function formatTooltipVal(val: number) {
 }
 </script>
 
-<div class="card-tactile h-full relative group min-h-[315px] p-6 flex flex-col justify-between font-sans border border-border/60 bg-card shadow-sm">
+<div class="card-tactile h-full relative group min-h-78.75 p-6 flex flex-col justify-between font-sans border border-border/60 bg-card shadow-sm">
   {#if isLoading}
-    <div class="flex-grow w-full relative flex items-center justify-center">
+    <div class="grow w-full relative flex items-center justify-center">
       <Skeleton class="h-full w-full rounded-lg animate-pulse" />
     </div>
   {:else}
@@ -223,7 +223,7 @@ function formatTooltipVal(val: number) {
     <!-- Main Chart Area -->
     <div 
       role="presentation"
-      class="flex-grow relative w-full h-[225px] select-none mt-2 flex flex-col justify-between" 
+      class="grow relative w-full h-56.25 select-none mt-2 flex flex-col justify-between"
       onmouseleave={handleMouseLeave}
     >
       <!-- Horizontal Grid Lines background -->
@@ -233,7 +233,7 @@ function formatTooltipVal(val: number) {
             <span class="w-10 text-end text-[9px] font-bold text-muted-foreground/80 font-mono pe-2 select-none">
               {formatVal(tickVal)}
             </span>
-            <div class="flex-grow border-t border-dashed border-border/40"></div>
+            <div class="grow border-t border-dashed border-border/40"></div>
           </div>
         {/each}
       </div>
@@ -246,7 +246,7 @@ function formatTooltipVal(val: number) {
       >
         {#each bars as bar, idx}
           {@const isActive = hoveredIdx === idx}
-          <div class="flex-grow flex flex-col items-center justify-end h-full relative group/col">
+          <div class="grow flex flex-col items-center justify-end h-full relative group/col">
             <!-- Active slice highlight background -->
             {#if isActive}
               <div class="absolute inset-x-1 top-0 bottom-0 bg-foreground/5 rounded-md pointer-events-none"></div>
@@ -269,7 +269,7 @@ function formatTooltipVal(val: number) {
             </div>
 
             <!-- X-Axis Label Centered Under Bars -->
-            <div class="absolute bottom-[-24px] text-[9px] font-bold text-muted-foreground/90 font-mono select-none">
+            <div class="absolute -bottom-6 text-[9px] font-bold text-muted-foreground/90 font-mono select-none">
               {bar.month}
             </div>
           </div>
@@ -280,7 +280,7 @@ function formatTooltipVal(val: number) {
       {#if hoveredIdx !== null && tooltipPos}
         {@const activeBar = bars[hoveredIdx]}
         <div
-          class="absolute z-30 p-2.5 text-[10px] font-sans border bg-card border-border text-foreground rounded-lg shadow-xl pointer-events-none flex flex-col gap-1 min-w-[130px] text-start"
+          class="absolute z-30 p-2.5 text-[10px] font-sans border bg-card border-border text-foreground rounded-lg shadow-xl pointer-events-none flex flex-col gap-1 min-w-32.5 text-start"
           style="left: {tooltipPos.x + 15}px; top: {tooltipPos.y - 65}px;"
         >
           <span class="text-muted-foreground font-bold border-b border-border/40 pb-0.5 mb-1">{activeBar.month}</span>

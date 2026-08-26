@@ -62,11 +62,16 @@ async function loadData() {
   if (!orgId) return;
   isLoading = true;
   try {
-    const [asgn, subj, usr] = await Promise.all([
-      commands.academic.listClassSubjects(classId || ""),
+    const [classes, subj, usr] = await Promise.all([
+      commands.academic.listClasses(),
       commands.academic.listSubjects(),
       commands.iam.listUsers({ role: "teacher" }),
     ]);
+    const classData = classes.find((item: any) => String(item.id) === classId);
+    const asgn = await commands.academic.listClassSubjects(
+      classId || "",
+      String(classData?.period_id || ""),
+    );
     allAssignments = asgn;
     subjects = subj as unknown as JsonRecord[];
     teachers = usr as unknown as JsonRecord[];

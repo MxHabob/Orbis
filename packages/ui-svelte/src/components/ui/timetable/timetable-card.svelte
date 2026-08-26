@@ -13,6 +13,7 @@
     getClassName,
     getRoomName,
     subjectColor = "var(--color-primary)",
+    compact = false,
     ondragstart,
     onDelete,
     onEdit,
@@ -26,6 +27,7 @@
     getClassName: (id: string) => string;
     getRoomName?: (id: string) => string;
     subjectColor?: string;
+    compact?: boolean;
     ondragstart?: (event: DragEvent) => void;
     onDelete?: (id: string) => void;
     onEdit?: (lesson: any) => void;
@@ -82,11 +84,11 @@
   dir="auto"
   ondragstart={preventCardDrag}
   style={`--subject-color: ${subjectColor};`}
-  class="group relative flex h-full min-h-20 min-w-0 w-full flex-col overflow-hidden rounded-md border border-primary-foreground/20 bg-(--subject-color) text-primary-foreground select-none {hasConflict ? 'border-destructive' : ''} {isDraft ? 'border-dashed' : ''}"
+  class="group relative flex h-full min-w-0 w-full flex-col overflow-hidden rounded-md border border-primary-foreground/20 bg-(--subject-color) text-primary-foreground select-none {compact ? 'min-h-0' : 'min-h-20'} {hasConflict ? 'border-destructive' : ''} {isDraft ? 'border-dashed' : ''}"
   in:fade={{ duration: 120 }}
   aria-label={subjectName}
 >
-  <div class="relative flex min-h-0 flex-1 flex-col overflow-hidden px-2 pb-1.5 pt-2 text-start">
+  <div class="relative flex min-h-0 flex-1 flex-col px-2 pb-1.5 pt-2 text-start {compact ? 'overflow-visible' : 'overflow-hidden'}">
     {#if !isDraft}
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <span
@@ -106,7 +108,7 @@
       {subjectName}
     </div>
 
-    <div class="mt-1 flex min-h-0 flex-1 flex-col gap-0.5 overflow-hidden text-[9px] leading-tight text-primary-foreground/80">
+    <div class="mt-1 flex min-h-0 flex-1 flex-col gap-0.5 text-[9px] leading-tight text-primary-foreground/80 {compact ? 'overflow-visible' : 'overflow-hidden'}">
       {#if viewMode === "class" && teacherName}
         <span class="flex min-w-0 items-center gap-1" title={teacherName}>
           <Users size={9} strokeWidth={2} class="shrink-0 text-primary-foreground/70" />
@@ -150,7 +152,7 @@
   </div>
 
   {#if timeLabel}
-    <div class="flex h-7 min-h-7 items-center justify-center overflow-hidden border-t border-primary-foreground/20 bg-primary-foreground/15 px-1.5 text-[10px] font-bold leading-none text-primary-foreground whitespace-nowrap" dir="ltr" aria-label={timeLabel}>
+    <div class="flex {compact ? 'h-6 min-h-6' : 'h-7 min-h-7'} items-center justify-center overflow-hidden border-t border-primary-foreground/20 bg-primary-foreground/15 px-1.5 text-[10px] font-bold leading-none text-primary-foreground whitespace-nowrap" dir="ltr" aria-label={timeLabel}>
       <span class="max-w-full truncate">{timeLabel}</span>
     </div>
   {/if}

@@ -246,7 +246,7 @@ function toggleColumnVisibility(colId: string) {
               <SlidersHorizontal size={14} />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" class="min-w-[180px]">
+          <DropdownMenuContent align="end" class="min-w-45">
             {#each columns as col}
               {@const id = col.id || col.prop || ""}
               {@const header = col.header || col.name || ""}

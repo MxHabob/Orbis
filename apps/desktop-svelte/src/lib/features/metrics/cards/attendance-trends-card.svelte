@@ -41,9 +41,11 @@ async function loadData() {
       return;
     }
 
-    const records = await commands.assessment.listAttendance(
-      effectivePeriodId,
-      classId,
+    const year = new Date().getFullYear();
+    const records = await commands.assessment.report(
+      classId || "all",
+      `${year}-01-01`,
+      `${year}-12-31`,
     );
 
     if (records && records.length > 0) {
@@ -168,7 +170,7 @@ function handleMouseLeave() {
 }
 </script>
 
-<div class="card-tactile h-full relative group min-h-[265px] p-5 flex flex-col justify-between font-sans border border-border/60 bg-card shadow-sm">
+<div class="card-tactile h-full relative group min-h-66.25 p-5 flex flex-col justify-between font-sans border border-border/60 bg-card shadow-sm">
   {#if isLoading}
     <div class="grow w-full relative flex items-center justify-center">
       <Skeleton class="h-full w-full rounded-lg animate-pulse" />
@@ -200,13 +202,13 @@ function handleMouseLeave() {
     </div>
 
     <!-- Main Chart Area -->
-    <div class="grow relative w-full h-full min-h-[165px] select-none mt-4 flex items-center justify-center">
+    <div class="grow relative w-full h-full min-h-41.25 select-none mt-4 flex items-center justify-center">
       {#if data.length === 0}
         <!-- Dotted rectangle outline placeholder matching screenshot 4 left -->
         <div class="w-full h-full border border-dashed border-border/60 rounded-xl flex items-center justify-center bg-muted/5 transition-colors">
           <div class="flex flex-col items-center gap-1 px-4 text-center">
             <span class="text-xs font-semibold text-foreground/80">{m.reports_attendance_empty_title()}</span>
-            <span class="text-[9px] text-muted-foreground max-w-[260px] leading-relaxed">
+            <span class="text-[9px] text-muted-foreground max-w-65 leading-relaxed">
               {m.reports_attendance_empty_desc()}
             </span>
           </div>
@@ -293,7 +295,7 @@ function handleMouseLeave() {
         {#if hoveredPointIdx !== null && tooltipPos}
           {@const activePt = dataPoints[hoveredPointIdx]}
           <div
-            class="absolute z-30 p-2 text-[10px] font-sans border bg-card border-border text-foreground rounded-lg shadow-xl pointer-events-none transition-all duration-700 flex flex-col gap-0.5 min-w-[100px] text-start"
+            class="absolute z-30 p-2 text-[10px] font-sans border bg-card border-border text-foreground rounded-lg shadow-xl pointer-events-none transition-all duration-700 flex flex-col gap-0.5 min-w-25 text-start"
             style="left: {tooltipPos.x + 15}px; top: {tooltipPos.y - 25}px;"
           >
             <span class="text-muted-foreground font-bold border-b border-border/40 pb-0.5 mb-1">{activePt.item.rawDate}</span>

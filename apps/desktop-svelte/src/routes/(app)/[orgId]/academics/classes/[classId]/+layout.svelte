@@ -28,9 +28,9 @@ import CapacityIndicator from "$lib/shared/components/capacity-indicator.svelte"
 import {
   GraduationCap,
   Users,
-  Award,
   BookUser,
-  ClipboardList,
+  UserRound,
+  BookOpen,
   Bell,
   Share2,
   MoreHorizontal,
@@ -84,23 +84,23 @@ const menuItems = $derived([
     icon: GraduationCap,
   },
   {
-    path: "assessments",
-    label: m.academics_class_detail_tab_assessments
-      ? m.academics_class_detail_tab_assessments()
-      : "التقييمات",
-    icon: Award,
+    path: "students",
+    label: m.academics_class_detail_tab_students
+      ? m.academics_class_detail_tab_students()
+      : "الطلاب",
+    icon: UserRound,
+  },
+  {
+    path: "subjects",
+    label: m.academics_class_detail_tab_subjects
+      ? m.academics_class_detail_tab_subjects()
+      : "المواد",
+    icon: BookOpen,
   },
   {
     path: "teachers",
     label: m.common_year_teachers ? m.common_year_teachers() : "المعلمون",
     icon: BookUser,
-  },
-  {
-    path: "grades",
-    label: m.academics_class_detail_tab_grades
-      ? m.academics_class_detail_tab_grades()
-      : "الدرجات والطلاب",
-    icon: ClipboardList,
   },
 ]);
 </script>
@@ -130,7 +130,7 @@ const menuItems = $derived([
 
     <DropdownMenu>
       <DropdownMenuTrigger>
-        {#snippet child({ props })}
+        {#snippet child({ props }: { props: Record<string, any> })}
           <Button
             variant="outline"
             size="sm"

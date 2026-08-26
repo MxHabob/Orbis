@@ -58,15 +58,18 @@ const enrollmentsQuery = createQuery(() => ({
 
 const classSubjectsQuery = createQuery(() => ({
   queryKey: ["class-subjects", classId, orgId],
-  queryFn: () => commands.academic.listClassSubjects(classId, orgId),
+  queryFn: async () => {
+    const classes = await commands.academic.listClasses();
+    const classData = classes.find((item: any) => String(item.id) === classId);
+    return commands.academic.listClassSubjects(classId, String(classData?.period_id || ""));
+  },
   enabled: !!classId && !!orgId,
   staleTime: 5 * 60 * 1000,
 }));
 
 const assessmentsQuery = createQuery(() => ({
   queryKey: ["assessments", classId, periodId],
-  queryFn: () =>
-    commands.assessment.listAssessments(periodId || "").catch(() => []),
+  queryFn: () => commands.assessment.listAssessmentSchemes().catch(() => []),
   enabled: !!classId && !!periodId && !!orgId,
   staleTime: 5 * 60 * 1000,
 }));
@@ -74,10 +77,12 @@ const assessmentsQuery = createQuery(() => ({
 // Dynamic class attendance analytics
 const attendanceQuery = createQuery(() => ({
   queryKey: ["attendance-analytics", orgId, classId, periodId],
-  queryFn: () =>
-    commands.assessment
-      .listAttendance(orgId, periodId || "", classId)
-      .catch(() => []),
+  queryFn: () => {
+    const year = new Date().getFullYear();
+    return commands.assessment
+      .report(classId, `${year}-01-01`, `${year}-12-31`)
+      .catch(() => []);
+  },
   enabled: !!orgId && !!classId && !!periodId,
   staleTime: 5 * 60 * 1000,
 }));
@@ -323,7 +328,7 @@ function handleTriggerAction(issue: any) {
           <div class="border border-border bg-card/60 rounded-xl overflow-hidden shadow-sm text-start">
             <div class="flex items-center justify-between bg-muted/20 border-b border-border/40 p-3 select-none">
               <span class="font-mono text-xs font-bold text-foreground">
-                /academics/classes/{classId}/grades: {m.academics_class_overview_grade_matrix_sheet()}
+                Gradebook preview: {m.academics_class_overview_grade_matrix_sheet()}
               </span>
               <span class="bg-primary/10 border border-primary/20 text-primary text-[8px] font-extrabold uppercase py-0.5 px-2.5 rounded font-sans">
                 {m.academics_class_overview_grade_matrix_preview()}
@@ -335,7 +340,7 @@ function handleTriggerAction(issue: any) {
               <div class="flex items-center gap-2 select-none">
                 <span class="text-[10px] text-muted-foreground font-bold">{m.common_word_subject()}:</span>
                 <Select type="single" value={selectedSubjectId} onValueChange={(v) => { if (v) selectedSubjectId = v; }}>
-                  <SelectTrigger class="w-[180px] text-xs h-7.5 bg-background">
+                  <SelectTrigger class="w-45 text-xs h-7.5 bg-background">
                     <div class="flex items-center gap-1.5 min-w-0">
                       <BookOpen size={11} class="text-muted-foreground shrink-0" />
                       <span class="truncate">
@@ -355,7 +360,7 @@ function handleTriggerAction(issue: any) {
                 </Select>
               </div>
 
-              <div class="border border-border/60 rounded-xl overflow-hidden h-[260px]">
+              <div class="border border-border/60 rounded-xl overflow-hidden h-65">
                 {#if gradeMatrixQuery.isLoading}
                   <div class="h-full flex flex-col gap-2 p-2">
                     {#each Array(5) as _}
