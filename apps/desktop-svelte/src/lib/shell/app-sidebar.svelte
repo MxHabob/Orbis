@@ -158,7 +158,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 				<GitIntegrationPopover />
 				<UpgradeButton />
 				<AutomationStatusPopover {orgId} />
-				<MoreActionsDropdown />
+        <MoreActionsDropdown orgName={orgNameDisplay} />
 			</div>
 
 			<UserSidebarMenu {orgId} />

@@ -14,6 +14,7 @@ import {
 } from "@orbis/ui-svelte/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@orbis/ui-svelte";
 import { isDesktopApp } from "$lib/core/ipc";
+import BackupCliDialog from "./backup-cli-dialog.svelte";
 import {
   MoreHorizontal,
   HelpCircle,
@@ -27,7 +28,16 @@ import {
   MessageSquare,
   Lock,
   SquareCode,
+  DatabaseBackup,
 } from "@lucide/svelte";
+
+let isBackupCliOpen = $state(false);
+
+let {
+  orgName = "Orbis School",
+}: {
+  orgName?: string;
+} = $props();
 
 async function openUrl(url: string) {
   if (isDesktopApp()) {
@@ -156,7 +166,7 @@ const iconClass = "text-muted-foreground shrink-0";
     <DropdownMenuSeparator />
 
     <!-- Give Feedback -->
-    <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('mailto:feedback@orbis.edu')}>
+    <DropdownMenuItem class={menuItemClass} onclick={() => (isBackupCliOpen = true)}>
       <Megaphone size={14} class={iconClass} />
       <span>{m.common_action_back?.() ?? "Give feedback"}</span>
     </DropdownMenuItem>
@@ -169,3 +179,5 @@ const iconClass = "text-muted-foreground shrink-0";
   </DropdownMenuContent>
   </DropdownMenuPortal>
 </DropdownMenu>
+
+<BackupCliDialog bind:open={isBackupCliOpen} {orgName} />
