@@ -147,7 +147,7 @@ async function handleSubmit(e: SubmitEvent) {
 }
 </script>
 
-<form onsubmit={handleSubmit} class="flex flex-col h-full overflow-hidden gap-0 bg-background text-start">
+<form onsubmit={handleSubmit} class="flex flex-col h-full overflow-hidden gap-0 text-start">
   <SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
     <SheetTitle class="text-base font-bold text-foreground flex items-center gap-2">
       <Building2 size={18} class="text-primary" />

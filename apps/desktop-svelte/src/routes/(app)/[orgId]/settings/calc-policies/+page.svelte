@@ -133,7 +133,7 @@ function getRoundingLabel(r: string) {
   <title>سياسات الحساب | Orbis</title>
 </svelte:head>
 
-<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide bg-background">
+<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
   {#if policiesQuery.isLoading}
     <SettingsFormSkeleton />
   {:else if policiesQuery.error}

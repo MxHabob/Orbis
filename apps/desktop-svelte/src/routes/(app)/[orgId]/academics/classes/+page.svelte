@@ -102,7 +102,7 @@ and triggers the class creation side sheet. Each card links to the class detail 
 </script>
 
 <div
-	class="h-full w-full min-w-0 overflow-y-auto overflow-x-hidden scrollbar-hide bg-background p-3 sm:p-4 flex flex-col gap-4"
+	class="h-full w-full min-w-0 overflow-y-auto overflow-x-hidden scrollbar-hide p-3 sm:p-4 flex flex-col gap-4"
 >
 	<!-- KPI Metrics Summary -->
 	{#if !pageLoading && !error && classes.length > 0}

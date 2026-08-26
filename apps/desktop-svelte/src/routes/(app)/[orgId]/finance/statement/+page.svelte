@@ -209,7 +209,7 @@ function exitPage() {
 }
 </script>
 
-<div class="flex h-full min-h-0 w-full flex-col overflow-hidden bg-background text-foreground">
+<div class="flex h-full min-h-0 w-full flex-col overflow-hidden text-foreground">
   <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-6 lg:flex-row">
     <aside class="flex w-full shrink-0 flex-col gap-3 lg:w-64">
       <AccountTree categories={treeCategories} bind:selectedIds={selectedIds} />

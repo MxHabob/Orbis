@@ -106,7 +106,7 @@ function handleGridAction(event: GridActionEvent) {
 }
 </script>
 
-<div class="h-full flex flex-col overflow-hidden bg-background p-6">
+<div class="h-full flex flex-col overflow-hidden p-6">
   <div class="flex items-center justify-between pb-4 flex-nowrap shrink-0">
     <div class="flex flex-col gap-0.5 text-start">
       <h1 class="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">

@@ -97,7 +97,7 @@ const domainLabels: Record<string, string> = {
 };
 </script>
 
-<div class="h-full overflow-y-auto bg-background font-sans p-6 scrollbar-hide">
+<div class="h-full overflow-y-auto font-sans p-6 scrollbar-hide">
   <div class="w-full space-y-6">
 
     <!-- Risk Summary Cards (Full Grid Width) -->

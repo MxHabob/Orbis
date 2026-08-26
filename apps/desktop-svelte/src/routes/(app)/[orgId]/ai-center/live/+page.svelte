@@ -77,7 +77,7 @@ const eventStyles: Record<string, { color: string; icon: typeof Bell }> = {
 };
 </script>
 
-<div class="h-full flex flex-col overflow-hidden bg-background font-sans">
+<div class="h-full flex flex-col overflow-hidden font-sans">
   <!-- Top Control Bar (Midday Style) -->
   <div class="px-6 py-3 shrink-0 border-b border-border/40 bg-background flex items-center justify-between">
     <div class="flex items-center gap-2">

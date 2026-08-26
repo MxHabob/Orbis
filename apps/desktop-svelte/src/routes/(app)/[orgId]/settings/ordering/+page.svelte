@@ -138,7 +138,7 @@ const filtered = $derived(
 <svelte:head>
   <title>{m.common_nav_ordering()} | Orbis</title>
 </svelte:head>
-<div class="h-full w-full overflow-hidden flex flex-col font-sans text-start bg-background relative">
+<div class="h-full w-full overflow-hidden flex flex-col font-sans text-start relative">
   <div class="flex-1 overflow-y-auto scrollbar-hide">
     <div class="p-6 pb-28 flex flex-col gap-6">
       <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 font-sans border-b border-border/40 pb-5 select-none">

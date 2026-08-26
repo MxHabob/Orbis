@@ -120,7 +120,7 @@ Follows standard settings layout pattern (section headers, clean two-column grid
 </svelte:head>
 
 <div
-  class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide bg-background"
+  class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide"
 >
   {#if policyQuery.isLoading}
     <div class="w-full">

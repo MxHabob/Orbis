@@ -251,7 +251,7 @@ const workflowCategories = $derived([
   <title>{m.ai_center_settings_page_title()} | Orbis</title>
 </svelte:head>
 
-<div class="h-full w-full overflow-y-auto p-6 pb-32 flex flex-col gap-6 scrollbar-hide bg-background font-sans">
+<div class="h-full w-full overflow-y-auto p-6 pb-32 flex flex-col gap-6 scrollbar-hide font-sans">
   <form onsubmit={(e) => { e.preventDefault(); saveAllSettings(); }} class="flex flex-col gap-6 w-full">
 
     <!-- ── Section 1: Autopilot Operational Mode ─────────────────── -->

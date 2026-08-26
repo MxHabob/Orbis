@@ -202,7 +202,7 @@ let baseCurrencyCode = $derived(
   <title>{m.settings_nav_currencies()} | Orbis</title>
 </svelte:head>
 
-<div class="h-full w-full overflow-y-auto bg-background p-6 flex flex-col gap-6 scrollbar-hide">
+<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
   <!-- Header -->
   <div class="flex items-center justify-between gap-4 pb-5 select-none border-b border-border/40 font-sans">
     <div class="flex items-center gap-2">

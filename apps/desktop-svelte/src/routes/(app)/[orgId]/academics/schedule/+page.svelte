@@ -420,7 +420,7 @@
   );
 </script>
 
-<div class="h-full w-full flex flex-col items-stretch overflow-hidden bg-background">
+<div class="h-full w-full flex flex-col items-stretch overflow-hidden">
   <!-- Top Horizontal Command & Filter Toolbar -->
   <ScheduleToolbar
     bind:activePeriodId

@@ -183,7 +183,7 @@ const componentTypes = [
   <title>هياكل التقييم | Orbis</title>
 </svelte:head>
 
-<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide bg-background">
+<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
   {#if schemesQuery.isLoading}
     <SettingsFormSkeleton />
   {:else if schemesQuery.error}
