@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Plus, Clock } from "@lucide/svelte";
+  import { Clock } from "@lucide/svelte";
   import SessionCard from "./session-card.svelte";
   import TimeGutter from "./time-gutter.svelte";
   import CalendarHeader from "./calendar-header.svelte";
@@ -184,21 +184,7 @@
                       />
                     {/each}
                   {:else}
-                    <!-- Empty Slot Placeholder with Quick-Add Action -->
-                    <!-- svelte-ignore a11y_click_events_have_key_events -->
-                    <!-- svelte-ignore a11y_no_static_element_interactions -->
-                    <div
-                      onclick={() => onCellClick?.(day.value, String(slot.id))}
-                      class="flex flex-1 w-full h-full min-h-[64px] cursor-pointer items-center justify-center rounded-md border border-dashed border-transparent transition-all group-hover:border-border/60 group-hover:bg-muted/30"
-                      title={isArabic ? "إضافة حصة جديدة" : "Add Lesson"}
-                    >
-                      <span
-                        class="flex items-center gap-1 text-[11px] font-medium text-muted-foreground/40 opacity-0 transition-opacity group-hover:opacity-100 group-hover:text-primary"
-                      >
-                        <Plus size={13} />
-                        <span>{isArabic ? "حصة" : "Add"}</span>
-                      </span>
-                    </div>
+                    <div class="min-h-[64px] flex-1 w-full"></div>
                   {/if}
                 </div>
               {/each}

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Plus, Users, User, MapPin } from "@lucide/svelte";
+  import { Users, User, MapPin } from "@lucide/svelte";
   import { getLocale } from "$lib/paraglide/runtime";
 
   interface Props {
@@ -112,15 +112,7 @@
                     </div>
                   </div>
                 {:else}
-                  <!-- svelte-ignore a11y_click_events_have_key_events -->
-                  <!-- svelte-ignore a11y_no_static_element_interactions -->
-                  <div
-                    onclick={() => onCellClick?.(cls.id, slot.id, selectedDay)}
-                    class="h-full min-h-[48px] rounded-md border border-dashed border-transparent hover:border-border/60 hover:bg-muted/30 cursor-pointer flex items-center justify-center text-muted-foreground/30 hover:text-primary transition-all"
-                    title={isArabic ? "إضافة حصة" : "Add Lesson"}
-                  >
-                    <Plus size={12} />
-                  </div>
+                  <div class="h-full min-h-[48px]"></div>
                 {/if}
               </td>
             {/each}
