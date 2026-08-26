@@ -65,6 +65,7 @@
   let topic = $state("");
   let homework = $state("");
   let notes = $state("");
+  let lastClassId = $state("");
 
   let isSubmitting = $state(false);
   let isCheckingConflict = $state(false);
@@ -76,15 +77,26 @@
     () => periodId
   );
   const classSubjects = $derived(classSubjectsQuery.data ?? []);
+  const isLoadingClassSubjects = $derived(classSubjectsQuery.isFetching);
 
   // Filter available subjects to those taught in this class
   const classSubjectIds = $derived(
     new Set(classSubjects.map((cs) => String(cs.subject_id)))
   );
   const availableSubjects = $derived(
-    classSubjects.length > 0
+    !isLoadingClassSubjects && classSubjects.length > 0
       ? subjects.filter((s) => classSubjectIds.has(String(s.id)))
-      : subjects
+      : []
+  );
+
+  const selectedClassSubject = $derived(
+    classSubjects.find((cs) => String(cs.subject_id) === String(selectedSubjectId))
+  );
+
+  const availableTeachers = $derived(
+    selectedClassSubject?.primary_teacher_id
+      ? teachers.filter((teacher) => String(teacher.id) === String(selectedClassSubject.primary_teacher_id))
+      : []
   );
 
   // Sync form state when sheet opens or target lesson changes
@@ -117,11 +129,23 @@
 
   // When subject changes, automatically pick the assigned primary teacher
   $effect(() => {
-    if (selectedSubjectId && classSubjects.length > 0) {
-      const cs = classSubjects.find((x) => String(x.subject_id) === String(selectedSubjectId));
-      if (cs && cs.primary_teacher_id && !selectedTeacherId) {
-        selectedTeacherId = String(cs.primary_teacher_id);
+    if (open && !lesson?.id && selectedClassId && selectedClassId !== lastClassId) {
+      lastClassId = selectedClassId;
+      selectedSubjectId = "";
+      selectedTeacherId = "";
+    }
+
+    if (!isLoadingClassSubjects && classSubjects.length === 1 && !selectedSubjectId && !lesson?.id) {
+      selectedSubjectId = String(classSubjects[0].subject_id);
+    }
+
+    if (selectedSubjectId && selectedClassSubject?.primary_teacher_id) {
+      const assignedTeacherId = String(selectedClassSubject.primary_teacher_id);
+      if (selectedTeacherId !== assignedTeacherId) {
+        selectedTeacherId = assignedTeacherId;
       }
+    } else if (selectedSubjectId && selectedTeacherId) {
+      selectedTeacherId = "";
     }
   });
 
@@ -233,8 +257,8 @@
 </script>
 
 <Sheet bind:open>
-  <SheetContent class="w-full sm:max-w-lg overflow-y-auto flex flex-col p-6 text-start">
-    <SheetHeader>
+  <SheetContent class="h-full w-full sm:max-w-lg overflow-hidden flex flex-col bg-background p-0 text-start">
+    <SheetHeader class="border-b border-border/60 px-6 pb-4 pt-6 text-end">
       <SheetTitle>
         {lesson
           ? (isArabic ? "تعديل الحصة المجدولة" : "Edit Scheduled Lesson")
@@ -262,7 +286,7 @@
       </div>
     {/if}
 
-    <form onsubmit={handleSubmit} class="mt-4 flex-1 flex flex-col gap-4">
+    <form onsubmit={handleSubmit} class="mt-0 min-h-0 flex-1 overflow-y-auto scrollbar-hide px-6 py-5 flex flex-col gap-5">
       <!-- Class Selector -->
       <div class="space-y-1.5">
         <Label for="class-select" class="text-xs font-semibold">{isArabic ? "الفصل الدراسي" : "Class"} *</Label>
@@ -272,7 +296,7 @@
           onValueChange={(val) => (selectedClassId = val ?? "")}
           disabled={Boolean(lesson?.id)}
         >
-          <SelectTrigger id="class-select" class="h-9 text-xs">
+          <SelectTrigger id="class-select" class="h-9 w-full min-w-0 text-xs">
             <div class="flex items-center gap-1.5 truncate">
               <Users size={13} class="text-muted-foreground" />
               <span>{classes.find((c) => String(c.id) === selectedClassId)?.name_ar || classes.find((c) => String(c.id) === selectedClassId)?.name || (isArabic ? "اختر الفصل..." : "Select class...")}</span>
@@ -295,7 +319,7 @@
           onValueChange={(val) => (selectedSubjectId = val ?? "")}
           disabled={Boolean(lesson?.id)}
         >
-          <SelectTrigger id="subject-select" class="h-9 text-xs">
+          <SelectTrigger id="subject-select" class="h-9 w-full min-w-0 text-xs">
             <div class="flex items-center gap-1.5 truncate">
               <BookOpen size={13} class="text-muted-foreground" />
               <span>{availableSubjects.find((s) => String(s.id) === selectedSubjectId)?.name_ar || availableSubjects.find((s) => String(s.id) === selectedSubjectId)?.name || (isArabic ? "اختر المادة..." : "Select subject...")}</span>
@@ -305,7 +329,7 @@
             {#each availableSubjects as s (s.id)}
               <SelectItem value={String(s.id)} class="text-xs">
                 <div class="flex items-center gap-2">
-                  <span class="h-2 w-2 rounded-full" style={`background-color: ${s.color || 'oklch(0.58 0.1 285)'};`}></span>
+                  <span class="h-2 w-2 rounded-full" style={`background-color: ${s.color || 'var(--primary)'};`}></span>
                   <span>{s.name_ar || s.name}</span>
                 </div>
               </SelectItem>
@@ -322,14 +346,14 @@
           value={selectedTeacherId}
           onValueChange={(val) => (selectedTeacherId = val ?? "")}
         >
-          <SelectTrigger id="teacher-select" class="h-9 text-xs">
+          <SelectTrigger id="teacher-select" class="h-9 w-full min-w-0 text-xs">
             <div class="flex items-center gap-1.5 truncate">
               <User size={13} class="text-muted-foreground" />
               <span>{teachers.find((t) => String(t.id) === selectedTeacherId)?.name_ar || teachers.find((t) => String(t.id) === selectedTeacherId)?.full_name || (isArabic ? "اختر المعلم..." : "Select teacher...")}</span>
             </div>
           </SelectTrigger>
           <SelectContent class="max-h-56">
-            {#each teachers as t (t.id)}
+            {#each availableTeachers as t (t.id)}
               <SelectItem value={String(t.id)} class="text-xs">{t.name_ar || t.full_name}</SelectItem>
             {/each}
           </SelectContent>
@@ -344,7 +368,7 @@
           value={selectedRoomId}
           onValueChange={(val) => (selectedRoomId = val ?? "")}
         >
-          <SelectTrigger id="room-select" class="h-9 text-xs">
+          <SelectTrigger id="room-select" class="h-9 w-full min-w-0 text-xs">
             <div class="flex items-center gap-1.5 truncate">
               <MapPin size={13} class="text-muted-foreground" />
               <span>{rooms.find((r) => String(r.id) === selectedRoomId)?.name_ar || rooms.find((r) => String(r.id) === selectedRoomId)?.name || (isArabic ? "بدون قاعة محددة" : "No Room")}</span>
@@ -363,14 +387,14 @@
 
       <!-- Day of Week & TimeSlot Grid -->
       <div class="grid grid-cols-2 gap-3">
-        <div class="space-y-1.5">
+        <div class="min-w-0 space-y-1.5">
           <Label class="text-xs font-semibold">{isArabic ? "اليوم" : "Day"} *</Label>
           <Select
             type="single"
             value={String(selectedDayOfWeek)}
             onValueChange={(val) => (selectedDayOfWeek = Number(val) || 1)}
           >
-            <SelectTrigger class="h-9 text-xs">
+            <SelectTrigger class="h-9 w-full min-w-0 text-xs">
               <span>{weekdaysList.find((w) => w.val === selectedDayOfWeek)?.[isArabic ? "labelAr" : "labelEn"]}</span>
             </SelectTrigger>
             <SelectContent>
@@ -381,14 +405,14 @@
           </Select>
         </div>
 
-        <div class="space-y-1.5">
+        <div class="min-w-0 space-y-1.5">
           <Label class="text-xs font-semibold">{isArabic ? "الحصة الزمنية" : "Time Slot"} *</Label>
           <Select
             type="single"
             value={selectedSlotId}
             onValueChange={(val) => (selectedSlotId = val ?? "")}
           >
-            <SelectTrigger class="h-9 text-xs">
+            <SelectTrigger class="h-9 w-full min-w-0 text-xs">
               <div class="flex items-center gap-1.5 truncate">
                 <Clock size={13} class="text-muted-foreground" />
                 <span>{timeSlots.find((s) => String(s.id) === selectedSlotId)?.name_ar || timeSlots.find((s) => String(s.id) === selectedSlotId)?.name || (isArabic ? "اختر الحصة..." : "Select slot...")}</span>
@@ -421,7 +445,7 @@
         <Textarea id="lesson-notes" bind:value={notes} rows={2} placeholder={isArabic ? "أي تعليمات أو ملاحظات خاصة..." : "Notes..."} class="text-xs" />
       </div>
 
-      <SheetFooter class="mt-6 flex items-center justify-between gap-2 border-t border-border/40 pt-4">
+      <SheetFooter class="sticky bottom-0 mt-0 flex items-center justify-between gap-2 border-t border-border/60 bg-background pt-4">
         {#if lesson?.id}
           <Button
             type="button"
