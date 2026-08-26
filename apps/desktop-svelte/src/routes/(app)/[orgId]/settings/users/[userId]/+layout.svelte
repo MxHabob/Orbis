@@ -14,16 +14,6 @@ import type { User } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-  DialogHeader,
-  DialogFooter,
-} from "@orbis/ui-svelte/dialog";
-import { Input } from "@orbis/ui-svelte/input";
-import { Label } from "@orbis/ui-svelte/label";
 import { toast } from "svelte-sonner";
 import { Trash2 } from "@lucide/svelte";
 import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
@@ -33,6 +23,7 @@ import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
 import type { Snippet } from "svelte";
 
 import { localizeHref } from "$lib/paraglide/runtime";
+import UserResetPasswordDialog from "$lib/features/settings/components/user-reset-password-dialog.svelte";
 
 let { children }: { children: Snippet } = $props();
 
@@ -251,80 +242,4 @@ const menuItems = $derived([
   </div>
 </div>
 
-<!-- Reset Password Dialog -->
-<Dialog bind:open={showResetModal}>
-  <DialogContent class="max-w-md text-start">
-    <form onsubmit={handleResetPassword} class="flex flex-col gap-4">
-      <DialogHeader>
-        <DialogTitle>{m.settings_user_detail_reset_pass_title()}</DialogTitle>
-        <DialogDescription>
-          {m.settings_user_detail_reset_pass_desc({
-            name: fullName || "User",
-          })}
-        </DialogDescription>
-      </DialogHeader>
-
-      <div class="flex flex-col gap-2 text-start">
-        <Label
-          for="new_password"
-          class="text-xs font-medium text-muted-foreground"
-        >
-          {m.settings_security_new_password()}
-        </Label>
-        <Input
-          id="new_password"
-          type="password"
-          bind:value={newPassword}
-          placeholder="••••••••"
-          required
-          minlength={6}
-          disabled={isResettingPassword}
-        />
-      </div>
-
-      <div class="flex flex-col gap-2 text-start">
-        <Label
-          for="confirm_password"
-          class="text-xs font-medium text-muted-foreground"
-        >
-          {m.settings_security_confirm_password()}
-        </Label>
-        <Input
-          id="confirm_password"
-          type="password"
-          bind:value={confirmPassword}
-          placeholder="••••••••"
-          required
-          disabled={isResettingPassword}
-        />
-      </div>
-
-      <DialogFooter class="border-t border-border pt-4 mt-2">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onclick={() => {
-            showResetModal = false;
-            newPassword = "";
-            confirmPassword = "";
-          }}
-          disabled={isResettingPassword}
-        >
-          {m.common_action_cancel()}
-        </Button>
-        <Button
-          type="submit"
-          variant="lime"
-          size="sm"
-          class="font-bold"
-          disabled={isResettingPassword}
-        >
-          {isResettingPassword
-            ? "..."
-            : m.settings_user_detail_btn_reset_pass()}
-        </Button>
-      </DialogFooter>
-    </form>
-  </DialogContent>
-</Dialog>
+<UserResetPasswordDialog bind:open={showResetModal} fullName={fullName} bind:newPassword bind:confirmPassword isResettingPassword={isResettingPassword} onsubmit={handleResetPassword} oncancel={() => { showResetModal = false; newPassword = ""; confirmPassword = ""; }} />

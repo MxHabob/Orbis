@@ -6,23 +6,16 @@
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
-import { Button } from "@orbis/ui-svelte/button";
 import {
   Select,
   SelectTrigger,
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@orbis/ui-svelte/dialog";
-import { History, Info } from "@lucide/svelte";
+import { History } from "@lucide/svelte";
 import { l, isAr } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
+import AuditDetailsDialog from "$lib/features/settings/components/audit-details-dialog.svelte";
 
 import { DataTable } from "$lib/tables";
 import { auditLogs as auditDef, withIndex } from "$lib/tables/definitions";
@@ -179,51 +172,4 @@ function openDetails(log: any) {
   </div>
 </div>
 
-<!-- Details Dialog -->
-{#if selectedLog}
-  <Dialog open={isDetailsOpen} onOpenChange={(open) => { if (!open) { selectedLog = null; isDetailsOpen = false; } }}>
-    <DialogContent class="max-w-2xl text-start font-sans">
-      <DialogHeader>
-        <DialogTitle class="flex items-center gap-2">
-          <Info size={18} class="text-primary" />
-          <span>{m.common_audit_details_title?.() || "Audit Log Details"}</span>
-        </DialogTitle>
-        <DialogDescription>
-          {formatDate(selectedLog.created_at)}
-        </DialogDescription>
-      </DialogHeader>
-
-      <div class="grid grid-cols-2 gap-4 py-2 text-xs">
-        <div class="flex flex-col gap-1">
-          <span class="text-muted-foreground font-semibold">User:</span>
-          <span class="text-foreground">{getUserEmail(selectedLog.user_id)}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-muted-foreground font-semibold">Action:</span>
-          <span class="font-mono bg-muted/40 px-2 py-0.5 rounded-md border border-border/50 inline-block">{selectedLog.action}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-muted-foreground font-semibold">Entity Type:</span>
-          <span class="text-foreground font-semibold">{selectedLog.entity_type}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-muted-foreground font-semibold">Entity ID:</span>
-          <span class="text-foreground font-mono">{selectedLog.entity_id}</span>
-        </div>
-        {#if selectedLog.ip_address}
-          <div class="flex flex-col gap-1">
-            <span class="text-muted-foreground font-semibold">IP Address:</span>
-            <span class="text-foreground font-mono">{selectedLog.ip_address}</span>
-          </div>
-        {/if}
-      </div>
-
-      {#if selectedLog.metadata}
-        <div class="flex flex-col gap-1.5 text-xs text-start border-t border-border pt-4">
-          <span class="text-muted-foreground font-semibold">Metadata:</span>
-          <pre class="bg-muted p-3 rounded-lg text-[10px] font-mono overflow-x-auto text-foreground whitespace-pre-wrap">{selectedLog.metadata}</pre>
-        </div>
-      {/if}
-    </DialogContent>
-  </Dialog>
-{/if}
+<AuditDetailsDialog bind:open={isDetailsOpen} log={selectedLog} userEmail={selectedLog ? getUserEmail(selectedLog.user_id) : ""} formatDate={formatDate} onclose={() => { selectedLog = null; isDetailsOpen = false; }} />

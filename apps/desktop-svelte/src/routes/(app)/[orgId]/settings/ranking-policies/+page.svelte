@@ -7,23 +7,13 @@ Uses the Assessment Engine's ranking_policy CRUD operations.
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui-svelte/button";
-import { Input } from "@orbis/ui-svelte/input";
-import { Label } from "@orbis/ui-svelte/label";
 import { Badge } from "@orbis/ui-svelte/badge";
-import { Switch } from "@orbis/ui-svelte/switch";
 import {
   Select,
   SelectTrigger,
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@orbis/ui-svelte/dialog";
 import { toast } from "svelte-sonner";
 import {
   Sliders,
@@ -34,6 +24,7 @@ import {
   Award,
 } from "@lucide/svelte";
 import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
+import RankingPolicyDialog from "$lib/features/settings/components/ranking-policy-dialog.svelte";
 
 let { data }: { data: { orgId: string } } = $props();
 const orgId = $derived(data.orgId);
@@ -128,7 +119,6 @@ async function handleDelete(id: string) {
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 select-none scrollbar-hide">
-  <!-- Header -->
   <div class="flex items-center justify-between">
     <div class="space-y-1">
       <h1 class="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
@@ -145,7 +135,6 @@ async function handleDelete(id: string) {
     </Button>
   </div>
 
-  <!-- Content -->
   {#if policiesQuery.isLoading}
     <SettingsFormSkeleton />
   {:else if policies.length === 0}
@@ -171,42 +160,18 @@ async function handleDelete(id: string) {
                 {policy.is_enabled ? "مفعّلة" : "معطلة"}
               </Badge>
             </div>
-
             <div class="space-y-1 text-xs text-muted-foreground">
-              <div class="flex justify-between">
-                <span>نطاق الترتيب:</span>
-                <span class="font-medium text-foreground capitalize">{policy.ranking_scope}</span>
-              </div>
-              <div class="flex justify-between">
-                <span>الخوارزمية:</span>
-                <span class="font-medium text-foreground capitalize">{policy.ranking_method}</span>
-              </div>
-              <div class="flex justify-between">
-                <span>معيار الترتيب:</span>
-                <span class="font-medium text-foreground">{policy.ranking_metric}</span>
-              </div>
-              <div class="flex justify-between">
-                <span>التعادل:</span>
-                <span class="font-medium text-foreground">{policy.tie_handling}</span>
-              </div>
+              <div class="flex justify-between"><span>نطاق الترتيب:</span><span class="font-medium text-foreground capitalize">{policy.ranking_scope}</span></div>
+              <div class="flex justify-between"><span>الخوارزمية:</span><span class="font-medium text-foreground capitalize">{policy.ranking_method}</span></div>
+              <div class="flex justify-between"><span>معيار الترتيب:</span><span class="font-medium text-foreground">{policy.ranking_metric}</span></div>
+              <div class="flex justify-between"><span>التعادل:</span><span class="font-medium text-foreground">{policy.tie_handling}</span></div>
             </div>
           </div>
-
           <div class="flex items-center justify-end gap-1 pt-2 border-t border-border/40">
-            <Button
-              variant="ghost"
-              size="sm"
-              class="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-              onclick={() => openEdit(policy)}
-            >
+            <Button variant="ghost" size="sm" class="h-7 w-7 p-0 text-muted-foreground hover:text-foreground" onclick={() => openEdit(policy)}>
               <Pencil class="h-3.5 w-3.5" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              class="h-7 w-7 p-0 text-destructive/70 hover:text-destructive"
-              onclick={() => handleDelete(policy.id)}
-            >
+            <Button variant="ghost" size="sm" class="h-7 w-7 p-0 text-destructive/70 hover:text-destructive" onclick={() => handleDelete(policy.id)}>
               <Trash2 class="h-3.5 w-3.5" />
             </Button>
           </div>
@@ -216,99 +181,4 @@ async function handleDelete(id: string) {
   {/if}
 </div>
 
-<!-- Create / Edit Dialog -->
-<Dialog bind:open={showDialog}>
-  <DialogContent class="max-w-md">
-    <DialogHeader>
-      <DialogTitle>{editingId ? "تعديل سياسة الترتيب" : "إضافة سياسة ترتيب جديدة"}</DialogTitle>
-    </DialogHeader>
-
-    <div class="space-y-4 py-2 text-xs">
-      <div class="space-y-1.5">
-        <Label>اسم السياسة</Label>
-        <Input bind:value={form.name} placeholder="مثال: الترتيب العام للصفوف" />
-      </div>
-
-      <div class="space-y-1.5">
-        <Label>نطاق الترتيب (Scope)</Label>
-        <Select
-          type="single"
-          value={form.ranking_scope}
-          onValueChange={(val) => { if (val) form.ranking_scope = val; }}
-        >
-          <SelectTrigger class="w-full">
-            {form.ranking_scope === "class" ? "على مستوى الصف (Class)" : form.ranking_scope === "level" ? "على مستوى المرحلة (Level)" : "على مستوى المؤسسة (Org)"}
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="class">على مستوى الصف (Class)</SelectItem>
-            <SelectItem value="division">على مستوى الشعبة (Division)</SelectItem>
-            <SelectItem value="level">على مستوى المرحلة (Level)</SelectItem>
-            <SelectItem value="org">على مستوى المؤسسة بالكامل (Org)</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div class="space-y-1.5">
-        <Label>معيار الترتيب (Metric)</Label>
-        <Select
-          type="single"
-          value={form.ranking_metric}
-          onValueChange={(val) => { if (val) form.ranking_metric = val; }}
-        >
-          <SelectTrigger class="w-full">
-            {form.ranking_metric === "total_score" ? "المجموع الكلي (Total Score)" : form.ranking_metric === "percentage" ? "النسبة المئوية (Percentage)" : "المعدل التراكمي (GPA)"}
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="total_score">المجموع الكلي (Total Score)</SelectItem>
-            <SelectItem value="percentage">النسبة المئوية (Percentage)</SelectItem>
-            <SelectItem value="gpa">المعدل التراكمي (GPA)</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div class="space-y-1.5">
-        <Label>طريقة التعامل مع التعادل (Tie Handling)</Label>
-        <Select
-          type="single"
-          value={form.tie_handling}
-          onValueChange={(val) => { if (val) form.tie_handling = val; }}
-        >
-          <SelectTrigger class="w-full">
-            {form.tie_handling === "same_rank" ? "نفس الرتبة (Same Rank: 1, 2, 2, 4)" : form.tie_handling === "sequential" ? "ترتيب تسلسلي (Sequential: 1, 2, 3, 4)" : "تخطي الرتبة (Skip)"}
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="same_rank">نفس الرتبة (Same Rank: 1, 2, 2, 4)</SelectItem>
-            <SelectItem value="sequential">ترتيب تسلسلي (Sequential: 1, 2, 3, 4)</SelectItem>
-            <SelectItem value="skip">تخطي الرتبة (Skip)</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div class="flex items-center justify-between pt-2">
-        <Label>تفعيل السياسة</Label>
-        <Switch
-          checked={form.is_enabled === 1}
-          onCheckedChange={(c) => { form.is_enabled = c ? 1 : 0; }}
-        />
-      </div>
-
-      <div class="flex items-center justify-between">
-        <Label>شمل الطلاب الراسبين في الترتيب</Label>
-        <Switch
-          checked={form.include_failed_students === 1}
-          onCheckedChange={(c) => { form.include_failed_students = c ? 1 : 0; }}
-        />
-      </div>
-    </div>
-
-    <DialogFooter>
-      <Button variant="outline" onclick={() => { showDialog = false; }}>إلغاء</Button>
-      <Button onclick={handleSave} disabled={isSaving || !form.name.trim()}>
-        {#if isSaving}
-          <Loader2 class="h-4 w-4 animate-spin mr-1" />
-        {/if}
-        حفظ
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+<RankingPolicyDialog bind:open={showDialog} form={form} editingId={editingId} isSaving={isSaving} onsubmit={handleSave} />

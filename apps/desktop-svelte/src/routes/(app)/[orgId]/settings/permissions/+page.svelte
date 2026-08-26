@@ -11,14 +11,6 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@orbis/ui-svelte/dialog";
 import { Badge } from "@orbis/ui-svelte/badge";
 import {
   Table,
@@ -33,6 +25,8 @@ import { commands } from "$lib/core/ipc";
 import { goto } from "$app/navigation";
 import SearchField from "$lib/shared/components/search-field.svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
+import PermissionRuleDialog from "$lib/features/settings/components/permission-rule-dialog.svelte";
+import UserPermissionsDialog from "$lib/features/settings/components/user-permissions-dialog.svelte";
 import {
   Search,
   Plus,
@@ -408,7 +402,7 @@ function toggleAction(ruleIndex: number, action: string) {
 
           <!-- Role Filter -->
           <div class="w-full sm:w-48 text-start">
-            <Select type="single" value={roleFilter} onValueChange={(v) => (roleFilter = v ?? "")}>
+            <Select type="single" value={roleFilter} onValueChange={(v: string | undefined) => (roleFilter = v ?? "")}>
               <SelectTrigger class="h-9 w-full text-xs bg-background/50">
                 {roleFilter ? m.settings_permissions_filter_role({ role: roleFilter }) : m.settings_users_filter_role_all()}
               </SelectTrigger>
@@ -485,7 +479,7 @@ function toggleAction(ruleIndex: number, action: string) {
                   <label class="inline-flex items-center gap-2 mt-2.5 cursor-pointer group select-none">
                     <Checkbox
                       checked={rule.only_if_creator}
-                      onCheckedChange={(checked) => {
+                      onCheckedChange={(checked: boolean) => {
                         rule.only_if_creator = Boolean(checked);
                         hasUnsavedChanges = true;
                       }}
@@ -547,164 +541,5 @@ function toggleAction(ruleIndex: number, action: string) {
   />
 </div>
 
-<!-- Create Custom Rule Modal -->
-<Dialog bind:open={showAddRuleModal}>
-  <DialogContent class="max-w-lg text-start">
-    <DialogHeader>
-      <DialogTitle>{m.settings_permissions_dialog_add_title()}</DialogTitle>
-    </DialogHeader>
-
-    <div class="flex flex-col gap-4 py-2">
-      <!-- Document Type Selector -->
-      <div class="flex flex-col gap-1.5 text-start">
-        <Label for="rule_doc_type" class="text-xs font-medium text-muted-foreground">
-          {m.settings_permissions_col_doc_type()}
-        </Label>
-        <Select type="single" value={newRuleDocType} onValueChange={(v) => (newRuleDocType = v ?? "")}>
-          <SelectTrigger class="h-9 w-full text-xs">
-            {newRuleDocType || "Select Document Type"}
-          </SelectTrigger>
-          <SelectContent>
-            {#each standardDocTypes as type}
-              <SelectItem value={type}>{type}</SelectItem>
-            {/each}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <!-- Role Selector -->
-      <div class="flex flex-col gap-1.5 text-start">
-        <Label for="rule_role" class="text-xs font-medium text-muted-foreground">
-          {m.settings_permissions_label_role()}
-        </Label>
-        <Select type="single" value={newRuleRole} onValueChange={(v) => (newRuleRole = v ?? "Academics User")}>
-          <SelectTrigger class="h-9 w-full text-xs">
-            {newRuleRole}
-          </SelectTrigger>
-          <SelectContent>
-            {#each standardRoles as role}
-              <SelectItem value={role}>{role}</SelectItem>
-            {/each}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div class="grid grid-cols-2 gap-4 items-end">
-        <!-- Level -->
-        <div class="flex flex-col gap-1.5 text-start">
-          <Label for="rule_level" class="text-xs font-medium text-muted-foreground">
-            {m.academics_exams_level()}
-          </Label>
-          <Input
-            id="rule_level"
-            type="number"
-            bind:value={newRuleLevel}
-            class="h-9 text-xs"
-          />
-        </div>
-
-        <!-- Creator Condition -->
-        <div class="pb-2">
-          <label class="inline-flex items-center gap-2 cursor-pointer select-none">
-            <Checkbox
-              checked={newRuleOnlyIfCreator}
-              onCheckedChange={(checked) => (newRuleOnlyIfCreator = Boolean(checked))}
-            />
-            <span class="text-xs text-muted-foreground">
-              {m.settings_permissions_only_creator()}
-            </span>
-          </label>
-        </div>
-      </div>
-
-      <!-- Actions Selector Checklist -->
-      <div class="flex flex-col gap-2 border-t border-border/40 pt-4 mt-2 text-start">
-        <span class="text-xs font-semibold text-muted-foreground mb-1">
-          {m.settings_permissions_label_allowed_actions()}
-        </span>
-        <div class="grid grid-cols-3 gap-2.5 max-h-40 overflow-y-auto pr-1">
-          {#each getActionsForDocType(newRuleDocType || "Default") as action}
-            <label class="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer select-none font-medium">
-              <Checkbox
-                checked={newRuleActions.includes(action)}
-                onCheckedChange={(checked) => {
-                  if (checked) {
-                    newRuleActions = [...newRuleActions, action];
-                  } else {
-                    newRuleActions = newRuleActions.filter(a => a !== action);
-                  }
-                }}
-              />
-              <span>{capitalizeFirstLetter(action)}</span>
-            </label>
-          {/each}
-        </div>
-      </div>
-    </div>
-
-    <DialogFooter class="border-t border-border pt-4 mt-2">
-      <Button variant="ghost" size="sm" onclick={() => showAddRuleModal = false}>
-        {m.common_action_cancel()}
-      </Button>
-      <Button variant="lime" size="sm" class="font-bold" onclick={addRule}>
-        {m.settings_permissions_btn_add()}
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
-
-<!-- Set User Permissions Modal Dialog -->
-<Dialog bind:open={showSetUserPermissionsModal}>
-  <DialogContent class="max-w-md text-start">
-    <DialogHeader>
-      <DialogTitle>{m.settings_permissions_dialog_user_title()}</DialogTitle>
-      <DialogDescription>
-        {m.settings_permissions_dialog_user_desc()}
-      </DialogDescription>
-    </DialogHeader>
-
-    <div class="my-2">
-      <SearchField
-        placeholder={m.settings_permissions_search_user_placeholder()}
-        bind:value={userSearchQuery}
-        class="max-w-none w-full"
-      />
-    </div>
-
-    <!-- Users Scrollable list -->
-    <div class="flex flex-col gap-1.5 max-h-60 overflow-y-auto pr-1">
-      {#if filteredUsers.length === 0}
-        <span class="text-xs text-muted-foreground text-center py-6">
-          {m.settings_users_empty()}
-        </span>
-      {:else}
-        {#each filteredUsers as u}
-          <button
-            onclick={() => {
-              showSetUserPermissionsModal = false;
-              goto(`/${data.orgId}/settings/users/${u.id}`);
-            }}
-            class="w-full text-start p-2.5 rounded-lg border border-border bg-background hover:bg-accent transition-all flex items-center justify-between group cursor-pointer"
-          >
-            <div class="flex flex-col gap-0.5">
-              <span class="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">{u.full_name}</span>
-              <span class="text-[9px] text-muted-foreground font-mono">{u.email}</span>
-            </div>
-            <div class="flex items-center gap-1.5">
-              <Badge variant="secondary" class="text-[9px] font-semibold">
-                {u.primary_role}
-              </Badge>
-              <ChevronRight size={12} class="text-muted-foreground group-hover:text-foreground transition-colors" />
-            </div>
-          </button>
-        {/each}
-      {/if}
-    </div>
-
-    <DialogFooter class="border-t border-border pt-4">
-      <Button variant="ghost" size="sm" onclick={() => showSetUserPermissionsModal = false}>
-        {m.common_titlebar_close()}
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+<PermissionRuleDialog bind:open={showAddRuleModal} bind:docType={newRuleDocType} bind:role={newRuleRole} bind:level={newRuleLevel} bind:onlyIfCreator={newRuleOnlyIfCreator} bind:actions={newRuleActions} standardDocTypes={standardDocTypes} standardRoles={standardRoles} getActionsForDocType={getActionsForDocType} capitalizeFirstLetter={capitalizeFirstLetter} onsubmit={addRule} />
+<UserPermissionsDialog bind:open={showSetUserPermissionsModal} users={usersList} bind:searchQuery={userSearchQuery} filteredUsers={filteredUsers} onselect={(id) => { showSetUserPermissionsModal = false; goto(`/${data.orgId}/settings/users/${id}`); }} />

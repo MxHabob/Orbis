@@ -4,7 +4,6 @@
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogDescription,
     DialogFooter,
   } from "@orbis/ui-svelte/dialog";
   import { Button } from "@orbis/ui-svelte/button";
@@ -123,11 +122,6 @@
         <Printer size={18} class="text-primary" />
         <span>{isArabic ? "تصدير وطباعة الجدول الدراسي" : "Export & Print Timetable"}</span>
       </DialogTitle>
-      <DialogDescription>
-        {isArabic
-          ? "اختر نوع الجدول والمستهدف لتجهيز وثيقة الطباعة أو التصدير بتنسيق عالي الدقة."
-          : "Choose schedule type to prepare a high-resolution printable document."}
-      </DialogDescription>
     </DialogHeader>
 
     <div class="mt-4 flex flex-col gap-4">

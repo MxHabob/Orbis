@@ -7,8 +7,6 @@ Uses the Assessment Engine's calculation_policy CRUD operations.
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui-svelte/button";
-import { Input } from "@orbis/ui-svelte/input";
-import { Label } from "@orbis/ui-svelte/label";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Separator } from "@orbis/ui-svelte/separator";
 import { Textarea } from "@orbis/ui-svelte/textarea";
@@ -18,13 +16,6 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@orbis/ui-svelte/dialog";
 import { toast } from "svelte-sonner";
 import {
   Calculator,
@@ -35,6 +26,7 @@ import {
   FlaskConical,
 } from "@lucide/svelte";
 import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
+import CalculationPolicyDialog from "$lib/features/settings/components/calculation-policy-dialog.svelte";
 
 let { data }: { data: { orgId: string } } = $props();
 const orgId = $derived(data.orgId);
@@ -210,54 +202,4 @@ function getRoundingLabel(r: string) {
   {/if}
 </div>
 
-<!-- Create/Edit Dialog -->
-<Dialog bind:open={showDialog}>
-  <DialogContent class="max-w-md w-full min-w-0">
-    <DialogHeader>
-      <DialogTitle class="text-sm">{editingId ? "تعديل سياسة الحساب" : "إنشاء سياسة حساب جديدة"}</DialogTitle>
-    </DialogHeader>
-    <div class="flex flex-col gap-4 py-2 w-full min-w-0">
-      <div class="flex flex-col gap-1.5 w-full min-w-0">
-        <Label class="text-xs">اسم السياسة</Label>
-        <Input bind:value={form.name} placeholder="مثال: المجموع الموزون الافتراضي" class="text-xs w-full min-w-0" />
-      </div>
-
-      <div class="flex flex-col gap-1.5 w-full min-w-0">
-        <Label class="text-xs">نوع القاعدة</Label>
-        <Select type="single" value={form.rule_type} onValueChange={(v) => { if (v) form.rule_type = v; }}>
-          <SelectTrigger class="text-xs h-9 w-full min-w-0">{getRuleLabel(form.rule_type)}</SelectTrigger>
-          <SelectContent class="text-xs">
-            <SelectItem value="weighted_sum">المجموع الموزون</SelectItem>
-            <SelectItem value="simple_average">المتوسط البسيط</SelectItem>
-            <SelectItem value="custom_ast">صيغة مخصصة (AST)</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div class="flex flex-col gap-1.5 w-full min-w-0">
-        <Label class="text-xs">صيغة الحساب</Label>
-        <Textarea bind:value={form.formula_expression} class="text-xs font-mono min-h-15 w-full min-w-0 max-w-full break-all" placeholder="SUM(score * weight) / SUM(weight)" />
-      </div>
-
-      <div class="flex flex-col gap-1.5 w-full min-w-0">
-        <Label class="text-xs">سياسة التقريب</Label>
-        <Select type="single" value={form.rounding_policy} onValueChange={(v) => { if (v) form.rounding_policy = v; }}>
-          <SelectTrigger class="text-xs h-9 w-full min-w-0">{getRoundingLabel(form.rounding_policy)}</SelectTrigger>
-          <SelectContent class="text-xs">
-            <SelectItem value="round_half_up">تقريب للأعلى</SelectItem>
-            <SelectItem value="round_half_down">تقريب للأسفل</SelectItem>
-            <SelectItem value="truncate">قطع الكسور</SelectItem>
-            <SelectItem value="ceiling">تقريب للسقف</SelectItem>
-            <SelectItem value="floor">تقريب للقاع</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
-    <DialogFooter class="flex items-center justify-end w-full pt-2">
-      <Button size="sm" class="text-xs cursor-pointer" onclick={handleSave} disabled={isSaving || !form.name.trim()}>
-        {#if isSaving}<Loader2 size={12} class="animate-spin me-1" />{/if}
-        {editingId ? "تحديث" : "إنشاء"}
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+<CalculationPolicyDialog bind:open={showDialog} form={form} editingId={editingId} isSaving={isSaving} getRuleLabel={getRuleLabel} getRoundingLabel={getRoundingLabel} onsubmit={handleSave} />

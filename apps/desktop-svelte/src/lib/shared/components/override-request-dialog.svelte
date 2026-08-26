@@ -29,7 +29,6 @@ import {
   DialogHeader,
   DialogFooter,
   DialogTitle,
-  DialogDescription,
 } from "@orbis/ui-svelte/dialog";
 import { Button } from "@orbis/ui-svelte/button";
 import { Textarea } from "@orbis/ui-svelte/textarea";
@@ -197,9 +196,6 @@ async function submit() {
         <Shield class="size-5 text-primary" />
         {m.common_override_request_title ? m.common_override_request_title() : "Override Request"}
       </DialogTitle>
-      <DialogDescription>
-        {m.common_override_request_desc ? m.common_override_request_desc() : "This action requires approval. Submit a request with justification."}
-      </DialogDescription>
     </DialogHeader>
 
     <div class="flex flex-col gap-4 py-2">

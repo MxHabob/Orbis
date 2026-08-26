@@ -8,17 +8,8 @@ Uses the Assessment Engine's assessment_scheme CRUD operations.
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui-svelte/button";
-import { Input } from "@orbis/ui-svelte/input";
-import { Label } from "@orbis/ui-svelte/label";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Separator } from "@orbis/ui-svelte/separator";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@orbis/ui-svelte/dialog";
 import { toast } from "svelte-sonner";
 import {
   Layers,
@@ -30,6 +21,8 @@ import {
   Weight,
 } from "@lucide/svelte";
 import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
+import AssessmentSchemeDialog from "$lib/features/settings/components/assessment-scheme-dialog.svelte";
+import AssessmentComponentDialog from "$lib/features/settings/components/assessment-component-dialog.svelte";
 
 let { data }: { data: { orgId: string } } = $props();
 const orgId = $derived(data.orgId);
@@ -366,77 +359,6 @@ const componentTypes = [
   {/if}
 </div>
 
-<!-- Create Scheme Dialog -->
-<Dialog bind:open={showCreateDialog}>
-  <DialogContent class="max-w-sm">
-    <DialogHeader>
-      <DialogTitle class="text-sm">إنشاء هيكل تقييم جديد</DialogTitle>
-    </DialogHeader>
-    <div class="flex flex-col gap-4 py-2">
-      <div class="flex flex-col gap-2">
-        <Label class="text-xs">اسم الهيكل</Label>
-        <Input bind:value={newSchemeName} placeholder="مثال: هيكل التقييم الابتدائي" class="text-xs" />
-      </div>
-      <div class="flex flex-col gap-2">
-        <Label class="text-xs">الوصف (اختياري)</Label>
-        <Input bind:value={newSchemeDesc} placeholder="وصف مختصر لهيكل التقييم" class="text-xs" />
-      </div>
-    </div>
-    <DialogFooter>
-      <Button size="sm" class="text-xs cursor-pointer" onclick={handleCreateScheme} disabled={isCreating || !newSchemeName.trim()}>
-        {#if isCreating}<Loader2 size={12} class="animate-spin me-1" />{/if}
-        إنشاء
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+<AssessmentSchemeDialog bind:open={showCreateDialog} bind:name={newSchemeName} bind:description={newSchemeDesc} isCreating={isCreating} onsubmit={handleCreateScheme} />
 
-<!-- Create/Edit Component Dialog -->
-<Dialog bind:open={showComponentDialog}>
-  <DialogContent class="max-w-sm">
-    <DialogHeader>
-      <DialogTitle class="text-sm">{editingComponentId ? "تعديل مكوّن" : "إضافة مكوّن تقييم"}</DialogTitle>
-    </DialogHeader>
-    <div class="flex flex-col gap-3 py-2">
-      <div class="flex flex-col gap-1.5">
-        <Label class="text-xs">اسم المكوّن</Label>
-        <Input bind:value={componentForm.name} placeholder="مثال: اختبار نهاية الفصل" class="text-xs" />
-      </div>
-
-      <div class="flex flex-col gap-1.5">
-        <Label class="text-xs">نوع المكوّن</Label>
-        <div class="grid grid-cols-3 gap-1.5">
-          {#each componentTypes as ct}
-            <button
-              class="text-[10px] py-1.5 rounded-md border transition-all cursor-pointer {componentForm.component_type === ct.v ? 'border-primary bg-primary/10 text-primary font-semibold' : 'border-border/40 text-muted-foreground hover:border-border'}"
-              onclick={() => (componentForm.component_type = ct.v)}
-            >
-              {ct.l}
-            </button>
-          {/each}
-        </div>
-      </div>
-
-      <div class="grid grid-cols-3 gap-3">
-        <div class="flex flex-col gap-1.5">
-          <Label class="text-xs">الوزن %</Label>
-          <Input type="number" min="0" max="100" bind:value={componentForm.weight} class="text-xs font-mono" />
-        </div>
-        <div class="flex flex-col gap-1.5">
-          <Label class="text-xs">الدرجة القصوى</Label>
-          <Input type="number" min="0" bind:value={componentForm.max_score} class="text-xs font-mono" />
-        </div>
-        <div class="flex flex-col gap-1.5">
-          <Label class="text-xs">درجة النجاح</Label>
-          <Input type="number" min="0" bind:value={componentForm.passing_score} class="text-xs font-mono" />
-        </div>
-      </div>
-    </div>
-    <DialogFooter>
-      <Button size="sm" class="text-xs cursor-pointer" onclick={handleSaveComponent} disabled={isSavingComponent || !componentForm.name.trim()}>
-        {#if isSavingComponent}<Loader2 size={12} class="animate-spin me-1" />{/if}
-        {editingComponentId ? "تحديث" : "إضافة"}
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+<AssessmentComponentDialog bind:open={showComponentDialog} form={componentForm} editingId={editingComponentId} componentTypes={componentTypes} isSaving={isSavingComponent} onsubmit={handleSaveComponent} />

@@ -14,7 +14,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from "@orbis/ui-svelte/dialog";
 import {
@@ -314,9 +313,6 @@ function applySuggestion(suggestion: MultiUpLayout) {
         <LayoutGrid class="text-primary h-5 w-5" />
         <span>{m.common_print_multi_up_title()}</span>
       </DialogTitle>
-      <DialogDescription>
-        {m.common_print_multi_up_description()}
-      </DialogDescription>
     </DialogHeader>
 
     {#if isBatchProcessing}

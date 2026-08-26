@@ -20,9 +20,14 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from "@orbis/ui-svelte/dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@orbis/ui-svelte/accordion";
 import {
   Select,
   SelectTrigger,
@@ -231,12 +236,13 @@ async function handleSubmit(e: Event) {
           </Badge>
         {/if}
       </div>
-      <DialogDescription class="text-xs text-muted-foreground">
-        {m.settings_currencies_add_dialog_desc()}
-      </DialogDescription>
     </DialogHeader>
 
     <form onsubmit={handleSubmit} class="flex flex-col gap-4 py-2">
+      <Accordion type="multiple" value={["currency", "formatting"]} class="flex flex-col gap-3">
+        <AccordionItem value="currency" class="rounded-lg border border-border/50 px-3">
+          <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.settings_nav_currencies()}</AccordionTrigger>
+          <AccordionContent>
       <!-- Preset Quick Selection -->
       <div class="flex flex-col gap-1.5 p-3 rounded-lg border border-border/40 bg-muted/20">
         <div class="flex items-center gap-1.5 text-xs text-primary font-medium">
@@ -302,6 +308,13 @@ async function handleSubmit(e: Event) {
           />
         </div>
       </div>
+
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="formatting" class="rounded-lg border border-border/50 px-3">
+          <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.settings_currencies_col_rate()}</AccordionTrigger>
+          <AccordionContent>
 
       <!-- Position, Decimals & Rate -->
       <div class="grid grid-cols-3 gap-3">
@@ -369,6 +382,9 @@ async function handleSubmit(e: Event) {
           disabled={isSubmitting}
         />
       </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
 
       <DialogFooter class="pt-2">
         <Button

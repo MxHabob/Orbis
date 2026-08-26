@@ -7,18 +7,8 @@ Uses the Assessment Engine's grade_scale CRUD operations.
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui-svelte/button";
-import { Input } from "@orbis/ui-svelte/input";
-import { Label } from "@orbis/ui-svelte/label";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Separator } from "@orbis/ui-svelte/separator";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@orbis/ui-svelte/dialog";
-import { Switch } from "@orbis/ui-svelte/switch";
 import { toast } from "svelte-sonner";
 import {
   Scale,
@@ -30,6 +20,8 @@ import {
   Pencil,
 } from "@lucide/svelte";
 import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
+import GradeScaleDialog from "$lib/features/settings/components/grade-scale-dialog.svelte";
+import GradeScaleItemDialog from "$lib/features/settings/components/grade-scale-item-dialog.svelte";
 
 let { data }: { data: { orgId: string } } = $props();
 const orgId = $derived(data.orgId);
@@ -273,75 +265,5 @@ function getTypeLabel(t: string) {
   {/if}
 </div>
 
-<!-- Create Scale Dialog -->
-<Dialog bind:open={showCreateDialog}>
-  <DialogContent class="max-w-sm">
-    <DialogHeader>
-      <DialogTitle class="text-sm">إنشاء مقياس درجات جديد</DialogTitle>
-    </DialogHeader>
-    <div class="flex flex-col gap-4 py-2">
-      <div class="flex flex-col gap-2">
-        <Label class="text-xs">اسم المقياس</Label>
-        <Input bind:value={newScaleName} placeholder="مثال: مقياس النسبة المئوية" class="text-xs" />
-      </div>
-      <div class="flex flex-col gap-2">
-        <Label class="text-xs">نوع المقياس</Label>
-        <div class="flex gap-2">
-          {#each [{ v: "percentage", l: "نسبة مئوية" }, { v: "gpa_4_0", l: "GPA 4.0" }, { v: "pass_fail", l: "ناجح/راسب" }] as opt}
-            <button
-              class="flex-1 text-[10px] py-2 rounded-md border transition-all cursor-pointer {newScaleType === opt.v ? 'border-primary bg-primary/10 text-primary font-semibold' : 'border-border/40 text-muted-foreground hover:border-border'}"
-              onclick={() => (newScaleType = opt.v)}
-            >
-              {opt.l}
-            </button>
-          {/each}
-        </div>
-      </div>
-    </div>
-    <DialogFooter>
-      <Button size="sm" class="text-xs cursor-pointer" onclick={handleCreateScale} disabled={isCreating || !newScaleName.trim()}>
-        {#if isCreating}<Loader2 size={12} class="animate-spin me-1" />{/if}
-        إنشاء
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
-
-<!-- Create Item Dialog -->
-<Dialog bind:open={showItemDialog}>
-  <DialogContent class="max-w-sm">
-    <DialogHeader>
-      <DialogTitle class="text-sm">إضافة تقدير جديد</DialogTitle>
-    </DialogHeader>
-    <div class="flex flex-col gap-3 py-2">
-      <div class="flex flex-col gap-1.5">
-        <Label class="text-xs">التقدير</Label>
-        <Input bind:value={newItem.grade_label} placeholder="مثال: ممتاز" class="text-xs" />
-      </div>
-      <div class="grid grid-cols-2 gap-3">
-        <div class="flex flex-col gap-1.5">
-          <Label class="text-xs">أدنى درجة</Label>
-          <Input type="number" bind:value={newItem.min_score} class="text-xs font-mono" />
-        </div>
-        <div class="flex flex-col gap-1.5">
-          <Label class="text-xs">أعلى درجة</Label>
-          <Input type="number" bind:value={newItem.max_score} class="text-xs font-mono" />
-        </div>
-      </div>
-      <div class="flex flex-col gap-1.5">
-        <Label class="text-xs">نقاط GPA</Label>
-        <Input type="number" step="0.5" bind:value={newItem.gpa_points} class="text-xs font-mono" />
-      </div>
-      <div class="flex items-center justify-between">
-        <Label class="text-xs">ناجح</Label>
-        <Switch checked={newItem.is_passing} onCheckedChange={(v) => (newItem.is_passing = v)} />
-      </div>
-    </div>
-    <DialogFooter>
-      <Button size="sm" class="text-xs cursor-pointer" onclick={handleCreateItem} disabled={isCreatingItem || !newItem.grade_label.trim()}>
-        {#if isCreatingItem}<Loader2 size={12} class="animate-spin me-1" />{/if}
-        إضافة
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+<GradeScaleDialog bind:open={showCreateDialog} bind:name={newScaleName} bind:scaleType={newScaleType} isCreating={isCreating} onsubmit={handleCreateScale} />
+<GradeScaleItemDialog bind:open={showItemDialog} item={newItem} isCreating={isCreatingItem} onsubmit={handleCreateItem} />

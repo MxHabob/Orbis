@@ -4,9 +4,7 @@
 	import { Button } from "../button/index.js";
 	import { cn, type WithoutChildrenOrChild } from "../../../utils.js";
 	import * as Dialog from "./index.js";
-	import DialogPortal from "./dialog-portal.svelte";
 	import type { Snippet } from "svelte";
-	import type { ComponentProps } from "svelte";
 
 	let {
 		ref = $bindable(null),
@@ -16,19 +14,19 @@
 		showCloseButton = true,
 		...restProps
 	}: WithoutChildrenOrChild<DialogPrimitive.ContentProps> & {
-		portalProps?: WithoutChildrenOrChild<ComponentProps<typeof DialogPortal>>;
+		portalProps?: WithoutChildrenOrChild<DialogPrimitive.PortalProps>;
 		children: Snippet;
 		showCloseButton?: boolean;
 	} = $props();
 </script>
 
-<DialogPortal {...portalProps}>
+<DialogPrimitive.Portal {...portalProps}>
 	<Dialog.Overlay />
 	<DialogPrimitive.Content
 		bind:ref
 		data-slot="dialog-content"
 		class={cn(
-			"flex flex-col max-w-[calc(100vw-2rem)] sm:max-w-md max-h-[90vh] overflow-y-auto min-w-0 gap-5 rounded-xl bg-popover p-6 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 fixed top-1/2 left-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 outline-none shadow-2xl box-border",
+			"fixed top-1/2 left-1/2 z-50 flex w-full max-w-[calc(100vw-2rem)] min-w-0 max-h-[90vh] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-y-auto rounded-[10px] border border-border/60 bg-[#FAFAF9] p-4 text-sm text-foreground shadow-2xl outline-none box-border dark:bg-[#0C0C0C] data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 duration-100 sm:max-w-114",
 			className
 		)}
 		{...restProps}
@@ -37,7 +35,7 @@
 		{#if showCloseButton}
 			<DialogPrimitive.Close data-slot="dialog-close">
 				{#snippet child({ props })}
-					<Button variant="ghost" class="absolute top-4 end-4" size="icon-sm" {...props}>
+					<Button variant="ghost" class="absolute top-4 inset-e-4" size="icon-sm" {...props}>
 						<XIcon />
 						<span class="sr-only">Close</span>
 					</Button>
@@ -45,4 +43,4 @@
 			</DialogPrimitive.Close>
 		{/if}
 	</DialogPrimitive.Content>
-</DialogPortal>
+</DialogPrimitive.Portal>

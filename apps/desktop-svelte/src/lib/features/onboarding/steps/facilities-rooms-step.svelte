@@ -21,13 +21,6 @@ import {
 } from "@orbis/ui-svelte/select";
 import { Button } from "@orbis/ui-svelte/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@orbis/ui-svelte/dialog";
-import {
   AlertDialog,
   AlertDialogContent,
   AlertDialogHeader,
@@ -50,6 +43,7 @@ import {
 } from "@lucide/svelte";
 
 import { onboardingState } from "../state.svelte";
+import AddBuildingDialog from "../components/add-building-dialog.svelte";
 
 let newRoomName = $state("");
 let newRoomNameAr = $state("");
@@ -324,33 +318,7 @@ function confirmRemoveBuilding() {
   </Tabs>
 
   <!-- Add Building Dialog -->
-  <Dialog bind:open={isAddDialogOpen}>
-    <DialogContent class="max-w-md w-full min-w-0">
-      <DialogHeader>
-        <DialogTitle class="text-sm">{m.common_onboarding_add_building_dialog_title()}</DialogTitle>
-      </DialogHeader>
-      <div class="flex flex-col gap-3 py-2">
-        <div class="flex flex-col gap-1.5">
-          <Label class="text-xs">{m.common_onboarding_add_building_name()}</Label>
-          <Input
-            bind:value={newBuildingName}
-            placeholder={m.common_onboarding_add_building_placeholder()}
-            class="text-xs"
-            autofocus
-            onkeydown={(e) => { if (e.key === "Enter") confirmAddBuilding(); }}
-          />
-        </div>
-      </div>
-      <DialogFooter class="flex items-center justify-end w-full pt-2">
-        <Button variant="outline" size="sm" class="text-xs cursor-pointer" onclick={() => (isAddDialogOpen = false)}>
-          {m.common_action_cancel()}
-        </Button>
-        <Button size="sm" class="text-xs cursor-pointer" onclick={confirmAddBuilding} disabled={!newBuildingName.trim()}>
-          {m.common_onboarding_add_building()}
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
+  <AddBuildingDialog bind:open={isAddDialogOpen} bind:name={newBuildingName} onsubmit={confirmAddBuilding} />
 
   <!-- Delete Building Alert Dialog -->
   <AlertDialog bind:open={isDeleteDialogOpen}>
