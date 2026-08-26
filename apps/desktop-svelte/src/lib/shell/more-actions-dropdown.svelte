@@ -70,8 +70,7 @@ const iconClass = "text-muted-foreground shrink-0";
           <span>{m.common_sidebar_help_resources?.() ?? "Resources"}</span>
         </div>
       </DropdownMenuSubTrigger>
-      <DropdownMenuPortal>
-        <DropdownMenuSubContent sideOffset={4} class="w-48 text-start">
+      <DropdownMenuSubContent side="left" align="end" sideOffset={4} class="w-48 text-start">
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://orbis.edu/welcome')}>
             <Compass size={13} class={iconClass} />
             <span>{m.common_sidebar_help_welcome_page?.() ?? "Welcome Page"}</span>
@@ -92,8 +91,7 @@ const iconClass = "text-muted-foreground shrink-0";
             <Headphones size={13} class={iconClass} />
             <span>{m.common_sidebar_help_contact_support?.() ?? "Contact Support"}</span>
           </DropdownMenuItem>
-        </DropdownMenuSubContent>
-      </DropdownMenuPortal>
+      </DropdownMenuSubContent>
     </DropdownMenuSub>
 
     <!-- Community Submenu -->
@@ -104,8 +102,7 @@ const iconClass = "text-muted-foreground shrink-0";
           <span>{m.common_sidebar_help_community?.() ?? "Community"}</span>
         </div>
       </DropdownMenuSubTrigger>
-      <DropdownMenuPortal>
-        <DropdownMenuSubContent sideOffset={4} class="w-48 text-start">
+      <DropdownMenuSubContent side="left" align="end" sideOffset={4} class="w-48 text-start">
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://discord.gg/orbis')}>
             <MessageSquare size={13} class={iconClass} />
             <span>{m.common_sidebar_help_discord?.() ?? "Discord"}</span>
@@ -122,8 +119,7 @@ const iconClass = "text-muted-foreground shrink-0";
             </svg>
             <span>{m.common_sidebar_help_github?.() ?? "GitHub"}</span>
           </DropdownMenuItem>
-        </DropdownMenuSubContent>
-      </DropdownMenuPortal>
+      </DropdownMenuSubContent>
     </DropdownMenuSub>
 
     <!-- Legal Submenu -->
@@ -134,8 +130,7 @@ const iconClass = "text-muted-foreground shrink-0";
           <span>{m.common_sidebar_help_legal?.() ?? "Legal"}</span>
         </div>
       </DropdownMenuSubTrigger>
-      <DropdownMenuPortal>
-        <DropdownMenuSubContent sideOffset={4} class="w-48 text-start">
+      <DropdownMenuSubContent side="left" align="end" sideOffset={4} class="w-48 text-start">
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://orbis.edu/terms')}>
             <FileText size={13} class={iconClass} />
             <span>{m.common_sidebar_help_terms?.() ?? "Terms of Service"}</span>
@@ -144,8 +139,7 @@ const iconClass = "text-muted-foreground shrink-0";
             <Lock size={13} class={iconClass} />
             <span>{m.common_login_privacy_policy?.() ?? "Privacy Policy"}</span>
           </DropdownMenuItem>
-        </DropdownMenuSubContent>
-      </DropdownMenuPortal>
+      </DropdownMenuSubContent>
     </DropdownMenuSub>
 
     <DropdownMenuSeparator />
