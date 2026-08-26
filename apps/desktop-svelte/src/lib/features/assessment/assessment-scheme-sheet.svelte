@@ -22,7 +22,7 @@
 </script>
 
 <Sheet bind:open>
-  <SheetContent side={isArabic ? "left" : "right"} class="w-full sm:max-w-md p-0 flex flex-col h-full bg-background border-border/50">
+  <SheetContent side={isArabic ? "left" : "right"} class="w-full sm:max-w-md p-0 flex flex-col h-full border-border/50">
     <div class="p-6 border-b border-border/40 bg-muted/20">
       <SheetHeader>
         <SheetTitle class="flex items-center gap-2 text-lg">

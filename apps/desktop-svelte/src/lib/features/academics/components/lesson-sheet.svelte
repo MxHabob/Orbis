@@ -262,7 +262,7 @@
 </script>
 
 <Sheet bind:open>
-  <SheetContent class="h-full w-full sm:max-w-lg overflow-hidden flex flex-col bg-background p-0 text-start">
+  <SheetContent class="h-full w-full sm:max-w-lg overflow-hidden flex flex-col p-0 text-start">
     <SheetHeader class="border-b border-border/60 px-6 pb-4 pt-6 text-end">
       <SheetTitle>
         {lesson

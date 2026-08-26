@@ -21,7 +21,7 @@ function handleClose() {
 <Dialog bind:open>
   <DialogContent
     showCloseButton={true}
-    class="sm:max-w-200 w-full p-0 gap-0 overflow-hidden bg-card border border-border rounded-2xl flex select-none text-card-foreground shadow-[0_24px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_24px_50px_rgba(0,0,0,0.65)]"
+    class="sm:max-w-200 w-full p-0 gap-0 overflow-hidden border border-border rounded-2xl flex select-none shadow-[0_24px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_24px_50px_rgba(0,0,0,0.65)]"
   >
     <!-- Top-Right Geometric Slanted Corner Graphic (using brand primary with opacity, flips in RTL layout) -->
     <svg
