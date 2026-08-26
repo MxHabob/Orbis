@@ -2,21 +2,25 @@
   import { createQuery } from "@tanstack/svelte-query";
   import { commands } from "$lib/core/ipc";
   import { Skeleton } from "@orbis/ui-svelte/skeleton";
-  import { Timetable } from "@orbis/ui-svelte/timetable";
+  import { TimetableGrid } from "@orbis/ui-svelte";
   import { Clock, Calendar, ExternalLink } from "@lucide/svelte";
   import { getLocale, localizeHref } from "$lib/paraglide/runtime";
-  import * as m from "$lib/paraglide/messages";
   import WorkspaceCard from "./workspace-card.svelte";
   import { page } from "$app/state";
 
-  let { classId, periodId }: { classId: string; periodId: string } = $props();
+  interface Props {
+    classId: string;
+    periodId: string;
+  }
+
+  let { classId, periodId }: Props = $props();
 
   const orgId = $derived(String(page.params.orgId || ""));
   const isArabic = $derived(getLocale() === "ar");
 
   const scheduleQuery = createQuery(() => ({
     queryKey: ["class-schedule", classId, periodId],
-    queryFn: () => commands.scheduling.listLessonsByClass(periodId, classId),
+    queryFn: () => commands.scheduling.listLessonsByClass(periodId || "", classId || ""),
     enabled: !!classId && !!periodId,
     staleTime: 2 * 60 * 1000,
   }));
@@ -63,28 +67,24 @@
 
     for (const slot of timeSlots) {
       if (!slot.applicable_days) continue;
-      for (const value of String(slot.applicable_days).split(",")) {
-        const day = Number(value.trim());
-        if (Number.isInteger(day) && day >= 1 && day <= 7) {
-          configuredDays.add(day);
-        }
+      for (const val of String(slot.applicable_days).split(",")) {
+        const d = Number(val.trim());
+        if (Number.isInteger(d) && d >= 1 && d <= 7) configuredDays.add(d);
       }
     }
 
-    for (const lesson of lessons) {
-      const day = Number(lesson.day_of_week);
-      if (Number.isInteger(day) && day >= 1 && day <= 7) {
-        configuredDays.add(day);
-      }
+    for (const l of lessons) {
+      const d = Number(l.day_of_week);
+      if (Number.isInteger(d) && d >= 1 && d <= 7) configuredDays.add(d);
     }
 
     const days = configuredDays.size > 0 ? [...configuredDays] : [1, 2, 3, 4, 5];
     const weekOrder = [7, 1, 2, 3, 4, 5, 6];
     return days.sort((a, b) => weekOrder.indexOf(a) - weekOrder.indexOf(b)).map((day) => ({
       value: day,
-      label: isArabic 
-        ? ["", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"][day] || String(day)
-        : ["", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][day] || String(day),
+      label: new Intl.DateTimeFormat(getLocale(), { weekday: "short" }).format(
+        new Date(Date.UTC(2023, 0, day))
+      ),
       isToday: false,
     }));
   });
@@ -97,42 +97,34 @@
 
   function getTeacherName(teacherId: string): string {
     const teacher = users.find((u) => String(u.id) === String(teacherId));
-    if (!teacher) return isArabic ? "بدون معلم" : "No Teacher";
-    return isArabic ? teacher.name_ar || teacher.full_name || teacher.name : teacher.full_name || teacher.name || teacher.name_ar;
+    if (!teacher) return "";
+    return isArabic ? teacher.name_ar || teacher.full_name : teacher.full_name || teacher.name_ar;
   }
 
-  function getClassName(clsId: string): string {
-    return "";
-  }
-
-  function getRoomName(roomId: string): string {
-    const room = rooms.find((r) => String(r.id) === String(roomId));
-    if (!room) return "";
-    return isArabic ? room.name_ar || room.name : room.name || room.name_ar;
+  function getRoomName(roomId?: string): string {
+    if (!roomId) return "";
+    const rm = rooms.find((r) => String(r.id) === String(roomId));
+    return rm ? (isArabic ? rm.name_ar || rm.name : rm.name || rm.name_ar) : "";
   }
 
   function getSubjectColor(subjectId: string): string {
     const sub = subjects.find((s) => String(s.id) === String(subjectId)) as any;
-    const savedColor = sub?.color || sub?.color_hex || sub?.accent_color;
-    if (savedColor) return savedColor;
-
-    const hash = String(subjectId)
-      .split("")
-      .reduce((total, character) => (total * 31 + character.charCodeAt(0)) >>> 0, 0);
-    return `hsl(${hash % 360} 65% 52%)`;
+    if (sub?.color) return sub.color;
+    const hash = String(subjectId).split("").reduce((acc, ch) => (acc * 31 + ch.charCodeAt(0)) >>> 0, 0);
+    return `hsl(${hash % 360} 70% 50%)`;
   }
 
   const isLoading = $derived(scheduleQuery.isLoading || timeSlotsQuery.isLoading);
 </script>
 
-<WorkspaceCard title={isArabic ? "الجدول الدراسي الأسبوعي" : "Weekly Class Timetable"} class="min-h-[320px]">
+<WorkspaceCard title={isArabic ? "الجدول الدراسي الأسبوعي" : "Weekly Class Timetable"}>
   {#snippet actions()}
     <a
-      href={localizeHref(`/${orgId}/academics/schedule`)}
+      href={localizeHref(`/${orgId}/academics/schedule?classId=${classId}`)}
       class="flex items-center gap-1.5 text-xs text-primary hover:underline font-semibold"
     >
       <Calendar size={13} />
-      <span>{isArabic ? "عرض الجدول العام" : "Full Schedule"}</span>
+      <span>{isArabic ? "عرض وإدارة الجدول" : "Full Schedule"}</span>
       <ExternalLink size={11} class="opacity-70" />
     </a>
   {/snippet}
@@ -154,24 +146,18 @@
     </div>
   {:else}
     <!-- Compact, responsive viewport container -->
-    <div class="w-full max-h-[380px] overflow-y-auto overflow-x-auto rounded-xl border border-border/50 bg-card p-1 scrollbar-thin">
-      <Timetable
+    <div class="w-full max-h-[380px] overflow-hidden rounded-xl border border-border/50 bg-card">
+      <TimetableGrid
         {timeSlots}
         {weekdays}
         {lessons}
-        draftLessons={[]}
-        previewDraft={false}
         viewMode="class"
+        compact={true}
         locale={getLocale()}
         {getSubjectName}
         {getTeacherName}
-        {getClassName}
         {getRoomName}
         {getSubjectColor}
-        compact={true}
-        fitViewport={true}
-        onCellClick={() => {}}
-        onDeleteLesson={() => {}}
       />
     </div>
   {/if}

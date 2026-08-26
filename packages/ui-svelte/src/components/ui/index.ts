@@ -140,3 +140,10 @@ export {
 export { Calendar } from "./calendar/index.js";
 export { Logo } from "./logo/index.js";
 export { Toaster } from "./sonner/index.js";
+export {
+  TimetableGrid,
+  SessionCard,
+  TimeGutter,
+  CalendarHeader,
+  BreakRow,
+} from "./timetable/index.js";

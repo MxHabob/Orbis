@@ -12,8 +12,8 @@ export interface DocforgeCommands {
   listTemplates(request: any | null): Promise<any>;
   listDataSchemas(): Promise<any>;
   previewMultiUp(templateId: string, entityIds: string[], multiUpConfig: string): Promise<any[]>;
-  startMultiUpPrint(jobs: any, Arc<docforgeOrbis: any, templateId: string, entityIds: string[], multiUpConfig: string): Promise<any>;
-  getMultiUpPrintStatus(jobs: any, Arc<docforgeOrbis: any, jobId: string): Promise<any>;
+  startMultiUpPrint(jobs: any, docforgeOrbis: any, templateId: string, entityIds: string[], multiUpConfig: string): Promise<any>;
+  getMultiUpPrintStatus(jobs: any, docforgeOrbis: any, jobId: string): Promise<any>;
   listTemplateVersions(templateId: string): Promise<any>;
   revertTemplateVersion(templateId: string, version: number): Promise<any>;
 }

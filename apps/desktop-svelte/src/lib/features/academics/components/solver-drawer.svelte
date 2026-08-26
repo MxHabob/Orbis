@@ -1,0 +1,302 @@
+<script lang="ts">
+  import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetDescription,
+    SheetFooter,
+  } from "@orbis/ui-svelte/sheet";
+  import { Button } from "@orbis/ui-svelte/button";
+  import { Badge } from "@orbis/ui-svelte/badge";
+  import { Checkbox } from "@orbis/ui-svelte/checkbox";
+  import { Label } from "@orbis/ui-svelte/label";
+  import {
+    WandSparkles,
+    Loader2,
+    CheckCircle2,
+    AlertTriangle,
+    Eye,
+    Check,
+    X,
+    Clock,
+    Sparkles,
+  } from "@lucide/svelte";
+  import { commands, extractErrorMessage } from "$lib/core/ipc";
+  import { toast } from "svelte-sonner";
+  import { getLocale } from "$lib/paraglide/runtime";
+
+  interface Props {
+    open: boolean;
+    periodId: string;
+    previewDraft: boolean;
+    activeJob: any;
+    onApply?: () => void;
+  }
+
+  let {
+    open = $bindable(false),
+    periodId,
+    previewDraft = $bindable(false),
+    activeJob = $bindable(null),
+    onApply,
+  }: Props = $props();
+
+  const isArabic = $derived(getLocale() === "ar");
+
+  let isLaunching = $state(false);
+  let isApplying = $state(false);
+  let solveJobs = $state<any[]>([]);
+  let pollTimer: ReturnType<typeof setInterval> | null = null;
+
+  $effect(() => {
+    if (open && periodId) {
+      loadJobs();
+      pollTimer = setInterval(() => {
+        if (periodId) loadJobs();
+      }, 3000);
+    }
+    return () => {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    };
+  });
+
+  async function loadJobs() {
+    try {
+      const jobs = await commands.scheduling.listJobs(periodId);
+      solveJobs = jobs || [];
+      if (jobs.length > 0) {
+        activeJob = jobs[0];
+      }
+    } catch (e) {
+      console.error("Error loading solve jobs:", e);
+    }
+  }
+
+  async function handleStartSolve() {
+    isLaunching = true;
+    try {
+      const res = await commands.scheduling.start(periodId);
+      activeJob = res;
+      toast.success(isArabic ? "تم بدء التوليد الذكي للجدول بنجاح" : "AI solver started");
+      await loadJobs();
+    } catch (err) {
+      toast.error(extractErrorMessage(err));
+    } finally {
+      isLaunching = false;
+    }
+  }
+
+  async function handleApplySolve(jobId: string) {
+    isApplying = true;
+    try {
+      await commands.scheduling.apply(jobId);
+      toast.success(isArabic ? "تم تطبيق الجدول المقترح وتحديث كافة الحصص" : "Schedule applied successfully");
+      previewDraft = false;
+      open = false;
+      onApply?.();
+    } catch (err) {
+      toast.error(extractErrorMessage(err));
+    } finally {
+      isApplying = false;
+    }
+  }
+
+  async function handleCancelJob(jobId: string) {
+    try {
+      await commands.scheduling.cancel(jobId);
+      toast.info(isArabic ? "تم إلغاء عملية التوليد" : "Solve job cancelled");
+      loadJobs();
+    } catch (err) {
+      toast.error(extractErrorMessage(err));
+    }
+  }
+</script>
+
+<Sheet bind:open>
+  <SheetContent class="w-full sm:max-w-lg overflow-y-auto flex flex-col p-6 text-start">
+    <SheetHeader>
+      <div class="flex items-center gap-2">
+        <div class="p-2 rounded-lg bg-primary/10 text-primary">
+          <WandSparkles size={18} />
+        </div>
+        <div>
+          <SheetTitle>
+            {isArabic ? "المجدول الذكي (AI Solver)" : "AI Schedule Generator"}
+          </SheetTitle>
+          <SheetDescription>
+            {isArabic
+              ? "توليد وتوزيع الحصص تلقائياً وفقاً للقيود وتوافر المعلمين والقاعات."
+              : "Generate optimal timetables avoiding teacher and room conflicts."}
+          </SheetDescription>
+        </div>
+      </div>
+    </SheetHeader>
+
+    <div class="mt-4 flex-1 flex flex-col gap-4">
+      <!-- Solver Trigger Banner -->
+      <div class="rounded-xl border border-primary/20 bg-primary/5 p-4 flex flex-col gap-3">
+        <div class="flex items-start justify-between">
+          <div class="space-y-0.5">
+            <h4 class="text-xs font-bold text-foreground">
+              {isArabic ? "توليد جدول جديد للفترة الحالية" : "Generate Schedule for Current Period"}
+            </h4>
+            <p class="text-[11px] text-muted-foreground leading-relaxed">
+              {isArabic
+                ? "يقوم المحرك الذكي بتحليل الحصص الأسبوعية لكل مادة، وتوافر المعلمين، والقاعات لتوزيع الحصص بدون أي تعارض."
+                : "The constraint engine computes non-conflicting placements for all class subjects and rooms."}
+            </p>
+          </div>
+        </div>
+
+        <Button
+          type="button"
+          size="sm"
+          class="w-full gap-2 text-xs font-bold shadow-xs"
+          disabled={isLaunching || activeJob?.status === "running" || activeJob?.status === "pending"}
+          onclick={handleStartSolve}
+        >
+          {#if isLaunching || activeJob?.status === "running" || activeJob?.status === "pending"}
+            <Loader2 size={13} class="animate-spin" />
+            <span>{isArabic ? "جاري الحساب والتوليد..." : "Computing Schedule..."}</span>
+          {:else}
+            <Sparkles size={13} />
+            <span>{isArabic ? "بدء التوليد الذكي الآن" : "Start AI Solver"}</span>
+          {/if}
+        </Button>
+      </div>
+
+      <!-- Active / Latest Job Status Card -->
+      {#if activeJob}
+        <div class="rounded-xl border border-border/60 bg-card p-4 flex flex-col gap-3 shadow-xs">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-foreground">
+              {isArabic ? "حالة عملية التوليد الأخيرة" : "Latest Solver Job"}
+            </span>
+
+            {#if activeJob.status === "completed"}
+              <Badge variant="default" class="bg-emerald-600 text-white gap-1 text-[10px]">
+                <CheckCircle2 size={10} />
+                {isArabic ? "مكتمل بنجاح" : "Completed"}
+              </Badge>
+            {:else if activeJob.status === "running" || activeJob.status === "pending"}
+              <Badge variant="secondary" class="bg-primary/10 text-primary gap-1 text-[10px] animate-pulse">
+                <Loader2 size={10} class="animate-spin" />
+                {isArabic ? "قيد المعالجة" : "Running"}
+              </Badge>
+            {:else if activeJob.status === "failed"}
+              <Badge variant="destructive" class="gap-1 text-[10px]">
+                <AlertTriangle size={10} />
+                {isArabic ? "فشلت العملية" : "Failed"}
+              </Badge>
+            {:else}
+              <Badge variant="outline" class="text-[10px]">
+                {activeJob.status}
+              </Badge>
+            {/if}
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+            <div>
+              <span class="text-[10px] block">{isArabic ? "عدد الحصص المقترحة" : "Items Created"}:</span>
+              <span class="font-bold text-foreground">{activeJob.items_created || 0}</span>
+            </div>
+            <div>
+              <span class="text-[10px] block">{isArabic ? "جودة الحل (Score)" : "Score"}:</span>
+              <span class="font-bold text-foreground font-mono">{activeJob.score || "N/A"}</span>
+            </div>
+          </div>
+
+          {#if activeJob.status === "running"}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              class="h-7 text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
+              onclick={() => handleCancelJob(activeJob.id)}
+            >
+              {isArabic ? "إلغاء العملية" : "Cancel Solver"}
+            </Button>
+          {/if}
+
+          <!-- Draft Preview & Apply Actions (If completed) -->
+          {#if activeJob.status === "completed" && activeJob.best_solution}
+            <div class="flex flex-col gap-2 pt-2 border-t border-border/40">
+              <div class="flex items-center gap-2">
+                <Checkbox
+                  id="preview-draft-check"
+                  checked={previewDraft}
+                  onCheckedChange={(val) => (previewDraft = Boolean(val))}
+                />
+                <Label for="preview-draft-check" class="text-xs cursor-pointer font-semibold flex items-center gap-1">
+                  <Eye size={12} class="text-primary" />
+                  <span>{isArabic ? "معاينة الجدول المقترح على شبكة التقويم" : "Preview Draft on Calendar Grid"}</span>
+                </Label>
+              </div>
+
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                class="w-full gap-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs mt-1"
+                disabled={isApplying}
+                onclick={() => handleApplySolve(activeJob.id)}
+              >
+                {#if isApplying}
+                  <Loader2 size={13} class="animate-spin" />
+                  <span>{isArabic ? "جاري التطبيق والحفظ..." : "Applying..."}</span>
+                {:else}
+                  <Check size={14} />
+                  <span>{isArabic ? "تطبيق واعتماد الجدول المقترح" : "Apply Proposed Timetable"}</span>
+                {/if}
+              </Button>
+            </div>
+          {/if}
+        </div>
+      {/if}
+
+      <!-- Past Solve Jobs History -->
+      {#if solveJobs.length > 1}
+        <div class="flex flex-col gap-1.5 mt-2">
+          <span class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+            {isArabic ? "سجل عمليات التوليد السابقة" : "Previous Solver Runs"}
+          </span>
+
+          <div class="flex flex-col gap-1 max-h-48 overflow-y-auto">
+            {#each solveJobs.slice(1) as job (job.id)}
+              <div class="flex items-center justify-between p-2 rounded-md border border-border/40 bg-card text-xs">
+                <div class="flex items-center gap-1.5">
+                  <Clock size={11} class="text-muted-foreground" />
+                  <span class="text-[10px] text-muted-foreground font-mono">
+                    {new Date(job.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                  <Badge variant="outline" class="h-4 text-[9px]">{job.status}</Badge>
+                </div>
+
+                {#if job.status === "completed"}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    class="h-6 text-[11px] font-semibold text-primary"
+                    onclick={() => handleApplySolve(job.id)}
+                  >
+                    {isArabic ? "تطبيق" : "Apply"}
+                  </Button>
+                {/if}
+              </div>
+            {/each}
+          </div>
+        </div>
+      {/if}
+    </div>
+
+    <SheetFooter class="mt-6 border-t border-border/40 pt-4">
+      <Button variant="outline" size="sm" class="w-full text-xs" onclick={() => (open = false)}>
+        {isArabic ? "إغلاق" : "Close"}
+      </Button>
+    </SheetFooter>
+  </SheetContent>
+</Sheet>
