@@ -1,226 +1,216 @@
-<!--
-@component ClassDetailLayout
-Master-Detail layout for a single class.
-Provides a DetailPageHeader (back to classes list) and SecondaryMenu tabs
-(Overview | Assessments | Teachers | Grades & Students).
-Uses Pattern A: MainViewport with class info sidebar.
--->
 <script lang="ts">
-import * as m from "$lib/paraglide/messages";
-import { page } from "$app/state";
-import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
-import { Badge } from "@orbis/ui-svelte/badge";
-import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@orbis/ui-svelte/dropdown-menu";
-import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
-import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
-import AskOrbisButton from "$lib/shared/components/ask-orbis-button.svelte";
-import { Button } from "@orbis/ui-svelte/button";
-import { toast } from "svelte-sonner";
-import CapacityIndicator from "$lib/shared/components/capacity-indicator.svelte";
-import {
-  GraduationCap,
-  Users,
-  BookUser,
-  UserRound,
-  BookOpen,
-  Bell,
-  Share2,
-  MoreHorizontal,
-} from "@lucide/svelte";
-import type { Snippet } from "svelte";
+  import { page } from "$app/state";
+  import { createQuery } from "@tanstack/svelte-query";
+  import { commands } from "$lib/core/ipc";
+  import { Badge } from "@orbis/ui-svelte/badge";
+  import { Skeleton } from "@orbis/ui-svelte/skeleton";
+  import { Users, BookOpen, GraduationCap, ChevronRight } from "@lucide/svelte";
+  import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+  import * as m from "$lib/paraglide/messages";
+  import { academicContext } from "$lib/stores";
+  import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
+  import CapacityIndicator from "$lib/shared/components/capacity-indicator.svelte";
 
-import { getLocale } from "$lib/paraglide/runtime";
-import { l } from "$lib/core/i18n/locale";
+  let { children } = $props();
 
-let { children }: { children: Snippet } = $props();
+  const classId = $derived(String(page.params.classId || ""));
+  const classSubjectId = $derived(
+    page.params.classSubjectId ? String(page.params.classSubjectId) : null,
+  );
+  const orgId = $derived(String(page.params.orgId || ""));
+  const periodId = $derived(academicContext.effectivePeriodId);
+  const isArabic = $derived(getLocale() === "ar");
 
-const orgId = $derived(page.params.orgId);
-const classId = $derived(page.params.classId);
+  // Class Info Query
+  const classQuery = createQuery(() => ({
+    queryKey: ["class-detail-master-layout", classId, periodId],
+    queryFn: () => commands.academic.getClass(classId),
+    enabled: !!classId,
+  }));
 
-let classData = $state<any>(null);
-let studentsCount = $state(0);
-let isLoading = $state(true);
+  // Students Count Query
+  const studentsQuery = createQuery(() => ({
+    queryKey: ["class-students-count-master-layout", classId, periodId],
+    queryFn: () => commands.academic.listEnrichedStudents(classId),
+    enabled: !!classId,
+  }));
 
-let selectedPriority = $state("high");
-const classDisplayName = $derived(
-  classData ? l(classData.name_ar, classData.name) : "",
-);
+  // Subject Info Query (only when classSubjectId is present)
+  const subjectQuery = createQuery(() => ({
+    queryKey: ["class-subject-title-layout", classId, classSubjectId, periodId],
+    queryFn: async () => {
+      if (!classSubjectId) return null;
+      const offerings = await commands.academic.listClassSubjects(
+        classId,
+        periodId || "",
+      );
+      const offering = offerings.find(
+        (o: any) => String(o.id) === String(classSubjectId),
+      );
+      if (!offering) return null;
+      const catalog = await commands.academic.listSubjects();
+      const catSub = catalog.find(
+        (s: any) => String(s.id) === String(offering.subject_id),
+      );
+      return { ...offering, catalog: catSub };
+    },
+    enabled: !!classId && !!classSubjectId,
+  }));
 
-async function loadClassData() {
-  if (!orgId || !classId) return;
-  isLoading = true;
-  try {
-    const [classes, enrollments] = await Promise.all([
-      commands.academic.listClasses(),
-      commands.academic.listEnrollments(),
-    ]);
-    classData = classes.find((c) => String(c.id) === classId);
-    studentsCount = enrollments.filter(
-      (s) => String(s.class_id) === classId,
-    ).length;
-  } catch (e) {
-    console.error("Error loading class data:", e);
-  } finally {
-    isLoading = false;
-  }
-}
+  const classData = $derived(classQuery.data as any);
+  const subjectData = $derived(subjectQuery.data as any);
+  const isLoading = $derived(
+    classQuery.isLoading || (!!classSubjectId && subjectQuery.isLoading),
+  );
+  const studentsCount = $derived(((studentsQuery.data || []) as any[]).length);
 
-onMount(loadClassData);
+  const classDisplayName = $derived.by(() => {
+    if (!classData) return "";
+    return isArabic
+      ? classData.name_ar || classData.name
+      : classData.name || classData.name_ar;
+  });
 
-const basePath = $derived(`/${orgId}/academics/classes/${classId}`);
+  const subjectDisplayName = $derived.by(() => {
+    if (!subjectData) return "";
+    return isArabic
+      ? subjectData.catalog?.name_ar ||
+          subjectData.catalog?.name ||
+          subjectData.subject_id
+      : subjectData.catalog?.name ||
+          subjectData.catalog?.name_ar ||
+          subjectData.subject_id;
+  });
 
-const menuItems = $derived([
-  {
-    path: "",
-    label: m.common_nav_overview ? m.common_nav_overview() : "نظرة عامة",
-    icon: GraduationCap,
-  },
-  {
-    path: "students",
-    label: m.academics_class_detail_tab_students
-      ? m.academics_class_detail_tab_students()
-      : "الطلاب",
-    icon: UserRound,
-  },
-  {
-    path: "curriculum",
-    label: m.academics_class_detail_tab_subjects
-      ? m.academics_class_detail_tab_subjects()
-      : "المواد",
-    icon: BookOpen,
-  },
-]);
+  const currentPath = $derived(page.url.pathname);
+  const isStudentsPage = $derived(
+    currentPath.endsWith("/students") || currentPath.endsWith("/students/"),
+  );
+  const isCurriculumListPage = $derived(
+    (currentPath.endsWith("/curriculum") ||
+      currentPath.endsWith("/curriculum/")) &&
+      !classSubjectId,
+  );
+
+  // Dynamic Back navigation
+  const backHref = $derived.by(() => {
+    if (classSubjectId) {
+      return `/${orgId}/academics/classes/${classId}/curriculum`;
+    }
+    if (isStudentsPage || isCurriculumListPage) {
+      return `/${orgId}/academics/classes/${classId}`;
+    }
+    return `/${orgId}/academics/classes`;
+  });
+
+  const backLabel = $derived.by(() => {
+    if (classSubjectId) {
+      return isArabic ? "مواد الفصل" : "Class Subjects";
+    }
+    if (isStudentsPage || isCurriculumListPage) {
+      return isArabic ? "لوحة تحكم الفصل" : "Class Dashboard";
+    }
+    return isArabic ? "قائمة الفصول" : "Classes List";
+  });
 </script>
 
-{#snippet headerActions()}
-  <div class="flex flex-wrap items-center gap-2 select-none">
-    {#if classData}
-      <AskOrbisButton
-        query={m.academics_class_evaluation_ai_ask_orbis_query({ name: classDisplayName })}
-        label={m.academics_class_evaluation_ask_orbis_btn({ name: classDisplayName })}
-        variant="outline"
-        size="sm"
-        class="h-8 text-[11px]"
-      />
-    {/if}
-
-    <!-- Bell icon-button -->
-    <Button
-      variant="outline"
-      size="sm"
-      class="h-8 text-[11px] gap-1.5 font-semibold shrink-0"
-      onclick={() => toast.success(m.academics_class_overview_notifs_enabled ? m.academics_class_overview_notifs_enabled() : "Notifications enabled for this class")}
-    >
-      <Bell size={12} />
-      {m.common_nav_notifications ? m.common_nav_notifications() : "Notifications"}
-    </Button>
-
-    <DropdownMenu>
-      <DropdownMenuTrigger>
-        {#snippet child({ props }: { props: Record<string, any> })}
-          <Button
-            variant="outline"
-            size="sm"
-            class="h-8 w-8 p-0 cursor-pointer"
-            {...props}
-          >
-            <MoreHorizontal size={14} />
-          </Button>
-        {/snippet}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" class="w-48 p-1 z-50 bg-popover border border-border shadow-md rounded-md select-none">
-        <DropdownMenuItem
-          class="flex items-center gap-2 px-2.5 py-2 text-[11px] font-semibold cursor-pointer text-foreground hover:bg-accent rounded-sm text-start"
-          onclick={() => toast.success(m.academics_class_overview_link_copied ? m.academics_class_overview_link_copied() : "Diagnostics link copied to clipboard")}
-        >
-          <Share2 size={12} class="text-muted-foreground shrink-0" />
-          <span>{m.academics_class_layout_share_link()}</span>
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator class="bg-border/60 my-1" />
-
-        <DropdownMenuItem
-          class="flex items-center gap-2 px-2.5 py-2 text-[11px] font-semibold cursor-pointer text-foreground hover:bg-accent rounded-sm text-start"
-          onclick={() => toast.info(m.academics_class_overview_more_opts ? m.academics_class_overview_more_opts() : "More diagnostic options")}
-        >
-          <MoreHorizontal size={12} class="text-muted-foreground shrink-0" />
-          <span>{m.common_nav_more_tooltip()}</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-
-    <!-- Separator divider -->
-    <div class="h-4 w-px bg-border/60 mx-1"></div>
-
-    <!-- Priority Indicator -->
-    <div class="flex items-center gap-1.5 font-sans">
-      <span class="text-[10px] text-muted-foreground">{m.academics_class_overview_priority ? m.academics_class_overview_priority() : "Priority:"}</span>
-      <Badge variant={selectedPriority === "critical" ? "destructive" : "secondary"} class="text-[9px] py-0.5 px-2 font-bold select-none cursor-pointer">
-        {selectedPriority}
-      </Badge>
-    </div>
-  </div>
-{/snippet}
-
 <div
-  class="h-full w-full flex flex-col overflow-hidden bg-background"
-  dir={getLocale() === "ar" ? "rtl" : "ltr"}
+  class="h-full w-full flex flex-col overflow-hidden bg-background font-sans text-start"
+  dir={isArabic ? "rtl" : "ltr"}
 >
-  <!-- Detail Page Header -->
-  <DetailPageHeader
-    backHref={`/${orgId}/academics/classes`}
-    backLabel={m.common_search_group_classes
-      ? m.common_search_group_classes()
-      : "الفصول"}
-    actions={headerActions}
-  >
+  <!-- Unified Breadcrumb Header: Class Name / Subject Name -->
+  <DetailPageHeader {backHref} {backLabel}>
     {#if isLoading}
-      <Skeleton class="h-6 w-32" />
+      <Skeleton class="h-6 w-36" />
       <Skeleton class="h-4.5 w-16" />
     {:else if classData}
-      <h1
-        class="text-lg font-bold tracking-tight text-foreground truncate shrink min-w-0 font-sans"
-      >
-        {classDisplayName || classId}
-      </h1>
-      <Badge
-        variant="secondary"
-        class="text-[9px] py-0 px-1.5 h-4.5 rounded shrink-0 font-sans"
-      >
-        <Users size={10} class="me-1" />
-        {studentsCount}
-      </Badge>
-      <div class="w-24 shrink-0 flex items-center">
-        <CapacityIndicator current={studentsCount} max={classData.capacity ?? 30} size="sm" />
+      <div class="flex items-center gap-2 min-w-0 flex-wrap">
+        <!-- Root Class Name (Clickable link when in subpages) -->
+        {#if classSubjectId || isStudentsPage || isCurriculumListPage}
+          <a
+            href={localizeHref(`/${orgId}/academics/classes/${classId}`)}
+            class="text-base font-bold text-muted-foreground hover:text-primary transition-colors truncate shrink-0"
+            title={isArabic
+              ? "الانتقال إلى لوحة تحكم الفصل"
+              : "Go to Class Dashboard"}
+          >
+            {classDisplayName || classId}
+          </a>
+          <span class="text-muted-foreground/60 text-sm font-semibold">/</span>
+        {:else}
+          <h1
+            class="text-lg font-bold tracking-tight text-foreground truncate shrink min-w-0"
+          >
+            {classDisplayName || classId}
+          </h1>
+        {/if}
+
+        <!-- Subpage Context: Specific Subject Name or Section -->
+        {#if classSubjectId && subjectData}
+          <div class="flex items-center gap-2 min-w-0">
+            <h1 class="text-base font-bold text-foreground truncate">
+              {subjectDisplayName}
+            </h1>
+            <Badge
+              variant={subjectData.is_active === 0 ? "outline" : "secondary"}
+              class="text-[9px] py-0 px-1.5 h-4.5 rounded font-sans uppercase shrink-0"
+            >
+              {subjectData.is_active === 0
+                ? isArabic
+                  ? "غير نشط"
+                  : "Inactive"
+                : isArabic
+                  ? "نشط"
+                  : "Active"}
+            </Badge>
+          </div>
+        {:else if isStudentsPage}
+          <h1 class="text-base font-bold text-foreground truncate">
+            {isArabic ? "الطلاب" : "Students"}
+          </h1>
+        {:else if isCurriculumListPage}
+          <h1 class="text-base font-bold text-foreground truncate">
+            {isArabic ? "المواد والمناهج" : "Curriculum & Subjects"}
+          </h1>
+        {/if}
+
+        <!-- Class Capacity & Badges (shown on main dashboard) -->
+        {#if !classSubjectId}
+          <Badge
+            variant="secondary"
+            class="text-[9px] py-0 px-1.5 h-4.5 rounded shrink-0 font-sans"
+          >
+            <Users size={10} class="me-1" />
+            {studentsCount}
+          </Badge>
+          <div class="w-24 shrink-0 flex items-center">
+            <CapacityIndicator
+              current={studentsCount}
+              max={classData.capacity ?? 30}
+              size="sm"
+            />
+          </div>
+          {#if classData.level}
+            <Badge
+              variant="outline"
+              class="text-[9px] py-0 px-1.5 h-4.5 rounded shrink-0 font-sans"
+            >
+              {classData.level}
+            </Badge>
+          {/if}
+        {/if}
       </div>
-      {#if classData.level}
-        <Badge
-          variant="outline"
-          class="text-[9px] py-0 px-1.5 h-4.5 rounded shrink-0 font-sans"
-        >
-          {classData.level}
-        </Badge>
-      {/if}
     {:else}
-      <span class="text-sm text-muted-foreground font-sans">{ m.error_not_found() }</span
+      <span class="text-sm text-muted-foreground"
+        >{m.error_not_found ? m.error_not_found() : "Not found"}</span
       >
     {/if}
   </DetailPageHeader>
 
-  <div class="flex-1 w-full overflow-y-auto p-6 scrollbar-hide ">
-    <div class="flex flex-col gap-6 w-full h-full">
-      <SecondaryMenu items={menuItems} {basePath} />
-      <div class="w-full flex-1">
-        {@render children()}
-      </div>
+  <!-- Main Viewport Content -->
+  <div class="flex-1 w-full overflow-y-auto p-6 scrollbar-hide">
+    <div class="w-full h-full max-w-7xl mx-auto">
+      {@render children()}
     </div>
   </div>
 </div>

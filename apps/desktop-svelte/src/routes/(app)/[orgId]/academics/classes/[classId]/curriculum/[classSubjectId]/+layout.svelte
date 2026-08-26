@@ -1,54 +1,129 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { onMount } from "svelte";
+  import { createQuery } from "@tanstack/svelte-query";
   import { commands } from "$lib/core/ipc";
-  import { Badge } from "@orbis/ui-svelte/badge";
-  import { BookOpen, ClipboardCheck, Calculator, FileCheck2, FileText } from "@lucide/svelte";
+  import { Button } from "@orbis/ui-svelte/button";
+  import { Settings2, Printer, Calculator, FileCheck2, User, Clock } from "@lucide/svelte";
+  import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
   import { getLocale } from "$lib/paraglide/runtime";
-  import type { Snippet } from "svelte";
+  import { academicContext } from "$lib/stores";
+  import AssessmentSchemeSheet from "$lib/features/assessment/assessment-scheme-sheet.svelte";
 
-  let { children }: { children: Snippet } = $props();
+  let { children } = $props();
 
   const orgId = $derived(String(page.params.orgId || ""));
   const classId = $derived(String(page.params.classId || ""));
   const classSubjectId = $derived(String(page.params.classSubjectId || ""));
   const isArabic = $derived(getLocale() === "ar");
-  let subject = $state<any>(null);
-  let isLoading = $state(true);
 
-  async function loadSubject() {
-    try {
-      const classes = await commands.academic.listClasses();
-      const classData = classes.find((item: any) => String(item.id) === classId);
-      const offerings = await commands.academic.listClassSubjects(
-        classId,
-        String(classData?.period_id || ""),
-      );
-      subject = offerings.find((item: any) => String(item.id) === classSubjectId);
-    } finally {
-      isLoading = false;
-    }
-  }
+  let showConfigSheet = $state(false);
 
-  onMount(loadSubject);
+  // Subject Offering Details
+  const subjectQuery = createQuery(() => ({
+    queryKey: ["subject-info-sub-layout", classId, classSubjectId],
+    queryFn: async () => {
+      const offerings = await commands.academic.listClassSubjects(classId, academicContext.effectivePeriodId || "");
+      const offering = offerings.find((o: any) => String(o.id) === classSubjectId);
+      if (!offering) throw new Error("Subject not found");
+      const catalog = await commands.academic.listSubjects();
+      const catSub = catalog.find((s: any) => String(s.id) === String(offering.subject_id));
+      return { ...offering, catalog: catSub };
+    },
+    enabled: !!classId && !!classSubjectId,
+  }));
+
+  const usersQuery = createQuery(() => ({
+    queryKey: ["all-users-subject-sub-layout"],
+    queryFn: () => commands.iam.listUsers(null),
+    staleTime: 10 * 60 * 1000,
+  }));
+
+  const subjectInfo = $derived(subjectQuery.data);
+  const users = $derived((usersQuery.data || []) as any[]);
+
+  const teacherDisplayName = $derived.by(() => {
+    if (!subjectInfo) return "";
+    if (subjectInfo.teacher_name) return subjectInfo.teacher_name;
+    const tid = subjectInfo.primary_teacher_id;
+    if (!tid) return isArabic ? "غير مسند لمعلم" : "Unassigned";
+    const foundUser = users.find((u) => String(u.id) === String(tid));
+    if (foundUser) return isArabic ? foundUser.name_ar || foundUser.full_name || foundUser.name : foundUser.full_name || foundUser.name || foundUser.name_ar;
+    if (String(tid).startsWith("dev-")) return isArabic ? "معلم تجريبي" : "Demo Teacher";
+    return isArabic ? "معلم المادة" : "Subject Teacher";
+  });
 
   const basePath = $derived(`/${orgId}/academics/classes/${classId}/curriculum/${classSubjectId}`);
-  const links = $derived([
-    { path: "", label: isArabic ? "ملخص المادة" : "Subject overview", icon: BookOpen },
-    { path: "assessment-scheme", label: isArabic ? "نظام التقييم" : "Assessment scheme", icon: ClipboardCheck },
-    { path: "gradebook", label: isArabic ? "دفتر الدرجات" : "Gradebook", icon: Calculator },
-    { path: "term-results", label: isArabic ? "نتائج الفصل" : "Term results", icon: FileCheck2 },
-    { path: "reports", label: isArabic ? "التقارير" : "Reports", icon: FileText },
+
+  const menuItems = $derived([
+    {
+      path: "",
+      label: isArabic ? "دفتر الدرجات" : "Coursework Gradebook",
+      icon: Calculator,
+    },
+    {
+      path: "term-results",
+      label: isArabic ? "نتائج الترم" : "Term Results",
+      icon: FileCheck2,
+    },
   ]);
 </script>
 
-<div class="flex flex-col gap-5 text-start">
-  <div class="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
-    <div class="flex items-center gap-2"><BookOpen size={18} class="text-primary" /><div><h2 class="text-sm font-bold">{isLoading ? (isArabic ? "جاري تحميل المادة..." : "Loading subject...") : subject?.subject_name || subject?.name || subject?.subject_id || (isArabic ? "المادة" : "Subject")}</h2><p class="mt-1 text-[10px] text-muted-foreground">{isArabic ? "سياق المادة داخل هذا الفصل" : "Subject context within this class"}</p></div></div>
-    <Badge variant={subject?.is_active === 0 ? "outline" : "secondary"} class="text-[9px]">{subject?.is_active === 0 ? (isArabic ? "غير نشطة" : "Inactive") : (isArabic ? "نشطة" : "Active")}</Badge>
+<div class="flex h-full w-full flex-col font-sans text-start gap-4">
+  
+  <!-- Sub-Toolbar: SecondaryMenu Tabs & Subject Action Controls -->
+  <div class="flex flex-wrap items-center justify-between gap-3 border-b border-border/50 pb-3 shrink-0">
+    
+    <!-- Secondary Menu Tab Switcher -->
+    <SecondaryMenu items={menuItems} {basePath} />
+
+    <!-- Meta & Actions on the Right -->
+    <div class="flex items-center gap-2">
+      {#if subjectInfo}
+        <div class="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-lg bg-muted/30 border border-border/40 text-[11px] text-muted-foreground me-1">
+          <span class="flex items-center gap-1">
+            <User size={12} class="opacity-70" />
+            <span class="font-medium text-foreground">{teacherDisplayName}</span>
+          </span>
+          {#if subjectInfo.weekly_hours}
+            <span class="opacity-30">•</span>
+            <span class="flex items-center gap-1">
+              <Clock size={11} class="opacity-70" />
+              <span>{subjectInfo.weekly_hours} {isArabic ? "ساعات/أسبوع" : "hrs/wk"}</span>
+            </span>
+          {/if}
+        </div>
+      {/if}
+
+      <Button
+        variant="outline"
+        size="sm"
+        class="h-8 gap-1.5 text-xs font-semibold shadow-2xs"
+        onclick={() => showConfigSheet = true}
+      >
+        <Settings2 size={13} class="text-primary" />
+        <span>{isArabic ? "إعداد التقييمات" : "Assessments Scheme"}</span>
+      </Button>
+
+      <Button
+        variant="outline"
+        size="sm"
+        class="h-8 gap-1.5 text-xs font-semibold shadow-2xs"
+        onclick={() => window.print()}
+      >
+        <Printer size={13} />
+        <span class="hidden sm:inline">{isArabic ? "طباعة" : "Print"}</span>
+      </Button>
+    </div>
+
   </div>
-  <nav class="flex flex-wrap gap-1 border-b border-border/60 pb-2" aria-label={isArabic ? "تنقل المادة" : "Subject navigation"}>
-    {#each links as link (link.path)}{@const Icon = link.icon}<a href={`${basePath}/${link.path}`} class="inline-flex items-center gap-1.5 px-3 py-2 text-[11px] font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground" class:font-semibold={page.url.pathname === `${basePath}/${link.path}` || (link.path === "" && page.url.pathname === basePath)}><Icon size={13} />{link.label}</a>{/each}
-  </nav>
-  <div>{@render children()}</div>
+
+  <!-- Main Content Space -->
+  <div class="flex-1 w-full overflow-hidden flex flex-col">
+    {@render children()}
+  </div>
+
 </div>
+
+{#if showConfigSheet}
+  <AssessmentSchemeSheet bind:open={showConfigSheet} {classSubjectId} periodId={academicContext.effectivePeriodId || ""} />
+{/if}

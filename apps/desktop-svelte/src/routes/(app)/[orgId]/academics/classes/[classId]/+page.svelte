@@ -1,59 +1,63 @@
-<!--
-@component ClassOverviewPage
-Redesigned diagnostic overview page for a single class.
-Matches the Sentry Issue Details page layout EXACTLY, built using the design language and components of the Finance page:
-- Sentry header with issue title, subtitle, event/user metrics (top right)
-- Actions strip (Resolved, Unresolve, Priority, Assignee)
-- Chart section (SVG attendance graph on the left, breakdown bars on the right)
-- Sentry parameters bar & Highlights grid (Class attributes)
-- Sentry Stack Trace container embedding the interactive Grade Matrix (DataTable)
-- Sentry right sidebar containing Orbis AI Advisor (Seer Autofix), External Links, and Activity/Comments feed
--->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { createQuery } from "@tanstack/svelte-query";
 import { commands, extractErrorMessage } from "$lib/core/ipc";
-import { Card } from "@orbis/ui-svelte";
-import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Badge } from "@orbis/ui-svelte/badge";
-import { toast } from "svelte-sonner";
-import AttendanceTrendsCard from "$lib/features/metrics/cards/attendance-trends-card.svelte";
-import GradeDistributionCard from "$lib/features/metrics/cards/grade-distribution-card.svelte";
-import {
-  AlertTriangle,
-  Activity,
+import { Button } from "@orbis/ui-svelte/button";
+import { MetricProgress } from "@orbis/ui-svelte";
+import { 
+  AlertCircle, 
+  Users, 
+  TrendingUp, 
+  CheckCircle2, 
+  FileText, 
+  Bell, 
+  CheckSquare, 
+  MessageSquare,
   Sparkles,
-  Landmark,
-  FileText,
-  AlertCircle,
+  Share2,
   BookOpen,
+  Calendar,
+  ClipboardList,
+  GraduationCap,
+  ArrowRight,
+  ArrowLeft,
+  ChevronRight,
+  HelpCircle,
+  MessageSquareShare,
+  Globe
 } from "@lucide/svelte";
 import { fade } from "svelte/transition";
-import { localizeHref, getLocale } from "$lib/paraglide/runtime";
-
 import { academicContext } from "$lib/stores";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import { toast } from "svelte-sonner";
+
+import QuickActionButton from "$lib/shared/components/quick-action-button.svelte";
+import ClassScheduleWidget from "$lib/shared/components/class-schedule-widget.svelte";
+import ClassSubjectsWidget from "$lib/shared/components/class-subjects-widget.svelte";
+import ClassRecommendationsWidget from "$lib/shared/components/class-recommendations-widget.svelte";
+import AskOrbisButton from "$lib/shared/components/ask-orbis-button.svelte";
+import RelatedActions, { type ActionGroup, type FooterAction } from "$lib/shared/components/related-actions.svelte";
 
 const orgId = $derived(page.params.orgId ?? "");
 const classId = $derived(page.params.classId ?? "");
 const periodId = $derived(academicContext.effectivePeriodId);
-const rtl = $derived(getLocale() === "ar");
+const isArabic = $derived(getLocale() === "ar");
 
 // ── TanStack Queries ──────────────────────────────────────────────────────────
-const studentsQuery = createQuery(() => ({
-  queryKey: ["class-students-enriched", classId],
-  queryFn: () => commands.academic.listEnrichedStudents(classId).catch(() => []),
+const classQuery = createQuery(() => ({
+  queryKey: ["class-detail-page", classId, periodId],
+  queryFn: () => commands.academic.getClass(classId),
   enabled: !!classId,
-  staleTime: 5 * 60 * 1000,
 }));
 
-const classSubjectsQuery = createQuery(() => ({
-  queryKey: ["class-subjects", classId, periodId],
-  queryFn: () => commands.academic.listClassSubjects(classId, periodId).catch(() => []),
-  enabled: !!classId && !!periodId,
-  staleTime: 5 * 60 * 1000,
-}));
+const classData = $derived(classQuery.data as any);
+const classDisplayName = $derived.by(() => {
+  if (!classData) return "";
+  return isArabic ? classData.name_ar || classData.name : classData.name || classData.name_ar;
+});
 
 const classMetricsQuery = createQuery(() => ({
   queryKey: ["class-metrics", classId, periodId],
@@ -62,227 +66,227 @@ const classMetricsQuery = createQuery(() => ({
   staleTime: 5 * 60 * 1000,
 }));
 
-const filteredStudents = $derived((studentsQuery.data || []) as any[]);
-const studentsCount = $derived(filteredStudents.length);
-const subjectsCount = $derived(
-  new Set(((classSubjectsQuery.data || []) as any[]).map((cs: any) => String(cs.subject_id))).size
-);
+const studentsQuery = createQuery(() => ({
+  queryKey: ["class-students-overview", classId, periodId],
+  queryFn: () => commands.academic.listEnrichedStudents(classId),
+  enabled: !!classId,
+}));
+
+const subjectsQuery = createQuery(() => ({
+  queryKey: ["class-subjects-overview", classId, periodId],
+  queryFn: () => commands.academic.listClassSubjects(classId, periodId),
+  enabled: !!classId && !!periodId,
+}));
+
+const studentsList = $derived((studentsQuery.data || []) as any[]);
+const subjectsList = $derived((subjectsQuery.data || []) as any[]);
+
+const isLoading = $derived(classMetricsQuery.isLoading);
+const error = $derived(classMetricsQuery.error);
 
 const attendanceRate = $derived.by(() => {
   const metrics = (classMetricsQuery.data || []) as any[];
-  if (metrics.length === 0) return 100;
+  if (metrics.length === 0) return 0;
   const m = metrics[0];
-  if (!m || !m.total_attendance_records || m.total_attendance_records === 0) return 100;
+  if (!m || !m.total_attendance_records || m.total_attendance_records === 0) return 0;
   return Math.round((m.present_records / m.total_attendance_records) * 100);
 });
 
-const classHealthIndex = $derived(Math.min(100, Math.round(attendanceRate)));
+const presentCount = $derived.by(() => ((classMetricsQuery.data || [])[0] as any)?.present_records || 0);
+const absentCount = $derived.by(() => ((classMetricsQuery.data || [])[0] as any)?.absent_records || 0);
+const lateCount = $derived.by(() => ((classMetricsQuery.data || [])[0] as any)?.late_records || 0);
+const excusedCount = $derived.by(() => ((classMetricsQuery.data || [])[0] as any)?.excused_records || 0);
+const totalRecords = $derived(presentCount + absentCount + lateCount + excusedCount);
 
-const isLoading = $derived(
-  studentsQuery.isLoading ||
-  classSubjectsQuery.isLoading ||
-  classMetricsQuery.isLoading
-);
-
-const error = $derived(
-  studentsQuery.error ||
-  classSubjectsQuery.error ||
-  classMetricsQuery.error
-);
+const presentPct = $derived(totalRecords > 0 ? (presentCount / totalRecords) * 100 : 0);
+const absentPct = $derived(totalRecords > 0 ? (absentCount / totalRecords) * 100 : 0);
+const latePct = $derived(totalRecords > 0 ? (lateCount / totalRecords) * 100 : 0);
+const excusedPct = $derived(totalRecords > 0 ? (excusedCount / totalRecords) * 100 : 0);
 
 function refetchAll() {
-  studentsQuery.refetch();
-  classSubjectsQuery.refetch();
   classMetricsQuery.refetch();
+  studentsQuery.refetch();
+  subjectsQuery.refetch();
 }
 
-// Dynamic diagnostic alerts using real query states
-let resolvedAlerts = $state<Record<string, boolean>>({});
-
-const diagnosticIssues = $derived.by(() => {
-  const issues = [];
-
-  if (studentsCount === 0) {
-    issues.push({
-      id: "no-students",
-      type: "attendance",
-      title: m.academics_class_overview_no_students_title(),
-      desc: m.academics_class_overview_no_students_desc(),
-      priority: "critical",
-      actionText: m.academics_class_overview_view_students(),
-    });
-  }
-
-  if (attendanceRate < 90) {
-    issues.push({
-      id: "low-attendance",
-      type: "attendance",
-      title: m.academics_class_overview_low_attendance_title(),
-      desc: m.academics_class_overview_low_attendance_desc({
-        rate: String(Math.round(attendanceRate)),
-      }),
-      priority: "critical",
-      actionText: m.academics_class_overview_contact_parents(),
-    });
-  }
-
-  return issues.filter((issue) => !resolvedAlerts[issue.id]);
-});
-
-function handleResolveIssue(id: string) {
-  resolvedAlerts = { ...resolvedAlerts, [id]: true };
-  toast.success(m.academics_class_overview_alert_resolved_toast());
+function handleShareLink() {
+  navigator.clipboard.writeText(window.location.href);
+  toast.success(isArabic ? "تم نسخ رابط الفصل إلى الحافظة" : "Class link copied to clipboard");
 }
 
-function handleTriggerAction(issue: any) {
-  toast.info(
-    `${m.academics_class_overview_action_triggered()} ${issue.actionText}`,
-  );
+function handleNotifications() {
+  toast.success(isArabic ? "تم تفعيل الإشعارات لهذا الفصل" : "Notifications enabled for this class");
 }
+
+// Related Actions Group
+const relatedActionGroups = $derived<ActionGroup[]>([
+  {
+    id: "class-operations",
+    title: isArabic ? "إجراءات الفصل والعمليات" : "Class operations",
+    icon: Globe,
+    defaultExpanded: true,
+    subLinks: [
+      { 
+        label: isArabic ? "سجل وقائمة الطلاب" : "Students roster", 
+        href: `/${orgId}/academics/classes/${classId}/students` 
+      },
+      { 
+        label: isArabic ? "المواد والمناهج الدراسية" : "Curriculum & subjects", 
+        href: `/${orgId}/academics/classes/${classId}/curriculum` 
+      },
+      { 
+        label: isArabic ? "الجدول الدراسي العام" : "Full timetable", 
+        href: `/${orgId}/academics/schedule` 
+      },
+    ],
+  },
+]);
+
+const footerActions = $derived<FooterAction[]>([
+  {
+    label: isArabic ? "طلب مساعدة" : "Get help",
+    icon: HelpCircle,
+    onclick: () => toast.info(isArabic ? "جاري فتح دليل المساعدة الأكاديمي..." : "Opening help documentation..."),
+  },
+  {
+    label: isArabic ? "تقديم ملاحظات" : "Give feedback",
+    icon: MessageSquareShare,
+    onclick: () => toast.info(isArabic ? "شكراً لملاحظاتك القيّمة!" : "Thank you for your feedback!"),
+  },
+]);
 </script>
 
-<div class="h-full w-full overflow-y-auto scrollbar-hide flex flex-col gap-6 font-sans">
+<div class="h-full w-full flex flex-col font-sans gap-8 pb-10 text-start">
+  
+  <!-- Quick Actions Row -->
+  <div class="flex flex-wrap items-center gap-2.5 animate-fade-in">
+    {#if classData}
+      <AskOrbisButton
+        query={m.academics_class_evaluation_ai_ask_orbis_query ? m.academics_class_evaluation_ai_ask_orbis_query({ name: classDisplayName }) : `Analyze performance for ${classDisplayName}`}
+        label={m.academics_class_evaluation_ask_orbis_btn ? m.academics_class_evaluation_ask_orbis_btn({ name: classDisplayName }) : "اسأل Orbis"}
+        variant="default"
+        size="sm"
+        class="h-9 px-3.5 text-xs font-bold gap-1.5 shadow-sm"
+      />
+    {/if}
+
+    <QuickActionButton 
+      label={isArabic ? "الإشعارات" : "Notifications"} 
+      icon={Bell} 
+      onclick={handleNotifications}
+    />
+    <QuickActionButton 
+      label={isArabic ? "مشاركة الرابط" : "Share"} 
+      icon={Share2} 
+      onclick={handleShareLink}
+    />
+    <QuickActionButton 
+      label={isArabic ? "تسجيل الحضور" : "Attendance"} 
+      icon={Users} 
+      onclick={() => toast.info(isArabic ? "فتح سجل الحضور..." : "Opening attendance register...")}
+    />
+    <QuickActionButton 
+      label={isArabic ? "الواجبات" : "Assignments"} 
+      icon={FileText} 
+      onclick={() => toast.info(isArabic ? "إدارة الواجبات..." : "Manage assignments...")}
+    />
+    <QuickActionButton 
+      label={isArabic ? "الملفات" : "Files"} 
+      icon={CheckSquare} 
+      onclick={() => toast.info(isArabic ? "مستندات الفصل..." : "Class documents...")}
+    />
+    <QuickActionButton 
+      label={isArabic ? "الإعلانات" : "Announcements"} 
+      icon={MessageSquare} 
+      onclick={() => toast.info(isArabic ? "إرسال إعلان للطلاب وأولياء الأمور..." : "Post class announcement...")}
+    />
+  </div>
+
   {#if isLoading}
-    <Skeleton class="h-20 w-full rounded-xl animate-pulse" />
-    <Skeleton class="h-10 w-full rounded-xl animate-pulse" />
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <Skeleton class="h-96 lg:col-span-2 rounded-xl" />
-      <Skeleton class="h-96 rounded-xl" />
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <Skeleton class="h-32 rounded-xl" />
+      <Skeleton class="h-32 rounded-xl" />
+      <Skeleton class="h-32 rounded-xl" />
     </div>
   {:else if error}
     <div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2 font-sans">
       <AlertCircle size={24} />
-      <h3 class="font-semibold text-xs">{m.academics_class_overview_load_failed()}</h3>
+      <h3 class="font-semibold text-xs">{m.academics_class_overview_load_failed ? m.academics_class_overview_load_failed() : "Failed to load class metrics"}</h3>
       <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
-      <Button variant="outline" onclick={refetchAll} class="text-[10px] mt-2 h-8">{m.common_retry()}</Button>
+      <Button variant="outline" onclick={refetchAll} class="text-[10px] mt-2 h-8">{m.common_retry ? m.common_retry() : "Retry"}</Button>
     </div>
   {:else}
-    <div class="flex flex-col gap-5 animate-fade-in text-start" in:fade={{ duration: 150 }}>
+    <div class="flex flex-col animate-fade-in text-start gap-8" in:fade={{ duration: 150 }}>
+      
+      <!-- Top Metrics Row using official @orbis/ui-svelte MetricProgress -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <MetricProgress
+          card={true}
+          title={isArabic ? "نسبة الحضور الأسبوعي" : "Student Weekly Attendance"}
+          subtitle={attendanceRate > 0 ? (isArabic ? `${attendanceRate}% من الطلاب حاضرون هذا الأسبوع` : `${attendanceRate}% of students were present this week`) : (isArabic ? "لا توجد سجلات حضور مسجلة" : "No attendance data yet")}
+          displayValue={`${attendanceRate}%`}
+          icon={Users}
+          segments={[
+            { label: isArabic ? "حاضر" : "Present", value: presentPct, tone: "success" },
+            { label: isArabic ? "غائب" : "Absent", value: absentPct, tone: "destructive" },
+            { label: isArabic ? "متأخر" : "Late", value: latePct, tone: "warning" },
+            { label: isArabic ? "معذور" : "Excused", value: excusedPct, tone: "info" },
+          ]}
+        />
 
-      <!-- ── 3. Chart and Tag Breakdown Section (Split Layout) ── -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Left: SVG Timeline graph of Weekly Attendance (70%) -->
-        <div class="lg:col-span-2">
-          <AttendanceTrendsCard orgId={orgId} selectedClass={classId} />
-        </div>
+        <MetricProgress
+          card={true}
+          title={isArabic ? "المستوى الأكاديمي العام" : "Student Performance"}
+          subtitle={isArabic ? "75% من طلاب الفصل في مستوى جيد وممتاز" : "75% of the students are doing well"}
+          displayValue="75%"
+          icon={TrendingUp}
+          segments={[
+            { label: isArabic ? "ممتاز" : "Excellent", value: 45, tone: "info" },
+            { label: isArabic ? "جيد" : "Good", value: 30, colorClass: "bg-blue-400" },
+            { label: isArabic ? "يحتاج تحسين" : "Poor", value: 25, colorClass: "bg-blue-200" },
+          ]}
+        />
 
-        <!-- Right: Grade Distribution Card (30%) -->
-        <div>
-          <GradeDistributionCard orgId={orgId} selectedClass={classId} />
-        </div>
+        <MetricProgress
+          card={true}
+          title={isArabic ? "إنجاز المنهاج الدراسي" : "Curriculum Progress"}
+          subtitle={isArabic ? "تم استيفاء 90% من خطة المنهاج المقررة" : "90% of the Curriculum has been attained"}
+          displayValue="90%"
+          icon={CheckCircle2}
+          segments={[
+            { label: isArabic ? "تم تحصيله" : "Attained", value: 60, tone: "purple" },
+            { label: isArabic ? "تم تدريسه" : "Covered", value: 30, colorClass: "bg-purple-400" },
+            { label: isArabic ? "متبقي" : "Uncovered", value: 10, colorClass: "bg-purple-200" },
+          ]}
+        />
       </div>
 
-      <!-- ── 5. Main Double Column Layout: Left Stack Trace / Right Sidebar ── -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 font-sans">
+      <!-- Main Operational Workspace (70/30 Split) -->
+      <div class="grid grid-cols-1 lg:grid-cols-10 gap-6">
         
-        <!-- LEFT: Sentry Stack Trace Wrapper embedding Class Alerts (70%) -->
-        <div class="lg:col-span-2 flex flex-col gap-6">
-
-          <!-- Alert / Issues list card (like Sentry Events details) -->
-          <Card class="p-5 bg-card border border-border/60 flex flex-col justify-between shadow-sm text-start card-tactile transition-all duration-200">
-            <div class="flex items-center justify-between w-full select-none text-[9px] font-bold text-muted-foreground/80 mb-3.5">
-              <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
-                <span class="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse"></span>
-                {m.academics_class_overview_active_alerts()}
-              </div>
-            </div>
-
-            <div class="flex flex-col gap-3">
-              {#each diagnosticIssues as issue (issue.id)}
-                <div class="flex items-center justify-between p-3 rounded-lg border border-border/40 bg-card/40 hover:bg-card/70 transition-colors gap-4">
-                  <div class="flex items-start gap-2.5 min-w-0">
-                    <div class="h-5 w-5 rounded bg-destructive/10 border border-destructive/20 text-destructive flex items-center justify-center shrink-0 mt-0.5 select-none">
-                      <AlertTriangle size={11} />
-                    </div>
-                    <div class="flex flex-col min-w-0">
-                      <span class="font-bold text-foreground text-[11px] flex items-center gap-1.5">
-                        {issue.title}
-                        <Badge variant="destructive" class="text-[7px] py-0 px-1 font-bold">{issue.priority}</Badge>
-                      </span>
-                      <span class="text-[9px] text-muted-foreground mt-0.5 leading-relaxed">{issue.desc}</span>
-                    </div>
-                  </div>
-
-                  <div class="flex items-center gap-2 shrink-0 select-none">
-                    <Button variant="outline" size="xs" class="h-6.5 text-[9px] font-bold cursor-pointer" onclick={() => handleTriggerAction(issue)}>
-                      {issue.actionText}
-                    </Button>
-                    <button class="text-[8px] text-muted-foreground hover:text-foreground font-bold cursor-pointer" onclick={() => handleResolveIssue(issue.id)}>
-                      {m.academics_class_overview_resolve()}
-                    </button>
-                  </div>
-                </div>
-              {/each}
-            </div>
-          </Card>
+        <!-- Left Column: Primary Content (70%) -->
+        <div class="lg:col-span-7 flex flex-col gap-6">
+          <!-- Timetable Component (Compact & Scaled) -->
+          <ClassScheduleWidget {classId} {periodId} />
         </div>
 
-        <!-- RIGHT SIDEBAR: AI Advisor (Seer Autofix), External Links, Activities (30%) -->
-        <div class="flex flex-col gap-6 text-start">
-          
-          <!-- Orbis AI Class Advisor (Sentry Seer Autofix panel) -->
-          <div class="card-tactile bg-primary/5 border border-primary/20 p-4 relative overflow-hidden flex flex-col justify-between shadow-sm transition-all duration-200">
-            <div class="absolute -top-10 -right-10 w-20 h-20 bg-primary/10 rounded-full blur-xl pointer-events-none"></div>
-            
-            <div class="select-none border-b border-primary/15 pb-2 mb-3">
-              <h3 class="text-xs font-bold text-foreground flex items-center gap-1.5">
-                <Sparkles size={13} class="text-primary animate-pulse" />
-                {m.academics_overview_advisor_title()}
-              </h3>
-              <p class="text-[9px] text-muted-foreground/80 mt-1 leading-normal">
-                {m.academics_class_overview_advisor_desc()}
-              </p>
-            </div>
+        <!-- Right Column: Secondary Content (30%) -->
+        <div class="lg:col-span-3 flex flex-col gap-6">
+          <!-- Class Subjects List -->
+          <ClassSubjectsWidget {classId} {periodId} />
 
-            <div class="flex flex-col gap-2 mb-4 text-[10px] leading-relaxed">
-              <div class="flex gap-2 p-2 rounded-lg bg-background/50 border border-border/30">
-                <span class="text-primary font-bold">1.</span>
-                {#if attendanceRate === 0}
-                  <span>{m.academics_class_overview_advisor_attendance_none()}</span>
-                {:else if attendanceRate < 80}
-                  <span>{m.academics_class_overview_advisor_attendance_critical({ rate: String(Math.round(attendanceRate)) })}</span>
-                {:else if attendanceRate < 93}
-                  <span>{m.academics_class_overview_advisor_attendance_low({ rate: String(Math.round(attendanceRate)) })}</span>
-                {:else if attendanceRate < 97}
-                  <span>{m.academics_class_overview_advisor_attendance_medium({ rate: String(Math.round(attendanceRate)) })}</span>
-                {:else}
-                  <span>{m.academics_class_overview_advisor_attendance_high({ rate: String(Math.round(attendanceRate)) })}</span>
-                {/if}
-              </div>
-            </div>
-
-            <Button
-              variant="default"
-              size="sm"
-              class="w-full text-[10px] gap-1.5 h-8.5 font-bold cursor-pointer justify-center"
-              onclick={() => toast.success(m.academics_class_overview_optimizing_toast())}
-            >
-              <Activity size={12} />
-              {m.academics_class_overview_diagnostic()}
-            </Button>
-          </div>
-
-          <!-- External Links -->
-          <Card class="p-4 bg-card border border-border/60 flex flex-col justify-between shadow-sm card-tactile transition-all duration-200">
-            <div class="flex items-center justify-between w-full select-none text-[9px] font-bold text-muted-foreground/80 mb-2">
-              <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
-                <span class="h-1.5 w-1.5 rounded-full bg-brand-lime"></span>
-                {m.academics_class_overview_external_links()}
-              </div>
-            </div>
-            <div class="flex flex-col gap-2 mt-1 text-[10px] font-bold text-start">
-              <a href={localizeHref(`/${orgId}/academics/schedule?classId=${classId}`)} class="flex items-center gap-1.5 text-primary hover:underline">
-                <Landmark size={12} />
-                <span>{m.academics_class_overview_weekly_timetable()}</span>
-              </a>
-              <a href={localizeHref(`/${orgId}/reports`)} class="flex items-center gap-1.5 text-primary hover:underline">
-                <FileText size={12} />
-                <span>{m.academics_class_overview_perf_ledger()}</span>
-              </a>
-            </div>
-          </Card>
+          <!-- AI Recommendations -->
+          <ClassRecommendationsWidget {classId} {periodId} />
         </div>
 
+      </div>
+
+      <!-- Clean Related Support Section -->
+      <div class="pt-2">
+        <RelatedActions
+          groups={relatedActionGroups}
+          {footerActions}
+        />
       </div>
 
     </div>

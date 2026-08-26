@@ -53,13 +53,13 @@ function handleKeyDown(e: KeyboardEvent) {
 
 <svelte:window onkeydown={handleKeyDown} />
 
-<div class="flex h-full max-w-full bg-background mx-1">
+<div class="flex h-full max-w-full bg-background mx-1 pb-2">
 	{#if !uiStore.focusMode}
 		<div transition:slide={{ axis: 'x', duration: 200 }} class="overflow-hidden h-full flex shrink-0">
 			<AppSidebar {orgId} {orgName} />
 		</div>
 	{/if}
-	<div class="flex flex-1 flex-col overflow-hidden relative">
+	<div class="flex flex-1 flex-col overflow-hidden relative pb-4">
 		<div
 			class="flex flex-1 min-w-0 items-stretch overflow-hidden"
 		>

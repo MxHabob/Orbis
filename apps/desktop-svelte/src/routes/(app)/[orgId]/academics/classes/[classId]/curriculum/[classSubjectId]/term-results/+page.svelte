@@ -1,83 +1,122 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { onMount } from "svelte";
-  import { commands } from "$lib/core/ipc";
-  import { Button } from "@orbis/ui-svelte/button";
+  import { createQuery } from "@tanstack/svelte-query";
+  import { commands, extractErrorMessage } from "$lib/core/ipc";
   import { Badge } from "@orbis/ui-svelte/badge";
-  import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui-svelte/select";
-  import { FileCheck2, RefreshCcw, Calculator } from "@lucide/svelte";
-  import { toast } from "svelte-sonner";
+  import { Button } from "@orbis/ui-svelte/button";
+  import { AlertCircle, RefreshCcw, FileCheck2, Printer, CheckCircle2, XCircle } from "@lucide/svelte";
+  import { academicContext } from "$lib/stores";
   import { getLocale } from "$lib/paraglide/runtime";
 
-  const orgId = $derived(String(page.params.orgId || ""));
-  const classId = $derived(String(page.params.classId || ""));
   const classSubjectId = $derived(String(page.params.classSubjectId || ""));
+  const selectedPeriodId = $derived(academicContext.effectivePeriodId || "");
   const isArabic = $derived(getLocale() === "ar");
-  
-  let results = $state<any[]>([]);
-  let terms = $state<any[]>([]);
-  let selectedTermId = $state("");
-  let isLoading = $state(true);
-  let isCalculating = $state(false);
-  let error = $state("");
 
-  const passedCount = $derived(results.filter((result) => result.is_passing).length);
+  const termResultsQuery = createQuery(() => ({
+    queryKey: ["term-results-enriched", selectedPeriodId, classSubjectId],
+    queryFn: () => commands.assessment.listTermResultsEnriched(selectedPeriodId, classSubjectId),
+    enabled: !!selectedPeriodId && !!classSubjectId,
+  }));
 
-  function label(period: any): string {
-    return isArabic ? period?.name_ar || period?.name || period?.id : period?.name || period?.name_ar || period?.id;
+  const termResults = $derived((termResultsQuery.data || []) as any[]);
+
+  function getStudentName(enrollmentId: string): string {
+    const s = termResults.find((r: any) => r.enrollment_id === enrollmentId);
+    if (!s) return "-";
+    return isArabic ? s.student_name_ar || s.student_name || s.student_number : s.student_name || s.student_name_ar || s.student_number;
   }
-
-  function studentName(result: any): string {
-    return result.student_name || result.student_id || "-";
-  }
-
-  async function loadResults() {
-    results = selectedTermId
-      ? await commands.assessment.listTermResultsEnriched(selectedTermId, classSubjectId || null)
-      : [];
-  }
-
-  async function loadData() {
-    isLoading = true;
-    error = "";
-    try {
-      const [periodList, classList] = await Promise.all([
-        commands.calendar.listAcademicPeriods(),
-        commands.academic.listClasses(),
-      ]);
-      const classData = classList.find((item: any) => String(item.id) === classId);
-      const yearId = classData?.period_id || periodList.find((item: any) => item.period_type === "year" && item.status === "active")?.id;
-      terms = periodList.filter((item: any) => String(item.parent_id) === String(yearId) && (item.period_type === "term" || item.period_type === "semester"));
-      selectedTermId = terms.some((term) => String(term.id) === selectedTermId) ? selectedTermId : String(terms[0]?.id || yearId || "");
-      await loadResults();
-    } catch (cause) {
-      error = cause instanceof Error ? cause.message : String(cause);
-    } finally {
-      isLoading = false;
-    }
-  }
-
-  async function calculateResults() {
-    if (!selectedTermId) return;
-    isCalculating = true;
-    try {
-      const gradingIds = await commands.assessment.gradingChildIds(orgId, selectedTermId);
-      const examId = await commands.assessment.examChildId(orgId, selectedTermId);
-      await commands.assessment.calculateTermResultsBatch(selectedTermId, classId, gradingIds, examId);
-      await loadResults();
-      toast.success(isArabic ? "تم حساب نتائج المادة" : "Subject results calculated");
-    } catch (cause) {
-      toast.error(cause instanceof Error ? cause.message : String(cause));
-    } finally {
-      isCalculating = false;
-    }
-  }
-
-  onMount(loadData);
 </script>
 
-<div class="flex flex-col gap-4 text-start">
-  <div class="flex flex-wrap items-start justify-between gap-3"><div><div class="flex items-center gap-2"><FileCheck2 size={17} class="text-primary" /><h3 class="text-sm font-bold">{isArabic ? "نتائج مادة الفصل" : "Subject term results"}</h3></div><p class="mt-1 text-[10px] text-muted-foreground">{isArabic ? "النتائج الرسمية المحسوبة للمادة المحددة" : "Official calculated results for this subject"}</p></div><div class="flex items-center gap-2"><Button variant="outline" size="icon-sm" class="h-8 w-8" onclick={loadData} title={isArabic ? "تحديث" : "Refresh"}><RefreshCcw size={13} /></Button><Button variant="lime" size="sm" class="h-8 gap-1.5 text-xs" onclick={calculateResults} disabled={isCalculating || !selectedTermId}><Calculator size={13} />{isArabic ? "حساب النتائج" : "Calculate results"}</Button></div></div>
-  <div class="flex flex-wrap items-center gap-3 border-y border-border/60 py-3"><Select type="single" value={selectedTermId} onValueChange={(value: string | undefined) => { selectedTermId = value || ""; loadResults(); }}><SelectTrigger class="h-8 w-48 text-xs">{label(terms.find((term) => String(term.id) === selectedTermId)) || (isArabic ? "اختر الفصل" : "Select term")}</SelectTrigger><SelectContent>{#each terms as term (term.id)}<SelectItem value={String(term.id)}>{label(term)}</SelectItem>{/each}</SelectContent></Select><Badge variant="secondary" class="text-[10px]">{results.length} {isArabic ? "نتيجة" : "results"}</Badge><Badge variant="outline" class="text-[10px]">{passedCount} {isArabic ? "ناجح" : "passed"}</Badge></div>
-  {#if error}<div class="border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">{error}</div>{:else if isLoading}<div class="border border-border/60 py-16 text-center text-xs text-muted-foreground">{isArabic ? "جاري تحميل النتائج..." : "Loading results..."}</div>{:else if results.length === 0}<div class="flex items-center justify-center border border-dashed border-border py-16 text-xs text-muted-foreground">{isArabic ? "لم يتم حساب نتائج هذه المادة بعد" : "No results calculated for this subject yet"}</div>{:else}<div class="overflow-x-auto border border-border/70"><table class="w-full min-w-190 text-xs"><thead class="border-b border-border/70 bg-muted/30 text-muted-foreground"><tr><th class="px-3 py-2 text-start">{isArabic ? "الطالب" : "Student"}</th><th class="px-3 py-2 text-end">{isArabic ? "أعمال الفصل" : "Coursework"}</th><th class="px-3 py-2 text-end">{isArabic ? "الاختبار" : "Exam"}</th><th class="px-3 py-2 text-end">{isArabic ? "المجموع" : "Total"}</th><th class="px-3 py-2 text-end">%</th><th class="px-3 py-2 text-center">{isArabic ? "التقدير" : "Grade"}</th><th class="px-3 py-2 text-center">{isArabic ? "الحالة" : "Status"}</th></tr></thead><tbody>{#each results as result (result.id)}<tr class="border-b border-border/50 last:border-0 hover:bg-muted/20"><td class="px-3 py-2 font-medium">{studentName(result)}</td><td class="px-3 py-2 text-end">{result.coursework_score ?? 0} / {result.coursework_max ?? 0}</td><td class="px-3 py-2 text-end">{result.exam_score ?? 0} / {result.exam_max ?? 0}</td><td class="px-3 py-2 text-end font-semibold">{result.total_score ?? 0} / {result.total_max ?? 0}</td><td class="px-3 py-2 text-end">{Number(result.percentage ?? 0).toFixed(1)}%</td><td class="px-3 py-2 text-center font-semibold">{result.grade_label || "-"}</td><td class="px-3 py-2 text-center"><Badge variant={result.is_passing ? "secondary" : "destructive"} class="text-[9px]">{result.is_passing ? (isArabic ? "ناجح" : "Passed") : (isArabic ? "راسب" : "Failed")}</Badge></td></tr>{/each}</tbody></table></div>{/if}
+<div class="flex flex-col h-full w-full gap-2.5 font-sans">
+  
+  <!-- Action Toolbar (No duplicate titles) -->
+  <div class="flex items-center justify-between shrink-0 px-0.5">
+    <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+        <FileCheck2 size={14} class="text-primary opacity-80" />
+        <span>
+          {isArabic 
+            ? `${termResults.length} نتيجة مسجلة لهذا الترم` 
+            : `${termResults.length} calculated student results`}
+        </span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <Button 
+        variant="outline" 
+        size="sm" 
+        class="h-8 px-2.5 gap-1.5 cursor-pointer text-xs font-semibold shadow-2xs" 
+        onclick={() => termResultsQuery.refetch()} 
+        disabled={termResultsQuery.isLoading}
+      >
+        <RefreshCcw size={12} class={termResultsQuery.isLoading ? "animate-spin" : ""} />
+        <span>{isArabic ? "تحديث" : "Refresh"}</span>
+      </Button>
+    </div>
+  </div>
+
+  <!-- Table Container -->
+  <div class="flex-1 overflow-auto border border-border/70 rounded-xl shadow-xs bg-card">
+    {#if termResultsQuery.isLoading}
+      <div class="flex h-full items-center justify-center text-xs text-muted-foreground animate-pulse">
+        {isArabic ? "جاري تحميل نتائج الترم..." : "Loading term results..."}
+      </div>
+    {:else if termResultsQuery.error}
+      <div class="flex h-full flex-col items-center justify-center text-xs text-destructive gap-2 p-6">
+        <AlertCircle size={24} />
+        <span class="font-semibold">{extractErrorMessage(termResultsQuery.error)}</span>
+      </div>
+    {:else if termResults.length === 0}
+      <div class="flex flex-col h-full items-center justify-center p-8 text-center bg-muted/5 gap-2">
+        <FileCheck2 size={28} class="text-muted-foreground opacity-40 mb-1" />
+        <p class="text-xs font-bold text-foreground">
+          {isArabic ? "لم يتم احتساب نتائج الترم بعد" : "No term results calculated yet"}
+        </p>
+        <p class="text-[11px] text-muted-foreground max-w-sm">
+          {isArabic ? "يتم احتساب نتائج الترم تلقائياً عند اعتماد درجات التقييمات الشهرية." : "Term results are computed once coursework grades are finalized."}
+        </p>
+      </div>
+    {:else}
+      <table class="w-full min-w-160 text-xs border-collapse">
+        <thead class="border-b border-border/70 bg-muted/40 text-muted-foreground sticky top-0 text-[11px] font-bold">
+          <tr>
+            <th class="px-4 py-3 text-start">{isArabic ? "اسم الطالب" : "Student Name"}</th>
+            <th class="px-4 py-3 text-start">{isArabic ? "الدرجة العظمى" : "Max Score"}</th>
+            <th class="px-4 py-3 text-start">{isArabic ? "الدرجة المستحقة" : "Obtained Score"}</th>
+            <th class="px-4 py-3 text-start">{isArabic ? "التقدير" : "Grade"}</th>
+            <th class="px-4 py-3 text-center">{isArabic ? "الحالة" : "Status"}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {#each termResults as r (r.id)}
+            <tr class="border-b border-border/40 hover:bg-muted/20 transition-colors">
+              <td class="px-4 py-3 font-bold text-foreground">{getStudentName(r.enrollment_id)}</td>
+              <td class="px-4 py-3 text-muted-foreground font-mono">{r.max_score}</td>
+              <td class="px-4 py-3 font-bold text-foreground font-mono">{r.obtained_score}</td>
+              <td class="px-4 py-3">
+                <Badge variant="outline" class="text-[10px] font-bold px-2 py-0.5">
+                  {r.grade_value || "-"}
+                </Badge>
+              </td>
+              <td class="px-4 py-3 text-center">
+                {#if r.is_passed === 1}
+                  <Badge variant="secondary" class="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] font-bold">
+                    <CheckCircle2 size={11} class="me-1 inline" />
+                    {isArabic ? "ناجح" : "Passed"}
+                  </Badge>
+                {:else}
+                  <Badge variant="destructive" class="text-[10px] font-bold">
+                    <XCircle size={11} class="me-1 inline" />
+                    {isArabic ? "راسب" : "Failed"}
+                  </Badge>
+                {/if}
+              </td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    {/if}
+  </div>
+
 </div>

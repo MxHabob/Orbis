@@ -1,12 +1,13 @@
 <!--
 @component DetailPageHeader
-Shared header for entity detail pages (Student, User, Class).
+Shared header for entity detail pages (Student, User, Class, Subject).
 Provides a back button, title slot, and actions slot in a consistent layout.
 -->
 <script lang="ts">
 import { Button } from "@orbis/ui-svelte/button";
 import { ArrowRight, ArrowLeft } from "@lucide/svelte";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import { goto } from "$app/navigation";
 import type { Snippet } from "svelte";
 
 let {
@@ -15,11 +16,20 @@ let {
   children,
   actions,
 }: {
-  backHref: string;
+  backHref?: string;
   backLabel?: string;
   children: Snippet;
   actions?: Snippet;
 } = $props();
+
+function handleBack(e: MouseEvent) {
+  if (backHref) {
+    e.preventDefault();
+    goto(localizeHref(backHref));
+  } else if (typeof window !== "undefined") {
+    window.history.back();
+  }
+}
 </script>
 
 <div
@@ -27,7 +37,8 @@ let {
 >
   <div class="flex items-center gap-3 text-start shrink min-w-0">
     <Button
-      href={localizeHref(backHref)}
+      href={backHref ? localizeHref(backHref) : undefined}
+      onclick={handleBack}
       variant="secondary"
       size="icon"
       class="h-8 w-8 hover:bg-accent/80 cursor-pointer shrink-0"
