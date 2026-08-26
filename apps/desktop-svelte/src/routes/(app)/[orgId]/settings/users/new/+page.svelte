@@ -173,7 +173,6 @@ async function handleSubmit(e: SubmitEvent) {
                 required
                 disabled={isSubmitting}
                 class="bg-background/50 h-9 text-xs font-mono"
-                dir="ltr"
               />
             </div>
 
@@ -249,7 +248,6 @@ async function handleSubmit(e: SubmitEvent) {
                 required
                 disabled={isSubmitting}
                 class="bg-background/50 h-9 text-xs font-mono"
-                dir="ltr"
               />
             </div>
 
@@ -314,7 +312,6 @@ async function handleSubmit(e: SubmitEvent) {
                 placeholder="770000000"
                 disabled={isSubmitting}
                 class="bg-background/50 h-9 text-xs font-mono"
-                dir="ltr"
               />
             </div>
 

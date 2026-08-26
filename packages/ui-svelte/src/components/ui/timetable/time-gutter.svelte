@@ -40,7 +40,7 @@
           <Coffee size={11} class="shrink-0" />
           <span class="truncate">{slot.name_ar || slot.name || (isArabic ? "استراحة" : "Break")}</span>
         </div>
-        <span class="text-[9px] text-muted-foreground font-mono" dir="ltr">
+        <span class="text-[9px] text-muted-foreground font-mono">
           {formatTime(slot.start_time)}
         </span>
       {:else}
@@ -54,10 +54,10 @@
             </span>
           {/if}
         </div>
-        <span class="text-[10px] font-medium text-muted-foreground font-mono mt-0.5" dir="ltr">
+        <span class="text-[10px] font-medium text-muted-foreground font-mono mt-0.5">
           {formatTime(slot.start_time)}
         </span>
-        <span class="text-[9px] text-muted-foreground/60 font-mono" dir="ltr">
+        <span class="text-[9px] text-muted-foreground/60 font-mono">
           {formatTime(slot.end_time)}
         </span>
       {/if}

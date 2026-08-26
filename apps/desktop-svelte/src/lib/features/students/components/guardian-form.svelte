@@ -459,7 +459,6 @@ async function handleSubmit() {
           bind:value={phone}
           placeholder="777000000"
           class="h-9 text-sm font-mono text-start"
-          dir="ltr"
         />
       </div>
 
@@ -471,7 +470,6 @@ async function handleSubmit() {
           bind:value={email}
           placeholder="example@orbis.local"
           class="h-9 text-sm text-start"
-          dir="ltr"
         />
       </div>
 

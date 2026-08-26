@@ -37,7 +37,6 @@ import { onMount } from "svelte";
 import { toast } from "svelte-sonner";
 import { createEnrollmentsQuery } from "$lib/features/students";
 
-import { getLocale } from "$lib/paraglide/runtime";
 import { formatDate } from "$lib/core/i18n";
 
 const orgId = $derived(page.params.orgId || "");
@@ -358,7 +357,7 @@ async function handleUploadFile() {
 <!-- Modal: Add New Document Requirement -->
 {#if showAddModal}
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-xs">
-    <div class="bg-card border border-border p-6 rounded-xl shadow-xl w-full max-w-md flex flex-col gap-4 text-start select-none" dir={getLocale() === 'ar' ? 'rtl' : 'ltr'}>
+    <div class="bg-card border border-border p-6 rounded-xl shadow-xl w-full max-w-md flex flex-col gap-4 text-start select-none">
       <div class="flex items-center justify-between border-b border-border/80 pb-3">
         <h3 class="font-bold text-sm text-foreground flex items-center gap-2">
           <Paperclip size={15} class="text-primary" />
@@ -411,7 +410,6 @@ async function handleUploadFile() {
             type="text" 
             placeholder={m.common_docs_form_url_placeholder()} 
             class="text-xs font-mono"
-            dir="ltr"
             bind:value={newDocUrl}
           />
         </div>
@@ -440,7 +438,7 @@ async function handleUploadFile() {
 <!-- Modal: Upload simulated document file -->
 {#if showUploadModal}
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-xs">
-    <div class="bg-card border border-border p-6 rounded-xl shadow-xl w-full max-w-md flex flex-col gap-4 text-start select-none" dir={getLocale() === 'ar' ? 'rtl' : 'ltr'}>
+    <div class="bg-card border border-border p-6 rounded-xl shadow-xl w-full max-w-md flex flex-col gap-4 text-start select-none">
       <div class="flex items-center justify-between border-b border-border/80 pb-3">
         <h3 class="font-bold text-sm text-foreground flex items-center gap-2">
           <Upload size={15} class="text-primary" />
@@ -472,7 +470,6 @@ async function handleUploadFile() {
             type="text" 
             placeholder={m.common_docs_form_upload_url_placeholder()} 
             class="text-xs font-mono" 
-            dir="ltr"
             bind:value={uploadFileUrl}
           />
         </div>

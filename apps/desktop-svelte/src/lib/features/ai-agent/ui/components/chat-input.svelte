@@ -8,14 +8,12 @@ let {
   value = $bindable(""),
   isThinking = false,
   messagesLength = 0,
-  isRtl = false,
   onsubmit,
   onnewchat,
 }: {
   value?: string;
   isThinking?: boolean;
   messagesLength?: number;
-  isRtl?: boolean;
   onsubmit: (query: string) => void;
   onnewchat: (agentType?: string) => void;
 } = $props();
@@ -160,7 +158,6 @@ function handleCommandSelect(agentType: string) {
       placeholder={m.agent_chat_placeholder()}
       rows="2"
       class="w-full min-h-11 max-h-40 resize-y overflow-y-auto text-[13px] leading-5 rounded-lg  px-3 py-2.5 outline-none shadow-xs"
-      dir={isRtl ? "rtl" : "ltr"}
     ></Textarea>
 
     <div class="flex items-center justify-between px-1">

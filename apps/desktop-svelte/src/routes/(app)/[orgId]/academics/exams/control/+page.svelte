@@ -249,7 +249,7 @@ onMount(() => {
 });
 </script>
 
-<div class="h-full w-full overflow-y-auto scrollbar-hide p-6 flex flex-col gap-5 select-none" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
+<div class="h-full w-full overflow-y-auto scrollbar-hide p-6 flex flex-col gap-5 select-none">
   {#if isLoading}
     <div class="flex flex-col gap-4">
       <Skeleton class="h-64 w-full rounded-xl" />

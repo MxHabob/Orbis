@@ -116,7 +116,6 @@
 
 <div
   class="h-full w-full flex flex-col overflow-hidden bg-background font-sans text-start"
-  dir={isArabic ? "rtl" : "ltr"}
 >
   <!-- Unified Breadcrumb Header: Class Name / Subject Name -->
   <DetailPageHeader {backHref} {backLabel}>

@@ -145,7 +145,7 @@
     </div>
   {:else}
     <!-- Compact, responsive viewport container -->
-    <div class="w-full max-h-[380px] overflow-hidden rounded-md bg-card">
+    <div class="w-full max-h-95 overflow-hidden rounded-md bg-card">
       <TimetableGrid
         {timeSlots}
         {weekdays}

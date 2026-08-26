@@ -14,8 +14,6 @@ import {
 } from "@lucide/svelte";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import type { Snippet } from "svelte";
-import { getLocale } from "$lib/paraglide/runtime";
-
 let { data, children }: { data: { orgId: string }; children: Snippet } =
   $props();
 
@@ -52,7 +50,6 @@ const navItems = $derived([
 
 <div
   class="h-full w-full bg-background flex flex-col overflow-hidden"
-  dir={getLocale() === "ar" ? "rtl" : "ltr"}
 >
   <header class="border-b border-border/40 px-6 pt-2 pb-0 shrink-0">
     <SecondaryMenu items={navItems} {basePath} />

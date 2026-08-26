@@ -70,7 +70,6 @@ function handleKeydown(e: KeyboardEvent) {
 
 <div
   class="flex items-center gap-2 flex-nowrap shrink-0"
-  dir={rtl ? "rtl" : "ltr"}
 >
   {#if searchable}
     <div class="relative flex-1 max-w-xs">

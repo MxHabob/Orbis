@@ -102,7 +102,7 @@ let { state }: { state: StudentFormState } = $props();
             <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_phone_desc()}</span>
           </div>
           <div class="w-full md:w-[480px] shrink-0">
-            <Input bind:value={guardian.phone} class="h-9 w-full bg-background font-mono text-left" dir="ltr" placeholder="777000000" />
+            <Input bind:value={guardian.phone} class="h-9 w-full bg-background font-mono text-left" placeholder="777000000" />
           </div>
         </div>
 

@@ -281,7 +281,7 @@ function decisionLabel(d: string) {
                   <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_target_year_ar()}</span>
                 </div>
                 <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
-                  <Input id="target_year_name_ar" bind:value={config.target_year_name_ar} dir="rtl" class="h-9 w-full bg-background" />
+                  <Input id="target_year_name_ar" bind:value={config.target_year_name_ar} class="h-9 w-full bg-background" />
                 </div>
               </div>
 

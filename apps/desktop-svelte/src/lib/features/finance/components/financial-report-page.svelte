@@ -126,7 +126,7 @@ function reportSource(groups: string[][]) {
 }
 </script>
 
-<div class="flex h-full min-h-0 w-full flex-col overflow-hidden bg-background p-6" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
+<div class="flex h-full min-h-0 w-full flex-col overflow-hidden bg-background p-6">
   <div class="min-h-0 flex-1 overflow-hidden">
     {#if isLoading}
       <FinanceSkeleton />
@@ -193,7 +193,7 @@ function reportSource(groups: string[][]) {
       </div>
     {:else if kind === "trial_balance"}
       <div class="flex h-full min-h-0 flex-col overflow-hidden">
-        <div class="min-h-0 flex-1" dir="rtl">
+        <div class="min-h-0 flex-1">
           <DataTable
             columns={trialColumns}
             source={trialSource}
@@ -211,7 +211,7 @@ function reportSource(groups: string[][]) {
       </div>
     {:else}
       {@const groups = kind === "income_statement" ? [["الإيرادات", "revenue"], ["المصروفات", "expense"]] : [["الأصول", "asset"], ["الخصوم", "liability"], ["حقوق الملكية", "equity"]]}
-      <div class="h-full min-h-0" dir="rtl">
+      <div class="h-full min-h-0">
         <DataTable
           columns={reportColumns()}
           source={reportSource(groups)}

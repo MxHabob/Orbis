@@ -431,7 +431,7 @@ function handleKeydown(e: KeyboardEvent) {
 <Dialog open={uiStore.showSearch} onOpenChange={(open) => uiStore.setSearch(open)}>
   <DialogContent
     showCloseButton={false}
-    class="overflow-hidden p-0 max-w-full w-full md:max-w-[740px] h-[535px] m-0 select-none flex flex-col focus:outline-none"
+    class="overflow-hidden p-0 max-w-full w-full md:max-w-185 h-133.75 m-0 select-none flex flex-col focus:outline-none"
   >
     <!-- Search Input Bar -->
     <div class="px-4 py-3  shrink-0">

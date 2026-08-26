@@ -183,13 +183,13 @@ async function handleRunTick() {
         {#if diagnostics?.last_run_at}
           <div class="flex items-center justify-between">
             <span class="text-muted-foreground">{m.common_autopilot_popover_last_run()}</span>
-            <span class="font-medium text-foreground" dir="ltr">{formatDate(diagnostics.last_run_at, "datetime")}</span>
+            <span class="font-medium text-foreground">{formatDate(diagnostics.last_run_at, "datetime")}</span>
           </div>
         {/if}
         {#if diagnostics?.next_run_at}
           <div class="flex items-center justify-between">
             <span class="text-muted-foreground">{m.common_autopilot_popover_next_run()}</span>
-            <span class="font-medium text-foreground" dir="ltr">{formatDate(diagnostics.next_run_at, "datetime")}</span>
+            <span class="font-medium text-foreground">{formatDate(diagnostics.next_run_at, "datetime")}</span>
           </div>
         {/if}
       </div>

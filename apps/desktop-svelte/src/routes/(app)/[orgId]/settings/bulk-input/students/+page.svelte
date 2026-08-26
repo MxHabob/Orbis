@@ -26,7 +26,7 @@ import { Label } from "@orbis/ui-svelte/label";
 import { ArrowLeft, Upload, Columns3, Trash2, Info } from "@lucide/svelte";
 import { toast } from "svelte-sonner";
 
-import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import { localizeHref } from "$lib/paraglide/runtime";
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { authStore } from "$lib/stores";
 import { useQueryClient } from "@tanstack/svelte-query";
@@ -49,10 +49,7 @@ import {
   getStudentValidationSummary,
 } from "$lib/features/bulk-input/students/student-validator";
 
-let { data } = $props();
-const locale = getLocale();
-const isRtl = locale === "ar";
-
+let { data }: { data: { orgId: string } } = $props();
 const queryClient = useQueryClient();
 const classesQuery = createClassesQuery(() => data.orgId);
 const classes = $derived(classesQuery.data ?? []);
@@ -336,7 +333,6 @@ async function handleSubmit() {
 
 <div
   class="h-full w-full overflow-hidden bg-background/50 text-foreground"
-  dir={isRtl ? "rtl" : "ltr"}
 >
   <div class="max-w-[1600px] w-full h-full mx-auto p-6 flex flex-col gap-4 overflow-hidden">
     <!-- Header -->

@@ -307,7 +307,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
 </script>
 
 <Dialog bind:open={open}>
-  <DialogContent class="sm:max-w-[780px] text-start max-h-[90vh] flex flex-col overflow-hidden">
+  <DialogContent class="sm:max-w-195 text-start max-h-[90vh] flex flex-col overflow-hidden">
     <DialogHeader class="shrink-0">
       <DialogTitle class="flex items-center gap-2">
         <LayoutGrid class="text-primary h-5 w-5" />
@@ -317,7 +317,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
 
     {#if isBatchProcessing}
       <!-- ═══ Batch Progress View ═══ -->
-      <div class="flex-grow py-12 flex flex-col items-center justify-center gap-6">
+      <div class="grow py-12 flex flex-col items-center justify-center gap-6">
         <div class="w-full max-w-md flex flex-col gap-3">
           <div class="flex items-center justify-between text-xs text-muted-foreground">
             <span>{batchStatusText}</span>
@@ -337,10 +337,10 @@ function applySuggestion(suggestion: MultiUpLayout) {
 
     {:else}
       <!-- ═══ Main Content: Config + Preview ═══ -->
-      <div class="flex-grow flex flex-col md:flex-row gap-4 overflow-hidden py-3">
+      <div class="grow flex flex-col md:flex-row gap-4 overflow-hidden py-3">
 
         <!-- Left Panel: Config -->
-        <div class="w-full md:w-[240px] flex flex-col gap-3 shrink-0 overflow-y-auto scrollbar-hide">
+        <div class="w-full md:w-60 flex flex-col gap-3 shrink-0 overflow-y-auto scrollbar-hide">
           <!-- Template Selection -->
           <div class="flex flex-col gap-1.5">
             <Label class="text-xs font-semibold text-muted-foreground">
@@ -399,8 +399,8 @@ function applySuggestion(suggestion: MultiUpLayout) {
         </div>
 
         <!-- Right Panel: Preview -->
-        <div class="flex-grow flex flex-col gap-3 overflow-hidden">
-          <Tabs bind:value={activeTab} class="flex-grow flex flex-col overflow-hidden">
+        <div class="grow flex flex-col gap-3 overflow-hidden">
+          <Tabs bind:value={activeTab} class="grow flex flex-col overflow-hidden">
             <TabsList class="w-full shrink-0">
               <TabsTrigger value="preview" class="flex-1 text-xs">
                 {m.common_action_preview()}
@@ -411,7 +411,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
             </TabsList>
 
             <!-- Layout Preview Tab -->
-            <TabsContent value="preview" class="flex-grow flex items-center justify-center p-4 border border-border rounded-xl bg-muted/10 mt-2 overflow-hidden">
+            <TabsContent value="preview" class="grow flex items-center justify-center p-4 border border-border rounded-xl bg-muted/10 mt-2 overflow-hidden">
               <MultiUpPreview
                 layout={multiUpLayout}
                 totalRecords={entityIds.length}
@@ -421,7 +421,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
             </TabsContent>
 
             <!-- PDF Preview Tab -->
-            <TabsContent value="pdf" class="flex-grow border border-border rounded-xl bg-muted/20 mt-2 relative min-h-[280px] overflow-hidden flex items-center justify-center">
+            <TabsContent value="pdf" class="grow border border-border rounded-xl bg-muted/20 mt-2 relative min-h-70 overflow-hidden flex items-center justify-center">
               {#if generatingPdf}
                 <div class="absolute inset-0 bg-background/60 backdrop-blur-xs flex flex-col items-center justify-center gap-2 z-10">
                   <RefreshCw size={20} class="text-primary animate-spin" />

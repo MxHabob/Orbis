@@ -38,7 +38,7 @@ import { createClassesQuery } from "$lib/features/academics";
 import type { Snippet } from "svelte";
 import { toast } from "svelte-sonner";
 
-import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import { localizeHref } from "$lib/paraglide/runtime";
 import AskOrbisButton from "$lib/shared/components/ask-orbis-button.svelte";
 
 let { children }: { children: Snippet } = $props();
@@ -102,7 +102,6 @@ const menuItems = $derived([
 
 <div
   class="h-full w-full flex flex-col overflow-hidden bg-background"
-  dir={getLocale() === "ar" ? "rtl" : "ltr"}
 >
   <!-- Header using shared DetailPageHeader -->
   <DetailPageHeader

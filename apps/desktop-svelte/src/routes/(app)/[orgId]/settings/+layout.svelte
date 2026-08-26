@@ -186,7 +186,6 @@ const navGroups = $derived([
 
 <div
   class="h-full w-full bg-background overflow-hidden"
-  dir={getLocale() === "ar" ? "rtl" : "ltr"}
 >
   <MainViewport name="settings-workspace" leftWidth={{ default: 240, min: 200 }}>
     {#snippet left()}

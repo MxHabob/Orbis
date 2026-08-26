@@ -4,8 +4,6 @@ import { page } from "$app/state";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import type { Snippet } from "svelte";
 
-import { getLocale } from "$lib/paraglide/runtime";
-
 let { children }: { children: Snippet } = $props();
 
 const orgId = $derived(page.params.orgId || "");
@@ -25,7 +23,6 @@ const menuItems = $derived([
 
 <div
   class="h-full w-full overflow-y-auto scrollbar-hide"
-  dir={getLocale() === "ar" ? "rtl" : "ltr"}
 >
   <div class="w-full p-6 flex flex-col gap-6">
     <!-- Secondary Navigation -->

@@ -280,7 +280,7 @@
                   <span class="text-xs font-bold text-foreground truncate">
                     {slot.name_ar || slot.name || `Period ${slot.slot_number}`}
                   </span>
-                  <span class="text-[10px] text-muted-foreground font-mono" dir="ltr">
+                  <span class="text-[10px] text-muted-foreground font-mono">
                     {slot.start_time?.slice(0, 5)} - {slot.end_time?.slice(0, 5)} ({slot.duration_minutes || calcDuration(slot.start_time, slot.end_time)}{isArabic ? " دقيقة" : " min"})
                   </span>
                 </div>

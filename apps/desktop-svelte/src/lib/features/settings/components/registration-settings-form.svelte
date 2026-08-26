@@ -249,7 +249,7 @@ function handleSubmit(e: Event) {
 }
 </script>
 
-<div class="h-full w-full overflow-y-auto  scrollbar-hide text-start text-foreground" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
+<div class="h-full w-full overflow-y-auto scrollbar-hide text-start text-foreground">
   <div class="max-w-7xl mx-auto p-6 flex flex-col gap-6">
     <form onsubmit={handleSubmit} class="flex flex-col gap-6">
       <Tabs value="general" class="w-full">

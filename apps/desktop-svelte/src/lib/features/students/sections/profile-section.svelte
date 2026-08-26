@@ -53,7 +53,6 @@ let { state }: { state: StudentFormState } = $props();
           type="text" 
           placeholder={m.common_form_full_name_en_placeholder()} 
           class="h-9 w-full bg-background font-mono text-left" 
-          dir="ltr"
           bind:value={state.personal.nameEn}
           autocomplete="off"
         />
@@ -260,7 +259,6 @@ let { state }: { state: StudentFormState } = $props();
             type="tel" 
             placeholder={m.common_form_student_phone_placeholder()} 
             class="h-9 w-full bg-background font-mono text-left" 
-            dir="ltr"
             bind:value={state.personal.phone}
             onblur={() => state.triggerDuplicateCheck("phone", state.personal.phone)}
           />
@@ -289,7 +287,6 @@ let { state }: { state: StudentFormState } = $props();
             type="email" 
             placeholder="student@example.com" 
             class="h-9 w-full bg-background font-mono text-left" 
-            dir="ltr"
             bind:value={state.personal.email}
             onblur={() => state.triggerDuplicateCheck("email", state.personal.email)}
           />

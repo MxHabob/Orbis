@@ -51,6 +51,6 @@
   <span class="tracking-wide text-foreground/80">{breakName}</span>
 
   {#if timeLabel}
-    <span class="text-[10px] text-muted-foreground font-mono" dir="ltr">({timeLabel})</span>
+    <span class="text-[10px] text-muted-foreground font-mono">({timeLabel})</span>
   {/if}
 </div>

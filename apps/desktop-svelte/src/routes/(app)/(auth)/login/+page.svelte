@@ -8,8 +8,6 @@ import * as m from "$lib/paraglide/messages";
 import { Card } from "@orbis/ui-svelte/card";
 import { Logo } from "@orbis/ui-svelte/logo";
 
-import { getLocale } from "$lib/paraglide/runtime";
-
 import AnnouncementBanner from "$lib/features/auth/components/announcement-banner.svelte";
 import BackgroundPattern from "$lib/features/auth/components/background-pattern.svelte";
 import LoginForm from "$lib/features/auth/components/login-form.svelte";
@@ -23,7 +21,7 @@ let selectedYear = $state("");
 	<title>{m.common_login_title()}</title>
 </svelte:head>
 
-<div class="login-page h-full min-h-0 w-full bg-background flex flex-col items-center relative overflow-hidden" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
+<div class="login-page h-full min-h-0 w-full bg-background flex flex-col items-center relative overflow-hidden">
 	<AnnouncementBanner />
 
 	<BackgroundPattern />

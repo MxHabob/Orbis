@@ -158,7 +158,7 @@ function exportAccounts() {
 }
 </script>
 
-<div class="flex h-full min-h-0 w-full flex-col overflow-hidden bg-background p-6 font-sans" dir={rtl ? "rtl" : "ltr"}>
+<div class="flex h-full min-h-0 w-full flex-col overflow-hidden bg-background p-6 font-sans">
   <div class="flex min-h-0 w-full flex-1 flex-col gap-7" in:fade={{ duration: 180 }}>
     <header class="flex shrink-0 justify-end">
       <Button variant="outline" class="h-9 px-3 text-xs font-bold shrink-0" onclick={() => { isAddDialogOpen = true; }}>

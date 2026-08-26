@@ -17,15 +17,13 @@ import {
 import { Badge } from "@orbis/ui-svelte/badge";
 import { ArrowLeft, Users, GraduationCap, ArrowRight } from "@lucide/svelte";
 
-import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import { localizeHref } from "$lib/paraglide/runtime";
+let { data }: { data: { orgId: string } } = $props();
 
-let { data } = $props();
-const isRtl = getLocale() === "ar";
 </script>
 
 <div
   class="h-full w-full overflow-y-auto scrollbar-hide"
-  dir={isRtl ? "rtl" : "ltr"}
 >
   <div class="max-w-7xl mx-auto p-6 flex flex-col gap-6">
     <div class="flex items-center gap-3 pb-4">

@@ -20,7 +20,6 @@ import { onMount } from "svelte";
 import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
 
-import { getLocale } from "$lib/paraglide/runtime";
 import { l } from "$lib/core/i18n";
 import { createEnrollmentsQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
@@ -334,7 +333,7 @@ async function saveStudentDetails(e: Event) {
 }
 </script>
 
-<div class="h-full w-full overflow-y-auto scrollbar-hide text-start pb-10" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
+<div class="h-full w-full overflow-y-auto scrollbar-hide text-start pb-10">
   {#if isLoading}
     <div class="flex flex-col gap-6">
       <Skeleton class="h-32 w-full rounded-xl" />
@@ -438,7 +437,7 @@ async function saveStudentDetails(e: Event) {
               <span class="text-[10px] text-muted-foreground">{m.students_student_detail_row_name_en_desc()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0">
-              <Input type="text" class="text-xs font-semibold h-9 font-mono text-left" dir="ltr" bind:value={nameEn} />
+              <Input type="text" class="text-xs font-semibold h-9 font-mono text-left" bind:value={nameEn} />
             </div>
           </div>
 
@@ -448,7 +447,7 @@ async function saveStudentDetails(e: Event) {
               <span class="text-xs font-bold text-foreground">{m.common_bulk_col_dob()} *</span>
               <span class="text-[10px] text-muted-foreground">{m.students_student_detail_row_birth_date_desc()}</span>
             </div>
-            <div class="w-full md:w-80 shrink-0 grid grid-cols-3 gap-2" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
+            <div class="w-full md:w-80 shrink-0 grid grid-cols-3 gap-2">
               
               <!-- اليوم -->
               <Select bind:value={birthDay} type="single">
@@ -553,7 +552,7 @@ async function saveStudentDetails(e: Event) {
               <span class="text-[10px] text-muted-foreground">{m.students_student_detail_row_phone_desc()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0">
-              <Input type="text" class="text-xs h-9 font-mono text-left" dir="ltr" bind:value={phone} />
+              <Input type="text" class="text-xs h-9 font-mono text-left" bind:value={phone} />
             </div>
           </div>
 
@@ -564,7 +563,7 @@ async function saveStudentDetails(e: Event) {
               <span class="text-[10px] text-muted-foreground">{m.students_student_detail_row_email_desc()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0">
-              <Input type="email" class="text-xs h-9 font-mono text-left" dir="ltr" bind:value={email} />
+              <Input type="email" class="text-xs h-9 font-mono text-left" bind:value={email} />
             </div>
           </div>
 

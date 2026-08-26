@@ -55,11 +55,11 @@
           </th>
           {#each timeSlots as slot (slot.id)}
             {@const isBreak = Boolean(slot.is_break)}
-            <th class="p-2 border-e border-border/40 text-start min-w-[120px] last:border-e-0 {isBreak ? 'bg-amber-500/10' : ''}">
+            <th class="p-2 border-e border-border/40 text-start min-w-30 last:border-e-0 {isBreak ? 'bg-amber-500/10' : ''}">
               <div class="font-bold text-foreground text-[11px]">
                 {slot.name_ar || slot.name || `P${slot.slot_number}`}
               </div>
-              <div class="text-[9px] text-muted-foreground font-mono" dir="ltr">
+              <div class="text-[9px] text-muted-foreground font-mono">
                 {slot.start_time?.slice(0, 5)} - {slot.end_time?.slice(0, 5)}
               </div>
             </th>
@@ -84,7 +84,7 @@
 
               <td class="p-1 border-e border-border/40 last:border-e-0 align-top {isBreak ? 'bg-amber-500/5' : ''}">
                 {#if isBreak}
-                  <div class="h-full min-h-[44px] flex items-center justify-center text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                  <div class="h-full min-h-11 flex items-center justify-center text-[10px] font-semibold text-amber-600 dark:text-amber-400">
                     {slot.name_ar || slot.name || (isArabic ? "استراحة" : "Break")}
                   </div>
                 {:else if l}
@@ -93,7 +93,7 @@
                   <div
                     onclick={() => onLessonClick?.(l)}
                     style={`--subject-color: ${getSubjectColor(l.subject_id)};`}
-                    class="h-full min-h-[48px] rounded-md border border-border/60 bg-card p-1.5 cursor-pointer hover:border-primary/50 transition-all text-start relative overflow-hidden"
+                    class="h-full min-h-12 rounded-md border border-border/60 bg-card p-1.5 cursor-pointer hover:border-primary/50 transition-all text-start relative overflow-hidden"
                   >
                     <div
                       class="absolute inset-s-0 top-0 bottom-0 w-1"
@@ -112,7 +112,7 @@
                     </div>
                   </div>
                 {:else}
-                  <div class="h-full min-h-[48px]"></div>
+                  <div class="h-full min-h-12"></div>
                 {/if}
               </td>
             {/each}

@@ -189,7 +189,7 @@ async function handleDelete(link: GuardianLink) {
                 <span class="text-xs font-semibold text-foreground">{m.common_word_phone()}</span>
                 <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_phone_desc()}</span>
               </div>
-              <div class="w-full md:w-120 shrink-0 text-start font-mono text-sm text-foreground" dir="ltr">
+              <div class="w-full md:w-120 shrink-0 text-start font-mono text-sm text-foreground">
                 {user?.phone ?? user?.phone_number ?? "—"}
               </div>
             </div>
@@ -201,7 +201,7 @@ async function handleDelete(link: GuardianLink) {
                   <span class="text-xs font-semibold text-foreground">{m.common_word_email()}</span>
                   <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_guardians_email_desc()}</span>
                 </div>
-                <div class="w-full md:w-120 shrink-0 text-start font-mono text-sm text-foreground" dir="ltr">
+                <div class="w-full md:w-120 shrink-0 text-start font-mono text-sm text-foreground">
                   {String(user.email)}
                 </div>
               </div>

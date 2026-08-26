@@ -204,7 +204,7 @@
 
   <!-- Footer: Time Slot & Quick Actions -->
   <div class="flex items-center justify-between ps-1.5 pt-1 border-t border-border/40 mt-1">
-    <span class="text-[9px] font-medium text-muted-foreground/80 font-mono" dir="ltr">
+    <span class="text-[9px] font-medium text-muted-foreground/80 font-mono">
       {timeLabel || (timeSlot ? `${formatTime(timeSlot.start_time)} - ${formatTime(timeSlot.end_time)}` : "")}
     </span>
 

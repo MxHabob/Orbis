@@ -59,7 +59,7 @@ const handleLearnMore = async () => {
     <div class="whats-new-list flex-1 overflow-y-auto max-h-[440px] p-4 flex flex-col gap-5 bg-card">
       
       <!-- Announcement Item 1 -->
-      <div class="flex flex-col gap-2.5 text-start" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
+      <div class="flex flex-col gap-2.5 text-start">
         <div class="flex items-start justify-between gap-2">
           <h5 class="text-[12px] font-bold text-foreground leading-snug">
             {m.common_whats_new_title_1()}
@@ -95,7 +95,7 @@ const handleLearnMore = async () => {
       <div class="h-px bg-border/60"></div>
 
       <!-- Announcement Item 2 -->
-      <div class="flex flex-col gap-2.5 text-start pb-2" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
+      <div class="flex flex-col gap-2.5 text-start pb-2">
         <div class="flex items-start justify-between gap-2">
           <h5 class="text-[12px] font-bold text-foreground leading-snug">
             {m.common_whats_new_title_2()}

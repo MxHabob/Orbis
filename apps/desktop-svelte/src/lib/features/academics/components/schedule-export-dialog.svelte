@@ -225,7 +225,7 @@
               <tr class="border-b border-border/60 {isBreak ? 'bg-amber-500/5' : ''}">
                 <td class="p-2 border-e border-border font-medium bg-muted/10">
                   <div class="font-bold text-[11px]">{slot.name_ar || slot.name || `P${slot.slot_number}`}</div>
-                  <div class="text-[9px] text-muted-foreground font-mono" dir="ltr">{slot.start_time?.slice(0, 5)} - {slot.end_time?.slice(0, 5)}</div>
+                  <div class="text-[9px] text-muted-foreground font-mono">{slot.start_time?.slice(0, 5)} - {slot.end_time?.slice(0, 5)}</div>
                 </td>
                 {#if isBreak}
                   <td colspan={weekdays.length} class="p-2 text-center text-xs font-bold text-amber-600 dark:text-amber-400">

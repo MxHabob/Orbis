@@ -48,7 +48,7 @@ function normalizeYear() {
 }
 </script>
 
-<div class="grid w-full grid-cols-[1fr_1.35fr_1.6fr] gap-2" dir="ltr">
+<div class="grid w-full grid-cols-[1fr_1.35fr_1.6fr] gap-2">
   <Input
     bind:this={dayInput}
     id={`${idPrefix}-day`}

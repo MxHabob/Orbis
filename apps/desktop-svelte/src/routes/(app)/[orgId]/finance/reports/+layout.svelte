@@ -14,7 +14,7 @@ const items = $derived([
 ]);
 </script>
 
-<div class="flex h-full w-full flex-col overflow-hidden bg-background" dir="rtl">
+<div class="flex h-full w-full flex-col overflow-hidden bg-background">
   <div class="shrink-0 border-b border-border/40 bg-background px-2 pt-1">
     <SecondaryMenu items={items} {basePath} />
   </div>

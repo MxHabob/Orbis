@@ -172,7 +172,6 @@ function toggleColumnVisibility(colId: string) {
 
 <div
   class="orbis-data-table flex flex-col h-full w-full overflow-hidden"
-  dir={rtl ? "rtl" : "ltr"}
 >
   <!-- ── Header ───────────────────────────────────────────────────────── -->
   {#if title || subtitle}
