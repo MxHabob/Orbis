@@ -40,7 +40,7 @@
 		)}
 		{...restProps}
 	>
-		<div class={cn("relative h-full w-full overflow-hidden border bg-[#FAFAF9] p-6 dark:bg-[#0C0C0C]", className)}>
+		<div class={cn("relative h-full w-full overflow-hidden border bg-background p-6 text-foreground", className)}>
 			{@render children?.()}
 			{#if showCloseButton}
 				<SheetPrimitive.Close data-slot="sheet-close">
