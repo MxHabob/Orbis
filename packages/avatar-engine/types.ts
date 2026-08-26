@@ -8,6 +8,7 @@ export type AvatarHat =
   | "chef"
   | "astronaut"
   | "headset"
+  | "pilot"
   | "party"
   | "pirate"
   | "ninja"
@@ -25,6 +26,7 @@ export const ALL_AVATAR_HATS: AvatarHat[] = [
   "detective",
   "astronaut",
   "headset",
+  "pilot",
   "party",
   "pirate",
   "ninja",

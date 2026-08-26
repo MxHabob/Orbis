@@ -23,10 +23,12 @@ const sortedTasks = $derived(
 );
 </script>
 
-<div class="p-4 border-b border-border flex flex-col gap-3">
-  <h4 class="text-xs font-bold text-foreground leading-normal text-start">
-    {m.common_autopilot_popover_tasks_section()}
-  </h4>
+<div class="p-4 border-b border-border/60 flex flex-col gap-3">
+  {#if sortedTasks.length > 0 || isLoading}
+    <h4 class="text-[11px] font-bold text-muted-foreground leading-normal text-start uppercase tracking-wide">
+      {m.common_autopilot_popover_tasks_section()}
+    </h4>
+  {/if}
 
   {#if isLoading}
     <div class="space-y-2">
@@ -35,9 +37,11 @@ const sortedTasks = $derived(
     </div>
   {:else}
     {#if sortedTasks.length === 0}
-      <p class="text-[10px] text-muted-foreground text-start">
-        {m.common_autopilot_popover_no_tasks()}
-      </p>
+      <div class="flex flex-col items-center justify-center gap-1.5 rounded-xl bg-muted/15 px-4 py-5 text-center">
+        <p class="text-[10px] text-muted-foreground leading-relaxed">
+          {m.common_autopilot_popover_no_tasks()}
+        </p>
+      </div>
     {:else}
       <div class="max-h-[220px] overflow-y-auto scrollbar-hide mt-1 relative ps-4 border-s border-border space-y-4 text-start">
         {#each sortedTasks as task}

@@ -21,6 +21,7 @@ import {
   Settings,
 } from "@lucide/svelte";
 import { academicContext } from "$lib/stores";
+import { Avatar } from "@orbis/avatar-engine";
 
 import { formatDate } from "$lib/core/i18n";
 import {
@@ -142,12 +143,12 @@ async function handleRunTick() {
     side="right"
     align="end"
     sideOffset={12}
-    class="w-[360px] rounded-xl p-0 overflow-hidden z-50 flex flex-col font-sans text-start border border-border/60 bg-popover text-popover-foreground shadow-lg animate-in fade-in slide-in-from-left-2 duration-200"
+    class="w-85 rounded-2xl p-0 overflow-hidden z-50 flex flex-col font-sans text-start border border-border/70 bg-popover text-popover-foreground shadow-xl animate-in fade-in slide-in-from-left-2 duration-200"
   >
     <!-- Header -->
-    <div class="px-4 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
+    <div class="px-4 py-3 border-b border-border/70 bg-card flex items-center justify-between">
       <div class="flex items-center gap-1.5">
-        <Activity size={16} class="text-primary animate-pulse" />
+        <Avatar hat="pilot" width="30px" height="30px" />
         <span class="text-xs font-semibold text-foreground">{m.common_autopilot_popover_title()}</span>
         
         {#if !config}
@@ -173,41 +174,12 @@ async function handleRunTick() {
       </a>
     </div>
 
-    <!-- Status Details Panel -->
-    {#if config && config.autopilot_enabled !== 0}
-      <div class="px-4 py-2 border-b border-border bg-background flex flex-col gap-1.5 text-[10px]">
-        <div class="flex items-center justify-between">
-          <span class="text-muted-foreground">{m.common_autopilot_popover_mode()}</span>
-          <span class="font-medium text-foreground">{config.autopilot_mode === "strict" ? m.common_autopilot_mode_strict() : config.autopilot_mode === "relaxed" ? m.common_autopilot_mode_relaxed() : m.common_autopilot_mode_normal()}</span>
-        </div>
-        {#if diagnostics?.last_run_at}
-          <div class="flex items-center justify-between">
-            <span class="text-muted-foreground">{m.common_autopilot_popover_last_run()}</span>
-            <span class="font-medium text-foreground">{formatDate(diagnostics.last_run_at, "datetime")}</span>
-          </div>
-        {/if}
-        {#if diagnostics?.next_run_at}
-          <div class="flex items-center justify-between">
-            <span class="text-muted-foreground">{m.common_autopilot_popover_next_run()}</span>
-            <span class="font-medium text-foreground">{formatDate(diagnostics.next_run_at, "datetime")}</span>
-          </div>
-        {/if}
-      </div>
-    {/if}
-
     <!-- Diagnostics Panel (Stuck / Overdue Alerts) -->
     {#if diagnostics && (diagnostics.stuck_tasks.length > 0 || diagnostics.overdue_tasks.length > 0)}
-      <div class="px-4 py-2.5 border-b border-border bg-destructive/5 text-[10px] text-destructive flex flex-col gap-1">
-        <div class="flex items-center gap-1.5">
+      <div class="px-4 py-2 border-b border-destructive/15 bg-destructive/5 text-[10px] text-destructive flex items-center gap-1.5">
           <AlertTriangle size={12} class="shrink-0" />
           <span class="font-bold">{m.common_autopilot_popover_diagnostics_warning()}</span>
-        </div>
-        {#if diagnostics.stuck_tasks.length > 0}
-          <div class="ps-4 text-[9px] text-destructive/80">• {m.common_autopilot_popover_stuck_tasks()}: {diagnostics.stuck_tasks.length}</div>
-        {/if}
-        {#if diagnostics.overdue_tasks.length > 0}
-          <div class="ps-4 text-[9px] text-destructive/80">• {m.common_autopilot_popover_overdue_tasks()}: {diagnostics.overdue_tasks.length}</div>
-        {/if}
+          <span class="ms-auto text-[9px] text-destructive/80">{diagnostics.stuck_tasks.length + diagnostics.overdue_tasks.length}</span>
       </div>
     {/if}
 
@@ -220,10 +192,8 @@ async function handleRunTick() {
     />
 
     <!-- Manual Execution Actions -->
-    <div class="px-4 py-3 border-b border-border bg-muted/10">
+    <div class="px-4 py-3 ">
       <Button
-        variant="outline"
-        size="sm"
         class="w-full text-[10px] h-8 font-semibold cursor-pointer flex items-center justify-center gap-1.5"
         onclick={handleRunTick}
         disabled={runTickMutation.isPending}
@@ -235,19 +205,6 @@ async function handleRunTick() {
           {m.common_autopilot_popover_run_tick()}
         {/if}
       </Button>
-    </div>
-
-    <!-- Metadata Details -->
-    <div class="p-4 flex flex-col gap-2.5 bg-muted/10 text-xs">
-      <div class="flex items-center justify-between">
-        <span class="text-muted-foreground">{m.common_autopilot_popover_health_status()}</span>
-        <Badge 
-          variant={diagnostics?.status === 'critical' ? 'destructive' : diagnostics?.status === 'warning' ? 'secondary' : 'lime'}
-          class="text-[9px] h-4 px-1.5"
-        >
-          {diagnostics?.status === 'critical' ? m.common_override_risk_critical() : diagnostics?.status === 'warning' ? m.common_status_warning() : m.common_status_healthy()}
-        </Badge>
-      </div>
     </div>
   </PopoverContent>
 </Popover>

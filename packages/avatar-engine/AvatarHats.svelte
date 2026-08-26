@@ -310,6 +310,36 @@ let { hat = "none" }: { hat: AvatarHat } = $props();
     <path d="M 100 42 L 100 66" fill="none" stroke="#475569" stroke-width="3" />
   </g>
 
+{:else if hat === "pilot"}
+  <!-- Classic airline pilot cap -->
+  <g id="hat-pilot" style="transform: translate(0, 4px);">
+    <!-- Cap crown -->
+    <path
+      d="M 66 64 C 68 42, 84 32, 100 32 C 116 32, 132 42, 134 64 Q 100 70 66 64 Z"
+      fill="#172554"
+      stroke="#0F172A"
+      stroke-width="1.5"
+    />
+    <!-- Gold band -->
+    <path d="M 67 57 Q 100 50 133 57 L 133 64 Q 100 70 67 64 Z" fill="#F8FAFC" />
+    <path d="M 68 58 Q 100 52 132 58 L 132 61 Q 100 56 68 61 Z" fill="#F59E0B" />
+    <!-- Cap visor -->
+    <path
+      d="M 50 66 Q 100 56 150 66 Q 100 75 50 66 Z"
+      fill="#0F172A"
+      stroke="#020617"
+      stroke-width="1.5"
+    />
+    <!-- Pilot wings badge -->
+    <path
+      d="M 91 43 L 96 47 L 100 42 L 104 47 L 109 43 L 106 52 L 94 52 Z"
+      fill="#FBBF24"
+      stroke="#B45309"
+      stroke-width="1"
+      stroke-linejoin="round"
+    />
+  </g>
+
 {:else if hat === "propeller"}
   <!-- 🚁 Retro Propeller Beanie -->
   <g id="hat-propeller" style="transform: translate(0, 4px);">
