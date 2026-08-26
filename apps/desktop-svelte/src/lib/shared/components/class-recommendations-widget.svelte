@@ -2,7 +2,7 @@
   import { createQuery } from "@tanstack/svelte-query";
   import { commands } from "$lib/core/ipc";
   import { Skeleton } from "@orbis/ui-svelte/skeleton";
-  import { Sparkles, AlertTriangle, FileText, CheckCircle2, Info } from "@lucide/svelte";
+  import { Sparkles, AlertTriangle, CheckCircle2, Info } from "@lucide/svelte";
   import { getLocale } from "$lib/paraglide/runtime";
   import WorkspaceCard from "./workspace-card.svelte";
 
@@ -52,23 +52,6 @@
       });
     }
 
-    // Generic contextual recommendations
-    recs.push({
-      id: "upcoming-exams",
-      title: "Publish Midterm Scheme",
-      desc: "Ensure weights are configured for next week.",
-      icon: FileText,
-      colorClass: "bg-blue-100 text-blue-600",
-    });
-
-    recs.push({
-      id: "unassigned-subject",
-      title: "Assign Missing Teacher",
-      desc: "One subject lacks a primary teacher.",
-      icon: Info,
-      colorClass: "bg-amber-100 text-amber-600",
-    });
-
     return recs;
   });
 
@@ -88,7 +71,7 @@
   {:else}
     <div class="flex flex-col gap-3 h-full overflow-y-auto scrollbar-hide">
       {#each recommendations as rec}
-        <div class="flex items-center gap-3 p-3 rounded-lg border border-border/40 bg-card hover:bg-muted/30 transition-colors shadow-sm cursor-pointer group">
+        <div class="flex items-center gap-3 p-3 rounded-md bg-muted/10 hover:bg-muted/30 transition-colors cursor-pointer group">
           <div class={`flex items-center justify-center w-8 h-8 rounded-md shrink-0 ${rec.colorClass}`}>
             <rec.icon size={14} />
           </div>

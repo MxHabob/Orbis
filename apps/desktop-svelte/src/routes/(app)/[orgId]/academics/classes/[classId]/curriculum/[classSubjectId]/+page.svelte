@@ -3,14 +3,12 @@
   import { commands } from "$lib/core/ipc";
   import { Badge } from "@orbis/ui-svelte/badge";
   import { Button } from "@orbis/ui-svelte/button";
-  import { RefreshCcw, Save, AlertCircle, CheckCircle2, FileSpreadsheet } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
   import { getLocale } from "$lib/paraglide/runtime";
   import * as m from "$lib/paraglide/messages";
   import { academicContext } from "$lib/stores";
-  import { OrbisGrid } from "@orbis/svelte-grid";
   import type { CellEditEvent } from "@orbis/svelte-grid";
-  import { buildGradeColumns, transformMatrixToSource, recalculateRowTotals } from "$lib/tables";
+  import { DataTable, buildGradeColumns, transformMatrixToSource, recalculateRowTotals } from "$lib/tables";
 
   const classSubjectId = $derived(String(page.params.classSubjectId || ""));
   const isArabic = $derived(getLocale() === "ar");
@@ -120,7 +118,6 @@
     
     <div class="flex items-center gap-2">
       <div class="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-        <FileSpreadsheet size={14} class="text-primary opacity-80" />
         <span>
           {isArabic 
             ? `${gridSource.length} طالب في السجل` 
@@ -134,7 +131,6 @@
         </Badge>
       {:else if gridSource.length > 0}
         <Badge variant="outline" class="bg-emerald-500/10 text-[10px] text-emerald-600 border-emerald-500/20 font-medium">
-          <CheckCircle2 size={10} class="me-1 inline" />
           {isArabic ? "البيانات محفوظة" : "All changes saved"}
         </Badge>
       {/if}
@@ -150,7 +146,6 @@
         disabled={isMatrixLoading}
         title={isArabic ? "إعادة تحميل الدرجات" : "Reload grades"}
       >
-        <RefreshCcw size={12} class={isMatrixLoading ? "animate-spin" : ""} />
         <span>{isArabic ? "تحديث" : "Refresh"}</span>
       </Button>
 
@@ -161,7 +156,6 @@
         disabled={!isDirty || isSaving || !canEnterGrades} 
         onclick={handleSaveAll}
       >
-        <Save size={13} class={isSaving ? "animate-spin" : ""} />
         <span>{isArabic ? "حفظ التغييرات" : "Save Changes"}</span>
       </Button>
     </div>
@@ -170,13 +164,8 @@
   
   <!-- Main Grid Canvas -->
   <div class="flex-1 w-full overflow-hidden border border-border/70 rounded-xl shadow-xs bg-card">
-    {#if isMatrixLoading && !gridSource.length}
-      <div class="flex h-full items-center justify-center text-xs text-muted-foreground animate-pulse">
-        {isArabic ? "جاري تحميل درجات الطلاب..." : "Loading gradebook matrix..."}
-      </div>
-    {:else if !gridColumns.length}
+    {#if !gridColumns.length && !isMatrixLoading}
       <div class="flex flex-col h-full items-center justify-center p-8 text-center bg-muted/5 gap-2">
-        <AlertCircle size={28} class="text-muted-foreground opacity-40 mb-1" />
         <p class="text-xs font-bold text-foreground">
           {isArabic ? "لم يتم تكوين خطة تقييم لهذه الفترة" : "No assessment scheme configured for this period"}
         </p>
@@ -185,13 +174,15 @@
         </p>
       </div>
     {:else}
-      <OrbisGrid 
-        columns={gridColumns} 
-        source={gridSource} 
-        height="100%" 
-        rtl={isArabic} 
-        readonly={!canEnterGrades} 
-        onCellEdit={handleCellEdit} 
+      <DataTable
+        columns={gridColumns}
+        source={gridSource}
+        loading={isMatrixLoading}
+        height="100%"
+        rtl={isArabic}
+        readonly={!canEnterGrades}
+        oncelledit={handleCellEdit}
+        emptyTitle={isArabic ? "لا يوجد طلاب في السجل" : "No students in the register"}
       />
     {/if}
   </div>

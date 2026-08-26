@@ -18,8 +18,8 @@ Generic, modular workspace card container with header actions and body slot.
   } = $props();
 </script>
 
-<div class="flex flex-col bg-card border border-border/60 rounded-xl overflow-hidden shadow-2xs {className}">
-  <div class="flex items-center justify-between p-4 border-b border-border/40 bg-muted/10">
+<div class="flex flex-col bg-card border border-border/50 rounded-lg overflow-hidden {className}">
+  <div class="flex items-center justify-between p-3 border-b border-border/30 bg-muted/10">
     <h3 class="font-bold text-sm font-sans tracking-tight">{title}</h3>
     {#if actions}
       <div class="flex items-center gap-2">
@@ -27,7 +27,7 @@ Generic, modular workspace card container with header actions and body slot.
       </div>
     {/if}
   </div>
-  <div class="flex-1 flex flex-col p-4 overflow-hidden">
+  <div class="flex-1 flex flex-col p-3 overflow-hidden">
     {@render children()}
   </div>
 </div>

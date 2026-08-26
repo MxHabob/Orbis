@@ -36,7 +36,7 @@
   }
 </script>
 
-<WorkspaceCard title={isArabic ? "المواد الدراسية" : "Class Subjects"} class="min-h-[300px]">
+<WorkspaceCard title={isArabic ? "المواد الدراسية" : "Class Subjects"}>
   {#snippet actions()}
     <div class="flex items-center gap-2">
       <Badge variant="secondary" class="text-[10px] py-0 px-1.5 h-5 font-bold font-sans">
@@ -66,7 +66,7 @@
     <div class="flex flex-col items-center justify-center h-full py-8 text-center border border-dashed border-border/60 rounded-xl bg-muted/10">
       <BookOpen size={24} class="text-muted-foreground opacity-40 mb-2" />
       <p class="text-xs font-bold text-foreground">{isArabic ? "لم يتم ربط أي مواد" : "No Subjects Linked"}</p>
-      <p class="text-[10px] text-muted-foreground mt-1 max-w-[200px]">
+      <p class="text-[10px] text-muted-foreground mt-1 max-w-50">
         {isArabic ? "قم بربط مواد المنهاج الدراسي بهذا الفصل لتمكين دفتر الدرجات والجدول." : "Link curriculum subjects to enable gradebook and timetables."}
       </p>
       <Button
@@ -82,11 +82,11 @@
       </Button>
     </div>
   {:else}
-    <div class="flex flex-col gap-2 overflow-y-auto max-h-[320px] scrollbar-hide pe-1">
+    <div class="flex flex-col gap-2 overflow-y-auto max-h-80 scrollbar-hide pe-1">
       {#each subjects as subject (subject.id)}
         <a
           href={localizeHref(`/${orgId}/academics/classes/${classId}/curriculum/${subject.id}`)}
-          class="flex items-center justify-between p-3 rounded-xl border border-border/50 bg-card hover:bg-muted/40 hover:border-primary/40 transition-all shadow-xs group"
+          class="flex items-center justify-between p-3 rounded-md bg-muted/10 hover:bg-muted/40 transition-colors group"
         >
           <div class="flex items-center gap-3 min-w-0">
             <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary font-bold text-xs shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
