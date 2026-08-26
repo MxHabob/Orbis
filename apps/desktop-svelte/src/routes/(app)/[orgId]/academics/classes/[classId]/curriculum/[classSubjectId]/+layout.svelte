@@ -3,11 +3,11 @@
   import { createQuery } from "@tanstack/svelte-query";
   import { commands } from "$lib/core/ipc";
   import { Button } from "@orbis/ui-svelte/button";
-  import { Settings2, Printer, Calculator, FileCheck2, User, Clock } from "@lucide/svelte";
   import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
   import { getLocale } from "$lib/paraglide/runtime";
   import { academicContext } from "$lib/stores";
   import AssessmentSchemeSheet from "$lib/features/assessment/assessment-scheme-sheet.svelte";
+    import { Clock } from "@lucide/svelte";
 
   let { children } = $props();
 
@@ -58,12 +58,10 @@
     {
       path: "",
       label: isArabic ? "دفتر الدرجات" : "Coursework Gradebook",
-      icon: Calculator,
     },
     {
       path: "term-results",
       label: isArabic ? "نتائج الترم" : "Term Results",
-      icon: FileCheck2,
     },
   ]);
 </script>
@@ -71,7 +69,7 @@
 <div class="flex h-full w-full flex-col font-sans text-start gap-4">
   
   <!-- Sub-Toolbar: SecondaryMenu Tabs & Subject Action Controls -->
-  <div class="flex flex-wrap items-center justify-between gap-3 border-b border-border/50 pb-3 shrink-0">
+  <div class="flex flex-wrap items-center justify-between gap-3 border-b border-border/40 pb-3 shrink-0">
     
     <!-- Secondary Menu Tab Switcher -->
     <SecondaryMenu items={menuItems} {basePath} />
@@ -79,17 +77,11 @@
     <!-- Meta & Actions on the Right -->
     <div class="flex items-center gap-2">
       {#if subjectInfo}
-        <div class="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-lg bg-muted/30 border border-border/40 text-[11px] text-muted-foreground me-1">
-          <span class="flex items-center gap-1">
-            <User size={12} class="opacity-70" />
-            <span class="font-medium text-foreground">{teacherDisplayName}</span>
-          </span>
+        <div class="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-md bg-muted/30 text-[11px] text-muted-foreground me-1">
+          <span class="font-medium text-foreground">{teacherDisplayName}</span>
           {#if subjectInfo.weekly_hours}
             <span class="opacity-30">•</span>
-            <span class="flex items-center gap-1">
-              <Clock size={11} class="opacity-70" />
-              <span>{subjectInfo.weekly_hours} {isArabic ? "ساعات/أسبوع" : "hrs/wk"}</span>
-            </span>
+               <span>{subjectInfo.weekly_hours} {isArabic ? "ساعات/أسبوع" : "hrs/wk"}</span>
           {/if}
         </div>
       {/if}
@@ -97,20 +89,18 @@
       <Button
         variant="outline"
         size="sm"
-        class="h-8 gap-1.5 text-xs font-semibold shadow-2xs"
+        class="h-8 gap-1.5 text-xs font-semibold"
         onclick={() => showConfigSheet = true}
       >
-        <Settings2 size={13} class="text-primary" />
         <span>{isArabic ? "إعداد التقييمات" : "Assessments Scheme"}</span>
       </Button>
 
       <Button
         variant="outline"
         size="sm"
-        class="h-8 gap-1.5 text-xs font-semibold shadow-2xs"
+        class="h-8 gap-1.5 text-xs font-semibold"
         onclick={() => window.print()}
       >
-        <Printer size={13} />
         <span class="hidden sm:inline">{isArabic ? "طباعة" : "Print"}</span>
       </Button>
     </div>
