@@ -8,7 +8,7 @@ import * as m from "$lib/paraglide/messages";
 import { Dialog, DialogContent } from "@orbis/ui-svelte/dialog";
 import { Button } from "@orbis/ui-svelte";
 
-import { BookOpen, Check, GraduationCap } from "@lucide/svelte";
+import { Check } from "@lucide/svelte";
 
 let { open = $bindable(false) }: { open: boolean } = $props();
 
@@ -20,19 +20,17 @@ function handleClose() {
 <Dialog bind:open>
   <DialogContent
     showCloseButton={true}
-    class="sm:max-w-200 w-full p-0 gap-0 overflow-hidden border border-border rounded-2xl grid grid-cols-[3fr_2fr] select-none shadow-[0_24px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_24px_50px_rgba(0,0,0,0.65)]"
+    class="sm:max-w-[60rem] min-h-[32rem] w-full p-0 gap-0 overflow-hidden grid grid-cols-[3fr_2fr] select-none"
   >
-    <!-- Education-themed corner illustrations follow the inherited text direction. -->
-    <div class="absolute top-0 inset-e-0 h-32 w-64 text-primary/15 dark:text-primary/10 opacity-90 z-0 pointer-events-none overflow-hidden">
-      <GraduationCap class="absolute -top-5 end-5 h-36 w-36 -rotate-12" strokeWidth={1.25} />
+    <!-- Geometric corner accents follow the inherited text direction. -->
+    <div class="absolute top-0 inset-e-0 h-20 w-[26rem] origin-center rtl:-scale-x-100 bg-primary/15 dark:bg-[#d9d1e8] opacity-90 z-0 pointer-events-none [clip-path:polygon(0_0,100%_0,100%_100%,76%_100%,76%_70%,57%_70%,57%_42%,8%_42%)]">
     </div>
 
-    <div class="absolute bottom-0 inset-s-0 h-32 w-64 text-primary/15 dark:text-primary/10 opacity-90 z-0 pointer-events-none overflow-hidden">
-      <BookOpen class="absolute -bottom-7 start-4 h-40 w-40 rotate-6" strokeWidth={1.1} />
+    <div class="absolute bottom-0 inset-s-0 h-24 w-56 origin-center rtl:-scale-x-100 bg-primary/15 dark:bg-[#d9d1e8] opacity-90 z-0 pointer-events-none [clip-path:polygon(0_0,24%_0,24%_28%,45%_28%,45%_56%,66%_56%,66%_82%,100%_82%,100%_100%,0_100%)]">
     </div>
 
     <!-- Left Column (Pitch & Action) -->
-    <div class="flex flex-col justify-between p-10 pe-6 z-10 text-start">
+    <div class="flex flex-col justify-center p-10 pe-6 z-10 text-start">
       <div class="flex flex-col gap-4">
         <!-- Badge -->
         <span class="text-[9.5px] font-bold tracking-widest text-primary uppercase">
@@ -62,17 +60,17 @@ function handleClose() {
       </div>
 
       <!-- Action Buttons -->
-      <div class="flex items-center gap-3 mt-6">
+      <div class="flex items-center gap-3 mt-8">
         <Button
           type="button"
-          class="px-5 py-2.5 text-[11.5px] font-bold rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer transition-all duration-150 shadow-md border-0"
+          class="px-5 py-2.5 text-[11.5px] font-bold"
         >
           {m.common_upgrade_btn_now()}
         </Button>
         <Button
-          variant="outline"
+          variant="secondary"
           onclick={handleClose}
-          class="px-5 py-2.5 text-[11.5px] font-bold rounded-lg bg-muted border border-border hover:bg-muted/80 text-muted-foreground cursor-pointer transition-all duration-150"
+          class="px-5 py-2.5 text-[11.5px] font-bold"
         >
           {m.common_upgrade_btn_later()}
         </Button>
@@ -80,7 +78,7 @@ function handleClose() {
     </div>
 
     <!-- Right Column (Features & Current Plan) -->
-    <div class="flex flex-col justify-between p-10 ps-8 border-s border-border z-10 text-start bg-muted/10">
+    <div class="flex flex-col justify-center p-10 ps-8 border-s border-border z-10 text-start bg-muted/10">
       <!-- Features List -->
       <div class="flex flex-col">
         <h3 class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4.5">
@@ -143,7 +141,7 @@ function handleClose() {
       </div>
 
       <!-- Current Plan Status -->
-      <div class="mt-8 flex flex-col gap-0.5 select-none">
+      <div class="mt-10 flex flex-col gap-0.5 select-none">
         <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
           {m.common_dt_type_system()}
         </span>
