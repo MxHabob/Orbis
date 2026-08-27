@@ -261,11 +261,14 @@ export function createEditorStore(initialDoc: TemplateDocument) {
 
     const newNode = createDefaultNode(type, props);
     // Apply drop position if provided
-    if (x !== undefined && y !== undefined && "position" in newNode) {
-      (newNode as any).position = {
-        ...(newNode as any).position,
-        x: Math.round(x * 10) / 10,
-        y: Math.round(y * 10) / 10,
+    if (x !== undefined && y !== undefined && (newNode as any).props?.position) {
+      (newNode as any).props = {
+        ...(newNode as any).props,
+        position: {
+          ...(newNode as any).props.position,
+          x: Math.round(x * 10) / 10,
+          y: Math.round(y * 10) / 10,
+        },
       };
     }
     executeCommand(new AddNodeCommand(parentId, newNode));

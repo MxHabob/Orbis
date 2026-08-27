@@ -33,9 +33,9 @@ const selectionRects = $derived(
   store.selectedIds
     .map((id) => {
       const node = findNode(store.document, id);
-      if (!node || !("position" in node) || !(node as any).position)
-        return null;
-      const pos = (node as any).position;
+      if (!node) return null;
+      const pos = (node as any).props?.position ?? (node as any).position;
+      if (!pos) return null;
       const x = mmToPx(pos.x ?? 0, vp.dpi, vp.zoom);
       const y = mmToPx(pos.y ?? 0, vp.dpi, vp.zoom);
 
@@ -128,10 +128,11 @@ function startDrag(e: MouseEvent, nodeId: string, handle: string) {
   dragOrigPositions.clear();
   for (const id of store.selectedIds) {
     const node = findNode(store.document, id);
-    if (node && "position" in node && (node as any).position) {
+    const position = (node as any)?.props?.position ?? (node as any)?.position;
+    if (position) {
       dragOrigPositions.set(id, {
-        x: (node as any).position.x ?? 0,
-        y: (node as any).position.y ?? 0,
+        x: position.x ?? 0,
+        y: position.y ?? 0,
       });
     }
   }

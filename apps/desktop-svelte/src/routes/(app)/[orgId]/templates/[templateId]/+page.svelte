@@ -287,8 +287,10 @@ function handleKeydown(e: KeyboardEvent) {
   ) {
     if (store.selectedIds.length > 0 && store.selectedNode) {
       e.preventDefault();
-      const nudge = e.shiftKey ? 10 : 1;
-      const pos = (store.selectedNode as any).position;
+      const nudge = e.shiftKey ? 5 : 0.5;
+      const pos =
+        (store.selectedNode as any).props?.position ??
+        (store.selectedNode as any).position;
       if (pos) {
         const dx =
           e.code === "ArrowLeft" ? -nudge : e.code === "ArrowRight" ? nudge : 0;
