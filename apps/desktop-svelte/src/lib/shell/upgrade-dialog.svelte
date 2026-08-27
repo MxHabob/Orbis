@@ -8,7 +8,7 @@ import * as m from "$lib/paraglide/messages";
 import { Dialog, DialogContent } from "@orbis/ui-svelte/dialog";
 import { Button } from "@orbis/ui-svelte";
 
-import { Check } from "@lucide/svelte";
+import { BookOpen, Check, GraduationCap } from "@lucide/svelte";
 
 let { open = $bindable(false) }: { open: boolean } = $props();
 
@@ -22,23 +22,14 @@ function handleClose() {
     showCloseButton={true}
     class="sm:max-w-200 w-full p-0 gap-0 overflow-hidden border border-border rounded-2xl grid grid-cols-[3fr_2fr] select-none shadow-[0_24px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_24px_50px_rgba(0,0,0,0.65)]"
   >
-    <!-- Top-Right Geometric Slanted Corner Graphic (using brand primary with opacity, flips in RTL layout) -->
-    <svg
-      class="absolute top-0 inset-e-0 h-32 w-64 text-primary/15 dark:text-primary/10 opacity-90 overflow-visible z-0 pointer-events-none"
-      viewBox="0 0 250 110"
-      fill="currentColor"
-    >
-      <path d="M70 0 L250 0 L250 110 L220 110 L220 85 L190 85 L190 55 L160 55 L160 25 L70 25 Z" />
-    </svg>
+    <!-- Education-themed corner illustrations follow the inherited text direction. -->
+    <div class="absolute top-0 inset-e-0 h-32 w-64 text-primary/15 dark:text-primary/10 opacity-90 z-0 pointer-events-none overflow-hidden">
+      <GraduationCap class="absolute -top-5 end-5 h-36 w-36 -rotate-12" strokeWidth={1.25} />
+    </div>
 
-    <!-- Bottom-Left Geometric Slanted Corner Graphic (using brand primary with opacity, flips in RTL layout) -->
-    <svg
-      class="absolute bottom-0 inset-s-0 h-32 w-64 text-primary/15 dark:text-primary/10 opacity-90 overflow-visible z-0 pointer-events-none"
-      viewBox="0 0 250 110"
-      fill="currentColor"
-    >
-      <path d="M0 110 L0 0 L20 0 L20 30 L50 30 L50 65 L85 65 L85 90 L250 90 L250 110 Z" />
-    </svg>
+    <div class="absolute bottom-0 inset-s-0 h-32 w-64 text-primary/15 dark:text-primary/10 opacity-90 z-0 pointer-events-none overflow-hidden">
+      <BookOpen class="absolute -bottom-7 start-4 h-40 w-40 rotate-6" strokeWidth={1.1} />
+    </div>
 
     <!-- Left Column (Pitch & Action) -->
     <div class="flex flex-col justify-between p-10 pe-6 z-10 text-start">
@@ -171,9 +162,3 @@ function handleClose() {
     </div>
   </DialogContent>
 </Dialog>
-
-<style>
-  :global([dir="rtl"]) :global([data-slot="dialog-content"]) > svg {
-    transform: scaleX(-1);
-  }
-</style>
