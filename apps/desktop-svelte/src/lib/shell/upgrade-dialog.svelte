@@ -9,7 +9,6 @@ import { Dialog, DialogContent } from "@orbis/ui-svelte/dialog";
 import { Button } from "@orbis/ui-svelte";
 
 import { Check } from "@lucide/svelte";
-import { getLocale } from "$lib/paraglide/runtime";
 
 let { open = $bindable(false) }: { open: boolean } = $props();
 
@@ -21,12 +20,11 @@ function handleClose() {
 <Dialog bind:open>
   <DialogContent
     showCloseButton={true}
-    class="sm:max-w-200 w-full p-0 gap-0 overflow-hidden border border-border rounded-2xl flex select-none shadow-[0_24px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_24px_50px_rgba(0,0,0,0.65)]"
+    class="sm:max-w-200 w-full p-0 gap-0 overflow-hidden border border-border rounded-2xl grid grid-cols-[3fr_2fr] select-none shadow-[0_24px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_24px_50px_rgba(0,0,0,0.65)]"
   >
     <!-- Top-Right Geometric Slanted Corner Graphic (using brand primary with opacity, flips in RTL layout) -->
     <svg
       class="absolute top-0 inset-e-0 h-32 w-64 text-primary/15 dark:text-primary/10 opacity-90 overflow-visible z-0 pointer-events-none"
-      style={getLocale() === "ar" ? "transform: scaleX(-1);" : ""}
       viewBox="0 0 250 110"
       fill="currentColor"
     >
@@ -36,7 +34,6 @@ function handleClose() {
     <!-- Bottom-Left Geometric Slanted Corner Graphic (using brand primary with opacity, flips in RTL layout) -->
     <svg
       class="absolute bottom-0 inset-s-0 h-32 w-64 text-primary/15 dark:text-primary/10 opacity-90 overflow-visible z-0 pointer-events-none"
-      style={getLocale() === "ar" ? "transform: scaleX(-1);" : ""}
       viewBox="0 0 250 110"
       fill="currentColor"
     >
@@ -44,7 +41,7 @@ function handleClose() {
     </svg>
 
     <!-- Left Column (Pitch & Action) -->
-    <div class="w-[60%] flex flex-col justify-between p-10 pe-6 z-10 text-start">
+    <div class="flex flex-col justify-between p-10 pe-6 z-10 text-start">
       <div class="flex flex-col gap-4">
         <!-- Badge -->
         <span class="text-[9.5px] font-bold tracking-widest text-primary uppercase">
@@ -57,7 +54,7 @@ function handleClose() {
         </h2>
 
         <!-- Description Paragraphs -->
-        <div class="flex flex-col gap-3.5 text-muted-foreground text-[11.5px] leading-relaxed pr-2">
+        <div class="flex flex-col gap-3.5 text-muted-foreground text-[11.5px] leading-relaxed pe-2">
           <p>
             {m.common_upgrade_desc_1()}
           </p>
@@ -92,7 +89,7 @@ function handleClose() {
     </div>
 
     <!-- Right Column (Features & Current Plan) -->
-    <div class="w-[40%] flex flex-col justify-between p-10 ps-8 border-s border-border z-10 text-start bg-muted/10">
+    <div class="flex flex-col justify-between p-10 ps-8 border-s border-border z-10 text-start bg-muted/10">
       <!-- Features List -->
       <div class="flex flex-col">
         <h3 class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4.5">
@@ -174,3 +171,9 @@ function handleClose() {
     </div>
   </DialogContent>
 </Dialog>
+
+<style>
+  :global([dir="rtl"]) :global([data-slot="dialog-content"]) > svg {
+    transform: scaleX(-1);
+  }
+</style>
