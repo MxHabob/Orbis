@@ -148,7 +148,6 @@ function insertPreset(preset: TextPreset) {
     content: preset.sampleAr,
     ...preset.style,
     textAlign: "start",
-    direction: "rtl",
   });
 }
 </script>
@@ -169,7 +168,7 @@ function insertPreset(preset: TextPreset) {
           font-family: {preset.style.fontFamily}, sans-serif;
           color: {preset.style.color};
           line-height: {preset.style.lineHeight};
-          direction: rtl;
+          direction: inherit;
           text-align: start;
         ">
           {preset.sampleAr}

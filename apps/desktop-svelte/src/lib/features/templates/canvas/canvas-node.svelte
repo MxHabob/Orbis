@@ -190,7 +190,7 @@ const textSegments = $derived(
               text-decoration: {nodeProps.textDecoration || 'none'};
               color: {nodeProps.color || '#000000'};
               text-align: {nodeProps.textAlign || 'start'};
-              direction: {nodeProps.direction || 'rtl'};
+              direction: {nodeProps.direction || 'inherit'};
               line-height: {nodeProps.lineHeight || 1.4};
               overflow: visible;
               word-wrap: break-word;
@@ -217,7 +217,7 @@ const textSegments = $derived(
               text-decoration: {nodeProps.textDecoration || 'none'};
               color: {nodeProps.color || '#000000'};
               text-align: {nodeProps.textAlign || 'start'};
-              direction: {nodeProps.direction || 'rtl'};
+              direction: {nodeProps.direction || 'inherit'};
               line-height: {nodeProps.lineHeight || 1.4};
               display: flex;
               flex-direction: column;

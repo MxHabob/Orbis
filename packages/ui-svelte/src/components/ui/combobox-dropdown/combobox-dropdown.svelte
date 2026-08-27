@@ -65,7 +65,7 @@ function handleSelect(item: ComboboxItem) {
         <span class="truncate">
           {selectedItem ? selectedItem.label : placeholder}
         </span>
-        <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        <ChevronsUpDown class="ms-2 h-4 w-4 shrink-0 opacity-50" />
       </Button>
     {/snippet}
   </PopoverTrigger>
@@ -102,7 +102,7 @@ function handleSelect(item: ComboboxItem) {
             >
               <span class="truncate">{item.label}</span>
               {#if selectedItem?.value === item.value}
-                <Check class="h-3.5 w-3.5 text-primary shrink-0 ml-2" />
+                <Check class="h-3.5 w-3.5 text-primary shrink-0 ms-2" />
               {/if}
             </button>
           {/each}

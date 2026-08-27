@@ -237,7 +237,7 @@ function triggerUpload() {
           onclick={() => documentsQuery.fetchNextPage()}
         >
           {#if documentsQuery.isFetchingNextPage}
-            <Loader2 class="mr-1 h-3 w-3 animate-spin" /> {m.template_loading?.() || "Loading..."}
+            <Loader2 class="me-1 h-3 w-3 animate-spin" /> {m.template_loading?.() || "Loading..."}
           {:else}
             {m.template_load_more?.() || "Load More"}
           {/if}

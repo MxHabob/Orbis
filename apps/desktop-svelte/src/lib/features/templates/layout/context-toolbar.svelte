@@ -575,7 +575,7 @@ function handleAlign(
   .ctx-title-input {
     position: absolute;
     top: 0;
-    left: 0;
+    inset-inline-start: 0;
     width: 100%;
     height: 100%;
     font-size: 12px;

@@ -819,7 +819,6 @@ function createDefaultNode(
           fontWeight: "400",
           color: "#000000",
           textAlign: "start",
-          direction: "rtl",
           ...overrides,
         },
         position: { x: 10, y: 10, width: 80, height: 20 },

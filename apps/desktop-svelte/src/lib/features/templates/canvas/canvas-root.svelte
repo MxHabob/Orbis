@@ -225,7 +225,6 @@ function handleDrop(e: DragEvent) {
           content: `{{${varName}}}`,
           fontSize: 12,
           fontFamily: "Rubik",
-          direction: "rtl",
         },
         docPos.x,
         docPos.y,
