@@ -5,6 +5,7 @@ import { toast } from "svelte-sonner";
 
 import { l } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
+import { studentRegistrationSchema } from "@orbis/schemas";
 
 import { PersonalInfoState } from "./state/personal-info.svelte";
 import { GuardianState } from "./state/guardian-info.svelte";
@@ -401,7 +402,11 @@ export class StudentFormState {
             : null,
         };
 
-        const res: any = await commands.enrollment_workflow.registerStudent(payload);
+        const validatedPayload = studentRegistrationSchema.safeParse(payload);
+        if (!validatedPayload.success) {
+          throw new Error("بيانات تسجيل الطالب غير مكتملة أو غير صالحة");
+        }
+        const res: any = await commands.enrollment_workflow.registerStudent(validatedPayload.data);
         targetStudentId = String(res.user_id);
         targetEnrollmentId = String(res.enrollment_id);
 

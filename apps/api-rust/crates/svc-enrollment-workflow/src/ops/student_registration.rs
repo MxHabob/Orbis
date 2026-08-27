@@ -23,6 +23,15 @@ use shared_kernel::traits::{AuditEntry, Permission};
 use svc_iam::entities::user;
 use svc_academic::entities::{enrollment, student_guardian, class};
 
+async fn fail_validation_step(
+    process: &mut ProcessState,
+    db: &sea_orm::DatabaseConnection,
+    message: &str,
+) -> Result<(), AppError> {
+    process.fail_step(db, "validate", message).await?;
+    Ok(())
+}
+
 /// Student registration request.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RegisterStudentRequest {
@@ -82,6 +91,10 @@ pub async fn register_student(
     // ── Step 1: Validate ─────────────────────────────────────────
     process.begin_step(&ctx.db, "validate").await?;
     let settings = ctx.settings.get_registration_settings(&ctx.org_id).await?;
+    if req.name.trim().is_empty() {
+        fail_validation_step(&mut process, &ctx.db, "Student name is required").await?;
+        return Err(AppError::validation("Student name is required"));
+    }
     for field in &settings.required_fields {
         match field.as_str() {
             "email" => {
@@ -102,14 +115,61 @@ pub async fn register_student(
                     return Err(AppError::validation("National ID is required by organization policy"));
                 }
             }
+            "birth_date" => {
+                if req.birth_date.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true) {
+                    fail_validation_step(&mut process, &ctx.db, "Birth date is required by organization policy").await?;
+                    return Err(AppError::validation("Birth date is required by organization policy"));
+                }
+            }
+            "sex" => {
+                if req.gender.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true) {
+                    fail_validation_step(&mut process, &ctx.db, "Gender is required by organization policy").await?;
+                    return Err(AppError::validation("Gender is required by organization policy"));
+                }
+            }
             _ => {}
+        }
+    }
+    if !settings.allow_no_guardian
+        && (req.guardian_name.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true)
+            || req.guardian_phone.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true))
+    {
+        fail_validation_step(&mut process, &ctx.db, "Guardian is required by organization policy").await?;
+        return Err(AppError::validation("Guardian is required by organization policy"));
+    }
+    let class_id = req.class_id.as_deref().filter(|id| !id.trim().is_empty())
+        .ok_or_else(|| AppError::validation("Class is required for student enrollment"))?;
+    let target_class = class::Entity::find_by_id(class_id.to_string())
+        .one(&tx)
+        .await?
+        .ok_or_else(|| AppError::not_found("class", class_id))?;
+    let class_period_id = target_class.period_id.clone();
+    if target_class.org_id != ctx.org_id {
+        return Err(AppError::validation("Class does not belong to the current organization"));
+    }
+    let verdict = ctx.period_gate
+        .check_enrollment(&ctx.db, &ctx.org_id, &class_period_id, class_id, None)
+        .await?;
+    if matches!(verdict.decision, shared_kernel::period_gate::GateDecision::Blocked) {
+        return Err(AppError::policy_blocked(verdict.reason.unwrap_or_else(|| "Enrollment is closed".into())));
+    }
+    if let Some(max_capacity) = settings.max_class_capacity {
+        let count = enrollment::Entity::find()
+            .filter(enrollment::Column::ClassId.eq(class_id))
+            .filter(enrollment::Column::PeriodId.eq(&class_period_id))
+            .filter(enrollment::Column::Status.ne("withdrawn"))
+            .count(&tx)
+            .await?;
+        if count >= max_capacity as u64 {
+            return Err(AppError::validation("Class capacity reached by organization policy"));
         }
     }
     process.complete_step(&ctx.db, "validate", serde_json::json!({"fields_checked": settings.required_fields.len()})).await?;
 
     // ── Step 2: Check for duplicates ─────────────────────────────
     process.begin_step(&ctx.db, "check_duplicates").await?;
-    if let Some(ref email) = req.email {
+        if settings.prevent_duplicates.iter().any(|field| field == "email") {
+            if let Some(ref email) = req.email {
         if !email.trim().is_empty() {
             let exists = user::Entity::find()
                 .filter(user::Column::OrgId.eq(&ctx.org_id))
@@ -122,8 +182,25 @@ pub async fn register_student(
                 return Err(AppError::conflict(format!("Email '{}' is already registered", email)));
             }
         }
-    }
-    if let Some(ref nid) = req.national_id {
+            }
+        }
+        if settings.prevent_duplicates.iter().any(|field| field == "phone") {
+            if let Some(ref phone) = req.phone {
+                if !phone.trim().is_empty() {
+                    let exists = user::Entity::find()
+                        .filter(user::Column::OrgId.eq(&ctx.org_id))
+                        .filter(user::Column::Phone.eq(phone))
+                        .one(&tx).await?.is_some();
+                    if exists {
+                        process.fail_step(&ctx.db, "check_duplicates", "Phone already registered").await?;
+                        return Err(AppError::conflict(format!("Phone '{}' is already registered", phone)));
+                    }
+                }
+            }
+        }
+        if settings.prevent_duplicates.iter().any(|field| field == "national_id")
+                && !settings.allow_duplicate_national_id {
+            if let Some(ref nid) = req.national_id {
         if !nid.trim().is_empty() {
             let exists = svc_iam::entities::person::Entity::find()
                 .filter(svc_iam::entities::person::Column::OrgId.eq(&ctx.org_id))
@@ -136,7 +213,8 @@ pub async fn register_student(
                 return Err(AppError::conflict(format!("National ID '{}' is already registered", nid)));
             }
         }
-    }
+            }
+        }
     process.complete_step(&ctx.db, "check_duplicates", serde_json::json!({"passed": true})).await?;
 
     // ── Step 3: Create Student Person and User ──────────────────────────────
@@ -211,27 +289,16 @@ pub async fn register_student(
 
     // ── Step 5: Create Enrollment ────────────────────────────────
     process.begin_step(&ctx.db, "create_enrollment").await?;
-    let class_id = req.class_id.clone().unwrap_or_default();
     let enrollment_id = uuid::Uuid::new_v4().to_string();
-
-    let class_period_id = if !class_id.is_empty() {
-        class::Entity::find_by_id(class_id.clone())
-            .one(&tx)
-            .await?
-            .map(|c| c.period_id)
-            .unwrap_or_default()
-    } else {
-        String::new()
-    };
 
     let new_enrollment = enrollment::ActiveModel {
         id: sea_orm::ActiveValue::Set(enrollment_id.clone()),
         org_id: sea_orm::ActiveValue::Set(ctx.org_id.clone()),
         period_id: sea_orm::ActiveValue::Set(class_period_id.clone()),
         student_id: sea_orm::ActiveValue::Set(student_user_id.clone()),
-        class_id: sea_orm::ActiveValue::Set(class_id.clone()),
+        class_id: sea_orm::ActiveValue::Set(class_id.to_string()),
         student_number: sea_orm::ActiveValue::Set(student_number.clone()),
-        status: sea_orm::ActiveValue::Set("active".to_string()),
+        status: sea_orm::ActiveValue::Set(if settings.requires_approval { "pending".to_string() } else { "active".to_string() }),
         enrollment_date: sea_orm::ActiveValue::Set(now.clone()),
         enrollment_type: sea_orm::ActiveValue::Set("standard".to_string()),
         created_at: sea_orm::ActiveValue::Set(now.clone()),

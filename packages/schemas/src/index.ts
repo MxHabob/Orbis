@@ -47,8 +47,8 @@ export {
   generalSettingsInputSchema,
 } from "./settings.js";
 export type { GeneralSettingsInput } from "./settings.js";
-export { guardianFormInputSchema } from "./students.js";
-export type { GuardianFormInput } from "./students.js";
+export { guardianFormInputSchema, studentRegistrationSchema } from "./students.js";
+export type { GuardianFormInput, StudentRegistrationInput } from "./students.js";
 export { examSessionInputSchema, examSubjectInputSchema } from "./exams.js";
 export type { ExamSessionInput, ExamSubjectInput } from "./exams.js";
 export { buildingInputSchema, templateInputSchema } from "./templates.js";
@@ -57,6 +57,8 @@ export type { CreatePeriodInput } from "./calendar.js";
 
 export { orgUnitInputSchema } from "./organization.js";
 export type { OrgUnitInput } from "./organization.js";
+export { registrationSettingsSchema } from "./registration.js";
+export type { RegistrationSettingsInput } from "./registration.js";
 
 export { ledgerAccountInputSchema } from "./ledger.js";
 export type { LedgerAccountInput } from "./ledger.js";

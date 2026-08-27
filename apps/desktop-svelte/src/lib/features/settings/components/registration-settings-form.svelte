@@ -30,6 +30,7 @@ import { Plus, Trash2, Sparkles, ShieldCheck, Layers, BookOpen } from "@lucide/s
 import { toast } from "svelte-sonner";
 
 import { getLocale } from "$lib/paraglide/runtime";
+import { registrationSettingsSchema } from "@orbis/schemas";
 import { INSTITUTION_PROFILES } from "$lib/features/onboarding/templates";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
@@ -52,9 +53,10 @@ let documentInput = $state("");
 
 // Policy settings state
 let requiresApproval = $state(false);
-let allowNoGuardian = $state(false);
+let allowNoGuardian = $state(true);
 let autoAssignFees = $state(true);
 let allowDuplicateNationalId = $state(false);
+let maxClassCapacity = $state<number | null>(null);
 
 // Field configurations
 let requiredFields = $state<Record<string, boolean>>({
@@ -127,6 +129,7 @@ function getFormSnapshot() {
     allowNoGuardian,
     autoAssignFees,
     allowDuplicateNationalId,
+    maxClassCapacity,
     requiredFields,
     activeFields,
     preventDuplicates,
@@ -148,6 +151,7 @@ function restoreSnapshot() {
   allowNoGuardian = snapshot.allowNoGuardian;
   autoAssignFees = snapshot.autoAssignFees;
   allowDuplicateNationalId = snapshot.allowDuplicateNationalId;
+  maxClassCapacity = snapshot.maxClassCapacity;
   requiredFields = snapshot.requiredFields;
   activeFields = snapshot.activeFields;
   preventDuplicates = snapshot.preventDuplicates;
@@ -207,6 +211,7 @@ $effect(() => {
     if (pol.allow_no_guardian !== undefined) allowNoGuardian = !!pol.allow_no_guardian;
     if (pol.auto_assign_fees !== undefined) autoAssignFees = pol.auto_assign_fees !== false;
     if (pol.allow_duplicate_national_id !== undefined) allowDuplicateNationalId = !!pol.allow_duplicate_national_id;
+    if (pol.max_class_capacity !== undefined) maxClassCapacity = pol.max_class_capacity == null ? null : Number(pol.max_class_capacity);
 
     initialSnapshot = getFormSnapshot();
   }
@@ -280,14 +285,21 @@ function handleSubmit(e?: Event) {
     student_number_prefix: studentNumberPattern.split("-")[0] || "STU",
     student_number_digits: 6,
     requires_approval: requiresApproval,
+    max_class_capacity: maxClassCapacity,
     allow_no_guardian: allowNoGuardian,
     allow_duplicate_national_id: allowDuplicateNationalId,
     auto_assign_fees: autoAssignFees,
     default_fee_template_ids: [],
   };
 
+  const result = registrationSettingsSchema.safeParse(registrationSettings);
+  if (!result.success) {
+    toast.error("تحقق من قواعد التسجيل والحقول المطلوبة");
+    return;
+  }
+
   onsave({
-    registration: registrationSettings,
+    registration: result.data,
   });
 }
 </script>
@@ -635,6 +647,30 @@ function handleSubmit(e?: Event) {
                   />
                   <span class="text-xs font-medium text-muted-foreground">{requiresApproval ? "مفعل" : "معطل"}</span>
                 </div>
+              </div>
+
+              <!-- Allow No Guardian Rule -->
+              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+                <div class="flex flex-col gap-1 text-start">
+                  <Label for="max_class_capacity" class="text-xs font-semibold text-foreground">
+                    الحد الأقصى لعدد الطلاب في الصف
+                  </Label>
+                  <span class="text-[11px] text-muted-foreground leading-relaxed">
+                    اتركه فارغًا لاستخدام سعة الصف المحددة في البيانات الأكاديمية.
+                  </span>
+                </div>
+                <Input
+                  id="max_class_capacity"
+                  type="number"
+                  value={maxClassCapacity ?? ""}
+                  oninput={(event) => {
+                    const value = event.currentTarget.value.trim();
+                    maxClassCapacity = value === "" ? null : Math.max(1, Number(value));
+                  }}
+                  min="1"
+                  step="1"
+                  class="h-9 w-full md:w-40"
+                />
               </div>
 
               <!-- Allow No Guardian Rule -->
