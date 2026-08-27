@@ -14,9 +14,8 @@ import {
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui-svelte/select";
+import PeriodSelect from "$lib/features/academics/components/period-select.svelte";
 import { toast } from "svelte-sonner";
-import { examsStore } from "$lib/features/exams/store.svelte";
-import { authStore } from "$lib/stores";
 import { commands } from "$lib/core/ipc";
 import { examSessionInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
@@ -36,19 +35,19 @@ let {
 const isEdit = $derived(!!session);
 
 // Form fields state
-let name = $state(session?.name || "");
-let nameAr = $state(session?.name_ar || "");
-let sessionType = $state(session?.session_type || "final");
-let startDate = $state(session?.start_date || "");
-let endDate = $state(session?.end_date || "");
-let periodId = $state(session?.period_id || "");
+let name = $state("");
+let nameAr = $state("");
+let sessionType = $state<"final" | "midterm" | "quiz" | "practical">("final");
+let startDate = $state("");
+let endDate = $state("");
+let periodId = $state("");
 let periodsList = $state<any[]>([]);
 
 const form = new FormController({
   initialValues: {
     name: "",
     name_ar: "",
-    session_type: "final" as const,
+    session_type: "final" as "final" | "midterm" | "quiz" | "practical",
     start_date: "",
     end_date: "",
     period_id: "",
@@ -70,8 +69,8 @@ $effect(() => {
 // Load academic periods on open
 $effect(() => {
   if (open && orgId) {
-    commands.academic
-      .listPeriods(orgId)
+    commands.calendar
+      .listAcademicPeriods()
       .then((res: any) => {
         periodsList = res || [];
         if (!periodId && periodsList.length > 0) {
@@ -88,12 +87,13 @@ async function handleSubmit() {
   form.values = { name, name_ar: nameAr, session_type: sessionType, start_date: startDate, end_date: endDate, period_id: periodId };
   const submitted = await form.submit(async (payload) => {
     if (isEdit && session) {
-      await commands.exam.updateSession(session.id, {
-        name: payload.name || payload.name_ar,
-
-        start_date: payload.start_date,
-        end_date: payload.end_date,
-      });
+      await commands.exam.updateSession(
+        session.id,
+        payload.name || payload.name_ar,
+        session.status || null,
+        payload.start_date,
+        payload.end_date,
+      );
     } else {
       await commands.exam.createSession({
         name: payload.name || payload.name_ar,
@@ -134,16 +134,13 @@ async function handleSubmit() {
         <label for="session-period" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
           الدورة الأكاديمية
         </label>
-        <Select type="single" value={String(periodId)} onValueChange={(value: string | undefined) => (periodId = value ?? "")}>
-          <SelectTrigger id="session-period" class="h-9 w-full text-sm">
-            {periodsList.find((period) => String(period.id) === String(periodId))?.name_ar || periodsList.find((period) => String(period.id) === String(periodId))?.name || m.exams_session_select_term()}
-          </SelectTrigger>
-          <SelectContent>
-            {#each periodsList as period (period.id)}
-              <SelectItem value={String(period.id)}>{period.name_ar || period.name}</SelectItem>
-            {/each}
-          </SelectContent>
-        </Select>
+        <PeriodSelect
+          id="session-period"
+          bind:value={periodId}
+          periods={periodsList}
+          placeholder={m.exams_session_select_term()}
+          class="text-sm"
+        />
       </div>
 
       <!-- Name Arabic -->
@@ -167,7 +164,7 @@ async function handleSubmit() {
         <label for="session-type" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
           {m.common_exams_create_type()}
         </label>
-        <Select type="single" value={sessionType} onValueChange={(value: string | undefined) => (sessionType = value ?? "final")}>
+        <Select type="single" value={sessionType} onValueChange={(value: string | undefined) => (sessionType = (value as typeof sessionType) ?? "final")}>
           <SelectTrigger id="session-type" class="h-9 w-full text-sm">
             {sessionType === "final"
               ? m.exams_session_type_final()
