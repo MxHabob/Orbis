@@ -251,7 +251,7 @@ async function handleSubmit(e: Event) {
 
     <form onsubmit={handleSubmit} class="flex flex-col gap-4 py-2">
       <Accordion type="multiple" value={["currency", "formatting"]} class="flex flex-col gap-3">
-        <AccordionItem value="currency" class="rounded-lg border border-border/50 px-3">
+        <AccordionItem value="currency" class="rounded-lg px-3">
           <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.settings_nav_currencies()}</AccordionTrigger>
           <AccordionContent>
       <!-- Preset Quick Selection -->
@@ -323,7 +323,7 @@ async function handleSubmit(e: Event) {
           </AccordionContent>
         </AccordionItem>
 
-        <AccordionItem value="formatting" class="rounded-lg border border-border/50 px-3">
+        <AccordionItem value="formatting" class="rounded-lg px-3">
           <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.settings_currencies_col_rate()}</AccordionTrigger>
           <AccordionContent>
 

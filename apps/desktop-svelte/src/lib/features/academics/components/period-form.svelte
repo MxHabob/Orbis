@@ -132,8 +132,8 @@ async function handleSubmit(e: SubmitEvent) {
   </SheetHeader>
 
   <div class="flex-1 overflow-y-auto p-6 scrollbar-hide text-start">
-    <Accordion type="multiple" value={["identity", "schedule", "grading"]} class="flex flex-col gap-4">
-      <AccordionItem value="identity" class="rounded-lg border border-border/50 px-4">
+    <Accordion type="multiple" value={["identity", "schedule", "grading"]} class="flex flex-col gap-2">
+      <AccordionItem value="identity" class="rounded-lg">
         <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_user_form_name_en()}</AccordionTrigger>
         <AccordionContent>
     <!-- Names (Arabic & English) -->
@@ -230,7 +230,7 @@ async function handleSubmit(e: SubmitEvent) {
         </AccordionContent>
       </AccordionItem>
 
-      <AccordionItem value="schedule" class="rounded-lg border border-border/50 px-4">
+      <AccordionItem value="schedule" class="rounded-lg">
         <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_year_start_date()} / {m.common_year_end_date()}</AccordionTrigger>
         <AccordionContent>
 
@@ -268,7 +268,7 @@ async function handleSubmit(e: SubmitEvent) {
         </AccordionContent>
       </AccordionItem>
 
-      <AccordionItem value="grading" class="rounded-lg border border-border/50 px-4">
+      <AccordionItem value="grading" class="rounded-lg">
         <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_cycle_form_grading()}</AccordionTrigger>
         <AccordionContent>
 
@@ -325,7 +325,7 @@ async function handleSubmit(e: SubmitEvent) {
   </div>
 
   <!-- Actions -->
-  <div class="px-6 py-4 border-t border-border/40 flex gap-2 justify-end shrink-0 bg-background/50">
+  <div class="px-6 py-3 border-t border-border/40 flex gap-2 justify-end shrink-0 bg-background/50">
     <Button
       type="button"
       variant="ghost"

@@ -334,7 +334,7 @@ async function handleSubmit() {
       </div>
     {:else}
       <Accordion type="multiple" value={["contact", "permissions"]} class="flex flex-col gap-4">
-        <AccordionItem value="contact" class="rounded-lg border border-border/50 px-4">
+        <AccordionItem value="contact" class="rounded-lg">
           <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_word_fullname()}</AccordionTrigger>
           <AccordionContent>
       <!-- User Search + Select (only show in create mode) -->
@@ -485,7 +485,7 @@ async function handleSubmit() {
           </AccordionContent>
         </AccordionItem>
 
-        <AccordionItem value="permissions" class="rounded-lg border border-border/50 px-4">
+        <AccordionItem value="permissions" class="rounded-lg">
           <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.students_guardian_permissions()}</AccordionTrigger>
           <AccordionContent>
 
@@ -527,10 +527,10 @@ async function handleSubmit() {
   </div>
 
   <!-- Actions -->
-  <div class="px-6 py-4 border-t border-border/40 flex gap-2 shrink-0 bg-background/50">
+  <div class="px-6 py-3 border-t border-border/40 flex gap-2 shrink-0 bg-background/50">
     <Button
       type="button"
-      variant="outline"
+        variant="ghost"
       class="flex-1 h-9 text-sm"
       onclick={onCancel}
     >

@@ -183,7 +183,7 @@ async function handleSubmit() {
 
   <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
     <Accordion type="multiple" value={["details", "options"]} class="flex flex-col gap-4">
-      <AccordionItem value="details" class="rounded-lg border border-border/50 px-4">
+      <AccordionItem value="details" class="rounded-lg">
         <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_dt_form_name()}</AccordionTrigger>
         <AccordionContent>
     <!-- Name -->
@@ -286,7 +286,7 @@ async function handleSubmit() {
         </AccordionContent>
       </AccordionItem>
 
-      <AccordionItem value="options" class="rounded-lg border border-border/50 px-4">
+      <AccordionItem value="options" class="rounded-lg">
         <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_dt_form_auto_apply()}</AccordionTrigger>
         <AccordionContent>
 
@@ -350,10 +350,10 @@ async function handleSubmit() {
   </div>
 
   <!-- Form Actions -->
-  <div class="px-6 py-4 border-t border-border/40 flex gap-2 shrink-0 bg-background/50">
+  <div class="px-6 py-3 border-t border-border/40 flex gap-2 shrink-0 bg-background/50">
     <Button 
       type="button" 
-      variant="outline" 
+        variant="ghost" 
       onclick={onCancel}
       disabled={isSubmitting}
       class="flex-1 h-9 text-sm"

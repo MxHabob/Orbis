@@ -276,7 +276,7 @@ async function handleSubmit() {
 
   <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
     <Accordion type="multiple" value={["details", "applicability"]} class="flex flex-col gap-4">
-      <AccordionItem value="details" class="rounded-lg border border-border/50 px-4">
+      <AccordionItem value="details" class="rounded-lg">
         <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_ft_sheet_create_title()}</AccordionTrigger>
         <AccordionContent>
     <!-- Name (Arabic) -->
@@ -382,7 +382,7 @@ async function handleSubmit() {
         </AccordionContent>
       </AccordionItem>
 
-      <AccordionItem value="applicability" class="rounded-lg border border-border/50 px-4">
+      <AccordionItem value="applicability" class="rounded-lg">
         <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_ft_applicability()}</AccordionTrigger>
         <AccordionContent>
 
@@ -471,10 +471,10 @@ async function handleSubmit() {
   </div>
 
   <!-- Actions -->
-  <div class="px-6 py-4 border-t border-border/40 flex gap-2 shrink-0 bg-background/50">
+  <div class="px-6 py-3 border-t border-border/40 flex gap-2 shrink-0 bg-background/50">
     <Button 
       type="button" 
-      variant="outline" 
+        variant="ghost" 
       onclick={onCancel}
       disabled={form.isSubmitting}
       class="flex-1 h-9 text-sm"

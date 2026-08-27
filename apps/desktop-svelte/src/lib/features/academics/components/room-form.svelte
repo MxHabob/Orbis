@@ -88,7 +88,7 @@ async function handleSubmit(e: SubmitEvent) {
     </SheetTitle>
   </SheetHeader>
 
-  <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5 scrollbar-hide text-start">
+  <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-4 scrollbar-hide text-start">
     <!-- Names (Arabic & English) -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <!-- Arabic Name -->
@@ -200,7 +200,7 @@ async function handleSubmit(e: SubmitEvent) {
   </div>
 
   <!-- Actions -->
-  <div class="px-6 py-4 border-t border-border/40 flex gap-2 justify-end shrink-0 bg-background/50">
+  <div class="px-6 py-3 border-t border-border/40 flex gap-2 justify-end shrink-0 bg-background/50">
     <Button
       type="button"
       variant="ghost"

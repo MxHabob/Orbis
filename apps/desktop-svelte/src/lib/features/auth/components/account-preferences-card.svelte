@@ -60,7 +60,7 @@ const themes = [
             {m.common_account_preferences_theme_desc ? m.common_account_preferences_theme_desc() : "Select your theme preference. It can be synced to your system's theme, always light mode, or always dark mode."}
           </span>
         </div>
-        <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+        <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
           <Select
             type="single"
             value={selectedTheme}

@@ -11,7 +11,7 @@
   import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui-svelte/select";
   import { SheetHeader, SheetTitle } from "@orbis/ui-svelte/sheet";
   import { Textarea } from "@orbis/ui-svelte/textarea";
-  import { BookOpen, Calendar, Clock, MapPin, ShieldAlert, User, Users } from "@lucide/svelte";
+  import { BookOpen, Clock, MapPin, ShieldAlert, User, Users } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
   import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
@@ -131,7 +131,8 @@
       );
       const conflicts = (results ?? []).filter((item: any) => !lesson?.id || String(item.lesson_id) !== String(lesson.id));
       if (conflicts.length > 0) {
-        conflictMessage = m.common_lesson_sheet_conflict_err({ type: String(conflicts[0].conflict_type || "") });
+        const conflictType = (conflicts[0] as unknown as { conflict_type?: string }).conflict_type;
+        conflictMessage = m.common_lesson_sheet_conflict_err({ type: String(conflictType || "") });
       }
     } catch (error) {
       console.warn("Conflict check bypassed:", error);
@@ -196,8 +197,7 @@
 
 <form onsubmit={handleSubmit} class="flex h-full flex-col overflow-hidden gap-0">
   <SheetHeader class="shrink-0 border-b border-border/40 px-6 py-4 text-start select-none">
-    <SheetTitle class="flex items-center gap-2 text-xl font-bold text-foreground">
-      <Calendar size={18} class="text-primary" />
+    <SheetTitle class="text-xl font-bold text-foreground">
       <span>{isEditing ? m.common_lesson_edit_title() : m.common_lesson_sheet_title()}</span>
     </SheetTitle>
   </SheetHeader>
@@ -210,10 +210,10 @@
       </div>
     {/if}
 
-    <Accordion type="multiple" value={["schedule", "content"]} class="flex flex-col gap-4">
-      <AccordionItem value="schedule" class="rounded-lg border border-border/50 px-4">
+    <Accordion type="multiple" value={["schedule", "content"]} class="flex flex-col gap-2">
+      <AccordionItem value="schedule" class="rounded-lg">
         <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_lesson_placement()}</AccordionTrigger>
-        <AccordionContent class="space-y-5">
+        <AccordionContent class="space-y-3">
           <div class="flex flex-col gap-2 text-start">
             <label for="lesson-class" class="text-sm font-medium text-foreground">{m.common_lesson_class()} *</label>
             <Select type="single" value={selectedClassId} onValueChange={(value: string | undefined) => (selectedClassId = value ?? "")} disabled={isEditing}>
@@ -248,9 +248,9 @@
           </div>
         </AccordionContent>
       </AccordionItem>
-      <AccordionItem value="content" class="rounded-lg border border-border/50 px-4">
+      <AccordionItem value="content" class="rounded-lg">
         <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_lesson_content()}</AccordionTrigger>
-        <AccordionContent class="space-y-5">
+        <AccordionContent class="space-y-3">
           <div class="flex flex-col gap-2 text-start"><label for="lesson-topic" class="text-sm font-medium text-foreground">{m.common_lesson_topic()}</label><Input id="lesson-topic" bind:value={topic} placeholder={m.common_lesson_topic_placeholder()} /></div>
           <div class="flex flex-col gap-2 text-start"><label for="lesson-homework" class="text-sm font-medium text-foreground">{m.common_lesson_homework()}</label><Input id="lesson-homework" bind:value={homework} placeholder={m.common_lesson_homework_placeholder()} /></div>
           <div class="flex flex-col gap-2 text-start"><label for="lesson-notes" class="text-sm font-medium text-foreground">{m.common_lesson_notes()}</label><Textarea id="lesson-notes" bind:value={notes} rows={3} placeholder={m.common_lesson_notes_placeholder()} /></div>
@@ -259,7 +259,7 @@
     </Accordion>
   </div>
 
-  <div class="flex shrink-0 justify-end gap-2 border-t border-border/40 bg-background/50 px-6 py-4">
+  <div class="flex shrink-0 justify-end gap-2 border-t border-border/40 bg-background/50 px-6 py-3">
     <Button type="button" variant="ghost" onclick={onCancel} disabled={isSubmitting}>{m.common_action_cancel()}</Button>
     <Button type="submit" variant="lime" class="font-semibold" disabled={isSubmitting || isCheckingConflict || Boolean(conflictMessage)}>{isSubmitting ? m.common_state_saving() : m.common_lesson_save()}</Button>
   </div>

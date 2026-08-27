@@ -8,6 +8,7 @@ import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
+import { SheetHeader, SheetTitle } from "@orbis/ui-svelte/sheet";
 import {
   Select,
   SelectTrigger,
@@ -152,9 +153,16 @@ async function handleSubmit() {
 }
 </script>
 
-<form class="flex flex-col gap-5" onsubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+<form class="flex h-full flex-col overflow-hidden gap-0" onsubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+  <SheetHeader class="shrink-0 border-b border-border/40 px-6 py-4 text-start select-none">
+    <SheetTitle class="text-xl font-bold text-foreground">
+      {isEditMode ? m.common_action_edit() : m.common_cs_sheet_create_title()}
+    </SheetTitle>
+  </SheetHeader>
+
+  <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
   {#if isLoading}
-    <div class="flex flex-col gap-5 animate-pulse">
+    <div class="flex flex-col gap-4 animate-pulse">
       <div class="flex flex-col gap-1.5">
         <Skeleton class="h-3.5 w-24" />
         <Skeleton class="h-9 w-full rounded-md" />
@@ -173,9 +181,10 @@ async function handleSubmit() {
       </div>
     </div>
   {:else}
+    <div class="flex flex-col gap-4">
     <!-- Period -->
     <div class="flex flex-col gap-1.5">
-      <Label class="text-xs font-semibold text-muted-foreground">{m.common_metrics_period()} *</Label>
+      <Label class="text-sm font-medium text-foreground">{m.common_metrics_period()} *</Label>
       <PeriodSelect
         bind:value={periodId}
         periods={availablePeriods}
@@ -187,7 +196,7 @@ async function handleSubmit() {
     {#if !fixedClassId}
       <!-- Class -->
       <div class="flex flex-col gap-1.5">
-        <Label class="text-xs font-semibold text-muted-foreground">{m.common_word_semester()} *</Label>
+        <Label class="text-sm font-medium text-foreground">{m.common_word_semester()} *</Label>
         <ClassSelect
           bind:value={classId}
           {classes}
@@ -199,7 +208,7 @@ async function handleSubmit() {
 
     <!-- Subject -->
     <div class="flex flex-col gap-1.5">
-      <Label class="text-xs font-semibold text-muted-foreground">{m.common_word_subject()} *</Label>
+      <Label class="text-sm font-medium text-foreground">{m.common_word_subject()} *</Label>
       <SubjectSelect
         bind:value={subjectId}
         {subjects}
@@ -210,7 +219,7 @@ async function handleSubmit() {
 
     <!-- Primary Teacher -->
     <div class="flex flex-col gap-1.5">
-      <Label class="text-xs font-semibold text-muted-foreground">{m.common_cs_col_teacher()} *</Label>
+      <Label class="text-sm font-medium text-foreground">{m.common_cs_col_teacher()} *</Label>
       <TeacherSelect
         bind:value={teacherId}
         {teachers}
@@ -221,7 +230,7 @@ async function handleSubmit() {
 
     <!-- Weekly Hours -->
     <div class="flex flex-col gap-1.5">
-      <Label class="text-xs font-semibold text-muted-foreground">{m.common_cs_col_hours()}</Label>
+      <Label class="text-sm font-medium text-foreground">{m.common_cs_col_hours()}</Label>
       <Input
         type="number"
         min="1"
@@ -234,7 +243,7 @@ async function handleSubmit() {
 
     <!-- Assessment scheme (optional; falls back to period/org default) -->
     <div class="flex flex-col gap-1.5">
-      <Label class="text-xs font-semibold text-muted-foreground">{m.common_cs_assessment_scheme()}</Label>
+      <Label class="text-sm font-medium text-foreground">{m.common_cs_assessment_scheme()}</Label>
       <Select
         type="single"
         value={schemeId || "__default__"}
@@ -258,23 +267,27 @@ async function handleSubmit() {
       </Select>
     </div>
 
-    <!-- Actions -->
-    <div class="flex gap-2 pt-2 border-t border-border/40">
+    </div>
+  {/if}
+  </div>
+
+  <!-- Actions -->
+  <div class="flex shrink-0 justify-end gap-2 border-t border-border/40 bg-background/50 px-6 py-3">
       <Button
         type="button"
-        variant="outline"
-        class="flex-1 h-9 text-sm"
+        variant="ghost"
+        class="h-9 text-sm"
         onclick={onCancel}
       >
         {m.common_action_cancel()}
       </Button>
       <Button
         type="submit"
-        class="flex-1 h-9 text-sm"
+        variant="lime"
+        class="h-9 text-sm font-semibold"
         disabled={isSaving || isLoading || !classId || !subjectId || !teacherId || !periodId}
       >
         {isSaving ? m.common_state_saving() : m.common_action_save()}
       </Button>
-    </div>
-  {/if}
+  </div>
 </form>

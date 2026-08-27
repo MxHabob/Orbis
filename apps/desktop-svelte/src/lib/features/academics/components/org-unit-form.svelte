@@ -144,8 +144,8 @@ async function handleSubmit(e: SubmitEvent) {
   </SheetHeader>
 
   <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
-    <Accordion type="multiple" value={["structure", "access", "location"]} class="flex flex-col gap-4">
-      <AccordionItem value="structure" class="rounded-lg border border-border/50 px-4">
+    <Accordion type="multiple" value={["structure", "access", "location"]} class="flex flex-col gap-2">
+      <AccordionItem value="structure" class="rounded-lg">
         <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_org_unit_structure()}</AccordionTrigger>
         <AccordionContent>
     <!-- Names (Arabic & English) -->
@@ -256,7 +256,7 @@ async function handleSubmit(e: SubmitEvent) {
         </AccordionContent>
       </AccordionItem>
 
-      <AccordionItem value="access" class="rounded-lg border border-border/50 px-4">
+      <AccordionItem value="access" class="rounded-lg">
         <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_org_unit_access()}</AccordionTrigger>
         <AccordionContent>
 
@@ -278,7 +278,7 @@ async function handleSubmit(e: SubmitEvent) {
         </AccordionContent>
       </AccordionItem>
 
-      <AccordionItem value="location" class="rounded-lg border border-border/50 px-4">
+      <AccordionItem value="location" class="rounded-lg">
         <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_org_unit_location()}</AccordionTrigger>
         <AccordionContent>
 
