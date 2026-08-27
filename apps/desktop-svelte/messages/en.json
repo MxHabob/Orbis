@@ -1,4 +1,6 @@
 {
+  "academics_schedule_time_slot_required": "Enter a slot name and valid times",
+  "common_class_placeholder_name_en": "e.g., Grade 1 - Group A",
   "template_placeholder_name_en": "e.g. Student Certificate",
   "template_placeholder_name_ar": "مثال: شهادة طالب",
   "template_placeholder_description": "Brief template description",

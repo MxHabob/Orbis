@@ -93,7 +93,7 @@ async function handleSubmit(e: SubmitEvent) {
 				id="name_en"
 				type="text" 
 				bind:value={name}
-				placeholder="e.g., Grade 1 - Group A"
+				placeholder={m.common_class_placeholder_name_en()}
 			/>
 		</div>
 

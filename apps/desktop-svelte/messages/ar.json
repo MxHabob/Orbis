@@ -1,4 +1,6 @@
 {
+  "academics_schedule_time_slot_required": "أدخل اسم الحصة ووقتاً صحيحاً",
+  "common_class_placeholder_name_en": "مثال: الصف الأول - المجموعة أ",
   "template_placeholder_name_en": "مثال: Student Certificate",
   "template_placeholder_description": "وصف موجز للقالب",
   "academics_exams_center_title": "مركز الاختبارات والكنترول",
