@@ -12,9 +12,10 @@ import { toast } from "svelte-sonner";
 import { l } from "$lib/core/i18n";
 import { generalSettingsInputSchema } from "@orbis/schemas";
 
-let { org, isSaving, onsave, onsaveavatar, onremove, onlanguagechange } =
+let { org, orgId, isSaving, onsave, onsaveavatar, onremove, onlanguagechange } =
   $props<{
     org: any;
+    orgId: string;
     isSaving: boolean;
     onsave: (request: any) => void;
     onsaveavatar: (logo: string | null) => void;
@@ -162,6 +163,7 @@ function handleSaveAvatar(e: Event) {
 
     <AvatarSettingsCard
       bind:logo
+      {orgId}
       {name}
       {isSaving}
       onsave={handleSaveAvatar}

@@ -4,6 +4,15 @@ use crate::state::AppState;
 use crate::commands::error::{CmdResult, CommandError};
 use svc_document::ops;
 
+#[derive(serde::Deserialize, Default)]
+pub struct DocumentListRequest {
+    pub owner_id: Option<String>,
+    pub entity_type: Option<String>,
+    pub category: Option<String>,
+    pub cursor: Option<String>,
+    pub limit: Option<u64>,
+}
+
 #[tauri::command]
 pub async fn upload_document(
     state: State<'_, Arc<AppState>>,
@@ -37,22 +46,24 @@ pub async fn upload_document(
 #[tauri::command]
 pub async fn get_documents(
     state: State<'_, Arc<AppState>>,
-    owner_id: Option<String>,
-    entity_type: Option<String>,
-    category: Option<String>,
-    cursor: Option<String>,
-    limit: Option<u64>,
+    request: Option<DocumentListRequest>,
 ) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let filters = request.unwrap_or_default();
+    let target = filters.owner_id.as_deref().filter(|s| *s != "all");
     
-    let target = owner_id.as_deref().filter(|s| *s != "all");
-    
-    let request = shared_kernel::pagination::CursorRequest {
-        cursor,
-        limit: limit.unwrap_or(50),
+    let cursor_request = shared_kernel::pagination::CursorRequest {
+        cursor: filters.cursor,
+        limit: filters.limit.unwrap_or(50),
     };
     
-    let docs = ops::document::list(&ctx, target, entity_type.as_deref(), category.as_deref(), request)
+    let docs = ops::document::list(
+        &ctx,
+        target,
+        filters.entity_type.as_deref(),
+        filters.category.as_deref(),
+        cursor_request,
+    )
         .await
         .map_err(CommandError::from)?;
         

@@ -313,7 +313,12 @@ export const commands: OrbisCommands = {
     },
     deleteDocument: (id: any) => cmd("document_document_delete", { id }),
     uploadDocument: (fileName: any, mimeType: any, bytes: any, entityType: any, entityId: any, category: any, visibility: any) => cmd("upload_document", { fileName, mimeType, bytes, entityType, entityId, category, visibility }),
-    getDocuments: (ownerId: any, entityType: any, category: any, cursor: any, limit: any) => cmd("get_documents", { ownerId, entityType, category, cursor, limit }),
+    getDocuments: (ownerIdOrRequest: any, entityType?: any, category?: any, cursor?: any, limit?: any) => {
+      const request = (typeof ownerIdOrRequest === "object" && ownerIdOrRequest !== null && !Array.isArray(ownerIdOrRequest))
+        ? ownerIdOrRequest
+        : { ownerId: ownerIdOrRequest, entityType, category, cursor, limit };
+      return cmd("get_documents", { request });
+    },
     storageDeleteDocument: (id: any) => cmd("storage_delete_document", { id }),
   },
   calendar: {

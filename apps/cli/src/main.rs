@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+use std::path::PathBuf;
 use colored::*;
 use anyhow::{anyhow, Result};
 use sea_orm::{ConnectionTrait, Database, DbBackend, Statement, TransactionTrait};
@@ -27,6 +28,25 @@ pub enum Commands {
     Backup,
     /// Manage product license and activation
     License,
+    /// Validate and install versioned DocForge template packages
+    Templates {
+        #[command(subcommand)]
+        command: TemplateCommands,
+    },
+}
+
+#[derive(Subcommand, Clone)]
+pub enum TemplateCommands {
+    /// Validate a template package directory
+    Validate { package: PathBuf },
+    /// Create templates and system assets from a package
+    Create { package: PathBuf },
+    /// List installed templates for the first organization
+    List,
+    /// Install a template package into the first organization
+    Install { package: PathBuf },
+    /// Update an installed package without overwriting local edits
+    Update { package: PathBuf },
 }
 
 /// Menu choices as an enum for robust matching.
@@ -39,6 +59,7 @@ enum MenuChoice {
     License,
     ResetDatabase,
     SeedDefaultData,
+    CreateDefaultTemplates,
     Exit,
 }
 
@@ -63,6 +84,9 @@ async fn handle_command(command: &Commands) -> Result<()> {
         }
         Commands::License => {
             commands::license::execute().await?;
+        }
+        Commands::Templates { command } => {
+            commands::templates::execute(command).await?;
         }
     }
     Ok(())
@@ -105,6 +129,8 @@ fn build_menu(status: &core::database::SystemStatus) -> Vec<MenuItem> {
     if is_development_environment() {
         push("Create Default Development Data", MenuChoice::SeedDefaultData);
     }
+
+    push("Create Default Templates", MenuChoice::CreateDefaultTemplates);
 
     push("Exit", MenuChoice::Exit);
     items
@@ -321,6 +347,13 @@ async fn main() -> Result<()> {
                                     ui::output::print_error(&e.to_string());
                                 }
                             }
+                            MenuChoice::CreateDefaultTemplates => {
+                                if let Err(e) = commands::templates::execute(&TemplateCommands::Create {
+                                    package: default_template_package_path(),
+                                }).await {
+                                    ui::output::print_error(&e.to_string());
+                                }
+                            }
                             MenuChoice::Exit => break,
                         }
 
@@ -337,4 +370,13 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn default_template_package_path() -> PathBuf {
+    let repository_path = PathBuf::from("apps/cli/templates/school-defaults");
+    if repository_path.is_dir() {
+        repository_path
+    } else {
+        PathBuf::from("templates/school-defaults")
+    }
 }

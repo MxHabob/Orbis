@@ -80,13 +80,24 @@ export function useUploadDocument() {
   const queryClient = useQueryClient();
 
   return createMutation(() => ({
-    mutationFn: (payload: {
+    mutationFn: async (payload: {
       file: File;
       entity_type: string;
       entity_id: string;
       category: string;
       visibility: string;
-    }) => commands.document.uploadDocument(payload),
+    }) => {
+      const bytes = new Uint8Array(await payload.file.arrayBuffer());
+      return commands.document.uploadDocument(
+        payload.file.name,
+        payload.file.type || "application/octet-stream",
+        bytes,
+        payload.entity_type,
+        payload.entity_id,
+        payload.category,
+        payload.visibility,
+      );
+    },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({
         queryKey: documentKeys.all,

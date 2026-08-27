@@ -1,16 +1,17 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
-import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
+import LogoUpload from "$lib/shared/components/logo-upload.svelte";
 
 interface Props {
   logo: string;
   name: string;
+  orgId: string;
   isSaving?: boolean;
   onsave: (e: Event) => void;
 }
 
-let { logo = $bindable(), name, isSaving = false, onsave }: Props = $props();
+let { logo = $bindable(), name, orgId, isSaving = false, onsave }: Props = $props();
 </script>
 
 <div class="border border-border rounded-md overflow-hidden flex flex-col">
@@ -21,10 +22,11 @@ let { logo = $bindable(), name, isSaving = false, onsave }: Props = $props();
 
   <!-- Card Body -->
   <div class="px-6 py-5 flex items-center justify-start text-start select-none">
-    <AvatarUpload
-      bind:avatarUrl={logo}
+    <LogoUpload
+      bind:logoUrl={logo}
       size={64}
-      fallbackText={name}
+      entityType="organization"
+      entityId={orgId}
     />
   </div>
 

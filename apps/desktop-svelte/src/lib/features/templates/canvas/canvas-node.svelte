@@ -31,7 +31,10 @@ const w = $derived(pos.w);
 const h = $derived(pos.h);
 
 function getNodePosition() {
-  const position = "position" in node ? (node as any).position : null;
+  const position =
+    "props" in node && node.props && "position" in node.props
+      ? (node.props as any).position
+      : null;
   if (!position) {
     return { x: 0, y: 0, w: pageSizePx.width, h: 20 };
   }

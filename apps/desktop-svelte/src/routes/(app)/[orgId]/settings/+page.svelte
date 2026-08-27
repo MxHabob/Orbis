@@ -58,19 +58,10 @@ async function handleSave(data: any) {
 async function handleSaveAvatar(fileOrUrl: File | string | null) {
   if (!orgId) return;
   try {
-    let avatarUrl: string | undefined;
-    if (fileOrUrl instanceof File) {
-      throw new Error("Avatar file upload is not available in the desktop client");
-    } else if (typeof fileOrUrl === "string") {
-      avatarUrl = fileOrUrl;
-    } else {
-      avatarUrl = undefined;
-    }
-
     await updateOrgMutation.mutateAsync({
       orgId,
       request: {
-        avatar: avatarUrl,
+        logo: typeof fileOrUrl === "string" ? fileOrUrl : null,
       },
     });
 
@@ -96,6 +87,7 @@ async function handleRemoveOrganization() {
   {#key orgQuery.data}
     <GeneralSettingsForm
       org={orgQuery.data}
+      {orgId}
       {isSaving}
       onsave={handleSave}
       onsaveavatar={handleSaveAvatar}

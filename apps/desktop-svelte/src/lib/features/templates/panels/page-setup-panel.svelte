@@ -26,9 +26,9 @@ const pageSizes = [
   { id: "A5", label: "A5 (148×210)", w: 148, h: 210 },
   { id: "Letter", label: "Letter (216×279)", w: 216, h: 279 },
   { id: "Legal", label: "Legal (216×356)", w: 216, h: 356 },
-  { id: m.template_size_id_card(), w: 85.6, h: 53.98 },
-  { id: m.template_size_badge(), w: 86, h: 54 },
-  { id: m.template_size_custom(), w: 0, h: 0 },
+  { id: "ID_CARD", label: m.template_size_id_card(), w: 85.6, h: 53.98 },
+  { id: "BADGE", label: m.template_size_badge(), w: 86, h: 54 },
+  { id: "Custom", label: m.template_size_custom(), w: 0, h: 0 },
 ];
 
 function updatePageSetup(updates: Record<string, unknown>) {
