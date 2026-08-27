@@ -73,14 +73,14 @@ let headId = $state(initUnit?.head_id || "");
 let dataIsolation = $state(initUnit?.data_isolation || "shared");
 
 const unitTypeOptions = [
-  { value: "branch", label: "فرع / مجمع تعليمي (Branch / Campus)", icon: School },
-  { value: "stage", label: "مرحلة دراسية (Educational Stage)", icon: Layers },
-  { value: "section", label: "قسم / مسار بنين أو بنات (Section / Track)", icon: Users },
-  { value: "college", label: "كلية / معهد عالي (College / Faculty)", icon: GraduationCap },
-  { value: "department", label: "قسم أكاديمي أو إداري (Department)", icon: Briefcase },
-  { value: "program", label: "برنامج / مسار تدريبي (Program / Track)", icon: BookOpen },
-  { value: "building", label: "مبنى (Building)", icon: Building2 },
-  { value: "facility", label: "قاعة / مختبر / معمل (Hall / Lab / Facility)", icon: DoorOpen },
+  { value: "branch", label: m.common_org_unit_branch(), icon: School },
+  { value: "stage", label: m.common_org_unit_stage(), icon: Layers },
+  { value: "section", label: m.common_org_unit_section(), icon: Users },
+  { value: "college", label: m.common_org_unit_college(), icon: GraduationCap },
+  { value: "department", label: m.common_org_unit_department(), icon: Briefcase },
+  { value: "program", label: m.common_org_unit_program(), icon: BookOpen },
+  { value: "building", label: m.common_org_unit_building(), icon: Building2 },
+  { value: "facility", label: m.common_org_unit_facility(), icon: DoorOpen },
 ];
 
 async function loadReferenceData() {
@@ -109,7 +109,7 @@ async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
 
   if (!name.trim() && !nameAr.trim()) {
-    toast.error("يرجى إدخال اسم الوحدة التنظيمية");
+    toast.error(m.common_org_unit_error_name_required());
     return;
   }
 
@@ -131,10 +131,10 @@ async function handleSubmit(e: SubmitEvent) {
 
     if (isEdit && unit) {
       await commands.organization.updateOrgUnit(unit.id, payload);
-      toast.success("تم تحديث بيانات الوحدة التنظيمية بنجاح");
+      toast.success(m.common_org_unit_update_success());
     } else {
       await commands.organization.createOrgUnit(payload);
-      toast.success("تم إنشاء الوحدة التنظيمية بنجاح");
+      toast.success(m.common_org_unit_create_success());
     }
 
     onSuccess();
@@ -151,26 +151,26 @@ async function handleSubmit(e: SubmitEvent) {
   <SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
     <SheetTitle class="text-base font-bold text-foreground flex items-center gap-2">
       <Building2 size={18} class="text-primary" />
-      {isEdit ? "تعديل الوحدة التنظيمية" : "إضافة وحدة تنظيمية جديدة"}
+      {isEdit ? m.common_org_unit_edit_title() : m.common_org_unit_add_title()}
     </SheetTitle>
   </SheetHeader>
 
   <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
     <Accordion type="multiple" value={["structure", "access", "location"]} class="flex flex-col gap-4">
       <AccordionItem value="structure" class="rounded-lg border border-border/50 px-4">
-        <AccordionTrigger class="text-sm font-semibold hover:no-underline">الهيكل التنظيمي</AccordionTrigger>
+        <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_org_unit_structure()}</AccordionTrigger>
         <AccordionContent>
     <!-- Names (Arabic & English) -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="flex flex-col gap-1.5 text-start">
         <Label for="unit_name_ar" class="text-xs font-semibold">
-          الاسم بالعربية <span class="text-destructive">*</span>
+          {m.common_org_unit_name_ar()} <span class="text-destructive">*</span>
         </Label>
         <Input
           id="unit_name_ar"
           type="text"
           bind:value={nameAr}
-          placeholder="مثال: المرحلة الثانوية - بنين"
+          placeholder={m.common_org_unit_name_ar_placeholder()}
           required
           disabled={isSubmitting}
           class="text-xs h-9"
@@ -179,13 +179,13 @@ async function handleSubmit(e: SubmitEvent) {
 
       <div class="flex flex-col gap-1.5 text-start">
         <Label for="unit_name_en" class="text-xs font-semibold">
-          الاسم بالإنجليزية
+          {m.common_org_unit_name_en()}
         </Label>
         <Input
           id="unit_name_en"
           type="text"
           bind:value={name}
-          placeholder="e.g. High School - Boys"
+          placeholder={m.common_org_unit_name_en_placeholder()}
           disabled={isSubmitting}
           class="text-xs h-9"
         />
@@ -196,7 +196,7 @@ async function handleSubmit(e: SubmitEvent) {
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <!-- Unit Type -->
       <div class="flex flex-col gap-1.5 text-start">
-        <Label class="text-xs font-semibold">نوع الوحدة التنظيمية</Label>
+        <Label class="text-xs font-semibold">{m.common_org_unit_type()}</Label>
         <Select type="single" value={unitType} onValueChange={(v) => { if (v) unitType = v; }}>
           <SelectTrigger class="h-9 text-xs w-full">
             {unitTypeOptions.find(o => o.value === unitType)?.label || unitType}
@@ -216,13 +216,13 @@ async function handleSubmit(e: SubmitEvent) {
 
       <!-- Parent Unit -->
       <div class="flex flex-col gap-1.5 text-start">
-        <Label class="text-xs font-semibold">الوحدة الأم (المستوى الأعلى)</Label>
+        <Label class="text-xs font-semibold">{m.common_org_unit_parent()}</Label>
         <Select type="single" value={parentId} onValueChange={(v) => (parentId = v ?? "")}>
           <SelectTrigger class="h-9 text-xs w-full">
-            {unitsList.find(u => String(u.id) === parentId) ? `${unitsList.find(u => String(u.id) === parentId).name_ar || unitsList.find(u => String(u.id) === parentId).name}` : "— جذر المؤسسة (Root Unit) —"}
+            {unitsList.find(u => String(u.id) === parentId) ? `${unitsList.find(u => String(u.id) === parentId).name_ar || unitsList.find(u => String(u.id) === parentId).name}` : m.common_org_unit_root()}
           </SelectTrigger>
           <SelectContent class="text-xs">
-            <SelectItem value="">— جذر المؤسسة (Root Unit) —</SelectItem>
+            <SelectItem value="">{m.common_org_unit_root()}</SelectItem>
             {#each unitsList as u}
               <SelectItem value={String(u.id)}>
                 {u.name_ar || u.name} ({u.unit_type})
@@ -269,20 +269,20 @@ async function handleSubmit(e: SubmitEvent) {
       </AccordionItem>
 
       <AccordionItem value="access" class="rounded-lg border border-border/50 px-4">
-        <AccordionTrigger class="text-sm font-semibold hover:no-underline">نطاق البيانات والصلاحيات</AccordionTrigger>
+        <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_org_unit_access()}</AccordionTrigger>
         <AccordionContent>
 
     <!-- Data Isolation -->
     <div class="flex flex-col gap-1.5 text-start border-t border-border/30 pt-3">
-      <Label class="text-xs font-semibold">نطاق عزل البيانات والصلاحيات (Data Isolation)</Label>
+      <Label class="text-xs font-semibold">{m.common_org_unit_isolation()}</Label>
       <Select type="single" value={dataIsolation} onValueChange={(v) => { if (v) dataIsolation = v; }}>
         <SelectTrigger class="h-9 text-xs w-full">
-          {dataIsolation === "isolated" ? "معزول (Isolated) - لا يرى موظفوه إلا بيانات هذا الفرع" : dataIsolation === "read_only" ? "اطلاع فقط (Read Only)" : "مشترك (Shared) - بيانات مدمجة مع الإدارة المركزية"}
+          {dataIsolation === "isolated" ? m.common_org_unit_isolated() : dataIsolation === "read_only" ? m.common_org_unit_read_only() : m.common_org_unit_shared()}
         </SelectTrigger>
         <SelectContent class="text-xs">
-          <SelectItem value="shared">مشترك (Shared) - بيانات مدمجة مع الإدارة المركزية</SelectItem>
-          <SelectItem value="isolated">معزول (Isolated) - لا يرى موظفوه إلا بيانات هذا الفرع</SelectItem>
-          <SelectItem value="read_only">اطلاع فقط (Read Only) - صلاحيات تصفح فقط</SelectItem>
+          <SelectItem value="shared">{m.common_org_unit_shared()}</SelectItem>
+          <SelectItem value="isolated">{m.common_org_unit_isolated()}</SelectItem>
+          <SelectItem value="read_only">{m.common_org_unit_read_only()}</SelectItem>
         </SelectContent>
       </Select>
     </div>
@@ -291,28 +291,28 @@ async function handleSubmit(e: SubmitEvent) {
       </AccordionItem>
 
       <AccordionItem value="location" class="rounded-lg border border-border/50 px-4">
-        <AccordionTrigger class="text-sm font-semibold hover:no-underline">الموقع والطاقة الاستيعابية</AccordionTrigger>
+        <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_org_unit_location()}</AccordionTrigger>
         <AccordionContent>
 
     <!-- Location & Capacity (Optional / Conditional) -->
     <div class="border-t border-border/30 pt-3 flex flex-col gap-3">
-      <span class="text-xs font-semibold text-muted-foreground">الموقع المكاني والطاقة الاستيعابية</span>
+      <span class="text-xs font-semibold text-muted-foreground">{m.common_org_unit_location_details()}</span>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div class="flex flex-col gap-1 text-start">
-          <Label for="unit_bld" class="text-[11px]">المبنى</Label>
-          <Input id="unit_bld" type="text" bind:value={building} placeholder="مثال: المبنى A" disabled={isSubmitting} class="text-xs h-8" />
+          <Label for="unit_bld" class="text-[11px]">{m.common_org_unit_building()}</Label>
+          <Input id="unit_bld" type="text" bind:value={building} placeholder={m.common_org_unit_building_placeholder()} disabled={isSubmitting} class="text-xs h-8" />
         </div>
         <div class="flex flex-col gap-1 text-start">
-          <Label for="unit_floor" class="text-[11px]">الطابق</Label>
+          <Label for="unit_floor" class="text-[11px]">{m.common_rooms_label_floor()}</Label>
           <Input id="unit_floor" type="number" bind:value={floor} placeholder="1" disabled={isSubmitting} class="text-xs h-8" />
         </div>
         <div class="flex flex-col gap-1 text-start">
-          <Label for="unit_room" class="text-[11px]">رقم الغرفة/القاعة</Label>
-          <Input id="unit_room" type="text" bind:value={roomNumber} placeholder="102" disabled={isSubmitting} class="text-xs h-8" />
+          <Label for="unit_room" class="text-[11px]">{m.common_org_unit_room()}</Label>
+          <Input id="unit_room" type="text" bind:value={roomNumber} placeholder={m.common_org_unit_room_placeholder()} disabled={isSubmitting} class="text-xs h-8" />
         </div>
         <div class="flex flex-col gap-1 text-start">
-          <Label for="unit_cap" class="text-[11px]">الطاقة الاستيعابية</Label>
-          <Input id="unit_cap" type="number" bind:value={capacity} placeholder="35" disabled={isSubmitting} class="text-xs h-8" />
+          <Label for="unit_cap" class="text-[11px]">{m.common_org_unit_capacity()}</Label>
+          <Input id="unit_cap" type="number" bind:value={capacity} placeholder={m.common_org_unit_capacity_placeholder()} disabled={isSubmitting} class="text-xs h-8" />
         </div>
       </div>
     </div>
@@ -331,7 +331,7 @@ async function handleSubmit(e: SubmitEvent) {
       disabled={isSubmitting}
       class="text-xs cursor-pointer"
     >
-      إلغاء
+      {m.common_action_cancel()}
     </Button>
     <Button
       type="submit"
@@ -340,7 +340,7 @@ async function handleSubmit(e: SubmitEvent) {
       class="font-semibold px-6 text-xs cursor-pointer"
       disabled={isSubmitting}
     >
-      {isSubmitting ? "جاري الحفظ..." : isEdit ? "تحديث الوحدة" : "إنشاء الوحدة"}
+      {isSubmitting ? m.common_state_saving() : isEdit ? m.common_org_unit_update() : m.common_org_unit_create()}
     </Button>
   </div>
 </form>

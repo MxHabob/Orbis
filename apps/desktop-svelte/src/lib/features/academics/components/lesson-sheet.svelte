@@ -19,7 +19,8 @@
   import { AlertTriangle, Clock, MapPin, Trash2, User, Users, BookOpen } from "@lucide/svelte";
   import { commands, extractErrorMessage } from "$lib/core/ipc";
   import { toast } from "svelte-sonner";
-  import { getLocale } from "$lib/paraglide/runtime";
+  import * as m from "$lib/paraglide/messages";
+  import { l } from "$lib/core/i18n";
   import { createClassSubjectsQuery } from "$lib/features/academics/queries";
   import {
     Accordion,
@@ -57,8 +58,6 @@
     timeSlots = [],
     onSuccess,
   }: Props = $props();
-
-  const isArabic = $derived(getLocale() === "ar");
 
   // Form Fields
   let selectedClassId = $state("");
@@ -195,12 +194,12 @@
   async function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
     if (!selectedClassId || !selectedSubjectId || !selectedTeacherId || !selectedSlotId) {
-      toast.error(isArabic ? "يرجى تعبئة كافة الحقول المطلوبة" : "Please fill required fields");
+      toast.error(m.common_lesson_required_fields());
       return;
     }
 
     if (conflicts.length > 0) {
-      toast.error(isArabic ? "يوجد تعارض في الجدول لهذا الموعد" : "Schedule conflict detected");
+      toast.error(m.common_lesson_schedule_conflict());
       return;
     }
 
@@ -220,7 +219,7 @@
           homework: homework.trim() || null,
           notes: notes.trim() || null,
         } as any);
-        toast.success(isArabic ? "تم تحديث الحصة بنجاح" : "Lesson updated successfully");
+        toast.success(m.common_lesson_updated());
       } else {
         // Create Lesson
         await commands.scheduling.createLesson({
@@ -236,7 +235,7 @@
           homework: homework.trim() || null,
           notes: notes.trim() || null,
         } as any);
-        toast.success(isArabic ? "تمت جدولة الحصة بنجاح" : "Lesson scheduled successfully");
+        toast.success(m.common_lesson_scheduled());
       }
 
       open = false;
@@ -252,7 +251,7 @@
     if (!lesson?.id) return;
     try {
       await commands.scheduling.deleteLesson(lesson.id);
-      toast.success(isArabic ? "تم حذف الحصة من الجدول" : "Lesson deleted");
+      toast.success(m.common_lesson_deleted());
       open = false;
       onSuccess?.();
     } catch (err) {
@@ -266,8 +265,8 @@
     <SheetHeader class="border-b border-border/60 px-6 pb-4 pt-6 text-end">
       <SheetTitle>
         {lesson
-          ? (isArabic ? "تعديل الحصة المجدولة" : "Edit Scheduled Lesson")
-          : (isArabic ? "جدولة حصة جديدة" : "Schedule New Lesson")}
+          ? m.common_lesson_sheet_edit_title()
+          : m.common_lesson_sheet_create_title()}
       </SheetTitle>
     </SheetHeader>
 
@@ -276,10 +275,10 @@
       <div class="mt-4 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive flex items-start gap-2">
         <AlertTriangle size={15} class="shrink-0 mt-0.5 text-destructive" />
         <div class="flex-1">
-          <p class="font-bold">{isArabic ? "تعارض في الجدول!" : "Scheduling Conflict!"}</p>
+          <p class="font-bold">{m.common_lesson_conflict_title()}</p>
           <ul class="mt-1 list-disc list-inside space-y-0.5 text-[11px] opacity-90">
             {#each conflicts as c}
-              <li>{c.message || (isArabic ? "يوجد تعارض في الموعد أو المعلم أو القاعة" : "Slot or teacher double booking")}</li>
+              <li>{c.message || m.common_lesson_conflict_detail()}</li>
             {/each}
           </ul>
         </div>
@@ -289,11 +288,11 @@
     <form onsubmit={handleSubmit} class="mt-0 min-h-0 flex-1 overflow-y-auto scrollbar-hide px-6 py-5">
       <Accordion type="multiple" value={["placement", "content"]} class="flex flex-col gap-4">
         <AccordionItem value="placement" class="rounded-lg border border-border/50 px-4">
-          <AccordionTrigger class="text-sm font-semibold hover:no-underline">{isArabic ? "بيانات الجدولة" : "Lesson placement"}</AccordionTrigger>
+          <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_lesson_placement()}</AccordionTrigger>
           <AccordionContent>
       <!-- Class Selector -->
       <div class="space-y-1.5">
-        <Label for="class-select" class="text-xs font-semibold">{isArabic ? "الفصل الدراسي" : "Class"} *</Label>
+        <Label for="class-select" class="text-xs font-semibold">{m.common_lesson_class()} *</Label>
         <Select
           type="single"
           value={selectedClassId}
@@ -303,7 +302,7 @@
           <SelectTrigger id="class-select" class="h-9 w-full min-w-0 text-xs">
             <div class="flex items-center gap-1.5 truncate">
               <Users size={13} class="text-muted-foreground" />
-              <span>{classes.find((c) => String(c.id) === selectedClassId)?.name_ar || classes.find((c) => String(c.id) === selectedClassId)?.name || (isArabic ? "اختر الفصل..." : "Select class...")}</span>
+              <span>{classes.find((c) => String(c.id) === selectedClassId) ? l(classes.find((c) => String(c.id) === selectedClassId).name_ar, classes.find((c) => String(c.id) === selectedClassId).name) : m.common_lesson_select_class()}</span>
             </div>
           </SelectTrigger>
           <SelectContent class="max-h-56">
@@ -316,7 +315,7 @@
 
       <!-- Subject Selector -->
       <div class="space-y-1.5">
-        <Label for="subject-select" class="text-xs font-semibold">{isArabic ? "المادة الدراسية" : "Subject"} *</Label>
+        <Label for="subject-select" class="text-xs font-semibold">{m.common_lesson_subject()} *</Label>
         <Select
           type="single"
           value={selectedSubjectId}
@@ -326,7 +325,7 @@
           <SelectTrigger id="subject-select" class="h-9 w-full min-w-0 text-xs">
             <div class="flex items-center gap-1.5 truncate">
               <BookOpen size={13} class="text-muted-foreground" />
-              <span>{availableSubjects.find((s) => String(s.id) === selectedSubjectId)?.name_ar || availableSubjects.find((s) => String(s.id) === selectedSubjectId)?.name || (isArabic ? "اختر المادة..." : "Select subject...")}</span>
+              <span>{availableSubjects.find((s) => String(s.id) === selectedSubjectId) ? l(availableSubjects.find((s) => String(s.id) === selectedSubjectId).name_ar, availableSubjects.find((s) => String(s.id) === selectedSubjectId).name) : m.common_lesson_select_subject()}</span>
             </div>
           </SelectTrigger>
           <SelectContent class="max-h-56">
@@ -344,7 +343,7 @@
 
       <!-- Teacher Selector -->
       <div class="space-y-1.5">
-        <Label for="teacher-select" class="text-xs font-semibold">{isArabic ? "المعلم" : "Teacher"} *</Label>
+        <Label for="teacher-select" class="text-xs font-semibold">{m.common_lesson_teacher()} *</Label>
         <Select
           type="single"
           value={selectedTeacherId}
@@ -353,7 +352,7 @@
           <SelectTrigger id="teacher-select" class="h-9 w-full min-w-0 text-xs">
             <div class="flex items-center gap-1.5 truncate">
               <User size={13} class="text-muted-foreground" />
-              <span>{teachers.find((t) => String(t.id) === selectedTeacherId)?.name_ar || teachers.find((t) => String(t.id) === selectedTeacherId)?.full_name || (isArabic ? "اختر المعلم..." : "Select teacher...")}</span>
+              <span>{teachers.find((t) => String(t.id) === selectedTeacherId) ? l(teachers.find((t) => String(t.id) === selectedTeacherId).name_ar, teachers.find((t) => String(t.id) === selectedTeacherId).full_name) : m.common_lesson_select_teacher()}</span>
             </div>
           </SelectTrigger>
           <SelectContent class="max-h-56">
@@ -366,7 +365,7 @@
 
       <!-- Room Selector -->
       <div class="space-y-1.5">
-        <Label for="room-select" class="text-xs font-semibold">{isArabic ? "القاعة الدراسية (اختياري)" : "Room (Optional)"}</Label>
+        <Label for="room-select" class="text-xs font-semibold">{m.common_lesson_room_optional()}</Label>
         <Select
           type="single"
           value={selectedRoomId}
@@ -375,11 +374,11 @@
           <SelectTrigger id="room-select" class="h-9 w-full min-w-0 text-xs">
             <div class="flex items-center gap-1.5 truncate">
               <MapPin size={13} class="text-muted-foreground" />
-              <span>{rooms.find((r) => String(r.id) === selectedRoomId)?.name_ar || rooms.find((r) => String(r.id) === selectedRoomId)?.name || (isArabic ? "بدون قاعة محددة" : "No Room")}</span>
+              <span>{rooms.find((r) => String(r.id) === selectedRoomId) ? l(rooms.find((r) => String(r.id) === selectedRoomId).name_ar, rooms.find((r) => String(r.id) === selectedRoomId).name) : m.common_lesson_no_room_selected()}</span>
             </div>
           </SelectTrigger>
           <SelectContent class="max-h-56">
-            <SelectItem value="" class="text-xs text-muted-foreground">{isArabic ? "بدون قاعة" : "None"}</SelectItem>
+            <SelectItem value="" class="text-xs text-muted-foreground">{m.common_lesson_no_room()}</SelectItem>
             {#each rooms as r (r.id)}
               <SelectItem value={String(r.id)} class="text-xs">
                 {r.name_ar || r.name} {r.building ? `(${r.building})` : ""}
@@ -392,25 +391,25 @@
       <!-- Day of Week & TimeSlot Grid -->
       <div class="grid grid-cols-2 gap-3">
         <div class="min-w-0 space-y-1.5">
-          <Label class="text-xs font-semibold">{isArabic ? "اليوم" : "Day"} *</Label>
+          <Label class="text-xs font-semibold">{m.common_lesson_label_day()} *</Label>
           <Select
             type="single"
             value={String(selectedDayOfWeek)}
             onValueChange={(val) => (selectedDayOfWeek = Number(val) || 1)}
           >
             <SelectTrigger class="h-9 w-full min-w-0 text-xs">
-              <span>{weekdaysList.find((w) => w.val === selectedDayOfWeek)?.[isArabic ? "labelAr" : "labelEn"]}</span>
+              <span>{weekdaysList.find((w) => w.val === selectedDayOfWeek) ? l(weekdaysList.find((w) => w.val === selectedDayOfWeek).labelAr, weekdaysList.find((w) => w.val === selectedDayOfWeek).labelEn) : ""}</span>
             </SelectTrigger>
             <SelectContent>
               {#each weekdaysList as w}
-                <SelectItem value={String(w.val)} class="text-xs">{isArabic ? w.labelAr : w.labelEn}</SelectItem>
+                <SelectItem value={String(w.val)} class="text-xs">{l(w.labelAr, w.labelEn)}</SelectItem>
               {/each}
             </SelectContent>
           </Select>
         </div>
 
         <div class="min-w-0 space-y-1.5">
-          <Label class="text-xs font-semibold">{isArabic ? "الحصة الزمنية" : "Time Slot"} *</Label>
+          <Label class="text-xs font-semibold">{m.common_lesson_time_slot()} *</Label>
           <Select
             type="single"
             value={selectedSlotId}
@@ -419,13 +418,13 @@
             <SelectTrigger class="h-9 w-full min-w-0 text-xs">
               <div class="flex items-center gap-1.5 truncate">
                 <Clock size={13} class="text-muted-foreground" />
-                <span>{timeSlots.find((s) => String(s.id) === selectedSlotId)?.name_ar || timeSlots.find((s) => String(s.id) === selectedSlotId)?.name || (isArabic ? "اختر الحصة..." : "Select slot...")}</span>
+                <span>{timeSlots.find((s) => String(s.id) === selectedSlotId) ? l(timeSlots.find((s) => String(s.id) === selectedSlotId).name_ar, timeSlots.find((s) => String(s.id) === selectedSlotId).name) : m.common_lesson_select_slot()}</span>
               </div>
             </SelectTrigger>
             <SelectContent class="max-h-56">
               {#each timeSlots.filter((s) => !s.is_break) as s (s.id)}
                 <SelectItem value={String(s.id)} class="text-xs">
-                  {s.name_ar || s.name || `Period ${s.slot_number}`} ({s.start_time?.slice(0, 5)} - {s.end_time?.slice(0, 5)})
+                  {s.name_ar || s.name || m.academics_schedule_placeholder_period_en({ number: s.slot_number })} ({s.start_time?.slice(0, 5)} - {s.end_time?.slice(0, 5)})
                 </SelectItem>
               {/each}
             </SelectContent>
@@ -437,23 +436,23 @@
         </AccordionItem>
 
         <AccordionItem value="content" class="rounded-lg border border-border/50 px-4">
-          <AccordionTrigger class="text-sm font-semibold hover:no-underline">{isArabic ? "محتوى الحصة" : "Lesson content"}</AccordionTrigger>
+          <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_lesson_content()}</AccordionTrigger>
           <AccordionContent>
 
       <!-- Topic / Homework / Notes (Optional) -->
       <div class="space-y-1.5">
-        <Label for="lesson-topic" class="text-xs font-semibold">{isArabic ? "موضوع الدرس" : "Lesson Topic"}</Label>
-        <Input id="lesson-topic" bind:value={topic} placeholder={isArabic ? "عنوان الدرس أو الوحدة..." : "Lesson topic..."} class="h-8 text-xs" />
+        <Label for="lesson-topic" class="text-xs font-semibold">{m.common_lesson_topic()}</Label>
+        <Input id="lesson-topic" bind:value={topic} placeholder={m.common_lesson_topic_placeholder()} class="h-8 text-xs" />
       </div>
 
       <div class="space-y-1.5">
-        <Label for="lesson-hw" class="text-xs font-semibold">{isArabic ? "الواجب المنزلي" : "Homework"}</Label>
-        <Input id="lesson-hw" bind:value={homework} placeholder={isArabic ? "الواجب المطلوب..." : "Homework..."} class="h-8 text-xs" />
+        <Label for="lesson-hw" class="text-xs font-semibold">{m.common_lesson_homework()}</Label>
+        <Input id="lesson-hw" bind:value={homework} placeholder={m.common_lesson_homework_placeholder()} class="h-8 text-xs" />
       </div>
 
       <div class="space-y-1.5">
-        <Label for="lesson-notes" class="text-xs font-semibold">{isArabic ? "ملاحظات إضافية" : "Notes"}</Label>
-        <Textarea id="lesson-notes" bind:value={notes} rows={2} placeholder={isArabic ? "أي تعليمات أو ملاحظات خاصة..." : "Notes..."} class="text-xs" />
+        <Label for="lesson-notes" class="text-xs font-semibold">{m.common_lesson_notes()}</Label>
+        <Textarea id="lesson-notes" bind:value={notes} rows={2} placeholder={m.common_lesson_notes_placeholder()} class="text-xs" />
       </div>
 
           </AccordionContent>
@@ -470,7 +469,7 @@
             class="gap-1.5 text-xs"
           >
             <Trash2 size={13} />
-            <span>{isArabic ? "حذف الحصة" : "Delete"}</span>
+            <span>{m.common_action_delete()}</span>
           </Button>
         {:else}
           <div></div>
@@ -484,7 +483,7 @@
             onclick={() => (open = false)}
             class="text-xs"
           >
-            {isArabic ? "إلغاء" : "Cancel"}
+            {m.common_action_cancel()}
           </Button>
           <Button
             type="submit"
@@ -493,8 +492,8 @@
             class="text-xs font-semibold"
           >
             {isSubmitting
-              ? (isArabic ? "جاري الحفظ..." : "Saving...")
-              : (isArabic ? "حفظ الحصة" : "Save Lesson")}
+              ? m.common_lesson_saving()
+              : m.common_lesson_save()}
           </Button>
         </div>
       </SheetFooter>
