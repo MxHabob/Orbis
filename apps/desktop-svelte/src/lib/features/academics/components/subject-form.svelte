@@ -1,6 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { commands } from "$lib/core/ipc";
+import { commands, OrbisError } from "$lib/core/ipc";
+import { createSubjectInputSchema } from "@orbis/schemas";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { SheetHeader, SheetTitle } from "@orbis/ui-svelte/sheet";
@@ -27,19 +28,19 @@ let color = $state("");
 
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
-  if (!nameAr && !name) {
-    toast.error(m.common_subject_toast_error_name());
+	const result = createSubjectInputSchema.safeParse({
+		name,
+		name_ar: nameAr,
+		code,
+		color: color || null,
+	});
+	if (!result.success) {
+		toast.error(m.common_subject_toast_error_name());
     return;
   }
   isSubmitting = true;
   try {
-    const request = {
-      name: name || nameAr,
-      name_ar: nameAr || name,
-      code: code || "",
-	color: color || null,
-    };
-    await commands.academic.createSubject(request);
+		await commands.academic.createSubject(result.data);
     toast.success(m.common_subject_toast_success());
 
     // Reset fields
@@ -50,8 +51,8 @@ async function handleSubmit(e: SubmitEvent) {
     color = "";
 
     onSuccess();
-  } catch (e) {
-    const errorMsg = e instanceof Error ? e.message : String(e);
+	} catch (e) {
+		const errorMsg = OrbisError.fromUnknown(e).message;
     toast.error(m.common_subject_toast_error_submit({ error: errorMsg }));
   } finally {
     isSubmitting = false;

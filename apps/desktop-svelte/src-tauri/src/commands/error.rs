@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 pub struct CommandError {
     pub message: String,
     pub code: Option<String>,
+    pub field: Option<String>,
 }
 
 impl CommandError {
@@ -16,6 +17,7 @@ impl CommandError {
         Self {
             message: message.into(),
             code: None,
+            field: None,
         }
     }
 
@@ -23,6 +25,7 @@ impl CommandError {
         Self {
             message: message.into(),
             code: Some(code.into()),
+            field: None,
         }
     }
 
@@ -30,6 +33,7 @@ impl CommandError {
         Self {
             message: message.into(),
             code: Some("NOT_FOUND".to_string()),
+            field: None,
         }
     }
 
@@ -37,6 +41,7 @@ impl CommandError {
         Self {
             message: message.into(),
             code: Some("UNAUTHORIZED".to_string()),
+            field: None,
         }
     }
 }
@@ -58,6 +63,7 @@ impl From<sea_orm::DbErr> for CommandError {
         Self {
             message: err.to_string(),
             code: Some("DATABASE_ERROR".to_string()),
+            field: None,
         }
     }
 }
@@ -69,21 +75,22 @@ impl From<shared_kernel::errors::AppError> for CommandError {
             AppError::NotFound { entity_type, id } => Self {
                 message: format!("{} not found: {}", entity_type, id),
                 code: Some("NOT_FOUND".to_string()),
+                field: None,
             },
             AppError::Validation { message, field } => Self {
-                message: match field {
-                    Some(f) => format!("Validation failed on field '{}': {}", f, message),
-                    None => format!("Validation failed: {}", message),
-                },
+                message,
                 code: Some("VALIDATION_ERROR".to_string()),
+                field,
             },
             AppError::Unauthorized { reason } => Self {
                 message: reason,
                 code: Some("UNAUTHORIZED".to_string()),
+                field: None,
             },
             AppError::Conflict { message } => Self {
                 message,
                 code: Some("CONFLICT".to_string()),
+                field: None,
             },
             AppError::BusinessRule { rule, details } => Self {
                 message: match details {
@@ -91,18 +98,22 @@ impl From<shared_kernel::errors::AppError> for CommandError {
                     None => rule,
                 },
                 code: Some("BUSINESS_RULE_VIOLATION".to_string()),
+                field: None,
             },
             AppError::Database(msg) => Self {
                 message: msg,
                 code: Some("DATABASE_ERROR".to_string()),
+                field: None,
             },
             AppError::Internal(msg) => Self {
                 message: msg,
                 code: Some("INTERNAL_ERROR".to_string()),
+                field: None,
             },
             other => Self {
                 message: other.to_string(),
                 code: Some("UNKNOWN_ERROR".to_string()),
+                field: None,
             },
         }
     }

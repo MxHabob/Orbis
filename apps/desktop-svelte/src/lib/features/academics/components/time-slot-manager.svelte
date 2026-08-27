@@ -2,6 +2,7 @@
 import { Save, X } from "@lucide/svelte";
 import { toast } from "svelte-sonner";
 import { commands, extractErrorMessage } from "$lib/core/ipc";
+import { createTimeSlotInputSchema } from "@orbis/schemas";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import * as m from "$lib/paraglide/messages";
@@ -73,7 +74,22 @@ function durationMinutes() {
 
 async function saveSlot(event: SubmitEvent) {
   event.preventDefault();
-  if (!nameAr.trim() || !startTime || !endTime || durationMinutes() <= 0) {
+  const slotNumber = timeSlots.reduce(
+    (highest, slot) => Math.max(highest, Number(slot.slot_number) || 0),
+    0,
+  ) + 1;
+  const result = createTimeSlotInputSchema.safeParse({
+    period_id: periodId,
+    slot_number: slotNumber,
+    name: name.trim() || nameAr.trim(),
+    name_ar: nameAr.trim(),
+    start_time: startTime,
+    end_time: endTime,
+    duration_minutes: durationMinutes(),
+    is_break: false,
+    applicable_days: "1,2,3,4,5",
+  });
+  if (!result.success) {
     toast.error(m.academics_schedule_time_slot_required());
     return;
   }
@@ -89,21 +105,7 @@ async function saveSlot(event: SubmitEvent) {
       });
       toast.success(m.academics_schedule_time_slot_updated());
     } else {
-      const slotNumber = timeSlots.reduce(
-        (highest, slot) => Math.max(highest, Number(slot.slot_number) || 0),
-        0,
-      ) + 1;
-      await commands.scheduling.createTimeSlot({
-        period_id: periodId,
-        slot_number: slotNumber,
-        name: name.trim() || nameAr.trim(),
-        name_ar: nameAr.trim(),
-        start_time: startTime,
-        end_time: endTime,
-        duration_minutes: durationMinutes(),
-        is_break: false,
-        applicable_days: "1,2,3,4,5",
-      });
+      await commands.scheduling.createTimeSlot(result.data);
       toast.success(m.academics_schedule_time_slot_added());
     }
     resetForm();

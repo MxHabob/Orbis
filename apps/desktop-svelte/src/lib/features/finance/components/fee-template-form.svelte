@@ -1,7 +1,8 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n";
-import { commands } from "$lib/core/ipc";
+import { commands, OrbisError } from "$lib/core/ipc";
+import { feeTemplateInputSchema } from "@orbis/schemas";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
@@ -219,45 +220,42 @@ $effect(() => {
 });
 
 async function handleSubmit() {
-  if (!name.trim()) {
-    toast.error(m.common_ft_error_name_required());
-    return;
-  }
+  const applicableLevels =
+    !applyToAllGrades && selectedLevels.length > 0
+      ? JSON.stringify({ levels: selectedLevels })
+      : null;
   if (!applyToAllGrades && selectedLevels.length === 0) {
     toast.error(
       m.common_ft_error_levels_required(),
     );
     return;
   }
+  const result = feeTemplateInputSchema.safeParse({
+    name,
+    name_ar: nameAr || null,
+    code: code || null,
+    category,
+    default_amount: Number(amount),
+    revenue_account_id: null,
+    receivable_account_id: null,
+    applicable_levels: applicableLevels,
+    frequency,
+    is_mandatory: isMandatory,
+  });
+  if (!result.success) {
+    toast.error(m.common_ft_error_name_required());
+    return;
+  }
 
   isSubmitting = true;
   try {
-    const request = {
-      name: name.trim(),
-      name_ar: nameAr.trim() || null,
-      code: code.trim() || null,
-      category,
-      default_amount: Number(amount || 0),
-      revenue_account_id: "", // Managed automatically by backend
-      receivable_account_id: "", // Managed automatically by backend
-      applicable_levels:
-        !applyToAllGrades && selectedLevels.length > 0
-          ? JSON.stringify({ levels: selectedLevels })
-          : null,
-      frequency,
-      installment_config: null,
-      late_fee_rules: null,
-      is_mandatory: isMandatory ? 1 : 0,
-      is_active: isActive ? 1 : 0,
-    };
-
     if (template) {
-      await commands.finance.updateFeeTemplate(template.id, request as any);
+      await commands.finance.updateFeeTemplate(template.id, result.data);
       toast.success(
         m.common_ft_update_success(),
       );
     } else {
-      await commands.finance.createFeeTemplate(request as any);
+      await commands.finance.createFeeTemplate(result.data);
       toast.success(
         m.common_ft_create_success(),
       );

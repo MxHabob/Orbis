@@ -5,6 +5,33 @@
  * extractErrorMessage() and Web used different patterns.
  */
 
+export type CommandErrorPayload = {
+  message?: unknown;
+  code?: unknown;
+  field?: unknown;
+  details?: unknown;
+};
+
+function isCommandErrorPayload(value: unknown): value is CommandErrorPayload {
+  return typeof value === "object" && value !== null;
+}
+
+function statusCodeForErrorCode(code: string): number {
+  switch (code) {
+    case "NOT_FOUND":
+      return 404;
+    case "UNAUTHORIZED":
+      return 401;
+    case "CONFLICT":
+      return 409;
+    case "VALIDATION_ERROR":
+    case "VALIDATION":
+      return 422;
+    default:
+      return 500;
+  }
+}
+
 export class OrbisError extends Error {
   public readonly code: string;
   public readonly statusCode: number;
@@ -26,6 +53,19 @@ export class OrbisError extends Error {
   static fromUnknown(e: unknown): OrbisError {
     if (e instanceof OrbisError) return e;
     if (e instanceof Error) return new OrbisError(e.message, "ERROR");
+    if (isCommandErrorPayload(e)) {
+      const code = typeof e.code === "string" ? e.code : "UNKNOWN";
+      const details =
+        typeof e.field === "string"
+          ? { field: e.field, details: e.details }
+          : e.details;
+      return new OrbisError(
+        extractErrorMessage(e),
+        code,
+        statusCodeForErrorCode(code),
+        details,
+      );
+    }
     return new OrbisError(extractErrorMessage(e), "UNKNOWN");
   }
 

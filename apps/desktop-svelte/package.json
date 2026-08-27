@@ -26,6 +26,7 @@
     "@orbis/app-store": "workspace:*",
     "@orbis/sdk-core": "workspace:*",
     "@orbis/sdk-desktop": "workspace:*",
+    "@orbis/schemas": "workspace:*",
     "@orbis/location": "workspace:*",
     "@orbis/ui-svelte": "workspace:*",
     "@orbis/utils": "workspace:*",

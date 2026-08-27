@@ -14,10 +14,12 @@
   },
   "devDependencies": {
     "@orbis/tsconfig": "workspace:*",
+    "@types/bun": "latest",
     "@types/node": "^26.1.1",
     "typescript": "^7.0.2"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
   }
 }

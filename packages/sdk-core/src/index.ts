@@ -14,18 +14,22 @@
  */
 
 // ── Types ───────────────────────────────────────────────────────
-export * from './types/index.js';
+export * from "./types/index.js";
 
 // ── Commands ────────────────────────────────────────────────────
-export * from './commands/index.js';
+export * from "./commands/index.js";
 
 // ── Errors ──────────────────────────────────────────────────────
-export { OrbisError, extractErrorMessage } from './errors.js';
+export {
+  OrbisError,
+  extractErrorMessage,
+  type CommandErrorPayload,
+} from "./errors.js";
 
 // ── Permissions ─────────────────────────────────────────────────
-export { Permissions } from './permissions.js';
+export { Permissions } from "./permissions.js";
 
 // ── Events ──────────────────────────────────────────────────────
-export { EventTypes } from './events.js';
+export { EventTypes } from "./events.js";
 
 export type JsonRecord = Record<string, any>;

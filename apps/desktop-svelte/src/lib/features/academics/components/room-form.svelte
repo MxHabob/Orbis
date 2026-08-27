@@ -1,6 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { commands } from "$lib/core/ipc";
+import { commands, OrbisError } from "$lib/core/ipc";
+import { createRoomInputSchema } from "@orbis/schemas";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { SheetHeader, SheetTitle } from "@orbis/ui-svelte/sheet";
@@ -53,36 +54,36 @@ const roomTypeLabels = {
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
 
-  if (!name && !nameAr) {
+  const result = createRoomInputSchema.safeParse({
+    name,
+    name_ar: nameAr,
+    capacity: capacity ? Number(capacity) : null,
+    room_type: roomType,
+    building: building || null,
+    floor: floor ? Number(floor) : null,
+  });
+
+  if (!result.success) {
     toast.error(m.common_rooms_error_name_required());
     return;
   }
 
   isSubmitting = true;
   try {
-    const request = {
-      name: name || nameAr,
-      name_ar: nameAr || name,
-      capacity: capacity ? Number(capacity) : null,
-      room_type: roomType,
-      building: building || null,
-      floor: floor ? Number(floor) : null,
-    };
-
     if (isEdit && room) {
       await commands.scheduling.updateRoom(room.id, {
-        ...request,
+        ...result.data,
         is_active: room.is_active,
       });
       toast.success(m.common_rooms_update_success());
     } else {
-      await commands.scheduling.createRoom(request);
+      await commands.scheduling.createRoom(result.data);
       toast.success(m.common_rooms_create_success());
     }
 
     onSuccess();
   } catch (e) {
-    const errorMsg = e instanceof Error ? e.message : String(e);
+    const errorMsg = OrbisError.fromUnknown(e).message;
     toast.error(errorMsg);
   } finally {
     isSubmitting = false;

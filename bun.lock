@@ -29,6 +29,7 @@
         "@orbis/app-store": "workspace:*",
         "@orbis/avatar-engine": "workspace:*",
         "@orbis/location": "workspace:*",
+        "@orbis/schemas": "workspace:*",
         "@orbis/sdk-core": "workspace:*",
         "@orbis/sdk-desktop": "workspace:*",
         "@orbis/svelte-grid": "workspace:*",
@@ -95,11 +96,24 @@
         "typescript": "^7.0.2",
       },
     },
+    "packages/schemas": {
+      "name": "@orbis/schemas",
+      "version": "1.0.0",
+      "dependencies": {
+        "zod": "^4.1.13",
+      },
+      "devDependencies": {
+        "@orbis/tsconfig": "workspace:*",
+        "@types/bun": "latest",
+        "typescript": "^7.0.2",
+      },
+    },
     "packages/sdk-core": {
       "name": "@orbis/sdk-core",
       "version": "1.0.0",
       "devDependencies": {
         "@orbis/tsconfig": "workspace:*",
+        "@types/bun": "latest",
         "@types/node": "^26.1.1",
         "typescript": "^7.0.2",
       },
@@ -463,6 +477,8 @@
     "@orbis/desktop-svelte": ["@orbis/desktop-svelte@workspace:apps/desktop-svelte"],
 
     "@orbis/location": ["@orbis/location@workspace:packages/location"],
+
+    "@orbis/schemas": ["@orbis/schemas@workspace:packages/schemas"],
 
     "@orbis/sdk-core": ["@orbis/sdk-core@workspace:packages/sdk-core"],
 

@@ -1,6 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { commands } from "$lib/core/ipc";
+import { commands, OrbisError } from "$lib/core/ipc";
+import { feeAssignmentInputSchema } from "@orbis/schemas";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { toast } from "svelte-sonner";
@@ -72,29 +73,21 @@ $effect(() => {
 
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
-  if (!selectedEnrollmentId) {
-    toast.error(m.common_fee_toast_error_student());
-    return;
-  }
-  if (!selectedFeeTemplateId) {
-    toast.error(m.common_fee_toast_error_ledger());
-    return;
-  }
-  if (!amount || amount <= 0) {
+	const result = feeAssignmentInputSchema.safeParse({
+		enrollment_id: selectedEnrollmentId,
+		fee_template_id: selectedFeeTemplateId,
+		amount: amount === null ? null : Number(amount),
+		notes: description || undefined,
+		due_date: dueDate,
+	});
+	if (!result.success) {
     toast.error(m.common_fee_toast_error_amount());
     return;
   }
 
   isSubmitting = true;
   try {
-    const request = {
-      enrollment_id: selectedEnrollmentId,
-      fee_template_id: selectedFeeTemplateId,
-      amount: Number(amount),
-      notes: description || undefined,
-      due_date: dueDate,
-    };
-    await commands.finance.assignStudentFee(request);
+		await commands.finance.assignStudentFee(result.data);
     toast.success(m.common_fee_toast_success());
 
     // Reset form
@@ -104,7 +97,7 @@ async function handleSubmit(e: SubmitEvent) {
 
     onSuccess();
   } catch (e) {
-    const errorMsg = e instanceof Error ? e.message : String(e);
+	const errorMsg = OrbisError.fromUnknown(e).message;
     toast.error(m.common_fee_toast_error_submit({ error: errorMsg }));
   } finally {
     isSubmitting = false;

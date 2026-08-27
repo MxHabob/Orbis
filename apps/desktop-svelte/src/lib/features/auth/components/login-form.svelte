@@ -10,7 +10,8 @@ import { Eye, EyeOff, Loader2 } from "@lucide/svelte";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { toast } from "svelte-sonner";
 
-import { commands, extractErrorMessage } from "$lib/core/ipc";
+import { commands, OrbisError } from "$lib/core/ipc";
+import { loginInputSchema } from "@orbis/schemas";
 
 // No props needed
 
@@ -18,27 +19,53 @@ let email = $state("");
 let password = $state("");
 let showPassword = $state(false);
 let error = $state<string | null>(null);
+let fieldErrors = $state<Record<string, string>>({});
 let isLoading = $state(false);
 
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
-  if (!email || !password) {
+  error = null;
+  fieldErrors = {};
+
+  const result = loginInputSchema.safeParse({
+    identifier: email,
+    password,
+  });
+
+  if (!result.success) {
+    fieldErrors = Object.fromEntries(
+      result.error.issues.map((issue) => [
+        issue.path[0] === "identifier" ? "email" : String(issue.path[0]),
+        m.auth_login_fill_all_fields(),
+      ]),
+    );
     error = m.auth_login_fill_all_fields();
     return;
   }
 
   isLoading = true;
-  error = null;
 
   try {
-    await authStore.login(email, password);
+    await authStore.login(result.data.identifier, result.data.password);
     const targetOrgId = authStore.orgId || "default";
     await goto(localizeHref(`/${targetOrgId}`), {
       invalidateAll: true,
       replaceState: true,
     });
   } catch (err) {
-    error = extractErrorMessage(err) || m.auth_login_failed();
+    const normalizedError = OrbisError.fromUnknown(err);
+    if (
+      normalizedError.code === "VALIDATION_ERROR" &&
+      normalizedError.details &&
+      typeof normalizedError.details === "object" &&
+      "field" in normalizedError.details
+    ) {
+      const field = normalizedError.details.field;
+      if (typeof field === "string") {
+        fieldErrors[field] = normalizedError.message;
+      }
+    }
+    error = normalizedError.message || m.auth_login_failed();
   } finally {
     isLoading = false;
   }
@@ -68,10 +95,14 @@ function handleForgotPassword() {
 			placeholder={m.auth_login_account_placeholder()}
 			bind:value={email}
 			required
+			aria-invalid={Boolean(fieldErrors.email)}
 			autocomplete="email"
 			disabled={isLoading}
 			class="h-10 text-xs focus-visible:ring-primary bg-background/50 border-input"
 		/>
+		{#if fieldErrors.email}
+			<p class="text-xs text-destructive" role="alert">{fieldErrors.email}</p>
+		{/if}
 	</div>
 
 	<!-- Password Field -->
@@ -87,6 +118,7 @@ function handleForgotPassword() {
 				placeholder={m.common_user_form_password()}
 				bind:value={password}
 				required
+				aria-invalid={Boolean(fieldErrors.password)}
 				autocomplete="current-password"
 				disabled={isLoading}
 				class="h-10 text-xs focus-visible:ring-primary bg-background/50 border-input flex-1"
@@ -106,6 +138,9 @@ function handleForgotPassword() {
 				{/if}
 			</Button>
 		</div>
+		{#if fieldErrors.password}
+			<p class="text-xs text-destructive" role="alert">{fieldErrors.password}</p>
+		{/if}
 	</div>
 
 	<!-- Actions Bar -->

@@ -1,6 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { commands } from "$lib/core/ipc";
+import { commands, OrbisError } from "$lib/core/ipc";
+import { createAssessmentInputSchema } from "@orbis/schemas";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
@@ -48,28 +49,24 @@ const typeLabels: Record<"exam" | "quiz" | "homework" | "classwork", string> =
 
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
-  if (!nameAr && !name) {
-    toast.error(m.common_assessment_toast_error_name());
-    return;
-  }
-  if (!classId || !subjectId || !periodId) {
-		toast.error(m.common_assessment_error_context_required());
-    return;
-  }
+	const result = createAssessmentInputSchema.safeParse({
+		class_id: classId,
+		subject_id: subjectId,
+		term_id: periodId,
+		month: defaultMonth,
+		title: name,
+		title_ar: nameAr,
+		max_score: Number(maxScore),
+		weight: Number(weight),
+		item_type: assessmentType,
+	});
+	if (!result.success) {
+		toast.error(m.common_assessment_toast_error_name());
+		return;
+	}
   isSubmitting = true;
   try {
-    const request = {
-      class_id: classId,
-      subject_id: subjectId,
-      term_id: periodId,
-      month: defaultMonth,
-      title: name || nameAr,
-      title_ar: nameAr || name,
-      max_score: maxScore ? Number(maxScore) : 100,
-      weight: weight ? Number(weight) : 15,
-      item_type: assessmentType,
-    };
-    await commands.assessment.createAssessment(request);
+		await commands.assessment.createAssessment(result.data);
     toast.success(m.common_assessment_toast_success());
 
     // Reset fields
@@ -80,8 +77,8 @@ async function handleSubmit(e: SubmitEvent) {
     assessmentType = "exam";
 
     onSuccess();
-  } catch (e) {
-    toast.error(m.common_assessment_toast_error_submit());
+	} catch (e) {
+		toast.error(OrbisError.fromUnknown(e).message || m.common_assessment_toast_error_submit());
   } finally {
     isSubmitting = false;
   }
