@@ -63,7 +63,7 @@ async function loadFormData() {
     currencies = currencyList;
   } catch (e) {
     console.error("Error loading form data:", e);
-    toast.error("حدث خطأ أثناء تحميل البيانات");
+    toast.error(m.common_ledger_error_load());
   } finally {
     isLoading = false;
   }
@@ -123,12 +123,12 @@ async function handleSubmit(e: SubmitEvent) {
   try {
     if (activeTab === "gl") {
       if (!glParentId) {
-        toast.error("يرجى اختيار الحساب الأب");
+        toast.error(m.common_ledger_error_parent());
         isSubmitting = false;
         return;
       }
       if (!glNameAr && !glNameEn) {
-        toast.error("يرجى إدخال اسم الحساب (بالعربية أو الإنجليزية)");
+        toast.error(m.common_ledger_error_name());
         isSubmitting = false;
         return;
       }
@@ -178,7 +178,7 @@ async function handleSubmit(e: SubmitEvent) {
       trNameEn = "";
     } else if (activeTab === "entity") {
       if (!enNameAr && !enNameEn) {
-        toast.error("يرجى إدخال اسم الكيان المالي");
+        toast.error(m.common_ledger_error_entity_name());
         isSubmitting = false;
         return;
       }
@@ -194,7 +194,7 @@ async function handleSubmit(e: SubmitEvent) {
       };
 
       await commands.finance.createAccount(request);
-      toast.success("تم إنشاء الحساب المساعد للكيان بنجاح");
+      toast.success(m.common_ledger_entity_created());
 
       // Reset
       enNameAr = "";
@@ -251,7 +251,7 @@ async function handleSubmit(e: SubmitEvent) {
           </Label>
           <ComboboxDropdown
             placeholder={m.common_ledger_placeholder_parent()}
-            searchPlaceholder="ابحث عن الحساب الرئيسي..."
+            searchPlaceholder={m.common_ledger_search_parent()}
             selectedItem={selectedParentItem}
             items={parentItems}
             onSelect={handleParentSelect}
@@ -269,7 +269,7 @@ async function handleSubmit(e: SubmitEvent) {
               id="gl_name_ar"
               type="text"
               bind:value={glNameAr}
-              placeholder="مثال: رسوم الأنشطة الترفيهية"
+              placeholder={m.common_ledger_name_ar()}
               required={!glNameEn}
               disabled={isSubmitting}
             />
@@ -282,7 +282,7 @@ async function handleSubmit(e: SubmitEvent) {
               id="gl_name_en"
               type="text"
               bind:value={glNameEn}
-              placeholder="e.g., Recreational Activities Fees"
+              placeholder={m.common_ledger_name_en()}
               required={!glNameAr}
               disabled={isSubmitting}
             />
@@ -312,26 +312,26 @@ async function handleSubmit(e: SubmitEvent) {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="flex flex-col gap-1.5 text-start">
             <Label for="tr_name_ar" class="text-xs font-bold text-foreground">
-              الاسم (عربي)
+              {m.common_ledger_name_ar()}
             </Label>
             <Input
               id="tr_name_ar"
               type="text"
               bind:value={trNameAr}
-              placeholder="مثال: الصندوق الرئيسي أو الحساب البنكي الرئيسي"
+              placeholder={m.common_ledger_name_ar()}
               required={!trNameEn}
               disabled={isSubmitting}
             />
           </div>
           <div class="flex flex-col gap-1.5 text-start">
             <Label for="tr_name_en" class="text-xs font-bold text-foreground">
-              الاسم (إنجليزي)
+              {m.common_ledger_name_en()}
             </Label>
             <Input
               id="tr_name_en"
               type="text"
               bind:value={trNameEn}
-              placeholder="e.g., General Management Cashbox"
+              placeholder={m.common_ledger_name_en()}
               required={!trNameAr}
               disabled={isSubmitting}
             />
@@ -389,26 +389,26 @@ async function handleSubmit(e: SubmitEvent) {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="flex flex-col gap-1.5 text-start">
             <Label for="en_name_ar" class="text-xs font-bold text-foreground">
-              الاسم (عربي)
+              {m.common_ledger_name_ar()}
             </Label>
             <Input
               id="en_name_ar"
               type="text"
               bind:value={enNameAr}
-              placeholder="مثال: شركة آفاق للمقاولات"
+              placeholder={m.common_ledger_entity_name_ar_placeholder()}
               required={!enNameEn}
               disabled={isSubmitting}
             />
           </div>
           <div class="flex flex-col gap-1.5 text-start">
             <Label for="en_name_en" class="text-xs font-bold text-foreground">
-              الاسم (إنجليزي)
+              {m.common_ledger_name_en()}
             </Label>
             <Input
               id="en_name_en"
               type="text"
               bind:value={enNameEn}
-              placeholder="e.g., Afaq Contracting Company"
+              placeholder={m.common_ledger_entity_name_en_placeholder()}
               required={!enNameAr}
               disabled={isSubmitting}
             />
