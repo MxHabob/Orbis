@@ -16,6 +16,8 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
+import { templateInputSchema } from "@orbis/schemas";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
 interface Props {
   open: boolean;
@@ -40,6 +42,16 @@ let {
   schemas = {},
   onsubmit,
 }: Props = $props();
+
+const form = new FormController({
+  initialValues: { name: "", name_ar: "", description: "", entity_type: "", document_type: "", preset: "" },
+  schema: templateInputSchema,
+});
+
+async function handleSubmit() {
+  form.values = { name, name_ar: nameAr, description: desc, entity_type: entityType, document_type: docType, preset };
+  if (await form.submit(async () => {})) onsubmit();
+}
 
 const entityLabels: Record<string, string> = {
   enrollment: m.template_entity_student_reg(),
@@ -180,7 +192,7 @@ function documentLabel(type: string) {
 
     <DialogFooter class="gap-2">
       <Button variant="outline" size="sm" onclick={() => (open = false)}>{m.common_action_cancel()}</Button>
-      <Button variant="default" size="sm" onclick={onsubmit}>{m.common_form_btn_create()}</Button>
+      <Button variant="default" size="sm" onclick={handleSubmit} disabled={form.isSubmitting}>{m.common_form_btn_create()}</Button>
     </DialogFooter>
   </DialogContent>
 </Dialog>

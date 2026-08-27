@@ -19,8 +19,9 @@ import {
 import * as Sheet from "@orbis/ui-svelte/sheet";
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { authStore } from "$lib/stores";
-import type { GuardianLink, JsonRecord } from "@orbis/sdk-core";
+import type { JsonRecord } from "@orbis/sdk-core";
 import { toast } from "svelte-sonner";
+import { guardianFormInputSchema } from "@orbis/schemas";
 
 import { createUsersQuery } from "$lib/features/settings/queries";
 import { createEnrollmentsQuery } from "$lib/features/students/queries";
@@ -42,7 +43,7 @@ let {
 }: {
   orgId: string;
   studentId: string;
-  editData?: GuardianLink | null;
+  editData?: any;
   onSuccess?: () => void;
   onCancel?: () => void;
 } = $props();
@@ -90,10 +91,11 @@ $effect(() => {
       .getUser(String(editData.guardian_id))
       .then((u) => {
         if (u) {
-          fullName = String(u.full_name ?? u.name_ar ?? "");
-          phone = String(u.phone ?? u.phone ?? "");
+          const user = u as unknown as JsonRecord;
+          fullName = String(user.full_name ?? "");
+          phone = String(user.phone ?? "");
           email = String(u.email ?? "");
-          nationalId = String(u.national_id ?? "");
+          nationalId = String(user.national_id ?? "");
         }
       })
       .catch((e) => {
@@ -202,37 +204,13 @@ function clearSelectedUser() {
 }
 
 async function handleSubmit() {
-  if (!fullName.trim()) {
+  const validation = guardianFormInputSchema.safeParse({ fullName, phone, email, nationalId, relationship, paymentSharePercent });
+  if (!validation.success) {
     toast.error(m.common_validation_guardian_name_required());
     return;
   }
-  if (!phone.trim()) {
-    toast.error(m.common_validation_guardian_phone_required());
-    return;
-  }
-  if (!relationship) {
-    toast.error(m.common_validation_relationship_required());
-    return;
-  }
 
-  // Inputs Validation
-  const phoneClean = phone.trim();
-  if (!/^\+?[0-9]{7,15}$/.test(phoneClean)) {
-    toast.error(m.common_validation_phone_format_strict());
-    return;
-  }
-
-  const emailClean = email.trim();
-  if (emailClean && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailClean)) {
-    toast.error(m.common_validation_email_format());
-    return;
-  }
-
-  const nationalIdClean = nationalId.trim();
-  if (nationalIdClean && !/^[0-9]{7,15}$/.test(nationalIdClean)) {
-    toast.error(m.common_validation_nid_format());
-    return;
-  }
+  const { fullName: fullNameClean, phone: phoneClean, email: emailClean, nationalId: nationalIdClean } = validation.data;
 
   isSaving = true;
   try {
@@ -241,15 +219,15 @@ async function handleSubmit() {
 
     if (!finalGuardianUserId) {
       // Check if user already exists in db by phone
-      const checkExisting = await commands.academic.searchGuardians(phoneClean);
+      const checkExisting = await commands.academic.search(phoneClean);
       if (checkExisting && checkExisting.length > 0) {
-        finalGuardianUserId = checkExisting[0].id;
+        finalGuardianUserId = String(
+          checkExisting[0].guardian_id ?? checkExisting[0].id,
+        );
         // Optionally update the existing user info
         await commands.iam.updateUser(finalGuardianUserId, {
-          full_name: fullName.trim(),
-          name_ar: fullName.trim(),
+          full_name: fullNameClean,
           phone: phoneClean || null,
-          national_id: nationalIdClean || null,
         });
       } else {
         // Generate a secure random password for initial account setup
@@ -257,26 +235,20 @@ async function handleSubmit() {
         const guardEmail = emailClean || `parent.${Date.now()}@orbis.local`;
 
         // Create a new parent user
-        const guardUser = await commands.iam.createUser(createdBy, {
+        const guardUser = await commands.iam.createUser({
           email: guardEmail,
-          password: tempPassword,
-          full_name: fullName.trim(),
-          name_ar: fullName.trim(),
+          password_hash: tempPassword,
+          full_name: fullNameClean,
           primary_role: "parent",
           phone: phoneClean || null,
-          sex: "male",
-          national_id: nationalIdClean || null,
-          date_of_birth: null,
         });
         finalGuardianUserId = guardUser.id;
       }
     } else {
       // Update existing parent user details
       await commands.iam.updateUser(finalGuardianUserId, {
-        full_name: fullName.trim(),
-        name_ar: fullName.trim(),
+        full_name: fullNameClean,
         phone: phoneClean || null,
-        national_id: nationalIdClean || null,
       });
     }
 
@@ -306,7 +278,7 @@ async function handleSubmit() {
     };
 
     if (isEditMode && editData?.id) {
-      await commands.platform.updateGuardianLink(String(editData.id), request);
+      await commands.academic.updateGuardian(String(editData.id), request);
       toast.success(m.common_guardians_update_success());
     } else {
       // Create link requires guardian_id. Let's make sure it is sent correctly.
@@ -314,7 +286,7 @@ async function handleSubmit() {
         ...request,
         guardian_id: finalGuardianUserId,
       };
-      await commands.platform.createGuardianLink(requestWithGuardian);
+      await commands.academic.createGuardian(requestWithGuardian as any);
       toast.success(m.common_guardians_create_success());
     }
 
@@ -487,7 +459,7 @@ async function handleSubmit() {
       <!-- Relation -->
       <div class="flex flex-col gap-1.5">
         <Label class="text-xs font-semibold text-muted-foreground">{m.common_bulk_col_guardian_rel()} *</Label>
-        <Select type="single" value={relationship} onValueChange={(v) => (relationship = v ?? "father")}>
+        <Select type="single" value={relationship} onValueChange={(v: string | undefined) => (relationship = v ?? "father")}>
           <SelectTrigger class="h-9 text-sm">
             {selectedRelation?.label ?? relationship}
           </SelectTrigger>
@@ -523,17 +495,17 @@ async function handleSubmit() {
         
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div class="flex items-center gap-2">
-            <Checkbox id="primary_chk" checked={isPrimary} onCheckedChange={(val) => isPrimary = !!val} />
+            <Checkbox id="primary_chk" checked={isPrimary} onCheckedChange={(val: boolean | "indeterminate") => isPrimary = val === true} />
             <Label for="primary_chk" class="text-xs cursor-pointer">{m.common_form_guardian_role_primary()}</Label>
           </div>
 
           <div class="flex items-center gap-2">
-            <Checkbox id="emergency_chk" checked={isEmergencyContact} onCheckedChange={(val) => isEmergencyContact = !!val} />
+            <Checkbox id="emergency_chk" checked={isEmergencyContact} onCheckedChange={(val: boolean | "indeterminate") => isEmergencyContact = val === true} />
             <Label for="emergency_chk" class="text-xs cursor-pointer">{m.common_form_guardian_role_emergency()}</Label>
           </div>
 
           <div class="flex items-center gap-2">
-            <Checkbox id="payer_chk" checked={isPayer} onCheckedChange={(val) => isPayer = !!val} />
+            <Checkbox id="payer_chk" checked={isPayer} onCheckedChange={(val: boolean | "indeterminate") => isPayer = val === true} />
             <Label for="payer_chk" class="text-xs cursor-pointer">{m.common_form_guardian_role_payer()}</Label>
           </div>
         </div>

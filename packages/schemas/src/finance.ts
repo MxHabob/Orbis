@@ -19,5 +19,43 @@ export const feeAssignmentInputSchema = z.object({
   amount_override: z.number().finite().positive().nullable().optional(),
 });
 
+export const discountTemplateInputSchema = z.object({
+  name: z.string().trim().min(1),
+  code: z.string().trim().nullable().optional(),
+  item_type: z.enum(["manual", "scholarship", "system"]),
+  calculation_method: z.enum(["percentage", "fixed"]),
+  value: z.number().finite().min(0),
+  priority: z.number().int().nonnegative().nullable().optional(),
+  requires_approval: z.number().int().min(0).max(1),
+  is_auto_apply: z.number().int().min(0).max(1),
+  is_stackable: z.number().int().min(0).max(1),
+  is_active: z.number().int().min(0).max(1),
+});
+
+export const paymentRecordInputSchema = z.object({
+  fee_id: z.string().trim().min(1),
+  amount: z.number().finite().positive(),
+  method: z.enum(["cash", "bank_transfer", "card"]),
+  reference: z.string().trim().optional(),
+  notes: z.string().trim().optional(),
+  cash_account_id: z.string().trim().min(1),
+  currency: z.string().trim().regex(/^[A-Za-z]{3}$/),
+  exchange_rate: z.number().finite().positive().optional(),
+});
+
+export const currencyInputSchema = z.object({
+  code: z.string().trim().toUpperCase().min(2).max(3),
+  name: z.string().trim().min(1),
+  name_ar: z.string().trim().nullable().optional(),
+  symbol: z.string().trim().min(1),
+  symbol_position: z.enum(["before", "after"]),
+  decimal_places: z.number().int().min(0).max(4),
+  exchange_rate: z.number().finite().positive(),
+  is_base: z.boolean(),
+});
+
 export type FeeAssignmentInput = z.infer<typeof feeAssignmentInputSchema>;
 export type FeeTemplateInput = z.infer<typeof feeTemplateInputSchema>;
+export type DiscountTemplateInput = z.infer<typeof discountTemplateInputSchema>;
+export type PaymentRecordInput = z.infer<typeof paymentRecordInputSchema>;
+export type CurrencyInput = z.infer<typeof currencyInputSchema>;

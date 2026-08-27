@@ -41,7 +41,7 @@ async function loadDropdownData() {
   try {
     const [studentList, templateList] = await Promise.all([
       commands.academic.listEnrollments(),
-      commands.finance.listActiveFeeTemplates(),
+	commands.finance.listFeeTemplates(),
     ]);
     students = studentList;
     templates = templateList;
@@ -151,7 +151,7 @@ async function handleSubmit(e: SubmitEvent) {
 			step="any"
 			placeholder="0.00"
 			required
-			disabled={isSubmitting}
+			disabled={form.isSubmitting}
 		/>
 	</div>
 
@@ -159,12 +159,12 @@ async function handleSubmit(e: SubmitEvent) {
 	<div class="flex flex-col gap-2 text-start">
 		<label for="fee_due" class="text-sm font-medium text-foreground">
 			{m.common_fee_label_due()}
-			disabled={form.isSubmitting}
+		</label>
 		<Input 
 			id="fee_due"
 			type="date" 
 			bind:value={dueDate}
-			disabled={isSubmitting}
+			disabled={form.isSubmitting}
 		/>
 	</div>
 
@@ -172,31 +172,33 @@ async function handleSubmit(e: SubmitEvent) {
 	<div class="flex flex-col gap-2 text-start">
 		<label for="fee_desc" class="text-sm font-medium text-foreground">
 			{m.common_fee_label_desc()}
-			placeholder={m.common_fee_placeholder_desc()}
+		</label>
 		<Input 
 			id="fee_desc"
 			type="text" 
 			bind:value={description}
 			placeholder={m.common_fee_placeholder_desc()}
-			disabled={isSubmitting}
+			disabled={form.isSubmitting}
 		/>
 	</div>
 
 	<!-- Form Actions -->
+	<div class="flex justify-end gap-2 pt-2">
 		<Button 
 			type="button" 
 			variant="ghost" 
 			onclick={onCancel}
-			disabled={isSubmitting}
+			disabled={form.isSubmitting}
 		>
 			{m.common_action_cancel()}
+		</Button>
 		<Button 
 			type="submit"
 			variant="lime" 
 			class="font-semibold"
-			disabled={isSubmitting || isLoadingDropdowns}
+			disabled={form.isSubmitting || isLoadingDropdowns}
 		>
-			{isSubmitting ? m.common_fee_toast_assigning() : m.common_fee_button_assign()}
+			{form.isSubmitting ? m.common_fee_toast_assigning() : m.common_fee_button_assign()}
 		</Button>
 	</div>
 </form>

@@ -14,6 +14,7 @@ import {
 } from "@orbis/ui-svelte/select";
 import { Award } from "@lucide/svelte";
 import { toast } from "svelte-sonner";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
 let {
   classId,
@@ -32,55 +33,49 @@ let {
 } = $props();
 
 // Form state
-let isSubmitting = $state(false);
-let name = $state("");
-let nameAr = $state("");
-let maxScore = $state<number>(100);
-let weight = $state<number>(15);
-let assessmentType = $state<"exam" | "quiz" | "homework" | "classwork">("exam");
-
-const typeLabels: Record<"exam" | "quiz" | "homework" | "classwork", string> =
-  $derived({
-    exam: m.common_assessment_option_exam(),
-    quiz: m.common_assessment_option_quiz(),
-    homework: m.common_assessments_type_homework(),
-    classwork: m.common_assessment_option_classwork(),
-  });
-
-async function handleSubmit(e: SubmitEvent) {
-  e.preventDefault();
-	const result = createAssessmentInputSchema.safeParse({
+const form = new FormController({
+	initialValues: {
+		title: "",
+		title_ar: "",
+		max_score: 100,
+		weight: 15,
+		item_type: "exam" as const,
+	},
+	schema: createAssessmentInputSchema,
+	normalize: (values) => ({
 		class_id: classId,
 		subject_id: subjectId,
 		term_id: periodId,
 		month: defaultMonth,
-		title: name,
-		title_ar: nameAr,
-		max_score: Number(maxScore),
-		weight: Number(weight),
-		item_type: assessmentType,
-	});
-	if (!result.success) {
-		toast.error(m.common_assessment_toast_error_name());
-		return;
-	}
-  isSubmitting = true;
-  try {
-		await commands.assessment.createAssessment(result.data);
+		...values,
+	}),
+});
+
+function fieldError(field: string): string | undefined {
+	return form.errors[field]?.[0];
+}
+
+const typeLabels: Record<"exam" | "quiz" | "homework" | "classwork", string> =
+  $derived({
+	exam: m.common_assessment_option_exam(),
+	quiz: m.common_assessment_option_quiz(),
+	homework: m.common_assessments_type_homework(),
+	classwork: m.common_assessment_option_classwork(),
+  });
+
+async function handleSubmit(e: SubmitEvent) {
+  e.preventDefault();
+  const submitted = await form.submit(async (payload) => {
+		await (commands.assessment as any).createAssessment(payload);
     toast.success(m.common_assessment_toast_success());
-
-    // Reset fields
-    name = "";
-    nameAr = "";
-    maxScore = 100;
-    weight = 15;
-    assessmentType = "exam";
-
+  });
+  if (submitted) {
+    form.reset();
     onSuccess();
-	} catch (e) {
-		toast.error(OrbisError.fromUnknown(e).message || m.common_assessment_toast_error_submit());
-  } finally {
-    isSubmitting = false;
+  } else if (form.formError) {
+    toast.error(form.formError);
+  } else if (Object.keys(form.errors).length > 0) {
+    toast.error(m.common_assessment_toast_error_name());
   }
 }
 </script>
@@ -102,7 +97,8 @@ async function handleSubmit(e: SubmitEvent) {
 			<Input 
 				id="ass_name_ar"
 				type="text" 
-				bind:value={nameAr}
+				bind:value={form.values.title_ar}
+				onblur={() => form.markTouched("title_ar")}
 				placeholder={m.common_assessment_placeholder_name_ar()}
 				required
 			/>
@@ -116,7 +112,8 @@ async function handleSubmit(e: SubmitEvent) {
 			<Input 
 				id="ass_name_en"
 				type="text" 
-				bind:value={name}
+				bind:value={form.values.title}
+				onblur={() => form.markTouched("title")}
 				placeholder={m.common_assessment_placeholder_name_ar()}
 			/>
 		</div>
@@ -126,9 +123,9 @@ async function handleSubmit(e: SubmitEvent) {
 			<Label for="ass_type" class="text-sm font-medium text-foreground">
 				{m.common_assessment_label_type()}
 			</Label>
-			<Select type="single" value={assessmentType} onValueChange={(v) => (assessmentType = (v as any) ?? "exam")}>
+			<Select type="single" value={form.values.item_type} onValueChange={(v: string | undefined) => (form.values.item_type = (v as typeof form.values.item_type) ?? "exam")}>
 				<SelectTrigger class="h-9 text-sm w-full">
-					{typeLabels[assessmentType] || assessmentType}
+					{typeLabels[form.values.item_type] || form.values.item_type}
 				</SelectTrigger>
 				<SelectContent>
 					<SelectItem value="exam">{m.common_assessment_option_exam()}</SelectItem>
@@ -149,7 +146,8 @@ async function handleSubmit(e: SubmitEvent) {
 				<Input 
 					id="ass_max"
 					type="number" 
-					bind:value={maxScore}
+					bind:value={form.values.max_score}
+					onblur={() => form.markTouched("max_score")}
 					min="1"
 					max="1000"
 				/>
@@ -163,7 +161,8 @@ async function handleSubmit(e: SubmitEvent) {
 				<Input 
 					id="ass_weight"
 					type="number" 
-					bind:value={weight}
+					bind:value={form.values.weight}
+					onblur={() => form.markTouched("weight")}
 					min="1"
 					max="100"
 				/>
@@ -177,7 +176,7 @@ async function handleSubmit(e: SubmitEvent) {
 			type="button" 
 			variant="ghost" 
 			onclick={onCancel}
-			disabled={isSubmitting}
+			disabled={form.isSubmitting}
 		>
 			{m.common_action_cancel()}
 		</Button>
@@ -185,9 +184,9 @@ async function handleSubmit(e: SubmitEvent) {
 			type="submit" 
 			variant="lime" 
 			class="font-semibold"
-			disabled={isSubmitting}
+			disabled={form.isSubmitting}
 		>
-			{isSubmitting ? m.common_state_saving() : m.common_action_save()}
+			{form.isSubmitting ? m.common_state_saving() : m.common_action_save()}
 		</Button>
 	</div>
 </form>

@@ -5,6 +5,8 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { toast } from "svelte-sonner";
 import { formatCurrency } from "$lib/core/i18n";
+import { paymentRecordInputSchema } from "@orbis/schemas";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
 import { slide } from "svelte/transition";
 
@@ -19,7 +21,6 @@ let {
 } = $props();
 
 // State
-let isSubmitting = $state(false);
 let students = $state<any[]>([]);
 let treasuries = $state<any[]>([]);
 let fees = $state<any[]>([]);
@@ -37,6 +38,20 @@ let amount = $state<number | null>(null);
 let receiptNumber = $state("");
 let referenceNumber = $state("");
 let notes = $state("");
+
+const form = new FormController({
+	initialValues: {
+		fee_id: "",
+		amount: 0,
+		method: "cash",
+		reference: "",
+		notes: "",
+		cash_account_id: "",
+		currency: "YER",
+	},
+	schema: paymentRecordInputSchema,
+});
+const isSubmitting = $derived(form.isSubmitting);
 
 // Derived exchange rate & conversion
 const exchangeRate = $derived.by(() => {
@@ -129,30 +144,11 @@ $effect(() => {
 
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
-  if (!selectedEnrollmentId) {
-    toast.error(m.common_fee_toast_error_student());
+	if (!selectedEnrollmentId) {
+		toast.error(m.common_fee_toast_error_student());
     return;
   }
-  if (!selectedFeeId) {
-    toast.error(m.common_payment_toast_error_fee());
-    return;
-  }
-  if (!selectedTreasuryId) {
-	toast.error(m.common_payment_toast_error_cash_account());
-    return;
-  }
-  if (!amount || amount <= 0) {
-    toast.error(m.common_fee_toast_error_amount());
-    return;
-  }
-  if (!currency || currency.trim().length !== 3) {
-    toast.error(m.common_ledger_toast_error_currency());
-    return;
-  }
-
-  isSubmitting = true;
-  try {
-    const request = {
+	form.values = {
       fee_id: selectedFeeId,
       amount: Number(amount),
       method:
@@ -166,22 +162,22 @@ async function handleSubmit(e: SubmitEvent) {
       cash_account_id: selectedTreasuryId,
       currency: currency.trim().toUpperCase(),
     };
-	await commands.finance.record({ ...request, exchange_rate: undefined });
-    toast.success(m.common_payment_toast_success());
-
-    // Reset form
-    amount = null;
-    receiptNumber = "";
-    referenceNumber = "";
-    notes = "";
-
-    onSuccess();
-  } catch (e) {
-    const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(m.common_payment_toast_error_submit({ error: errorMsg }));
-  } finally {
-    isSubmitting = false;
-  }
+	const submitted = await form.submit(async (payload) => {
+		await commands.finance.record({ ...payload, exchange_rate: undefined });
+		toast.success(m.common_payment_toast_success());
+	});
+	if (submitted) {
+		form.reset();
+		amount = null;
+		receiptNumber = "";
+		referenceNumber = "";
+		notes = "";
+		onSuccess();
+	} else if (form.formError) {
+		toast.error(form.formError);
+	} else {
+		toast.error(m.common_fee_toast_error_amount());
+	}
 }
 </script>
 

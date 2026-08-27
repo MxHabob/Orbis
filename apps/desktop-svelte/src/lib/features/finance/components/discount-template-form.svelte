@@ -19,6 +19,8 @@ import {
   AccordionTrigger,
 } from "@orbis/ui-svelte/accordion";
 import { toast } from "svelte-sonner";
+import { discountTemplateInputSchema } from "@orbis/schemas";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
 let {
   orgId,
@@ -45,6 +47,22 @@ let isAutoApply = $state(false);
 let isStackable = $state(false);
 let priority = $state<number | null>(null);
 let isActive = $state(true);
+
+const form = new FormController({
+  initialValues: {
+    name: "",
+    code: null as string | null,
+    item_type: "manual",
+    calculation_method: "percentage",
+    value: 0,
+    priority: null as number | null,
+    requires_approval: 0,
+    is_auto_apply: 0,
+    is_stackable: 0,
+    is_active: 1,
+  },
+  schema: discountTemplateInputSchema,
+});
 
 // Options for Type
 const itemTypes = $derived([
@@ -107,31 +125,25 @@ $effect(() => {
 });
 
 async function handleSubmit() {
-  if (!name.trim()) {
-    toast.error(m.common_dt_error_name_required());
-    return;
-  }
-  if (value < 0) {
-    toast.error(m.common_dt_error_value_positive());
-    return;
-  }
-
-  isSubmitting = true;
-  try {
+  form.values = {
+    name,
+    code,
+    item_type: itemType,
+    calculation_method: calculationMethod,
+    value: Number(value),
+    priority: priority === null ? null : Number(priority),
+    requires_approval: requiresApproval ? 1 : 0,
+    is_auto_apply: isAutoApply ? 1 : 0,
+    is_stackable: isStackable ? 1 : 0,
+    is_active: isActive ? 1 : 0,
+  };
+  const submitted = await form.submit(async (payload) => {
     const request = {
-      name: name.trim(),
-      code: code.trim() || null,
-      item_type: itemType,
-      calculation_method: calculationMethod,
-      value: Math.round(value),
+      ...payload,
+      value: Math.round(payload.value),
       eligibility_rules: null,
       limits: null,
-      requires_approval: requiresApproval ? 1 : 0,
       approver_roles: null,
-      is_auto_apply: isAutoApply ? 1 : 0,
-      is_stackable: isStackable ? 1 : 0,
-      priority: priority,
-      is_active: isActive ? 1 : 0,
     };
 
     if (template) {
@@ -147,11 +159,10 @@ async function handleSubmit() {
     }
 
     onSuccess();
-  } catch (e: unknown) {
-    toast.error(extractErrorMessage(e));
-  } finally {
-    isSubmitting = false;
-  }
+  });
+  if (submitted) onSuccess();
+  else if (form.formError) toast.error(form.formError);
+  else if (Object.keys(form.errors).length > 0) toast.error(m.common_dt_error_name_required());
 }
 </script>
 

@@ -30,6 +30,8 @@ import TeacherSelect from "$lib/features/academics/components/teacher-select.sve
 import { createUsersQuery } from "$lib/features/settings/queries";
 import { createAssessmentSchemesQuery } from "$lib/features/academics/queries-assessment";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import { classSubjectFormInputSchema } from "@orbis/schemas";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
 let {
   orgId,
@@ -87,7 +89,17 @@ const isLoading = $derived(
     subjectsQuery.isLoading ||
     usersQuery.isLoading,
 );
-let isSaving = $state(false);
+const form = new FormController({
+  initialValues: {
+    class_id: "",
+    subject_id: "",
+    teacher_id: "",
+    period_id: "",
+    weekly_hours: 4,
+  },
+  schema: classSubjectFormInputSchema,
+});
+const isSaving = $derived(form.isSubmitting);
 
 // Derived label helpers
 const selectedClass = $derived(classes.find((c) => String(c.id) === classId));
@@ -105,19 +117,20 @@ const availablePeriods = $derived(
 );
 
 async function handleSubmit() {
-  if (!classId || !subjectId || !teacherId || !periodId) {
-    toast.error(m.common_form_error_required_fields());
-    return;
-  }
-
-  isSaving = true;
-  try {
+  form.values = {
+    class_id: classId,
+    subject_id: subjectId,
+    teacher_id: teacherId,
+    period_id: periodId,
+    weekly_hours: Number(weeklyHours),
+  };
+  const submitted = await form.submit(async (values) => {
     const request = {
-      class_id: classId,
-      subject_id: subjectId,
-      period_id: periodId,
-      primary_teacher_id: teacherId,
-      weekly_hours: weeklyHours,
+      class_id: values.class_id,
+      subject_id: values.subject_id,
+      period_id: values.period_id,
+      primary_teacher_id: values.teacher_id,
+      weekly_hours: values.weekly_hours,
       scheme_id: schemeId || null,
     };
 
@@ -133,11 +146,9 @@ async function handleSubmit() {
     }
 
     onSuccess?.();
-  } catch (e: unknown) {
-    toast.error(extractErrorMessage(e));
-  } finally {
-    isSaving = false;
-  }
+  });
+  if (!submitted && form.formError) toast.error(form.formError);
+  else if (!submitted) toast.error(m.common_form_error_required_fields());
 }
 </script>
 

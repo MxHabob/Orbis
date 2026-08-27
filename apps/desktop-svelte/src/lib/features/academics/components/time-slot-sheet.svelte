@@ -20,6 +20,8 @@
   import { commands, extractErrorMessage } from "$lib/core/ipc";
   import { toast } from "svelte-sonner";
   import * as m from "$lib/paraglide/messages";
+  import { createTimeSlotInputSchema } from "@orbis/schemas";
+  import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
   interface Props {
     open: boolean;
@@ -46,6 +48,21 @@
   let isBreak = $state(false);
   let breakType = $state("recess");
   let isSubmitting = $state(false);
+
+  const form = new FormController({
+    initialValues: {
+      period_id: "",
+      slot_number: 1,
+      name: "",
+      name_ar: "",
+      start_time: "08:00",
+      end_time: "08:45",
+      duration_minutes: 45,
+      is_break: false,
+      applicable_days: "1,2,3,4,5",
+    },
+    schema: createTimeSlotInputSchema,
+  });
 
   function resetForm() {
     editingSlotId = null;
@@ -86,8 +103,18 @@
 
   async function handleSaveSlot(e: SubmitEvent) {
     e.preventDefault();
-    const dur = calcDuration(startTime, endTime);
-    if (dur <= 0) {
+    form.values = {
+      period_id: periodId,
+      slot_number: timeSlots.reduce((max, s) => Math.max(max, Number(s.slot_number) || 0), 0) + 1,
+      name: name.trim() || nameAr.trim(),
+      name_ar: nameAr.trim(),
+      start_time: startTime,
+      end_time: endTime,
+      duration_minutes: calcDuration(startTime, endTime),
+      is_break: isBreak,
+      applicable_days: "1,2,3,4,5",
+    };
+    if (!form.validate()) {
       toast.error(m.academics_schedule_time_slot_end_error());
       return;
     }

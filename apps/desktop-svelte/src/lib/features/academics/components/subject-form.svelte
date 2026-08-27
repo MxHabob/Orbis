@@ -23,10 +23,17 @@ const form = new FormController<SubjectDraft>({
 function fieldError(field: string): string | undefined {
 	return form.errors[field]?.[0];
 }
-  onSuccess: () => void;
-  onCancel: () => void;
+let {
+	onSuccess,
+	onCancel,
+}: {
+	orgId: string;
+	onSuccess: () => void;
+	onCancel: () => void;
 } = $props();
 
+async function handleSubmit(e: SubmitEvent) {
+	e.preventDefault();
 	const submitted = await form.submit(async (draft) => {
 		await commands.academic.createSubject({
 			...draft,
@@ -34,24 +41,13 @@ function fieldError(field: string): string | undefined {
 		});
 	});
 	if (submitted) {
-		code,
 		form.reset();
-		await commands.academic.createSubject(result.data);
+		onSuccess();
 	} else if (form.formError) {
 		toast.error(form.formError);
 	} else if (Object.keys(form.errors).length > 0) {
 		toast.error(m.common_subject_toast_error_name());
-    code = "";
-    creditHours = 3;
-    color = "";
-
-    onSuccess();
-	} catch (e) {
-		const errorMsg = OrbisError.fromUnknown(e).message;
-    toast.error(m.common_subject_toast_error_submit({ error: errorMsg }));
-  } finally {
-    isSubmitting = false;
-  }
+	}
 }
 </script>
 

@@ -42,6 +42,8 @@ import {
   Globe,
   Loader2,
 } from "@lucide/svelte";
+import { currencyInputSchema } from "@orbis/schemas";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
 interface Props {
   open: boolean;
@@ -116,7 +118,20 @@ let symbolPosition = $state("after"); // "before" | "after"
 let decimalPlaces = $state(2);
 let exchangeRate = $state(1.0);
 let isBase = $state(false);
-let isSubmitting = $state(false);
+const form = new FormController({
+  initialValues: {
+    code: "",
+    name: "",
+    name_ar: null as string | null,
+    symbol: "",
+    symbol_position: "after",
+    decimal_places: 2,
+    exchange_rate: 1,
+    is_base: false,
+  },
+  schema: currencyInputSchema,
+});
+const isSubmitting = $derived(form.isSubmitting);
 
 const selectedPresetItem = $derived(
   code ? presetMap.get(code.toUpperCase()) || { id: code, label: code, value: code } : null,
@@ -179,46 +194,42 @@ async function handleSubmit(e: Event) {
   if (isSubmitting) return;
 
   const cleanCode = code.trim().toUpperCase();
-  if (!cleanCode || cleanCode.length < 2) {
-    toast.error(m.settings_currencies_invalid_code());
-    return;
-  }
 
   if (existingCurrencies.some((c) => c.code?.toUpperCase() === cleanCode)) {
     toast.error(m.settings_currencies_already_exists());
     return;
   }
 
-  if (exchangeRate <= 0) {
-    toast.error(m.settings_currencies_invalid_rate());
-    return;
-  }
-
-  isSubmitting = true;
-
-  try {
+  form.values = {
+    code: cleanCode,
+    name: name.trim() || cleanCode,
+    name_ar: nameAr.trim() || null,
+    symbol: symbol.trim() || cleanCode,
+    symbol_position: symbolPosition,
+    decimal_places: Number(decimalPlaces),
+    exchange_rate: Number(exchangeRate),
+    is_base: isBase,
+  };
+  const submitted = await form.submit(async (values) => {
     await commands.finance.createCurrency(
-      cleanCode,
-      name.trim() || cleanCode,
-      nameAr.trim() || null,
-      symbol.trim() || cleanCode,
-      symbolPosition,
-      decimalPlaces,
-      exchangeRate,
-      isBase,
+      values.code,
+      values.name,
+      values.name_ar,
+      values.symbol,
+      values.symbol_position,
+      values.decimal_places,
+      values.exchange_rate,
+      values.is_base,
     );
 
     toast.success(m.settings_currencies_added_success());
+  });
+  if (submitted) {
     open = false;
     resetForm();
     onsuccess?.();
-  } catch (error: any) {
-    console.error("Error creating currency:", error);
-    const errorMsg = typeof error === "string" ? error : error?.message || "Unknown error";
-    toast.error(m.settings_currencies_add_error({ error: errorMsg }));
-  } finally {
-    isSubmitting = false;
-  }
+  } else if (form.formError) toast.error(form.formError);
+  else toast.error(m.settings_currencies_invalid_code());
 }
 </script>
 

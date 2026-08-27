@@ -8,6 +8,9 @@ import {
   DangerZoneSettingsCard,
 } from "$lib/features/settings";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
+import { toast } from "svelte-sonner";
+import { l } from "$lib/core/i18n";
+import { generalSettingsInputSchema } from "@orbis/schemas";
 
 let { org, isSaving, onsave, onsaveavatar, onremove, onlanguagechange } =
   $props<{
@@ -84,14 +87,19 @@ function handleReset() {
 
 function handleSubmit(e?: Event) {
   e?.preventDefault();
+  const result = generalSettingsInputSchema.safeParse({ name, currency, timezone, locale, dateFormat });
+  if (!result.success) {
+    toast.error(l("بيانات الإعدادات غير صالحة", "Settings contain invalid values"));
+    return;
+  }
   onsave({
-    name,
+    name: result.data.name,
     logo: logo || null,
     primary_color: primaryColor,
-    currency,
-    timezone,
-    locale,
-    date_format: dateFormat,
+    currency: result.data.currency,
+    timezone: result.data.timezone,
+    locale: result.data.locale,
+    date_format: result.data.dateFormat,
     hijri_enabled: hijriEnabled ? 1 : 0,
   });
   if (initialValues) {

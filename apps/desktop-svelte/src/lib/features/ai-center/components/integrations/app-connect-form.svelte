@@ -10,6 +10,8 @@ import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
 import { Switch } from "@orbis/ui-svelte/switch";
 import { l } from "$lib/core/i18n";
+import { toast } from "svelte-sonner";
+import { createAppSettingsSchema } from "@orbis/schemas";
 import {
   Select,
   SelectContent,
@@ -37,7 +39,12 @@ $effect.pre(() => {
 
 function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
-  onsubmit?.(values);
+  const result = createAppSettingsSchema(settings).safeParse(values);
+  if (!result.success) {
+    toast.error(l("يرجى مراجعة بيانات الاتصال", "Please review the connection settings"));
+    return;
+  }
+  onsubmit?.(result.data);
 }
 </script>
 

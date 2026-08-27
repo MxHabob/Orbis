@@ -216,6 +216,7 @@ function formatVal(val: number) {
     <!-- HTML Chart Area -->
     <div 
       class="flex-grow relative w-full h-[225px] select-none mt-2 flex flex-col justify-between" 
+      role="application"
       onmouseleave={handleMouseLeave}
     >
       <!-- Horizontal Grid Lines background -->

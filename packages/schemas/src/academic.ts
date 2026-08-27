@@ -66,7 +66,39 @@ export const createTimeSlotInputSchema = z
     message: "End time must be after start time",
   });
 
+export const classFormInputSchema = z.object({
+  name: z.string().trim().optional(),
+  name_ar: z.string().trim().optional(),
+  code: z.string().trim().max(50).optional(),
+  grade_level: z.string().trim().max(50).optional(),
+  capacity: z.number().int().min(1).max(100),
+  color: z.string().trim().optional(),
+}).refine((value) => Boolean(value.name || value.name_ar), {
+  path: ["name"],
+  message: "Name is required",
+});
+
+export const classSubjectFormInputSchema = z.object({
+  class_id: z.string().trim().min(1),
+  subject_id: z.string().trim().min(1),
+  teacher_id: z.string().trim().min(1),
+  period_id: z.string().trim().min(1),
+  weekly_hours: z.number().int().min(1).max(30),
+});
+
+export const lessonFormInputSchema = z.object({
+  period_id: z.string().trim().min(1),
+  class_id: z.string().trim().min(1),
+  subject_id: z.string().trim().min(1),
+  teacher_id: z.string().trim().min(1),
+  time_slot_id: z.string().trim().min(1),
+  day_of_week: z.number().int().min(1).max(7),
+});
+
 export type CreateRoomInput = z.infer<typeof createRoomInputSchema>;
 export type CreateSubjectInput = z.infer<typeof createSubjectInputSchema>;
 export type CreateAssessmentInput = z.infer<typeof createAssessmentInputSchema>;
 export type CreateTimeSlotInput = z.infer<typeof createTimeSlotInputSchema>;
+export type ClassFormInput = z.infer<typeof classFormInputSchema>;
+export type ClassSubjectFormInput = z.infer<typeof classSubjectFormInputSchema>;
+export type LessonFormInput = z.infer<typeof lessonFormInputSchema>;

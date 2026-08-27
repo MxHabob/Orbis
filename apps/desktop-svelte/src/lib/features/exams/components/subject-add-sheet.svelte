@@ -28,6 +28,8 @@ import {
 } from "@orbis/ui-svelte/accordion";
 
 import { commands } from "$lib/core/ipc";
+import { examSubjectInputSchema } from "@orbis/schemas";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
 const examTypeLabels = {
   written: m.exams_subject_type_written(),
@@ -62,6 +64,17 @@ let maxScore = $state(100);
 let durationMinutes = $state(120);
 let examType = $state("written");
 let isSaving = $state(false);
+
+const form = new FormController({
+  initialValues: {
+    session_id: "",
+    subject_id: "",
+    max_score: 100,
+    duration_minutes: 120,
+    exam_type: "written" as "written" | "oral" | "practical" | "mixed",
+  },
+  schema: examSubjectInputSchema,
+});
 
 function resetForm() {
   subjectId = "";
@@ -123,25 +136,23 @@ async function handleSubmit() {
     }
   }
 
-  isSaving = true;
-  try {
-    // 2. Link/create exam subject inside this session
-    await commands.exam.createExamSubject({
+  form.values = {
       session_id: sessionId,
       subject_id: targetSubjectId,
-      max_score: maxScore,
-      duration_minutes: durationMinutes,
-      exam_type: examType,
-    });
+      max_score: Number(maxScore),
+      duration_minutes: Number(durationMinutes),
+      exam_type: examType as "written" | "oral" | "practical" | "mixed",
+  };
+  const submitted = await form.submit(async (payload) => {
+    await commands.exam.add(payload);
     toast.success("تمت إضافة المادة للدورة بنجاح");
+  });
+  if (submitted) {
     resetForm();
     open = false;
     onSuccess();
-  } catch (e: any) {
-    toast.error((e as any)?.message || "فشل إضافة المادة للدورة");
-  } finally {
-    isSaving = false;
-  }
+  } else if (form.formError) toast.error(form.formError);
+  else toast.error("بيانات المادة غير صالحة");
 }
 </script>
 
@@ -189,7 +200,7 @@ async function handleSubmit() {
             <label for="subject-select" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
               اختر المادة
             </label>
-            <Select type="single" value={subjectId} onValueChange={(v) => (subjectId = v ?? "")}>
+            <Select type="single" value={subjectId} onValueChange={(v: string | undefined) => (subjectId = v ?? "")}>
               <SelectTrigger class="h-9 text-xs w-full">
                 {subjectsList.find(s => String(s.id) === subjectId)?.name_ar || subjectsList.find(s => String(s.id) === subjectId)?.name || "اختر مادة دراسية..."}
               </SelectTrigger>
@@ -258,7 +269,7 @@ async function handleSubmit() {
           <label for="exam-type" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
             {m.common_bulk_col_exam_type()}
           </label>
-          <Select type="single" value={examType} onValueChange={(v) => (examType = v ?? "written")}>
+          <Select type="single" value={examType} onValueChange={(v: string | undefined) => (examType = v ?? "written")}>
             <SelectTrigger class="h-9 text-xs w-full">
               {examTypeLabels[examType as keyof typeof examTypeLabels] || examType}
             </SelectTrigger>

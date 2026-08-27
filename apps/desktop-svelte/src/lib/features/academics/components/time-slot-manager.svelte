@@ -1,11 +1,12 @@
 <script lang="ts">
 import { Save, X } from "@lucide/svelte";
 import { toast } from "svelte-sonner";
-import { commands, extractErrorMessage } from "$lib/core/ipc";
+import { commands } from "$lib/core/ipc";
 import { createTimeSlotInputSchema } from "@orbis/schemas";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import * as m from "$lib/paraglide/messages";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
 let {
   open = $bindable(false),
@@ -21,12 +22,27 @@ let {
   onSuccess: () => void;
 } = $props();
 
-let isSubmitting = $state(false);
 let editingId = $state<string | null>(slot?.id ? String(slot.id) : null);
 let nameAr = $state("");
 let name = $state("");
 let startTime = $state("");
 let endTime = $state("");
+
+const form = new FormController({
+  initialValues: {
+    period_id: "",
+    slot_number: 1,
+    name: "",
+    name_ar: "",
+    start_time: "",
+    end_time: "",
+    duration_minutes: 0,
+    is_break: false,
+    applicable_days: "1,2,3,4,5",
+  },
+  schema: createTimeSlotInputSchema,
+});
+const isSubmitting = $derived(form.isSubmitting);
 
 function resetForm() {
   editingId = null;
@@ -78,7 +94,7 @@ async function saveSlot(event: SubmitEvent) {
     (highest, slot) => Math.max(highest, Number(slot.slot_number) || 0),
     0,
   ) + 1;
-  const result = createTimeSlotInputSchema.safeParse({
+  form.values = {
     period_id: periodId,
     slot_number: slotNumber,
     name: name.trim() || nameAr.trim(),
@@ -88,14 +104,8 @@ async function saveSlot(event: SubmitEvent) {
     duration_minutes: durationMinutes(),
     is_break: false,
     applicable_days: "1,2,3,4,5",
-  });
-  if (!result.success) {
-    toast.error(m.academics_schedule_time_slot_required());
-    return;
-  }
-
-  isSubmitting = true;
-  try {
+  };
+  const submitted = await form.submit(async (payload) => {
     if (editingId) {
       await commands.scheduling.updateTimeSlot(editingId, {
         name: name.trim() || nameAr.trim(),
@@ -105,17 +115,16 @@ async function saveSlot(event: SubmitEvent) {
       });
       toast.success(m.academics_schedule_time_slot_updated());
     } else {
-      await commands.scheduling.createTimeSlot(result.data);
+      await commands.scheduling.createTimeSlot(payload);
       toast.success(m.academics_schedule_time_slot_added());
     }
+  });
+  if (submitted) {
     resetForm();
     open = false;
     onSuccess();
-  } catch (error) {
-    toast.error(extractErrorMessage(error));
-  } finally {
-    isSubmitting = false;
-  }
+  } else if (form.formError) toast.error(form.formError);
+  else toast.error(m.academics_schedule_time_slot_required());
 }
 
 </script>

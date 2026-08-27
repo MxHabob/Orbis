@@ -16,6 +16,8 @@ import { getLocale } from "$lib/paraglide/runtime";
 import { l } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
 import { createClassSubjectsQuery } from "$lib/features/academics/queries";
+import { lessonFormInputSchema } from "@orbis/schemas";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
 let {
   orgId,
@@ -46,12 +48,24 @@ let {
 } = $props();
 
 // Form state
-let isSubmitting = $state(false);
 let formSubjectId = $state(lesson?.subject_id || "");
 let formTeacherId = $state(lesson?.teacher_id || "");
 let formRoom = $state(lesson?.room_id || "");
 let formDayOfWeek = $state(lesson?.day_of_week || dayOfWeek);
 let formTimeSlotId = $state(lesson?.time_slot_id || timeSlotId);
+
+const form = new FormController({
+  initialValues: {
+    period_id: "",
+    class_id: "",
+    subject_id: "",
+    teacher_id: "",
+    time_slot_id: "",
+    day_of_week: 1,
+  },
+  schema: lessonFormInputSchema,
+});
+const isSubmitting = $derived(form.isSubmitting);
 
 const classSubjectsQuery = createClassSubjectsQuery(
   () => classId,
@@ -148,7 +162,15 @@ async function checkScheduleConflict() {
 
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
-  if (!formSubjectId) {
+  form.values = {
+    period_id: periodId,
+    class_id: classId,
+    subject_id: formSubjectId,
+    teacher_id: formTeacherId,
+    time_slot_id: formTimeSlotId,
+    day_of_week: Number(formDayOfWeek),
+  };
+  if (!form.validate()) {
     toast.error(m.common_lesson_toast_error_subject());
     return;
   }
@@ -156,20 +178,19 @@ async function handleSubmit(e: SubmitEvent) {
     toast.error(m.common_lesson_error_subject_link());
     return;
   }
-  if (!formTeacherId) {
-    toast.error(m.common_lesson_error_teacher_link());
+  if (conflictError) {
+    toast.error(conflictError);
     return;
   }
-  isSubmitting = true;
-  try {
+  const submitted = await form.submit(async (values) => {
     const request = {
-      period_id: periodId,
-      class_id: classId,
+      period_id: values.period_id,
+      class_id: values.class_id,
       class_subject_id: selectedClassSubject.id,
-      subject_id: formSubjectId,
-      teacher_id: formTeacherId || undefined,
-      time_slot_id: formTimeSlotId,
-      day_of_week: formDayOfWeek,
+      subject_id: values.subject_id,
+      teacher_id: values.teacher_id,
+      time_slot_id: values.time_slot_id,
+      day_of_week: values.day_of_week,
       room_id: formRoom || undefined,
     };
     if (isEditing) {
@@ -191,14 +212,9 @@ async function handleSubmit(e: SubmitEvent) {
     conflictError = null;
 
     onSuccess();
-  } catch (e) {
-    const errorMessage = extractErrorMessage(e);
-    toast.error(m.common_lesson_toast_error(), {
-      description: errorMessage,
-      duration: 7000,
-    });
-  } finally {
-    isSubmitting = false;
+  });
+  if (!submitted && form.formError) {
+    toast.error(m.common_lesson_toast_error(), { description: form.formError, duration: 7000 });
   }
 }
 </script>

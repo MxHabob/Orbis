@@ -17,6 +17,8 @@ import { toast } from "svelte-sonner";
 import { examsStore } from "$lib/features/exams/store.svelte";
 import { authStore } from "$lib/stores";
 import { commands } from "$lib/core/ipc";
+import { examSessionInputSchema } from "@orbis/schemas";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
 let {
   open = $bindable(false),
@@ -41,7 +43,18 @@ let endDate = $state(session?.end_date || "");
 let periodId = $state(session?.period_id || "");
 let periodsList = $state<any[]>([]);
 
-let isSaving = $state(false);
+const form = new FormController({
+  initialValues: {
+    name: "",
+    name_ar: "",
+    session_type: "final" as const,
+    start_date: "",
+    end_date: "",
+    period_id: "",
+  },
+  schema: examSessionInputSchema,
+});
+const isSaving = $derived(form.isSubmitting);
 
 // Reset form when session changes
 $effect(() => {
@@ -71,37 +84,23 @@ $effect(() => {
 });
 
 async function handleSubmit() {
-  if (!nameAr.trim()) {
-    toast.error("اسم الدورة مطلوب");
-    return;
-  }
-  if (!startDate || !endDate) {
-    toast.error("تاريخ البداية والنهاية مطلوبان");
-    return;
-  }
-  if (!periodId) {
-    toast.error("الدورة الأكاديمية مطلوبة");
-    return;
-  }
-
-  isSaving = true;
-  try {
-    const userId = authStore.userId || authStore.user?.id || "desktop_user";
+  form.values = { name, name_ar: nameAr, session_type: sessionType, start_date: startDate, end_date: endDate, period_id: periodId };
+  const submitted = await form.submit(async (payload) => {
     if (isEdit && session) {
       await commands.exam.updateSession(session.id, {
-        name,
+        name: payload.name || payload.name_ar,
 
-        start_date: startDate,
-        end_date: endDate,
+        start_date: payload.start_date,
+        end_date: payload.end_date,
       });
     } else {
       await commands.exam.createSession({
-        name,
+        name: payload.name || payload.name_ar,
 
-        session_type: sessionType,
-        start_date: startDate,
-        end_date: endDate,
-        period_id: periodId,
+        session_type: payload.session_type,
+        start_date: payload.start_date,
+        end_date: payload.end_date,
+        period_id: payload.period_id,
       });
     }
     toast.success(m.common_exams_create_success());
@@ -113,11 +112,9 @@ async function handleSubmit() {
     periodId = "";
     open = false;
     onSuccess();
-  } catch (e: any) {
-    toast.error((e as any)?.message || "Failed to save session");
-  } finally {
-    isSaving = false;
-  }
+  });
+  if (!submitted && form.formError) toast.error(form.formError);
+  else if (!submitted) toast.error("بيانات الدورة غير صالحة");
 }
 </script>
 
