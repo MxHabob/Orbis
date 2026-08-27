@@ -63,7 +63,7 @@ $effect(() => {
   sessionType = session?.session_type || "final";
   startDate = session?.start_date || "";
   endDate = session?.end_date || "";
-  periodId = session?.period_id || "";
+  periodId = session?.period_id ? String(session.period_id) : "";
 });
 
 // Load academic periods on open
@@ -74,7 +74,7 @@ $effect(() => {
       .then((res: any) => {
         periodsList = res || [];
         if (!periodId && periodsList.length > 0) {
-          periodId = periodsList[0].id;
+          periodId = String(periodsList[0].id);
         }
       })
       .catch((e) => {
@@ -115,7 +115,10 @@ async function handleSubmit() {
     onSuccess();
   });
   if (!submitted && form.formError) toast.error(form.formError);
-  else if (!submitted) toast.error("بيانات الدورة غير صالحة");
+  else if (!submitted) {
+    const validationMessage = Object.values(form.errors).flat()[0];
+    toast.error(validationMessage || "بيانات الدورة غير صالحة");
+  }
 }
 </script>
 
