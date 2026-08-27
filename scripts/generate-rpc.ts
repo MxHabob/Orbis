@@ -656,15 +656,18 @@ export const commands: OrbisCommands = {\n`;
       if (op.tsFuncName.endsWith("Paginated") || op.args.some(a => a.rustType.includes("CursorRequest"))) {
           const cursorArgs = op.args.filter(a => a.rustType.includes("CursorRequest"));
           const extraArgs = op.args.filter(a => !cursorArgs.includes(a));
-          const extraSignature = extraArgs.map(a => `${a.name}?: any`).join(", ");
-          const signature = extraSignature ? `cursorOrReq?: any, ${extraSignature}` : "cursorOrReq?: any, limit?: any";
-          content += `    ${op.tsFuncName}: (${signature}) => {\n`;
-          content += `      const req = (typeof cursorOrReq === "object" && cursorOrReq !== null && !Array.isArray(cursorOrReq))\n`;
-          content += `        ? cursorOrReq\n`;
-          content += `        : { cursor: typeof cursorOrReq === "string" ? cursorOrReq : null, limit: 50 };\n`;
-          const extraPayload = extraArgs.map(a => `${a.name}: ${a.name}`).join(", ");
-          content += `      return cmd("${tauriFuncName}", { request: req${extraPayload ? `, ${extraPayload}` : ""} });\n`;
-          content += `    },\n`;
+          if (extraArgs.length > 0) {
+            const signature = op.args.map(a => `${a.name}: any`).join(", ");
+            const payload = op.args.map(a => `${a.name}: ${a.name}`).join(", ");
+            content += `    ${op.tsFuncName}: (${signature}) => cmd("${tauriFuncName}", { ${payload} }),\n`;
+          } else {
+            content += `    ${op.tsFuncName}: (cursorOrReq?: any, limit?: any) => {\n`;
+            content += `      const req = (typeof cursorOrReq === "object" && cursorOrReq !== null && !Array.isArray(cursorOrReq))\n`;
+            content += `        ? cursorOrReq\n`;
+            content += `        : { cursor: typeof cursorOrReq === "string" ? cursorOrReq : null, limit: typeof limit === "number" ? limit : 50 };\n`;
+            content += `      return cmd("${tauriFuncName}", { request: req });\n`;
+            content += `    },\n`;
+          }
         } else if (op.args.some(a => a.rustName === "on_chunk")) {
           const callbackArg = op.args.find(a => a.rustName === "on_chunk")?.name || "onChunk";
           const callArgs = op.args.map(a => a.name === callbackArg ? `${callbackArg}: channel` : a.name).join(", ");

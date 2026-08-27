@@ -797,6 +797,7 @@ class OnboardingState {
       const org = await commands.organization.getOrganization().catch(() => null);
       if (org) {
         const updateRequest = {
+          org_id: orgId,
           name: this.profile.orgName || org.name,
           logo: org.logo || null,
           primary_color: org.primary_color,
@@ -805,9 +806,11 @@ class OnboardingState {
           locale: this.profile.locale || org.locale,
           date_format: org.date_format,
           hijri_enabled: org.hijri_enabled,
-          settings: JSON.stringify(settingsObj),
         };
         await commands.organization.updateOrganization(updateRequest).catch(e => console.warn("Update org warning:", e));
+        await commands.organization.updateSettings({
+          registration: settingsObj.registration_config,
+        }).catch(e => console.warn("Update organization settings warning:", e));
       }
 
       // Currency is already created by the backend bootstrap_full().

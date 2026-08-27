@@ -77,7 +77,10 @@ const examSessions = $derived((examSessionsQuery.data as any[]) ?? []);
 // System Document Templates Query
 const documentTemplatesQuery = createQuery(() => ({
   queryKey: ["document-templates", data.orgId],
-  queryFn: () => commands.document.listDocuments(data.orgId),
+  queryFn: () => commands.docforge.listTemplates({
+    org_id: data.orgId,
+    document_type: "EXAM_REGISTER",
+  }),
   enabled: !!data.orgId,
   staleTime: 5 * 60 * 1000,
 }));

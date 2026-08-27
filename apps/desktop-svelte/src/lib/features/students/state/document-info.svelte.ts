@@ -29,10 +29,13 @@ export class DocumentInfoState {
     if (!originalStudent || !this.studentId) return;
 
     try {
-      const studentDocs = await commands.document.listDocuments(
+      const studentDocs = (await commands.document.listDocuments(
+        null,
         originalStudent.student_id,
-      );
-      const submitted = [];
+        null,
+        null,
+      )) as any[];
+      const submitted: any[] = [];
       const requiredDocNames =
         this.orgRequiredDocuments.length > 0
           ? this.orgRequiredDocuments

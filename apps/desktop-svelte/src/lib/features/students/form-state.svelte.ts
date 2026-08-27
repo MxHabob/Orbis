@@ -77,18 +77,19 @@ export class StudentFormState {
   async init() {
     try {
       const [org] = await Promise.all([
-        commands.organization.getOrganization(this.orgId),
+        commands.organization.getOrganization(),
         this.financial.init(),
       ]);
 
       if (org) {
-        this.orgName = String(org.name || org.name_ar || "");
-        if (org.settings) {
+        const organization = org as any;
+        this.orgName = String(organization.name || organization.name_ar || "");
+        if (organization.settings) {
           try {
             const settings =
-              typeof org.settings === "string"
-                ? JSON.parse(org.settings)
-                : (org.settings || {});
+              typeof organization.settings === "string"
+                ? JSON.parse(organization.settings)
+                : (organization.settings || {});
             const reg = settings.registration || settings.registration_config || {};
 
             if (Array.isArray(reg.required_documents)) {
@@ -148,10 +149,7 @@ export class StudentFormState {
       if (this.isEditMode && this.studentId) {
         let originalStudent: any = null;
         try {
-          originalStudent = await commands.academic.getEnrollment(
-            this.orgId,
-            this.studentId,
-          );
+          originalStudent = await commands.academic.getEnrollment(this.studentId);
         } catch (err) {
           console.error("Failed to load student by ID from backend:", err);
         }
@@ -347,7 +345,7 @@ export class StudentFormState {
 
     try {
       // Verify control account
-      const accounts = await commands.finance.listAccounts(this.orgId);
+      const accounts = await commands.finance.listAccounts();
       const hasControlAccount = accounts.some((acc) => acc.code === "110301");
       if (!hasControlAccount) {
         toast.error(m.common_form_error_control_account_missing());
@@ -377,19 +375,11 @@ export class StudentFormState {
         await commands.iam.updateUser(targetStudentId, studentUserData);
 
         if (originalStudent.class_id !== this.personal.classId) {
-          await commands.academic.transfer(
-            this.orgId,
-            this.studentId!,
-            this.personal.classId,
-          );
+          await commands.academic.transfer(this.studentId!, this.personal.classId);
         }
 
         if (originalStudent.status !== this.registrationStatus) {
-          await commands.academic.withdraw(
-            this.orgId,
-            this.studentId!,
-            this.registrationStatus,
-          );
+          await commands.academic.withdraw(this.studentId!);
         }
         toast.success(m.common_form_success_update());
       } else {
@@ -411,7 +401,7 @@ export class StudentFormState {
             : null,
         };
 
-        const res = await commands.enrollment_workflow.registerStudent(payload);
+        const res: any = await commands.enrollment_workflow.registerStudent(payload);
         targetStudentId = String(res.user_id);
         targetEnrollmentId = String(res.enrollment_id);
 
@@ -429,43 +419,29 @@ export class StudentFormState {
         let guardianUserId = guardian.user_id;
 
         if (!guardianUserId) {
-          const checkExisting = await commands.academic.searchGuardians(
-            this.orgId,
-            guardian.phone,
-          );
+          const checkExisting = await commands.academic.search(guardian.phone);
           if (checkExisting && checkExisting.length > 0) {
             guardianUserId = checkExisting[0].id;
           } else {
             const guardEmail =
               guardian.email.trim() || `parent.${Date.now()}@orbis.local`;
-            const guardUser = await commands.iam.createUser(
-              this.orgId,
-              "system",
-              {
+            const guardUser = await commands.iam.createUser({
                 email: guardEmail,
-                password: "Orbis123456",
                 full_name: guardian.full_name.trim(),
-                name_ar: guardian.full_name.trim(),
                 primary_role: "parent",
                 phone: guardian.phone.trim() || null,
-                sex: "male",
-                national_id: guardian.national_id.trim() || null,
-                date_of_birth: null,
-              },
-            );
+              password_hash: null,
+            });
             guardianUserId = guardUser.id;
           }
         } else {
           await commands.iam.updateUser(guardianUserId!, {
             full_name: guardian.full_name.trim(),
-            name_ar: guardian.full_name.trim(),
             phone: guardian.phone.trim() || null,
-            national_id: guardian.national_id.trim() || null,
           });
         }
 
         const existingLinks = await commands.academic.listGuardiansByStudent(
-          this.orgId,
           targetStudentId,
         );
         const matchedLink = existingLinks.find(
@@ -492,12 +468,12 @@ export class StudentFormState {
         };
 
         if (matchedLink) {
-          await commands.platform.updateGuardianLink(
+          await commands.academic.updateGuardian(
             String(matchedLink.id),
             linkRequest,
           );
         } else {
-          await commands.platform.createGuardianLink(linkRequest);
+          await commands.academic.createGuardian(linkRequest);
         }
       }
 
@@ -510,7 +486,7 @@ export class StudentFormState {
         for (const key in this.financial.selectedOptionalFees) {
           if (this.financial.selectedOptionalFees[key].checked) {
             try {
-              await commands.finance.assignStudentFee({
+              await commands.finance.assign({
                 enrollment_id: targetEnrollmentId,
                 fee_template_id: key,
                 amount: this.financial.selectedOptionalFees[key].amount,
@@ -548,8 +524,7 @@ export class StudentFormState {
     }
     this.isDownloadingForm = true;
     try {
-      const templateRecord = await commands.document.getDocuments(
-        this.orgId,
+      const templateRecord = await commands.docforge.getTemplate(
         this.selectedTemplateId,
       );
       if (!templateRecord) {
@@ -558,7 +533,7 @@ export class StudentFormState {
         );
         return;
       }
-      const documentModel = JSON.parse(templateRecord.document_json as string);
+      const documentModel = JSON.parse((templateRecord as any).document_json as string);
 
       const printVariables = {
         orgName: this.orgName,

@@ -5,6 +5,7 @@ use crate::commands::error::{CmdResult, CommandError};
 use svc_document::ops;
 
 #[derive(serde::Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct DocumentListRequest {
     pub owner_id: Option<String>,
     pub entity_type: Option<String>,

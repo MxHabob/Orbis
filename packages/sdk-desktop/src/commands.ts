@@ -31,12 +31,7 @@ export const commands: OrbisCommands = {
     getPermissions: (role: any) => cmd("iam_role_get_permissions", { role }),
     savePermissions: (role: any, permissions: any) => cmd("iam_role_save_permissions", { role, permissions }),
     listUsers: (filter: any) => cmd("iam_user_list", { filter }),
-    listUsersPaginated: (cursorOrReq?: any, filter?: any) => {
-      const req = (typeof cursorOrReq === "object" && cursorOrReq !== null && !Array.isArray(cursorOrReq))
-        ? cursorOrReq
-        : { cursor: typeof cursorOrReq === "string" ? cursorOrReq : null, limit: 50 };
-      return cmd("iam_user_list_paginated", { request: req, filter: filter });
-    },
+    listUsersPaginated: (request: any, filter: any) => cmd("iam_user_list_paginated", { request: request, filter: filter }),
     getUser: (userId: any) => cmd("iam_user_get", { userId }),
     search: (queryStr: any) => cmd("iam_user_search", { queryStr }),
     createUser: (req: any) => cmd("iam_user_create", { req }),
@@ -104,13 +99,13 @@ export const commands: OrbisCommands = {
     listEnrollmentsPaginated: (cursorOrReq?: any, limit?: any) => {
       const req = (typeof cursorOrReq === "object" && cursorOrReq !== null && !Array.isArray(cursorOrReq))
         ? cursorOrReq
-        : { cursor: typeof cursorOrReq === "string" ? cursorOrReq : null, limit: 50 };
+        : { cursor: typeof cursorOrReq === "string" ? cursorOrReq : null, limit: typeof limit === "number" ? limit : 50 };
       return cmd("academic_enrollment_list_paginated", { request: req });
     },
     listPaginatedEnriched: (cursorOrReq?: any, limit?: any) => {
       const req = (typeof cursorOrReq === "object" && cursorOrReq !== null && !Array.isArray(cursorOrReq))
         ? cursorOrReq
-        : { cursor: typeof cursorOrReq === "string" ? cursorOrReq : null, limit: 50 };
+        : { cursor: typeof cursorOrReq === "string" ? cursorOrReq : null, limit: typeof limit === "number" ? limit : 50 };
       return cmd("academic_enrollment_list_paginated_enriched", { request: req });
     },
     getEnrollment: (id: any) => cmd("academic_enrollment_get", { id }),
@@ -170,12 +165,7 @@ export const commands: OrbisCommands = {
     listActive: () => cmd("assessment_calculation_policy_list_active", {}),
     listGrades: (assessmentId: any) => cmd("assessment_grade_list", { assessmentId }),
     listGradesByPeriodAndClassSubject: (periodId: any, classSubjectId: any) => cmd("assessment_grade_list_by_period_and_class_subject", { periodId, classSubjectId }),
-    listGradesPaginated: (cursorOrReq?: any, assessmentId?: any) => {
-      const req = (typeof cursorOrReq === "object" && cursorOrReq !== null && !Array.isArray(cursorOrReq))
-        ? cursorOrReq
-        : { cursor: typeof cursorOrReq === "string" ? cursorOrReq : null, limit: 50 };
-      return cmd("assessment_grade_list_paginated", { request: req, assessmentId: assessmentId });
-    },
+    listGradesPaginated: (assessmentId: any, request: any) => cmd("assessment_grade_list_paginated", { assessmentId: assessmentId, request: request }),
     reportCard: (enrollmentId: any, periodId: any) => cmd("assessment_grade_report_card", { enrollmentId, periodId }),
     analytics: (periodId: any, classSubjectId: any) => cmd("assessment_grade_analytics", { periodId, classSubjectId }),
     matrix: (periodId: any, classSubjectId: any) => cmd("assessment_grade_matrix", { periodId, classSubjectId }),
@@ -305,12 +295,7 @@ export const commands: OrbisCommands = {
     updateSession: (sessionId: any, name: any, status: any, startDate: any, endDate: any) => cmd("exam_session_update", { sessionId, name, status, startDate, endDate }),
   },
   document: {
-    listDocuments: (cursorOrReq?: any, ownerId?: any, entityType?: any, category?: any) => {
-      const req = (typeof cursorOrReq === "object" && cursorOrReq !== null && !Array.isArray(cursorOrReq))
-        ? cursorOrReq
-        : { cursor: typeof cursorOrReq === "string" ? cursorOrReq : null, limit: 50 };
-      return cmd("document_document_list", { request: req, ownerId: ownerId, entityType: entityType, category: category });
-    },
+    listDocuments: (ownerId: any, entityType: any, category: any, request: any) => cmd("document_document_list", { ownerId: ownerId, entityType: entityType, category: category, request: request }),
     deleteDocument: (id: any) => cmd("document_document_delete", { id }),
     uploadDocument: (fileName: any, mimeType: any, bytes: any, entityType: any, entityId: any, category: any, visibility: any) => cmd("upload_document", { fileName, mimeType, bytes, entityType, entityId, category, visibility }),
     getDocuments: (request: any) => cmd("get_documents", { request }),

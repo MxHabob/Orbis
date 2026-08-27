@@ -211,7 +211,6 @@ async function generatePreview() {
     // Use first N entity IDs for preview (one sheet)
     const previewIds = entityIds.slice(0, multiUpLayout.itemsPerSheet);
     const pdfBytes = await commands.docforge.previewMultiUp(
-      orgId || "",
       selectedTemplateId,
       previewIds,
       configJson,

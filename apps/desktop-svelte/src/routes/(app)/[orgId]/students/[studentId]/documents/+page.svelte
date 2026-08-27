@@ -79,7 +79,7 @@ async function loadDocuments() {
   error = null;
   try {
     // Fetch real documents for this student
-    documents = await commands.document.listDocuments(studentUserId, null, null, null);
+    documents = await commands.document.listDocuments(null, studentUserId, null, null);
   } catch (e) {
     error = e instanceof Error ? e.message : String(e);
   } finally {
@@ -95,20 +95,10 @@ async function handleAddDocument() {
 
   try {
     const request = {
-      orgId,
-      ownerId: studentUserId,
+      owner_id: studentUserId,
       name: newDocName.trim(),
-      title: newDocTitle.trim() ? newDocTitle.trim() : newDocName.trim(),
-      description: newDocDescription.trim() ? newDocDescription.trim() : null,
-      type: newDocUrl.trim() ? "file" : "placeholder",
-      visibility: "private",
-      storageProvider: "local",
-      url: newDocUrl.trim() ? newDocUrl.trim() : null,
-      processingStatus: newDocUrl.trim() ? "ready" : "pending_upload",
-      isTemplate: 0,
-      uploadedBy: "system",
-      size: newDocUrl.trim() ? 1024 * 1024 * 2 : null, // 2MB mock size
-      extension: newDocUrl.trim() ? "pdf" : null,
+      item_type: newDocUrl.trim() ? "file" : "placeholder",
+      key: newDocUrl.trim(),
     };
 
     await commands.academic.createDocument(request);
