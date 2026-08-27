@@ -183,7 +183,6 @@ async function handleSubmit(e: SubmitEvent) {
 	</div>
 
 	<!-- Form Actions -->
-			disabled={form.isSubmitting}
 		<Button 
 			type="button" 
 			variant="ghost" 
@@ -191,9 +190,8 @@ async function handleSubmit(e: SubmitEvent) {
 			disabled={isSubmitting}
 		>
 			{m.common_action_cancel()}
-			disabled={form.isSubmitting || isLoadingDropdowns}
 		<Button 
-			{form.isSubmitting ? m.common_fee_toast_assigning() : m.common_fee_button_assign()}
+			type="submit"
 			variant="lime" 
 			class="font-semibold"
 			disabled={isSubmitting || isLoadingDropdowns}

@@ -234,6 +234,7 @@ function formatVal(val: number) {
       <!-- Columns Container -->
       <div 
         class="absolute inset-0 flex items-end justify-between ps-16 pe-2 pb-8 pt-4 cursor-crosshair"
+        role="application"
         onmousemove={handleMouseMove}
       >
         {#each bars as bar, idx}
