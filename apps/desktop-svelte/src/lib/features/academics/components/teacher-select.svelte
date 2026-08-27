@@ -46,8 +46,8 @@ const selectedTeacher = $derived(
 const displayLabel = $derived(
   value === "all" || value === "" || !value
     ? showAllOption
-      ? allOptionLabel || "جميع المعلمين"
-      : placeholder || (m.common_cs_form_select_teacher ? m.common_cs_form_select_teacher() : "اختر المعلم...")
+      ? allOptionLabel || m.common_cs_form_all_teachers()
+      : placeholder || m.common_cs_form_select_teacher()
     : selectedTeacher
       ? getTeacherLabel(selectedTeacher)
       : value,
@@ -80,7 +80,7 @@ function handleValueChange(newVal: string | undefined) {
         value="all"
         class="text-xs text-start justify-start cursor-pointer"
       >
-        {allOptionLabel || "جميع المعلمين"}
+        {allOptionLabel || m.common_cs_form_all_teachers()}
       </SelectItem>
     {/if}
     {#each teachers as t (t.id)}
@@ -93,7 +93,7 @@ function handleValueChange(newVal: string | undefined) {
     {/each}
     {#if teachers.length === 0 && !showAllOption}
       <div class="px-3 py-2 text-xs text-muted-foreground text-start">
-        {m.common_status_undefined() === "غير محدد" ? "لا يوجد معلمون" : "No teachers available"}
+        {m.common_cs_form_no_teachers()}
       </div>
     {/if}
   </SelectContent>

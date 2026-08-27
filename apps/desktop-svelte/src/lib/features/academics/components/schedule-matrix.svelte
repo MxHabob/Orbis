@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Users, User, MapPin } from "@lucide/svelte";
-  import { getLocale } from "$lib/paraglide/runtime";
+  import * as m from "$lib/paraglide/messages";
+  import { l } from "$lib/core/i18n";
 
   interface Props {
     timeSlots: any[];
@@ -30,8 +31,6 @@
     onCellClick,
   }: Props = $props();
 
-  const isArabic = $derived(getLocale() === "ar");
-
   // Day Lessons
   const dayLessons = $derived(
     lessons.filter((l) => Number(l.day_of_week) === selectedDay)
@@ -51,13 +50,13 @@
       <thead class="sticky top-0 z-20 bg-card shadow-2xs">
         <tr class="border-b border-border/60 bg-muted/20">
           <th class="p-2 border-e border-border/60 text-start w-32 font-bold text-muted-foreground">
-            {isArabic ? "الفصل الدراسي" : "Class"}
+            {m.common_table_class()}
           </th>
           {#each timeSlots as slot (slot.id)}
             {@const isBreak = Boolean(slot.is_break)}
             <th class="p-2 border-e border-border/40 text-start min-w-30 last:border-e-0 {isBreak ? 'bg-amber-500/10' : ''}">
               <div class="font-bold text-foreground text-[11px]">
-                {slot.name_ar || slot.name || `P${slot.slot_number}`}
+                {l(slot.name_ar, slot.name) || `P${slot.slot_number}`}
               </div>
               <div class="text-[9px] text-muted-foreground font-mono">
                 {slot.start_time?.slice(0, 5)} - {slot.end_time?.slice(0, 5)}
@@ -73,7 +72,7 @@
             <td class="p-2 border-e border-border/60 font-bold text-foreground bg-muted/10">
               <div class="flex items-center gap-1.5 truncate">
                 <Users size={12} class="text-primary shrink-0" />
-                <span class="truncate">{cls.name_ar || cls.name}</span>
+                <span class="truncate">{l(cls.name_ar, cls.name)}</span>
               </div>
             </td>
 
@@ -85,7 +84,7 @@
               <td class="p-1 border-e border-border/40 last:border-e-0 align-top {isBreak ? 'bg-amber-500/5' : ''}">
                 {#if isBreak}
                   <div class="h-full min-h-11 flex items-center justify-center text-[10px] font-semibold text-amber-600 dark:text-amber-400">
-                    {slot.name_ar || slot.name || (isArabic ? "استراحة" : "Break")}
+                    {l(slot.name_ar, slot.name) || m.common_onboarding_break_recess()}
                   </div>
                 {:else if l}
                   <!-- svelte-ignore a11y_click_events_have_key_events -->

@@ -89,7 +89,7 @@ async function handleSubmit(e: SubmitEvent) {
 				id="sub_name_en"
 				type="text" 
 				bind:value={name}
-				placeholder="e.g., Mathematics"
+				placeholder={m.common_subject_placeholder_name_en()}
 			/>
 		</div>
 
@@ -102,7 +102,7 @@ async function handleSubmit(e: SubmitEvent) {
 				id="sub_code"
 				type="text" 
 				bind:value={code}
-				placeholder="e.g., MATH-101"
+				placeholder={m.common_subject_placeholder_code()}
 			/>
 		</div>
 

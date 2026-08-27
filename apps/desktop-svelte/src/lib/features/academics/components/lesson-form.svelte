@@ -13,6 +13,7 @@ import {
 import { ShieldAlert, Calendar } from "@lucide/svelte";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
+import { l } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
 import { createClassSubjectsQuery } from "$lib/features/academics/queries";
 
@@ -152,11 +153,11 @@ async function handleSubmit(e: SubmitEvent) {
     return;
   }
   if (!selectedClassSubject) {
-    toast.error("المادة غير مرتبطة بهذا الصف في الفترة المحددة");
+    toast.error(m.common_lesson_error_subject_link());
     return;
   }
   if (!formTeacherId) {
-    toast.error("لا يوجد معلم مرتبط بالمادة المحددة لهذا الصف");
+    toast.error(m.common_lesson_error_teacher_link());
     return;
   }
   isSubmitting = true;
@@ -181,7 +182,7 @@ async function handleSubmit(e: SubmitEvent) {
     } else {
       await commands.scheduling.createLesson(request);
     }
-    toast.success(isEditing ? "تم تعديل الحصة بنجاح" : m.common_lesson_toast_success());
+    toast.success(isEditing ? m.common_lesson_edit_success() : m.common_lesson_toast_success());
 
     // Reset fields
     formSubjectId = "";
@@ -206,7 +207,7 @@ async function handleSubmit(e: SubmitEvent) {
 	<SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
 		<SheetTitle class="text-xl font-bold text-foreground flex items-center gap-2">
 			<Calendar size={18} class="text-primary" />
-      <span>{isEditing ? "تعديل الحصة" : m.common_lesson_sheet_title()}</span>
+      <span>{isEditing ? m.common_lesson_edit_title() : m.common_lesson_sheet_title()}</span>
 		</SheetTitle>
 	</SheetHeader>
 
@@ -214,14 +215,14 @@ async function handleSubmit(e: SubmitEvent) {
     {#if isEditing}
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-start">
         <div class="flex flex-col gap-2">
-          <label for="sched_day" class="text-sm font-medium text-foreground">اليوم</label>
+          <label for="sched_day" class="text-sm font-medium text-foreground">{m.common_lesson_label_day()}</label>
           <Select type="single" value={String(formDayOfWeek)} onValueChange={(value) => { formDayOfWeek = Number(value); }}>
             <SelectTrigger id="sched_day" class="h-9 text-sm w-full">{weekdays.find((day) => day.value === formDayOfWeek)?.label}</SelectTrigger>
             <SelectContent>{#each weekdays as day}<SelectItem value={String(day.value)}>{day.label}</SelectItem>{/each}</SelectContent>
           </Select>
         </div>
         <div class="flex flex-col gap-2">
-          <label for="sched_slot" class="text-sm font-medium text-foreground">الفترة</label>
+          <label for="sched_slot" class="text-sm font-medium text-foreground">{m.common_lesson_label_period()}</label>
           <Select type="single" value={formTimeSlotId} onValueChange={(value) => { formTimeSlotId = value ?? ""; }}>
             <SelectTrigger id="sched_slot" class="h-9 text-sm w-full">{timeSlots.find((slot) => String(slot.id) === formTimeSlotId)?.name_ar || formTimeSlotId}</SelectTrigger>
             <SelectContent>{#each timeSlots.filter((slot) => !slot.is_break) as slot}<SelectItem value={String(slot.id)}>{slot.name_ar || slot.name} ({slot.start_time} - {slot.end_time})</SelectItem>{/each}</SelectContent>
@@ -261,12 +262,12 @@ async function handleSubmit(e: SubmitEvent) {
 			</label>
       <Select type="single" value={formTeacherId} onValueChange={(v) => (formTeacherId = v ?? "")} disabled={availableTeachers.length === 0}>
 				<SelectTrigger class="h-9 text-sm w-full">
-					{teachers.find(teach => String(teach.id) === formTeacherId) ? (getLocale() === "ar" ? (teachers.find(teach => String(teach.id) === formTeacherId).name_ar || teachers.find(teach => String(teach.id) === formTeacherId).full_name) : teachers.find(teach => String(teach.id) === formTeacherId).full_name) : m.common_lesson_option_no_teacher()}
+          {teachers.find(teach => String(teach.id) === formTeacherId) ? l(teachers.find(teach => String(teach.id) === formTeacherId).name_ar, teachers.find(teach => String(teach.id) === formTeacherId).full_name) : m.common_lesson_option_no_teacher()}
 				</SelectTrigger>
 				<SelectContent>
 					<SelectItem value="">{m.common_lesson_option_no_teacher()}</SelectItem>
                     {#each availableTeachers as teach (teach.id)}
-						<SelectItem value={String(teach.id)}>{getLocale() === "ar" ? (teach.name_ar || teach.full_name) : teach.full_name}</SelectItem>
+                    <SelectItem value={String(teach.id)}>{l(teach.name_ar, teach.full_name)}</SelectItem>
 					{/each}
 				</SelectContent>
 			</Select>
@@ -280,16 +281,14 @@ async function handleSubmit(e: SubmitEvent) {
       <Select type="single" value={formRoom} onValueChange={(v) => (formRoom = v ?? "")}>
         <SelectTrigger id="sched_room" class="h-9 text-sm w-full">
           {rooms.find((room) => String(room.id) === String(formRoom))
-            ? (getLocale() === "ar"
-              ? (rooms.find((room) => String(room.id) === String(formRoom)).name_ar || rooms.find((room) => String(room.id) === String(formRoom)).name)
-              : rooms.find((room) => String(room.id) === String(formRoom)).name)
-            : (getLocale() === "ar" ? "اختر الغرفة (اختياري)" : "Select room (optional)")}
+            ? l(rooms.find((room) => String(room.id) === String(formRoom)).name_ar, rooms.find((room) => String(room.id) === String(formRoom)).name)
+            : m.common_lesson_option_select_room()}
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">{getLocale() === "ar" ? "بدون غرفة" : "No room"}</SelectItem>
+          <SelectItem value="">{m.common_lesson_option_no_room()}</SelectItem>
           {#each rooms as room (room.id)}
             <SelectItem value={String(room.id)}>
-              {getLocale() === "ar" ? (room.name_ar || room.name) : room.name}
+              {l(room.name_ar, room.name)}
             </SelectItem>
           {/each}
         </SelectContent>
@@ -313,7 +312,7 @@ async function handleSubmit(e: SubmitEvent) {
 			class="font-semibold"
 			disabled={isSubmitting || !!conflictError}
 		>
-			{isSubmitting ? m.common_state_saving() : (getLocale() === "ar" ? "حفظ الحصة" : "Save Lesson")}
+        			{isSubmitting ? m.common_state_saving() : m.common_lesson_save()}
 		</Button>
 	</div>
 </form>

@@ -19,7 +19,7 @@
   import { Clock, Plus, Trash2, Edit2, Coffee, Save, X } from "@lucide/svelte";
   import { commands, extractErrorMessage } from "$lib/core/ipc";
   import { toast } from "svelte-sonner";
-  import { getLocale } from "$lib/paraglide/runtime";
+  import * as m from "$lib/paraglide/messages";
 
   interface Props {
     open: boolean;
@@ -34,8 +34,6 @@
     timeSlots = [],
     onSuccess,
   }: Props = $props();
-
-  const isArabic = $derived(getLocale() === "ar");
 
   let editingSlotId = $state<string | null>(null);
   let isAdding = $state(false);
@@ -76,8 +74,8 @@
     isAdding = true;
     const nextSlotNum =
       timeSlots.filter((s) => !s.is_break).reduce((max, s) => Math.max(max, Number(s.slot_number) || 0), 0) + 1;
-    nameAr = `الحصة ${nextSlotNum}`;
-    name = `Period ${nextSlotNum}`;
+    nameAr = m.academics_schedule_placeholder_period({ number: nextSlotNum });
+    name = m.academics_schedule_placeholder_period_en({ number: nextSlotNum });
   }
 
   function calcDuration(start: string, end: string): number {
@@ -90,7 +88,7 @@
     e.preventDefault();
     const dur = calcDuration(startTime, endTime);
     if (dur <= 0) {
-      toast.error(isArabic ? "يجب أن يكون وقت النهاية بعد وقت البداية" : "End time must be after start time");
+      toast.error(m.academics_schedule_time_slot_end_error());
       return;
     }
 
@@ -107,7 +105,7 @@
           is_break: isBreak ? 1 : 0,
           break_type: isBreak ? breakType : null,
         } as any);
-        toast.success(isArabic ? "تم تعديل الفترة بنجاح" : "Time slot updated");
+        toast.success(m.academics_schedule_time_slot_updated());
       } else {
         // Create
         const slotNumber =
@@ -125,7 +123,7 @@
           break_type: isBreak ? breakType : null,
           applicable_days: "1,2,3,4,5",
         } as any);
-        toast.success(isArabic ? "تمت إضافة الحصة بنجاح" : "Time slot added");
+        toast.success(m.academics_schedule_time_slot_added());
       }
 
       resetForm();
@@ -140,7 +138,7 @@
   async function handleDeleteSlot(id: string) {
     try {
       await commands.scheduling.deleteTimeSlot(id);
-      toast.success(isArabic ? "تم حذف الفترة" : "Time slot deleted");
+      toast.success(m.academics_schedule_time_slot_deleted());
       if (editingSlotId === id) resetForm();
       onSuccess?.();
     } catch (err) {
@@ -153,7 +151,7 @@
   <SheetContent class="w-full sm:max-w-lg overflow-y-auto flex flex-col p-6 text-start">
     <SheetHeader>
       <SheetTitle>
-        {isArabic ? "إدارة جدول الحصص والأجراس" : "Time Slots & Bell Schedule"}
+        {m.academics_schedule_time_slots_heading()}
       </SheetTitle>
     </SheetHeader>
 
@@ -163,7 +161,7 @@
         <form onsubmit={handleSaveSlot} class="rounded-xl border border-primary/30 bg-card p-4 flex flex-col gap-3 shadow-xs">
           <div class="flex items-center justify-between">
             <span class="text-xs font-bold text-primary">
-              {editingSlotId ? (isArabic ? "تعديل الفترة" : "Edit Slot") : (isArabic ? "إضافة فترة جديدة" : "New Slot")}
+              {editingSlotId ? m.academics_schedule_time_slot_edit() : m.academics_schedule_time_slot_new()}
             </span>
             <Button variant="ghost" size="icon" class="h-6 w-6" onclick={resetForm}>
               <X size={12} />
@@ -172,22 +170,22 @@
 
           <div class="grid grid-cols-2 gap-3">
             <div class="space-y-1">
-              <Label class="text-[11px] font-semibold">{isArabic ? "الاسم بالعربية" : "Arabic Name"} *</Label>
-              <Input bind:value={nameAr} placeholder="مثال: الحصة 1" class="h-8 text-xs" required />
+              <Label class="text-[11px] font-semibold">{m.academics_schedule_name_ar()} *</Label>
+              <Input bind:value={nameAr} placeholder={m.academics_schedule_placeholder_period({ number: 1 })} class="h-8 text-xs" required />
             </div>
             <div class="space-y-1">
-              <Label class="text-[11px] font-semibold">{isArabic ? "الاسم بالإنجليزية" : "English Name"}</Label>
-              <Input bind:value={name} placeholder="e.g. Period 1" class="h-8 text-xs" />
+              <Label class="text-[11px] font-semibold">{m.academics_schedule_name_en()}</Label>
+              <Input bind:value={name} placeholder={m.academics_schedule_placeholder_period_en({ number: 1 })} class="h-8 text-xs" />
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div class="space-y-1">
-              <Label class="text-[11px] font-semibold">{isArabic ? "وقت البداية" : "Start Time"} *</Label>
+              <Label class="text-[11px] font-semibold">{m.academics_schedule_start_time()} *</Label>
               <Input type="time" bind:value={startTime} class="h-8 text-xs font-mono" required />
             </div>
             <div class="space-y-1">
-              <Label class="text-[11px] font-semibold">{isArabic ? "وقت النهاية" : "End Time"} *</Label>
+              <Label class="text-[11px] font-semibold">{m.academics_schedule_end_time()} *</Label>
               <Input type="time" bind:value={endTime} class="h-8 text-xs font-mono" required />
             </div>
           </div>
@@ -195,30 +193,30 @@
           <div class="flex items-center gap-2 pt-1">
             <Checkbox id="is-break-check" checked={isBreak} onCheckedChange={(val) => (isBreak = Boolean(val))} />
             <Label for="is-break-check" class="text-xs cursor-pointer font-medium">
-              {isArabic ? "فترة استراحة / فسحة / صلاة (بدون تدريس)" : "Break slot (No teaching)"}
+              {m.academics_schedule_break_slot()}
             </Label>
           </div>
 
           {#if isBreak}
             <div class="space-y-1">
-              <Label class="text-[11px] font-semibold">{isArabic ? "نوع الاستراحة" : "Break Type"}</Label>
+              <Label class="text-[11px] font-semibold">{m.academics_schedule_break_type()}</Label>
               <Select type="single" value={breakType} onValueChange={(val) => (breakType = val ?? "recess")}>
                 <SelectTrigger class="h-8 text-xs">
                   <span>
                     {breakType === "recess"
-                      ? (isArabic ? "فسحة / استراحة" : "Recess")
+                      ? m.common_onboarding_break_recess()
                       : breakType === "lunch"
-                        ? (isArabic ? "وجبة الغداء" : "Lunch")
+                        ? m.common_onboarding_break_lunch()
                         : breakType === "prayer"
-                          ? (isArabic ? "صلاة الظهر" : "Prayer")
-                          : (isArabic ? "طابور الصباح" : "Morning Assembly")}
+                          ? m.common_onboarding_break_prayer()
+                          : m.academics_schedule_morning_assembly()}
                   </span>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="recess" class="text-xs">{isArabic ? "فسحة / استراحة" : "Recess"}</SelectItem>
-                  <SelectItem value="lunch" class="text-xs">{isArabic ? "وجبة الغداء" : "Lunch"}</SelectItem>
-                  <SelectItem value="prayer" class="text-xs">{isArabic ? "صلاة الظهر" : "Prayer"}</SelectItem>
-                  <SelectItem value="morning" class="text-xs">{isArabic ? "طابور الصباح" : "Morning Assembly"}</SelectItem>
+                  <SelectItem value="recess" class="text-xs">{m.common_onboarding_break_recess()}</SelectItem>
+                  <SelectItem value="lunch" class="text-xs">{m.common_onboarding_break_lunch()}</SelectItem>
+                  <SelectItem value="prayer" class="text-xs">{m.common_onboarding_break_prayer()}</SelectItem>
+                  <SelectItem value="morning" class="text-xs">{m.academics_schedule_morning_assembly()}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -226,11 +224,11 @@
 
           <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
             <Button type="button" variant="outline" size="sm" class="h-8 text-xs" onclick={resetForm}>
-              {isArabic ? "إلغاء" : "Cancel"}
+              {m.common_action_cancel()}
             </Button>
             <Button type="submit" size="sm" class="h-8 text-xs font-semibold" disabled={isSubmitting}>
               <Save size={13} class="me-1" />
-              {isArabic ? "حفظ الفترة" : "Save Slot"}
+              {m.academics_schedule_save_slot()}
             </Button>
           </div>
         </form>
@@ -242,21 +240,21 @@
           onclick={startAdd}
         >
           <Plus size={14} />
-          <span>{isArabic ? "إضافة حصة أو استراحة جديدة" : "Add Time Slot or Break"}</span>
+          <span>{m.academics_schedule_add_slot()}</span>
         </Button>
       {/if}
 
       <!-- List of Existing Slots -->
       <div class="flex flex-col gap-1.5 mt-2">
         <span class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-          {isArabic ? "الحصص الحالية في الجدول" : "Current Schedule Periods"} ({timeSlots.length})
+          {m.academics_schedule_current_slots()} ({timeSlots.length})
         </span>
 
         {#if timeSlots.length === 0}
           <div class="flex flex-col items-center justify-center p-8 border border-dashed border-border/60 rounded-xl bg-muted/10 text-center gap-2">
             <Clock size={24} class="text-muted-foreground/60" />
             <p class="text-xs text-muted-foreground">
-              {isArabic ? "لم يتم تعريف أي حصص بعد لهذه الفترة الأكاديمية." : "No time slots defined for this term."}
+              {m.academics_schedule_no_slots()}
             </p>
           </div>
         {:else}
@@ -278,10 +276,10 @@
 
                 <div class="flex flex-col min-w-0">
                   <span class="text-xs font-bold text-foreground truncate">
-                    {slot.name_ar || slot.name || `Period ${slot.slot_number}`}
+                    {slot.name_ar || slot.name || m.academics_schedule_placeholder_period_en({ number: slot.slot_number })}
                   </span>
                   <span class="text-[10px] text-muted-foreground font-mono">
-                    {slot.start_time?.slice(0, 5)} - {slot.end_time?.slice(0, 5)} ({slot.duration_minutes || calcDuration(slot.start_time, slot.end_time)}{isArabic ? " دقيقة" : " min"})
+                    {slot.start_time?.slice(0, 5)} - {slot.end_time?.slice(0, 5)} ({slot.duration_minutes || calcDuration(slot.start_time, slot.end_time)} {m.academics_schedule_minutes()})
                   </span>
                 </div>
               </div>
@@ -292,7 +290,7 @@
                   size="icon"
                   class="h-7 w-7 text-muted-foreground hover:text-foreground"
                   onclick={() => startEdit(slot)}
-                  aria-label={isArabic ? "تعديل" : "Edit"}
+                  aria-label={m.academics_schedule_edit()}
                 >
                   <Edit2 size={12} />
                 </Button>
@@ -301,7 +299,7 @@
                   size="icon"
                   class="h-7 w-7 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
                   onclick={() => handleDeleteSlot(String(slot.id))}
-                  aria-label={isArabic ? "حذف" : "Delete"}
+                  aria-label={m.common_action_delete()}
                 >
                   <Trash2 size={12} />
                 </Button>
@@ -314,7 +312,7 @@
 
     <SheetFooter class="mt-6 border-t border-border/40 pt-4">
       <Button variant="outline" size="sm" class="w-full text-xs" onclick={() => (open = false)}>
-        {isArabic ? "إغلاق" : "Close"}
+        {m.common_action_close()}
       </Button>
     </SheetFooter>
   </SheetContent>

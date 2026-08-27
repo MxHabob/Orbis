@@ -17,13 +17,12 @@
     AlertTriangle,
     Eye,
     Check,
-    X,
     Clock,
     Sparkles,
   } from "@lucide/svelte";
   import { commands, extractErrorMessage } from "$lib/core/ipc";
   import { toast } from "svelte-sonner";
-  import { getLocale } from "$lib/paraglide/runtime";
+  import * as m from "$lib/paraglide/messages";
 
   interface Props {
     open: boolean;
@@ -40,8 +39,6 @@
     activeJob = $bindable(null),
     onApply,
   }: Props = $props();
-
-  const isArabic = $derived(getLocale() === "ar");
 
   let isLaunching = $state(false);
   let isApplying = $state(false);
@@ -80,7 +77,7 @@
     try {
       const res = await commands.scheduling.start(periodId);
       activeJob = res;
-      toast.success(isArabic ? "تم بدء التوليد الذكي للجدول بنجاح" : "AI solver started");
+      toast.success(m.academics_schedule_solver_started());
       await loadJobs();
     } catch (err) {
       toast.error(extractErrorMessage(err));
@@ -93,7 +90,7 @@
     isApplying = true;
     try {
       await commands.scheduling.apply(jobId);
-      toast.success(isArabic ? "تم تطبيق الجدول المقترح وتحديث كافة الحصص" : "Schedule applied successfully");
+      toast.success(m.academics_schedule_solver_applied());
       previewDraft = false;
       open = false;
       onApply?.();
@@ -107,7 +104,7 @@
   async function handleCancelJob(jobId: string) {
     try {
       await commands.scheduling.cancel(jobId);
-      toast.info(isArabic ? "تم إلغاء عملية التوليد" : "Solve job cancelled");
+      toast.info(m.academics_schedule_solver_cancelled());
       loadJobs();
     } catch (err) {
       toast.error(extractErrorMessage(err));
@@ -124,7 +121,7 @@
         </div>
         <div>
           <SheetTitle>
-            {isArabic ? "المجدول الذكي (AI Solver)" : "AI Schedule Generator"}
+            {m.academics_schedule_solver_title()}
           </SheetTitle>
         </div>
       </div>
@@ -136,12 +133,10 @@
         <div class="flex items-start justify-between">
           <div class="space-y-0.5">
             <h4 class="text-xs font-bold text-foreground">
-              {isArabic ? "توليد جدول جديد للفترة الحالية" : "Generate Schedule for Current Period"}
+              {m.academics_schedule_generate_current()}
             </h4>
             <p class="text-[11px] text-muted-foreground leading-relaxed">
-              {isArabic
-                ? "يقوم المحرك الذكي بتحليل الحصص الأسبوعية لكل مادة، وتوافر المعلمين، والقاعات لتوزيع الحصص بدون أي تعارض."
-                : "The constraint engine computes non-conflicting placements for all class subjects and rooms."}
+              {m.academics_schedule_generate_desc()}
             </p>
           </div>
         </div>
@@ -155,10 +150,10 @@
         >
           {#if isLaunching || activeJob?.status === "running" || activeJob?.status === "pending"}
             <Loader2 size={13} class="animate-spin" />
-            <span>{isArabic ? "جاري الحساب والتوليد..." : "Computing Schedule..."}</span>
+            <span>{m.academics_schedule_computing()}</span>
           {:else}
             <Sparkles size={13} />
-            <span>{isArabic ? "بدء التوليد الذكي الآن" : "Start AI Solver"}</span>
+            <span>{m.academics_schedule_start_now()}</span>
           {/if}
         </Button>
       </div>
@@ -168,23 +163,23 @@
         <div class="rounded-xl border border-border/60 bg-card p-4 flex flex-col gap-3 shadow-xs">
           <div class="flex items-center justify-between">
             <span class="text-xs font-bold text-foreground">
-              {isArabic ? "حالة عملية التوليد الأخيرة" : "Latest Solver Job"}
+              {m.academics_schedule_latest_job()}
             </span>
 
             {#if activeJob.status === "completed"}
               <Badge variant="default" class="bg-emerald-600 text-white gap-1 text-[10px]">
                 <CheckCircle2 size={10} />
-                {isArabic ? "مكتمل بنجاح" : "Completed"}
+                {m.academics_schedule_status_completed()}
               </Badge>
             {:else if activeJob.status === "running" || activeJob.status === "pending"}
               <Badge variant="secondary" class="bg-primary/10 text-primary gap-1 text-[10px] animate-pulse">
                 <Loader2 size={10} class="animate-spin" />
-                {isArabic ? "قيد المعالجة" : "Running"}
+                {m.academics_schedule_status_running()}
               </Badge>
             {:else if activeJob.status === "failed"}
               <Badge variant="destructive" class="gap-1 text-[10px]">
                 <AlertTriangle size={10} />
-                {isArabic ? "فشلت العملية" : "Failed"}
+                {m.academics_schedule_status_failed()}
               </Badge>
             {:else}
               <Badge variant="outline" class="text-[10px]">
@@ -195,11 +190,11 @@
 
           <div class="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
             <div>
-              <span class="text-[10px] block">{isArabic ? "عدد الحصص المقترحة" : "Items Created"}:</span>
+              <span class="text-[10px] block">{m.academics_schedule_items_created()}:</span>
               <span class="font-bold text-foreground">{activeJob.items_created || 0}</span>
             </div>
             <div>
-              <span class="text-[10px] block">{isArabic ? "جودة الحل (Score)" : "Score"}:</span>
+              <span class="text-[10px] block">{m.academics_schedule_score()}:</span>
               <span class="font-bold text-foreground font-mono">{activeJob.score || "N/A"}</span>
             </div>
           </div>
@@ -212,7 +207,7 @@
               class="h-7 text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
               onclick={() => handleCancelJob(activeJob.id)}
             >
-              {isArabic ? "إلغاء العملية" : "Cancel Solver"}
+              {m.academics_schedule_cancel()}
             </Button>
           {/if}
 
@@ -227,7 +222,7 @@
                 />
                 <Label for="preview-draft-check" class="text-xs cursor-pointer font-semibold flex items-center gap-1">
                   <Eye size={12} class="text-primary" />
-                  <span>{isArabic ? "معاينة الجدول المقترح على شبكة التقويم" : "Preview Draft on Calendar Grid"}</span>
+                  <span>{m.academics_schedule_preview_grid()}</span>
                 </Label>
               </div>
 
@@ -241,10 +236,10 @@
               >
                 {#if isApplying}
                   <Loader2 size={13} class="animate-spin" />
-                  <span>{isArabic ? "جاري التطبيق والحفظ..." : "Applying..."}</span>
+                  <span>{m.academics_schedule_applying()}</span>
                 {:else}
                   <Check size={14} />
-                  <span>{isArabic ? "تطبيق واعتماد الجدول المقترح" : "Apply Proposed Timetable"}</span>
+                  <span>{m.academics_schedule_apply_proposed()}</span>
                 {/if}
               </Button>
             </div>
@@ -256,7 +251,7 @@
       {#if solveJobs.length > 1}
         <div class="flex flex-col gap-1.5 mt-2">
           <span class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-            {isArabic ? "سجل عمليات التوليد السابقة" : "Previous Solver Runs"}
+            {m.academics_schedule_previous_runs()}
           </span>
 
           <div class="flex flex-col gap-1 max-h-48 overflow-y-auto">
@@ -277,7 +272,7 @@
                     class="h-6 text-[11px] font-semibold text-primary"
                     onclick={() => handleApplySolve(job.id)}
                   >
-                    {isArabic ? "تطبيق" : "Apply"}
+                    {m.academics_schedule_apply()}
                   </Button>
                 {/if}
               </div>
@@ -289,7 +284,7 @@
 
     <SheetFooter class="mt-6 border-t border-border/40 pt-4">
       <Button variant="outline" size="sm" class="w-full text-xs" onclick={() => (open = false)}>
-        {isArabic ? "إغلاق" : "Close"}
+        {m.common_action_close()}
       </Button>
     </SheetFooter>
   </SheetContent>

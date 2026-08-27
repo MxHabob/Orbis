@@ -164,11 +164,11 @@ async function handleSubmit() {
   {:else}
     <!-- Period -->
     <div class="flex flex-col gap-1.5">
-      <Label class="text-xs font-semibold text-muted-foreground">{m.common_metrics_period ? m.common_metrics_period() : "Academic Period"} *</Label>
+      <Label class="text-xs font-semibold text-muted-foreground">{m.common_metrics_period()} *</Label>
       <PeriodSelect
         bind:value={periodId}
         periods={availablePeriods}
-        placeholder="Select Period"
+        placeholder={m.academics_studio_select_period()}
         class="h-9 text-sm"
       />
     </div>
@@ -223,7 +223,7 @@ async function handleSubmit() {
 
     <!-- Assessment scheme (optional; falls back to period/org default) -->
     <div class="flex flex-col gap-1.5">
-      <Label class="text-xs font-semibold text-muted-foreground">Assessment scheme</Label>
+      <Label class="text-xs font-semibold text-muted-foreground">{m.common_cs_assessment_scheme()}</Label>
       <Select
         type="single"
         value={schemeId || "__default__"}
@@ -234,10 +234,10 @@ async function handleSubmit() {
             ? String(
                 schemes.find((s) => String(s.id) === schemeId)?.name ?? schemeId,
               )
-            : "Default"}
+            : m.common_cs_assessment_default()}
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="__default__">Default</SelectItem>
+          <SelectItem value="__default__">{m.common_cs_assessment_default()}</SelectItem>
           {#each schemes as scheme (scheme.id)}
             <SelectItem value={String(scheme.id)}>
               {scheme.name || scheme.id}

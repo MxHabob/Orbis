@@ -5,26 +5,22 @@
     WandSparkles,
     Printer,
     Clock,
-    Plus,
     Users,
     User,
     MapPin,
     BookOpen,
     Layers,
-    AlertTriangle,
-    Maximize2,
-    Minimize2,
   } from "@lucide/svelte";
   import { Button } from "@orbis/ui-svelte/button";
   import { Input } from "@orbis/ui-svelte/input";
-  import { Badge } from "@orbis/ui-svelte/badge";
   import {
     Select,
     SelectTrigger,
     SelectContent,
     SelectItem,
   } from "@orbis/ui-svelte/select";
-  import { getLocale } from "$lib/paraglide/runtime";
+  import { l } from "$lib/core/i18n";
+  import * as m from "$lib/paraglide/messages";
 
   type ViewMode = "class" | "teacher" | "room" | "subject" | "matrix";
 
@@ -70,8 +66,6 @@
     onNewLessonClick,
   }: Props = $props();
 
-  const isArabic = $derived(getLocale() === "ar");
-
   const selectedPeriod = $derived(
     periods.find((p) => String(p.id) === String(activePeriodId))
   );
@@ -82,12 +76,12 @@
     onPeriodChange?.(val);
   }
 
-  const viewModes: { id: ViewMode; labelAr: string; labelEn: string; icon: any }[] = [
-    { id: "class", labelAr: "الفصول", labelEn: "Classes", icon: Users },
-    { id: "teacher", labelAr: "المعلمون", labelEn: "Teachers", icon: User },
-    { id: "room", labelAr: "القاعات", labelEn: "Rooms", icon: MapPin },
-    { id: "subject", labelAr: "المواد", labelEn: "Subjects", icon: BookOpen },
-    { id: "matrix", labelAr: "المخطط العام", labelEn: "Matrix", icon: Layers },
+  const viewModes: { id: ViewMode; label: () => string; icon: any }[] = [
+    { id: "class", label: m.academics_studio_classes, icon: Users },
+    { id: "teacher", label: m.academics_studio_teachers, icon: User },
+    { id: "room", label: m.academics_studio_rooms, icon: MapPin },
+    { id: "subject", label: m.academics_studio_subject, icon: BookOpen },
+    { id: "matrix", label: m.academics_planning_studio_title, icon: Layers },
   ];
 </script>
 
@@ -108,14 +102,14 @@
             <span class="truncate">
               {selectedPeriod
                 ? (isArabic ? selectedPeriod.name_ar || selectedPeriod.name : selectedPeriod.name || selectedPeriod.name_ar)
-                : (isArabic ? "اختر الفترة..." : "Select Period...")}
+                : m.academics_studio_select_period()}
             </span>
           </div>
         </SelectTrigger>
         <SelectContent class="max-h-60 text-start">
           {#each periods as p (p.id)}
             <SelectItem value={String(p.id)} class="text-xs">
-              {isArabic ? p.name_ar || p.name : p.name || p.name_ar}
+              {l(p.name_ar, p.name)}
             </SelectItem>
           {/each}
         </SelectContent>
@@ -136,7 +130,7 @@
             onclick={() => (viewMode = mode.id)}
           >
             <Icon size={12} class={isActive ? "text-primary" : "text-muted-foreground"} />
-            <span class="hidden md:inline">{isArabic ? mode.labelAr : mode.labelEn}</span>
+            <span class="hidden md:inline">{mode.label()}</span>
           </button>
         {/each}
       </div>
@@ -148,7 +142,7 @@
         <Search size={13} class="absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
         <Input
           bind:value={searchTerm}
-          placeholder={isArabic ? "بحث سريع بالمعلم أو المادة..." : "Quick filter..."}
+          placeholder={m.academics_schedule_quick_filter()}
           class="h-8 ps-8 pe-3 text-xs bg-muted/20 border-border/40"
         />
       </div>
@@ -163,10 +157,10 @@
         size="sm"
         class="h-8 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
         onclick={onTimeSlotsClick}
-        title={isArabic ? "إدارة الحصص الزمنية" : "Time Slots"}
+        title={m.academics_schedule_time_slots_title()}
       >
         <Clock size={13} />
-        <span class="hidden xl:inline">{isArabic ? "الحصص" : "Slots"}</span>
+        <span class="hidden xl:inline">{m.academics_schedule_time_slots_label()}</span>
       </Button>
 
       
@@ -175,10 +169,10 @@
         size="sm"
         class="h-8 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
         onclick={onExportClick}
-        title={isArabic ? "طباعة وتصدير الجدول" : "Print & Export"}
+        title={m.academics_schedule_export_title()}
       >
         <Printer size={13} />
-        <span class="hidden xl:inline">{isArabic ? "تصدير" : "Export"}</span>
+        <span class="hidden xl:inline">{m.academics_schedule_export_label()}</span>
       </Button>
       <!-- AI Generator Studio Button -->
       <Button
@@ -187,7 +181,7 @@
         onclick={onAutoScheduleClick}
       >
         <WandSparkles size={13} />
-        <span class="hidden sm:inline">{isArabic ? "المخطط السنوي" : "Year Planner"}</span>
+        <span class="hidden sm:inline">{m.academics_schedule_year_planner()}</span>
       </Button>
     </div>
   </div>
@@ -198,7 +192,7 @@
       <div class="flex items-center gap-2 min-w-0 flex-1">
         <!-- Class Selector (When in Class view) -->
         {#if viewMode === "class"}
-          <span class="text-muted-foreground shrink-0 font-medium">{isArabic ? "الفصل النشط:" : "Class:"}</span>
+          <span class="text-muted-foreground shrink-0 font-medium">{m.academics_schedule_active_class()}</span>
           <Select
             type="single"
             value={selectedClassId}
@@ -206,13 +200,13 @@
           >
             <SelectTrigger class="h-7 w-48 bg-card text-xs font-semibold border-border/60">
               <span class="truncate">
-                {classes.find((c) => String(c.id) === selectedClassId)?.name_ar || classes.find((c) => String(c.id) === selectedClassId)?.name || (isArabic ? "اختر الفصل..." : "Select Class...")}
+                {classes.find((c) => String(c.id) === selectedClassId) ? l(classes.find((c) => String(c.id) === selectedClassId).name_ar, classes.find((c) => String(c.id) === selectedClassId).name) : m.academics_studio_select_class()}
               </span>
             </SelectTrigger>
             <SelectContent class="max-h-60 text-start">
               {#each classes as c (c.id)}
                 <SelectItem value={String(c.id)} class="text-xs">
-                  {c.name_ar || c.name}
+                  {l(c.name_ar, c.name)}
                 </SelectItem>
               {/each}
             </SelectContent>
@@ -221,7 +215,7 @@
 
         <!-- Teacher Selector (When in Teacher view) -->
         {#if viewMode === "teacher"}
-          <span class="text-muted-foreground shrink-0 font-medium">{isArabic ? "المعلم:" : "Teacher:"}</span>
+          <span class="text-muted-foreground shrink-0 font-medium">{m.academics_schedule_active_teacher()}</span>
           <Select
             type="single"
             value={selectedTeacherId}
@@ -229,13 +223,13 @@
           >
             <SelectTrigger class="h-7 w-52 bg-card text-xs font-semibold border-border/60">
               <span class="truncate">
-                {teachers.find((t) => String(t.id) === selectedTeacherId)?.name_ar || teachers.find((t) => String(t.id) === selectedTeacherId)?.full_name || (isArabic ? "اختر المعلم..." : "Select Teacher...")}
+                {teachers.find((t) => String(t.id) === selectedTeacherId) ? l(teachers.find((t) => String(t.id) === selectedTeacherId).name_ar, teachers.find((t) => String(t.id) === selectedTeacherId).full_name) : m.academics_studio_select_teacher()}
               </span>
             </SelectTrigger>
             <SelectContent class="max-h-60 text-start">
               {#each teachers as t (t.id)}
                 <SelectItem value={String(t.id)} class="text-xs">
-                  {t.name_ar || t.full_name}
+                  {l(t.name_ar, t.full_name)}
                 </SelectItem>
               {/each}
             </SelectContent>
@@ -244,7 +238,7 @@
 
         <!-- Room Selector (When in Room view) -->
         {#if viewMode === "room"}
-          <span class="text-muted-foreground shrink-0 font-medium">{isArabic ? "القاعة:" : "Room:"}</span>
+          <span class="text-muted-foreground shrink-0 font-medium">{m.academics_schedule_active_room()}</span>
           <Select
             type="single"
             value={selectedRoomId}
@@ -252,13 +246,13 @@
           >
             <SelectTrigger class="h-7 w-48 bg-card text-xs font-semibold border-border/60">
               <span class="truncate">
-                {rooms.find((r) => String(r.id) === selectedRoomId)?.name_ar || rooms.find((r) => String(r.id) === selectedRoomId)?.name || (isArabic ? "اختر القاعة..." : "Select Room...")}
+                {rooms.find((r) => String(r.id) === selectedRoomId) ? l(rooms.find((r) => String(r.id) === selectedRoomId).name_ar, rooms.find((r) => String(r.id) === selectedRoomId).name) : m.academics_studio_select_room()}
               </span>
             </SelectTrigger>
             <SelectContent class="max-h-60 text-start">
               {#each rooms as r (r.id)}
                 <SelectItem value={String(r.id)} class="text-xs">
-                  {r.name_ar || r.name} {r.building ? `(${r.building})` : ""}
+                  {l(r.name_ar, r.name)} {r.building ? `(${r.building})` : ""}
                 </SelectItem>
               {/each}
             </SelectContent>
@@ -267,7 +261,7 @@
 
         <!-- Subject Selector (When in Subject view) -->
         {#if viewMode === "subject"}
-          <span class="text-muted-foreground shrink-0 font-medium">{isArabic ? "المادة:" : "Subject:"}</span>
+          <span class="text-muted-foreground shrink-0 font-medium">{m.academics_schedule_active_subject()}</span>
           <Select
             type="single"
             value={selectedSubjectId}
@@ -275,7 +269,7 @@
           >
             <SelectTrigger class="h-7 w-48 bg-card text-xs font-semibold border-border/60">
               <span class="truncate">
-                {subjects.find((s) => String(s.id) === selectedSubjectId)?.name_ar || subjects.find((s) => String(s.id) === selectedSubjectId)?.name || (isArabic ? "اختر المادة..." : "Select Subject...")}
+                {subjects.find((s) => String(s.id) === selectedSubjectId) ? l(subjects.find((s) => String(s.id) === selectedSubjectId).name_ar, subjects.find((s) => String(s.id) === selectedSubjectId).name) : m.academics_schedule_select_subject()}
               </span>
             </SelectTrigger>
             <SelectContent class="max-h-60 text-start">
@@ -283,7 +277,7 @@
                 <SelectItem value={String(s.id)} class="text-xs">
                   <div class="flex items-center gap-1.5">
                     <span class="h-2 w-2 rounded-full" style={`background-color: ${s.color || 'oklch(0.58 0.1 285)'};`}></span>
-                    <span>{s.name_ar || s.name}</span>
+                    <span>{l(s.name_ar, s.name)}</span>
                   </div>
                 </SelectItem>
               {/each}
