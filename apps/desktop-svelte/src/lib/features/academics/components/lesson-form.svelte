@@ -1,334 +1,266 @@
 <script lang="ts">
-import * as m from "$lib/paraglide/messages";
-import { commands, extractErrorMessage } from "$lib/core/ipc";
-import { Button } from "@orbis/ui-svelte/button";
-import { Input } from "@orbis/ui-svelte/input";
-import { SheetHeader, SheetTitle } from "@orbis/ui-svelte/sheet";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@orbis/ui-svelte/select";
-import { ShieldAlert, Calendar } from "@lucide/svelte";
-import { toast } from "svelte-sonner";
-import { getLocale } from "$lib/paraglide/runtime";
-import { l } from "$lib/core/i18n";
-import { fade } from "svelte/transition";
-import { createClassSubjectsQuery } from "$lib/features/academics/queries";
-import { lessonFormInputSchema } from "@orbis/schemas";
-import { FormController } from "$lib/shared/forms/form-controller.svelte";
+  import * as m from "$lib/paraglide/messages";
+  import { commands, extractErrorMessage } from "$lib/core/ipc";
+  import { l } from "$lib/core/i18n";
+  import { getLocale } from "$lib/paraglide/runtime";
+  import { createClassSubjectsQuery } from "$lib/features/academics/queries";
+  import { lessonFormInputSchema } from "@orbis/schemas";
+  import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@orbis/ui-svelte/accordion";
+  import { Button } from "@orbis/ui-svelte/button";
+  import { Input } from "@orbis/ui-svelte/input";
+  import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui-svelte/select";
+  import { SheetHeader, SheetTitle } from "@orbis/ui-svelte/sheet";
+  import { Textarea } from "@orbis/ui-svelte/textarea";
+  import { BookOpen, Calendar, Clock, MapPin, ShieldAlert, User, Users } from "@lucide/svelte";
+  import { toast } from "svelte-sonner";
+  import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
-let {
-  orgId,
-  periodId,
-  classId,
-  dayOfWeek,
-  timeSlotId,
-  timeSlots = [],
-  lesson = null,
-  subjects = [],
-  teachers = [],
-  rooms = [],
-  onSuccess,
-  onCancel,
-}: {
-  orgId: string;
-  periodId: string;
-  classId: string;
-  dayOfWeek: number;
-  timeSlotId: string;
-  timeSlots?: any[];
-  lesson?: any | null;
-  subjects: any[];
-  teachers: any[];
-  rooms: any[];
-  onSuccess: () => void;
-  onCancel: () => void;
-} = $props();
-
-// Form state
-let formSubjectId = $state(lesson?.subject_id || "");
-let formTeacherId = $state(lesson?.teacher_id || "");
-let formRoom = $state(lesson?.room_id || "");
-let formDayOfWeek = $state(lesson?.day_of_week || dayOfWeek);
-let formTimeSlotId = $state(lesson?.time_slot_id || timeSlotId);
-
-const form = new FormController({
-  initialValues: {
-    period_id: "",
-    class_id: "",
-    subject_id: "",
-    teacher_id: "",
-    time_slot_id: "",
-    day_of_week: 1,
-  },
-  schema: lessonFormInputSchema,
-});
-const isSubmitting = $derived(form.isSubmitting);
-
-const classSubjectsQuery = createClassSubjectsQuery(
-  () => classId,
-  () => periodId,
-);
-const classSubjects = $derived(classSubjectsQuery.data ?? []);
-const linkedSubjectIds = $derived(
-  new Set(classSubjects.map((item: any) => String(item.subject_id))),
-);
-const availableSubjects = $derived(
-  subjects.filter((subject: any) => linkedSubjectIds.has(String(subject.id))),
-);
-const linkedTeacherIds = $derived(
-  new Set(
-    classSubjects
-      .filter((item: any) => !formSubjectId || String(item.subject_id) === String(formSubjectId))
-      .map((item: any) => String(item.primary_teacher_id || item.teacher_id))
-      .filter((id: string) => id && id !== "undefined"),
-  ),
-);
-const availableTeachers = $derived(
-  teachers.filter((teacher: any) => linkedTeacherIds.has(String(teacher.id))),
-);
-const selectedClassSubject = $derived(
-  classSubjects.find((item: any) => String(item.subject_id) === String(formSubjectId)),
-);
-
-// Conflict state
-let conflictError = $state<string | null>(null);
-let isCheckingConflict = $state(false);
-
-const weekdays = $derived(
-  Array.from({ length: 7 }, (_, index) => {
-    const day = index + 1;
-    return {
-      value: day,
-      label: new Intl.DateTimeFormat(getLocale(), { weekday: "long" }).format(
-        new Date(Date.UTC(2023, 0, day)),
-      ),
-    };
-  }),
-);
-
-const isEditing = $derived(!!lesson?.id);
-
-$effect(() => {
-  if (lesson?.id) {
-    formSubjectId = lesson.subject_id || "";
-    formTeacherId = lesson.teacher_id || "";
-    formRoom = lesson.room_id || "";
-    formDayOfWeek = lesson.day_of_week || dayOfWeek;
-    formTimeSlotId = lesson.time_slot_id || timeSlotId;
-  } else {
-    formDayOfWeek = dayOfWeek;
-    formTimeSlotId = timeSlotId;
-  }
-});
-
-// Check conflict when teacher, room or subject selection changes
-$effect(() => {
-  if (formTeacherId || formRoom || formSubjectId) {
-    checkScheduleConflict();
-  }
-});
-
-async function checkScheduleConflict() {
-  if (!formSubjectId || !classId || !formTimeSlotId) return;
-  isCheckingConflict = true;
-  conflictError = null;
-  try {
-    const conflicts = await commands.scheduling.checkConflicts(
-      periodId,
-      classId,
-      formTeacherId || "no_teacher",
-      formTimeSlotId,
-      formDayOfWeek,
-      formRoom || null,
-    );
-    const relevantConflicts = (conflicts ?? []).filter(
-      (conflict: any) => !lesson?.id || String(conflict.id) !== String(lesson.id),
-    );
-    if (relevantConflicts.length > 0) {
-      const first = relevantConflicts[0] as any;
-      conflictError = m.common_lesson_sheet_conflict_err({
-        type: String(first.conflict_type || ""),
-      });
-    }
-  } catch (e) {
-    console.warn("Conflict check bypassed:", e);
-  } finally {
-    isCheckingConflict = false;
-  }
-}
-
-async function handleSubmit(e: SubmitEvent) {
-  e.preventDefault();
-  form.values = {
-    period_id: periodId,
-    class_id: classId,
-    subject_id: formSubjectId,
-    teacher_id: formTeacherId,
-    time_slot_id: formTimeSlotId,
-    day_of_week: Number(formDayOfWeek),
+  type Props = {
+    orgId: string;
+    periodId: string;
+    classId: string;
+    dayOfWeek: number;
+    timeSlotId: string;
+    timeSlots?: any[];
+    lesson?: any | null;
+    classes?: any[];
+    subjects: any[];
+    teachers: any[];
+    rooms: any[];
+    onSuccess: () => void;
+    onCancel: () => void;
   };
-  if (!form.validate()) {
-    toast.error(m.common_lesson_toast_error_subject());
-    return;
-  }
-  if (!selectedClassSubject) {
-    toast.error(m.common_lesson_error_subject_link());
-    return;
-  }
-  if (conflictError) {
-    toast.error(conflictError);
-    return;
-  }
-  const submitted = await form.submit(async (values) => {
-    const request = {
-      period_id: values.period_id,
-      class_id: values.class_id,
-      class_subject_id: selectedClassSubject.id,
-      subject_id: values.subject_id,
-      teacher_id: values.teacher_id,
-      time_slot_id: values.time_slot_id,
-      day_of_week: values.day_of_week,
-      room_id: formRoom || undefined,
-    };
-    if (isEditing) {
-      await commands.scheduling.updateLesson(lesson.id, {
-        teacher_id: formTeacherId || undefined,
-        time_slot_id: formTimeSlotId,
-        day_of_week: formDayOfWeek,
-        room_id: formRoom || undefined,
-      });
-    } else {
-      await commands.scheduling.createLesson(request);
-    }
-    toast.success(isEditing ? m.common_lesson_edit_success() : m.common_lesson_toast_success());
 
-    // Reset fields
-    formSubjectId = "";
-    formTeacherId = "";
-    formRoom = "";
-    conflictError = null;
+  let {
+    orgId: _orgId,
+    periodId,
+    classId,
+    dayOfWeek,
+    timeSlotId,
+    timeSlots = [],
+    lesson = null,
+    classes = [],
+    subjects = [],
+    teachers = [],
+    rooms = [],
+    onSuccess,
+    onCancel,
+  }: Props = $props();
 
-    onSuccess();
+  let selectedClassId = $state("");
+  let selectedSubjectId = $state("");
+  let selectedTeacherId = $state("");
+  let selectedRoomId = $state("");
+  let selectedDay = $state(1);
+  let selectedSlotId = $state("");
+  let topic = $state("");
+  let homework = $state("");
+  let notes = $state("");
+  let conflictMessage = $state<string | null>(null);
+  let isCheckingConflict = $state(false);
+
+  const form = new FormController({
+    initialValues: {
+      period_id: "",
+      class_id: "",
+      subject_id: "",
+      teacher_id: "",
+      time_slot_id: "",
+      day_of_week: 1,
+    },
+    schema: lessonFormInputSchema,
   });
-  if (!submitted && form.formError) {
-    toast.error(m.common_lesson_toast_error(), { description: form.formError, duration: 7000 });
+  const isEditing = $derived(Boolean(lesson?.id));
+  const isSubmitting = $derived(form.isSubmitting);
+  const classSubjectsQuery = createClassSubjectsQuery(() => selectedClassId, () => periodId);
+  const classSubjects = $derived(classSubjectsQuery.data ?? []);
+  const availableSubjects = $derived.by(() => {
+    const linkedIds = new Set(classSubjects.map((item: any) => String(item.subject_id)));
+    return subjects.filter((subject: any) => linkedIds.has(String(subject.id)));
+  });
+  const selectedClassSubject = $derived(
+    classSubjects.find((item: any) => String(item.subject_id) === selectedSubjectId),
+  );
+  const availableTeachers = $derived.by(() => {
+    const linkedIds = classSubjects
+      .filter((item: any) => !selectedSubjectId || String(item.subject_id) === selectedSubjectId)
+      .map((item: any) => String(item.primary_teacher_id || item.teacher_id))
+      .filter(Boolean);
+    return teachers.filter((teacher: any) => linkedIds.includes(String(teacher.id)));
+  });
+  const weekdays = $derived(
+    Array.from({ length: 7 }, (_, index) => {
+      const value = index + 1;
+      return { value, label: new Intl.DateTimeFormat(getLocale(), { weekday: "long" }).format(new Date(Date.UTC(2023, 0, value))) };
+    }),
+  );
+
+  $effect(() => {
+    selectedClassId = String(lesson?.class_id || classId || "");
+    selectedSubjectId = String(lesson?.subject_id || "");
+    selectedTeacherId = String(lesson?.teacher_id || "");
+    selectedRoomId = String(lesson?.room_id || "");
+    selectedDay = Number(lesson?.day_of_week || dayOfWeek || 1);
+    selectedSlotId = String(lesson?.time_slot_id || timeSlotId || "");
+    topic = lesson?.topic || "";
+    homework = lesson?.homework || "";
+    notes = lesson?.notes || "";
+  });
+
+  $effect(() => {
+    if (selectedSubjectId && selectedClassSubject?.primary_teacher_id) {
+      selectedTeacherId = String(selectedClassSubject.primary_teacher_id);
+    }
+  });
+
+  $effect(() => {
+    if (selectedClassId && selectedSubjectId && selectedSlotId) checkConflict();
+  });
+
+  async function checkConflict() {
+    isCheckingConflict = true;
+    conflictMessage = null;
+    try {
+      const results = await commands.scheduling.checkConflicts(
+        periodId,
+        selectedClassId,
+        selectedTeacherId || "no_teacher",
+        selectedSlotId,
+        selectedDay,
+        selectedRoomId || null,
+      );
+      const conflicts = (results ?? []).filter((item: any) => !lesson?.id || String(item.lesson_id) !== String(lesson.id));
+      if (conflicts.length > 0) {
+        conflictMessage = m.common_lesson_sheet_conflict_err({ type: String(conflicts[0].conflict_type || "") });
+      }
+    } catch (error) {
+      console.warn("Conflict check bypassed:", error);
+    } finally {
+      isCheckingConflict = false;
+    }
   }
-}
+
+  async function handleSubmit(event: SubmitEvent) {
+    event.preventDefault();
+    form.values = {
+      period_id: periodId,
+      class_id: selectedClassId,
+      subject_id: selectedSubjectId,
+      teacher_id: selectedTeacherId,
+      time_slot_id: selectedSlotId,
+      day_of_week: selectedDay,
+    };
+    if (!form.validate()) {
+      toast.error(m.common_lesson_required_fields());
+      return;
+    }
+    if (!selectedClassSubject) {
+      toast.error(m.common_lesson_error_subject_link());
+      return;
+    }
+    if (conflictMessage) {
+      toast.error(conflictMessage);
+      return;
+    }
+
+    const submitted = await form.submit(async (values) => {
+      const content = {
+        topic: topic.trim() || undefined,
+        homework: homework.trim() || undefined,
+        notes: notes.trim() || undefined,
+      };
+      if (isEditing) {
+        await commands.scheduling.updateLesson(lesson.id, {
+          teacher_id: values.teacher_id || undefined,
+          time_slot_id: values.time_slot_id,
+          day_of_week: values.day_of_week,
+          room_id: selectedRoomId || undefined,
+          ...content,
+        } as any);
+      } else {
+        await commands.scheduling.createLesson({
+          ...values,
+          class_subject_id: selectedClassSubject.id,
+          room_id: selectedRoomId || undefined,
+          ...content,
+        } as any);
+      }
+      toast.success(isEditing ? m.common_lesson_edit_success() : m.common_lesson_toast_success());
+      onSuccess();
+    });
+    if (!submitted && form.formError) {
+      toast.error(m.common_lesson_toast_error(), { description: extractErrorMessage(form.formError) });
+    }
+  }
 </script>
 
-<form onsubmit={handleSubmit} class="flex flex-col h-full overflow-hidden gap-0">
-	<SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
-		<SheetTitle class="text-xl font-bold text-foreground flex items-center gap-2">
-			<Calendar size={18} class="text-primary" />
+<form onsubmit={handleSubmit} class="flex h-full flex-col overflow-hidden gap-0">
+  <SheetHeader class="shrink-0 border-b border-border/40 px-6 py-4 text-start select-none">
+    <SheetTitle class="flex items-center gap-2 text-xl font-bold text-foreground">
+      <Calendar size={18} class="text-primary" />
       <span>{isEditing ? m.common_lesson_edit_title() : m.common_lesson_sheet_title()}</span>
-		</SheetTitle>
-	</SheetHeader>
+    </SheetTitle>
+  </SheetHeader>
 
-	<div class="flex-1 overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
-    {#if isEditing}
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-start">
-        <div class="flex flex-col gap-2">
-          <label for="sched_day" class="text-sm font-medium text-foreground">{m.common_lesson_label_day()}</label>
-          <Select type="single" value={String(formDayOfWeek)} onValueChange={(value) => { formDayOfWeek = Number(value); }}>
-            <SelectTrigger id="sched_day" class="h-9 text-sm w-full">{weekdays.find((day) => day.value === formDayOfWeek)?.label}</SelectTrigger>
-            <SelectContent>{#each weekdays as day}<SelectItem value={String(day.value)}>{day.label}</SelectItem>{/each}</SelectContent>
-          </Select>
-        </div>
-        <div class="flex flex-col gap-2">
-          <label for="sched_slot" class="text-sm font-medium text-foreground">{m.common_lesson_label_period()}</label>
-          <Select type="single" value={formTimeSlotId} onValueChange={(value) => { formTimeSlotId = value ?? ""; }}>
-            <SelectTrigger id="sched_slot" class="h-9 text-sm w-full">{timeSlots.find((slot) => String(slot.id) === formTimeSlotId)?.name_ar || formTimeSlotId}</SelectTrigger>
-            <SelectContent>{#each timeSlots.filter((slot) => !slot.is_break) as slot}<SelectItem value={String(slot.id)}>{slot.name_ar || slot.name} ({slot.start_time} - {slot.end_time})</SelectItem>{/each}</SelectContent>
-          </Select>
-        </div>
+  <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
+    {#if conflictMessage}
+      <div class="mb-6 flex items-start gap-2.5 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-start text-xs text-amber-600 dark:text-amber-400">
+        <ShieldAlert size={16} class="mt-0.5 shrink-0 text-amber-500" />
+        <span class="font-medium">{conflictMessage}</span>
       </div>
     {/if}
-		<!-- Conflict Warning Box -->
-		{#if conflictError}
-			<div class="alert-brand-warning flex items-start gap-2.5 p-3 rounded-lg text-xs text-start bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0" transition:fade>
-				<ShieldAlert size={16} class="text-amber-500 shrink-0 mt-0.5" />
-				<span class="font-medium">{conflictError}</span>
-			</div>
-		{/if}
 
-		<!-- Subject Selector -->
-		<div class="flex flex-col gap-2 text-start">
-			<label for="sched_sub" class="text-sm font-medium text-foreground">
-				{m.common_lesson_label_subject()}
-			</label>
-      <Select type="single" value={formSubjectId} onValueChange={(v) => (formSubjectId = v ?? "")} disabled={isEditing || availableSubjects.length === 0}>
-				<SelectTrigger class="h-9 text-sm w-full">
-					{subjects.find(sub => String(sub.id) === formSubjectId)?.name_ar || subjects.find(sub => String(sub.id) === formSubjectId)?.name || m.common_lesson_option_select_subject()}
-				</SelectTrigger>
-				<SelectContent>
-                    {#each availableSubjects as sub (sub.id)}
-						<SelectItem value={String(sub.id)}>{sub.name_ar || sub.name}</SelectItem>
-					{/each}
-				</SelectContent>
-			</Select>
-		</div>
+    <Accordion type="multiple" value={["schedule", "content"]} class="flex flex-col gap-4">
+      <AccordionItem value="schedule" class="rounded-lg border border-border/50 px-4">
+        <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_lesson_placement()}</AccordionTrigger>
+        <AccordionContent class="space-y-5">
+          <div class="flex flex-col gap-2 text-start">
+            <label for="lesson-class" class="text-sm font-medium text-foreground">{m.common_lesson_class()} *</label>
+            <Select type="single" value={selectedClassId} onValueChange={(value: string | undefined) => (selectedClassId = value ?? "")} disabled={isEditing}>
+              <SelectTrigger id="lesson-class" class="h-9 w-full text-sm"><div class="flex items-center gap-1.5 truncate"><Users size={13} class="text-muted-foreground" /><span>{classes.find((item) => String(item.id) === selectedClassId) ? l(classes.find((item) => String(item.id) === selectedClassId).name_ar, classes.find((item) => String(item.id) === selectedClassId).name) : m.common_lesson_select_class()}</span></div></SelectTrigger>
+              <SelectContent>{#each classes as item (item.id)}<SelectItem value={String(item.id)}>{l(item.name_ar, item.name)}</SelectItem>{/each}</SelectContent>
+            </Select>
+          </div>
+          <div class="flex flex-col gap-2 text-start">
+            <label for="lesson-subject" class="text-sm font-medium text-foreground">{m.common_lesson_subject()} *</label>
+            <Select type="single" value={selectedSubjectId} onValueChange={(value: string | undefined) => (selectedSubjectId = value ?? "")} disabled={isEditing || availableSubjects.length === 0}>
+              <SelectTrigger id="lesson-subject" class="h-9 w-full text-sm"><div class="flex items-center gap-1.5 truncate"><BookOpen size={13} class="text-muted-foreground" /><span>{availableSubjects.find((item) => String(item.id) === selectedSubjectId) ? l(availableSubjects.find((item) => String(item.id) === selectedSubjectId).name_ar, availableSubjects.find((item) => String(item.id) === selectedSubjectId).name) : m.common_lesson_select_subject()}</span></div></SelectTrigger>
+              <SelectContent>{#each availableSubjects as item (item.id)}<SelectItem value={String(item.id)}>{l(item.name_ar, item.name)}</SelectItem>{/each}</SelectContent>
+            </Select>
+          </div>
+          <div class="flex flex-col gap-2 text-start">
+            <label for="lesson-teacher" class="text-sm font-medium text-foreground">{m.common_lesson_label_teacher()}</label>
+            <Select type="single" value={selectedTeacherId} onValueChange={(value: string | undefined) => (selectedTeacherId = value ?? "")} disabled={availableTeachers.length === 0}>
+              <SelectTrigger id="lesson-teacher" class="h-9 w-full text-sm"><div class="flex items-center gap-1.5 truncate"><User size={13} class="text-muted-foreground" /><span>{teachers.find((item) => String(item.id) === selectedTeacherId) ? l(teachers.find((item) => String(item.id) === selectedTeacherId).name_ar, teachers.find((item) => String(item.id) === selectedTeacherId).full_name) : m.common_lesson_option_no_teacher()}</span></div></SelectTrigger>
+              <SelectContent><SelectItem value="">{m.common_lesson_option_no_teacher()}</SelectItem>{#each availableTeachers as item (item.id)}<SelectItem value={String(item.id)}>{l(item.name_ar, item.full_name)}</SelectItem>{/each}</SelectContent>
+            </Select>
+          </div>
+          <div class="flex flex-col gap-2 text-start">
+            <label for="lesson-room" class="text-sm font-medium text-foreground">{m.common_lesson_label_room()}</label>
+            <Select type="single" value={selectedRoomId} onValueChange={(value: string | undefined) => (selectedRoomId = value ?? "")}>
+              <SelectTrigger id="lesson-room" class="h-9 w-full text-sm"><div class="flex items-center gap-1.5 truncate"><MapPin size={13} class="text-muted-foreground" /><span>{rooms.find((item) => String(item.id) === selectedRoomId) ? l(rooms.find((item) => String(item.id) === selectedRoomId).name_ar, rooms.find((item) => String(item.id) === selectedRoomId).name) : m.common_lesson_option_select_room()}</span></div></SelectTrigger>
+              <SelectContent><SelectItem value="">{m.common_lesson_option_no_room()}</SelectItem>{#each rooms as item (item.id)}<SelectItem value={String(item.id)}>{l(item.name_ar, item.name)}</SelectItem>{/each}</SelectContent>
+            </Select>
+          </div>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div class="flex flex-col gap-2 text-start"><label for="lesson-day" class="text-sm font-medium text-foreground">{m.common_lesson_label_day()} *</label><Select type="single" value={String(selectedDay)} onValueChange={(value: string | undefined) => (selectedDay = Number(value) || 1)}><SelectTrigger id="lesson-day" class="h-9 w-full text-sm"><span class="truncate">{weekdays.find((item) => item.value === selectedDay)?.label}</span></SelectTrigger><SelectContent>{#each weekdays as item}<SelectItem value={String(item.value)}>{item.label}</SelectItem>{/each}</SelectContent></Select></div>
+            <div class="flex flex-col gap-2 text-start"><label for="lesson-slot" class="text-sm font-medium text-foreground">{m.common_lesson_label_period()} *</label><Select type="single" value={selectedSlotId} onValueChange={(value: string | undefined) => (selectedSlotId = value ?? "")}><SelectTrigger id="lesson-slot" class="h-9 w-full text-sm"><div class="flex items-center gap-1.5 truncate"><Clock size={13} class="text-muted-foreground" /><span>{timeSlots.find((item) => String(item.id) === selectedSlotId)?.name_ar || m.common_lesson_select_slot()}</span></div></SelectTrigger><SelectContent>{#each timeSlots.filter((item) => !item.is_break) as item (item.id)}<SelectItem value={String(item.id)}>{l(item.name_ar, item.name)} ({item.start_time?.slice(0, 5)} - {item.end_time?.slice(0, 5)})</SelectItem>{/each}</SelectContent></Select></div>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+      <AccordionItem value="content" class="rounded-lg border border-border/50 px-4">
+        <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_lesson_content()}</AccordionTrigger>
+        <AccordionContent class="space-y-5">
+          <div class="flex flex-col gap-2 text-start"><label for="lesson-topic" class="text-sm font-medium text-foreground">{m.common_lesson_topic()}</label><Input id="lesson-topic" bind:value={topic} placeholder={m.common_lesson_topic_placeholder()} /></div>
+          <div class="flex flex-col gap-2 text-start"><label for="lesson-homework" class="text-sm font-medium text-foreground">{m.common_lesson_homework()}</label><Input id="lesson-homework" bind:value={homework} placeholder={m.common_lesson_homework_placeholder()} /></div>
+          <div class="flex flex-col gap-2 text-start"><label for="lesson-notes" class="text-sm font-medium text-foreground">{m.common_lesson_notes()}</label><Textarea id="lesson-notes" bind:value={notes} rows={3} placeholder={m.common_lesson_notes_placeholder()} /></div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  </div>
 
-		<!-- Teacher Selector -->
-		<div class="flex flex-col gap-2 text-start">
-			<label for="sched_teach" class="text-sm font-medium text-foreground">
-				{m.common_lesson_label_teacher()}
-			</label>
-      <Select type="single" value={formTeacherId} onValueChange={(v) => (formTeacherId = v ?? "")} disabled={availableTeachers.length === 0}>
-				<SelectTrigger class="h-9 text-sm w-full">
-          {teachers.find(teach => String(teach.id) === formTeacherId) ? l(teachers.find(teach => String(teach.id) === formTeacherId).name_ar, teachers.find(teach => String(teach.id) === formTeacherId).full_name) : m.common_lesson_option_no_teacher()}
-				</SelectTrigger>
-				<SelectContent>
-					<SelectItem value="">{m.common_lesson_option_no_teacher()}</SelectItem>
-                    {#each availableTeachers as teach (teach.id)}
-                    <SelectItem value={String(teach.id)}>{l(teach.name_ar, teach.full_name)}</SelectItem>
-					{/each}
-				</SelectContent>
-			</Select>
-		</div>
-
-    <!-- Room Selector -->
-		<div class="flex flex-col gap-2 text-start">
-			<label for="sched_room" class="text-sm font-medium text-foreground">
-				{m.common_lesson_label_room()}
-			</label>
-      <Select type="single" value={formRoom} onValueChange={(v) => (formRoom = v ?? "")}>
-        <SelectTrigger id="sched_room" class="h-9 text-sm w-full">
-          {rooms.find((room) => String(room.id) === String(formRoom))
-            ? l(rooms.find((room) => String(room.id) === String(formRoom)).name_ar, rooms.find((room) => String(room.id) === String(formRoom)).name)
-            : m.common_lesson_option_select_room()}
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="">{m.common_lesson_option_no_room()}</SelectItem>
-          {#each rooms as room (room.id)}
-            <SelectItem value={String(room.id)}>
-              {l(room.name_ar, room.name)}
-            </SelectItem>
-          {/each}
-        </SelectContent>
-      </Select>
-		</div>
-	</div>
-
-	<!-- Form Actions -->
-	<div class="px-6 py-4 border-t border-border/40 flex gap-2 justify-end shrink-0 bg-background/50">
-		<Button 
-			type="button" 
-			variant="ghost" 
-			onclick={onCancel}
-			disabled={isSubmitting}
-		>
-			{m.common_action_cancel()}
-		</Button>
-		<Button 
-			type="submit" 
-			variant="lime" 
-			class="font-semibold"
-			disabled={isSubmitting || !!conflictError}
-		>
-        			{isSubmitting ? m.common_state_saving() : m.common_lesson_save()}
-		</Button>
-	</div>
+  <div class="flex shrink-0 justify-end gap-2 border-t border-border/40 bg-background/50 px-6 py-4">
+    <Button type="button" variant="ghost" onclick={onCancel} disabled={isSubmitting}>{m.common_action_cancel()}</Button>
+    <Button type="submit" variant="lime" class="font-semibold" disabled={isSubmitting || isCheckingConflict || Boolean(conflictMessage)}>{isSubmitting ? m.common_state_saving() : m.common_lesson_save()}</Button>
+  </div>
 </form>

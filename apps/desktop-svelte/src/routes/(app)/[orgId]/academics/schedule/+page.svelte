@@ -557,6 +557,7 @@
 <!-- Lesson Create / Edit Side Sheet -->
 <LessonSheet
   bind:open={isLessonSheetOpen}
+  orgId={data.orgId}
   periodId={activePeriodId}
   classId={selectedClassId}
   dayOfWeek={activeCellDay}
