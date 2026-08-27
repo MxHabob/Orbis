@@ -49,8 +49,8 @@ const selectedClass = $derived(
 const displayLabel = $derived(
   value === "all" || value === "" || !value
     ? showAllOption
-      ? allOptionLabel || (m.common_filter_all_classes ? m.common_filter_all_classes() : "جميع الصفوف")
-      : placeholder || (m.common_form_select_class ? m.common_form_select_class() : "اختر الصف الدراسي...")
+      ? allOptionLabel || m.common_filter_all_classes()
+      : placeholder || m.common_form_select_class()
     : selectedClass
       ? getClassLabel(selectedClass)
       : value,
@@ -83,7 +83,7 @@ function handleValueChange(newVal: string | undefined) {
         value="all"
         class="text-xs text-start justify-start cursor-pointer"
       >
-        {allOptionLabel || (m.common_filter_all_classes ? m.common_filter_all_classes() : "جميع الصفوف")}
+        {allOptionLabel || m.common_filter_all_classes()}
       </SelectItem>
     {/if}
     {#each classes as cls (cls.id)}
@@ -96,7 +96,7 @@ function handleValueChange(newVal: string | undefined) {
     {/each}
     {#if classes.length === 0 && !showAllOption}
       <div class="px-3 py-2 text-xs text-muted-foreground text-start">
-        {m.common_status_undefined() === "غير محدد" ? "لا توجد صفوف مضافة" : "No classes available"}
+        {m.common_classes_empty_title()}
       </div>
     {/if}
   </SelectContent>
