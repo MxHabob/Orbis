@@ -53,9 +53,7 @@ async function handleSubmit(e: SubmitEvent) {
     return;
   }
   if (!classId || !subjectId || !periodId) {
-    toast.error(
-      "Please select a class, subject, and period before creating an assessment.",
-    );
+		toast.error(m.common_assessment_error_context_required());
     return;
   }
   isSubmitting = true;

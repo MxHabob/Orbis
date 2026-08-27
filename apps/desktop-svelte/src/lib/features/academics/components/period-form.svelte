@@ -87,11 +87,11 @@ async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
 
   if (!name && !nameAr) {
-    toast.error("Name is required");
+    toast.error(m.common_period_form_error_name_required());
     return;
   }
   if (!startDate || !endDate) {
-    toast.error("Dates are required");
+    toast.error(m.common_period_form_error_dates_required());
     return;
   }
 

@@ -43,18 +43,18 @@ let floor = $state<number | null>(
 );
 
 const roomTypeLabels = {
-  classroom: "Classroom",
-  laboratory: "Laboratory",
-  lecture_hall: "Lecture Hall",
-  office: "Staff Office",
-  other: "Other",
+  classroom: m.common_rooms_type_classroom(),
+  laboratory: m.common_rooms_type_laboratory(),
+  lecture_hall: m.common_rooms_type_lecture_hall(),
+  office: m.common_rooms_type_office(),
+  other: m.common_rooms_type_other(),
 };
 
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
 
   if (!name && !nameAr) {
-    toast.error("Room Name is required");
+    toast.error(m.common_rooms_error_name_required());
     return;
   }
 
@@ -93,7 +93,7 @@ async function handleSubmit(e: SubmitEvent) {
 <form onsubmit={handleSubmit} class="flex flex-col h-full overflow-hidden gap-0">
   <SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
     <SheetTitle class="text-xl font-bold text-foreground">
-      {isEdit ? "Edit Room Details" : m.common_rooms_add()}
+      {isEdit ? m.common_rooms_edit_title() : m.common_rooms_add()}
     </SheetTitle>
   </SheetHeader>
 
@@ -103,7 +103,7 @@ async function handleSubmit(e: SubmitEvent) {
       <!-- Arabic Name -->
       <div class="flex flex-col gap-2">
         <label for="room_name_ar" class="text-xs font-semibold text-foreground">
-          Arabic Name
+          {m.common_rooms_label_name_ar()}
         </label>
         <Input
           id="room_name_ar"
@@ -117,13 +117,13 @@ async function handleSubmit(e: SubmitEvent) {
       <!-- English Name -->
       <div class="flex flex-col gap-2">
         <label for="room_name_en" class="text-xs font-semibold text-foreground">
-          English Name <span class="text-destructive">*</span>
+          {m.common_rooms_label_name_en()} <span class="text-destructive">*</span>
         </label>
         <Input
           id="room_name_en"
           type="text"
           bind:value={name}
-          placeholder="e.g. Room 101 or Computer Lab"
+          placeholder={m.common_rooms_placeholder_name_en()}
           required
           disabled={isSubmitting}
         />
@@ -135,18 +135,18 @@ async function handleSubmit(e: SubmitEvent) {
       <!-- Room Type -->
       <div class="flex flex-col gap-2">
         <label for="room_type" class="text-xs font-semibold text-foreground">
-          Room Type
+          {m.common_rooms_type_label()}
         </label>
         <Select type="single" value={roomType} onValueChange={(v) => (roomType = v ?? "classroom")}>
           <SelectTrigger class="h-9 text-sm w-full">
             {roomTypeLabels[roomType as keyof typeof roomTypeLabels] || roomType}
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="classroom">Classroom</SelectItem>
-            <SelectItem value="laboratory">Laboratory</SelectItem>
-            <SelectItem value="lecture_hall">Lecture Hall</SelectItem>
-            <SelectItem value="office">Staff Office</SelectItem>
-            <SelectItem value="other">Other</SelectItem>
+            <SelectItem value="classroom">{m.common_rooms_type_classroom()}</SelectItem>
+            <SelectItem value="laboratory">{m.common_rooms_type_laboratory()}</SelectItem>
+            <SelectItem value="lecture_hall">{m.common_rooms_type_lecture_hall()}</SelectItem>
+            <SelectItem value="office">{m.common_rooms_type_office()}</SelectItem>
+            <SelectItem value="other">{m.common_rooms_type_other()}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -160,7 +160,7 @@ async function handleSubmit(e: SubmitEvent) {
           id="room_capacity"
           type="number"
           bind:value={capacity}
-          placeholder="e.g. 40"
+          placeholder={m.common_rooms_placeholder_capacity()}
           disabled={isSubmitting}
         />
       </div>
@@ -171,13 +171,13 @@ async function handleSubmit(e: SubmitEvent) {
       <!-- Building -->
       <div class="flex flex-col gap-2">
         <label for="room_building" class="text-xs font-semibold text-foreground">
-          Building
+          {m.common_rooms_label_building()}
         </label>
         <Input
           id="room_building"
           type="text"
           bind:value={building}
-          placeholder="e.g. Main Building"
+          placeholder={m.common_rooms_placeholder_building()}
           disabled={isSubmitting}
         />
       </div>
@@ -185,13 +185,13 @@ async function handleSubmit(e: SubmitEvent) {
       <!-- Floor -->
       <div class="flex flex-col gap-2">
         <label for="room_floor" class="text-xs font-semibold text-foreground">
-          Floor
+          {m.common_rooms_label_floor()}
         </label>
         <Input
           id="room_floor"
           type="number"
           bind:value={floor}
-          placeholder="e.g. 1"
+          placeholder={m.common_rooms_placeholder_floor()}
           disabled={isSubmitting}
         />
       </div>
