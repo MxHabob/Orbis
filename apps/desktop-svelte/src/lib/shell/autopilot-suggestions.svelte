@@ -24,7 +24,7 @@ const sortedTasks = $derived(
 );
 </script>
 
-<div class="p-4 border-b border-border/60 flex flex-col gap-3">
+<div class="flex flex-col gap-3 border-b border-border/60 p-4">
   {#if sortedTasks.length > 0 || isLoading}
     <h4 class="text-[11px] font-bold text-muted-foreground leading-normal text-start uppercase tracking-wide">
       {m.common_autopilot_popover_tasks_section()}
@@ -38,11 +38,15 @@ const sortedTasks = $derived(
     </div>
   {:else}
     {#if sortedTasks.length === 0}
-      <div class="flex flex-col items-center justify-center gap-1.5 rounded-xl bg-muted/15 px-4 py-5 text-center">
-        <div class="flex items-center justify-center py-1">
-          <AvatarPilotPlane mood="steady" />
+      <div class="flex min-h-[205px] flex-col items-center justify-center gap-2 rounded-xl bg-background/60 px-4 py-5 text-center">
+        <div class="flex h-[112px] w-full items-center justify-center">
+          <AvatarPilotPlane mood="steady" width="172px" height="102px" />
         </div>
-        <p class="text-[10px] text-muted-foreground leading-relaxed">
+        <span class="flex items-center gap-1.5 text-[10px] font-medium text-primary">
+          <span class="size-1.5 rounded-full bg-primary" aria-hidden="true"></span>
+          {m.common_phase_active()}
+        </span>
+        <p class="max-w-[220px] text-[10px] leading-relaxed text-muted-foreground">
           {m.common_autopilot_popover_no_tasks()}
         </p>
       </div>

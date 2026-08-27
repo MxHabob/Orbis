@@ -146,10 +146,10 @@ async function handleRunTick() {
     class="w-85 rounded-2xl p-0 overflow-hidden z-50 flex flex-col font-sans text-start border border-border/70 bg-popover text-popover-foreground shadow-xl animate-in fade-in slide-in-from-left-2 duration-200"
   >
     <!-- Header -->
-    <div class="px-4 py-3 border-b border-border/70 bg-card flex items-center justify-between">
-      <div class="flex items-center gap-1.5">
-        <Avatar hat="pilot" width="30px" height="30px" />
-        <span class="text-xs font-semibold text-foreground">{m.common_autopilot_popover_title()}</span>
+    <div class="flex items-center justify-between gap-3 border-b border-border/70 bg-card px-4 py-3">
+      <div class="flex min-w-0 items-center gap-1.5">
+        <Avatar hat="pilot" width="30px" height="30px" class="shrink-0" />
+        <span class="truncate text-xs font-semibold text-foreground">{m.common_autopilot_popover_title()}</span>
         
         {#if !config}
           <Skeleton class="h-3.5 w-10 rounded" />
@@ -167,7 +167,7 @@ async function handleRunTick() {
       <!-- Settings Redirect Icon Link -->
       <a 
         href="/{orgId}/settings/academic-policy" 
-        class="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+        class="flex size-7 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         title={m.common_autopilot_popover_config_title()}
       >
         <Settings size={14} />
@@ -192,9 +192,9 @@ async function handleRunTick() {
     />
 
     <!-- Manual Execution Actions -->
-    <div class="px-4 py-3 ">
+    <div class="border-t border-border/50 bg-card px-4 py-3">
       <Button
-        class="w-full text-[10px] h-8 font-semibold cursor-pointer flex items-center justify-center gap-1.5"
+        class="h-9 w-full cursor-pointer rounded-lg text-[10px] font-semibold shadow-sm flex items-center justify-center gap-1.5"
         onclick={handleRunTick}
         disabled={runTickMutation.isPending}
       >
