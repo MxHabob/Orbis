@@ -4,15 +4,21 @@ export { loginInputSchema } from "./iam.js";
 export {
   discountTemplateInputSchema,
   currencyInputSchema,
+  cashAccountInputSchema,
   feeAssignmentInputSchema,
   feeTemplateInputSchema,
+  entityAccountInputSchema,
+  generalLedgerAccountInputSchema,
   paymentRecordInputSchema,
 } from "./finance.js";
 export type {
   DiscountTemplateInput,
   CurrencyInput,
+  CashAccountInput,
   FeeAssignmentInput,
   FeeTemplateInput,
+  EntityAccountInput,
+  GeneralLedgerAccountInput,
   PaymentRecordInput,
 } from "./finance.js";
 

@@ -14,6 +14,12 @@ import {
 import { ComboboxDropdown } from "@orbis/ui-svelte/combobox-dropdown";
 import { SheetFooter } from "@orbis/ui-svelte/sheet";
 import { toast } from "svelte-sonner";
+import {
+  cashAccountInputSchema,
+  entityAccountInputSchema,
+  generalLedgerAccountInputSchema,
+} from "@orbis/schemas";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { BookOpen, Landmark, Users, Info, Check, Loader2 } from "@lucide/svelte";
 
 let {
@@ -116,6 +122,15 @@ function handleTabChange(tab: "gl" | "cash_account" | "entity") {
   activeTab = tab;
 }
 
+async function submitAccount(schema: any, values: Record<string, unknown>): Promise<boolean> {
+  const form = new FormController({ initialValues: values, schema });
+  const submitted = await form.submit(async (payload) => {
+    await commands.finance.createAccount(payload as any);
+  });
+  if (!submitted) toast.error(form.formError || m.common_ledger_error_name());
+  return submitted;
+}
+
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   isSubmitting = true;
@@ -146,7 +161,7 @@ async function handleSubmit(e: SubmitEvent) {
         sub_type: undefined,
       };
 
-      await commands.finance.createAccount(request);
+      if (!(await submitAccount(generalLedgerAccountInputSchema, request))) return;
       toast.success(m.common_ledger_toast_success());
 
       // Reset
@@ -170,7 +185,7 @@ async function handleSubmit(e: SubmitEvent) {
         parent_id: undefined,
       };
 
-      await commands.finance.createAccount(request);
+      if (!(await submitAccount(cashAccountInputSchema, request))) return;
       toast.success(m.common_cash_account_created());
 
       // Reset
@@ -193,7 +208,7 @@ async function handleSubmit(e: SubmitEvent) {
         sub_type: enType,
       };
 
-      await commands.finance.createAccount(request);
+      if (!(await submitAccount(entityAccountInputSchema, request))) return;
       toast.success(m.common_ledger_entity_created());
 
       // Reset
@@ -218,7 +233,7 @@ async function handleSubmit(e: SubmitEvent) {
       <Label for="account_type" class="text-xs font-bold text-foreground">
         {m.common_ledger_label_type()}
       </Label>
-      <Select type="single" value={activeTab} onValueChange={(value) => handleTabChange(value as typeof activeTab)}>
+      <Select type="single" value={activeTab} onValueChange={(value: string | undefined) => handleTabChange((value ?? "gl") as typeof activeTab)}>
         <SelectTrigger id="account_type" class="h-9 w-full text-xs text-start">
           <span class="flex items-center gap-2">
             {#if activeTab === "gl"}
