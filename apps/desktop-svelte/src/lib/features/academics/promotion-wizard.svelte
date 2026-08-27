@@ -364,7 +364,7 @@ function decisionLabel(d: string) {
                     <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_final_level()}</span>
                   </div>
                   <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
-                    <Input id="final_level" bind:value={config.final_level} placeholder="e.g. Grade 12" class="h-9 w-full bg-background" />
+                    <Input id="final_level" bind:value={config.final_level} placeholder={m.common_promo_final_level_placeholder()} class="h-9 w-full bg-background" />
                   </div>
                 </div>
               {/if}
@@ -447,7 +447,7 @@ function decisionLabel(d: string) {
                         <span class="text-[11px] text-muted-foreground">{m.common_promo_desc_source_level()}</span>
                       </div>
                       <div class="w-full md:w-[480px] shrink-0">
-                        <Input bind:value={mapping.source_level} placeholder="e.g. Grade 5" class="h-9 w-full bg-background" />
+                        <Input bind:value={mapping.source_level} placeholder={m.common_promo_source_level_placeholder()} class="h-9 w-full bg-background" />
                       </div>
                     </div>
                     
@@ -458,7 +458,7 @@ function decisionLabel(d: string) {
                         <span class="text-[11px] text-muted-foreground">{m.common_promo_desc_target_level()}</span>
                       </div>
                       <div class="w-full md:w-[480px] shrink-0">
-                        <Input bind:value={mapping.target_level} placeholder="e.g. Grade 6" class="h-9 w-full bg-background" />
+                        <Input bind:value={mapping.target_level} placeholder={m.common_promo_target_level_placeholder()} class="h-9 w-full bg-background" />
                       </div>
                     </div>
 
@@ -474,7 +474,7 @@ function decisionLabel(d: string) {
                           oninput={(e) => {
                             mapping.target_class_names = e.currentTarget.value.split(",").map(s => s.trim()).filter(Boolean);
                           }}
-                          placeholder="6A, 6B, 6C"
+                          placeholder={m.common_promo_target_classes_placeholder()}
                           class="h-9 w-full bg-background"
                         />
                       </div>

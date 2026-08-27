@@ -236,25 +236,25 @@ async function handleSubmit(e: SubmitEvent) {
     <!-- Code & Head of Unit -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="flex flex-col gap-1.5 text-start">
-        <Label for="unit_code" class="text-xs font-semibold">الرمز / الكود التعريفي</Label>
+        <Label for="unit_code" class="text-xs font-semibold">{m.common_org_unit_code()}</Label>
         <Input
           id="unit_code"
           type="text"
           bind:value={code}
-          placeholder="مثال: HIGH-BOYS أو SEC-01"
+          placeholder={m.common_org_unit_code()}
           disabled={isSubmitting}
           class="text-xs font-mono h-9"
         />
       </div>
 
       <div class="flex flex-col gap-1.5 text-start">
-        <Label class="text-xs font-semibold">مدير / رئيس الوحدة</Label>
+        <Label class="text-xs font-semibold">{m.common_org_unit_head()}</Label>
         <Select type="single" value={headId} onValueChange={(v) => (headId = v ?? "")}>
           <SelectTrigger class="h-9 text-xs w-full">
-            {staffList.find(s => String(s.id) === headId) ? (staffList.find(s => String(s.id) === headId).name_ar || staffList.find(s => String(s.id) === headId).full_name) : "— بدون تحديد —"}
+            {staffList.find(s => String(s.id) === headId) ? (staffList.find(s => String(s.id) === headId).name_ar || staffList.find(s => String(s.id) === headId).full_name) : m.common_org_unit_none()}
           </SelectTrigger>
           <SelectContent class="text-xs">
-            <SelectItem value="">— بدون تحديد —</SelectItem>
+            <SelectItem value="">{m.common_org_unit_none()}</SelectItem>
             {#each staffList as s}
               <SelectItem value={String(s.id)}>
                 {s.name_ar || s.full_name || s.username}
