@@ -290,15 +290,21 @@ async fn install(path: &Path, update: bool) -> Result<()> {
         if let Some(row) = existing {
             let is_system = row.try_get::<i32>("", "is_system").unwrap_or(0);
             let current = row.try_get::<String>("", "document_json").unwrap_or_default();
-            if update && is_system == 1 && current == *document_json {
-                continue;
-            }
             if update && is_system == 1 {
                 let id = row.try_get::<String>("", "id")?;
-                txn.execute_unprepared(&format!(
-                    "UPDATE templates SET document_json='{}', version=version+1, meta='{}', updated_at='{}' WHERE id='{}' AND org_id='{}'",
-                    escape(document_json), escape(&metadata), now, escape(&id), escape(&org_id)
-                )).await?;
+                if current == *document_json {
+                    txn.execute_unprepared(&format!(
+                        "UPDATE templates SET page_size='{}', page_width_mm={}, page_height_mm={}, orientation='{}', margins_json='{}', meta='{}', updated_at='{}' WHERE id='{}' AND org_id='{}'",
+                        page_size, page_width_mm, page_height_mm, orientation,
+                        escape(&margins_json), escape(&metadata), now, escape(&id), escape(&org_id)
+                    )).await?;
+                } else {
+                    txn.execute_unprepared(&format!(
+                        "UPDATE templates SET document_json='{}', page_size='{}', page_width_mm={}, page_height_mm={}, orientation='{}', margins_json='{}', version=version+1, meta='{}', updated_at='{}' WHERE id='{}' AND org_id='{}'",
+                        escape(document_json), page_size, page_width_mm, page_height_mm, orientation,
+                        escape(&margins_json), escape(&metadata), now, escape(&id), escape(&org_id)
+                    )).await?;
+                }
             }
             continue;
         }

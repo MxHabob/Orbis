@@ -161,8 +161,8 @@ function getPageDimensionMm(dim: "width" | "height"): number {
     A5: { w: 148, h: 210 },
     Letter: { w: 216, h: 279 },
     Legal: { w: 216, h: 356 },
-    ID_CARD: { w: 85.6, h: 53.98 },
-    BADGE: { w: 86, h: 54 },
+    ID_CARD: { w: 53.98, h: 85.6 },
+    BADGE: { w: 54, h: 86 },
   };
   const size = sizes[pageSetup.size] ?? {
     w: pageSetup.width ?? 210,

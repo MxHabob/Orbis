@@ -348,7 +348,7 @@ async fn main() -> Result<()> {
                                 }
                             }
                             MenuChoice::CreateDefaultTemplates => {
-                                if let Err(e) = commands::templates::execute(&TemplateCommands::Create {
+                                if let Err(e) = commands::templates::execute(&TemplateCommands::Update {
                                     package: default_template_package_path(),
                                 }).await {
                                     ui::output::print_error(&e.to_string());

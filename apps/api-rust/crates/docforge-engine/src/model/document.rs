@@ -82,8 +82,8 @@ impl PageSize {
             PageSize::A5 => (148.0, 210.0),
             PageSize::Letter => (216.0, 279.0),
             PageSize::Legal => (216.0, 356.0),
-            PageSize::IdCard => (85.6, 53.98),
-            PageSize::Badge => (86.0, 54.0),
+            PageSize::IdCard => (53.98, 85.6),
+            PageSize::Badge => (54.0, 86.0),
             PageSize::Custom => (210.0, 297.0), // default to A4
         }
     }

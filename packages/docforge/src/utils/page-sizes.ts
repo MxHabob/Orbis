@@ -20,8 +20,8 @@ export const PAGE_SIZES: Record<PageSize, PageDimensions> = {
   A5: { width: 148, height: 210 },
   Letter: { width: 216, height: 279 },
   Legal: { width: 216, height: 356 },
-  ID_CARD: { width: 85.6, height: 53.98 },
-  BADGE: { width: 86, height: 54 },
+  ID_CARD: { width: 53.98, height: 85.6 },
+  BADGE: { width: 54, height: 86 },
   Custom: { width: 210, height: 297 }, // default to A4
 };
 
