@@ -34,8 +34,8 @@ const handleLearnMore = async () => {
       variant="outline"
       size="icon-sm"
       class="cursor-pointer"
-      title="What's New"
-      aria-label="What's new"
+      title={m.common_whats_new_header_title()}
+      aria-label={m.common_whats_new_header_title()}
     >
       <Megaphone size={14} class="text-foreground stroke-[2px]" />
     </Button>
@@ -84,7 +84,7 @@ const handleLearnMore = async () => {
         <div class="w-full aspect-[16/7] rounded-lg overflow-hidden border border-border bg-muted/20 flex items-center justify-center">
           <img
             src={orbisEcosystem}
-            alt="Orbis Ecosystem Illustration"
+            alt=""
             class="w-full h-full object-cover"
             draggable="false"
           />
@@ -113,7 +113,7 @@ const handleLearnMore = async () => {
         <div class="w-full aspect-[16/7] rounded-lg overflow-hidden border border-border bg-muted/20 flex items-center justify-center">
           <img
             src={mulverseOrbis}
-            alt="Mulverse Integration Illustration"
+            alt=""
             class="w-full h-full object-cover"
             draggable="false"
           />
