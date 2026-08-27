@@ -10,7 +10,6 @@ import { Badge } from "@orbis/ui-svelte/badge";
 import { Megaphone } from "@lucide/svelte";
 import { isDesktopApp } from "$lib/core/ipc";
 
-import { getLocale } from "$lib/paraglide/runtime";
 import orbisEcosystem from "$lib/assets/orbis-ecosystem.png";
 import mulverseOrbis from "$lib/assets/mulverse-orbis.png";
 
@@ -34,7 +33,7 @@ const handleLearnMore = async () => {
     <Button
       variant="outline"
       size="icon-sm"
-      class="rounded-[8px] shrink-0 cursor-pointer"
+      class="cursor-pointer"
       title="What's New"
       aria-label="What's new"
     >
@@ -43,28 +42,29 @@ const handleLearnMore = async () => {
   </PopoverTrigger>
   
   <PopoverContent
+    dir="auto"
     side="bottom"
     align="end"
     sideOffset={8}
-    class="w-[360px] bg-card border border-border shadow-2xl rounded-xl p-0 overflow-hidden z-50 flex flex-col font-sans text-start text-card-foreground"
+    class="w-[min(420px,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] rounded-xl p-0 overflow-hidden font-sans text-start"
   >
     <!-- Announcement Header -->
-    <div class="px-4 py-3 border-b border-border bg-card/50 flex items-center justify-between select-none">
-      <h4 class="font-bold text-xs text-foreground">
+    <div class="sticky top-0 z-10 px-4 py-3 border-b border-border flex items-center justify-between select-none">
+      <h4 class="font-bold text-sm text-foreground">
         {m.common_whats_new_header_title()}
       </h4>
     </div>
 
     <!-- Announcement Feed List (Scrollable) -->
-    <div class="whats-new-list flex-1 overflow-y-auto max-h-[440px] p-4 flex flex-col gap-5 bg-card">
+    <div class="whats-new-list flex-1 overflow-y-auto max-h-[min(440px,calc(100vh-7rem))] px-4 py-4 flex flex-col gap-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       
       <!-- Announcement Item 1 -->
-      <div class="flex flex-col gap-2.5 text-start">
+      <div class="flex flex-col gap-3 text-start">
         <div class="flex items-start justify-between gap-2">
           <h5 class="text-[12px] font-bold text-foreground leading-snug">
             {m.common_whats_new_title_1()}
           </h5>
-          <Badge variant="brand" class="text-[9px] px-1.5 py-0 shrink-0 font-semibold bg-primary/10 text-primary border-none">
+          <Badge variant="brand" class="shrink-0">
             {m.common_whats_new_badge_feature()}
           </Badge>
         </div>
@@ -81,11 +81,11 @@ const handleLearnMore = async () => {
         </p>
 
         <!-- Illustration Image 1 -->
-        <div class="w-full rounded-lg overflow-hidden border border-border bg-muted/20 flex items-center justify-center">
+        <div class="w-full aspect-[16/7] rounded-lg overflow-hidden border border-border bg-muted/20 flex items-center justify-center">
           <img
             src={orbisEcosystem}
             alt="Orbis Ecosystem Illustration"
-            class="w-full h-auto object-cover"
+            class="w-full h-full object-cover"
             draggable="false"
           />
         </div>
@@ -95,12 +95,12 @@ const handleLearnMore = async () => {
       <div class="h-px bg-border/60"></div>
 
       <!-- Announcement Item 2 -->
-      <div class="flex flex-col gap-2.5 text-start pb-2">
+      <div class="flex flex-col gap-3 text-start pb-2">
         <div class="flex items-start justify-between gap-2">
           <h5 class="text-[12px] font-bold text-foreground leading-snug">
             {m.common_whats_new_title_2()}
           </h5>
-          <Badge variant="brand" class="text-[9px] px-1.5 py-0 shrink-0 font-semibold bg-primary/10 text-primary border-none">
+          <Badge variant="brand" class="shrink-0">
             {m.common_whats_new_badge_integration()}
           </Badge>
         </div>
@@ -110,11 +110,11 @@ const handleLearnMore = async () => {
         </p>
 
         <!-- Illustration Image 2 -->
-        <div class="w-full rounded-lg overflow-hidden border border-border bg-muted/20 flex items-center justify-center">
+        <div class="w-full aspect-[16/7] rounded-lg overflow-hidden border border-border bg-muted/20 flex items-center justify-center">
           <img
             src={mulverseOrbis}
             alt="Mulverse Integration Illustration"
-            class="w-full h-auto object-cover"
+            class="w-full h-full object-cover"
             draggable="false"
           />
         </div>
@@ -123,21 +123,3 @@ const handleLearnMore = async () => {
     </div>
   </PopoverContent>
 </Popover>
-
-<style>
-  :global(.whats-new-list) {
-    scrollbar-width: thin;
-    scrollbar-color: var(--border) transparent;
-  }
-  :global(.whats-new-list)::-webkit-scrollbar {
-    width: 3px !important;
-    display: block !important;
-  }
-  :global(.whats-new-list)::-webkit-scrollbar-track {
-    background: transparent !important;
-  }
-  :global(.whats-new-list)::-webkit-scrollbar-thumb {
-    background-color: var(--border) !important;
-    border-radius: 9999px !important;
-  }
-</style>
