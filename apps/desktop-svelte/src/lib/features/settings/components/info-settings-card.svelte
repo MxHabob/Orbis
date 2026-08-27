@@ -6,11 +6,12 @@ import { Input } from "@orbis/ui-svelte/input";
 interface Props {
   slug: string;
   name: string;
+  nameAr: string;
   id: string;
   isSaving?: boolean;
 }
 
-let { slug, name = $bindable(), id, isSaving = false }: Props = $props();
+let { slug, name = $bindable(), nameAr = $bindable(), id, isSaving = false }: Props = $props();
 </script>
 
 <div class="border border-border rounded-md overflow-hidden flex flex-col">
@@ -36,6 +37,26 @@ let { slug, name = $bindable(), id, isSaving = false }: Props = $props();
           value={slug}
           disabled
           class="h-9 w-full bg-muted/40 text-muted-foreground border-border/80"
+        />
+      </div>
+    </div>
+
+    <!-- Arabic Display Name -->
+    <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+      <div class="flex flex-col gap-1 text-start">
+        <Label for="org_name_ar" class="text-xs font-semibold text-foreground">
+          الاسم العربي
+        </Label>
+        <span class="text-[11px] text-muted-foreground leading-relaxed">الاسم المستخدم في المستندات والقوالب العربية</span>
+      </div>
+      <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+        <Input
+          id="org_name_ar"
+          type="text"
+          dir="rtl"
+          bind:value={nameAr}
+          disabled={isSaving}
+          class="h-9 w-full bg-background"
         />
       </div>
     </div>

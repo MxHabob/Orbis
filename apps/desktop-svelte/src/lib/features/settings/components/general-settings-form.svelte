@@ -25,6 +25,7 @@ let { org, orgId, isSaving, onsave, onsaveavatar, onremove, onlanguagechange } =
 
 // Form state initialized once with props
 let name = $state("");
+let nameAr = $state("");
 let slug = $state("");
 let id = $state("");
 let logo = $state("");
@@ -40,6 +41,7 @@ let initialValues = $state<any>(null);
 $effect(() => {
   if (org && !initialValues) {
     name = org.name || "";
+    nameAr = org.name_ar || "";
     slug = org.slug || "";
     id = org.id || "";
     logo = org.logo || "";
@@ -48,10 +50,11 @@ $effect(() => {
     timezone = org.timezone || "Asia/Aden";
     locale = org.locale || "ar";
     dateFormat = org.date_format || "YYYY-MM-DD";
-    hijriEnabled = org.hijri_enabled === 1;
+    hijriEnabled = org.hijri_enabled === true || org.hijri_enabled === 1;
 
     initialValues = {
       name,
+      nameAr,
       primaryColor,
       currency,
       timezone,
@@ -66,6 +69,7 @@ const isDirty = $derived.by(() => {
   if (!initialValues) return false;
   return (
     name !== initialValues.name ||
+    nameAr !== initialValues.nameAr ||
     primaryColor !== initialValues.primaryColor ||
     currency !== initialValues.currency ||
     timezone !== initialValues.timezone ||
@@ -78,6 +82,7 @@ const isDirty = $derived.by(() => {
 function handleReset() {
   if (!initialValues) return;
   name = initialValues.name;
+  nameAr = initialValues.nameAr;
   primaryColor = initialValues.primaryColor;
   currency = initialValues.currency;
   timezone = initialValues.timezone;
@@ -95,17 +100,19 @@ function handleSubmit(e?: Event) {
   }
   onsave({
     name: result.data.name,
+    name_ar: nameAr || null,
     logo: logo || null,
     primary_color: primaryColor,
     currency: result.data.currency,
     timezone: result.data.timezone,
     locale: result.data.locale,
     date_format: result.data.dateFormat,
-    hijri_enabled: hijriEnabled ? 1 : 0,
+    hijri_enabled: hijriEnabled,
   });
   if (initialValues) {
     initialValues = {
       name,
+      nameAr,
       primaryColor,
       currency,
       timezone,
@@ -119,13 +126,14 @@ function handleSubmit(e?: Event) {
 function handleLanguageChange(newLocale: string) {
   onlanguagechange(newLocale, {
     name,
+    name_ar: nameAr || null,
     logo: logo || null,
     primary_color: primaryColor,
     currency,
     timezone,
     locale: newLocale,
     date_format: dateFormat,
-    hijri_enabled: hijriEnabled ? 1 : 0,
+    hijri_enabled: hijriEnabled,
   });
 }
 
@@ -141,6 +149,7 @@ function handleSaveAvatar(e: Event) {
       <InfoSettingsCard
         {slug}
         bind:name
+        bind:nameAr
         {id}
         {isSaving}
       />
@@ -159,6 +168,47 @@ function handleSaveAvatar(e: Event) {
         {isSaving}
         onLanguageChange={handleLanguageChange}
       />
+
+            <div class="border border-border rounded-md overflow-hidden flex flex-col">
+              <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
+                حدود المنظمة
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x rtl:md:divide-x-reverse divide-border">
+                <div class="px-6 py-5 flex flex-col gap-1 text-start">
+                  <span class="text-xs font-semibold text-foreground">المستخدمون</span>
+                  <span class="text-2xl font-semibold tabular-nums">{org.max_users ?? "—"}</span>
+                  <span class="text-[11px] text-muted-foreground">الحد الأقصى المسموح به</span>
+                </div>
+                <div class="px-6 py-5 flex flex-col gap-1 text-start">
+                  <span class="text-xs font-semibold text-foreground">الطلاب</span>
+                  <span class="text-2xl font-semibold tabular-nums">{org.max_students ?? "—"}</span>
+                  <span class="text-[11px] text-muted-foreground">الحد الأقصى المسموح به</span>
+                </div>
+                <div class="px-6 py-5 flex flex-col gap-1 text-start">
+                  <span class="text-xs font-semibold text-foreground">التخزين</span>
+                  <span class="text-2xl font-semibold tabular-nums">{org.max_storage_gb ?? "—"} GB</span>
+                  <span class="text-[11px] text-muted-foreground">السعة المخصصة للمنظمة</span>
+                </div>
+              </div>
+            </div>
+
+            {#if org.features}
+              {@const features = typeof org.features === "string" ? (() => { try { return JSON.parse(org.features); } catch { return {}; } })() : org.features}
+              {#if Object.keys(features || {}).length > 0}
+                <div class="border border-border rounded-md overflow-hidden flex flex-col">
+                  <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
+                    الميزات المفعلة
+                  </div>
+                  <div class="px-6 py-5 flex flex-wrap gap-2">
+                    {#each Object.entries(features) as [feature, enabled]}
+                      {#if enabled}
+                        <span class="rounded-md border border-border bg-muted/40 px-3 py-1.5 text-xs font-medium">{feature}</span>
+                      {/if}
+                    {/each}
+                  </div>
+                </div>
+              {/if}
+            {/if}
     </form>
 
     <AvatarSettingsCard

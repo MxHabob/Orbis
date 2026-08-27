@@ -27,10 +27,10 @@ export function createUpdateOrganizationMutation() {
   const queryClient = useQueryClient();
   return createMutation(() => ({
     mutationFn: (variables: { orgId: string; request: any }) =>
-      commands.organization.updateOrganization(
-        variables.orgId,
-        variables.request,
-      ),
+      commands.organization.updateOrganization({
+        ...variables.request,
+        org_id: variables.orgId,
+      }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: ["organization", variables.orgId],
