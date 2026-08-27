@@ -3,10 +3,9 @@ import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { toast } from "svelte-sonner";
 
-import { extractErrorMessage } from "$lib/core/ipc";
+import { commands, extractErrorMessage } from "$lib/core/ipc";
 import {
   createOrganizationQuery,
-  createUpdateOrganizationMutation,
   RegistrationSettingsForm,
 } from "$lib/features/settings";
 import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
@@ -15,10 +14,9 @@ let orgId = $derived(page.params.orgId as string);
 
 // Query & Mutation
 const orgQuery = createOrganizationQuery(() => orgId);
-const updateOrgMutation = createUpdateOrganizationMutation();
+let isSaving = $state(false);
 
 let isLoading = $derived(orgQuery.isLoading);
-let isSaving = $derived(updateOrgMutation.isPending);
 
 async function handleSave(registrationConfig: any) {
   const org = orgQuery.data;
@@ -27,39 +25,27 @@ async function handleSave(registrationConfig: any) {
   let settingsObj: Record<string, any> = {};
   if (org.settings) {
     try {
-      settingsObj = JSON.parse(org.settings as string);
+      settingsObj = typeof org.settings === "string"
+        ? JSON.parse(org.settings)
+        : org.settings;
     } catch {
       settingsObj = {};
     }
   }
 
-  settingsObj.registration_config = registrationConfig;
+  settingsObj.registration = registrationConfig.registration;
 
-  const request = {
-    name: org.name,
-    logo: org.logo || null,
-    primary_color: org.primary_color,
-    currency: org.currency,
-    timezone: org.timezone,
-    locale: org.locale,
-    date_format: org.date_format,
-    hijri_enabled: org.hijri_enabled,
-    settings: JSON.stringify(settingsObj),
-  };
-
-  updateOrgMutation.mutate(
-    { orgId, request },
-    {
-      onSuccess: () => {
-        toast.success(m.settings_registration_save_success());
-      },
-      onError: (e: unknown) => {
-        toast.error(
-          m.settings_registration_save_error({ error: extractErrorMessage(e) }),
-        );
-      },
-    },
-  );
+  isSaving = true;
+  try {
+    await commands.organization.updateSettings(settingsObj);
+    toast.success(m.settings_registration_save_success());
+  } catch (e: unknown) {
+    toast.error(
+      m.settings_registration_save_error({ error: extractErrorMessage(e) }),
+    );
+  } finally {
+    isSaving = false;
+  }
 }
 </script>
 

@@ -26,7 +26,7 @@ let { primaryColor = $bindable(), isSaving = false }: Props = $props();
         </Label>
         <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_color_desc()}</span>
       </div>
-      <div class="w-full md:w-[480px] shrink-0 flex items-center justify-start gap-2">
+      <div class="w-full md:w-120 shrink-0 flex items-center justify-start gap-2">
         <input
           id="org_color"
           type="color"

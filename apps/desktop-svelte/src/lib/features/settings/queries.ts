@@ -16,7 +16,10 @@ import type { Organization } from "$lib/core/ipc";
 export function createOrganizationQuery(orgId: () => string) {
   return createQuery<Organization>(() => ({
     queryKey: ["organization", orgId()],
-    queryFn: async () => await commands.organization.getOrganization(),
+    queryFn: async (): Promise<Organization> => {
+      const organization = await commands.organization.getOrganization();
+      return organization as Organization;
+    },
     enabled: !!orgId(),
     staleTime: 5 * 60 * 1000,
   }));
@@ -43,7 +46,7 @@ export function createUpdateOrganizationMutation() {
 export function createUsersQuery(orgId: () => string) {
   return createQuery(() => ({
     queryKey: ["users", orgId()],
-    queryFn: () => commands.iam.listUsers(),
+    queryFn: () => commands.iam.listUsers(null),
     enabled: !!orgId(),
     staleTime: 5 * 60 * 1000,
   }));
@@ -59,7 +62,10 @@ export function createUsersPaginatedQuery(
   return createInfiniteQuery(() => ({
     queryKey: ["users_paginated", orgId(), limit, filter],
     queryFn: async ({ pageParam }) => {
-      return commands.iam.listUsersPaginated(pageParam, limit, filter);
+      return commands.iam.listUsersPaginated(
+        { cursor: pageParam, limit },
+        filter ?? null,
+      );
     },
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage: any) => {

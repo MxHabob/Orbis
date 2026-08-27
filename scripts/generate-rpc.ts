@@ -650,15 +650,20 @@ export const commands: OrbisCommands = {\n`;
     content += `  ${domain}: {\n`;
     for (const op of domainOps) {
       const argsStr = op.args.map(a => `${a.name === "cmd" ? "cmdPayload" : a.name}: any`).join(", ");
-      const passArgsStr = op.args.map(a => `${a.name === "cmd" ? "cmd: cmdPayload" : a.name}`).join(", ");
+      const passArgsStr = op.args.map(a => `${a.name === "cmd" ? "cmd: cmdPayload" : `${a.rustName}: ${a.name}`}`).join(", ");
       const tauriFuncName = op.isCustom ? op.funcName : `${domain}_${op.opFile}_${op.funcName}`;
       
       if (op.tsFuncName.endsWith("Paginated") || op.args.some(a => a.rustType.includes("CursorRequest"))) {
-          content += `    ${op.tsFuncName}: (cursorOrReq?: any, limit?: any) => {\n`;
+          const cursorArgs = op.args.filter(a => a.rustType.includes("CursorRequest"));
+          const extraArgs = op.args.filter(a => !cursorArgs.includes(a));
+          const extraSignature = extraArgs.map(a => `${a.name}?: any`).join(", ");
+          const signature = extraSignature ? `cursorOrReq?: any, ${extraSignature}` : "cursorOrReq?: any, limit?: any";
+          content += `    ${op.tsFuncName}: (${signature}) => {\n`;
           content += `      const req = (typeof cursorOrReq === "object" && cursorOrReq !== null && !Array.isArray(cursorOrReq))\n`;
           content += `        ? cursorOrReq\n`;
-          content += `        : { cursor: typeof cursorOrReq === "string" ? cursorOrReq : null, limit: typeof limit === "number" ? limit : 50 };\n`;
-          content += `      return cmd("${tauriFuncName}", { request: req });\n`;
+          content += `        : { cursor: typeof cursorOrReq === "string" ? cursorOrReq : null, limit: 50 };\n`;
+          const extraPayload = extraArgs.map(a => `${a.rustName}: ${a.name}`).join(", ");
+          content += `      return cmd("${tauriFuncName}", { request: req${extraPayload ? `, ${extraPayload}` : ""} });\n`;
           content += `    },\n`;
         } else if (op.args.some(a => a.rustName === "on_chunk")) {
           const callbackArg = op.args.find(a => a.rustName === "on_chunk")?.name || "onChunk";

@@ -87,7 +87,7 @@ export function useUploadDocument() {
       category: string;
       visibility: string;
     }) => {
-      const bytes = new Uint8Array(await payload.file.arrayBuffer());
+      const bytes = Array.from(new Uint8Array(await payload.file.arrayBuffer()));
       return commands.document.uploadDocument(
         payload.file.name,
         payload.file.type || "application/octet-stream",

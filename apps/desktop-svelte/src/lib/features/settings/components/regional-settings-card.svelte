@@ -77,7 +77,7 @@ const dateFormats = [
         </Label>
         <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_date_format_desc()}</span>
       </div>
-      <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+      <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
         <Select type="single" value={dateFormat} onValueChange={(v: string | undefined) => (dateFormat = v ?? "")} disabled={isSaving}>
           <SelectTrigger class="h-9 w-full">
             {dateFormats.find(df => df.value === dateFormat)?.label || dateFormat}
@@ -99,7 +99,7 @@ const dateFormats = [
         </Label>
         <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_hijri_desc()}</span>
       </div>
-      <div class="w-full md:w-[480px] shrink-0 flex items-center justify-start md:justify-start">
+      <div class="w-full md:w-120 shrink-0 flex items-center justify-start md:justify-start">
         <Switch
           id="hijri_enabled"
           bind:checked={hijriEnabled}

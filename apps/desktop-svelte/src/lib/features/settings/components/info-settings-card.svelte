@@ -30,7 +30,7 @@ let { slug, name = $bindable(), nameAr = $bindable(), id, isSaving = false }: Pr
         </Label>
         <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_slug_desc()}</span>
       </div>
-      <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+      <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
         <Input
           id="org_slug"
           type="text"
@@ -49,7 +49,7 @@ let { slug, name = $bindable(), nameAr = $bindable(), id, isSaving = false }: Pr
         </Label>
         <span class="text-[11px] text-muted-foreground leading-relaxed">الاسم المستخدم في المستندات والقوالب العربية</span>
       </div>
-      <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+      <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
         <Input
           id="org_name_ar"
           type="text"
@@ -70,7 +70,7 @@ let { slug, name = $bindable(), nameAr = $bindable(), id, isSaving = false }: Pr
         </Label>
         <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_name_desc()}</span>
       </div>
-      <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+      <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
         <Input
           id="org_name"
           type="text"
@@ -91,7 +91,7 @@ let { slug, name = $bindable(), nameAr = $bindable(), id, isSaving = false }: Pr
         </Label>
         <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_id_desc()}</span>
       </div>
-      <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+      <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
         <Input
           id="org_id"
           type="text"

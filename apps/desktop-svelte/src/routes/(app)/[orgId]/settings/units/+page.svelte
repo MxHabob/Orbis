@@ -551,11 +551,11 @@ function escapeHtml(text: string): string {
                           {/if}
                         </button>
                       {:else}
-                        <div class="w-6 h-6 flex-shrink-0"></div>
+                        <div class="w-6 h-6 shrink-0"></div>
                       {/if}
 
                       <!-- Icon -->
-                      <div class="p-1 rounded bg-muted/40 text-muted-foreground border border-border/20 flex-shrink-0 flex items-center justify-center">
+                      <div class="p-1 rounded bg-muted/40 text-muted-foreground border border-border/20 shrink-0 flex items-center justify-center">
                         <Icon size={12} />
                       </div>
 
@@ -659,7 +659,7 @@ function escapeHtml(text: string): string {
                   <!-- Name with icon -->
                   <TableCell class="p-2">
                     <div class="flex items-center gap-2 text-start">
-                      <div class="p-1 rounded bg-muted/40 text-muted-foreground border border-border/20 flex-shrink-0 flex items-center justify-center">
+                      <div class="p-1 rounded bg-muted/40 text-muted-foreground border border-border/20 shrink-0 flex items-center justify-center">
                         <Icon size={12} />
                       </div>
                       <div class="flex flex-col leading-tight min-w-0">
