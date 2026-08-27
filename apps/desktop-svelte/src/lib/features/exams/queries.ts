@@ -82,9 +82,11 @@ export function updateSessionMutation() {
       };
     }) =>
       commands.exam.updateSession(
-        variables.orgId,
         variables.sessionId,
-        variables.updates,
+        variables.updates.name ?? null,
+        variables.updates.status ?? null,
+        variables.updates.start_date ?? null,
+        variables.updates.end_date ?? null,
       ) as Promise<ExamSession>,
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
@@ -112,7 +114,7 @@ export function addExamSubjectMutation() {
         exam_type?: string;
       };
     }) =>
-      commands.exam.createExamSubject(variables.data) as Promise<ExamSubject>,
+      commands.exam.add(variables.data) as Promise<ExamSubject>,
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
         queryKey: ["exam-subjects", variables.sessionId],

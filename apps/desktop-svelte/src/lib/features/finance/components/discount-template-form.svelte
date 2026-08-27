@@ -147,12 +147,17 @@ async function handleSubmit() {
     };
 
     if (template) {
-      await commands.finance.updateDiscountTemplate(template.id, request);
+      await commands.finance.updateDiscount(
+        template.id,
+        request.name,
+        request.value,
+        request.is_active,
+      );
       toast.success(
         m.common_dt_update_success(),
       );
     } else {
-      await commands.finance.createDiscountTemplate(request);
+      await commands.finance.createDiscount(request);
       toast.success(
         m.common_dt_create_success(),
       );

@@ -186,7 +186,6 @@ function resetForm() {
   decimalPlaces = 2;
   exchangeRate = 1.0;
   isBase = false;
-  isSubmitting = false;
 }
 
 async function handleSubmit(e: Event) {
@@ -214,7 +213,7 @@ async function handleSubmit(e: Event) {
     await commands.finance.createCurrency(
       values.code,
       values.name,
-      values.name_ar,
+      values.name_ar ?? null,
       values.symbol,
       values.symbol_position,
       values.decimal_places,
@@ -233,7 +232,7 @@ async function handleSubmit(e: Event) {
 }
 </script>
 
-<Dialog bind:open onOpenChange={(v) => !v && resetForm()}>
+<Dialog bind:open onOpenChange={(v: boolean) => !v && resetForm()}>
   <DialogContent class="max-w-md">
     <DialogHeader>
       <div class="flex items-center justify-between">
@@ -386,7 +385,7 @@ async function handleSubmit(e: Event) {
 
         <Switch
           checked={isBase}
-          onCheckedChange={(val) => {
+          onCheckedChange={(val: boolean) => {
             isBase = val;
             if (val) exchangeRate = 1.0;
           }}

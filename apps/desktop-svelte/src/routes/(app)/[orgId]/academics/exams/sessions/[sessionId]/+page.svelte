@@ -266,26 +266,23 @@ async function loadSession() {
 			loadedRooms,
 			[classList, subjectList],
 		] = await Promise.all([
-			commands.exam.getSubjects(sessionId).catch((err: unknown) => {
+			commands.exam.listExamSubjects(sessionId as string).catch((err: unknown) => {
 				console.error("Failed to load subjects", err);
 				return [];
 			}),
-			commands.exam.getSchedules(sessionId).catch((err: unknown) => {
+			commands.exam.listExamSchedules(sessionId as string).catch((err: unknown) => {
 				console.error("Failed to load schedules", err);
 				return [];
 			}),
-			commands.exam.getSeatingNumbers(sessionId).catch((err: unknown) => {
+			commands.exam.listSecretNumbers(sessionId as string).catch((err: unknown) => {
 				console.error("Failed to load seating numbers", err);
 				return [];
 			}),
-			commands.exam.getHalls(sessionId).catch((err: unknown) => {
+			commands.exam.listHalls().catch((err: unknown) => {
 				console.error("Failed to load halls", err);
 				return [];
 			}),
-			commands.exam.getProctors(sessionId).catch((err: unknown) => {
-				console.error("Failed to load proctors", err);
-				return [];
-			}),
+			Promise.resolve([]),
 			commands.scheduling.listRooms().catch((err: unknown) => {
 				console.error("Failed to load school rooms", err);
 				return [];
@@ -326,8 +323,7 @@ onMount(() => {
 
 // Quick actions
 async function handleGenerateSeating() {
-  const userId = authStore.userId || authStore.user?.id || "desktop_user";
-  const promise = commands.exam.generateSeating(sessionId as string, userId);
+	const promise = commands.exam.generate2(sessionId as string);
   toast.promise(promise, {
     loading: "جاري توليد أرقام الجلوس...",
     success: "تم توليد أرقام الجلوس بنجاح!",
@@ -342,19 +338,7 @@ async function handleGenerateSeating() {
 }
 
 async function handleGenerateSecrets() {
-  const userId = authStore.userId || authStore.user?.id || "desktop_user";
-  const promise = commands.exam.generateSecrets(sessionId as string, userId);
-  toast.promise(promise, {
-    loading: "جاري توليد الأرقام السرية...",
-    success: "تم توليد الأرقام السرية بنجاح!",
-    error: (err) => (err as any)?.message || "فشل توليد الأرقام السرية",
-  });
-  try {
-    await promise;
-    await loadSession();
-  } catch (err) {
-    console.error(err);
-  }
+	toast.error("توليد الأرقام السرية غير متاح في نسخة سطح المكتب حاليًا");
 }
 
 // Generate an array of YYYY-MM-DD strings between two dates inclusive
@@ -373,58 +357,13 @@ function generateDatesRange(startStr: string, endStr: string): string[] {
 }
 
 async function loadSolveJobs() {
-  if (!sessionId) return;
-  try {
-    const list = await commands.exam.listSolveJobs(sessionId);
-    solveJobs = list;
-
-    // Auto-resume polling if any job is running in background
-    const running = list.find(
-      (j: any) => j.status === "pending" || j.status === "running",
-    );
-    if (running) {
-      activeJob = running;
-      isSolving = true;
-      startPollingJob(String(running.id));
-    }
-  } catch (e) {
-    console.error("Error loading solve jobs:", e);
-  }
+	solveJobs = [];
+	activeJob = null;
+	isSolving = false;
 }
 
 async function handleAutoSchedule() {
-  if (!session) return;
-  const available_dates = generateDatesRange(
-    session.start_date,
-    session.end_date,
-  );
-  if (available_dates.length === 0) {
-    toast.error("تاريخ البداية أو النهاية غير صالح");
-    return;
-  }
-
-  isSolving = true;
-  solveError = null;
-  activeJob = null;
-
-  try {
-    const userId = authStore.userId || authStore.user?.id || "desktop_user";
-    const req = {
-      exam_session_id: sessionId,
-      available_dates,
-      max_exams_per_day: maxExamsPerDay,
-      preferred_period: preferredPeriod,
-      default_duration_minutes: defaultDurationMinutes,
-    };
-    const job = await commands.exam.startSolve(userId, req);
-    activeJob = job;
-    toast.success(m.common_schedule_ai_optimization_started());
-    startPollingJob(String(job.id));
-  } catch (e: any) {
-    isSolving = false;
-    solveError = (e as any)?.message || String(e);
-    toast.error(solveError || "Error");
-  }
+	toast.error("الجدولة التلقائية غير متاحة في نسخة سطح المكتب حاليًا");
 }
 
 async function startPollingJob(jobId: string) {
@@ -479,38 +418,11 @@ function stopPolling() {
 }
 
 async function handleCancelSolve() {
-  if (!activeJob) return;
-  try {
-    const job = await commands.exam.cancelSolve(activeJob.id);
-    activeJob = job;
-    stopPolling();
-    isSolving = false;
-    toast.success(
-      m.academics_exams_sessions_sessionId_optimization_job_cancelled(),
-    );
-    await loadSolveJobs();
-  } catch (err: any) {
-    toast.error((err as any)?.message || "Failed to cancel");
-  }
+	toast.error("إلغاء الجدولة التلقائية غير متاح في نسخة سطح المكتب حاليًا");
 }
 
 async function handleApplySolve() {
-  if (!activeJob) return;
-  const promise = commands.exam.applySolve(activeJob.id);
-  toast.promise(promise, {
-    loading: m.academics_exams_sessions_sessionId_applying_optimized_schedule(),
-    success:
-      m.academics_exams_sessions_sessionId_applied_schedule_successfully(),
-    error: (err: any) => (err as any)?.message || "Failed to apply",
-  });
-  try {
-    await promise;
-    activeJob = null;
-    await loadSolveJobs();
-    await loadSession();
-  } catch (err) {
-    console.error(err);
-  }
+	toast.error("تطبيق الجدولة التلقائية غير متاح في نسخة سطح المكتب حاليًا");
 }
 
 async function handleDeleteSchedule(scheduleId: string) {
@@ -521,7 +433,7 @@ async function handleDeleteSchedule(scheduleId: string) {
     variant: "destructive",
   });
   if (!confirmed) return;
-  const promise = commands.exam.deleteSchedule(scheduleId);
+	const promise = commands.exam.deleteExamSchedule(scheduleId);
   toast.promise(promise, {
     loading: m.academics_exams_sessions_sessionId_deleting_scheduled_exam(),
     success: m.academics_exams_sessions_sessionId_deleted_exam_successfully(),
@@ -546,7 +458,12 @@ async function handleToggleScheduleStatus(sched: any) {
       ? m.academics_exams_sessions_sessionId_deactivated_successfully()
       : m.academics_exams_sessions_sessionId_activated_successfully();
 
-  const promise = commands.exam.updateScheduleStatus(sched.id, newStatus);
+	const promise = commands.exam.updateExamSchedule(
+		sched.id,
+		sched.exam_date || null,
+		sched.start_time || null,
+		newStatus,
+	);
   toast.promise(promise, {
     loading: label,
     success: labelSuccess,
@@ -561,31 +478,18 @@ async function handleToggleScheduleStatus(sched: any) {
 }
 
 async function handleAllocateHalls() {
-  const promise = commands.exam.allocateHalls(sessionId as string, {
-    separate_divisions: separateDivisions,
-    separate_genders: separateGenders,
-    balance_halls: balanceHalls,
-  });
-
-  toast.promise(promise, {
-    loading: "جاري توزيع الطلاب على القاعات...",
-    success: "تم توزيع الطلاب على القاعات بنجاح!",
-    error: (err: any) => (err as any)?.message || "فشل توزيع الطلاب",
-  });
-
-  try {
-    await promise;
-    await loadSession();
-  } catch (err) {
-    console.error(err);
-  }
+	toast.error("توزيع الطلاب على القاعات غير متاح في نسخة سطح المكتب حاليًا");
 }
 
 async function handleActivate() {
   if (!session) return;
-  const promise = commands.exam.updateSession(sessionId as string, {
-    status: "active",
-  });
+	const promise = commands.exam.updateSession(
+		sessionId as string,
+		null,
+		"active",
+		null,
+		null,
+	);
 
   toast.promise(promise, {
     loading: "جاري تفعيل دورة الامتحانات...",
@@ -624,31 +528,7 @@ async function handleToggleHall(room: any) {
 }
 
 async function handleAssignProctors() {
-  if (schedules.length === 0) {
-    toast.error("يرجى جدولة الامتحانات أولاً قبل تعيين المراقبين");
-    return;
-  }
-
-  let successCount = 0;
-  isLoading = true;
-  try {
-    for (const sched of schedules) {
-      await commands.exam.autoAssignProctors(sessionId as string, sched.id, {
-        proctors_per_hall: proctorsPerHall,
-        prevent_own_subject: preventOwnSubject,
-        max_sessions_per_teacher: maxSessionsPerTeacher,
-      });
-      successCount++;
-    }
-    toast.success(
-      `تم تعيين المراقبين بنجاح لـ ${successCount} فترات امتحانية!`,
-    );
-    await loadSession();
-  } catch (err: any) {
-    toast.error((err as any)?.message || "فشل تعيين المراقبين");
-  } finally {
-    isLoading = false;
-  }
+	toast.error("تعيين المراقبين غير متاح في نسخة سطح المكتب حاليًا");
 }
 </script>
 
@@ -814,14 +694,14 @@ async function handleAssignProctors() {
 								<!-- Rows (Dates) -->
 								{#each sessionDates as date}
 									<!-- Date Cell -->
-									<div class="timetable-period-info p-3 font-semibold text-center flex flex-col justify-center items-center gap-1 min-h-[90px] border-b bg-muted/10 border-e">
+									<div class="timetable-period-info p-3 font-semibold text-center flex flex-col justify-center items-center gap-1 min-h-22.5 border-b bg-muted/10 border-e">
 										<span class="text-[11px] tracking-wide font-extrabold text-foreground text-center">
 											{formatDateWithDay(date)}
 										</span>
 									</div>
 
 									<!-- Morning Cell -->
-									<div class="timetable-cell p-3 text-start h-full min-h-[90px] relative flex flex-col justify-start items-stretch gap-2 border-b bg-card border-e">
+									<div class="timetable-cell p-3 text-start h-full min-h-22.5 relative flex flex-col justify-start items-stretch gap-2 border-b bg-card border-e">
 										{#each getExamsInCell(date, "morning") as sched (sched.id)}
 											<div 
 												style="--subject-color: {getSubjectColor(sched.exam_subject_id)};"
@@ -876,7 +756,7 @@ async function handleAssignProctors() {
 									</div>
 
 									<!-- Afternoon Cell -->
-									<div class="timetable-cell p-3 text-start h-full min-h-[90px] relative flex flex-col justify-start items-stretch gap-2 border-b bg-card">
+									<div class="timetable-cell p-3 text-start h-full min-h-22.5 relative flex flex-col justify-start items-stretch gap-2 border-b bg-card">
 										{#each getExamsInCell(date, "afternoon") as sched (sched.id)}
 											<div 
 												style="--subject-color: {getSubjectColor(sched.exam_subject_id)};"

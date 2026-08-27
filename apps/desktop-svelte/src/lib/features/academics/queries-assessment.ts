@@ -44,7 +44,7 @@ export function createCalcPoliciesQuery(orgId: () => string) {
 export function createCalcPolicyQuery(policyId: () => string | undefined) {
   return createQuery(() => ({
     queryKey: ["calc-policy", policyId()],
-    queryFn: () => commands.assessment.getCalcPolicy(policyId()!),
+    queryFn: () => commands.assessment.getCalculationPolicy(policyId()!),
     enabled: !!policyId(),
     staleTime: 10 * 60 * 1000,
   }));

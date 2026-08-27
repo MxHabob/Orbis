@@ -1,10 +1,10 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
-import { commands, extractErrorMessage } from "$lib/core/ipc";
+import { extractErrorMessage } from "$lib/core/ipc";
 import { toast } from "svelte-sonner";
 
-import { getLocale, setLocale } from "$lib/paraglide/runtime";
+import { setLocale } from "$lib/paraglide/runtime";
 import {
   createOrganizationQuery,
   createUpdateOrganizationMutation,
@@ -60,7 +60,7 @@ async function handleSaveAvatar(fileOrUrl: File | string | null) {
   try {
     let avatarUrl: string | undefined;
     if (fileOrUrl instanceof File) {
-      avatarUrl = await uploadAsset(fileOrUrl, "avatar");
+      throw new Error("Avatar file upload is not available in the desktop client");
     } else if (typeof fileOrUrl === "string") {
       avatarUrl = fileOrUrl;
     } else {
@@ -82,12 +82,7 @@ async function handleSaveAvatar(fileOrUrl: File | string | null) {
 
 async function handleRemoveOrganization() {
   if (!orgId) return;
-  try {
-    await commands.organization.deleteOrganization(orgId);
-    toast.success(m.settings_general_save_success());
-  } catch (e: unknown) {
-    toast.error(extractErrorMessage(e));
-  }
+  toast.error("Organization deletion is not available in the desktop client");
 }
 </script>
 

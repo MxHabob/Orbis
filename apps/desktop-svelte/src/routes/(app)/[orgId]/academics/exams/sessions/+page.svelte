@@ -4,11 +4,12 @@ Lists all exam sessions as cards with status, dates, and subject counts.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { onMount } from "svelte";
+import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { localizeHref } from "$lib/paraglide/runtime";
+import { commands } from "$lib/core/ipc";
 import { fade } from "svelte/transition";
 import {
   Plus,
@@ -31,7 +32,19 @@ let isSheetOpen = $state(false);
 
 // Reactive state from TanStack Query
 const orgId = $derived(data.orgId);
-const sessionsQuery = createExamSessionsQuery(() => orgId);
+const queryClient = useQueryClient();
+const periodsQuery = createQuery(() => ({
+	queryKey: ["exam-session-periods", orgId],
+	queryFn: () => commands.calendar.listAcademicPeriods(),
+	enabled: !!orgId,
+	staleTime: 5 * 60 * 1000,
+}));
+const periods = $derived((periodsQuery.data || []) as any[]);
+const activePeriodId = $derived.by(() => {
+	const active = periods.find((period) => period.status === "active" || period.is_active);
+	return String(active?.id || periods[0]?.id || "");
+});
+const sessionsQuery = createExamSessionsQuery(() => activePeriodId);
 const sessions = $derived((sessionsQuery.data || []) as any[]);
 const isLoading = $derived(sessionsQuery.isLoading);
 
@@ -169,5 +182,7 @@ function getTypeLabel(type: string): string {
 <SessionCreateSheet
 	bind:open={isSheetOpen}
 	orgId={data.orgId}
-	onSuccess={() => {}}
+	onSuccess={() => {
+		queryClient.invalidateQueries({ queryKey: ["exam-sessions"] });
+	}}
 />
