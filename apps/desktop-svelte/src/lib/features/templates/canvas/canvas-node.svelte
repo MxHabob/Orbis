@@ -34,7 +34,7 @@ function getNodePosition() {
   const position =
     "props" in node && node.props && "position" in node.props
       ? (node.props as any).position
-      : null;
+      : (node as any).position;
   if (!position) {
     return { x: 0, y: 0, w: pageSizePx.width, h: 20 };
   }
