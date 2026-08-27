@@ -50,19 +50,15 @@ let isActive = $state(true);
 const itemTypes = $derived([
   {
     value: "manual",
-    label: m.common_dt_type_manual ? m.common_dt_type_manual() : "يدوي",
+    label: m.common_dt_type_manual(),
   },
   {
     value: "scholarship",
-    label: m.common_dt_type_scholarship
-      ? m.common_dt_type_scholarship()
-      : "منحة دراسية",
+    label: m.common_dt_type_scholarship(),
   },
   {
     value: "system",
-    label: m.common_dt_type_system
-      ? m.common_dt_type_system()
-      : "تلقائي بالنظام",
+    label: m.common_dt_type_system(),
   },
 ]);
 const itemTypeLabels = $derived(
@@ -77,13 +73,11 @@ const selectedItemTypeLabel = $derived(itemTypeLabels[itemType] ?? itemType);
 const calculationMethods = $derived([
   {
     value: "percentage",
-    label: m.common_dt_method_percentage
-      ? m.common_dt_method_percentage()
-      : "نسبة مئوية (%)",
+    label: m.common_dt_method_percentage(),
   },
   {
     value: "fixed",
-    label: m.common_dt_method_fixed ? m.common_dt_method_fixed() : "مبلغ ثابت",
+    label: m.common_dt_method_fixed(),
   },
 ]);
 const calculationMethodLabels = $derived(
@@ -114,19 +108,11 @@ $effect(() => {
 
 async function handleSubmit() {
   if (!name.trim()) {
-    toast.error(
-      m.common_status_undefined() === "غير محدد"
-        ? "الاسم مطلوب"
-        : "Name is required",
-    );
+    toast.error(m.common_dt_error_name_required());
     return;
   }
   if (value < 0) {
-    toast.error(
-      m.common_status_undefined() === "غير محدد"
-        ? "يجب أن تكون القيمة رقمًا موجبًا"
-        : "Value must be a positive number",
-    );
+    toast.error(m.common_dt_error_value_positive());
     return;
   }
 
@@ -151,16 +137,12 @@ async function handleSubmit() {
     if (template) {
       await commands.finance.updateDiscountTemplate(template.id, request);
       toast.success(
-        m.common_dt_update_success
-          ? m.common_dt_update_success()
-          : "Discount template updated successfully",
+        m.common_dt_update_success(),
       );
     } else {
       await commands.finance.createDiscountTemplate(request);
       toast.success(
-        m.common_dt_create_success
-          ? m.common_dt_create_success()
-          : "Discount template created successfully",
+        m.common_dt_create_success(),
       );
     }
 
@@ -183,26 +165,26 @@ async function handleSubmit() {
   <Sheet.Header class="px-6 py-4 border-b border-border/40 shrink-0 text-start">
     <Sheet.Title class="text-base font-bold text-foreground">
       {template 
-        ? (m.common_action_edit ? m.common_action_edit() : "تعديل قالب الخصم") 
-        : (m.common_dt_sheet_create_title ? m.common_dt_sheet_create_title() : "إنشاء قالب خصم")}
+        ? m.common_action_edit()
+        : m.common_dt_sheet_create_title()}
     </Sheet.Title>
   </Sheet.Header>
 
   <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
     <Accordion type="multiple" value={["details", "options"]} class="flex flex-col gap-4">
       <AccordionItem value="details" class="rounded-lg border border-border/50 px-4">
-        <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_dt_form_name ? m.common_dt_form_name() : "Discount details"}</AccordionTrigger>
+        <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_dt_form_name()}</AccordionTrigger>
         <AccordionContent>
     <!-- Name -->
     <div class="flex flex-col gap-1.5 text-start">
       <Label for="dt_form_name" class="text-xs font-semibold text-muted-foreground">
-        {m.common_dt_form_name ? m.common_dt_form_name() : "اسم الخصم / المنحة"} *
+        {m.common_dt_form_name()} *
       </Label>
       <Input 
         id="dt_form_name"
         type="text" 
         bind:value={name}
-        placeholder="e.g., Brother Discount (15%) or Scholarship"
+        placeholder={m.common_dt_name_placeholder()}
         required
         disabled={isSubmitting}
       />
@@ -211,13 +193,13 @@ async function handleSubmit() {
     <!-- Code/Symbol -->
     <div class="flex flex-col gap-1.5 text-start">
       <Label for="dt_form_code" class="text-xs font-semibold text-muted-foreground">
-        {m.common_dt_form_code ? m.common_dt_form_code() : "الكود / الرمز"}
+        {m.common_dt_form_code()}
       </Label>
       <Input 
         id="dt_form_code"
         type="text" 
         bind:value={code}
-        placeholder="e.g., BRO_15"
+        placeholder={m.common_dt_code_placeholder()}
         disabled={isSubmitting}
       />
     </div>
@@ -227,7 +209,7 @@ async function handleSubmit() {
       <!-- Type -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label class="text-xs font-semibold text-muted-foreground">
-          {m.common_dt_form_type ? m.common_dt_form_type() : "نوع الخصم"} *
+          {m.common_dt_form_type()} *
         </Label>
         <Select type="single" value={itemType} onValueChange={(v) => (itemType = v ?? "manual")} disabled={isSubmitting}>
           <SelectTrigger class="h-9 text-sm">
@@ -244,7 +226,7 @@ async function handleSubmit() {
       <!-- Calculation Method -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label class="text-xs font-semibold text-muted-foreground">
-          {m.common_dt_col_method ? m.common_dt_col_method() : "طريقة الحساب"} *
+          {m.common_dt_col_method()} *
         </Label>
         <Select type="single" value={calculationMethod} onValueChange={(v) => (calculationMethod = v ?? "percentage")} disabled={isSubmitting}>
           <SelectTrigger class="h-9 text-sm">
@@ -262,14 +244,14 @@ async function handleSubmit() {
     <!-- Value -->
     <div class="flex flex-col gap-1.5 text-start">
       <Label for="dt_form_value" class="text-xs font-semibold text-muted-foreground">
-        {m.common_dt_col_value ? m.common_dt_col_value() : "القيمة"} *
+        {m.common_dt_col_value()} *
       </Label>
       <Input 
         id="dt_form_value"
         type="number" 
         min="0"
         bind:value={value}
-        placeholder={calculationMethod === 'percentage' ? 'e.g., 15' : 'e.g., 50000'}
+        placeholder={calculationMethod === 'percentage' ? m.common_dt_value_percentage_placeholder() : m.common_dt_value_fixed_placeholder()}
         required
         disabled={isSubmitting}
       />
@@ -278,7 +260,7 @@ async function handleSubmit() {
     <!-- Priority (optional) -->
     <div class="flex flex-col gap-1.5 text-start">
       <Label for="dt_form_priority" class="text-xs font-semibold text-muted-foreground">
-        {m.common_dt_form_priority ? m.common_dt_form_priority() : "الأولوية"}
+        {m.common_dt_form_priority()}
       </Label>
       <Input 
         id="dt_form_priority"
@@ -294,7 +276,7 @@ async function handleSubmit() {
       </AccordionItem>
 
       <AccordionItem value="options" class="rounded-lg border border-border/50 px-4">
-        <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_dt_form_auto_apply ? m.common_dt_form_auto_apply() : "Application options"}</AccordionTrigger>
+        <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_dt_form_auto_apply()}</AccordionTrigger>
         <AccordionContent>
 
     <!-- Options Checkboxes Grid -->
@@ -308,7 +290,7 @@ async function handleSubmit() {
           disabled={isSubmitting}
         />
         <Label for="dt_auto_apply_chk" class="text-xs cursor-pointer select-none">
-          {m.common_dt_form_auto_apply ? m.common_dt_form_auto_apply() : "تطبيق تلقائي"}
+          {m.common_dt_form_auto_apply()}
         </Label>
       </div>
 
@@ -321,7 +303,7 @@ async function handleSubmit() {
           disabled={isSubmitting}
         />
         <Label for="dt_stackable_chk" class="text-xs cursor-pointer select-none">
-          {m.common_dt_form_stackable ? m.common_dt_form_stackable() : "قابل للدمج / التداخل"}
+          {m.common_dt_form_stackable()}
         </Label>
       </div>
 
@@ -334,7 +316,7 @@ async function handleSubmit() {
           disabled={isSubmitting}
         />
         <Label for="dt_requires_approval_chk" class="text-xs cursor-pointer select-none">
-          {m.common_dt_form_requires_approval ? m.common_dt_form_requires_approval() : "يتطلب موافقة الإدارة"}
+          {m.common_dt_form_requires_approval()}
         </Label>
       </div>
 
@@ -347,7 +329,7 @@ async function handleSubmit() {
           disabled={isSubmitting}
         />
         <Label for="dt_active_chk" class="text-xs cursor-pointer select-none">
-          {m.common_phase_active ? m.common_phase_active() : "نشط"}
+          {m.common_phase_active()}
         </Label>
       </div>
     </div>
@@ -365,7 +347,7 @@ async function handleSubmit() {
       disabled={isSubmitting}
       class="flex-1 h-9 text-sm"
     >
-      {m.common_action_cancel ? m.common_action_cancel() : "إلغاء"}
+      {m.common_action_cancel()}
     </Button>
     <Button 
       type="submit" 
@@ -373,9 +355,9 @@ async function handleSubmit() {
       class="flex-1 h-9 text-sm font-semibold"
     >
       {#if isSubmitting}
-        {m.common_state_saving ? m.common_state_saving() : "جاري الحفظ..."}
+        {m.common_state_saving()}
       {:else}
-        {m.common_action_save ? m.common_action_save() : "حفظ قالب الخصم"}
+        {m.common_action_save()}
       {/if}
     </Button>
   </div>

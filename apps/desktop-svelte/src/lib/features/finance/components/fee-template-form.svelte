@@ -58,35 +58,35 @@ const categories = $derived([
     value: "tuition",
     label: m.common_ft_category_tuition
       ? m.common_ft_category_tuition()
-      : "رسوم دراسية",
+      : m.common_ft_category_tuition(),
   },
   {
     value: "transport",
     label: m.common_ft_category_transport
       ? m.common_ft_category_transport()
-      : "نقل",
+      : m.common_ft_category_transport(),
   },
   {
     value: "books",
-    label: m.common_ft_category_books ? m.common_ft_category_books() : "كتب",
+    label: m.common_ft_category_books(),
   },
   {
     value: "uniform",
     label: m.common_ft_category_uniform
       ? m.common_ft_category_uniform()
-      : "زي مدرسي",
+      : m.common_ft_category_uniform(),
   },
   {
     value: "exam",
     label: m.common_ft_category_exam
       ? m.common_ft_category_exam()
-      : "رسوم امتحانات",
+      : m.common_ft_category_exam(),
   },
   {
     value: "other",
     label: m.common_guardians_relationship_other
       ? m.common_guardians_relationship_other()
-      : "أخرى",
+      : m.common_guardians_relationship_other(),
   },
 ]);
 const categoryLabels = $derived(
@@ -102,25 +102,25 @@ const frequencies = $derived([
     value: "once",
     label: m.common_ft_frequency_once
       ? m.common_ft_frequency_once()
-      : "مرة واحدة",
+      : m.common_ft_frequency_once(),
   },
   {
     value: "monthly",
     label: m.common_ft_frequency_monthly
       ? m.common_ft_frequency_monthly()
-      : "شهري",
+      : m.common_ft_frequency_monthly(),
   },
   {
     value: "termly",
     label: m.common_ft_frequency_termly
       ? m.common_ft_frequency_termly()
-      : "فصلي",
+      : m.common_ft_frequency_termly(),
   },
   {
     value: "yearly",
     label: m.common_ft_frequency_yearly
       ? m.common_ft_frequency_yearly()
-      : "سنوي",
+      : m.common_ft_frequency_yearly(),
   },
 ]);
 const frequencyLabels = $derived(
@@ -220,14 +220,12 @@ $effect(() => {
 
 async function handleSubmit() {
   if (!name.trim()) {
-    toast.error("Name (English) is required");
+    toast.error(m.common_ft_error_name_required());
     return;
   }
   if (!applyToAllGrades && selectedLevels.length === 0) {
     toast.error(
-      m.common_status_undefined() === "غير محدد"
-        ? "يرجى تحديد صف واحد على الأقل أو تفعيل خيار التطبيق على جميع الصفوف"
-        : "Please select at least one grade level or apply to all",
+      m.common_ft_error_levels_required(),
     );
     return;
   }
@@ -256,16 +254,12 @@ async function handleSubmit() {
     if (template) {
       await commands.finance.updateFeeTemplate(template.id, request as any);
       toast.success(
-        m.common_ft_update_success
-          ? m.common_ft_update_success()
-          : "Fee template updated successfully",
+        m.common_ft_update_success(),
       );
     } else {
       await commands.finance.createFeeTemplate(request as any);
       toast.success(
-        m.common_ft_create_success
-          ? m.common_ft_create_success()
-          : "Fee template created successfully",
+        m.common_ft_create_success(),
       );
     }
 
@@ -289,26 +283,26 @@ async function handleSubmit() {
   <Sheet.Header class="px-6 py-4 border-b border-border/40 shrink-0 text-start">
     <Sheet.Title class="text-base font-bold text-foreground">
       {template 
-        ? (m.common_action_edit ? m.common_action_edit() : "تعديل قالب الرسوم") 
-        : (m.common_ft_sheet_create_title ? m.common_ft_sheet_create_title() : "إنشاء قالب رسوم")}
+        ? m.common_action_edit()
+        : m.common_ft_sheet_create_title()}
     </Sheet.Title>
   </Sheet.Header>
 
   <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
     <Accordion type="multiple" value={["details", "applicability"]} class="flex flex-col gap-4">
       <AccordionItem value="details" class="rounded-lg border border-border/50 px-4">
-        <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_ft_sheet_create_title ? m.common_ft_sheet_create_title() : "Fee details"}</AccordionTrigger>
+        <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_ft_sheet_create_title()}</AccordionTrigger>
         <AccordionContent>
     <!-- Name (Arabic) -->
     <div class="flex flex-col gap-1.5 text-start">
       <Label for="ft_form_name_ar" class="text-xs font-semibold text-muted-foreground">
-        {m.common_ft_col_name ? m.common_ft_col_name() : "اسم القالب بالعربية"}
+        {m.common_ft_col_name()}
       </Label>
       <Input 
         id="ft_form_name_ar"
         type="text" 
         bind:value={nameAr}
-        placeholder="مثال: رسوم تسجيل الصف الأول"
+        placeholder={m.common_ft_name_ar_placeholder()}
         disabled={isSubmitting}
       />
     </div>
@@ -316,13 +310,13 @@ async function handleSubmit() {
     <!-- Name (English) -->
     <div class="flex flex-col gap-1.5 text-start">
       <Label for="ft_form_name_en" class="text-xs font-semibold text-muted-foreground">
-        {m.common_user_form_name_en ? m.common_user_form_name_en() : "Name (English)"} *
+        {m.common_user_form_name_en()} *
       </Label>
       <Input 
         id="ft_form_name_en"
         type="text" 
         bind:value={name}
-        placeholder="e.g., Grade 1 Enrollment Fees"
+        placeholder={m.common_ft_name_en_placeholder()}
         required
         disabled={isSubmitting}
       />
@@ -331,13 +325,13 @@ async function handleSubmit() {
     <!-- Code/Symbol -->
     <div class="flex flex-col gap-1.5 text-start">
       <Label for="ft_form_code" class="text-xs font-semibold text-muted-foreground">
-        {m.common_status_undefined() === "غير محدد" ? "رمز القالب / الكود" : "Template Code"}
+        {m.common_ft_form_code()}
       </Label>
       <Input 
         id="ft_form_code"
         type="text" 
         bind:value={code}
-        placeholder="e.g., FEES_GR1"
+        placeholder={m.common_ft_code_placeholder()}
         disabled={isSubmitting}
       />
     </div>
@@ -347,7 +341,7 @@ async function handleSubmit() {
       <!-- Category -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label class="text-xs font-semibold text-muted-foreground">
-          {m.common_ft_col_category ? m.common_ft_col_category() : "الفئة"} *
+          {m.common_ft_col_category()} *
         </Label>
         <Select type="single" value={category} onValueChange={(v) => (category = v ?? "tuition")} disabled={isSubmitting}>
           <SelectTrigger class="h-9 text-sm">
@@ -364,7 +358,7 @@ async function handleSubmit() {
       <!-- Frequency -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label class="text-xs font-semibold text-muted-foreground">
-          {m.common_ft_col_frequency ? m.common_ft_col_frequency() : "التكرار"} *
+          {m.common_ft_col_frequency()} *
         </Label>
         <Select type="single" value={frequency} onValueChange={(v) => (frequency = v ?? "yearly")} disabled={isSubmitting}>
           <SelectTrigger class="h-9 text-sm">
@@ -382,7 +376,7 @@ async function handleSubmit() {
     <!-- Amount -->
     <div class="flex flex-col gap-1.5 text-start">
       <Label for="ft_form_amount" class="text-xs font-semibold text-muted-foreground">
-        {m.common_ft_col_amount ? m.common_ft_col_amount() : "المبلغ"} *
+        {m.common_ft_col_amount()} *
       </Label>
       <Input 
         id="ft_form_amount"
@@ -390,7 +384,7 @@ async function handleSubmit() {
         min="0"
         step="0.01"
         bind:value={amount}
-        placeholder="e.g., 150000"
+        placeholder={m.common_ft_amount_placeholder()}
         required
         disabled={isSubmitting}
       />
@@ -400,13 +394,13 @@ async function handleSubmit() {
       </AccordionItem>
 
       <AccordionItem value="applicability" class="rounded-lg border border-border/50 px-4">
-        <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_status_undefined() === "غير محدد" ? "الصفوف والإعدادات" : "Applicability and settings"}</AccordionTrigger>
+        <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_ft_applicability()}</AccordionTrigger>
         <AccordionContent>
 
     <!-- Grade Level Applicability -->
     <div class="flex flex-col gap-3 p-4 bg-muted/20 rounded-lg border border-border/30">
       <span class="text-xs font-bold text-foreground text-start">
-        {m.common_status_undefined() === "غير محدد" ? "الصفوف المستهدفة بالرسم" : "Target Grade Levels"}
+        {m.common_ft_target_levels()}
       </span>
       
       <div class="flex items-center gap-2">
@@ -417,7 +411,7 @@ async function handleSubmit() {
           disabled={isSubmitting}
         />
         <Label for="ft_form_apply_all" class="text-xs cursor-pointer">
-          {m.common_status_undefined() === "غير محدد" ? "يطبق على جميع الصفوف" : "Apply to all grades"}
+          {m.common_ft_apply_all()}
         </Label>
       </div>
 
@@ -447,7 +441,7 @@ async function handleSubmit() {
             {/each}
             {#if uniqueLevels.length === 0}
               <span class="text-xs text-muted-foreground col-span-2 text-start">
-                {m.common_status_undefined() === "غير محدد" ? "لا توجد صفوف دراسية مضافة. يرجى إعداد الفصول أولاً." : "No grade levels found. Please set up classes first."}
+                {m.common_ft_no_levels()}
               </span>
             {/if}
           </div>
@@ -466,7 +460,7 @@ async function handleSubmit() {
           disabled={isSubmitting}
         />
         <Label for="ft_mandatory_chk" class="text-xs cursor-pointer">
-          {m.common_status_undefined() === "غير محدد" ? "إلزامي لجميع الطلاب" : "Mandatory for all students"}
+          {m.common_ft_mandatory()}
         </Label>
       </div>
 
@@ -479,7 +473,7 @@ async function handleSubmit() {
           disabled={isSubmitting}
         />
         <Label for="ft_active_chk" class="text-xs cursor-pointer">
-          {m.common_phase_active ? m.common_phase_active() : "نشط"}
+          {m.common_phase_active()}
         </Label>
       </div>
     </div>
@@ -497,7 +491,7 @@ async function handleSubmit() {
       disabled={isSubmitting}
       class="flex-1 h-9 text-sm"
     >
-      {m.common_action_cancel ? m.common_action_cancel() : "إلغاء"}
+      {m.common_action_cancel()}
     </Button>
     <Button 
       type="submit" 
@@ -505,9 +499,9 @@ async function handleSubmit() {
       class="flex-1 h-9 text-sm font-semibold"
     >
       {#if isSubmitting}
-        {m.common_state_saving ? m.common_state_saving() : "جاري الحفظ..."}
+        {m.common_state_saving()}
       {:else}
-        {m.common_action_save ? m.common_action_save() : "حفظ القالب"}
+        {m.common_action_save()}
       {/if}
     </Button>
   </div>
