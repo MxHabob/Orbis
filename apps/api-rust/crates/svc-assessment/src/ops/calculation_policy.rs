@@ -40,24 +40,30 @@ pub async fn get(
 
 // ── Commands ────────────────────────────────────────────────────
 
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
+pub struct CreateCalculationPolicyPayload {
+    pub name: String,
+    pub target_period_id: Option<String>,
+    pub rule_type: String,
+    pub formula_expression: String,
+    pub rounding_policy: Option<String>,
+}
+
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
+pub struct UpdateCalculationPolicyPayload {
+    pub name: Option<String>,
+    pub target_period_id: Option<String>,
+    pub rule_type: Option<String>,
+    pub formula_expression: Option<String>,
+    pub rounding_policy: Option<String>,
+}
+
 /// Create a new calculation policy.
 pub async fn create(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    req: CreateCalculationPolicyPayload,
 ) -> Result<calculation_policy::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
-
-    #[derive(serde::Deserialize)]
-    struct Req {
-        name: String,
-        target_period_id: Option<String>,
-        rule_type: String,
-        formula_expression: String,
-        rounding_policy: Option<String>,
-    }
-
-    let req: Req = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid calculation policy payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let model = calculation_policy::Model {
@@ -95,7 +101,7 @@ pub async fn create(
 pub async fn update(
     ctx: &ServiceContext,
     policy_id: &str,
-    data: serde_json::Value,
+    req: UpdateCalculationPolicyPayload,
 ) -> Result<calculation_policy::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
 
@@ -109,18 +115,6 @@ pub async fn update(
             "Cannot update an archived policy. Create a new policy instead."
         ));
     }
-
-    #[derive(serde::Deserialize)]
-    struct Req {
-        name: Option<String>,
-        target_period_id: Option<String>,
-        rule_type: Option<String>,
-        formula_expression: Option<String>,
-        rounding_policy: Option<String>,
-    }
-
-    let req: Req = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid update payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let old_version = existing.version;

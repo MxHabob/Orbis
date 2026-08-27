@@ -51,22 +51,44 @@ pub async fn list_components(
 
 // ── Commands ────────────────────────────────────────────────────
 
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
+pub struct CreateAssessmentSchemePayload {
+    pub name: String,
+    pub description: Option<String>,
+    pub period_id: Option<String>,
+}
+
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
+pub struct UpdateAssessmentSchemePayload {
+    pub name: Option<String>,
+    pub description: Option<String>,
+}
+
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
+pub struct CreateSchemeComponentPayload {
+    pub scheme_id: String,
+    pub name: String,
+    pub component_type: String,
+    pub weight: f64,
+    pub max_score: f64,
+    pub passing_score: Option<f64>,
+}
+
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
+pub struct UpdateSchemeComponentPayload {
+    pub name: Option<String>,
+    pub component_type: Option<String>,
+    pub weight: Option<f64>,
+    pub max_score: Option<f64>,
+    pub passing_score: Option<f64>,
+}
+
 /// Create a new assessment scheme.
 pub async fn create(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    req: CreateAssessmentSchemePayload,
 ) -> Result<assessment_scheme::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
-
-    #[derive(serde::Deserialize)]
-    struct Req {
-        name: String,
-        description: Option<String>,
-        period_id: Option<String>,
-    }
-
-    let req: Req = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid assessment scheme payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let model = assessment_scheme::Model {
@@ -89,18 +111,18 @@ pub async fn create(
 pub async fn update(
     ctx: &ServiceContext,
     scheme_id: &str,
-    data: serde_json::Value,
+    req: UpdateAssessmentSchemePayload,
 ) -> Result<assessment_scheme::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
 
     let existing = get(ctx, scheme_id).await?;
     let mut active: assessment_scheme::ActiveModel = existing.into();
 
-    if let Some(name) = data.get("name").and_then(|v| v.as_str()) {
-        active.name = Set(name.to_string());
+    if let Some(name) = req.name {
+        active.name = Set(name);
     }
-    if let Some(desc) = data.get("description") {
-        active.description = Set(desc.as_str().map(|s| s.to_string()));
+    if req.description.is_some() {
+        active.description = Set(req.description);
     }
     active.updated_at = Set(Utc::now().to_rfc3339());
 
@@ -128,22 +150,9 @@ pub async fn delete(ctx: &ServiceContext, scheme_id: &str) -> Result<(), AppErro
 /// Add a component to an assessment scheme.
 pub async fn create_component(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    req: CreateSchemeComponentPayload,
 ) -> Result<assessment_scheme_component::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
-
-    #[derive(serde::Deserialize)]
-    struct Req {
-        scheme_id: String,
-        name: String,
-        component_type: String,
-        weight: f64,
-        max_score: f64,
-        passing_score: Option<f64>,
-    }
-
-    let req: Req = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid scheme component payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let model = assessment_scheme_component::Model {
@@ -167,7 +176,7 @@ pub async fn create_component(
 pub async fn update_component(
     ctx: &ServiceContext,
     component_id: &str,
-    data: serde_json::Value,
+    req: UpdateSchemeComponentPayload,
 ) -> Result<assessment_scheme_component::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
 
@@ -178,20 +187,20 @@ pub async fn update_component(
 
     let mut active: assessment_scheme_component::ActiveModel = existing.into();
 
-    if let Some(name) = data.get("name").and_then(|v| v.as_str()) {
-        active.name = Set(name.to_string());
+    if let Some(name) = req.name {
+        active.name = Set(name);
     }
-    if let Some(ct) = data.get("component_type").and_then(|v| v.as_str()) {
-        active.component_type = Set(ct.to_string());
+    if let Some(ct) = req.component_type {
+        active.component_type = Set(ct);
     }
-    if let Some(w) = data.get("weight").and_then(|v| v.as_f64()) {
+    if let Some(w) = req.weight {
         active.weight = Set(w);
     }
-    if let Some(ms) = data.get("max_score").and_then(|v| v.as_f64()) {
+    if let Some(ms) = req.max_score {
         active.max_score = Set(ms);
     }
-    if let Some(ps) = data.get("passing_score") {
-        active.passing_score = Set(ps.as_f64());
+    if req.passing_score.is_some() {
+        active.passing_score = Set(req.passing_score);
     }
     active.updated_at = Set(Utc::now().to_rfc3339());
 

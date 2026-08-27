@@ -54,3 +54,86 @@ export interface PromotionJob {
   updated_at: string;
 }
 
+export interface PromotionConfig {
+  source_period_id: string;
+  target_year_name: string;
+  target_year_name_ar?: string | null;
+  target_start_date: string;
+  target_end_date: string;
+  passing_score?: number | null;
+  min_attendance_rate?: number | null;
+  auto_graduate_final_level: boolean;
+  final_level?: string | null;
+  exclude_withdrawn: boolean;
+  carry_over_outstanding_fees: boolean;
+  carry_over_guardians: boolean;
+  class_mapping: ClassMapping[];
+}
+
+export interface ClassMapping {
+  source_level: string;
+  target_level: string;
+  target_class_names: string[];
+  distribution_strategy: string;
+}
+
+export interface PromotionPreview {
+  job_id: string;
+  total: number;
+  promoted: number;
+  retained: number;
+  graduated: number;
+  excluded: number;
+  details: PromotionDetailPreview[];
+  class_plan: ClassPlanEntry[];
+}
+
+export interface PromotionDetailPreview {
+  student_id: string;
+  student_name: string;
+  student_name_ar?: string | null;
+  student_number?: string | null;
+  source_class: string;
+  source_level: string;
+  decision: string;
+  reason: string;
+  target_level?: string | null;
+  target_class?: string | null;
+  final_score?: number | null;
+  attendance_rate?: number | null;
+}
+
+export interface ClassPlanEntry {
+  source_level: string;
+  target_level: string;
+  target_classes: string[];
+  student_count: number;
+}
+
+export interface PromotionResult {
+  job_id: string;
+  target_period_id: string;
+  target_year_name: string;
+  total: number;
+  promoted: number;
+  retained: number;
+  graduated: number;
+  excluded: number;
+}
+
+export interface RegisterStudentRequest {
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  password?: string | null;
+  gender?: string | null;
+  birth_date?: string | null;
+  nationality?: string | null;
+  national_id?: string | null;
+  address?: string | null;
+  class_id?: string | null;
+  guardian_name?: string | null;
+  guardian_phone?: string | null;
+  guardian_relationship?: string | null;
+}
+

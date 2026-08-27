@@ -44,6 +44,14 @@ function mapRustTypeToTs(rustType: string): string {
     return `${mapRustTypeToTs(inner)}[]`;
   }
 
+  if (t.startsWith("HashMap<")) {
+    const inner = t.substring(8, t.lastIndexOf(">"));
+    const parts = inner.split(",").map((part) => part.trim());
+    return parts.length === 2
+      ? `Record<${mapRustTypeToTs(parts[0])}, ${mapRustTypeToTs(parts[1])}>`
+      : "unknown";
+  }
+
   if (
     t === "String" ||
     t === "&str" ||
@@ -84,17 +92,61 @@ function mapRustTypeToTs(rustType: string): string {
     t === "Json" ||
     t === "JsonValue"
   ) {
-    return "any";
+    return "unknown";
   }
 
   if (t === "()" || t === "void") return "void";
+
+  if (t === "AstNode") return "unknown";
+
+  if (t === "SolveMode") return "string";
+
+  if (t.endsWith("::Model")) {
+    return toPascalCase(t.split("::").at(-2) || "") || "unknown";
+  }
 
   // Fallback for custom enums/identifiers
   if (/^[A-Za-z0-9_]+$/.test(t)) {
     return t;
   }
 
-  return "any";
+  return "unknown";
+}
+
+function parseOperationDtos(
+  content: string,
+  existingNames: Set<string>,
+): Struct[] {
+  const structs: Struct[] = [];
+  const structRegex = /pub struct\s+([A-Za-z0-9_]+)\s*\{([\s\S]*?)\}/g;
+  let match;
+
+  while ((match = structRegex.exec(content)) !== null) {
+    const name = match[1];
+      const attributes = content.slice(Math.max(0, match.index - 300), match.index);
+      if (!/derive\([^)]*Deserialize/.test(attributes)) continue;
+    if (!name || name === "Model" || existingNames.has(name)) continue;
+
+    const fields: Field[] = [];
+    for (const line of match[2].split("\n")) {
+      const field = line.match(/pub\s+([a-zA-Z0-9_]+):\s*(.+?),/);
+      if (!field?.[1] || !field[2]) continue;
+      const rawRustType = field[2].trim();
+      fields.push({
+        name: field[1],
+        rustType: rawRustType,
+        tsType: mapRustTypeToTs(rawRustType),
+        isOptional: rawRustType.startsWith("Option<"),
+      });
+    }
+
+    if (fields.length > 0) {
+      structs.push({ name, fields });
+      existingNames.add(name);
+    }
+  }
+
+  return structs;
 }
 
 function parseRustEntities(): Record<string, Struct[]> {
@@ -174,6 +226,50 @@ function parseRustEntities(): Record<string, Struct[]> {
 
       if (fields.length > 0) {
         cratesOutput[domain].push({ name: entityName, fields });
+      }
+    }
+  }
+
+  // Public operation DTOs are part of the SDK contract alongside entities.
+  for (const crate of crates) {
+    if (
+      !crate.startsWith("svc-") &&
+      !crate.startsWith("platform-") &&
+      !crate.startsWith("shared-")
+    ) {
+      continue;
+    }
+
+    const opsDir = path.join(API_CRATES_DIR, crate, "src", "ops");
+    if (!fs.existsSync(opsDir)) continue;
+
+    let domain = crate.replace(/^svc-/, "").replace(/^platform-/, "");
+    if (domain === "enrollment-workflow") domain = "enrollment_workflow";
+    if (domain === "policy") domain = "platform_policy";
+    if (!cratesOutput[domain]) cratesOutput[domain] = [];
+
+    const existingNames = new Set(cratesOutput[domain].map((item) => item.name));
+    for (const file of fs.readdirSync(opsDir)) {
+      if (!file.endsWith(".rs") || file === "mod.rs") continue;
+      const content = fs.readFileSync(path.join(opsDir, file), "utf8");
+      cratesOutput[domain].push(...parseOperationDtos(content, existingNames));
+    }
+
+    const contractsDir = path.join(API_CRATES_DIR, crate, "src", "contracts");
+    if (fs.existsSync(contractsDir)) {
+      for (const file of fs.readdirSync(contractsDir)) {
+        if (!file.endsWith(".rs") || file === "mod.rs") continue;
+        const content = fs.readFileSync(path.join(contractsDir, file), "utf8");
+        cratesOutput[domain].push(...parseOperationDtos(content, existingNames));
+      }
+    }
+
+    const servicesDir = path.join(API_CRATES_DIR, crate, "src", "services");
+    if (fs.existsSync(servicesDir)) {
+      for (const file of fs.readdirSync(servicesDir)) {
+        if (!file.endsWith(".rs") || file === "mod.rs") continue;
+        const content = fs.readFileSync(path.join(servicesDir, file), "utf8");
+        cratesOutput[domain].push(...parseOperationDtos(content, existingNames));
       }
     }
   }

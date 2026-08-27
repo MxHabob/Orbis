@@ -38,7 +38,7 @@ pub async fn get(ctx: &ServiceContext, id: &str) -> Result<subject::Model, AppEr
 
 // ── Commands ────────────────────────────────────────────────────
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct CreateSubjectPayload {
     pub code: String,
     pub name: String,
@@ -49,12 +49,9 @@ pub struct CreateSubjectPayload {
 /// Create a new subject.
 pub async fn create(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    req: CreateSubjectPayload,
 ) -> Result<subject::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::SubjectWrite).await?;
-
-    let req: CreateSubjectPayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid create subject payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
@@ -116,7 +113,7 @@ pub async fn create(
     Ok(created)
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct UpdateSubjectPayload {
     pub name: String,
     pub name_ar: Option<String>,
@@ -129,12 +126,9 @@ pub struct UpdateSubjectPayload {
 pub async fn update(
     ctx: &ServiceContext,
     subject_id: &str,
-    data: serde_json::Value,
+    req: UpdateSubjectPayload,
 ) -> Result<subject::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::SubjectWrite).await?;
-
-    let req: UpdateSubjectPayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid update subject payload: {e}")))?;
 
     let existing = get(ctx, subject_id).await?;
     let old_data = serde_json::to_value(&existing).ok();

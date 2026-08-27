@@ -1,5 +1,7 @@
 {
   "extends": "@orbis/tsconfig/base.json",
-  "include": ["src"],
-  "exclude": ["node_modules", "src/**/*.test.ts"]
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts"]
 }

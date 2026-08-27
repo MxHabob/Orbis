@@ -10,65 +10,34 @@ import { Eye, EyeOff, Loader2 } from "@lucide/svelte";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { toast } from "svelte-sonner";
 
-import { commands, OrbisError } from "$lib/core/ipc";
 import { loginInputSchema } from "@orbis/schemas";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
 // No props needed
 
-let email = $state("");
-let password = $state("");
 let showPassword = $state(false);
-let error = $state<string | null>(null);
-let fieldErrors = $state<Record<string, string>>({});
-let isLoading = $state(false);
+const form = new FormController({
+	initialValues: { identifier: "", password: "" },
+	schema: loginInputSchema,
+});
+
+function fieldError(field: string): string | undefined {
+	return form.errors[field]?.[0];
+}
 
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
-  error = null;
-  fieldErrors = {};
-
-  const result = loginInputSchema.safeParse({
-    identifier: email,
-    password,
-  });
-
-  if (!result.success) {
-    fieldErrors = Object.fromEntries(
-      result.error.issues.map((issue) => [
-        issue.path[0] === "identifier" ? "email" : String(issue.path[0]),
-        m.auth_login_fill_all_fields(),
-      ]),
-    );
-    error = m.auth_login_fill_all_fields();
-    return;
-  }
-
-  isLoading = true;
-
-  try {
-    await authStore.login(result.data.identifier, result.data.password);
+	const submitted = await form.submit(async (payload) => {
+		await authStore.login(payload.identifier, payload.password);
     const targetOrgId = authStore.orgId || "default";
     await goto(localizeHref(`/${targetOrgId}`), {
       invalidateAll: true,
       replaceState: true,
     });
-  } catch (err) {
-    const normalizedError = OrbisError.fromUnknown(err);
-    if (
-      normalizedError.code === "VALIDATION_ERROR" &&
-      normalizedError.details &&
-      typeof normalizedError.details === "object" &&
-      "field" in normalizedError.details
-    ) {
-      const field = normalizedError.details.field;
-      if (typeof field === "string") {
-        fieldErrors[field] = normalizedError.message;
-      }
-    }
-    error = normalizedError.message || m.auth_login_failed();
-  } finally {
-    isLoading = false;
-  }
+	});
+	if (!submitted && !form.formError && Object.keys(form.errors).length === 0) {
+		form.formError = m.auth_login_failed();
+	}
 }
 
 function handleForgotPassword() {
@@ -77,9 +46,9 @@ function handleForgotPassword() {
 </script>
 
 <form class="space-y-4" onsubmit={handleSubmit}>
-	{#if error}
+	{#if form.formError}
 		<div class="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-xs text-destructive flex items-start gap-2 animate-in fade-in slide-in-from-top-1">
-			<span>{error}</span>
+			<span>{form.formError}</span>
 		</div>
 	{/if}
 
@@ -93,15 +62,16 @@ function handleForgotPassword() {
 			id="email"
 			type="email"
 			placeholder={m.auth_login_account_placeholder()}
-			bind:value={email}
+			bind:value={form.values.identifier}
+			onblur={() => form.markTouched("identifier")}
 			required
-			aria-invalid={Boolean(fieldErrors.email)}
+			aria-invalid={Boolean(fieldError("identifier"))}
 			autocomplete="email"
-			disabled={isLoading}
+			disabled={form.isSubmitting}
 			class="h-10 text-xs focus-visible:ring-primary bg-background/50 border-input"
 		/>
-		{#if fieldErrors.email}
-			<p class="text-xs text-destructive" role="alert">{fieldErrors.email}</p>
+		{#if fieldError("identifier")}
+			<p class="text-xs text-destructive" role="alert">{fieldError("identifier")}</p>
 		{/if}
 	</div>
 
@@ -116,11 +86,12 @@ function handleForgotPassword() {
 				id="password"
 				type={showPassword ? 'text' : 'password'}
 				placeholder={m.common_user_form_password()}
-				bind:value={password}
+				bind:value={form.values.password}
+				onblur={() => form.markTouched("password")}
 				required
-				aria-invalid={Boolean(fieldErrors.password)}
+				aria-invalid={Boolean(fieldError("password"))}
 				autocomplete="current-password"
-				disabled={isLoading}
+				disabled={form.isSubmitting}
 				class="h-10 text-xs focus-visible:ring-primary bg-background/50 border-input flex-1"
 			/>
 			<Button
@@ -138,8 +109,8 @@ function handleForgotPassword() {
 				{/if}
 			</Button>
 		</div>
-		{#if fieldErrors.password}
-			<p class="text-xs text-destructive" role="alert">{fieldErrors.password}</p>
+		{#if fieldError("password")}
+			<p class="text-xs text-destructive" role="alert">{fieldError("password")}</p>
 		{/if}
 	</div>
 
@@ -149,9 +120,9 @@ function handleForgotPassword() {
 			type="submit"
 			variant="default"
 			class="font-semibold h-10 text-xs px-6 cursor-pointer bg-primary text-primary-foreground hover:bg-primary/95"
-			disabled={isLoading}
+			disabled={form.isSubmitting}
 		>
-			{#if isLoading}
+			{#if form.isSubmitting}
 				<Loader2 size={13} strokeWidth={2} class="mr-1.5 animate-spin" />
 				{m.auth_login_submitting()}
 			{:else}

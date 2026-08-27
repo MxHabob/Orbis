@@ -12,7 +12,7 @@ export interface Account {
   path: string;
   depth: number;
   currency: string;
-  balances: any;
+  balances: unknown;
   entity_type?: string | null;
   entity_id?: string | null;
   is_control_account: number;
@@ -177,21 +177,128 @@ export interface StudentFee {
   updated_at: string;
 }
 
-export interface CashAccount {
+export interface LedgerAccountResponse {
   id: string;
   org_id: string;
+  code: string;
   name: string;
   name_ar?: string | null;
-  code?: string | null;
   item_type: string;
   sub_type?: string | null;
   parent_id?: string | null;
+  path: string;
+  depth: number;
   currency: string;
-  balances: Record<string, number>;
+  entity_type?: string | null;
+  entity_id?: string | null;
   is_control_account: number;
   is_system_account: number;
   is_active: number;
   created_at: string;
   updated_at: string;
+  balances: unknown;
+}
+
+export interface AccountStatement {
+  account_id: string;
+  account_name: string;
+  account_code: string;
+  currency: string;
+  start_date: string;
+  end_date: string;
+  opening_balance: number;
+  closing_balance: number;
+  items: StatementItem[];
+}
+
+export interface StatementItem {
+  id: string;
+  date: string;
+  reference: string;
+  description: string;
+  description_ar?: string | null;
+  debit?: number | null;
+  credit?: number | null;
+  running_balance: number;
+}
+
+export interface CreateLedgerAccountCmd {
+  code: string;
+  name: string;
+  name_ar?: string | null;
+  item_type: string;
+  sub_type?: string | null;
+  parent_id?: string | null;
+  currency: string;
+  opening_balance?: number | null;
+}
+
+export interface CreateJournalEntryCmd {
+  transaction_ref: string;
+  accounting_date: string;
+  fiscal_period_id: string;
+  amount: number;
+  debit_account_id: string;
+  credit_account_id: string;
+  currency: string;
+  exchange_rate?: number | null;
+  description: string;
+  description_ar?: string | null;
+  source_type: string;
+  source_id?: string | null;
+  source_module?: string | null;
+}
+
+export interface RecordPaymentCmd {
+  fee_id?: string | null;
+  enrollment_id?: string | null;
+  cash_account_id: string;
+  amount: number;
+  currency: string;
+  exchange_rate?: number | null;
+  method: string;
+  payer_name?: string | null;
+  notes?: string | null;
+}
+
+export interface CreateFeeTemplateCmd {
+  name: string;
+  name_ar?: string | null;
+  code?: string | null;
+  category: string;
+  default_amount: number;
+  revenue_account_id?: string | null;
+  receivable_account_id?: string | null;
+  applicable_levels?: string | null;
+  frequency: string;
+  is_mandatory: boolean;
+}
+
+export interface UpdateFeeTemplateCmd {
+  name?: string | null;
+  name_ar?: string | null;
+  code?: string | null;
+  category?: string | null;
+  default_amount?: number | null;
+  revenue_account_id?: string | null;
+  receivable_account_id?: string | null;
+  applicable_levels?: string | null;
+  frequency?: string | null;
+  is_mandatory?: boolean | null;
+  is_active?: boolean | null;
+}
+
+export interface AssignFeeCmd {
+  enrollment_id: string;
+  fee_template_id: string;
+  amount_override?: number | null;
+}
+
+export interface CreateDiscountTemplateCmd {
+  name: string;
+  name_ar?: string | null;
+  amount: number;
+  is_percentage: boolean;
+  account_id: string;
 }
 

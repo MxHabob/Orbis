@@ -10,7 +10,7 @@ use shared_kernel::traits::{AuditEntry, Permission};
 
 use crate::entities::room;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct CreateRoomRequest {
     pub name: String,
     pub name_ar: Option<String>,
@@ -20,7 +20,7 @@ pub struct CreateRoomRequest {
     pub floor: Option<i32>,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct UpdateRoomRequest {
     pub name: Option<String>,
     pub name_ar: Option<String>,
@@ -41,12 +41,9 @@ pub async fn list(ctx: &ServiceContext) -> Result<Vec<room::Model>, AppError> {
 
 pub async fn create(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    req: CreateRoomRequest,
 ) -> Result<room::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleWrite).await?;
-
-    let req: CreateRoomRequest = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid create room payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
@@ -74,12 +71,9 @@ pub async fn create(
 
 pub async fn update(
     ctx: &ServiceContext, room_id: &str,
-    data: serde_json::Value,
+    req: UpdateRoomRequest,
 ) -> Result<room::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleWrite).await?;
-
-    let req: UpdateRoomRequest = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid update room payload: {e}")))?;
 
     let existing = room::Entity::find_by_id(room_id.to_string())
         .one(&ctx.db).await?

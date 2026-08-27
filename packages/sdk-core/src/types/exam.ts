@@ -189,3 +189,174 @@ export interface TeacherExamAvailability {
   updated_at: string;
 }
 
+export interface CreateExamSubjectRequest {
+  session_id: string;
+  subject_id: string;
+  max_score: number;
+  class_subject_id?: string | null;
+  duration_minutes?: number | null;
+  exam_type?: string | null;
+}
+
+export interface CreateHallRequest {
+  name: string;
+  capacity: number;
+  exam_session_id?: string | null;
+  room_id?: string | null;
+  building?: string | null;
+  floor_number?: number | null;
+}
+
+export interface CreateExamSessionRequest {
+  period_id: string;
+  name: string;
+  name_ar?: string | null;
+  session_type: string;
+  start_date: string;
+  end_date: string;
+}
+
+export interface AutoScheduleRequest {
+  exam_session_id: string;
+  available_dates: string[];
+  max_exams_per_day?: number | null;
+  preferred_period?: string | null;
+  default_duration_minutes?: number | null;
+  morning_start?: string | null;
+  afternoon_start?: string | null;
+  gap_minutes?: number | null;
+  conflict_groups?: string[][] | null;
+  priority_subject_ids?: string[] | null;
+}
+
+export interface AllocationConfig {
+  separate_divisions: boolean;
+  separate_genders: boolean;
+  balance_halls: boolean;
+}
+
+export interface AllocationResult {
+  total_students: number;
+  total_halls: number;
+  allocations: HallAllocationSummary[];
+}
+
+export interface HallAllocationSummary {
+  hall_id: string;
+  hall_number: string;
+  capacity: number;
+  allocated: number;
+  utilization_pct: number;
+}
+
+export interface ProctorAssignConfig {
+  proctors_per_hall: number;
+  prevent_own_subject: boolean;
+  max_sessions_per_teacher: number;
+}
+
+export interface ProctorAssignResult {
+  assigned_count: number;
+  halls_covered: number;
+  total_halls: number;
+  uncovered_halls: string[];
+}
+
+export interface ExamLogisticsService {
+  cmd: unknown;
+  query: unknown;
+  session_service: unknown;
+  ordering_service: unknown;
+}
+
+export interface SeatingNumberView {
+  id: string;
+  enrollment_id: string;
+  student_id: string;
+  seating_number: string;
+  sequence_number: number;
+  class_id: string;
+  is_active: boolean;
+}
+
+export interface GenerationResult {
+  generated_count: number;
+  exam_session_id: string;
+}
+
+export interface SecretNumberView {
+  id: string;
+  enrollment_id: string;
+  student_id: string;
+  secret_number?: string | null;
+  is_revealed: boolean;
+  barcode_data?: string | null;
+  qr_data?: string | null;
+}
+
+export interface UpdateExamSessionRequest {
+  name?: string | null;
+  name_ar?: string | null;
+  code?: string | null;
+  session_type?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  hijri_start_date?: string | null;
+  hijri_end_date?: string | null;
+  applicable_levels?: string | null;
+  applicable_class_ids?: string | null;
+  settings?: string | null;
+  grading_deadline?: string | null;
+  results_publish_date?: string | null;
+  status?: string | null;
+}
+
+export interface CreateExamScheduleRequest {
+  exam_session_id: string;
+  exam_subject_id: string;
+  exam_date: string;
+  start_time: string;
+  end_time: string;
+  period?: string | null;
+  applicable_class_ids?: string | null;
+  room_ids?: string | null;
+  notes?: string | null;
+}
+
+export interface CreateExamHallRequest {
+  exam_session_id: string;
+  room_id: string;
+  hall_number: string;
+  capacity?: number | null;
+  seating_arrangement?: string | null;
+  is_accessible?: number | null;
+  notes?: string | null;
+}
+
+export interface OrderedStudent {
+  enrollment_id: string;
+  student_id: string;
+  class_id: string;
+  student_name_ar?: string | null;
+  level: string;
+  division?: string | null;
+  order_in_class: number;
+  order_in_level?: number | null;
+  order_in_org?: number | null;
+  sort_key: string;
+  is_frozen: boolean;
+}
+
+export interface RebuildOrderingResult {
+  total_students: number;
+  ordered_count: number;
+  frozen_skipped: number;
+  strategy: string;
+  version: number;
+}
+
+export interface StudentOrderingService {
+  cmd: unknown;
+  query: unknown;
+}
+

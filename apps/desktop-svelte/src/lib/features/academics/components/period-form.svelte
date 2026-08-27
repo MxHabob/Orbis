@@ -11,7 +11,8 @@ import {
   SelectItem,
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
-import { extractErrorMessage } from "$lib/core/ipc";
+import { createPeriodInputSchema } from "@orbis/schemas";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { ChevronRight } from "@lucide/svelte";
 import {
   Accordion,
@@ -27,30 +28,47 @@ let {
   onCancel,
 }: {
   orgId: string;
-  period?: any;
+  period?: {
+    id: string;
+    name?: string | null;
+    name_ar?: string | null;
+    code?: string | null;
+    period_type?: string | null;
+    parent_id?: string | null;
+    period_id?: string | null;
+    start_date?: string | null;
+    end_date?: string | null;
+    grading_system?: string | null;
+    passing_grade?: number | null;
+    max_grade?: number | null;
+  } | null;
   onSuccess: () => void;
   onCancel: () => void;
 } = $props();
 
 const isEdit = $derived(!!period);
 
-// Form state
-let isSubmitting = $state(false);
 let periodsList = $state<any[]>([]);
 
-let name = $state(period?.name || "");
-let nameAr = $state(period?.name_ar || "");
-let code = $state(period?.code || "");
-let periodType = $state(period?.period_type || "year");
-// For existing terms, fallback to parent_id. For legacy, fallback to period_id
-let parentId = $state(
-  period?.parent_id || (periodType !== "year" ? period?.period_id : ""),
-);
-let startDate = $state(period?.start_date || "");
-let endDate = $state(period?.end_date || "");
-let gradingSystem = $state(period?.grading_system || "percentage");
-let passingGrade = $state<number>(period?.passing_grade || 50);
-let maxGrade = $state<number>(period?.max_grade || 100);
+const form = new FormController({
+  initialValues: {
+    name: period?.name || "",
+    name_ar: period?.name_ar || "",
+    code: period?.code || "",
+    period_type: period?.period_type || "year",
+    parent_id: period?.parent_id || period?.period_id || "",
+    start_date: period?.start_date || "",
+    end_date: period?.end_date || "",
+    grading_system: period?.grading_system || "percentage",
+    passing_grade: period?.passing_grade ?? 50,
+    max_grade: period?.max_grade ?? 100,
+  },
+  schema: createPeriodInputSchema,
+});
+
+function fieldError(field: string): string | undefined {
+  return form.errors[field]?.[0];
+}
 
 const periodTypeLabels = $derived({
   year: m.common_cycle_form_type_year(),
@@ -85,45 +103,24 @@ $effect(() => {
 
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
-
-  if (!name && !nameAr) {
-    toast.error(m.common_period_form_error_name_required());
-    return;
-  }
-  if (!startDate || !endDate) {
-    toast.error(m.common_period_form_error_dates_required());
-    return;
-  }
-
-  isSubmitting = true;
-  try {
+  const submitted = await form.submit(async (payload) => {
     const request = {
-      name: name || nameAr,
-      name_ar: nameAr || name,
-      code: code || undefined,
-      period_type: periodType,
-      parent_id: periodType !== "year" && parentId ? parentId : undefined,
-      start_date: startDate,
-      end_date: endDate,
-      grading_system: gradingSystem,
-      passing_grade: passingGrade ? Number(passingGrade) : 50,
-      max_grade: maxGrade ? Number(maxGrade) : 100,
+      ...payload,
+      name: payload.name || payload.name_ar || "",
+      name_ar: payload.name_ar || payload.name || undefined,
+      parent_id: payload.period_type !== "year" && payload.parent_id ? payload.parent_id : undefined,
     };
-
-    if (isEdit) {
+    if (isEdit && period) {
       await commands.calendar.updateAcademicPeriod(period.id, request);
       toast.success(m.common_action_save());
     } else {
       await commands.calendar.createAcademicPeriod(request);
       toast.success(m.common_period_form_success());
     }
-
-    onSuccess();
-  } catch (e: unknown) {
-    toast.error(extractErrorMessage(e));
-  } finally {
-    isSubmitting = false;
-  }
+  });
+  if (submitted) onSuccess();
+  else if (form.formError) toast.error(form.formError);
+  else if (Object.keys(form.errors).length > 0) toast.error(m.common_period_form_error_dates_required());
 }
 </script>
 
@@ -148,9 +145,10 @@ async function handleSubmit(e: SubmitEvent) {
         <Input
           id="per_name_ar"
           type="text"
-          bind:value={nameAr}
+          bind:value={form.values.name_ar}
+          onblur={() => form.markTouched("name_ar")}
           placeholder={m.common_period_form_name_placeholder()}
-          disabled={isSubmitting}
+          disabled={form.isSubmitting}
         />
       </div>
 
@@ -161,10 +159,13 @@ async function handleSubmit(e: SubmitEvent) {
         <Input
           id="per_name_en"
           type="text"
-          bind:value={name}
+          bind:value={form.values.name}
+          onblur={() => form.markTouched("name")}
+          aria-invalid={Boolean(fieldError("name"))}
+          aria-describedby={fieldError("name") ? "period_name_error" : undefined}
           placeholder={m.common_period_form_name_en_placeholder()}
           required
-          disabled={isSubmitting}
+          disabled={form.isSubmitting}
         />
       </div>
     </div>
@@ -175,9 +176,9 @@ async function handleSubmit(e: SubmitEvent) {
         <label for="per_type" class="text-xs font-semibold text-foreground">
           {m.common_word_type()}
         </label>
-        <Select type="single" value={periodType} onValueChange={(v) => (periodType = v ?? "year")} disabled={isEdit}>
+        <Select type="single" value={form.values.period_type} onValueChange={(v) => (form.values.period_type = v ?? "year")} disabled={isEdit}>
           <SelectTrigger class="h-9 text-sm w-full">
-            {periodTypeLabels[periodType as keyof typeof periodTypeLabels] || periodType}
+            {periodTypeLabels[form.values.period_type as keyof typeof periodTypeLabels] || form.values.period_type}
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="year">{m.common_cycle_form_type_year()}</SelectItem>
@@ -186,14 +187,14 @@ async function handleSubmit(e: SubmitEvent) {
         </Select>
       </div>
 
-      {#if periodType !== "year"}
+      {#if form.values.period_type !== "year"}
         <div class="flex flex-col gap-2">
           <label for="per_parent" class="text-xs font-semibold text-foreground">
             {m.common_period_form_parent()}
           </label>
-          <Select type="single" value={parentId} onValueChange={(v) => (parentId = v ?? "")} disabled={isEdit}>
+          <Select type="single" value={form.values.parent_id} onValueChange={(v) => (form.values.parent_id = v ?? "")} disabled={isEdit}>
             <SelectTrigger class="h-9 text-sm w-full">
-              {periodsList.find(p => String(p.id) === parentId) ? (periodsList.find(p => String(p.id) === parentId).name_ar || periodsList.find(p => String(p.id) === parentId).name) : m.common_period_form_parent_none()}
+              {periodsList.find(p => String(p.id) === form.values.parent_id) ? (periodsList.find(p => String(p.id) === form.values.parent_id).name_ar || periodsList.find(p => String(p.id) === form.values.parent_id).name) : m.common_period_form_parent_none()}
             </SelectTrigger>
             <SelectContent class="max-h-60 overflow-y-auto">
               <SelectItem value="">{m.common_period_form_parent_none()}</SelectItem>
@@ -218,9 +219,9 @@ async function handleSubmit(e: SubmitEvent) {
           <Input
             id="per_code"
             type="text"
-            bind:value={code}
+            bind:value={form.values.code}
             placeholder="e.g. AY-2026"
-            disabled={isSubmitting || isEdit}
+            disabled={form.isSubmitting || isEdit}
           />
         </div>
       {/if}
@@ -242,9 +243,10 @@ async function handleSubmit(e: SubmitEvent) {
         <Input
           id="per_start"
           type="date"
-          bind:value={startDate}
+          bind:value={form.values.start_date}
+          onblur={() => form.markTouched("start_date")}
           required
-          disabled={isSubmitting}
+          disabled={form.isSubmitting}
         />
       </div>
 
@@ -255,9 +257,10 @@ async function handleSubmit(e: SubmitEvent) {
         <Input
           id="per_end"
           type="date"
-          bind:value={endDate}
+          bind:value={form.values.end_date}
+          onblur={() => form.markTouched("end_date")}
           required
-          disabled={isSubmitting}
+          disabled={form.isSubmitting}
         />
       </div>
     </div>
@@ -275,9 +278,9 @@ async function handleSubmit(e: SubmitEvent) {
         <label for="per_grading" class="text-xs font-semibold text-foreground">
           {m.common_cycle_form_grading()}
         </label>
-        <Select type="single" value={gradingSystem} onValueChange={(v) => (gradingSystem = v ?? "percentage")}>
+        <Select type="single" value={form.values.grading_system} onValueChange={(v) => (form.values.grading_system = v ?? "percentage")}>
           <SelectTrigger class="h-9 text-sm w-full">
-            {gradingLabels[gradingSystem as keyof typeof gradingLabels] || gradingSystem}
+            {gradingLabels[form.values.grading_system as keyof typeof gradingLabels] || form.values.grading_system}
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="percentage">{m.common_cycle_form_grading_percentage()}</SelectItem>
@@ -294,9 +297,10 @@ async function handleSubmit(e: SubmitEvent) {
         <Input
           id="per_max"
           type="number"
-          bind:value={maxGrade}
+          bind:value={form.values.max_grade}
+          onblur={() => form.markTouched("max_grade")}
           min={1}
-          disabled={isSubmitting}
+          disabled={form.isSubmitting}
         />
       </div>
 
@@ -307,10 +311,11 @@ async function handleSubmit(e: SubmitEvent) {
         <Input
           id="per_passing"
           type="number"
-          bind:value={passingGrade}
+          bind:value={form.values.passing_grade}
           min={0}
-          max={maxGrade}
-          disabled={isSubmitting}
+          max={form.values.max_grade}
+          onblur={() => form.markTouched("passing_grade")}
+          disabled={form.isSubmitting}
         />
       </div>
     </div>
@@ -325,7 +330,7 @@ async function handleSubmit(e: SubmitEvent) {
       type="button"
       variant="ghost"
       onclick={onCancel}
-      disabled={isSubmitting}
+      disabled={form.isSubmitting}
     >
       {m.common_action_cancel()}
     </Button>
@@ -333,9 +338,9 @@ async function handleSubmit(e: SubmitEvent) {
       type="submit"
       variant="lime"
       class="font-semibold px-6"
-      disabled={isSubmitting}
+      disabled={form.isSubmitting}
     >
-      {isSubmitting ? m.common_period_form_saving() : m.common_action_save()}
+      {form.isSubmitting ? m.common_period_form_saving() : m.common_action_save()}
     </Button>
   </div>
 </form>

@@ -86,7 +86,7 @@ pub async fn get(ctx: &ServiceContext, lesson_id: &str) -> Result<scheduled_less
         .ok_or_else(|| AppError::not_found("scheduled_lesson", lesson_id))
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct CreateLessonRequest {
     pub period_id: String,
     pub class_id: String,
@@ -100,12 +100,9 @@ pub struct CreateLessonRequest {
 
 pub async fn create(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    req: CreateLessonRequest,
 ) -> Result<scheduled_lesson::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleWrite).await?;
-
-    let req: CreateLessonRequest = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid create lesson payload: {e}")))?;
 
     validate_placement(ctx, &req.period_id, &req.class_id, &req.class_subject_id, &req.subject_id, &req.teacher_id, &req.time_slot_id, req.room_id.as_deref()).await?;
     let conflicts = check_conflicts_for_placement(
@@ -154,7 +151,7 @@ pub async fn create(
     Ok(created)
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct UpdateLessonRequest {
     pub teacher_id: Option<String>,
     pub time_slot_id: Option<String>,
@@ -166,12 +163,9 @@ pub struct UpdateLessonRequest {
 
 pub async fn update(
     ctx: &ServiceContext, lesson_id: &str,
-    data: serde_json::Value,
+    req: UpdateLessonRequest,
 ) -> Result<scheduled_lesson::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleWrite).await?;
-
-    let req: UpdateLessonRequest = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid update lesson payload: {e}")))?;
 
     let existing = get(ctx, lesson_id).await?;
     let teacher_id = req.teacher_id.as_deref().unwrap_or(&existing.teacher_id);

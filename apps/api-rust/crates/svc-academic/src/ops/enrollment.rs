@@ -17,13 +17,28 @@ use svc_iam::entities::{person, user};
 use crate::contracts::events::event_types;
 use crate::entities::{enrollment, class};
 
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
+pub struct EnrichedEnrollmentResponse {
+    #[serde(flatten)]
+    pub enrollment: enrollment::Model,
+    pub full_name: String,
+    pub name_ar: Option<String>,
+    pub name_en: Option<String>,
+    pub sex: String,
+    pub birth_date: Option<String>,
+    pub phone: Option<String>,
+    pub email: Option<String>,
+    pub address: Option<String>,
+    pub national_id: Option<String>,
+}
+
 // ── Queries ─────────────────────────────────────────────────────
 
 /// Helper to enrich enrollment models with demographics from persons and users.
 pub async fn enrich_enrollment_models(
     db: &sea_orm::DatabaseConnection,
     enrollments: &[enrollment::Model],
-) -> Result<Vec<serde_json::Value>, AppError> {
+) -> Result<Vec<EnrichedEnrollmentResponse>, AppError> {
     if enrollments.is_empty() {
         return Ok(Vec::new());
     }
@@ -106,7 +121,9 @@ pub async fn enrich_enrollment_models(
             obj.insert("national_id".into(), national_id.map(serde_json::Value::String).unwrap_or(serde_json::Value::Null));
         }
 
-        enriched.push(val);
+        enriched.push(serde_json::from_value(val).map_err(|e| {
+            AppError::validation(format!("Invalid enriched enrollment response: {e}"))
+        })?);
     }
 
     Ok(enriched)
@@ -128,7 +145,7 @@ pub async fn list(
 /// List enriched enrollments with demographics.
 pub async fn list_enriched(
     ctx: &ServiceContext,
-) -> Result<Vec<serde_json::Value>, AppError> {
+) -> Result<Vec<EnrichedEnrollmentResponse>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::EnrollmentRead).await?;
 
     let enrollments = enrollment::Entity::find()
@@ -165,7 +182,7 @@ pub async fn list_paginated(
 pub async fn list_paginated_enriched(
     ctx: &ServiceContext,
     request: shared_kernel::pagination::CursorRequest,
-) -> Result<shared_kernel::pagination::CursorPage<serde_json::Value>, AppError> {
+) -> Result<shared_kernel::pagination::CursorPage<EnrichedEnrollmentResponse>, AppError> {
     use shared_kernel::pagination::CursorPage;
     ctx.permissions.check(&ctx.actor, Permission::EnrollmentRead).await?;
 
@@ -182,7 +199,7 @@ pub async fn list_paginated_enriched(
     let enriched_items = enrich_enrollment_models(&ctx.db, &items).await?;
 
     Ok(CursorPage::from_items_with(enriched_items, limit, |val| {
-        val.get("id").and_then(|v| v.as_str()).unwrap_or_default().to_string()
+        val.enrollment.id.clone()
     }))
 }
 
@@ -197,7 +214,7 @@ pub async fn get(ctx: &ServiceContext, id: &str) -> Result<enrollment::Model, Ap
 }
 
 /// Get a single enriched enrollment by ID with demographic details.
-pub async fn get_enriched(ctx: &ServiceContext, id: &str) -> Result<serde_json::Value, AppError> {
+pub async fn get_enriched(ctx: &ServiceContext, id: &str) -> Result<EnrichedEnrollmentResponse, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::EnrollmentRead).await?;
 
     let enrollment = enrollment::Entity::find_by_id(id.to_string())
@@ -217,7 +234,7 @@ pub async fn get_enriched(ctx: &ServiceContext, id: &str) -> Result<serde_json::
 /// - No duplicate enrollment in the same period
 /// - Class capacity check
 /// - Mandatory fee assignment (via FeeAssigner trait)
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct CreateEnrollmentPayload {
     pub org_id: Option<String>,
     pub period_id: String,
@@ -228,12 +245,9 @@ pub struct CreateEnrollmentPayload {
 
 pub async fn create(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    req: CreateEnrollmentPayload,
 ) -> Result<enrollment::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::EnrollmentWrite).await?;
-
-    let req: CreateEnrollmentPayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid create enrollment payload: {e}")))?;
 
     let org_id = req.org_id.clone().unwrap_or_else(|| ctx.org_id.clone());
 
@@ -496,7 +510,7 @@ pub async fn check_duplicate(
         .await?)
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct PromotePayload {
     pub is_promoted: i32,
     pub promotion_decision: Option<String>,
@@ -506,12 +520,9 @@ pub struct PromotePayload {
 pub async fn promote(
     ctx: &ServiceContext,
     enrollment_id: &str,
-    data: serde_json::Value,
+    req: PromotePayload,
 ) -> Result<enrollment::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::EnrollmentWrite).await?;
-
-    let req: PromotePayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid promote payload: {e}")))?;
 
     let existing = get(ctx, enrollment_id).await?;
     let old_data = serde_json::to_value(&existing).ok();

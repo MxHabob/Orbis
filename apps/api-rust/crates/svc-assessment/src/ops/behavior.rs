@@ -29,7 +29,7 @@ pub async fn list(
 
 // ── Commands ────────────────────────────────────────────────────
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct SubmitAIBehaviorRequest {
     pub period_id: String,
     pub enrollment_id: String,
@@ -46,12 +46,9 @@ pub struct SubmitAIBehaviorRequest {
 /// Submit an AI-detected behavior record.
 pub async fn submit_ai(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    req: SubmitAIBehaviorRequest,
 ) -> Result<behavior_record::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::BehaviorAI).await?;
-
-    let req: SubmitAIBehaviorRequest = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid behavior payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();

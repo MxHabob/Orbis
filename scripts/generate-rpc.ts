@@ -38,6 +38,11 @@ function toCamelCase(str: string): string {
   return str.replace(/_([a-z0-9])/g, g => g[1].toUpperCase());
 }
 
+function toPascalCase(str: string): string {
+  const camel = toCamelCase(str);
+  return camel.charAt(0).toUpperCase() + camel.slice(1);
+}
+
 function splitRustArguments(args: string): string[] {
   const result: string[] = [];
   let start = 0;
@@ -69,26 +74,46 @@ function mapRustTypeToTs(rustType: string): string {
   rustType = rustType.replace("&str", "string").replace("String", "string");
   rustType = rustType.replace(/\bbool\b/g, "boolean");
   rustType = rustType.replace(/i32|u32|i64|u64|f32|f64|usize|isize/g, "number");
-  rustType = rustType.replace("serde_json::Value", "any");
+  rustType = rustType.replace("serde_json::Value", "__UNRESOLVED_JSON__");
   rustType = rustType.replace("()", "void");
   
   // strip lifetimes and references
   rustType = rustType.replace(/&'[a-zA-Z]+\s+/g, "");
   rustType = rustType.replace(/&mut\s+/g, "");
   rustType = rustType.replace(/&\s*/g, "");
+
+  const hashMapIndex = rustType.indexOf("HashMap<");
+  if (hashMapIndex >= 0) {
+    const inner = rustType.substring(hashMapIndex + 8, rustType.lastIndexOf(">"));
+    const parts = splitRustArguments(inner);
+    return parts.length === 2
+      ? `Record<${mapRustTypeToTs(parts[0])}, ${mapRustTypeToTs(parts[1])}>`
+      : "__UNRESOLVED_HASHMAP__";
+  }
   
   if (rustType.startsWith("Option<")) {
-      const inner = rustType.match(/Option<(.*)>/)?.[1] || "any";
+      const inner = rustType.match(/Option<(.*)>/)?.[1] || "__UNRESOLVED__";
       return `${mapRustTypeToTs(inner)} | null`;
   }
   if (rustType.startsWith("Vec<")) {
-      const inner = rustType.match(/Vec<(.*)>/)?.[1] || "any";
+      const inner = rustType.match(/Vec<(.*)>/)?.[1] || "__UNRESOLVED__";
       return `${mapRustTypeToTs(inner)}[]`;
   }
+
+  if (rustType.startsWith("(") && rustType.endsWith(")")) {
+    const items = splitRustArguments(rustType.slice(1, -1));
+    return `[${items.map(mapRustTypeToTs).join(", ")}]`;
+  }
   
-  if (rustType.includes("tauri::ipc::Channel")) return "any";
-  if (rustType.includes("State<")) return "any";
-  if (rustType.includes("::")) return "any";
+  if (rustType.includes("tauri::ipc::Channel")) return "__UNRESOLVED_CHANNEL__";
+  if (rustType.includes("State<")) return "__UNRESOLVED_STATE__";
+  if (rustType.includes("::")) {
+    const segments = rustType.split("::");
+    const qualifiedName = segments.at(-1) === "Model"
+      ? toPascalCase(segments.at(-2) || "")
+      : segments.at(-1);
+    return qualifiedName || "__UNRESOLVED_TYPE__";
+  }
 
   return rustType;
 }
@@ -99,6 +124,13 @@ function isPrimitiveTs(ts: string) {
 }
 
 function formatTsType(ts: string, knownTypes: Set<string>) {
+  if (ts.startsWith("__UNRESOLVED")) {
+    return "unknown";
+  }
+  if (ts.startsWith("[") && ts.endsWith("]")) {
+    const items = splitRustArguments(ts.slice(1, -1));
+    return `[${items.map((item) => formatTsType(item, knownTypes)).join(", ")}]`;
+  }
     if (isPrimitiveTs(ts)) return ts;
     let isArray = false;
     let isNullable = false;
@@ -113,7 +145,7 @@ function formatTsType(ts: string, knownTypes: Set<string>) {
     }
     
     if (!knownTypes.has(base)) {
-        base = "any";
+      base = "unknown";
     } else {
         base = `Types.${base}`;
     }
@@ -421,8 +453,14 @@ function generateTsInterfaces(ops: OpFunction[], knownTypes: Set<string>) {
       content += `export interface ${domainCamel}Commands {\n`;
       
       for (const op of domainOps) {
-        const argsStr = op.args.map(a => `${a.name}: ${formatTsType(a.tsType, knownTypes)}`).join(", ");
-        const retType = formatTsType(op.tsReturnType, knownTypes);
+        let argsStr: string;
+        let retType: string;
+        try {
+          argsStr = op.args.map(a => `${a.name}: ${formatTsType(a.tsType, knownTypes)}`).join(", ");
+          retType = formatTsType(op.tsReturnType, knownTypes);
+        } catch (error) {
+          throw new Error(`${domain}.${op.tsFuncName}: ${(error as Error).message}`);
+        }
         content += `  ${op.tsFuncName}(${argsStr}): Promise<${retType}>;\n`;
       }
 

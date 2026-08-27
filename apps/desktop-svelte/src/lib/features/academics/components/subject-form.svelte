@@ -1,51 +1,46 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { commands, OrbisError } from "$lib/core/ipc";
+import { commands } from "$lib/core/ipc";
 import { createSubjectInputSchema } from "@orbis/schemas";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { SheetHeader, SheetTitle } from "@orbis/ui-svelte/sheet";
 import InputColor from "$lib/shared/components/input-color.svelte";
 import { toast } from "svelte-sonner";
+type SubjectDraft = {
+	name: string;
+	name_ar: string;
+	code: string;
+	color: string | null;
+};
 
-let {
-  orgId,
-  onSuccess,
-  onCancel,
-}: {
-  orgId: string;
+const form = new FormController<SubjectDraft>({
+	initialValues: { name: "", name_ar: "", code: "", color: null },
+	schema: createSubjectInputSchema,
+});
+
+function fieldError(field: string): string | undefined {
+	return form.errors[field]?.[0];
+}
   onSuccess: () => void;
   onCancel: () => void;
 } = $props();
 
-// Form state
-let isSubmitting = $state(false);
-let name = $state("");
-let nameAr = $state("");
-let code = $state("");
-let creditHours = $state<number>(3);
-let color = $state("");
-
-async function handleSubmit(e: SubmitEvent) {
-  e.preventDefault();
-	const result = createSubjectInputSchema.safeParse({
-		name,
-		name_ar: nameAr,
-		code,
-		color: color || null,
+	const submitted = await form.submit(async (draft) => {
+		await commands.academic.createSubject({
+			...draft,
+			name: draft.name || draft.name_ar || "",
+		});
 	});
-	if (!result.success) {
-		toast.error(m.common_subject_toast_error_name());
-    return;
-  }
-  isSubmitting = true;
-  try {
+	if (submitted) {
+		code,
+		form.reset();
 		await commands.academic.createSubject(result.data);
-    toast.success(m.common_subject_toast_success());
-
-    // Reset fields
-    name = "";
-    nameAr = "";
+	} else if (form.formError) {
+		toast.error(form.formError);
+	} else if (Object.keys(form.errors).length > 0) {
+		toast.error(m.common_subject_toast_error_name());
     code = "";
     creditHours = 3;
     color = "";
@@ -75,10 +70,14 @@ async function handleSubmit(e: SubmitEvent) {
 			</label>
 			<InputColor
 				placeholder={m.common_subject_placeholder_name_ar()}
-				bind:value={nameAr}
-				bind:color={color}
+				bind:value={form.values.name_ar}
+				bind:color={form.values.color}
+				onblur={() => form.markTouched("name_ar")}
 				required
 			/>
+			{#if fieldError("name_ar")}
+				<p id="sub_name_ar_error" class="text-xs text-destructive">{fieldError("name_ar")}</p>
+			{/if}
 		</div>
 
 		<!-- Name (English) -->
@@ -89,9 +88,15 @@ async function handleSubmit(e: SubmitEvent) {
 			<Input 
 				id="sub_name_en"
 				type="text" 
-				bind:value={name}
+				bind:value={form.values.name}
+				onblur={() => form.markTouched("name")}
+				aria-invalid={Boolean(fieldError("name"))}
+				aria-describedby={fieldError("name") ? "sub_name_error" : undefined}
 				placeholder={m.common_subject_placeholder_name_en()}
 			/>
+			{#if fieldError("name")}
+				<p id="sub_name_error" class="text-xs text-destructive">{fieldError("name")}</p>
+			{/if}
 		</div>
 
 		<!-- Subject Code -->
@@ -102,9 +107,15 @@ async function handleSubmit(e: SubmitEvent) {
 			<Input 
 				id="sub_code"
 				type="text" 
-				bind:value={code}
+				bind:value={form.values.code}
+				onblur={() => form.markTouched("code")}
+				aria-invalid={Boolean(fieldError("code"))}
+				aria-describedby={fieldError("code") ? "sub_code_error" : undefined}
 				placeholder={m.common_subject_placeholder_code()}
 			/>
+			{#if fieldError("code")}
+				<p id="sub_code_error" class="text-xs text-destructive">{fieldError("code")}</p>
+			{/if}
 		</div>
 
 		<!-- Credit Hours -->
@@ -115,7 +126,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<Input 
 				id="sub_weight"
 				type="number" 
-				bind:value={creditHours}
+				value="3"
 				min="1"
 				max="20"
 			/>
@@ -128,7 +139,7 @@ async function handleSubmit(e: SubmitEvent) {
 			type="button" 
 			variant="ghost" 
 			onclick={onCancel}
-			disabled={isSubmitting}
+			disabled={form.isSubmitting}
 		>
 			{m.common_action_cancel()}
 		</Button>
@@ -136,9 +147,9 @@ async function handleSubmit(e: SubmitEvent) {
 			type="submit" 
 			variant="lime" 
 			class="font-semibold"
-			disabled={isSubmitting}
+			disabled={form.isSubmitting}
 		>
-			{isSubmitting ? m.common_state_saving() : m.common_action_save()}
+			{form.isSubmitting ? m.common_state_saving() : m.common_action_save()}
 		</Button>
 	</div>
 </form>

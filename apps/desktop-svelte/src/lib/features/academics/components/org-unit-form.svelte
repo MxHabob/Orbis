@@ -1,6 +1,8 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/core/ipc";
+import { orgUnitInputSchema } from "@orbis/schemas";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
@@ -52,25 +54,29 @@ const initUnit = untrack(() => unit);
 const initParentId = untrack(() => defaultParentId);
 
 // Form state
-let isSubmitting = $state(false);
 let unitsList = $state<any[]>([]);
 let staffList = $state<any[]>([]);
 
-let name = $state(initUnit?.name || "");
-let nameAr = $state(initUnit?.name_ar || "");
-let code = $state(initUnit?.code || "");
-let unitType = $state(initUnit?.unit_type || "stage");
-let parentId = $state(initUnit?.parent_id || initParentId || "");
-let capacity = $state<number | null>(
-  initUnit?.capacity ? Number(initUnit.capacity) : null,
-);
-let roomNumber = $state(initUnit?.room_number || "");
-let floor = $state<number | null>(
-  initUnit?.floor ? Number(initUnit.floor) : null,
-);
-let building = $state(initUnit?.building || "");
-let headId = $state(initUnit?.head_id || "");
-let dataIsolation = $state(initUnit?.data_isolation || "shared");
+const form = new FormController({
+  initialValues: {
+    name: initUnit?.name || "",
+    name_ar: initUnit?.name_ar || "",
+    code: initUnit?.code || "",
+    unit_type: initUnit?.unit_type || "stage",
+    parent_id: initUnit?.parent_id || initParentId || "",
+    head_id: initUnit?.head_id || "",
+    capacity: initUnit?.capacity ?? null,
+    room_number: initUnit?.room_number || "",
+    floor: initUnit?.floor ?? null,
+    building: initUnit?.building || "",
+    data_isolation: initUnit?.data_isolation || "shared",
+  },
+  schema: orgUnitInputSchema,
+});
+
+function fieldError(field: string): string | undefined {
+  return form.errors[field]?.[0];
+}
 
 const unitTypeOptions = [
   { value: "branch", label: m.common_org_unit_branch(), icon: School },
@@ -107,28 +113,14 @@ onMount(() => {
 
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
-
-  if (!name.trim() && !nameAr.trim()) {
-    toast.error(m.common_org_unit_error_name_required());
-    return;
-  }
-
-  isSubmitting = true;
-  try {
+  const submitted = await form.submit(async (values) => {
     const payload = {
-      name: name.trim() || nameAr.trim(),
-      name_ar: nameAr.trim() || name.trim(),
-      code: code.trim() || undefined,
-      unit_type: unitType,
-      parent_id: parentId || undefined,
-      head_id: headId || undefined,
-      capacity: capacity ? Number(capacity) : undefined,
-      room_number: roomNumber.trim() || undefined,
-      floor: floor !== null ? Number(floor) : undefined,
-      building: building.trim() || undefined,
-      data_isolation: dataIsolation,
+      ...values,
+      name: values.name.trim() || values.name_ar.trim(),
+      name_ar: values.name_ar.trim() || values.name.trim(),
+      parent_id: values.parent_id || undefined,
+      head_id: values.head_id || undefined,
     };
-
     if (isEdit && unit) {
       await commands.organization.updateOrgUnit(unit.id, payload);
       toast.success(m.common_org_unit_update_success());
@@ -136,14 +128,10 @@ async function handleSubmit(e: SubmitEvent) {
       await commands.organization.createOrgUnit(payload);
       toast.success(m.common_org_unit_create_success());
     }
-
-    onSuccess();
-  } catch (e) {
-    const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(errorMsg);
-  } finally {
-    isSubmitting = false;
-  }
+  });
+  if (submitted) onSuccess();
+  else if (form.formError) toast.error(form.formError);
+  else if (Object.keys(form.errors).length > 0) toast.error(m.common_org_unit_error_name_required());
 }
 </script>
 
@@ -169,10 +157,10 @@ async function handleSubmit(e: SubmitEvent) {
         <Input
           id="unit_name_ar"
           type="text"
-          bind:value={nameAr}
+          bind:value={form.values.name_ar}
           placeholder={m.common_org_unit_name_ar_placeholder()}
           required
-          disabled={isSubmitting}
+          disabled={form.isSubmitting}
           class="text-xs h-9"
         />
       </div>
@@ -184,9 +172,9 @@ async function handleSubmit(e: SubmitEvent) {
         <Input
           id="unit_name_en"
           type="text"
-          bind:value={name}
+          bind:value={form.values.name}
           placeholder={m.common_org_unit_name_en_placeholder()}
-          disabled={isSubmitting}
+          disabled={form.isSubmitting}
           class="text-xs h-9"
         />
       </div>
@@ -197,9 +185,9 @@ async function handleSubmit(e: SubmitEvent) {
       <!-- Unit Type -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label class="text-xs font-semibold">{m.common_org_unit_type()}</Label>
-        <Select type="single" value={unitType} onValueChange={(v) => { if (v) unitType = v; }}>
+        <Select type="single" value={form.values.unit_type} onValueChange={(v) => { if (v) form.values.unit_type = v; }}>
           <SelectTrigger class="h-9 text-xs w-full">
-            {unitTypeOptions.find(o => o.value === unitType)?.label || unitType}
+            {unitTypeOptions.find(o => o.value === form.values.unit_type)?.label || form.values.unit_type}
           </SelectTrigger>
           <SelectContent class="text-xs">
             {#each unitTypeOptions as opt}
@@ -217,9 +205,9 @@ async function handleSubmit(e: SubmitEvent) {
       <!-- Parent Unit -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label class="text-xs font-semibold">{m.common_org_unit_parent()}</Label>
-        <Select type="single" value={parentId} onValueChange={(v) => (parentId = v ?? "")}>
+        <Select type="single" value={form.values.parent_id} onValueChange={(v) => (form.values.parent_id = v ?? "")}>
           <SelectTrigger class="h-9 text-xs w-full">
-            {unitsList.find(u => String(u.id) === parentId) ? `${unitsList.find(u => String(u.id) === parentId).name_ar || unitsList.find(u => String(u.id) === parentId).name}` : m.common_org_unit_root()}
+            {unitsList.find(u => String(u.id) === form.values.parent_id) ? `${unitsList.find(u => String(u.id) === form.values.parent_id).name_ar || unitsList.find(u => String(u.id) === form.values.parent_id).name}` : m.common_org_unit_root()}
           </SelectTrigger>
           <SelectContent class="text-xs">
             <SelectItem value="">{m.common_org_unit_root()}</SelectItem>
@@ -240,16 +228,16 @@ async function handleSubmit(e: SubmitEvent) {
         <Input
           id="unit_code"
           type="text"
-          bind:value={code}
+          bind:value={form.values.code}
           placeholder={m.common_org_unit_code()}
-          disabled={isSubmitting}
+          disabled={form.isSubmitting}
           class="text-xs font-mono h-9"
         />
       </div>
 
       <div class="flex flex-col gap-1.5 text-start">
         <Label class="text-xs font-semibold">{m.common_org_unit_head()}</Label>
-        <Select type="single" value={headId} onValueChange={(v) => (headId = v ?? "")}>
+        <Select type="single" value={form.values.head_id} onValueChange={(v) => (form.values.head_id = v ?? "")}>
           <SelectTrigger class="h-9 text-xs w-full">
             {staffList.find(s => String(s.id) === headId) ? (staffList.find(s => String(s.id) === headId).name_ar || staffList.find(s => String(s.id) === headId).full_name) : m.common_org_unit_none()}
           </SelectTrigger>
@@ -275,7 +263,7 @@ async function handleSubmit(e: SubmitEvent) {
     <!-- Data Isolation -->
     <div class="flex flex-col gap-1.5 text-start border-t border-border/30 pt-3">
       <Label class="text-xs font-semibold">{m.common_org_unit_isolation()}</Label>
-      <Select type="single" value={dataIsolation} onValueChange={(v) => { if (v) dataIsolation = v; }}>
+      <Select type="single" value={form.values.data_isolation} onValueChange={(v) => { if (v) form.values.data_isolation = v; }}>
         <SelectTrigger class="h-9 text-xs w-full">
           {dataIsolation === "isolated" ? m.common_org_unit_isolated() : dataIsolation === "read_only" ? m.common_org_unit_read_only() : m.common_org_unit_shared()}
         </SelectTrigger>
@@ -300,19 +288,19 @@ async function handleSubmit(e: SubmitEvent) {
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div class="flex flex-col gap-1 text-start">
           <Label for="unit_bld" class="text-[11px]">{m.common_org_unit_building()}</Label>
-          <Input id="unit_bld" type="text" bind:value={building} placeholder={m.common_org_unit_building_placeholder()} disabled={isSubmitting} class="text-xs h-8" />
+          <Input id="unit_bld" type="text" bind:value={form.values.building} placeholder={m.common_org_unit_building_placeholder()} disabled={form.isSubmitting} class="text-xs h-8" />
         </div>
         <div class="flex flex-col gap-1 text-start">
           <Label for="unit_floor" class="text-[11px]">{m.common_rooms_label_floor()}</Label>
-          <Input id="unit_floor" type="number" bind:value={floor} placeholder="1" disabled={isSubmitting} class="text-xs h-8" />
+          <Input id="unit_floor" type="number" bind:value={form.values.floor} placeholder="1" disabled={form.isSubmitting} class="text-xs h-8" />
         </div>
         <div class="flex flex-col gap-1 text-start">
           <Label for="unit_room" class="text-[11px]">{m.common_org_unit_room()}</Label>
-          <Input id="unit_room" type="text" bind:value={roomNumber} placeholder={m.common_org_unit_room_placeholder()} disabled={isSubmitting} class="text-xs h-8" />
+          <Input id="unit_room" type="text" bind:value={form.values.room_number} placeholder={m.common_org_unit_room_placeholder()} disabled={form.isSubmitting} class="text-xs h-8" />
         </div>
         <div class="flex flex-col gap-1 text-start">
           <Label for="unit_cap" class="text-[11px]">{m.common_org_unit_capacity()}</Label>
-          <Input id="unit_cap" type="number" bind:value={capacity} placeholder={m.common_org_unit_capacity_placeholder()} disabled={isSubmitting} class="text-xs h-8" />
+          <Input id="unit_cap" type="number" bind:value={form.values.capacity} placeholder={m.common_org_unit_capacity_placeholder()} disabled={form.isSubmitting} class="text-xs h-8" />
         </div>
       </div>
     </div>
@@ -328,7 +316,7 @@ async function handleSubmit(e: SubmitEvent) {
       variant="ghost"
       size="sm"
       onclick={onCancel}
-      disabled={isSubmitting}
+      disabled={form.isSubmitting}
       class="text-xs cursor-pointer"
     >
       {m.common_action_cancel()}
@@ -338,9 +326,9 @@ async function handleSubmit(e: SubmitEvent) {
       variant="default"
       size="sm"
       class="font-semibold px-6 text-xs cursor-pointer"
-      disabled={isSubmitting}
+      disabled={form.isSubmitting}
     >
-      {isSubmitting ? m.common_state_saving() : isEdit ? m.common_org_unit_update() : m.common_org_unit_create()}
+      {form.isSubmitting ? m.common_state_saving() : isEdit ? m.common_org_unit_update() : m.common_org_unit_create()}
     </Button>
   </div>
 </form>

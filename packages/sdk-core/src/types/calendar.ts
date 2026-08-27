@@ -67,3 +67,35 @@ export interface PeriodTemplate {
   updated_at: string;
 }
 
+export interface CreatePeriodPayload {
+  name: string;
+  name_ar?: string | null;
+  code?: string | null;
+  period_type: string;
+  parent_id?: string | null;
+  start_date: string;
+  end_date: string;
+  enrollment_start?: string | null;
+  enrollment_end?: string | null;
+  grade_entry_start?: string | null;
+  grade_entry_end?: string | null;
+  exam_start?: string | null;
+  exam_end?: string | null;
+  scale_id?: string | null;
+  pass_fail_policy_id?: string | null;
+  sort_order?: number | null;
+  metadata?: string | null;
+}
+
+export interface UpdatePeriodPayload {
+  name?: string | null;
+  name_ar?: string | null;
+  code?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  scale_id?: string | null;
+  pass_fail_policy_id?: string | null;
+  sort_order?: number | null;
+  metadata?: string | null;
+}
+

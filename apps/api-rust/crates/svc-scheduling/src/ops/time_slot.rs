@@ -42,7 +42,7 @@ fn validate_time_range(start: &str, end: &str) -> Result<(), AppError> {
     Ok(())
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct CreateTimeSlotPayload {
     pub period_id: String,
     pub slot_number: i32,
@@ -62,12 +62,9 @@ pub struct CreateTimeSlotPayload {
 
 pub async fn create(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    req: CreateTimeSlotPayload,
 ) -> Result<time_slot::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleWrite).await?;
-
-    let req: CreateTimeSlotPayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid create time slot payload: {e}")))?;
     validate_time_range(&req.start_time, &req.end_time)?;
 
     let now = Utc::now().to_rfc3339();
@@ -96,7 +93,7 @@ pub async fn create(
     Ok(created)
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct UpdateTimeSlotPayload {
     pub name: Option<String>,
     pub name_ar: Option<String>,
@@ -107,12 +104,9 @@ pub struct UpdateTimeSlotPayload {
 pub async fn update(
     ctx: &ServiceContext,
     slot_id: &str,
-    data: serde_json::Value,
+    req: UpdateTimeSlotPayload,
 ) -> Result<time_slot::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleWrite).await?;
-
-    let req: UpdateTimeSlotPayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid update time slot payload: {e}")))?;
 
     let existing = time_slot::Entity::find_by_id(slot_id.to_string())
         .one(&ctx.db).await?

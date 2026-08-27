@@ -217,3 +217,106 @@ export interface Verification {
   created_at: string;
 }
 
+export interface ChangePasswordPayload {
+  new_password_hash: string;
+}
+
+export interface RegisterPayload {
+  org_id?: string | null;
+  full_name: string;
+  email?: string | null;
+  phone?: string | null;
+  primary_role: string;
+  password_hash: string;
+}
+
+export interface PermissionPayload {
+  document_type: string;
+  level: number;
+  actions: string[];
+  only_if_creator?: boolean | null;
+}
+
+export interface AssignRolePayload {
+  user_id: string;
+  role: string;
+  scope_type: string;
+  scope_id?: string | null;
+}
+
+export interface UserFilter {
+  role?: string | null;
+  roles?: string[] | null;
+  status?: string | null;
+}
+
+export interface CreateUserPayload {
+  person_id?: string | null;
+  full_name: string;
+  email?: string | null;
+  phone?: string | null;
+  primary_role: string;
+  password_hash?: string | null;
+}
+
+export interface UpdateUserPayload {
+  full_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  status?: string | null;
+}
+
+export interface ChangeRolePayload {
+  role: string;
+}
+
+export interface CreateUserCmd {
+  org_id: string;
+  username: string;
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
+  primary_role: string;
+}
+
+export interface UpdateUserCmd {
+  user_id: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  is_active?: boolean | null;
+}
+
+export interface ChangeUserRoleCmd {
+  user_id: string;
+  new_role: string;
+}
+
+export interface LoginCmd {
+  username: string;
+  password: string;
+  org_slug: string;
+}
+
+export interface Claims {
+  sub: string;
+  org_id: string;
+  role: string;
+  exp: number;
+  iat: number;
+}
+
+export interface LoginResponse {
+  user: User;
+  token: string;
+  refresh_token: string;
+}
+
+export interface AuthService {
+  cmd: unknown;
+  query: unknown;
+  cfg: unknown;
+}
+

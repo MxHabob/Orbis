@@ -44,7 +44,7 @@ pub async fn get(ctx: &ServiceContext, id: &str) -> Result<class::Model, AppErro
 
 // ── Commands ────────────────────────────────────────────────────
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct CreateClassPayload {
     pub org_unit_id: String,
     pub period_id: String,
@@ -62,12 +62,9 @@ pub struct CreateClassPayload {
 /// Create a new class.
 pub async fn create(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    req: CreateClassPayload,
 ) -> Result<class::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ClassWrite).await?;
-
-    let req: CreateClassPayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid create class payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
@@ -124,7 +121,7 @@ pub async fn create(
     Ok(created)
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct UpdateClassPayload {
     pub name: String,
     pub name_ar: Option<String>,
@@ -137,12 +134,9 @@ pub struct UpdateClassPayload {
 pub async fn update(
     ctx: &ServiceContext,
     class_id: &str,
-    data: serde_json::Value,
+    req: UpdateClassPayload,
 ) -> Result<class::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ClassWrite).await?;
-
-    let req: UpdateClassPayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid update class payload: {e}")))?;
 
     let existing = get(ctx, class_id).await?;
     let old_data = serde_json::to_value(&existing).ok();
@@ -270,7 +264,7 @@ pub async fn list_students(
 pub async fn list_enriched_students(
     ctx: &ServiceContext,
     class_id: &str,
-) -> Result<Vec<serde_json::Value>, AppError> {
+) -> Result<Vec<crate::ops::enrollment::EnrichedEnrollmentResponse>, AppError> {
     let enrollments = list_students(ctx, class_id).await?;
     crate::ops::enrollment::enrich_enrollment_models(&ctx.db, &enrollments).await
 }

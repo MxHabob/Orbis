@@ -122,7 +122,7 @@ pub async fn get_current(ctx: &ServiceContext) -> Result<Option<academic_period:
     Ok(latest)
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct CreatePeriodPayload {
     pub name: String,
     #[serde(default)]
@@ -158,12 +158,9 @@ pub struct CreatePeriodPayload {
 
 pub async fn create(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    req: CreatePeriodPayload,
 ) -> Result<academic_period::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::PeriodWrite).await?;
-
-    let req: CreatePeriodPayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid create period payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
@@ -328,7 +325,7 @@ pub async fn toggle_grade_entry(
     Ok(updated)
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct UpdatePeriodPayload {
     pub name: Option<String>,
     pub name_ar: Option<String>,
@@ -344,12 +341,9 @@ pub struct UpdatePeriodPayload {
 pub async fn update(
     ctx: &ServiceContext,
     period_id: &str,
-    data: serde_json::Value,
+    req: UpdatePeriodPayload,
 ) -> Result<academic_period::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::PeriodWrite).await?;
-
-    let req: UpdatePeriodPayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid update period payload: {e}")))?;
 
     let existing = get(ctx, period_id).await?;
     let mut active = existing.into_active_model();

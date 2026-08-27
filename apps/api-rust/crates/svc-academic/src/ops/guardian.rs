@@ -53,7 +53,7 @@ pub async fn search(
         .await?)
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct CreateGuardianPayload {
     pub student_id: String,
     pub guardian_id: String,
@@ -65,12 +65,9 @@ pub struct CreateGuardianPayload {
 /// Create a guardian link.
 pub async fn create(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    req: CreateGuardianPayload,
 ) -> Result<student_guardian::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::GuardianWrite).await?;
-
-    let req: CreateGuardianPayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid create guardian payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
@@ -118,7 +115,7 @@ pub async fn create(
 }
 
 /// Update a guardian link.
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct UpdateGuardianPayload {
     pub relationship: Option<String>,
     pub is_primary: Option<bool>,
@@ -128,12 +125,9 @@ pub struct UpdateGuardianPayload {
 pub async fn update(
     ctx: &ServiceContext,
     link_id: &str,
-    data: serde_json::Value,
+    req: UpdateGuardianPayload,
 ) -> Result<student_guardian::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::GuardianWrite).await?;
-
-    let req: UpdateGuardianPayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid update guardian payload: {e}")))?;
 
     let existing = student_guardian::Entity::find_by_id(link_id.to_string())
         .one(&ctx.db)

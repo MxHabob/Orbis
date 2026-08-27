@@ -235,7 +235,7 @@ pub async fn matrix(
 
 // ── Commands ────────────────────────────────────────────────────
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct CreateGradePayload {
     pub period_id: String,
     pub enrollment_id: String,
@@ -253,7 +253,7 @@ pub struct CreateGradePayload {
     pub component_id: Option<String>,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct SubmitBulkPayload {
     pub period_id: String,
     pub grades: Vec<CreateGradePayload>,
@@ -339,12 +339,9 @@ async fn persist_grade(
 /// Submit a single grade (upsert when component + offering is set).
 pub async fn submit(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    req: CreateGradePayload,
 ) -> Result<grade::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::GradeWrite).await?;
-
-    let req: CreateGradePayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid grade payload: {e}")))?;
 
     let engine = AssessmentEngine::for_period(&ctx.db, &ctx.org_id, &req.period_id).await?;
     let saved = persist_grade(ctx, req, &engine).await?;
@@ -366,16 +363,11 @@ pub async fn submit(
 /// Submit multiple grades at once.
 pub async fn submit_bulk(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    req: SubmitBulkPayload,
 ) -> Result<Vec<grade::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::GradeWrite).await?;
 
-    let grades: Vec<CreateGradePayload> = if let Ok(payload) = serde_json::from_value::<SubmitBulkPayload>(data.clone()) {
-        payload.grades
-    } else {
-        serde_json::from_value(data)
-            .map_err(|e| AppError::validation(format!("Invalid bulk grade payload: {e}")))?
-    };
+    let grades = req.grades;
 
     // Cache AssessmentEngine instances by period_id to avoid N+1 queries.
     // In the common case (bulk entry for a single period), this reduces
@@ -487,12 +479,9 @@ pub async fn bulk_subject_entry(
 /// Upsert a single grade cell (create or update).
 pub async fn upsert_cell(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    req: UpsertCellRequest,
 ) -> Result<UpsertCellResult, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::GradeWrite).await?;
-    
-    let req: UpsertCellRequest = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid upsert payload: {e}")))?;
 
     check_period_open(ctx, &req.period_id).await?;
 

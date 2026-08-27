@@ -198,7 +198,7 @@ pub async fn get_analytics(
 
 // ── Commands ────────────────────────────────────────────────────
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct CreateAttendancePayload {
     pub period_id: String,
     pub enrollment_id: String,
@@ -214,7 +214,7 @@ pub struct CreateAttendancePayload {
     pub is_excused: Option<i32>,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct BulkAttendancePayload {
     pub period_id: String,
     pub class_id: String,
@@ -224,7 +224,7 @@ pub struct BulkAttendancePayload {
     pub records: Vec<BulkAttendanceItem>,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct BulkAttendanceItem {
     pub enrollment_id: String,
     pub status: String,
@@ -234,12 +234,9 @@ pub struct BulkAttendanceItem {
 /// Record attendance for a single student.
 pub async fn record(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    req: CreateAttendancePayload,
 ) -> Result<attendance::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AttendanceWrite).await?;
-
-    let req: CreateAttendancePayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid record attendance payload: {e}")))?;
 
     // ── Period Gate: check period is active ──
     {
@@ -301,12 +298,9 @@ pub async fn record(
 /// Record bulk attendance for an entire class.
 pub async fn record_bulk(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    req: BulkAttendancePayload,
 ) -> Result<Vec<attendance::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AttendanceWrite).await?;
-
-    let req: BulkAttendancePayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid bulk attendance payload: {e}")))?;
 
     // ── Period Gate: single check for the entire bulk (same period) ──
     {

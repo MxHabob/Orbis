@@ -55,3 +55,89 @@ export interface OrgUnit {
   updated_at: string;
 }
 
+export interface BootstrapPayload {
+  org_name: string;
+  org_name_ar?: string | null;
+  org_type: string;
+  currency: string;
+  timezone?: string | null;
+  locale?: string | null;
+  admin_name: string;
+  admin_username: string;
+  admin_password_hash: string;
+}
+
+export interface BootstrapResult {
+  org_id: string;
+  admin_id: string;
+  grade_scale_id: string;
+  calculation_policy_id: string;
+  period_template_id: string;
+}
+
+export interface CreateOrgUnitPayload {
+  name: string;
+  name_ar?: string | null;
+  parent_id?: string | null;
+  unit_type?: string | null;
+  code?: string | null;
+  head_id?: string | null;
+  capacity?: number | null;
+  room_number?: string | null;
+  floor?: number | null;
+  building?: string | null;
+  data_isolation?: string | null;
+  sort_order?: number | null;
+}
+
+export interface UpdateOrgUnitPayload {
+  name?: string | null;
+  name_ar?: string | null;
+  parent_id?: string | null;
+  unit_type?: string | null;
+  code?: string | null;
+  head_id?: string | null;
+  capacity?: number | null;
+  room_number?: string | null;
+  floor?: number | null;
+  building?: string | null;
+  data_isolation?: string | null;
+  sort_order?: number | null;
+}
+
+export interface CreateOrganizationCmd {
+  name: string;
+  slug: string;
+  timezone: string;
+  locale: string;
+}
+
+export interface UpdateOrganizationCmd {
+  org_id: string;
+  name?: string | null;
+  name_ar?: string | null;
+  timezone?: string | null;
+  locale?: string | null;
+  currency?: string | null;
+  date_format?: string | null;
+  hijri_enabled?: boolean | null;
+  logo?: string | null;
+  favicon?: string | null;
+  primary_color?: string | null;
+}
+
+export interface UpdateRegistrationSettingsCmd {
+  org_id: string;
+  settings: unknown;
+}
+
+export interface UpdateFinanceSettingsCmd {
+  org_id: string;
+  settings: unknown;
+}
+
+export interface UpdateGradingSettingsCmd {
+  org_id: string;
+  settings: unknown;
+}
+

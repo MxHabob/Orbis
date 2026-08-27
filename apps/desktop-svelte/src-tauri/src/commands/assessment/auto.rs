@@ -59,24 +59,24 @@ pub async fn assessment_assessment_scheme_list_components(state: State<'_, Arc<A
 }
 
 #[tauri::command]
-pub async fn assessment_assessment_scheme_create(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn assessment_assessment_scheme_create(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::assessment_scheme::create(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::assessment_scheme::create(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn assessment_assessment_scheme_update(state: State<'_, Arc<AppState>>, scheme_id: String, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn assessment_assessment_scheme_update(state: State<'_, Arc<AppState>>, scheme_id: String, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::assessment_scheme::update(&ctx, &scheme_id, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::assessment_scheme::update(&ctx, &scheme_id, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -88,24 +88,24 @@ pub async fn assessment_assessment_scheme_delete(state: State<'_, Arc<AppState>>
 }
 
 #[tauri::command]
-pub async fn assessment_assessment_scheme_create_component(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn assessment_assessment_scheme_create_component(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::assessment_scheme::create_component(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::assessment_scheme::create_component(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn assessment_assessment_scheme_update_component(state: State<'_, Arc<AppState>>, component_id: String, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn assessment_assessment_scheme_update_component(state: State<'_, Arc<AppState>>, component_id: String, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::assessment_scheme::update_component(&ctx, &component_id, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::assessment_scheme::update_component(&ctx, &component_id, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -152,24 +152,24 @@ pub async fn assessment_attendance_get_analytics(state: State<'_, Arc<AppState>>
 }
 
 #[tauri::command]
-pub async fn assessment_attendance_record(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn assessment_attendance_record(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::attendance::record(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::attendance::record(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn assessment_attendance_record_bulk(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn assessment_attendance_record_bulk(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::attendance::record_bulk(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::attendance::record_bulk(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -188,13 +188,13 @@ pub async fn assessment_behavior_list(state: State<'_, Arc<AppState>>, enrollmen
 }
 
 #[tauri::command]
-pub async fn assessment_behavior_submit_ai(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn assessment_behavior_submit_ai(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::behavior::submit_ai(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::behavior::submit_ai(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -227,24 +227,24 @@ pub async fn assessment_calculation_policy_get(state: State<'_, Arc<AppState>>, 
 }
 
 #[tauri::command]
-pub async fn assessment_calculation_policy_create(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn assessment_calculation_policy_create(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::calculation_policy::create(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::calculation_policy::create(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn assessment_calculation_policy_update(state: State<'_, Arc<AppState>>, policy_id: String, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn assessment_calculation_policy_update(state: State<'_, Arc<AppState>>, policy_id: String, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::calculation_policy::update(&ctx, &policy_id, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::calculation_policy::update(&ctx, &policy_id, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -309,24 +309,24 @@ pub async fn assessment_grade_matrix(state: State<'_, Arc<AppState>>, period_id:
 }
 
 #[tauri::command]
-pub async fn assessment_grade_submit(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn assessment_grade_submit(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::grade::submit(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::grade::submit(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn assessment_grade_submit_bulk(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn assessment_grade_submit_bulk(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::grade::submit_bulk(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::grade::submit_bulk(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -353,13 +353,13 @@ pub async fn assessment_grade_bulk_subject_entry(state: State<'_, Arc<AppState>>
 }
 
 #[tauri::command]
-pub async fn assessment_grade_upsert_cell(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn assessment_grade_upsert_cell(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::grade::upsert_cell(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::grade::upsert_cell(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -392,24 +392,24 @@ pub async fn assessment_grade_scale_list_items(state: State<'_, Arc<AppState>>, 
 }
 
 #[tauri::command]
-pub async fn assessment_grade_scale_create(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn assessment_grade_scale_create(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::grade_scale::create(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::grade_scale::create(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn assessment_grade_scale_update(state: State<'_, Arc<AppState>>, scale_id: String, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn assessment_grade_scale_update(state: State<'_, Arc<AppState>>, scale_id: String, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::grade_scale::update(&ctx, &scale_id, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::grade_scale::update(&ctx, &scale_id, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -421,13 +421,13 @@ pub async fn assessment_grade_scale_delete(state: State<'_, Arc<AppState>>, scal
 }
 
 #[tauri::command]
-pub async fn assessment_grade_scale_create_item(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn assessment_grade_scale_create_item(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::grade_scale::create_item(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::grade_scale::create_item(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 

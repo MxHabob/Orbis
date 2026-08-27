@@ -95,3 +95,137 @@ export interface TimeSlot {
   updated_at: string;
 }
 
+export interface CreateLessonRequest {
+  period_id: string;
+  class_id: string;
+  class_subject_id: string;
+  subject_id: string;
+  teacher_id: string;
+  time_slot_id: string;
+  day_of_week: number;
+  room_id?: string | null;
+}
+
+export interface UpdateLessonRequest {
+  teacher_id?: string | null;
+  time_slot_id?: string | null;
+  day_of_week?: number | null;
+  room_id?: string | null;
+  topic?: string | null;
+  status?: string | null;
+}
+
+export interface CreateRoomRequest {
+  name: string;
+  name_ar?: string | null;
+  capacity?: number | null;
+  room_type: string;
+  building?: string | null;
+  floor?: number | null;
+}
+
+export interface UpdateRoomRequest {
+  name?: string | null;
+  name_ar?: string | null;
+  capacity?: number | null;
+  room_type?: string | null;
+  building?: string | null;
+  floor?: number | null;
+}
+
+export interface CreateTimeSlotPayload {
+  period_id: string;
+  slot_number: number;
+  name?: string | null;
+  name_ar?: string | null;
+  start_time: string;
+  end_time: string;
+  duration_minutes: number;
+  is_break: boolean;
+  break_type?: string | null;
+  applicable_days?: string | null;
+}
+
+export interface UpdateTimeSlotPayload {
+  name?: string | null;
+  name_ar?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+}
+
+export interface CreateTimeSlotRequest {
+  period_id: string;
+  slot_number: number;
+  name?: string | null;
+  name_ar?: string | null;
+  start_time: string;
+  end_time: string;
+  duration_minutes: number;
+  is_break?: number | null;
+  break_type?: string | null;
+  applicable_days?: string | null;
+  sort_order?: number | null;
+}
+
+export interface UpdateTimeSlotRequest {
+  name?: string | null;
+  name_ar?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  duration_minutes?: number | null;
+  is_break?: number | null;
+  break_type?: string | null;
+  applicable_days?: string | null;
+  sort_order?: number | null;
+  is_active?: number | null;
+}
+
+export interface ScheduleConflict {
+  lesson_id: string;
+  conflict_type: string;
+  message: string;
+}
+
+export interface ScheduledLessonView {
+  id: string;
+  org_id: string;
+  period_id: string;
+  class_id: string;
+  class_subject_id: string;
+  subject_id: string;
+  teacher_id: string;
+  substitute_teacher_id?: string | null;
+  time_slot_id: string;
+  day_of_week: number;
+  room_id?: string | null;
+  room_name?: string | null;
+  status: string;
+  is_substituted: number;
+  substitution_reason?: string | null;
+  topic?: string | null;
+  topic_ar?: string | null;
+  homework?: string | null;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StartSolveRequest {
+  period_id: string;
+  mode: string;
+}
+
+export interface SolveJobResponse {
+  id: string;
+  org_id: string;
+  period_id: string;
+  mode: string;
+  status: string;
+  score?: string | null;
+  lessons_created: number;
+  error_message?: string | null;
+  started_at?: string | null;
+  completed_at?: string | null;
+  created_at: string;
+}
+

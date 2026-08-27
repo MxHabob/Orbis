@@ -3,6 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n";
 import { commands, OrbisError } from "$lib/core/ipc";
 import { feeTemplateInputSchema } from "@orbis/schemas";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
@@ -35,16 +36,25 @@ let {
 } = $props();
 
 // Form state
-let isSubmitting = $state(false);
+const form = new FormController({
+  initialValues: {
+    name: "",
+    name_ar: null,
+    code: null,
+    category: "tuition",
+    default_amount: 0,
+    revenue_account_id: null,
+    receivable_account_id: null,
+    applicable_levels: null,
+    frequency: "yearly",
+    is_mandatory: true,
+  },
+  schema: feeTemplateInputSchema,
+});
 
-let name = $state("");
-let nameAr = $state("");
-let code = $state("");
-let category = $state("tuition");
-let amount = $state<number>(0);
-let frequency = $state("yearly");
-let isMandatory = $state(true);
-let isActive = $state(true);
+function fieldError(field: string): string | undefined {
+  return form.errors[field]?.[0];
+}
 
 // Grade levels applicability state
 let classes = $state<any[]>([]);
@@ -96,7 +106,7 @@ const categoryLabels = $derived(
     {} as Record<string, string>,
   ),
 );
-const selectedCategoryLabel = $derived(categoryLabels[category] ?? category);
+const selectedCategoryLabel = $derived(categoryLabels[form.values.category] ?? form.values.category);
 
 const frequencies = $derived([
   {
@@ -131,22 +141,21 @@ const frequencyLabels = $derived(
   ),
 );
 const selectedFrequencyLabel = $derived(
-  frequencyLabels[frequency] ?? frequency,
+  frequencyLabels[form.values.frequency] ?? form.values.frequency,
 );
 
 // Initialize form if in edit mode
 $effect(() => {
   if (template) {
-    name = template.name || "";
-    nameAr = template.name_ar || "";
-    code = template.code || "";
-    category = template.category || "tuition";
-    frequency = template.frequency || "yearly";
-    isMandatory = template.is_mandatory === 1;
-    isActive = template.is_active === 1;
+    form.values.name = template.name || "";
+    form.values.name_ar = template.name_ar || null;
+    form.values.code = template.code || null;
+    form.values.category = template.category || "tuition";
+    form.values.frequency = template.frequency || "yearly";
+    form.values.is_mandatory = template.is_mandatory === 1;
 
     // Load amount directly from default_amount
-    amount = template.default_amount || 0;
+    form.values.default_amount = template.default_amount || 0;
 
     // Load applicable levels
     if (template.applicable_levels) {
@@ -230,44 +239,23 @@ async function handleSubmit() {
     );
     return;
   }
-  const result = feeTemplateInputSchema.safeParse({
-    name,
-    name_ar: nameAr || null,
-    code: code || null,
-    category,
-    default_amount: Number(amount),
-    revenue_account_id: null,
-    receivable_account_id: null,
-    applicable_levels: applicableLevels,
-    frequency,
-    is_mandatory: isMandatory,
-  });
-  if (!result.success) {
-    toast.error(m.common_ft_error_name_required());
-    return;
-  }
-
-  isSubmitting = true;
-  try {
+  const submitted = await form.submit(async (payload) => {
+    const request = { ...payload, applicable_levels: applicableLevels };
     if (template) {
-      await commands.finance.updateFeeTemplate(template.id, result.data);
+      await commands.finance.updateFeeTemplate(template.id, request);
       toast.success(
         m.common_ft_update_success(),
       );
     } else {
-      await commands.finance.createFeeTemplate(result.data);
+      await commands.finance.createFeeTemplate(request);
       toast.success(
         m.common_ft_create_success(),
       );
     }
-
-    onSuccess();
-  } catch (e) {
-    const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(errorMsg);
-  } finally {
-    isSubmitting = false;
-  }
+  });
+  if (submitted) onSuccess();
+  else if (form.formError) toast.error(form.formError);
+  else if (Object.keys(form.errors).length > 0) toast.error(m.common_ft_error_name_required());
 }
 </script>
 
@@ -299,9 +287,10 @@ async function handleSubmit() {
       <Input 
         id="ft_form_name_ar"
         type="text" 
-        bind:value={nameAr}
+        bind:value={form.values.name_ar}
+        onblur={() => form.markTouched("name_ar")}
         placeholder={m.common_ft_name_ar_placeholder()}
-        disabled={isSubmitting}
+        disabled={form.isSubmitting}
       />
     </div>
 
@@ -313,10 +302,11 @@ async function handleSubmit() {
       <Input 
         id="ft_form_name_en"
         type="text" 
-        bind:value={name}
+        bind:value={form.values.name}
+        onblur={() => form.markTouched("name")}
         placeholder={m.common_ft_name_en_placeholder()}
         required
-        disabled={isSubmitting}
+        disabled={form.isSubmitting}
       />
     </div>
 
@@ -328,9 +318,9 @@ async function handleSubmit() {
       <Input 
         id="ft_form_code"
         type="text" 
-        bind:value={code}
+        bind:value={form.values.code}
         placeholder={m.common_ft_code_placeholder()}
-        disabled={isSubmitting}
+        disabled={form.isSubmitting}
       />
     </div>
 
@@ -341,7 +331,7 @@ async function handleSubmit() {
         <Label class="text-xs font-semibold text-muted-foreground">
           {m.common_ft_col_category()} *
         </Label>
-        <Select type="single" value={category} onValueChange={(v) => (category = v ?? "tuition")} disabled={isSubmitting}>
+        <Select type="single" value={form.values.category} onValueChange={(v) => (form.values.category = v ?? "tuition")} disabled={form.isSubmitting}>
           <SelectTrigger class="h-9 text-sm">
             {selectedCategoryLabel}
           </SelectTrigger>
@@ -358,7 +348,7 @@ async function handleSubmit() {
         <Label class="text-xs font-semibold text-muted-foreground">
           {m.common_ft_col_frequency()} *
         </Label>
-        <Select type="single" value={frequency} onValueChange={(v) => (frequency = v ?? "yearly")} disabled={isSubmitting}>
+        <Select type="single" value={form.values.frequency} onValueChange={(v) => (form.values.frequency = v ?? "yearly")} disabled={form.isSubmitting}>
           <SelectTrigger class="h-9 text-sm">
             {selectedFrequencyLabel}
           </SelectTrigger>
@@ -381,10 +371,11 @@ async function handleSubmit() {
         type="number" 
         min="0"
         step="0.01"
-        bind:value={amount}
+        bind:value={form.values.default_amount}
+        onblur={() => form.markTouched("default_amount")}
         placeholder={m.common_ft_amount_placeholder()}
         required
-        disabled={isSubmitting}
+        disabled={form.isSubmitting}
       />
     </div>
 
@@ -406,7 +397,7 @@ async function handleSubmit() {
           id="ft_form_apply_all" 
           checked={applyToAllGrades} 
           onCheckedChange={(val) => applyToAllGrades = !!val} 
-          disabled={isSubmitting}
+          disabled={form.isSubmitting}
         />
         <Label for="ft_form_apply_all" class="text-xs cursor-pointer">
           {m.common_ft_apply_all()}
@@ -453,9 +444,9 @@ async function handleSubmit() {
       <div class="flex items-center gap-2">
         <Checkbox 
           id="ft_mandatory_chk" 
-          checked={isMandatory} 
-          onCheckedChange={(val) => isMandatory = !!val} 
-          disabled={isSubmitting}
+                  checked={form.values.is_mandatory} 
+                  onCheckedChange={(val) => form.values.is_mandatory = !!val} 
+                  disabled={form.isSubmitting}
         />
         <Label for="ft_mandatory_chk" class="text-xs cursor-pointer">
           {m.common_ft_mandatory()}
@@ -466,9 +457,8 @@ async function handleSubmit() {
       <div class="flex items-center gap-2">
         <Checkbox 
           id="ft_active_chk" 
-          checked={isActive} 
-          onCheckedChange={(val) => isActive = !!val} 
-          disabled={isSubmitting}
+                  checked={template ? template.is_active === 1 : true} 
+                  disabled={form.isSubmitting}
         />
         <Label for="ft_active_chk" class="text-xs cursor-pointer">
           {m.common_phase_active()}
@@ -486,17 +476,17 @@ async function handleSubmit() {
       type="button" 
       variant="outline" 
       onclick={onCancel}
-      disabled={isSubmitting}
+      disabled={form.isSubmitting}
       class="flex-1 h-9 text-sm"
     >
       {m.common_action_cancel()}
     </Button>
     <Button 
       type="submit" 
-      disabled={isSubmitting}
+      disabled={form.isSubmitting}
       class="flex-1 h-9 text-sm font-semibold"
     >
-      {#if isSubmitting}
+      {#if form.isSubmitting}
         {m.common_state_saving()}
       {:else}
         {m.common_action_save()}

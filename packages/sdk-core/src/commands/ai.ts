@@ -2,16 +2,16 @@
 import type * as Types from '../types/index.js';
 
 export interface AiCommands {
-  autopilotGetTasks(): Promise<any>;
-  autopilotGetDiagnostics(): Promise<any>;
+  autopilotGetTasks(): Promise<unknown>;
+  autopilotGetDiagnostics(): Promise<unknown>;
   autopilotRunTick(): Promise<void>;
-  agentGetSessions(): Promise<any>;
-  agentGetSessionLogs(sessionId: string): Promise<any>;
+  agentGetSessions(): Promise<unknown>;
+  agentGetSessionLogs(sessionId: string): Promise<unknown>;
   agentApproveAction(actionLogId: string, approvedBy: string): Promise<void>;
   agentRejectAction(actionLogId: string, rejectedBy: string, reason: string): Promise<void>;
-  agentCreateSession(sessionType: string): Promise<any>;
-  agentQuery(sessionId: string, text: string, context: any | null, onChunk: any): Promise<string>;
+  agentCreateSession(sessionType: string): Promise<unknown>;
+  agentQuery(sessionId: string, text: string, context: unknown, onChunk: unknown): Promise<string>;
   agentOpenStandalone(): Promise<void>;
-  aiGetAutopilotConfig(orgId: string): Promise<any>;
-  aiSaveAutopilotConfig(orgId: string, config: any): Promise<void>;
+  aiGetAutopilotConfig(orgId: string): Promise<unknown>;
+  aiSaveAutopilotConfig(orgId: string, config: unknown): Promise<void>;
 }

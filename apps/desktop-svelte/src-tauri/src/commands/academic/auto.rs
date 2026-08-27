@@ -20,24 +20,24 @@ pub async fn academic_class_get(state: State<'_, Arc<AppState>>, id: String) -> 
 }
 
 #[tauri::command]
-pub async fn academic_class_create(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn academic_class_create(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::class::create(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::class::create(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn academic_class_update(state: State<'_, Arc<AppState>>, class_id: String, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn academic_class_update(state: State<'_, Arc<AppState>>, class_id: String, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::class::update(&ctx, &class_id, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::class::update(&ctx, &class_id, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -84,24 +84,24 @@ pub async fn academic_class_subject_list_by_teacher(state: State<'_, Arc<AppStat
 }
 
 #[tauri::command]
-pub async fn academic_class_subject_create(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn academic_class_subject_create(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::class_subject::create(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::class_subject::create(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn academic_class_subject_update(state: State<'_, Arc<AppState>>, id: String, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn academic_class_subject_update(state: State<'_, Arc<AppState>>, id: String, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::class_subject::update(&ctx, &id, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::class_subject::update(&ctx, &id, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -127,13 +127,13 @@ pub async fn academic_document_get(state: State<'_, Arc<AppState>>, id: String) 
 }
 
 #[tauri::command]
-pub async fn academic_document_create(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn academic_document_create(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::document::create(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::document::create(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -206,13 +206,13 @@ pub async fn academic_enrollment_get_enriched(state: State<'_, Arc<AppState>>, i
 }
 
 #[tauri::command]
-pub async fn academic_enrollment_create(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn academic_enrollment_create(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::enrollment::create(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::enrollment::create(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -238,13 +238,13 @@ pub async fn academic_enrollment_check_duplicate(state: State<'_, Arc<AppState>>
 }
 
 #[tauri::command]
-pub async fn academic_enrollment_promote(state: State<'_, Arc<AppState>>, enrollment_id: String, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn academic_enrollment_promote(state: State<'_, Arc<AppState>>, enrollment_id: String, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::enrollment::promote(&ctx, &enrollment_id, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::enrollment::promote(&ctx, &enrollment_id, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -284,24 +284,24 @@ pub async fn academic_guardian_search(state: State<'_, Arc<AppState>>, query: St
 }
 
 #[tauri::command]
-pub async fn academic_guardian_create(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn academic_guardian_create(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::guardian::create(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::guardian::create(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn academic_guardian_update(state: State<'_, Arc<AppState>>, link_id: String, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn academic_guardian_update(state: State<'_, Arc<AppState>>, link_id: String, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::guardian::update(&ctx, &link_id, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::guardian::update(&ctx, &link_id, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -341,24 +341,24 @@ pub async fn academic_subject_get(state: State<'_, Arc<AppState>>, id: String) -
 }
 
 #[tauri::command]
-pub async fn academic_subject_create(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn academic_subject_create(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::subject::create(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::subject::create(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn academic_subject_update(state: State<'_, Arc<AppState>>, subject_id: String, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn academic_subject_update(state: State<'_, Arc<AppState>>, subject_id: String, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::subject::update(&ctx, &subject_id, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::subject::update(&ctx, &subject_id, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 

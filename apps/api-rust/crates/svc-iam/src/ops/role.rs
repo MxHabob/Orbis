@@ -12,6 +12,14 @@ use shared_kernel::traits::{AuditEntry, Permission};
 use crate::contracts::events::event_types;
 use crate::entities::{role_permission, user_role};
 
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
+pub struct PermissionPayload {
+    pub document_type: String,
+    pub level: i32,
+    pub actions: Vec<String>,
+    pub only_if_creator: Option<bool>,
+}
+
 pub async fn list_by_user(
     ctx: &ServiceContext, user_id: &str,
 ) -> Result<Vec<user_role::Model>, AppError> {
@@ -22,7 +30,7 @@ pub async fn list_by_user(
         .all(&ctx.db).await?)
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct AssignRolePayload {
     pub user_id: String,
     pub role: String,
@@ -32,12 +40,9 @@ pub struct AssignRolePayload {
 
 pub async fn assign(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    req: AssignRolePayload,
 ) -> Result<user_role::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::UserRoleWrite).await?;
-
-    let req: AssignRolePayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid assign role payload: {e}")))?;
 
     let id = Uuid::new_v4().to_string();
     let model = user_role::Model {
@@ -139,7 +144,7 @@ pub async fn get_permissions(
 pub async fn save_permissions(
     db: &sea_orm::DatabaseConnection,
     role: &str,
-    permissions: Vec<serde_json::Value>,
+    permissions: Vec<PermissionPayload>,
 ) -> Result<(), AppError> {
 
     role_permission::Entity::delete_many()
@@ -149,31 +154,13 @@ pub async fn save_permissions(
 
     let now = Utc::now().to_rfc3339();
     for perm in permissions {
-        let actions_str = if perm["actions"].is_array() {
-            serde_json::to_string(&perm["actions"]).unwrap_or_else(|_| "[]".to_string())
-        } else if let Some(s) = perm["actions"].as_str() {
-            if s.starts_with('[') {
-                s.to_string()
-            } else {
-                let list: Vec<String> = s.split(',').map(|x| x.trim().to_string()).filter(|x| !x.is_empty()).collect();
-                serde_json::to_string(&list).unwrap_or_else(|_| "[]".to_string())
-            }
-        } else {
-            "[]".to_string()
-        };
-
-        let only_if_creator_val = if perm["only_if_creator"].as_bool().unwrap_or(false)
-            || perm["only_if_creator"].as_i64().unwrap_or(0) == 1
-        {
-            1
-        } else {
-            0
-        };
+        let actions_str = serde_json::to_string(&perm.actions).unwrap_or_else(|_| "[]".to_string());
+        let only_if_creator_val = i32::from(perm.only_if_creator.unwrap_or(false));
 
         let active = role_permission::ActiveModel {
             role: sea_orm::ActiveValue::Set(role.to_string()),
-            document_type: sea_orm::ActiveValue::Set(perm["document_type"].as_str().unwrap_or_default().to_string()),
-            level: sea_orm::ActiveValue::Set(perm["level"].as_i64().unwrap_or(0) as i32),
+            document_type: sea_orm::ActiveValue::Set(perm.document_type),
+            level: sea_orm::ActiveValue::Set(perm.level),
             only_if_creator: sea_orm::ActiveValue::Set(only_if_creator_val),
             actions: sea_orm::ActiveValue::Set(actions_str),
             created_at: sea_orm::ActiveValue::Set(now.clone()),

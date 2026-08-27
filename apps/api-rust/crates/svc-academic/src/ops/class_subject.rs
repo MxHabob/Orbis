@@ -48,7 +48,7 @@ pub async fn list_by_teacher(
 
 // ── Commands ────────────────────────────────────────────────────
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct CreateClassSubjectPayload {
     pub class_id: String,
     pub subject_id: String,
@@ -61,12 +61,9 @@ pub struct CreateClassSubjectPayload {
 /// Assign a subject to a class with a teacher.
 pub async fn create(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    req: CreateClassSubjectPayload,
 ) -> Result<class_subject::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ClassWrite).await?;
-
-    let req: CreateClassSubjectPayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid create class subject payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
@@ -107,7 +104,7 @@ pub async fn create(
     Ok(created)
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct UpdateClassSubjectPayload {
     pub primary_teacher_id: Option<String>,
     pub weekly_hours: Option<i32>,
@@ -118,12 +115,9 @@ pub struct UpdateClassSubjectPayload {
 pub async fn update(
     ctx: &ServiceContext,
     id: &str,
-    data: serde_json::Value,
+    req: UpdateClassSubjectPayload,
 ) -> Result<class_subject::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ClassWrite).await?;
-
-    let req: UpdateClassSubjectPayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid update class subject payload: {e}")))?;
 
     let existing = class_subject::Entity::find_by_id(id.to_string())
         .one(&ctx.db)

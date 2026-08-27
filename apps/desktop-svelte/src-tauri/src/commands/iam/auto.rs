@@ -13,13 +13,13 @@ pub async fn iam_audit_list(state: State<'_, Arc<AppState>>) -> CmdResult<serde_
 }
 
 #[tauri::command]
-pub async fn iam_auth_change_password(state: State<'_, Arc<AppState>>, user_id: String, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn iam_auth_change_password(state: State<'_, Arc<AppState>>, user_id: String, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    ops::auth::change_password(&ctx, &user_id, data_parsed).await.map_err(CommandError::from)?;
+    ops::auth::change_password(&ctx, &user_id, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::json!({}))
 }
 
@@ -45,13 +45,13 @@ pub async fn iam_role_list_by_user(state: State<'_, Arc<AppState>>, user_id: Str
 }
 
 #[tauri::command]
-pub async fn iam_role_assign(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn iam_role_assign(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::role::assign(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::role::assign(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -132,24 +132,24 @@ pub async fn iam_user_search(state: State<'_, Arc<AppState>>, query_str: String)
 }
 
 #[tauri::command]
-pub async fn iam_user_create(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn iam_user_create(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::user::create(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::user::create(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn iam_user_update(state: State<'_, Arc<AppState>>, user_id: String, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn iam_user_update(state: State<'_, Arc<AppState>>, user_id: String, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::user::update(&ctx, &user_id, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::user::update(&ctx, &user_id, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -161,13 +161,13 @@ pub async fn iam_user_delete(state: State<'_, Arc<AppState>>, user_id: String) -
 }
 
 #[tauri::command]
-pub async fn iam_user_change_role(state: State<'_, Arc<AppState>>, user_id: String, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn iam_user_change_role(state: State<'_, Arc<AppState>>, user_id: String, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::user::change_role(&ctx, &user_id, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::user::change_role(&ctx, &user_id, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 

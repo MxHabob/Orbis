@@ -311,3 +311,620 @@ export interface TermResult {
   updated_at: string;
 }
 
+export interface AnnualCalcRequest {
+  student_id: string;
+  enrollment_id: string;
+  year_period_id: string;
+  class_subject_id: string;
+  term_period_ids: string[];
+}
+
+export interface CreateAssessmentSchemePayload {
+  name: string;
+  description?: string | null;
+  period_id?: string | null;
+}
+
+export interface UpdateAssessmentSchemePayload {
+  name?: string | null;
+  description?: string | null;
+}
+
+export interface CreateSchemeComponentPayload {
+  scheme_id: string;
+  name: string;
+  component_type: string;
+  weight: number;
+  max_score: number;
+  passing_score?: number | null;
+}
+
+export interface UpdateSchemeComponentPayload {
+  name?: string | null;
+  component_type?: string | null;
+  weight?: number | null;
+  max_score?: number | null;
+  passing_score?: number | null;
+}
+
+export interface ClassMetrics {
+  class_id: string;
+  active_students: number;
+  capacity: number;
+  utilization_rate: number;
+  attendance_rate: number;
+  present_count: number;
+  absent_count: number;
+  late_count: number;
+  excused_count: number;
+  at_risk_students: number;
+  subject_count: number;
+  weekly_hours: number;
+}
+
+export interface CreateAttendancePayload {
+  period_id: string;
+  enrollment_id: string;
+  class_id: string;
+  date: string;
+  status: string;
+  check_in_time?: string | null;
+  check_out_time?: string | null;
+  lesson_slot?: string | null;
+  subject_name?: string | null;
+  notes?: string | null;
+  excuse_type?: string | null;
+  is_excused?: number | null;
+}
+
+export interface BulkAttendancePayload {
+  period_id: string;
+  class_id: string;
+  date: string;
+  lesson_slot?: string | null;
+  subject_name?: string | null;
+  records: BulkAttendanceItem[];
+}
+
+export interface BulkAttendanceItem {
+  enrollment_id: string;
+  status: string;
+  notes?: string | null;
+}
+
+export interface SubmitAIBehaviorRequest {
+  period_id: string;
+  enrollment_id: string;
+  behavior_type: string;
+  severity: string;
+  description: string;
+  confidence?: number | null;
+  camera_id?: string | null;
+  model_version?: string | null;
+  location?: string | null;
+  image_evidence?: string | null;
+}
+
+export interface CreateCalculationPolicyPayload {
+  name: string;
+  target_period_id?: string | null;
+  rule_type: string;
+  formula_expression: string;
+  rounding_policy?: string | null;
+}
+
+export interface UpdateCalculationPolicyPayload {
+  name?: string | null;
+  target_period_id?: string | null;
+  rule_type?: string | null;
+  formula_expression?: string | null;
+  rounding_policy?: string | null;
+}
+
+export interface WeightedItem {
+  node: unknown;
+  weight: number;
+}
+
+export interface CalcEngine {
+  context: unknown;
+}
+
+export interface CreateGradePayload {
+  period_id: string;
+  enrollment_id: string;
+  subject_name: string;
+  subject_name_ar?: string | null;
+  score: number;
+  max_score: number;
+  weight?: number | null;
+  exam_type: string;
+  semester: string;
+  notes?: string | null;
+  is_final?: number | null;
+  assessment_id?: string | null;
+  class_subject_id?: string | null;
+  component_id?: string | null;
+}
+
+export interface SubmitBulkPayload {
+  period_id: string;
+  grades: CreateGradePayload[];
+}
+
+export interface CreateGradeScalePayload {
+  name: string;
+  scale_type: string;
+}
+
+export interface UpdateGradeScalePayload {
+  name?: string | null;
+  scale_type?: string | null;
+}
+
+export interface CreateGradeScaleItemPayload {
+  scale_id: string;
+  grade_label: string;
+  min_score: number;
+  max_score: number;
+  gpa_points?: number | null;
+  is_passing: boolean;
+}
+
+export interface TermCalcRequest {
+  student_id: string;
+  enrollment_id: string;
+  term_period_id: string;
+  class_subject_id: string;
+  grading_period_ids: string[];
+  exam_period_id?: string | null;
+  exam_score?: number | null;
+  exam_max?: number | null;
+}
+
+export interface RecordGrade {
+  enrollment_id: string;
+  assessment_id?: string | null;
+  class_subject_id?: string | null;
+  subject_name: string;
+  subject_name_ar?: string | null;
+  score: number;
+  max_score: number;
+  weight: number;
+  exam_type: string;
+  semester: string;
+  notes?: string | null;
+}
+
+export interface BulkRecordGrades {
+  period_id: string;
+  class_id: string;
+  grades: RecordGrade[];
+}
+
+export interface CompileSemesterResults {
+  period_id: string;
+  class_id: string;
+  policy_id?: string | null;
+  scale_id?: string | null;
+}
+
+export interface RecordAttendance {
+  enrollment_id: string;
+  class_id: string;
+  date: string;
+  status: string;
+  check_in_time?: string | null;
+  check_out_time?: string | null;
+  period?: string | null;
+  subject_name?: string | null;
+  notes?: string | null;
+  excuse_type?: string | null;
+  excuse_document?: string | null;
+  is_excused: boolean;
+}
+
+export interface BulkRecordAttendance {
+  class_id: string;
+  date: string;
+  records: RecordAttendance[];
+}
+
+export interface RecordBehavior {
+  enrollment_id: string;
+  behavior_type: string;
+  severity: string;
+  category?: string | null;
+  title: string;
+  title_ar?: string | null;
+  description: string;
+  incident_date: string;
+  incident_time?: string | null;
+  location?: string | null;
+  points?: number | null;
+  action_taken?: string | null;
+}
+
+export interface CreateAssessmentScheme {
+  name: string;
+  description?: string | null;
+  components: CreateSchemeComponent[];
+}
+
+export interface CreateSchemeComponent {
+  name: string;
+  component_type: string;
+  weight: number;
+  max_score: number;
+  passing_score?: number | null;
+}
+
+export interface CreateCalculationPolicy {
+  target_period_id?: string | null;
+  name: string;
+  rule_type: string;
+  formula_expression: string;
+  rounding_policy?: string | null;
+}
+
+export interface GenerateSnapshot {
+  student_id: string;
+  period_id: string;
+  class_subject_id: string;
+  policy_id: string;
+  scale_id: string;
+}
+
+export interface GradeRecordedEvent {
+  grade_id: string;
+  enrollment_id: string;
+  subject_name: string;
+  score: number;
+  max_score: number;
+  is_final: boolean;
+}
+
+export interface SemesterCompiledEvent {
+  period_id: string;
+  class_id: string;
+  students_compiled: number;
+  snapshots_generated: number;
+}
+
+export interface AttendanceRecordedEvent {
+  enrollment_id: string;
+  class_id: string;
+  date: string;
+  status: string;
+}
+
+export interface BehaviorRecordedEvent {
+  behavior_id: string;
+  enrollment_id: string;
+  behavior_type: string;
+  severity: string;
+}
+
+export interface SnapshotGeneratedEvent {
+  snapshot_id: string;
+  student_id: string;
+  period_id: string;
+  final_score: number;
+  grade_letter?: string | null;
+  is_passing: boolean;
+}
+
+export interface AtRiskDetectedEvent {
+  student_id: string;
+  enrollment_id: string;
+  risk_factors: string[];
+  risk_score: number;
+}
+
+export interface GradeResponse {
+  id: string;
+  enrollment_id: string;
+  subject_name: string;
+  subject_name_ar?: string | null;
+  score: number;
+  max_score: number;
+  weight: number;
+  grade_letter?: string | null;
+  grade_points?: number | null;
+  exam_type: string;
+  semester: string;
+  is_final: boolean;
+  graded_by: string;
+  graded_at: string;
+}
+
+export interface GradeMatrixResponse {
+  class_id: string;
+  period_id: string;
+  subjects: string[];
+  students: StudentGradeRow[];
+}
+
+export interface StudentGradeRow {
+  enrollment_id: string;
+  student_name: string;
+  student_number?: string | null;
+  grades: number[];
+  total?: number | null;
+  average?: number | null;
+  rank?: number | null;
+}
+
+export interface ReportCardResponse {
+  enrollment_id: string;
+  period_id: string;
+  student_name: string;
+  class_name: string;
+  subjects: SubjectGradeSummary[];
+  total_score: number;
+  percentage: number;
+  gpa?: number | null;
+  overall_grade?: string | null;
+  rank?: number | null;
+  total_students?: number | null;
+  attendance_summary?: AttendanceSummaryResponse | null;
+}
+
+export interface SubjectGradeSummary {
+  subject_name: string;
+  subject_name_ar?: string | null;
+  exam_scores: ExamScore[];
+  final_score: number;
+  max_score: number;
+  grade_letter?: string | null;
+  is_passing: boolean;
+}
+
+export interface ExamScore {
+  exam_type: string;
+  score: number;
+  max_score: number;
+  weight: number;
+}
+
+export interface AttendanceSummaryResponse {
+  total_days: number;
+  present_days: number;
+  absent_days: number;
+  excused_days: number;
+  late_days: number;
+  attendance_rate: number;
+}
+
+export interface AttendanceReportResponse {
+  class_id: string;
+  students: StudentAttendanceSummary[];
+}
+
+export interface StudentAttendanceSummary {
+  enrollment_id: string;
+  student_name: string;
+  summary: AttendanceSummaryResponse;
+}
+
+export interface BehaviorSummaryResponse {
+  enrollment_id: string;
+  total_records: number;
+  positive_count: number;
+  negative_count: number;
+  neutral_count: number;
+  total_points: number;
+  pending_actions: number;
+}
+
+export interface SnapshotResponse {
+  id: string;
+  student_id: string;
+  period_id: string;
+  class_subject_id: string;
+  final_score: number;
+  grade_letter?: string | null;
+  gpa_points?: number | null;
+  is_passing: boolean;
+  rank?: number | null;
+  status: string;
+}
+
+export interface CreateAttendanceRequest {
+  enrollment_id: string;
+  class_id: string;
+  date: string;
+  status: string;
+  check_in_time?: string | null;
+  check_out_time?: string | null;
+  lesson_slot?: string | null;
+  subject_name?: string | null;
+  notes?: string | null;
+  excuse_type?: string | null;
+  is_excused?: number | null;
+}
+
+export interface BulkAttendanceRequest {
+  class_id: string;
+  date: string;
+  lesson_slot?: string | null;
+  subject_name?: string | null;
+  records: BulkAttendanceRecord[];
+}
+
+export interface BulkAttendanceRecord {
+  enrollment_id: string;
+  status: string;
+  notes?: string | null;
+}
+
+export interface AttendanceReport {
+  enrollment_id: string;
+  student_id: string;
+  student_name: string;
+  total_days: number;
+  present_days: number;
+  absent_days: number;
+  late_days: number;
+  excused_days: number;
+  sick_days: number;
+  attendance_rate: number;
+  is_at_risk: boolean;
+}
+
+export interface AttendanceAnalytics {
+  total_records: number;
+  present_count: number;
+  absent_count: number;
+  late_count: number;
+  excused_count: number;
+  sick_count: number;
+  overall_rate: number;
+  at_risk_count: number;
+}
+
+export interface AIBehaviorSubmission {
+  student_id: string;
+  behavior_type: string;
+  confidence: number;
+  location: string;
+  image_evidence?: string | null;
+  model_version: string;
+  camera_id: string;
+  description: string;
+}
+
+export interface UpdateBehaviorRequest {
+  status?: string | null;
+  resolution_notes?: string | null;
+  action_taken?: string | null;
+  action_details?: string | null;
+}
+
+export interface BehaviorService {
+  cmd: unknown;
+  query: unknown;
+}
+
+export interface CreateGradeRequest {
+  enrollment_id: string;
+  subject_name: string;
+  subject_name_ar?: string | null;
+  score: number;
+  max_score: number;
+  weight?: number | null;
+  exam_type: string;
+  semester: string;
+  notes?: string | null;
+  is_final?: number | null;
+  assessment_id?: string | null;
+  class_subject_id?: string | null;
+  component_id?: string | null;
+}
+
+export interface BulkGradeRequest {
+  grades: CreateGradeRequest[];
+}
+
+export interface UpdateGradeRequest {
+  score: number;
+  max_score: number;
+  notes?: string | null;
+  change_reason?: string | null;
+}
+
+export interface BulkSubjectGradeEntry {
+  period_id: string;
+  class_id: string;
+  subject_id: string;
+  subject_name: string;
+  subject_name_ar?: string | null;
+  assessment_id?: string | null;
+  class_subject_id?: string | null;
+  exam_type: string;
+  semester: string;
+  max_score: number;
+  weight?: number | null;
+  is_final?: number | null;
+  students: StudentScore[];
+}
+
+export interface StudentScore {
+  enrollment_id: string;
+  score: number;
+  notes?: string | null;
+}
+
+export interface BulkSubjectGradeResult {
+  created: number;
+  updated: number;
+  failed: number;
+  errors: string[];
+  grades: Grade[];
+}
+
+export interface GradeCell {
+  grade_id?: string | null;
+  assessment_id?: string | null;
+  exam_type: string;
+  score?: number | null;
+  max_score: number;
+}
+
+export interface GradeReportCard {
+  enrollment_id: string;
+  student_id: string;
+  student_name: string;
+  period_name: string;
+  subjects: SubjectGradeSummary[];
+  overall_percentage: number;
+  overall_gpa: number;
+  overall_letter: string;
+  total_subjects: number;
+  passed_subjects: number;
+  failed_subjects: number;
+}
+
+export interface UpsertCellRequest {
+  enrollment_id: string;
+  period_id: string;
+  assessment_id: string;
+  subject_name: string;
+  subject_name_ar?: string | null;
+  exam_type: string;
+  semester: string;
+  score: number;
+  max_score: number;
+  class_subject_id?: string | null;
+}
+
+export interface UpsertCellResult {
+  grade_id: string;
+  created: boolean;
+}
+
+export interface GradeAnalytics {
+  class_average: number;
+  class_median: number;
+  class_min: number;
+  class_max: number;
+  pass_count: number;
+  fail_count: number;
+  pass_rate: number;
+  grade_distribution: GradeDistribution;
+}
+
+export interface GradeDistribution {
+  excellent: number;
+  very_good: number;
+  good: number;
+  acceptable: number;
+  weak: number;
+  fail: number;
+}
+
+export interface GradeService {
+  cmd: unknown;
+  query: unknown;
+}
+

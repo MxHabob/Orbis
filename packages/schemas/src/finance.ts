@@ -16,9 +16,7 @@ export const feeTemplateInputSchema = z.object({
 export const feeAssignmentInputSchema = z.object({
   enrollment_id: z.string().trim().min(1),
   fee_template_id: z.string().trim().min(1),
-  amount: z.number().finite().positive(),
-  notes: z.string().trim().optional(),
-  due_date: z.string().date(),
+  amount_override: z.number().finite().positive().nullable().optional(),
 });
 
 export type FeeAssignmentInput = z.infer<typeof feeAssignmentInputSchema>;

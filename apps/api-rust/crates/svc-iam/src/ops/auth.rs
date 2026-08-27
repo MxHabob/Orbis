@@ -130,7 +130,7 @@ pub async fn restore_session(
     Ok((user, session))
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct ChangePasswordPayload {
     pub new_password_hash: String,
 }
@@ -139,12 +139,9 @@ pub struct ChangePasswordPayload {
 pub async fn change_password(
     ctx: &ServiceContext,
     user_id: &str,
-    data: serde_json::Value,
+    req: ChangePasswordPayload,
 ) -> Result<(), AppError> {
     ctx.permissions.check(&ctx.actor, Permission::UserWrite).await?;
-
-    let req: ChangePasswordPayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid change password payload: {e}")))?;
 
     let existing = user::Entity::find_by_id(user_id.to_string())
         .one(&ctx.db).await?
@@ -187,7 +184,7 @@ pub async fn list_sessions(
         .all(&ctx.db).await?)
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct RegisterPayload {
     pub org_id: Option<String>,
     pub full_name: String,
@@ -199,11 +196,8 @@ pub struct RegisterPayload {
 
 pub async fn register(
     db: &DatabaseConnection,
-    data: serde_json::Value,
+    req: RegisterPayload,
 ) -> Result<user::Model, AppError> {
-    let req: RegisterPayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid register payload: {e}")))?;
-
     // Check email/phone uniqueness
     if let Some(ref email) = req.email {
         let existing = user::Entity::find()

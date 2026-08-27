@@ -165,3 +165,124 @@ export interface Subject {
   updated_at: string;
 }
 
+export interface CreateClassPayload {
+  org_unit_id: string;
+  period_id: string;
+  name: string;
+  name_ar?: string | null;
+  grade_level: string;
+  capacity: number;
+  division?: string | null;
+  color?: string | null;
+}
+
+export interface UpdateClassPayload {
+  name: string;
+  name_ar?: string | null;
+  level: string;
+  division?: string | null;
+  capacity?: number | null;
+}
+
+export interface CreateClassSubjectPayload {
+  class_id: string;
+  subject_id: string;
+  period_id: string;
+  primary_teacher_id?: string | null;
+  weekly_hours?: number | null;
+  scheme_id?: string | null;
+}
+
+export interface UpdateClassSubjectPayload {
+  primary_teacher_id?: string | null;
+  weekly_hours?: number | null;
+  scheme_id?: string | null;
+}
+
+export interface CreateDocumentPayload {
+  owner_id: string;
+  name: string;
+  item_type: string;
+  key: string;
+}
+
+export interface EnrichedEnrollmentResponse {
+  enrollment: Enrollment;
+  full_name: string;
+  name_ar?: string | null;
+  name_en?: string | null;
+  sex: string;
+  birth_date?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  national_id?: string | null;
+}
+
+export interface CreateEnrollmentPayload {
+  org_id?: string | null;
+  period_id: string;
+  student_id: string;
+  class_id: string;
+  student_number: string;
+}
+
+export interface PromotePayload {
+  is_promoted: number;
+  promotion_decision?: string | null;
+  promotion_notes?: string | null;
+}
+
+export interface CreateGuardianPayload {
+  student_id: string;
+  guardian_id: string;
+  relationship: string;
+  relationship_ar?: string | null;
+  is_primary: boolean;
+}
+
+export interface UpdateGuardianPayload {
+  relationship?: string | null;
+  is_primary?: boolean | null;
+}
+
+export interface CreateSubjectPayload {
+  code: string;
+  name: string;
+  name_ar?: string | null;
+  color?: string | null;
+}
+
+export interface UpdateSubjectPayload {
+  name: string;
+  name_ar?: string | null;
+  code: string;
+  category?: string | null;
+  color?: string | null;
+}
+
+export interface CreateClassCmd {
+  org_id: string;
+  period_id: string;
+  org_unit_id: string;
+  name: string;
+  name_ar?: string | null;
+  grade_level: string;
+  capacity: number;
+}
+
+export interface CreateSubjectCmd {
+  org_id: string;
+  name: string;
+  name_ar?: string | null;
+  code: string;
+  category: string;
+}
+
+export interface CreateOrgUnitCmd {
+  org_id: string;
+  name: string;
+  name_ar?: string | null;
+  parent_id?: string | null;
+}
+

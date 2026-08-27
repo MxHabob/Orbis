@@ -2,18 +2,18 @@
 import type * as Types from '../types/index.js';
 
 export interface DocforgeCommands {
-  createTemplate(request: any | null): Promise<any>;
-  getTemplate(templateId: string): Promise<any>;
-  updateTemplate(templateId: string, request: any | null): Promise<any>;
-  publishTemplate(templateId: string): Promise<any>;
-  archiveTemplate(templateId: string): Promise<any>;
-  restoreTemplate(templateId: string): Promise<any>;
-  deleteTemplate(templateId: string): Promise<any>;
-  listTemplates(request: any | null): Promise<any>;
-  listDataSchemas(): Promise<any>;
-  previewMultiUp(templateId: string, entityIds: string[], multiUpConfig: string): Promise<any[]>;
-  startMultiUpPrint(templateId: string, entityIds: string[], multiUpConfig: string): Promise<any>;
-  getMultiUpPrintStatus(jobId: string): Promise<any>;
-  listTemplateVersions(templateId: string): Promise<any>;
-  revertTemplateVersion(templateId: string, version: number): Promise<any>;
+  createTemplate(request: unknown): Promise<unknown>;
+  getTemplate(templateId: string): Promise<unknown>;
+  updateTemplate(templateId: string, request: unknown): Promise<unknown>;
+  publishTemplate(templateId: string): Promise<unknown>;
+  archiveTemplate(templateId: string): Promise<unknown>;
+  restoreTemplate(templateId: string): Promise<unknown>;
+  deleteTemplate(templateId: string): Promise<unknown>;
+  listTemplates(request: unknown): Promise<unknown>;
+  listDataSchemas(): Promise<unknown>;
+  previewMultiUp(templateId: string, entityIds: string[], multiUpConfig: string): Promise<unknown>;
+  startMultiUpPrint(templateId: string, entityIds: string[], multiUpConfig: string): Promise<unknown>;
+  getMultiUpPrintStatus(jobId: string): Promise<unknown>;
+  listTemplateVersions(templateId: string): Promise<unknown>;
+  revertTemplateVersion(templateId: string, version: number): Promise<unknown>;
 }

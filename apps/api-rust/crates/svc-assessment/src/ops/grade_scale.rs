@@ -50,22 +50,36 @@ pub async fn list_items(
 
 // ── Commands ────────────────────────────────────────────────────
 
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
+pub struct CreateGradeScalePayload {
+    pub name: String,
+    #[serde(rename = "type")]
+    pub scale_type: String,
+}
+
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
+pub struct UpdateGradeScalePayload {
+    pub name: Option<String>,
+    #[serde(rename = "type")]
+    pub scale_type: Option<String>,
+}
+
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
+pub struct CreateGradeScaleItemPayload {
+    pub scale_id: String,
+    pub grade_label: String,
+    pub min_score: f64,
+    pub max_score: f64,
+    pub gpa_points: Option<f64>,
+    pub is_passing: bool,
+}
+
 /// Create a new grade scale.
 pub async fn create(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    req: CreateGradeScalePayload,
 ) -> Result<grade_scale::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
-
-    #[derive(serde::Deserialize)]
-    struct Req {
-        name: String,
-        #[serde(rename = "type")]
-        scale_type: String,
-    }
-
-    let req: Req = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid grade scale payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let model = grade_scale::Model {
@@ -86,7 +100,7 @@ pub async fn create(
 pub async fn update(
     ctx: &ServiceContext,
     scale_id: &str,
-    data: serde_json::Value,
+    req: UpdateGradeScalePayload,
 ) -> Result<grade_scale::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
 
@@ -94,16 +108,6 @@ pub async fn update(
         .one(&ctx.db)
         .await?
         .ok_or_else(|| AppError::not_found("grade_scale", scale_id))?;
-
-    #[derive(serde::Deserialize)]
-    struct Req {
-        name: Option<String>,
-        #[serde(rename = "type")]
-        scale_type: Option<String>,
-    }
-
-    let req: Req = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid update payload: {e}")))?;
 
     let mut active: grade_scale::ActiveModel = existing.into();
     if let Some(name) = req.name {
@@ -141,22 +145,9 @@ pub async fn delete(ctx: &ServiceContext, scale_id: &str) -> Result<(), AppError
 /// Add a new item to a grade scale.
 pub async fn create_item(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    req: CreateGradeScaleItemPayload,
 ) -> Result<grade_scale_item::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
-
-    #[derive(serde::Deserialize)]
-    struct Req {
-        scale_id: String,
-        grade_label: String,
-        min_score: f64,
-        max_score: f64,
-        gpa_points: Option<f64>,
-        is_passing: bool,
-    }
-
-    let req: Req = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid scale item payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let model = grade_scale_item::Model {

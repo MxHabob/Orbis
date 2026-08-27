@@ -1,7 +1,8 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { commands, OrbisError } from "$lib/core/ipc";
+import { commands } from "$lib/core/ipc";
 import { feeAssignmentInputSchema } from "@orbis/schemas";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { toast } from "svelte-sonner";
@@ -17,15 +18,20 @@ let {
 } = $props();
 
 // State
-let isSubmitting = $state(false);
 let students = $state<any[]>([]);
 let templates = $state<any[]>([]);
 let isLoadingDropdowns = $state(false);
 
 // Form state
-let selectedEnrollmentId = $state("");
-let selectedFeeTemplateId = $state("");
-let amount = $state<number | null>(null);
+const form = new FormController({
+	initialValues: {
+		enrollment_id: "",
+		fee_template_id: "",
+		amount_override: null as number | null,
+	},
+	schema: feeAssignmentInputSchema,
+});
+
 let description = $state("");
 let dueDate = $state(new Date().toISOString().split("T")[0]);
 
@@ -41,9 +47,9 @@ async function loadDropdownData() {
     templates = templateList;
 
     if (studentList.length > 0)
-      selectedEnrollmentId = String(studentList[0].id);
+	form.values.enrollment_id = String(studentList[0].id);
     if (templateList.length > 0)
-      selectedFeeTemplateId = String(templateList[0].id);
+	form.values.fee_template_id = String(templateList[0].id);
   } catch (e) {
     console.error("Error loading dropdown data for fee-assign-form:", e);
   } finally {
@@ -60,12 +66,12 @@ $effect(() => {
 
 // Auto-fill template amount when template changes
 $effect(() => {
-  if (selectedFeeTemplateId && templates.length > 0) {
+	if (form.values.fee_template_id && templates.length > 0) {
     const tpl = templates.find(
-      (t) => String(t.id) === String(selectedFeeTemplateId),
+	(t) => String(t.id) === String(form.values.fee_template_id),
     );
     if (tpl) {
-      amount =
+	form.values.amount_override =
         tpl.default_amount !== undefined ? Number(tpl.default_amount) : null;
     }
   }
@@ -73,35 +79,16 @@ $effect(() => {
 
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
-	const result = feeAssignmentInputSchema.safeParse({
-		enrollment_id: selectedEnrollmentId,
-		fee_template_id: selectedFeeTemplateId,
-		amount: amount === null ? null : Number(amount),
-		notes: description || undefined,
-		due_date: dueDate,
-	});
-	if (!result.success) {
-    toast.error(m.common_fee_toast_error_amount());
-    return;
-  }
-
-  isSubmitting = true;
-  try {
-		await commands.finance.assignStudentFee(result.data);
+	const submitted = await form.submit(async (payload) => {
+		await commands.finance.assign(payload);
     toast.success(m.common_fee_toast_success());
-
-    // Reset form
-    amount = null;
+		form.reset();
     description = "";
     dueDate = new Date().toISOString().split("T")[0];
-
-    onSuccess();
-  } catch (e) {
-	const errorMsg = OrbisError.fromUnknown(e).message;
-    toast.error(m.common_fee_toast_error_submit({ error: errorMsg }));
-  } finally {
-    isSubmitting = false;
-  }
+	});
+	if (submitted) onSuccess();
+	else if (form.formError) toast.error(form.formError);
+	else if (Object.keys(form.errors).length > 0) toast.error(m.common_fee_toast_error_amount());
 }
 </script>
 
@@ -113,9 +100,10 @@ async function handleSubmit(e: SubmitEvent) {
 		</label>
 		<select 
 			id="fee_student"
-			bind:value={selectedEnrollmentId}
+			bind:value={form.values.enrollment_id}
+			onblur={() => form.markTouched("enrollment_id")}
 			class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full"
-			disabled={isLoadingDropdowns || isSubmitting}
+			disabled={isLoadingDropdowns || form.isSubmitting}
 		>
 			{#if isLoadingDropdowns}
 				<option>{m.common_fee_dropdown_loading_students()}</option>
@@ -134,9 +122,10 @@ async function handleSubmit(e: SubmitEvent) {
 		</label>
 		<select 
 			id="fee_ledger"
-			bind:value={selectedFeeTemplateId}
+			bind:value={form.values.fee_template_id}
+			onblur={() => form.markTouched("fee_template_id")}
 			class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full"
-			disabled={isLoadingDropdowns || isSubmitting}
+			disabled={isLoadingDropdowns || form.isSubmitting}
 		>
 			{#if isLoadingDropdowns}
 				<option>{m.common_fee_dropdown_loading_ledgers()}</option>
@@ -156,7 +145,8 @@ async function handleSubmit(e: SubmitEvent) {
 		<Input 
 			id="fee_amount"
 			type="number" 
-			bind:value={amount}
+			bind:value={form.values.amount_override}
+			onblur={() => form.markTouched("amount_override")}
 			min="1"
 			step="any"
 			placeholder="0.00"
@@ -169,7 +159,7 @@ async function handleSubmit(e: SubmitEvent) {
 	<div class="flex flex-col gap-2 text-start">
 		<label for="fee_due" class="text-sm font-medium text-foreground">
 			{m.common_fee_label_due()}
-		</label>
+			disabled={form.isSubmitting}
 		<Input 
 			id="fee_due"
 			type="date" 
@@ -182,7 +172,7 @@ async function handleSubmit(e: SubmitEvent) {
 	<div class="flex flex-col gap-2 text-start">
 		<label for="fee_desc" class="text-sm font-medium text-foreground">
 			{m.common_fee_label_desc()}
-		</label>
+			placeholder={m.common_fee_placeholder_desc()}
 		<Input 
 			id="fee_desc"
 			type="text" 
@@ -193,7 +183,7 @@ async function handleSubmit(e: SubmitEvent) {
 	</div>
 
 	<!-- Form Actions -->
-	<div class="flex gap-2 justify-end mt-auto pt-6">
+			disabled={form.isSubmitting}
 		<Button 
 			type="button" 
 			variant="ghost" 
@@ -201,9 +191,9 @@ async function handleSubmit(e: SubmitEvent) {
 			disabled={isSubmitting}
 		>
 			{m.common_action_cancel()}
-		</Button>
+			disabled={form.isSubmitting || isLoadingDropdowns}
 		<Button 
-			type="submit" 
+			{form.isSubmitting ? m.common_fee_toast_assigning() : m.common_fee_button_assign()}
 			variant="lime" 
 			class="font-semibold"
 			disabled={isSubmitting || isLoadingDropdowns}

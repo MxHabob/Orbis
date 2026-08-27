@@ -48,24 +48,24 @@ pub async fn scheduling_lesson_get(state: State<'_, Arc<AppState>>, lesson_id: S
 }
 
 #[tauri::command]
-pub async fn scheduling_lesson_create(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn scheduling_lesson_create(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::lesson::create(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::lesson::create(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn scheduling_lesson_update(state: State<'_, Arc<AppState>>, lesson_id: String, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn scheduling_lesson_update(state: State<'_, Arc<AppState>>, lesson_id: String, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::lesson::update(&ctx, &lesson_id, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::lesson::update(&ctx, &lesson_id, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -91,24 +91,24 @@ pub async fn scheduling_room_list(state: State<'_, Arc<AppState>>) -> CmdResult<
 }
 
 #[tauri::command]
-pub async fn scheduling_room_create(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn scheduling_room_create(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::room::create(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::room::create(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn scheduling_room_update(state: State<'_, Arc<AppState>>, room_id: String, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn scheduling_room_update(state: State<'_, Arc<AppState>>, room_id: String, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::room::update(&ctx, &room_id, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::room::update(&ctx, &room_id, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -169,24 +169,24 @@ pub async fn scheduling_time_slot_list(state: State<'_, Arc<AppState>>) -> CmdRe
 }
 
 #[tauri::command]
-pub async fn scheduling_time_slot_create(state: State<'_, Arc<AppState>>, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn scheduling_time_slot_create(state: State<'_, Arc<AppState>>, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::time_slot::create(&ctx, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::time_slot::create(&ctx, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn scheduling_time_slot_update(state: State<'_, Arc<AppState>>, slot_id: String, data: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
+pub async fn scheduling_time_slot_update(state: State<'_, Arc<AppState>>, slot_id: String, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let data_parsed = match data {
+    let req_parsed = match req {
         Some(v) => serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?,
-        None => return Err(CommandError::new("Missing argument: data")),
+        None => return Err(CommandError::new("Missing argument: req")),
     };
-    let result = ops::time_slot::update(&ctx, &slot_id, data_parsed).await.map_err(CommandError::from)?;
+    let result = ops::time_slot::update(&ctx, &slot_id, req_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 

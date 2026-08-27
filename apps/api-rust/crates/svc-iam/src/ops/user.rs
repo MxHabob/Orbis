@@ -107,7 +107,7 @@ pub async fn search(
         .all(&ctx.db).await?)
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct CreateUserPayload {
     pub person_id: Option<String>,
     pub full_name: String,
@@ -119,12 +119,9 @@ pub struct CreateUserPayload {
 
 pub async fn create(
     ctx: &ServiceContext,
-    data: serde_json::Value,
+    req: CreateUserPayload,
 ) -> Result<user::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::UserWrite).await?;
-
-    let req: CreateUserPayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid create user payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
@@ -225,7 +222,7 @@ pub async fn create(
     Ok(created)
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct UpdateUserPayload {
     pub full_name: Option<String>,
     pub email: Option<String>,
@@ -236,12 +233,9 @@ pub struct UpdateUserPayload {
 pub async fn update(
     ctx: &ServiceContext,
     user_id: &str,
-    data: serde_json::Value,
+    req: UpdateUserPayload,
 ) -> Result<user::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::UserWrite).await?;
-
-    let req: UpdateUserPayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid update user payload: {e}")))?;
 
     let existing = get(ctx, user_id).await?;
     let old_data = serde_json::to_value(&existing).ok();
@@ -316,7 +310,7 @@ pub async fn delete(ctx: &ServiceContext, user_id: &str) -> Result<(), AppError>
     Ok(())
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct ChangeRolePayload {
     pub role: String,
 }
@@ -324,12 +318,9 @@ pub struct ChangeRolePayload {
 pub async fn change_role(
     ctx: &ServiceContext,
     user_id: &str,
-    data: serde_json::Value,
+    req: ChangeRolePayload,
 ) -> Result<user::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::UserWrite).await?;
-
-    let req: ChangeRolePayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid change role payload: {e}")))?;
 
     let existing = get(ctx, user_id).await?;
     let old_data = serde_json::to_value(&existing).ok();

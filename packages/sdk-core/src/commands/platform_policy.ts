@@ -2,8 +2,8 @@
 import type * as Types from '../types/index.js';
 
 export interface Platform_policyCommands {
-  getAcademicPolicy(orgId: string): Promise<any>;
-  updateAcademicPolicy(orgId: string, payload: any): Promise<void>;
-  getAutopilotConfig(orgId: string): Promise<any>;
-  updateAutopilotConfig(orgId: string, config: any): Promise<void>;
+  getAcademicPolicy(orgId: string): Promise<unknown>;
+  updateAcademicPolicy(orgId: string, payload: unknown): Promise<void>;
+  getAutopilotConfig(orgId: string): Promise<unknown>;
+  updateAutopilotConfig(orgId: string, config: unknown): Promise<void>;
 }
