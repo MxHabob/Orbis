@@ -4,6 +4,7 @@ import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { toast } from "svelte-sonner";
+import { formatCurrency } from "$lib/core/i18n";
 
 import { slide } from "svelte/transition";
 
@@ -92,9 +93,7 @@ async function loadStudentFees(enrollId: string) {
       selectedFeeId = "";
       amount = null;
       toast.info(
-        m.common_status_undefined() === "غير محدد"
-          ? "لا توجد رسوم مستحقة غير مدفوعة لهذا الطالب"
-          : "No outstanding unpaid fees for this student",
+				m.finance_payment_no_fees(),
       );
     }
   } catch (e) {
@@ -199,7 +198,7 @@ async function handleSubmit(e: SubmitEvent) {
 			disabled={isLoadingDropdowns || isSubmitting}
 		>
 			{#if isLoadingDropdowns}
-				<option>{m.common_status_undefined() === "غير محدد" ? m.common_fee_dropdown_loading_students() : "Loading students..."}</option>
+				<option>{m.common_fee_dropdown_loading_students()}</option>
 			{:else}
 				{#each students as s (s.id)}
 					<option value={String(s.id)}>{s.full_name || s.student_number || s.id}</option>
@@ -220,13 +219,13 @@ async function handleSubmit(e: SubmitEvent) {
 			disabled={isLoadingFees || isSubmitting}
 		>
 			{#if isLoadingFees}
-				<option>{m.common_status_undefined() === "غير محدد" ? m.finance_payment_loading_fees() : "Loading fees..."}</option>
+				<option>{m.finance_payment_loading_fees()}</option>
 			{:else if fees.length === 0}
-				<option value="">{m.common_status_undefined() === "غير محدد" ? m.finance_payment_no_fees() : "-- No outstanding fees for this student --"}</option>
+				<option value="">{m.finance_payment_no_fees()}</option>
 			{:else}
 				{#each fees as f (f.id)}
 					<option value={String(f.id)}>
-						{f.notes || f.id.slice(0, 8)} ({m.common_status_undefined() === "غير محدد" ? 'المتبقي: ' : 'Balance: '}{f.balance})
+						{f.notes || f.id.slice(0, 8)} ({m.common_payment_label_balance()}: {f.balance})
 					</option>
 				{/each}
 			{/if}
@@ -265,9 +264,9 @@ async function handleSubmit(e: SubmitEvent) {
 			class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full"
 			disabled={isSubmitting}
 		>
-			<option value="Cash">{m.common_status_undefined() === "غير محدد" ? m.finance_pos_cash() : "Cash"}</option>
-			<option value="Bank Transfer">{m.common_status_undefined() === "غير محدد" ? m.finance_pos_bank_transfer() : "Bank Transfer"}</option>
-			<option value="Card">{m.common_status_undefined() === "غير محدد" ? m.finance_payment_type_card() : "Card"}</option>
+			<option value="Cash">{m.finance_pos_cash()}</option>
+			<option value="Bank Transfer">{m.finance_pos_bank_transfer()}</option>
+			<option value="Card">{m.finance_payment_type_card()}</option>
 		</select>
 	</div>
 
@@ -307,7 +306,7 @@ async function handleSubmit(e: SubmitEvent) {
 		/>
 		{#if currency.toUpperCase() !== 'YER' && amount && amount > 0}
 			<div class="text-xs text-emerald-500 font-bold select-none mt-1" transition:slide={{ duration: 150 }}>
-				 يعادل بالريال: {formatCurrency(convertedAmount, 'YER')} (سعر الصرف: {exchangeRate.toFixed(2)})
+				 {m.common_payment_converted_yer({ amount: formatCurrency(convertedAmount, "YER"), rate: exchangeRate.toFixed(2) })}
 			</div>
 		{/if}
 	</div>
@@ -321,7 +320,7 @@ async function handleSubmit(e: SubmitEvent) {
 			id="pay_receipt"
 			type="text" 
 			bind:value={receiptNumber}
-			placeholder="e.g., REC-10492"
+			placeholder={m.common_payment_receipt_placeholder()}
 			disabled={isSubmitting}
 		/>
 	</div>
@@ -335,7 +334,7 @@ async function handleSubmit(e: SubmitEvent) {
 			id="pay_ref"
 			type="text" 
 			bind:value={referenceNumber}
-			placeholder="e.g., TXN-998822"
+			placeholder={m.common_payment_reference_placeholder()}
 			disabled={isSubmitting}
 		/>
 	</div>

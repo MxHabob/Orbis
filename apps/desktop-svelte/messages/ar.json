@@ -1,4 +1,8 @@
 {
+  "common_payment_converted_yer": "يعادل بالريال: {amount} (سعر الصرف: {rate})",
+  "common_payment_label_balance": "المتبقي",
+  "common_payment_receipt_placeholder": "مثال: REC-10492",
+  "common_payment_reference_placeholder": "مثال: TXN-998822",
   "common_ft_error_name_required": "اسم الرسوم بالإنجليزية مطلوب",
   "common_ft_error_levels_required": "يرجى تحديد صف واحد على الأقل أو تفعيل خيار التطبيق على جميع الصفوف",
   "common_ft_name_ar_placeholder": "مثال: رسوم تسجيل الصف الأول",

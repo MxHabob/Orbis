@@ -1,4 +1,8 @@
 {
+  "common_payment_converted_yer": "Equivalent in YER: {amount} (Exchange rate: {rate})",
+  "common_payment_label_balance": "Balance",
+  "common_payment_receipt_placeholder": "e.g., REC-10492",
+  "common_payment_reference_placeholder": "e.g., TXN-998822",
   "common_ft_error_name_required": "English fee name is required",
   "common_ft_error_levels_required": "Please select at least one grade level or apply to all",
   "common_ft_name_ar_placeholder": "e.g., Grade 1 Enrollment Fees",
