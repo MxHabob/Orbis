@@ -26,11 +26,12 @@ import {
   TabsTrigger,
   TabsContent,
 } from "@orbis/ui-svelte/tabs";
-import { Save, Plus, Trash2, Sparkles, ShieldCheck, Layers, BookOpen } from "@lucide/svelte";
+import { Plus, Trash2, Sparkles, ShieldCheck, Layers, BookOpen } from "@lucide/svelte";
 import { toast } from "svelte-sonner";
 
 import { getLocale } from "$lib/paraglide/runtime";
 import { INSTITUTION_PROFILES } from "$lib/features/onboarding/templates";
+import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
 let { org, isSaving, onsave } = $props<{
   org: any;
@@ -113,14 +114,54 @@ const SYSTEM_FIELDS = [
   { key: "documents", label: m.common_form_tab_documents(), supportsDuplicate: false },
 ];
 
-let isInitialized = false;
+let isInitialized = $state(false);
+let initialSnapshot = $state("");
+
+function getFormSnapshot() {
+  return JSON.stringify({
+    institutionType,
+    studentNumberPattern,
+    rawStages,
+    requiredDocuments,
+    requiresApproval,
+    allowNoGuardian,
+    autoAssignFees,
+    allowDuplicateNationalId,
+    requiredFields,
+    activeFields,
+    preventDuplicates,
+  });
+}
+
+const isDirty = $derived(
+  isInitialized && initialSnapshot !== "" && getFormSnapshot() !== initialSnapshot,
+);
+
+function restoreSnapshot() {
+  if (!initialSnapshot) return;
+  const snapshot = JSON.parse(initialSnapshot);
+  institutionType = snapshot.institutionType;
+  studentNumberPattern = snapshot.studentNumberPattern;
+  rawStages = snapshot.rawStages;
+  requiredDocuments = snapshot.requiredDocuments;
+  requiresApproval = snapshot.requiresApproval;
+  allowNoGuardian = snapshot.allowNoGuardian;
+  autoAssignFees = snapshot.autoAssignFees;
+  allowDuplicateNationalId = snapshot.allowDuplicateNationalId;
+  requiredFields = snapshot.requiredFields;
+  activeFields = snapshot.activeFields;
+  preventDuplicates = snapshot.preventDuplicates;
+}
 
 $effect(() => {
-  if (org?.settings && !isInitialized) {
+  if (org && !isInitialized) {
     isInitialized = true;
     let settingsObj: any = {};
     try {
-      settingsObj = typeof org.settings === "string" ? JSON.parse(org.settings) : (org.settings || {});
+      settingsObj =
+        typeof org.settings === "string"
+          ? JSON.parse(org.settings)
+          : org.settings || {};
     } catch {}
     
     // Single Source of Truth: org.settings.registration (fallback to registration_config if legacy data)
@@ -166,6 +207,8 @@ $effect(() => {
     if (pol.allow_no_guardian !== undefined) allowNoGuardian = !!pol.allow_no_guardian;
     if (pol.auto_assign_fees !== undefined) autoAssignFees = pol.auto_assign_fees !== false;
     if (pol.allow_duplicate_national_id !== undefined) allowDuplicateNationalId = !!pol.allow_duplicate_national_id;
+
+    initialSnapshot = getFormSnapshot();
   }
 });
 
@@ -219,8 +262,8 @@ function removeDocument(doc: string) {
   requiredDocuments = requiredDocuments.filter((d) => d !== doc);
 }
 
-function handleSubmit(e: Event) {
-  e.preventDefault();
+function handleSubmit(e?: Event) {
+  e?.preventDefault();
 
   const activeFieldsArray = Object.keys(activeFields).filter((k) => activeFields[k]);
   const requiredFieldsArray = Object.keys(requiredFields).filter((k) => requiredFields[k] && activeFields[k]);
@@ -658,19 +701,12 @@ function handleSubmit(e: Event) {
         </TabsContent>
       </Tabs>
 
-      <!-- Footer Action Bar -->
-      <div class="flex items-center justify-end gap-3 mt-6 p-4 select-none">
-        <Button 
-          variant="lime" 
-          type="submit" 
-          class="text-xs h-9 px-4 cursor-pointer font-semibold shrink-0" 
-          disabled={isSaving}
-        >
-          <Save size={14} class="me-1.5" />
-          {isSaving ? m.common_state_saving() : m.settings_registration_save()}
-        </Button>
-      </div>
-
     </form>
   </div>
+  <SettingsBottomBar
+    {isSaving}
+    {isDirty}
+    onsave={handleSubmit}
+    onreset={restoreSnapshot}
+  />
 </div>

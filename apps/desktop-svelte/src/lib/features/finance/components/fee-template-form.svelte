@@ -323,7 +323,7 @@ async function handleSubmit() {
     <!-- Code/Symbol -->
     <div class="flex flex-col gap-1.5 text-start">
       <Label for="ft_form_code" class="text-xs font-semibold text-muted-foreground">
-        {m.common_ft_form_code()}
+        {m.common_ledger_col_code()}
       </Label>
       <Input 
         id="ft_form_code"

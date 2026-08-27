@@ -6,6 +6,7 @@ Follows standard settings layout pattern (section headers, clean two-column grid
 <script lang="ts">
   import * as m from "$lib/paraglide/messages";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { untrack } from "svelte";
   import {
     createOrgAcademicPolicyQuery,
     useUpdateAcademicPolicy,
@@ -32,6 +33,7 @@ Follows standard settings layout pattern (section headers, clean two-column grid
     LockKeyhole,
   } from "@lucide/svelte";
   import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
+  import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
   let { data }: { data: { orgId: string } } = $props();
   const orgId = $derived(data.orgId);
@@ -41,6 +43,7 @@ Follows standard settings layout pattern (section headers, clean two-column grid
 
   // Form states
   let isSaving = $state(false);
+  let initialSnapshot = $state("");
   let form = $state({
     default_grading_system: "percentage",
     default_passing_grade: 50,
@@ -74,11 +77,21 @@ Follows standard settings layout pattern (section headers, clean two-column grid
         auto_graduate_final_level: d.auto_graduate_final_level === 1,
         exclude_withdrawn: d.exclude_withdrawn !== 0,
       };
+      initialSnapshot = untrack(() => JSON.stringify(form));
     }
   });
 
-  async function handleSave(e: Event) {
-    e.preventDefault();
+  const isDirty = $derived(
+    initialSnapshot !== "" && JSON.stringify(form) !== initialSnapshot,
+  );
+
+  function handleReset() {
+    if (!initialSnapshot) return;
+    form = JSON.parse(initialSnapshot);
+  }
+
+  async function handleSave(e?: Event) {
+    e?.preventDefault();
     isSaving = true;
     try {
       const payload = {
@@ -97,6 +110,7 @@ Follows standard settings layout pattern (section headers, clean two-column grid
       };
 
       await updateMutation.mutateAsync({ orgId: data.orgId, payload });
+      initialSnapshot = JSON.stringify(form);
 
       toast.success(
         m.settings_general_save_success
@@ -150,24 +164,6 @@ Follows standard settings layout pattern (section headers, clean two-column grid
           <p class="text-xs text-muted-foreground">إعدادات النظم الدراسية، درجات النجاح، رصد الدرجات، وضوابط التسجيل والترفيع.</p>
         </div>
 
-        <Button
-          type="submit"
-          variant="default"
-          size="sm"
-          class="px-6 font-semibold h-9 text-xs cursor-pointer"
-          disabled={isSaving}
-        >
-          {#if isSaving}
-            <Loader2 class="size-3.5 animate-spin me-1.5" />
-          {/if}
-          {isSaving
-            ? m.common_state_saving
-              ? m.common_state_saving()
-              : "جاري الحفظ..."
-            : m.settings_action_save_changes
-              ? m.settings_action_save_changes()
-              : "حفظ التغييرات"}
-        </Button>
       </div>
 
       <!-- Two-Column Settings Layout -->
@@ -415,5 +411,11 @@ Follows standard settings layout pattern (section headers, clean two-column grid
 
       </div>
     </form>
+    <SettingsBottomBar
+      {isDirty}
+      {isSaving}
+      onsave={handleSave}
+      onreset={handleReset}
+    />
   {/if}
 </div>
