@@ -22,6 +22,7 @@
   import * as m from "$lib/paraglide/messages";
   import { createTimeSlotInputSchema } from "@orbis/schemas";
   import { FormController } from "$lib/shared/forms/form-controller.svelte";
+  import TimeSlotForm from "./time-slot-form.svelte";
 
   interface Props {
     open: boolean;
@@ -128,7 +129,7 @@
           name_ar: nameAr.trim(),
           start_time: startTime,
           end_time: endTime,
-          duration_minutes: dur,
+          duration_minutes: calcDuration(startTime, endTime),
           is_break: isBreak ? 1 : 0,
           break_type: isBreak ? breakType : null,
         } as any);
@@ -145,7 +146,7 @@
           name_ar: nameAr.trim(),
           start_time: startTime,
           end_time: endTime,
-          duration_minutes: dur,
+          duration_minutes: calcDuration(startTime, endTime),
           is_break: isBreak ? 1 : 0,
           break_type: isBreak ? breakType : null,
           applicable_days: "1,2,3,4,5",
@@ -184,7 +185,7 @@
 
     <div class="mt-4 flex-1 flex flex-col gap-4">
       <!-- Add Slot Form / Editor -->
-      {#if isAdding || editingSlotId}
+      {#if editingSlotId}
         <form onsubmit={handleSaveSlot} class="rounded-xl border border-primary/30 bg-card p-4 flex flex-col gap-3 shadow-xs">
           <div class="flex items-center justify-between">
             <span class="text-xs font-bold text-primary">
@@ -218,7 +219,7 @@
           </div>
 
           <div class="flex items-center gap-2 pt-1">
-            <Checkbox id="is-break-check" checked={isBreak} onCheckedChange={(val) => (isBreak = Boolean(val))} />
+            <Checkbox id="is-break-check" checked={isBreak} onCheckedChange={(val: boolean | "indeterminate") => (isBreak = Boolean(val))} />
             <Label for="is-break-check" class="text-xs cursor-pointer font-medium">
               {m.academics_schedule_break_slot()}
             </Label>
@@ -227,7 +228,7 @@
           {#if isBreak}
             <div class="space-y-1">
               <Label class="text-[11px] font-semibold">{m.academics_schedule_break_type()}</Label>
-              <Select type="single" value={breakType} onValueChange={(val) => (breakType = val ?? "recess")}>
+              <Select type="single" value={breakType} onValueChange={(val: string | undefined) => (breakType = val ?? "recess")}>
                 <SelectTrigger class="h-8 text-xs">
                   <span>
                     {breakType === "recess"
@@ -344,3 +345,13 @@
     </SheetFooter>
   </SheetContent>
 </Sheet>
+
+<TimeSlotForm
+  bind:open={isAdding}
+  {periodId}
+  nextSlotNumber={timeSlots.filter((slot) => !slot.is_break).reduce((max, slot) => Math.max(max, Number(slot.slot_number) || 0), 0) + 1}
+  onSuccess={() => {
+    isAdding = false;
+    onSuccess?.();
+  }}
+/> 
