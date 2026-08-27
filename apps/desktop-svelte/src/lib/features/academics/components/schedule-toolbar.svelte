@@ -69,7 +69,6 @@
   const selectedPeriod = $derived(
     periods.find((p) => String(p.id) === String(activePeriodId))
   );
-
   function handlePeriodSelect(val: string | null) {
     if (!val) return;
     activePeriodId = val;
@@ -101,7 +100,7 @@
             <CalendarIcon size={13} class="text-primary shrink-0" />
             <span class="truncate">
               {selectedPeriod
-                ? (isArabic ? selectedPeriod.name_ar || selectedPeriod.name : selectedPeriod.name || selectedPeriod.name_ar)
+                ? l(selectedPeriod.name_ar, selectedPeriod.name)
                 : m.academics_studio_select_period()}
             </span>
           </div>
