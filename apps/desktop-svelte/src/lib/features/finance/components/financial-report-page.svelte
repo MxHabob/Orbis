@@ -2,7 +2,6 @@
 import * as m from "$lib/paraglide/messages";
 import { createAccountsQuery, createCurrenciesQuery } from "$lib/features/finance";
 import { extractErrorMessage } from "$lib/core/ipc";
-import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/core/i18n";
 import { DataTable } from "$lib/tables";
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
@@ -61,10 +60,10 @@ const overviewMetrics = $derived.by(() => {
 });
 
 const trialColumns = $derived.by((): OrbisColumnDef[] => [
-  { id: "account", prop: "account", name: "الحساب", size: 260, readonly: true },
+  { id: "account", prop: "account", name: m.finance_report_account(), size: 260, readonly: true },
   ...activeCurrencies.flatMap((currency) => [
-    { id: `${currency.code}_debit`, prop: `${currency.code}_debit`, name: `مدين ${currency.code}`, size: 120, readonly: true, cellClass: "orbis-cell-number" },
-    { id: `${currency.code}_credit`, prop: `${currency.code}_credit`, name: `دائن ${currency.code}`, size: 120, readonly: true, cellClass: "orbis-cell-number" },
+    { id: `${currency.code}_debit`, prop: `${currency.code}_debit`, name: m.finance_report_debit({ currency: currency.code }), size: 120, readonly: true, cellClass: "orbis-cell-number" },
+    { id: `${currency.code}_credit`, prop: `${currency.code}_credit`, name: m.finance_report_credit({ currency: currency.code }), size: 120, readonly: true, cellClass: "orbis-cell-number" },
   ]),
 ]);
 
@@ -84,8 +83,8 @@ const trialSource = $derived(
 
 function reportColumns(): OrbisColumnDef[] {
   return [
-    { id: "section", prop: "section", name: "القسم", size: 150, readonly: true },
-    { id: "account", prop: "account", name: "الحساب", size: 280, readonly: true },
+    { id: "section", prop: "section", name: m.finance_report_section(), size: 150, readonly: true },
+    { id: "account", prop: "account", name: m.finance_report_account(), size: 280, readonly: true },
     ...activeCurrencies.map((currency) => ({
       id: currency.code,
       prop: currency.code,
@@ -115,7 +114,7 @@ function reportSource(groups: string[][]) {
   }
   for (const group of groups) {
     const type = group[1]!;
-    const totalRow: Record<string, unknown> = { section: group[0], account: "الإجمالي" };
+    const totalRow: Record<string, unknown> = { section: group[0], account: m.finance_report_total() };
     for (const currency of activeCurrencies) {
       const amount = totals[type][currency.code] || 0;
       totalRow[currency.code] = formatCurrency(amount, currency.code);
@@ -132,7 +131,7 @@ function reportSource(groups: string[][]) {
       <FinanceSkeleton />
     {:else if queryError}
       <ErrorState
-        title="تعذر تحميل التقرير"
+        title={m.finance_report_load_error()}
         message={extractErrorMessage(queryError)}
         onRetry={reloadData}
       />
@@ -142,25 +141,25 @@ function reportSource(groups: string[][]) {
           <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <div class="rounded-lg border border-border/70 bg-card p-3">
               <MetricProgress variant="single" value={overviewMetrics.assets} showProgress={false} tone="primary">
-                {#snippet title()}إجمالي الأصول{/snippet}
+                {#snippet title()}{m.finance_report_total_assets()}{/snippet}
                 {#snippet metadata()}{overviewMetrics.currencyCode}{/snippet}
               </MetricProgress>
             </div>
             <div class="rounded-lg border border-border/70 bg-card p-3">
               <MetricProgress variant="single" value={overviewMetrics.liabilities} showProgress={false} tone="warning">
-                {#snippet title()}إجمالي الخصوم{/snippet}
+                {#snippet title()}{m.finance_report_total_liabilities()}{/snippet}
                 {#snippet metadata()}{overviewMetrics.currencyCode}{/snippet}
               </MetricProgress>
             </div>
             <div class="rounded-lg border border-border/70 bg-card p-3">
               <MetricProgress variant="single" value={overviewMetrics.equity} showProgress={false} tone="success">
-                {#snippet title()}حقوق الملكية{/snippet}
+                {#snippet title()}{m.finance_report_equity()}{/snippet}
                 {#snippet metadata()}{overviewMetrics.currencyCode}{/snippet}
               </MetricProgress>
             </div>
             <div class="rounded-lg border border-border/70 bg-card p-3">
               <MetricProgress variant="single" value={overviewMetrics.netIncome} showProgress={false} tone={overviewMetrics.netIncome >= 0 ? "success" : "warning"}>
-                {#snippet title()}صافي نتيجة النشاط{/snippet}
+                {#snippet title()}{m.finance_report_net_income()}{/snippet}
                 {#snippet metadata()}{overviewMetrics.currencyCode}{/snippet}
               </MetricProgress>
             </div>
@@ -171,21 +170,21 @@ function reportSource(groups: string[][]) {
               <MetricProgress
                 variant="segmented"
                 segments={[
-                  { label: "الأصول", value: Math.max(0, overviewMetrics.assets), tone: "primary", displayValue: formatCurrency(overviewMetrics.assets, overviewMetrics.currencyCode) },
-                  { label: "الخصوم", value: Math.max(0, overviewMetrics.liabilities), tone: "warning", displayValue: formatCurrency(overviewMetrics.liabilities, overviewMetrics.currencyCode) },
-                  { label: "حقوق الملكية", value: Math.max(0, overviewMetrics.equity), tone: "success", displayValue: formatCurrency(overviewMetrics.equity, overviewMetrics.currencyCode) },
+                  { label: m.finance_report_assets(), value: Math.max(0, overviewMetrics.assets), tone: "primary", displayValue: formatCurrency(overviewMetrics.assets, overviewMetrics.currencyCode) },
+                  { label: m.finance_report_liabilities(), value: Math.max(0, overviewMetrics.liabilities), tone: "warning", displayValue: formatCurrency(overviewMetrics.liabilities, overviewMetrics.currencyCode) },
+                  { label: m.finance_report_equity(), value: Math.max(0, overviewMetrics.equity), tone: "success", displayValue: formatCurrency(overviewMetrics.equity, overviewMetrics.currencyCode) },
                 ]}
               >
-                {#snippet title()}المركز المالي{/snippet}
+                {#snippet title()}{m.finance_report_financial_position()}{/snippet}
                 {#snippet metadata()}{overviewMetrics.currencyCode}{/snippet}
               </MetricProgress>
             </div>
             <div class="border border-border/60 bg-card p-5 text-start shadow-sm">
-              <h2 class="mb-4 border-b border-border/40 pb-3 text-xs font-bold">حالة البيانات</h2>
+              <h2 class="mb-4 border-b border-border/40 pb-3 text-xs font-bold">{m.finance_report_data_status()}</h2>
               <div class="flex flex-col gap-3 text-xs">
-                <div class="flex items-center justify-between"><span class="text-muted-foreground">الحسابات المرحّلة</span><strong class="font-mono">{leafAccounts.length}</strong></div>
-                <div class="flex items-center justify-between"><span class="text-muted-foreground">العملات النشطة</span><strong class="font-mono">{activeCurrencies.length}</strong></div>
-                <div class="flex items-center justify-between border-t border-border/40 pt-3"><span class="text-muted-foreground">عملة العرض</span><strong class="font-mono">{overviewMetrics.currencyCode}</strong></div>
+                <div class="flex items-center justify-between"><span class="text-muted-foreground">{m.finance_report_posted_accounts()}</span><strong class="font-mono">{leafAccounts.length}</strong></div>
+                <div class="flex items-center justify-between"><span class="text-muted-foreground">{m.finance_report_active_currencies()}</span><strong class="font-mono">{activeCurrencies.length}</strong></div>
+                <div class="flex items-center justify-between border-t border-border/40 pt-3"><span class="text-muted-foreground">{m.finance_report_display_currency()}</span><strong class="font-mono">{overviewMetrics.currencyCode}</strong></div>
               </div>
             </div>
           </div>
@@ -198,8 +197,8 @@ function reportSource(groups: string[][]) {
             columns={trialColumns}
             source={trialSource}
             searchable
-            searchPlaceholder="ابحث في الحسابات..."
-            emptyTitle="لا توجد حسابات"
+            searchPlaceholder={m.finance_report_search_accounts()}
+            emptyTitle={m.finance_report_no_accounts()}
             rtl
             exportable
             refreshable
@@ -210,14 +209,14 @@ function reportSource(groups: string[][]) {
         </div>
       </div>
     {:else}
-      {@const groups = kind === "income_statement" ? [["الإيرادات", "revenue"], ["المصروفات", "expense"]] : [["الأصول", "asset"], ["الخصوم", "liability"], ["حقوق الملكية", "equity"]]}
+      {@const groups = kind === "income_statement" ? [[m.finance_report_revenue(), "revenue"], [m.finance_report_expenses(), "expense"]] : [[m.finance_report_assets(), "asset"], [m.finance_report_liabilities(), "liability"], [m.finance_report_equity(), "equity"]]}
       <div class="h-full min-h-0">
         <DataTable
           columns={reportColumns()}
           source={reportSource(groups)}
           searchable
-          searchPlaceholder="ابحث في الحسابات..."
-          emptyTitle="لا توجد حسابات"
+          searchPlaceholder={m.finance_report_search_accounts()}
+          emptyTitle={m.finance_report_no_accounts()}
           rtl
           exportable
           refreshable

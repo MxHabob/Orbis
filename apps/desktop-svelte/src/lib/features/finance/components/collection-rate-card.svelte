@@ -23,17 +23,17 @@ let {
   <div class="flex items-center justify-between w-full select-none text-[9px] font-bold text-muted-foreground/80 mb-3">
     <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
       <Hourglass size={11} class="text-muted-foreground/80" />
-      <span>{m.finance_overview_performance_title ? m.finance_overview_performance_title() : m.finance_overview_performance_title()}</span>
+      <span>{m.finance_overview_performance_title()}</span>
     </div>
   </div>
 
   <!-- Body -->
   <div class="flex flex-col text-start justify-center flex-grow py-4 select-none">
     <p class="text-xs text-muted-foreground leading-relaxed">
-      إن نسبة التحصيل الحالية للمؤسسة مقارنة بإجمالي الرسوم المقررة 
-      <span class="font-bold text-foreground font-mono">{formatCurrency(totalFees, "YER")}</span> 
-      والمبالغ المحصلة 
-      <span class="font-bold text-foreground font-mono">{formatCurrency(totalPaid, "YER")}</span> هي:
+      {m.finance_collection_rate_description({
+        totalFees: formatCurrency(totalFees, "YER"),
+        totalPaid: formatCurrency(totalPaid, "YER"),
+      })}
     </p>
     <div class="text-4xl font-black text-foreground font-sans mt-5 tracking-tight">
       {collectionRate}%
@@ -43,7 +43,7 @@ let {
   <!-- Footer -->
   <div class="flex flex-col gap-2 pt-2 border-t border-border/40 w-full mt-2 text-[10px]">
     <a href={localizeHref(`/${orgId}/finance/reports`)} class="flex items-center gap-1.5 hover:underline text-primary font-bold group/link">
-      <span>{m.finance_overview_btn_statement ? m.finance_overview_btn_statement() : m.finance_overview_btn_statement()}</span>
+      <span>{m.finance_overview_btn_statement()}</span>
       <ArrowRight size={10} class="transition-transform group-hover/link:translate-x-0.5 rtl:rotate-180" />
     </a>
   </div>
