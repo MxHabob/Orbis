@@ -5,12 +5,6 @@
     "moduleResolution": "Bundler",
     "ignoreDeprecations": "6.0"
   },
-  "include": [
-    "AvatarController.svelte.ts",
-    "AvatarStateMachine.ts",
-    "index.ts",
-    "ambient.d.ts",
-    "animations/**/*.ts"
-  ],
+  "include": ["src"],
   "exclude": ["node_modules"]
 }

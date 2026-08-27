@@ -2,6 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import { AvatarPilotPlane } from "@orbis/avatar-engine";
 import { AlertCircle } from "@lucide/svelte";
 
 import { formatDate } from "$lib/core/i18n";
@@ -38,6 +39,9 @@ const sortedTasks = $derived(
   {:else}
     {#if sortedTasks.length === 0}
       <div class="flex flex-col items-center justify-center gap-1.5 rounded-xl bg-muted/15 px-4 py-5 text-center">
+        <div class="flex items-center justify-center py-1">
+          <AvatarPilotPlane mood="steady" />
+        </div>
         <p class="text-[10px] text-muted-foreground leading-relaxed">
           {m.common_autopilot_popover_no_tasks()}
         </p>

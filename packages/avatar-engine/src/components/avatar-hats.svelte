@@ -4,7 +4,7 @@ Premium Notion/Raycast-style Vector Hats matching avatar head geometry (cy=120 r
 Designs use soft depth shadows, seamless head wrapping, and zero harsh sticker outlines.
 -->
 <script lang="ts">
-import type { AvatarHat } from "./types.js";
+import type { AvatarHat } from "../core/types.js";
 
 let { hat = "none" }: { hat: AvatarHat } = $props();
 </script>

@@ -1,14 +1,14 @@
 <script lang="ts">
 import { onDestroy } from "svelte";
 import { spring } from "svelte/motion";
-import { AvatarController } from "./AvatarController.svelte";
-import AvatarHats from "./AvatarHats.svelte";
-import { ALL_AVATAR_HATS, type AvatarHat } from "./types.js";
-import { idleAnimation } from "./animations/idle.js";
-import { blinkAnimation } from "./animations/blink.js";
-import { thinkAnimation } from "./animations/think.js";
-import { happyAnimation } from "./animations/happy.js";
-import { errorAnimation } from "./animations/error.js";
+import { AvatarController } from "../core/avatar-controller.svelte";
+import AvatarHats from "./avatar-hats.svelte";
+import { ALL_AVATAR_HATS, type AvatarHat } from "../core/types.js";
+import { idleAnimation } from "../animations/idle.js";
+import { blinkAnimation } from "../animations/blink.js";
+import { thinkAnimation } from "../animations/think.js";
+import { happyAnimation } from "../animations/happy.js";
+import { errorAnimation } from "../animations/error.js";
 
 let {
   controller,
