@@ -650,7 +650,7 @@ export const commands: OrbisCommands = {\n`;
     content += `  ${domain}: {\n`;
     for (const op of domainOps) {
       const argsStr = op.args.map(a => `${a.name === "cmd" ? "cmdPayload" : a.name}: any`).join(", ");
-      const passArgsStr = op.args.map(a => `${a.name === "cmd" ? "cmd: cmdPayload" : `${a.rustName}: ${a.name}`}`).join(", ");
+      const passArgsStr = op.args.map(a => `${a.name === "cmd" ? "cmd: cmdPayload" : a.name}`).join(", ");
       const tauriFuncName = op.isCustom ? op.funcName : `${domain}_${op.opFile}_${op.funcName}`;
       
       if (op.tsFuncName.endsWith("Paginated") || op.args.some(a => a.rustType.includes("CursorRequest"))) {
@@ -662,7 +662,7 @@ export const commands: OrbisCommands = {\n`;
           content += `      const req = (typeof cursorOrReq === "object" && cursorOrReq !== null && !Array.isArray(cursorOrReq))\n`;
           content += `        ? cursorOrReq\n`;
           content += `        : { cursor: typeof cursorOrReq === "string" ? cursorOrReq : null, limit: 50 };\n`;
-          const extraPayload = extraArgs.map(a => `${a.rustName}: ${a.name}`).join(", ");
+          const extraPayload = extraArgs.map(a => `${a.name}: ${a.name}`).join(", ");
           content += `      return cmd("${tauriFuncName}", { request: req${extraPayload ? `, ${extraPayload}` : ""} });\n`;
           content += `    },\n`;
         } else if (op.args.some(a => a.rustName === "on_chunk")) {
