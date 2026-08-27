@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Clock } from "@lucide/svelte";
+  import { Clock, Plus } from "@lucide/svelte";
   import SessionCard from "./session-card.svelte";
   import TimeGutter from "./time-gutter.svelte";
   import CalendarHeader from "./calendar-header.svelte";
@@ -184,7 +184,15 @@
                       />
                     {/each}
                   {:else}
-                    <div class="min-h-[64px] flex-1 w-full"></div>
+                    <button
+                      type="button"
+                      class="min-h-16 flex-1 w-full flex items-center justify-center rounded-md text-primary opacity-0 transition-opacity hover:bg-primary/10 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      onclick={() => onCellClick?.(day.value, String(slot.id))}
+                      aria-label={isArabic ? "إضافة حصة" : "Add lesson"}
+                      title={isArabic ? "إضافة حصة" : "Add lesson"}
+                    >
+                      <Plus size={18} />
+                    </button>
                   {/if}
                 </div>
               {/each}
