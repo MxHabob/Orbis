@@ -2,7 +2,6 @@
   import * as m from "$lib/paraglide/messages";
   import { commands, extractErrorMessage } from "$lib/core/ipc";
   import { createTimeSlotInputSchema } from "@orbis/schemas";
-  import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@orbis/ui-svelte/accordion";
   import { Button } from "@orbis/ui-svelte/button";
   import { Checkbox } from "@orbis/ui-svelte/checkbox";
   import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@orbis/ui-svelte/dialog";
@@ -105,12 +104,7 @@
     </DialogHeader>
 
     <form onsubmit={handleSubmit} class="flex flex-col gap-4 py-2">
-      <Accordion type="multiple" value={["details"]} class="w-full">
-        <AccordionItem value="details" class="rounded-lg">
-          <AccordionTrigger class="text-sm font-semibold hover:no-underline">
-            {m.academics_schedule_time_slot_new()}
-          </AccordionTrigger>
-          <AccordionContent class="space-y-4">
+      <div class="flex flex-col gap-4">
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div class="flex flex-col gap-2">
                 <Label class="text-sm font-medium text-foreground">{m.academics_schedule_name_ar()} *</Label>
@@ -152,9 +146,7 @@
                 </Select>
               </div>
             {/if}
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+      </div>
 
       <div class="flex justify-end gap-2 border-t border-border/40 pt-3">
         <Button type="button" variant="outline" size="sm" class="text-xs" onclick={() => (open = false)} disabled={form.isSubmitting}>{m.common_action_cancel()}</Button>
