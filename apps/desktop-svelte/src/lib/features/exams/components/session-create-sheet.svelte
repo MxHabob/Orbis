@@ -13,6 +13,7 @@ import {
 } from "@orbis/ui-svelte/sheet";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import { examsStore } from "$lib/features/exams/store.svelte";
 import { authStore } from "$lib/stores";
@@ -133,16 +134,16 @@ async function handleSubmit() {
         <label for="session-period" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
           الدورة الأكاديمية
         </label>
-        <select
-          id="session-period"
-          bind:value={periodId}
-          class="h-9 px-3 text-xs rounded-lg border border-border bg-background text-foreground focus:ring-1 focus:ring-primary w-full"
-        >
-          <option value="" disabled>{m.exams_session_select_term()}</option>
-          {#each periodsList as c}
-            <option value={c.id}>{c.name_ar || c.name}</option>
-          {/each}
-        </select>
+        <Select type="single" value={String(periodId)} onValueChange={(value: string | undefined) => (periodId = value ?? "")}>
+          <SelectTrigger id="session-period" class="h-9 w-full text-sm">
+            {periodsList.find((period) => String(period.id) === String(periodId))?.name_ar || periodsList.find((period) => String(period.id) === String(periodId))?.name || m.exams_session_select_term()}
+          </SelectTrigger>
+          <SelectContent>
+            {#each periodsList as period (period.id)}
+              <SelectItem value={String(period.id)}>{period.name_ar || period.name}</SelectItem>
+            {/each}
+          </SelectContent>
+        </Select>
       </div>
 
       <!-- Name Arabic -->
@@ -166,16 +167,23 @@ async function handleSubmit() {
         <label for="session-type" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
           {m.common_exams_create_type()}
         </label>
-        <select
-          id="session-type"
-          bind:value={sessionType}
-          class="h-9 px-3 text-xs rounded-lg border border-border bg-background text-foreground focus:ring-1 focus:ring-primary"
-        >
-          <option value="final">{m.exams_session_type_final()}</option>
-          <option value="midterm">{m.exams_session_type_midterm()}</option>
-          <option value="quiz">{m.exams_session_type_quiz()}</option>
-          <option value="practical">{m.exams_subject_type_practical()}</option>
-        </select>
+        <Select type="single" value={sessionType} onValueChange={(value: string | undefined) => (sessionType = value ?? "final")}>
+          <SelectTrigger id="session-type" class="h-9 w-full text-sm">
+            {sessionType === "final"
+              ? m.exams_session_type_final()
+              : sessionType === "midterm"
+                ? m.exams_session_type_midterm()
+                : sessionType === "quiz"
+                  ? m.exams_session_type_quiz()
+                  : m.exams_subject_type_practical()}
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="final">{m.exams_session_type_final()}</SelectItem>
+            <SelectItem value="midterm">{m.exams_session_type_midterm()}</SelectItem>
+            <SelectItem value="quiz">{m.exams_session_type_quiz()}</SelectItem>
+            <SelectItem value="practical">{m.exams_subject_type_practical()}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <!-- Dates Row -->
