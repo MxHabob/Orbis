@@ -20,17 +20,17 @@ let {
   <div class="flex items-center justify-between w-full select-none text-[9px] font-bold text-muted-foreground/80 mb-3">
     <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
       <span class="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse"></span>
-      {m.finance_overview_late_students ? m.finance_overview_late_students() : "الطلاب المتأخرين عن السداد"}
+      {m.finance_overview_late_students()}
     </div>
     <div class="flex items-center gap-2">
       <a href={localizeHref(`/${orgId}/finance/fees`)}>
         <Button variant="outline" size="xs" class="h-6 text-[9px] font-bold cursor-pointer">
-          {m.common_fee_button_assign ? m.common_fee_button_assign() : "فرض رسوم"}
+          {m.common_fee_button_assign()}
         </Button>
       </a>
       <a href={localizeHref(`/${orgId}/finance/fees`)}>
         <Button variant="outline" size="xs" class="h-6 text-[9px] font-bold cursor-pointer">
-          {m.common_overview_view_all ? m.common_overview_view_all() : "عرض الكل"}
+          {m.common_overview_view_all()}
         </Button>
       </a>
     </div>
@@ -65,11 +65,11 @@ let {
               <span class="font-bold font-mono text-foreground text-[10px]">{formatCurrency(item.remaining, "YER")}</span>
               {#if item.daysLate > 0}
                 <span class="text-[7px] font-mono text-destructive select-none font-bold mt-0.5">
-                  {m.finance_overview_days_overdue ? m.finance_overview_days_overdue({ days: item.daysLate }) : `متأخر ${item.daysLate} يوم`}
+                  {m.finance_overview_days_overdue({ days: item.daysLate })}
                 </span>
               {:else}
                 <span class="text-[7px] text-muted-foreground select-none font-semibold mt-0.5">
-                  يستحق قريباً
+                  {m.finance_overview_due_soon()}
                 </span>
               {/if}
             </div>

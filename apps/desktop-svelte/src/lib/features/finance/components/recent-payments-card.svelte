@@ -19,17 +19,17 @@ let {
   <div class="flex items-center justify-between w-full select-none text-[9px] font-bold text-muted-foreground/80 mb-3.5">
     <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
       <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-      {m.finance_overview_recent_payments ? m.finance_overview_recent_payments() : "آخر المدفوعات المستلمة"}
+      {m.finance_overview_recent_payments()}
     </div>
     <div class="flex items-center gap-2">
       <a href={localizeHref(`/${orgId}/finance/payments`)}>
         <Button variant="outline" size="xs" class="h-6 text-[9px] font-bold cursor-pointer">
-          {m.finance_overview_btn_new_payment ? m.finance_overview_btn_new_payment() : "سند جديد"}
+          {m.finance_overview_btn_new_payment()}
         </Button>
       </a>
       <a href={localizeHref(`/${orgId}/finance/payments`)}>
         <Button variant="outline" size="xs" class="h-6 text-[9px] font-bold cursor-pointer">
-          {m.common_overview_view_all ? m.common_overview_view_all() : "عرض الكل"}
+          {m.common_overview_view_all()}
         </Button>
       </a>
     </div>
