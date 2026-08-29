@@ -1,7 +1,7 @@
 //! User operations — CRUD, profile, search.
 
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Condition, QuerySelect};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Condition, QuerySelect, ConnectionTrait};
 use uuid::Uuid;
 
 use shared_kernel::context::ServiceContext;
@@ -142,9 +142,16 @@ pub async fn create(
                 first_name.clone()
             };
 
+            let new_party_id = uuid::Uuid::new_v4().to_string();
+            let _ = ctx.db.execute(sea_orm::Statement::from_sql_and_values(
+                sea_orm::DbBackend::Sqlite,
+                "INSERT INTO parties (id, party_type, created_at, updated_at) VALUES ($1, $2, $3, $4)",
+                vec![new_party_id.clone().into(), "person".into(), now.clone().into(), now.clone().into()],
+            )).await;
+
             let person_model = crate::entities::person::Model {
                 id: new_person_id.clone(),
-                party_id: "".to_string(),
+                party_id: new_party_id,
                 org_id: Some(ctx.org_id.clone()),
                 first_name,
                 last_name,

@@ -11,7 +11,7 @@
 //!
 //! If any step fails, ProcessManager compensates all completed steps.
 
-use sea_orm::{ActiveModelTrait, EntityTrait, ColumnTrait, QueryFilter, PaginatorTrait, TransactionTrait};
+use sea_orm::{ActiveModelTrait, EntityTrait, ColumnTrait, QueryFilter, PaginatorTrait, TransactionTrait, ConnectionTrait};
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
@@ -207,14 +207,22 @@ pub async fn register_student(
 
     // ── Step 3: Create Student Person and User ──────────────────────────────
     process.begin_step(&tx, "create_user").await?;
+    let student_party_id = uuid::Uuid::new_v4().to_string();
     let student_person_id = uuid::Uuid::new_v4().to_string();
     let student_user_id = uuid::Uuid::new_v4().to_string();
     let now = chrono::Utc::now().to_rfc3339();
+
+    // Create Student Party
+    tx.execute(sea_orm::Statement::from_sql_and_values(
+        sea_orm::DbBackend::Sqlite,
+        "INSERT INTO parties (id, party_type, created_at, updated_at) VALUES ($1, $2, $3, $4)",
+        vec![student_party_id.clone().into(), "person".into(), now.clone().into(), now.clone().into()],
+    )).await.map_err(|e| AppError::internal(format!("Failed to insert student party: {}", e)))?;
     
     // Create Person
     let new_person = svc_iam::entities::person::ActiveModel {
         id: sea_orm::ActiveValue::Set(student_person_id.clone()),
-        party_id: sea_orm::ActiveValue::Set("".to_string()),
+        party_id: sea_orm::ActiveValue::Set(student_party_id.clone()),
         org_id: sea_orm::ActiveValue::Set(Some(ctx.org_id.clone())),
         first_name: sea_orm::ActiveValue::Set(req.name.clone()),
         last_name: sea_orm::ActiveValue::Set(req.name.clone()),
@@ -240,6 +248,7 @@ pub async fn register_student(
     let new_user = user::ActiveModel {
         id: sea_orm::ActiveValue::Set(student_user_id.clone()),
         person_id: sea_orm::ActiveValue::Set(student_person_id.clone()),
+        party_id: sea_orm::ActiveValue::Set(Some(student_party_id.clone())),
         org_id: sea_orm::ActiveValue::Set(ctx.org_id.clone()),
         email: sea_orm::ActiveValue::Set(req.email.clone()),
         phone: sea_orm::ActiveValue::Set(req.phone.clone()),
@@ -283,12 +292,12 @@ pub async fn register_student(
         id: sea_orm::ActiveValue::Set(enrollment_id.clone()),
         org_id: sea_orm::ActiveValue::Set(ctx.org_id.clone()),
         period_id: sea_orm::ActiveValue::Set(class_period_id.clone()),
-        student_id: sea_orm::ActiveValue::Set(student_user_id.clone()),
+        student_id: sea_orm::ActiveValue::Set(student_person_id.clone()),
         class_id: sea_orm::ActiveValue::Set(class_id.to_string()),
         student_number: sea_orm::ActiveValue::Set(student_number.clone()),
-        status: sea_orm::ActiveValue::Set(if settings.requires_approval { "pending".to_string() } else { "active".to_string() }),
+        status: sea_orm::ActiveValue::Set("active".to_string()),
         enrollment_date: sea_orm::ActiveValue::Set(now.clone()),
-        enrollment_type: sea_orm::ActiveValue::Set("standard".to_string()),
+        enrollment_type: sea_orm::ActiveValue::Set("regular".to_string()),
         created_at: sea_orm::ActiveValue::Set(now.clone()),
         updated_at: sea_orm::ActiveValue::Set(now.clone()),
         ..Default::default()
@@ -309,13 +318,21 @@ pub async fn register_student(
     process.begin_step(&tx, "link_guardian").await?;
     let guardian_linked = if let (Some(ref g_name), Some(ref g_phone)) = (&req.guardian_name, &req.guardian_phone) {
         if !g_name.trim().is_empty() && !g_phone.trim().is_empty() {
+            let guardian_party_id = uuid::Uuid::new_v4().to_string();
+            let guardian_person_id = uuid::Uuid::new_v4().to_string();
             let guardian_id = uuid::Uuid::new_v4().to_string();
 
+            // Create Guardian Party
+            tx.execute(sea_orm::Statement::from_sql_and_values(
+                sea_orm::DbBackend::Sqlite,
+                "INSERT INTO parties (id, party_type, created_at, updated_at) VALUES ($1, $2, $3, $4)",
+                vec![guardian_party_id.clone().into(), "person".into(), now.clone().into(), now.clone().into()],
+            )).await.map_err(|e| AppError::internal(format!("Failed to insert guardian party: {}", e)))?;
+
             // Create guardian person
-            let guardian_person_id = uuid::Uuid::new_v4().to_string();
             let g_person = svc_iam::entities::person::ActiveModel {
                 id: sea_orm::ActiveValue::Set(guardian_person_id.clone()),
-                party_id: sea_orm::ActiveValue::Set("".to_string()),
+                party_id: sea_orm::ActiveValue::Set(guardian_party_id.clone()),
                 org_id: sea_orm::ActiveValue::Set(Some(ctx.org_id.clone())),
                 first_name: sea_orm::ActiveValue::Set(g_name.clone()),
                 last_name: sea_orm::ActiveValue::Set(g_name.clone()),
@@ -332,6 +349,7 @@ pub async fn register_student(
             let g_user = user::ActiveModel {
                 id: sea_orm::ActiveValue::Set(guardian_id.clone()),
                 person_id: sea_orm::ActiveValue::Set(guardian_person_id.clone()),
+                party_id: sea_orm::ActiveValue::Set(Some(guardian_party_id.clone())),
                 org_id: sea_orm::ActiveValue::Set(ctx.org_id.clone()),
                 phone: sea_orm::ActiveValue::Set(Some(g_phone.clone())),
                 full_name: sea_orm::ActiveValue::Set(g_name.clone()),
