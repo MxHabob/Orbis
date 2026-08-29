@@ -385,6 +385,8 @@ export class StudentFormState {
         toast.success(m.common_form_success_update());
       } else {
         const firstGuardian = this.guardian.linkedGuardians[0];
+        const hasGuardianName = !!firstGuardian?.full_name?.trim();
+        const hasGuardianPhone = !!firstGuardian?.phone?.trim();
 
         const payload = {
           name: this.personal.nameAr.trim() || this.personal.nameEn.trim() || "طالب جديد",
@@ -395,16 +397,20 @@ export class StudentFormState {
           national_id: this.personal.nationalId.trim() || null,
           address: this.personal.address.trim() || null,
           class_id: this.personal.classId || null,
-          guardian_name: firstGuardian ? firstGuardian.full_name.trim() : null,
-          guardian_phone: firstGuardian ? firstGuardian.phone.trim() : null,
-          guardian_relationship: firstGuardian
-            ? firstGuardian.relationship
+          guardian_name: hasGuardianName ? firstGuardian.full_name.trim() : null,
+          guardian_phone: hasGuardianPhone ? firstGuardian.phone.trim() : null,
+          guardian_relationship: hasGuardianName || hasGuardianPhone
+            ? firstGuardian.relationship || null
             : null,
         };
 
         const validatedPayload = studentRegistrationSchema.safeParse(payload);
         if (!validatedPayload.success) {
-          throw new Error("بيانات تسجيل الطالب غير مكتملة أو غير صالحة");
+          const errDetail = validatedPayload.error.issues
+            .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+            .join(", ");
+          console.error("Student registration validation failed:", validatedPayload.error);
+          throw new Error(`بيانات تسجيل الطالب غير مكتملة أو غير صالحة (${errDetail})`);
         }
         const res: any = await commands.enrollment_workflow.registerStudent(validatedPayload.data);
         targetStudentId = String(res.user_id);
@@ -414,8 +420,15 @@ export class StudentFormState {
       }
 
       // Save multi-guardian links
+      const firstGuardianHandledByBackend =
+        !this.isEditMode &&
+        !!(
+          this.guardian.linkedGuardians[0]?.full_name?.trim() &&
+          this.guardian.linkedGuardians[0]?.phone?.trim()
+        );
+
       let guardiansToProcess = this.guardian.linkedGuardians;
-      if (!this.isEditMode && this.guardian.linkedGuardians.length > 0) {
+      if (firstGuardianHandledByBackend) {
         guardiansToProcess = this.guardian.linkedGuardians.slice(1);
       }
 

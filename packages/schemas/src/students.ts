@@ -1,18 +1,33 @@
 import { z } from "zod";
 
+const emptyToNull = (val: unknown) =>
+  typeof val === "string" && val.trim() === "" ? null : val;
+
 export const studentRegistrationSchema = z.object({
   name: z.string().trim().min(1).max(150),
-  email: z.string().trim().email().nullable(),
-  phone: z.string().trim().regex(/^\+?[0-9]{7,15}$/).nullable(),
-  gender: z.string().trim().min(1).nullable(),
-  birth_date: z.string().trim().min(1).nullable(),
-  nationality: z.string().trim().nullable().optional(),
-  national_id: z.string().trim().regex(/^[0-9]{7,15}$/).nullable(),
-  address: z.string().trim().nullable().optional(),
+  email: z.preprocess(emptyToNull, z.string().trim().email().nullable().optional()),
+  phone: z.preprocess(
+    emptyToNull,
+    z.string().trim().regex(/^\+?[0-9]{7,15}$/).nullable().optional()
+  ),
+  gender: z.preprocess(emptyToNull, z.string().trim().min(1).nullable().optional()),
+  birth_date: z.preprocess(emptyToNull, z.string().trim().min(1).nullable().optional()),
+  nationality: z.preprocess(emptyToNull, z.string().trim().nullable().optional()),
+  national_id: z.preprocess(
+    emptyToNull,
+    z.string().trim().regex(/^[0-9]{7,15}$/).nullable().optional()
+  ),
+  address: z.preprocess(emptyToNull, z.string().trim().nullable().optional()),
   class_id: z.string().trim().min(1),
-  guardian_name: z.string().trim().nullable(),
-  guardian_phone: z.string().trim().regex(/^\+?[0-9]{7,15}$/).nullable(),
-  guardian_relationship: z.string().trim().min(1).nullable(),
+  guardian_name: z.preprocess(emptyToNull, z.string().trim().nullable().optional()),
+  guardian_phone: z.preprocess(
+    emptyToNull,
+    z.string().trim().regex(/^\+?[0-9]{7,15}$/).nullable().optional()
+  ),
+  guardian_relationship: z.preprocess(
+    emptyToNull,
+    z.string().trim().min(1).nullable().optional()
+  ),
 });
 
 export type StudentRegistrationInput = z.infer<typeof studentRegistrationSchema>;
