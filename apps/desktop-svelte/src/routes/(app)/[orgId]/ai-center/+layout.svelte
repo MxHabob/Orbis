@@ -26,11 +26,6 @@ const navItems = $derived([
     icon: Compass,
   },
   {
-    path: "logs",
-    label: m.ai_center_nav_logs ? m.ai_center_nav_logs() : "سجل الأنشطة",
-    icon: ScrollText,
-  },
-  {
     path: "live",
     label: m.ai_center_nav_live ? m.ai_center_nav_live() : "البث المباشر",
     icon: Video,
@@ -49,6 +44,11 @@ const navItems = $derived([
     path: "settings",
     label: m.ai_center_nav_settings ? m.ai_center_nav_settings() : "الإعدادات",
     icon: Settings,
+  },
+  {
+    path: "logs",
+    label: m.ai_center_nav_logs ? m.ai_center_nav_logs() : "سجل الأنشطة",
+    icon: ScrollText,
   },
 ]);
 </script>
