@@ -146,8 +146,9 @@ let gridSource = $derived(
 );
 
 function handleGridAction(event: GridActionEvent) {
-  if (event.actionId === "toggle-select") {
-    const id = String(event.row?.id);
+  if (event.actionId === "toggle-select" || event.actionId === "select") {
+    const id = String(event.row?.id || "");
+    if (!id) return;
     const newSet = new Set(selectedIds);
     if (newSet.has(id)) {
       newSet.delete(id);
@@ -159,10 +160,6 @@ function handleGridAction(event: GridActionEvent) {
   } else if (event.actionId === "dblclick") {
     if (event.row?.id) {
       goto(localizeHref(`/${orgId}/students/${event.row.id}`));
-    }
-  } else if (event.actionId === "click") {
-    if (event.row?.id) {
-      studentsStore.selectedId = String(event.row.id);
     }
   }
 }

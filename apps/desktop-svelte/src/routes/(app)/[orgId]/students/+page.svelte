@@ -16,7 +16,12 @@ import {
   Printer,
   Upload,
   ShieldAlert,
+  GraduationCap,
+  ExternalLink,
+  CheckCircle2,
 } from "@lucide/svelte";
+import { fly } from "svelte/transition";
+import { quintOut } from "svelte/easing";
 import {
   studentsStore,
   createEnrollmentsPaginatedQuery,
@@ -27,7 +32,6 @@ import StudentsTableSkeleton from "$lib/shared/skeletons/students-table-skeleton
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import StudentTable from "$lib/features/students/student-table.svelte";
-import StudentInspector from "$lib/features/students/student-inspector.svelte";
 import { toast } from "svelte-sonner";
 import { goto } from "$app/navigation";
 import PeriodGateAction from "$lib/shared/components/period-gate-action.svelte";
@@ -109,8 +113,6 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 	<MainViewport
 		name="students-workspace"
 		leftWidth={{ default: 240, min: 200 }}
-		right={studentsStore.selectedId ? rightSnippet : undefined}
-		rightWidth={{ default: 360, min: 300 }}
 	>
 		<!-- Left Panel: Sidebar Filters -->
 		{#snippet left()}
@@ -141,40 +143,32 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 						]
 					},
 					{
-						title: m.common_search_group_classes(),
+						title: m.common_filter_classes(),
 						items: [
 							{
 								label: m.common_filter_all_classes(),
+								badge: formatNumber(enrollments.length),
 								isActive: studentsStore.selectedClassId === null,
 								onclick: () => studentsStore.selectedClassId = null
 							},
-							...classes.map(cls => {
-								const count = getCountByClass(String(cls.id));
-								return {
-									label: String(l(cls.name_ar, cls.name) || cls.id),
-									badge: count > 0 ? formatNumber(count) : null,
-									isActive: studentsStore.selectedClassId === cls.id,
-									onclick: () => studentsStore.selectedClassId = String(cls.id)
-								};
-							})
+							...classes.map(c => ({
+								label: String(l(c.name_ar, c.name) || c.name || c.id),
+								badge: formatNumber(getCountByClass(String(c.id))),
+								isActive: studentsStore.selectedClassId === c.id,
+								onclick: () => studentsStore.selectedClassId = String(c.id)
+							}))
 						]
 					}
 				]}
-			>
-				{#snippet headerAction()}
-					{#if hasActiveFilters}
-						<Button 
-							variant="ghost" 
-							size="icon-xs" 
-							class="h-5 w-5 text-muted-foreground hover:text-foreground cursor-pointer" 
-							onclick={clearFilters}
-							title={m.students_clear_filters()}
-						>
-							<FilterX size={12} />
-						</Button>
-					{/if}
-				{/snippet}
-			</SidebarNav>
+				actions={[
+					{
+						label: m.common_filter_clear(),
+						icon: FilterX,
+						onclick: clearFilters,
+						disabled: !hasActiveFilters
+					}
+				]}
+			/>
 		{/snippet}
 
 		<!-- Middle Panel: Directory datagrid -->
@@ -193,16 +187,6 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 				</div>
 
 					<div class="flex items-center gap-2">
-						{#if selectedStudentIds.size > 0}
-							<Button
-								variant="outline"
-								class="text-xs h-9 px-3"
-								onclick={() => printDialogOpen = true}
-							>
-								<Printer size={13} class="me-1.5" />
-								<span>{m.common_print_templates()} ({selectedStudentIds.size})</span>
-							</Button>
-						{/if}
 						<Button
 							variant="outline"
 							class="text-xs h-9 px-3"
@@ -284,14 +268,75 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 
 	</MainViewport>
 
-	{#snippet rightSnippet()}
-		<div class="h-full border-l border-border bg-card/45 flex flex-col overflow-hidden">
-			<StudentInspector 
-				student={enrollments.find(e => e.id === studentsStore.selectedId)} 
-				onClose={() => studentsStore.selectedId = null} 
-			/>
+	<!-- Floating Bottom Action Bar for Selected Students -->
+	{#if selectedStudentIds.size > 0}
+		<div
+			class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-lg pointer-events-auto select-none"
+			transition:fly={{ y: 35, duration: 250, easing: quintOut }}
+		>
+			<div class="bg-card/95 backdrop-blur-md border border-border shadow-2xl rounded-xl px-4 py-2.5 flex items-center justify-between gap-3 ring-1 ring-black/5 dark:ring-white/10">
+				<!-- Selection Counter & Info -->
+				<div class="flex min-w-0 items-center gap-2.5 text-start">
+					<span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+						<GraduationCap size={15} strokeWidth={2.5} />
+					</span>
+					<div class="flex flex-col min-w-0">
+						<span class="truncate text-xs font-bold text-foreground">
+							{formatNumber(selectedStudentIds.size)} {selectedStudentIds.size === 1 ? m.common_word_student() : 'طلاب'} محدد
+						</span>
+						{#if selectedStudentIds.size === 1}
+							{@const singleStudent = enrollments.find(e => selectedStudentIds.has(e.id))}
+							{#if singleStudent}
+								<span class="truncate text-[11px] text-muted-foreground">
+									{singleStudent.full_name || singleStudent.name_ar || ''}
+								</span>
+							{/if}
+						{/if}
+					</div>
+				</div>
+
+				<!-- Action Buttons -->
+				<div class="flex shrink-0 items-center gap-2">
+					{#if selectedStudentIds.size === 1}
+						{@const singleStudent = enrollments.find(e => selectedStudentIds.has(e.id))}
+						{#if singleStudent}
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								class="h-8 px-2.5 text-xs font-medium cursor-pointer gap-1.5"
+								onclick={() => goto(localizeHref(`/${data.orgId}/students/${singleStudent.id}`))}
+							>
+								<ExternalLink size={13} />
+								<span>الملف الشخصي</span>
+							</Button>
+						{/if}
+					{/if}
+
+					<Button
+						type="button"
+						variant="lime"
+						size="sm"
+						class="h-8 px-3 text-xs font-semibold shadow-xs cursor-pointer gap-1.5"
+						onclick={() => printDialogOpen = true}
+					>
+						<Printer size={14} />
+						<span>{m.common_print_templates()} ({selectedStudentIds.size})</span>
+					</Button>
+
+					<Button
+						type="button"
+						variant="ghost"
+						size="sm"
+						class="h-8 px-2 text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
+						onclick={() => selectedStudentIds = new Set()}
+					>
+						{m.common_action_cancel()}
+					</Button>
+				</div>
+			</div>
 		</div>
-	{/snippet}
+	{/if}
 
 	<PrintDialog
 		bind:open={printDialogOpen}
@@ -310,4 +355,3 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 	/>
 
 </div>
-

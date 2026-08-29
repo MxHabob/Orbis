@@ -1,5 +1,6 @@
 <script lang="ts">
 import { Checkbox } from "@orbis/ui-svelte/checkbox";
+import { getContext } from "svelte";
 
 interface Props {
   row: Record<string, any>;
@@ -10,26 +11,31 @@ interface Props {
 
 let { row, column, onaction }: Props = $props();
 
-const isChecked = $derived(!!row.__selected || !!row[column.id]);
+const gridAction = getContext<((ev: any) => void) | undefined>("orbis-grid-onaction");
 
-function handleToggle(val: boolean | "indeterminate") {
-  onaction?.({
+const isChecked = $derived(!!row?.__selected || !!row?.[column?.id]);
+
+function toggle() {
+  const handler = onaction || gridAction;
+  handler?.({
     actionId: "toggle-select",
     row,
-    checked: val,
   });
 }
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
 <div 
-  class="flex items-center justify-center w-full h-full"
-  onclick={(e) => e.stopPropagation()}
-  onkeydown={(e) => e.stopPropagation()}
+  class="flex items-center justify-center w-full h-full cursor-pointer select-none py-1"
+  onclick={(e) => {
+    e.stopPropagation();
+    toggle();
+  }}
 >
   <Checkbox
     checked={isChecked}
-    onCheckedChange={handleToggle}
-    class="cursor-pointer h-4 w-4"
+    onCheckedChange={() => toggle()}
+    class="cursor-pointer h-4 w-4 pointer-events-none"
   />
 </div>
