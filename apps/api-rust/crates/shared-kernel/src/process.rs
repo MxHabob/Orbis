@@ -11,7 +11,7 @@
 //! Compensation runs in reverse order: if step 4 fails, steps 3→2→1 are compensated.
 
 use serde::{Deserialize, Serialize};
-use sea_orm::{DatabaseConnection, ConnectionTrait, Statement, DbBackend};
+use sea_orm::{ConnectionTrait, Statement, DbBackend};
 use tracing::{info, error};
 
 use crate::errors::AppError;
@@ -101,7 +101,7 @@ pub struct ProcessState {
 
 impl ProcessState {
     /// Create a new process and persist it immediately.
-    pub async fn start(db: &DatabaseConnection, process_type: &str, org_id: &str, step_names: &[&str]) -> Result<Self, AppError> {
+    pub async fn start<C: ConnectionTrait>(db: &C, process_type: &str, org_id: &str, step_names: &[&str]) -> Result<Self, AppError> {
         let state = Self {
             id: uuid::Uuid::new_v4().to_string(),
             process_type: process_type.to_string(),
@@ -127,7 +127,7 @@ impl ProcessState {
     }
 
     /// Persist the current state to the `process_log` table.
-    async fn persist(&self, db: &DatabaseConnection) -> Result<(), AppError> {
+    pub async fn persist<C: ConnectionTrait>(&self, db: &C) -> Result<(), AppError> {
         let steps_json = serde_json::to_string(&self.steps)
             .map_err(|e| AppError::internal(format!("Failed to serialize process steps: {}", e)))?;
         
@@ -163,7 +163,7 @@ impl ProcessState {
     }
 
     /// Mark a step as in-progress.
-    pub async fn begin_step(&mut self, db: &DatabaseConnection, name: &str) -> Result<(), AppError> {
+    pub async fn begin_step<C: ConnectionTrait>(&mut self, db: &C, name: &str) -> Result<(), AppError> {
         let step = self.find_step_mut(name)?;
         step.status = StepStatus::InProgress;
         step.started_at = Some(chrono::Utc::now().to_rfc3339());
@@ -172,7 +172,7 @@ impl ProcessState {
     }
 
     /// Mark a step as completed with its result.
-    pub async fn complete_step(&mut self, db: &DatabaseConnection, name: &str, result: serde_json::Value) -> Result<(), AppError> {
+    pub async fn complete_step<C: ConnectionTrait>(&mut self, db: &C, name: &str, result: serde_json::Value) -> Result<(), AppError> {
         let step = self.find_step_mut(name)?;
         step.status = StepStatus::Completed;
         step.result = Some(result);
@@ -183,7 +183,7 @@ impl ProcessState {
     }
 
     /// Mark a step as failed and update process status.
-    pub async fn fail_step(&mut self, db: &DatabaseConnection, name: &str, error_msg: &str) -> Result<(), AppError> {
+    pub async fn fail_step<C: ConnectionTrait>(&mut self, db: &C, name: &str, error_msg: &str) -> Result<(), AppError> {
         if let Ok(step) = self.find_step_mut(name) {
             step.status = StepStatus::Failed;
             step.completed_at = Some(chrono::Utc::now().to_rfc3339());
@@ -197,7 +197,7 @@ impl ProcessState {
     }
 
     /// Register a compensation action for a completed step.
-    pub async fn add_compensation(&mut self, db: &DatabaseConnection, step_name: &str, action: CompensationAction) -> Result<(), AppError> {
+    pub async fn add_compensation<C: ConnectionTrait>(&mut self, db: &C, step_name: &str, action: CompensationAction) -> Result<(), AppError> {
         if let Ok(step) = self.find_step_mut(step_name) {
             step.compensation = Some(action);
             self.persist(db).await?;
@@ -206,7 +206,7 @@ impl ProcessState {
     }
 
     /// Mark the entire process as completed.
-    pub async fn complete(&mut self, db: &DatabaseConnection) -> Result<(), AppError> {
+    pub async fn complete<C: ConnectionTrait>(&mut self, db: &C) -> Result<(), AppError> {
         self.status = ProcessStatus::Completed;
         self.completed_at = Some(chrono::Utc::now().to_rfc3339());
         self.persist(db).await?;
@@ -217,7 +217,7 @@ impl ProcessState {
     ///
     /// This rolls back the effects of completed steps by executing their
     /// compensation actions in reverse.
-    pub async fn compensate(&mut self, db: &DatabaseConnection) -> Result<(), AppError> {
+    pub async fn compensate<C: ConnectionTrait>(&mut self, db: &C) -> Result<(), AppError> {
         self.status = ProcessStatus::Compensating;
 
         // Walk steps in reverse, compensating completed ones
@@ -267,8 +267,8 @@ impl ProcessState {
 }
 
 /// Execute a single compensation action against the database.
-async fn execute_compensation(
-    db: &DatabaseConnection,
+async fn execute_compensation<C: ConnectionTrait>(
+    db: &C,
     action: &CompensationAction,
 ) -> Result<(), AppError> {
     match action {

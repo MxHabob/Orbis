@@ -46,7 +46,7 @@ const navItems = $derived([
     icon: Settings,
   },
   {
-    path: "logs",
+    path: "ai-logs",
     label: m.ai_center_nav_logs ? m.ai_center_nav_logs() : "سجل الأنشطة",
     icon: ScrollText,
   },

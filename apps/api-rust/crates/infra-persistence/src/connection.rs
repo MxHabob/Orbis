@@ -23,7 +23,7 @@ const DB_PRAGMAS: &str = "\
     PRAGMA synchronous=NORMAL; \
     PRAGMA foreign_keys=ON; \
     PRAGMA cache_size=-64000; \
-    PRAGMA busy_timeout=5000; \
+    PRAGMA busy_timeout=30000; \
     PRAGMA mmap_size=268435456; \
     PRAGMA temp_store=MEMORY;";
 
@@ -39,10 +39,10 @@ pub struct PoolConfig {
 impl PoolConfig {
     pub fn default() -> Self {
         Self {
-            max_connections: 10,
-            min_connections: 2,
-            connect_timeout_secs: 5,
-            idle_timeout_secs: 30,
+            max_connections: 5,
+            min_connections: 1,
+            connect_timeout_secs: 30,
+            idle_timeout_secs: 60,
             max_lifetime_secs: 1800,
         }
     }
@@ -50,7 +50,12 @@ impl PoolConfig {
 
 /// Format the SQLite connection string correctly for SeaORM, with read/write/create mode.
 pub fn sqlite_url_rwc(db_path: &Path) -> String {
-    format!("sqlite://{}?mode=rwc", db_path.display())
+    let path_str = db_path.to_string_lossy().replace('\\', "/");
+    if path_str.starts_with('/') {
+        format!("sqlite://{path_str}?mode=rwc")
+    } else {
+        format!("sqlite:///{path_str}?mode=rwc")
+    }
 }
 
 /// Connect to a SQLite database with the given URL, pool config, and pragmas.

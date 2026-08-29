@@ -23,15 +23,6 @@ use shared_kernel::traits::{AuditEntry, Permission};
 use svc_iam::entities::user;
 use svc_academic::entities::{enrollment, student_guardian, class};
 
-async fn fail_validation_step(
-    process: &mut ProcessState,
-    db: &sea_orm::DatabaseConnection,
-    message: &str,
-) -> Result<(), AppError> {
-    process.fail_step(db, "validate", message).await?;
-    Ok(())
-}
-
 /// Student registration request.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RegisterStudentRequest {
@@ -70,11 +61,69 @@ pub async fn register_student(
         .check(&ctx.actor, Permission::EnrollmentWrite)
         .await?;
 
+    // ── Pre-checks & Validation (Read-only) ──────────────────────
+    let settings = ctx.settings.get_registration_settings(&ctx.org_id).await?;
+    if req.name.trim().is_empty() {
+        return Err(AppError::validation("Student name is required"));
+    }
+    for field in &settings.required_fields {
+        match field.as_str() {
+            "email" => {
+                if req.email.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true) {
+                    return Err(AppError::validation("Email is required by organization policy"));
+                }
+            }
+            "phone" => {
+                if req.phone.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true) {
+                    return Err(AppError::validation("Phone is required by organization policy"));
+                }
+            }
+            "national_id" => {
+                if req.national_id.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true) {
+                    return Err(AppError::validation("National ID is required by organization policy"));
+                }
+            }
+            "birth_date" => {
+                if req.birth_date.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true) {
+                    return Err(AppError::validation("Birth date is required by organization policy"));
+                }
+            }
+            "sex" => {
+                if req.gender.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true) {
+                    return Err(AppError::validation("Gender is required by organization policy"));
+                }
+            }
+            _ => {}
+        }
+    }
+    if !settings.allow_no_guardian
+        && (req.guardian_name.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true)
+            || req.guardian_phone.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true))
+    {
+        return Err(AppError::validation("Guardian is required by organization policy"));
+    }
+    let class_id = req.class_id.as_deref().filter(|id| !id.trim().is_empty())
+        .ok_or_else(|| AppError::validation("Class is required for student enrollment"))?;
+    let target_class = class::Entity::find_by_id(class_id.to_string())
+        .one(&ctx.db)
+        .await?
+        .ok_or_else(|| AppError::not_found("class", class_id))?;
+    let class_period_id = target_class.period_id.clone();
+    if target_class.org_id != ctx.org_id {
+        return Err(AppError::validation("Class does not belong to the current organization"));
+    }
+    let verdict = ctx.period_gate
+        .check_enrollment(&ctx.db, &ctx.org_id, &class_period_id, class_id, None)
+        .await?;
+    if matches!(verdict.decision, shared_kernel::period_gate::GateDecision::Blocked) {
+        return Err(AppError::policy_blocked(verdict.reason.unwrap_or_else(|| "Enrollment is closed".into())));
+    }
+
+    // ── Begin Transaction & Process ──────────────────────────────
     let tx = ctx.db.begin().await.map_err(|e| AppError::internal(format!("Failed to begin transaction: {}", e)))?;
 
-    // ── Initialize Process ───────────────────────────────────────
     let mut process = ProcessState::start(
-        &ctx.db,
+        &tx,
         "student_registration",
         &ctx.org_id,
         &[
@@ -89,70 +138,7 @@ pub async fn register_student(
     ).await?;
 
     // ── Step 1: Validate ─────────────────────────────────────────
-    process.begin_step(&ctx.db, "validate").await?;
-    let settings = ctx.settings.get_registration_settings(&ctx.org_id).await?;
-    if req.name.trim().is_empty() {
-        fail_validation_step(&mut process, &ctx.db, "Student name is required").await?;
-        return Err(AppError::validation("Student name is required"));
-    }
-    for field in &settings.required_fields {
-        match field.as_str() {
-            "email" => {
-                if req.email.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true) {
-                    process.fail_step(&ctx.db, "validate", "Email is required by organization policy").await?;
-                    return Err(AppError::validation("Email is required by organization policy"));
-                }
-            }
-            "phone" => {
-                if req.phone.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true) {
-                    process.fail_step(&ctx.db, "validate", "Phone is required by organization policy").await?;
-                    return Err(AppError::validation("Phone is required by organization policy"));
-                }
-            }
-            "national_id" => {
-                if req.national_id.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true) {
-                    process.fail_step(&ctx.db, "validate", "National ID is required by organization policy").await?;
-                    return Err(AppError::validation("National ID is required by organization policy"));
-                }
-            }
-            "birth_date" => {
-                if req.birth_date.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true) {
-                    fail_validation_step(&mut process, &ctx.db, "Birth date is required by organization policy").await?;
-                    return Err(AppError::validation("Birth date is required by organization policy"));
-                }
-            }
-            "sex" => {
-                if req.gender.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true) {
-                    fail_validation_step(&mut process, &ctx.db, "Gender is required by organization policy").await?;
-                    return Err(AppError::validation("Gender is required by organization policy"));
-                }
-            }
-            _ => {}
-        }
-    }
-    if !settings.allow_no_guardian
-        && (req.guardian_name.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true)
-            || req.guardian_phone.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true))
-    {
-        fail_validation_step(&mut process, &ctx.db, "Guardian is required by organization policy").await?;
-        return Err(AppError::validation("Guardian is required by organization policy"));
-    }
-    let class_id = req.class_id.as_deref().filter(|id| !id.trim().is_empty())
-        .ok_or_else(|| AppError::validation("Class is required for student enrollment"))?;
-    let target_class = class::Entity::find_by_id(class_id.to_string())
-        .one(&tx)
-        .await?
-        .ok_or_else(|| AppError::not_found("class", class_id))?;
-    let class_period_id = target_class.period_id.clone();
-    if target_class.org_id != ctx.org_id {
-        return Err(AppError::validation("Class does not belong to the current organization"));
-    }
-    let verdict = ctx.period_gate
-        .check_enrollment(&ctx.db, &ctx.org_id, &class_period_id, class_id, None)
-        .await?;
-    if matches!(verdict.decision, shared_kernel::period_gate::GateDecision::Blocked) {
-        return Err(AppError::policy_blocked(verdict.reason.unwrap_or_else(|| "Enrollment is closed".into())));
-    }
+    process.begin_step(&tx, "validate").await?;
     if let Some(max_capacity) = settings.max_class_capacity {
         let count = enrollment::Entity::find()
             .filter(enrollment::Column::ClassId.eq(class_id))
@@ -161,64 +147,66 @@ pub async fn register_student(
             .count(&tx)
             .await?;
         if count >= max_capacity as u64 {
+            let _ = process.fail_step(&tx, "validate", "Class capacity reached").await;
+            tx.rollback().await.map_err(|e| AppError::internal(format!("Rollback failed: {}", e)))?;
             return Err(AppError::validation("Class capacity reached by organization policy"));
         }
     }
-    process.complete_step(&ctx.db, "validate", serde_json::json!({"fields_checked": settings.required_fields.len()})).await?;
+    process.complete_step(&tx, "validate", serde_json::json!({"fields_checked": settings.required_fields.len()})).await?;
 
     // ── Step 2: Check for duplicates ─────────────────────────────
-    process.begin_step(&ctx.db, "check_duplicates").await?;
-        if settings.prevent_duplicates.iter().any(|field| field == "email") {
-            if let Some(ref email) = req.email {
-        if !email.trim().is_empty() {
-            let exists = user::Entity::find()
-                .filter(user::Column::OrgId.eq(&ctx.org_id))
-                .filter(user::Column::Email.eq(email))
-                .one(&tx)
-                .await?
-                .is_some();
-            if exists {
-                process.fail_step(&ctx.db, "check_duplicates", "Email already registered").await?;
-                return Err(AppError::conflict(format!("Email '{}' is already registered", email)));
-            }
-        }
-            }
-        }
-        if settings.prevent_duplicates.iter().any(|field| field == "phone") {
-            if let Some(ref phone) = req.phone {
-                if !phone.trim().is_empty() {
-                    let exists = user::Entity::find()
-                        .filter(user::Column::OrgId.eq(&ctx.org_id))
-                        .filter(user::Column::Phone.eq(phone))
-                        .one(&tx).await?.is_some();
-                    if exists {
-                        process.fail_step(&ctx.db, "check_duplicates", "Phone already registered").await?;
-                        return Err(AppError::conflict(format!("Phone '{}' is already registered", phone)));
-                    }
+    process.begin_step(&tx, "check_duplicates").await?;
+    if settings.prevent_duplicates.iter().any(|field| field == "email") {
+        if let Some(ref email) = req.email {
+            if !email.trim().is_empty() {
+                let exists = user::Entity::find()
+                    .filter(user::Column::OrgId.eq(&ctx.org_id))
+                    .filter(user::Column::Email.eq(email))
+                    .one(&tx)
+                    .await?
+                    .is_some();
+                if exists {
+                    process.fail_step(&tx, "check_duplicates", "Email already registered").await?;
+                    return Err(AppError::conflict(format!("Email '{}' is already registered", email)));
                 }
             }
         }
-        if settings.prevent_duplicates.iter().any(|field| field == "national_id")
-                && !settings.allow_duplicate_national_id {
-            if let Some(ref nid) = req.national_id {
-        if !nid.trim().is_empty() {
-            let exists = svc_iam::entities::person::Entity::find()
-                .filter(svc_iam::entities::person::Column::OrgId.eq(&ctx.org_id))
-                .filter(svc_iam::entities::person::Column::NationalId.eq(nid))
-                .one(&tx)
-                .await?
-                .is_some();
-            if exists {
-                process.fail_step(&ctx.db, "check_duplicates", "National ID already registered").await?;
-                return Err(AppError::conflict(format!("National ID '{}' is already registered", nid)));
+    }
+    if settings.prevent_duplicates.iter().any(|field| field == "phone") {
+        if let Some(ref phone) = req.phone {
+            if !phone.trim().is_empty() {
+                let exists = user::Entity::find()
+                    .filter(user::Column::OrgId.eq(&ctx.org_id))
+                    .filter(user::Column::Phone.eq(phone))
+                    .one(&tx).await?.is_some();
+                if exists {
+                    process.fail_step(&tx, "check_duplicates", "Phone already registered").await?;
+                    return Err(AppError::conflict(format!("Phone '{}' is already registered", phone)));
+                }
             }
         }
+    }
+    if settings.prevent_duplicates.iter().any(|field| field == "national_id")
+            && !settings.allow_duplicate_national_id {
+        if let Some(ref nid) = req.national_id {
+            if !nid.trim().is_empty() {
+                let exists = svc_iam::entities::person::Entity::find()
+                    .filter(svc_iam::entities::person::Column::OrgId.eq(&ctx.org_id))
+                    .filter(svc_iam::entities::person::Column::NationalId.eq(nid))
+                    .one(&tx)
+                    .await?
+                    .is_some();
+                if exists {
+                    process.fail_step(&tx, "check_duplicates", "National ID already registered").await?;
+                    return Err(AppError::conflict(format!("National ID '{}' is already registered", nid)));
+                }
             }
         }
-    process.complete_step(&ctx.db, "check_duplicates", serde_json::json!({"passed": true})).await?;
+    }
+    process.complete_step(&tx, "check_duplicates", serde_json::json!({"passed": true})).await?;
 
     // ── Step 3: Create Student Person and User ──────────────────────────────
-    process.begin_step(&ctx.db, "create_user").await?;
+    process.begin_step(&tx, "create_user").await?;
     let student_person_id = uuid::Uuid::new_v4().to_string();
     let student_user_id = uuid::Uuid::new_v4().to_string();
     let now = chrono::Utc::now().to_rfc3339();
@@ -267,17 +255,17 @@ pub async fn register_student(
 
     match new_user.insert(&tx).await {
         Ok(_) => {
-            process.complete_step(&ctx.db, "create_user", serde_json::json!({"user_id": &student_user_id})).await?;
+            process.complete_step(&tx, "create_user", serde_json::json!({"user_id": &student_user_id})).await?;
         }
         Err(e) => {
-            process.fail_step(&ctx.db, "create_user", &e.to_string()).await?;
+            let _ = process.fail_step(&tx, "create_user", &e.to_string()).await;
             tx.rollback().await.map_err(|e| AppError::internal(format!("Rollback failed: {}", e)))?;
             return Err(AppError::internal(format!("Failed to create student user: {}", e)));
         }
     }
 
     // ── Step 4: Generate Student Number ──────────────────────────
-    process.begin_step(&ctx.db, "generate_number").await?;
+    process.begin_step(&tx, "generate_number").await?;
     let sequence = enrollment::Entity::find()
         .filter(enrollment::Column::OrgId.eq(&ctx.org_id))
         .count(&tx)
@@ -285,10 +273,10 @@ pub async fn register_student(
     let prefix = &settings.student_number_prefix;
     let digits = settings.student_number_digits;
     let student_number = format!("{}{:0width$}", prefix, sequence, width = digits);
-    process.complete_step(&ctx.db, "generate_number", serde_json::json!({"number": &student_number})).await?;
+    process.complete_step(&tx, "generate_number", serde_json::json!({"number": &student_number})).await?;
 
     // ── Step 5: Create Enrollment ────────────────────────────────
-    process.begin_step(&ctx.db, "create_enrollment").await?;
+    process.begin_step(&tx, "create_enrollment").await?;
     let enrollment_id = uuid::Uuid::new_v4().to_string();
 
     let new_enrollment = enrollment::ActiveModel {
@@ -308,17 +296,17 @@ pub async fn register_student(
 
     match new_enrollment.insert(&tx).await {
         Ok(_) => {
-            process.complete_step(&ctx.db, "create_enrollment", serde_json::json!({"enrollment_id": &enrollment_id})).await?;
+            process.complete_step(&tx, "create_enrollment", serde_json::json!({"enrollment_id": &enrollment_id})).await?;
         }
         Err(e) => {
-            process.fail_step(&ctx.db, "create_enrollment", &e.to_string()).await?;
+            let _ = process.fail_step(&tx, "create_enrollment", &e.to_string()).await;
             tx.rollback().await.map_err(|e| AppError::internal(format!("Rollback failed: {}", e)))?;
             return Err(AppError::internal(format!("Failed to create enrollment: {}", e)));
         }
     }
 
     // ── Step 6: Link Guardian ────────────────────────────────────
-    process.begin_step(&ctx.db, "link_guardian").await?;
+    process.begin_step(&tx, "link_guardian").await?;
     let guardian_linked = if let (Some(ref g_name), Some(ref g_phone)) = (&req.guardian_name, &req.guardian_phone) {
         if !g_name.trim().is_empty() && !g_phone.trim().is_empty() {
             let guardian_id = uuid::Uuid::new_v4().to_string();
@@ -386,10 +374,10 @@ pub async fn register_student(
     } else {
         false
     };
-    process.complete_step(&ctx.db, "link_guardian", serde_json::json!({"linked": guardian_linked})).await?;
+    process.complete_step(&tx, "link_guardian", serde_json::json!({"linked": guardian_linked})).await?;
 
     // ── Step 7: Assign Mandatory Fees ────────────────────────────
-    process.begin_step(&ctx.db, "assign_fees").await?;
+    process.begin_step(&tx, "assign_fees").await?;
     let fees_assigned = if settings.auto_assign_fees {
         match ctx.fee_assigner.assign_mandatory_fees(
             &ctx.org_id,
@@ -406,12 +394,13 @@ pub async fn register_student(
     } else {
         0
     };
-    process.complete_step(&ctx.db, "assign_fees", serde_json::json!({"count": fees_assigned})).await?;
+    process.complete_step(&tx, "assign_fees", serde_json::json!({"count": fees_assigned})).await?;
 
-    // ── Complete Process ─────────────────────────────────────────
-    process.complete(&ctx.db).await?;
+    // ── Complete Process & Commit Transaction ────────────────────
+    process.complete(&tx).await?;
+    tx.commit().await.map_err(|e| AppError::internal(format!("Commit failed: {}", e)))?;
 
-    // ── Event Sourcing ───────────────────────────────────────────
+    // ── Event Sourcing (Post-commit) ─────────────────────────────
     let payload = serde_json::json!({
         "user_id": &student_user_id,
         "enrollment_id": &enrollment_id,
@@ -422,14 +411,16 @@ pub async fn register_student(
         "fees_assigned": fees_assigned,
     });
 
-    ctx.event_store.append(
+    if let Err(e) = ctx.event_store.append(
         "enrollment",
         &enrollment_id,
         "enrollment.created",
         &payload,
         &ctx.actor,
         ctx.correlation_id.as_deref(),
-    ).await?;
+    ).await {
+        tracing::warn!(error = %e, "Failed to append event to event store");
+    }
 
     // ── Event Bus (for reactive pipeline + plugins) ──────────────
     ctx.event_bus.publish(shared_kernel::event_bus::EventEnvelope {
@@ -445,7 +436,7 @@ pub async fn register_student(
     });
 
     // ── Audit Log ────────────────────────────────────────────────
-    ctx.audit.log(AuditEntry {
+    let _ = ctx.audit.log(AuditEntry {
         org_id: ctx.org_id.clone(),
         actor: ctx.actor.clone(),
         action: "student.registered".to_string(),
@@ -454,7 +445,7 @@ pub async fn register_student(
         old_data: None,
         new_data: Some(payload),
         correlation_id: ctx.correlation_id.clone(),
-    }).await?;
+    }).await;
 
     info!(
         org_id = %ctx.org_id,
@@ -462,8 +453,6 @@ pub async fn register_student(
         student_number = %student_number,
         "Student registered successfully"
     );
-
-    tx.commit().await.map_err(|e| AppError::internal(format!("Commit failed: {}", e)))?;
 
     Ok(RegistrationResult {
         user_id: student_user_id,
