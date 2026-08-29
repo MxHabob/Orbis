@@ -780,10 +780,11 @@ class OnboardingState {
 
       // ── Step 1: Update Organization Base Currency, Locale, Timezone ──
       const chosenCurrency = this.profile.currency || "SAR";
+      const profileDef = INSTITUTION_PROFILES[this.profile.institutionType] || INSTITUTION_PROFILES.school;
       const settingsObj = {
         registration_config: {
           institution_type: this.profile.institutionType,
-          student_number_pattern: this.profile.studentNumberPattern,
+          student_number_pattern: this.profile.studentNumberPattern || profileDef.numberingPattern,
           academic_stages: this.academics.gradeLevels
             .filter((gl) => gl.enabled)
             .map((gl) => gl.level),
@@ -791,10 +792,14 @@ class OnboardingState {
           active_fields: this.profile.activeFields,
           prevent_duplicates: this.profile.preventDuplicates,
           required_documents: this.profile.requiredDocumentsList,
+          require_approval: profileDef.policySettings?.requires_approval ?? false,
+          allow_no_guardian: profileDef.policySettings?.allow_no_guardian ?? false,
+          auto_assign_fees: profileDef.policySettings?.auto_assign_fees ?? true,
+          allow_duplicate_national_id: profileDef.policySettings?.allow_duplicate_national_id ?? false,
         },
       };
 
-      const org = await commands.organization.getOrganization().catch(() => null);
+      const org = (await commands.organization.getOrganization().catch(() => null)) as any;
       if (org) {
         const updateRequest = {
           org_id: orgId,
@@ -817,10 +822,14 @@ class OnboardingState {
       // Only ensure the base currency flag is set if needed.
 
       // ── Step 2: Create Organizational Structure (Org Units) ──────────
+      // Hierarchy: Organization (Root) -> Branch (فرع) -> Building (مبنى) -> Floor (طابق) -> Room (قاعة/مرفق)
       let rootUnitId = "";
+      let branchUnitId = "";
       let existingUnits: any[] = [];
       try {
         existingUnits = await commands.organization.listOrgUnits().catch(() => []);
+        
+        // 1. Root Organization Unit (المنظمة الرئيسية)
         const root = existingUnits?.find(
           (u: any) =>
             (u.unit_type === "root" || u.unitType === "root") &&
@@ -835,9 +844,29 @@ class OnboardingState {
             unit_type: "root",
           });
           rootUnitId = created?.id || "";
+          if (created) existingUnits = [...existingUnits, created];
         }
         if (!rootUnitId) {
           throw new Error(m.onboarding_err_root_unit_creation());
+        }
+
+        // 2. Main Branch Unit (الفرع الرئيسي) under Organization Root
+        const existingBranch = existingUnits?.find(
+          (u: any) =>
+            u.parent_id === rootUnitId &&
+            (u.unit_type === "branch" || u.unitType === "branch"),
+        );
+        if (existingBranch) {
+          branchUnitId = existingBranch.id;
+        } else {
+          const createdBranch = await commands.organization.createOrgUnit({
+            name: "Main Branch",
+            name_ar: "الفرع الرئيسي",
+            parent_id: rootUnitId,
+            unit_type: "branch",
+          });
+          branchUnitId = createdBranch?.id || rootUnitId;
+          if (createdBranch) existingUnits = [...existingUnits, createdBranch];
         }
       } catch (e) {
         throw new Error(
@@ -845,7 +874,7 @@ class OnboardingState {
         );
       }
 
-      // Create the facilities tree under the main organizational unit.
+      // 3. Buildings under Branch (parent_id = branchUnitId)
       const buildingUnitIds: Record<string, string> = {};
       for (const bldName of this.facilities.buildings) {
         if (!bldName || !bldName.trim()) continue;
@@ -853,14 +882,14 @@ class OnboardingState {
           const normalizedBuildingName = bldName.trim().toLowerCase();
           const existingBuilding = existingUnits?.find(
             (unit: any) =>
-              unit.parent_id === rootUnitId &&
+              unit.parent_id === branchUnitId &&
               (unit.unit_type === "building" || unit.unitType === "building") &&
               String(unit.name || "").trim().toLowerCase() === normalizedBuildingName,
           );
           const building = existingBuilding || await commands.organization.createOrgUnit({
               name: bldName.trim(),
               name_ar: bldName.trim(),
-              parent_id: rootUnitId,
+              parent_id: branchUnitId,
               unit_type: "building",
             });
           if (!building?.id) continue;
@@ -871,6 +900,7 @@ class OnboardingState {
         }
       }
 
+      // 4. Floors under Building (parent_id = buildingId)
       const floorUnitIds: Record<string, string> = {};
       for (const room of this.facilities.rooms) {
         const buildingId = buildingUnitIds[room.building];
@@ -899,6 +929,7 @@ class OnboardingState {
           if (!existingFloor) existingUnits = [...existingUnits, floorUnit];
         }
 
+        // 5. Rooms under Floor (parent_id = floorUnitId)
         const floorUnitId = floorUnitIds[floorKey];
         const roomExists = existingUnits?.some(
           (unit: any) =>
@@ -927,6 +958,7 @@ class OnboardingState {
 
       // ── Step 3: Create Academic Year & Periods ────────────────────────
       let rootPeriodId = "";
+      const todayStr = new Date().toISOString().slice(0, 10);
       try {
         const rootPeriod = await commands.calendar.createAcademicPeriod({
           name: this.calendar.academicYearName || "Academic Year",
@@ -935,6 +967,8 @@ class OnboardingState {
           end_date: this.calendar.endDate,
           period_type: "year",
           parent_id: null,
+          status: "active",
+          is_enrollment_open: 1,
         });
         rootPeriodId = rootPeriod?.id || "";
         console.log("Root academic period created successfully with ID:", rootPeriodId);
@@ -951,12 +985,22 @@ class OnboardingState {
         }
 
         // Process child periods from payload
-        for (const period of payload.periods.slice(1)) {
+        for (let pIdx = 0; pIdx < payload.periods.slice(1).length; pIdx++) {
+          const period = payload.periods.slice(1)[pIdx];
           try {
             let parentId = rootPeriodId;
             if (period.parent_id && createdPeriodsMap[period.parent_id]) {
               parentId = createdPeriodsMap[period.parent_id];
             }
+
+            // The first semester / active period starts active and open for enrollment
+            const isFirstPeriod = pIdx === 0;
+            const periodStatus = isFirstPeriod || (period.start_date <= todayStr && todayStr <= period.end_date)
+              ? "active"
+              : "planned";
+            const isEnrollOpen = isFirstPeriod || (period.start_date <= todayStr && todayStr <= period.end_date)
+              ? 1
+              : 0;
 
             const created = await commands.calendar.createAcademicPeriod({
               parent_id: parentId,
@@ -966,6 +1010,8 @@ class OnboardingState {
               end_date: period.end_date,
               period_type: period.period_type,
               weight: period.weight ? Math.round(Number(period.weight)) : undefined,
+              status: periodStatus,
+              is_enrollment_open: isEnrollOpen,
             });
             if (created?.id && period.id) {
               createdPeriodsMap[period.id] = created.id;
@@ -982,14 +1028,15 @@ class OnboardingState {
       }
 
       // ── Step 4: Create Classes (الفصول) ───────────────────────────────
+      const createdClassIds: string[] = [];
+      const targetClassOrgUnitId = branchUnitId || rootUnitId;
       for (const gl of this.academics.gradeLevels) {
         if (!gl.enabled) continue;
-        const targetOrgUnitId = rootUnitId;
 
         for (const div of gl.divisions) {
           try {
-            await commands.academic.createClass({
-              org_unit_id: targetOrgUnitId,
+            const createdClass = await commands.academic.createClass({
+              org_unit_id: targetClassOrgUnitId,
               period_id: activePeriodId,
               name: `${gl.name} - ${div}`,
               name_ar: `${gl.name_ar} - الشعبة ${div}`,
@@ -998,6 +1045,9 @@ class OnboardingState {
               division: div,
               color: gl.color,
             });
+            if (createdClass?.id) {
+              createdClassIds.push(createdClass.id);
+            }
           } catch (e) {
             console.warn(`Class "${gl.name} - ${div}" creation warning:`, e);
           }
@@ -1043,15 +1093,44 @@ class OnboardingState {
       }
 
       // ── Step 7: Create Subjects (المواد الدراسية) ─────────────────────
+      const createdSubjectIds: string[] = [];
       for (const subj of payload.subjects) {
         try {
-          await commands.academic.createSubject({
+          const createdSubj = await commands.academic.createSubject({
             code: subj.code,
             name: subj.name,
             name_ar: subj.name_ar,
           });
+          if (createdSubj?.id) {
+            createdSubjectIds.push(createdSubj.id);
+          }
         } catch (e) {
           console.warn(`Subject "${subj.name}" creation warning:`, e);
+        }
+      }
+
+      // ── Step 7b: Auto-allocate Curriculum (class_subjects) ───────────
+      // For Schools: Curriculums/subjects are continuous throughout the entire academic year (applied to root year AND all semester periods).
+      // For Universities / Institutes: Allocated for the active semester/period.
+      const targetPeriodIds =
+        this.profile.institutionType === "school"
+          ? Array.from(new Set([activePeriodId, ...Object.values(createdPeriodsMap)].filter(Boolean)))
+          : [activePeriodId];
+
+      for (const classId of createdClassIds) {
+        for (const subjId of createdSubjectIds) {
+          for (const targetPeriodId of targetPeriodIds) {
+            try {
+              await commands.academic.createClassSubject({
+                class_id: classId,
+                subject_id: subjId,
+                period_id: targetPeriodId,
+                weekly_hours: 4,
+              });
+            } catch (csErr) {
+              console.warn("Class-subject allocation warning:", csErr);
+            }
+          }
         }
       }
 
@@ -1090,6 +1169,15 @@ class OnboardingState {
             console.warn(`Fee template for ${gl.level} warning:`, feeErr);
           }
         }
+      }
+
+      // ── Step 9: Autopilot Zero-Day Kickoff & Diagnostics ──────────────
+      try {
+        await commands.ai?.autopilotRunTick?.();
+        const diag = await commands.ai?.autopilotGetDiagnostics?.();
+        console.log("Autopilot zero-day kickoff completed:", diag);
+      } catch (apErr) {
+        console.warn("Autopilot kickoff notification:", apErr);
       }
 
       localStorage.removeItem("orbis_onboarding_state");

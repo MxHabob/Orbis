@@ -139,9 +139,13 @@ pub struct CreatePeriodPayload {
     #[serde(default)]
     pub enrollment_end: Option<String>,
     #[serde(default)]
+    pub is_enrollment_open: Option<i32>,
+    #[serde(default)]
     pub grade_entry_start: Option<String>,
     #[serde(default)]
     pub grade_entry_end: Option<String>,
+    #[serde(default)]
+    pub is_grade_entry_open: Option<i32>,
     #[serde(default)]
     pub exam_start: Option<String>,
     #[serde(default)]
@@ -150,6 +154,8 @@ pub struct CreatePeriodPayload {
     pub scale_id: Option<String>,
     #[serde(default)]
     pub pass_fail_policy_id: Option<String>,
+    #[serde(default)]
+    pub status: Option<String>,
     #[serde(default)]
     pub sort_order: Option<i32>,
     #[serde(default)]
@@ -190,6 +196,9 @@ pub async fn create(
         .one(&ctx.db)
         .await?;
 
+    let period_status = req.status.unwrap_or_else(|| "planned".to_string());
+    let is_enroll_open = req.is_enrollment_open.unwrap_or(0);
+
     if year_exists.is_none() {
         let year_model = crate::entities::academic_year::ActiveModel {
             id: Set(period_id_val.clone()),
@@ -200,7 +209,7 @@ pub async fn create(
             end_date: Set(req.end_date.clone()),
             hijri_start: Set(None),
             hijri_end: Set(None),
-            status: Set("active".to_string()),
+            status: Set(if period_status == "active" { "active".to_string() } else { "active".to_string() }),
             is_locked: Set(0),
             locked_at: Set(None),
             locked_by: Set(None),
@@ -223,22 +232,22 @@ pub async fn create(
         name: Set(req.name),
         name_ar: Set(req.name_ar),
         code: Set(req.code),
-        period_type: Set(period_type_val),
+        period_type: Set(period_type_val.clone()),
         start_date: Set(req.start_date),
         end_date: Set(req.end_date),
         hijri_start: Set(None),
         hijri_end: Set(None),
         enrollment_start: Set(req.enrollment_start),
         enrollment_end: Set(req.enrollment_end),
-        is_enrollment_open: Set(0),
+        is_enrollment_open: Set(is_enroll_open),
         grade_entry_start: Set(req.grade_entry_start),
         grade_entry_end: Set(req.grade_entry_end),
-        is_grade_entry_open: Set(0),
+        is_grade_entry_open: Set(req.is_grade_entry_open.unwrap_or(0)),
         exam_start: Set(req.exam_start),
         exam_end: Set(req.exam_end),
         scale_id: Set(req.scale_id),
         pass_fail_policy_id: Set(req.pass_fail_policy_id),
-        status: Set("planned".to_string()),
+        status: Set(period_status.clone()),
         is_locked: Set(0),
         locked_at: Set(None),
         locked_by: Set(None),
@@ -253,10 +262,43 @@ pub async fn create(
     ctx.audit.log(AuditEntry {
         org_id: ctx.org_id.clone(), actor: ctx.actor.clone(),
         action: "period.create".into(), entity_type: "academic_period".into(),
-        entity_id: id, old_data: None,
+        entity_id: id.clone(), old_data: None,
         new_data: Some(serde_json::to_value(&created).unwrap_or_default()),
         correlation_id: ctx.correlation_id.clone(),
     }).await?;
+
+    ctx.event_bus.publish(shared_kernel::event_bus::EventEnvelope {
+        event_type: "period.created".to_string(),
+        entity_type: "academic_period".to_string(),
+        entity_id: id.clone(),
+        org_id: ctx.org_id.clone(),
+        actor: ctx.actor.as_str().into(),
+        actor_type: ctx.actor.actor_type().into(),
+        correlation_id: ctx.correlation_id.clone(),
+        payload: serde_json::json!({
+            "period_id": &id,
+            "period_type": &period_type_val,
+            "status": &period_status,
+        }),
+        chain_depth: 0,
+    });
+
+    if period_status == "active" {
+        ctx.event_bus.publish(shared_kernel::event_bus::EventEnvelope {
+            event_type: "period.activated".to_string(),
+            entity_type: "academic_period".to_string(),
+            entity_id: id.clone(),
+            org_id: ctx.org_id.clone(),
+            actor: ctx.actor.as_str().into(),
+            actor_type: ctx.actor.actor_type().into(),
+            correlation_id: ctx.correlation_id.clone(),
+            payload: serde_json::json!({
+                "period_id": &id,
+                "period_type": &period_type_val,
+            }),
+            chain_depth: 0,
+        });
+    }
 
     Ok(created)
 }

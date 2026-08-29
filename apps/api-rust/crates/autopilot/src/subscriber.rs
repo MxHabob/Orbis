@@ -27,6 +27,8 @@ impl AutopilotSubscriber {
                         // or any enrollment change that could alter fee calculations.
                         let trigger_tick = match event.event_type.as_str() {
                             "period.locked" | "period.closed" | "period.activated" => true,
+                            "period.created" | "class.created" => true,
+                            "organization.bootstrapped" | "onboarding.completed" => true,
                             "enrollment.created" | "enrollment.updated" | "enrollment.deleted" => true,
                             "assessment.period_score_calculated" => true,
                             _ => false,

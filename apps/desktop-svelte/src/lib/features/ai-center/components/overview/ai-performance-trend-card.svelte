@@ -166,6 +166,16 @@ function handleMouseLeave() {
           </div>
         </div>
       {/if}
+
+      <!-- Zero Activity Overlay -->
+      {#if displayData.every((d) => d.requests === 0)}
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+          <div class="px-3 py-1.5 rounded-lg bg-background/80 backdrop-blur-xs border border-border/60 text-[10px] text-muted-foreground font-medium flex items-center gap-1.5 shadow-xs">
+            <Activity size={12} class="text-primary" />
+            <span>جاهز للاستخدام — يبدأ المخطط بالرسم فور تنفيذ الوكلاء للعمليات والاستفسارات</span>
+          </div>
+        </div>
+      {/if}
     </div>
 
     <!-- Footer link -->

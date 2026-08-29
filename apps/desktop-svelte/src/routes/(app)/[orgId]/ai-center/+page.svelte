@@ -29,7 +29,7 @@ let { data }: { data: { orgId: string } } = $props();
 let healthStatus = $state<"healthy" | "degraded" | "offline">("healthy");
 let sessionCount = $state(0);
 let actionCount = $state(0);
-let autopilotMode = $state("مقترح");
+let autopilotMode = $state("تلقائي");
 let connectedAppsCount = $state(0);
 let connectedIntegrations = $state<any[]>([]);
 let activeSessions = $state<any[]>([]);
@@ -38,25 +38,24 @@ let isLoading = $state(true);
 
 onMount(async () => {
   try {
-    const [health, logs, tasks, integrations, sessions] = await Promise.all([
-      (commands as any).aiCenter?.checkHealth?.().catch(() => null) ?? Promise.resolve(null),
-      (commands as any).aiCenter?.listActionLogs?.(data.orgId).catch(() => []) ?? commands.iam?.listAuditLogs?.().catch(() => []) ?? Promise.resolve([]),
-      (commands as any).aiCenter?.listAutopilotTasks?.(data.orgId).catch(() => []) ?? Promise.resolve([]),
-      (commands as any).aiCenter?.listConnectedIntegrations?.().catch(() => []) ?? Promise.resolve([]),
-      (commands as any).agent?.listSessions?.(data.orgId).catch(() => []) ?? Promise.resolve([]),
+    const [tasks, diagnostics, sessions, config] = await Promise.all([
+      commands.ai.autopilotGetTasks().catch(() => []),
+      commands.ai.autopilotGetDiagnostics().catch(() => null),
+      commands.ai.agentGetSessions().catch(() => []),
+      commands.ai.aiGetAutopilotConfig(data.orgId).catch(() => null),
     ]);
 
-    healthStatus = health ? "healthy" : "healthy";
-    activeSessions = (sessions as any[]) ?? [];
+    healthStatus = (diagnostics as any)?.is_healthy === false ? "degraded" : "healthy";
+    activeSessions = Array.isArray(sessions) ? sessions : [];
     sessionCount = activeSessions.length;
-    actionCount = (logs as any[])?.length ?? 0;
-    connectedIntegrations = (integrations as any[]) ?? [];
-    connectedAppsCount = connectedIntegrations.length;
-    recentLogs = ((logs as any[]) ?? []).slice(0, 5);
 
-    const config = await ((commands as any).aiCenter?.getAutopilotConfig?.(data.orgId) ?? commands.platform_policy?.getAutopilotConfig(data.orgId) ?? Promise.resolve(null)).catch(() => null);
-    if (config && (config as any).enabled) {
-      autopilotMode = (config as any).execution_mode === "automatic" ? "تلقائي" : "مقترح";
+    const taskList = Array.isArray(tasks) ? (tasks as any[]) : [];
+    actionCount = taskList.length;
+    recentLogs = taskList.slice(0, 5);
+
+    if (config) {
+      const mode = (config as any).execution_mode || (config as any).autopilot_mode;
+      autopilotMode = mode === "automatic" ? "تلقائي" : mode === "manual" ? "يدوي" : "مقترح";
     }
   } catch (e) {
     console.warn("[AI Center] Overview load:", e);
@@ -214,13 +213,13 @@ const healthInfo = $derived(healthConfig[healthStatus]);
               {#each recentLogs as log}
                 <div class="px-4 py-3 flex items-center justify-between hover:bg-muted/20 transition-colors">
                   <div class="flex items-center gap-3">
-                    <span class="w-2 h-2 rounded-full bg-primary shrink-0"></span>
+                    <span class="w-2 h-2 rounded-full {log.status === 'completed' ? 'bg-primary' : log.status === 'failed' ? 'bg-destructive' : 'bg-muted-foreground/60'} shrink-0"></span>
                     <div>
-                      <code class="text-[11px] font-mono font-semibold text-foreground bg-muted px-1.5 py-0.5 rounded">{log.action_code}</code>
-                      <p class="text-[11px] text-muted-foreground mt-1 truncate max-w-sm">{log.reasoning || "تم تنفيذ الإجراء تلقائياً."}</p>
+                      <code class="text-[11px] font-mono font-semibold text-foreground bg-muted px-1.5 py-0.5 rounded">{log.task_type || log.action_code || log.action || "مهمة أتمتة"}</code>
+                      <p class="text-[11px] text-muted-foreground mt-1 truncate max-w-sm">{log.last_error || log.reason || log.reasoning || (log.status === 'completed' ? 'تم تنفيذ المهمة بنجاح.' : 'مجدولة للتنفيذ القادم.')}</p>
                     </div>
                   </div>
-                  <span class="text-[10px] text-muted-foreground font-mono shrink-0">{log.executed_at || "—"}</span>
+                  <span class="text-[10px] text-muted-foreground font-mono shrink-0">{log.scheduled_at || log.executed_at || "—"}</span>
                 </div>
               {/each}
             </div>

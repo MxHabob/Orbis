@@ -197,13 +197,35 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
         ]
     )).await.map_err(|e| AppError::internal(format!("Failed to create pass/fail policy: {e}")))?;
 
-    // 3c. Academic Policies (SSOT reference hub)
+    // 3c. Academic Policies (SSOT reference hub + Full Autopilot Baseline)
     let policy_id = Uuid::new_v4().to_string();
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO academic_policies (id, org_id, default_scale_id, default_pass_fail_policy_id, default_grading_system, default_passing_score, default_max_score, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+        "INSERT INTO academic_policies (
+            id, org_id, default_scale_id, default_pass_fail_policy_id,
+            default_grading_system, default_passing_score, default_max_score,
+            enrollment_auto_close, allow_late_enrollment, late_enrollment_approval,
+            grade_entry_auto_close, allow_grade_edit_after_close, grade_edit_approval,
+            min_attendance_rate, auto_graduate_final_level, exclude_withdrawn,
+            autopilot_mode, autopilot_enabled, max_auto_retries, pause_on_error,
+            auto_open_enrollment, auto_close_enrollment, auto_open_grade_entry, auto_close_grade_entry,
+            auto_lock_periods, auto_advance_periods, auto_archive_years,
+            grace_days_after_deadline, notify_before_deadline_days,
+            created_at, updated_at
+        ) VALUES (
+            $1, $2, $3, $4,
+            $5, $6, $7,
+            1, 1, 0,
+            1, 0, 1,
+            75.0, 0, 1,
+            'automatic', 1, 3, 0,
+            1, 1, 1, 1,
+            1, 0, 0,
+            7, 3,
+            $8, $9
+        )",
         vec![
-            policy_id.into(), org_id.clone().into(),
+            policy_id.clone().into(), org_id.clone().into(),
             scale_id.clone().into(),
             pf_id.into(),
             blueprint.grading_system.clone().into(),
@@ -409,6 +431,17 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
         )).await.map_err(|e| AppError::internal(format!("Failed to create period template: {e}")))?;
     }
     let tmpl_id = primary_tmpl_id;
+
+    // Link default template to academic policies
+    db.execute(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "UPDATE academic_policies SET default_template_id = $1, updated_at = $2 WHERE org_id = $3",
+        vec![
+            tmpl_id.clone().into(),
+            now.clone().into(),
+            org_id.clone().into(),
+        ]
+    )).await.ok();
 
     // 3f. Default Role Permissions
     for perm in &blueprint.default_permissions {
