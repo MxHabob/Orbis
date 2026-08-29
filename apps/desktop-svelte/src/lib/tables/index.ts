@@ -5,6 +5,7 @@ export * as tableDefs from "./definitions";
 // Cells
 export { default as AvatarCell } from "./components/AvatarCell.svelte";
 export { default as BadgeCell } from "./components/BadgeCell.svelte";
+export { default as CheckboxCell } from "./components/CheckboxCell.svelte";
 export { default as ActionsCell } from "./components/ActionsCell.svelte";
 export { default as DefaultCell } from "./components/DefaultCell.svelte";
 export { default as ActionOverlay } from "./components/ActionOverlay.svelte";

@@ -273,15 +273,52 @@ pub async fn register_student(
         }
     }
 
+/// Format student number according to organization numbering pattern.
+fn format_student_number(pattern: &str, prefix: &str, digits: usize, sequence: u64) -> String {
+    let year = chrono::Utc::now().format("%Y").to_string();
+    let short_year = chrono::Utc::now().format("%y").to_string();
+    let width = if digits > 0 { digits } else { 5 };
+    let seq_str = format!("{:0width$}", sequence, width = width);
+
+    let trimmed_pattern = pattern.trim();
+    if trimmed_pattern.is_empty() {
+        return format!("{}{}", prefix, seq_str);
+    }
+
+    let mut result = trimmed_pattern.to_string();
+    result = result.replace("{PREFIX}", prefix);
+    result = result.replace("{YEAR}", &year);
+    result = result.replace("{YYYY}", &year);
+    result = result.replace("{YY}", &short_year);
+    result = result.replace("{SEQ}", &seq_str);
+    result = result.replace("{SEQUENCE}", &seq_str);
+
+    if result.contains('#') {
+        let hash_count = result.chars().filter(|c| *c == '#').count();
+        let formatted_seq = format!("{:0width$}", sequence, width = hash_count);
+        let hashes = "#".repeat(hash_count);
+        result = result.replace(&hashes, &formatted_seq);
+    }
+
+    if !trimmed_pattern.contains("{SEQ}") && !trimmed_pattern.contains("{SEQUENCE}") && !trimmed_pattern.contains('#') {
+        result = format!("{}-{}", result, seq_str);
+    }
+
+    result
+}
+
     // ── Step 4: Generate Student Number ──────────────────────────
     process.begin_step(&tx, "generate_number").await?;
     let sequence = enrollment::Entity::find()
         .filter(enrollment::Column::OrgId.eq(&ctx.org_id))
         .count(&tx)
         .await? + 1;
-    let prefix = &settings.student_number_prefix;
-    let digits = settings.student_number_digits;
-    let student_number = format!("{}{:0width$}", prefix, sequence, width = digits);
+    let student_number = format_student_number(
+        &settings.student_number_pattern,
+        &settings.student_number_prefix,
+        settings.student_number_digits,
+        sequence,
+    );
     process.complete_step(&tx, "generate_number", serde_json::json!({"number": &student_number})).await?;
 
     // ── Step 5: Create Enrollment ────────────────────────────────

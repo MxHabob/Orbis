@@ -9,7 +9,7 @@ import { commands } from "$lib/core/ipc";
 export function createEnrollmentsQuery(orgId: () => string) {
   return createQuery(() => ({
     queryKey: ["enrollments", orgId()],
-    queryFn: () => commands.academic.listEnrollments(),
+    queryFn: () => commands.academic.listEnriched(),
     enabled: !!orgId(),
     staleTime: 2 * 60 * 1000, // Student data changes more frequently — 2 min
   }));
@@ -23,7 +23,7 @@ export function createEnrollmentsPaginatedQuery(
   return createInfiniteQuery(() => ({
     queryKey: ["enrollments_paginated", orgId(), limit],
     queryFn: async ({ pageParam }) => {
-      return commands.academic.listEnrollmentsPaginated(pageParam as string | null, limit);
+      return commands.academic.listPaginatedEnriched(pageParam as string | null, limit);
     },
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage: any) => {

@@ -5,11 +5,10 @@ Matches the column layout and styling of the React dashboard precisely.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { DataTable } from "$lib/tables";
+import { DataTable, AvatarCell, BadgeCell, CheckboxCell } from "$lib/tables";
 import type { Enrollment } from "$lib/core/ipc";
 
 import { formatDate, l } from "$lib/core/i18n";
-import { createInitials } from "$lib/tables";
 import type { OrbisColumnDef, GridActionEvent } from "@orbis/svelte-grid";
 import { GraduationCap } from "@lucide/svelte";
 import { goto } from "$app/navigation";
@@ -19,7 +18,7 @@ import { studentsStore } from "$lib/features/students";
 let {
   students,
   classes = [],
-  enableSelection = false,
+  enableSelection = true,
   selectedIds = $bindable(new Set()),
   onSelectionChange,
   orgId,
@@ -43,19 +42,14 @@ function getClassName(classId: string): string {
 
 // ── Column Definitions ─────────────────────────────────────────────
 
-import { AvatarCell, BadgeCell } from "$lib/tables";
-
-// ── Column Definitions ─────────────────────────────────────────────
-
-const columns = $derived.by<OrbisColumnDef[]>(() => [
+const baseColumns: OrbisColumnDef[] = [
   {
     id: "full_name",
     prop: "full_name",
     header: m.common_word_student(),
     name: m.common_word_student(),
-    width: 320,
-    size: 320,
-    pin: "colPinStart",
+    width: 280,
+    size: 280,
     cell: AvatarCell,
   },
   {
@@ -73,8 +67,8 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
     prop: "class_name",
     header: m.common_table_class(),
     name: m.common_table_class(),
-    width: 150,
-    size: 150,
+    width: 160,
+    size: 160,
   },
   {
     id: "status",
@@ -90,8 +84,8 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
     prop: "sex_display",
     header: m.common_form_sex(),
     name: m.common_form_sex(),
-    width: 100,
-    size: 100,
+    width: 110,
+    size: 110,
   },
   {
     id: "enrollment_date_display",
@@ -102,49 +96,58 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
     size: 150,
     cellClass: "text-xs text-muted-foreground",
   },
-]);
+];
 
-let gridSource = $derived(
-  (students || []).map((student, i) => ({
-    ...student,
-    __idx: i + 1,
-    class_name: getClassName(String(student.class_id)),
-    sex_display:
-      student.sex === "male"
-        ? m.common_form_male()
-        : student.sex === "female"
-          ? m.common_form_female()
-          : "-",
-    enrollment_date_display: student.enrollment_date
-      ? formatDate(student.enrollment_date)
-      : "-",
-    __selected: selectedIds.has(String(student.id)),
-  })),
-);
-
-let activeColumns = $derived.by(() => {
-  const cols = [...columns];
+const columns = $derived.by<OrbisColumnDef[]>(() => {
+  const cols = [...baseColumns];
   if (enableSelection) {
     cols.unshift({
       id: "__selected",
       prop: "__selected",
       header: "",
       name: "",
-      width: 40,
-      size: 40,
-      readonly: true,
-      pin: "colPinStart",
-      editor: "checkbox",
+      width: 48,
+      size: 48,
+      cell: CheckboxCell,
+      sort: false,
     });
   }
   return cols;
 });
 
+let gridSource = $derived(
+  (students || []).map((student, i) => {
+    const rawSex = String(student.sex || (student as any).gender || "").toLowerCase();
+    const studentName =
+      student.full_name ||
+      (student as any).name ||
+      (student as any).name_ar ||
+      (student as any).name_en ||
+      m.common_word_student();
+    const isSelected = selectedIds.has(String(student.id));
+
+    return {
+      ...student,
+      __idx: i + 1,
+      __selected: isSelected,
+      full_name: studentName,
+      class_name: getClassName(String(student.class_id)),
+      sex_display:
+        rawSex === "male" || rawSex === "ذكر"
+          ? m.common_form_male()
+          : rawSex === "female" || rawSex === "أنثى"
+            ? m.common_form_female()
+            : "-",
+      enrollment_date_display: student.enrollment_date
+        ? formatDate(student.enrollment_date)
+        : "-",
+    };
+  }),
+);
+
 function handleGridAction(event: GridActionEvent) {
-  if (event.actionId === "dblclick") {
-    goto(localizeHref(`/${orgId}/students/${event.row.id}`));
-  } else if (event.actionId === "toggle-select") {
-    const id = String(event.row.id);
+  if (event.actionId === "toggle-select") {
+    const id = String(event.row?.id);
     const newSet = new Set(selectedIds);
     if (newSet.has(id)) {
       newSet.delete(id);
@@ -153,15 +156,23 @@ function handleGridAction(event: GridActionEvent) {
     }
     selectedIds = newSet;
     onSelectionChange?.(newSet);
+  } else if (event.actionId === "dblclick") {
+    if (event.row?.id) {
+      goto(localizeHref(`/${orgId}/students/${event.row.id}`));
+    }
+  } else if (event.actionId === "click") {
+    if (event.row?.id) {
+      studentsStore.selectedId = String(event.row.id);
+    }
   }
 }
 </script>
 
 <DataTable
-  columns={activeColumns}
+  {columns}
   source={gridSource}
   height="100%"
-  rowSize={48}
+  rowSize={44}
   rtl={getLocale() === "ar"}
   onaction={handleGridAction}
   emptyIcon={GraduationCap}

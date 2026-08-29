@@ -516,6 +516,9 @@ export class StudentFormState {
             }
           }
         }
+      if (queryClient) {
+        queryClient.invalidateQueries({ queryKey: ["enrollments"] });
+        queryClient.invalidateQueries({ queryKey: ["enrollments_paginated"] });
       }
 
       goto(localizeHref(`/${this.orgId}/students`));
