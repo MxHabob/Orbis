@@ -142,6 +142,11 @@ pub async fn start_server(_database_url: &str, port: u16) -> Result<(), Box<dyn 
         .route("/api/import/grades", post(handler::import_export::post_import_grades))
         .route("/api/export/students", get(handler::import_export::get_export_students))
         .route("/api/export/grades", get(handler::import_export::get_export_grades))
+        // Reports
+        .route("/api/reports", get(handler::report::get_reports))
+        .route("/api/reports/:code", get(handler::report::get_report_definition))
+        .route("/api/reports/generate", post(handler::report::post_generate_report))
+        .route("/api/reports/export", post(handler::report::post_export_report))
         // Static Storage
         .nest_service("/storage", ServeDir::new("app_data/storage"))
         .with_state(state)

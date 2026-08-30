@@ -2383,5 +2383,6 @@
   "common_sidebar_help_twitter": "Twitter / X",
   "common_sidebar_help_github": "GitHub",
   "common_sidebar_help_legal": "Legal",
-  "common_search_add": "Add"
+  "common_search_add": "Add",
+  "common_refresh": "Refresh"
 }

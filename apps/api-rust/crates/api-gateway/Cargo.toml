@@ -21,6 +21,7 @@ svc-scheduling = { workspace = true }
 svc-finance = { workspace = true }
 svc-exam = { workspace = true }
 svc-document = { workspace = true }
+svc-report = { workspace = true }
 autopilot = { workspace = true }
 docforge-orbis = { path = "../docforge-orbis" }
 infra-persistence = { workspace = true }

@@ -1,4 +1,4 @@
-﻿//! Application state for the API Gateway.
+//! Application state for the API Gateway.
 //!
 //! Mirrors the Desktop's AppState but for HTTP context.
 //! Provides `build_context()` to create a `ServiceContext` for any request.
@@ -9,6 +9,8 @@ use shared_kernel::context::ServiceContext;
 use shared_kernel::traits::Actor;
 use shared_kernel::event_bus::EventBus;
 use shared_kernel::errors::AppError;
+use svc_report::service::ReportService;
+use svc_report::registry::ReportRegistry;
 
 /// Platform services â€” same as Desktop, shared between both.
 pub struct PlatformServices {
@@ -133,6 +135,7 @@ pub struct AppState {
     pub db: DatabaseConnection,
     pub platform: Arc<PlatformServices>,
     pub config: Arc<shared_kernel::config::Config>,
+    pub report_svc: Arc<ReportService>,
 }
 
 impl AppState {
@@ -155,7 +158,12 @@ impl AppState {
         platform.start_autopilot_scheduler();
         platform.start_autopilot_catch_up();
 
-        Ok(Self { db, platform, config })
+        // Initialize report service
+        let registry = Arc::new(ReportRegistry::new());
+        let report_svc = Arc::new(ReportService::new(registry, Arc::new(db.clone())));
+        report_svc.register_builtin_reports();
+
+        Ok(Self { db, platform, config, report_svc })
     }
 
     /// Build a ServiceContext from the authenticated user.
@@ -171,6 +179,16 @@ impl AppState {
         let mut ctx = self.platform.context_for(self.db.clone(), org_id, Actor::System);
         ctx.ensure_correlation_id();
         ctx
+    }
+
+    /// Get the report service.
+    pub fn report_service(&self) -> &ReportService {
+        &self.report_svc
+    }
+
+    /// Get a reference to the database connection.
+    pub fn db(&self) -> &DatabaseConnection {
+        &self.db
     }
 
     /// Validate a Bearer token and return the user model.

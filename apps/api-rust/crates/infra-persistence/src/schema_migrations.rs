@@ -17,6 +17,7 @@ pub async fn run_p0_migrations(db: &DatabaseConnection) -> Result<(), DbErr> {
     migrate_grading_architecture(db).await?;
     migrate_p6_schema_corrections(db).await?;
     migrate_p7_grading_bindings(db).await?;
+    migrate_p8_report_definitions(db).await?;
     Ok(())
 }
 
@@ -943,5 +944,79 @@ async fn migrate_p7_grading_bindings(db: &DatabaseConnection) -> Result<(), DbEr
     db.execute_unprepared("CREATE INDEX IF NOT EXISTS idx_grades_component ON grades(component_id)").await?;
 
     info!("P7 migration complete: grading bindings applied");
+    Ok(())
+}
+
+/// P8: Report definitions and template bindings tables.
+async fn migrate_p8_report_definitions(db: &DatabaseConnection) -> Result<(), DbErr> {
+    // Check if already applied
+    let row = db
+        .query_one(Statement::from_string(
+            db.get_database_backend(),
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'report_definitions'",
+        ))
+        .await?;
+
+    if row.is_some() {
+        return Ok(());
+    }
+
+    info!("Applying P8 migration: report definitions and template bindings");
+
+    // Report Definitions — metadata for every available report
+    db.execute_unprepared(
+        r#"CREATE TABLE IF NOT EXISTS report_definitions (
+            code                  TEXT PRIMARY KEY,
+            org_id                TEXT,
+            domain                TEXT NOT NULL,
+            category              TEXT NOT NULL,
+            name                  TEXT NOT NULL,
+            name_ar               TEXT NOT NULL,
+            description           TEXT,
+            description_ar        TEXT,
+            parameters_schema     TEXT NOT NULL DEFAULT '[]',
+            required_permissions  TEXT DEFAULT '[]',
+            supported_formats     TEXT DEFAULT '["data_only"]',
+            default_template_id   TEXT,
+            is_system             INTEGER DEFAULT 1,
+            is_active             INTEGER DEFAULT 1,
+            sort_order            INTEGER DEFAULT 0,
+            version               INTEGER DEFAULT 1,
+            created_at            TEXT NOT NULL,
+            updated_at            TEXT NOT NULL
+        )"#,
+    )
+    .await?;
+
+    db.execute_unprepared(
+        "CREATE INDEX IF NOT EXISTS idx_rd_domain ON report_definitions(domain, category)",
+    )
+    .await?;
+
+    db.execute_unprepared(
+        "CREATE INDEX IF NOT EXISTS idx_rd_org ON report_definitions(org_id) WHERE org_id IS NOT NULL",
+    )
+    .await?;
+
+    // Report Template Bindings — links report definitions to DocForge templates
+    db.execute_unprepared(
+        r#"CREATE TABLE IF NOT EXISTS report_template_bindings (
+            id             TEXT PRIMARY KEY,
+            report_code    TEXT NOT NULL REFERENCES report_definitions(code) ON DELETE CASCADE,
+            template_id    TEXT REFERENCES templates(id),
+            locale         TEXT DEFAULT 'ar',
+            format         TEXT DEFAULT 'pdf',
+            is_default     INTEGER DEFAULT 1,
+            created_at     TEXT NOT NULL
+        )"#,
+    )
+    .await?;
+
+    db.execute_unprepared(
+        "CREATE INDEX IF NOT EXISTS idx_rtb_report ON report_template_bindings(report_code, locale, format)",
+    )
+    .await?;
+
+    info!("P8 migration complete: report definitions and template bindings");
     Ok(())
 }

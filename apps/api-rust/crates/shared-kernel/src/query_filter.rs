@@ -1,27 +1,16 @@
 use sea_orm::{Condition, sea_query::{Expr, Value as SeaValue, SimpleExpr}, ColumnTrait, EntityTrait};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default)]
+#[serde(default)]
 pub struct UniversalFilter {
     pub conditions: Vec<FilterCondition>,
-    #[serde(default)]
     pub logic: FilterLogic,
     pub search: Option<String>,
     pub sort_by: Option<String>,
     pub sort_dir: Option<SortDirection>,
 }
 
-impl Default for UniversalFilter {
-    fn default() -> Self {
-        Self {
-            conditions: Vec::new(),
-            logic: FilterLogic::And,
-            search: None,
-            sort_by: None,
-            sort_dir: None,
-        }
-    }
-}
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct FilterCondition {

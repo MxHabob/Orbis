@@ -197,6 +197,105 @@ pub struct OrgSettings {
     pub registration: RegistrationSettings,
     pub finance: FinanceSettings,
     pub grading: GradingSettings,
+    #[serde(default)]
+    pub reporting: ReportingSettings,
+}
+
+// ── Reporting Settings ──────────────────────────────────────────
+
+/// Controls report generation behavior for an organization.
+///
+/// Stored as part of `OrgSettings` in `organizations.settings` JSON.
+/// Read by `SettingsProvider` and used when resolving report `OrgContext`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReportingSettings {
+    /// Header style: "standard" (logo + name + address), "minimal" (name only),
+    /// "custom" (user-defined template component).
+    #[serde(default = "default_header_style")]
+    pub header_style: String,
+
+    /// Whether to show the organization logo in report headers.
+    #[serde(default = "default_true")]
+    pub show_logo: bool,
+
+    /// Whether to show the address in report headers.
+    #[serde(default)]
+    pub show_address: bool,
+
+    /// Whether to show contact info (phone/email) in report headers.
+    #[serde(default)]
+    pub show_contact: bool,
+
+    /// Organization address (English).
+    #[serde(default)]
+    pub address: Option<String>,
+
+    /// Organization address (Arabic).
+    #[serde(default)]
+    pub address_ar: Option<String>,
+
+    /// Phone number for report headers.
+    #[serde(default)]
+    pub phone: Option<String>,
+
+    /// Email for report headers.
+    #[serde(default)]
+    pub email: Option<String>,
+
+    /// Website for report headers.
+    #[serde(default)]
+    pub website: Option<String>,
+
+    /// Tax identification number.
+    #[serde(default)]
+    pub tax_id: Option<String>,
+
+    /// Registration / license number.
+    #[serde(default)]
+    pub registration_number: Option<String>,
+
+    /// Asset ID of the official stamp image.
+    #[serde(default)]
+    pub stamp_asset_id: Option<String>,
+
+    /// Asset ID of the authorized signature image.
+    #[serde(default)]
+    pub signature_asset_id: Option<String>,
+
+    /// Default report locale: "ar", "en", "ar-en", "en-ar".
+    #[serde(default = "default_report_locale")]
+    pub default_locale: String,
+
+    /// Number format: "arabic-indic" (٠١٢٣) or "western" (0123).
+    #[serde(default = "default_number_format")]
+    pub number_format: String,
+
+    /// Date display format.
+    #[serde(default = "default_date_format")]
+    pub date_format: String,
+}
+
+impl Default for ReportingSettings {
+    fn default() -> Self {
+        Self {
+            header_style: default_header_style(),
+            show_logo: true,
+            show_address: false,
+            show_contact: false,
+            address: None,
+            address_ar: None,
+            phone: None,
+            email: None,
+            website: None,
+            tax_id: None,
+            registration_number: None,
+            stamp_asset_id: None,
+            signature_asset_id: None,
+            default_locale: default_report_locale(),
+            number_format: default_number_format(),
+            date_format: default_date_format(),
+        }
+    }
 }
 
 // ── Default Helpers ─────────────────────────────────────────────
@@ -279,3 +378,20 @@ fn default_passing_grade() -> f64 {
 fn default_max_grade() -> f64 {
     100.0
 }
+
+fn default_header_style() -> String {
+    "standard".to_string()
+}
+
+fn default_report_locale() -> String {
+    "ar".to_string()
+}
+
+fn default_number_format() -> String {
+    "western".to_string()
+}
+
+fn default_date_format() -> String {
+    "YYYY/MM/DD".to_string()
+}
+

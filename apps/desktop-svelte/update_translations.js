@@ -14,7 +14,8 @@ const newAr = {
   "common_sidebar_help_twitter": "تويتر / X",
   "common_sidebar_help_github": "جيت هب",
   "common_sidebar_help_legal": "الشؤون القانونية",
-  "common_search_add": "إضافة"
+  "common_search_add": "إضافة",
+  "common_refresh": "تحديث"
 };
 
 const newEn = {
@@ -28,7 +29,8 @@ const newEn = {
   "common_sidebar_help_twitter": "Twitter / X",
   "common_sidebar_help_github": "GitHub",
   "common_sidebar_help_legal": "Legal",
-  "common_search_add": "Add"
+  "common_search_add": "Add",
+  "common_refresh": "Refresh"
 };
 
 function updateFile(path, newData) {

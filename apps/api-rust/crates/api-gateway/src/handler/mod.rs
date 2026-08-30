@@ -24,3 +24,4 @@ pub mod schedule_solve;
 pub mod room;
 pub mod exam;
 pub mod import_export;
+pub mod report;
