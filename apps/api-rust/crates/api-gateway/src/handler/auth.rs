@@ -19,7 +19,7 @@ pub async fn post_login(
 #[utoipa::path(post, path = "/api/auth/register")]
 pub async fn post_register(
     State(state): State<AppState>,
-    Json(body): Json<serde_json::Value>,
+    Json(body): Json<svc_iam::ops::auth::RegisterPayload>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let r = ops::auth::register(&state.db, body).await
         .map_err(|e| (StatusCode::BAD_REQUEST, Json(json!({"success":false,"error":e.to_string()}))))?;

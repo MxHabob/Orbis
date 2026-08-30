@@ -5,6 +5,6 @@ export interface DocumentCommands {
   listDocuments(ownerId: string | null, entityType: string | null, category: string | null, request: unknown): Promise<unknown>;
   deleteDocument(id: string): Promise<void>;
   uploadDocument(fileName: string, mimeType: string, bytes: unknown[], entityType: string, entityId: string, category: string, visibility: string): Promise<unknown>;
-  getDocuments(request: Types.DocumentListRequest | null): Promise<unknown>;
+  getDocuments(request: unknown | null): Promise<unknown>;
   storageDeleteDocument(id: string): Promise<unknown>;
 }

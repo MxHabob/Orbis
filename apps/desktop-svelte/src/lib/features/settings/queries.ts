@@ -52,19 +52,21 @@ export function createUsersQuery(orgId: () => string) {
   }));
 }
 
+import type { UniversalFilter } from "@orbis/ui-svelte/filter-builder";
+
 /** Paginated users query using Cursor-based infinite scrolling. */
 export function createUsersPaginatedQuery(
   orgId: () => string,
   limit: number = 50,
-  filter?: { role?: string; status?: string },
+  filter?: () => UniversalFilter | undefined,
 ) {
   // @ts-ignore - auto imported
   return createInfiniteQuery(() => ({
-    queryKey: ["users_paginated", orgId(), limit, filter],
+    queryKey: ["users_paginated", orgId(), limit, filter?.()],
     queryFn: async ({ pageParam }) => {
       return commands.iam.listUsersPaginated(
         { cursor: pageParam, limit },
-        filter ?? null,
+        filter?.() ?? null,
       );
     },
     initialPageParam: null as string | null,

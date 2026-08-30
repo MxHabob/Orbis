@@ -244,12 +244,6 @@ export interface AssignRolePayload {
   scope_id?: string | null;
 }
 
-export interface UserFilter {
-  role?: string | null;
-  roles?: string[] | null;
-  status?: string | null;
-}
-
 export interface CreateUserPayload {
   person_id?: string | null;
   full_name: string;

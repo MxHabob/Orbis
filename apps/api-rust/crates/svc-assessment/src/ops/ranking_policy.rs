@@ -26,14 +26,25 @@ use crate::entities::ranking_policy;
 
 // ── CRUD ────────────────────────────────────────────────────────
 
+use shared_kernel::query_filter::UniversalFilter;
+
 /// List all ranking policies for the current organization.
-pub async fn list(ctx: &ServiceContext) -> Result<Vec<ranking_policy::Model>, AppError> {
+pub async fn list(ctx: &ServiceContext, filter: Option<UniversalFilter>) -> Result<Vec<ranking_policy::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AssessmentRead).await?;
 
-    Ok(ranking_policy::Entity::find()
-        .filter(ranking_policy::Column::OrgId.eq(&ctx.org_id))
-        .all(&ctx.db)
-        .await?)
+    let mut query = ranking_policy::Entity::find()
+        .filter(ranking_policy::Column::OrgId.eq(&ctx.org_id));
+
+    if let Some(f) = filter {
+        let condition = f.build_condition(|field| match field {
+            "name" => Some(ranking_policy::Column::Name.into_expr().into()),
+            "is_enabled" => Some(ranking_policy::Column::IsEnabled.into_expr().into()),
+            _ => None,
+        });
+        query = query.filter(condition);
+    }
+
+    Ok(query.all(&ctx.db).await?)
 }
 
 /// Get a single ranking policy by ID.

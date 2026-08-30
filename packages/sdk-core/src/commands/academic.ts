@@ -20,8 +20,8 @@ export interface AcademicCommands {
   createDocument(req: Types.CreateDocumentPayload): Promise<Types.Document>;
   deleteDocument(docId: string): Promise<void>;
   enrichEnrollmentModels(enrollments: unknown): Promise<Types.EnrichedEnrollmentResponse[]>;
-  listEnrollments(): Promise<Types.Enrollment[]>;
-  listEnriched(): Promise<Types.EnrichedEnrollmentResponse[]>;
+  listEnrollments(filter: unknown | null): Promise<Types.Enrollment[]>;
+  listEnriched(filter: unknown | null): Promise<Types.EnrichedEnrollmentResponse[]>;
   listEnrollmentsPaginated(request: unknown): Promise<unknown>;
   listPaginatedEnriched(request: unknown): Promise<unknown>;
   getEnrollment(id: string): Promise<Types.Enrollment>;

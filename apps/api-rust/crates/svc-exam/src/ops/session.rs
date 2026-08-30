@@ -12,13 +12,26 @@ use shared_kernel::traits::{AuditEntry, Permission};
 use crate::contracts::events::event_types;
 use crate::entities::exam_session;
 
-pub async fn list(ctx: &ServiceContext, period_id: &str) -> Result<Vec<exam_session::Model>, AppError> {
+use shared_kernel::query_filter::UniversalFilter;
+
+pub async fn list(ctx: &ServiceContext, period_id: &str, filter: Option<UniversalFilter>) -> Result<Vec<exam_session::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ExamSessionRead).await?;
-    Ok(exam_session::Entity::find()
+    let mut query = exam_session::Entity::find()
         .filter(exam_session::Column::OrgId.eq(&ctx.org_id))
-        .filter(exam_session::Column::PeriodId.eq(period_id))
-        .order_by_desc(exam_session::Column::StartDate)
-        .all(&ctx.db).await?)
+        .filter(exam_session::Column::PeriodId.eq(period_id));
+
+    if let Some(f) = filter {
+        let condition = f.build_condition(|field| match field {
+            "name" => Some(exam_session::Column::Name.into_expr().into()),
+            "status" => Some(exam_session::Column::Status.into_expr().into()),
+            "start_date" => Some(exam_session::Column::StartDate.into_expr().into()),
+            "end_date" => Some(exam_session::Column::EndDate.into_expr().into()),
+            _ => None,
+        });
+        query = query.filter(condition);
+    }
+
+    Ok(query.order_by_desc(exam_session::Column::StartDate).all(&ctx.db).await?)
 }
 
 pub async fn get(ctx: &ServiceContext, session_id: &str) -> Result<exam_session::Model, AppError> {

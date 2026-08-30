@@ -7,19 +7,19 @@ use svc_assessment::ops;
 #[utoipa::path(get, path = "/api/attendance/{class_id}/{date}")]
 pub async fn get_attendance(State(state): State<AppState>, Path((class_id, date)): Path<(String, String)>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let ctx = state.build_context(&user.org_id, &user.id);
-    let r = ops::attendance::list(&ctx, &class_id, &date).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
+    let r = ops::attendance::list(&ctx, &class_id, &date, None).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(r)
 }
 
 #[utoipa::path(post, path = "/api/attendance")]
-pub async fn post_attendance(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser, Json(body): Json<serde_json::Value>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+pub async fn post_attendance(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser, Json(body): Json<svc_assessment::ops::attendance::CreateAttendancePayload>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let ctx = state.build_context(&user.org_id, &user.id);
     let r = ops::attendance::record(&ctx, body).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(r)
 }
 
 #[utoipa::path(post, path = "/api/attendance/bulk")]
-pub async fn post_attendance_bulk(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser, Json(body): Json<serde_json::Value>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+pub async fn post_attendance_bulk(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser, Json(body): Json<svc_assessment::ops::attendance::BulkAttendancePayload>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let ctx = state.build_context(&user.org_id, &user.id);
     let r = ops::attendance::record_bulk(&ctx, body).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(r)

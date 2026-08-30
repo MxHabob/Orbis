@@ -12,19 +12,32 @@ use crate::entities::behavior_record;
 
 // ── Queries ─────────────────────────────────────────────────────
 
+use shared_kernel::query_filter::UniversalFilter;
+
 /// List behavior records for an enrollment in the org.
 pub async fn list(
     ctx: &ServiceContext,
     enrollment_id: &str,
+    filter: Option<UniversalFilter>,
 ) -> Result<Vec<behavior_record::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::BehaviorRead).await?;
 
-    Ok(behavior_record::Entity::find()
+    let mut query = behavior_record::Entity::find()
         .filter(behavior_record::Column::OrgId.eq(&ctx.org_id))
-        .filter(behavior_record::Column::EnrollmentId.eq(enrollment_id))
-        .order_by_desc(behavior_record::Column::IncidentDate)
-        .all(&ctx.db)
-        .await?)
+        .filter(behavior_record::Column::EnrollmentId.eq(enrollment_id));
+
+    if let Some(f) = filter {
+        let condition = f.build_condition(|field| match field {
+            "behavior_type" => Some(behavior_record::Column::BehaviorType.into_expr().into()),
+            "severity" => Some(behavior_record::Column::Severity.into_expr().into()),
+            "incident_date" => Some(behavior_record::Column::IncidentDate.into_expr().into()),
+            "status" => Some(behavior_record::Column::Status.into_expr().into()),
+            _ => None,
+        });
+        query = query.filter(condition);
+    }
+
+    Ok(query.order_by_desc(behavior_record::Column::IncidentDate).all(&ctx.db).await?)
 }
 
 // ── Commands ────────────────────────────────────────────────────

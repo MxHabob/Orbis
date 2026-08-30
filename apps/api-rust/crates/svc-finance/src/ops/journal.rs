@@ -8,18 +8,32 @@ use shared_kernel::traits::{AuditEntry, Permission};
 
 use crate::entities::journal_entry;
 
+use shared_kernel::query_filter::UniversalFilter;
+
 pub async fn list(
     ctx: &ServiceContext,
     limit: Option<u64>,
     offset: Option<u64>,
+    filter: Option<UniversalFilter>,
 ) -> Result<Vec<journal_entry::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceRead).await?;
     let limit_val = limit.unwrap_or(500);
     let offset_val = offset.unwrap_or(0);
     
-    Ok(journal_entry::Entity::find()
-        .filter(journal_entry::Column::OrgId.eq(&ctx.org_id))
-        .order_by_desc(journal_entry::Column::AccountingDate)
+    let mut query = journal_entry::Entity::find()
+        .filter(journal_entry::Column::OrgId.eq(&ctx.org_id));
+
+    if let Some(f) = filter {
+        let condition = f.build_condition(|field| match field {
+            "source_type" => Some(journal_entry::Column::SourceType.into_expr().into()),
+            "is_reversed" => Some(journal_entry::Column::IsReversed.into_expr().into()),
+            "accounting_date" => Some(journal_entry::Column::AccountingDate.into_expr().into()),
+            _ => None,
+        });
+        query = query.filter(condition);
+    }
+
+    Ok(query.order_by_desc(journal_entry::Column::AccountingDate)
         .limit(limit_val)
         .offset(offset_val)
         .all(&ctx.db).await?)

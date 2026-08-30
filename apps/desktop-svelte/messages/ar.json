@@ -261,7 +261,7 @@
   "common_filter_all": "الكل",
   "common_filter_active": "الطلاب النشطين",
   "common_filter_withdrawn": "الطلاب المنسحبين",
-  "common_filter_all_classes": "كل الصفوف",
+  "common_filter_all_classes": "جميع الفصول",
   "common_table_class": "الصف",
   "common_table_enrolled_at": "تاريخ التسجيل",
   "common_table_no_students": "لم يتم العثور على طلاب",
@@ -2373,5 +2373,15 @@
   "ai_center_integrations_status_coming_soon": "قريباً",
   "ai_center_live_grid_1x1": "شاشة كاملة",
   "ai_center_live_grid_2x2": "شبكة 2x2",
-  "ai_center_live_grid_3x3": "شبكة 3x3"
+  "ai_center_live_grid_3x3": "شبكة 3x3",
+  "common_filter_classes": "الفصول",
+  "common_dt_empty": "لا توجد قوالب خصم",
+  "common_ft_empty_desc": "لا توجد قوالب رسوم",
+  "common_sidebar_help_tour": "جولة في الواجهة",
+  "common_sidebar_help_community": "المجتمع",
+  "common_sidebar_help_discord": "ديسكورد",
+  "common_sidebar_help_twitter": "تويتر / X",
+  "common_sidebar_help_github": "جيت هب",
+  "common_sidebar_help_legal": "الشؤون القانونية",
+  "common_search_add": "إضافة"
 }

@@ -16,14 +16,25 @@ use crate::entities::{assessment_scheme, assessment_scheme_component};
 
 // ── Queries ─────────────────────────────────────────────────────
 
+use shared_kernel::query_filter::UniversalFilter;
+
 /// List all assessment schemes for the current organization.
-pub async fn list(ctx: &ServiceContext) -> Result<Vec<assessment_scheme::Model>, AppError> {
+pub async fn list(ctx: &ServiceContext, filter: Option<UniversalFilter>) -> Result<Vec<assessment_scheme::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AssessmentRead).await?;
 
-    Ok(assessment_scheme::Entity::find()
-        .filter(assessment_scheme::Column::OrgId.eq(&ctx.org_id))
-        .all(&ctx.db)
-        .await?)
+    let mut query = assessment_scheme::Entity::find()
+        .filter(assessment_scheme::Column::OrgId.eq(&ctx.org_id));
+
+    if let Some(f) = filter {
+        let condition = f.build_condition(|field| match field {
+            "name" => Some(assessment_scheme::Column::Name.into_expr().into()),
+            "period_id" => Some(assessment_scheme::Column::PeriodId.into_expr().into()),
+            _ => None,
+        });
+        query = query.filter(condition);
+    }
+
+    Ok(query.all(&ctx.db).await?)
 }
 
 /// Get a single assessment scheme by ID.

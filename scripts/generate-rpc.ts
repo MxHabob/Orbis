@@ -11,7 +11,8 @@ const SDK_DESKTOP_DIR = path.join(WORKSPACE_ROOT, "packages", "sdk-desktop", "sr
 const DOMAINS = [
   "iam", "organization", "academic", "assessment",
   "scheduling", "finance", "exam", "document",
-  "calendar", "enrollment_workflow", "platform_policy"
+  "calendar", "enrollment_workflow", "platform_policy",
+  "reporting"
 ];
 
 interface RustField {

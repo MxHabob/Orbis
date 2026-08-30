@@ -17,15 +17,26 @@ pub struct CreateExamSubjectRequest {
     pub exam_type: Option<String>,
 }
 
+use shared_kernel::query_filter::UniversalFilter;
+
 pub async fn list(
     ctx: &ServiceContext,
     session_id: &str,
+    filter: Option<UniversalFilter>,
 ) -> Result<Vec<exam_subject::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ExamSessionRead).await?;
-    Ok(exam_subject::Entity::find()
-        .filter(exam_subject::Column::ExamSessionId.eq(session_id))
-        .all(&ctx.db)
-        .await?)
+    let mut query = exam_subject::Entity::find()
+        .filter(exam_subject::Column::ExamSessionId.eq(session_id));
+
+    if let Some(f) = filter {
+        let condition = f.build_condition(|field| match field {
+            "exam_type" => Some(exam_subject::Column::ExamType.into_expr().into()),
+            _ => None,
+        });
+        query = query.filter(condition);
+    }
+
+    Ok(query.all(&ctx.db).await?)
 }
 
 pub async fn add(

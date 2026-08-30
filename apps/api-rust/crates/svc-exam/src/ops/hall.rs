@@ -20,12 +20,24 @@ pub struct CreateHallRequest {
     pub floor_number: Option<i32>,
 }
 
-pub async fn list(ctx: &ServiceContext) -> Result<Vec<exam_hall::Model>, AppError> {
+use shared_kernel::query_filter::UniversalFilter;
+
+pub async fn list(ctx: &ServiceContext, filter: Option<UniversalFilter>) -> Result<Vec<exam_hall::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ExamSessionRead).await?;
-    Ok(exam_hall::Entity::find()
-        .filter(exam_hall::Column::OrgId.eq(&ctx.org_id))
-        .order_by_asc(exam_hall::Column::HallNumber)
-        .all(&ctx.db).await?)
+    let mut query = exam_hall::Entity::find()
+        .filter(exam_hall::Column::OrgId.eq(&ctx.org_id));
+
+    if let Some(f) = filter {
+        let condition = f.build_condition(|field| match field {
+            "capacity" => Some(exam_hall::Column::Capacity.into_expr().into()),
+            "building" => Some(exam_hall::Column::Building.into_expr().into()),
+            "floor_number" => Some(exam_hall::Column::FloorNumber.into_expr().into()),
+            _ => None,
+        });
+        query = query.filter(condition);
+    }
+
+    Ok(query.order_by_asc(exam_hall::Column::HallNumber).all(&ctx.db).await?)
 }
 
 pub async fn create(

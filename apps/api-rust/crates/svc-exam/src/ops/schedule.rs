@@ -16,5 +16,5 @@ pub async fn get(
     ctx: &ServiceContext,
     session_id: &str,
 ) -> Result<Vec<exam_schedule::Model>, AppError> {
-    crate::ops::exam_schedule::list(ctx, session_id).await
+    crate::ops::exam_schedule::list(ctx, session_id, None).await
 }

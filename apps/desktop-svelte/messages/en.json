@@ -2373,5 +2373,15 @@
   "template_cmd_cut_elements": "Cut elements",
   "template_cmd_paste_elements": "Paste elements",
   "template_cmd_move_element": "Move element",
-  "template_cmd_delete_element": "Delete element"
+  "template_cmd_delete_element": "Delete element",
+  "common_filter_classes": "Classes",
+  "common_dt_empty": "No discount templates",
+  "common_ft_empty_desc": "No fee templates",
+  "common_sidebar_help_tour": "Tour the new navigation",
+  "common_sidebar_help_community": "Community",
+  "common_sidebar_help_discord": "Discord",
+  "common_sidebar_help_twitter": "Twitter / X",
+  "common_sidebar_help_github": "GitHub",
+  "common_sidebar_help_legal": "Legal",
+  "common_search_add": "Add"
 }

@@ -1,0 +1,14 @@
+[package]
+name = "svc-reporting"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+csv = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+shared-kernel = { workspace = true }
+lazy_static = "1.4.0"
+chrono = { workspace = true }

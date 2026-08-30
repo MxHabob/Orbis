@@ -21,6 +21,8 @@ import { authStore } from "$lib/stores";
 import { DataTable } from "$lib/tables";
 import { users as usersDef, withIndex } from "$lib/tables/definitions";
 import { createUsersPaginatedQuery } from "$lib/features/settings/queries";
+import type { UniversalFilter } from "@orbis/ui-svelte/filter-builder";
+import { userFilterFields } from "$lib/tables/definitions/filter-configs";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -32,6 +34,7 @@ import type { GridActionEvent, ActionItem } from "@orbis/svelte-grid";
 let searchQuery = $state("");
 let selectedRole = $state("all");
 let overlayEl = $state<any>();
+let activeFilter = $state<UniversalFilter>({ logic: "AND", conditions: [], groups: [] });
 
 const userActions: ActionItem[] = [
   { id: "edit", label: "Edit / View", icon: "Pencil" },
@@ -39,7 +42,11 @@ const userActions: ActionItem[] = [
 ];
 
 // ── Data Loading ────────────────────────────────────────────────────────
-const usersQuery = createUsersPaginatedQuery(() => data.orgId);
+const usersQuery = createUsersPaginatedQuery(
+  () => data.orgId, 
+  50, 
+  () => activeFilter
+);
 const users = $derived(
   usersQuery.data?.pages?.flatMap((page: any) => page.items) ?? [],
 );
@@ -175,18 +182,20 @@ async function handleAction(event: GridActionEvent) {
   <!-- DataTable -->
   <div class="flex-1 min-h-0 flex flex-col">
     <DataTable
-      {columns}
+      columns={columns}
       source={gridSource}
       loading={isLoading}
       searchable
       searchPlaceholder={m.settings_users_search_placeholder()}
       bind:searchValue={searchQuery}
+      refreshable
+      onRefresh={loadUsers}
+      filterable
+      filterFields={userFilterFields}
+      bind:filterValue={activeFilter}
       emptyIcon={Users}
       emptyTitle={m.settings_users_empty()}
       emptyDescription={m.settings_users_empty_desc()}
-      rtl={getLocale() === "ar"}
-      refreshable
-      onRefresh={loadUsers}
       onaction={handleAction}
     />
     {#if usersQuery.hasNextPage && selectedRole === 'all' && searchQuery === ''}

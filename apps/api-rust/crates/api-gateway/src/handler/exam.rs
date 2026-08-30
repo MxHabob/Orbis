@@ -7,7 +7,7 @@ use svc_exam::ops;
 #[utoipa::path(get, path = "/api/exam/sessions/{period_id}")]
 pub async fn get_sessions(State(state): State<AppState>, Path(period_id): Path<String>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let ctx = state.build_context(&user.org_id, &user.id);
-    let r = ops::session::list(&ctx, &period_id).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
+    let r = ops::session::list(&ctx, &period_id, None).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(r)
 }
 
@@ -21,14 +21,14 @@ pub async fn post_session(State(state): State<AppState>, AuthenticatedUser(user)
 #[utoipa::path(get, path = "/api/exam/sessions/{session_id}/subjects")]
 pub async fn get_exam_subjects(State(state): State<AppState>, Path(session_id): Path<String>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let ctx = state.build_context(&user.org_id, &user.id);
-    let r = ops::exam_subject::list(&ctx, &session_id).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
+    let r = ops::exam_subject::list(&ctx, &session_id, None).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(r)
 }
 
 #[utoipa::path(get, path = "/api/exam/halls")]
 pub async fn get_halls(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let ctx = state.build_context(&user.org_id, &user.id);
-    let r = ops::hall::list(&ctx).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
+    let r = ops::hall::list(&ctx, None).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(r)
 }
 

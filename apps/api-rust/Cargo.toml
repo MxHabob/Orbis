@@ -21,6 +21,7 @@ members = [
     "crates/api-gateway",
     "crates/svc-document",
     "crates/platform-policy",
+    "crates/svc-reporting",
 ]
 
 [workspace.dependencies]
@@ -64,6 +65,7 @@ svc-document = { path = "crates/svc-document" }
 infra-persistence = { path = "crates/infra-persistence" }
 infra-integration = { path = "crates/infra-integration" }
 infra-scheduler = { path = "crates/infra-scheduler" }
+svc-reporting = { path = "crates/svc-reporting" }
 
 # HTTP client (solver sidecar)
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }

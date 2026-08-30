@@ -129,30 +129,60 @@ pub async fn enrich_enrollment_models(
     Ok(enriched)
 }
 
+use shared_kernel::query_filter::UniversalFilter;
+
 /// List enrollments, optionally filtered by class and/or period.
 pub async fn list(
     ctx: &ServiceContext,
+    filter: Option<UniversalFilter>,
 ) -> Result<Vec<enrollment::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::EnrollmentRead).await?;
 
-    Ok(enrollment::Entity::find()
-        .filter(enrollment::Column::OrgId.eq(&ctx.org_id))
-        .order_by_asc(enrollment::Column::StudentNumber)
-        .all(&ctx.db)
-        .await?)
+    let mut query = enrollment::Entity::find()
+        .filter(enrollment::Column::OrgId.eq(&ctx.org_id));
+
+    if let Some(f) = filter {
+        let condition = f.build_condition(|field| match field {
+            "student_number" => Some(enrollment::Column::StudentNumber.into_expr().into()),
+            "status" => Some(enrollment::Column::Status.into_expr().into()),
+            "enrollment_date" => Some(enrollment::Column::EnrollmentDate.into_expr().into()),
+            "class_id" => Some(enrollment::Column::ClassId.into_expr().into()),
+            "period_id" => Some(enrollment::Column::PeriodId.into_expr().into()),
+            "enrollment_type" => Some(enrollment::Column::EnrollmentType.into_expr().into()),
+            "withdrawal_date" => Some(enrollment::Column::WithdrawalDate.into_expr().into()),
+            _ => None,
+        });
+        query = query.filter(condition);
+    }
+
+    Ok(query.order_by_asc(enrollment::Column::StudentNumber).all(&ctx.db).await?)
 }
 
 /// List enriched enrollments with demographics.
 pub async fn list_enriched(
     ctx: &ServiceContext,
+    filter: Option<UniversalFilter>,
 ) -> Result<Vec<EnrichedEnrollmentResponse>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::EnrollmentRead).await?;
 
-    let enrollments = enrollment::Entity::find()
-        .filter(enrollment::Column::OrgId.eq(&ctx.org_id))
-        .order_by_asc(enrollment::Column::StudentNumber)
-        .all(&ctx.db)
-        .await?;
+    let mut query = enrollment::Entity::find()
+        .filter(enrollment::Column::OrgId.eq(&ctx.org_id));
+
+    if let Some(f) = filter {
+        let condition = f.build_condition(|field| match field {
+            "student_number" => Some(enrollment::Column::StudentNumber.into_expr().into()),
+            "status" => Some(enrollment::Column::Status.into_expr().into()),
+            "enrollment_date" => Some(enrollment::Column::EnrollmentDate.into_expr().into()),
+            "class_id" => Some(enrollment::Column::ClassId.into_expr().into()),
+            "period_id" => Some(enrollment::Column::PeriodId.into_expr().into()),
+            "enrollment_type" => Some(enrollment::Column::EnrollmentType.into_expr().into()),
+            "withdrawal_date" => Some(enrollment::Column::WithdrawalDate.into_expr().into()),
+            _ => None,
+        });
+        query = query.filter(condition);
+    }
+
+    let enrollments = query.order_by_asc(enrollment::Column::StudentNumber).all(&ctx.db).await?;
 
     enrich_enrollment_models(&ctx.db, &enrollments).await
 }
@@ -169,6 +199,20 @@ pub async fn list_paginated(
     let mut query = enrollment::Entity::find()
         .filter(enrollment::Column::OrgId.eq(&ctx.org_id))
         .order_by_asc(enrollment::Column::Id);
+
+    if let Some(f) = request.filter.clone() {
+        let condition = f.build_condition(|field| match field {
+            "student_number" => Some(enrollment::Column::StudentNumber.into_expr().into()),
+            "status" => Some(enrollment::Column::Status.into_expr().into()),
+            "enrollment_date" => Some(enrollment::Column::EnrollmentDate.into_expr().into()),
+            "class_id" => Some(enrollment::Column::ClassId.into_expr().into()),
+            "period_id" => Some(enrollment::Column::PeriodId.into_expr().into()),
+            "enrollment_type" => Some(enrollment::Column::EnrollmentType.into_expr().into()),
+            "withdrawal_date" => Some(enrollment::Column::WithdrawalDate.into_expr().into()),
+            _ => None,
+        });
+        query = query.filter(condition);
+    }
 
     if let Some(ref cursor) = request.cursor {
         query = query.filter(enrollment::Column::Id.gt(cursor));
@@ -190,6 +234,20 @@ pub async fn list_paginated_enriched(
     let mut query = enrollment::Entity::find()
         .filter(enrollment::Column::OrgId.eq(&ctx.org_id))
         .order_by_asc(enrollment::Column::Id);
+
+    if let Some(f) = request.filter.clone() {
+        let condition = f.build_condition(|field| match field {
+            "student_number" => Some(enrollment::Column::StudentNumber.into_expr().into()),
+            "status" => Some(enrollment::Column::Status.into_expr().into()),
+            "enrollment_date" => Some(enrollment::Column::EnrollmentDate.into_expr().into()),
+            "class_id" => Some(enrollment::Column::ClassId.into_expr().into()),
+            "period_id" => Some(enrollment::Column::PeriodId.into_expr().into()),
+            "enrollment_type" => Some(enrollment::Column::EnrollmentType.into_expr().into()),
+            "withdrawal_date" => Some(enrollment::Column::WithdrawalDate.into_expr().into()),
+            _ => None,
+        });
+        query = query.filter(condition);
+    }
 
     if let Some(ref cursor) = request.cursor {
         query = query.filter(enrollment::Column::Id.gt(cursor));

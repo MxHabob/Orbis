@@ -13,7 +13,7 @@
 use sea_orm::{ConnectionTrait, DatabaseConnection, Statement, TransactionTrait};
 use shared_kernel::errors::AppError;
 use uuid::Uuid;
-use chrono::Utc;
+use chrono::{Utc, Datelike};
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
@@ -520,6 +520,8 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
         vec![org_settings.to_string().into(), org_id.clone().into()]
     )).await.ok();
 
+
+
     info!("Bootstrap completed for org_id={} type={}", org_id, payload.org_type);
 
     Ok(BootstrapResult {
@@ -624,6 +626,7 @@ async fn seed_chart_of_accounts<C: ConnectionTrait>(
 
     Ok(())
 }
+
 
 // ── Internal Blueprint Definitions ──────────────────────────────
 

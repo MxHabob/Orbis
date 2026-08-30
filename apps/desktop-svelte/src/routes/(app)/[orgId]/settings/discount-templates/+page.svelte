@@ -15,6 +15,9 @@ import DiscountTemplateSheet from "$lib/features/finance/components/discount-tem
 
 import { DataTable } from "$lib/tables";
 import { discountTemplates as dtDef, withIndex } from "$lib/tables/definitions";
+import type { UniversalFilter } from "@orbis/ui-svelte/filter-builder";
+import { discountTemplateFilterFields } from "$lib/tables/definitions/filter-configs";
+import { applyFilter } from "@orbis/ui-svelte/filter-builder";
 import type { GridActionEvent } from "@orbis/svelte-grid";
 
 let { data }: { data: { orgId: string } } = $props();
@@ -24,6 +27,7 @@ let templates = $state<any[]>([]);
 let isLoading = $state(true);
 let isSheetOpen = $state(false);
 let selectedTemplate = $state<any | null>(null);
+let activeFilter = $state<UniversalFilter>({ logic: "AND", conditions: [], groups: [] });
 
 // ── Data Loading ────────────────────────────────────────────────────────
 
@@ -59,11 +63,13 @@ function getTypeLabel(typeStr: string): string {
   return typeStr;
 }
 
+const filteredTemplates = $derived(applyFilter(templates, activeFilter));
+
 // ── Grid Source ─────────────────────────────────────────────────────────
 
 const gridSource = $derived(
   withIndex(
-    templates.map((tpl) => ({
+    filteredTemplates.map((tpl) => ({
       ...tpl,
       name: tpl.name_ar || tpl.name || "—",
       discount_type: getTypeLabel(tpl.discount_type || tpl.type || ""),
@@ -118,9 +124,12 @@ function handleGridAction(event: GridActionEvent) {
       {columns}
       source={gridSource}
       loading={isLoading}
+      filterable={true}
+      filterFields={discountTemplateFilterFields}
+      bind:filterValue={activeFilter}
       emptyIcon={Percent}
       emptyTitle={m.common_dt_empty?.() || "No discount templates"}
-      emptyDescription={m.common_dt_empty_desc?.() || "Create discount templates for student fees"}
+      emptyDescription={m.common_dt_empty_desc?.() || "Create standard discounts or scholarships"}
       rtl={getLocale() === "ar"}
       refreshable
       onRefresh={loadTemplates}

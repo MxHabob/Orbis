@@ -6,9 +6,13 @@ use crate::commands::error::{CmdResult, CommandError};
 use svc_exam::ops;
 
 #[tauri::command]
-pub async fn exam_exam_schedule_list(state: State<'_, Arc<AppState>>, session_id: String) -> CmdResult<serde_json::Value> {
+pub async fn exam_exam_schedule_list(state: State<'_, Arc<AppState>>, session_id: String, filter: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::exam_schedule::list(&ctx, &session_id).await.map_err(CommandError::from)?;
+    let filter_parsed = match filter {
+        Some(v) => Some(serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?),
+        None => None,
+    };
+    let result = ops::exam_schedule::list(&ctx, &session_id, filter_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -34,9 +38,13 @@ pub async fn exam_exam_schedule_delete(state: State<'_, Arc<AppState>>, schedule
 }
 
 #[tauri::command]
-pub async fn exam_exam_subject_list(state: State<'_, Arc<AppState>>, session_id: String) -> CmdResult<serde_json::Value> {
+pub async fn exam_exam_subject_list(state: State<'_, Arc<AppState>>, session_id: String, filter: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::exam_subject::list(&ctx, &session_id).await.map_err(CommandError::from)?;
+    let filter_parsed = match filter {
+        Some(v) => Some(serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?),
+        None => None,
+    };
+    let result = ops::exam_subject::list(&ctx, &session_id, filter_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -52,9 +60,13 @@ pub async fn exam_exam_subject_add(state: State<'_, Arc<AppState>>, data: Option
 }
 
 #[tauri::command]
-pub async fn exam_hall_list(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
+pub async fn exam_hall_list(state: State<'_, Arc<AppState>>, filter: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::hall::list(&ctx).await.map_err(CommandError::from)?;
+    let filter_parsed = match filter {
+        Some(v) => Some(serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?),
+        None => None,
+    };
+    let result = ops::hall::list(&ctx, filter_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -147,9 +159,13 @@ pub async fn exam_seating_list(state: State<'_, Arc<AppState>>, session_id: Stri
 }
 
 #[tauri::command]
-pub async fn exam_session_list(state: State<'_, Arc<AppState>>, period_id: String) -> CmdResult<serde_json::Value> {
+pub async fn exam_session_list(state: State<'_, Arc<AppState>>, period_id: String, filter: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::session::list(&ctx, &period_id).await.map_err(CommandError::from)?;
+    let filter_parsed = match filter {
+        Some(v) => Some(serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?),
+        None => None,
+    };
+    let result = ops::session::list(&ctx, &period_id, filter_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 

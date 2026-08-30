@@ -16,8 +16,8 @@ export interface IamCommands {
   saveForUser(userId: string, roles: string[]): Promise<void>;
   getPermissions(role: string | null): Promise<Types.RolePermission[]>;
   savePermissions(role: string, permissions: Types.PermissionPayload[]): Promise<void>;
-  listUsers(filter: Types.UserFilter | null): Promise<Types.User[]>;
-  listUsersPaginated(request: unknown, filter: Types.UserFilter | null): Promise<unknown>;
+  listUsers(filter: unknown | null): Promise<Types.User[]>;
+  listUsersPaginated(request: unknown, filter: unknown | null): Promise<unknown>;
   getUser(userId: string): Promise<Types.User>;
   search(queryStr: string): Promise<Types.User[]>;
   createUser(req: Types.CreateUserPayload): Promise<Types.User>;

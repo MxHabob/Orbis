@@ -16,6 +16,7 @@ import {
   CalendarDays,
   CalendarClock,
   TrendingUp,
+  BarChart3,
 } from "@lucide/svelte";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
@@ -70,6 +71,11 @@ const navItems = $derived([
     path: "promotion",
     label: m.common_promo_title(),
     icon: TrendingUp,
+  },
+  {
+    path: "reports",
+    label: m.common_nav_reports ? m.common_nav_reports() : "التقارير",
+    icon: BarChart3,
   },
 ]);
 </script>

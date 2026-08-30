@@ -10,6 +10,7 @@ import type { DocumentCommands } from './document.js';
 import type { CalendarCommands } from './calendar.js';
 import type { Enrollment_workflowCommands } from './enrollment_workflow.js';
 import type { Platform_policyCommands } from './platform_policy.js';
+import type { ReportingCommands } from './reporting.js';
 import type { AiCommands } from './ai.js';
 import type { DocforgeCommands } from './docforge.js';
 
@@ -25,6 +26,7 @@ export interface OrbisCommands {
   calendar: CalendarCommands;
   enrollment_workflow: Enrollment_workflowCommands;
   platform_policy: Platform_policyCommands;
+  reporting: ReportingCommands;
   ai: AiCommands;
   docforge: DocforgeCommands;
 }
@@ -40,5 +42,6 @@ export type { DocumentCommands } from './document.js';
 export type { CalendarCommands } from './calendar.js';
 export type { Enrollment_workflowCommands } from './enrollment_workflow.js';
 export type { Platform_policyCommands } from './platform_policy.js';
+export type { ReportingCommands } from './reporting.js';
 export type { AiCommands } from './ai.js';
 export type { DocforgeCommands } from './docforge.js';

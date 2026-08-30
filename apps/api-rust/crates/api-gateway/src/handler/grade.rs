@@ -8,26 +8,26 @@ use svc_assessment::ops;
 pub async fn get_grades(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser, Json(body): Json<serde_json::Value>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let ctx = state.build_context(&user.org_id, &user.id);
     let assessment_id = body["assessment_id"].as_str().unwrap_or_default();
-    let r = ops::grade::list(&ctx, assessment_id).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
+    let r = ops::grade::list(&ctx, assessment_id, None).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(r)
 }
 
 #[utoipa::path(post, path = "/api/grades")]
-pub async fn post_grades(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser, Json(body): Json<serde_json::Value>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+pub async fn post_grades(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser, Json(body): Json<svc_assessment::ops::grade::CreateGradePayload>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let ctx = state.build_context(&user.org_id, &user.id);
     let r = ops::grade::submit(&ctx, body).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(r)
 }
 
 #[utoipa::path(post, path = "/api/grades/bulk")]
-pub async fn post_grades_bulk(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser, Json(body): Json<serde_json::Value>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+pub async fn post_grades_bulk(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser, Json(body): Json<svc_assessment::ops::grade::SubmitBulkPayload>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let ctx = state.build_context(&user.org_id, &user.id);
     let r = ops::grade::submit_bulk(&ctx, body).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(r)
 }
 
 #[utoipa::path(post, path = "/api/grades/upsert")]
-pub async fn post_grade_upsert(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser, Json(body): Json<serde_json::Value>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+pub async fn post_grade_upsert(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser, Json(body): Json<svc_assessment::services::grade::UpsertCellRequest>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let ctx = state.build_context(&user.org_id, &user.id);
     let r = ops::grade::upsert_cell(&ctx, body).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(r)

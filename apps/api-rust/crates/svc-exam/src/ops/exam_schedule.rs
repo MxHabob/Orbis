@@ -10,13 +10,27 @@ use shared_kernel::traits::{AuditEntry, Permission};
 
 use crate::entities::exam_schedule;
 
+use shared_kernel::query_filter::UniversalFilter;
+
 pub async fn list(
     ctx: &ServiceContext, session_id: &str,
+    filter: Option<UniversalFilter>,
 ) -> Result<Vec<exam_schedule::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ExamSessionRead).await?;
-    Ok(exam_schedule::Entity::find()
-        .filter(exam_schedule::Column::ExamSessionId.eq(session_id))
-        .order_by_asc(exam_schedule::Column::ExamDate)
+    let mut query = exam_schedule::Entity::find()
+        .filter(exam_schedule::Column::ExamSessionId.eq(session_id));
+
+    if let Some(f) = filter {
+        let condition = f.build_condition(|field| match field {
+            "exam_date" => Some(exam_schedule::Column::ExamDate.into_expr().into()),
+            "status" => Some(exam_schedule::Column::Status.into_expr().into()),
+            "period" => Some(exam_schedule::Column::Period.into_expr().into()),
+            _ => None,
+        });
+        query = query.filter(condition);
+    }
+
+    Ok(query.order_by_asc(exam_schedule::Column::ExamDate)
         .order_by_asc(exam_schedule::Column::StartTime)
         .all(&ctx.db).await?)
 }

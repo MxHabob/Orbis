@@ -28,6 +28,9 @@ pub struct CursorRequest {
     /// Maximum number of items to return. Clamped to `MAX_LIMIT`.
     #[serde(default = "default_limit")]
     pub limit: u64,
+
+    /// Optional generic query filter
+    pub filter: Option<crate::query_filter::UniversalFilter>,
 }
 
 impl CursorRequest {
@@ -45,6 +48,7 @@ impl Default for CursorRequest {
         Self {
             cursor: None,
             limit: default_limit(),
+            filter: None,
         }
     }
 }

@@ -29,6 +29,19 @@
   ],
   "templates": [
     {
+      "templateId": "administration.master-template",
+      "code": "SYS-MASTER",
+      "category": "administration",
+      "name": "Master Template",
+      "nameAr": "الترويسة والتذييل الافتراضي",
+      "documentType": "MASTER",
+      "entityType": "system",
+      "documentPath": "documents/administration/master-template.json",
+      "locale": "ar",
+      "default": true,
+      "locked": true
+    },
+    {
       "templateId": "academic.student-term-report-card",
       "code": "ACADEMIC-STUDENT-TERM-REPORT",
       "category": "academic",

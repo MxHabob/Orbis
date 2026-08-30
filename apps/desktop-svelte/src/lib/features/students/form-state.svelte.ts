@@ -516,13 +516,15 @@ export class StudentFormState {
             }
           }
         }
+      } // CLOSE if (this.registrationStatus === "active" || ...)
+      
       if (queryClient) {
         queryClient.invalidateQueries({ queryKey: ["enrollments"] });
         queryClient.invalidateQueries({ queryKey: ["enrollments_paginated"] });
       }
 
       goto(localizeHref(`/${this.orgId}/students`));
-    } catch (e: any) {
+    } catch (e) {
       if (targetStudentId && !this.isEditMode) {
         try {
           await commands.iam.deleteUser(targetStudentId);

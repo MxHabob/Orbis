@@ -77,12 +77,15 @@ export interface CreatePeriodPayload {
   end_date: string;
   enrollment_start?: string | null;
   enrollment_end?: string | null;
+  is_enrollment_open?: number | null;
   grade_entry_start?: string | null;
   grade_entry_end?: string | null;
+  is_grade_entry_open?: number | null;
   exam_start?: string | null;
   exam_end?: string | null;
   scale_id?: string | null;
   pass_fail_policy_id?: string | null;
+  status?: string | null;
   sort_order?: number | null;
   metadata?: string | null;
 }

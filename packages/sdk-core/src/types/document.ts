@@ -21,11 +21,3 @@ export interface Documents {
   updated_at: string;
 }
 
-export interface DocumentListRequest {
-  ownerId?: string | null;
-  entityType?: string | null;
-  category?: string | null;
-  cursor?: string | null;
-  limit?: number | null;
-}
-

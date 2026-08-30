@@ -11,6 +11,9 @@ import RoomCreateSheet from "$lib/features/academics/components/room-create-shee
 
 import { DataTable } from "$lib/tables";
 import { rooms as roomsDef, withIndex } from "$lib/tables/definitions";
+import type { UniversalFilter } from "@orbis/ui-svelte/filter-builder";
+import { roomFilterFields } from "$lib/tables/definitions/filter-configs";
+import { applyFilter } from "@orbis/ui-svelte/filter-builder";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -20,6 +23,7 @@ let isLoading = $state(true);
 let searchQuery = $state("");
 let isSheetOpen = $state(false);
 let editingRoom = $state<any>(null);
+let activeFilter = $state<UniversalFilter>({ logic: "AND", conditions: [], groups: [] });
 
 // ── Data Loading ────────────────────────────────────────────────────────
 
@@ -41,16 +45,19 @@ onMount(() => {
 // ── Filtering ───────────────────────────────────────────────────────────
 
 const filteredRooms = $derived(
-  rooms.filter((r) => {
-    const q = searchQuery.toLowerCase();
-    return (
-      !q ||
-      (r.name || "").toLowerCase().includes(q) ||
-      (r.name_ar || "").toLowerCase().includes(q) ||
-      (r.room_type || "").toLowerCase().includes(q) ||
-      (r.building || "").toLowerCase().includes(q)
-    );
-  }),
+  applyFilter(
+    rooms.filter((r) => {
+      const q = searchQuery.toLowerCase();
+      return (
+        !q ||
+        (r.name || "").toLowerCase().includes(q) ||
+        (r.name_ar || "").toLowerCase().includes(q) ||
+        (r.room_type || "").toLowerCase().includes(q) ||
+        (r.building || "").toLowerCase().includes(q)
+      );
+    }),
+    activeFilter
+  )
 );
 
 // ── Grid Source ─────────────────────────────────────────────────────────
@@ -102,17 +109,27 @@ function openCreateSheet() {
   </div>
 
   <div class="flex-1 min-h-0">
-    <DataTable
-      {columns}
-      source={gridSource}
-      loading={isLoading}
-      searchable
-      searchPlaceholder={m.settings_rooms_search_placeholder()}
-      bind:searchValue={searchQuery}
-      emptyIcon={DoorOpen}
-      emptyTitle={m.common_rooms_empty()}
-      emptyDescription={m.common_rooms_empty_desc()}
-      rtl={getLocale() === "ar"}
+      <DataTable
+        {columns}
+        source={gridSource}
+        {isLoading}
+        searchable={true}
+        searchPlaceholder={m.common_rooms_search_placeholder()}
+        bind:searchValue={searchQuery}
+        filterable={true}
+        filterFields={roomFilterFields}
+        bind:filterValue={activeFilter}
+        oncelledit={(e) => {}}
+        onaction={(e) => {
+          if (e.action === "edit") {
+            editingRoom = e.row;
+            isSheetOpen = true;
+          }
+        }}
+        emptyIcon={DoorOpen}
+        emptyTitle={m.common_rooms_empty()}
+        emptyDescription={m.common_rooms_empty_desc()}
+        rtl={getLocale() === "ar"}
     />
   </div>
 </div>

@@ -15,6 +15,9 @@ import FeeTemplateSheet from "$lib/features/finance/components/fee-template-shee
 
 import { DataTable } from "$lib/tables";
 import { feeTemplates as ftDef, withIndex } from "$lib/tables/definitions";
+import type { UniversalFilter } from "@orbis/ui-svelte/filter-builder";
+import { feeTemplateFilterFields } from "$lib/tables/definitions/filter-configs";
+import { applyFilter } from "@orbis/ui-svelte/filter-builder";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -23,6 +26,7 @@ let templates = $state<any[]>([]);
 let isLoading = $state(true);
 let isSheetOpen = $state(false);
 let selectedTemplate = $state<any | null>(null);
+let activeFilter = $state<UniversalFilter>({ logic: "AND", conditions: [], groups: [] });
 
 // ── Data Loading ────────────────────────────────────────────────────────
 
@@ -63,11 +67,13 @@ function getFrequencyLabel(freqStr: string) {
   return freqStr;
 }
 
+const filteredTemplates = $derived(applyFilter(templates, activeFilter));
+
 // ── Grid Source ─────────────────────────────────────────────────────────
 
 const gridSource = $derived(
   withIndex(
-    templates.map((tpl) => ({
+    filteredTemplates.map((tpl) => ({
       ...tpl,
       name: tpl.name_ar || tpl.name || "—",
       amount: formatCurrency(Number(tpl.default_amount || 0), "YER"),
@@ -128,6 +134,9 @@ function handleGridAction(event: GridActionEvent) {
       {columns}
       source={gridSource}
       loading={isLoading}
+      filterable={true}
+      filterFields={feeTemplateFilterFields}
+      bind:filterValue={activeFilter}
       emptyIcon={Receipt}
       emptyTitle={m.common_ft_empty?.() || "No fee templates"}
       emptyDescription={m.common_ft_empty_desc?.() || "Create fee templates to auto-apply on enrollment"}

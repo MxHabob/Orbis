@@ -30,6 +30,8 @@ import {
 import AiEmptyState from "$lib/shared/components/ai-empty-state.svelte";
 import type { Snippet } from "svelte";
 import { DefaultCell } from "../index";
+import { FilterTrigger } from "@orbis/ui-svelte/filter-builder";
+import type { UniversalFilter, FieldDefinition } from "@orbis/ui-svelte/filter-builder";
 
 // ── Props ──────────────────────────────────────────────────────────────
 
@@ -55,6 +57,12 @@ interface Props {
   emptyIcon?: any;
   emptyTitle?: string;
   emptyDescription?: string;
+
+  /** Universal Filter configuration */
+  filterable?: boolean;
+  filterFields?: FieldDefinition[];
+  filterValue?: UniversalFilter;
+  onFilter?: (filter: UniversalFilter) => void;
 
   /** Grid options */
   readonly?: boolean;
@@ -100,6 +108,10 @@ let {
   emptyIcon,
   emptyTitle = "No data",
   emptyDescription = "",
+  filterable = false,
+  filterFields = [],
+  filterValue = $bindable({ logic: "AND", conditions: [], groups: [] }),
+  onFilter,
   readonly = true,
   rtl = false,
   height = "100%",
@@ -138,7 +150,7 @@ let hasData = $derived(source.length > 0);
 let showGrid = $derived(!loading && hasData);
 let showEmpty = $derived(!loading && !hasData);
 let showToolbar = $derived(
-  searchable || exportable || refreshable || !!actions,
+  searchable || exportable || refreshable || filterable || !!actions,
 );
 let effectiveSearch = $derived(searchValue || localSearch);
 
@@ -208,6 +220,15 @@ function toggleColumnVisibility(colId: string) {
       <div class="flex-1"></div>
 
       <div class="flex items-center gap-1.5 flex-nowrap shrink-0">
+        {#if filterable && filterFields.length > 0}
+          <FilterTrigger 
+            bind:filter={filterValue} 
+            fields={filterFields} 
+            onApply={onFilter} 
+          />
+          <div class="w-px h-4 bg-border mx-1"></div>
+        {/if}
+
         {#if actions}
           {@render actions()}
         {/if}

@@ -126,19 +126,31 @@ async fn try_enqueue_snapshot(
 
 // ── Queries ─────────────────────────────────────────────────────
 
+use shared_kernel::query_filter::UniversalFilter;
+
 /// List grades, filtered by assessment_id.
 pub async fn list(
     ctx: &ServiceContext,
     assessment_id: &str,
+    filter: Option<UniversalFilter>,
 ) -> Result<Vec<grade::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::GradeRead).await?;
 
-    Ok(grade::Entity::find()
+    let mut query = grade::Entity::find()
         .filter(grade::Column::OrgId.eq(&ctx.org_id))
-        .filter(grade::Column::AssessmentId.eq(assessment_id))
-        .order_by_asc(grade::Column::SubjectName)
-        .all(&ctx.db)
-        .await?)
+        .filter(grade::Column::AssessmentId.eq(assessment_id));
+
+    if let Some(f) = filter {
+        let condition = f.build_condition(|field| match field {
+            "enrollment_id" => Some(grade::Column::EnrollmentId.into_expr().into()),
+            "score" => Some(grade::Column::Score.into_expr().into()),
+            "subject_name" => Some(grade::Column::SubjectName.into_expr().into()),
+            _ => None,
+        });
+        query = query.filter(condition);
+    }
+
+    Ok(query.order_by_asc(grade::Column::SubjectName).all(&ctx.db).await?)
 }
 
 /// List grades for a period + class_subject (gradebook cells).
@@ -172,6 +184,16 @@ pub async fn list_paginated(
         .filter(grade::Column::OrgId.eq(&ctx.org_id))
         .filter(grade::Column::AssessmentId.eq(assessment_id))
         .order_by_asc(grade::Column::Id);
+
+    if let Some(f) = request.filter.clone() {
+        let condition = f.build_condition(|field| match field {
+            "enrollment_id" => Some(grade::Column::EnrollmentId.into_expr().into()),
+            "score" => Some(grade::Column::Score.into_expr().into()),
+            "subject_name" => Some(grade::Column::SubjectName.into_expr().into()),
+            _ => None,
+        });
+        query = query.filter(condition);
+    }
 
     if let Some(ref cursor) = request.cursor {
         query = query.filter(grade::Column::Id.gt(cursor));

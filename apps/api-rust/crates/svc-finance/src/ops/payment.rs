@@ -15,18 +15,33 @@ use crate::entities::{account, payment, student_fee, currency};
 
 use crate::ops::ledger;
 
+use shared_kernel::query_filter::UniversalFilter;
+
 pub async fn list(
     ctx: &ServiceContext,
     limit: Option<u64>,
     offset: Option<u64>,
+    filter: Option<UniversalFilter>,
 ) -> Result<Vec<payment::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceRead).await?;
     let limit_val = limit.unwrap_or(500);
     let offset_val = offset.unwrap_or(0);
 
-    Ok(payment::Entity::find()
-        .filter(payment::Column::OrgId.eq(&ctx.org_id))
-        .order_by_desc(payment::Column::PaidAt)
+    let mut query = payment::Entity::find()
+        .filter(payment::Column::OrgId.eq(&ctx.org_id));
+
+    if let Some(f) = filter {
+        let condition = f.build_condition(|field| match field {
+            "method" => Some(payment::Column::Method.into_expr().into()),
+            "enrollment_id" => Some(payment::Column::EnrollmentId.into_expr().into()),
+            "payment_type" => Some(payment::Column::PaymentType.into_expr().into()),
+            "paid_at" => Some(payment::Column::PaidAt.into_expr().into()),
+            _ => None,
+        });
+        query = query.filter(condition);
+    }
+
+    Ok(query.order_by_desc(payment::Column::PaidAt)
         .limit(limit_val)
         .offset(offset_val)
         .all(&ctx.db)

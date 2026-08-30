@@ -156,16 +156,24 @@ pub async fn academic_enrollment_enrich_enrollment_models(state: State<'_, Arc<A
 }
 
 #[tauri::command]
-pub async fn academic_enrollment_list(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
+pub async fn academic_enrollment_list(state: State<'_, Arc<AppState>>, filter: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::enrollment::list(&ctx).await.map_err(CommandError::from)?;
+    let filter_parsed = match filter {
+        Some(v) => Some(serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?),
+        None => None,
+    };
+    let result = ops::enrollment::list(&ctx, filter_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn academic_enrollment_list_enriched(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
+pub async fn academic_enrollment_list_enriched(state: State<'_, Arc<AppState>>, filter: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::enrollment::list_enriched(&ctx).await.map_err(CommandError::from)?;
+    let filter_parsed = match filter {
+        Some(v) => Some(serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?),
+        None => None,
+    };
+    let result = ops::enrollment::list_enriched(&ctx, filter_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 

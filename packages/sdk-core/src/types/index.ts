@@ -11,3 +11,4 @@ export * from './finance.js';
 export * from './iam.js';
 export * from './organization.js';
 export * from './scheduling.js';
+export * from './reporting.js';

@@ -15,14 +15,25 @@ use crate::entities::calculation_policy;
 
 // ── Queries ─────────────────────────────────────────────────────
 
+use shared_kernel::query_filter::UniversalFilter;
+
 /// List all calculation policies for the current organization.
-pub async fn list(ctx: &ServiceContext) -> Result<Vec<calculation_policy::Model>, AppError> {
+pub async fn list(ctx: &ServiceContext, filter: Option<UniversalFilter>) -> Result<Vec<calculation_policy::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AssessmentRead).await?;
 
-    Ok(calculation_policy::Entity::find()
-        .filter(calculation_policy::Column::OrgId.eq(&ctx.org_id))
-        .all(&ctx.db)
-        .await?)
+    let mut query = calculation_policy::Entity::find()
+        .filter(calculation_policy::Column::OrgId.eq(&ctx.org_id));
+
+    if let Some(f) = filter {
+        let condition = f.build_condition(|field| match field {
+            "name" => Some(calculation_policy::Column::Name.into_expr().into()),
+            "is_archived" => Some(calculation_policy::Column::IsArchived.into_expr().into()),
+            _ => None,
+        });
+        query = query.filter(condition);
+    }
+
+    Ok(query.all(&ctx.db).await?)
 }
 
 /// Get a single calculation policy by ID.

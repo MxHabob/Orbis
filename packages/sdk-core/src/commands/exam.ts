@@ -2,13 +2,13 @@
 import type * as Types from '../types/index.js';
 
 export interface ExamCommands {
-  listExamSchedules(sessionId: string): Promise<Types.ExamSchedule[]>;
+  listExamSchedules(sessionId: string, filter: unknown | null): Promise<Types.ExamSchedule[]>;
   createExamSchedule(examSessionId: string, examSubjectId: string, examDate: string, startTime: string, endTime: string, period: string, applicableClassIds: string | null, roomIds: string | null): Promise<Types.ExamSchedule>;
   updateExamSchedule(scheduleId: string, examDate: string | null, startTime: string | null, status: string | null): Promise<Types.ExamSchedule>;
   deleteExamSchedule(scheduleId: string): Promise<void>;
-  listExamSubjects(sessionId: string): Promise<Types.ExamSubject[]>;
+  listExamSubjects(sessionId: string, filter: unknown | null): Promise<Types.ExamSubject[]>;
   add(data: unknown): Promise<Types.ExamSubject>;
-  listHalls(): Promise<Types.ExamHall[]>;
+  listHalls(filter: unknown | null): Promise<Types.ExamHall[]>;
   createHall(data: unknown): Promise<Types.ExamHall>;
   deleteHall(hallId: string): Promise<void>;
   listAllocations(examSessionId: string): Promise<Types.ExamHallAllocation[]>;
@@ -21,7 +21,7 @@ export interface ExamCommands {
   getSchedule(sessionId: string): Promise<Types.ExamSchedule[]>;
   generate2(sessionId: string): Promise<unknown>;
   listSeatings(sessionId: string): Promise<Types.SeatingNumber[]>;
-  listSessions(periodId: string): Promise<Types.ExamSession[]>;
+  listSessions(periodId: string, filter: unknown | null): Promise<Types.ExamSession[]>;
   getSession(sessionId: string): Promise<Types.ExamSession>;
   createSession(data: unknown): Promise<Types.ExamSession>;
   updateSession(sessionId: string, name: string | null, status: string | null, startDate: string | null, endDate: string | null): Promise<Types.ExamSession>;

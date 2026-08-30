@@ -56,6 +56,7 @@ pub async fn get_documents(
     let cursor_request = shared_kernel::pagination::CursorRequest {
         cursor: filters.cursor,
         limit: filters.limit.unwrap_or(50),
+        filter: None,
     };
     
     let docs = ops::document::list(

@@ -31,6 +31,7 @@ dependencies = [
  "svc-finance",
  "svc-iam",
  "svc-organization",
+ "svc-reporting",
  "svc-scheduling",
  "tauri",
  "tauri-build",
@@ -6013,6 +6014,20 @@ dependencies = [
  "tracing",
  "utoipa 4.2.3",
  "uuid",
+]
+
+[[package]]
+name = "svc-reporting"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "csv",
+ "lazy_static",
+ "serde",
+ "serde_json",
+ "shared-kernel",
+ "thiserror 1.0.69",
+ "tokio",
 ]
 
 [[package]]

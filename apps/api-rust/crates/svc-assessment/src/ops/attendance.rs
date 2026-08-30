@@ -140,21 +140,32 @@ pub async fn class_metrics(
 
 // ── Queries ─────────────────────────────────────────────────────
 
+use shared_kernel::query_filter::UniversalFilter;
+
 /// List attendance records.
 pub async fn list(
     ctx: &ServiceContext,
     class_id: &str,
     date: &str,
+    filter: Option<UniversalFilter>,
 ) -> Result<Vec<attendance::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AttendanceRead).await?;
 
-    Ok(attendance::Entity::find()
+    let mut query = attendance::Entity::find()
         .filter(attendance::Column::OrgId.eq(&ctx.org_id))
         .filter(attendance::Column::ClassId.eq(class_id))
-        .filter(attendance::Column::Date.eq(date))
-        .order_by_asc(attendance::Column::EnrollmentId)
-        .all(&ctx.db)
-        .await?)
+        .filter(attendance::Column::Date.eq(date));
+
+    if let Some(f) = filter {
+        let condition = f.build_condition(|field| match field {
+            "status" => Some(attendance::Column::Status.into_expr().into()),
+            "enrollment_id" => Some(attendance::Column::EnrollmentId.into_expr().into()),
+            _ => None,
+        });
+        query = query.filter(condition);
+    }
+
+    Ok(query.order_by_asc(attendance::Column::EnrollmentId).all(&ctx.db).await?)
 }
 
 /// Get attendance report for a student.

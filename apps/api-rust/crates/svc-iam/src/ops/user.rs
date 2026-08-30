@@ -12,16 +12,11 @@ use shared_kernel::traits::{AuditEntry, Permission};
 use crate::contracts::events::event_types;
 use crate::entities::user;
 
-#[derive(serde::Deserialize)]
-pub struct UserFilter {
-    pub role: Option<String>,
-    pub roles: Option<Vec<String>>,
-    pub status: Option<String>,
-}
+use shared_kernel::query_filter::UniversalFilter;
 
 pub async fn list(
     ctx: &ServiceContext,
-    filter: Option<UserFilter>,
+    filter: Option<UniversalFilter>,
 ) -> Result<Vec<user::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::UserRead).await?;
 
@@ -30,17 +25,19 @@ pub async fn list(
         .filter(user::Column::IsDeleted.eq(0));
 
     if let Some(f) = filter {
-        if let Some(role) = f.role {
-            query = query.filter(user::Column::PrimaryRole.eq(role));
-        } else if let Some(roles) = f.roles {
-            if !roles.is_empty() {
-                query = query.filter(user::Column::PrimaryRole.is_in(roles));
-            }
-        }
-        
-        if let Some(status) = f.status {
-            query = query.filter(user::Column::Status.eq(status));
-        }
+        let condition = f.build_condition(|field| match field {
+            "full_name" => Some(user::Column::FullName.into_expr().into()),
+            "email" => Some(user::Column::Email.into_expr().into()),
+            "phone" => Some(user::Column::Phone.into_expr().into()),
+            "primary_role" => Some(user::Column::PrimaryRole.into_expr().into()),
+            "status" => Some(user::Column::Status.into_expr().into()),
+            "created_at" => Some(user::Column::CreatedAt.into_expr().into()),
+            "last_login_at" => Some(user::Column::LastLoginAt.into_expr().into()),
+            "login_count" => Some(user::Column::LoginCount.into_expr().into()),
+            "mfa_enabled" => Some(user::Column::MfaEnabled.into_expr().into()),
+            _ => None,
+        });
+        query = query.filter(condition);
     }
 
     Ok(query.order_by_asc(user::Column::FullName).all(&ctx.db).await?)
@@ -49,7 +46,7 @@ pub async fn list(
 pub async fn list_paginated(
     ctx: &ServiceContext,
     request: shared_kernel::pagination::CursorRequest,
-    filter: Option<UserFilter>,
+    filter: Option<UniversalFilter>,
 ) -> Result<shared_kernel::pagination::CursorPage<user::Model>, AppError> {
     use shared_kernel::pagination::CursorPage;
     ctx.permissions.check(&ctx.actor, Permission::UserRead).await?;
@@ -60,18 +57,24 @@ pub async fn list_paginated(
         .filter(user::Column::IsDeleted.eq(0))
         .order_by_asc(user::Column::Id);
 
-    if let Some(f) = filter {
-        if let Some(role) = f.role {
-            query = query.filter(user::Column::PrimaryRole.eq(role));
-        } else if let Some(roles) = f.roles {
-            if !roles.is_empty() {
-                query = query.filter(user::Column::PrimaryRole.is_in(roles));
-            }
-        }
-        
-        if let Some(status) = f.status {
-            query = query.filter(user::Column::Status.eq(status));
-        }
+    // Filter provided in the request body supersedes the one in CursorRequest
+    // Or we merge them, but for now we just use the one provided as parameter.
+    let active_filter = filter.or(request.filter.clone());
+
+    if let Some(f) = active_filter {
+        let condition = f.build_condition(|field| match field {
+            "full_name" => Some(user::Column::FullName.into_expr().into()),
+            "email" => Some(user::Column::Email.into_expr().into()),
+            "phone" => Some(user::Column::Phone.into_expr().into()),
+            "primary_role" => Some(user::Column::PrimaryRole.into_expr().into()),
+            "status" => Some(user::Column::Status.into_expr().into()),
+            "created_at" => Some(user::Column::CreatedAt.into_expr().into()),
+            "last_login_at" => Some(user::Column::LastLoginAt.into_expr().into()),
+            "login_count" => Some(user::Column::LoginCount.into_expr().into()),
+            "mfa_enabled" => Some(user::Column::MfaEnabled.into_expr().into()),
+            _ => None,
+        });
+        query = query.filter(condition);
     }
 
     if let Some(ref cursor) = request.cursor {

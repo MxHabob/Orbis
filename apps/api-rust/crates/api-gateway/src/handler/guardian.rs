@@ -12,7 +12,7 @@ pub async fn get_guardians(State(state): State<AppState>, Path(student_id): Path
 }
 
 #[utoipa::path(post, path = "/api/guardians")]
-pub async fn post_guardians(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser, Json(body): Json<serde_json::Value>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+pub async fn post_guardians(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser, Json(body): Json<svc_academic::ops::guardian::CreateGuardianPayload>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let ctx = state.build_context(&user.org_id, &user.id);
     let r = ops::guardian::create(&ctx, body).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(StatusCode::CREATED, r)

@@ -109,9 +109,13 @@ pub async fn finance_fee_template_update(state: State<'_, Arc<AppState>>, templa
 }
 
 #[tauri::command]
-pub async fn finance_journal_list(state: State<'_, Arc<AppState>>, limit: Option<u64>, offset: Option<u64>) -> CmdResult<serde_json::Value> {
+pub async fn finance_journal_list(state: State<'_, Arc<AppState>>, limit: Option<u64>, offset: Option<u64>, filter: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::journal::list(&ctx, limit, offset).await.map_err(CommandError::from)?;
+    let filter_parsed = match filter {
+        Some(v) => Some(serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?),
+        None => None,
+    };
+    let result = ops::journal::list(&ctx, limit, offset, filter_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -180,9 +184,13 @@ pub async fn finance_ledger_get_account_statement(state: State<'_, Arc<AppState>
 }
 
 #[tauri::command]
-pub async fn finance_payment_list(state: State<'_, Arc<AppState>>, limit: Option<u64>, offset: Option<u64>) -> CmdResult<serde_json::Value> {
+pub async fn finance_payment_list(state: State<'_, Arc<AppState>>, limit: Option<u64>, offset: Option<u64>, filter: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::payment::list(&ctx, limit, offset).await.map_err(CommandError::from)?;
+    let filter_parsed = match filter {
+        Some(v) => Some(serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?),
+        None => None,
+    };
+    let result = ops::payment::list(&ctx, limit, offset, filter_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -198,16 +206,24 @@ pub async fn finance_payment_record(state: State<'_, Arc<AppState>>, cmd: Option
 }
 
 #[tauri::command]
-pub async fn finance_student_fee_list_by_enrollment(state: State<'_, Arc<AppState>>, enrollment_id: String) -> CmdResult<serde_json::Value> {
+pub async fn finance_student_fee_list_by_enrollment(state: State<'_, Arc<AppState>>, enrollment_id: String, filter: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::student_fee::list_by_enrollment(&ctx, &enrollment_id).await.map_err(CommandError::from)?;
+    let filter_parsed = match filter {
+        Some(v) => Some(serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?),
+        None => None,
+    };
+    let result = ops::student_fee::list_by_enrollment(&ctx, &enrollment_id, filter_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]
-pub async fn finance_student_fee_list_by_org(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
+pub async fn finance_student_fee_list_by_org(state: State<'_, Arc<AppState>>, filter: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::student_fee::list_by_org(&ctx).await.map_err(CommandError::from)?;
+    let filter_parsed = match filter {
+        Some(v) => Some(serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?),
+        None => None,
+    };
+    let result = ops::student_fee::list_by_org(&ctx, filter_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 

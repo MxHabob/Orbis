@@ -101,16 +101,28 @@ pub async fn delete_template(ctx: &ServiceContext, template_id: &str) -> Result<
 
 // ── Student Fees ────────────────────────────────────────────────
 
+use shared_kernel::query_filter::UniversalFilter;
+
 pub async fn list_student_fees(
     ctx: &ServiceContext,
     enrollment_id: &str,
+    filter: Option<UniversalFilter>,
 ) -> Result<Vec<student_fee::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceRead).await?;
-    Ok(student_fee::Entity::find()
+    let mut query = student_fee::Entity::find()
         .filter(student_fee::Column::OrgId.eq(&ctx.org_id))
-        .filter(student_fee::Column::EnrollmentId.eq(enrollment_id))
-        .order_by_asc(student_fee::Column::DueDate)
-        .all(&ctx.db).await?)
+        .filter(student_fee::Column::EnrollmentId.eq(enrollment_id));
+
+    if let Some(f) = filter {
+        let condition = f.build_condition(|field| match field {
+            "status" => Some(student_fee::Column::Status.into_expr().into()),
+            "due_date" => Some(student_fee::Column::DueDate.into_expr().into()),
+            _ => None,
+        });
+        query = query.filter(condition);
+    }
+    
+    Ok(query.order_by_asc(student_fee::Column::DueDate).all(&ctx.db).await?)
 }
 
 pub async fn assign_student_fee(

@@ -38,9 +38,13 @@ pub async fn assessment_annual_engine_finalize_annual_result(state: State<'_, Ar
 }
 
 #[tauri::command]
-pub async fn assessment_assessment_scheme_list(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
+pub async fn assessment_assessment_scheme_list(state: State<'_, Arc<AppState>>, filter: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::assessment_scheme::list(&ctx).await.map_err(CommandError::from)?;
+    let filter_parsed = match filter {
+        Some(v) => Some(serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?),
+        None => None,
+    };
+    let result = ops::assessment_scheme::list(&ctx, filter_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -131,9 +135,13 @@ pub async fn assessment_attendance_class_metrics(state: State<'_, Arc<AppState>>
 }
 
 #[tauri::command]
-pub async fn assessment_attendance_list(state: State<'_, Arc<AppState>>, class_id: String, date: String) -> CmdResult<serde_json::Value> {
+pub async fn assessment_attendance_list(state: State<'_, Arc<AppState>>, class_id: String, date: String, filter: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::attendance::list(&ctx, &class_id, &date).await.map_err(CommandError::from)?;
+    let filter_parsed = match filter {
+        Some(v) => Some(serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?),
+        None => None,
+    };
+    let result = ops::attendance::list(&ctx, &class_id, &date, filter_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -181,9 +189,13 @@ pub async fn assessment_attendance_report(state: State<'_, Arc<AppState>>, class
 }
 
 #[tauri::command]
-pub async fn assessment_behavior_list(state: State<'_, Arc<AppState>>, enrollment_id: String) -> CmdResult<serde_json::Value> {
+pub async fn assessment_behavior_list(state: State<'_, Arc<AppState>>, enrollment_id: String, filter: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::behavior::list(&ctx, &enrollment_id).await.map_err(CommandError::from)?;
+    let filter_parsed = match filter {
+        Some(v) => Some(serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?),
+        None => None,
+    };
+    let result = ops::behavior::list(&ctx, &enrollment_id, filter_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -213,9 +225,13 @@ pub async fn assessment_behavior_delete(state: State<'_, Arc<AppState>>, record_
 }
 
 #[tauri::command]
-pub async fn assessment_calculation_policy_list(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
+pub async fn assessment_calculation_policy_list(state: State<'_, Arc<AppState>>, filter: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::calculation_policy::list(&ctx).await.map_err(CommandError::from)?;
+    let filter_parsed = match filter {
+        Some(v) => Some(serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?),
+        None => None,
+    };
+    let result = ops::calculation_policy::list(&ctx, filter_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -263,9 +279,13 @@ pub async fn assessment_calculation_policy_list_active(state: State<'_, Arc<AppS
 }
 
 #[tauri::command]
-pub async fn assessment_grade_list(state: State<'_, Arc<AppState>>, assessment_id: String) -> CmdResult<serde_json::Value> {
+pub async fn assessment_grade_list(state: State<'_, Arc<AppState>>, assessment_id: String, filter: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::grade::list(&ctx, &assessment_id).await.map_err(CommandError::from)?;
+    let filter_parsed = match filter {
+        Some(v) => Some(serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?),
+        None => None,
+    };
+    let result = ops::grade::list(&ctx, &assessment_id, filter_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -439,9 +459,13 @@ pub async fn assessment_grade_scale_delete_item(state: State<'_, Arc<AppState>>,
 }
 
 #[tauri::command]
-pub async fn assessment_ranking_policy_list(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
+pub async fn assessment_ranking_policy_list(state: State<'_, Arc<AppState>>, filter: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
-    let result = ops::ranking_policy::list(&ctx).await.map_err(CommandError::from)?;
+    let filter_parsed = match filter {
+        Some(v) => Some(serde_json::from_value(v).map_err(|e| CommandError::new(e.to_string()))?),
+        None => None,
+    };
+    let result = ops::ranking_policy::list(&ctx, filter_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 

@@ -15,7 +15,7 @@ export interface FinanceCommands {
   listFeeTemplates(): Promise<Types.FeeTemplate[]>;
   createFeeTemplate(cmd: Types.CreateFeeTemplateCmd): Promise<Types.FeeTemplate>;
   updateFeeTemplate(templateId: string, cmd: Types.UpdateFeeTemplateCmd): Promise<Types.FeeTemplate>;
-  listJournalEntries(limit: number | null, offset: number | null): Promise<Types.JournalEntry[]>;
+  listJournalEntries(limit: number | null, offset: number | null, filter: unknown | null): Promise<Types.JournalEntry[]>;
   createJournalEntry(debitAccountId: string, creditAccountId: string, amount: number, currency: string, description: string, descriptionAr: string | null, accountingDate: string, fiscalPeriodId: string, sourceType: string, sourceId: string | null): Promise<Types.JournalEntry>;
   listAccounts(): Promise<Types.LedgerAccountResponse[]>;
   listTransactionAccounts(): Promise<Types.LedgerAccountResponse[]>;
@@ -24,9 +24,9 @@ export interface FinanceCommands {
   createJournalEntry2(cmd: Types.CreateJournalEntryCmd): Promise<Types.JournalEntry>;
   getJournalEntries(limit: number | null, offset: number | null): Promise<Types.JournalEntry[]>;
   getAccountStatement(accountId: string, startDate: string, endDate: string): Promise<Types.AccountStatement>;
-  listPayments(limit: number | null, offset: number | null): Promise<Types.Payment[]>;
+  listPayments(limit: number | null, offset: number | null, filter: unknown | null): Promise<Types.Payment[]>;
   record(cmd: Types.RecordPaymentCmd): Promise<Types.Payment>;
-  listStudentFeesByEnrollment(enrollmentId: string): Promise<Types.StudentFee[]>;
-  listStudentFeesByOrg(): Promise<Types.StudentFee[]>;
+  listStudentFeesByEnrollment(enrollmentId: string, filter: unknown | null): Promise<Types.StudentFee[]>;
+  listStudentFeesByOrg(filter: unknown | null): Promise<Types.StudentFee[]>;
   assign(cmd: Types.AssignFeeCmd): Promise<Types.StudentFee>;
 }
