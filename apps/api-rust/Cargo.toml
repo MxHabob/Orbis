@@ -20,6 +20,7 @@ members = [
     "crates/docforge-orbis",
     "crates/api-gateway",
     "crates/svc-document",
+    "crates/svc-report",
     "crates/platform-policy",
 ]
 
@@ -61,6 +62,7 @@ svc-finance = { path = "crates/svc-finance" }
 svc-exam = { path = "crates/svc-exam" }
 autopilot = { path = "crates/autopilot" }
 svc-document = { path = "crates/svc-document" }
+svc-report = { path = "crates/svc-report" }
 infra-persistence = { path = "crates/infra-persistence" }
 infra-integration = { path = "crates/infra-integration" }
 infra-scheduler = { path = "crates/infra-scheduler" }
