@@ -59,30 +59,30 @@ onMount(() => {
   }
 });
 
+import { applyFilter } from "@orbis/ui-svelte/filter-builder";
+import type { UniversalFilter } from "@orbis/ui-svelte/filter-builder";
+import { studentFeeFilterFields } from "$lib/tables/definitions/filter-configs";
+
+let activeFilter = $state<UniversalFilter>({ logic: "AND", conditions: [], groups: [] });
+
 // Derived Filtered List
-const filteredFees = $derived.by(() => {
-  return fees.filter((f) => {
-    // 1. Search Query
-    let matchesSearch = true;
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase().trim();
-      const studentName = String(f.student_name || "").toLowerCase();
-      const studentNum = String(f.student_number || "").toLowerCase();
-      const desc = String(f.description || "").toLowerCase();
-      matchesSearch =
-        studentName.includes(q) || studentNum.includes(q) || desc.includes(q);
-    }
-
-    // 2. Status
-    let matchesStatus = true;
-    if (statusFilter !== "all") {
-      const stat = String(f.status || "").toLowerCase();
-      matchesStatus = stat === statusFilter;
-    }
-
-    return matchesSearch && matchesStatus;
-  });
-});
+const filteredFees = $derived(
+  applyFilter(
+    fees.filter((f) => {
+      let matchesSearch = true;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase().trim();
+        const studentName = String(f.student_name || "").toLowerCase();
+        const studentNum = String(f.student_number || "").toLowerCase();
+        const desc = String(f.description || "").toLowerCase();
+        matchesSearch =
+          studentName.includes(q) || studentNum.includes(q) || desc.includes(q);
+      }
+      return matchesSearch;
+    }),
+    activeFilter
+  )
+);
 
 // Calculations
 const stats = $derived.by(() => {
@@ -209,42 +209,16 @@ const rtl = $derived(getLocale() === "ar");
       searchable
       searchPlaceholder={m.finance_fees_search_placeholder()}
       bind:searchValue={searchQuery}
+      filterable={true}
+      filterFields={studentFeeFilterFields}
+      bind:filterValue={activeFilter}
       emptyIcon={Wallet}
       emptyTitle={m.finance_fees_empty_title()}
       emptyDescription={m.finance_fees_empty_desc()}
       {rtl}
       refreshable
       onRefresh={loadFees}
-    >
-      {#snippet actions()}
-        <div class="flex items-center gap-2 text-start select-none me-2">
-          <span class="text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-            {m.finance_fees_filter_status()}
-          </span>
-          <div class="w-36">
-            <Select type="single" value={statusFilter} onValueChange={(v) => (statusFilter = v ?? "all")}>
-              <SelectTrigger class="h-8 w-full text-xs bg-card border-border/60">
-                {#if statusFilter === "all"}
-                  {m.common_status_all()}
-                {:else if statusFilter === "unpaid"}
-                  {m.finance_fees_status_unpaid()}
-                {:else if statusFilter === "partially_paid"}
-                  {m.finance_fees_status_partially_paid()}
-                {:else if statusFilter === "paid"}
-                  {m.finance_fees_status_paid()}
-                {/if}
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{m.common_status_all()}</SelectItem>
-                <SelectItem value="unpaid">{m.finance_fees_status_unpaid()}</SelectItem>
-                <SelectItem value="partially_paid">{m.finance_fees_status_partially_paid()}</SelectItem>
-                <SelectItem value="paid">{m.finance_fees_status_paid()}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      {/snippet}
-    </DataTable>
+    />
   </div>
 </div>
 

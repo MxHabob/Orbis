@@ -546,8 +546,8 @@
   "common_rooms_col_name": "اسم القاعة",
   "common_rooms_col_capacity": "السعة الاستيعابية",
   "common_rooms_col_location": "الموقع",
-  "common_rooms_empty": "لا توجد قاعات دراسية",
-  "common_rooms_empty_desc": "ابدأ بإضافة القاعات والمختبرات لتتمكن من استخدامها في جدولة الحصص الدراسية",
+  "common_rooms_empty": "لا توجد قاعات",
+  "common_rooms_empty_desc": "قم بإضافة قاعات دراسية ومعامل ليتم جدولة الفصول فيها.",
   "common_rooms_create_success": "تم إضافة القاعة بنجاح",
   "common_rooms_update_success": "تم تحديث بيانات القاعة بنجاح",
   "common_rooms_edit_title": "تعديل بيانات القاعة",
@@ -1142,7 +1142,7 @@
   "common_class_label_grade": "المستوى الدراسي",
   "common_state_saving": "جاري الحفظ...",
   "common_control_label": "الكنترول",
-  "common_nav_rooms": "الغرف والقاعات",
+  "common_nav_rooms": "القاعات",
   "common_login_title": "تسجيل الدخول — Orbis",
   "common_login_privacy_policy": "سياسة الخصوصية",
   "common_word_students": "الطلاب",
@@ -2384,5 +2384,6 @@
   "common_sidebar_help_github": "جيت هب",
   "common_sidebar_help_legal": "الشؤون القانونية",
   "common_search_add": "إضافة",
-  "common_refresh": "تحديث"
+  "common_refresh": "تحديث",
+  "common_rooms_search_placeholder": "ابحث باسم القاعة أو المبنى..."
 }

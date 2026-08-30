@@ -93,32 +93,37 @@ const availableCurrencies = $derived(
   [...new Set(childAccounts.map((account) => account.currency || baseCurrency))].sort(),
 );
 
+import { applyFilter } from "@orbis/ui-svelte/filter-builder";
+import type { UniversalFilter } from "@orbis/ui-svelte/filter-builder";
+import { accountFilterFields } from "$lib/tables/definitions/filter-configs";
+
+let activeFilter = $state<UniversalFilter>({ logic: "AND", conditions: [], groups: [] });
+
+const filteredAccounts = $derived(
+  applyFilter(
+    childAccounts.filter((account) => {
+      const query = searchQuery.trim().toLowerCase();
+      const name = String(account.name_ar || account.name || "").toLowerCase();
+      const code = String(account.code || "").toLowerCase();
+      return (!query || name.includes(query) || code.includes(query));
+    }),
+    activeFilter
+  )
+);
+
 const treasurySource = $derived(
   withIndex(
-    childAccounts
-      .filter((account) => {
-        const query = searchQuery.trim().toLowerCase();
-        const name = String(account.name_ar || account.name || "").toLowerCase();
-        const code = String(account.code || "").toLowerCase();
-        const type = String(account.item_type || account.type || "").toLowerCase();
-        const subtype = String(account.sub_type || "").toLowerCase();
-        const currency = String(account.currency || baseCurrency).toUpperCase();
-        return (!query || name.includes(query) || code.includes(query)) &&
-          (accountTypeFilter === "all" || type === accountTypeFilter) &&
-          (accountSubtypeFilter === "all" || subtype === accountSubtypeFilter) &&
-          (currencyFilter === "all" || currency === currencyFilter);
-      })
-      .map((account) => ({
-        ...account,
-        name: account.name_ar || account.name || "—",
-        treasury_type: getAccountTypeLabel(account),
-        balance: formatCurrency(
-          Number(account.balances?.[account.currency] || 0),
-          account.currency || baseCurrency,
-        ),
-        currency_code: account.currency || baseCurrency,
-        status: account.is_active === 1 ? "active" : "inactive",
-      })),
+    filteredAccounts.map((account) => ({
+      ...account,
+      name: account.name_ar || account.name || "—",
+      treasury_type: getAccountTypeLabel(account),
+      balance: formatCurrency(
+        Number(account.balances?.[account.currency] || 0),
+        account.currency || baseCurrency,
+      ),
+      currency_code: account.currency || baseCurrency,
+      status: account.is_active === 1 ? "active" : "inactive",
+    })),
   ),
 );
 
@@ -175,6 +180,9 @@ function exportAccounts() {
         searchable
         searchPlaceholder="ابحث باسم الحساب أو رقمه..."
         bind:searchValue={searchQuery}
+        filterable={true}
+        filterFields={accountFilterFields}
+        bind:filterValue={activeFilter}
         emptyIcon={Landmark}
         emptyTitle={m.finance_no_ledgers()}
         {rtl}
@@ -182,45 +190,7 @@ function exportAccounts() {
         onRefresh={loadData}
         exportable
         onExport={exportAccounts}
-      >
-        {#snippet actions()}
-          <Select type="single" value={accountTypeFilter} onValueChange={(value) => (accountTypeFilter = value ?? "all")}>
-            <SelectTrigger class="h-8 w-28 bg-card text-xs">
-              {accountTypeFilter === "all" ? "كل الأنواع" : getAccountTypeLabel({ item_type: accountTypeFilter })}
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">كل الأنواع</SelectItem>
-              <SelectItem value="asset">{m.finance_type_asset()}</SelectItem>
-              <SelectItem value="liability">{m.finance_type_liability()}</SelectItem>
-              <SelectItem value="equity">حقوق الملكية</SelectItem>
-              <SelectItem value="revenue">{m.finance_type_revenue()}</SelectItem>
-              <SelectItem value="expense">{m.finance_type_expense()}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select type="single" value={accountSubtypeFilter} onValueChange={(value) => (accountSubtypeFilter = value ?? "all")}>
-            <SelectTrigger class="h-8 w-28 bg-card text-xs">
-              {accountSubtypeFilter === "all" ? "كل التصنيفات" : accountSubtypeFilter === "cash" ? "صندوق" : accountSubtypeFilter === "bank" ? "بنك" : accountSubtypeFilter}
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">كل التصنيفات</SelectItem>
-              <SelectItem value="cash">صندوق</SelectItem>
-              <SelectItem value="bank">بنك</SelectItem>
-              <SelectItem value="vendor">مورد</SelectItem>
-              <SelectItem value="partner">شريك</SelectItem>
-              <SelectItem value="employee">موظف</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select type="single" value={currencyFilter} onValueChange={(value) => (currencyFilter = value ?? "all")}>
-            <SelectTrigger class="h-8 w-24 bg-card text-xs">{currencyFilter === "all" ? "كل العملات" : currencyFilter}</SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">كل العملات</SelectItem>
-              {#each availableCurrencies as currency}
-                <SelectItem value={currency}>{currency}</SelectItem>
-              {/each}
-            </SelectContent>
-          </Select>
-        {/snippet}
-      </DataTable>
+      />
     </div>
   </div>
 </div>

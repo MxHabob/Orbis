@@ -67,11 +67,24 @@ async function handleAISummarize() {
   }
 }
 
+import { applyFilter } from "@orbis/ui-svelte/filter-builder";
+import type { UniversalFilter } from "@orbis/ui-svelte/filter-builder";
+import { behaviorFilterFields } from "$lib/tables/definitions/filter-configs";
+
+let activeFilter = $state<UniversalFilter>({ logic: "AND", conditions: [], groups: [] });
+
+const filteredRecords = $derived(
+  applyFilter(
+    records,
+    activeFilter
+  )
+);
+
 // ── Grid Source ─────────────────────────────────────────────────────────
 
 const gridSource = $derived(
   withIndex(
-    records.map((rec) => ({
+    filteredRecords.map((rec) => ({
       ...rec,
       created_at: formatDate(rec.created_at) || "—",
       record_type:
@@ -136,6 +149,9 @@ const rtl = $derived(getLocale() === "ar");
       {columns}
       source={gridSource}
       loading={isLoading}
+      filterable={true}
+      filterFields={behaviorFilterFields}
+      bind:filterValue={activeFilter}
       emptyIcon={ShieldCheck}
       emptyTitle={m.academics_behavior_empty_title()}
       emptyDescription={m.academics_behavior_empty_desc()}

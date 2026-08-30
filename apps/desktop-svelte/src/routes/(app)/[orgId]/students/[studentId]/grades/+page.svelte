@@ -48,11 +48,24 @@ async function loadGrades() {
   }
 }
 
+import { applyFilter } from "@orbis/ui-svelte/filter-builder";
+import type { UniversalFilter } from "@orbis/ui-svelte/filter-builder";
+import { gradesFilterFields } from "$lib/tables/definitions/filter-configs";
+
+let activeFilter = $state<UniversalFilter>({ logic: "AND", conditions: [], groups: [] });
+
+const filteredGrades = $derived(
+  applyFilter(
+    (report?.grades || []),
+    activeFilter
+  )
+);
+
 // ── Grid Source ─────────────────────────────────────────────────────────
 
 const gridSource = $derived(
   withIndex(
-    (report?.grades || []).map((g: any) => ({
+    filteredGrades.map((g: any) => ({
       ...g,
       subject_name: g.subject_name || g.subject_id || "—",
       exam_type: g.assessment_name || m.academics_grades_default_assessment(),
@@ -98,6 +111,9 @@ const columns = $derived(
     {columns}
     source={gridSource}
     loading={isLoading}
+    filterable={true}
+    filterFields={gradesFilterFields}
+    bind:filterValue={activeFilter}
     emptyIcon={GraduationCap}
     emptyTitle={m.academics_grades_empty_title()}
     emptyDescription={m.academics_grades_empty_subtitle()}

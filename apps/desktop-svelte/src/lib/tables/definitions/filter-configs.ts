@@ -245,3 +245,51 @@ export const auditFilterFields: FieldDefinition[] = [
   { id: "entity_type", label: "Entity Type", type: "string" },
   { id: "created_at", label: "Date", type: "date" },
 ];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Finance — Accounts & Fees
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const accountFilterFields: FieldDefinition[] = [
+  { id: "type", label: "Type", type: "select", options: [
+    { label: "Asset", value: "asset" },
+    { label: "Liability", value: "liability" },
+    { label: "Equity", value: "equity" },
+    { label: "Revenue", value: "revenue" },
+    { label: "Expense", value: "expense" },
+  ]},
+  { id: "currency", label: "Currency", type: "string" },
+  { id: "code", label: "Account Code", type: "string" },
+];
+
+export const studentFilterFields: FieldDefinition[] = [
+  { id: "full_name", label: "Name", type: "string" },
+  { id: "student_number", label: "Student Number", type: "string" },
+  { id: "sex", label: "Gender", type: "select", options: [
+    { label: "Male", value: "male" },
+    { label: "Female", value: "female" },
+  ]},
+  { id: "enrollment_date", label: "Enrollment Date", type: "date" },
+  { id: "status", label: "Status", type: "select", options: [
+    { label: "Active", value: "active" },
+    { label: "Inactive", value: "inactive" },
+    { label: "Graduated", value: "graduated" },
+    { label: "Transferred", value: "transferred" },
+    { label: "Suspended", value: "suspended" },
+  ]},
+];
+
+export const gradesFilterFields: FieldDefinition[] = [
+  { id: "type", label: "Type", type: "select", options: [
+    { label: "Exam", value: "exam" },
+    { label: "Assignment", value: "assignment" },
+    { label: "Quiz", value: "quiz" },
+  ]},
+];
+
+export const curriculumFilterFields: FieldDefinition[] = [
+  { id: "type", label: "Type", type: "select", options: [
+    { label: "Core", value: "core" },
+    { label: "Elective", value: "elective" },
+  ]},
+];

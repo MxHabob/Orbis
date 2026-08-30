@@ -83,15 +83,17 @@ function formatDate(dateStr: string): string {
 
 // ── Filtering ───────────────────────────────────────────────────────────
 
+import { applyFilter } from "@orbis/ui-svelte/filter-builder";
+import type { UniversalFilter } from "@orbis/ui-svelte/filter-builder";
+import { auditFilterFields } from "$lib/tables/definitions/filter-configs";
+
+let activeFilter = $state<UniversalFilter>({ logic: "AND", conditions: [], groups: [] });
+
 const uniqueActions = $derived([
   ...new Set(auditLogs.map((l) => l.action).filter(Boolean)),
 ]);
 
-const filteredLogs = $derived(
-  auditLogs.filter(
-    (log) => actionFilter === "all" || log.action === actionFilter,
-  ),
-);
+const filteredLogs = $derived(applyFilter(auditLogs, activeFilter));
 
 // ── Grid Source ─────────────────────────────────────────────────────────
 
@@ -139,21 +141,6 @@ function openDetails(log: any) {
     <h1 class="text-lg font-bold text-foreground truncate">
       {m.common_nav_audit?.() || "Audit Logs"}
     </h1>
-    <div class="flex items-center gap-2 flex-nowrap shrink-0">
-      <div class="w-44 text-start">
-        <Select type="single" value={actionFilter} onValueChange={(v) => (actionFilter = v ?? "all")}>
-          <SelectTrigger class="h-8 w-full text-xs bg-card border-border/60">
-            {actionFilter === "all" ? (m.common_audit_filter_action?.() || "All Actions") : actionFilter}
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{m.common_audit_filter_action?.() || "All Actions"}</SelectItem>
-            {#each uniqueActions as act}
-              <SelectItem value={act}>{act}</SelectItem>
-            {/each}
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
   </div>
 
   <!-- DataTable -->
@@ -162,6 +149,9 @@ function openDetails(log: any) {
       {columns}
       source={gridSource}
       loading={isLoading}
+      filterable={true}
+      filterFields={auditFilterFields}
+      bind:filterValue={activeFilter}
       emptyIcon={History}
       emptyTitle={m.common_audit_empty?.() || "No audit logs found"}
       emptyDescription={m.common_audit_empty_desc?.() || "No operations have been recorded yet."}

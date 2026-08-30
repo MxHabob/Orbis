@@ -115,8 +115,21 @@ const columns = $derived.by<OrbisColumnDef[]>(() => {
   return cols;
 });
 
+import { applyFilter } from "@orbis/ui-svelte/filter-builder";
+import type { UniversalFilter } from "@orbis/ui-svelte/filter-builder";
+import { studentFilterFields } from "$lib/tables/definitions/filter-configs";
+
+let activeFilter = $state<UniversalFilter>({ logic: "AND", conditions: [], groups: [] });
+
+const filteredStudents = $derived(
+  applyFilter(
+    (students || []),
+    activeFilter
+  )
+);
+
 let gridSource = $derived(
-  (students || []).map((student, i) => {
+  filteredStudents.map((student, i) => {
     const rawSex = String(student.sex || (student as any).gender || "").toLowerCase();
     const studentName =
       student.full_name ||
@@ -172,6 +185,9 @@ function handleGridAction(event: GridActionEvent) {
   rowSize={44}
   rtl={getLocale() === "ar"}
   onaction={handleGridAction}
+  filterable={true}
+  filterFields={studentFilterFields}
+  bind:filterValue={activeFilter}
   emptyIcon={GraduationCap}
   emptyTitle={m.common_table_no_students()}
   emptyDescription={m.common_table_no_students_hint()}

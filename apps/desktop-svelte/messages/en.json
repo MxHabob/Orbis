@@ -547,8 +547,8 @@
   "common_rooms_col_name": "Room Name",
   "common_rooms_col_capacity": "Capacity",
   "common_rooms_col_location": "Location",
-  "common_rooms_empty": "No rooms found",
-  "common_rooms_empty_desc": "Add your first classroom, laboratory, or lecture hall to get started with timetables",
+  "common_rooms_empty": "No Rooms",
+  "common_rooms_empty_desc": "Add classrooms and labs to schedule classes.",
   "common_rooms_create_success": "Room created successfully",
   "common_rooms_update_success": "Room updated successfully",
   "common_rooms_edit_title": "Edit Room Details",
@@ -1143,7 +1143,7 @@
   "common_class_label_grade": "Grade Level",
   "common_state_saving": "Saving...",
   "common_control_label": "Control Board",
-  "common_nav_rooms": "Rooms & Halls",
+  "common_nav_rooms": "Rooms",
   "common_login_title": "Sign In — Orbis",
   "common_login_privacy_policy": "Privacy Policy",
   "common_word_students": "Students",
@@ -2384,5 +2384,6 @@
   "common_sidebar_help_github": "GitHub",
   "common_sidebar_help_legal": "Legal",
   "common_search_add": "Add",
-  "common_refresh": "Refresh"
+  "common_refresh": "Refresh",
+  "common_rooms_search_placeholder": "Search by room name or building..."
 }

@@ -47,11 +47,24 @@ async function loadAttendance() {
   }
 }
 
+import { applyFilter } from "@orbis/ui-svelte/filter-builder";
+import type { UniversalFilter } from "@orbis/ui-svelte/filter-builder";
+import { attendanceFilterFields } from "$lib/tables/definitions/filter-configs";
+
+let activeFilter = $state<UniversalFilter>({ logic: "AND", conditions: [], groups: [] });
+
+const filteredAttendance = $derived(
+  applyFilter(
+    (report?.logs || []),
+    activeFilter
+  )
+);
+
 // ── Grid Source ─────────────────────────────────────────────────────────
 
 const gridSource = $derived(
   withIndex(
-    (report?.logs || []).map((log: any) => ({
+    filteredAttendance.map((log: any) => ({
       ...log,
       date: formatDate(log.date) || "—",
       status: String(log.status || "")
@@ -120,8 +133,12 @@ const rtl = $derived(getLocale() === "ar");
       {columns}
       source={gridSource}
       loading={isLoading}
+      filterable={true}
+      filterFields={attendanceFilterFields}
+      bind:filterValue={activeFilter}
       emptyIcon={Calendar}
-      emptyTitle={m.reports_no_attendance()}
+      emptyTitle={m.academics_attendance_empty_title()}
+      emptyDescription={m.academics_attendance_empty_subtitle()}
       {rtl}
       height="350px"
     />
