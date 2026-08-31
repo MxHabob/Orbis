@@ -67,7 +67,7 @@ function handleMouseLeave() {
 
 <div class="h-full w-full p-6 bg-card border border-border rounded-xl flex flex-col justify-between text-start relative overflow-hidden shadow-sm min-h-[280px] font-sans">
   {#if isLoading}
-    <div class="flex-grow w-full relative flex items-center justify-center">
+    <div class="grow w-full relative flex items-center justify-center">
       <Skeleton class="h-full w-full rounded-lg animate-pulse" />
     </div>
   {:else}
@@ -100,7 +100,7 @@ function handleMouseLeave() {
 
     <!-- Chart Visual Area -->
     <div
-      class="flex-grow relative w-full h-[160px] select-none mt-2 flex flex-col justify-between z-10"
+      class="grow relative w-full h-40 select-none mt-2 flex flex-col justify-between z-10"
       onmouseleave={handleMouseLeave}
       role="region"
       aria-label="مخطط أداء الذكاء الاصطناعي"
@@ -112,7 +112,7 @@ function handleMouseLeave() {
             <span class="w-12 text-end text-[9px] font-bold text-muted-foreground/60 font-mono pe-2">
               {Math.round(Math.max(10, maxVal) - i * (maxVal / 3))}
             </span>
-            <div class="flex-grow border-t border-dashed border-border/40"></div>
+            <div class="grow border-t border-dashed border-border/40"></div>
           </div>
         {/each}
       </div>
@@ -125,7 +125,7 @@ function handleMouseLeave() {
       >
         {#each bars as bar, idx}
           {@const isActive = hoveredIdx === idx}
-          <div class="flex-grow flex flex-col items-center justify-end h-full relative group/col">
+          <div class="grow flex flex-col items-center justify-end h-full relative group/col">
             {#if isActive}
               <div class="absolute inset-x-1 top-0 bottom-0 bg-primary/10 rounded-md pointer-events-none border border-primary/20"></div>
             {/if}
@@ -141,7 +141,7 @@ function handleMouseLeave() {
               ></div>
             </div>
 
-            <div class="absolute bottom-[-22px] text-[10px] font-bold text-muted-foreground font-mono">
+            <div class="absolute -bottom-5.5 text-[10px] font-bold text-muted-foreground font-mono">
               {bar.label}
             </div>
           </div>
@@ -184,7 +184,7 @@ function handleMouseLeave() {
         <Activity size={12} class="text-primary" />
         <span>مراقبة الأداء والاستجابة الفعلية للنظام.</span>
       </div>
-      <a href={localizeHref(`/${orgId}/ai-center/logs`)} class="text-primary hover:underline flex items-center gap-1 group font-semibold">
+      <a href={localizeHref(`/${orgId}/ai-center/ai-logs`)} class="text-primary hover:underline flex items-center gap-1 group font-semibold">
         <span>عرض سجل الأنشطة الكامل</span>
         <ArrowRight size={11} class="transition-transform group-hover:translate-x-0.5 rtl:rotate-180" />
       </a>
