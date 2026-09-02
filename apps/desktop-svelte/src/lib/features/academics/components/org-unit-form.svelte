@@ -290,22 +290,18 @@ async function handleSubmit(e: SubmitEvent) {
     <div class="border-t border-border/30 pt-3 flex flex-col gap-3">
       <span class="text-xs font-semibold text-muted-foreground">{m.common_org_unit_location_details()}</span>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div class="flex flex-col gap-1 text-start">
-          <Label for="unit_bld" class="text-[11px]">{m.common_org_unit_building()}</Label>
-          <Input id="unit_bld" type="text" bind:value={form.values.building} placeholder={m.common_org_unit_building_placeholder()} disabled={form.isSubmitting} class="text-xs h-8" />
-        </div>
-        <div class="flex flex-col gap-1 text-start">
-          <Label for="unit_floor" class="text-[11px]">{m.common_rooms_label_floor()}</Label>
-          <Input id="unit_floor" type="number" bind:value={form.values.floor} placeholder="1" disabled={form.isSubmitting} class="text-xs h-8" />
-        </div>
-        <div class="flex flex-col gap-1 text-start">
-          <Label for="unit_room" class="text-[11px]">{m.common_org_unit_room()}</Label>
-          <Input id="unit_room" type="text" bind:value={form.values.room_number} placeholder={m.common_org_unit_room_placeholder()} disabled={form.isSubmitting} class="text-xs h-8" />
-        </div>
-        <div class="flex flex-col gap-1 text-start">
-          <Label for="unit_cap" class="text-[11px]">{m.common_org_unit_capacity()}</Label>
-          <Input id="unit_cap" type="number" bind:value={form.values.capacity} placeholder={m.common_org_unit_capacity_placeholder()} disabled={form.isSubmitting} class="text-xs h-8" />
-        </div>
+        <FormField id="unit_bld" label={m.common_org_unit_building()} error={fieldError("building")}>
+          {#snippet children()}<Input id="unit_bld" type="text" bind:value={form.values.building} placeholder={m.common_org_unit_building_placeholder()} disabled={form.isSubmitting} class="text-xs h-8" />{/snippet}
+        </FormField>
+        <FormField id="unit_floor" label={m.common_rooms_label_floor()} error={fieldError("floor")}>
+          {#snippet children()}<Input id="unit_floor" type="number" bind:value={form.values.floor} placeholder="1" disabled={form.isSubmitting} class="text-xs h-8" />{/snippet}
+        </FormField>
+        <FormField id="unit_room" label={m.common_org_unit_room()} error={fieldError("room_number")}>
+          {#snippet children()}<Input id="unit_room" type="text" bind:value={form.values.room_number} placeholder={m.common_org_unit_room_placeholder()} disabled={form.isSubmitting} class="text-xs h-8" />{/snippet}
+        </FormField>
+        <FormField id="unit_cap" label={m.common_org_unit_capacity()} error={fieldError("capacity")}>
+          {#snippet children()}<Input id="unit_cap" type="number" bind:value={form.values.capacity} placeholder={m.common_org_unit_capacity_placeholder()} disabled={form.isSubmitting} class="text-xs h-8" />{/snippet}
+        </FormField>
       </div>
     </div>
         </AccordionContent>

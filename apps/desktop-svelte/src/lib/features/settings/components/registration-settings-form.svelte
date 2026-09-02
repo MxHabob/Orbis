@@ -32,6 +32,7 @@ import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import { registrationSettingsSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { FormField } from "@orbis/ui-svelte";
 import { INSTITUTION_PROFILES } from "$lib/features/onboarding/templates";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
@@ -371,8 +372,10 @@ function handleSubmit(e?: Event) {
                     {m.settings_registration_inst_desc()}
                   </span>
                 </div>
-                <div class="w-full md:w-[320px] shrink-0">
-                  <Select bind:value={institutionType} type="single" onValueChange={(val) => val && applySmartPreset(val)}>
+                <div class="w-full md:w-80 shrink-0">
+                  <FormField id="inst_type" label={m.common_registration_inst_type()} required>
+                    {#snippet children()}
+                    <Select bind:value={institutionType} type="single" onValueChange={(val: string | undefined) => val && applySmartPreset(val)}>
                     <SelectTrigger id="inst_type" class="h-9 text-xs flex justify-between items-center border border-input bg-background w-full">
                       <span>
                         {institutionType === "school" ? m.settings_registration_school() : 
@@ -387,7 +390,9 @@ function handleSubmit(e?: Event) {
                       <SelectItem value="institute">{m.settings_registration_institute()}</SelectItem>
                       <SelectItem value="training_center">{m.settings_registration_training_center()}</SelectItem>
                     </SelectContent>
-                  </Select>
+                    </Select>
+                    {/snippet}
+                  </FormField>
                 </div>
               </div>
 
@@ -401,8 +406,12 @@ function handleSubmit(e?: Event) {
                     {m.settings_registration_pattern_desc()}
                   </span>
                 </div>
-                <div class="w-full md:w-[320px] shrink-0">
-                  <Input id="num_pattern" bind:value={studentNumberPattern} class="h-9 text-xs border border-input bg-background w-full font-mono" />
+                <div class="w-full md:w-80 shrink-0">
+                  <FormField id="num_pattern" label={m.settings_registration_num_pattern()} required>
+                    {#snippet children()}
+                    <Input id="num_pattern" bind:value={studentNumberPattern} class="h-9 text-xs border border-input bg-background w-full font-mono" />
+                    {/snippet}
+                  </FormField>
                 </div>
               </div>
             </div>

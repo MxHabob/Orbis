@@ -2,6 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Label } from "@orbis/ui-svelte/label";
 import { Input } from "@orbis/ui-svelte/input";
+import { FormField } from "@orbis/ui-svelte";
 
 interface Props {
   slug: string;
@@ -44,42 +45,28 @@ let { slug, name = $bindable(), nameAr = $bindable(), id, isSaving = false }: Pr
     <!-- Arabic Display Name -->
     <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
       <div class="flex flex-col gap-1 text-start">
-        <Label for="org_name_ar" class="text-xs font-semibold text-foreground">
-          الاسم العربي
-        </Label>
         <span class="text-[11px] text-muted-foreground leading-relaxed">الاسم المستخدم في المستندات والقوالب العربية</span>
       </div>
       <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
-        <Input
-          id="org_name_ar"
-          type="text"
-          dir="rtl"
-          bind:value={nameAr}
-          disabled={isSaving}
-          class="h-9 w-full bg-background"
-        />
+        <FormField id="org_name_ar" label="الاسم العربي">
+          {#snippet children()}
+            <Input id="org_name_ar" type="text" dir="rtl" bind:value={nameAr} disabled={isSaving} class="h-9 w-full bg-background" />
+          {/snippet}
+        </FormField>
       </div>
     </div>
 
     <!-- Display Name -->
     <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
       <div class="flex flex-col gap-1 text-start">
-        <Label for="org_name" class="text-xs font-semibold text-foreground flex items-center gap-1">
-          {m.settings_general_display_name()}
-          <span class="text-destructive">*</span>
-        </Label>
         <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_name_desc()}</span>
       </div>
       <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
-        <Input
-          id="org_name"
-          type="text"
-          bind:value={name}
-          placeholder={m.settings_general_name_placeholder()}
-          required
-          disabled={isSaving}
-          class="h-9 w-full bg-background"
-        />
+        <FormField id="org_name" label={m.settings_general_display_name()} required>
+          {#snippet children()}
+            <Input id="org_name" type="text" bind:value={name} placeholder={m.settings_general_name_placeholder()} required disabled={isSaving} class="h-9 w-full bg-background" />
+          {/snippet}
+        </FormField>
       </div>
     </div>
 
