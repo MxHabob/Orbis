@@ -1,9 +1,8 @@
 <script lang="ts">
     import { Button } from "../components/ui/button";
     import { Filter, X } from "@lucide/svelte";
-    import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "../components/ui/dialog";
+    import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "../components/ui/dialog";
     import FilterBuilder from "./FilterBuilder.svelte";
-    import FilterSummary from "./FilterSummary.svelte";
     import { defaultFilterTranslations, type UniversalFilter, type FieldDefinition, type FilterTranslations } from "./types";
 
     let {
@@ -49,7 +48,7 @@
                     <Filter class="w-3.5 h-3.5" />
                     {translations.filter}
                     {#if activeCount > 0}
-                        <span class="absolute -top-1 -end-1 bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                        <span class="absolute -top-1 -inset-e-1 bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
                             {activeCount}
                         </span>
                     {/if}
@@ -59,7 +58,6 @@
         <DialogContent class="max-w-3xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
                 <DialogTitle>{translations.advancedFilter}</DialogTitle>
-                <DialogDescription>{translations.description}</DialogDescription>
             </DialogHeader>
             <div class="py-4">
                 <FilterBuilder bind:filter {fields} translations={translations} />

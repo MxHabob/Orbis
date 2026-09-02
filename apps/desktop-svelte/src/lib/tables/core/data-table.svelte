@@ -227,7 +227,6 @@ function toggleColumnVisibility(colId: string) {
             translations={{
               filter: m.common_filter(),
               advancedFilter: m.common_filter_advanced(),
-              description: m.common_filter_description(),
               matchAll: m.common_filter_match_all(),
               matchAny: m.common_filter_match_any(),
               rule: m.common_filter_rule(),

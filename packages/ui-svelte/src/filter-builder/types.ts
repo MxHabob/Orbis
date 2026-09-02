@@ -37,7 +37,6 @@ export interface FieldDefinition {
 export interface FilterTranslations {
     filter: string;
     advancedFilter: string;
-    description: string;
     matchAll: string;
     matchAny: string;
     rule: string;
@@ -54,7 +53,6 @@ export interface FilterTranslations {
 export const defaultFilterTranslations: FilterTranslations = {
     filter: "Filter",
     advancedFilter: "Advanced Filter",
-    description: "Build complex filters with multiple conditions and groups.",
     matchAll: "Match ALL of the following:",
     matchAny: "Match ANY of the following:",
     rule: "Rule",
