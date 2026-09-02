@@ -2,7 +2,7 @@
     import { Button } from "../components/ui/button";
     import { Select, SelectTrigger, SelectContent, SelectItem } from "../components/ui/select";
     import { Plus, Trash2, GitBranch } from "@lucide/svelte";
-    import { FilterOperator, type UniversalFilter, type FieldDefinition } from "./types";
+    import { FilterOperator, type UniversalFilter, type FieldDefinition, type FilterTranslations, defaultFilterTranslations } from "./types";
     import FilterRow from "./FilterRow.svelte";
     import FilterBuilderSelf from "./FilterBuilder.svelte";
     import { slide } from "svelte/transition";
@@ -11,12 +11,14 @@
         filter = $bindable(),
         fields = [],
         isRoot = true,
-        onRemove = () => {}
+        onRemove = () => {},
+        translations = defaultFilterTranslations
     }: {
         filter: UniversalFilter;
         fields: FieldDefinition[];
         isRoot?: boolean;
         onRemove?: () => void;
+        translations?: FilterTranslations;
     } = $props();
 
     function addCondition() {
@@ -65,25 +67,25 @@
             </Select>
             
             <span class="text-xs text-muted-foreground font-medium hidden sm:inline-block">
-                Match {filter.logic === 'AND' ? 'ALL' : 'ANY'} of the following:
+                {filter.logic === 'AND' ? translations.matchAll : translations.matchAny}
             </span>
         </div>
 
         <div class="flex items-center gap-2">
             <Button variant="outline" size="sm" onclick={addCondition} class="h-8 gap-1 text-xs">
                 <Plus class="w-3.5 h-3.5" />
-                <span class="hidden sm:inline">Rule</span>
+                <span class="hidden sm:inline">{translations.rule}</span>
             </Button>
             
             <Button variant="outline" size="sm" onclick={addGroup} class="h-8 gap-1 text-xs">
                 <GitBranch class="w-3.5 h-3.5" />
-                <span class="hidden sm:inline">Group</span>
+                <span class="hidden sm:inline">{translations.group}</span>
             </Button>
 
             {#if !isRoot}
                 <Button variant="ghost" size="icon" onclick={onRemove} class="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive transition-colors ml-1">
                     <Trash2 class="w-3.5 h-3.5" />
-                    <span class="sr-only">Remove Group</span>
+                    <span class="sr-only">{translations.removeGroup}</span>
                 </Button>
             {/if}
         </div>
@@ -98,6 +100,7 @@
                         <FilterRow 
                             bind:condition={filter.conditions[i]} 
                             fields={fields} 
+                            translations={translations}
                             onRemove={() => removeCondition(i)} 
                         />
                     </div>
@@ -112,6 +115,7 @@
                             bind:filter={filter.groups[i]} 
                             fields={fields} 
                             isRoot={false} 
+                            translations={translations}
                             onRemove={() => removeGroup(i)} 
                         />
                     </div>
@@ -120,10 +124,10 @@
         </div>
     {:else}
         <div class="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg bg-muted/20 text-muted-foreground">
-            <p class="text-sm mb-2">No rules defined in this group.</p>
+            <p class="text-sm mb-2">{translations.noRules}</p>
             <div class="flex gap-2">
-                <Button variant="secondary" size="sm" onclick={addCondition} class="text-xs">Add Rule</Button>
-                <Button variant="outline" size="sm" onclick={addGroup} class="text-xs">Add Sub-Group</Button>
+                <Button variant="secondary" size="sm" onclick={addCondition} class="text-xs">{translations.addRule}</Button>
+                <Button variant="outline" size="sm" onclick={addGroup} class="text-xs">{translations.addSubGroup}</Button>
             </div>
         </div>
     {/if}

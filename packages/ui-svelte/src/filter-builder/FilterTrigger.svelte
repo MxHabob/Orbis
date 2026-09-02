@@ -4,16 +4,18 @@
     import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "../components/ui/dialog";
     import FilterBuilder from "./FilterBuilder.svelte";
     import FilterSummary from "./FilterSummary.svelte";
-    import type { UniversalFilter, FieldDefinition } from "./types";
+    import { defaultFilterTranslations, type UniversalFilter, type FieldDefinition, type FilterTranslations } from "./types";
 
     let {
         filter = $bindable(),
         fields = [],
-        onApply
+        onApply,
+        translations = defaultFilterTranslations
     }: {
         filter: UniversalFilter;
         fields: FieldDefinition[];
         onApply?: (filter: UniversalFilter) => void;
+        translations?: FilterTranslations;
     } = $props();
 
     let isOpen = $state(false);
@@ -45,7 +47,7 @@
             {#snippet child({ props })}
                 <Button variant="ghost" size="sm" class="h-8 gap-1.5 text-xs relative" {...props}>
                     <Filter class="w-3.5 h-3.5" />
-                    Filter
+                    {translations.filter}
                     {#if activeCount > 0}
                         <span class="absolute -top-1 -end-1 bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
                             {activeCount}
@@ -56,18 +58,18 @@
         </DialogTrigger>
         <DialogContent class="max-w-3xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-                <DialogTitle>Advanced Filter</DialogTitle>
-                <DialogDescription>Build complex filters with multiple conditions and groups.</DialogDescription>
+                <DialogTitle>{translations.advancedFilter}</DialogTitle>
+                <DialogDescription>{translations.description}</DialogDescription>
             </DialogHeader>
             <div class="py-4">
-                <FilterBuilder bind:filter {fields} />
+                <FilterBuilder bind:filter {fields} translations={translations} />
             </div>
             <DialogFooter class="flex items-center justify-between gap-2">
                 <Button variant="ghost" size="sm" class="text-xs text-destructive" onclick={handleClear}>
-                    <X class="w-3.5 h-3.5 me-1" /> Clear All
+                    <X class="w-3.5 h-3.5 me-1" /> {translations.clearAll}
                 </Button>
                 <Button size="sm" class="text-xs" onclick={handleApply}>
-                    Apply Filter
+                    {translations.applyFilter}
                 </Button>
             </DialogFooter>
         </DialogContent>

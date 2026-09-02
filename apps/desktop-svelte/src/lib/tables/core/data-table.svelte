@@ -224,6 +224,22 @@ function toggleColumnVisibility(colId: string) {
           <FilterTrigger 
             bind:filter={filterValue} 
             fields={filterFields} 
+            translations={{
+              filter: m.common_filter(),
+              advancedFilter: m.common_filter_advanced(),
+              description: m.common_filter_description(),
+              matchAll: m.common_filter_match_all(),
+              matchAny: m.common_filter_match_any(),
+              rule: m.common_filter_rule(),
+              group: m.common_filter_group(),
+              removeGroup: m.common_filter_remove_group(),
+              noRules: m.common_filter_no_rules(),
+              addRule: m.common_filter_add_rule(),
+              addSubGroup: m.common_filter_add_sub_group(),
+              removeCondition: m.common_filter_remove_condition(),
+              clearAll: m.common_filter_clear_all(),
+              applyFilter: m.common_filter_apply()
+            }}
             onApply={onFilter} 
           />
           <div class="w-px h-4 bg-border mx-1"></div>
