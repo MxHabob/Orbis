@@ -23,33 +23,49 @@ pub struct FilterCondition {
 #[serde(rename_all = "lowercase")]
 pub enum FilterLogic {
     #[default]
+    #[serde(alias = "AND")]
     And,
+    #[serde(alias = "OR")]
     Or,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum SortDirection {
+    #[serde(alias = "ASC")]
     Asc,
+    #[serde(alias = "DESC")]
     Desc,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum FilterOperator {
+    #[serde(alias = "Eq")]
     Eq,
+    #[serde(alias = "Ne", alias = "Neq")]
     Neq,
+    #[serde(alias = "Gt")]
     Gt,
+    #[serde(alias = "Gte")]
     Gte,
+    #[serde(alias = "Lt")]
     Lt,
+    #[serde(alias = "Lte")]
     Lte,
+    #[serde(alias = "Like")]
     Contains,
+    #[serde(alias = "NotLike")]
     NotContains,
     StartsWith,
     EndsWith,
+    #[serde(alias = "In")]
     In,
+    #[serde(alias = "NotIn")]
     NotIn,
+    #[serde(alias = "IsNull")]
     IsNull,
+    #[serde(alias = "IsNotNull")]
     IsNotNull,
     Between,
     DateBefore,
