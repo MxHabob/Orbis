@@ -26,22 +26,6 @@ let data = $state<{ month: string; amount: number; lastYearAmount: number }[]>(
 );
 let isLoading = $state(true);
 
-// Mock dataset matching Image 1 & 2 exactly as a fallback
-const mockRevenueData = [
-  { month: "Jan", amount: 55000, lastYearAmount: 38000 },
-  { month: "Feb", amount: 53000, lastYearAmount: 18000 },
-  { month: "Mar", amount: 53000, lastYearAmount: 18000 },
-  { month: "Apr", amount: 14000, lastYearAmount: 7000 },
-  { month: "May", amount: 62000, lastYearAmount: 18000 },
-  { month: "Jun", amount: 52000, lastYearAmount: 18000 },
-  { month: "Jul", amount: 21000, lastYearAmount: 18000 },
-  { month: "Aug", amount: 62000, lastYearAmount: 18000 },
-  { month: "Sep", amount: 62000, lastYearAmount: 18000 },
-  { month: "Oct", amount: 14000, lastYearAmount: 57000 },
-  { month: "Nov", amount: 0, lastYearAmount: 0 },
-  { month: "Dec", amount: 48000, lastYearAmount: 18000 },
-];
-
 async function loadData() {
   isLoading = true;
   try {
@@ -57,74 +41,33 @@ async function loadData() {
       months.push({ label, index: i });
     }
 
-    if (payments && payments.length > 0) {
-      const currentYear = new Date().getFullYear();
-      const thisYearMap = Array(12).fill(0);
-      const lastYearMap = Array(12).fill(0);
+    const currentYear = new Date().getFullYear();
+    const thisYearMap = Array(12).fill(0) as number[];
+    const lastYearMap = Array(12).fill(0) as number[];
 
-      for (const p of payments) {
-        const dateStr = ((p as any).payment_date ||
-          p.created_at ||
-          "") as string;
-        if (!dateStr) continue;
-        const dateObj = new Date(dateStr);
-        if (isNaN(dateObj.getTime())) continue;
+    for (const payment of payments ?? []) {
+      const dateString = String((payment as any).payment_date ?? payment.created_at ?? "");
+      const date = new Date(dateString);
+      if (!dateString || Number.isNaN(date.getTime())) continue;
 
-        const year = dateObj.getFullYear();
-        const month = dateObj.getMonth();
-        const amt = Number(p.amount || 0);
+      const amount = Number((payment as any).amount ?? 0);
+      if (!Number.isFinite(amount)) continue;
 
-        if (year === currentYear) {
-          thisYearMap[month] += amt;
-        } else if (year === currentYear - 1) {
-          lastYearMap[month] += amt;
-        }
+      if (date.getFullYear() === currentYear) {
+        thisYearMap[date.getMonth()] += amount;
+      } else if (date.getFullYear() === currentYear - 1) {
+        lastYearMap[date.getMonth()] += amount;
       }
-
-      const hasPayments =
-        thisYearMap.some((v) => v > 0) || lastYearMap.some((v) => v > 0);
-      if (hasPayments) {
-        data = months.map(({ label, index }) => ({
-          month: label,
-          amount: thisYearMap[index],
-          lastYearAmount: lastYearMap[index],
-        }));
-      } else {
-        data = months.map(({ label, index }) => ({
-          month: label,
-          amount: mockRevenueData[index]!.amount,
-          lastYearAmount: mockRevenueData[index]!.lastYearAmount,
-        }));
-      }
-    } else {
-      data = months.map(({ label, index }) => ({
-        month: label,
-        amount: mockRevenueData[index]!.amount,
-        lastYearAmount: mockRevenueData[index]!.lastYearAmount,
-      }));
     }
+
+    data = months.map(({ label, index }) => ({
+      month: label,
+      amount: thisYearMap[index] ?? 0,
+      lastYearAmount: lastYearMap[index] ?? 0,
+    }));
   } catch (e) {
     console.error("Error loading finance revenue trends:", e);
-    // fallback
-    const months = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
-    data = months.map((label, index) => ({
-      month: label,
-      amount: mockRevenueData[index]!.amount,
-      lastYearAmount: mockRevenueData[index]!.lastYearAmount,
-    }));
+    data = [];
   } finally {
     isLoading = false;
   }

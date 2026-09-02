@@ -119,12 +119,16 @@ const eventStyles: Record<string, { color: string; icon: typeof Bell }> = {
         <div class="h-full grid {gridCols[gridLayout]} gap-3">
           {#each Array(gridSlots[gridLayout]) as _, i}
             {@const cam = cameras[i]}
-            <button
-              type="button"
+            <div
+              role="button"
+              tabindex="0"
               class="relative bg-card rounded-xl overflow-hidden flex items-center justify-center
                      border-2 transition-all cursor-pointer shadow-inner w-full h-full text-start
                      {selectedIdx === i ? 'border-primary ring-2 ring-primary/20' : 'border-border/30 hover:border-border'}"
               onclick={() => selectedIdx = i}
+              onkeydown={(event) => {
+                if (event.key === "Enter" || event.key === " ") selectedIdx = i;
+              }}
             >
               {#if cam}
                 {#if cam.status === "online"}
@@ -143,7 +147,7 @@ const eventStyles: Record<string, { color: string; icon: typeof Bell }> = {
                       </div>
                     </div>
                   </div>
-                  <button type="button" class="absolute top-2.5 right-2.5 p-1.5 bg-background/80 border border-border/40 rounded-md text-foreground hover:text-primary transition-colors cursor-pointer">
+                  <button type="button" onclick={(event) => event.stopPropagation()} class="absolute top-2.5 right-2.5 p-1.5 bg-background/80 border border-border/40 rounded-md text-foreground hover:text-primary transition-colors cursor-pointer">
                     <Maximize2 size={12} />
                   </button>
                 {:else}
@@ -161,7 +165,7 @@ const eventStyles: Record<string, { color: string; icon: typeof Bell }> = {
                   <p class="text-[10px] text-muted-foreground">خانة شاغرة</p>
                 </div>
               {/if}
-            </button>
+            </div>
           {/each}
         </div>
       </div>

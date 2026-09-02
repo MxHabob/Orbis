@@ -85,17 +85,12 @@ async function loadData() {
         data[data.length - 1]?.count ?? enrollments.length;
       totalCount = currentMonthActive;
     } else {
-      // Fallback mockup matching Screenshot 4 (Right):
-      // Monthly Enrollment starting from Mar (~590) to Feb (~738)
-      const mockCounts = [
-        590, 610, 635, 650, 640, 660, 655, 670, 710, 700, 715, 738,
-      ];
       data = months.map(({ label, key }, idx) => ({
         month: label,
         rawDate: key,
-        count: mockCounts[idx] ?? 0,
+        count: 0,
       }));
-      totalCount = 738;
+      totalCount = 0;
     }
 
     const sum = data.reduce((acc, d) => acc + d.count, 0);
