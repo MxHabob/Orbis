@@ -1,7 +1,7 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
+use bcrypt::{DEFAULT_COST, hash};
 use colored::*;
-use sea_orm::{Database, ConnectionTrait};
-use bcrypt::{hash, DEFAULT_COST};
+use sea_orm::{ConnectionTrait, Database};
 
 use crate::core::config::CliConfig;
 use crate::core::database;
@@ -16,11 +16,17 @@ pub async fn execute() -> Result<()> {
 
     if status.is_setup_complete() {
         output::print_success("The system is already fully configured and ready.");
-        output::print_info("Action: Run `orbis start` (or select 'Start System' from the menu) to boot.");
+        output::print_info(
+            "Action: Run `orbis start` (or select 'Start System' from the menu) to boot.",
+        );
         return Ok(());
     } else if status.is_initialized() {
-        output::print_warning("The core database exists but Initial Setup (Onboarding) is pending.");
-        output::print_info("Action: Run `orbis start` to boot the application and complete the setup from the Desktop UI.");
+        output::print_warning(
+            "The core database exists but Initial Setup (Onboarding) is pending.",
+        );
+        output::print_info(
+            "Action: Run `orbis start` to boot the application and complete the setup from the Desktop UI.",
+        );
         return Ok(());
     }
 
@@ -39,27 +45,28 @@ pub async fn execute() -> Result<()> {
             let info = license::load_license()?;
             output::print_success(&format!(
                 "License already active: {} (expires in {} days)",
-                info.plan, info.days_remaining()
+                info.plan,
+                info.days_remaining()
             ));
             info
         }
         _ => {
-            let activation_options = vec![
-                "1. Enter License Key",
-                "2. Start Free Trial (30 days)",
-            ];
-            let choice = prompts::prompt_select("How would you like to activate?", activation_options)?;
+            let activation_options = vec!["1. Enter License Key", "2. Start Free Trial (30 days)"];
+            let choice =
+                prompts::prompt_select("How would you like to activate?", activation_options)?;
 
             if choice.contains("Trial") {
                 let info = license::activate_trial()?;
                 output::print_success(&format!(
                     "Trial activated! Plan: {} | Expires: {} days",
-                    info.plan, info.days_remaining()
+                    info.plan,
+                    info.days_remaining()
                 ));
                 info
             } else {
                 loop {
-                    let key = prompts::prompt_license_key("Enter License Key (XXXX-XXXX-XXXX-XXXX):")?;
+                    let key =
+                        prompts::prompt_license_key("Enter License Key (XXXX-XXXX-XXXX-XXXX):")?;
                     match license::activate_license(&key) {
                         Ok(info) => {
                             output::print_success(&format!(
@@ -86,7 +93,10 @@ pub async fn execute() -> Result<()> {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     output::print_phase_header(2, TOTAL_PHASES, "Infrastructure Setup");
 
-    let db_options = vec!["1. SQLite (Recommended for local/offline)", "2. PostgreSQL (Enterprise / Dedicated On-Premise Server)"];
+    let db_options = vec![
+        "1. SQLite (Recommended for local/offline)",
+        "2. PostgreSQL (Enterprise / Dedicated On-Premise Server)",
+    ];
     let db_choice = prompts::prompt_select("Select database provider:", db_options)?;
 
     let config = CliConfig::default();
@@ -94,22 +104,29 @@ pub async fn execute() -> Result<()> {
         output::print_progress_ok("SQLite selected — local storage");
         config.db_url.clone()
     } else {
-        prompts::prompt_text("Enter PostgreSQL Connection String (e.g. postgres://user:pass@localhost/orbis):")?
+        prompts::prompt_text(
+            "Enter PostgreSQL Connection String (e.g. postgres://user:pass@localhost/orbis):",
+        )?
     };
 
     output::print_progress_pending("Creating database and running schema migrations...");
-    let db = Database::connect(&db_url).await
+    let db = Database::connect(&db_url)
+        .await
         .map_err(|e| anyhow!("Failed to connect to database: {}", e))?;
 
     let schema_sql = if db_url.starts_with("postgres://") || db_url.starts_with("postgresql://") {
-        include_str!("../../../api-rust/crates/infra-persistence/src/schemas/schema_baseline_pg.sql")
+        include_str!(
+            "../../../api-rust/crates/infra-persistence/src/schemas/schema_baseline_pg.sql"
+        )
     } else {
         include_str!("../../../api-rust/crates/infra-persistence/src/schemas/schema_baseline.sql")
     };
     db.execute_unprepared(schema_sql).await?;
-    infra_persistence::schema_migrations::run_p0_migrations(&db).await
+    infra_persistence::schema_migrations::run_p0_migrations(&db)
+        .await
         .map_err(|e| anyhow!("Failed running P0 migrations: {}", e))?;
-    infra_persistence::schema_migrations::run_p4_migrations(&db).await
+    infra_persistence::schema_migrations::run_p4_migrations(&db)
+        .await
         .map_err(|e| anyhow!("Failed running P4 migrations: {}", e))?;
 
     output::print_progress_ok("Database schema created successfully");
@@ -174,9 +191,13 @@ pub async fn execute() -> Result<()> {
     ));
 
     timezone = prompts::prompt_text_with_default("Timezone:", &detected_tz)?;
-    let currency_input = prompts::prompt_text_with_default("Base Currency (ISO 4217):", &detected_currency)?;
+    let currency_input =
+        prompts::prompt_text_with_default("Base Currency (ISO 4217):", &detected_currency)?;
     currency = currency_input.trim().to_uppercase();
-    let language_input = prompts::prompt_text_with_default("Default System Language (ar / en):", &detected_language)?;
+    let language_input = prompts::prompt_text_with_default(
+        "Default System Language (ar / en):",
+        &detected_language,
+    )?;
     language = language_input.trim().to_lowercase();
 
     // Phase 4: Administrator Account
@@ -189,17 +210,20 @@ pub async fn execute() -> Result<()> {
 
     // Review & Edit Loop
     loop {
-        output::print_summary_box("Configuration Review", &[
-            ("Organization (EN):", &org_name),
-            ("Organization (AR):", &org_name_ar),
-            ("Slug:", &org_slug),
-            ("Institution Type:", institution_type_label),
-            ("Timezone:", &timezone),
-            ("Base Currency:", &currency),
-            ("Default Language:", &language),
-            ("Admin Name:", &admin_name),
-            ("Admin Email:", &admin_username),
-        ]);
+        output::print_summary_box(
+            "Configuration Review",
+            &[
+                ("Organization (EN):", &org_name),
+                ("Organization (AR):", &org_name_ar),
+                ("Slug:", &org_slug),
+                ("Institution Type:", institution_type_label),
+                ("Timezone:", &timezone),
+                ("Base Currency:", &currency),
+                ("Default Language:", &language),
+                ("Admin Name:", &admin_name),
+                ("Admin Email:", &admin_username),
+            ],
+        );
 
         let review_options = vec![
             "1. Confirm & Initialize System (Press Enter to finish)",
@@ -208,7 +232,10 @@ pub async fn execute() -> Result<()> {
             "4. Cancel Setup",
         ];
 
-        let review_choice = prompts::prompt_select("Would you like to proceed or edit any previous step?", review_options)?;
+        let review_choice = prompts::prompt_select(
+            "Would you like to proceed or edit any previous step?",
+            review_options,
+        )?;
 
         if review_choice.contains("Confirm") {
             break;
@@ -223,11 +250,13 @@ pub async fn execute() -> Result<()> {
         } else if review_choice.contains("Edit Organization Setup") {
             output::print_phase_header(3, TOTAL_PHASES, "Organization Setup (Editing)");
             org_name = prompts::prompt_text_with_default("Organization Name (EN):", &org_name)?;
-            org_name_ar = prompts::prompt_text_with_default("Organization Name (AR):", &org_name_ar)?;
+            org_name_ar =
+                prompts::prompt_text_with_default("Organization Name (AR):", &org_name_ar)?;
             let re_slug = transliterate_arabic_to_ascii(&org_name);
             org_slug = prompts::prompt_text_with_default("Organization Slug:", &re_slug)?;
 
-            let bp_choice = prompts::prompt_select("Select institution type:", blueprint_options.clone())?;
+            let bp_choice =
+                prompts::prompt_select("Select institution type:", blueprint_options.clone())?;
             blueprint = if bp_choice.contains("University") {
                 "university".to_string()
             } else if bp_choice.contains("Training") {
@@ -244,7 +273,8 @@ pub async fn execute() -> Result<()> {
             timezone = prompts::prompt_text_with_default("Timezone:", &timezone)?;
             let c_in = prompts::prompt_text_with_default("Base Currency (ISO 4217):", &currency)?;
             currency = c_in.trim().to_uppercase();
-            let l_in = prompts::prompt_text_with_default("Default System Language (ar / en):", &language)?;
+            let l_in =
+                prompts::prompt_text_with_default("Default System Language (ar / en):", &language)?;
             language = l_in.trim().to_lowercase();
         }
     }
@@ -254,10 +284,10 @@ pub async fn execute() -> Result<()> {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     output::print_phase_header(5, TOTAL_PHASES, "Initializing System");
 
-
-
     // 5a. Bootstrap organization + admin + core data
-    output::print_progress_pending("Creating organization, admin account, chart of accounts, and cash/bank accounts...");
+    output::print_progress_pending(
+        "Creating organization, admin account, chart of accounts, and cash/bank accounts...",
+    );
     let hashed_password = hash(&admin_password, DEFAULT_COST).unwrap_or_default();
     let payload = svc_organization::ops::bootstrap::BootstrapPayload {
         org_name: org_name.clone(),
@@ -273,7 +303,9 @@ pub async fn execute() -> Result<()> {
 
     let result = svc_organization::ops::bootstrap::bootstrap_full(&db, payload).await?;
     let org_id = result.org_id;
-    output::print_progress_ok("Organization, chart of accounts, and cash/bank accounts created successfully");
+    output::print_progress_ok(
+        "Organization, chart of accounts, and cash/bank accounts created successfully",
+    );
 
     // 5d. Store license limits in organization
     output::print_progress_pending("Applying license limits...");
@@ -284,9 +316,13 @@ pub async fn execute() -> Result<()> {
             (license_info.max_users as i64).into(),
             (license_info.max_students as i64).into(),
             org_id.clone().into(),
-        ]
-    )).await?;
-    output::print_progress_ok(&format!("License limits applied (Plan: {})", license_info.plan));
+        ],
+    ))
+    .await?;
+    output::print_progress_ok(&format!(
+        "License limits applied (Plan: {})",
+        license_info.plan
+    ));
 
     // 5e. Desktop download (production only)
     let env_var = std::env::var("APP_ENV").unwrap_or_else(|_| "development".to_string());
@@ -300,7 +336,10 @@ pub async fn execute() -> Result<()> {
         if app_exists {
             output::print_progress_ok("Desktop application found");
         } else {
-            println!("\n{}", "Orbis Desktop is distributed via GitHub Releases.".cyan());
+            println!(
+                "\n{}",
+                "Orbis Desktop is distributed via GitHub Releases.".cyan()
+            );
             let token = prompts::prompt_password(
                 "Enter GitHub Personal Access Token (Leave empty for public repos):",
                 None,
@@ -319,22 +358,32 @@ pub async fn execute() -> Result<()> {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     output::print_phase_header(6, TOTAL_PHASES, "Summary");
 
-    let db_provider = if db_url.starts_with("sqlite") { "SQLite" } else { "PostgreSQL" };
+    let db_provider = if db_url.starts_with("sqlite") {
+        "SQLite"
+    } else {
+        "PostgreSQL"
+    };
 
-    output::print_summary_box("System Initialized Successfully!", &[
-        ("Organization:", &org_name),
-        ("Organization (AR):", &org_name_ar),
-        ("Slug:", &org_slug),
-        ("Admin:", &admin_username),
-        ("Database:", db_provider),
-        ("Institution:", institution_type_label),
-        ("License:", &license_info.plan.to_string()),
-        ("Timezone:", &timezone),
-        ("Currency:", &currency),
-    ]);
+    output::print_summary_box(
+        "System Initialized Successfully!",
+        &[
+            ("Organization:", &org_name),
+            ("Organization (AR):", &org_name_ar),
+            ("Slug:", &org_slug),
+            ("Admin:", &admin_username),
+            ("Database:", db_provider),
+            ("Institution:", institution_type_label),
+            ("License:", &license_info.plan.to_string()),
+            ("Timezone:", &timezone),
+            ("Currency:", &currency),
+        ],
+    );
 
     println!("  {}", "Next Steps:".bold());
-    println!("  1. Run {} to boot the system", "orbis start".cyan().bold());
+    println!(
+        "  1. Run {} to boot the system",
+        "orbis start".cyan().bold()
+    );
     println!("  2. The Desktop app will guide you through academic setup");
     println!("     (calendar, classes, subjects, etc.)\n");
 
@@ -388,9 +437,13 @@ fn detect_currency(timezone: &str) -> String {
     let tz_lower = timezone.to_lowercase();
     if tz_lower.contains("riyadh") || tz_lower.contains("saudi") {
         "SAR".to_string()
-    } else if tz_lower.contains("aden") || tz_lower.contains("sanaa") || tz_lower.contains("yemen") {
+    } else if tz_lower.contains("aden") || tz_lower.contains("sanaa") || tz_lower.contains("yemen")
+    {
         "YER".to_string()
-    } else if tz_lower.contains("dubai") || tz_lower.contains("uae") || tz_lower.contains("abu_dhabi") {
+    } else if tz_lower.contains("dubai")
+        || tz_lower.contains("uae")
+        || tz_lower.contains("abu_dhabi")
+    {
         "AED".to_string()
     } else if tz_lower.contains("cairo") || tz_lower.contains("egypt") {
         "EGP".to_string()
@@ -434,7 +487,9 @@ fn detect_language() -> String {
             .output()
         {
             if output.status.success() {
-                let win_lang = String::from_utf8_lossy(&output.stdout).trim().to_lowercase();
+                let win_lang = String::from_utf8_lossy(&output.stdout)
+                    .trim()
+                    .to_lowercase();
                 if win_lang.starts_with("ar") {
                     return "ar".to_string();
                 } else if win_lang.starts_with("en") {
@@ -451,7 +506,8 @@ fn transliterate_arabic_to_ascii(input: &str) -> String {
     let mut result = String::new();
     for c in input.chars() {
         match c {
-            '\u{0627}' | '\u{0623}' | '\u{0625}' | '\u{0622}' | '\u{0649}' | '\u{0621}' | '\u{0626}' | '\u{0624}' => result.push('a'),
+            '\u{0627}' | '\u{0623}' | '\u{0625}' | '\u{0622}' | '\u{0649}' | '\u{0621}'
+            | '\u{0626}' | '\u{0624}' => result.push('a'),
             '\u{0628}' => result.push('b'),
             '\u{062A}' | '\u{0629}' => result.push('t'),
             '\u{062B}' => result.push_str("th"),

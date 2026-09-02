@@ -90,9 +90,15 @@ pub fn print_info(message: &str) {
 pub fn print_phase_header(phase: u8, total: u8, title: &str) {
     let header = format!("  Phase {}/{} ▸ {}", phase, total, title);
     println!();
-    println!("{}", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━".truecolor(0, 204, 255));
+    println!(
+        "{}",
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━".truecolor(0, 204, 255)
+    );
     println!("{}", header.truecolor(0, 204, 255).bold());
-    println!("{}", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━".truecolor(0, 204, 255));
+    println!(
+        "{}",
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━".truecolor(0, 204, 255)
+    );
 }
 
 /// Prints a progress step with a success icon.
@@ -154,5 +160,8 @@ where
 
 /// Prints a simple section divider.
 pub fn print_divider() {
-    println!("{}", "───────────────────────────────────────────────────────────".truecolor(50, 50, 50));
+    println!(
+        "{}",
+        "───────────────────────────────────────────────────────────".truecolor(50, 50, 50)
+    );
 }

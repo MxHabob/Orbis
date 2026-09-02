@@ -1,4 +1,4 @@
-use sea_orm::{Database, Statement, DatabaseBackend, ConnectionTrait};
+use sea_orm::{ConnectionTrait, Database, DatabaseBackend, Statement};
 
 use crate::core::license;
 
@@ -43,10 +43,13 @@ pub async fn get_full_status() -> SystemStatus {
     };
 
     // Check organizations
-    let (has_org, org_name) = match db.query_one(Statement::from_string(
-        DatabaseBackend::Sqlite,
-        "SELECT name FROM organizations LIMIT 1;".to_owned()
-    )).await {
+    let (has_org, org_name) = match db
+        .query_one(Statement::from_string(
+            DatabaseBackend::Sqlite,
+            "SELECT name FROM organizations LIMIT 1;".to_owned(),
+        ))
+        .await
+    {
         Ok(Some(row)) => {
             let name: Option<String> = row.try_get("", "name").ok();
             (true, name)
@@ -66,10 +69,13 @@ pub async fn get_full_status() -> SystemStatus {
     }
 
     // Check admin users
-    let has_admin = match db.query_one(Statement::from_string(
-        DatabaseBackend::Sqlite,
-        "SELECT COUNT(*) as cnt FROM users WHERE primary_role = 'super_admin';".to_owned()
-    )).await {
+    let has_admin = match db
+        .query_one(Statement::from_string(
+            DatabaseBackend::Sqlite,
+            "SELECT COUNT(*) as cnt FROM users WHERE primary_role = 'super_admin';".to_owned(),
+        ))
+        .await
+    {
         Ok(Some(row)) => {
             let count: i64 = row.try_get("", "cnt").unwrap_or(0);
             count > 0
@@ -78,10 +84,13 @@ pub async fn get_full_status() -> SystemStatus {
     };
 
     // Check academic years (setup completed via Desktop)
-    let has_academic_years = match db.query_one(Statement::from_string(
-        DatabaseBackend::Sqlite,
-        "SELECT COUNT(*) as cnt FROM academic_years;".to_owned()
-    )).await {
+    let has_academic_years = match db
+        .query_one(Statement::from_string(
+            DatabaseBackend::Sqlite,
+            "SELECT COUNT(*) as cnt FROM academic_years;".to_owned(),
+        ))
+        .await
+    {
         Ok(Some(row)) => {
             let count: i64 = row.try_get("", "cnt").unwrap_or(0);
             count > 0

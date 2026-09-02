@@ -1,6 +1,6 @@
 use anyhow::Result;
-use inquire::{Password, PasswordDisplayMode, Select, Text, Confirm};
 use colored::*;
+use inquire::{Confirm, Password, PasswordDisplayMode, Select, Text};
 
 use crate::core::validator;
 
@@ -51,7 +51,11 @@ where
 }
 
 /// Prompts for text input with a default value, retrying until the validator passes.
-pub fn prompt_text_validated_with_default<F>(message: &str, default: &str, validate: F) -> Result<String>
+pub fn prompt_text_validated_with_default<F>(
+    message: &str,
+    default: &str,
+    validate: F,
+) -> Result<String>
 where
     F: Fn(&str) -> Result<()>,
 {
@@ -118,7 +122,10 @@ pub fn prompt_password_confirmed(message: &str) -> Result<String> {
             .prompt()?;
 
         if password != confirm {
-            println!("{} Passwords do not match. Please try again.", "[!]".yellow());
+            println!(
+                "{} Passwords do not match. Please try again.",
+                "[!]".yellow()
+            );
             continue;
         }
 

@@ -90,24 +90,30 @@ fn show_license_info(info: &license::LicenseInfo) {
         _ => "Unknown".dimmed(),
     };
 
-    output::print_summary_box("License Information", &[
-        ("Status:", &status_display.to_string()),
-        ("Plan:", &info.plan.to_string()),
-        ("Days Remaining:", &info.days_remaining().to_string()),
-    ]);
+    output::print_summary_box(
+        "License Information",
+        &[
+            ("Status:", &status_display.to_string()),
+            ("Plan:", &info.plan.to_string()),
+            ("Days Remaining:", &info.days_remaining().to_string()),
+        ],
+    );
 }
 
 fn show_license_details(info: &license::LicenseInfo) {
-    output::print_summary_box("License Details", &[
-        ("Key:", &info.key),
-        ("Plan:", &info.plan.to_string()),
-        ("Status:", &info.status.to_string()),
-        ("Activated:", &info.activated_at),
-        ("Expires:", &info.expires_at),
-        ("Max Users:", &info.max_users.to_string()),
-        ("Max Students:", &info.max_students.to_string()),
-        ("Features:", &info.features.join(", ")),
-    ]);
+    output::print_summary_box(
+        "License Details",
+        &[
+            ("Key:", &info.key),
+            ("Plan:", &info.plan.to_string()),
+            ("Status:", &info.status.to_string()),
+            ("Activated:", &info.activated_at),
+            ("Expires:", &info.expires_at),
+            ("Max Users:", &info.max_users.to_string()),
+            ("Max Students:", &info.max_students.to_string()),
+            ("Features:", &info.features.join(", ")),
+        ],
+    );
 }
 
 fn activate_new_license() -> Result<()> {

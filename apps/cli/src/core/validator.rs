@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use regex::Regex;
 
 /// Validates that an organization name is not empty and within reasonable length.
@@ -30,7 +30,9 @@ pub fn validate_slug(slug: &str) -> Result<()> {
     }
     let re = Regex::new(r"^[a-z0-9]+(-[a-z0-9]+)*$").unwrap();
     if !re.is_match(trimmed) {
-        return Err(anyhow!("Slug must contain only lowercase letters, numbers, and hyphens (e.g. my-school)."));
+        return Err(anyhow!(
+            "Slug must contain only lowercase letters, numbers, and hyphens (e.g. my-school)."
+        ));
     }
     Ok(())
 }
@@ -72,10 +74,14 @@ pub fn validate_password(password: &str) -> Result<()> {
         return Err(anyhow!("Password must be 128 characters or less."));
     }
     if !password.chars().any(|c| c.is_uppercase()) {
-        return Err(anyhow!("Password must contain at least one uppercase letter."));
+        return Err(anyhow!(
+            "Password must contain at least one uppercase letter."
+        ));
     }
     if !password.chars().any(|c| c.is_lowercase()) {
-        return Err(anyhow!("Password must contain at least one lowercase letter."));
+        return Err(anyhow!(
+            "Password must contain at least one lowercase letter."
+        ));
     }
     if !password.chars().any(|c| c.is_ascii_digit()) {
         return Err(anyhow!("Password must contain at least one digit."));
@@ -92,13 +98,27 @@ pub fn password_strength(password: &str) -> &'static str {
     let has_special = password.chars().any(|c| !c.is_alphanumeric());
 
     let mut score = 0;
-    if len >= 8 { score += 1; }
-    if len >= 12 { score += 1; }
-    if len >= 16 { score += 1; }
-    if has_upper { score += 1; }
-    if has_lower { score += 1; }
-    if has_digit { score += 1; }
-    if has_special { score += 1; }
+    if len >= 8 {
+        score += 1;
+    }
+    if len >= 12 {
+        score += 1;
+    }
+    if len >= 16 {
+        score += 1;
+    }
+    if has_upper {
+        score += 1;
+    }
+    if has_lower {
+        score += 1;
+    }
+    if has_digit {
+        score += 1;
+    }
+    if has_special {
+        score += 1;
+    }
 
     match score {
         0..=2 => "Weak",
@@ -116,7 +136,9 @@ pub fn validate_license_key(key: &str) -> Result<()> {
     }
     let re = Regex::new(r"^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$").unwrap();
     if !re.is_match(&trimmed) {
-        return Err(anyhow!("Invalid license key format. Expected: XXXX-XXXX-XXXX-XXXX"));
+        return Err(anyhow!(
+            "Invalid license key format. Expected: XXXX-XXXX-XXXX-XXXX"
+        ));
     }
     Ok(())
 }

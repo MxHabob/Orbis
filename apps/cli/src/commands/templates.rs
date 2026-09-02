@@ -1,13 +1,15 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
+use sea_orm::{
+    ConnectionTrait, Database, DatabaseBackend, DatabaseConnection, Statement, TransactionTrait,
+};
 use serde::Deserialize;
 use serde_json::Value;
-use sea_orm::{ConnectionTrait, Database, DatabaseConnection, DatabaseBackend, Statement, TransactionTrait};
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::core::config::CliConfig;
 use crate::TemplateCommands;
+use crate::core::config::CliConfig;
 
 #[derive(Debug, Deserialize)]
 struct PackageManifest {
@@ -86,7 +88,10 @@ pub async fn execute(command: &TemplateCommands) -> Result<()> {
         TemplateCommands::Validate { package } => {
             let loaded = load_package(package)?;
             validate_package(&loaded)?;
-            println!("Valid template package: {} {}", loaded.manifest.display_name, loaded.manifest.package_version);
+            println!(
+                "Valid template package: {} {}",
+                loaded.manifest.display_name, loaded.manifest.package_version
+            );
         }
         TemplateCommands::Create { package } => install(package, false).await?,
         TemplateCommands::List => list_installed().await?,
@@ -97,8 +102,13 @@ pub async fn execute(command: &TemplateCommands) -> Result<()> {
 }
 
 fn load_package(path: &Path) -> Result<LoadedPackage> {
-    let root = if path.is_dir() { path.to_path_buf() } else {
-        return Err(anyhow!("Template package must be a directory: {}", path.display()));
+    let root = if path.is_dir() {
+        path.to_path_buf()
+    } else {
+        return Err(anyhow!(
+            "Template package must be a directory: {}",
+            path.display()
+        ));
     };
     let manifest_path = root.join("manifest.json");
     let manifest_text = fs::read_to_string(&manifest_path)
@@ -121,7 +131,11 @@ fn load_package(path: &Path) -> Result<LoadedPackage> {
         documents.push((template.clone(), document));
     }
 
-    Ok(LoadedPackage { root, manifest, documents })
+    Ok(LoadedPackage {
+        root,
+        manifest,
+        documents,
+    })
 }
 
 fn validate_package(package: &LoadedPackage) -> Result<()> {
@@ -152,22 +166,42 @@ fn validate_package(package: &LoadedPackage) -> Result<()> {
             return Err(anyhow!("Duplicate template code: {}", template.code));
         }
         if !category_ids.contains(&template.category) {
-            return Err(anyhow!("Template {} references unknown category {}", template.template_id, template.category));
+            return Err(anyhow!(
+                "Template {} references unknown category {}",
+                template.template_id,
+                template.category
+            ));
         }
         if !template.document_path.ends_with(".json") {
-            return Err(anyhow!("Template document must be JSON: {}", template.document_path));
+            return Err(anyhow!(
+                "Template document must be JSON: {}",
+                template.document_path
+            ));
         }
 
         let document_value: Value = serde_json::from_str(document_json)
             .with_context(|| format!("Invalid JSON document: {}", template.template_id))?;
         reject_unsupported_features(&document_value, &template.template_id)?;
-        let document: docforge_engine::model::TemplateDocument = serde_json::from_value(document_value)
-            .with_context(|| format!("Document is not compatible with the Rust engine: {}", template.template_id))?;
+        let document: docforge_engine::model::TemplateDocument =
+            serde_json::from_value(document_value).with_context(|| {
+                format!(
+                    "Document is not compatible with the Rust engine: {}",
+                    template.template_id
+                )
+            })?;
         if document.root.id().is_empty() {
-            return Err(anyhow!("Template {} has an empty root id", template.template_id));
+            return Err(anyhow!(
+                "Template {} has an empty root id",
+                template.template_id
+            ));
         }
-        if document.meta.entity_type != template.entity_type || document.meta.document_type != template.document_type {
-            return Err(anyhow!("Template metadata mismatch: {}", template.template_id));
+        if document.meta.entity_type != template.entity_type
+            || document.meta.document_type != template.document_type
+        {
+            return Err(anyhow!(
+                "Template metadata mismatch: {}",
+                template.template_id
+            ));
         }
         if let Some(fixture_path) = &template.fixture_path {
             let path = package.root.join(fixture_path);
@@ -185,17 +219,32 @@ fn reject_unsupported_features(value: &Value, template_id: &str) -> Result<()> {
         match value {
             Value::Object(map) => {
                 if map.get("type").and_then(Value::as_str) == Some("ComponentRef") {
-                    return Err(anyhow!("Template {} uses unsupported ComponentRef", template_id));
+                    return Err(anyhow!(
+                        "Template {} uses unsupported ComponentRef",
+                        template_id
+                    ));
                 }
                 if map.contains_key("pages") {
-                    return Err(anyhow!("Template {} uses pages[]; Rust engine currently requires root", template_id));
+                    return Err(anyhow!(
+                        "Template {} uses pages[]; Rust engine currently requires root",
+                        template_id
+                    ));
                 }
                 if map.contains_key("styles") || map.contains_key("theme") {
-                    return Err(anyhow!("Template {} uses unsupported styles/theme", template_id));
+                    return Err(anyhow!(
+                        "Template {} uses unsupported styles/theme",
+                        template_id
+                    ));
                 }
-                for child in map.values() { walk(child, template_id)?; }
+                for child in map.values() {
+                    walk(child, template_id)?;
+                }
             }
-            Value::Array(items) => for item in items { walk(item, template_id)?; },
+            Value::Array(items) => {
+                for item in items {
+                    walk(item, template_id)?;
+                }
+            }
             _ => {}
         }
         Ok(())
@@ -203,21 +252,39 @@ fn reject_unsupported_features(value: &Value, template_id: &str) -> Result<()> {
     walk(value, template_id)
 }
 
+fn repair_legacy_template_variables(value: &mut Value) -> bool {
+    match value {
+        Value::String(text) if text == "student.fullName" => {
+            *text = "{{student.fullName}}".to_string();
+            true
+        }
+        Value::Array(items) => items.iter_mut().any(repair_legacy_template_variables),
+        Value::Object(fields) => fields.values_mut().any(repair_legacy_template_variables),
+        _ => false,
+    }
+}
+
 async fn database() -> Result<DatabaseConnection> {
     let config = CliConfig::default();
-    let db = Database::connect(&config.db_url).await
+    let db = Database::connect(&config.db_url)
+        .await
         .with_context(|| format!("Unable to connect to {}", config.db_url))?;
     if db.get_database_backend() != DatabaseBackend::Sqlite {
-        return Err(anyhow!("Template installation currently requires SQLite because the existing DocForge migration is SQLite-specific"));
+        return Err(anyhow!(
+            "Template installation currently requires SQLite because the existing DocForge migration is SQLite-specific"
+        ));
     }
     Ok(db)
 }
 
 async fn organization_id(db: &DatabaseConnection) -> Result<String> {
-    let row = db.query_one(Statement::from_string(
-        DatabaseBackend::Sqlite,
-        "SELECT id FROM organizations WHERE is_deleted = 0 ORDER BY created_at LIMIT 1".to_string(),
-    )).await?;
+    let row = db
+        .query_one(Statement::from_string(
+            DatabaseBackend::Sqlite,
+            "SELECT id FROM organizations WHERE is_deleted = 0 ORDER BY created_at LIMIT 1"
+                .to_string(),
+        ))
+        .await?;
     row.and_then(|value| value.try_get::<String>("", "id").ok())
         .ok_or_else(|| anyhow!("No organization found. Run `orbis init` first."))
 }
@@ -226,7 +293,8 @@ async fn install(path: &Path, update: bool) -> Result<()> {
     let package = load_package(path)?;
     validate_package(&package)?;
     let db = database().await?;
-    docforge_orbis::schema::migrate_template_schema(&db).await
+    docforge_orbis::schema::migrate_template_schema(&db)
+        .await
         .context("Unable to create DocForge template tables")?;
     let org_id = organization_id(&db).await?;
     let txn = db.begin().await?;
@@ -238,25 +306,59 @@ async fn install(path: &Path, update: bool) -> Result<()> {
     for asset in &package.manifest.assets {
         let source = package.root.join(&asset.path);
         let target = storage_root.join("assets").join(&asset.asset_id);
-        let document_target = storage_root.join(&org_id).join("shared").join("templates").join(format!("{}.svg", asset.asset_id));
-        if let Some(parent) = document_target.parent() { fs::create_dir_all(parent)?; }
-        fs::copy(&source, &target).with_context(|| format!("Unable to copy asset {}", source.display()))?;
-        fs::copy(&source, &document_target).with_context(|| format!("Unable to copy resource {}", source.display()))?;
+        let document_target = storage_root
+            .join(&org_id)
+            .join("shared")
+            .join("templates")
+            .join(format!("{}.svg", asset.asset_id));
+        if let Some(parent) = document_target.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        fs::copy(&source, &target)
+            .with_context(|| format!("Unable to copy asset {}", source.display()))?;
+        fs::copy(&source, &document_target)
+            .with_context(|| format!("Unable to copy resource {}", source.display()))?;
         let metadata = serde_json::json!({
             "packageId": package.manifest.package_id,
             "packageVersion": package.manifest.package_version,
             "displayNameAr": package.manifest.display_name_ar,
             "nameAr": asset.name_ar,
             "sourcePath": asset.path,
-        }).to_string();
+        })
+        .to_string();
         let sql = format!(
             "INSERT OR IGNORE INTO template_assets (id, org_id, name, asset_type, mime_type, file_size, storage_key, storage_provider, tags, is_system, created_by, created_at, updated_at) VALUES ('{}','{}','{}','{}','{}',{},'{}','local','{}',1,'{}','{}','{}')",
-            escape(&asset.asset_id), escape(&org_id), escape(&asset.name), escape(&asset.asset_type), escape(&asset.mime_type), fs::metadata(&target)?.len(), escape(&asset.asset_id), escape(&metadata), actor, now, now
+            escape(&asset.asset_id),
+            escape(&org_id),
+            escape(&asset.name),
+            escape(&asset.asset_type),
+            escape(&asset.mime_type),
+            fs::metadata(&target)?.len(),
+            escape(&asset.asset_id),
+            escape(&metadata),
+            actor,
+            now,
+            now
         );
         txn.execute_unprepared(&sql).await?;
         let document_sql = format!(
             "INSERT OR IGNORE INTO documents (id, org_id, uploaded_by, entity_type, entity_id, name, category, visibility, size, mime_type, extension, storage_provider, path, url, created_at, updated_at) VALUES ('{}','{}','{}','template','shared','{}','image','internal',{},'{}','svg','local','{}','/storage/{}/shared/templates/{}.svg','{}','{}')",
-            escape(&asset.asset_id), escape(&org_id), actor, escape(&asset.name), fs::metadata(&source)?.len(), escape(&asset.mime_type), escape(&document_target.strip_prefix(&storage_root).unwrap_or(&document_target).to_string_lossy()), escape(&org_id), escape(&asset.asset_id), now, now
+            escape(&asset.asset_id),
+            escape(&org_id),
+            actor,
+            escape(&asset.name),
+            fs::metadata(&source)?.len(),
+            escape(&asset.mime_type),
+            escape(
+                &document_target
+                    .strip_prefix(&storage_root)
+                    .unwrap_or(&document_target)
+                    .to_string_lossy()
+            ),
+            escape(&org_id),
+            escape(&asset.asset_id),
+            now,
+            now
         );
         txn.execute_unprepared(&document_sql).await?;
     }
@@ -264,7 +366,14 @@ async fn install(path: &Path, update: bool) -> Result<()> {
     for category in &package.manifest.categories {
         let sql = format!(
             "INSERT OR IGNORE INTO template_categories (id, org_id, name, name_ar, slug, sort_order, is_system, is_active, created_at, updated_at) VALUES ('{}','{}','{}',{},{}, {},1,1,'{}','{}')",
-            escape(&category.id), escape(&org_id), escape(&category.name), optional(&category.name_ar), quote(&category.id), category.sort_order, now, now
+            escape(&category.id),
+            escape(&org_id),
+            escape(&category.name),
+            optional(&category.name_ar),
+            quote(&category.id),
+            category.sort_order,
+            now,
+            now
         );
         txn.execute_unprepared(&sql).await?;
     }
@@ -273,25 +382,45 @@ async fn install(path: &Path, update: bool) -> Result<()> {
         let mut assets_map = std::collections::HashMap::new();
         if let Some(assets) = value.get("assets").and_then(serde_json::Value::as_object) {
             for (key, asset_val) in assets {
-                if let Some(asset_id) = asset_val.get("assetId").and_then(serde_json::Value::as_str) {
+                if let Some(asset_id) = asset_val.get("assetId").and_then(serde_json::Value::as_str)
+                {
                     assets_map.insert(key.clone(), asset_id.to_string());
                 }
             }
         }
 
-        fn walk(value: &mut serde_json::Value, assets_map: &std::collections::HashMap<String, String>, org_id: &str) {
+        fn walk(
+            value: &mut serde_json::Value,
+            assets_map: &std::collections::HashMap<String, String>,
+            org_id: &str,
+        ) {
             match value {
                 serde_json::Value::Object(map) => {
                     if map.get("type").and_then(serde_json::Value::as_str) == Some("Image") {
                         if let Some(serde_json::Value::Object(props)) = map.get_mut("props") {
-                            if let Some(asset_ref) = props.get("assetRef").and_then(serde_json::Value::as_str) {
+                            if let Some(asset_ref) =
+                                props.get("assetRef").and_then(serde_json::Value::as_str)
+                            {
                                 if let Some(asset_id) = assets_map.get(asset_ref) {
-                                    let src_path = format!("/storage/{}/shared/templates/{}.svg", org_id, asset_id);
-                                    let has_var_src = props.get("src").and_then(|v| v.as_str()).map(|s| s.starts_with("{{")).unwrap_or(false);
+                                    let src_path = format!(
+                                        "/storage/{}/shared/templates/{}.svg",
+                                        org_id, asset_id
+                                    );
+                                    let has_var_src = props
+                                        .get("src")
+                                        .and_then(|v| v.as_str())
+                                        .map(|s| s.starts_with("{{"))
+                                        .unwrap_or(false);
                                     if has_var_src {
-                                        props.insert("fallbackSrc".to_string(), serde_json::Value::String(src_path));
+                                        props.insert(
+                                            "fallbackSrc".to_string(),
+                                            serde_json::Value::String(src_path),
+                                        );
                                     } else {
-                                        props.insert("src".to_string(), serde_json::Value::String(src_path));
+                                        props.insert(
+                                            "src".to_string(),
+                                            serde_json::Value::String(src_path),
+                                        );
                                     }
                                 }
                             }
@@ -315,14 +444,19 @@ async fn install(path: &Path, update: bool) -> Result<()> {
     for (template, document_json) in &package.documents {
         let mut document_value: serde_json::Value = serde_json::from_str(document_json)
             .with_context(|| format!("Invalid JSON document: {}", template.template_id))?;
-            
+
         inject_image_srcs(&mut document_value, &org_id);
-        
-        let document: docforge_engine::model::TemplateDocument = serde_json::from_value(document_value.clone())
-            .with_context(|| format!("Document is not compatible with the Rust engine: {}", template.template_id))?;
-            
+
+        let document: docforge_engine::model::TemplateDocument =
+            serde_json::from_value(document_value.clone()).with_context(|| {
+                format!(
+                    "Document is not compatible with the Rust engine: {}",
+                    template.template_id
+                )
+            })?;
+
         let document_json_injected = serde_json::to_string(&document_value)?;
-        
+
         let page_setup = &document.meta.page_setup;
         let (page_width_mm, page_height_mm) = page_setup_dimensions(page_setup);
         let page_size = page_size_name(&page_setup.size);
@@ -332,7 +466,8 @@ async fn install(path: &Path, update: bool) -> Result<()> {
             "packageId": package.manifest.package_id,
             "packageVersion": package.manifest.package_version,
             "source": "orbis-cli",
-        }).to_string();
+        })
+        .to_string();
         let existing = txn.query_one(Statement::from_sql_and_values(
             DatabaseBackend::Sqlite,
             "SELECT id, document_json, is_system FROM templates WHERE org_id = ? AND code = ? LIMIT 1",
@@ -340,7 +475,25 @@ async fn install(path: &Path, update: bool) -> Result<()> {
         )).await?;
         if let Some(row) = existing {
             let is_system = row.try_get::<i32>("", "is_system").unwrap_or(0);
-            let current = row.try_get::<String>("", "document_json").unwrap_or_default();
+            let current = row
+                .try_get::<String>("", "document_json")
+                .unwrap_or_default();
+            if !update && is_system == 1 {
+                if let Ok(mut current_value) = serde_json::from_str::<serde_json::Value>(&current) {
+                    if repair_legacy_template_variables(&mut current_value) {
+                        let repaired_json = serde_json::to_string(&current_value)?;
+                        let id = row.try_get::<String>("", "id")?;
+                        txn.execute_unprepared(&format!(
+                            "UPDATE templates SET document_json='{}', version=version+1, updated_at='{}' WHERE id='{}' AND org_id='{}'",
+                            escape(&repaired_json), now, escape(&id), escape(&org_id)
+                        )).await?;
+                        println!(
+                            "Repaired legacy variables in system template {}",
+                            template.template_id
+                        );
+                    }
+                }
+            }
             if update && is_system == 1 {
                 let id = row.try_get::<String>("", "id")?;
                 if current == *document_json {
@@ -363,7 +516,27 @@ async fn install(path: &Path, update: bool) -> Result<()> {
         let id = format!("{}-{}", package.manifest.package_id, template.template_id);
         let sql = format!(
             "INSERT INTO templates (id, org_id, category_id, code, name, name_ar, document_type, entity_type, page_size, page_width_mm, page_height_mm, orientation, margins_json, document_json, status, version, created_by, is_system, is_default, is_locked, locale, meta, created_at, updated_at) VALUES ('{}','{}','{}','{}','{}',{},{},{},'{}',{},{},'{}','{}','{}','published',1,'{}',1,{}, {},'{}','{}','{}','{}')",
-            escape(&id), escape(&org_id), escape(&template.category), escape(&template.code), escape(&template.name), optional(&template.name_ar), quote(&template.document_type), quote(&template.entity_type), page_size, page_width_mm, page_height_mm, orientation, escape(&margins_json), escape(&document_json_injected), actor, bool_int(template.default), bool_int(template.locked), escape(template.locale.as_deref().unwrap_or("ar")), escape(&metadata), now, now
+            escape(&id),
+            escape(&org_id),
+            escape(&template.category),
+            escape(&template.code),
+            escape(&template.name),
+            optional(&template.name_ar),
+            quote(&template.document_type),
+            quote(&template.entity_type),
+            page_size,
+            page_width_mm,
+            page_height_mm,
+            orientation,
+            escape(&margins_json),
+            escape(&document_json_injected),
+            actor,
+            bool_int(template.default),
+            bool_int(template.locked),
+            escape(template.locale.as_deref().unwrap_or("ar")),
+            escape(&metadata),
+            now,
+            now
         );
         txn.execute_unprepared(&sql).await?;
         for asset in &package.manifest.assets {
@@ -376,7 +549,13 @@ async fn install(path: &Path, update: bool) -> Result<()> {
     }
 
     txn.commit().await?;
-    println!("{} template package {} {} into organization {}", if update { "Updated" } else { "Installed" }, package.manifest.package_id, package.manifest.package_version, org_id);
+    println!(
+        "{} template package {} {} into organization {}",
+        if update { "Updated" } else { "Installed" },
+        package.manifest.package_id,
+        package.manifest.package_version,
+        org_id
+    );
     Ok(())
 }
 
@@ -389,15 +568,33 @@ async fn list_installed() -> Result<()> {
         vec![org_id.into()],
     )).await?;
     for row in rows {
-        println!("{} | {} | {} | v{}", row.try_get::<Option<String>>("", "code")?.unwrap_or_default(), row.try_get::<String>("", "name")?, row.try_get::<String>("", "status")?, row.try_get::<i32>("", "version")?);
+        println!(
+            "{} | {} | {} | v{}",
+            row.try_get::<Option<String>>("", "code")?
+                .unwrap_or_default(),
+            row.try_get::<String>("", "name")?,
+            row.try_get::<String>("", "status")?,
+            row.try_get::<i32>("", "version")?
+        );
     }
     Ok(())
 }
 
-fn escape(value: &str) -> String { value.replace('\'', "''") }
-fn quote(value: &str) -> String { format!("'{}'", escape(value)) }
-fn optional(value: &Option<String>) -> String { value.as_deref().map(quote).unwrap_or_else(|| "NULL".to_string()) }
-fn bool_int(value: bool) -> i32 { if value { 1 } else { 0 } }
+fn escape(value: &str) -> String {
+    value.replace('\'', "''")
+}
+fn quote(value: &str) -> String {
+    format!("'{}'", escape(value))
+}
+fn optional(value: &Option<String>) -> String {
+    value
+        .as_deref()
+        .map(quote)
+        .unwrap_or_else(|| "NULL".to_string())
+}
+fn bool_int(value: bool) -> i32 {
+    if value { 1 } else { 0 }
+}
 
 fn page_size_name(size: &docforge_engine::model::document::PageSize) -> &'static str {
     match size {
@@ -419,7 +616,9 @@ fn orientation_name(orientation: &docforge_engine::model::document::Orientation)
     }
 }
 
-fn page_setup_dimensions(page_setup: &docforge_engine::model::document::PageSetup) -> (String, String) {
+fn page_setup_dimensions(
+    page_setup: &docforge_engine::model::document::PageSetup,
+) -> (String, String) {
     let (width, height) = match &page_setup.size {
         docforge_engine::model::document::PageSize::Custom => (
             page_setup.width.unwrap_or(210.0),
@@ -433,5 +632,26 @@ fn page_setup_dimensions(page_setup: &docforge_engine::model::document::PageSetu
 fn storage_root(db_url: &str) -> PathBuf {
     let raw = db_url.strip_prefix("sqlite://").unwrap_or(db_url);
     let path = raw.split('?').next().unwrap_or(raw);
-    Path::new(path).parent().unwrap_or_else(|| Path::new(".")).join("storage")
+    Path::new(path)
+        .parent()
+        .unwrap_or_else(|| Path::new("."))
+        .join("storage")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::repair_legacy_template_variables;
+    use serde_json::json;
+
+    #[test]
+    fn repairs_only_bare_legacy_student_name() {
+        let mut value = json!({
+            "content": "student.fullName",
+            "other": "student.fullName is a field"
+        });
+
+        assert!(repair_legacy_template_variables(&mut value));
+        assert_eq!(value["content"], "{{student.fullName}}");
+        assert_eq!(value["other"], "student.fullName is a field");
+    }
 }

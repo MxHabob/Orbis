@@ -1,6 +1,6 @@
+use crate::ui::output;
 use anyhow::Result;
 use std::path::Path;
-use crate::ui::output;
 
 pub async fn execute() -> Result<()> {
     output::print_step("Running System Diagnostics...");
@@ -10,13 +10,14 @@ pub async fn execute() -> Result<()> {
 
     // 1. Check for DB file (SQLite)
     let config = crate::core::config::CliConfig::default();
-    let db_path_str = config.db_url
+    let db_path_str = config
+        .db_url
         .replace("sqlite://", "")
         .replace("?mode=rwc", "")
         .replace("?mode=ro", "");
-    
+
     let db_path = Path::new(&db_path_str);
-    
+
     print!("{: <40}", "Main Database (orbis.db):");
     if db_path.exists() {
         println!("[+] Found");
@@ -26,8 +27,12 @@ pub async fn execute() -> Result<()> {
     }
 
     // 2. Check for App executable
-    let app_name = if cfg!(windows) { "Orbis-Svelte.exe" } else { "Orbis-Svelte" };
-    
+    let app_name = if cfg!(windows) {
+        "Orbis-Svelte.exe"
+    } else {
+        "Orbis-Svelte"
+    };
+
     // Look in current dir, or relative to workspace root
     let possible_paths = crate::core::config::CliConfig::get_app_executable_paths();
 
@@ -59,7 +64,9 @@ pub async fn execute() -> Result<()> {
     if all_good {
         output::print_success("System is healthy and ready to run!");
     } else {
-        output::print_warning("Some issues were found. Run `cli init` to repair or build the desktop app.");
+        output::print_warning(
+            "Some issues were found. Run `cli init` to repair or build the desktop app.",
+        );
     }
 
     Ok(())

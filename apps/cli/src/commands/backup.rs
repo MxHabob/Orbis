@@ -1,8 +1,8 @@
-use anyhow::{anyhow, Result};
+use crate::ui::output;
+use anyhow::{Result, anyhow};
+use chrono::Local;
 use std::fs;
 use std::path::Path;
-use chrono::Local;
-use crate::ui::output;
 
 pub async fn execute() -> Result<()> {
     output::print_step("Initializing Database Backup...");
@@ -14,23 +14,27 @@ pub async fn execute() -> Result<()> {
     }
 
     let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
-    
+
     let config = crate::core::config::CliConfig::default();
-    let db_path_str = config.db_url
+    let db_path_str = config
+        .db_url
         .replace("sqlite://", "")
         .replace("?mode=rwc", "")
         .replace("?mode=ro", "");
     let db_path = Path::new(&db_path_str);
 
     if !db_path.exists() {
-        return Err(anyhow!("Cannot backup: Database file at {:?} does not exist.", db_path));
+        return Err(anyhow!(
+            "Cannot backup: Database file at {:?} does not exist.",
+            db_path
+        ));
     }
 
     let backup_filename = format!("orbis_{}.db.bak", timestamp);
     let backup_path = backup_dir.join(&backup_filename);
 
     output::print_info(&format!("Copying {:?} -> {}...", db_path, backup_filename));
-    
+
     fs::copy(db_path, &backup_path)?;
 
     output::print_success(&format!("Backup successful! Saved to {:?}", backup_path));

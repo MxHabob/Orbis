@@ -1,6 +1,6 @@
-use anyhow::{anyhow, Result};
-use chrono::{Utc, Duration};
-use serde::{Serialize, Deserialize};
+use anyhow::{Result, anyhow};
+use chrono::{Duration, Utc};
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 use crate::core::validator;
@@ -129,19 +129,36 @@ pub fn activate_license(key: &str) -> Result<LicenseInfo> {
             LicensePlan::Professional,
             200,
             2000,
-            vec!["core".to_string(), "reports".to_string(), "finance".to_string(), "exams".to_string()],
+            vec![
+                "core".to_string(),
+                "reports".to_string(),
+                "finance".to_string(),
+                "exams".to_string(),
+            ],
         ),
         "ENTR" => (
             LicensePlan::Enterprise,
             500,
             5000,
-            vec!["core".to_string(), "reports".to_string(), "finance".to_string(), "exams".to_string(), "api".to_string(), "multi_branch".to_string()],
+            vec![
+                "core".to_string(),
+                "reports".to_string(),
+                "finance".to_string(),
+                "exams".to_string(),
+                "api".to_string(),
+                "multi_branch".to_string(),
+            ],
         ),
         _ => (
             LicensePlan::Professional,
             200,
             2000,
-            vec!["core".to_string(), "reports".to_string(), "finance".to_string(), "exams".to_string()],
+            vec![
+                "core".to_string(),
+                "reports".to_string(),
+                "finance".to_string(),
+                "exams".to_string(),
+            ],
         ),
     };
 
@@ -193,7 +210,9 @@ pub fn activate_trial() -> Result<LicenseInfo> {
 pub fn load_license() -> Result<LicenseInfo> {
     let path = license_file_path();
     if !path.exists() {
-        return Err(anyhow!("No license file found. Run `orbis init` or `orbis license` to activate."));
+        return Err(anyhow!(
+            "No license file found. Run `orbis init` or `orbis license` to activate."
+        ));
     }
 
     let content = std::fs::read_to_string(&path)
@@ -237,8 +256,7 @@ fn save_license(info: &LicenseInfo) -> Result<()> {
     let content = serde_json::to_string_pretty(info)
         .map_err(|e| anyhow!("Failed to serialize license: {}", e))?;
 
-    std::fs::write(&path, content)
-        .map_err(|e| anyhow!("Failed to write license file: {}", e))?;
+    std::fs::write(&path, content).map_err(|e| anyhow!("Failed to write license file: {}", e))?;
 
     Ok(())
 }

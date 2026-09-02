@@ -1,8 +1,8 @@
+use anyhow::{Result, anyhow};
 use clap::{Parser, Subcommand};
-use std::path::PathBuf;
 use colored::*;
-use anyhow::{anyhow, Result};
 use sea_orm::{ConnectionTrait, Database, DbBackend, Statement, TransactionTrait};
+use std::path::PathBuf;
 
 pub mod commands;
 pub mod core;
@@ -10,7 +10,10 @@ pub mod ui;
 
 #[derive(Parser)]
 #[command(name = "orbis")]
-#[command(about = "Orbis Management CLI", long_about = "Standalone CLI for setting up and managing the Orbis Educational System.")]
+#[command(
+    about = "Orbis Management CLI",
+    long_about = "Standalone CLI for setting up and managing the Orbis Educational System."
+)]
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
@@ -127,10 +130,16 @@ fn build_menu(status: &core::database::SystemStatus) -> Vec<MenuItem> {
     }
 
     if is_development_environment() {
-        push("Create Default Development Data", MenuChoice::SeedDefaultData);
+        push(
+            "Create Default Development Data",
+            MenuChoice::SeedDefaultData,
+        );
     }
 
-    push("Create Default Templates", MenuChoice::CreateDefaultTemplates);
+    push(
+        "Create Default Templates",
+        MenuChoice::CreateDefaultTemplates,
+    );
 
     push("Exit", MenuChoice::Exit);
     items
@@ -138,7 +147,10 @@ fn build_menu(status: &core::database::SystemStatus) -> Vec<MenuItem> {
 
 fn is_development_environment() -> bool {
     matches!(
-        std::env::var("APP_ENV").unwrap_or_else(|_| "development".to_string()).to_lowercase().as_str(),
+        std::env::var("APP_ENV")
+            .unwrap_or_else(|_| "development".to_string())
+            .to_lowercase()
+            .as_str(),
         "development" | "dev"
     )
 }
@@ -164,17 +176,16 @@ async fn handle_reset_database() {
                     .prompt();
 
                     match provider {
-                        Ok("PostgreSQL") => match inquire::Text::new(
-                            "Enter PostgreSQL Connection String:",
-                        )
-                        .prompt()
-                        {
-                            Ok(url) => url,
-                            Err(e) => {
-                                ui::output::print_error(&format!("Reset cancelled: {e}"));
-                                return;
+                        Ok("PostgreSQL") => {
+                            match inquire::Text::new("Enter PostgreSQL Connection String:").prompt()
+                            {
+                                Ok(url) => url,
+                                Err(e) => {
+                                    ui::output::print_error(&format!("Reset cancelled: {e}"));
+                                    return;
+                                }
                             }
-                        },
+                        }
                         Ok("SQLite") => core::config::CliConfig::default().db_url,
                         Ok(_) | Err(_) => {
                             println!("{}", "[-] Reset cancelled.".dimmed());
@@ -258,8 +269,10 @@ async fn reset_postgres(url: &str) -> Result<()> {
             .map(|name| format!("\"public\".\"{}\"", name.replace('"', "\"\"")))
             .collect::<Vec<_>>()
             .join(", ");
-        txn.execute_unprepared(&format!("TRUNCATE TABLE {qualified_tables} RESTART IDENTITY CASCADE"))
-            .await?;
+        txn.execute_unprepared(&format!(
+            "TRUNCATE TABLE {qualified_tables} RESTART IDENTITY CASCADE"
+        ))
+        .await?;
     }
 
     txn.commit().await.map_err(|e| anyhow!(e))?;
@@ -288,7 +301,8 @@ async fn main() -> Result<()> {
         // Interactive Launcher Mode (when double-clicked without arguments)
         loop {
             let status = core::database::get_full_status().await;
-            let (db_exists, setup_completed) = (status.is_initialized(), status.is_setup_complete());
+            let (db_exists, setup_completed) =
+                (status.is_initialized(), status.is_setup_complete());
             ui::output::print_banner(db_exists, setup_completed);
 
             // Show org name if available
@@ -348,9 +362,12 @@ async fn main() -> Result<()> {
                                 }
                             }
                             MenuChoice::CreateDefaultTemplates => {
-                                if let Err(e) = commands::templates::execute(&TemplateCommands::Update {
-                                    package: default_template_package_path(),
-                                }).await {
+                                if let Err(e) =
+                                    commands::templates::execute(&TemplateCommands::Update {
+                                        package: default_template_package_path(),
+                                    })
+                                    .await
+                                {
                                     ui::output::print_error(&e.to_string());
                                 }
                             }

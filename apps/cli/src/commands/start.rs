@@ -1,11 +1,11 @@
-use anyhow::{anyhow, Result};
-use std::process::Command;
 use crate::core::config::CliConfig;
 use crate::ui::output;
+use anyhow::{Result, anyhow};
+use std::process::Command;
 
 pub async fn execute() -> Result<()> {
     output::print_step("Booting Orbis System...");
-    
+
     let app_name = if cfg!(windows) {
         "Orbis-Svelte.exe"
     } else {
@@ -26,11 +26,11 @@ pub async fn execute() -> Result<()> {
         Some(path) => {
             output::print_info(&format!("Found Orbis application at {:?}", path));
             output::print_step("Spawning application process...");
-            
+
             let child = Command::new(path)
                 .spawn()
                 .map_err(|e| anyhow!("Failed to start Orbis-Svelte: {}", e))?;
-                
+
             output::print_success(&format!("System is running (PID: {})!", child.id()));
         }
         None => {

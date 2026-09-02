@@ -1,13 +1,13 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use colored::*;
-use reqwest::header::{ACCEPT, AUTHORIZATION, USER_AGENT};
+use futures_util::StreamExt;
+use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::Client;
+use reqwest::header::{ACCEPT, AUTHORIZATION, USER_AGENT};
 use serde::Deserialize;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
-use futures_util::StreamExt;
-use indicatif::{ProgressBar, ProgressStyle};
 
 const REPO_OWNER: &str = "orbis-edu";
 const REPO_NAME: &str = "orbis";
@@ -29,7 +29,10 @@ struct GitHubAsset {
 pub async fn download_latest_release(token: &str) -> Result<()> {
     let client = Client::new();
     let mut req = client
-        .get(format!("https://api.github.com/repos/{}/{}/releases/latest", REPO_OWNER, REPO_NAME))
+        .get(format!(
+            "https://api.github.com/repos/{}/{}/releases/latest",
+            REPO_OWNER, REPO_NAME
+        ))
         .header(USER_AGENT, "orbis-cli/1.0")
         .header(ACCEPT, "application/vnd.github.v3+json");
 
@@ -40,22 +43,35 @@ pub async fn download_latest_release(token: &str) -> Result<()> {
     let res = req.send().await?;
 
     if !res.status().is_success() {
-        return Err(anyhow!("Failed to fetch release from GitHub. Status: {}. Ensure your token is valid if the repo is private.", res.status()));
+        return Err(anyhow!(
+            "Failed to fetch release from GitHub. Status: {}. Ensure your token is valid if the repo is private.",
+            res.status()
+        ));
     }
 
     let release: GitHubRelease = res.json().await?;
-    println!("{} Found release: {}", "[+]".green(), release.tag_name.bold());
+    println!(
+        "{} Found release: {}",
+        "[+]".green(),
+        release.tag_name.bold()
+    );
 
     // Find the Windows installer (.msi or .exe or .zip)
-    let asset = release.assets.into_iter().find(|a| a.name.ends_with(".msi") || a.name.ends_with(".zip") || a.name.ends_with(".exe"));
+    let asset = release
+        .assets
+        .into_iter()
+        .find(|a| a.name.ends_with(".msi") || a.name.ends_with(".zip") || a.name.ends_with(".exe"));
 
     match asset {
         Some(asset) => {
             println!("{} Downloading asset: {}", "[v]".cyan(), asset.name);
             download_asset(&client, &asset, token).await?;
-        },
+        }
         None => {
-            println!("{} No suitable desktop binary found in the latest release.", "[!]".red());
+            println!(
+                "{} No suitable desktop binary found in the latest release.",
+                "[!]".red()
+            );
         }
     }
 
@@ -63,7 +79,8 @@ pub async fn download_latest_release(token: &str) -> Result<()> {
 }
 
 async fn download_asset(client: &Client, asset: &GitHubAsset, token: &str) -> Result<()> {
-    let mut req = client.get(&asset.url)
+    let mut req = client
+        .get(&asset.url)
         .header(USER_AGENT, "orbis-cli/1.0")
         .header(ACCEPT, "application/octet-stream"); // Required to download the actual file, not JSON
 
@@ -74,7 +91,10 @@ async fn download_asset(client: &Client, asset: &GitHubAsset, token: &str) -> Re
     let res = req.send().await?;
 
     if !res.status().is_success() {
-        return Err(anyhow!("Failed to download asset. Status: {}", res.status()));
+        return Err(anyhow!(
+            "Failed to download asset. Status: {}",
+            res.status()
+        ));
     }
 
     let total_size = res.content_length().unwrap_or(0);
@@ -99,7 +119,11 @@ async fn download_asset(client: &Client, asset: &GitHubAsset, token: &str) -> Re
     }
 
     pb.finish_with_message("Download complete");
-    println!("{} Saved to: {:?}", "[+]".green(), file_path.canonicalize()?);
+    println!(
+        "{} Saved to: {:?}",
+        "[+]".green(),
+        file_path.canonicalize()?
+    );
 
     Ok(())
 }

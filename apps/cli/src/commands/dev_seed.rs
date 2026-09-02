@@ -1,5 +1,5 @@
-use anyhow::{anyhow, Result};
-use bcrypt::{hash, DEFAULT_COST};
+use anyhow::{Result, anyhow};
+use bcrypt::{DEFAULT_COST, hash};
 use chrono::Utc;
 use inquire::Text;
 use sea_orm::{ConnectionTrait, Database, DatabaseBackend, Statement, TransactionTrait};
@@ -14,7 +14,9 @@ const DEV_PASSWORD: &str = "Teacher123!";
 
 pub async fn execute() -> Result<()> {
     if !is_development() {
-        return Err(anyhow!("Default data is available only in development mode."));
+        return Err(anyhow!(
+            "Default data is available only in development mode."
+        ));
     }
 
     let count = prompt_teacher_count()?;
@@ -23,7 +25,8 @@ pub async fn execute() -> Result<()> {
     let txn = db.begin().await?;
 
     let backend = txn.get_database_backend();
-    let org_id = find_organization(&txn, backend).await?
+    let org_id = find_organization(&txn, backend)
+        .await?
         .ok_or_else(|| anyhow!("No organization found. Run init first."))?;
     let password_hash = hash(DEV_PASSWORD, DEFAULT_COST)?;
     let now = Utc::now().to_rfc3339();
@@ -47,8 +50,14 @@ pub async fn execute() -> Result<()> {
             &txn,
             backend,
             "INSERT INTO parties (id, party_type, created_at, updated_at) VALUES (?, ?, ?, ?)",
-            vec![party_id.clone().into(), "person".into(), now.clone().into(), now.clone().into()],
-        ).await?;
+            vec![
+                party_id.clone().into(),
+                "person".into(),
+                now.clone().into(),
+                now.clone().into(),
+            ],
+        )
+        .await?;
         execute_with_values(
             &txn,
             backend,
@@ -76,15 +85,22 @@ pub async fn execute() -> Result<()> {
     txn.commit().await?;
     output::print_success(&format!("Created {created} development teacher(s)."));
     if skipped > 0 {
-        output::print_info(&format!("Skipped {skipped} existing development teacher(s)."));
+        output::print_info(&format!(
+            "Skipped {skipped} existing development teacher(s)."
+        ));
     }
-    output::print_info(&format!("Test password for generated teachers: {DEV_PASSWORD}"));
+    output::print_info(&format!(
+        "Test password for generated teachers: {DEV_PASSWORD}"
+    ));
     Ok(())
 }
 
 fn is_development() -> bool {
     matches!(
-        std::env::var("APP_ENV").unwrap_or_else(|_| "development".to_string()).to_lowercase().as_str(),
+        std::env::var("APP_ENV")
+            .unwrap_or_else(|_| "development".to_string())
+            .to_lowercase()
+            .as_str(),
         "development" | "dev"
     )
 }
@@ -105,11 +121,13 @@ async fn find_organization(
     db: &sea_orm::DatabaseTransaction,
     backend: DatabaseBackend,
 ) -> Result<Option<String>> {
-    let row = db.query_one(Statement::from_sql_and_values(
-        backend,
-        "SELECT id FROM organizations ORDER BY created_at LIMIT 1",
-        vec![],
-    )).await?;
+    let row = db
+        .query_one(Statement::from_sql_and_values(
+            backend,
+            "SELECT id FROM organizations ORDER BY created_at LIMIT 1",
+            vec![],
+        ))
+        .await?;
     Ok(row.and_then(|value| value.try_get::<String>("", "id").ok()))
 }
 
@@ -119,11 +137,13 @@ async fn teacher_exists(
     org_id: &str,
     email: &str,
 ) -> Result<bool> {
-    let row = db.query_one(Statement::from_sql_and_values(
-        backend,
-        "SELECT id FROM users WHERE org_id = ? AND email = ? AND is_deleted = 0 LIMIT 1",
-        vec![org_id.to_string().into(), email.to_string().into()],
-    )).await?;
+    let row = db
+        .query_one(Statement::from_sql_and_values(
+            backend,
+            "SELECT id FROM users WHERE org_id = ? AND email = ? AND is_deleted = 0 LIMIT 1",
+            vec![org_id.to_string().into(), email.to_string().into()],
+        ))
+        .await?;
     Ok(row.is_some())
 }
 
@@ -138,7 +158,8 @@ async fn execute_with_values(
     } else {
         sql.to_string()
     };
-    db.execute(Statement::from_sql_and_values(backend, sql, values)).await?;
+    db.execute(Statement::from_sql_and_values(backend, sql, values))
+        .await?;
     Ok(())
 }
 
