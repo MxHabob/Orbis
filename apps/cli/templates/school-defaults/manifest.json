@@ -17,6 +17,14 @@
       "assetType": "logo",
       "mimeType": "image/svg+xml",
       "path": "assets/logos/yemen-state-emblem.svg"
+    },
+    {
+      "assetId": "orbis-feedback",
+      "name": "Orbis Feedback Logo",
+      "nameAr": "شعار النظام",
+      "assetType": "logo",
+      "mimeType": "image/svg+xml",
+      "path": "assets/logos/orbis-feedback.svg"
     }
   ],
   "categories": [

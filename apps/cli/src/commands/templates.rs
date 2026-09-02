@@ -286,8 +286,13 @@ async fn install(path: &Path, update: bool) -> Result<()> {
                         if let Some(serde_json::Value::Object(props)) = map.get_mut("props") {
                             if let Some(asset_ref) = props.get("assetRef").and_then(serde_json::Value::as_str) {
                                 if let Some(asset_id) = assets_map.get(asset_ref) {
-                                    let src = format!("/storage/{}/shared/templates/{}.svg", org_id, asset_id);
-                                    props.insert("src".to_string(), serde_json::Value::String(src));
+                                    let src_path = format!("/storage/{}/shared/templates/{}.svg", org_id, asset_id);
+                                    let has_var_src = props.get("src").and_then(|v| v.as_str()).map(|s| s.starts_with("{{")).unwrap_or(false);
+                                    if has_var_src {
+                                        props.insert("fallbackSrc".to_string(), serde_json::Value::String(src_path));
+                                    } else {
+                                        props.insert("src".to_string(), serde_json::Value::String(src_path));
+                                    }
                                 }
                             }
                         }

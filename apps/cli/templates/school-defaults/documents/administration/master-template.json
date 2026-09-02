@@ -48,6 +48,10 @@
     "state_emblem": {
       "type": "image",
       "assetId": "orbis.yemen.state-emblem"
+    },
+    "org-fallback-logo": {
+      "assetId": "orbis-feedback",
+      "type": "image"
     }
   },
   "root": {
@@ -126,8 +130,14 @@
             "type": "Image",
             "id": "header-org-logo",
             "props": {
+              "assetRef": "org-fallback-logo",
               "src": "{{org_logo_url}}",
-              "position": { "x": 15, "y": 5, "width": 20, "height": 20 },
+              "position": {
+                "x": 10,
+                "y": 5,
+                "width": 20,
+                "height": 22
+              },
               "fit": "contain"
             }
           },

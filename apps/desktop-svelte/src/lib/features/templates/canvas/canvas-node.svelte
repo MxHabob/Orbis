@@ -237,8 +237,9 @@ import { resolveDocumentUrl } from "$lib/features/documents/queries";
 
     {:else if node.type === "Image"}
       <!-- Image Node -->
-      {#if nodeProps.src}
-        {#await resolveDocumentUrl(nodeProps.src) then resolvedSrc}
+      {#if nodeProps.src || nodeProps.fallbackSrc}
+        {@const currentSrc = (nodeProps.src && !nodeProps.src.startsWith("{{")) ? nodeProps.src : (nodeProps.fallbackSrc || nodeProps.src)}
+        {#await resolveDocumentUrl(currentSrc) then resolvedSrc}
           <image
             href={resolvedSrc}
             width={w}
