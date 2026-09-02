@@ -1,5 +1,7 @@
 export type { LoginInput } from "./iam.js";
 export { loginInputSchema } from "./iam.js";
+export { userCreateInputSchema } from "./users.js";
+export type { UserCreateInput } from "./users.js";
 
 export {
   discountTemplateInputSchema,

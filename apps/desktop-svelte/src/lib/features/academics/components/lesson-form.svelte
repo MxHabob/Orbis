@@ -14,6 +14,7 @@
   import { BookOpen, Clock, MapPin, ShieldAlert, User, Users } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
   import { FormController } from "$lib/shared/forms/form-controller.svelte";
+  import { FormField } from "@orbis/ui-svelte";
 
   type Props = {
     orgId: string;
@@ -214,34 +215,38 @@
       <AccordionItem value="schedule" class="rounded-lg">
         <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_lesson_placement()}</AccordionTrigger>
         <AccordionContent class="space-y-3">
-          <div class="flex flex-col gap-2 text-start">
-            <label for="lesson-class" class="text-sm font-medium text-foreground">{m.common_lesson_class()} *</label>
+          <FormField id="lesson-class" label={m.common_lesson_class()} error={form.errors.class_id?.[0]} required>
+            {#snippet children()}
             <Select type="single" value={selectedClassId} onValueChange={(value: string | undefined) => (selectedClassId = value ?? "")} disabled={isEditing}>
               <SelectTrigger id="lesson-class" class="h-9 w-full text-sm"><div class="flex items-center gap-1.5 truncate"><Users size={13} class="text-muted-foreground" /><span>{classes.find((item) => String(item.id) === selectedClassId) ? l(classes.find((item) => String(item.id) === selectedClassId).name_ar, classes.find((item) => String(item.id) === selectedClassId).name) : m.common_lesson_select_class()}</span></div></SelectTrigger>
               <SelectContent>{#each classes as item (item.id)}<SelectItem value={String(item.id)}>{l(item.name_ar, item.name)}</SelectItem>{/each}</SelectContent>
             </Select>
-          </div>
-          <div class="flex flex-col gap-2 text-start">
-            <label for="lesson-subject" class="text-sm font-medium text-foreground">{m.common_lesson_subject()} *</label>
+            {/snippet}
+          </FormField>
+          <FormField id="lesson-subject" label={m.common_lesson_subject()} error={form.errors.subject_id?.[0]} required>
+            {#snippet children()}
             <Select type="single" value={selectedSubjectId} onValueChange={(value: string | undefined) => (selectedSubjectId = value ?? "")} disabled={isEditing || availableSubjects.length === 0}>
               <SelectTrigger id="lesson-subject" class="h-9 w-full text-sm"><div class="flex items-center gap-1.5 truncate"><BookOpen size={13} class="text-muted-foreground" /><span>{availableSubjects.find((item) => String(item.id) === selectedSubjectId) ? l(availableSubjects.find((item) => String(item.id) === selectedSubjectId).name_ar, availableSubjects.find((item) => String(item.id) === selectedSubjectId).name) : m.common_lesson_select_subject()}</span></div></SelectTrigger>
               <SelectContent>{#each availableSubjects as item (item.id)}<SelectItem value={String(item.id)}>{l(item.name_ar, item.name)}</SelectItem>{/each}</SelectContent>
             </Select>
-          </div>
-          <div class="flex flex-col gap-2 text-start">
-            <label for="lesson-teacher" class="text-sm font-medium text-foreground">{m.common_lesson_label_teacher()}</label>
+            {/snippet}
+          </FormField>
+          <FormField id="lesson-teacher" label={m.common_lesson_label_teacher()} error={form.errors.teacher_id?.[0]}>
+            {#snippet children()}
             <Select type="single" value={selectedTeacherId} onValueChange={(value: string | undefined) => (selectedTeacherId = value ?? "")} disabled={availableTeachers.length === 0}>
               <SelectTrigger id="lesson-teacher" class="h-9 w-full text-sm"><div class="flex items-center gap-1.5 truncate"><User size={13} class="text-muted-foreground" /><span>{teachers.find((item) => String(item.id) === selectedTeacherId) ? l(teachers.find((item) => String(item.id) === selectedTeacherId).name_ar, teachers.find((item) => String(item.id) === selectedTeacherId).full_name) : m.common_lesson_option_no_teacher()}</span></div></SelectTrigger>
               <SelectContent><SelectItem value="">{m.common_lesson_option_no_teacher()}</SelectItem>{#each availableTeachers as item (item.id)}<SelectItem value={String(item.id)}>{l(item.name_ar, item.full_name)}</SelectItem>{/each}</SelectContent>
             </Select>
-          </div>
-          <div class="flex flex-col gap-2 text-start">
-            <label for="lesson-room" class="text-sm font-medium text-foreground">{m.common_lesson_label_room()}</label>
+            {/snippet}
+          </FormField>
+          <FormField id="lesson-room" label={m.common_lesson_label_room()}>
+            {#snippet children()}
             <Select type="single" value={selectedRoomId} onValueChange={(value: string | undefined) => (selectedRoomId = value ?? "")}>
               <SelectTrigger id="lesson-room" class="h-9 w-full text-sm"><div class="flex items-center gap-1.5 truncate"><MapPin size={13} class="text-muted-foreground" /><span>{rooms.find((item) => String(item.id) === selectedRoomId) ? l(rooms.find((item) => String(item.id) === selectedRoomId).name_ar, rooms.find((item) => String(item.id) === selectedRoomId).name) : m.common_lesson_option_select_room()}</span></div></SelectTrigger>
               <SelectContent><SelectItem value="">{m.common_lesson_option_no_room()}</SelectItem>{#each rooms as item (item.id)}<SelectItem value={String(item.id)}>{l(item.name_ar, item.name)}</SelectItem>{/each}</SelectContent>
             </Select>
-          </div>
+            {/snippet}
+          </FormField>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div class="flex flex-col gap-2 text-start"><label for="lesson-day" class="text-sm font-medium text-foreground">{m.common_lesson_label_day()} *</label><Select type="single" value={String(selectedDay)} onValueChange={(value: string | undefined) => (selectedDay = Number(value) || 1)}><SelectTrigger id="lesson-day" class="h-9 w-full text-sm"><span class="truncate">{weekdays.find((item) => item.value === selectedDay)?.label}</span></SelectTrigger><SelectContent>{#each weekdays as item}<SelectItem value={String(item.value)}>{item.label}</SelectItem>{/each}</SelectContent></Select></div>
             <div class="flex flex-col gap-2 text-start"><label for="lesson-slot" class="text-sm font-medium text-foreground">{m.common_lesson_label_period()} *</label><Select type="single" value={selectedSlotId} onValueChange={(value: string | undefined) => (selectedSlotId = value ?? "")}><SelectTrigger id="lesson-slot" class="h-9 w-full text-sm"><div class="flex items-center gap-1.5 truncate"><Clock size={13} class="text-muted-foreground" /><span>{timeSlots.find((item) => String(item.id) === selectedSlotId)?.name_ar || m.common_lesson_select_slot()}</span></div></SelectTrigger><SelectContent>{#each timeSlots.filter((item) => !item.is_break) as item (item.id)}<SelectItem value={String(item.id)}>{l(item.name_ar, item.name)} ({item.start_time?.slice(0, 5)} - {item.end_time?.slice(0, 5)})</SelectItem>{/each}</SelectContent></Select></div>

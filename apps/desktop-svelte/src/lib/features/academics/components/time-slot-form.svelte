@@ -6,6 +6,7 @@
   import { Checkbox } from "@orbis/ui-svelte/checkbox";
   import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@orbis/ui-svelte/dialog";
   import { Input } from "@orbis/ui-svelte/input";
+  import { FormField } from "@orbis/ui-svelte";
   import { Label } from "@orbis/ui-svelte/label";
   import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui-svelte/select";
   import { toast } from "svelte-sonner";
@@ -106,25 +107,29 @@
     <form onsubmit={handleSubmit} class="flex flex-col gap-4 py-2">
       <div class="flex flex-col gap-4">
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div class="flex flex-col gap-2">
-                <Label class="text-sm font-medium text-foreground">{m.academics_schedule_name_ar()} *</Label>
+              <FormField label={m.academics_schedule_name_ar()} error={form.errors.name_ar?.[0]} required>
+                {#snippet children()}
                 <Input bind:value={nameAr} placeholder={m.academics_schedule_placeholder_period({ number: 1 })} class="h-9 text-sm" required />
-              </div>
-              <div class="flex flex-col gap-2">
-                <Label class="text-sm font-medium text-foreground">{m.academics_schedule_name_en()}</Label>
+                {/snippet}
+              </FormField>
+              <FormField label={m.academics_schedule_name_en()} error={form.errors.name?.[0]}>
+                {#snippet children()}
                 <Input bind:value={name} placeholder={m.academics_schedule_placeholder_period_en({ number: 1 })} class="h-9 text-sm" />
-              </div>
+                {/snippet}
+              </FormField>
             </div>
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div class="flex flex-col gap-2">
-                <Label class="text-sm font-medium text-foreground">{m.academics_schedule_start_time()} *</Label>
+              <FormField label={m.academics_schedule_start_time()} error={form.errors.start_time?.[0]} required>
+                {#snippet children()}
                 <Input type="time" bind:value={startTime} class="h-9 text-sm font-mono" required />
-              </div>
-              <div class="flex flex-col gap-2">
-                <Label class="text-sm font-medium text-foreground">{m.academics_schedule_end_time()} *</Label>
+                {/snippet}
+              </FormField>
+              <FormField label={m.academics_schedule_end_time()} error={form.errors.end_time?.[0]} required>
+                {#snippet children()}
                 <Input type="time" bind:value={endTime} class="h-9 text-sm font-mono" required />
-              </div>
+                {/snippet}
+              </FormField>
             </div>
 
             <div class="flex items-center gap-2">
@@ -133,8 +138,8 @@
             </div>
 
             {#if isBreak}
-              <div class="flex flex-col gap-2">
-                <Label class="text-sm font-medium text-foreground">{m.academics_schedule_break_type()}</Label>
+              <FormField label={m.academics_schedule_break_type()}>
+                {#snippet children()}
                 <Select type="single" value={breakType} onValueChange={(value: string | undefined) => (breakType = value ?? "recess")}>
                   <SelectTrigger class="h-9 text-sm">{breakType === "recess" ? m.common_onboarding_break_recess() : breakType === "lunch" ? m.common_onboarding_break_lunch() : breakType === "prayer" ? m.common_onboarding_break_prayer() : m.academics_schedule_morning_assembly()}</SelectTrigger>
                   <SelectContent>
@@ -144,7 +149,8 @@
                     <SelectItem value="morning">{m.academics_schedule_morning_assembly()}</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+                {/snippet}
+              </FormField>
             {/if}
       </div>
 

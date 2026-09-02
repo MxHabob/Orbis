@@ -20,6 +20,7 @@ import {
   generalLedgerAccountInputSchema,
 } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { FormField } from "@orbis/ui-svelte";
 import { BookOpen, Landmark, Users, Info, Check, Loader2 } from "@lucide/svelte";
 
 let {
@@ -229,10 +230,8 @@ async function handleSubmit(e: SubmitEvent) {
 
 <div class="flex h-full flex-col overflow-hidden">
   <form onsubmit={handleSubmit} class="flex min-h-full flex-col gap-5 px-1">
-    <div class="flex flex-col gap-1.5 text-start">
-      <Label for="account_type" class="text-xs font-bold text-foreground">
-        {m.common_ledger_label_type()}
-      </Label>
+    <FormField id="account_type" label={m.common_ledger_label_type()} required>
+      {#snippet children()}
       <Select type="single" value={activeTab} onValueChange={(value: string | undefined) => handleTabChange((value ?? "gl") as typeof activeTab)}>
         <SelectTrigger id="account_type" class="h-9 w-full text-xs text-start">
           <span class="flex items-center gap-2">
@@ -254,16 +253,15 @@ async function handleSubmit(e: SubmitEvent) {
           <SelectItem value="entity" class="text-xs cursor-pointer">{m.common_ledger_tab_entity()}</SelectItem>
         </SelectContent>
       </Select>
-    </div>
+      {/snippet}
+    </FormField>
 
     {#if activeTab === "gl"}
       <!-- GL Account Form Content -->
       <div class="flex flex-col gap-4 animate-in fade-in-50 duration-150">
         <!-- Parent Account Select -->
-        <div class="flex flex-col gap-1.5 text-start">
-          <Label class="text-xs font-bold text-foreground">
-            {m.common_ledger_label_parent()}
-          </Label>
+        <FormField label={m.common_ledger_label_parent()} required>
+          {#snippet children()}
           <ComboboxDropdown
             placeholder={m.common_ledger_placeholder_parent()}
             searchPlaceholder={m.common_ledger_search_parent()}
@@ -272,14 +270,13 @@ async function handleSubmit(e: SubmitEvent) {
             onSelect={handleParentSelect}
             class="w-full text-xs"
           />
-        </div>
+          {/snippet}
+        </FormField>
 
         <!-- Account Names -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="flex flex-col gap-1.5 text-start">
-            <Label for="gl_name_ar" class="text-xs font-bold text-foreground">
-              {m.common_ledger_label_name_ar()}
-            </Label>
+          <FormField id="gl_name_ar" label={m.common_ledger_label_name_ar()} required={!glNameEn}>
+            {#snippet children()}
             <Input
               id="gl_name_ar"
               type="text"
@@ -288,11 +285,10 @@ async function handleSubmit(e: SubmitEvent) {
               required={!glNameEn}
               disabled={isSubmitting}
             />
-          </div>
-          <div class="flex flex-col gap-1.5 text-start">
-            <Label for="gl_name_en" class="text-xs font-bold text-foreground">
-              {m.common_ledger_label_name_en()}
-            </Label>
+            {/snippet}
+          </FormField>
+          <FormField id="gl_name_en" label={m.common_ledger_label_name_en()} required={!glNameAr}>
+            {#snippet children()}
             <Input
               id="gl_name_en"
               type="text"
@@ -301,7 +297,8 @@ async function handleSubmit(e: SubmitEvent) {
               required={!glNameAr}
               disabled={isSubmitting}
             />
-          </div>
+            {/snippet}
+          </FormField>
         </div>
 
         <!-- Inherited fields (Type only) -->
@@ -325,10 +322,8 @@ async function handleSubmit(e: SubmitEvent) {
       <div class="flex flex-col gap-4 animate-in fade-in-50 duration-150">
         <!-- Treasury Names -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="flex flex-col gap-1.5 text-start">
-            <Label for="tr_name_ar" class="text-xs font-bold text-foreground">
-              {m.common_ledger_name_ar()}
-            </Label>
+          <FormField id="tr_name_ar" label={m.common_ledger_name_ar()} required={!trNameEn}>
+            {#snippet children()}
             <Input
               id="tr_name_ar"
               type="text"
@@ -337,11 +332,10 @@ async function handleSubmit(e: SubmitEvent) {
               required={!trNameEn}
               disabled={isSubmitting}
             />
-          </div>
-          <div class="flex flex-col gap-1.5 text-start">
-            <Label for="tr_name_en" class="text-xs font-bold text-foreground">
-              {m.common_ledger_name_en()}
-            </Label>
+            {/snippet}
+          </FormField>
+          <FormField id="tr_name_en" label={m.common_ledger_name_en()} required={!trNameAr}>
+            {#snippet children()}
             <Input
               id="tr_name_en"
               type="text"
@@ -350,14 +344,13 @@ async function handleSubmit(e: SubmitEvent) {
               required={!trNameAr}
               disabled={isSubmitting}
             />
-          </div>
+            {/snippet}
+          </FormField>
         </div>
 
         <!-- Treasury Type -->
-        <div class="flex flex-col gap-1.5 text-start">
-          <Label class="text-xs font-bold text-foreground">
-            {m.common_ledger_label_cash_account_type()}
-          </Label>
+        <FormField label={m.common_ledger_label_cash_account_type()} required>
+          {#snippet children()}
           <Select bind:value={trType} type="single">
             <SelectTrigger class="w-full text-xs text-start flex items-center justify-between bg-background">
               <span class="truncate">
@@ -369,7 +362,8 @@ async function handleSubmit(e: SubmitEvent) {
               <SelectItem value="bank" class="text-xs cursor-pointer">{m.common_cash_account_type_bank()}</SelectItem>
             </SelectContent>
           </Select>
-        </div>
+          {/snippet}
+        </FormField>
 
         <div class="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5 text-[11px] text-muted-foreground">
           <Info size={14} class="shrink-0 text-primary" />
@@ -382,10 +376,8 @@ async function handleSubmit(e: SubmitEvent) {
       <!-- Entity Form Content -->
       <div class="flex flex-col gap-4 animate-in fade-in-50 duration-150">
         <!-- Entity Type Selection -->
-        <div class="flex flex-col gap-1.5 text-start">
-          <Label class="text-xs font-bold text-foreground">
-            {m.common_print_multi_up_entity_type()}
-          </Label>
+        <FormField label={m.common_print_multi_up_entity_type()} required>
+          {#snippet children()}
           <Select bind:value={enType} type="single">
             <SelectTrigger class="w-full text-xs text-start flex items-center justify-between bg-background">
               <span class="truncate">
@@ -398,14 +390,13 @@ async function handleSubmit(e: SubmitEvent) {
               <SelectItem value="employee" class="text-xs cursor-pointer">{m.common_ledger_entity_employee()}</SelectItem>
             </SelectContent>
           </Select>
-        </div>
+          {/snippet}
+        </FormField>
 
         <!-- Entity Names -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="flex flex-col gap-1.5 text-start">
-            <Label for="en_name_ar" class="text-xs font-bold text-foreground">
-              {m.common_ledger_name_ar()}
-            </Label>
+          <FormField id="en_name_ar" label={m.common_ledger_name_ar()} required={!enNameEn}>
+            {#snippet children()}
             <Input
               id="en_name_ar"
               type="text"
@@ -414,11 +405,10 @@ async function handleSubmit(e: SubmitEvent) {
               required={!enNameEn}
               disabled={isSubmitting}
             />
-          </div>
-          <div class="flex flex-col gap-1.5 text-start">
-            <Label for="en_name_en" class="text-xs font-bold text-foreground">
-              {m.common_ledger_name_en()}
-            </Label>
+            {/snippet}
+          </FormField>
+          <FormField id="en_name_en" label={m.common_ledger_name_en()} required={!enNameAr}>
+            {#snippet children()}
             <Input
               id="en_name_en"
               type="text"
@@ -427,7 +417,8 @@ async function handleSubmit(e: SubmitEvent) {
               required={!enNameAr}
               disabled={isSubmitting}
             />
-          </div>
+            {/snippet}
+          </FormField>
         </div>
 
       </div>

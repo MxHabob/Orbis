@@ -3,7 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
-import { Label } from "@orbis/ui-svelte/label";
+import { FormField } from "@orbis/ui-svelte";
 import {
   Select,
   SelectTrigger,
@@ -17,6 +17,8 @@ import { authStore } from "$lib/stores";
 import { goto } from "$app/navigation";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { Save, User } from "@lucide/svelte";
+import { userCreateInputSchema } from "@orbis/schemas";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
 let { data }: { data: { orgId: string } } = $props();
 const orgId = $derived(data.orgId);
@@ -34,6 +36,26 @@ let sex = $state("male");
 let nationalId = $state("");
 let dob = $state("");
 let address = $state("");
+
+const form = new FormController({
+  initialValues: {
+    full_name: "",
+    name_ar: null as string | null,
+    email: "",
+    password: "",
+    primary_role: "teacher" as "admin" | "teacher" | "parent" | "student" | "staff",
+    sex: "male" as "male" | "female" | null,
+    phone: null as string | null,
+    national_id: null as string | null,
+    date_of_birth: null as string | null,
+    address: null as string | null,
+  },
+  schema: userCreateInputSchema,
+});
+
+function fieldError(field: string): string | undefined {
+  return form.errors[field]?.[0];
+}
 
 function getRoleLabel(roleStr: string): string {
   switch (roleStr) {
@@ -55,62 +77,42 @@ function getRoleLabel(roleStr: string): string {
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
 
-  if (!fullName.trim()) {
-    toast.error("Full name is required");
-    return;
-  }
-  if (!email.trim()) {
-    toast.error("Email is required");
-    return;
-  }
-  if (!password) {
-    toast.error("Password is required");
-    return;
-  }
-
   isSubmitting = true;
   try {
-    const createdBy = authStore.userId || "unknown";
-
-    // 1. Send the primary create request to backend
-    const request = {
-      email: email.trim(),
+    form.values = {
+      full_name: fullName,
+      name_ar: nameAr,
+      email,
       password,
-      full_name: fullName.trim(),
-      name_ar: nameAr.trim() || null,
-      primary_role: role,
-      sex: sex || null,
-      phone: phone.trim() || null,
-      national_id: nationalId.trim() || null,
-      date_of_birth: dob || null,
+      primary_role: role as "admin" | "teacher" | "parent" | "student" | "staff",
+      sex: sex as "male" | "female" | null,
+      phone,
+      national_id: nationalId,
+      date_of_birth: dob,
+      address,
     };
-
-    const newUser = await commands.iam.createUser(request);
-
-    // 2. Update extra fields (name_en, address) since they are not in the primary createUser endpoint
-    const updateRequest: Record<string, any> = {};
-    if (fullName.trim()) {
-      updateRequest.name_en = fullName.trim();
+    const submitted = await form.submit(async (request) => {
+      const newUser = await commands.iam.createUser(request);
+      const updateRequest: Record<string, any> = {};
+      if (request.full_name.trim()) updateRequest.name_en = request.full_name.trim();
+      if (request.address) updateRequest.address = request.address;
+      if (Object.keys(updateRequest).length > 0) {
+        await commands.iam.updateUser(newUser.id, updateRequest);
+      }
+    });
+    if (!submitted) {
+      toast.error(Object.values(form.errors).flat()[0] || "بيانات المستخدم غير صالحة");
+      return;
     }
-    if (address.trim()) {
-      updateRequest.address = address.trim();
-    }
-
-    if (Object.keys(updateRequest).length > 0) {
-      await commands.iam.updateUser(newUser.id, updateRequest);
-    }
-
     toast.success(m.settings_users_create_success());
-
-    // Navigate back to the users directory
     goto(localizeHref(`/${orgId}/settings/users`));
   } catch (e) {
-    const errorMsg = (e as any)?.message || String(e);
-    toast.error(errorMsg);
+    toast.error(e instanceof Error ? e.message : String(e));
   } finally {
     isSubmitting = false;
   }
 }
+
 </script>
 
 <svelte:head>
@@ -118,7 +120,6 @@ async function handleSubmit(e: SubmitEvent) {
 </svelte:head>
 
 <div class="h-full w-full flex flex-col overflow-hidden">
-  <!-- Sticky Page Header -->
   <DetailPageHeader
     backHref={`/${orgId}/settings/users`}
     backLabel={m.settings_nav_users()}
@@ -145,86 +146,37 @@ async function handleSubmit(e: SubmitEvent) {
           </div>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Name in Arabic -->
-            <div class="flex flex-col gap-2 text-start">
-              <Label for="usr_name_ar" class="text-xs font-medium text-muted-foreground">
-                {m.common_word_fullname()}
-              </Label>
-              <Input
-                id="usr_name_ar"
-                type="text"
-                bind:value={nameAr}
-                placeholder={m.common_user_form_full_name_placeholder()}
-                disabled={isSubmitting}
-                class="bg-background/50 h-9 text-xs"
-              />
-            </div>
-
-            <!-- Name in English -->
-            <div class="flex flex-col gap-2 text-start">
-              <Label for="usr_full_name" class="text-xs font-medium text-muted-foreground">
-                {m.common_user_form_name_en()} <span class="text-destructive">*</span>
-              </Label>
-              <Input
-                id="usr_full_name"
-                type="text"
-                bind:value={fullName}
-                placeholder={m.common_form_full_name_en_placeholder()}
-                required
-                disabled={isSubmitting}
-                class="bg-background/50 h-9 text-xs font-mono"
-              />
-            </div>
-
-            <!-- Sex / Gender -->
-            <div class="flex flex-col gap-2 text-start">
-              <Label for="usr_sex" class="text-xs font-medium text-muted-foreground">
-                {m.common_form_sex()}
-              </Label>
-              <Select
-                type="single"
-                value={sex}
-                onValueChange={(v) => (sex = v ?? "male")}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger id="usr_sex" class="h-9 w-full text-xs bg-background/50">
-                  {sex === "male" ? m.common_form_male() : m.common_form_female()}
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="male" class="text-xs">{m.common_form_male()}</SelectItem>
-                  <SelectItem value="female" class="text-xs">{m.common_form_female()}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <!-- Date of Birth -->
-            <div class="flex flex-col gap-2 text-start">
-              <Label for="usr_dob" class="text-xs font-medium text-muted-foreground">
-                {m.common_bulk_col_dob()}
-              </Label>
-              <Input
-                id="usr_dob"
-                type="date"
-                bind:value={dob}
-                disabled={isSubmitting}
-                class="bg-background/50 h-9 text-xs"
-              />
-            </div>
-
-            <!-- National ID -->
-            <div class="flex flex-col gap-2 text-start md:col-span-2">
-              <Label for="usr_nid" class="text-xs font-medium text-muted-foreground">
-                {m.common_user_form_national_id()}
-              </Label>
-              <Input
-                id="usr_nid"
-                type="text"
-                bind:value={nationalId}
-                placeholder="100020003"
-                disabled={isSubmitting}
-                class="bg-background/50 h-9 text-xs"
-              />
-            </div>
+            <FormField id="usr_name_ar" label={m.common_word_fullname()} error={fieldError("name_ar")}>
+              {#snippet children()}
+                <Input id="usr_name_ar" type="text" bind:value={nameAr} placeholder={m.common_user_form_full_name_placeholder()} disabled={isSubmitting} class="bg-background/50 h-9 text-xs" />
+              {/snippet}
+            </FormField>
+            <FormField id="usr_full_name" label={m.common_user_form_name_en()} error={fieldError("full_name")} required>
+              {#snippet children()}
+                <Input id="usr_full_name" type="text" bind:value={fullName} placeholder={m.common_form_full_name_en_placeholder()} required disabled={isSubmitting} class="bg-background/50 h-9 text-xs font-mono" />
+              {/snippet}
+            </FormField>
+            <FormField id="usr_sex" label={m.common_form_sex()} error={fieldError("sex")} required>
+              {#snippet children()}
+                <Select type="single" value={sex} onValueChange={(v: string | undefined) => (sex = v ?? "male")} disabled={isSubmitting}>
+                  <SelectTrigger id="usr_sex" class="h-9 w-full text-xs bg-background/50">{sex === "male" ? m.common_form_male() : m.common_form_female()}</SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male" class="text-xs">{m.common_form_male()}</SelectItem>
+                    <SelectItem value="female" class="text-xs">{m.common_form_female()}</SelectItem>
+                  </SelectContent>
+                </Select>
+              {/snippet}
+            </FormField>
+            <FormField id="usr_dob" label={m.common_bulk_col_dob()} error={fieldError("date_of_birth")}>
+              {#snippet children()}
+                <Input id="usr_dob" type="date" bind:value={dob} disabled={isSubmitting} class="bg-background/50 h-9 text-xs" />
+              {/snippet}
+            </FormField>
+            <FormField id="usr_nid" label={m.common_user_form_national_id()} error={fieldError("national_id")}>
+              {#snippet children()}
+                <Input id="usr_nid" type="text" bind:value={nationalId} placeholder="100020003" disabled={isSubmitting} class="bg-background/50 h-9 text-xs font-mono" />
+              {/snippet}
+            </FormField>
           </div>
         </div>
 
@@ -235,61 +187,30 @@ async function handleSubmit(e: SubmitEvent) {
           </div>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Email -->
-            <div class="flex flex-col gap-2 text-start">
-              <Label for="usr_email" class="text-xs font-medium text-muted-foreground">
-                {m.common_word_email()} <span class="text-destructive">*</span>
-              </Label>
-              <Input
-                id="usr_email"
-                type="email"
-                bind:value={email}
-                placeholder={m.common_user_form_email_placeholder()}
-                required
-                disabled={isSubmitting}
-                class="bg-background/50 h-9 text-xs font-mono"
-              />
-            </div>
-
-            <!-- Password -->
-            <div class="flex flex-col gap-2 text-start">
-              <Label for="usr_password" class="text-xs font-medium text-muted-foreground">
-                {m.common_user_form_password()} <span class="text-destructive">*</span>
-              </Label>
-              <Input
-                id="usr_password"
-                type="password"
-                bind:value={password}
-                placeholder={m.common_user_form_password_placeholder()}
-                required
-                disabled={isSubmitting}
-                class="bg-background/50 h-9 text-xs"
-              />
-            </div>
-
-            <!-- Role Selection -->
-            <div class="flex flex-col gap-2 text-start md:col-span-2">
-              <Label for="usr_role" class="text-xs font-medium text-muted-foreground">
-                {m.common_user_form_role()}
-              </Label>
-              <Select
-                type="single"
-                value={role}
-                onValueChange={(v) => (role = v ?? "teacher")}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger id="usr_role" class="h-9 w-full text-xs bg-background/50">
-                  {getRoleLabel(role)}
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin" class="text-xs">{m.common_users_filter_admin()}</SelectItem>
-                  <SelectItem value="teacher" class="text-xs">{m.common_schedule_page_teacher()}</SelectItem>
-                  <SelectItem value="parent" class="text-xs">{m.common_users_filter_guardian()}</SelectItem>
-                  <SelectItem value="student" class="text-xs">{m.common_word_student_single()}</SelectItem>
-                  <SelectItem value="staff" class="text-xs">{m.common_user_form_role_staff()}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <FormField id="usr_email" label={m.common_word_email()} error={fieldError("email")} required>
+              {#snippet children()}
+                <Input id="usr_email" type="email" bind:value={email} placeholder={m.common_user_form_email_placeholder()} required disabled={isSubmitting} class="bg-background/50 h-9 text-xs font-mono" />
+              {/snippet}
+            </FormField>
+            <FormField id="usr_password" label={m.common_user_form_password()} error={fieldError("password")} required>
+              {#snippet children()}
+                <Input id="usr_password" type="password" bind:value={password} placeholder={m.common_user_form_password_placeholder()} required disabled={isSubmitting} class="bg-background/50 h-9 text-xs" />
+              {/snippet}
+            </FormField>
+            <FormField id="usr_role" label={m.common_user_form_role()} error={fieldError("primary_role")} required>
+              {#snippet children()}
+                <Select type="single" value={role} onValueChange={(v: string | undefined) => (role = v ?? "teacher")} disabled={isSubmitting}>
+                  <SelectTrigger id="usr_role" class="h-9 w-full text-xs bg-background/50">{getRoleLabel(role)}</SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin" class="text-xs">{m.common_users_filter_admin()}</SelectItem>
+                    <SelectItem value="teacher" class="text-xs">{m.common_schedule_page_teacher()}</SelectItem>
+                    <SelectItem value="parent" class="text-xs">{m.common_users_filter_guardian()}</SelectItem>
+                    <SelectItem value="student" class="text-xs">{m.common_word_student_single()}</SelectItem>
+                    <SelectItem value="staff" class="text-xs">{m.common_user_form_role_staff()}</SelectItem>
+                  </SelectContent>
+                </Select>
+              {/snippet}
+            </FormField>
           </div>
         </div>
 
@@ -300,35 +221,16 @@ async function handleSubmit(e: SubmitEvent) {
           </div>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Phone Number -->
-            <div class="flex flex-col gap-2 text-start">
-              <Label for="usr_phone" class="text-xs font-medium text-muted-foreground">
-                {m.common_word_phone()}
-              </Label>
-              <Input
-                id="usr_phone"
-                type="tel"
-                bind:value={phone}
-                placeholder="770000000"
-                disabled={isSubmitting}
-                class="bg-background/50 h-9 text-xs font-mono"
-              />
-            </div>
-
-            <!-- Address -->
-            <div class="flex flex-col gap-2 text-start">
-              <Label for="usr_address" class="text-xs font-medium text-muted-foreground">
-                {m.common_word_address()}
-              </Label>
-              <Input
-                id="usr_address"
-                type="text"
-                bind:value={address}
-                placeholder={m.common_user_form_address_placeholder()}
-                disabled={isSubmitting}
-                class="bg-background/50 h-9 text-xs"
-              />
-            </div>
+            <FormField id="usr_phone" label={m.common_word_phone()} error={fieldError("phone")}>
+              {#snippet children()}
+                <Input id="usr_phone" type="tel" bind:value={phone} placeholder="770000000" disabled={isSubmitting} class="bg-background/50 h-9 text-xs font-mono" />
+              {/snippet}
+            </FormField>
+            <FormField id="usr_address" label={m.common_word_address()} error={fieldError("address")}>
+              {#snippet children()}
+                <Input id="usr_address" type="text" bind:value={address} placeholder={m.common_user_form_address_placeholder()} disabled={isSubmitting} class="bg-background/50 h-9 text-xs" />
+              {/snippet}
+            </FormField>
           </div>
         </div>
 

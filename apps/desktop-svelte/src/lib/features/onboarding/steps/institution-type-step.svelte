@@ -8,6 +8,7 @@ import * as m from "$lib/paraglide/messages";
 import { Card } from "@orbis/ui-svelte/card";
 import { Label } from "@orbis/ui-svelte/label";
 import { Input } from "@orbis/ui-svelte/input";
+import { FormField } from "@orbis/ui-svelte";
 import { Badge } from "@orbis/ui-svelte/badge";
 
 import { onboardingState } from "../state.svelte";
@@ -114,18 +115,17 @@ function selectProfile(type: string) {
 
   <!-- Automatic Numbering Customization -->
   <div class="p-4 border border-border/60 rounded-xl bg-card space-y-3 text-start">
-    <div class="flex flex-col gap-1">
-      <Label for="numbering_pattern" class="text-xs font-bold text-foreground">
-        {m.common_onboarding_profile_numbering_title()}
-      </Label>
+    <FormField id="numbering_pattern" label={m.common_onboarding_profile_numbering_title()} required>
+      {#snippet children()}
       <p class="text-[10px] text-muted-foreground">
         {m.common_onboarding_profile_numbering_desc()}
       </p>
-    </div>
-    <Input 
+      <Input 
       id="numbering_pattern" 
       bind:value={onboardingState.profile.studentNumberPattern} 
       class="h-9 text-xs border border-input max-w-md font-mono" 
-    />
+      />
+      {/snippet}
+    </FormField>
   </div>
 </div>

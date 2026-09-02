@@ -3,6 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/core/ipc";
 import { feeAssignmentInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { FormField } from "@orbis/ui-svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { toast } from "svelte-sonner";
@@ -94,10 +95,8 @@ async function handleSubmit(e: SubmitEvent) {
 
 <form onsubmit={handleSubmit} class="flex-1 overflow-y-auto py-6 flex flex-col gap-6 scrollbar-hide">
 	<!-- Student Select -->
-	<div class="flex flex-col gap-2 text-start">
-		<label for="fee_student" class="text-sm font-medium text-foreground">
-			{m.common_fee_label_student()}
-		</label>
+	<FormField id="fee_student" label={m.common_fee_label_student()} error={form.errors.enrollment_id?.[0]} required>
+		{#snippet children()}
 		<select 
 			id="fee_student"
 			bind:value={form.values.enrollment_id}
@@ -113,13 +112,12 @@ async function handleSubmit(e: SubmitEvent) {
 				{/each}
 			{/if}
 		</select>
-	</div>
+		{/snippet}
+	</FormField>
 
 	<!-- Fee Template Select -->
-	<div class="flex flex-col gap-2 text-start">
-		<label for="fee_ledger" class="text-sm font-medium text-foreground">
-			{m.common_fee_label_ledger()}
-		</label>
+	<FormField id="fee_ledger" label={m.common_fee_label_ledger()} error={form.errors.fee_template_id?.[0]} required>
+		{#snippet children()}
 		<select 
 			id="fee_ledger"
 			bind:value={form.values.fee_template_id}
@@ -135,13 +133,12 @@ async function handleSubmit(e: SubmitEvent) {
 				{/each}
 			{/if}
 		</select>
-	</div>
+		{/snippet}
+	</FormField>
 
 	<!-- Fee Amount -->
-	<div class="flex flex-col gap-2 text-start">
-		<label for="fee_amount" class="text-sm font-medium text-foreground">
-			{m.common_fee_label_amount()}
-		</label>
+	<FormField id="fee_amount" label={m.common_fee_label_amount()} error={form.errors.amount_override?.[0]}>
+		{#snippet children()}
 		<Input 
 			id="fee_amount"
 			type="number" 
@@ -153,26 +150,24 @@ async function handleSubmit(e: SubmitEvent) {
 			required
 			disabled={form.isSubmitting}
 		/>
-	</div>
+		{/snippet}
+	</FormField>
 
 	<!-- Due Date -->
-	<div class="flex flex-col gap-2 text-start">
-		<label for="fee_due" class="text-sm font-medium text-foreground">
-			{m.common_fee_label_due()}
-		</label>
+	<FormField id="fee_due" label={m.common_fee_label_due()}>
+		{#snippet children()}
 		<Input 
 			id="fee_due"
 			type="date" 
 			bind:value={dueDate}
 			disabled={form.isSubmitting}
 		/>
-	</div>
+		{/snippet}
+	</FormField>
 
 	<!-- Description -->
-	<div class="flex flex-col gap-2 text-start">
-		<label for="fee_desc" class="text-sm font-medium text-foreground">
-			{m.common_fee_label_desc()}
-		</label>
+	<FormField id="fee_desc" label={m.common_fee_label_desc()}>
+		{#snippet children()}
 		<Input 
 			id="fee_desc"
 			type="text" 
@@ -180,7 +175,8 @@ async function handleSubmit(e: SubmitEvent) {
 			placeholder={m.common_fee_placeholder_desc()}
 			disabled={form.isSubmitting}
 		/>
-	</div>
+		{/snippet}
+	</FormField>
 
 	<!-- Form Actions -->
 	<div class="flex justify-end gap-2 pt-2">

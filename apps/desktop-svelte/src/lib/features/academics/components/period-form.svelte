@@ -13,6 +13,7 @@ import {
 import { toast } from "svelte-sonner";
 import { createPeriodInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { FormField } from "@orbis/ui-svelte";
 import { ChevronRight } from "@lucide/svelte";
 import {
   Accordion,
@@ -138,10 +139,8 @@ async function handleSubmit(e: SubmitEvent) {
         <AccordionContent>
     <!-- Names (Arabic & English) -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div class="flex flex-col gap-2">
-        <label for="per_name_ar" class="text-xs font-semibold text-foreground">
-          {m.common_cycle_form_name()}
-        </label>
+      <FormField id="per_name_ar" label={m.common_cycle_form_name()} error={fieldError("name_ar")}>
+        {#snippet children()}
         <Input
           id="per_name_ar"
           type="text"
@@ -150,12 +149,11 @@ async function handleSubmit(e: SubmitEvent) {
           placeholder={m.common_period_form_name_placeholder()}
           disabled={form.isSubmitting}
         />
-      </div>
+        {/snippet}
+      </FormField>
 
-      <div class="flex flex-col gap-2">
-        <label for="per_name_en" class="text-xs font-semibold text-foreground">
-          {m.common_user_form_name_en()} <span class="text-destructive">*</span>
-        </label>
+      <FormField id="per_name_en" label={m.common_user_form_name_en()} error={fieldError("name")} required>
+        {#snippet children()}
         <Input
           id="per_name_en"
           type="text"
@@ -167,15 +165,14 @@ async function handleSubmit(e: SubmitEvent) {
           required
           disabled={form.isSubmitting}
         />
-      </div>
+        {/snippet}
+      </FormField>
     </div>
 
     <!-- Type & Parent -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div class="flex flex-col gap-2">
-        <label for="per_type" class="text-xs font-semibold text-foreground">
-          {m.common_word_type()}
-        </label>
+      <FormField id="per_type" label={m.common_word_type()} error={fieldError("period_type")} required>
+        {#snippet children()}
         <Select type="single" value={form.values.period_type} onValueChange={(v) => (form.values.period_type = v ?? "year")} disabled={isEdit}>
           <SelectTrigger class="h-9 text-sm w-full">
             {periodTypeLabels[form.values.period_type as keyof typeof periodTypeLabels] || form.values.period_type}
@@ -185,13 +182,12 @@ async function handleSubmit(e: SubmitEvent) {
             <SelectItem value="term">{m.common_period_form_type_term()}</SelectItem>
           </SelectContent>
         </Select>
-      </div>
+        {/snippet}
+      </FormField>
 
       {#if form.values.period_type !== "year"}
-        <div class="flex flex-col gap-2">
-          <label for="per_parent" class="text-xs font-semibold text-foreground">
-            {m.common_period_form_parent()}
-          </label>
+        <FormField id="per_parent" label={m.common_period_form_parent()} error={fieldError("parent_id")}>
+          {#snippet children()}
           <Select type="single" value={form.values.parent_id} onValueChange={(v) => (form.values.parent_id = v ?? "")} disabled={isEdit}>
             <SelectTrigger class="h-9 text-sm w-full">
               {periodsList.find(p => String(p.id) === form.values.parent_id) ? (periodsList.find(p => String(p.id) === form.values.parent_id).name_ar || periodsList.find(p => String(p.id) === form.values.parent_id).name) : m.common_period_form_parent_none()}
@@ -210,12 +206,11 @@ async function handleSubmit(e: SubmitEvent) {
               {/each}
             </SelectContent>
           </Select>
-        </div>
+          {/snippet}
+        </FormField>
       {:else}
-        <div class="flex flex-col gap-2">
-          <label for="per_code" class="text-xs font-semibold text-foreground">
-            Code
-          </label>
+        <FormField id="per_code" label="Code" error={fieldError("code")}>
+          {#snippet children()}
           <Input
             id="per_code"
             type="text"
@@ -223,7 +218,8 @@ async function handleSubmit(e: SubmitEvent) {
             placeholder="e.g. AY-2026"
             disabled={form.isSubmitting || isEdit}
           />
-        </div>
+          {/snippet}
+        </FormField>
       {/if}
     </div>
 
@@ -236,10 +232,8 @@ async function handleSubmit(e: SubmitEvent) {
 
     <!-- Dates -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div class="flex flex-col gap-2">
-        <label for="per_start" class="text-xs font-semibold text-foreground">
-          {m.common_year_start_date()} <span class="text-destructive">*</span>
-        </label>
+      <FormField id="per_start" label={m.common_year_start_date()} error={fieldError("start_date")} required>
+        {#snippet children()}
         <Input
           id="per_start"
           type="date"
@@ -248,12 +242,11 @@ async function handleSubmit(e: SubmitEvent) {
           required
           disabled={form.isSubmitting}
         />
-      </div>
+        {/snippet}
+      </FormField>
 
-      <div class="flex flex-col gap-2">
-        <label for="per_end" class="text-xs font-semibold text-foreground">
-          {m.common_year_end_date()} <span class="text-destructive">*</span>
-        </label>
+      <FormField id="per_end" label={m.common_year_end_date()} error={fieldError("end_date")} required>
+        {#snippet children()}
         <Input
           id="per_end"
           type="date"
@@ -262,7 +255,8 @@ async function handleSubmit(e: SubmitEvent) {
           required
           disabled={form.isSubmitting}
         />
-      </div>
+        {/snippet}
+      </FormField>
     </div>
 
         </AccordionContent>
@@ -274,10 +268,8 @@ async function handleSubmit(e: SubmitEvent) {
 
     <!-- Grading configs -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div class="flex flex-col gap-2">
-        <label for="per_grading" class="text-xs font-semibold text-foreground">
-          {m.common_cycle_form_grading()}
-        </label>
+      <FormField id="per_grading" label={m.common_cycle_form_grading()} error={fieldError("grading_system")} required>
+        {#snippet children()}
         <Select type="single" value={form.values.grading_system} onValueChange={(v) => (form.values.grading_system = v ?? "percentage")}>
           <SelectTrigger class="h-9 text-sm w-full">
             {gradingLabels[form.values.grading_system as keyof typeof gradingLabels] || form.values.grading_system}
@@ -288,12 +280,11 @@ async function handleSubmit(e: SubmitEvent) {
             <SelectItem value="gpa">{m.common_period_form_grading_gpa()}</SelectItem>
           </SelectContent>
         </Select>
-      </div>
+        {/snippet}
+      </FormField>
 
-      <div class="flex flex-col gap-2">
-        <label for="per_max" class="text-xs font-semibold text-foreground">
-          Max Grade
-        </label>
+      <FormField id="per_max" label="Max Grade" error={fieldError("max_grade")} required>
+        {#snippet children()}
         <Input
           id="per_max"
           type="number"
@@ -302,12 +293,11 @@ async function handleSubmit(e: SubmitEvent) {
           min={1}
           disabled={form.isSubmitting}
         />
-      </div>
+        {/snippet}
+      </FormField>
 
-      <div class="flex flex-col gap-2">
-        <label for="per_passing" class="text-xs font-semibold text-foreground">
-          {m.common_cycle_form_passing_grade()}
-        </label>
+      <FormField id="per_passing" label={m.common_cycle_form_passing_grade()} error={fieldError("passing_grade")} required>
+        {#snippet children()}
         <Input
           id="per_passing"
           type="number"
@@ -317,7 +307,8 @@ async function handleSubmit(e: SubmitEvent) {
           onblur={() => form.markTouched("passing_grade")}
           disabled={form.isSubmitting}
         />
-      </div>
+        {/snippet}
+      </FormField>
     </div>
         </AccordionContent>
       </AccordionItem>

@@ -21,6 +21,7 @@ import {
 import { toast } from "svelte-sonner";
 import { discountTemplateInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { FormField } from "@orbis/ui-svelte";
 
 let {
   orgId,
@@ -192,10 +193,8 @@ async function handleSubmit() {
         <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_dt_form_name()}</AccordionTrigger>
         <AccordionContent>
     <!-- Name -->
-    <div class="flex flex-col gap-1.5 text-start">
-      <Label for="dt_form_name" class="text-xs font-semibold text-muted-foreground">
-        {m.common_dt_form_name()} *
-      </Label>
+    <FormField id="dt_form_name" label={m.common_dt_form_name()} error={form.errors.name?.[0]} required>
+      {#snippet children()}
       <Input 
         id="dt_form_name"
         type="text" 
@@ -204,13 +203,12 @@ async function handleSubmit() {
         required
         disabled={isSubmitting}
       />
-    </div>
+      {/snippet}
+    </FormField>
 
     <!-- Code/Symbol -->
-    <div class="flex flex-col gap-1.5 text-start">
-      <Label for="dt_form_code" class="text-xs font-semibold text-muted-foreground">
-        {m.common_dt_form_code()}
-      </Label>
+    <FormField id="dt_form_code" label={m.common_dt_form_code()} error={form.errors.code?.[0]}>
+      {#snippet children()}
       <Input 
         id="dt_form_code"
         type="text" 
@@ -218,15 +216,14 @@ async function handleSubmit() {
         placeholder={m.common_dt_code_placeholder()}
         disabled={isSubmitting}
       />
-    </div>
+      {/snippet}
+    </FormField>
 
     <!-- Type & Calculation Method Grid -->
     <div class="grid grid-cols-2 gap-4">
       <!-- Type -->
-      <div class="flex flex-col gap-1.5 text-start">
-        <Label class="text-xs font-semibold text-muted-foreground">
-          {m.common_dt_form_type()} *
-        </Label>
+      <FormField label={m.common_dt_form_type()} error={form.errors.item_type?.[0]} required>
+        {#snippet children()}
         <Select type="single" value={itemType} onValueChange={(v) => (itemType = v ?? "manual")} disabled={isSubmitting}>
           <SelectTrigger class="h-9 text-sm">
             {selectedItemTypeLabel}
@@ -237,13 +234,12 @@ async function handleSubmit() {
             {/each}
           </SelectContent>
         </Select>
-      </div>
+        {/snippet}
+      </FormField>
 
       <!-- Calculation Method -->
-      <div class="flex flex-col gap-1.5 text-start">
-        <Label class="text-xs font-semibold text-muted-foreground">
-          {m.common_dt_col_method()} *
-        </Label>
+      <FormField label={m.common_dt_col_method()} error={form.errors.calculation_method?.[0]} required>
+        {#snippet children()}
         <Select type="single" value={calculationMethod} onValueChange={(v) => (calculationMethod = v ?? "percentage")} disabled={isSubmitting}>
           <SelectTrigger class="h-9 text-sm">
             {selectedCalculationMethodLabel}
@@ -254,14 +250,13 @@ async function handleSubmit() {
             {/each}
           </SelectContent>
         </Select>
-      </div>
+        {/snippet}
+      </FormField>
     </div>
 
     <!-- Value -->
-    <div class="flex flex-col gap-1.5 text-start">
-      <Label for="dt_form_value" class="text-xs font-semibold text-muted-foreground">
-        {m.common_dt_col_value()} *
-      </Label>
+    <FormField id="dt_form_value" label={m.common_dt_col_value()} error={form.errors.value?.[0]} required>
+      {#snippet children()}
       <Input 
         id="dt_form_value"
         type="number" 
@@ -271,13 +266,12 @@ async function handleSubmit() {
         required
         disabled={isSubmitting}
       />
-    </div>
+      {/snippet}
+    </FormField>
 
     <!-- Priority (optional) -->
-    <div class="flex flex-col gap-1.5 text-start">
-      <Label for="dt_form_priority" class="text-xs font-semibold text-muted-foreground">
-        {m.common_dt_form_priority()}
-      </Label>
+    <FormField id="dt_form_priority" label={m.common_dt_form_priority()} error={form.errors.priority?.[0]}>
+      {#snippet children()}
       <Input 
         id="dt_form_priority"
         type="number" 
@@ -286,7 +280,8 @@ async function handleSubmit() {
         placeholder={m.common_dt_form_priority_placeholder ? m.common_dt_form_priority_placeholder() : "e.g., 1 (highest)"}
         disabled={isSubmitting}
       />
-    </div>
+      {/snippet}
+    </FormField>
 
         </AccordionContent>
       </AccordionItem>

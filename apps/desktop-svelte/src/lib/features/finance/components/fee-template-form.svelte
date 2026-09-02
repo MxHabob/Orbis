@@ -4,6 +4,7 @@ import { l } from "$lib/core/i18n";
 import { commands, OrbisError } from "$lib/core/ipc";
 import { feeTemplateInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { FormField } from "@orbis/ui-svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
@@ -280,10 +281,8 @@ async function handleSubmit() {
         <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_ft_sheet_create_title()}</AccordionTrigger>
         <AccordionContent>
     <!-- Name (Arabic) -->
-    <div class="flex flex-col gap-1.5 text-start">
-      <Label for="ft_form_name_ar" class="text-xs font-semibold text-muted-foreground">
-        {m.common_ft_col_name()}
-      </Label>
+    <FormField id="ft_form_name_ar" label={m.common_ft_col_name()} error={form.errors.name_ar?.[0]}>
+      {#snippet children()}
       <Input 
         id="ft_form_name_ar"
         type="text" 
@@ -292,13 +291,12 @@ async function handleSubmit() {
         placeholder={m.common_ft_name_ar_placeholder()}
         disabled={form.isSubmitting}
       />
-    </div>
+      {/snippet}
+    </FormField>
 
     <!-- Name (English) -->
-    <div class="flex flex-col gap-1.5 text-start">
-      <Label for="ft_form_name_en" class="text-xs font-semibold text-muted-foreground">
-        {m.common_user_form_name_en()} *
-      </Label>
+    <FormField id="ft_form_name_en" label={m.common_user_form_name_en()} error={form.errors.name?.[0]} required>
+      {#snippet children()}
       <Input 
         id="ft_form_name_en"
         type="text" 
@@ -308,13 +306,12 @@ async function handleSubmit() {
         required
         disabled={form.isSubmitting}
       />
-    </div>
+      {/snippet}
+    </FormField>
 
     <!-- Code/Symbol -->
-    <div class="flex flex-col gap-1.5 text-start">
-      <Label for="ft_form_code" class="text-xs font-semibold text-muted-foreground">
-        {m.common_ledger_col_code()}
-      </Label>
+    <FormField id="ft_form_code" label={m.common_ledger_col_code()} error={form.errors.code?.[0]}>
+      {#snippet children()}
       <Input 
         id="ft_form_code"
         type="text" 
@@ -322,15 +319,14 @@ async function handleSubmit() {
         placeholder={m.common_ft_code_placeholder()}
         disabled={form.isSubmitting}
       />
-    </div>
+      {/snippet}
+    </FormField>
 
     <!-- Category & Frequency Grid -->
     <div class="grid grid-cols-2 gap-4">
       <!-- Category -->
-      <div class="flex flex-col gap-1.5 text-start">
-        <Label class="text-xs font-semibold text-muted-foreground">
-          {m.common_ft_col_category()} *
-        </Label>
+      <FormField label={m.common_ft_col_category()} error={form.errors.category?.[0]} required>
+        {#snippet children()}
         <Select type="single" value={form.values.category} onValueChange={(v) => (form.values.category = v ?? "tuition")} disabled={form.isSubmitting}>
           <SelectTrigger class="h-9 text-sm">
             {selectedCategoryLabel}
@@ -341,13 +337,12 @@ async function handleSubmit() {
             {/each}
           </SelectContent>
         </Select>
-      </div>
+        {/snippet}
+      </FormField>
 
       <!-- Frequency -->
-      <div class="flex flex-col gap-1.5 text-start">
-        <Label class="text-xs font-semibold text-muted-foreground">
-          {m.common_ft_col_frequency()} *
-        </Label>
+      <FormField label={m.common_ft_col_frequency()} error={form.errors.frequency?.[0]} required>
+        {#snippet children()}
         <Select type="single" value={form.values.frequency} onValueChange={(v) => (form.values.frequency = v ?? "yearly")} disabled={form.isSubmitting}>
           <SelectTrigger class="h-9 text-sm">
             {selectedFrequencyLabel}
@@ -358,14 +353,13 @@ async function handleSubmit() {
             {/each}
           </SelectContent>
         </Select>
-      </div>
+        {/snippet}
+      </FormField>
     </div>
 
     <!-- Amount -->
-    <div class="flex flex-col gap-1.5 text-start">
-      <Label for="ft_form_amount" class="text-xs font-semibold text-muted-foreground">
-        {m.common_ft_col_amount()} *
-      </Label>
+    <FormField id="ft_form_amount" label={m.common_ft_col_amount()} error={form.errors.default_amount?.[0]} required>
+      {#snippet children()}
       <Input 
         id="ft_form_amount"
         type="number" 
@@ -377,7 +371,8 @@ async function handleSubmit() {
         required
         disabled={form.isSubmitting}
       />
-    </div>
+      {/snippet}
+    </FormField>
 
         </AccordionContent>
       </AccordionItem>

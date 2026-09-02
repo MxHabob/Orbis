@@ -4,7 +4,7 @@ import { commands, OrbisError } from "$lib/core/ipc";
 import { createAssessmentInputSchema } from "@orbis/schemas";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
-import { Label } from "@orbis/ui-svelte/label";
+import { FormField } from "@orbis/ui-svelte";
 import { SheetHeader, SheetTitle } from "@orbis/ui-svelte/sheet";
 import {
   Select,
@@ -90,10 +90,8 @@ async function handleSubmit(e: SubmitEvent) {
 
 	<div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5 scrollbar-hide">
 		<!-- Name (Arabic) -->
-		<div class="flex flex-col gap-2 text-start">
-			<Label for="ass_name_ar" class="text-sm font-medium text-foreground">
-				{m.common_assessment_label_name_ar()}
-			</Label>
+		<FormField id="ass_name_ar" label={m.common_assessment_label_name_ar()} error={fieldError("title_ar")} required>
+			{#snippet children()}
 			<Input 
 				id="ass_name_ar"
 				type="text" 
@@ -102,13 +100,12 @@ async function handleSubmit(e: SubmitEvent) {
 				placeholder={m.common_assessment_placeholder_name_ar()}
 				required
 			/>
-		</div>
+			{/snippet}
+		</FormField>
 
 		<!-- Name (English) -->
-		<div class="flex flex-col gap-2 text-start">
-			<Label for="ass_name_en" class="text-sm font-medium text-foreground">
-				{m.common_assessment_label_name_en()}
-			</Label>
+		<FormField id="ass_name_en" label={m.common_assessment_label_name_en()} error={fieldError("title")}>
+			{#snippet children()}
 			<Input 
 				id="ass_name_en"
 				type="text" 
@@ -116,13 +113,12 @@ async function handleSubmit(e: SubmitEvent) {
 				onblur={() => form.markTouched("title")}
 				placeholder={m.common_assessment_placeholder_name_ar()}
 			/>
-		</div>
+			{/snippet}
+		</FormField>
 
 		<!-- Assessment Type -->
-		<div class="flex flex-col gap-2 text-start">
-			<Label for="ass_type" class="text-sm font-medium text-foreground">
-				{m.common_assessment_label_type()}
-			</Label>
+		<FormField id="ass_type" label={m.common_assessment_label_type()} error={fieldError("item_type")} required>
+			{#snippet children()}
 			<Select type="single" value={form.values.item_type} onValueChange={(v: string | undefined) => (form.values.item_type = (v as typeof form.values.item_type) ?? "exam")}>
 				<SelectTrigger class="h-9 text-sm w-full">
 					{typeLabels[form.values.item_type] || form.values.item_type}
@@ -134,15 +130,14 @@ async function handleSubmit(e: SubmitEvent) {
 					<SelectItem value="classwork">{m.common_assessment_option_classwork()}</SelectItem>
 				</SelectContent>
 			</Select>
-		</div>
+			{/snippet}
+		</FormField>
 
 		<!-- Two columns for scores -->
 		<div class="grid grid-cols-2 gap-4">
 			<!-- Max Score -->
-			<div class="flex flex-col gap-2 text-start">
-				<Label for="ass_max" class="text-sm font-medium text-foreground">
-					{m.common_exams_subjects_score()}
-				</Label>
+			<FormField id="ass_max" label={m.common_exams_subjects_score()} error={fieldError("max_score")} required>
+				{#snippet children()}
 				<Input 
 					id="ass_max"
 					type="number" 
@@ -151,13 +146,12 @@ async function handleSubmit(e: SubmitEvent) {
 					min="1"
 					max="1000"
 				/>
-			</div>
+				{/snippet}
+			</FormField>
 
 			<!-- Weight -->
-			<div class="flex flex-col gap-2 text-start">
-				<Label for="ass_weight" class="text-sm font-medium text-foreground">
-					{m.common_assessment_label_weight()}
-				</Label>
+			<FormField id="ass_weight" label={m.common_assessment_label_weight()} error={fieldError("weight")} required>
+				{#snippet children()}
 				<Input 
 					id="ass_weight"
 					type="number" 
@@ -166,7 +160,8 @@ async function handleSubmit(e: SubmitEvent) {
 					min="1"
 					max="100"
 				/>
-			</div>
+				{/snippet}
+			</FormField>
 		</div>
 	</div>
 

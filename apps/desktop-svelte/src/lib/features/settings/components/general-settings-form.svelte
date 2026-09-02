@@ -11,6 +11,7 @@ import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte
 import { toast } from "svelte-sonner";
 import { l } from "$lib/core/i18n";
 import { generalSettingsInputSchema } from "@orbis/schemas";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
 let { org, orgId, isSaving, onsave, onsaveavatar, onremove, onlanguagechange } =
   $props<{
@@ -37,6 +38,16 @@ let dateFormat = $state("YYYY-MM-DD");
 let hijriEnabled = $state(false);
 
 let initialValues = $state<any>(null);
+const settingsForm = new FormController({
+  initialValues: {
+    name: "",
+    currency: "YER",
+    timezone: "Asia/Aden",
+    locale: "ar",
+    dateFormat: "YYYY-MM-DD",
+  },
+  schema: generalSettingsInputSchema,
+});
 
 $effect(() => {
   if (org && !initialValues) {
@@ -93,21 +104,23 @@ function handleReset() {
 
 function handleSubmit(e?: Event) {
   e?.preventDefault();
-  const result = generalSettingsInputSchema.safeParse({ name, currency, timezone, locale, dateFormat });
-  if (!result.success) {
-    toast.error(l("بيانات الإعدادات غير صالحة", "Settings contain invalid values"));
-    return;
-  }
-  onsave({
-    name: result.data.name,
-    name_ar: nameAr || null,
-    logo: logo || null,
-    primary_color: primaryColor,
-    currency: result.data.currency,
-    timezone: result.data.timezone,
-    locale: result.data.locale,
-    date_format: result.data.dateFormat,
-    hijri_enabled: hijriEnabled,
+  settingsForm.values = { name, currency, timezone, locale, dateFormat };
+  settingsForm.submit(async (result) => {
+    onsave({
+      name: result.name,
+      name_ar: nameAr || null,
+      logo: logo || null,
+      primary_color: primaryColor,
+      currency: result.currency,
+      timezone: result.timezone,
+      locale: result.locale,
+      date_format: result.dateFormat,
+      hijri_enabled: hijriEnabled,
+    });
+  }).then((submitted) => {
+    if (!submitted) {
+      toast.error(l("بيانات الإعدادات غير صالحة", "Settings contain invalid values"));
+    }
   });
   if (initialValues) {
     initialValues = {

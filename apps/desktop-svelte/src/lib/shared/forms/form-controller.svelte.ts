@@ -1,4 +1,5 @@
 import { OrbisError } from "@orbis/sdk-core";
+import { createForm } from "@tanstack/svelte-form";
 import { z } from "zod";
 
 export type FormErrors = Record<string, string[]>;
@@ -80,14 +81,32 @@ export class FormController<Values, Payload = Values> {
 
   private readonly options: FormControllerOptions<Values, Payload>;
   private asyncAbort?: AbortController;
+  private readonly tanstackForm;
 
   constructor(options: FormControllerOptions<Values, Payload>) {
     this.options = options;
     this.values = structuredClone(options.initialValues);
+    this.tanstackForm = createForm(() => ({
+      defaultValues: structuredClone(options.initialValues),
+      validators: {
+        onChange: ({ value }: { value: Values }) => {
+          const candidate = options.normalize ? options.normalize(value) : value;
+          const result = options.schema.safeParse(candidate);
+          return result.success ? undefined : result.error.issues[0]?.message;
+        },
+      },
+    }));
+  }
+
+  private syncToTanStack(): void {
+    for (const [field, value] of Object.entries(this.values as Record<string, unknown>)) {
+      this.tanstackForm.setFieldValue(field as never, value as never);
+    }
   }
 
   setField<Key extends keyof Values>(field: Key, value: Values[Key]): void {
     this.values = { ...this.values, [field]: value };
+    this.tanstackForm.setFieldValue(String(field) as never, value as never);
     this.formError = undefined;
   }
 
@@ -97,6 +116,7 @@ export class FormController<Values, Payload = Values> {
   }
 
   validate(fields?: string[]): boolean {
+    this.syncToTanStack();
     const candidate = this.options.normalize
       ? this.options.normalize(this.values)
       : this.values;
@@ -159,5 +179,6 @@ export class FormController<Values, Payload = Values> {
     this.touched = {};
     this.formError = undefined;
     this.isSubmitting = false;
+    this.tanstackForm.reset(structuredClone(values));
   }
 }

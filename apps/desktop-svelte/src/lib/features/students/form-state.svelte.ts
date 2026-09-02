@@ -6,6 +6,7 @@ import { toast } from "svelte-sonner";
 import { l } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { studentRegistrationSchema } from "@orbis/schemas";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
 import { PersonalInfoState } from "./state/personal-info.svelte";
 import { GuardianState } from "./state/guardian-info.svelte";
@@ -59,6 +60,24 @@ export class StudentFormState {
   isSaving = $state(false);
   orgName = $state("");
   isDownloadingForm = $state(false);
+  registrationForm = new FormController({
+    initialValues: {
+      name: "",
+      name_en: null as string | null,
+      email: null as string | null,
+      phone: null as string | null,
+      gender: null as string | null,
+      birth_date: null as string | null,
+      nationality: null as string | null,
+      national_id: null as string | null,
+      address: null as string | null,
+      class_id: "",
+      guardian_name: null as string | null,
+      guardian_phone: null as string | null,
+      guardian_relationship: null as string | null,
+    },
+    schema: studentRegistrationSchema,
+  });
 
   // Printing templates
   availableTemplates = $state<any[]>([]);
@@ -395,9 +414,10 @@ export class StudentFormState {
           phone: this.personal.phone.trim() || null,
           gender: this.personal.sex || null,
           birth_date: this.personal.birthDate || null,
+          nationality: this.personal.nationality.trim() || null,
           national_id: this.personal.nationalId.trim() || null,
           address: this.personal.address.trim() || null,
-          class_id: this.personal.classId || null,
+          class_id: this.personal.classId || "",
           guardian_name: hasGuardianName ? firstGuardian.full_name.trim() : null,
           guardian_phone: hasGuardianPhone ? firstGuardian.phone.trim() : null,
           guardian_relationship: hasGuardianName || hasGuardianPhone
@@ -405,15 +425,15 @@ export class StudentFormState {
             : null,
         };
 
-        const validatedPayload = studentRegistrationSchema.safeParse(payload);
-        if (!validatedPayload.success) {
-          const errDetail = validatedPayload.error.issues
-            .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+        this.registrationForm.values = payload;
+        const isValid = await this.registrationForm.submit(async () => {});
+        if (!isValid) {
+          const errDetail = Object.entries(this.registrationForm.errors)
+            .map(([field, messages]) => `${field}: ${messages[0]}`)
             .join(", ");
-          console.error("Student registration validation failed:", validatedPayload.error);
           throw new Error(`بيانات تسجيل الطالب غير مكتملة أو غير صالحة (${errDetail})`);
         }
-        const res: any = await commands.enrollment_workflow.registerStudent(validatedPayload.data);
+        const res: any = await commands.enrollment_workflow.registerStudent(this.registrationForm.values);
         targetStudentId = String(res.user_id);
         targetEnrollmentId = String(res.enrollment_id);
 
@@ -534,7 +554,7 @@ export class StudentFormState {
         }
       }
       console.error("Save error:", e);
-      toast.error(m.common_form_error_save({ error: e.message || String(e) }));
+      toast.error(m.common_form_error_save({ error: e instanceof Error ? e.message : String(e) }));
     } finally {
       this.isSaving = false;
     }

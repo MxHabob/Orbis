@@ -33,6 +33,7 @@ import { createAssessmentSchemesQuery } from "$lib/features/academics/queries-as
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { classSubjectFormInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { FormField } from "@orbis/ui-svelte";
 
 let {
   orgId,
@@ -183,54 +184,58 @@ async function handleSubmit() {
   {:else}
     <div class="flex flex-col gap-4">
     <!-- Period -->
-    <div class="flex flex-col gap-1.5">
-      <Label class="text-sm font-medium text-foreground">{m.common_metrics_period()} *</Label>
+    <FormField label={m.common_metrics_period()} error={form.errors.period_id?.[0]} required>
+      {#snippet children()}
       <PeriodSelect
         bind:value={periodId}
         periods={availablePeriods}
         placeholder={m.academics_studio_select_period()}
         class="h-9 text-sm"
       />
-    </div>
+      {/snippet}
+    </FormField>
 
     {#if !fixedClassId}
       <!-- Class -->
-      <div class="flex flex-col gap-1.5">
-        <Label class="text-sm font-medium text-foreground">{m.common_word_semester()} *</Label>
+      <FormField label={m.common_word_semester()} error={form.errors.class_id?.[0]} required>
+        {#snippet children()}
         <ClassSelect
           bind:value={classId}
           {classes}
           placeholder={m.common_cs_form_select_class()}
           class="h-9 text-sm"
         />
-      </div>
+        {/snippet}
+      </FormField>
     {/if}
 
     <!-- Subject -->
-    <div class="flex flex-col gap-1.5">
-      <Label class="text-sm font-medium text-foreground">{m.common_word_subject()} *</Label>
+    <FormField label={m.common_word_subject()} error={form.errors.subject_id?.[0]} required>
+      {#snippet children()}
       <SubjectSelect
         bind:value={subjectId}
         {subjects}
         placeholder={m.common_cs_form_select_subject()}
         class="h-9 text-sm"
       />
-    </div>
+      {/snippet}
+    </FormField>
 
     <!-- Primary Teacher -->
-    <div class="flex flex-col gap-1.5">
-      <Label class="text-sm font-medium text-foreground">{m.common_cs_col_teacher()} *</Label>
+    <FormField label={m.common_cs_col_teacher()} error={form.errors.teacher_id?.[0]} required>
+      {#snippet children()}
       <TeacherSelect
         bind:value={teacherId}
         {teachers}
         placeholder={m.common_cs_form_select_teacher()}
         class="h-9 text-sm"
       />
-    </div>
+      {/snippet}
+    </FormField>
 
     <!-- Weekly Hours -->
-    <div class="flex flex-col gap-1.5">
-      <Label class="text-sm font-medium text-foreground">{m.common_cs_col_hours()}</Label>
+    <FormField label={m.common_cs_col_hours()} error={form.errors.weekly_hours?.[0]} required>
+      {#snippet children()}
       <Input
         type="number"
         min="1"
@@ -239,11 +244,12 @@ async function handleSubmit() {
         oninput={(e) => (weeklyHours = parseInt((e.target as HTMLInputElement).value) || 4)}
         class="h-9 text-sm"
       />
-    </div>
+      {/snippet}
+    </FormField>
 
     <!-- Assessment scheme (optional; falls back to period/org default) -->
-    <div class="flex flex-col gap-1.5">
-      <Label class="text-sm font-medium text-foreground">{m.common_cs_assessment_scheme()}</Label>
+    <FormField label={m.common_cs_assessment_scheme()}>
+      {#snippet children()}
       <Select
         type="single"
         value={schemeId || "__default__"}
@@ -265,7 +271,8 @@ async function handleSubmit() {
           {/each}
         </SelectContent>
       </Select>
-    </div>
+      {/snippet}
+    </FormField>
 
     </div>
   {/if}

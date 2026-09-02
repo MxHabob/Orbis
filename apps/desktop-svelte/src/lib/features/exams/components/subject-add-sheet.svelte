@@ -13,6 +13,7 @@ import {
 } from "@orbis/ui-svelte/sheet";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
+import { FormField } from "@orbis/ui-svelte";
 import {
   Select,
   SelectTrigger,
@@ -196,10 +197,8 @@ async function handleSubmit() {
 
         {#if mode === "select"}
           <!-- Existing Subjects Selection Dropdown -->
-          <div class="flex flex-col gap-1.5">
-            <label for="subject-select" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
-              اختر المادة
-            </label>
+          <FormField id="subject-select" label="اختر المادة" error={form.errors.subject_id?.[0]} required>
+            {#snippet children()}
             <Select type="single" value={subjectId} onValueChange={(v: string | undefined) => (subjectId = v ?? "")}>
               <SelectTrigger class="h-9 text-xs w-full">
                 {subjectsList.find(s => String(s.id) === subjectId)?.name_ar || subjectsList.find(s => String(s.id) === subjectId)?.name || "اختر مادة دراسية..."}
@@ -210,32 +209,30 @@ async function handleSubmit() {
                 {/each}
               </SelectContent>
             </Select>
-          </div>
+            {/snippet}
+          </FormField>
         {:else}
           <!-- New Subject Form Fields -->
           <div class="flex flex-col gap-3 p-3 rounded-lg border border-dashed border-border/60 bg-muted/20">
             <span class="text-[9px] font-bold text-primary uppercase">{m.exams_subject_new_details()}</span>
             
-            <div class="flex flex-col gap-1.5">
-              <label for="new-sub-name-ar" class="text-[10px] font-medium text-muted-foreground">
-                اسم المادة (عربي) *
-              </label>
+            <FormField id="new-sub-name-ar" label="اسم المادة (عربي)" error={form.errors.subject_id?.[0]} required>
+              {#snippet children()}
               <Input id="new-sub-name-ar" bind:value={newSubjectNameAr} placeholder="مثال: الرياضيات" class="text-xs h-8" />
-            </div>
+              {/snippet}
+            </FormField>
 
-            <div class="flex flex-col gap-1.5">
-              <label for="new-sub-name-en" class="text-[10px] font-medium text-muted-foreground">
-                اسم المادة (إنجليزي)
-              </label>
+            <FormField id="new-sub-name-en" label="اسم المادة (إنجليزي)">
+              {#snippet children()}
               <Input id="new-sub-name-en" bind:value={newSubjectName} placeholder="e.g. Mathematics" class="text-xs h-8" />
-            </div>
+              {/snippet}
+            </FormField>
 
-            <div class="flex flex-col gap-1.5">
-              <label for="new-sub-code" class="text-[10px] font-medium text-muted-foreground">
-                رمز المادة *
-              </label>
+            <FormField id="new-sub-code" label="رمز المادة" required>
+              {#snippet children()}
               <Input id="new-sub-code" bind:value={newSubjectCode} placeholder="مثال: MATH" class="text-xs h-8 uppercase font-mono" />
-            </div>
+              {/snippet}
+            </FormField>
           </div>
         {/if}
 
@@ -249,26 +246,22 @@ async function handleSubmit() {
         <div class="border-t border-border/40 my-1"></div>
 
         <!-- Max Score -->
-        <div class="flex flex-col gap-1.5">
-          <label for="max-score" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
-            {m.common_exams_subjects_score()}
-          </label>
+        <FormField id="max-score" label={m.common_exams_subjects_score()} error={form.errors.max_score?.[0]} required>
+          {#snippet children()}
           <Input id="max-score" type="number" bind:value={maxScore} class="text-xs h-9 font-mono" />
-        </div>
+          {/snippet}
+        </FormField>
 
         <!-- Duration -->
-        <div class="flex flex-col gap-1.5">
-          <label for="duration" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
-            {m.common_exams_subjects_duration()}
-          </label>
+        <FormField id="duration" label={m.common_exams_subjects_duration()} error={form.errors.duration_minutes?.[0]} required>
+          {#snippet children()}
           <Input id="duration" type="number" bind:value={durationMinutes} class="text-xs h-9 font-mono" />
-        </div>
+          {/snippet}
+        </FormField>
 
         <!-- Exam Type -->
-        <div class="flex flex-col gap-1.5">
-          <label for="exam-type" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
-            {m.common_bulk_col_exam_type()}
-          </label>
+        <FormField id="exam-type" label={m.common_bulk_col_exam_type()} error={form.errors.exam_type?.[0]} required>
+          {#snippet children()}
           <Select type="single" value={examType} onValueChange={(v: string | undefined) => (examType = v ?? "written")}>
             <SelectTrigger class="h-9 text-xs w-full">
               {examTypeLabels[examType as keyof typeof examTypeLabels] || examType}
@@ -280,7 +273,8 @@ async function handleSubmit() {
               <SelectItem value="mixed">{m.exams_subject_type_mixed()}</SelectItem>
             </SelectContent>
           </Select>
-        </div>
+          {/snippet}
+        </FormField>
             </AccordionContent>
           </AccordionItem>
         </Accordion>

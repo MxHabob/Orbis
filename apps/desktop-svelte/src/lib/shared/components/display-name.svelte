@@ -13,6 +13,7 @@ import {
 } from "@orbis/ui-svelte/card";
 import { Input } from "@orbis/ui-svelte/input";
 import { Button } from "@orbis/ui-svelte/button";
+import { FormField } from "@orbis/ui-svelte";
 import { Loader2 } from "@lucide/svelte";
 
 let {
@@ -63,16 +64,20 @@ function handleSave(event: Event) {
     </CardHeader>
 
     <CardContent class="px-6 pb-4">
-      <Input
-        bind:value={tempName}
-        class="max-w-md text-xs h-9"
-        autocomplete="off"
-        autocapitalize="none"
-        autocorrect="off"
-        spellcheck="false"
-        maxlength={maxLength}
-        disabled={isSubmitting}
-      />
+      <FormField label={title} error={isInvalid ? "Invalid name" : undefined} required>
+        {#snippet children()}
+          <Input
+            bind:value={tempName}
+            class="max-w-md text-xs h-9"
+            autocomplete="off"
+            autocapitalize="none"
+            autocorrect="off"
+            spellcheck="false"
+            maxlength={maxLength}
+            disabled={isSubmitting}
+          />
+        {/snippet}
+      </FormField>
     </CardContent>
 
     <CardFooter class="px-6 py-4 bg-muted/20 border-t border-border flex items-center justify-between gap-4">
@@ -83,7 +88,7 @@ function handleSave(event: Event) {
         type="submit"
         size="sm"
         disabled={isInvalid || isSubmitting}
-        class="min-w-[80px] h-8 text-xs cursor-pointer transition-transform active:scale-95"
+        class="min-w-20 h-8 text-xs cursor-pointer transition-transform active:scale-95"
       >
         {#if isSubmitting}
           <Loader2 class="animate-spin mr-1.5 shrink-0" size={13} />

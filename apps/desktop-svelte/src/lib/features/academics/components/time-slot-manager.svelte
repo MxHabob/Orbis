@@ -5,6 +5,7 @@ import { commands } from "$lib/core/ipc";
 import { createTimeSlotInputSchema } from "@orbis/schemas";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
+import { FormField } from "@orbis/ui-svelte";
 import * as m from "$lib/paraglide/messages";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
@@ -132,10 +133,10 @@ async function saveSlot(event: SubmitEvent) {
 {#if open}
   <section class="shrink-0 rounded-xl border border-primary/30 bg-card/40 p-3 text-start">
     <form class="mt-3 grid grid-cols-1 gap-3 rounded-lg border border-primary/30 bg-background p-3 sm:grid-cols-2 lg:grid-cols-5" onsubmit={saveSlot}>
-      <Input bind:value={nameAr} placeholder={m.academics_schedule_name_ar()} required disabled={isSubmitting} />
-      <Input bind:value={name} placeholder={m.academics_schedule_name_en()} disabled={isSubmitting} />
-      <Input bind:value={startTime} type="time" required disabled={isSubmitting} />
-      <Input bind:value={endTime} type="time" required disabled={isSubmitting} />
+      <FormField label={m.academics_schedule_name_ar()} error={form.errors.name_ar?.[0]} required>{#snippet children()}<Input bind:value={nameAr} placeholder={m.academics_schedule_name_ar()} required disabled={isSubmitting} />{/snippet}</FormField>
+      <FormField label={m.academics_schedule_name_en()} error={form.errors.name?.[0]}>{#snippet children()}<Input bind:value={name} placeholder={m.academics_schedule_name_en()} disabled={isSubmitting} />{/snippet}</FormField>
+      <FormField label={m.academics_schedule_start_time()} error={form.errors.start_time?.[0]} required>{#snippet children()}<Input bind:value={startTime} type="time" required disabled={isSubmitting} />{/snippet}</FormField>
+      <FormField label={m.academics_schedule_end_time()} error={form.errors.end_time?.[0]} required>{#snippet children()}<Input bind:value={endTime} type="time" required disabled={isSubmitting} />{/snippet}</FormField>
       <div class="flex gap-2">
         <Button type="submit" class="h-9 flex-1 gap-1.5 text-xs" disabled={isSubmitting}>
           <Save size={14} />

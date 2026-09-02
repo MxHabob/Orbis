@@ -3,6 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
+import { FormField } from "@orbis/ui-svelte";
 import { SheetHeader, SheetTitle } from "@orbis/ui-svelte/sheet";
 import InputColor from "$lib/shared/components/input-color.svelte";
 import { toast } from "svelte-sonner";
@@ -69,23 +70,20 @@ async function handleSubmit(e: SubmitEvent) {
 
 	<div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5 scrollbar-hide">
 		<!-- Name (Arabic) -->
-		<div class="flex flex-col gap-2 text-start">
-			<label for="name_ar" class="text-sm font-medium text-foreground">
-				{m.academics_class_label_name_ar()}
-			</label>
+		<FormField id="name_ar" label={m.academics_class_label_name_ar()} error={fieldError("name_ar")} required>
+			{#snippet children()}
 			<InputColor
 				placeholder={m.academics_class_placeholder_name_ar()}
 				bind:value={form.values.name_ar}
 				bind:color={form.values.color}
 				required
 			/>
-		</div>
+			{/snippet}
+		</FormField>
 
 		<!-- Name (English) -->
-		<div class="flex flex-col gap-2 text-start">
-			<label for="name_en" class="text-sm font-medium text-foreground">
-				{m.academics_class_label_name_en()}
-			</label>
+		<FormField id="name_en" label={m.academics_class_label_name_en()} error={fieldError("name")}>
+			{#snippet children()}
 			<Input 
 				id="name_en"
 				type="text" 
@@ -94,15 +92,14 @@ async function handleSubmit(e: SubmitEvent) {
 				aria-invalid={Boolean(fieldError("name"))}
 				placeholder={m.common_class_placeholder_name_en()}
 			/>
-		</div>
+			{/snippet}
+		</FormField>
 
 		<!-- Two Columns Row -->
 		<div class="grid grid-cols-2 gap-4">
 			<!-- Class Code -->
-			<div class="flex flex-col gap-2 text-start">
-				<label for="code" class="text-sm font-medium text-foreground">
-					{m.academics_class_label_code()}
-				</label>
+			<FormField id="code" label={m.academics_class_label_code()} error={fieldError("code")}>
+				{#snippet children()}
 				<Input 
 					id="code"
 					type="text" 
@@ -110,13 +107,12 @@ async function handleSubmit(e: SubmitEvent) {
 					onblur={() => form.markTouched("code")}
 					placeholder={m.academics_class_placeholder_code()}
 				/>
-			</div>
+				{/snippet}
+			</FormField>
 
 			<!-- Grade Level -->
-			<div class="flex flex-col gap-2 text-start">
-				<label for="grade" class="text-sm font-medium text-foreground">
-					{m.common_class_label_grade()}
-				</label>
+			<FormField id="grade" label={m.common_class_label_grade()} error={fieldError("grade_level")}>
+				{#snippet children()}
 				<Input 
 					id="grade"
 					type="text" 
@@ -124,14 +120,13 @@ async function handleSubmit(e: SubmitEvent) {
 					onblur={() => form.markTouched("grade_level")}
 					placeholder={m.academics_class_placeholder_grade()}
 				/>
-			</div>
+				{/snippet}
+			</FormField>
 		</div>
 
 		<!-- Capacity -->
-		<div class="flex flex-col gap-2 text-start">
-			<label for="capacity" class="text-sm font-medium text-foreground">
-				{m.academics_class_label_capacity()}
-			</label>
+		<FormField id="capacity" label={m.academics_class_label_capacity()} error={fieldError("capacity")} required>
+			{#snippet children()}
 			<Input 
 				id="capacity"
 				type="number" 
@@ -140,7 +135,8 @@ async function handleSubmit(e: SubmitEvent) {
 				min="1"
 				max="100"
 			/>
-		</div>
+			{/snippet}
+		</FormField>
 	</div>
 
 	<!-- Form Actions -->

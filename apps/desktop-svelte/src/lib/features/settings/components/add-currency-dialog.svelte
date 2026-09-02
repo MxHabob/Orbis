@@ -11,6 +11,7 @@ import { toast } from "svelte-sonner";
 import { uniqueCurrencies } from "@orbis/location/currencies";
 import { ComboboxDropdown } from "@orbis/ui-svelte/combobox-dropdown";
 import { Button } from "@orbis/ui-svelte/button";
+import { FormField } from "@orbis/ui-svelte";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
 import { Switch } from "@orbis/ui-svelte/switch";
@@ -271,11 +272,8 @@ async function handleSubmit(e: Event) {
 
       <!-- Currency Code & Symbol -->
       <div class="grid grid-cols-2 gap-3">
-        <div class="flex flex-col gap-1.5">
-          <Label class="text-xs flex items-center justify-between">
-            <span>{m.common_ledger_col_code()}</span>
-            <span class="text-destructive text-[10px]">*</span>
-          </Label>
+        <FormField label={m.common_ledger_col_code()} error={form.errors.code?.[0]} required>
+          {#snippet children()}
           <Input
             bind:value={code}
             placeholder="USD"
@@ -283,40 +281,44 @@ async function handleSubmit(e: Event) {
             required
             disabled={isSubmitting}
           />
-        </div>
+          {/snippet}
+        </FormField>
 
-        <div class="flex flex-col gap-1.5">
-          <Label class="text-xs">{m.settings_currencies_col_symbol()}</Label>
+        <FormField label={m.settings_currencies_col_symbol()} error={form.errors.symbol?.[0]} required>
+          {#snippet children()}
           <Input
             bind:value={symbol}
             placeholder="$"
             class="text-xs font-mono h-8"
             disabled={isSubmitting}
           />
-        </div>
+          {/snippet}
+        </FormField>
       </div>
 
       <!-- Names Grid -->
       <div class="grid grid-cols-2 gap-3">
-        <div class="flex flex-col gap-1.5">
-          <Label class="text-xs">{m.common_cycle_form_name()}</Label>
+        <FormField label={m.common_cycle_form_name()} error={form.errors.name_ar?.[0]}>
+          {#snippet children()}
           <Input
             bind:value={nameAr}
             placeholder="دولار أمريكي"
             class="text-xs h-8"
             disabled={isSubmitting}
           />
-        </div>
+          {/snippet}
+        </FormField>
 
-        <div class="flex flex-col gap-1.5">
-          <Label class="text-xs">الاسم بالإنجليزية</Label>
+        <FormField label="الاسم بالإنجليزية" error={form.errors.name?.[0]} required>
+          {#snippet children()}
           <Input
             bind:value={name}
             placeholder="US Dollar"
             class="text-xs h-8"
             disabled={isSubmitting}
           />
-        </div>
+          {/snippet}
+        </FormField>
       </div>
 
           </AccordionContent>
@@ -328,8 +330,8 @@ async function handleSubmit(e: Event) {
 
       <!-- Position, Decimals & Rate -->
       <div class="grid grid-cols-3 gap-3">
-        <div class="flex flex-col gap-1.5">
-          <Label class="text-xs">موقع الرمز</Label>
+        <FormField label="موقع الرمز" error={form.errors.symbol_position?.[0]} required>
+          {#snippet children()}
           <Select type="single" bind:value={symbolPosition} disabled={isSubmitting}>
             <SelectTrigger class="h-8 w-full text-xs">
               {symbolPosition === "before" ? m.settings_currencies_symbol_position_before() : m.settings_currencies_symbol_position_after()}
@@ -339,10 +341,11 @@ async function handleSubmit(e: Event) {
               <SelectItem value="before">{m.settings_currencies_symbol_position_before()}</SelectItem>
             </SelectContent>
           </Select>
-        </div>
+          {/snippet}
+        </FormField>
 
-        <div class="flex flex-col gap-1.5">
-          <Label class="text-xs">الخانات العشرية</Label>
+        <FormField label="الخانات العشرية" error={form.errors.decimal_places?.[0]} required>
+          {#snippet children()}
           <Input
             type="number"
             min="0"
@@ -351,13 +354,11 @@ async function handleSubmit(e: Event) {
             class="text-xs font-mono h-8"
             disabled={isSubmitting}
           />
-        </div>
+          {/snippet}
+        </FormField>
 
-        <div class="flex flex-col gap-1.5">
-          <Label class="text-xs flex items-center gap-1">
-            <ArrowRightLeft size={12} class="text-muted-foreground" />
-            <span>{m.settings_currencies_col_rate()}</span>
-          </Label>
+        <FormField label={m.settings_currencies_col_rate()} error={form.errors.exchange_rate?.[0]} required>
+          {#snippet children()}
           <Input
             type="number"
             step="0.0001"
@@ -366,7 +367,8 @@ async function handleSubmit(e: Event) {
             disabled={isBase || isSubmitting}
             class="text-xs font-mono h-8"
           />
-        </div>
+          {/snippet}
+        </FormField>
       </div>
 
       <!-- Base Currency Switch -->

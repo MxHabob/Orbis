@@ -7,7 +7,7 @@ Renders appropriate input types: text, password, number, url, select, switch.
 import type { AppSetting } from "@orbis/app-store";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
-import { Label } from "@orbis/ui-svelte/label";
+import { FormField } from "@orbis/ui-svelte";
 import { Switch } from "@orbis/ui-svelte/switch";
 import { l } from "$lib/core/i18n";
 import { toast } from "svelte-sonner";
@@ -50,13 +50,8 @@ function handleSubmit(e: SubmitEvent) {
 
 <form class="space-y-4" onsubmit={handleSubmit}>
   {#each settings as setting (setting.id)}
-    <div class="space-y-1.5">
-      <Label for={setting.id} class="text-xs font-medium text-foreground block">
-        {l(setting.label_ar, setting.label)}
-        {#if setting.required}
-          <span class="text-red-500 ml-0.5">*</span>
-        {/if}
-      </Label>
+    <FormField id={setting.id} label={l(setting.label_ar, setting.label) || setting.id} error={undefined} required={setting.required}>
+      {#snippet children()}
 
       {#if setting.type === "switch"}
         <!-- Toggle Switch -->
@@ -107,7 +102,8 @@ function handleSubmit(e: SubmitEvent) {
           {l(setting.description_ar, setting.description)}
         </p>
       {/if}
-    </div>
+      {/snippet}
+    </FormField>
   {/each}
 
   <Button type="submit" class="w-full" size="sm">

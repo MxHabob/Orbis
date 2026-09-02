@@ -3,6 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/core/ipc";
 import { orgUnitInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { FormField } from "@orbis/ui-svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
@@ -150,10 +151,8 @@ async function handleSubmit(e: SubmitEvent) {
         <AccordionContent>
     <!-- Names (Arabic & English) -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div class="flex flex-col gap-1.5 text-start">
-        <Label for="unit_name_ar" class="text-xs font-semibold">
-          {m.common_org_unit_name_ar()} <span class="text-destructive">*</span>
-        </Label>
+      <FormField id="unit_name_ar" label={m.common_org_unit_name_ar()} error={fieldError("name_ar")} required>
+        {#snippet children()}
         <Input
           id="unit_name_ar"
           type="text"
@@ -163,12 +162,11 @@ async function handleSubmit(e: SubmitEvent) {
           disabled={form.isSubmitting}
           class="text-xs h-9"
         />
-      </div>
+        {/snippet}
+      </FormField>
 
-      <div class="flex flex-col gap-1.5 text-start">
-        <Label for="unit_name_en" class="text-xs font-semibold">
-          {m.common_org_unit_name_en()}
-        </Label>
+      <FormField id="unit_name_en" label={m.common_org_unit_name_en()} error={fieldError("name")}>
+        {#snippet children()}
         <Input
           id="unit_name_en"
           type="text"
@@ -177,14 +175,15 @@ async function handleSubmit(e: SubmitEvent) {
           disabled={form.isSubmitting}
           class="text-xs h-9"
         />
-      </div>
+        {/snippet}
+      </FormField>
     </div>
 
     <!-- Type & Parent -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <!-- Unit Type -->
-      <div class="flex flex-col gap-1.5 text-start">
-        <Label class="text-xs font-semibold">{m.common_org_unit_type()}</Label>
+      <FormField label={m.common_org_unit_type()} error={fieldError("unit_type")} required>
+        {#snippet children()}
         <Select type="single" value={form.values.unit_type} onValueChange={(v) => { if (v) form.values.unit_type = v; }}>
           <SelectTrigger class="h-9 text-xs w-full">
             {unitTypeOptions.find(o => o.value === form.values.unit_type)?.label || form.values.unit_type}
@@ -200,11 +199,12 @@ async function handleSubmit(e: SubmitEvent) {
             {/each}
           </SelectContent>
         </Select>
-      </div>
+        {/snippet}
+      </FormField>
 
       <!-- Parent Unit -->
-      <div class="flex flex-col gap-1.5 text-start">
-        <Label class="text-xs font-semibold">{m.common_org_unit_parent()}</Label>
+      <FormField label={m.common_org_unit_parent()} error={fieldError("parent_id")}>
+        {#snippet children()}
         <Select type="single" value={form.values.parent_id} onValueChange={(v) => (form.values.parent_id = v ?? "")}>
           <SelectTrigger class="h-9 text-xs w-full">
             {unitsList.find(u => String(u.id) === form.values.parent_id) ? `${unitsList.find(u => String(u.id) === form.values.parent_id).name_ar || unitsList.find(u => String(u.id) === form.values.parent_id).name}` : m.common_org_unit_root()}
@@ -218,13 +218,14 @@ async function handleSubmit(e: SubmitEvent) {
             {/each}
           </SelectContent>
         </Select>
-      </div>
+        {/snippet}
+      </FormField>
     </div>
 
     <!-- Code & Head of Unit -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div class="flex flex-col gap-1.5 text-start">
-        <Label for="unit_code" class="text-xs font-semibold">{m.common_org_unit_code()}</Label>
+      <FormField id="unit_code" label={m.common_org_unit_code()} error={fieldError("code")}>
+        {#snippet children()}
         <Input
           id="unit_code"
           type="text"
@@ -233,10 +234,11 @@ async function handleSubmit(e: SubmitEvent) {
           disabled={form.isSubmitting}
           class="text-xs font-mono h-9"
         />
-      </div>
+        {/snippet}
+      </FormField>
 
-      <div class="flex flex-col gap-1.5 text-start">
-        <Label class="text-xs font-semibold">{m.common_org_unit_head()}</Label>
+      <FormField label={m.common_org_unit_head()} error={fieldError("head_id")}>
+        {#snippet children()}
         <Select type="single" value={form.values.head_id} onValueChange={(v) => (form.values.head_id = v ?? "")}>
           <SelectTrigger class="h-9 text-xs w-full">
             {staffList.find(s => String(s.id) === headId) ? (staffList.find(s => String(s.id) === headId).name_ar || staffList.find(s => String(s.id) === headId).full_name) : m.common_org_unit_none()}
@@ -250,7 +252,8 @@ async function handleSubmit(e: SubmitEvent) {
             {/each}
           </SelectContent>
         </Select>
-      </div>
+        {/snippet}
+      </FormField>
     </div>
 
         </AccordionContent>
@@ -261,8 +264,8 @@ async function handleSubmit(e: SubmitEvent) {
         <AccordionContent>
 
     <!-- Data Isolation -->
-    <div class="flex flex-col gap-1.5 text-start border-t border-border/30 pt-3">
-      <Label class="text-xs font-semibold">{m.common_org_unit_isolation()}</Label>
+    <FormField label={m.common_org_unit_isolation()} error={fieldError("data_isolation")} required>
+      {#snippet children()}
       <Select type="single" value={form.values.data_isolation} onValueChange={(v) => { if (v) form.values.data_isolation = v; }}>
         <SelectTrigger class="h-9 text-xs w-full">
           {dataIsolation === "isolated" ? m.common_org_unit_isolated() : dataIsolation === "read_only" ? m.common_org_unit_read_only() : m.common_org_unit_shared()}
@@ -273,7 +276,8 @@ async function handleSubmit(e: SubmitEvent) {
           <SelectItem value="read_only">{m.common_org_unit_read_only()}</SelectItem>
         </SelectContent>
       </Select>
-    </div>
+      {/snippet}
+    </FormField>
 
         </AccordionContent>
       </AccordionItem>

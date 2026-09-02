@@ -5,6 +5,7 @@ import { createSubjectInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
+import { FormField } from "@orbis/ui-svelte";
 import { SheetHeader, SheetTitle } from "@orbis/ui-svelte/sheet";
 import InputColor from "$lib/shared/components/input-color.svelte";
 import { toast } from "svelte-sonner";
@@ -60,10 +61,8 @@ async function handleSubmit(e: SubmitEvent) {
 
 	<div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5 scrollbar-hide">
 		<!-- Name (Arabic) -->
-		<div class="flex flex-col gap-2 text-start">
-			<label for="sub_name_ar" class="text-sm font-medium text-foreground">
-				{m.common_subject_label_name_ar()}
-			</label>
+		<FormField id="sub_name_ar" label={m.common_subject_label_name_ar()} error={fieldError("name_ar")} required>
+			{#snippet children()}
 			<InputColor
 				placeholder={m.common_subject_placeholder_name_ar()}
 				bind:value={form.values.name_ar}
@@ -71,16 +70,12 @@ async function handleSubmit(e: SubmitEvent) {
 				onblur={() => form.markTouched("name_ar")}
 				required
 			/>
-			{#if fieldError("name_ar")}
-				<p id="sub_name_ar_error" class="text-xs text-destructive">{fieldError("name_ar")}</p>
-			{/if}
-		</div>
+			{/snippet}
+		</FormField>
 
 		<!-- Name (English) -->
-		<div class="flex flex-col gap-2 text-start">
-			<label for="sub_name_en" class="text-sm font-medium text-foreground">
-				{m.common_subject_label_name_en()}
-			</label>
+		<FormField id="sub_name_en" label={m.common_subject_label_name_en()} error={fieldError("name")}>
+			{#snippet children()}
 			<Input 
 				id="sub_name_en"
 				type="text" 
@@ -90,16 +85,12 @@ async function handleSubmit(e: SubmitEvent) {
 				aria-describedby={fieldError("name") ? "sub_name_error" : undefined}
 				placeholder={m.common_subject_placeholder_name_en()}
 			/>
-			{#if fieldError("name")}
-				<p id="sub_name_error" class="text-xs text-destructive">{fieldError("name")}</p>
-			{/if}
-		</div>
+			{/snippet}
+		</FormField>
 
 		<!-- Subject Code -->
-		<div class="flex flex-col gap-2 text-start">
-			<label for="sub_code" class="text-sm font-medium text-foreground">
-				{m.common_subject_label_code()}
-			</label>
+		<FormField id="sub_code" label={m.common_subject_label_code()} error={fieldError("code")} required>
+			{#snippet children()}
 			<Input 
 				id="sub_code"
 				type="text" 
@@ -109,10 +100,8 @@ async function handleSubmit(e: SubmitEvent) {
 				aria-describedby={fieldError("code") ? "sub_code_error" : undefined}
 				placeholder={m.common_subject_placeholder_code()}
 			/>
-			{#if fieldError("code")}
-				<p id="sub_code_error" class="text-xs text-destructive">{fieldError("code")}</p>
-			{/if}
-		</div>
+			{/snippet}
+		</FormField>
 
 		<!-- Credit Hours -->
 		<div class="flex flex-col gap-2 text-start">

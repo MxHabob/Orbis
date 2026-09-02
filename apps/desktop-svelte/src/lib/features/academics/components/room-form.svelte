@@ -3,6 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/core/ipc";
 import { createRoomInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { FormField } from "@orbis/ui-svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { SheetHeader, SheetTitle } from "@orbis/ui-svelte/sheet";
@@ -92,10 +93,8 @@ async function handleSubmit(e: SubmitEvent) {
     <!-- Names (Arabic & English) -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <!-- Arabic Name -->
-      <div class="flex flex-col gap-2">
-        <label for="room_name_ar" class="text-xs font-semibold text-foreground">
-          {m.common_rooms_label_name_ar()}
-        </label>
+      <FormField id="room_name_ar" label={m.common_rooms_label_name_ar()} error={fieldError("name_ar")}>
+        {#snippet children()}
         <Input
           id="room_name_ar"
           type="text"
@@ -104,13 +103,12 @@ async function handleSubmit(e: SubmitEvent) {
           placeholder={m.academics_room_form_placeholder()}
           disabled={form.isSubmitting}
         />
-      </div>
+        {/snippet}
+      </FormField>
 
       <!-- English Name -->
-      <div class="flex flex-col gap-2">
-        <label for="room_name_en" class="text-xs font-semibold text-foreground">
-          {m.common_rooms_label_name_en()} <span class="text-destructive">*</span>
-        </label>
+      <FormField id="room_name_en" label={m.common_rooms_label_name_en()} error={fieldError("name")} required>
+        {#snippet children()}
         <Input
           id="room_name_en"
           type="text"
@@ -122,19 +120,15 @@ async function handleSubmit(e: SubmitEvent) {
           required
           disabled={form.isSubmitting}
         />
-        {#if fieldError("name")}
-          <p id="room_name_error" class="text-xs text-destructive">{fieldError("name")}</p>
-        {/if}
-      </div>
+        {/snippet}
+      </FormField>
     </div>
 
     <!-- Type & Capacity -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <!-- Room Type -->
-      <div class="flex flex-col gap-2">
-        <label for="room_type" class="text-xs font-semibold text-foreground">
-          {m.common_rooms_type_label()}
-        </label>
+      <FormField id="room_type" label={m.common_rooms_type_label()} error={fieldError("room_type")} required>
+        {#snippet children()}
         <Select type="single" value={form.values.room_type} onValueChange={(v) => (form.values.room_type = v ?? "classroom")}>
           <SelectTrigger class="h-9 text-sm w-full">
             {roomTypeLabels[form.values.room_type as keyof typeof roomTypeLabels] || form.values.room_type}
@@ -147,13 +141,12 @@ async function handleSubmit(e: SubmitEvent) {
             <SelectItem value="other">{m.common_rooms_type_other()}</SelectItem>
           </SelectContent>
         </Select>
-      </div>
+        {/snippet}
+      </FormField>
 
       <!-- Capacity -->
-      <div class="flex flex-col gap-2">
-        <label for="room_capacity" class="text-xs font-semibold text-foreground">
-          {m.common_rooms_col_capacity()}
-        </label>
+      <FormField id="room_capacity" label={m.common_rooms_col_capacity()} error={fieldError("capacity")}>
+        {#snippet children()}
         <Input
           id="room_capacity"
           type="number"
@@ -162,16 +155,15 @@ async function handleSubmit(e: SubmitEvent) {
           placeholder={m.common_rooms_placeholder_capacity()}
           disabled={form.isSubmitting}
         />
-      </div>
+        {/snippet}
+      </FormField>
     </div>
 
     <!-- Location (Building & Floor) -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <!-- Building -->
-      <div class="flex flex-col gap-2">
-        <label for="room_building" class="text-xs font-semibold text-foreground">
-          {m.common_rooms_label_building()}
-        </label>
+      <FormField id="room_building" label={m.common_rooms_label_building()} error={fieldError("building")}>
+        {#snippet children()}
         <Input
           id="room_building"
           type="text"
@@ -180,13 +172,12 @@ async function handleSubmit(e: SubmitEvent) {
           placeholder={m.common_rooms_placeholder_building()}
           disabled={form.isSubmitting}
         />
-      </div>
+        {/snippet}
+      </FormField>
 
       <!-- Floor -->
-      <div class="flex flex-col gap-2">
-        <label for="room_floor" class="text-xs font-semibold text-foreground">
-          {m.common_rooms_label_floor()}
-        </label>
+      <FormField id="room_floor" label={m.common_rooms_label_floor()} error={fieldError("floor")}>
+        {#snippet children()}
         <Input
           id="room_floor"
           type="number"
@@ -195,7 +186,8 @@ async function handleSubmit(e: SubmitEvent) {
           placeholder={m.common_rooms_placeholder_floor()}
           disabled={form.isSubmitting}
         />
-      </div>
+        {/snippet}
+      </FormField>
     </div>
   </div>
 

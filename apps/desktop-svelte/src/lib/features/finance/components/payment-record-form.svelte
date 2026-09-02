@@ -7,6 +7,7 @@ import { toast } from "svelte-sonner";
 import { formatCurrency } from "$lib/core/i18n";
 import { paymentRecordInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { FormField } from "@orbis/ui-svelte";
 
 import { slide } from "svelte/transition";
 
@@ -183,10 +184,8 @@ async function handleSubmit(e: SubmitEvent) {
 
 <form onsubmit={handleSubmit} class="flex-1 overflow-y-auto py-6 flex flex-col gap-6 scrollbar-hide">
 	<!-- Student Select -->
-	<div class="flex flex-col gap-2 text-start">
-		<label for="pay_student" class="text-sm font-medium text-foreground">
-			{m.common_fee_label_student()}
-		</label>
+	<FormField id="pay_student" label={m.common_fee_label_student()} required>
+		{#snippet children()}
 		<select 
 			id="pay_student"
 			bind:value={selectedEnrollmentId}
@@ -201,13 +200,12 @@ async function handleSubmit(e: SubmitEvent) {
 				{/each}
 			{/if}
 		</select>
-	</div>
+		{/snippet}
+	</FormField>
 
 	<!-- Student Fees Select -->
-	<div class="flex flex-col gap-2 text-start">
-		<label for="pay_fee" class="text-sm font-medium text-foreground">
-			{m.common_payment_label_fee()}
-		</label>
+	<FormField id="pay_fee" label={m.common_payment_label_fee()} required>
+		{#snippet children()}
 		<select 
 			id="pay_fee"
 			bind:value={selectedFeeId}
@@ -226,13 +224,12 @@ async function handleSubmit(e: SubmitEvent) {
 				{/each}
 			{/if}
 		</select>
-	</div>
+		{/snippet}
+	</FormField>
 
 	<!-- Treasury Account Select -->
-	<div class="flex flex-col gap-2 text-start">
-		<label for="pay_treasury" class="text-sm font-medium text-foreground">
-			{m.common_payment_label_cash_account()}
-		</label>
+	<FormField id="pay_treasury" label={m.common_payment_label_cash_account()} required>
+		{#snippet children()}
 		<select 
 			id="pay_treasury"
 			bind:value={selectedTreasuryId}
@@ -247,13 +244,12 @@ async function handleSubmit(e: SubmitEvent) {
 				{/each}
 			{/if}
 		</select>
-	</div>
+		{/snippet}
+	</FormField>
 
 	<!-- Payment Method Select -->
-	<div class="flex flex-col gap-2 text-start">
-		<label for="pay_method" class="text-sm font-medium text-foreground">
-			{m.common_payment_label_method()}
-		</label>
+	<FormField id="pay_method" label={m.common_payment_label_method()} required>
+		{#snippet children()}
 		<select 
 			id="pay_method"
 			bind:value={paymentMethod}
@@ -264,13 +260,12 @@ async function handleSubmit(e: SubmitEvent) {
 			<option value="Bank Transfer">{m.finance_pos_bank_transfer()}</option>
 			<option value="Card">{m.finance_payment_type_card()}</option>
 		</select>
-	</div>
+		{/snippet}
+	</FormField>
 
 	<!-- Currency Selection -->
-	<div class="flex flex-col gap-2 text-start">
-		<label for="pay_currency" class="text-sm font-medium text-foreground">
-			{m.common_payment_label_currency()}
-		</label>
+	<FormField id="pay_currency" label={m.common_payment_label_currency()} required>
+		{#snippet children()}
 		<select 
 			id="pay_currency"
 			bind:value={currency}
@@ -283,13 +278,12 @@ async function handleSubmit(e: SubmitEvent) {
 				</option>
 			{/each}
 		</select>
-	</div>
+		{/snippet}
+	</FormField>
 
 	<!-- Fee Amount -->
-	<div class="flex flex-col gap-2 text-start">
-		<label for="pay_amount" class="text-sm font-medium text-foreground">
-			{m.common_payment_label_amount()}
-		</label>
+	<FormField id="pay_amount" label={m.common_payment_label_amount()} required>
+		{#snippet children()}
 		<Input 
 			id="pay_amount"
 			type="number" 
@@ -305,13 +299,12 @@ async function handleSubmit(e: SubmitEvent) {
 				 {m.common_payment_converted_yer({ amount: formatCurrency(convertedAmount, "YER"), rate: exchangeRate.toFixed(2) })}
 			</div>
 		{/if}
-	</div>
+		{/snippet}
+	</FormField>
 
 	<!-- Receipt ID -->
-	<div class="flex flex-col gap-2 text-start">
-		<label for="pay_receipt" class="text-sm font-medium text-foreground">
-			{m.common_payment_label_receipt()}
-		</label>
+	<FormField id="pay_receipt" label={m.common_payment_label_receipt()}>
+		{#snippet children()}
 		<Input 
 			id="pay_receipt"
 			type="text" 
@@ -319,13 +312,12 @@ async function handleSubmit(e: SubmitEvent) {
 			placeholder={m.common_payment_receipt_placeholder()}
 			disabled={isSubmitting}
 		/>
-	</div>
+		{/snippet}
+	</FormField>
 
 	<!-- Reference Number (transaction ID) -->
-	<div class="flex flex-col gap-2 text-start">
-		<label for="pay_ref" class="text-sm font-medium text-foreground">
-			{m.common_payment_label_ref()}
-		</label>
+	<FormField id="pay_ref" label={m.common_payment_label_ref()}>
+		{#snippet children()}
 		<Input 
 			id="pay_ref"
 			type="text" 
@@ -333,13 +325,12 @@ async function handleSubmit(e: SubmitEvent) {
 			placeholder={m.common_payment_reference_placeholder()}
 			disabled={isSubmitting}
 		/>
-	</div>
+		{/snippet}
+	</FormField>
 
 	<!-- Description -->
-	<div class="flex flex-col gap-2 text-start">
-		<label for="pay_notes" class="text-sm font-medium text-foreground">
-			{m.common_payment_label_notes()}
-		</label>
+	<FormField id="pay_notes" label={m.common_payment_label_notes()}>
+		{#snippet children()}
 		<Input 
 			id="pay_notes"
 			type="text" 
@@ -347,7 +338,8 @@ async function handleSubmit(e: SubmitEvent) {
 			placeholder={m.common_payment_placeholder_notes()}
 			disabled={isSubmitting}
 		/>
-	</div>
+		{/snippet}
+	</FormField>
 
 	<!-- Form Actions -->
 	<div class="flex gap-2 justify-end mt-auto pt-6">

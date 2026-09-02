@@ -2,7 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
-import { Label } from "@orbis/ui-svelte/label";
+import { FormField } from "@orbis/ui-svelte";
 import {
   Dialog,
   DialogContent,
@@ -130,24 +130,27 @@ function documentLabel(type: string) {
     </DialogHeader>
 
     <div class="flex flex-col gap-3 py-1">
-      <div class="flex flex-col gap-2">
-        <Label for="name-en" class="text-xs font-semibold text-muted-foreground">{m.template_label_name_en()}</Label>
+      <FormField id="name-en" label={m.template_label_name_en()} error={form.errors.name?.[0]} required>
+        {#snippet children()}
         <Input id="name-en" bind:value={name} placeholder={m.template_placeholder_name_en()} />
-      </div>
+        {/snippet}
+      </FormField>
 
-      <div class="flex flex-col gap-2">
-        <Label for="name-ar" class="text-xs font-semibold text-muted-foreground">{m.template_label_name_ar()}</Label>
+      <FormField id="name-ar" label={m.template_label_name_ar()} error={form.errors.name_ar?.[0]}>
+        {#snippet children()}
         <Input id="name-ar" bind:value={nameAr} placeholder={m.template_placeholder_name_ar()} />
-      </div>
+        {/snippet}
+      </FormField>
 
-      <div class="flex flex-col gap-2">
-        <Label for="desc" class="text-xs font-semibold text-muted-foreground">{m.template_label_desc()}</Label>
+      <FormField id="desc" label={m.template_label_desc()} error={form.errors.description?.[0]}>
+        {#snippet children()}
         <Input id="desc" bind:value={desc} placeholder={m.template_placeholder_description()} />
-      </div>
+        {/snippet}
+      </FormField>
 
       <div class="grid grid-cols-2 gap-4">
-        <div class="flex flex-col gap-2">
-          <Label class="text-xs font-semibold text-muted-foreground">{m.template_label_entity()}</Label>
+        <FormField label={m.template_label_entity()} error={form.errors.entity_type?.[0]} required>
+          {#snippet children()}
           <Select type="single" bind:value={entityType}>
             <SelectTrigger>
               {entityLabels[entityType] ?? entityType}
@@ -159,10 +162,11 @@ function documentLabel(type: string) {
             </SelectContent>
           </Select>
           <span class="text-[10px] text-muted-foreground">{m.template_available_fields({ count: String(schemaFieldCount) })}</span>
-        </div>
+          {/snippet}
+        </FormField>
 
-        <div class="flex flex-col gap-2">
-          <Label class="text-xs font-semibold text-muted-foreground">{m.template_label_doc_type()}</Label>
+        <FormField label={m.template_label_doc_type()} error={form.errors.document_type?.[0]} required>
+          {#snippet children()}
           <Select type="single" bind:value={docType}>
             <SelectTrigger>
               {documentLabel(docType)}
@@ -173,11 +177,12 @@ function documentLabel(type: string) {
               {/each}
             </SelectContent>
           </Select>
-        </div>
+          {/snippet}
+        </FormField>
       </div>
 
-      <div class="flex flex-col gap-2">
-        <Label class="text-xs font-semibold text-muted-foreground">{m.template_label_preset()}</Label>
+      <FormField label={m.template_label_preset()} error={form.errors.preset?.[0]} required>
+        {#snippet children()}
         <Select type="single" bind:value={preset}>
           <SelectTrigger>{preset === "blank" ? m.template_preset_blank() : preset === "certificate" ? m.template_preset_certificate() : preset === "transcript" ? m.template_preset_transcript() : m.template_preset_receipt()}</SelectTrigger>
           <SelectContent>
@@ -187,7 +192,8 @@ function documentLabel(type: string) {
             <SelectItem value="receipt">{m.template_preset_receipt()}</SelectItem>
           </SelectContent>
         </Select>
-      </div>
+        {/snippet}
+      </FormField>
     </div>
 
     <DialogFooter class="gap-2">

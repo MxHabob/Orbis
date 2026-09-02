@@ -2,6 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
+import { FormField } from "@orbis/ui-svelte";
 import { Label } from "@orbis/ui-svelte/label";
 import {
   Card,
@@ -47,16 +48,12 @@ let {
             {m.settings_security_current_password_desc()}
           </span>
         </div>
-        <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
-          <Input
-            id="current_pass"
-            type="password"
-            bind:value={currentPassword}
-            placeholder="••••••••"
-            required
-            disabled={isUpdating}
-            class="h-9 w-full bg-background"
-          />
+        <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
+          <FormField id="current_pass" label={m.settings_security_current_password()} required>
+            {#snippet children()}
+              <Input id="current_pass" type="password" bind:value={currentPassword} placeholder="••••••••" required disabled={isUpdating} class="h-9 w-full bg-background" />
+            {/snippet}
+          </FormField>
         </div>
       </div>
 
@@ -70,17 +67,12 @@ let {
             {m.settings_security_new_password_desc()}
           </span>
         </div>
-        <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
-          <Input
-            id="new_pass"
-            type="password"
-            bind:value={newPassword}
-            placeholder="••••••••"
-            required
-            minlength={6}
-            disabled={isUpdating}
-            class="h-9 w-full bg-background"
-          />
+        <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
+          <FormField id="new_pass" label={m.settings_security_new_password()} required>
+            {#snippet children()}
+              <Input id="new_pass" type="password" bind:value={newPassword} placeholder="••••••••" required minlength={6} disabled={isUpdating} class="h-9 w-full bg-background" />
+            {/snippet}
+          </FormField>
         </div>
       </div>
 
@@ -94,16 +86,12 @@ let {
             {m.settings_security_confirm_password_desc()}
           </span>
         </div>
-        <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
-          <Input
-            id="confirm_pass"
-            type="password"
-            bind:value={confirmPassword}
-            placeholder="••••••••"
-            required
-            disabled={isUpdating}
-            class="h-9 w-full bg-background"
-          />
+        <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
+          <FormField id="confirm_pass" label={m.settings_security_confirm_password()} required>
+            {#snippet children()}
+              <Input id="confirm_pass" type="password" bind:value={confirmPassword} placeholder="••••••••" required disabled={isUpdating} class="h-9 w-full bg-background" />
+            {/snippet}
+          </FormField>
         </div>
       </div>
 

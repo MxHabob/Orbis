@@ -31,6 +31,7 @@ import { toast } from "svelte-sonner";
 
 import { getLocale } from "$lib/paraglide/runtime";
 import { registrationSettingsSchema } from "@orbis/schemas";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { INSTITUTION_PROFILES } from "$lib/features/onboarding/templates";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
@@ -118,6 +119,26 @@ const SYSTEM_FIELDS = [
 
 let isInitialized = $state(false);
 let initialSnapshot = $state("");
+const registrationForm = new FormController({
+  initialValues: {
+    institution_type: "school",
+    student_number_pattern: "STU-{YEAR}-{SEQ}",
+    stages: ["primary", "middle", "high"],
+    active_fields: [],
+    required_fields: [],
+    prevent_duplicates: [],
+    required_documents: [],
+    student_number_prefix: "STU",
+    student_number_digits: 6,
+    requires_approval: false,
+    max_class_capacity: null as number | null,
+    allow_no_guardian: true,
+    allow_duplicate_national_id: false,
+    auto_assign_fees: true,
+    default_fee_template_ids: [],
+  },
+  schema: registrationSettingsSchema,
+});
 
 function getFormSnapshot() {
   return JSON.stringify({
@@ -292,14 +313,11 @@ function handleSubmit(e?: Event) {
     default_fee_template_ids: [],
   };
 
-  const result = registrationSettingsSchema.safeParse(registrationSettings);
-  if (!result.success) {
-    toast.error("تحقق من قواعد التسجيل والحقول المطلوبة");
-    return;
-  }
-
-  onsave({
-    registration: result.data,
+  registrationForm.values = registrationSettings;
+  registrationForm.submit(async (result) => {
+    onsave({ registration: result });
+  }).then((submitted) => {
+    if (!submitted) toast.error("تحقق من قواعد التسجيل والحقول المطلوبة");
   });
 }
 </script>

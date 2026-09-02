@@ -4,7 +4,7 @@ import { goto } from "$app/navigation";
 import { authStore } from "$lib/stores";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
-import { Label } from "@orbis/ui-svelte/label";
+import { FormField } from "@orbis/ui-svelte";
 import { Eye, EyeOff, Loader2 } from "@lucide/svelte";
 
 import { localizeHref } from "$lib/paraglide/runtime";
@@ -53,35 +53,27 @@ function handleForgotPassword() {
 	{/if}
 
 	<!-- Account Field -->
-	<div class="flex flex-col gap-2 text-start">
-		<Label for="email" class="text-xs font-semibold text-foreground select-none flex items-center gap-1.5 uppercase tracking-wider">
-			<span>{m.common_nav_account()}</span>
-			<span class="text-[9px] text-muted-foreground/60 font-semibold">{m.auth_login_required_tag()}</span>
-		</Label>
-		<Input
-			id="email"
-			type="email"
-			placeholder={m.auth_login_account_placeholder()}
-			bind:value={form.values.identifier}
-			onblur={() => form.markTouched("identifier")}
-			required
-			aria-invalid={Boolean(fieldError("identifier"))}
-			autocomplete="email"
-			disabled={form.isSubmitting}
-			class="h-10 text-xs focus-visible:ring-primary bg-background/50 border-input"
-		/>
-		{#if fieldError("identifier")}
-			<p class="text-xs text-destructive" role="alert">{fieldError("identifier")}</p>
-		{/if}
-	</div>
+	<FormField id="email" label={m.common_nav_account()} error={fieldError("identifier")} required>
+		{#snippet children()}
+			<Input
+				id="email"
+				type="email"
+				placeholder={m.auth_login_account_placeholder()}
+				bind:value={form.values.identifier}
+				onblur={() => form.markTouched("identifier")}
+				required
+				aria-invalid={Boolean(fieldError("identifier"))}
+				autocomplete="email"
+				disabled={form.isSubmitting}
+				class="h-10 text-xs focus-visible:ring-primary bg-background/50 border-input"
+			/>
+		{/snippet}
+	</FormField>
 
 	<!-- Password Field -->
-	<div class="flex flex-col gap-2 text-start">
-		<Label for="password" class="text-xs font-semibold text-foreground select-none flex items-center gap-1.5 uppercase tracking-wider">
-			<span>{m.common_user_form_password()}</span>
-			<span class="text-[9px] text-muted-foreground/60 font-semibold">{m.auth_login_required_tag()}</span>
-		</Label>
-		<div class="flex items-center gap-2">
+	<FormField id="password" label={m.common_user_form_password()} error={fieldError("password")} required>
+		{#snippet children()}
+			<div class="flex items-center gap-2">
 			<Input
 				id="password"
 				type={showPassword ? 'text' : 'password'}
@@ -108,11 +100,9 @@ function handleForgotPassword() {
 					<Eye size={15} strokeWidth={2} />
 				{/if}
 			</Button>
-		</div>
-		{#if fieldError("password")}
-			<p class="text-xs text-destructive" role="alert">{fieldError("password")}</p>
-		{/if}
-	</div>
+			</div>
+		{/snippet}
+	</FormField>
 
 	<!-- Actions Bar -->
 	<div class="flex flex-wrap items-center gap-3 sm:gap-4 pt-2">

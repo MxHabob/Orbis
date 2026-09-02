@@ -13,6 +13,7 @@ import {
 } from "@orbis/ui-svelte/sheet";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
+import { FormField } from "@orbis/ui-svelte";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui-svelte/select";
 import PeriodSelect from "$lib/features/academics/components/period-select.svelte";
 import { toast } from "svelte-sonner";
@@ -133,10 +134,8 @@ async function handleSubmit() {
     <div class="flex-1 overflow-y-auto py-4 flex flex-col gap-4 px-1">
       
       <!-- Academic Period Selector -->
-      <div class="flex flex-col gap-1.5">
-        <label for="session-period" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
-          الدورة الأكاديمية
-        </label>
+      <FormField id="session-period" label="الدورة الأكاديمية" error={form.errors.period_id?.[0]} required>
+        {#snippet children()}
         <PeriodSelect
           id="session-period"
           bind:value={periodId}
@@ -144,29 +143,26 @@ async function handleSubmit() {
           placeholder={m.exams_session_select_term()}
           class="text-sm"
         />
-      </div>
+        {/snippet}
+      </FormField>
 
       <!-- Name Arabic -->
-      <div class="flex flex-col gap-1.5">
-        <label for="session-name-ar" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
-          {m.common_exams_create_name_ar()}
-        </label>
+      <FormField id="session-name-ar" label={m.common_exams_create_name_ar()} error={form.errors.name_ar?.[0]}>
+        {#snippet children()}
         <Input id="session-name-ar" bind:value={nameAr} placeholder="مثال: امتحانات نهاية الفصل الأول" class="text-xs h-9" />
-      </div>
+        {/snippet}
+      </FormField>
 
       <!-- Name English -->
-      <div class="flex flex-col gap-1.5">
-        <label for="session-name" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
-          {m.common_exams_create_name()}
-        </label>
+      <FormField id="session-name" label={m.common_exams_create_name()} error={form.errors.name?.[0]}>
+        {#snippet children()}
         <Input id="session-name" bind:value={name} placeholder="e.g. Final Exams Semester 1" class="text-xs h-9" />
-      </div>
+        {/snippet}
+      </FormField>
 
       <!-- Session Type -->
-      <div class="flex flex-col gap-1.5">
-        <label for="session-type" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
-          {m.common_exams_create_type()}
-        </label>
+      <FormField id="session-type" label={m.common_exams_create_type()} error={form.errors.session_type?.[0]} required>
+        {#snippet children()}
         <Select type="single" value={sessionType} onValueChange={(value: string | undefined) => (sessionType = (value as typeof sessionType) ?? "final")}>
           <SelectTrigger id="session-type" class="h-9 w-full text-sm">
             {sessionType === "final"
@@ -184,22 +180,21 @@ async function handleSubmit() {
             <SelectItem value="practical">{m.exams_subject_type_practical()}</SelectItem>
           </SelectContent>
         </Select>
-      </div>
+        {/snippet}
+      </FormField>
 
       <!-- Dates Row -->
       <div class="grid grid-cols-2 gap-3">
-        <div class="flex flex-col gap-1.5">
-          <label for="start-date" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
-            {m.common_year_start_date()}
-          </label>
+        <FormField id="start-date" label={m.common_year_start_date()} error={form.errors.start_date?.[0]} required>
+          {#snippet children()}
           <Input id="start-date" type="date" bind:value={startDate} class="text-xs h-9" />
-        </div>
-        <div class="flex flex-col gap-1.5">
-          <label for="end-date" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
-            {m.common_year_end_date()}
-          </label>
+          {/snippet}
+        </FormField>
+        <FormField id="end-date" label={m.common_year_end_date()} error={form.errors.end_date?.[0]} required>
+          {#snippet children()}
           <Input id="end-date" type="date" bind:value={endDate} class="text-xs h-9" />
-        </div>
+          {/snippet}
+        </FormField>
       </div>
     </div>
 
