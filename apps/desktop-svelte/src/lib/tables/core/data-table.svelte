@@ -151,7 +151,7 @@ let hasData = $derived(source.length > 0);
 let showGrid = $derived(!loading && hasData);
 let showEmpty = $derived(!loading && !hasData);
 let showToolbar = $derived(
-  searchable || exportable || refreshable || filterable || !!actions,
+  searchable || exportable || refreshable || printable || filterable || !!actions,
 );
 let effectiveSearch = $derived(searchValue || localSearch);
 

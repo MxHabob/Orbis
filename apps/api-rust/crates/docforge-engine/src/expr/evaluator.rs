@@ -26,6 +26,16 @@ fn evaluate_tokens(tokens: &[Token], context: &Value) -> String {
 
                 // Apply formatters in order
                 for fmt in formatters {
+                    if fmt.name == "default" && is_empty_value(&current_val) {
+                        if !fmt.quoted_args.first().copied().unwrap_or(false) {
+                            if let Some(fallback_path) = fmt.args.first() {
+                            if let Some(fallback_value) = resolve_path(context, fallback_path) {
+                                current_val = fallback_value;
+                                continue;
+                            }
+                            }
+                        }
+                    }
                     current_val = format_value(&fmt.name, &current_val, &fmt.args);
                 }
 
@@ -55,6 +65,14 @@ fn evaluate_tokens(tokens: &[Token], context: &Value) -> String {
     }
 
     result
+}
+
+fn is_empty_value(value: &Value) -> bool {
+    match value {
+        Value::Null => true,
+        Value::String(value) => value.trim().is_empty(),
+        _ => false,
+    }
 }
 
 /// Resolve a dot-separated path against a JSON value.
@@ -271,6 +289,21 @@ mod tests {
     fn test_evaluate_simple_interpolation() {
         let ctx = json!({ "name": "أحمد" });
         assert_eq!(evaluate_expression("مرحبا {{name}}", &ctx), "مرحبا أحمد");
+    }
+
+    #[test]
+    fn test_default_can_resolve_fallback_path() {
+        let ctx = json!({ "student": { "nameAr": "", "fullName": "Ahmed Student" } });
+        assert_eq!(
+            evaluate_expression("{{student.nameAr | default:student.fullName}}", &ctx),
+            "Ahmed Student"
+        );
+    }
+
+    #[test]
+    fn test_default_keeps_quoted_text_literal() {
+        let ctx = json!({ "name": "", "bar": "context value" });
+        assert_eq!(evaluate_expression("{{name | default:'bar'}}", &ctx), "bar");
     }
 
     #[test]

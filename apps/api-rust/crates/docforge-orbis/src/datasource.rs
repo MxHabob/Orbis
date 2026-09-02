@@ -57,6 +57,16 @@ impl DataSource for EnrollmentDataSource {
         // 2. Fetch student user
         let user_stmt = select_by_id(db, "users", &student_id);
         let user_opt = db.query_one(user_stmt).await.map_err(|e| e.to_string())?;
+
+        let person_opt = if let Some(ref user) = user_opt {
+            let person_id = user.try_get::<String>("", "person_id").ok();
+            match person_id {
+                Some(id) => db.query_one(select_by_id(db, "persons", &id)).await.map_err(|e| e.to_string())?,
+                None => None,
+            }
+        } else {
+            None
+        };
         
         // 3. Fetch class
         let class_stmt = select_by_id(db, "classes", &class_id);
@@ -68,8 +78,8 @@ impl DataSource for EnrollmentDataSource {
             student_json = json!({
                 "id": student_id,
                 "fullName": user.try_get::<String>("", "full_name").unwrap_or_default(),
-                "nameAr": user.try_get::<Option<String>>("", "name_ar").unwrap_or_default(),
-                "nameEn": user.try_get::<Option<String>>("", "name_en").unwrap_or_default(),
+                "nameAr": person_opt.as_ref().and_then(|person| person.try_get::<Option<String>>("", "name_ar").ok()).flatten().or_else(|| user.try_get::<Option<String>>("", "name_ar").unwrap_or_default()),
+                "nameEn": person_opt.as_ref().and_then(|person| person.try_get::<Option<String>>("", "name_en").ok()).flatten(),
                 "email": user.try_get::<Option<String>>("", "email").unwrap_or_default(),
                 "phone": user.try_get::<Option<String>>("", "phone").unwrap_or_default(),
                 "nationalId": user.try_get::<Option<String>>("", "national_id").unwrap_or_default(),

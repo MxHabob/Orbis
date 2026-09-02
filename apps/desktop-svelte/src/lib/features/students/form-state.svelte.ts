@@ -390,6 +390,7 @@ export class StudentFormState {
 
         const payload = {
           name: this.personal.nameAr.trim() || this.personal.nameEn.trim() || "طالب جديد",
+          name_en: this.personal.nameEn.trim() || null,
           email: this.personal.email.trim() || null,
           phone: this.personal.phone.trim() || null,
           gender: this.personal.sex || null,

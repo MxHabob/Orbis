@@ -27,6 +27,7 @@ use svc_academic::entities::{enrollment, student_guardian, class};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RegisterStudentRequest {
     pub name: String,
+    pub name_en: Option<String>,
     pub email: Option<String>,
     pub phone: Option<String>,
     pub password: Option<String>,
@@ -228,6 +229,7 @@ pub async fn register_student(
         last_name: sea_orm::ActiveValue::Set(req.name.clone()),
         full_name: sea_orm::ActiveValue::Set(Some(req.name.clone())),
         name_ar: sea_orm::ActiveValue::Set(Some(req.name.clone())),
+        name_en: sea_orm::ActiveValue::Set(req.name_en.clone()),
         gender: sea_orm::ActiveValue::Set(req.gender.clone()),
         date_of_birth: sea_orm::ActiveValue::Set(req.birth_date.clone()),
         nationality: sea_orm::ActiveValue::Set(req.nationality.clone()),

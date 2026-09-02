@@ -202,6 +202,28 @@ function uint8ArrayToBase64(bytes: number[]): string {
   return window.btoa(binary);
 }
 
+function serializeMultiUpConfig(config: MultiUpConfig): string {
+  const sheetSize =
+    config.sheetSize === "Custom"
+      ? {
+          type: "Custom",
+          value: {
+            width_mm: config.customSheetWidthMm ?? 210,
+            height_mm: config.customSheetHeightMm ?? 297,
+          },
+        }
+      : { type: config.sheetSize };
+
+  return JSON.stringify({
+    ...config,
+    sheetSize,
+    fillOrder:
+      config.fillOrder === "rtl-ttb"
+        ? "right-to-left-top-to-bottom"
+        : "left-to-right-top-to-bottom",
+  });
+}
+
 // ── Preview Generation ───────────────────────────────────────
 
 async function generatePreview() {
@@ -209,7 +231,7 @@ async function generatePreview() {
   generatingPdf = true;
   pdfUrl = null;
   try {
-    const configJson = JSON.stringify(multiUpConfig);
+    const configJson = serializeMultiUpConfig(multiUpConfig);
     // Use first N entity IDs for preview (one sheet)
     const previewIds = entityIds.slice(0, multiUpLayout.itemsPerSheet);
     const pdfBytes = await commands.docforge.previewMultiUp(
@@ -248,7 +270,7 @@ async function handlePrintAction() {
     batchStatusText = m.common_print_multi_up_processing();
 
     try {
-      const configJson = JSON.stringify(multiUpConfig);
+      const configJson = serializeMultiUpConfig(multiUpConfig);
       const started = await commands.docforge.startMultiUpPrint(
         selectedTemplateId,
         entityIds,

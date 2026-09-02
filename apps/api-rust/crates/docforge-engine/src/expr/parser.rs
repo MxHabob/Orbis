@@ -21,6 +21,7 @@ pub enum Token {
 pub struct FormatterCall {
     pub name: String,
     pub args: Vec<String>,
+    pub quoted_args: Vec<bool>,
 }
 
 /// Parse a template string into a sequence of tokens.
@@ -96,11 +97,20 @@ fn parse_variable_expression(expr: &str) -> Token {
                     }
                 })
                 .collect();
-            formatters.push(FormatterCall { name, args });
+            let quoted_args = args_str
+                .split(':')
+                .map(|arg| {
+                    let trimmed = arg.trim();
+                    (trimmed.starts_with('\'') && trimmed.ends_with('\''))
+                        || (trimmed.starts_with('"') && trimmed.ends_with('"'))
+                })
+                .collect();
+            formatters.push(FormatterCall { name, args, quoted_args });
         } else {
             formatters.push(FormatterCall {
                 name: fmt_str.to_string(),
                 args: Vec::new(),
+                quoted_args: Vec::new(),
             });
         }
     }
@@ -224,10 +234,12 @@ mod tests {
                     FormatterCall {
                         name: "number".to_string(),
                         args: vec!["0.00".to_string()]
+                        , quoted_args: vec![true]
                     },
                     FormatterCall {
                         name: "default".to_string(),
                         args: vec!["—".to_string()]
+                        , quoted_args: vec![true]
                     }
                 ]
             }]

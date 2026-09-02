@@ -5,6 +5,7 @@ const emptyToNull = (val: unknown) =>
 
 export const studentRegistrationSchema = z.object({
   name: z.string().trim().min(1).max(150),
+  name_en: z.preprocess(emptyToNull, z.string().trim().max(150).nullable().optional()),
   email: z.preprocess(emptyToNull, z.string().trim().email().nullable().optional()),
   phone: z.preprocess(
     emptyToNull,
