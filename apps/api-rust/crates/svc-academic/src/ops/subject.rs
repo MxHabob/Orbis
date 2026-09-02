@@ -20,7 +20,6 @@ pub async fn list(ctx: &ServiceContext) -> Result<Vec<subject::Model>, AppError>
 
     Ok(subject::Entity::find()
         .filter(subject::Column::OrgId.eq(&ctx.org_id))
-        .filter(subject::Column::IsActive.eq(1))
         .order_by_asc(subject::Column::SortOrder)
         .all(&ctx.db)
         .await?)

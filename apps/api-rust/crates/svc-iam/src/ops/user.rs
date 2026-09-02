@@ -21,8 +21,7 @@ pub async fn list(
     ctx.permissions.check(&ctx.actor, Permission::UserRead).await?;
 
     let mut query = user::Entity::find()
-        .filter(user::Column::OrgId.eq(&ctx.org_id))
-        .filter(user::Column::IsDeleted.eq(0));
+        .filter(user::Column::OrgId.eq(&ctx.org_id));
 
     if let Some(f) = filter {
         let condition = f.build_condition(|field| match field {
@@ -54,7 +53,6 @@ pub async fn list_paginated(
     let limit = request.effective_limit();
     let mut query = user::Entity::find()
         .filter(user::Column::OrgId.eq(&ctx.org_id))
-        .filter(user::Column::IsDeleted.eq(0))
         .order_by_asc(user::Column::Id);
 
     // Filter provided in the request body supersedes the one in CursorRequest

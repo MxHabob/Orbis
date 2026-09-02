@@ -24,7 +24,6 @@ pub async fn list(ctx: &ServiceContext) -> Result<Vec<org_unit::Model>, AppError
 
     Ok(org_unit::Entity::find()
         .filter(org_unit::Column::OrgId.eq(&ctx.org_id))
-        .filter(org_unit::Column::IsActive.eq(1))
         .order_by_asc(org_unit::Column::SortOrder)
         .all(&ctx.db)
         .await?)
@@ -38,7 +37,6 @@ pub async fn get_descendants(
     Ok(org_unit::Entity::find()
         .filter(org_unit::Column::OrgId.eq(&ctx.org_id))
         .filter(org_unit::Column::Path.starts_with(&format!("{}/", node_path)))
-        .filter(org_unit::Column::IsActive.eq(1))
         .order_by_asc(org_unit::Column::Path)
         .all(&ctx.db)
         .await?)

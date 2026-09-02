@@ -25,7 +25,6 @@ pub async fn list(
 
     Ok(class::Entity::find()
         .filter(class::Column::OrgId.eq(&ctx.org_id))
-        .filter(class::Column::IsDeleted.eq(0))
         .order_by_asc(class::Column::Level)
         .order_by_asc(class::Column::Name)
         .all(&ctx.db)
