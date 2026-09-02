@@ -28,7 +28,6 @@ let { org, orgId, isSaving, onsave, onsaveavatar, onremove, onlanguagechange } =
 let name = $state("");
 let nameAr = $state("");
 let slug = $state("");
-let id = $state("");
 let logo = $state("");
 let primaryColor = $state("#84cc16");
 let currency = $state("YER");
@@ -54,7 +53,6 @@ $effect(() => {
     name = org.name || "";
     nameAr = org.name_ar || "";
     slug = org.slug || "";
-    id = org.id || "";
     logo = org.logo || "";
     primaryColor = org.primary_color || "#84cc16";
     currency = org.currency || "YER";
@@ -163,7 +161,7 @@ function handleSaveAvatar(e: Event) {
         {slug}
         bind:name
         bind:nameAr
-        {id}
+        organizationId={orgId}
         {isSaving}
       />
 
