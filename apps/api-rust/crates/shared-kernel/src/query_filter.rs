@@ -1,4 +1,4 @@
-use sea_orm::{Condition, sea_query::{Expr, Value as SeaValue, SimpleExpr}, ColumnTrait, EntityTrait};
+use sea_orm::{Condition, sea_query::{Expr, Value as SeaValue, SimpleExpr}};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, Serialize, Default)]

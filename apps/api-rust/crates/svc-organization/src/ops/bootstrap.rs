@@ -13,7 +13,7 @@
 use sea_orm::{ConnectionTrait, DatabaseConnection, Statement, TransactionTrait};
 use shared_kernel::errors::AppError;
 use uuid::Uuid;
-use chrono::{Utc, Datelike};
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
