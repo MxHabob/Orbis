@@ -85,7 +85,15 @@ pub async fn list_paginated(
 
 pub async fn get(ctx: &ServiceContext, user_id: &str) -> Result<user::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::UserRead).await?;
-    user::Entity::find_by_id(user_id.to_string())
+    if let Some(user) = user::Entity::find_by_id(user_id.to_string())
+        .filter(user::Column::OrgId.eq(&ctx.org_id))
+        .one(&ctx.db).await? {
+        return Ok(user);
+    }
+
+    user::Entity::find()
+        .filter(user::Column::PersonId.eq(user_id.to_string()))
+        .filter(user::Column::OrgId.eq(&ctx.org_id))
         .one(&ctx.db).await?
         .ok_or_else(|| AppError::not_found("user", user_id))
 }
@@ -233,6 +241,7 @@ pub async fn create(
 #[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct UpdateUserPayload {
     pub full_name: Option<String>,
+    pub name_en: Option<String>,
     pub email: Option<String>,
     pub phone: Option<String>,
     pub status: Option<String>,
@@ -268,6 +277,9 @@ pub async fn update(
             person_active.full_name = Set(Some(n.clone()));
             person_active.first_name = Set(n.clone());
             person_active.last_name = Set(n.clone());
+        }
+        if let Some(name_en) = req.name_en {
+            person_active.name_en = Set(Some(name_en));
         }
         person_active.updated_at = Set(Utc::now().to_rfc3339());
         person_active.update(&ctx.db).await?;

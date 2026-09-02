@@ -331,7 +331,7 @@ fn format_student_number(pattern: &str, prefix: &str, digits: usize, sequence: u
         id: sea_orm::ActiveValue::Set(enrollment_id.clone()),
         org_id: sea_orm::ActiveValue::Set(ctx.org_id.clone()),
         period_id: sea_orm::ActiveValue::Set(class_period_id.clone()),
-        student_id: sea_orm::ActiveValue::Set(student_person_id.clone()),
+        student_id: sea_orm::ActiveValue::Set(student_user_id.clone()),
         class_id: sea_orm::ActiveValue::Set(class_id.to_string()),
         student_number: sea_orm::ActiveValue::Set(student_number.clone()),
         status: sea_orm::ActiveValue::Set("active".to_string()),

@@ -535,16 +535,25 @@ impl DataSource for ReportCardDataSource {
         let enroll_opt = db.query_one(enroll_stmt).await.map_err(|e| e.to_string())?;
         let enroll = enroll_opt.ok_or_else(|| format!("Enrollment not found: {}", enrollment_id))?;
         let student_id: String = enroll.try_get("", "student_id").map_err(|e| e.to_string())?;
+        let class_id: String = enroll.try_get("", "class_id").unwrap_or_default();
 
         // Fetch student
         let user_stmt = select_by_id(db, "users", &student_id);
         let user_opt = db.query_one(user_stmt).await.map_err(|e| e.to_string())?;
+        let person_stmt = user_opt.as_ref()
+            .and_then(|user| user.try_get::<String>("", "person_id").ok())
+            .map(|person_id| select_by_id(db, "persons", &person_id));
+        let person_opt = match person_stmt {
+            Some(stmt) => db.query_one(stmt).await.map_err(|e| e.to_string())?,
+            None => None,
+        };
         let mut student_json = json!({});
         if let Some(user) = user_opt {
             student_json = json!({
                 "fullName": user.try_get::<String>("", "full_name").unwrap_or_default(),
-                "nameAr": user.try_get::<Option<String>>("", "name_ar").unwrap_or_default(),
-                "nationalId": user.try_get::<Option<String>>("", "national_id").unwrap_or_default(),
+                "nameAr": person_opt.as_ref().and_then(|person| person.try_get::<Option<String>>("", "name_ar").ok()).flatten(),
+                "nameEn": person_opt.as_ref().and_then(|person| person.try_get::<Option<String>>("", "name_en").ok()).flatten(),
+                "nationalId": person_opt.as_ref().and_then(|person| person.try_get::<Option<String>>("", "national_id").ok()).flatten(),
             });
         }
 
@@ -554,6 +563,12 @@ impl DataSource for ReportCardDataSource {
         let period_name = period_opt.as_ref()
             .and_then(|p| p.try_get::<String>("", "name").ok())
             .unwrap_or_default();
+        let class_json = db.query_one(select_by_id(db, "classes", &class_id)).await.ok().flatten()
+            .map(|class| json!({
+                "name": class.try_get::<String>("", "name").unwrap_or_default(),
+                "nameAr": class.try_get::<Option<String>>("", "name_ar").unwrap_or_default(),
+            }))
+            .unwrap_or_else(|| json!({}));
 
         // Fetch all period scores for this student in this period
         let snapshots_stmt = sea_orm::Statement::from_sql_and_values(
@@ -604,6 +619,7 @@ impl DataSource for ReportCardDataSource {
             "periodId": period_id,
             "periodName": period_name,
             "student": student_json,
+            "class": class_json,
             "subjects": subjects,
             "overallGpa": (overall_gpa * 100.0).round() / 100.0,
             "totalSubjects": subjects.len(),
@@ -622,9 +638,14 @@ impl DataSource for ReportCardDataSource {
                 "properties": {
                     "fullName": { "type": "string", "label": "الاسم الكامل / Full Name" },
                     "nameAr": { "type": "string", "label": "الاسم بالعربية / Name (AR)" },
+                    "nameEn": { "type": "string", "label": "الاسم بالإنجليزية / Name (EN)" },
                     "nationalId": { "type": "string", "label": "رقم الهوية / National ID" }
                 }
             },
+            "class": { "type": "object", "properties": {
+                "name": { "type": "string", "label": "الفصل / Class" },
+                "nameAr": { "type": "string", "label": "الفصل بالعربية / Class (AR)" }
+            }},
             "subjects": {
                 "type": "array",
                 "label": "المواد / Subjects",

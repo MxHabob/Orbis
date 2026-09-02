@@ -128,7 +128,10 @@ pub async fn enrollment_student_id<C: ConnectionTrait>(
     let row = conn
         .query_one(Statement::from_sql_and_values(
             backend,
-            "SELECT student_id FROM enrollments WHERE id = ?1",
+            "SELECT COALESCE(u.id, e.student_id) AS student_id \
+             FROM enrollments e \
+             LEFT JOIN users u ON u.id = e.student_id OR u.person_id = e.student_id \
+             WHERE e.id = ?1 LIMIT 1",
             vec![enrollment_id.into()],
         ))
         .await
