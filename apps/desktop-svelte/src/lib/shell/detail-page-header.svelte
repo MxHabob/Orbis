@@ -5,7 +5,7 @@ Provides a back button, title slot, and actions slot in a consistent layout.
 -->
 <script lang="ts">
 import { Button } from "@orbis/ui-svelte/button";
-import { ArrowRight, ArrowLeft } from "@lucide/svelte";
+import { ArrowRight, ArrowLeft, Printer } from "@lucide/svelte";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { goto } from "$app/navigation";
 import type { Snippet } from "svelte";
@@ -15,12 +15,18 @@ let {
   backLabel = "",
   children,
   actions,
+  printType,
+  printIds,
 }: {
   backHref?: string;
   backLabel?: string;
   children: Snippet;
   actions?: Snippet;
+  printType?: string;
+  printIds?: string[];
 } = $props();
+
+import { openPrintDialog } from "$lib/stores/print.svelte";
 
 function handleBack(e: MouseEvent) {
   if (backHref) {
@@ -54,9 +60,21 @@ function handleBack(e: MouseEvent) {
     {@render children()}
   </div>
 
-  {#if actions}
+  {#if actions || printType}
     <div class="flex items-center gap-2 flex-nowrap shrink-0 justify-end">
-      {@render actions()}
+      {@render actions?.()}
+      
+      {#if printType && printIds && printIds.length > 0}
+        <Button
+          variant="outline"
+          size="sm"
+          class="gap-1.5"
+          onclick={() => openPrintDialog(printType, printIds)}
+        >
+          <Printer class="h-4 w-4" />
+          <span class="hidden sm:inline">طباعة</span>
+        </Button>
+      {/if}
     </div>
   {/if}
 </div>

@@ -3,6 +3,8 @@ import { isDesktopApp } from "$lib/core/ipc";
 import TitleBar from "$lib/shell/title-bar.svelte";
 import GlobalConfirmDialog from "$lib/shared/components/global-confirm-dialog.svelte";
 import { uiStore } from "$lib/stores";
+import { printState } from "$lib/stores/print.svelte";
+import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 
 let { children } = $props();
 </script>
@@ -24,3 +26,10 @@ let { children } = $props();
 {/if}
 
 <GlobalConfirmDialog />
+
+<PrintDialog
+	bind:open={printState.isOpen}
+	entityType={printState.entityType}
+	entityIds={printState.entityIds}
+	entityLabels={printState.entityLabels}
+/>

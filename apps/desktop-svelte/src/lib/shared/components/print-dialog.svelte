@@ -179,8 +179,10 @@ $effect(() => {
 
 // ── React to template selection ──────────────────────────────
 
+let lastProcessedTemplateId = "";
 $effect(() => {
-  if (selectedTemplateId && templates.length > 0) {
+  if (selectedTemplateId && templates.length > 0 && selectedTemplateId !== lastProcessedTemplateId) {
+    lastProcessedTemplateId = selectedTemplateId;
     const tpl = templates.find((t: any) => t.id === selectedTemplateId);
     if (tpl) {
       updateConfigFromTemplate(tpl);

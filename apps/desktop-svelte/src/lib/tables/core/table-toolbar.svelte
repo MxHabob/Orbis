@@ -6,7 +6,7 @@
 <script lang="ts">
 import { Input } from "@orbis/ui-svelte/input";
 import { Button } from "@orbis/ui-svelte/button";
-import { Search, Download, RefreshCcw, X } from "@lucide/svelte";
+import { Search, Download, RefreshCcw, X, Printer } from "@lucide/svelte";
 import type { Snippet } from "svelte";
 
 interface Props {
@@ -23,6 +23,10 @@ interface Props {
   /** Enable refresh button */
   refreshable?: boolean;
   onRefresh?: () => void;
+
+  /** Enable print button */
+  printable?: boolean;
+  onPrint?: () => void;
 
   /** Row count to display */
   rowCount?: number;
@@ -46,6 +50,8 @@ let {
   onExport,
   refreshable = false,
   onRefresh,
+  printable = false,
+  onPrint,
   rowCount,
   actions,
   filters,
@@ -122,6 +128,18 @@ function handleKeydown(e: KeyboardEvent) {
         title="Refresh"
       >
         <RefreshCcw size={14} />
+      </Button>
+    {/if}
+
+    {#if printable}
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onclick={() => onPrint?.()}
+        class="text-muted-foreground hover:text-foreground"
+        title="Print"
+      >
+        <Printer size={14} />
       </Button>
     {/if}
 

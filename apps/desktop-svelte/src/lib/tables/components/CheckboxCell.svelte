@@ -6,20 +6,21 @@ interface Props {
   row: Record<string, any>;
   column: { id: string; meta?: Record<string, any> };
   api?: any;
-  onaction?: (ev: any) => void;
 }
 
-let { row, column, onaction }: Props = $props();
+let { row, column }: Props = $props();
 
 const gridAction = getContext<((ev: any) => void) | undefined>("orbis-grid-onaction");
 
 const isChecked = $derived(!!row?.__selected || !!row?.[column?.id]);
 
 function toggle() {
-  const handler = onaction || gridAction;
-  handler?.({
+  gridAction?.({
     actionId: "toggle-select",
     row,
+    rowIndex: row.__rowIndex ?? 0,
+    prop: column.id,
+    originalEvent: new MouseEvent("click"),
   });
 }
 </script>
@@ -35,7 +36,6 @@ function toggle() {
 >
   <Checkbox
     checked={isChecked}
-    onCheckedChange={() => toggle()}
     class="cursor-pointer h-4 w-4 pointer-events-none"
   />
 </div>

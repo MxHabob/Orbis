@@ -190,6 +190,8 @@ async function handleAction(event: GridActionEvent) {
       bind:searchValue={searchQuery}
       refreshable
       onRefresh={loadUsers}
+      printable={true}
+      printType="user"
       filterable
       filterFields={userFilterFields}
       bind:filterValue={activeFilter}

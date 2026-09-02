@@ -16,18 +16,13 @@ import { Input } from "@orbis/ui-svelte/input";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from "@orbis/ui-svelte/dropdown-menu";
-import {
   Search,
   Download,
   RefreshCcw,
-  SlidersHorizontal,
+  Printer,
 } from "@lucide/svelte";
 import AiEmptyState from "$lib/shared/components/ai-empty-state.svelte";
+import { openPrintDialog } from "$lib/stores/print.svelte";
 import type { Snippet } from "svelte";
 import { DefaultCell } from "../index";
 import { FilterTrigger } from "@orbis/ui-svelte/filter-builder";
@@ -87,6 +82,9 @@ interface Props {
   onExport?: () => void;
   refreshable?: boolean;
   onRefresh?: () => void;
+  printable?: boolean;
+  onPrint?: () => void;
+  printType?: string; // Entity type for bulk print
 
   /** Title displayed above the grid */
   title?: string;
@@ -128,6 +126,9 @@ let {
   onExport,
   refreshable = false,
   onRefresh,
+  printable = false,
+  onPrint,
+  printType,
   title,
   subtitle,
   skeletonRows = 8,
@@ -171,15 +172,6 @@ function handleSearchKeydown(e: KeyboardEvent) {
   }
 }
 
-function toggleColumnVisibility(colId: string) {
-  columns = columns.map((col) => {
-    const id = col.id || col.prop || "";
-    if (id === colId) {
-      return { ...col, hidden: !col.hidden };
-    }
-    return col;
-  });
-}
 </script>
 
 <div
@@ -259,6 +251,18 @@ function toggleColumnVisibility(colId: string) {
           </Button>
         {/if}
 
+        {#if printable}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onclick={() => onPrint ? onPrint() : (printType ? openPrintDialog(printType, []) : null)}
+            class="text-muted-foreground"
+            title="Print"
+          >
+            <Printer size={14} />
+          </Button>
+        {/if}
+
         {#if exportable}
           <Button
             variant="ghost"
@@ -270,36 +274,6 @@ function toggleColumnVisibility(colId: string) {
           </Button>
         {/if}
 
-        <DropdownMenu>
-          <DropdownMenuTrigger>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              class="text-muted-foreground cursor-pointer"
-              title="تخصيص الأعمدة"
-            >
-              <SlidersHorizontal size={14} />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" class="min-w-45">
-            {#each columns as col}
-              {@const id = col.id || col.prop || ""}
-              {@const header = col.header || col.name || ""}
-              {#if id && header}
-                <DropdownMenuItem
-                  class="flex items-center justify-between gap-2 text-xs cursor-pointer"
-                  closeOnSelect={false}
-                  onclick={() => toggleColumnVisibility(id)}
-                >
-                  <span>{header}</span>
-                  <span class="text-[10px] font-bold text-primary">
-                    {col.hidden ? "✕ مخفي" : "✓ ظاهر"}
-                  </span>
-                </DropdownMenuItem>
-              {/if}
-            {/each}
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
     </div>
   {/if}
