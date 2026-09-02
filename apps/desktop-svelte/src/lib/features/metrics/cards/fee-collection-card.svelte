@@ -29,7 +29,10 @@ let isLoading = $state(true);
 async function loadData() {
   isLoading = true;
   try {
-    const payments = await commands.finance.listPayments();
+    const payments = await commands.finance.listPayments(10000, 0, {
+      class_id: selectedClass === "all" ? null : selectedClass,
+      period_id: selectedTerm === "all" ? null : selectedTerm,
+    });
 
     // Setup localized short names for 12 months (Jan to Dec)
     const months: { label: string; index: number }[] = [];
