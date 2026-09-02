@@ -9,7 +9,6 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
 import { Checkbox } from "@orbis/ui-svelte/checkbox";
-import { Badge } from "@orbis/ui-svelte/badge";
 import {
   Select,
   SelectTrigger,
@@ -18,10 +17,12 @@ import {
 } from "@orbis/ui-svelte/select";
 import * as Sheet from "@orbis/ui-svelte/sheet";
 import { commands, extractErrorMessage } from "$lib/core/ipc";
-import { authStore } from "$lib/stores";
 import type { JsonRecord } from "@orbis/sdk-core";
 import { toast } from "svelte-sonner";
 import { guardianFormInputSchema } from "@orbis/schemas";
+import type { GuardianFormInput } from "@orbis/schemas";
+import { createForm } from "@tanstack/svelte-form";
+import { FormField } from "@orbis/ui-svelte";
 
 import { createUsersQuery } from "$lib/features/settings/queries";
 import { createEnrollmentsQuery } from "$lib/features/students/queries";
@@ -62,12 +63,65 @@ let isPrimary = $state(false);
 let isEmergencyContact = $state(false);
 let isPayer = $state(false);
 let paymentSharePercent = $state(0);
+let fieldErrors = $state<Record<string, string>>({});
+
+const guardianForm = createForm<
+  GuardianFormInput,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any
+>(() => ({
+  defaultValues: {
+    fullName: "",
+    phone: "",
+    email: "",
+    nationalId: "",
+    relationship: "father",
+    paymentSharePercent: 0,
+  },
+  validators: {
+    onChange: ({ value }: { value: GuardianFormInput }) => {
+      const result = guardianFormInputSchema.safeParse(value);
+      return result.success ? undefined : result.error.issues[0]?.message;
+    },
+  },
+}));
+
+function validateField(field: string) {
+  const result = guardianFormInputSchema.safeParse({
+    fullName,
+    phone,
+    email,
+    nationalId,
+    relationship,
+    paymentSharePercent,
+  });
+  const issue = result.success
+    ? undefined
+    : result.error.issues.find((item) => item.path[0] === field);
+  fieldErrors[field] = issue?.message ?? "";
+}
+
+function fieldError(field: string) {
+  return fieldErrors[field] ?? "";
+}
+
+function syncField<K extends keyof GuardianFormInput>(field: K, value: GuardianFormInput[K]) {
+  guardianForm.setFieldValue(field as any, value as any);
+  validateField(String(field));
+}
 
 $effect(() => {
   guardianUserId = editData ? String(editData.guardian_id ?? "") : "";
-  relationship = editData
-    ? String(editData.relationship ?? editData.relationship ?? "father")
-    : "father";
+  relationship = editData ? String(editData.relationship ?? "father") : "father";
   job = editData
     ? String(
         (editData as unknown as JsonRecord).occupation ??
@@ -79,12 +133,12 @@ $effect(() => {
     ? Boolean(editData.is_primary === 1 || editData.is_primary === true)
     : false;
   isEmergencyContact = editData
-    ? Boolean(editData.is_primary === 1 || editData.is_primary === true)
+    ? Boolean(editData.is_authorized_pickup === 1 || editData.is_authorized_pickup === true)
     : false;
   isPayer = editData
-    ? Boolean(editData.is_primary === 1 || editData.is_primary === true)
+    ? Boolean(editData.can_view_finance === 1 || editData.can_view_finance === true)
     : false;
-  paymentSharePercent = editData ? Number(editData.is_primary ?? 0) : 0;
+  paymentSharePercent = editData ? Number(editData.payment_share_percent ?? 0) : 0;
 
   if (editData && editData.guardian_id) {
     commands.iam
@@ -206,15 +260,21 @@ function clearSelectedUser() {
 async function handleSubmit() {
   const validation = guardianFormInputSchema.safeParse({ fullName, phone, email, nationalId, relationship, paymentSharePercent });
   if (!validation.success) {
+    fieldErrors = {};
+    for (const issue of validation.error.issues) {
+      const field = String(issue.path[0] ?? "form");
+      if (!fieldErrors[field]) fieldErrors[field] = issue.message;
+    }
     toast.error(m.common_validation_guardian_name_required());
     return;
   }
 
-  const { fullName: fullNameClean, phone: phoneClean, email: emailClean, nationalId: nationalIdClean } = validation.data;
+  fieldErrors = {};
+
+  const { fullName: fullNameClean, phone: phoneClean, email: emailClean } = validation.data;
 
   isSaving = true;
   try {
-    const createdBy = authStore.user?.id || "";
     let finalGuardianUserId = guardianUserId;
 
     if (!finalGuardianUserId) {
@@ -267,12 +327,13 @@ async function handleSubmit() {
       relationship: relationship,
       relationship_ar: relationshipAr,
       is_primary: isPrimary,
-      is_authorized_pickup: false,
+      is_authorized_pickup: isEmergencyContact,
       occupation: job.trim() || null,
       can_view_grades: true,
       can_view_attendance: true,
       can_view_behavior: true,
       can_view_finance: isPayer,
+      payment_share_percent: isPayer ? paymentSharePercent : 0,
       can_view_schedule: true,
       can_receive_notifications: true,
     };
@@ -333,23 +394,23 @@ async function handleSubmit() {
         </div>
       </div>
     {:else}
-      <Accordion type="multiple" value={["contact", "permissions"]} class="flex flex-col gap-4">
+      <Accordion type="multiple" value={["contact"]} class="flex flex-col gap-5">
         <AccordionItem value="contact" class="rounded-lg">
           <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_word_fullname()}</AccordionTrigger>
-          <AccordionContent>
+          <AccordionContent class="pt-6 space-y-6">
       <!-- User Search + Select (only show in create mode) -->
       {#if !isEditMode}
-        <div class="flex flex-col gap-1.5">
+        <div class="flex flex-col gap-4">
           <Label class="text-xs font-semibold text-muted-foreground">{m.common_form_guardian_search_label()}</Label>
           <Input
             type="text"
             placeholder={m.common_form_guardian_search_placeholder()}
             bind:value={localSearch}
             oninput={() => updateSearch(localSearch)}
-            class="h-8 text-xs mb-1"
+            class="h-10 text-sm mb-2"
           />
           
-          {#if !guardianUserId}
+          {#if !guardianUserId && searchQuery.trim().length > 0}
             <div class="rounded-lg border border-border/40 bg-card/50 overflow-hidden">
               {#if searchQuery.trim().length === 0}
                 {#if filteredUsers.length === 0}
@@ -413,85 +474,101 @@ async function handleSubmit() {
       {/if}
 
       <!-- Full Name -->
-      <div class="flex flex-col gap-1.5">
-        <Label class="text-xs font-semibold text-muted-foreground">{m.common_word_fullname()} *</Label>
-        <Input
-          type="text"
-          bind:value={fullName}
-          placeholder="الاسم الكامل لولي الأمر"
-          class="h-9 text-sm"
-        />
-      </div>
+      <FormField id="guardian-full-name" label={m.common_word_fullname()} error={fieldError("fullName")} required>
+        {#snippet children()}
+          <Input
+            id="guardian-full-name"
+            type="text"
+            bind:value={fullName}
+            placeholder="الاسم الكامل لولي الأمر"
+            class="h-10 text-sm"
+            aria-invalid={!!fieldError("fullName")}
+            oninput={() => syncField("fullName", fullName)}
+          />
+        {/snippet}
+      </FormField>
 
       <!-- Phone -->
-      <div class="flex flex-col gap-1.5">
-        <Label class="text-xs font-semibold text-muted-foreground">{m.common_word_phone()} *</Label>
-        <Input
-          type="text"
-          bind:value={phone}
-          placeholder="777000000"
-          class="h-9 text-sm font-mono text-start"
-        />
-      </div>
+      <FormField id="guardian-phone" label={m.common_word_phone()} error={fieldError("phone")} required>
+        {#snippet children()}
+          <Input
+            id="guardian-phone"
+            type="text"
+            bind:value={phone}
+            placeholder="777000000"
+            class="h-10 text-sm font-mono text-start"
+            aria-invalid={!!fieldError("phone")}
+            oninput={() => syncField("phone", phone)}
+          />
+        {/snippet}
+      </FormField>
 
       <!-- Email -->
-      <div class="flex flex-col gap-1.5">
-        <Label class="text-xs font-semibold text-muted-foreground">{m.students_guardian_email_optional()}</Label>
-        <Input
-          type="email"
-          bind:value={email}
-          placeholder="example@orbis.local"
-          class="h-9 text-sm text-start"
-        />
-      </div>
+      <FormField id="guardian-email" label={m.students_guardian_email_optional()} error={fieldError("email")}>
+        {#snippet children()}
+          <Input
+            id="guardian-email"
+            type="email"
+            bind:value={email}
+            placeholder="example@orbis.local"
+            class="h-10 text-sm text-start"
+            aria-invalid={!!fieldError("email")}
+            oninput={() => syncField("email", email)}
+          />
+        {/snippet}
+      </FormField>
 
       <!-- National ID -->
-      <div class="flex flex-col gap-1.5">
-        <Label class="text-xs font-semibold text-muted-foreground">{m.common_form_guardian_national_id_label()}</Label>
-        <Input
-          type="text"
-          bind:value={nationalId}
-          placeholder="رقم هوية ولي الأمر"
-          class="h-9 text-sm font-mono"
-        />
-      </div>
+      <FormField id="guardian-national-id" label={m.common_form_guardian_national_id_label()} error={fieldError("nationalId")}>
+        {#snippet children()}
+          <Input
+            id="guardian-national-id"
+            type="text"
+            bind:value={nationalId}
+            placeholder="رقم هوية ولي الأمر"
+            class="h-10 text-sm font-mono"
+            aria-invalid={!!fieldError("nationalId")}
+            oninput={() => syncField("nationalId", nationalId)}
+          />
+        {/snippet}
+      </FormField>
 
       <!-- Relation -->
-      <div class="flex flex-col gap-1.5">
-        <Label class="text-xs font-semibold text-muted-foreground">{m.common_bulk_col_guardian_rel()} *</Label>
-        <Select type="single" value={relationship} onValueChange={(v: string | undefined) => (relationship = v ?? "father")}>
-          <SelectTrigger class="h-9 text-sm">
-            {selectedRelation?.label ?? relationship}
-          </SelectTrigger>
-          <SelectContent>
-            {#each relationships as r (r.value)}
-              <SelectItem value={r.value}>{r.label}</SelectItem>
-            {/each}
-          </SelectContent>
-        </Select>
-      </div>
+      <FormField id="guardian-relationship" label={m.common_bulk_col_guardian_rel()} error={fieldError("relationship")} required>
+        {#snippet children()}
+          <Select type="single" value={relationship} onValueChange={(v: string | undefined) => { relationship = v ?? "father"; syncField("relationship", relationship); }}>
+            <SelectTrigger id="guardian-relationship" class="h-10 text-sm" aria-invalid={!!fieldError("relationship")}>
+              {selectedRelation?.label ?? relationship}
+            </SelectTrigger>
+            <SelectContent>
+              {#each relationships as r (r.value)}
+                <SelectItem value={r.value}>{r.label}</SelectItem>
+              {/each}
+            </SelectContent>
+          </Select>
+        {/snippet}
+      </FormField>
 
       <!-- Job -->
-      <div class="flex flex-col gap-1.5">
-        <Label class="text-xs font-semibold text-muted-foreground">{m.common_guardians_form_job()}</Label>
-        <Input
-          type="text"
-          bind:value={job}
-          placeholder="المهنة الحالية لولي الأمر"
-          class="h-9 text-sm"
-        />
-      </div>
+      <FormField id="guardian-job" label={m.common_guardians_form_job()}>
+        {#snippet children()}
+          <Input
+            id="guardian-job"
+            type="text"
+            bind:value={job}
+            placeholder="المهنة الحالية لولي الأمر"
+            class="h-10 text-sm"
+          />
+        {/snippet}
+      </FormField>
 
           </AccordionContent>
         </AccordionItem>
 
         <AccordionItem value="permissions" class="rounded-lg">
           <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.students_guardian_permissions()}</AccordionTrigger>
-          <AccordionContent>
+          <AccordionContent class="pt-6 space-y-6">
 
-      <!-- Permissions and Financial Responsibility -->
-      <div class="flex flex-col gap-3 p-4 rounded-lg bg-muted/20 border border-border/30">
-        <p class="text-xs font-bold text-foreground">{m.students_guardian_permissions()}</p>
         
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div class="flex items-center gap-2">
@@ -519,7 +596,6 @@ async function handleSubmit() {
             </div>
           </div>
         {/if}
-      </div>
           </AccordionContent>
         </AccordionItem>
       </Accordion>

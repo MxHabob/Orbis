@@ -30,6 +30,7 @@ export {
   CardContent,
 } from "./card/index.js";
 export { Checkbox } from "./checkbox/index.js";
+export { FormField, FormMessage } from "./form/index.js";
 export {
   Dialog,
   DialogTrigger,
