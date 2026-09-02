@@ -1,6 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Input } from "@orbis/ui-svelte/input";
+import { FormField } from "@orbis/ui-svelte";
 
 import { getLocale } from "$lib/paraglide/runtime";
 import { onboardingState } from "../state.svelte";
@@ -14,7 +15,7 @@ const enabledGradeLevels = $derived(
 
   <!-- Registration Fees List (Clean, borderless list of rows) -->
   <div class="w-full overflow-x-auto scrollbar-hide border border-border/60 rounded-2xl bg-card shadow-sm">
-    <div class="min-w-[640px] divide-y divide-border/60">
+    <div class="min-w-160 divide-y divide-border/60">
       <!-- Header Row -->
       <div class="grid grid-cols-[50px_2.5fr_1.5fr] gap-4 p-4 bg-muted/20 text-xs font-semibold text-muted-foreground select-none text-start items-center">
         <span>{m.common_td_text_color()}</span>
@@ -37,7 +38,9 @@ const enabledGradeLevels = $derived(
 
           <!-- Fee Input -->
           <div class="flex justify-end items-center">
-            <div class="relative w-[180px]">
+            <FormField label={m.common_onboarding_fees_label({ currency: onboardingState.profile.currency })}>
+              {#snippet children()}
+            <div class="relative w-45">
               <Input
                 type="number"
                 min="0"
@@ -46,10 +49,12 @@ const enabledGradeLevels = $derived(
                 onchange={() => onboardingState.save()}
                 class="h-8 ps-12 text-end text-sm font-bold font-mono bg-background/50 border-border/60 focus:border-primary"
               />
-              <div class="absolute inset-y-0 start-3 flex items-center pointer-events-none text-[10px] font-bold text-muted-foreground uppercase font-sans">
+              <div class="absolute inset-y-0 inset-s-3 flex items-center pointer-events-none text-[10px] font-bold text-muted-foreground uppercase font-sans">
                 {onboardingState.profile.currency}
               </div>
             </div>
+              {/snippet}
+            </FormField>
           </div>
         </div>
       {/each}

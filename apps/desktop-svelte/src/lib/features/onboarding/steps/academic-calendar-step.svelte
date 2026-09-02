@@ -5,7 +5,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Input } from "@orbis/ui-svelte/input";
-import { Label } from "@orbis/ui-svelte/label";
+import { FormField } from "@orbis/ui-svelte";
 import {
   Select,
   SelectTrigger,
@@ -73,25 +73,21 @@ async function handleLanguageChange(newLocale: string) {
       </h4>
     </div>
 
-    <div class="space-y-2 text-start">
-      <Label for="academicYearNameAr">{m.common_onboarding_academic_year_name_ar()}</Label>
-      <Input id="academicYearNameAr" bind:value={onboardingState.calendar.academicYearNameAr} placeholder="العام الدراسي 1447 هـ" />
-    </div>
+    <FormField id="academicYearNameAr" label={m.common_onboarding_academic_year_name_ar()} required>
+      {#snippet children()}<Input id="academicYearNameAr" bind:value={onboardingState.calendar.academicYearNameAr} placeholder="العام الدراسي 1447 هـ" />{/snippet}
+    </FormField>
 
-    <div class="space-y-2 text-start">
-      <Label for="academicYearName">{m.common_onboarding_academic_year_name_en()}</Label>
-      <Input id="academicYearName" bind:value={onboardingState.calendar.academicYearName} placeholder="Academic Year 1447 Hijri" class="text-left font-sans" style="direction: ltr;" />
-    </div>
+    <FormField id="academicYearName" label={m.common_onboarding_academic_year_name_en()}>
+      {#snippet children()}<Input id="academicYearName" bind:value={onboardingState.calendar.academicYearName} placeholder="Academic Year 1447 Hijri" class="text-left font-sans" style="direction: ltr;" />{/snippet}
+    </FormField>
 
-    <div class="space-y-2 text-start">
-      <Label for="startDate">{m.common_onboarding_start_date()}</Label>
-      <Input id="startDate" type="date" bind:value={onboardingState.calendar.startDate} />
-    </div>
+    <FormField id="startDate" label={m.common_onboarding_start_date()} required>
+      {#snippet children()}<Input id="startDate" type="date" bind:value={onboardingState.calendar.startDate} />{/snippet}
+    </FormField>
 
-    <div class="space-y-2 text-start">
-      <Label for="endDate">{m.common_onboarding_end_date()}</Label>
-      <Input id="endDate" type="date" bind:value={onboardingState.calendar.endDate} />
-    </div>
+    <FormField id="endDate" label={m.common_onboarding_end_date()} required>
+      {#snippet children()}<Input id="endDate" type="date" bind:value={onboardingState.calendar.endDate} />{/snippet}
+    </FormField>
   </div>
 
   <!-- Semesters Section -->
@@ -107,8 +103,8 @@ async function handleLanguageChange(newLocale: string) {
 
     <!-- Template Selection -->
     <div class="md:col-span-2 space-y-4">
-      <div class="space-y-2 text-start">
-        <Label class="text-xs font-semibold">{m.common_onboarding_template_label()}</Label>
+      <FormField label={m.common_onboarding_template_label()} required>
+        {#snippet children()}
         <Select type="single" bind:value={onboardingState.calendar.selectedTemplateId}>
           <SelectTrigger class="w-full h-9 text-xs font-sans">
             {#if onboardingState.calendar.selectedTemplateId}
@@ -128,7 +124,8 @@ async function handleLanguageChange(newLocale: string) {
             {/each}
           </SelectContent>
         </Select>
-      </div>
+        {/snippet}
+      </FormField>
 
       {#if onboardingState.calendar.selectedTemplateId}
         {@const selectedTpl = onboardingState.calendar.periodTemplates.find(t => t.id === onboardingState.calendar.selectedTemplateId)}

@@ -5,6 +5,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Input } from "@orbis/ui-svelte/input";
+import { FormField } from "@orbis/ui-svelte";
 import { Checkbox } from "@orbis/ui-svelte/checkbox";
 import { Button } from "@orbis/ui-svelte/button";
 import { Plus } from "@lucide/svelte";
@@ -35,7 +36,7 @@ function handleAddSubject() {
 
   <!-- Subjects List (Clean, borderless list of rows) -->
   <div class="w-full overflow-x-auto scrollbar-hide border border-border/60 rounded-2xl bg-card shadow-sm">
-    <div class="min-w-[768px] divide-y divide-border/60">
+    <div class="min-w-3xl divide-y divide-border/60">
       <!-- Header Row -->
       <div class="grid grid-cols-[50px_1.8fr_1fr_2fr_auto] gap-4 p-4 bg-muted/20 text-xs font-semibold text-muted-foreground select-none text-start items-center">
         <span>{m.common_td_text_color()}</span>
@@ -53,13 +54,13 @@ function handleAddSubject() {
         </div>
 
         <!-- Name Arabic -->
-        <Input bind:value={newSubNameAr} placeholder={m.common_onboarding_subjects_placeholder_ar()} class="h-8 text-xs font-bold font-sans bg-background/50 border-dashed border-border/80" />
+        <FormField label={m.common_onboarding_subject_name_ar()} required>{#snippet children()}<Input bind:value={newSubNameAr} placeholder={m.common_onboarding_subjects_placeholder_ar()} class="h-8 text-xs font-bold font-sans bg-background/50 border-dashed border-border/80" />{/snippet}</FormField>
 
         <!-- Code -->
-        <Input bind:value={newSubCode} placeholder="CHM" class="h-8 text-xs font-mono uppercase bg-background/50 border-dashed border-border/80 text-center" />
+        <FormField label={m.common_subject_label_code()} required>{#snippet children()}<Input bind:value={newSubCode} placeholder="CHM" class="h-8 text-xs font-mono uppercase bg-background/50 border-dashed border-border/80 text-center" />{/snippet}</FormField>
 
         <!-- Name English -->
-        <Input bind:value={newSubName} placeholder={m.common_onboarding_subjects_placeholder_ar()} class="h-8 text-xs font-sans bg-background/50 border-dashed border-border/80 text-left" style="direction: ltr;" />
+        <FormField label={m.common_onboarding_subjects_table_name_en()}>{#snippet children()}<Input bind:value={newSubName} placeholder={m.common_onboarding_subjects_placeholder_ar()} class="h-8 text-xs font-sans bg-background/50 border-dashed border-border/80 text-left" style="direction: ltr;" />{/snippet}</FormField>
 
         <!-- Add Button -->
         <div class="flex justify-center items-center">

@@ -24,6 +24,7 @@ import {
 } from "@orbis/ui-svelte/select";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Button } from "@orbis/ui-svelte/button";
+import { FormField } from "@orbis/ui-svelte";
 import { Input } from "@orbis/ui-svelte/input";
 import { confirmStore } from "$lib/stores";
 import { Switch } from "@orbis/ui-svelte/switch";
@@ -279,7 +280,7 @@ let baseCurrencyCode = $derived(
               <TableHead class="text-start font-bold text-xs">{m.common_word_type()}</TableHead>
               <TableHead class="text-start font-bold text-xs">{m.common_word_status()}</TableHead>
               <TableHead class="text-end font-bold text-xs">{m.settings_currencies_col_rate()}</TableHead>
-              <TableHead class="text-end font-bold text-xs w-[140px]">{m.common_je_col_actions()}</TableHead>
+              <TableHead class="text-end font-bold text-xs w-35">{m.common_je_col_actions()}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -327,7 +328,7 @@ let baseCurrencyCode = $derived(
                         type="number"
                         step="0.000001"
                         bind:value={editRateValue}
-                        class="h-8 w-[100px] text-end font-mono text-xs font-bold bg-background border border-primary/60 focus:border-primary"
+                        class="h-8 w-25 text-end font-mono text-xs font-bold bg-background border border-primary/60 focus:border-primary"
                       />
                       <span class="text-[10px] text-muted-foreground font-bold">{baseCurrencyCode}</span>
                       <Button
@@ -427,10 +428,8 @@ let baseCurrencyCode = $derived(
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Currency Code (Read Only) -->
-        <div class="flex flex-col gap-1.5">
-          <label for="edit_code" class="text-xs font-semibold text-muted-foreground">
-            {m.common_ledger_col_code()}
-          </label>
+        <FormField id="edit_code" label={m.common_ledger_col_code()} required>
+          {#snippet children()}
           <Input
             id="edit_code"
             type="text"
@@ -438,13 +437,12 @@ let baseCurrencyCode = $derived(
             disabled
             class="font-mono font-bold bg-muted/60 opacity-80"
           />
-        </div>
+          {/snippet}
+        </FormField>
 
         <!-- Symbol -->
-        <div class="flex flex-col gap-1.5">
-          <label for="edit_symbol" class="text-xs font-semibold text-muted-foreground">
-            {m.settings_currencies_label_symbol()}
-          </label>
+        <FormField id="edit_symbol" label={m.settings_currencies_label_symbol()} required>
+          {#snippet children()}
           <Input
             id="edit_symbol"
             type="text"
@@ -453,26 +451,24 @@ let baseCurrencyCode = $derived(
             required
             class="font-mono font-bold"
           />
-        </div>
+          {/snippet}
+        </FormField>
 
         <!-- Arabic Name -->
-        <div class="flex flex-col gap-1.5">
-          <label for="edit_name_ar" class="text-xs font-semibold text-muted-foreground">
-            {m.common_cycle_form_name()}
-          </label>
+        <FormField id="edit_name_ar" label={m.common_cycle_form_name()}>
+          {#snippet children()}
           <Input
             id="edit_name_ar"
             type="text"
             bind:value={editNameAr}
             placeholder={m.settings_currencies_name_ar_placeholder()}
           />
-        </div>
+          {/snippet}
+        </FormField>
 
         <!-- English Name -->
-        <div class="flex flex-col gap-1.5">
-          <label for="edit_name" class="text-xs font-semibold text-muted-foreground">
-            {m.settings_currencies_label_name_en()}
-          </label>
+        <FormField id="edit_name" label={m.settings_currencies_label_name_en()} required>
+          {#snippet children()}
           <Input
             id="edit_name"
             type="text"
@@ -480,14 +476,13 @@ let baseCurrencyCode = $derived(
             placeholder="e.g., US Dollar"
             required
           />
-        </div>
+          {/snippet}
+        </FormField>
 
         <!-- Symbol Position -->
-        <div class="flex flex-col gap-1.5">
-          <label for="edit_position" class="text-xs font-semibold text-muted-foreground">
-            {m.settings_currencies_label_position()}
-          </label>
-          <Select type="single" value={editSymbolPosition} onValueChange={(v) => (editSymbolPosition = v ?? "before")}>
+        <FormField id="edit_position" label={m.settings_currencies_label_position()} required>
+          {#snippet children()}
+          <Select type="single" value={editSymbolPosition} onValueChange={(v: string | undefined) => (editSymbolPosition = v ?? "before")}>
             <SelectTrigger class="h-9 w-full text-xs">
               {editSymbolPosition === "before" ? m.settings_currencies_position_before() : m.settings_currencies_position_after()}
             </SelectTrigger>
@@ -496,13 +491,12 @@ let baseCurrencyCode = $derived(
               <SelectItem value="after">{m.settings_currencies_position_after()}</SelectItem>
             </SelectContent>
           </Select>
-        </div>
+          {/snippet}
+        </FormField>
 
         <!-- Decimal Places -->
-        <div class="flex flex-col gap-1.5">
-          <label for="edit_decimals" class="text-xs font-semibold text-muted-foreground">
-            {m.settings_currencies_label_decimals()}
-          </label>
+        <FormField id="edit_decimals" label={m.settings_currencies_label_decimals()} required>
+          {#snippet children()}
           <Input
             id="edit_decimals"
             type="number"
@@ -511,16 +505,12 @@ let baseCurrencyCode = $derived(
             max={8}
             required
           />
-        </div>
+          {/snippet}
+        </FormField>
 
         <!-- Exchange Rate -->
-        <div class="flex flex-col gap-1.5 md:col-span-2">
-          <label for="edit_rate" class="text-xs font-semibold text-muted-foreground flex justify-between">
-            <span>{m.settings_currencies_label_rate_with_base()}</span>
-            {#if !editIsBase}
-              <span class="text-xs font-bold text-primary">1 {editCode} = {editExchangeRate} {baseCurrencyCode}</span>
-            {/if}
-          </label>
+        <FormField id="edit_rate" label={m.settings_currencies_label_rate_with_base()} required>
+          {#snippet children()}
           <Input
             id="edit_rate"
             type="number"
@@ -531,7 +521,8 @@ let baseCurrencyCode = $derived(
             required
             class="font-mono font-bold disabled:opacity-60"
           />
-        </div>
+          {/snippet}
+        </FormField>
       </div>
 
       <!-- Toggles -->

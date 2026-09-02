@@ -13,6 +13,7 @@ import {
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Label } from "@orbis/ui-svelte/label";
 import { Input } from "@orbis/ui-svelte/input";
+ import { FormField } from "@orbis/ui-svelte";
 import {
   Select,
   SelectTrigger,
@@ -132,7 +133,7 @@ function confirmRemoveBuilding() {
   <!-- Building Tabs -->
   <Tabs
     value={onboardingState.facilities.activeBuildingTab}
-    onValueChange={(v) => (onboardingState.facilities.activeBuildingTab = v ?? onboardingState.facilities.buildings[0])}
+          onValueChange={(v: string | undefined) => (onboardingState.facilities.activeBuildingTab = v ?? onboardingState.facilities.buildings[0])}
     class="w-full"
   >
     <TabsList class="w-full justify-start bg-transparent border-b border-border/60 rounded-none p-0 h-auto gap-2 overflow-x-auto flex-nowrap scrollbar-hide">
@@ -204,22 +205,13 @@ function confirmRemoveBuilding() {
             <!-- Inline Add New Room Row -->
             <div class="grid grid-cols-[1.5fr_1.5fr_1.8fr_1fr_1fr_auto] gap-3 px-3.5 py-2.5 items-center bg-primary/5 border-b border-border/40">
               <!-- Arabic Name -->
-              <Input
-                bind:value={newRoomNameAr}
-                placeholder={m.common_onboarding_rooms_placeholder_ar()}
-                class="h-8 text-xs font-sans bg-background"
-              />
+              <FormField label={m.common_onboarding_rooms_table_name_ar()} required>{#snippet children()}<Input bind:value={newRoomNameAr} placeholder={m.common_onboarding_rooms_placeholder_ar()} class="h-8 text-xs font-sans bg-background" />{/snippet}</FormField>
 
               <!-- English Name -->
-              <Input
-                bind:value={newRoomName}
-                placeholder={m.common_onboarding_rooms_placeholder_en()}
-                class="h-8 text-xs font-mono bg-background"
-                style="direction: ltr;"
-              />
+              <FormField label={m.common_onboarding_rooms_table_name_en()} required>{#snippet children()}<Input bind:value={newRoomName} placeholder={m.common_onboarding_rooms_placeholder_en()} class="h-8 text-xs font-mono bg-background" style="direction: ltr;" />{/snippet}</FormField>
 
               <!-- Room Type Select -->
-              <Select type="single" value={newRoomType} onValueChange={(v) => { if (v) newRoomType = v; }}>
+              <FormField label={m.common_onboarding_room_type()} required>{#snippet children()}<Select type="single" value={newRoomType} onValueChange={(v: string | undefined) => { if (v) newRoomType = v; }}>
                 <SelectTrigger class="h-8 text-xs bg-background">
                   {getRoomTypeLabel(newRoomType)}
                 </SelectTrigger>
@@ -228,18 +220,12 @@ function confirmRemoveBuilding() {
                     <SelectItem value={opt.value}>{opt.label()}</SelectItem>
                   {/each}
                 </SelectContent>
-              </Select>
+              </Select>{/snippet}</FormField>
 
-              <Input type="number" bind:value={newRoomFloor} min="0" step="1" placeholder={m.common_onboarding_room_floor_placeholder()} class="h-8 text-xs text-center font-mono bg-background" />
+              <FormField label={m.common_onboarding_rooms_table_floor()} required>{#snippet children()}<Input type="number" bind:value={newRoomFloor} min="0" step="1" placeholder={m.common_onboarding_room_floor_placeholder()} class="h-8 text-xs text-center font-mono bg-background" />{/snippet}</FormField>
 
               <!-- Capacity Input -->
-              <Input
-                type="number"
-                bind:value={newRoomCapacity}
-                min="1"
-                max="500"
-                class="h-8 text-xs text-center font-mono bg-background"
-              />
+              <FormField label={m.common_onboarding_room_capacity()} required>{#snippet children()}<Input type="number" bind:value={newRoomCapacity} min="1" max="500" class="h-8 text-xs text-center font-mono bg-background" />{/snippet}</FormField>
 
               <!-- Add Button -->
               <Button
@@ -272,7 +258,7 @@ function confirmRemoveBuilding() {
                 />
 
                 <!-- Room Type Select -->
-                <Select type="single" value={rm.room_type} onValueChange={(v) => { if (v) { rm.room_type = v; onboardingState.save(); } }}>
+                <Select type="single" value={rm.room_type} onValueChange={(v: string | undefined) => { if (v) { rm.room_type = v; onboardingState.save(); } }}>
                   <SelectTrigger class="h-8 text-xs">
                     {getRoomTypeLabel(rm.room_type)}
                   </SelectTrigger>

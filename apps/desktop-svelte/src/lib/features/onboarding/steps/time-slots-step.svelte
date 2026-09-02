@@ -1,6 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Input } from "@orbis/ui-svelte/input";
+import { FormField } from "@orbis/ui-svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { CalendarDays, Plus, Trash2 } from "@lucide/svelte";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -118,21 +119,21 @@ function removeSlot(slot: TimeSlot) {
     </div>
 
     <div class="grid grid-cols-1 gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3 sm:grid-cols-2 lg:grid-cols-4">
-      <Input bind:value={newSlotNameAr} placeholder={m.common_onboarding_schedule_name_ar()} class="h-9 text-xs" />
-      <Input bind:value={newSlotName} placeholder={m.common_onboarding_schedule_name_en()} class="h-9 text-xs text-left" style="direction: ltr;" />
-      <Input type="time" bind:value={newSlotStart} class="h-9 text-xs font-mono" />
-      <Input type="time" bind:value={newSlotEnd} class="h-9 text-xs font-mono" />
-      <select bind:value={newSlotType} class="h-9 rounded-md border border-border bg-background px-2 text-xs text-foreground">
+      <FormField label={m.common_onboarding_schedule_name_ar()} required>{#snippet children()}<Input bind:value={newSlotNameAr} placeholder={m.common_onboarding_schedule_name_ar()} class="h-9 text-xs" />{/snippet}</FormField>
+      <FormField label={m.common_onboarding_schedule_name_en()} required>{#snippet children()}<Input bind:value={newSlotName} placeholder={m.common_onboarding_schedule_name_en()} class="h-9 text-xs text-left" style="direction: ltr;" />{/snippet}</FormField>
+      <FormField label={m.academics_schedule_start_time()} required>{#snippet children()}<Input type="time" bind:value={newSlotStart} class="h-9 text-xs font-mono" />{/snippet}</FormField>
+      <FormField label={m.academics_schedule_end_time()} required>{#snippet children()}<Input type="time" bind:value={newSlotEnd} class="h-9 text-xs font-mono" />{/snippet}</FormField>
+      <FormField label={m.common_onboarding_lesson_type()} required>{#snippet children()}<select bind:value={newSlotType} class="h-9 rounded-md border border-border bg-background px-2 text-xs text-foreground">
         <option value="lesson">{m.common_onboarding_lesson_type()}</option>
         <option value="break">{m.common_onboarding_break_type()}</option>
-      </select>
+      </select>{/snippet}</FormField>
       {#if newSlotType === "break"}
-        <select bind:value={newBreakType} class="h-9 rounded-md border border-border bg-background px-2 text-xs text-foreground sm:col-span-2">
+        <FormField label={m.common_onboarding_break_type()} required><select bind:value={newBreakType} class="h-9 rounded-md border border-border bg-background px-2 text-xs text-foreground sm:col-span-2">
           <option value="recess">{m.common_onboarding_break_recess()}</option>
           <option value="lunch">{m.common_onboarding_break_lunch()}</option>
           <option value="prayer">{m.common_onboarding_break_prayer()}</option>
           <option value="custom">{m.common_onboarding_break_custom()}</option>
-        </select>
+        </select></FormField>
       {/if}
       <Button class="h-9 gap-1.5 text-xs sm:col-span-2 lg:col-span-1" onclick={handleAddSlot} disabled={!newSlotName.trim() || !newSlotNameAr.trim() || newSlotDuration <= 0}>
         <Plus size={14} /> {m.common_onboarding_add_period()}
