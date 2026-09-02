@@ -107,6 +107,7 @@ pub struct Spacing {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VariableDefinition {
+    #[serde(default = "default_source")]
     pub source: String,
     #[serde(rename = "type")]
     pub var_type: String,
@@ -120,6 +121,12 @@ pub struct VariableDefinition {
     pub expression: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default_value: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub required: Option<bool>,
+}
+
+fn default_source() -> String {
+    "context".to_string()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

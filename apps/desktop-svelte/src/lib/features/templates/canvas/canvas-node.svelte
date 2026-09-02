@@ -152,6 +152,8 @@ const textSegments = $derived(
     ? parseContentSegments(nodeProps.content)
     : [],
 );
+
+import { resolveDocumentUrl } from "$lib/features/documents/queries";
 </script>
 
 {#if isVisible}
@@ -236,12 +238,14 @@ const textSegments = $derived(
     {:else if node.type === "Image"}
       <!-- Image Node -->
       {#if nodeProps.src}
-        <image
-          href={nodeProps.src}
-          width={w}
-          height={h}
-          preserveAspectRatio={nodeProps.fit === "cover" ? "xMidYMid slice" : nodeProps.fit === "fill" ? "none" : "xMidYMid meet"}
-        />
+        {#await resolveDocumentUrl(nodeProps.src) then resolvedSrc}
+          <image
+            href={resolvedSrc}
+            width={w}
+            height={h}
+            preserveAspectRatio={nodeProps.fit === "cover" ? "xMidYMid slice" : nodeProps.fit === "fill" ? "none" : "xMidYMid meet"}
+          />
+        {/await}
       {:else}
         <!-- Image placeholder -->
         <rect width={w} height={h} fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4,2" rx="2" />

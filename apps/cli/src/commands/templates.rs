@@ -269,9 +269,55 @@ async fn install(path: &Path, update: bool) -> Result<()> {
         txn.execute_unprepared(&sql).await?;
     }
 
+    fn inject_image_srcs(value: &mut serde_json::Value, org_id: &str) {
+        let mut assets_map = std::collections::HashMap::new();
+        if let Some(assets) = value.get("assets").and_then(serde_json::Value::as_object) {
+            for (key, asset_val) in assets {
+                if let Some(asset_id) = asset_val.get("assetId").and_then(serde_json::Value::as_str) {
+                    assets_map.insert(key.clone(), asset_id.to_string());
+                }
+            }
+        }
+
+        fn walk(value: &mut serde_json::Value, assets_map: &std::collections::HashMap<String, String>, org_id: &str) {
+            match value {
+                serde_json::Value::Object(map) => {
+                    if map.get("type").and_then(serde_json::Value::as_str) == Some("Image") {
+                        if let Some(serde_json::Value::Object(props)) = map.get_mut("props") {
+                            if let Some(asset_ref) = props.get("assetRef").and_then(serde_json::Value::as_str) {
+                                if let Some(asset_id) = assets_map.get(asset_ref) {
+                                    let src = format!("/storage/{}/shared/templates/{}.svg", org_id, asset_id);
+                                    props.insert("src".to_string(), serde_json::Value::String(src));
+                                }
+                            }
+                        }
+                    }
+                    for child in map.values_mut() {
+                        walk(child, assets_map, org_id);
+                    }
+                }
+                serde_json::Value::Array(items) => {
+                    for item in items {
+                        walk(item, assets_map, org_id);
+                    }
+                }
+                _ => {}
+            }
+        }
+        walk(value, &assets_map, org_id);
+    }
+
     for (template, document_json) in &package.documents {
-        let document: docforge_engine::model::TemplateDocument = serde_json::from_str(document_json)
+        let mut document_value: serde_json::Value = serde_json::from_str(document_json)
+            .with_context(|| format!("Invalid JSON document: {}", template.template_id))?;
+            
+        inject_image_srcs(&mut document_value, &org_id);
+        
+        let document: docforge_engine::model::TemplateDocument = serde_json::from_value(document_value.clone())
             .with_context(|| format!("Document is not compatible with the Rust engine: {}", template.template_id))?;
+            
+        let document_json_injected = serde_json::to_string(&document_value)?;
+        
         let page_setup = &document.meta.page_setup;
         let (page_width_mm, page_height_mm) = page_setup_dimensions(page_setup);
         let page_size = page_size_name(&page_setup.size);
@@ -301,7 +347,7 @@ async fn install(path: &Path, update: bool) -> Result<()> {
                 } else {
                     txn.execute_unprepared(&format!(
                         "UPDATE templates SET document_json='{}', page_size='{}', page_width_mm={}, page_height_mm={}, orientation='{}', margins_json='{}', version=version+1, meta='{}', updated_at='{}' WHERE id='{}' AND org_id='{}'",
-                        escape(document_json), page_size, page_width_mm, page_height_mm, orientation,
+                        escape(&document_json_injected), page_size, page_width_mm, page_height_mm, orientation,
                         escape(&margins_json), escape(&metadata), now, escape(&id), escape(&org_id)
                     )).await?;
                 }
@@ -312,7 +358,7 @@ async fn install(path: &Path, update: bool) -> Result<()> {
         let id = format!("{}-{}", package.manifest.package_id, template.template_id);
         let sql = format!(
             "INSERT INTO templates (id, org_id, category_id, code, name, name_ar, document_type, entity_type, page_size, page_width_mm, page_height_mm, orientation, margins_json, document_json, status, version, created_by, is_system, is_default, is_locked, locale, meta, created_at, updated_at) VALUES ('{}','{}','{}','{}','{}',{},{},{},'{}',{},{},'{}','{}','{}','published',1,'{}',1,{}, {},'{}','{}','{}','{}')",
-            escape(&id), escape(&org_id), escape(&template.category), escape(&template.code), escape(&template.name), optional(&template.name_ar), quote(&template.document_type), quote(&template.entity_type), page_size, page_width_mm, page_height_mm, orientation, escape(&margins_json), escape(document_json), actor, bool_int(template.default), bool_int(template.locked), escape(template.locale.as_deref().unwrap_or("ar")), escape(&metadata), now, now
+            escape(&id), escape(&org_id), escape(&template.category), escape(&template.code), escape(&template.name), optional(&template.name_ar), quote(&template.document_type), quote(&template.entity_type), page_size, page_width_mm, page_height_mm, orientation, escape(&margins_json), escape(&document_json_injected), actor, bool_int(template.default), bool_int(template.locked), escape(template.locale.as_deref().unwrap_or("ar")), escape(&metadata), now, now
         );
         txn.execute_unprepared(&sql).await?;
         for asset in &package.manifest.assets {
