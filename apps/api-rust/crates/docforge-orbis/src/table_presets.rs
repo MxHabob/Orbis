@@ -8,7 +8,7 @@
 //! Each preset returns a standalone `TableProps` that can be serialized
 //! into a DocForge template's `TableNode.props`.
 
-use docforge_engine::model::nodes::{TableProps, TableColumnDef, TableStyle};
+use docforge_engine::model::nodes::{TableColumnDef, TableProps, TableStyle};
 
 /// Grades Table preset — subjects as rows, assessment results as columns.
 ///
@@ -103,14 +103,12 @@ pub fn grades_table() -> TableProps {
             row_height: Some(24.0),
             padding: Some(4.0),
         }),
-        conditional_formatting: Some(vec![
-            docforge_engine::model::nodes::ConditionalFormat {
-                field: "isPassing".into(),
-                operator: "eq".into(),
-                value: serde_json::json!(false),
-                style: serde_json::json!({ "color": "#cc0000", "fontWeight": "bold" }),
-            },
-        ]),
+        conditional_formatting: Some(vec![docforge_engine::model::nodes::ConditionalFormat {
+            field: "isPassing".into(),
+            operator: "eq".into(),
+            value: serde_json::json!(false),
+            style: serde_json::json!({ "color": "#cc0000", "fontWeight": "bold" }),
+        }]),
     }
 }
 

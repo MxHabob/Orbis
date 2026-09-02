@@ -12,7 +12,7 @@ impl SchemaRegistry {
         schema_payload: Value,
     ) -> Result<(), String> {
         let now = chrono::Utc::now().to_rfc3339();
-        
+
         let schema_str = schema_payload.to_string().replace('\'', "''");
         let org_id = org_id.replace('\'', "''");
         let provider_name = provider_name.replace('\'', "''");
@@ -37,7 +37,9 @@ impl SchemaRegistry {
                     schema_str, version + 1, now, org_id, provider_name
                 ),
             );
-            db.execute_unprepared(&update_stmt.to_string()).await.map_err(|e| e.to_string())?;
+            db.execute_unprepared(&update_stmt.to_string())
+                .await
+                .map_err(|e| e.to_string())?;
         } else {
             let id = uuid::Uuid::new_v4().to_string();
             let insert_stmt = sea_orm::Statement::from_string(
@@ -47,7 +49,9 @@ impl SchemaRegistry {
                     id, org_id, provider_name, schema_str, now, now
                 ),
             );
-            db.execute_unprepared(&insert_stmt.to_string()).await.map_err(|e| e.to_string())?;
+            db.execute_unprepared(&insert_stmt.to_string())
+                .await
+                .map_err(|e| e.to_string())?;
         }
 
         Ok(())
@@ -71,11 +75,15 @@ impl SchemaRegistry {
         );
 
         let opt = db.query_one(stmt).await.map_err(|e| e.to_string())?;
-        let record = opt.ok_or_else(|| format!("Schema not found for provider: {}", provider_name))?;
+        let record =
+            opt.ok_or_else(|| format!("Schema not found for provider: {}", provider_name))?;
 
-        let payload_str = record.try_get::<String>("", "schema_payload").map_err(|e| e.to_string())?;
-        let schema: Value = serde_json::from_str(&payload_str).unwrap_or_else(|_| serde_json::json!({}));
-        
+        let payload_str = record
+            .try_get::<String>("", "schema_payload")
+            .map_err(|e| e.to_string())?;
+        let schema: Value =
+            serde_json::from_str(&payload_str).unwrap_or_else(|_| serde_json::json!({}));
+
         Ok(schema)
     }
 }

@@ -34,7 +34,6 @@ const MIGRATION_STATEMENTS: &[&str] = &[
         created_at   TEXT NOT NULL,
         updated_at   TEXT NOT NULL
     )"#,
-
     // ── Templates (Master Record) ───────────────────────────────
     r#"CREATE TABLE IF NOT EXISTS templates (
         id                 TEXT PRIMARY KEY,
@@ -70,10 +69,8 @@ const MIGRATION_STATEMENTS: &[&str] = &[
         created_at         TEXT NOT NULL,
         updated_at         TEXT NOT NULL
     )"#,
-
     r#"CREATE INDEX IF NOT EXISTS idx_templates_org_status ON templates(org_id, status, document_type)"#,
     r#"CREATE UNIQUE INDEX IF NOT EXISTS idx_templates_org_code ON templates(org_id, code) WHERE code IS NOT NULL"#,
-
     // ── Template Versions (Immutable Snapshots) ──────────────────
     r#"CREATE TABLE IF NOT EXISTS template_versions (
         id              TEXT PRIMARY KEY,
@@ -90,7 +87,6 @@ const MIGRATION_STATEMENTS: &[&str] = &[
         created_at      TEXT NOT NULL,
         UNIQUE(template_id, version)
     )"#,
-
     // ── Template Components (Reusable Blocks) ────────────────────
     r#"CREATE TABLE IF NOT EXISTS template_components (
         id              TEXT PRIMARY KEY,
@@ -108,7 +104,6 @@ const MIGRATION_STATEMENTS: &[&str] = &[
         created_at      TEXT NOT NULL,
         updated_at      TEXT NOT NULL
     )"#,
-
     // ── Template Assets ──────────────────────────────────────────
     r#"CREATE TABLE IF NOT EXISTS template_assets (
         id               TEXT PRIMARY KEY,
@@ -132,9 +127,7 @@ const MIGRATION_STATEMENTS: &[&str] = &[
         created_at       TEXT NOT NULL,
         updated_at       TEXT NOT NULL
     )"#,
-
     r#"CREATE INDEX IF NOT EXISTS idx_assets_org_type ON template_assets(org_id, asset_type)"#,
-
     // ── Template ↔ Asset Usage ───────────────────────────────────
     r#"CREATE TABLE IF NOT EXISTS template_asset_usages (
         id           TEXT PRIMARY KEY,
@@ -143,7 +136,6 @@ const MIGRATION_STATEMENTS: &[&str] = &[
         usage_context TEXT,
         created_at   TEXT NOT NULL
     )"#,
-
     // ── Template ↔ Component Usage ───────────────────────────────
     r#"CREATE TABLE IF NOT EXISTS template_component_usages (
         id              TEXT PRIMARY KEY,
@@ -153,7 +145,6 @@ const MIGRATION_STATEMENTS: &[&str] = &[
         overrides_json  TEXT,
         created_at      TEXT NOT NULL
     )"#,
-
     // ── Data Source Definitions ──────────────────────────────────
     r#"CREATE TABLE IF NOT EXISTS template_data_sources (
         id               TEXT PRIMARY KEY,
@@ -168,7 +159,6 @@ const MIGRATION_STATEMENTS: &[&str] = &[
         created_at       TEXT NOT NULL,
         updated_at       TEXT NOT NULL
     )"#,
-
     // ── Generation Jobs ──────────────────────────────────────────
     r#"CREATE TABLE IF NOT EXISTS template_generation_jobs (
         id                TEXT PRIMARY KEY,
@@ -203,10 +193,8 @@ const MIGRATION_STATEMENTS: &[&str] = &[
         created_by        TEXT NOT NULL,
         created_at        TEXT NOT NULL
     )"#,
-
     r#"CREATE INDEX IF NOT EXISTS idx_jobs_org_status ON template_generation_jobs(org_id, status)"#,
     r#"CREATE INDEX IF NOT EXISTS idx_jobs_active ON template_generation_jobs(status) WHERE status IN ('pending', 'processing', 'paused')"#,
-
     // ── Generation Job Items ─────────────────────────────────────
     r#"CREATE TABLE IF NOT EXISTS template_generation_items (
         id              TEXT PRIMARY KEY,
@@ -220,10 +208,8 @@ const MIGRATION_STATEMENTS: &[&str] = &[
         rendered_at     TEXT,
         duration_ms     INTEGER
     )"#,
-
     r#"CREATE INDEX IF NOT EXISTS idx_items_job_status ON template_generation_items(job_id, status)"#,
     r#"CREATE INDEX IF NOT EXISTS idx_items_job_seq ON template_generation_items(job_id, sequence)"#,
-
     // ── Template Audit Trail ─────────────────────────────────────
     r#"CREATE TABLE IF NOT EXISTS template_audit_log (
         id           TEXT PRIMARY KEY,
@@ -238,7 +224,6 @@ const MIGRATION_STATEMENTS: &[&str] = &[
         metadata     TEXT,
         created_at   TEXT NOT NULL
     )"#,
-
     r#"CREATE INDEX IF NOT EXISTS idx_tpl_audit_org ON template_audit_log(org_id, created_at)"#,
     r#"CREATE INDEX IF NOT EXISTS idx_tpl_audit_template ON template_audit_log(template_id, created_at)"#,
 ];

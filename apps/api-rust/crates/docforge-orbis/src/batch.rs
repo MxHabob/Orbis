@@ -4,22 +4,19 @@
 // with pause, resume, cancel, and progress tracking.
 // ═══════════════════════════════════════════════════════════════
 
-use std::sync::{Arc, Mutex};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::collections::HashMap;
-use serde::{Serialize, Deserialize};
-use tokio::sync::mpsc;
 use sea_orm::DatabaseConnection;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
+use tokio::sync::mpsc;
 
+use crate::{datasource::DataSourceRegistry, template_service::TemplateService};
 use docforge_engine::{
-    render::font_cache::{FontCache, FontStyleKind},
-    render::pdf_renderer::{render_to_pdf, PdfRenderConfig},
     layout::LayoutEngine,
     model::TemplateDocument,
-};
-use crate::{
-    datasource::DataSourceRegistry,
-    template_service::TemplateService,
+    render::font_cache::{FontCache, FontStyleKind},
+    render::pdf_renderer::{render_to_pdf, PdfRenderConfig},
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -170,8 +167,12 @@ pub async fn start_batch_print_job(
     let mut fonts = FontCache::new("Rubik");
     let font_path = "C:\\Windows\\Fonts\\tahoma.ttf";
     if std::path::Path::new(font_path).exists() {
-        fonts.load_font_file("Tahoma", 400, FontStyleKind::Normal, font_path).ok();
-        fonts.load_font_file("Rubik", 400, FontStyleKind::Normal, font_path).ok();
+        fonts
+            .load_font_file("Tahoma", 400, FontStyleKind::Normal, font_path)
+            .ok();
+        fonts
+            .load_font_file("Rubik", 400, FontStyleKind::Normal, font_path)
+            .ok();
     }
     let fonts = Arc::new(fonts);
 
@@ -191,7 +192,12 @@ pub async fn start_batch_print_job(
         let data_source = match registry.get(&*entity_type_arc) {
             Some(ds) => ds,
             None => {
-                let _ = tx.send((0, Err(format!("Unsupported entity type: {}", entity_type_arc)))).await;
+                let _ = tx
+                    .send((
+                        0,
+                        Err(format!("Unsupported entity type: {}", entity_type_arc)),
+                    ))
+                    .await;
                 return;
             }
         };
@@ -221,7 +227,15 @@ pub async fn start_batch_print_job(
                 let context = match ds.resolve(&db_conn, &entity_id).await {
                     Ok(ctx) => ctx,
                     Err(e) => {
-                        let _ = tx_clone.send((index, Err(format!("Failed to resolve context for {}: {}", entity_id, e)))).await;
+                        let _ = tx_clone
+                            .send((
+                                index,
+                                Err(format!(
+                                    "Failed to resolve context for {}: {}",
+                                    entity_id, e
+                                )),
+                            ))
+                            .await;
                         return;
                     }
                 };
@@ -231,7 +245,9 @@ pub async fn start_batch_print_job(
                 let layout_result = match engine.layout(&doc_ref, &context) {
                     Ok(l) => l,
                     Err(e) => {
-                        let _ = tx_clone.send((index, Err(format!("Layout failed: {:?}", e)))).await;
+                        let _ = tx_clone
+                            .send((index, Err(format!("Layout failed: {:?}", e))))
+                            .await;
                         return;
                     }
                 };
@@ -242,7 +258,9 @@ pub async fn start_batch_print_job(
                         let _ = tx_clone.send((index, Ok(pdf.bytes))).await;
                     }
                     Err(e) => {
-                        let _ = tx_clone.send((index, Err(format!("PDF Render failed: {:?}", e)))).await;
+                        let _ = tx_clone
+                            .send((index, Err(format!("PDF Render failed: {:?}", e))))
+                            .await;
                     }
                 }
             });
@@ -255,8 +273,11 @@ pub async fn start_batch_print_job(
         processed += 1;
         match result {
             Ok(bytes) => {
-                let file_path = std::path::Path::new(&output_dir)
-                    .join(format!("doc_{:05}_{}.pdf", index + 1, job_id));
+                let file_path = std::path::Path::new(&output_dir).join(format!(
+                    "doc_{:05}_{}.pdf",
+                    index + 1,
+                    job_id
+                ));
                 if let Err(e) = std::fs::write(&file_path, bytes) {
                     eprintln!("Failed to write pdf file: {}", e);
                 }

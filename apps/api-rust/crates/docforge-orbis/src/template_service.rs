@@ -4,10 +4,10 @@
 // versioning, publishing, and archiving.
 // ═══════════════════════════════════════════════════════════════
 
+use chrono::Utc;
 use sea_orm::{ConnectionTrait, FromQueryResult};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use chrono::Utc;
 
 /// Template status in the lifecycle
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -168,21 +168,33 @@ impl TemplateService {
                 '{}', {},
                 '{}', '{}'
             )",
-            id, org_id,
-            opt_sql(&req.category_id), opt_sql(&req.code),
-            sql_escape(&req.name), opt_sql(&req.name_ar),
-            opt_sql(&req.description), opt_sql(&req.description_ar),
-            sql_escape(&req.document_type), sql_escape(&req.entity_type),
+            id,
+            org_id,
+            opt_sql(&req.category_id),
+            opt_sql(&req.code),
+            sql_escape(&req.name),
+            opt_sql(&req.name_ar),
+            opt_sql(&req.description),
+            opt_sql(&req.description_ar),
+            sql_escape(&req.document_type),
+            sql_escape(&req.entity_type),
             req.page_size.as_deref().unwrap_or("A4"),
-            req.page_width_mm.map(|v| v.to_string()).unwrap_or_else(|| "NULL".to_string()),
-            req.page_height_mm.map(|v| v.to_string()).unwrap_or_else(|| "NULL".to_string()),
+            req.page_width_mm
+                .map(|v| v.to_string())
+                .unwrap_or_else(|| "NULL".to_string()),
+            req.page_height_mm
+                .map(|v| v.to_string())
+                .unwrap_or_else(|| "NULL".to_string()),
             req.orientation.as_deref().unwrap_or("portrait"),
-            req.margins_json.as_deref().unwrap_or(r#"{"top":10,"bottom":10,"left":10,"right":10}"#),
+            req.margins_json
+                .as_deref()
+                .unwrap_or(r#"{"top":10,"bottom":10,"left":10,"right":10}"#),
             sql_escape(&document_json),
             user_id,
             req.locale.as_deref().unwrap_or("ar"),
             opt_sql(&req.tags),
-            now, now,
+            now,
+            now,
         ))
         .await
         .map_err(|e| e.to_string())?;
@@ -197,15 +209,14 @@ impl TemplateService {
         org_id: &str,
         template_id: &str,
     ) -> Result<TemplateRecord, String> {
-        let result = TemplateRecord::find_by_statement(
-            sea_orm::Statement::from_string(
-                sea_orm::DatabaseBackend::Sqlite,
-                format!(
-                    "SELECT * FROM templates WHERE id = '{}' AND org_id = '{}' AND deleted_at IS NULL",
-                    sql_escape(template_id), sql_escape(org_id)
-                ),
+        let result = TemplateRecord::find_by_statement(sea_orm::Statement::from_string(
+            sea_orm::DatabaseBackend::Sqlite,
+            format!(
+                "SELECT * FROM templates WHERE id = '{}' AND org_id = '{}' AND deleted_at IS NULL",
+                sql_escape(template_id),
+                sql_escape(org_id)
             ),
-        )
+        ))
         .one(db)
         .await
         .map_err(|e| e.to_string())?;
@@ -238,15 +249,17 @@ impl TemplateService {
         if let Some(ref search) = params.search {
             sql.push_str(&format!(
                 " AND (name LIKE '%{}%' OR name_ar LIKE '%{}%')",
-                sql_escape(search), sql_escape(search)
+                sql_escape(search),
+                sql_escape(search)
             ));
         }
 
         sql.push_str(" ORDER BY updated_at DESC");
 
-        TemplateRecord::find_by_statement(
-            sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Sqlite, sql),
-        )
+        TemplateRecord::find_by_statement(sea_orm::Statement::from_string(
+            sea_orm::DatabaseBackend::Sqlite,
+            sql,
+        ))
         .all(db)
         .await
         .map_err(|e| e.to_string())
@@ -266,19 +279,45 @@ impl TemplateService {
 
         // Build SET clauses
         let mut sets = Vec::new();
-        if let Some(ref name) = req.name { sets.push(format!("name = '{}'", sql_escape(name))); }
-        if let Some(ref name_ar) = req.name_ar { sets.push(format!("name_ar = '{}'", sql_escape(name_ar))); }
-        if let Some(ref desc) = req.description { sets.push(format!("description = '{}'", sql_escape(desc))); }
-        if let Some(ref desc_ar) = req.description_ar { sets.push(format!("description_ar = '{}'", sql_escape(desc_ar))); }
-        if let Some(ref cat) = req.category_id { sets.push(format!("category_id = '{}'", sql_escape(cat))); }
-        if let Some(ref code) = req.code { sets.push(format!("code = '{}'", sql_escape(code))); }
-        if let Some(ref ps) = req.page_size { sets.push(format!("page_size = '{}'", sql_escape(ps))); }
-        if let Some(w) = req.page_width_mm { sets.push(format!("page_width_mm = {}", w)); }
-        if let Some(h) = req.page_height_mm { sets.push(format!("page_height_mm = {}", h)); }
-        if let Some(ref o) = req.orientation { sets.push(format!("orientation = '{}'", sql_escape(o))); }
-        if let Some(ref m) = req.margins_json { sets.push(format!("margins_json = '{}'", sql_escape(m))); }
-        if let Some(ref locale) = req.locale { sets.push(format!("locale = '{}'", sql_escape(locale))); }
-        if let Some(ref tags) = req.tags { sets.push(format!("tags = '{}'", sql_escape(tags))); }
+        if let Some(ref name) = req.name {
+            sets.push(format!("name = '{}'", sql_escape(name)));
+        }
+        if let Some(ref name_ar) = req.name_ar {
+            sets.push(format!("name_ar = '{}'", sql_escape(name_ar)));
+        }
+        if let Some(ref desc) = req.description {
+            sets.push(format!("description = '{}'", sql_escape(desc)));
+        }
+        if let Some(ref desc_ar) = req.description_ar {
+            sets.push(format!("description_ar = '{}'", sql_escape(desc_ar)));
+        }
+        if let Some(ref cat) = req.category_id {
+            sets.push(format!("category_id = '{}'", sql_escape(cat)));
+        }
+        if let Some(ref code) = req.code {
+            sets.push(format!("code = '{}'", sql_escape(code)));
+        }
+        if let Some(ref ps) = req.page_size {
+            sets.push(format!("page_size = '{}'", sql_escape(ps)));
+        }
+        if let Some(w) = req.page_width_mm {
+            sets.push(format!("page_width_mm = {}", w));
+        }
+        if let Some(h) = req.page_height_mm {
+            sets.push(format!("page_height_mm = {}", h));
+        }
+        if let Some(ref o) = req.orientation {
+            sets.push(format!("orientation = '{}'", sql_escape(o)));
+        }
+        if let Some(ref m) = req.margins_json {
+            sets.push(format!("margins_json = '{}'", sql_escape(m)));
+        }
+        if let Some(ref locale) = req.locale {
+            sets.push(format!("locale = '{}'", sql_escape(locale)));
+        }
+        if let Some(ref tags) = req.tags {
+            sets.push(format!("tags = '{}'", sql_escape(tags)));
+        }
 
         // If document changed, bump version and create snapshot
         let _new_version = if let Some(ref doc_json) = req.document_json {
@@ -287,7 +326,8 @@ impl TemplateService {
             sets.push(format!("version = {}", v));
 
             // Create version snapshot
-            Self::create_version_snapshot(db, template_id, v, doc_json, &existing, user_id, &now).await?;
+            Self::create_version_snapshot(db, template_id, v, doc_json, &existing, user_id, &now)
+                .await?;
 
             v
         } else {
@@ -307,7 +347,9 @@ impl TemplateService {
             sql_escape(org_id),
         );
 
-        db.execute_unprepared(&sql).await.map_err(|e| e.to_string())?;
+        db.execute_unprepared(&sql)
+            .await
+            .map_err(|e| e.to_string())?;
 
         Self::get_by_id(db, org_id, template_id).await
     }
@@ -321,9 +363,13 @@ impl TemplateService {
         let now = Utc::now().to_rfc3339();
         let sql = format!(
             "UPDATE templates SET deleted_at = '{}' WHERE id = '{}' AND org_id = '{}'",
-            now, sql_escape(template_id), sql_escape(org_id)
+            now,
+            sql_escape(template_id),
+            sql_escape(org_id)
         );
-        db.execute_unprepared(&sql).await.map_err(|e| e.to_string())?;
+        db.execute_unprepared(&sql)
+            .await
+            .map_err(|e| e.to_string())?;
         Ok(())
     }
 
@@ -343,7 +389,9 @@ impl TemplateService {
             sql_escape(template_id), sql_escape(org_id)
         );
 
-        db.execute_unprepared(&sql).await.map_err(|e| e.to_string())?;
+        db.execute_unprepared(&sql)
+            .await
+            .map_err(|e| e.to_string())?;
 
         Self::get_by_id(db, org_id, template_id).await
     }
@@ -359,7 +407,9 @@ impl TemplateService {
             "UPDATE templates SET status = 'archived', updated_at = '{}' WHERE id = '{}' AND org_id = '{}'",
             now, sql_escape(template_id), sql_escape(org_id)
         );
-        db.execute_unprepared(&sql).await.map_err(|e| e.to_string())?;
+        db.execute_unprepared(&sql)
+            .await
+            .map_err(|e| e.to_string())?;
         Self::get_by_id(db, org_id, template_id).await
     }
 
@@ -374,7 +424,9 @@ impl TemplateService {
             "UPDATE templates SET status = 'draft', updated_at = '{}' WHERE id = '{}' AND org_id = '{}'",
             now, sql_escape(template_id), sql_escape(org_id)
         );
-        db.execute_unprepared(&sql).await.map_err(|e| e.to_string())?;
+        db.execute_unprepared(&sql)
+            .await
+            .map_err(|e| e.to_string())?;
         Self::get_by_id(db, org_id, template_id).await
     }
 
@@ -388,9 +440,10 @@ impl TemplateService {
             sql_escape(template_id)
         );
 
-        TemplateVersionRecord::find_by_statement(
-            sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Sqlite, sql),
-        )
+        TemplateVersionRecord::find_by_statement(sea_orm::Statement::from_string(
+            sea_orm::DatabaseBackend::Sqlite,
+            sql,
+        ))
         .all(db)
         .await
         .map_err(|e| e.to_string())
@@ -407,12 +460,14 @@ impl TemplateService {
         // Find the target version
         let sql = format!(
             "SELECT * FROM template_versions WHERE template_id = '{}' AND version = {}",
-            sql_escape(template_id), target_version
+            sql_escape(template_id),
+            target_version
         );
 
-        let version = TemplateVersionRecord::find_by_statement(
-            sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Sqlite, sql),
-        )
+        let version = TemplateVersionRecord::find_by_statement(sea_orm::Statement::from_string(
+            sea_orm::DatabaseBackend::Sqlite,
+            sql,
+        ))
         .one(db)
         .await
         .map_err(|e| e.to_string())?
@@ -420,18 +475,25 @@ impl TemplateService {
 
         // Update the template with the old document, creating a new version
         Self::update(
-            db, org_id, template_id, user_id,
+            db,
+            org_id,
+            template_id,
+            user_id,
             UpdateTemplateRequest {
-                name: None, name_ar: None,
-                description: None, description_ar: None,
-                category_id: None, code: None,
+                name: None,
+                name_ar: None,
+                description: None,
+                description_ar: None,
+                category_id: None,
+                code: None,
                 page_size: version.page_size,
                 page_width_mm: version.page_width_mm,
                 page_height_mm: version.page_height_mm,
                 orientation: version.orientation,
                 margins_json: version.margins_json,
                 document_json: Some(version.document_json),
-                locale: None, tags: None,
+                locale: None,
+                tags: None,
             },
         )
         .await
@@ -464,7 +526,9 @@ impl TemplateService {
             now,
         );
 
-        db.execute_unprepared(&sql).await.map_err(|e| e.to_string())?;
+        db.execute_unprepared(&sql)
+            .await
+            .map_err(|e| e.to_string())?;
         Ok(())
     }
 }

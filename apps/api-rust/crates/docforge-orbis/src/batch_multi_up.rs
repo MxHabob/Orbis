@@ -11,23 +11,23 @@
 // - ZipBundle:       ZIP containing individual PDFs + optional PNGs
 // ═══════════════════════════════════════════════════════════════
 
-use std::sync::Arc;
-use std::sync::atomic::Ordering;
-use serde::{Serialize, Deserialize};
 use sea_orm::DatabaseConnection;
+use serde::{Deserialize, Serialize};
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
 
-use docforge_engine::{
-    render::font_cache::{FontCache, FontStyleKind},
-    render::pdf_renderer::{render_to_pdf, PdfRenderConfig},
-    render::types::{LayoutResult, PageLayout},
-    layout::LayoutEngine,
-    layout::multi_up::MultiUpConfig,
-    model::TemplateDocument,
-};
 use crate::{
     batch::{BatchJob, BatchJobStatus},
     datasource::DataSourceRegistry,
     template_service::TemplateService,
+};
+use docforge_engine::{
+    layout::multi_up::MultiUpConfig,
+    layout::LayoutEngine,
+    model::TemplateDocument,
+    render::font_cache::{FontCache, FontStyleKind},
+    render::pdf_renderer::{render_to_pdf, PdfRenderConfig},
+    render::types::{LayoutResult, PageLayout},
 };
 
 // ── Output Modes ────────────────────────────────────────────
@@ -121,12 +121,14 @@ pub async fn preview_multi_up(
     let preview_ids = &entity_ids[..preview_count];
 
     let registry = DataSourceRegistry::new();
-    let data_source = registry.get(&template.entity_type)
+    let data_source = registry
+        .get(&template.entity_type)
         .ok_or_else(|| format!("Unsupported entity type: {}", template.entity_type))?;
 
     let mut contexts = Vec::with_capacity(preview_count);
     for entity_id in preview_ids {
-        let ctx = data_source.resolve(db, entity_id)
+        let ctx = data_source
+            .resolve(db, entity_id)
             .await
             .map_err(|e| format!("Failed to resolve {}: {}", entity_id, e))?;
         contexts.push(ctx);
@@ -134,7 +136,8 @@ pub async fn preview_multi_up(
 
     // 4. Layout multi-up (first sheet only)
     let engine = LayoutEngine::new(&fonts);
-    let layout_result = engine.layout_multi_up(&doc, &contexts, multi_up_config)
+    let layout_result = engine
+        .layout_multi_up(&doc, &contexts, multi_up_config)
         .map_err(|e| format!("Layout failed: {:?}", e))?;
 
     // 5. Render to PDF
@@ -163,10 +166,15 @@ pub async fn start_multi_up_print_job(
     let job_id = config.job_id.clone();
 
     // 1. Load template
-    let template = match TemplateService::get_by_id(&db, &config.org_id, &config.template_id).await {
+    let template = match TemplateService::get_by_id(&db, &config.org_id, &config.template_id).await
+    {
         Ok(t) => t,
         Err(e) => {
-            update_job_failed(&job, &progress_callback, format!("Failed to load template: {}", e));
+            update_job_failed(
+                &job,
+                &progress_callback,
+                format!("Failed to load template: {}", e),
+            );
             return;
         }
     };
@@ -174,14 +182,22 @@ pub async fn start_multi_up_print_job(
     let doc: TemplateDocument = match serde_json::from_str(&template.document_json) {
         Ok(d) => d,
         Err(e) => {
-            update_job_failed(&job, &progress_callback, format!("Failed to parse template: {}", e));
+            update_job_failed(
+                &job,
+                &progress_callback,
+                format!("Failed to parse template: {}", e),
+            );
             return;
         }
     };
 
     // 2. Create output directory
     if let Err(e) = std::fs::create_dir_all(&config.output_path) {
-        update_job_failed(&job, &progress_callback, format!("Failed to create output dir: {}", e));
+        update_job_failed(
+            &job,
+            &progress_callback,
+            format!("Failed to create output dir: {}", e),
+        );
         return;
     }
 
@@ -199,7 +215,11 @@ pub async fn start_multi_up_print_job(
     let data_source = match registry.get(&template.entity_type) {
         Some(ds) => ds,
         None => {
-            update_job_failed(&job, &progress_callback, format!("Unsupported entity type: {}", template.entity_type));
+            update_job_failed(
+                &job,
+                &progress_callback,
+                format!("Unsupported entity type: {}", template.entity_type),
+            );
             return;
         }
     };
@@ -214,7 +234,9 @@ pub async fn start_multi_up_print_job(
         // Check pause
         while job.pause_flag.load(Ordering::SeqCst) {
             tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-            if job.cancel_flag.load(Ordering::SeqCst) { return; }
+            if job.cancel_flag.load(Ordering::SeqCst) {
+                return;
+            }
         }
 
         match data_source.resolve(&db, entity_id).await {
@@ -246,7 +268,9 @@ pub async fn start_multi_up_print_job(
 
     for (sheet_idx, chunk) in chunks.iter().enumerate() {
         // Check cancel
-        if job.cancel_flag.load(Ordering::SeqCst) { return; }
+        if job.cancel_flag.load(Ordering::SeqCst) {
+            return;
+        }
 
         // Layout this sheet
         let layout_result = match engine.layout_multi_up(&doc, chunk, &config.multi_up) {
@@ -293,7 +317,10 @@ pub async fn start_multi_up_print_job(
                 }
                 output_files.push(file_path.to_string_lossy().to_string());
             }
-            MultiUpOutputMode::ZipBundle { include_png: _, png_dpi: _ } => {
+            MultiUpOutputMode::ZipBundle {
+                include_png: _,
+                png_dpi: _,
+            } => {
                 // ZIP bundling: save individual PDFs, then zip at the end
                 let pdf = match render_to_pdf(&layout_result, &fonts, &PdfRenderConfig::default()) {
                     Ok(p) => p,
@@ -328,13 +355,21 @@ pub async fn start_multi_up_print_job(
                 let file_name = format!("multi_up_{}.pdf", job_id);
                 let file_path = std::path::Path::new(&config.output_path).join(&file_name);
                 if let Err(e) = std::fs::write(&file_path, &pdf.bytes) {
-                    update_job_failed(&job, &progress_callback, format!("Failed to write merged PDF: {}", e));
+                    update_job_failed(
+                        &job,
+                        &progress_callback,
+                        format!("Failed to write merged PDF: {}", e),
+                    );
                     return;
                 }
                 output_files.push(file_path.to_string_lossy().to_string());
             }
             Err(e) => {
-                update_job_failed(&job, &progress_callback, format!("Merged PDF render failed: {:?}", e));
+                update_job_failed(
+                    &job,
+                    &progress_callback,
+                    format!("Merged PDF render failed: {:?}", e),
+                );
                 return;
             }
         }
@@ -371,10 +406,14 @@ fn load_system_fonts(fonts: &mut FontCache) {
 
     for (path, family, weight) in font_paths {
         if std::path::Path::new(path).exists() {
-            fonts.load_font_file(family, weight, FontStyleKind::Normal, path).ok();
+            fonts
+                .load_font_file(family, weight, FontStyleKind::Normal, path)
+                .ok();
             // Also register as default Rubik fallback
             if weight == 400 {
-                fonts.load_font_file("Rubik", 400, FontStyleKind::Normal, path).ok();
+                fonts
+                    .load_font_file("Rubik", 400, FontStyleKind::Normal, path)
+                    .ok();
             }
         }
     }

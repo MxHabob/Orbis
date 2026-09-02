@@ -3,9 +3,9 @@
 // Writes operational logs for template changes to template_audit_log
 // ═══════════════════════════════════════════════════════════════
 
+use chrono::Utc;
 use sea_orm::ConnectionTrait;
 use uuid::Uuid;
-use chrono::Utc;
 
 /// Log an action performed on a template or component.
 pub async fn log_template_action(
@@ -38,7 +38,9 @@ pub async fn log_template_action(
         now
     );
 
-    db.execute_unprepared(&sql).await.map_err(|e| e.to_string())?;
+    db.execute_unprepared(&sql)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
 

@@ -13,7 +13,7 @@ impl ProjectionStore {
         data: Value,
     ) -> Result<(), String> {
         let now = chrono::Utc::now().to_rfc3339();
-        
+
         let data_str = data.to_string().replace('\'', "''");
         let org_id = org_id.replace('\'', "''");
         let entity_type = entity_type.replace('\'', "''");
@@ -39,7 +39,9 @@ impl ProjectionStore {
                     data_str, version + 1, now, org_id, entity_type, entity_id
                 ),
             );
-            db.execute_unprepared(&update_stmt.to_string()).await.map_err(|e| e.to_string())?;
+            db.execute_unprepared(&update_stmt.to_string())
+                .await
+                .map_err(|e| e.to_string())?;
         } else {
             let id = uuid::Uuid::new_v4().to_string();
             let insert_stmt = sea_orm::Statement::from_string(
@@ -49,7 +51,9 @@ impl ProjectionStore {
                     id, org_id, entity_type, entity_id, data_str, now, now
                 ),
             );
-            db.execute_unprepared(&insert_stmt.to_string()).await.map_err(|e| e.to_string())?;
+            db.execute_unprepared(&insert_stmt.to_string())
+                .await
+                .map_err(|e| e.to_string())?;
         }
 
         Ok(())

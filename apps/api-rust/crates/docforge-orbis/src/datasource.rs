@@ -4,11 +4,11 @@
 // to dynamic JSON data contexts for template interpolation.
 // ═══════════════════════════════════════════════════════════════
 
+use async_trait::async_trait;
+use sea_orm::{ConnectionTrait, DatabaseConnection};
+use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::Arc;
-use async_trait::async_trait;
-use serde_json::{json, Value};
-use sea_orm::{DatabaseConnection, ConnectionTrait};
 
 // ── Safe Query Helper ─────────────────────────────────────────
 
@@ -21,16 +21,27 @@ fn select_by_id(db: &DatabaseConnection, table: &str, id: &str) -> sea_orm::Stat
     )
 }
 
+fn clean_name(value: Option<String>) -> Option<String> {
+    value.filter(|name| {
+        let trimmed = name.trim();
+        !trimmed.is_empty()
+            && trimmed != "student.fullName"
+            && trimmed != "{{student.fullName}}"
+            && trimmed != "student.nameAr"
+            && trimmed != "{{student.nameAr}}"
+    })
+}
+
 // ── DataSource Trait ──────────────────────────────────────────
 
 #[async_trait]
 pub trait DataSource: Send + Sync {
     /// Return the entity type supported by this data source (e.g. "enrollment", "payment", "exam", "user")
     fn entity_type(&self) -> &str;
-    
+
     /// Resolve variables for a given entity ID, returning a JSON context
     async fn resolve(&self, db: &DatabaseConnection, entity_id: &str) -> Result<Value, String>;
-    
+
     /// Return the JSON schema representing available variable paths and types for this data source
     fn schema(&self) -> Value;
 }
@@ -50,24 +61,32 @@ impl DataSource for EnrollmentDataSource {
         let enroll_stmt = select_by_id(db, "enrollments", entity_id);
         let enroll_opt = db.query_one(enroll_stmt).await.map_err(|e| e.to_string())?;
         let enroll = enroll_opt.ok_or_else(|| format!("Enrollment not found: {}", entity_id))?;
-        
-        let student_id: String = enroll.try_get("", "student_id").map_err(|e| e.to_string())?;
-        let class_id: String = enroll.try_get("", "class_id").map_err(|e| e.to_string())?;
-        
-        // 2. Fetch student user
-        let user_stmt = select_by_id(db, "users", &student_id);
-        let user_opt = db.query_one(user_stmt).await.map_err(|e| e.to_string())?;
 
-        let person_opt = if let Some(ref user) = user_opt {
-            let person_id = user.try_get::<String>("", "person_id").ok();
-            match person_id {
-                Some(id) => db.query_one(select_by_id(db, "persons", &id)).await.map_err(|e| e.to_string())?,
-                None => None,
-            }
+        let student_id: String = enroll
+            .try_get("", "student_id")
+            .map_err(|e| e.to_string())?;
+        let class_id: String = enroll.try_get("", "class_id").map_err(|e| e.to_string())?;
+
+        // 2. Enrollment.student_id references persons.id. Resolve the user account
+        // through users.person_id instead of treating the person id as a user id.
+        let person_opt = db
+            .query_one(select_by_id(db, "persons", &student_id))
+            .await
+            .map_err(|e| e.to_string())?;
+        let user_opt = if let Some(ref person) = person_opt {
+            let person_id = person
+                .try_get::<String>("", "id")
+                .map_err(|e| e.to_string())?;
+            let user_stmt = sea_orm::Statement::from_sql_and_values(
+                db.get_database_backend(),
+                "SELECT * FROM users WHERE person_id = $1 AND is_deleted = 0 ORDER BY created_at LIMIT 1",
+                vec![person_id.into()],
+            );
+            db.query_one(user_stmt).await.map_err(|e| e.to_string())?
         } else {
             None
         };
-        
+
         // 3. Fetch class
         let class_stmt = select_by_id(db, "classes", &class_id);
         let class_opt = db.query_one(class_stmt).await.map_err(|e| e.to_string())?;
@@ -75,11 +94,42 @@ impl DataSource for EnrollmentDataSource {
         // Construct JSON context
         let mut student_json = json!({});
         if let Some(user) = user_opt {
+            let person_name_ar = person_opt
+                .as_ref()
+                .and_then(|person| person.try_get::<Option<String>>("", "name_ar").ok())
+                .flatten();
+            let user_name_ar = user
+                .try_get::<Option<String>>("", "name_ar")
+                .unwrap_or_default();
+            let name_ar = clean_name(person_name_ar).or_else(|| clean_name(user_name_ar));
+            let name_en = clean_name(
+                person_opt
+                    .as_ref()
+                    .and_then(|person| person.try_get::<Option<String>>("", "name_en").ok())
+                    .flatten(),
+            );
+            let person_full_name = clean_name(
+                person_opt
+                    .as_ref()
+                    .and_then(|person| person.try_get::<Option<String>>("", "full_name").ok())
+                    .flatten(),
+            );
+            let user_full_name = clean_name(
+                user.try_get::<Option<String>>("", "full_name")
+                    .ok()
+                    .flatten(),
+            );
+            let full_name = person_full_name
+                .or(user_full_name)
+                .or_else(|| name_ar.clone())
+                .or_else(|| name_en.clone())
+                .unwrap_or_default();
+
             student_json = json!({
                 "id": student_id,
-                "fullName": user.try_get::<String>("", "full_name").unwrap_or_default(),
-                "nameAr": person_opt.as_ref().and_then(|person| person.try_get::<Option<String>>("", "name_ar").ok()).flatten().or_else(|| user.try_get::<Option<String>>("", "name_ar").unwrap_or_default()),
-                "nameEn": person_opt.as_ref().and_then(|person| person.try_get::<Option<String>>("", "name_en").ok()).flatten(),
+                "fullName": full_name,
+                "nameAr": name_ar,
+                "nameEn": name_en,
                 "email": user.try_get::<Option<String>>("", "email").unwrap_or_default(),
                 "phone": user.try_get::<Option<String>>("", "phone").unwrap_or_default(),
                 "nationalId": user.try_get::<Option<String>>("", "national_id").unwrap_or_default(),
@@ -110,17 +160,28 @@ impl DataSource for EnrollmentDataSource {
 
         let (final_grade, final_score, final_rank, final_gpa) = if let Some(snap) = snap_opt {
             (
-                snap.try_get::<Option<String>>("", "grade_label").unwrap_or_default(),
-                snap.try_get::<Option<f64>>("", "total_score").unwrap_or_default(),
-                snap.try_get::<Option<i32>>("", "rank_in_class").unwrap_or_default(),
-                snap.try_get::<Option<f64>>("", "gpa_points").unwrap_or_default(),
+                snap.try_get::<Option<String>>("", "grade_label")
+                    .unwrap_or_default(),
+                snap.try_get::<Option<f64>>("", "total_score")
+                    .unwrap_or_default(),
+                snap.try_get::<Option<i32>>("", "rank_in_class")
+                    .unwrap_or_default(),
+                snap.try_get::<Option<f64>>("", "gpa_points")
+                    .unwrap_or_default(),
             )
         } else {
             // Fallback to enrollment static fields if no snapshot exists yet
             (
-                enroll.try_get::<Option<String>>("", "final_grade").unwrap_or_default(),
-                enroll.try_get::<Option<f64>>("", "final_score").ok().flatten(),
-                enroll.try_get::<Option<i32>>("", "final_rank").unwrap_or_default(),
+                enroll
+                    .try_get::<Option<String>>("", "final_grade")
+                    .unwrap_or_default(),
+                enroll
+                    .try_get::<Option<f64>>("", "final_score")
+                    .ok()
+                    .flatten(),
+                enroll
+                    .try_get::<Option<i32>>("", "final_rank")
+                    .unwrap_or_default(),
                 None,
             )
         };
@@ -235,13 +296,19 @@ impl DataSource for ExamDataSource {
         // Fetch seating number record
         let seat_stmt = select_by_id(db, "seating_numbers", entity_id);
         let seat_opt = db.query_one(seat_stmt).await.map_err(|e| e.to_string())?;
-        let seat = seat_opt.ok_or_else(|| format!("Seating allocation record not found: {}", entity_id))?;
+        let seat = seat_opt
+            .ok_or_else(|| format!("Seating allocation record not found: {}", entity_id))?;
 
-        let session_id: String = seat.try_get("", "exam_session_id").map_err(|e| e.to_string())?;
-        
+        let session_id: String = seat
+            .try_get("", "exam_session_id")
+            .map_err(|e| e.to_string())?;
+
         // Fetch exam session details
         let session_stmt = select_by_id(db, "exam_sessions", &session_id);
-        let session_opt = db.query_one(session_stmt).await.map_err(|e| e.to_string())?;
+        let session_opt = db
+            .query_one(session_stmt)
+            .await
+            .map_err(|e| e.to_string())?;
 
         let mut session_json = json!({});
         if let Some(sess) = session_opt {
@@ -348,16 +415,43 @@ impl Default for DataSourceRegistry {
 impl DataSourceRegistry {
     pub fn new() -> Self {
         let mut sources = HashMap::new();
-        sources.insert("enrollment".to_string(), Arc::new(EnrollmentDataSource) as Arc<dyn DataSource>);
-        sources.insert("payment".to_string(), Arc::new(PaymentDataSource) as Arc<dyn DataSource>);
-        sources.insert("exam".to_string(), Arc::new(ExamDataSource) as Arc<dyn DataSource>);
-        sources.insert("user".to_string(), Arc::new(UserDataSource) as Arc<dyn DataSource>);
-        sources.insert("period_score".to_string(), Arc::new(PeriodScoreDataSource) as Arc<dyn DataSource>);
-        sources.insert("report_card".to_string(), Arc::new(ReportCardDataSource) as Arc<dyn DataSource>);
-        sources.insert("term_certificate".to_string(), Arc::new(TermCertificateDataSource) as Arc<dyn DataSource>);
-        sources.insert("annual_certificate".to_string(), Arc::new(AnnualCertificateDataSource) as Arc<dyn DataSource>);
-        sources.insert("exam_session".to_string(), Arc::new(ExamSessionDataSource) as Arc<dyn DataSource>);
-        
+        sources.insert(
+            "enrollment".to_string(),
+            Arc::new(EnrollmentDataSource) as Arc<dyn DataSource>,
+        );
+        sources.insert(
+            "payment".to_string(),
+            Arc::new(PaymentDataSource) as Arc<dyn DataSource>,
+        );
+        sources.insert(
+            "exam".to_string(),
+            Arc::new(ExamDataSource) as Arc<dyn DataSource>,
+        );
+        sources.insert(
+            "user".to_string(),
+            Arc::new(UserDataSource) as Arc<dyn DataSource>,
+        );
+        sources.insert(
+            "period_score".to_string(),
+            Arc::new(PeriodScoreDataSource) as Arc<dyn DataSource>,
+        );
+        sources.insert(
+            "report_card".to_string(),
+            Arc::new(ReportCardDataSource) as Arc<dyn DataSource>,
+        );
+        sources.insert(
+            "term_certificate".to_string(),
+            Arc::new(TermCertificateDataSource) as Arc<dyn DataSource>,
+        );
+        sources.insert(
+            "annual_certificate".to_string(),
+            Arc::new(AnnualCertificateDataSource) as Arc<dyn DataSource>,
+        );
+        sources.insert(
+            "exam_session".to_string(),
+            Arc::new(ExamSessionDataSource) as Arc<dyn DataSource>,
+        );
+
         DataSourceRegistry { sources }
     }
 
@@ -400,11 +494,18 @@ impl DataSource for ProjectionDataSource {
             vec![self.entity_type.clone().into(), entity_id.into()],
         );
         let opt = db.query_one(stmt).await.map_err(|e| e.to_string())?;
-        let record = opt.ok_or_else(|| format!("Projection not found for {} - {}", self.entity_type, entity_id))?;
-        
-        let data_str = record.try_get::<String>("", "data").unwrap_or_else(|_| "{}".to_string());
+        let record = opt.ok_or_else(|| {
+            format!(
+                "Projection not found for {} - {}",
+                self.entity_type, entity_id
+            )
+        })?;
+
+        let data_str = record
+            .try_get::<String>("", "data")
+            .unwrap_or_else(|_| "{}".to_string());
         let data: Value = serde_json::from_str(&data_str).unwrap_or_else(|_| json!({}));
-        
+
         Ok(data)
     }
 
@@ -437,7 +538,9 @@ impl DataSource for PeriodScoreDataSource {
 
         let student_id: String = snap.try_get("", "student_id").map_err(|e| e.to_string())?;
         let period_id: String = snap.try_get("", "period_id").map_err(|e| e.to_string())?;
-        let class_subject_id: String = snap.try_get("", "class_subject_id").map_err(|e| e.to_string())?;
+        let class_subject_id: String = snap
+            .try_get("", "class_subject_id")
+            .map_err(|e| e.to_string())?;
 
         // Fetch student info
         let user_stmt = select_by_id(db, "users", &student_id);
@@ -455,15 +558,21 @@ impl DataSource for PeriodScoreDataSource {
         // Fetch period info
         let period_stmt = select_by_id(db, "academic_periods", &period_id);
         let period_opt = db.query_one(period_stmt).await.map_err(|e| e.to_string())?;
-        let period_name = period_opt.as_ref()
+        let period_name = period_opt
+            .as_ref()
             .and_then(|p| p.try_get::<String>("", "name").ok())
             .unwrap_or_default();
 
         // Fetch class_subject info
         let cs_stmt = select_by_id(db, "class_subjects", &class_subject_id);
         let cs_opt = db.query_one(cs_stmt).await.map_err(|e| e.to_string())?;
-        let subject_name = cs_opt.as_ref()
-            .and_then(|cs| cs.try_get::<Option<String>>("", "subject_name").ok().flatten())
+        let subject_name = cs_opt
+            .as_ref()
+            .and_then(|cs| {
+                cs.try_get::<Option<String>>("", "subject_name")
+                    .ok()
+                    .flatten()
+            })
             .unwrap_or_default();
 
         Ok(json!({
@@ -525,7 +634,9 @@ impl DataSource for ReportCardDataSource {
         // entity_id format: "{enrollment_id}:{period_id}"
         let parts: Vec<&str> = entity_id.splitn(2, ':').collect();
         if parts.len() != 2 {
-            return Err("ReportCard entity_id must be in format 'enrollment_id:period_id'".to_string());
+            return Err(
+                "ReportCard entity_id must be in format 'enrollment_id:period_id'".to_string(),
+            );
         }
         let enrollment_id = parts[0];
         let period_id = parts[1];
@@ -533,14 +644,18 @@ impl DataSource for ReportCardDataSource {
         // Fetch enrollment → student_id
         let enroll_stmt = select_by_id(db, "enrollments", enrollment_id);
         let enroll_opt = db.query_one(enroll_stmt).await.map_err(|e| e.to_string())?;
-        let enroll = enroll_opt.ok_or_else(|| format!("Enrollment not found: {}", enrollment_id))?;
-        let student_id: String = enroll.try_get("", "student_id").map_err(|e| e.to_string())?;
+        let enroll =
+            enroll_opt.ok_or_else(|| format!("Enrollment not found: {}", enrollment_id))?;
+        let student_id: String = enroll
+            .try_get("", "student_id")
+            .map_err(|e| e.to_string())?;
         let class_id: String = enroll.try_get("", "class_id").unwrap_or_default();
 
         // Fetch student
         let user_stmt = select_by_id(db, "users", &student_id);
         let user_opt = db.query_one(user_stmt).await.map_err(|e| e.to_string())?;
-        let person_stmt = user_opt.as_ref()
+        let person_stmt = user_opt
+            .as_ref()
             .and_then(|user| user.try_get::<String>("", "person_id").ok())
             .map(|person_id| select_by_id(db, "persons", &person_id));
         let person_opt = match person_stmt {
@@ -560,14 +675,21 @@ impl DataSource for ReportCardDataSource {
         // Fetch period
         let period_stmt = select_by_id(db, "academic_periods", period_id);
         let period_opt = db.query_one(period_stmt).await.map_err(|e| e.to_string())?;
-        let period_name = period_opt.as_ref()
+        let period_name = period_opt
+            .as_ref()
             .and_then(|p| p.try_get::<String>("", "name").ok())
             .unwrap_or_default();
-        let class_json = db.query_one(select_by_id(db, "classes", &class_id)).await.ok().flatten()
-            .map(|class| json!({
-                "name": class.try_get::<String>("", "name").unwrap_or_default(),
-                "nameAr": class.try_get::<Option<String>>("", "name_ar").unwrap_or_default(),
-            }))
+        let class_json = db
+            .query_one(select_by_id(db, "classes", &class_id))
+            .await
+            .ok()
+            .flatten()
+            .map(|class| {
+                json!({
+                    "name": class.try_get::<String>("", "name").unwrap_or_default(),
+                    "nameAr": class.try_get::<Option<String>>("", "name_ar").unwrap_or_default(),
+                })
+            })
             .unwrap_or_else(|| json!({}));
 
         // Fetch all period scores for this student in this period
@@ -576,7 +698,10 @@ impl DataSource for ReportCardDataSource {
             "SELECT * FROM period_scores WHERE student_id = $1 AND period_id = $2 ORDER BY class_subject_id",
             vec![student_id.clone().into(), period_id.into()],
         );
-        let snapshot_rows = db.query_all(snapshots_stmt).await.map_err(|e| e.to_string())?;
+        let snapshot_rows = db
+            .query_all(snapshots_stmt)
+            .await
+            .map_err(|e| e.to_string())?;
 
         let mut subjects = Vec::new();
         let mut total_gpa = 0.0f64;
@@ -584,21 +709,47 @@ impl DataSource for ReportCardDataSource {
         let mut failed_count = 0usize;
 
         for row in &snapshot_rows {
-            let total_score = row.try_get::<Option<f64>>("", "total_score").unwrap_or_default().unwrap_or(0.0);
-            let grade_label = row.try_get::<Option<String>>("", "grade_label").unwrap_or_default().unwrap_or_default();
-            let gpa = row.try_get::<Option<f64>>("", "gpa_points").unwrap_or_default().unwrap_or(0.0);
-            let is_passing = row.try_get::<Option<i32>>("", "is_passing").unwrap_or_default().unwrap_or(0) == 1;
-            let rank_class = row.try_get::<Option<i32>>("", "rank_in_class").unwrap_or_default();
-            let cs_id = row.try_get::<String>("", "class_subject_id").unwrap_or_default();
+            let total_score = row
+                .try_get::<Option<f64>>("", "total_score")
+                .unwrap_or_default()
+                .unwrap_or(0.0);
+            let grade_label = row
+                .try_get::<Option<String>>("", "grade_label")
+                .unwrap_or_default()
+                .unwrap_or_default();
+            let gpa = row
+                .try_get::<Option<f64>>("", "gpa_points")
+                .unwrap_or_default()
+                .unwrap_or(0.0);
+            let is_passing = row
+                .try_get::<Option<i32>>("", "is_passing")
+                .unwrap_or_default()
+                .unwrap_or(0)
+                == 1;
+            let rank_class = row
+                .try_get::<Option<i32>>("", "rank_in_class")
+                .unwrap_or_default();
+            let cs_id = row
+                .try_get::<String>("", "class_subject_id")
+                .unwrap_or_default();
 
-            if is_passing { passed_count += 1; } else { failed_count += 1; }
+            if is_passing {
+                passed_count += 1;
+            } else {
+                failed_count += 1;
+            }
             total_gpa += gpa;
 
             // Resolve subject name from class_subjects
             let cs_stmt = select_by_id(db, "class_subjects", &cs_id);
             let cs_opt = db.query_one(cs_stmt).await.ok().flatten();
-            let subject_name = cs_opt.as_ref()
-                .and_then(|cs| cs.try_get::<Option<String>>("", "subject_name").ok().flatten())
+            let subject_name = cs_opt
+                .as_ref()
+                .and_then(|cs| {
+                    cs.try_get::<Option<String>>("", "subject_name")
+                        .ok()
+                        .flatten()
+                })
                 .unwrap_or_else(|| cs_id.clone());
 
             subjects.push(json!({
@@ -691,9 +842,14 @@ impl DataSource for TermCertificateDataSource {
 
         // Fetch enrollment → student
         let enroll_stmt = select_by_id(db, "enrollments", enrollment_id);
-        let enroll = db.query_one(enroll_stmt).await.map_err(|e| e.to_string())?
+        let enroll = db
+            .query_one(enroll_stmt)
+            .await
+            .map_err(|e| e.to_string())?
             .ok_or_else(|| format!("Enrollment not found: {}", enrollment_id))?;
-        let student_id: String = enroll.try_get("", "student_id").map_err(|e| e.to_string())?;
+        let student_id: String = enroll
+            .try_get("", "student_id")
+            .map_err(|e| e.to_string())?;
         let class_id: String = enroll.try_get("", "class_id").map_err(|e| e.to_string())?;
 
         // Student info
@@ -723,7 +879,8 @@ impl DataSource for TermCertificateDataSource {
         // Term period info
         let period_stmt = select_by_id(db, "academic_periods", term_period_id);
         let period_opt = db.query_one(period_stmt).await.map_err(|e| e.to_string())?;
-        let term_name = period_opt.as_ref()
+        let term_name = period_opt
+            .as_ref()
             .and_then(|p| p.try_get::<String>("", "name").ok())
             .unwrap_or_default();
 
@@ -741,18 +898,27 @@ impl DataSource for TermCertificateDataSource {
         let mut total_score_sum = 0.0f64;
 
         for row in &tr_rows {
-            let cs_id = row.try_get::<String>("", "class_subject_id").unwrap_or_default();
+            let cs_id = row
+                .try_get::<String>("", "class_subject_id")
+                .unwrap_or_default();
             let cs_stmt = select_by_id(db, "class_subjects", &cs_id);
             let cs_opt = db.query_one(cs_stmt).await.ok().flatten();
-            let subject_name = cs_opt.as_ref()
-                .and_then(|cs| cs.try_get::<Option<String>>("", "subject_name").ok().flatten())
+            let subject_name = cs_opt
+                .as_ref()
+                .and_then(|cs| {
+                    cs.try_get::<Option<String>>("", "subject_name")
+                        .ok()
+                        .flatten()
+                })
                 .unwrap_or_else(|| cs_id.clone());
 
             let cw = row.try_get::<f64>("", "coursework_score").unwrap_or(0.0);
             let ex = row.try_get::<f64>("", "exam_score").unwrap_or(0.0);
             let tot = row.try_get::<f64>("", "total_score").unwrap_or(0.0);
             let tot_max = row.try_get::<f64>("", "total_max").unwrap_or(50.0);
-            let grade = row.try_get::<Option<String>>("", "grade_label").unwrap_or_default();
+            let grade = row
+                .try_get::<Option<String>>("", "grade_label")
+                .unwrap_or_default();
             let rank = row.try_get::<Option<i32>>("", "rank").unwrap_or_default();
             let passing = row.try_get::<i32>("", "is_passing").unwrap_or(0) == 1;
 
@@ -834,19 +1000,27 @@ impl DataSource for AnnualCertificateDataSource {
     async fn resolve(&self, db: &DatabaseConnection, entity_id: &str) -> Result<Value, String> {
         let parts: Vec<&str> = entity_id.splitn(2, ':').collect();
         if parts.len() != 2 {
-            return Err("AnnualCertificate entity_id must be 'enrollment_id:year_period_id'".into());
+            return Err(
+                "AnnualCertificate entity_id must be 'enrollment_id:year_period_id'".into(),
+            );
         }
         let enrollment_id = parts[0];
         let year_period_id = parts[1];
 
         // Enrollment + student
-        let enroll = db.query_one(select_by_id(db, "enrollments", enrollment_id))
-            .await.map_err(|e| e.to_string())?
+        let enroll = db
+            .query_one(select_by_id(db, "enrollments", enrollment_id))
+            .await
+            .map_err(|e| e.to_string())?
             .ok_or_else(|| format!("Enrollment not found: {}", enrollment_id))?;
-        let student_id: String = enroll.try_get("", "student_id").map_err(|e| e.to_string())?;
+        let student_id: String = enroll
+            .try_get("", "student_id")
+            .map_err(|e| e.to_string())?;
 
-        let user_opt = db.query_one(select_by_id(db, "users", &student_id))
-            .await.map_err(|e| e.to_string())?;
+        let user_opt = db
+            .query_one(select_by_id(db, "users", &student_id))
+            .await
+            .map_err(|e| e.to_string())?;
         let mut student_json = json!({});
         if let Some(user) = user_opt {
             student_json = json!({
@@ -869,19 +1043,34 @@ impl DataSource for AnnualCertificateDataSource {
         let mut grand_max = 0.0f64;
 
         for row in &ar_rows {
-            let cs_id = row.try_get::<String>("", "class_subject_id").unwrap_or_default();
-            let cs_opt = db.query_one(select_by_id(db, "class_subjects", &cs_id)).await.ok().flatten();
-            let subject_name = cs_opt.as_ref()
-                .and_then(|cs| cs.try_get::<Option<String>>("", "subject_name").ok().flatten())
+            let cs_id = row
+                .try_get::<String>("", "class_subject_id")
+                .unwrap_or_default();
+            let cs_opt = db
+                .query_one(select_by_id(db, "class_subjects", &cs_id))
+                .await
+                .ok()
+                .flatten();
+            let subject_name = cs_opt
+                .as_ref()
+                .and_then(|cs| {
+                    cs.try_get::<Option<String>>("", "subject_name")
+                        .ok()
+                        .flatten()
+                })
                 .unwrap_or_else(|| cs_id.clone());
 
             let annual_total = row.try_get::<f64>("", "annual_total").unwrap_or(0.0);
             let annual_max = row.try_get::<f64>("", "annual_max").unwrap_or(100.0);
             let pct = row.try_get::<f64>("", "percentage").unwrap_or(0.0);
-            let grade = row.try_get::<Option<String>>("", "grade_label").unwrap_or_default();
+            let grade = row
+                .try_get::<Option<String>>("", "grade_label")
+                .unwrap_or_default();
             let rank = row.try_get::<Option<i32>>("", "rank").unwrap_or_default();
             let passing = row.try_get::<i32>("", "is_passing").unwrap_or(0) == 1;
-            let terms_json = row.try_get::<String>("", "term_scores_json").unwrap_or_else(|_| "[]".into());
+            let terms_json = row
+                .try_get::<String>("", "term_scores_json")
+                .unwrap_or_else(|_| "[]".into());
 
             grand_total += annual_total;
             grand_max += annual_max;
@@ -900,7 +1089,8 @@ impl DataSource for AnnualCertificateDataSource {
 
         let year_stmt = select_by_id(db, "academic_periods", year_period_id);
         let year_opt = db.query_one(year_stmt).await.map_err(|e| e.to_string())?;
-        let year_name = year_opt.as_ref()
+        let year_name = year_opt
+            .as_ref()
             .and_then(|p| p.try_get::<String>("", "name").ok())
             .unwrap_or_default();
 
@@ -959,7 +1149,10 @@ impl DataSource for ExamSessionDataSource {
     async fn resolve(&self, db: &DatabaseConnection, entity_id: &str) -> Result<Value, String> {
         // Fetch session
         let sess_stmt = select_by_id(db, "exam_sessions", entity_id);
-        let sess = db.query_one(sess_stmt).await.map_err(|e| e.to_string())?
+        let sess = db
+            .query_one(sess_stmt)
+            .await
+            .map_err(|e| e.to_string())?
             .ok_or_else(|| format!("Exam session not found: {}", entity_id))?;
 
         let session_json = json!({
@@ -979,13 +1172,18 @@ impl DataSource for ExamSessionDataSource {
             vec![entity_id.into()],
         );
         let hall_rows = db.query_all(halls_stmt).await.map_err(|e| e.to_string())?;
-        let halls: Vec<Value> = hall_rows.iter().map(|h| json!({
-            "id": h.try_get::<String>("", "id").unwrap_or_default(),
-            "name": h.try_get::<String>("", "name").unwrap_or_default(),
-            "capacity": h.try_get::<Option<i32>>("", "capacity").unwrap_or_default(),
-            "building": h.try_get::<Option<String>>("", "building").unwrap_or_default(),
-            "floor": h.try_get::<Option<String>>("", "floor").unwrap_or_default(),
-        })).collect();
+        let halls: Vec<Value> = hall_rows
+            .iter()
+            .map(|h| {
+                json!({
+                    "id": h.try_get::<String>("", "id").unwrap_or_default(),
+                    "name": h.try_get::<String>("", "name").unwrap_or_default(),
+                    "capacity": h.try_get::<Option<i32>>("", "capacity").unwrap_or_default(),
+                    "building": h.try_get::<Option<String>>("", "building").unwrap_or_default(),
+                    "floor": h.try_get::<Option<String>>("", "floor").unwrap_or_default(),
+                })
+            })
+            .collect();
 
         // Fetch all seating numbers for this session
         let seats_stmt = sea_orm::Statement::from_sql_and_values(
@@ -1010,12 +1208,17 @@ impl DataSource for ExamSessionDataSource {
             vec![entity_id.into()],
         );
         let proctor_rows = db.query_all(proctors_stmt).await.unwrap_or_default();
-        let proctors: Vec<Value> = proctor_rows.iter().map(|p| json!({
-            "name": p.try_get::<Option<String>>("", "full_name").unwrap_or_default(),
-            "nameAr": p.try_get::<Option<String>>("", "name_ar").unwrap_or_default(),
-            "role": p.try_get::<Option<String>>("", "role").unwrap_or_default(),
-            "hallId": p.try_get::<Option<String>>("", "hall_id").unwrap_or_default(),
-        })).collect();
+        let proctors: Vec<Value> = proctor_rows
+            .iter()
+            .map(|p| {
+                json!({
+                    "name": p.try_get::<Option<String>>("", "full_name").unwrap_or_default(),
+                    "nameAr": p.try_get::<Option<String>>("", "name_ar").unwrap_or_default(),
+                    "role": p.try_get::<Option<String>>("", "role").unwrap_or_default(),
+                    "hallId": p.try_get::<Option<String>>("", "hall_id").unwrap_or_default(),
+                })
+            })
+            .collect();
 
         Ok(json!({
             "session": session_json,
@@ -1068,14 +1271,11 @@ impl DataSource for ExamSessionDataSource {
 // without knowing about Sea-ORM.
 // ═══════════════════════════════════════════════════════════════
 
-use docforge_engine::plugin::data_source::{
-    DataSource as EngineDataSource,
-    DataContext,
-    DataFilter as EngineDataFilter,
-    DataSchema,
-    DataFieldSchema,
-};
 use docforge_engine::error::DocforgeError;
+use docforge_engine::plugin::data_source::{
+    DataContext, DataFieldSchema, DataFilter as EngineDataFilter, DataSchema,
+    DataSource as EngineDataSource,
+};
 
 /// Bridges an Orbis DataSource (DB-aware) to the engine DataSource trait.
 pub struct OrbisDataSourceAdapter {
@@ -1110,11 +1310,16 @@ impl EngineDataSource for OrbisDataSourceAdapter {
     }
 
     async fn resolve_one(&self, id: &str) -> Result<DataContext, DocforgeError> {
-        self.inner.resolve(&self.db, id).await
+        self.inner
+            .resolve(&self.db, id)
+            .await
             .map_err(|e| DocforgeError::DataSourceError(e))
     }
 
-    async fn resolve_many(&self, _filter: &EngineDataFilter) -> Result<Vec<DataContext>, DocforgeError> {
+    async fn resolve_many(
+        &self,
+        _filter: &EngineDataFilter,
+    ) -> Result<Vec<DataContext>, DocforgeError> {
         // For most Orbis data sources, batch queries are not yet implemented.
         // Return empty — the engine will fall back to resolve_one per item.
         Ok(Vec::new())
@@ -1134,15 +1339,19 @@ fn schema_value_to_fields(val: &Value) -> Vec<DataFieldSchema> {
     let mut fields = Vec::new();
     if let Some(obj) = val.as_object() {
         for (key, v) in obj {
-            let field_type = v.get("type")
+            let field_type = v
+                .get("type")
                 .and_then(|t| t.as_str())
                 .unwrap_or("string")
                 .to_string();
-            let label = v.get("label")
+            let label = v
+                .get("label")
                 .and_then(|l| l.as_str())
                 .unwrap_or(key.as_str())
                 .to_string();
-            let children = v.get("properties").map(|p| schema_value_to_fields(p))
+            let children = v
+                .get("properties")
+                .map(|p| schema_value_to_fields(p))
                 .or_else(|| v.get("items").map(|i| schema_value_to_fields(i)));
             fields.push(DataFieldSchema {
                 path: key.clone(),
@@ -1154,4 +1363,19 @@ fn schema_value_to_fields(val: &Value) -> Vec<DataFieldSchema> {
         }
     }
     fields
+}
+
+#[cfg(test)]
+mod tests {
+    use super::clean_name;
+
+    #[test]
+    fn ignores_template_placeholders_as_names() {
+        assert_eq!(clean_name(Some("student.fullName".to_string())), None);
+        assert_eq!(clean_name(Some("{{student.fullName}}".to_string())), None);
+        assert_eq!(
+            clean_name(Some("أحمد محمد".to_string())),
+            Some("أحمد محمد".to_string())
+        );
+    }
 }
