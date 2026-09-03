@@ -48,9 +48,5 @@ pub async fn students(
 pub async fn grades(
     _ctx: &ServiceContext,
 ) -> Result<serde_json::Value, AppError> {
-    Ok(serde_json::json!({
-        "success": true,
-        "message": "Bulk export of grades stub",
-        "data": []
-    }))
+    Err(AppError::internal("Bulk export of grades is not implemented"))
 }

@@ -140,7 +140,18 @@ pub struct AppState {
 
 impl AppState {
     pub async fn init() -> Result<Self, Box<dyn std::error::Error>> {
-        let config = Arc::new(shared_kernel::config::Config::load());
+        Self::init_with_database_url(None).await
+    }
+
+    pub async fn init_with_database_url(
+        database_url: Option<&str>,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        let mut loaded_config = shared_kernel::config::Config::load();
+        if let Some(database_url) = database_url.filter(|url| !url.trim().is_empty()) {
+            loaded_config.database_url = database_url.to_string();
+        }
+        let config = Arc::new(loaded_config);
+        config.validate()?;
         let db = infra_persistence::connection::connect_db(&config.database_url).await?;
 
         let baseline_sql = if config.database_url.starts_with("postgres://") || config.database_url.starts_with("postgresql://") {
@@ -151,6 +162,8 @@ impl AppState {
         infra_persistence::migrations::run_sql_migration(&db, baseline_sql).await?;
         infra_persistence::schema_migrations::run_p0_migrations(&db).await?;
         infra_persistence::schema_migrations::run_p4_migrations(&db).await?;
+        docforge_orbis::schema::migrate_template_schema(&db).await?;
+        infra_persistence::schema_migrations::run_postgres_security_migrations(&db).await?;
 
         let event_bus = Arc::new(EventBus::new());
         let platform = Arc::new(PlatformServices::new(db.clone(), event_bus));
@@ -193,17 +206,30 @@ impl AppState {
 
     /// Validate a Bearer token and return the user model.
     pub async fn validate_token(&self, token: &str) -> Result<crate::entities::user::Model, AppError> {
+        use chrono::{DateTime, Utc};
         use sea_orm::{EntityTrait, ColumnTrait, QueryFilter};
         let session = svc_iam::entities::user_session::Entity::find()
             .filter(svc_iam::entities::user_session::Column::Token.eq(token))
+            .filter(svc_iam::entities::user_session::Column::IsCurrent.eq(1))
             .one(&self.db)
             .await?
             .ok_or_else(|| AppError::unauthorized("Invalid or expired token"))?;
+
+        let expires_at = DateTime::parse_from_rfc3339(&session.expires_at)
+            .map_err(|_| AppError::unauthorized("Invalid session expiry"))?
+            .with_timezone(&Utc);
+        if expires_at <= Utc::now() {
+            return Err(AppError::unauthorized("Session expired"));
+        }
 
         let user = svc_iam::entities::user::Entity::find_by_id(&session.user_id)
             .one(&self.db)
             .await?
             .ok_or_else(|| AppError::unauthorized("User not found"))?;
+
+        if user.is_deleted != 0 || user.status.to_lowercase() != "active" {
+            return Err(AppError::unauthorized("User account is inactive"));
+        }
 
         Ok(user)
     }

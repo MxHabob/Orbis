@@ -11,6 +11,8 @@ use shared_kernel::traits::{AuditEntry, Permission};
 
 use crate::contracts::events::event_types;
 use crate::entities::{fee_template, student_fee};
+use svc_academic::entities::enrollment;
+use svc_academic::entities::enrollment;
 
 // ── Fee Templates ───────────────────────────────────────────────
 
@@ -72,7 +74,9 @@ pub async fn update_template(
 ) -> Result<fee_template::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceWrite).await?;
 
-    let existing = fee_template::Entity::find_by_id(template_id.to_string())
+    let existing = fee_template::Entity::find()
+        .filter(fee_template::Column::Id.eq(template_id.to_string()))
+        .filter(fee_template::Column::OrgId.eq(&ctx.org_id))
         .one(&ctx.db).await?
         .ok_or_else(|| AppError::not_found("fee_template", template_id))?;
 
@@ -88,7 +92,9 @@ pub async fn update_template(
 pub async fn delete_template(ctx: &ServiceContext, template_id: &str) -> Result<(), AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceWrite).await?;
 
-    let existing = fee_template::Entity::find_by_id(template_id.to_string())
+    let existing = fee_template::Entity::find()
+        .filter(fee_template::Column::Id.eq(template_id.to_string()))
+        .filter(fee_template::Column::OrgId.eq(&ctx.org_id))
         .one(&ctx.db).await?
         .ok_or_else(|| AppError::not_found("fee_template", template_id))?;
 
@@ -132,6 +138,20 @@ pub async fn assign_student_fee(
     period_id: String,
 ) -> Result<student_fee::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceWrite).await?;
+
+    enrollment::Entity::find()
+        .filter(enrollment::Column::Id.eq(enrollment_id.clone()))
+        .filter(enrollment::Column::OrgId.eq(&ctx.org_id))
+        .one(&ctx.db).await?
+        .ok_or_else(|| AppError::not_found("enrollment", &enrollment_id))?;
+    fee_template::Entity::find()
+        .filter(fee_template::Column::Id.eq(fee_template_id.clone()))
+        .filter(fee_template::Column::OrgId.eq(&ctx.org_id))
+        .one(&ctx.db).await?
+        .ok_or_else(|| AppError::not_found("fee_template", &fee_template_id))?;
+    if amount <= 0.0 {
+        return Err(AppError::validation("Fee amount must be greater than zero"));
+    }
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();

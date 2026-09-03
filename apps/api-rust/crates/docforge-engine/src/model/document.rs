@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Root type representing a complete template document.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct TemplateDocument {
     pub version: String,
     pub meta: DocumentMeta,
@@ -15,6 +15,42 @@ pub struct TemplateDocument {
     #[serde(default)]
     pub assets: HashMap<String, AssetReference>,
     pub root: TemplateNode,
+}
+
+#[derive(Debug, Deserialize)]
+struct TemplateDocumentWire {
+    version: String,
+    meta: DocumentMeta,
+    #[serde(default)]
+    variables: HashMap<String, VariableDefinition>,
+    #[serde(default)]
+    assets: HashMap<String, AssetReference>,
+    root: Option<TemplateNode>,
+    #[serde(default)]
+    pages: Vec<crate::model::nodes::PageNode>,
+}
+
+impl<'de> Deserialize<'de> for TemplateDocument {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let wire = TemplateDocumentWire::deserialize(deserializer)?;
+        let root = wire.root.or_else(|| {
+            wire.pages
+                .into_iter()
+                .next()
+                .map(TemplateNode::Page)
+        }).ok_or_else(|| serde::de::Error::custom("template document requires root or a non-empty pages array"))?;
+
+        Ok(Self {
+            version: wire.version,
+            meta: wire.meta,
+            variables: wire.variables,
+            assets: wire.assets,
+            root,
+        })
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

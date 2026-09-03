@@ -18,7 +18,7 @@ export interface AssessmentCommands {
   listComponentsForClassSubject(classSubjectId: string, periodId: string): Promise<Types.AssessmentSchemeComponent[]>;
   classMetrics(periodId: string, classId: string | null): Promise<Types.ClassMetrics[]>;
   listAttendances(classId: string, date: string, filter: unknown | null): Promise<Types.Attendance[]>;
-  getReport(PeriodId: string, enrollmentId: string): Promise<Types.AttendanceReport>;
+  getReport(periodId: string, enrollmentId: string): Promise<Types.AttendanceReport>;
   getAnalytics(periodId: string, classId: string): Promise<Types.AttendanceAnalytics>;
   record(req: Types.CreateAttendancePayload): Promise<Types.Attendance>;
   recordBulk(req: Types.BulkAttendancePayload): Promise<Types.Attendance[]>;
@@ -77,7 +77,7 @@ export interface AssessmentCommands {
   listPeriodScores(periodId: string, classSubjectId: string | null): Promise<Types.PeriodScore[]>;
   listOverallResults(periodId: string): Promise<Types.PeriodOverallResult[]>;
   listTermResults(termPeriodId: string, classSubjectId: string | null): Promise<Types.TermResult[]>;
-  listTermResultsEnriched(termPeriodId: string, classSubjectId: string | null): Promise<unknown>;
+  listTermResultsEnriched(termPeriodId: string, classSubjectId: string | null): Promise<unknown[]>;
   getResult2(resultId: string): Promise<Types.TermResult>;
   calculateTermResult(req: Types.TermCalcRequest): Promise<Types.TermResult>;
   calculateTermResultsBatch(termPeriodId: string, classId: string, gradingPeriodIds: string[], examPeriodId: string | null): Promise<Types.TermResult[]>;

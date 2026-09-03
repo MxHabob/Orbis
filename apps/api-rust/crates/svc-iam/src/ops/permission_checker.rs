@@ -43,6 +43,8 @@ impl PermissionChecker for IamPermissionChecker {
             Actor::User(user_id) => {
                 let user_model = user::Entity::find()
                     .filter(user::Column::Id.eq(user_id.as_str()))
+                    .filter(user::Column::IsDeleted.eq(0))
+                    .filter(user::Column::Status.eq("active"))
                     .one(&self.db)
                     .await?
                     .ok_or_else(|| AppError::unauthorized("User not found"))?;
@@ -64,6 +66,8 @@ impl PermissionChecker for IamPermissionChecker {
             Actor::User(user_id) => {
                 let user_model = user::Entity::find()
                     .filter(user::Column::Id.eq(user_id.as_str()))
+                    .filter(user::Column::IsDeleted.eq(0))
+                    .filter(user::Column::Status.eq("active"))
                     .one(&self.db)
                     .await?
                     .ok_or_else(|| AppError::unauthorized("User not found"))?;
@@ -71,7 +75,7 @@ impl PermissionChecker for IamPermissionChecker {
                 let iam_ctx = crate::services::authz::AuthzContext {
                     target_user_id: None,
                     target_class_id: ctx.class_id.clone(),
-                    target_org_id: ctx.org_unit_id.clone(),
+                    target_org_id: None,
                 };
 
                 self.authz.check_permission(&self.db, &user_model, permission, Some(&iam_ctx)).await

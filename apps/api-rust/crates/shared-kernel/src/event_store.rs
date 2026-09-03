@@ -12,7 +12,7 @@
 //!
 //! Schema: `domain_events` table (see migration).
 
-use sea_orm::{DatabaseConnection, ConnectionTrait, Statement, DbBackend};
+use sea_orm::{DatabaseConnection, ConnectionTrait, Statement};
 use serde::Serialize;
 
 use crate::errors::AppError;
@@ -72,7 +72,7 @@ impl EventStore {
         "#;
 
         tx.execute(Statement::from_sql_and_values(
-            DbBackend::Sqlite,
+            tx.get_database_backend(),
             sql,
             vec![
                 id.into(),
@@ -112,7 +112,7 @@ impl EventStore {
         "#;
 
         self.db.execute(Statement::from_sql_and_values(
-            DbBackend::Sqlite,
+            self.db.get_database_backend(),
             sql,
             vec![
                 aggregate_type.into(),
@@ -145,7 +145,7 @@ impl EventStore {
         "#;
 
         let rows = self.db.query_all(Statement::from_sql_and_values(
-            DbBackend::Sqlite,
+            self.db.get_database_backend(),
             sql,
             vec![aggregate_type.into(), aggregate_id.into()],
         )).await?;
@@ -186,7 +186,7 @@ impl EventStore {
         "#;
 
         let rows = self.db.query_all(Statement::from_sql_and_values(
-            DbBackend::Sqlite,
+            self.db.get_database_backend(),
             sql,
             vec![event_type.into(), since.into(), (limit as i64).into()],
         )).await?;
@@ -219,7 +219,7 @@ impl EventStore {
         "#;
 
         let result = self.db.query_one(Statement::from_sql_and_values(
-            DbBackend::Sqlite,
+            self.db.get_database_backend(),
             sql,
             vec![aggregate_type.into(), aggregate_id.into()],
         )).await?;
@@ -259,7 +259,7 @@ impl EventStore {
         "#;
 
         self.db.execute(Statement::from_sql_and_values(
-            DbBackend::Sqlite,
+            self.db.get_database_backend(),
             sql,
             vec![
                 id.clone().into(),

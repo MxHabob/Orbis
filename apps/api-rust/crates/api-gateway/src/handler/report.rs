@@ -3,15 +3,71 @@ use axum::{
     http::{StatusCode, header},
     response::IntoResponse,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::json;
-use std::sync::Arc;
 
 use crate::app_state::AppState;
 use crate::middleware::AuthenticatedUser;
+use shared_kernel::traits::Permission;
 use svc_report::definition::ReportDomain;
-use svc_report::request::{ReportRequest, OutputFormat, ReportLocale};
+use svc_report::definition::ReportDefinition;
+use svc_report::request::ReportRequest;
 use svc_report::org_context::OrgContext;
+
+async fn authorize_report(
+    state: &AppState,
+    user: &crate::entities::user::Model,
+    definition: &ReportDefinition,
+) -> Result<(), (StatusCode, Json<serde_json::Value>)> {
+    let ctx = state.build_context(&user.org_id, &user.id);
+    let permissions = if definition.required_permissions.is_empty() {
+        vec![domain_permission(&definition.domain)]
+    } else {
+        definition
+            .required_permissions
+            .iter()
+            .map(|permission| permission_from_code(permission))
+            .collect::<Result<Vec<_>, _>>()?
+    };
+
+    for permission in permissions {
+        ctx.permissions.check(&ctx.actor, permission).await.map_err(|e| {
+            (
+                StatusCode::FORBIDDEN,
+                Json(json!({"success": false, "error": e.to_string()})),
+            )
+        })?;
+    }
+    Ok(())
+}
+
+fn domain_permission(domain: &ReportDomain) -> Permission {
+    match domain {
+        ReportDomain::Finance => Permission::FinanceRead,
+        ReportDomain::Academic => Permission::EnrollmentRead,
+        ReportDomain::Exam => Permission::ExamSessionRead,
+        ReportDomain::Staff => Permission::UserRead,
+        ReportDomain::System => Permission::DashboardRead,
+    }
+}
+
+fn permission_from_code(code: &str) -> Result<Permission, (StatusCode, Json<serde_json::Value>)> {
+    let permission = match code {
+        "finance.read" => Permission::FinanceRead,
+        "academic.read" => Permission::EnrollmentRead,
+        "attendance.read" => Permission::AttendanceRead,
+        "exam.read" => Permission::ExamSessionRead,
+        "staff.read" => Permission::UserRead,
+        "system.read" => Permission::DashboardRead,
+        _ => {
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"success": false, "error": "Report permission is not configured"})),
+            ))
+        }
+    };
+    Ok(permission)
+}
 
 // ── List Report Definitions ─────────────────────────────────────
 
@@ -23,7 +79,7 @@ pub struct ListReportsQuery {
 #[utoipa::path(get, path = "/api/reports")]
 pub async fn get_reports(
     State(state): State<AppState>,
-    AuthenticatedUser(_user): AuthenticatedUser,
+    AuthenticatedUser(user): AuthenticatedUser,
     Query(query): Query<ListReportsQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let report_service = state.report_service();
@@ -38,7 +94,15 @@ pub async fn get_reports(
     });
 
     let reports = report_service.list_reports(domain.as_ref());
-    ok!(reports)
+    let mut authorized_reports = Vec::with_capacity(reports.len());
+    for report in reports {
+        if let Ok(definition) = report_service.get_definition(&report.code) {
+            if authorize_report(&state, &user, &definition).await.is_ok() {
+                authorized_reports.push(report);
+            }
+        }
+    }
+    ok!(authorized_reports)
 }
 
 // ── Get Single Report Definition ────────────────────────────────
@@ -47,12 +111,13 @@ pub async fn get_reports(
 pub async fn get_report_definition(
     State(state): State<AppState>,
     Path(code): Path<String>,
-    AuthenticatedUser(_user): AuthenticatedUser,
+    AuthenticatedUser(user): AuthenticatedUser,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let report_service = state.report_service();
 
     let definition = report_service.get_definition(&code)
         .map_err(|e| (StatusCode::NOT_FOUND, Json(json!({"success": false, "error": e.to_string()}))))?;
+    authorize_report(&state, &user, &definition).await?;
 
     ok!(definition)
 }
@@ -65,7 +130,13 @@ pub async fn post_generate_report(
     AuthenticatedUser(user): AuthenticatedUser,
     Json(body): Json<ReportRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let ctx = state.build_context(&user.org_id, &user.id);
     let report_service = state.report_service();
+    let definition = report_service.get_definition(&body.report_code)
+        .map_err(|e| (StatusCode::BAD_REQUEST, Json(json!({"success": false, "error": e.to_string()}))))?;
+    authorize_report(&state, &user, &definition).await?;
+    ctx.permissions.check(&ctx.actor, Permission::ExportData).await
+        .map_err(|e| (StatusCode::FORBIDDEN, Json(json!({"success": false, "error": e.to_string()}))))?;
     let org = resolve_org_context(&state, &user.org_id).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success": false, "error": e}))))?;
 
@@ -83,7 +154,13 @@ pub async fn post_export_report(
     AuthenticatedUser(user): AuthenticatedUser,
     Json(body): Json<ReportRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let ctx = state.build_context(&user.org_id, &user.id);
     let report_service = state.report_service();
+    let definition = report_service.get_definition(&body.report_code)
+        .map_err(|e| (StatusCode::BAD_REQUEST, Json(json!({"success": false, "error": e.to_string()}))))?;
+    authorize_report(&state, &user, &definition).await?;
+    ctx.permissions.check(&ctx.actor, Permission::ExportData).await
+        .map_err(|e| (StatusCode::FORBIDDEN, Json(json!({"success": false, "error": e.to_string()}))))?;
     let org = resolve_org_context(&state, &user.org_id).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success": false, "error": e}))))?;
 

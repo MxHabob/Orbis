@@ -6,7 +6,7 @@ export interface OrganizationCommands {
   exportStudents(): Promise<unknown>;
   exportGrades(): Promise<unknown>;
   importStudents(data: unknown): Promise<unknown>;
-  importGrades(Data: unknown): Promise<unknown>;
+  importGrades(data: unknown): Promise<unknown>;
   getDashboardStats(): Promise<unknown>;
   getOrganization(): Promise<unknown>;
   createOrganization(cmd: Types.CreateOrganizationCmd): Promise<unknown>;

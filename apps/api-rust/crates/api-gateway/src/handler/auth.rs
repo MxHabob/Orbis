@@ -21,6 +21,12 @@ pub async fn post_register(
     State(state): State<AppState>,
     Json(body): Json<svc_iam::ops::auth::RegisterPayload>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    if !state.config.public_registration_enabled {
+        return Err((
+            StatusCode::NOT_FOUND,
+            Json(json!({"success": false, "error": "Registration is disabled"})),
+        ));
+    }
     let r = ops::auth::register(&state.db, body).await
         .map_err(|e| (StatusCode::BAD_REQUEST, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(StatusCode::CREATED, r)

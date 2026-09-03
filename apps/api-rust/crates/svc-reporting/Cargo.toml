@@ -10,5 +10,6 @@ csv = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 shared-kernel = { workspace = true }
+sea-orm = { workspace = true }
 lazy_static = "1.4.0"
 chrono = { workspace = true }

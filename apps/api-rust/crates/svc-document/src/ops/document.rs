@@ -29,7 +29,12 @@ pub async fn upload_file(
 
     // 1. Generate unique key to avoid collisions
     let file_uuid = Uuid::new_v4().to_string();
-    let extension = req.file_name.split('.').last().unwrap_or("bin");
+    let extension = req.file_name
+        .rsplit('.')
+        .next()
+        .filter(|value| !value.is_empty() && value.len() <= 10 && value.chars().all(|c| c.is_ascii_alphanumeric()))
+        .unwrap_or("bin")
+        .to_ascii_lowercase();
     let key = format!("{}.{}", file_uuid, extension);
 
     // 2. Determine bucket (e.g., users, templates, students)

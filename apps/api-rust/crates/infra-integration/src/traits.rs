@@ -245,6 +245,9 @@ pub trait StorageProvider: Send + Sync {
     
     /// Deletes a file by its key
     async fn delete(&self, bucket: &str, key: &str) -> Result<(), String>;
+
+    /// Reads a stored object for an already-authorized download request.
+    async fn read(&self, bucket: &str, key: &str) -> Result<Vec<u8>, String>;
     
     /// Gets the direct download URL if applicable (e.g., S3 pre-signed URL)
     fn get_url(&self, bucket: &str, key: &str) -> Option<String>;

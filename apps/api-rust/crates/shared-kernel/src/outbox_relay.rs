@@ -46,8 +46,9 @@ impl OutboxRelay {
             LIMIT 100
         "#;
 
+        let backend = self.db.get_database_backend();
         let rows = self.db.query_all(Statement::from_sql_and_values(
-            DbBackend::Sqlite,
+            backend,
             sql,
             vec![],
         )).await?;
@@ -74,21 +75,25 @@ impl OutboxRelay {
                 }
                 Err(e) => {
                     error!("Failed to deserialize outbox event {}: {}", id, e);
-                    // We still delete it to prevent poison messages from blocking the relay
-                    processed_ids.push(id);
+                    // Keep malformed events for operational inspection and
+                    // replay after the producer/schema issue is corrected.
                 }
             }
         }
 
         if !processed_ids.is_empty() {
             // Delete processed events
-            let placeholders = processed_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+            let placeholders = processed_ids
+                .iter()
+                .enumerate()
+                .map(|(index, _)| if backend == DbBackend::Postgres { format!("${}", index + 1) } else { "?".to_string() })
+                .collect::<Vec<_>>().join(",");
             let delete_sql = format!("DELETE FROM outbox_events WHERE id IN ({})", placeholders);
             
             let values = processed_ids.into_iter().map(|id| id.into()).collect::<Vec<sea_orm::Value>>();
             
             self.db.execute(Statement::from_sql_and_values(
-                DbBackend::Sqlite,
+                backend,
                 &delete_sql,
                 values,
             )).await?;

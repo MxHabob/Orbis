@@ -30,9 +30,9 @@
     return cols.map(c => ({
       name: c.id,
       header: c.label,
-      width: c.width_weight * 50,
-      type: c.data_type === "number" || c.data_type === "currency" ? "number" : "string",
-      align: c.data_type === "number" || c.data_type === "currency" ? "right" : "left",
+      width: c.widthWeight * 50,
+      type: c.dataType === "number" || c.dataType === "currency" ? "number" : "string",
+      align: c.dataType === "number" || c.dataType === "currency" ? "right" : "left",
       editable: false,
     }));
   }
@@ -129,7 +129,7 @@
               
               <!-- Dynamic Filter Inputs (Simplified for MVP) -->
               <Input 
-                type={param.param_type === 'number' ? 'number' : param.param_type === 'date' ? 'date' : 'text'}
+                type={param.paramType === 'number' ? 'number' : param.paramType === 'date' ? 'date' : 'text'}
                 bind:value={filters[param.id]}
                 placeholder={param.label}
                 class="h-8 text-xs"

@@ -6023,6 +6023,7 @@ dependencies = [
  "chrono",
  "csv",
  "lazy_static",
+ "sea-orm",
  "serde",
  "serde_json",
  "shared-kernel",

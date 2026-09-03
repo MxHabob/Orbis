@@ -14,6 +14,20 @@ impl LocalStorageProvider {
             base_path: base_path.as_ref().to_path_buf(),
         }
     }
+
+    fn safe_path(&self, bucket: &str, key: &str) -> Result<PathBuf, String> {
+        let mut path = self.base_path.clone();
+        for component in [bucket, key] {
+            let candidate = Path::new(component);
+            if candidate.is_absolute()
+                || candidate.components().any(|part| matches!(part, std::path::Component::ParentDir | std::path::Component::RootDir | std::path::Component::Prefix(_)))
+            {
+                return Err("Storage path must remain within the configured base directory".to_string());
+            }
+            path.push(candidate);
+        }
+        Ok(path)
+    }
 }
 
 #[async_trait]
@@ -23,7 +37,7 @@ impl StorageProvider for LocalStorageProvider {
     }
 
     async fn upload(&self, bucket: &str, key: &str, data: &[u8]) -> Result<String, String> {
-        let file_path = self.base_path.join(bucket).join(key);
+        let file_path = self.safe_path(bucket, key)?;
         
         // Ensure parent directories exist
         if let Some(parent) = file_path.parent() {
@@ -43,7 +57,7 @@ impl StorageProvider for LocalStorageProvider {
     }
 
     async fn delete(&self, bucket: &str, key: &str) -> Result<(), String> {
-        let file_path = self.base_path.join(bucket).join(key);
+        let file_path = self.safe_path(bucket, key)?;
         if file_path.exists() {
             fs::remove_file(&file_path)
                 .await
@@ -52,9 +66,16 @@ impl StorageProvider for LocalStorageProvider {
         Ok(())
     }
 
+    async fn read(&self, bucket: &str, key: &str) -> Result<Vec<u8>, String> {
+        let file_path = self.safe_path(bucket, key)?;
+        fs::read(&file_path)
+            .await
+            .map_err(|e| format!("Failed to read file: {}", e))
+    }
+
     fn get_url(&self, bucket: &str, key: &str) -> Option<String> {
-        // Since it's local, we just return the path relative to the API's static file handler
-        // The API Gateway will host the base directory.
-        Some(format!("/storage/{}/{}", bucket, key))
+        self.safe_path(bucket, key).ok()?;
+        // Local objects must be read through an authenticated document endpoint.
+        None
     }
 }

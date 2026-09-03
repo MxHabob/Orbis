@@ -16,6 +16,7 @@ pub struct Config {
     pub jwt_secret: String,
     pub jwt_expiry_hours: i64,
     pub jwt_refresh_days: i64,
+    pub public_registration_enabled: bool,
 
     // ── Scheduling ──────────────────────────────────────────────
     pub solver_service_url: Option<String>,
@@ -32,6 +33,7 @@ impl Config {
         Config {
             // Core
             env: env::var("APP_ENV")
+                .or_else(|_| env::var("ORBIS_ENV"))
                 .unwrap_or_else(|_| "development".to_string()),
             port: env::var("PORT")
                 .ok()
@@ -40,7 +42,7 @@ impl Config {
             database_url: env::var("DATABASE_URL")
                 .unwrap_or_else(|_| "sqlite://../../orbis.db?mode=rwc".to_string()),
             jwt_secret: env::var("JWT_SECRET")
-                .unwrap_or_else(|_| "orbis_super_secure_secret_key_2026".to_string()),
+                .unwrap_or_default(),
             jwt_expiry_hours: env::var("JWT_EXPIRY_HOURS")
                 .ok()
                 .and_then(|h| h.parse().ok())
@@ -49,6 +51,13 @@ impl Config {
                 .ok()
                 .and_then(|d| d.parse().ok())
                 .unwrap_or(7),
+            public_registration_enabled: env::var("PUBLIC_REGISTRATION_ENABLED")
+                .ok()
+                .and_then(|value| value.parse().ok())
+                .unwrap_or_else(|| !env::var("APP_ENV")
+                    .or_else(|_| env::var("ORBIS_ENV"))
+                    .map(|value| value.eq_ignore_ascii_case("production"))
+                    .unwrap_or(false)),
 
             // Scheduling
             solver_service_url: env::var("SOLVER_SERVICE_URL")
@@ -66,6 +75,19 @@ impl Config {
             gemini_api_key: env::var("GEMINI_API_KEY")
                 .unwrap_or_else(|_| "".to_string()),
         }
+    }
+
+    pub fn validate(&self) -> Result<(), String> {
+        if self.env.eq_ignore_ascii_case("production") {
+            if self.jwt_secret.len() < 32 {
+                return Err("JWT_SECRET must be set to at least 32 characters in production".to_string());
+            }
+            if self.database_url.trim().is_empty() {
+                return Err("DATABASE_URL must be set in production".to_string());
+            }
+        }
+
+        Ok(())
     }
 
     pub fn is_development(&self) -> bool {

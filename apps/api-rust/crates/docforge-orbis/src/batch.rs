@@ -178,6 +178,7 @@ pub async fn start_batch_print_job(
 
     // 5. Worker queue orchestration (up to 8 parallel rendering tasks)
     let concurrency = 8;
+    let semaphore = Arc::new(tokio::sync::Semaphore::new(concurrency));
     let (tx, mut rx) = mpsc::channel::<(usize, Result<Vec<u8>, String>)>(concurrency);
     let entity_ids_len = entity_ids.len();
 
@@ -221,8 +222,13 @@ pub async fn start_batch_print_job(
             let doc_ref = doc_arc.clone();
             let fonts_ref = fonts.clone();
             let tx_clone = tx.clone();
+            let permit = semaphore.clone().acquire_owned().await;
+            if permit.is_err() {
+                break;
+            }
 
             tokio::spawn(async move {
+                let _permit = permit.expect("checked semaphore permit");
                 // Fetch record context
                 let context = match ds.resolve(&db_conn, &entity_id).await {
                     Ok(ctx) => ctx,
@@ -269,6 +275,7 @@ pub async fn start_batch_print_job(
 
     // 6. Receive processed PDFs and stream write them to disk
     let mut processed = 0;
+    let mut failed = 0;
     while let Some((index, result)) = rx.recv().await {
         processed += 1;
         match result {
@@ -280,10 +287,12 @@ pub async fn start_batch_print_job(
                 ));
                 if let Err(e) = std::fs::write(&file_path, bytes) {
                     eprintln!("Failed to write pdf file: {}", e);
+                    failed += 1;
                 }
             }
             Err(err) => {
                 eprintln!("Batch error for record index {}: {}", index, err);
+                failed += 1;
             }
         }
 
@@ -292,13 +301,27 @@ pub async fn start_batch_print_job(
             let mut status = job.status.lock().unwrap();
             status.processed_records = processed;
             if processed == entity_ids_len {
-                status.status = "completed".to_string();
+                status.status = if failed == 0 { "completed" } else { "failed" }.to_string();
+                if failed > 0 {
+                    status.error_message = Some(format!("{} record(s) failed during batch rendering", failed));
+                }
             }
             progress_callback(status.clone());
         }
 
         if processed == entity_ids_len {
             break;
+        }
+    }
+
+    if processed < entity_ids_len {
+        let mut status = job.status.lock().unwrap();
+        if status.status == "running" {
+            status.status = "failed".to_string();
+            status.error_message = Some(format!(
+                "Batch stopped before processing all records ({processed}/{entity_ids_len})"
+            ));
+            progress_callback(status.clone());
         }
     }
 }

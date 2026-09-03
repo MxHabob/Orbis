@@ -16,11 +16,14 @@ pub struct Model {
     pub phone: Option<String>,
     pub phone_verified: i32,
     pub phone_verified_at: Option<String>,
+    #[serde(skip_serializing)]
     pub password_hash: Option<String>,
     pub password_changed_at: Option<String>,
     pub password_expires_at: Option<String>,
     pub mfa_enabled: i32,
+    #[serde(skip_serializing)]
     pub mfa_secret: Option<String>,
+    #[serde(skip_serializing)]
     pub mfa_backup_codes: Option<String>,
     pub full_name: String,
     pub primary_role: String,

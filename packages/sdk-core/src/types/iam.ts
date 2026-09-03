@@ -227,7 +227,7 @@ export interface RegisterPayload {
   email?: string | null;
   phone?: string | null;
   primary_role: string;
-  password_hash: string;
+  password: string;
 }
 
 export interface PermissionPayload {

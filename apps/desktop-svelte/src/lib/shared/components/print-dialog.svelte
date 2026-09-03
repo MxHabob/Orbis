@@ -277,8 +277,13 @@ async function handlePrintAction() {
         configJson,
       );
       batchJobId = started.jobId;
+      const pollingDeadline = Date.now() + 10 * 60 * 1000;
 
       while (batchJobId) {
+        if (Date.now() >= pollingDeadline) {
+          throw new Error("Batch print timed out. Please try again.");
+        }
+
         const status = await commands.docforge.getMultiUpPrintStatus(batchJobId);
         const total = Number(status.totalRecords ?? entityIds.length);
         const processed = Number(status.processedRecords ?? 0);
@@ -307,6 +312,7 @@ async function handlePrintAction() {
       isBatchProcessing = false;
       batchJobId = null;
     }
+    isBatchProcessing = false;
   }
 }
 

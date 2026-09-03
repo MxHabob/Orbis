@@ -146,6 +146,13 @@ async fn migrate_academic_policies_branch_overrides(db: &DatabaseConnection) -> 
 }
 
 pub async fn run_p4_migrations(db: &DatabaseConnection) -> Result<(), DbErr> {
+    // The PostgreSQL baseline already contains the party/person model. The
+    // legacy migration below is SQLite-specific and must never run there.
+    if db.get_database_backend() == sea_orm::DbBackend::Postgres {
+        info!("Skipping SQLite-only P4 migration for PostgreSQL");
+        return Ok(());
+    }
+
     info!("Running P4 migrations for Party/Person model...");
 
     // Create parties and persons from existing users

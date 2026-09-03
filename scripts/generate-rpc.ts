@@ -75,7 +75,7 @@ function mapRustTypeToTs(rustType: string): string {
   rustType = rustType.replace("&str", "string").replace("String", "string");
   rustType = rustType.replace(/\bbool\b/g, "boolean");
   rustType = rustType.replace(/i32|u32|i64|u64|f32|f64|usize|isize/g, "number");
-  rustType = rustType.replace("serde_json::Value", "__UNRESOLVED_JSON__");
+  rustType = rustType.replace("serde_json::Value", "unknown");
   rustType = rustType.replace("()", "void");
   
   // strip lifetimes and references
@@ -275,7 +275,7 @@ function parseOps(): OpFunction[] {
           }
           
           args.push({
-            name: toCamelCase(argName),
+            name: toCamelCase(argName.replace(/^_+/, "")),
             rustName: argName,
             rustType: argTypeRaw,
             tsType: mapRustTypeToTs(argTypeRaw),

@@ -1,7 +1,7 @@
 //! Auth operations — login, logout, password, session management.
 
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, DatabaseConnection};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, DatabaseConnection, TransactionTrait};
 use uuid::Uuid;
 
 use shared_kernel::context::ServiceContext;
@@ -20,6 +20,7 @@ pub async fn login(
 ) -> Result<(user::Model, user_session::Model), AppError> {
     let found = user::Entity::find()
         .filter(user::Column::IsDeleted.eq(0))
+        .filter(user::Column::Status.eq("active"))
         .filter(
             sea_orm::Condition::any()
                 .add(user::Column::Email.eq(identifier))
@@ -121,18 +122,28 @@ pub async fn restore_session(
         .one(db)
         .await?
         .ok_or_else(|| AppError::unauthorized("Invalid or expired session token"))?;
+
+    let expires_at = chrono::DateTime::parse_from_rfc3339(&session.expires_at)
+        .map_err(|_| AppError::unauthorized("Invalid session expiry"))?;
+    if expires_at <= Utc::now() {
+        return Err(AppError::unauthorized("Session expired"));
+    }
         
     let user = user::Entity::find_by_id(session.user_id.clone())
         .one(db)
         .await?
         .ok_or_else(|| AppError::unauthorized("User not found"))?;
 
+    if user.is_deleted != 0 || user.status.to_lowercase() != "active" {
+        return Err(AppError::unauthorized("User account is inactive"));
+    }
+
     Ok((user, session))
 }
 
 #[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct ChangePasswordPayload {
-    pub new_password_hash: String,
+    pub new_password: String,
 }
 
 /// Change password.
@@ -141,17 +152,30 @@ pub async fn change_password(
     user_id: &str,
     req: ChangePasswordPayload,
 ) -> Result<(), AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::UserWrite).await?;
+    ctx.permissions.check(&ctx.actor, Permission::UserPasswordWrite).await?;
 
     let existing = user::Entity::find_by_id(user_id.to_string())
+        .filter(user::Column::OrgId.eq(ctx.org_id.clone()))
         .one(&ctx.db).await?
         .ok_or_else(|| AppError::not_found("user", user_id))?;
 
     let mut active: user::ActiveModel = existing.into();
-    active.password_hash = Set(Some(req.new_password_hash));
+    if req.new_password.len() < 12 {
+        return Err(AppError::validation("Password must contain at least 12 characters"));
+    }
+    let password_hash = bcrypt::hash(&req.new_password, bcrypt::DEFAULT_COST)
+        .map_err(|_| AppError::internal("Failed to secure password"))?;
+    active.password_hash = Set(Some(password_hash));
     active.password_changed_at = Set(Some(Utc::now().to_rfc3339()));
     active.updated_at = Set(Utc::now().to_rfc3339());
     active.update(&ctx.db).await?;
+
+    user_session::Entity::update_many()
+        .col_expr(user_session::Column::IsCurrent, 0.into())
+        .filter(user_session::Column::UserId.eq(user_id))
+        .filter(user_session::Column::IsCurrent.eq(1))
+        .exec(&ctx.db)
+        .await?;
 
     ctx.event_bus.publish(EventEnvelope {
         event_type: event_types::PASSWORD_CHANGED.into(),
@@ -186,18 +210,22 @@ pub async fn list_sessions(
 
 #[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct RegisterPayload {
-    pub org_id: Option<String>,
     pub full_name: String,
     pub email: Option<String>,
     pub phone: Option<String>,
-    pub primary_role: String,
-    pub password_hash: String,
+    pub password: String,
 }
 
 pub async fn register(
     db: &DatabaseConnection,
     req: RegisterPayload,
 ) -> Result<user::Model, AppError> {
+    if req.password.len() < 12 {
+        return Err(AppError::validation("Password must contain at least 12 characters"));
+    }
+    let password_hash = bcrypt::hash(&req.password, bcrypt::DEFAULT_COST)
+        .map_err(|_| AppError::internal("Failed to secure password"))?;
+
     // Check email/phone uniqueness
     if let Some(ref email) = req.email {
         let existing = user::Entity::find()
@@ -218,7 +246,8 @@ pub async fn register(
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
-    let org_id = req.org_id.unwrap_or_else(|| "default".to_string());
+    let org_id = "default".to_string();
+    let txn = db.begin().await?;
 
     // ── 1. Identity Provisioning ──────────────────────────────────
     // Self-registration provisions a new core identity profile first.
@@ -232,9 +261,19 @@ pub async fn register(
         first_name.clone()
     };
 
+    let party_id = Uuid::new_v4().to_string();
+    let party_model = crate::entities::party::Model {
+        id: party_id.clone(),
+        party_type: "Person".to_string(),
+        created_at: now.clone(),
+        updated_at: now.clone(),
+    };
+    let party_active: crate::entities::party::ActiveModel = party_model.into();
+    party_active.insert(&txn).await?;
+
     let person_model = crate::entities::person::Model {
         id: person_id.clone(),
-        party_id: "".to_string(), // Managed by party/organization domain
+        party_id,
         org_id: Some(org_id.clone()),
         first_name,
         last_name,
@@ -250,7 +289,7 @@ pub async fn register(
         created_at: now.clone(), updated_at: now.clone(),
     };
     let person_active: crate::entities::person::ActiveModel = person_model.into();
-    person_active.insert(db).await?;
+    person_active.insert(&txn).await?;
 
     let model = user::Model {
         id: id.clone(),
@@ -263,14 +302,14 @@ pub async fn register(
         phone: req.phone,
         phone_verified: 0,
         phone_verified_at: None,
-        password_hash: Some(req.password_hash),
+        password_hash: Some(password_hash),
         password_changed_at: None,
         password_expires_at: None,
         mfa_enabled: 0,
         mfa_secret: None,
         mfa_backup_codes: None,
         full_name: req.full_name,
-        primary_role: req.primary_role,
+        primary_role: "student".to_string(),
         status: "active".into(),
         last_login_at: None,
         last_login_ip: None,
@@ -288,10 +327,10 @@ pub async fn register(
     };
 
     let active: user::ActiveModel = model.into();
-    let created = active.insert(db).await?;
+    let created = active.insert(&txn).await?;
+    txn.commit().await?;
     Ok(created)
 }
-
 pub async fn logout_by_user(db: &DatabaseConnection, user_id: &str) -> Result<(), AppError> {
     user_session::Entity::update_many()
         .col_expr(user_session::Column::IsCurrent, sea_orm::sea_query::Expr::value(0))

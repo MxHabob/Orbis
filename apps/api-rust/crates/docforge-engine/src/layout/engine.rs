@@ -904,10 +904,8 @@ mod tests {
 
         assert!(!pdf_output.bytes.is_empty());
 
-        // Write the PDF output to session artifacts
-        let artifact_dir = "C:\\Users\\YZLPN3\\.gemini\\antigravity-ide\\brain\\3b480b93-845e-4d94-8f35-d67f2f1df4d8";
-        let pdf_path = std::path::Path::new(artifact_dir).join("arabic_layout_poc_proof.pdf");
-        
+        let artifact_dir = tempfile::tempdir().expect("Should create a temporary artifact directory");
+        let pdf_path = artifact_dir.path().join("arabic_layout_poc_proof.pdf");
         std::fs::write(&pdf_path, &pdf_output.bytes)
             .expect("Should successfully write integrated layout PDF to artifact folder");
 

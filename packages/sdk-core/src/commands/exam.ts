@@ -17,7 +17,7 @@ export interface ExamCommands {
   listSecretNumbers(sessionId: string): Promise<Types.SecretNumber[]>;
   listOrdering(periodId: string): Promise<Types.StudentOrdering[]>;
   generateOrdering(sessionId: string): Promise<void>;
-  generate(SessionId: string): Promise<unknown>;
+  generate(sessionId: string): Promise<unknown>;
   getSchedule(sessionId: string): Promise<Types.ExamSchedule[]>;
   generate2(sessionId: string): Promise<unknown>;
   listSeatings(sessionId: string): Promise<Types.SeatingNumber[]>;

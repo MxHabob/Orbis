@@ -8,7 +8,7 @@
     DialogFooter,
   } from "@orbis/ui-svelte/dialog";
   import { Button } from "@orbis/ui-svelte/button";
-  import { FileText, Table, FileSpreadsheet, Download, Loader2 } from "@lucide/svelte";
+  import { Table, Download, Loader2 } from "@lucide/svelte";
   import { commands } from "@orbis/sdk-desktop";
   import { toast } from "svelte-sonner";
   import * as m from "$lib/paraglide/messages";
@@ -28,7 +28,9 @@
   } = $props<Props>();
 
   let isExporting = $state(false);
-  let selectedFormat = $state<"pdf" | "csv" | "xlsx">("pdf");
+  // svc-reporting currently exposes CSV only. Keep the UI aligned with the
+  // active backend path until PDF/XLSX are implemented there.
+  let selectedFormat = $state<"csv">("csv");
 
   async function handleExport() {
     if (!definitionId) return;
@@ -39,11 +41,7 @@
       // result is the byte array, we need to download it
       const blob = new Blob([new Uint8Array(result)], {
         type:
-          selectedFormat === "csv"
-            ? "text/csv"
-            : selectedFormat === "xlsx"
-            ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            : "application/pdf",
+          "text/csv",
       });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -71,28 +69,12 @@
       </DialogDescription>
     </DialogHeader>
 
-    <div class="grid grid-cols-3 gap-4 py-4">
-      <button
-        class="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all hover:bg-muted {selectedFormat === 'pdf' ? 'border-primary bg-primary/5 text-primary' : 'border-transparent bg-muted/50'}"
-        onclick={() => selectedFormat = "pdf"}
-      >
-        <FileText size={32} />
-        <span class="text-sm font-medium">PDF</span>
-      </button>
-
-      <button
-        class="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all hover:bg-muted {selectedFormat === 'xlsx' ? 'border-primary bg-primary/5 text-primary' : 'border-transparent bg-muted/50'}"
-        onclick={() => selectedFormat = "xlsx"}
-      >
-        <FileSpreadsheet size={32} />
-        <span class="text-sm font-medium">Excel</span>
-      </button>
-
+    <div class="grid grid-cols-1 gap-4 py-4">
       <button
         class="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all hover:bg-muted {selectedFormat === 'csv' ? 'border-primary bg-primary/5 text-primary' : 'border-transparent bg-muted/50'}"
         onclick={() => selectedFormat = "csv"}
       >
-        <Table size={32} />
+        <Table size={32} aria-hidden="true" />
         <span class="text-sm font-medium">CSV</span>
       </button>
     </div>

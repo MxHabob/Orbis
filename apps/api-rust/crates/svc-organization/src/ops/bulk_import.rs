@@ -33,9 +33,5 @@ pub async fn grades(
     _ctx: &ServiceContext,
     _data: serde_json::Value,
 ) -> Result<serde_json::Value, AppError> {
-    Ok(serde_json::json!({
-        "success": true,
-        "message": "Bulk import of grades stub",
-        "imported_count": 0
-    }))
+    Err(AppError::internal("Bulk import of grades is not implemented"))
 }

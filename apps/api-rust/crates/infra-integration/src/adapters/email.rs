@@ -51,15 +51,11 @@ impl NotificationProvider for EmailAdapter {
     }
 
     async fn send(&self, notification: &Notification) -> Result<String, String> {
-        // TODO: Implement actual email sending
-        tracing::info!(
-            to = %notification.recipient,
-            subject = %notification.subject,
-            provider = %self.config.provider,
-            "Email sent (skeleton)"
-        );
-
-        Ok(format!("email_{}_{}", self.config.provider, uuid::Uuid::new_v4()))
+        let _ = notification;
+        Err(format!(
+            "Email provider '{}' is configured but sending is not implemented",
+            self.config.provider
+        ))
     }
 
     async fn send_bulk(&self, notifications: &[Notification]) -> Result<Vec<String>, String> {

@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use tracing::{error, info, warn};
+use tracing::{error, warn};
 
 use crate::traits::{
     ChatMessage, FinishReason, InferenceConfig, LlmError, LlmProvider, LlmResponse, MessageRole,
@@ -126,14 +126,9 @@ impl LlmProvider for GeminiAdapter {
         _config: &InferenceConfig,
     ) -> Result<LlmResponse, LlmError> {
         if self.api_key.is_empty() {
-            // Return mock response
-            info!("GEMINI_API_KEY is missing, returning mock LLM response");
-            return Ok(LlmResponse {
-                content: "هذا رد تجريبي من Gemini Adapter لأن مفتاح الـ API غير متوفر.".to_string(),
-                tool_calls: vec![],
-                usage: TokenUsage::default(),
-                finish_reason: FinishReason::Stop,
-            });
+            return Err(LlmError::ConfigError(
+                "GEMINI_API_KEY is required when Gemini is selected".to_string(),
+            ));
         }
 
         let url = format!(

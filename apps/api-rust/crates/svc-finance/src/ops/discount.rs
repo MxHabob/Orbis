@@ -79,7 +79,9 @@ pub async fn update(
 ) -> Result<discount_template::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceWrite).await?;
 
-    let existing = discount_template::Entity::find_by_id(template_id.to_string())
+    let existing = discount_template::Entity::find()
+        .filter(discount_template::Column::Id.eq(template_id.to_string()))
+        .filter(discount_template::Column::OrgId.eq(&ctx.org_id))
         .one(&ctx.db).await?
         .ok_or_else(|| AppError::not_found("discount_template", template_id))?;
 
@@ -95,7 +97,9 @@ pub async fn update(
 pub async fn delete(ctx: &ServiceContext, template_id: &str) -> Result<(), AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceWrite).await?;
 
-    let existing = discount_template::Entity::find_by_id(template_id.to_string())
+    let existing = discount_template::Entity::find()
+        .filter(discount_template::Column::Id.eq(template_id.to_string()))
+        .filter(discount_template::Column::OrgId.eq(&ctx.org_id))
         .one(&ctx.db).await?
         .ok_or_else(|| AppError::not_found("discount_template", template_id))?;
 

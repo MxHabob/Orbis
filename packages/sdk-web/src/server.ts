@@ -25,8 +25,11 @@ interface ServerConfig {
 }
 
 export function configureServer(config: ServerConfig): void {
+  const runtimeEnv = (globalThis as {
+    process?: { env?: Record<string, string | undefined> };
+  }).process?.env;
   const baseUrl =
-    config.baseUrl ?? process.env.ORBIS_API_URL ?? "http://localhost:3001";
+    config.baseUrl ?? runtimeEnv?.ORBIS_API_URL ?? "http://localhost:3001";
 
   // Wrap async getter in sync wrapper (configure expects sync)
   let cachedToken: string | null = null;

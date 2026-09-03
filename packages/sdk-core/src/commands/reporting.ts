@@ -2,8 +2,8 @@
 import type * as Types from '../types/index.js';
 
 export interface ReportingCommands {
-  exportReport(definitionId: string, filters: Record<string, __UNRESOLVED_JSON__>, format: string, TemplateId: string | null): Promise<unknown[]>;
-  queryReport(definitionId: string, filters: Record<string, __UNRESOLVED_JSON__>): Promise<Types.ReportDataset>;
+  exportReport(definitionId: string, filters: Record<string, unknown>, format: string, templateId: string | null): Promise<unknown[]>;
+  queryReport(definitionId: string, filters: Record<string, unknown>): Promise<Types.ReportDataset>;
   getReportDefinition(definitionId: string): Promise<Types.ReportDefinition>;
   listReports(module: string): Promise<Types.ReportDefinition[]>;
 }

@@ -2,14 +2,14 @@
 import type * as Types from '../types/index.js';
 
 export interface DocforgeCommands {
-  createTemplate(request: unknown): Promise<unknown>;
+  createTemplate(request: unknown | null): Promise<unknown>;
   getTemplate(templateId: string): Promise<unknown>;
-  updateTemplate(templateId: string, request: unknown): Promise<unknown>;
+  updateTemplate(templateId: string, request: unknown | null): Promise<unknown>;
   publishTemplate(templateId: string): Promise<unknown>;
   archiveTemplate(templateId: string): Promise<unknown>;
   restoreTemplate(templateId: string): Promise<unknown>;
   deleteTemplate(templateId: string): Promise<unknown>;
-  listTemplates(request: unknown): Promise<unknown>;
+  listTemplates(request: unknown | null): Promise<unknown>;
   listDataSchemas(): Promise<unknown>;
   previewMultiUp(templateId: string, entityIds: string[], multiUpConfig: string): Promise<unknown>;
   startMultiUpPrint(templateId: string, entityIds: string[], multiUpConfig: string): Promise<unknown>;

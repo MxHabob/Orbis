@@ -139,18 +139,18 @@ impl AuthzService {
     ) -> Result<(), AppError> {
         let role = user.primary_role.to_lowercase();
 
-        // 1. Admin bypass
-        if role == "super_admin" || role == "admin" {
-            return Ok(());
-        }
-
-        // 2. Cross-tenant boundary check
+        // Tenant boundaries apply to administrators as well.
         if let Some(ctx) = ctx {
             if let Some(ref target_org_id) = ctx.target_org_id {
                 if target_org_id != &user.org_id {
                     return Err(AppError::unauthorized("Cannot access resources outside of your organization"));
                 }
             }
+        }
+
+        // Administrators bypass permission rules, but not tenant boundaries.
+        if role == "super_admin" || role == "admin" {
+            return Ok(());
         }
 
         // 3. Database rule lookup
@@ -187,8 +187,8 @@ impl AuthzService {
             // Instantiate a lightweight ABAC engine (in a real app, rules are loaded from DB/Cache)
             let abac_engine = platform_policy::abac::AbacEngine::new(vec![]);
             if abac_engine.evaluate(&abac_ctx) == platform_policy::abac::Effect::Deny {
-                // For now, we only log ABAC denials as it's running in shadow mode
-                tracing::debug!("ABAC shadow evaluation: Denied access to {} for {}", doc_type, user.id);
+                tracing::warn!("ABAC denied access to {} for {}", doc_type, user.id);
+                return Err(AppError::unauthorized("Access denied by policy"));
             }
         }
 

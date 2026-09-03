@@ -1,7 +1,7 @@
 //! Student Fee operations.
 
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, TransactionTrait};
 use uuid::Uuid;
 
 use shared_kernel::context::ServiceContext;
@@ -67,7 +67,9 @@ pub async fn assign(
 ) -> Result<student_fee::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceWrite).await?;
 
-    let enroll = enrollment::Entity::find_by_id(cmd.enrollment_id.clone())
+    let enroll = enrollment::Entity::find()
+        .filter(enrollment::Column::Id.eq(cmd.enrollment_id.clone()))
+        .filter(enrollment::Column::OrgId.eq(&ctx.org_id))
         .one(&ctx.db)
         .await?
         .ok_or_else(|| AppError::not_found("enrollment", &cmd.enrollment_id))?;
@@ -80,12 +82,17 @@ pub async fn assign(
         None,
     ).await?;
 
-    let template = fee_template::Entity::find_by_id(cmd.fee_template_id.clone())
+    let template = fee_template::Entity::find()
+        .filter(fee_template::Column::Id.eq(cmd.fee_template_id.clone()))
+        .filter(fee_template::Column::OrgId.eq(&ctx.org_id))
         .one(&ctx.db)
         .await?
         .ok_or_else(|| AppError::not_found("fee_template", &cmd.fee_template_id))?;
 
     let amount = cmd.amount_override.unwrap_or(template.default_amount);
+    if amount <= 0.0 {
+        return Err(AppError::validation("Fee amount must be greater than zero"));
+    }
     let now = Utc::now().to_rfc3339();
     let fee_id = Uuid::new_v4().to_string();
 
@@ -108,9 +115,6 @@ pub async fn assign(
         updated_at: now.clone(),
     };
 
-    let active: student_fee::ActiveModel = sf.into();
-    let created_fee = active.insert(&ctx.db).await?;
-
     let description = format!("Tuition fee charged: {}", template.name);
     let description_ar = Some(format!("قيد رسوم دراسية: {}", template.name_ar.clone().unwrap_or(template.name.clone())));
 
@@ -130,7 +134,18 @@ pub async fn assign(
         source_module: Some("finance".to_string()),
     };
 
-    ledger::create_journal_entry(ctx, je_cmd).await?;
+    let txn = ctx.db.begin().await
+        .map_err(|e| AppError::internal(format!("Failed to start fee transaction: {e}")))?;
+    let active: student_fee::ActiveModel = sf.into();
+    let created_fee = active.insert(&txn).await?;
+    ledger::post_journal_entry(
+        &txn,
+        &ctx.org_id,
+        Some(ctx.actor.as_str()),
+        je_cmd,
+    ).await?;
+    txn.commit().await
+        .map_err(|e| AppError::internal(format!("Failed to commit fee transaction: {e}")))?;
 
     ctx.event_bus.publish(EventEnvelope {
         event_type: event_types::FEE_ASSIGNED.into(),

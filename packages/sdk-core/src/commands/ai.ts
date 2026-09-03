@@ -10,7 +10,7 @@ export interface AiCommands {
   agentApproveAction(actionLogId: string, approvedBy: string): Promise<void>;
   agentRejectAction(actionLogId: string, rejectedBy: string, reason: string): Promise<void>;
   agentCreateSession(sessionType: string): Promise<unknown>;
-  agentQuery(sessionId: string, text: string, context: unknown, onChunk: unknown): Promise<string>;
+  agentQuery(sessionId: string, text: string, context: unknown | null, onChunk: unknown): Promise<string>;
   agentOpenStandalone(): Promise<void>;
   aiGetAutopilotConfig(orgId: string): Promise<unknown>;
   aiSaveAutopilotConfig(orgId: string, config: unknown): Promise<void>;

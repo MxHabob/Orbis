@@ -1,7 +1,9 @@
 use std::collections::HashMap;
+use sea_orm::{ConnectionTrait, Statement};
 use shared_kernel::context::ServiceContext;
 use shared_kernel::errors::AppError;
-use crate::contracts::report::{ReportDataset, ReportMetadata};
+use shared_kernel::traits::Permission;
+use crate::contracts::report::{DataType, ReportDataset};
 
 pub async fn export_report(
     ctx: &ServiceContext,
@@ -26,84 +28,98 @@ pub async fn export_report(
 }
 
 pub async fn query_report(
-    _ctx: &ServiceContext,
+    ctx: &ServiceContext,
     definition_id: String,
     filters: HashMap<String, serde_json::Value>,
 ) -> Result<ReportDataset, AppError> {
-    let def = crate::registry::get_definition(&definition_id)?;
-
-    // MOCK DATA for testing
-    let rows: Vec<serde_json::Value> = if definition_id == "student_performance" {
-        vec![
-            serde_json::json!({
-                "student_name": "أحمد علي",
-                "gpa": 3.8,
-                "status": "ممتاز"
-            }),
-            serde_json::json!({
-                "student_name": "سارة خان",
-                "gpa": 3.2,
-                "status": "جيد جداً"
-            }),
-            serde_json::json!({
-                "student_name": "محمد حسن",
-                "gpa": 2.9,
-                "status": "جيد"
-            }),
-        ]
-    } else if definition_id == "attendance_summary" {
-        vec![
-            serde_json::json!({
-                "student_name": "أحمد علي",
-                "absent_days": 3,
-                "present_days": 42,
-                "rate": 93.3
-            }),
-            serde_json::json!({
-                "student_name": "سارة خان",
-                "absent_days": 1,
-                "present_days": 44,
-                "rate": 97.8
-            }),
-        ]
-    } else if definition_id == "trial_balance" {
-        vec![
-            serde_json::json!({
-                "account_name": "النقدية",
-                "debit": 150000.0,
-                "credit": 0.0
-            }),
-            serde_json::json!({
-                "account_name": "الذمم المدينة",
-                "debit": 85000.0,
-                "credit": 0.0
-            }),
-            serde_json::json!({
-                "account_name": "رأس المال",
-                "debit": 0.0,
-                "credit": 200000.0
-            }),
-            serde_json::json!({
-                "account_name": "الإيرادات",
-                "debit": 0.0,
-                "credit": 35000.0
-            }),
-        ]
-    } else {
-        vec![]
+    ctx.permissions.check(&ctx.actor, Permission::ExportData).await?;
+    let definition = crate::registry::get_definition(&definition_id)?;
+    let backend = ctx.db.get_database_backend();
+    let org_id = ctx.org_id.clone();
+    let rows = match definition_id.as_str() {
+        "student_performance" => {
+            let mut sql = String::from(
+                "SELECT u.full_name AS student_name, COALESCE(AVG(g.grade_points), AVG(g.score / NULLIF(g.max_score, 0) * 4.0)) AS gpa, CASE WHEN COALESCE(AVG(g.score / NULLIF(g.max_score, 0) * 100.0), 0) >= 90 THEN 'excellent' WHEN COALESCE(AVG(g.score / NULLIF(g.max_score, 0) * 100.0), 0) >= 75 THEN 'good' ELSE 'needs_improvement' END AS status FROM grades g JOIN enrollments e ON e.id = g.enrollment_id JOIN users u ON u.id = e.student_id WHERE g.org_id = $1 AND e.org_id = $1"
+            );
+            let mut values = vec![org_id.into()];
+            if let Some(class_id) = filters.get("class_id").and_then(serde_json::Value::as_str) {
+                sql.push_str(" AND e.class_id = $2");
+                values.push(class_id.to_string().into());
+            }
+            sql.push_str(" GROUP BY u.id, u.full_name ORDER BY u.full_name");
+            ctx.db.query_all(Statement::from_sql_and_values(backend, sql, values)).await?
+        }
+        "attendance_summary" => {
+            let (from, to) = date_range(&filters)?;
+            let sql = "SELECT u.full_name AS student_name, SUM(CASE WHEN a.status IN ('absent', 'excused') THEN 1 ELSE 0 END) AS absent_days, SUM(CASE WHEN a.status = 'present' THEN 1 ELSE 0 END) AS present_days, COALESCE(100.0 * SUM(CASE WHEN a.status = 'present' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 0) AS rate FROM attendance a JOIN enrollments e ON e.id = a.enrollment_id JOIN users u ON u.id = e.student_id WHERE a.org_id = $1 AND a.date >= $2 AND a.date <= $3 GROUP BY u.id, u.full_name ORDER BY u.full_name";
+            ctx.db.query_all(Statement::from_sql_and_values(
+                backend,
+                sql,
+                vec![org_id.into(), from.into(), to.into()],
+            )).await?
+        }
+        "trial_balance" => {
+            let as_of = filters.get("as_of_date")
+                .and_then(serde_json::Value::as_str)
+                .ok_or_else(|| AppError::validation("as_of_date is required"))?;
+            let sql = "SELECT a.name AS account_name, COALESCE(SUM(CASE WHEN j.debit_account_id = a.id THEN j.amount ELSE 0 END), 0) AS debit, COALESCE(SUM(CASE WHEN j.credit_account_id = a.id THEN j.amount ELSE 0 END), 0) AS credit FROM accounts a LEFT JOIN journal_entries j ON j.org_id = a.org_id AND (j.debit_account_id = a.id OR j.credit_account_id = a.id) AND j.accounting_date <= $2 WHERE a.org_id = $1 GROUP BY a.id, a.name ORDER BY a.code";
+            ctx.db.query_all(Statement::from_sql_and_values(
+                backend,
+                sql,
+                vec![org_id.into(), as_of.to_string().into()],
+            )).await?
+        }
+        _ => return Err(AppError::internal(format!(
+            "Report data provider is not implemented for '{}'",
+            definition_id
+        ))),
     };
 
+    let rows = rows.into_iter().map(|row| {
+        let mut value = serde_json::Map::new();
+        for column in &definition.columns {
+            let json_value = match column.data_type {
+                DataType::Number | DataType::Currency => row.try_get::<f64>("", &column.id)
+                    .map(serde_json::Value::from)
+                    .or_else(|_| row.try_get::<i64>("", &column.id).map(serde_json::Value::from))
+                    .unwrap_or(serde_json::Value::Null),
+                DataType::Boolean => row.try_get::<i32>("", &column.id)
+                    .map(|value| serde_json::Value::Bool(value != 0))
+                    .unwrap_or(serde_json::Value::Null),
+                _ => row.try_get::<String>("", &column.id)
+                    .map(serde_json::Value::String)
+                    .unwrap_or(serde_json::Value::Null),
+            };
+            value.insert(column.id.clone(), json_value);
+        }
+        serde_json::Value::Object(value)
+    }).collect();
+
     Ok(ReportDataset {
-        definition_id: def.id.clone(),
-        metadata: ReportMetadata {
+        definition_id: definition.id,
+        metadata: crate::contracts::report::ReportMetadata {
             generated_at: chrono::Utc::now().to_rfc3339(),
-            generated_by: None,
+            generated_by: Some(ctx.actor.as_str().to_string()),
             applied_filters: filters,
         },
-        columns: def.columns.clone(),
+        columns: definition.columns,
         rows,
         summary: None,
     })
+}
+
+fn date_range(filters: &HashMap<String, serde_json::Value>) -> Result<(String, String), AppError> {
+    let range = filters.get("date_range")
+        .and_then(serde_json::Value::as_object)
+        .ok_or_else(|| AppError::validation("date_range is required"))?;
+    let from = range.get("from").and_then(serde_json::Value::as_str)
+        .ok_or_else(|| AppError::validation("date_range.from is required"))?;
+    let to = range.get("to").and_then(serde_json::Value::as_str)
+        .ok_or_else(|| AppError::validation("date_range.to is required"))?;
+    if from > to {
+        return Err(AppError::validation("date_range.from must not be after date_range.to"));
+    }
+    Ok((from.to_string(), to.to_string()))
 }
 
 pub async fn get_report_definition(

@@ -14,6 +14,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 2. Load Configuration
     let cfg = Config::load();
+    cfg.validate()?;
 
     // 3. Start Server from library
     api_gateway::start_server(&cfg.database_url, cfg.port).await?;

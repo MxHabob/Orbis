@@ -2,13 +2,13 @@ use std::net::SocketAddr;
 use axum::{
     routing::{get, post, put, delete},
     Router,
-    extract::Json,
+    extract::DefaultBodyLimit,
+    extract::{Json, State},
     http::{StatusCode, Method},
     response::IntoResponse,
 };
 use serde_json::json;
 use tower_http::cors::CorsLayer;
-use tower_http::services::ServeDir;
 use tracing::info;
 
 pub mod entities;
@@ -21,13 +21,27 @@ mod middleware;
 
 use app_state::AppState;
 
-pub async fn start_server(_database_url: &str, port: u16) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn start_server(database_url: &str, port: u16) -> Result<(), Box<dyn std::error::Error>> {
     info!("🚀 Bootstrapping Orbis API Gateway (ops:: architecture)");
 
-    let state = AppState::init().await?;
+    let state = AppState::init_with_database_url(Some(database_url)).await?;
 
+    let configured_origins = std::env::var("CORS_ORIGINS").unwrap_or_else(|_| {
+        if state.config.is_development() {
+            "http://localhost:1520,http://localhost:3000".to_string()
+        } else {
+            String::new()
+        }
+    });
+    let allowed_origins = configured_origins
+        .split(',')
+        .filter_map(|origin| origin.trim().parse().ok())
+        .collect::<Vec<axum::http::HeaderValue>>();
+    if allowed_origins.is_empty() && !state.config.is_development() {
+        return Err("CORS_ORIGINS must contain at least one trusted origin outside development".into());
+    }
     let cors = CorsLayer::new()
-        .allow_origin(tower_http::cors::AllowOrigin::mirror_request())
+        .allow_origin(tower_http::cors::AllowOrigin::list(allowed_origins))
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::OPTIONS])
         .allow_headers(vec![
             axum::http::header::AUTHORIZATION,
@@ -36,9 +50,14 @@ pub async fn start_server(_database_url: &str, port: u16) -> Result<(), Box<dyn 
         ])
         .allow_credentials(true);
 
+    let is_development = state.config.is_development();
+    let bind_host = std::env::var("BIND_HOST")
+        .unwrap_or_else(|_| if is_development { "127.0.0.1".into() } else { "0.0.0.0".into() });
+
     let app = Router::new()
         // Health
         .route("/health", get(get_status))
+        .route("/ready", get(get_ready))
         .route("/api/status", get(get_status))
         // Auth
         .route("/api/auth/register", post(handler::auth::post_register))
@@ -87,6 +106,7 @@ pub async fn start_server(_database_url: &str, port: u16) -> Result<(), Box<dyn 
         // Documents
         .route("/api/documents/:owner_id", get(handler::document::get_documents))
         .route("/api/documents", post(handler::document::post_documents))
+        .route("/api/documents/:id/download", get(handler::document::download_document))
         .route("/api/documents/:id", delete(handler::document::delete_document))
         // Grades
         .route("/api/grades", get(handler::grade::get_grades).post(handler::grade::post_grades))
@@ -147,12 +167,17 @@ pub async fn start_server(_database_url: &str, port: u16) -> Result<(), Box<dyn 
         .route("/api/reports/:code", get(handler::report::get_report_definition))
         .route("/api/reports/generate", post(handler::report::post_generate_report))
         .route("/api/reports/export", post(handler::report::post_export_report))
-        // Static Storage
-        .nest_service("/storage", ServeDir::new("app_data/storage"))
+        // Storage is served only through authenticated document handlers.
         .with_state(state)
-        .layer(cors);
+        .layer(cors)
+        .layer(DefaultBodyLimit::max(
+            std::env::var("MAX_REQUEST_BYTES")
+                .ok()
+                .and_then(|value| value.parse().ok())
+                .unwrap_or(25 * 1024 * 1024),
+        ));
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    let addr = format!("{}:{}", bind_host, port).parse::<SocketAddr>()?;
     info!("📡 API Gateway listening on http://{}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
@@ -172,4 +197,17 @@ async fn get_status() -> impl IntoResponse {
             "engine": "Orbis API Gateway (ops:: architecture)",
         })),
     )
+}
+
+async fn get_ready(State(state): axum::extract::State<AppState>) -> impl IntoResponse {
+    match state.db.ping().await {
+        Ok(()) => (
+            StatusCode::OK,
+            Json(json!({ "success": true, "status": "ready" })),
+        ),
+        Err(_) => (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(json!({ "success": false, "status": "not_ready" })),
+        ),
+    }
 }

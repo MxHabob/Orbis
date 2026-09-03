@@ -210,7 +210,7 @@ impl TemplateService {
         template_id: &str,
     ) -> Result<TemplateRecord, String> {
         let result = TemplateRecord::find_by_statement(sea_orm::Statement::from_string(
-            sea_orm::DatabaseBackend::Sqlite,
+            db.get_database_backend(),
             format!(
                 "SELECT * FROM templates WHERE id = '{}' AND org_id = '{}' AND deleted_at IS NULL",
                 sql_escape(template_id),
@@ -257,7 +257,7 @@ impl TemplateService {
         sql.push_str(" ORDER BY updated_at DESC");
 
         TemplateRecord::find_by_statement(sea_orm::Statement::from_string(
-            sea_orm::DatabaseBackend::Sqlite,
+            db.get_database_backend(),
             sql,
         ))
         .all(db)
@@ -441,7 +441,7 @@ impl TemplateService {
         );
 
         TemplateVersionRecord::find_by_statement(sea_orm::Statement::from_string(
-            sea_orm::DatabaseBackend::Sqlite,
+            db.get_database_backend(),
             sql,
         ))
         .all(db)
@@ -465,7 +465,7 @@ impl TemplateService {
         );
 
         let version = TemplateVersionRecord::find_by_statement(sea_orm::Statement::from_string(
-            sea_orm::DatabaseBackend::Sqlite,
+            db.get_database_backend(),
             sql,
         ))
         .one(db)
