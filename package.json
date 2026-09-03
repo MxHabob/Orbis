@@ -5,7 +5,8 @@
   "workspaces": [
     "packages/*",
     "apps/api-rust",
-    "apps/desktop"
+    "apps/desktop",
+    "apps/mobile"
   ],
   "catalog": {
     "react": "19.2.3",
