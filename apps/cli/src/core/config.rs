@@ -92,10 +92,10 @@ impl CliConfig {
 
         // Built paths (fallback priority)
         paths.extend(vec![
-            std::path::Path::new("apps/desktop-svelte/src-tauri/target/release").join(app_name),
-            std::path::Path::new("apps/desktop-svelte/src-tauri/target/debug").join(app_name),
-            std::path::Path::new("../desktop-svelte/src-tauri/target/release").join(app_name),
-            std::path::Path::new("../desktop-svelte/src-tauri/target/debug").join(app_name),
+            std::path::Path::new("apps/desktop/src-tauri/target/release").join(app_name),
+            std::path::Path::new("apps/desktop/src-tauri/target/debug").join(app_name),
+            std::path::Path::new("../desktop/src-tauri/target/release").join(app_name),
+            std::path::Path::new("../desktop/src-tauri/target/debug").join(app_name),
         ]);
 
         paths

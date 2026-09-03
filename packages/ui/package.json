@@ -1,0 +1,176 @@
+﻿{
+  "name": "@orbis/ui",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "svelte": "./src/components/ui/index.ts",
+  "exports": {
+    ".": {
+      "svelte": "./src/components/ui/index.ts",
+      "default": "./src/components/ui/index.ts"
+    },
+    "./globals.css": "./globals.css",
+    "./utils": {
+      "svelte": "./src/utils.ts",
+      "default": "./src/utils.ts"
+    },
+    "./button": {
+      "svelte": "./src/components/ui/button/index.ts",
+      "default": "./src/components/ui/button/index.ts"
+    },
+    "./input": {
+      "svelte": "./src/components/ui/input/index.ts",
+      "default": "./src/components/ui/input/index.ts"
+    },
+    "./badge": {
+      "svelte": "./src/components/ui/badge/index.ts",
+      "default": "./src/components/ui/badge/index.ts"
+    },
+    "./card": {
+      "svelte": "./src/components/ui/card/index.ts",
+      "default": "./src/components/ui/card/index.ts"
+    },
+    "./dialog": {
+      "svelte": "./src/components/ui/dialog/index.ts",
+      "default": "./src/components/ui/dialog/index.ts"
+    },
+    "./sheet": {
+      "svelte": "./src/components/ui/sheet/index.ts",
+      "default": "./src/components/ui/sheet/index.ts"
+    },
+    "./skeleton": {
+      "svelte": "./src/components/ui/skeleton/index.ts",
+      "default": "./src/components/ui/skeleton/index.ts"
+    },
+    "./separator": {
+      "svelte": "./src/components/ui/separator/index.ts",
+      "default": "./src/components/ui/separator/index.ts"
+    },
+    "./label": {
+      "svelte": "./src/components/ui/label/index.ts",
+      "default": "./src/components/ui/label/index.ts"
+    },
+    "./form": {
+      "svelte": "./src/components/ui/form/index.ts",
+      "default": "./src/components/ui/form/index.ts"
+    },
+    "./select": {
+      "svelte": "./src/components/ui/select/index.ts",
+      "default": "./src/components/ui/select/index.ts"
+    },
+    "./tabs": {
+      "svelte": "./src/components/ui/tabs/index.ts",
+      "default": "./src/components/ui/tabs/index.ts"
+    },
+    "./tooltip": {
+      "svelte": "./src/components/ui/tooltip/index.ts",
+      "default": "./src/components/ui/tooltip/index.ts"
+    },
+    "./popover": {
+      "svelte": "./src/components/ui/popover/index.ts",
+      "default": "./src/components/ui/popover/index.ts"
+    },
+    "./combobox-dropdown": {
+      "svelte": "./src/components/ui/combobox-dropdown/index.ts",
+      "default": "./src/components/ui/combobox-dropdown/index.ts"
+    },
+    "./checkbox": {
+      "svelte": "./src/components/ui/checkbox/index.ts",
+      "default": "./src/components/ui/checkbox/index.ts"
+    },
+    "./switch": {
+      "svelte": "./src/components/ui/switch/index.ts",
+      "default": "./src/components/ui/switch/index.ts"
+    },
+    "./accordion": {
+      "svelte": "./src/components/ui/accordion/index.ts",
+      "default": "./src/components/ui/accordion/index.ts"
+    },
+    "./alert-dialog": {
+      "svelte": "./src/components/ui/alert-dialog/index.ts",
+      "default": "./src/components/ui/alert-dialog/index.ts"
+    },
+    "./avatar": {
+      "svelte": "./src/components/ui/avatar/index.ts",
+      "default": "./src/components/ui/avatar/index.ts"
+    },
+    "./progress": {
+      "svelte": "./src/components/ui/progress/index.ts",
+      "default": "./src/components/ui/progress/index.ts"
+    },
+    "./table": {
+      "svelte": "./src/components/ui/table/index.ts",
+      "default": "./src/components/ui/table/index.ts"
+    },
+    "./textarea": {
+      "svelte": "./src/components/ui/textarea/index.ts",
+      "default": "./src/components/ui/textarea/index.ts"
+    },
+    "./scroll-area": {
+      "svelte": "./src/components/ui/scroll-area/index.ts",
+      "default": "./src/components/ui/scroll-area/index.ts"
+    },
+    "./dropdown-menu": {
+      "svelte": "./src/components/ui/dropdown-menu/index.ts",
+      "default": "./src/components/ui/dropdown-menu/index.ts"
+    },
+    "./breadcrumb": {
+      "svelte": "./src/components/ui/breadcrumb/index.ts",
+      "default": "./src/components/ui/breadcrumb/index.ts"
+    },
+    "./calendar": {
+      "svelte": "./src/components/ui/calendar/index.ts",
+      "default": "./src/components/ui/calendar/index.ts"
+    },
+    "./timetable": {
+      "svelte": "./src/components/ui/timetable/index.ts",
+      "default": "./src/components/ui/timetable/index.ts"
+    },
+    "./logo": {
+      "svelte": "./src/components/ui/logo/index.ts",
+      "default": "./src/components/ui/logo/index.ts"
+    },
+    "./sonner": {
+      "svelte": "./src/components/ui/sonner/index.ts",
+      "default": "./src/components/ui/sonner/index.ts"
+    },
+    "./filter-builder": {
+      "svelte": "./src/filter-builder/index.ts",
+      "default": "./src/filter-builder/index.ts"
+    }
+  },
+  "peerDependencies": {
+    "svelte": "^5",
+    "tailwindcss": "^4"
+  },
+  "dependencies": {
+    "@fontsource-variable/rubik": "^5.2.8",
+    "@internationalized/date": "^3.12.0",
+    "@lucide/svelte": "^1.33.0",
+    "@orbis/utils": "workspace:*",
+    "bits-ui": "^2.16.3",
+    "class-variance-authority": "^0.7",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
+    "tailwind-merge": "^3.6.0",
+    "tailwind-variants": "^3.3.0",
+    "tailwindcss-animate": "^1.0.7"
+  },
+  "devDependencies": {
+    "@lucide/svelte": "^1.33.0",
+    "@tanstack/table-core": "^9.1.2",
+    "embla-carousel-svelte": "^8.6.0",
+    "formsnap": "^2.0.1",
+    "layerchart": "2.0.0-next.48",
+    "mode-watcher": "^1.1.0",
+    "paneforge": "^1.0.2",
+    "shadcn-svelte": "^1.3.0",
+    "svelte": "^5.56.1",
+    "sveltekit-superforms": "^2.30.0",
+    "tailwindcss": "^4.3.0",
+    "tw-animate-css": "^1.4.0",
+    "typescript": "^7.0.2",
+    "vaul-svelte": "^0.3.2"
+  }
+}
+

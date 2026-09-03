@@ -4,7 +4,7 @@
 //! It replaces the scattered initialization across:
 //! - `infra-persistence/bootstrap.rs` (academic_policies + period_templates)
 //! - `cli/seeder.rs` (currencies + permissions + period_templates + COA)
-//! - `desktop-svelte/completeSetup()` (INSTITUTION_PROFILES)
+//! - `desktop/completeSetup()` (INSTITUTION_PROFILES)
 //!
 //! Every blueprint produces the complete seed data for one institution type:
 //! academic_policies, grade_scales, calculation_policies, pass_fail_policies,

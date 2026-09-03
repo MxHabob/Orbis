@@ -1,7 +1,0 @@
-{
-  "extends": "@orbis/tsconfig/base.json",
-  "compilerOptions": {
-    "noEmit": true
-  },
-  "include": ["src/**/*.ts"]
-}

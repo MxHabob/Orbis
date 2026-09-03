@@ -91,4 +91,4 @@ jobs:
           releaseBody: "Automated release of the Orbis Desktop Client."
           releaseDraft: true
           prerelease: false
-          projectPath: "apps/desktop-svelte"
+          projectPath: "apps/desktop"

@@ -2,7 +2,7 @@ import { readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const root = process.cwd();
-const appRoot = join(root, "apps", "desktop-svelte");
+const appRoot = join(root, "apps", "desktop");
 const sourceRoot = join(appRoot, "src");
 const messagesRoot = join(appRoot, "messages");
 const sourceExtensions = new Set([".svelte", ".ts", ".js", ".tsx", ".jsx"]);

@@ -1,9 +1,0 @@
-{
-  "extends": "@orbis/tsconfig/base.json",
-  "compilerOptions": {
-    "paths": {
-      "@/*": ["./src/*"]
-    }
-  },
-  "include": ["src"]
-}

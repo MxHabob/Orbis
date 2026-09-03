@@ -19,8 +19,8 @@
       "name": "@orbis/api-rust",
       "version": "2.0.0",
     },
-    "apps/desktop-svelte": {
-      "name": "@orbis/desktop-svelte",
+    "apps/desktop": {
+      "name": "@orbis/desktop",
       "version": "1.0.0",
       "dependencies": {
         "@docforge/core": "workspace:*",
@@ -33,7 +33,7 @@
         "@orbis/sdk-core": "workspace:*",
         "@orbis/sdk-desktop": "workspace:*",
         "@orbis/svelte-grid": "workspace:*",
-        "@orbis/ui-svelte": "workspace:*",
+        "@orbis/ui": "workspace:*",
         "@orbis/utils": "workspace:*",
         "@tanstack/svelte-form": "^1.33.5",
         "@tanstack/svelte-query": "^6.1.40",
@@ -165,7 +165,7 @@
       "version": "1.0.0",
       "dependencies": {
         "@lucide/svelte": "^1.33.0",
-        "@orbis/ui-svelte": "workspace:*",
+        "@orbis/ui": "workspace:*",
         "@svar-ui/svelte-grid": "^2.0.0",
       },
       "devDependencies": {
@@ -179,8 +179,8 @@
       "name": "@orbis/tsconfig",
       "version": "1.0.0",
     },
-    "packages/ui-svelte": {
-      "name": "@orbis/ui-svelte",
+    "packages/ui": {
+      "name": "@orbis/ui",
       "version": "1.0.0",
       "dependencies": {
         "@fontsource-variable/rubik": "^5.2.8",
@@ -416,7 +416,7 @@
 
     "@orbis/avatar-engine": ["@orbis/avatar-engine@workspace:packages/avatar-engine"],
 
-    "@orbis/desktop-svelte": ["@orbis/desktop-svelte@workspace:apps/desktop-svelte"],
+    "@orbis/desktop": ["@orbis/desktop@workspace:apps/desktop"],
 
     "@orbis/location": ["@orbis/location@workspace:packages/location"],
 
@@ -434,7 +434,7 @@
 
     "@orbis/tsconfig": ["@orbis/tsconfig@workspace:packages/tsconfig"],
 
-    "@orbis/ui-svelte": ["@orbis/ui-svelte@workspace:packages/ui-svelte"],
+    "@orbis/ui": ["@orbis/ui@workspace:packages/ui"],
 
     "@orbis/utils": ["@orbis/utils@workspace:packages/utils"],
 

@@ -5,7 +5,7 @@ const WORKSPACE_ROOT = path.resolve(__dirname, "..");
 const API_CRATES_DIR = path.join(WORKSPACE_ROOT, "apps", "api-rust", "crates");
 const SDK_CORE_COMMANDS_DIR = path.join(WORKSPACE_ROOT, "packages", "sdk-core", "src", "commands");
 const SDK_CORE_TYPES_DIR = path.join(WORKSPACE_ROOT, "packages", "sdk-core", "src", "types");
-const TAURI_COMMANDS_DIR = path.join(WORKSPACE_ROOT, "apps", "desktop-svelte", "src-tauri", "src", "commands");
+const TAURI_COMMANDS_DIR = path.join(WORKSPACE_ROOT, "apps", "desktop", "src-tauri", "src", "commands");
 const SDK_DESKTOP_DIR = path.join(WORKSPACE_ROOT, "packages", "sdk-desktop", "src");
 
 const DOMAINS = [
