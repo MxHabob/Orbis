@@ -1650,6 +1650,10 @@ CREATE TABLE IF NOT EXISTS documents (
   name TEXT NOT NULL,
   description TEXT,
   category TEXT NOT NULL,
+  asset_type TEXT NOT NULL DEFAULT 'document',
+  school_year TEXT,
+  term TEXT,
+  tags TEXT,
   visibility TEXT NOT NULL,
   size INTEGER,
   mime_type TEXT,
@@ -1657,11 +1661,16 @@ CREATE TABLE IF NOT EXISTS documents (
   storage_provider TEXT NOT NULL,
   path TEXT NOT NULL,
   url TEXT,
+  thumbnail_path TEXT,
+  preview_path TEXT,
   deleted_at TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (org_id) REFERENCES organizations(id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_documents_archive_cursor ON documents(org_id, category, created_at, id);
+CREATE INDEX IF NOT EXISTS idx_documents_archive_type ON documents(org_id, asset_type, created_at, id);
 
 CREATE TABLE IF NOT EXISTS template_categories (
   id           TEXT PRIMARY KEY,

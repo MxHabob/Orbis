@@ -12,6 +12,7 @@ pub struct DocumentListRequest {
     pub category: Option<String>,
     pub cursor: Option<String>,
     pub limit: Option<u64>,
+    pub filter: Option<shared_kernel::query_filter::UniversalFilter>,
 }
 
 #[tauri::command]
@@ -34,6 +35,9 @@ pub async fn upload_document(
         entity_type,
         entity_id,
         category,
+        school_year: None,
+        term: None,
+        tags: None,
         visibility,
     };
     
@@ -56,7 +60,7 @@ pub async fn get_documents(
     let cursor_request = shared_kernel::pagination::CursorRequest {
         cursor: filters.cursor,
         limit: filters.limit.unwrap_or(50),
-        filter: None,
+        filter: filters.filter,
     };
     
     let docs = ops::document::list(

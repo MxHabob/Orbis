@@ -9,6 +9,10 @@ export interface Documents {
   name: string;
   description?: string | null;
   category: string;
+  asset_type: string;
+  school_year?: string | null;
+  term?: string | null;
+  tags?: string | null;
   visibility: string;
   size?: number | null;
   mime_type?: string | null;
@@ -16,6 +20,8 @@ export interface Documents {
   storage_provider: string;
   path: string;
   url?: string | null;
+  thumbnail_path?: string | null;
+  preview_path?: string | null;
   deleted_at?: string | null;
   created_at: string;
   updated_at: string;

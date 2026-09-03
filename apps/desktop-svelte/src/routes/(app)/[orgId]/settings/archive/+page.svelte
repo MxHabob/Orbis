@@ -4,20 +4,41 @@ import {
   useDocuments,
   useUploadDocument,
   useDeleteDocument,
-  resolveDocumentUrl,
-  getDocumentSource,
 } from "$lib/features/documents/queries";
 import { page } from "$app/state";
 import { Button } from "@orbis/ui-svelte/button";
-import { Input } from "@orbis/ui-svelte/input";
-import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import ArchivePreviewSheet from "$lib/features/documents/archive-preview-sheet.svelte";
+import ArchiveDocumentCard from "$lib/features/documents/archive-document-card.svelte";
+import ArchiveFilters from "$lib/features/documents/archive-filters.svelte";
+import ArchiveLoading from "$lib/features/documents/archive-loading.svelte";
 import { confirmStore } from "$lib/stores";
-import { Trash2, File, Image as ImageIcon, Video, Loader2, Upload, RefreshCw, Download, Search } from "@lucide/svelte";
+import { File, Loader2, RefreshCw, Upload } from "@lucide/svelte";
 import type { Documents } from "@orbis/sdk-core";
 import { createOperationToast } from "$lib/shared/components/operation-toast";
 
-const documentsQuery = useDocuments({ category: "archive" });
+let selectedCategory = $state("");
+let selectedAssetType = $state("");
+let selectedSchoolYear = $state("");
+let selectedTerm = $state("");
+let uploadCategory = $state("events");
+
+const archiveCategories = [
+  ["events", "الفعاليات"],
+  ["students", "الطلاب"],
+  ["staff", "الموظفون"],
+  ["certificates", "الشهادات"],
+  ["administration", "الإدارة"],
+  ["academic", "أكاديمي"],
+  ["archive", "غير مصنف"],
+] as const;
+const documentsQuery = useDocuments(() => ({
+  entityType: "archive",
+  category: selectedCategory,
+  search: searchQuery,
+  assetType: selectedAssetType,
+  schoolYear: selectedSchoolYear,
+  term: selectedTerm,
+}));
 const uploadMutation = useUploadDocument({ invalidateOnSuccess: false });
 const deleteMutation = useDeleteDocument();
 const orgId = $derived(page.params.orgId ?? "");
@@ -59,10 +80,7 @@ async function handleDelete(id: string) {
 
 // Flatten pages into a single array of documents
 let documents = $derived(
-  (documentsQuery.data?.pages.flatMap((p) => p.items) || []).filter((doc) => {
-    const query = searchQuery.trim().toLowerCase();
-    return !query || doc.name.toLowerCase().includes(query) || doc.category.toLowerCase().includes(query);
-  }),
+  documentsQuery.data?.pages.flatMap((p) => p.items) || [],
 );
 let groupedDocs = $derived(
   documents.reduce(
@@ -111,7 +129,7 @@ async function handleFileSelect(event: Event) {
           file: selectedFile,
           entity_type: "archive",
           entity_id: orgId || "organization",
-          category: "archive",
+          category: uploadCategory,
           visibility: "private",
         });
         completed += 1;
@@ -141,13 +159,14 @@ async function handleFileSelect(event: Event) {
       </p>
     </div>
     <div class="flex items-center gap-2">
-      <div class="relative hidden sm:block w-52">
-        <Search size={13} class="absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <Input bind:value={searchQuery} placeholder={m.common_header_search()} class="h-8 ps-8 text-xs" />
-      </div>
       <Button variant="outline" size="icon-sm" onclick={() => documentsQuery.refetch()} disabled={documentsQuery.isFetching} title={m.common_control_refresh()}>
         <RefreshCw size={14} class={documentsQuery.isFetching ? "animate-spin" : ""} />
       </Button>
+      <select bind:value={uploadCategory} class="hidden h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground sm:block" aria-label="تصنيف الملفات الجديدة">
+        {#each archiveCategories as [value, label]}
+          <option value={value}>{label}</option>
+        {/each}
+      </select>
       <Button variant="default" size="sm" onclick={openFilePicker} disabled={uploadMutation.isPending}>
         {#if uploadMutation.isPending}<Loader2 size={14} class="me-1.5 animate-spin" />{:else}<Upload size={14} class="me-1.5" />{/if}
         {m.common_docs_btn_upload()}
@@ -156,27 +175,18 @@ async function handleFileSelect(event: Event) {
     </div>
   </div>
 
+  <ArchiveFilters
+    bind:searchQuery
+    bind:selectedCategory
+    bind:selectedAssetType
+    bind:selectedSchoolYear
+    bind:selectedTerm
+    categories={archiveCategories}
+  />
+
   <!-- Loading Skeletons (Uses base Skeleton component styles) -->
   {#if documentsQuery.isLoading && documents.length === 0}
-    <div class="space-y-6">
-      <div class="space-y-4">
-        <Skeleton class="h-6 w-36 rounded-md" />
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {#each Array(12) as _}
-            <div class="flex flex-col p-2.5 rounded-xl border border-border/40 bg-card gap-2.5 shadow-2xs">
-              <Skeleton class="w-full aspect-square rounded-lg" />
-              <div class="space-y-1.5 px-0.5">
-                <Skeleton class="h-3.5 w-4/5 rounded" />
-                <div class="flex items-center justify-between pt-0.5">
-                  <Skeleton class="h-2.5 w-1/4 rounded" />
-                  <Skeleton class="h-2.5 w-1/3 rounded" />
-                </div>
-              </div>
-            </div>
-          {/each}
-        </div>
-      </div>
-    </div>
+    <ArchiveLoading />
   {:else if documents.length === 0}
     <!-- Empty State -->
     <div class="flex flex-col items-center justify-center py-20 text-center bg-muted/10 rounded-2xl border border-dashed border-border/60">
@@ -197,63 +207,7 @@ async function handleFileSelect(event: Event) {
         <h2 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/40 pb-2">{category}</h2>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {#each docs as doc (doc.id)}
-            <div class="group relative flex flex-col items-center p-2.5 rounded-xl border border-border/40 bg-card hover:border-primary/40 hover:shadow-md transition-all duration-200">
-              <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div
-                class="w-full aspect-square rounded-lg bg-muted/30 flex items-center justify-center overflow-hidden mb-2 relative cursor-pointer"
-                role="button"
-                tabindex="0"
-                onclick={() => openPreview(doc)}
-                onkeydown={(event) => event.key === "Enter" && openPreview(doc)}
-              >
-                {#if doc.mime_type?.startsWith("image/")}
-                  {#await resolveDocumentUrl(getDocumentSource(doc))}
-                    <Skeleton class="w-full h-full rounded-lg" />
-                  {:then srcUrl}
-                    <img src={srcUrl} alt={doc.name} class="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                  {/await}
-                {:else if doc.mime_type?.startsWith("video/")}
-                  {#await resolveDocumentUrl(getDocumentSource(doc))}
-                    <Skeleton class="w-full h-full rounded-lg" />
-                  {:then srcUrl}
-                    <video src={srcUrl} muted preload="metadata" class="w-full h-full object-cover" aria-label={doc.name}></video>
-                  {/await}
-                {:else}
-                  <File class="h-8 w-8 text-muted-foreground/70" />
-                {/if}
-                
-                <!-- Overlay Actions -->
-                <div class="absolute inset-0 bg-background/60 backdrop-blur-xs opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity gap-2">
-                  {#await resolveDocumentUrl(getDocumentSource(doc)) then srcUrl}
-                    <a
-                      href={srcUrl}
-                      download={doc.name}
-                      class="p-2 bg-background/90 hover:bg-background rounded-lg text-foreground shadow-sm transition-all hover:scale-105"
-                      title={m.settings_archive_action_download()}
-                    >
-                      <Download class="h-3.5 w-3.5" />
-                    </a>
-                  {/await}
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    class="h-7 w-7 p-0 rounded-lg cursor-pointer shadow-sm"
-                    onclick={() => handleDelete(doc.id)}
-                    title={m.common_action_delete()}
-                  >
-                    <Trash2 class="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-              
-              <div class="w-full px-0.5">
-                <p class="text-xs font-medium truncate w-full text-foreground" title={doc.name}>{doc.name}</p>
-                <p class="text-[10px] text-muted-foreground truncate w-full flex justify-between mt-0.5 font-mono">
-                  <span>{doc.extension?.toUpperCase() || 'BIN'}</span>
-                  <span>{((doc.size || 0) / 1024).toFixed(1)} KB</span>
-                </p>
-              </div>
-            </div>
+            <ArchiveDocumentCard document={doc} onpreview={openPreview} ondelete={handleDelete} />
           {/each}
         </div>
       </div>
@@ -288,3 +242,4 @@ async function handleFileSelect(event: Event) {
   url={selectedDocumentUrl}
   ondelete={handleDelete}
 /> 
+

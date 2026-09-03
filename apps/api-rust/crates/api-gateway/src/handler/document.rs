@@ -67,6 +67,9 @@ pub async fn post_documents(
         entity_type,
         entity_id,
         category,
+        school_year: None,
+        term: None,
+        tags: None,
         visibility,
     };
 

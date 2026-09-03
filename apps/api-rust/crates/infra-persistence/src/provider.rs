@@ -31,6 +31,7 @@ impl DatabaseProvider {
         crate::schema_migrations::run_postgres_security_migrations(&db).await?;
         crate::schema_migrations::run_p0_migrations(&db).await?;
         crate::schema_migrations::run_p4_migrations(&db).await?;
+        crate::schema_migrations::run_p9_migrations(&db).await?;
 
         Ok(Self {
             db,

@@ -199,6 +199,30 @@ pub async fn run_p4_migrations(db: &DatabaseConnection) -> Result<(), DbErr> {
     Ok(())
 }
 
+/// Add structured archive metadata to databases created before the archive model.
+pub async fn run_p9_migrations(db: &DatabaseConnection) -> Result<(), DbErr> {
+    for statement in [
+        "ALTER TABLE documents ADD COLUMN asset_type TEXT NOT NULL DEFAULT 'document'",
+        "ALTER TABLE documents ADD COLUMN school_year TEXT",
+        "ALTER TABLE documents ADD COLUMN term TEXT",
+        "ALTER TABLE documents ADD COLUMN tags TEXT",
+        "ALTER TABLE documents ADD COLUMN thumbnail_path TEXT",
+        "ALTER TABLE documents ADD COLUMN preview_path TEXT",
+    ] {
+        let _ = db.execute_unprepared(statement).await;
+    }
+
+    db.execute_unprepared(
+        "CREATE INDEX IF NOT EXISTS idx_documents_archive_cursor ON documents(org_id, category, created_at, id)",
+    )
+    .await?;
+    db.execute_unprepared(
+        "CREATE INDEX IF NOT EXISTS idx_documents_archive_type ON documents(org_id, asset_type, created_at, id)",
+    )
+    .await?;
+    Ok(())
+}
+
 /// Ensure process_log table has steps and current_step columns on existing databases.
 async fn migrate_process_log_schema(db: &DatabaseConnection) -> Result<(), DbErr> {
     let backend = db.get_database_backend();

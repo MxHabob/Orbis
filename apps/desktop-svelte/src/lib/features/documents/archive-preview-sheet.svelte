@@ -34,6 +34,7 @@ let panOriginY = 0;
 
 const isImage = $derived(document?.mime_type?.startsWith("image/") ?? false);
 const isVideo = $derived(document?.mime_type?.startsWith("video/") ?? false);
+const isAudio = $derived(document?.mime_type?.startsWith("audio/") ?? false);
 const isPdf = $derived(document?.mime_type === "application/pdf");
 const documentId = $derived(document?.id);
 
@@ -143,6 +144,8 @@ function endPan(event: PointerEvent) {
             <!-- Uploaded videos do not currently provide a captions track. -->
             <!-- svelte-ignore a11y_media_has_caption -->
             <video src={url} controls preload="metadata" class="max-h-[68vh] max-w-full bg-black shadow-sm" aria-label={document.name}></video>
+          {:else if isAudio}
+            <audio src={url} controls preload="metadata" class="w-full max-w-xl" aria-label={document.name}></audio>
           {:else if isPdf}
             <iframe src={url} title={document.name} class="h-[68vh] min-h-105 w-full border-0 bg-background"></iframe>
           {:else}

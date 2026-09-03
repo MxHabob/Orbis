@@ -16,6 +16,9 @@ pub struct UploadRequest<'a> {
     pub entity_type: String,
     pub entity_id: String,
     pub category: String,
+    pub school_year: Option<String>,
+    pub term: Option<String>,
+    pub tags: Option<String>,
     pub visibility: String,
 }
 
@@ -63,6 +66,16 @@ pub async fn upload_file(
         name: req.file_name.clone(),
         description: None,
         category: req.category.clone(),
+        asset_type: if req.mime_type.starts_with("image/") {
+            "image".to_string()
+        } else if req.mime_type.starts_with("video/") {
+            "video".to_string()
+        } else {
+            "document".to_string()
+        },
+        school_year: req.school_year.clone(),
+        term: req.term.clone(),
+        tags: req.tags.clone(),
         visibility: req.visibility.clone(),
         size: Some(req.data.len() as i32),
         mime_type: Some(req.mime_type.clone()),
@@ -70,6 +83,8 @@ pub async fn upload_file(
         storage_provider: storage.provider_name().to_string(),
         path: saved_path,
         url,
+        thumbnail_path: None,
+        preview_path: None,
         deleted_at: None,
         created_at: now.clone(),
         updated_at: now,
@@ -121,6 +136,19 @@ pub async fn list(
 
     if let Some(cat) = category {
         query = query.filter(documents::Column::Category.eq(cat));
+    }
+
+    if let Some(filter) = request.filter.as_ref() {
+        query = query.filter(filter.build_condition(|field| match field {
+            "asset_type" => Some(documents::Column::AssetType.into_expr().into()),
+            "school_year" => Some(documents::Column::SchoolYear.into_expr().into()),
+            "term" => Some(documents::Column::Term.into_expr().into()),
+            "tags" => Some(documents::Column::Tags.into_expr().into()),
+            _ => None,
+        }));
+        if let Some(search) = filter.search.as_deref().filter(|value| !value.is_empty()) {
+            query = query.filter(documents::Column::Name.like(format!("%{}%", search)));
+        }
     }
 
     let limit = request.effective_limit();
