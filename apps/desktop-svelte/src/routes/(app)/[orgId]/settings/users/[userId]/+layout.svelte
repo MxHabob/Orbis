@@ -188,6 +188,8 @@ const menuItems = $derived([
           <div class="w-full flex justify-start">
             <AvatarUpload
               {avatarUrl}
+              entityType="user"
+              entityId={String(userId)}
               size={220}
               fallbackText={fullName}
               class="rounded-xl border border-border"

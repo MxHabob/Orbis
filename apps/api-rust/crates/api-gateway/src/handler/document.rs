@@ -10,7 +10,7 @@ pub async fn get_documents(State(state): State<AppState>, Path(owner_id): Path<S
     // If owner_id is "all", pass None to list all org documents
     let target = if owner_id == "all" { None } else { Some(owner_id.as_str()) };
     let request = shared_kernel::pagination::CursorRequest { cursor: None, limit: 100, filter: None };
-    let r = ops::document::list(&ctx, target, None, None, request).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
+    let r = ops::document::list(&ctx, target, None, None, None, request).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(r)
 }
 

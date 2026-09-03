@@ -15,7 +15,7 @@ let {
   size = 64,
   isLoading = false,
   entityType = "organization",
-  entityId = "unknown",
+  entityId,
   category = "logo",
   onupload,
 }: {
@@ -23,7 +23,7 @@ let {
   size?: number;
   isLoading?: boolean;
   entityType?: string;
-  entityId?: string;
+  entityId: string;
   category?: string;
   onupload?: (url: string) => void;
 } = $props();

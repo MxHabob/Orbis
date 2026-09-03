@@ -217,6 +217,7 @@ async function handleSaveAvatar(e: Event) {
       <AccountAvatarCard
         bind:avatarUrl
         {fullName}
+        {userId}
         bind:useGravatar
         {isSavingAvatar}
         onsave={handleSaveAvatar}

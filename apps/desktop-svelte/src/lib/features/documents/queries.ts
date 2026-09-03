@@ -71,6 +71,7 @@ export const documentKeys = {
     assetType?: string;
     schoolYear?: string;
     term?: string;
+    entityId?: string;
   }) => ["documents", "filter", filter] as const,
 };
 
@@ -82,6 +83,7 @@ export function useDocuments(filter: () => {
   assetType?: string;
   schoolYear?: string;
   term?: string;
+  entityId?: string;
 }) {
   return createInfiniteQuery(() => ({
     queryKey: documentKeys.byFilter(filter()),
@@ -95,10 +97,13 @@ export function useDocuments(filter: () => {
         cursor: pageParam,
         limit: 50,
         filter:
-          currentFilter.search?.trim() || currentFilter.assetType || currentFilter.schoolYear || currentFilter.term
+          currentFilter.search?.trim() || currentFilter.entityId || currentFilter.assetType || currentFilter.schoolYear || currentFilter.term
             ? {
                 search: currentFilter.search?.trim() || undefined,
                 conditions: [
+                  ...(currentFilter.entityId
+                    ? [{ field: "entity_id", operator: "eq", value: currentFilter.entityId }]
+                    : []),
                   ...(currentFilter.assetType
                     ? [{ field: "asset_type", operator: "eq", value: currentFilter.assetType }]
                     : []),

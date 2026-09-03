@@ -18,7 +18,7 @@ let {
   fallbackText = "",
   class: className,
   entityType = "user",
-  entityId = "unknown",
+  entityId,
   category = "avatar",
   onupload,
 }: {
@@ -28,7 +28,7 @@ let {
   fallbackText?: string;
   class?: string;
   entityType?: string;
-  entityId?: string;
+  entityId: string;
   category?: string;
   onupload?: (url: string) => void;
 } = $props();

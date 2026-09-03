@@ -15,6 +15,7 @@ import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
 interface Props {
   avatarUrl: string | null;
   fullName: string;
+  userId: string;
   useGravatar: boolean;
   isSavingAvatar?: boolean;
   onsave: (e: Event) => void;
@@ -23,6 +24,7 @@ interface Props {
 let {
   avatarUrl = $bindable(),
   fullName,
+  userId,
   useGravatar = $bindable(),
   isSavingAvatar = false,
   onsave,
@@ -46,6 +48,8 @@ let {
           bind:avatarUrl={avatarUrl}
           size={64}
           fallbackText={fullName}
+          entityType="user"
+          entityId={userId}
         />
         {#if useGravatar}
           <span class="text-xs font-semibold text-muted-foreground">{m.common_account_avatar_use_gravatar ? m.common_account_avatar_use_gravatar() : 'Use Gravatar'} (Active)</span>

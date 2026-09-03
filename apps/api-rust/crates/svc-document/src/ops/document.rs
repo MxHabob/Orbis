@@ -126,6 +126,7 @@ pub async fn list(
     owner_id: Option<&str>,
     entity_type: Option<&str>,
     category: Option<&str>,
+    entity_id: Option<&str>,
     request: shared_kernel::pagination::CursorRequest,
 ) -> Result<shared_kernel::pagination::CursorPage<documents::Model>, AppError> {
     use sea_orm::{ColumnTrait, Condition, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
@@ -151,12 +152,17 @@ pub async fn list(
         query = query.filter(documents::Column::Category.eq(cat));
     }
 
+    if let Some(eid) = entity_id {
+        query = query.filter(documents::Column::EntityId.eq(eid));
+    }
+
     if let Some(filter) = request.filter.as_ref() {
         query = query.filter(filter.build_condition(|field| match field {
             "asset_type" => Some(documents::Column::AssetType.into_expr().into()),
             "school_year" => Some(documents::Column::SchoolYear.into_expr().into()),
             "term" => Some(documents::Column::Term.into_expr().into()),
             "tags" => Some(documents::Column::Tags.into_expr().into()),
+            "entity_id" => Some(documents::Column::EntityId.into_expr().into()),
             _ => None,
         }));
         if let Some(search) = filter.search.as_deref().filter(|value| !value.is_empty()) {

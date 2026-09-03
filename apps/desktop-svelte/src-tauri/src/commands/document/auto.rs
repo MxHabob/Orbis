@@ -12,7 +12,7 @@ pub async fn document_document_list(state: State<'_, Arc<AppState>>, owner_id: O
         Some(v) => serde_json::from_value(v).unwrap_or_default(),
         None => shared_kernel::pagination::CursorRequest::default(),
     };
-    let result = ops::document::list(&ctx, owner_id.as_deref(), entity_type.as_deref(), category.as_deref(), request_parsed).await.map_err(CommandError::from)?;
+    let result = ops::document::list(&ctx, owner_id.as_deref(), entity_type.as_deref(), category.as_deref(), None, request_parsed).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 

@@ -9,6 +9,7 @@ use svc_document::ops;
 pub struct DocumentListRequest {
     pub owner_id: Option<String>,
     pub entity_type: Option<String>,
+    pub entity_id: Option<String>,
     pub category: Option<String>,
     pub cursor: Option<String>,
     pub limit: Option<u64>,
@@ -68,6 +69,7 @@ pub async fn get_documents(
         target,
         filters.entity_type.as_deref(),
         filters.category.as_deref(),
+        filters.entity_id.as_deref(),
         cursor_request,
     )
         .await
