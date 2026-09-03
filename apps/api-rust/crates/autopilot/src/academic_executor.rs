@@ -4,6 +4,7 @@
 //! fake JSON strings. Every task type now makes actual database changes.
 
 use std::sync::Arc;
+use async_trait::async_trait;
 use chrono::Utc;
 use sea_orm::{
     DatabaseConnection, EntityTrait, ColumnTrait, QueryFilter,
@@ -29,7 +30,7 @@ impl AcademicExecutor {
         db: &DatabaseConnection,
         task: &autopilot_task::Model,
         event_bus: &Arc<EventBus>,
-        period_gate: Option<&Arc<PeriodGate>>,
+        period_gate: Option<&PeriodGate>,
     ) -> Result<String, AppError> {
         let now = Utc::now().to_rfc3339();
         let target_id = task.target_entity_id.as_deref()
@@ -324,7 +325,7 @@ impl AcademicExecutor {
     }
 
     async fn invalidate_gate_after_task(
-        period_gate: Option<&Arc<PeriodGate>>,
+        period_gate: Option<&PeriodGate>,
         task_type: &str,
         target_id: &str,
         org_id: &str,
@@ -389,5 +390,36 @@ impl AcademicExecutor {
             payload: serde_json::json!({}),
             chain_depth: 0,
         });
+    }
+}
+
+#[async_trait]
+impl crate::executor::AutopilotExecutor for AcademicExecutor {
+    fn can_handle(&self, task_type: &str) -> bool {
+        matches!(
+            task_type,
+            "year.activate"
+                | "year.start_closing"
+                | "year.archive"
+                | "period.activate"
+                | "period.start_grading"
+                | "period.lock"
+                | "period.close"
+                | "enrollment.open"
+                | "enrollment.close"
+                | "grade_entry.open"
+                | "grade_entry.close"
+                | "promotion.dry_run"
+        )
+    }
+
+    async fn execute(
+        &self,
+        db: &DatabaseConnection,
+        task: &autopilot_task::Model,
+        event_bus: &Arc<EventBus>,
+        period_gate: Option<&PeriodGate>,
+    ) -> Result<String, AppError> {
+        AcademicExecutor::execute(db, task, event_bus, period_gate).await
     }
 }

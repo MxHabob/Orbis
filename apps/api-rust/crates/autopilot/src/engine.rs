@@ -88,7 +88,7 @@ impl AutopilotEngine {
         Self { 
             event_bus, 
             period_gate: None,
-            executors: Vec::new(),
+            executors: vec![Arc::new(AcademicExecutor)],
         }
     }
 
@@ -380,11 +380,6 @@ impl AutopilotEngine {
                     exec_result = executor.execute(db, &task, &self.event_bus, self.period_gate.as_deref()).await;
                     break;
                 }
-            }
-
-            // Fallback for academic tasks (legacy hardcoding fallback)
-            if exec_result.is_err() && task.task_type.starts_with("academic.") {
-                exec_result = AcademicExecutor::execute(db, &task, &self.event_bus, self.period_gate.as_ref()).await;
             }
 
             match exec_result {
