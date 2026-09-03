@@ -1,5 +1,5 @@
-﻿{
-  "name": "@orbis/ui",
+{
+  "name": "@orbis/ui-svelte",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -173,4 +173,3 @@
     "vaul-svelte": "^0.3.2"
   }
 }
-

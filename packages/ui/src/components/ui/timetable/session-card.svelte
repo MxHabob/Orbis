@@ -1,6 +1,6 @@
 <script lang="ts">
   import { GripVertical, MapPin, Pencil, Trash2, Users, AlertTriangle, BookOpen, Clock } from "@lucide/svelte";
-  import { Button } from "@orbis/ui/button";
+  import { Button } from "@orbis/ui-svelte/button";
 
   interface Props {
     lesson: any;

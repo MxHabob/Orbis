@@ -46,7 +46,7 @@ function defaultCompare(a: unknown, b: unknown): number {
  * @example
  * ```svelte
  * <script lang="ts">
- * import { createTableState } from '@orbis/ui/table';
+ * import { createTableState } from '@orbis/ui-svelte/table';
  *
  * const table = createTableState({
  *   data: students,

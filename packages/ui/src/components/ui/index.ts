@@ -1,4 +1,4 @@
-// ── @orbis/ui ────────────────────────────────────────────────────────
+// ── @orbis/ui-svelte ─────────────────────────────────────────────────
 // Re-export all shadcn-svelte components for use across the monorepo.
 
 export {

@@ -1,4 +1,4 @@
-// ── @orbis/ui/table ─────────────────────────────────────────────────
+// ── @orbis/ui-svelte/table ──────────────────────────────────────────
 // Table infrastructure: primitive components + headless hooks + utilities.
 
 // ── Primitive Components (shadcn-svelte) ────────────────────────────
