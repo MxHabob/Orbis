@@ -25,6 +25,11 @@
   function stopPropagation(event: MouseEvent) {
     event.stopPropagation();
   }
+
+  async function resolveDisplayUrl(): Promise<string> {
+    const resolvedUrl = await resolveDocumentUrl(source);
+    return createDocumentPreviewUrl(resolvedUrl);
+  }
 </script>
 
 <article class="archive-card group">
@@ -37,12 +42,10 @@
     onkeydown={(event) => event.key === "Enter" && onpreview(document)}
   >
     {#if isImage}
-      {#await resolveDocumentUrl(source)} then sourceUrl}
-        {#await createDocumentPreviewUrl(sourceUrl) then previewUrl}
-          <img src={previewUrl} alt={document.name} loading="lazy" decoding="async" width="320" height="240" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-        {:catch}
-          <FileText class="m-auto h-8 w-8 text-muted-foreground/60" />
-        {/await}
+      {#await resolveDisplayUrl() then previewUrl}
+        <img src={previewUrl} alt={document.name} loading="lazy" decoding="async" width="320" height="240" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+      {:catch}
+        <FileText class="m-auto h-8 w-8 text-muted-foreground/60" />
       {/await}
     {:else if isVideo}
       {#await resolveDocumentUrl(source) then sourceUrl}

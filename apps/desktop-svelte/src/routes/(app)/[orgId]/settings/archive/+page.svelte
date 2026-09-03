@@ -4,6 +4,8 @@ import {
   useDocuments,
   useUploadDocument,
   useDeleteDocument,
+  resolveDocumentUrl,
+  getDocumentSource,
 } from "$lib/features/documents/queries";
 import { page } from "$app/state";
 import { Button } from "@orbis/ui-svelte/button";
@@ -31,6 +33,12 @@ const archiveCategories = [
   ["academic", "أكاديمي"],
   ["archive", "غير مصنف"],
 ] as const;
+let fileInput: HTMLInputElement | undefined = $state();
+let searchQuery = $state("");
+let isPreviewOpen = $state(false);
+let selectedDocument = $state<Documents | null>(null);
+let selectedDocumentUrl = $state("");
+let archiveScroller: HTMLDivElement | undefined = $state();
 const documentsQuery = useDocuments(() => ({
   entityType: "archive",
   category: selectedCategory,
@@ -42,12 +50,6 @@ const documentsQuery = useDocuments(() => ({
 const uploadMutation = useUploadDocument({ invalidateOnSuccess: false });
 const deleteMutation = useDeleteDocument();
 const orgId = $derived(page.params.orgId ?? "");
-let fileInput: HTMLInputElement | undefined = $state();
-let searchQuery = $state("");
-let isPreviewOpen = $state(false);
-let selectedDocument = $state<Documents | null>(null);
-let selectedDocumentUrl = $state("");
-let archiveScroller: HTMLDivElement | undefined = $state();
 
 async function loadNextPage() {
   if (!documentsQuery.hasNextPage || documentsQuery.isFetchingNextPage) return;
