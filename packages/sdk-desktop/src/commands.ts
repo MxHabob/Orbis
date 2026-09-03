@@ -38,7 +38,7 @@ export const commands: OrbisCommands = {
     updateUser: (userId: any, req: any) => cmd("iam_user_update", { userId, req }),
     deleteUser: (userId: any) => cmd("iam_user_delete", { userId }),
     changeRole: (userId: any, req: any) => cmd("iam_user_change_role", { userId, req }),
-    iamAuthLogin: (identifier: any, passwordHash: any) => cmd("iam_auth_login", { identifier, passwordHash }),
+    iamAuthLogin: (identifier: any, password: any) => cmd("iam_auth_login", { identifier, password }),
     iamAuthRestoreSession: (token: any) => cmd("iam_auth_restore_session", { token }),
     iamAuthLogout: (token: any) => cmd("iam_auth_logout", { token }),
     iamAuthRegister: (data: any) => cmd("iam_auth_register", { data }),
@@ -329,12 +329,6 @@ export const commands: OrbisCommands = {
     updateAcademicPolicy: (orgId: any, payload: any) => cmd("platform_policy_academic_policy_update_academic_policy", { orgId, payload }),
     getAutopilotConfig: (orgId: any) => cmd("platform_policy_academic_policy_get_autopilot_config", { orgId }),
     updateAutopilotConfig: (orgId: any, config: any) => cmd("platform_policy_academic_policy_update_autopilot_config", { orgId, config }),
-  },
-  reporting: {
-    exportReport: (definitionId: any, filters: any, format: any, templateId: any) => cmd("reporting_export_export_report", { definitionId, filters, format, templateId }),
-    queryReport: (definitionId: any, filters: any) => cmd("reporting_export_query_report", { definitionId, filters }),
-    getReportDefinition: (definitionId: any) => cmd("reporting_export_get_report_definition", { definitionId }),
-    listReports: (module: any) => cmd("reporting_export_list_reports", { module }),
   },
   ai: {
     autopilotGetTasks: () => cmd("autopilot_get_tasks", {}),

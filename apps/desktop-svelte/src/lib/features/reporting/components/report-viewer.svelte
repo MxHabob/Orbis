@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { commands } from "@orbis/sdk-desktop";
-  import type { ReportDefinition, ReportDataset, ReportColumn } from "@orbis/sdk-core";
+  import type { ReportDefinition, ReportDataset, ColumnDef } from "@orbis/sdk-core";
   import { Button } from "@orbis/ui-svelte/button";
   import { Input } from "@orbis/ui-svelte/input";
   import { Loader2, Download, Filter, RefreshCw, AlertCircle } from "@lucide/svelte";
@@ -26,13 +26,13 @@
   let gridColumns = $state<any[]>([]);
 
   // Map Rust ReportColumn to OrbisGrid column
-  function buildGridColumns(cols: any[]) {
+  function buildGridColumns(cols: ColumnDef[]) {
     return cols.map(c => ({
-      name: c.id,
-      header: c.label,
-      width: c.widthWeight * 50,
-      type: c.dataType === "number" || c.dataType === "currency" ? "number" : "string",
-      align: c.dataType === "number" || c.dataType === "currency" ? "right" : "left",
+      name: c.key,
+      header: getLocale() === "ar" ? c.headerAr : c.header,
+      width: c.width ? Number.parseInt(c.width, 10) || 120 : 120,
+      type: c.dataType === "number" || c.dataType === "currency" || c.dataType === "decimal" ? "number" : "string",
+      align: c.dataType === "number" || c.dataType === "currency" || c.dataType === "decimal" ? "right" : "left",
       editable: false,
     }));
   }
@@ -41,13 +41,12 @@
     try {
       isLoading = true;
       error = null;
-      // @ts-ignore - Temporary cast since generated bindings might lack this if not updated in DOMAINS completely yet
       definition = await commands.reporting.getReportDefinition(definitionId);
       // Initialize default filters
       if (definition) {
         filters = {};
         for (const p of definition.parameters) {
-          filters[p.id] = null;
+          filters[p.key] = null;
         }
       }
     } catch (e: any) {

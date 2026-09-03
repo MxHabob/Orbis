@@ -48,6 +48,10 @@ class SolveJobManager {
             .withBestSolutionConsumer { best -> onBestSolution(jobId, problem, best) }
             .withFinalBestSolutionConsumer { _ -> onSolveComplete(jobId) }
             .withExceptionHandler { _, throwable ->
+                jobs[jobId]?.let { state ->
+                    state.status = JobStatus.failed
+                    state.error = throwable.message ?: "Solver failed"
+                }
                 log.error("Solving failed for job $jobId", throwable)
             }
             .run()
@@ -120,6 +124,10 @@ class SolveJobManager {
             .withBestSolutionConsumer { best -> onBestExamSolution(jobId, problem, best) }
             .withFinalBestSolutionConsumer { _ -> onExamSolveComplete(jobId) }
             .withExceptionHandler { _, throwable ->
+                examJobs[jobId]?.let { state ->
+                    state.status = JobStatus.failed
+                    state.error = throwable.message ?: "Exam solver failed"
+                }
                 log.error("Exam solving failed for job $jobId", throwable)
             }
             .run()

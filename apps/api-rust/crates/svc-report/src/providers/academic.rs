@@ -127,6 +127,7 @@ pub async fn student_list(
 
     let mut sql = String::from(
         r#"SELECT
+            COUNT(*) OVER() AS total_count,
             e.id AS enrollment_id,
             e.student_number,
             e.status AS enrollment_status,
@@ -135,19 +136,21 @@ pub async fn student_list(
             c.name AS class_name,
             c.name_ar AS class_name_ar,
             c.level AS class_level,
-            u.id AS student_id,
-            u.full_name,
-            u.name_ar,
-            u.email,
-            u.phone,
-            u.national_id,
-            u.sex,
-            u.birth_date
+                        p.id AS student_id,
+                        p.full_name,
+                        p.name_ar,
+                        u.email,
+                        p.phone,
+                        p.national_id,
+                        p.gender AS sex,
+                        p.date_of_birth AS birth_date
         FROM enrollments e
-        JOIN users u ON e.student_id = u.id
+                JOIN persons p ON e.student_id = p.id
+                LEFT JOIN users u ON u.person_id = p.id AND u.org_id = e.org_id
         JOIN classes c ON e.class_id = c.id
         WHERE e.org_id = $1
-          AND e.period_id = $2"#
+                    AND e.period_id = $2
+                    AND p.org_id = $1"#
     );
 
     let mut params: Vec<sea_orm::Value> = vec![org_id.into(), period_id.into()];
@@ -163,9 +166,15 @@ pub async fn student_list(
         params.push(status.into());
         param_idx += 1;
     }
-    let _ = param_idx;
 
     sql.push_str(" ORDER BY c.level, c.name, e.student_number");
+
+    let pagination = request.pagination.clone().unwrap_or_default();
+    if request.pagination.is_some() {
+        sql.push_str(&format!(" LIMIT ${} OFFSET ${}", param_idx, param_idx + 1));
+        params.push(pagination.limit().into());
+        params.push(pagination.offset().into());
+    }
 
     let stmt = sea_orm::Statement::from_sql_and_values(
         db.get_database_backend(), &sql, params,
@@ -175,11 +184,20 @@ pub async fn student_list(
 
     let mut rows = Vec::with_capacity(rows_raw.len());
 
+    let total_count = rows_raw.first()
+        .and_then(|row| row.try_get::<i64>("", "total_count").ok())
+        .unwrap_or(rows_raw.len() as i64) as u64;
+    let row_offset = if request.pagination.is_some() {
+        pagination.offset() as usize
+    } else {
+        0
+    };
+
     for (idx, row) in rows_raw.iter().enumerate() {
         rows.push(json!({
-            "seq": idx + 1,
+            "seq": row_offset + idx + 1,
             "studentNumber": row.try_get::<String>("", "student_number").unwrap_or_default(),
-            "fullName": row.try_get::<String>("", "full_name").unwrap_or_default(),
+            "fullName": row.try_get::<Option<String>>("", "full_name").unwrap_or_default(),
             "nameAr": row.try_get::<Option<String>>("", "name_ar").unwrap_or_default(),
             "className": row.try_get::<String>("", "class_name").unwrap_or_default(),
             "classNameAr": row.try_get::<Option<String>>("", "class_name_ar").unwrap_or_default(),
@@ -193,8 +211,6 @@ pub async fn student_list(
             "birthDate": row.try_get::<Option<String>>("", "birth_date").unwrap_or_default(),
         }));
     }
-
-    let total_count = rows.len() as u64;
 
     let mut param_summary = vec![
         ParameterSummaryItem {
@@ -288,8 +304,8 @@ pub async fn student_list(
             subtotals: None,
         }),
         total_count,
-        page: 0,
-        page_size: 0,
+        page: if request.pagination.is_some() { pagination.page } else { 0 },
+        page_size: if request.pagination.is_some() { pagination.page_size } else { 0 },
         generated_at: now,
         generated_by: None,
     })

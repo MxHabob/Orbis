@@ -482,6 +482,19 @@ export interface TermCalcRequest {
   exam_max?: number | null;
 }
 
+export interface TermCalcOutput {
+  coursework_score: number;
+  coursework_max: number;
+  exam_score: number;
+  exam_max: number;
+  total_score: number;
+  total_max: number;
+  percentage: number;
+  grade_label?: string | null;
+  gpa_points?: number | null;
+  is_passing: boolean;
+}
+
 export interface RecordGrade {
   enrollment_id: string;
   assessment_id?: string | null;
@@ -781,6 +794,11 @@ export interface AttendanceAnalytics {
   sick_count: number;
   overall_rate: number;
   at_risk_count: number;
+}
+
+export interface AttendanceService {
+  cmd: unknown;
+  query: unknown;
 }
 
 export interface AIBehaviorSubmission {

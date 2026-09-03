@@ -11,12 +11,10 @@
   },
   "app": {
     "macOSPrivateApi": true,
-    "withGlobalTauri": true,
     "security": {
       "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost blob: data:; style-src 'self' 'unsafe-inline'; script-src 'self'",
       "dangerousDisableAssetCspModification": false,
       "freezePrototype": true,
-      "withGlobalTauri": false,
       "assetProtocol": {
         "enable": true,
         "scope": ["$APPDATA/**"]

@@ -12,6 +12,66 @@ use crate::repository::{SchedulingCommandRepo, SchedulingQueryRepo};
 use crate::services::{schedule::ScheduleService, solver::{StartSolveRequest, TimetableSolverService}};
 use infra_scheduler::RemoteTimefoldSolver;
 
+/// Requeue jobs that were interrupted while the API process was restarting.
+/// The immutable problem snapshot makes recovery independent of the UI request.
+pub async fn recover_interrupted_jobs(
+    db: sea_orm::DatabaseConnection,
+) -> Result<usize, AppError> {
+    use std::collections::HashSet;
+
+    let jobs = solve_job::Entity::find()
+        .filter(solve_job::Column::Status.is_in(["pending", "running"]))
+        .all(&db)
+        .await?;
+    let mut recovered = 0;
+
+    for job in jobs {
+        let Some(snapshot) = job.problem_snapshot.clone() else {
+            let mut active: solve_job::ActiveModel = job.into();
+            active.status = Set("failed".into());
+            active.error_message = Set(Some("Job cannot be recovered because its problem snapshot is missing".into()));
+            active.completed_at = Set(Some(Utc::now().to_rfc3339()));
+            active.updated_at = Set(Utc::now().to_rfc3339());
+            active.update(&db).await?;
+            continue;
+        };
+
+        let problem: infra_scheduler::TimetableProblem = match serde_json::from_str(&snapshot) {
+            Ok(problem) => problem,
+            Err(error) => {
+                let mut active: solve_job::ActiveModel = job.into();
+                active.status = Set("failed".into());
+                active.error_message = Set(Some(format!("Job snapshot is invalid: {error}")));
+                active.completed_at = Set(Some(Utc::now().to_rfc3339()));
+                active.updated_at = Set(Utc::now().to_rfc3339());
+                active.update(&db).await?;
+                continue;
+            }
+        };
+
+        let open_ids: HashSet<String> = problem.assignments.iter().map(|assignment| assignment.id.clone()).collect();
+        let query = std::sync::Arc::new(SchedulingQueryRepo::new(db.clone()));
+        let cmd = std::sync::Arc::new(SchedulingCommandRepo::new(db.clone()));
+        let solver_url = std::env::var("SOLVER_SERVICE_URL")
+            .ok()
+            .filter(|url| !url.is_empty())
+            .unwrap_or_else(|| "http://localhost:8081".to_string());
+        let scheduler = std::sync::Arc::new(RemoteTimefoldSolver::new(solver_url));
+
+        tokio::spawn(crate::services::solver::TimetableSolverService::run_solve_job(
+            scheduler,
+            cmd,
+            query,
+            job.id,
+            problem,
+            open_ids,
+        ));
+        recovered += 1;
+    }
+
+    Ok(recovered)
+}
+
 pub async fn start(
     ctx: &ServiceContext, period_id: &str,
 ) -> Result<crate::services::solver::SolveJobResponse, AppError> {

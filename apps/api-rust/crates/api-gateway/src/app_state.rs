@@ -160,6 +160,7 @@ impl AppState {
             include_str!("../../infra-persistence/src/schemas/schema_baseline.sql")
         };
         infra_persistence::migrations::run_sql_migration(&db, baseline_sql).await?;
+        infra_persistence::schema_migrations::run_outbox_migrations(&db).await?;
         infra_persistence::schema_migrations::run_p0_migrations(&db).await?;
         infra_persistence::schema_migrations::run_p4_migrations(&db).await?;
         docforge_orbis::schema::migrate_template_schema(&db).await?;
@@ -170,6 +171,10 @@ impl AppState {
         platform.start_event_loop();
         platform.start_autopilot_scheduler();
         platform.start_autopilot_catch_up();
+        let recovered_jobs = svc_scheduling::ops::solver::recover_interrupted_jobs(db.clone()).await?;
+        if recovered_jobs > 0 {
+            tracing::info!(count = recovered_jobs, "Recovered interrupted schedule solve jobs");
+        }
 
         // Initialize report service
         let registry = Arc::new(ReportRegistry::new());

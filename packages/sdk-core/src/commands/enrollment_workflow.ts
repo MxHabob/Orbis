@@ -8,5 +8,5 @@ export interface Enrollment_workflowCommands {
   startDryRun(jobId: string, config: Types.PromotionConfig): Promise<Types.PromotionPreview>;
   execute(jobId: string): Promise<Types.PromotionResult>;
   rollback(jobId: string): Promise<void>;
-  registerStudent(req: Types.RegisterStudentRequest): Promise<unknown>;
+  registerStudent(req: Types.RegisterStudentRequest): Promise<Types.RegistrationResult>;
 }

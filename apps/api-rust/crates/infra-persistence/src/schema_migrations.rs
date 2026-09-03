@@ -21,6 +21,20 @@ pub async fn run_p0_migrations(db: &DatabaseConnection) -> Result<(), DbErr> {
     Ok(())
 }
 
+/// Add durable claim metadata to outbox rows created by older installations.
+pub async fn run_outbox_migrations(db: &DatabaseConnection) -> Result<(), DbErr> {
+    for statement in [
+        "ALTER TABLE outbox_events ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE outbox_events ADD COLUMN locked_by TEXT",
+        "ALTER TABLE outbox_events ADD COLUMN locked_until TEXT",
+        "ALTER TABLE outbox_events ADD COLUMN last_error TEXT",
+    ] {
+        let _ = db.execute_unprepared(statement).await;
+    }
+    db.execute_unprepared("CREATE INDEX IF NOT EXISTS idx_outbox_events_claim ON outbox_events(locked_until, created_at)").await?;
+    Ok(())
+}
+
 /// Enable RLS on every table exposed through the public schema.
 ///
 /// No policies are created here intentionally: the application connects as

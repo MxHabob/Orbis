@@ -218,15 +218,13 @@ export interface Verification {
 }
 
 export interface ChangePasswordPayload {
-  new_password_hash: string;
+  new_password: string;
 }
 
 export interface RegisterPayload {
-  org_id?: string | null;
   full_name: string;
   email?: string | null;
   phone?: string | null;
-  primary_role: string;
   password: string;
 }
 
@@ -255,6 +253,7 @@ export interface CreateUserPayload {
 
 export interface UpdateUserPayload {
   full_name?: string | null;
+  name_en?: string | null;
   email?: string | null;
   phone?: string | null;
   status?: string | null;

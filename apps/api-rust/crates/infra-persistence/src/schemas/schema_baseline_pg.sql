@@ -1918,7 +1918,11 @@ CREATE TABLE IF NOT EXISTS outbox_events (
   org_id TEXT NOT NULL REFERENCES organizations(id),
   event_type TEXT NOT NULL,
   payload TEXT NOT NULL,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  locked_by TEXT,
+  locked_until TEXT,
+  last_error TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_outbox_events_created ON outbox_events(created_at);

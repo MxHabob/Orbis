@@ -11,9 +11,10 @@
 //! ```rust
 //! use shared_kernel::pagination::{CursorPage, CursorRequest};
 //!
-//! let request = CursorRequest { cursor: None, limit: 50 };
+//! let request = CursorRequest { cursor: None, limit: 50, filter: None };
 //! // ... query with WHERE id > cursor ORDER BY id LIMIT limit+1
-//! let page = CursorPage::from_items(items, request.limit);
+//! let items = Vec::<String>::new();
+//! let page = CursorPage::from_items_with(items, request.limit, |item| item.clone());
 //! ```
 
 use serde::{Deserialize, Serialize};

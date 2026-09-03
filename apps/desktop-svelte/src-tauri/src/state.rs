@@ -12,6 +12,7 @@ use shared_kernel::event_bus::EventBus;
 use shared_kernel::tenant_guard::TenantGuard;
 use shared_kernel::period_gate::PeriodGate;
 use shared_kernel::traits::Actor;
+use svc_report::org_context::OrgContext;
 
 /// Authenticated session context — set at login, cleared at logout.
 ///
@@ -172,6 +173,9 @@ pub struct AppState {
     /// Platform services (new architecture).
     pub platform: Arc<PlatformServices>,
 
+    /// Canonical backend report service shared by all Tauri report commands.
+    pub report_service: Arc<svc_report::service::ReportService>,
+
     /// Authenticated session — set at login, cleared at logout.
     pub session: Arc<RwLock<Option<SessionContext>>>,
 }
@@ -195,11 +199,19 @@ impl AppState {
         platform.start_event_loop();
         platform.start_autopilot_scheduler();
         platform.start_autopilot_catch_up();
+
+        let report_registry = Arc::new(svc_report::registry::ReportRegistry::new());
+        let report_service = Arc::new(svc_report::service::ReportService::new(
+            report_registry,
+            Arc::new(provider.db()),
+        ));
+        report_service.register_builtin_reports();
         
         Ok(Self {
             provider,
             config,
             platform,
+            report_service,
             session: Arc::new(RwLock::new(None)),
         })
     }
@@ -207,6 +219,45 @@ impl AppState {
     /// Accessor for the database connection.
     pub fn db(&self) -> DatabaseConnection {
         self.provider.db()
+    }
+
+    /// Resolve report branding and locale from the authenticated tenant record.
+    pub async fn report_org_context(&self, org_id: &str) -> Result<OrgContext, shared_kernel::errors::AppError> {
+        use sea_orm::{ConnectionTrait, Statement};
+
+        let row = self.db()
+            .query_one(Statement::from_sql_and_values(
+                self.db().get_database_backend(),
+                "SELECT id, name, name_ar, code, logo, locale, timezone, hijri_enabled, settings FROM organizations WHERE id = $1",
+                vec![org_id.to_string().into()],
+            ))
+            .await?
+            .ok_or_else(|| shared_kernel::errors::AppError::not_found("organization", org_id))?;
+
+        let settings_json: String = row.try_get("", "settings").unwrap_or_default();
+        let settings: shared_kernel::settings::OrgSettings = serde_json::from_str(&settings_json).unwrap_or_default();
+        let currency = settings.finance.default_currency;
+        let currency_symbol = match currency.as_str() {
+            "SAR" => "ر.س".to_string(),
+            "YER" => "ر.ي".to_string(),
+            "USD" => "$".to_string(),
+            "EUR" => "€".to_string(),
+            _ => currency.clone(),
+        };
+
+        Ok(OrgContext {
+            id: row.try_get("", "id").unwrap_or_else(|_| org_id.to_string()),
+            name: row.try_get("", "name").unwrap_or_default(),
+            name_ar: row.try_get("", "name_ar").unwrap_or_default(),
+            code: row.try_get("", "code").unwrap_or_default(),
+            logo_url: row.try_get("", "logo").unwrap_or_default(),
+            locale: row.try_get("", "locale").unwrap_or_else(|_| "ar".into()),
+            timezone: row.try_get("", "timezone").unwrap_or_else(|_| "Asia/Riyadh".into()),
+            hijri_enabled: row.try_get::<i32>("", "hijri_enabled").unwrap_or(0) != 0,
+            currency,
+            currency_symbol,
+            ..Default::default()
+        })
     }
 
     // ── Session Management ──────────────────────────────────────────

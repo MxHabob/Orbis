@@ -24,7 +24,7 @@ export interface IamCommands {
   updateUser(userId: string, req: Types.UpdateUserPayload): Promise<Types.User>;
   deleteUser(userId: string): Promise<void>;
   changeRole(userId: string, req: Types.ChangeRolePayload): Promise<Types.User>;
-  iamAuthLogin(identifier: string, passwordHash: string): Promise<unknown>;
+  iamAuthLogin(identifier: string, password: string): Promise<unknown>;
   iamAuthRestoreSession(token: string): Promise<unknown>;
   iamAuthLogout(token: string): Promise<unknown>;
   iamAuthRegister(data: unknown): Promise<unknown>;

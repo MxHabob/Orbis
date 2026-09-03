@@ -229,3 +229,10 @@ export interface SolveJobResponse {
   created_at: string;
 }
 
+export interface TimetableSolverService {
+  cmd: unknown;
+  query: unknown;
+  schedule_service: unknown;
+  scheduler: unknown;
+}
+

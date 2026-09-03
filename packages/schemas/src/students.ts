@@ -7,6 +7,7 @@ export const studentRegistrationSchema = z.object({
   name: z.string().trim().min(1).max(150),
   name_en: z.preprocess(emptyToNull, z.string().trim().max(150).nullable().optional()),
   email: z.preprocess(emptyToNull, z.string().trim().email().nullable().optional()),
+  password: z.string().min(12).max(128),
   phone: z.preprocess(
     emptyToNull,
     z.string().trim().regex(/^\+?[0-9]{7,15}$/).nullable().optional()

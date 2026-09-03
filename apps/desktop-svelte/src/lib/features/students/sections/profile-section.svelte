@@ -59,6 +59,28 @@ let { state }: { state: StudentFormState } = $props();
       </div>
     </div>
 
+    {#if !state.isEditMode}
+      <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+        <div class="flex flex-col gap-1 text-start">
+          <Label for="studentPassword" class="text-xs font-semibold text-foreground">
+            {m.common_user_form_password()}
+            <span class="text-destructive">*</span>
+          </Label>
+          <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_user_form_password_placeholder()}</span>
+        </div>
+        <div class="w-full md:w-120 shrink-0">
+          <Input
+            id="studentPassword"
+            type="password"
+            placeholder={m.common_user_form_password_placeholder()}
+            class="h-9 w-full bg-background font-mono"
+            bind:value={state.registrationForm.values.password}
+            autocomplete="new-password"
+          />
+        </div>
+      </div>
+    {/if}
+
     <!-- National ID / Passport -->
     {#if state.activeFields.national_id}
       <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">

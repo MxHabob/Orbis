@@ -47,7 +47,7 @@ infra-integration = { path = "../../api-rust/crates/infra-integration" }
 docforge-orbis = { path = "../../api-rust/crates/docforge-orbis" }
 docforge-engine = { path = "../../api-rust/crates/docforge-engine" }
 svc-document = { path = "../../api-rust/crates/svc-document" }
-svc-reporting = { path = "../../api-rust/crates/svc-reporting" }
+svc-report = { path = "../../api-rust/crates/svc-report" }
 sea-orm = { version = "1.1.0", features = ["sqlx-sqlite", "runtime-tokio-native-tls", "macros"] }
 uuid = { version = "1.9.1", features = ["v4", "serde"] }
 chrono = { version = "0.4.38", features = ["serde"] }

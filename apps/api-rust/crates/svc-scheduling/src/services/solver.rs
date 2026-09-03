@@ -470,7 +470,7 @@ impl TimetableSolverService {
         })
     }
 
-    async fn run_solve_job(
+    pub(crate) async fn run_solve_job(
         scheduler: Arc<dyn ScheduleSolver>,
         cmd: Arc<SchedulingCommandRepo>,
         query: Arc<SchedulingQueryRepo>,

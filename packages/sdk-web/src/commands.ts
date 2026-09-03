@@ -148,7 +148,7 @@ export const commands: OrbisCommands = {
     freezeOrdering: (periodId: any, userId: any) => http.post(`/api/exam/freeze_ordering`, { periodId, userId }),
   },
   iam: {
-    login: (identifier: any, passwordHash: any, ip: any) => http.post(`/api/iam/login`, { identifier, passwordHash, ip }),
+    login: (identifier: any, password: any) => http.post(`/api/auth/login`, { identifier, password }),
     logout: (sessionId: any) => http.post(`/api/iam/logout`, { sessionId }),
     changePassword: (PersonId: any, data: any) => http.post(`/api/iam/change_password`, { PersonId, data }),
     listSessions: (PersonId: any) => http.post(`/api/iam/list_sessions`, { PersonId }),

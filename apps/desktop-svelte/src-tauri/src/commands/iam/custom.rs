@@ -9,10 +9,10 @@ use svc_iam::ops;
 pub async fn iam_auth_login(
     state: State<'_, Arc<AppState>>,
     identifier: String,
-    password_hash: String,
+    password: String,
 ) -> CmdResult<serde_json::Value> {
     let db = state.db();
-    let (user, session) = ops::auth::login(&db, &identifier, &password_hash)
+    let (user, session) = ops::auth::login(&db, &identifier, &password)
         .await
         .map_err(CommandError::from)?;
 

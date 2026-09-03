@@ -3,6 +3,7 @@ use std::time::Duration;
 use sea_orm::{DatabaseConnection, DbBackend, Statement, ConnectionTrait};
 use tracing::{error, trace, debug};
 use tokio::time::sleep;
+use uuid::Uuid;
 
 use crate::event_bus::{EventBus, EventEnvelope};
 
@@ -38,10 +39,12 @@ impl OutboxRelay {
     }
 
     async fn process_outbox(&self) -> Result<(), sea_orm::DbErr> {
-        // Fetch up to 100 events at a time to prevent memory issues and lock holding
+        let worker_id = Uuid::new_v4().to_string();
+        let lease_until = (chrono::Utc::now() + chrono::Duration::minutes(2)).to_rfc3339();
         let sql = r#"
             SELECT id, payload
             FROM outbox_events
+            WHERE locked_until IS NULL OR locked_until < $1
             ORDER BY created_at ASC
             LIMIT 100
         "#;
@@ -50,7 +53,7 @@ impl OutboxRelay {
         let rows = self.db.query_all(Statement::from_sql_and_values(
             backend,
             sql,
-            vec![],
+            vec![chrono::Utc::now().to_rfc3339().into()],
         )).await?;
 
         if rows.is_empty() {
@@ -66,6 +69,15 @@ impl OutboxRelay {
             let id: String = row.try_get_by_index(0)?;
             let payload_str: String = row.try_get_by_index(1)?;
 
+            let claimed = self.db.execute(Statement::from_sql_and_values(
+                backend,
+                "UPDATE outbox_events SET locked_by = $1, locked_until = $2, attempts = attempts + 1 WHERE id = $3 AND (locked_until IS NULL OR locked_until < $4)",
+                vec![worker_id.clone().into(), lease_until.clone().into(), id.clone().into(), chrono::Utc::now().to_rfc3339().into()],
+            )).await?.rows_affected();
+            if claimed == 0 {
+                continue;
+            }
+
             // Deserialize the envelope
             match serde_json::from_str::<EventEnvelope>(&payload_str) {
                 Ok(envelope) => {
@@ -75,8 +87,11 @@ impl OutboxRelay {
                 }
                 Err(e) => {
                     error!("Failed to deserialize outbox event {}: {}", id, e);
-                    // Keep malformed events for operational inspection and
-                    // replay after the producer/schema issue is corrected.
+                    let _ = self.db.execute(Statement::from_sql_and_values(
+                        backend,
+                        "UPDATE outbox_events SET last_error = $1, locked_by = NULL, locked_until = NULL WHERE id = $2 AND locked_by = $3",
+                        vec![e.to_string().into(), id.into(), worker_id.clone().into()],
+                    )).await?;
                 }
             }
         }
@@ -86,11 +101,12 @@ impl OutboxRelay {
             let placeholders = processed_ids
                 .iter()
                 .enumerate()
-                .map(|(index, _)| if backend == DbBackend::Postgres { format!("${}", index + 1) } else { "?".to_string() })
+                .map(|(index, _)| if backend == DbBackend::Postgres { format!("${}", index + 2) } else { "?".to_string() })
                 .collect::<Vec<_>>().join(",");
-            let delete_sql = format!("DELETE FROM outbox_events WHERE id IN ({})", placeholders);
+            let delete_sql = format!("DELETE FROM outbox_events WHERE locked_by = $1 AND id IN ({})", placeholders);
             
-            let values = processed_ids.into_iter().map(|id| id.into()).collect::<Vec<sea_orm::Value>>();
+            let mut values = vec![worker_id.into()];
+            values.extend(processed_ids.into_iter().map(|id| id.into()));
             
             self.db.execute(Statement::from_sql_and_values(
                 backend,

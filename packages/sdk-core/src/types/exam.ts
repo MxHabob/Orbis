@@ -229,6 +229,19 @@ export interface AutoScheduleRequest {
   priority_subject_ids?: string[] | null;
 }
 
+export interface SolveJobResponse {
+  id: string;
+  org_id: string;
+  exam_session_id: string;
+  status: string;
+  score?: string | null;
+  items_created: number;
+  error_message?: string | null;
+  started_at?: string | null;
+  completed_at?: string | null;
+  created_at: string;
+}
+
 export interface AllocationConfig {
   separate_divisions: boolean;
   separate_genders: boolean;
@@ -294,6 +307,12 @@ export interface SecretNumberView {
   qr_data?: string | null;
 }
 
+export interface ExamNumbersService {
+  cmd: unknown;
+  query: unknown;
+  ordering_service: unknown;
+}
+
 export interface UpdateExamSessionRequest {
   name?: string | null;
   name_ar?: string | null;
@@ -331,6 +350,11 @@ export interface CreateExamHallRequest {
   seating_arrangement?: string | null;
   is_accessible?: number | null;
   notes?: string | null;
+}
+
+export interface ExamSessionService {
+  cmd: unknown;
+  query: unknown;
 }
 
 export interface OrderedStudent {

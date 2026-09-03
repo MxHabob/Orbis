@@ -121,8 +121,24 @@ export interface PromotionResult {
   excluded: number;
 }
 
+export interface EnrollmentData {
+  enrollment_id: string;
+  student_id: string;
+  student_name: string;
+  student_name_ar?: string | null;
+  student_number?: string | null;
+  class_id: string;
+  class_name: string;
+  level: string;
+  division?: string | null;
+  status: string;
+  final_score?: number | null;
+  attendance_rate: number;
+}
+
 export interface RegisterStudentRequest {
   name: string;
+  name_en?: string | null;
   email?: string | null;
   phone?: string | null;
   password?: string | null;
@@ -135,5 +151,13 @@ export interface RegisterStudentRequest {
   guardian_name?: string | null;
   guardian_phone?: string | null;
   guardian_relationship?: string | null;
+}
+
+export interface RegistrationResult {
+  user_id: string;
+  enrollment_id: string;
+  student_number: string;
+  fees_assigned: number;
+  guardian_linked: boolean;
 }
 

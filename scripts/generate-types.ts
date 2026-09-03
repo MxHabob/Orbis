@@ -99,6 +99,18 @@ function mapRustTypeToTs(rustType: string): string {
 
   if (t === "AstNode") return "unknown";
 
+  // Reporting enums are serialized as stable strings in the public contract.
+  if ([
+    "ReportDomain",
+    "OutputFormatKind",
+    "ParamType",
+    "ColumnDataType",
+    "ColumnAlign",
+    "AggregationType",
+    "ReportLocale",
+    "ThresholdOp",
+  ].includes(t)) return "string";
+
   if (t === "SolveMode") return "string";
 
   if (t.endsWith("::Model")) {
@@ -123,7 +135,7 @@ function parseOperationDtos(
 
   while ((match = structRegex.exec(content)) !== null) {
     const name = match[1];
-      const attributes = content.slice(Math.max(0, match.index - 300), match.index);
+      const attributes = content.slice(Math.max(0, match.index - 1200), match.index);
       if (!/derive\([^)]*Deserialize/.test(attributes)) continue;
     if (!name || name === "Model" || existingNames.has(name)) continue;
 
@@ -274,6 +286,17 @@ function parseRustEntities(): Record<string, Struct[]> {
     }
   }
 
+  // svc-report owns the canonical reporting contract. These structs live in
+  // definition/dataset modules rather than entities or operation DTO files.
+  const reportSrcDir = path.join(API_CRATES_DIR, "svc-report", "src");
+  if (fs.existsSync(reportSrcDir)) {
+    const reportStructs = ["definition.rs", "dataset.rs", "org_context.rs"]
+      .map((file) => path.join(reportSrcDir, file))
+      .filter((file) => fs.existsSync(file))
+      .flatMap((file) => parseOperationDtos(fs.readFileSync(file, "utf8"), new Set()));
+    cratesOutput.reporting = reportStructs;
+  }
+
   return cratesOutput;
 }
 
@@ -303,6 +326,13 @@ function generateTypescript() {
     if (domain === "reporting") {
       tsContent += `export type ParameterType = "text" | "integer" | "decimal" | "boolean" | "date" | "date_range" | "id" | "id_list" | "enum" | "threshold" | "period";\n`;
       tsContent += `export type DataType = "text" | "number" | "decimal" | "currency" | "percentage" | "date" | "date_time" | "boolean" | "status" | "sequence";\n\n`;
+      if (!structs.some((struct) => struct.name === "ReportDefinition")) {
+        tsContent += `export interface ReportDefinition {\n`;
+        tsContent += `  code: string;\n  name: string;\n  nameAr: string;\n  domain: string;\n  category: string;\n`;
+        tsContent += `  description?: string | null;\n  descriptionAr?: string | null;\n`;
+        tsContent += `  parameters: ParameterDef[];\n  requiredPermissions: string[];\n  supportedFormats: string[];\n`;
+        tsContent += `  defaultTemplateId?: string | null;\n  isSystem: boolean;\n  isActive: boolean;\n  sortOrder: number;\n  version: number;\n}\n\n`;
+      }
     }
 
     for (const struct of structs) {

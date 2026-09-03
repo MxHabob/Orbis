@@ -67,6 +67,12 @@ pub async fn register_student(
     if req.name.trim().is_empty() {
         return Err(AppError::validation("Student name is required"));
     }
+    let password = req.password.as_deref()
+        .filter(|value| !value.trim().is_empty())
+        .ok_or_else(|| AppError::validation("A student password is required; use an invitation or forced-reset flow instead of a default password"))?;
+    if password.chars().count() < 12 {
+        return Err(AppError::validation("Student password must contain at least 12 characters"));
+    }
     for field in &settings.required_fields {
         match field.as_str() {
             "email" => {
@@ -243,7 +249,7 @@ pub async fn register_student(
     new_person.insert(&tx).await?;
 
     let cost = if cfg!(debug_assertions) { 4 } else { 10 };
-    let password_hash = bcrypt::hash(req.password.as_deref().unwrap_or("123456"), cost)
+    let password_hash = bcrypt::hash(password, cost)
         .map_err(|e| AppError::internal(format!("Bcrypt hashing failed: {}", e)))?;
 
     // Create User (Auth only)

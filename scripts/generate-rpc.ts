@@ -238,6 +238,7 @@ function parseOps(): OpFunction[] {
       let match;
       while ((match = fnRegex.exec(content)) !== null) {
         const funcName = match[1];
+        if (funcName === "recover_interrupted_jobs") continue;
         const argsStr = match[2];
         const rustReturnType = match[3].trim();
         if (rustReturnType === "Self" || rustReturnType.endsWith("::Self")) continue;
