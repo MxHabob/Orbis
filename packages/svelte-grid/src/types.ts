@@ -17,6 +17,8 @@ export interface OrbisColumnDef {
   editor?: string | any;
   /** Custom Svelte component for rendering */
   cell?: Component<any>;
+  /** Custom Svelte component for rendering the column header */
+  headerCell?: Component<any>;
   /** Alignment of text in the column */
   align?: "start" | "center" | "end";
   /** Optional cell CSS class */

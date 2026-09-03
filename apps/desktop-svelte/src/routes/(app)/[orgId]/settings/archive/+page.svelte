@@ -8,13 +8,18 @@ import {
   getDocumentSource,
 } from "$lib/features/documents/queries";
 import { page } from "$app/state";
+import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui-svelte/select";
 import ArchivePreviewSheet from "$lib/features/documents/archive-preview-sheet.svelte";
 import ArchiveDocumentCard from "$lib/features/documents/archive-document-card.svelte";
 import ArchiveFilters from "$lib/features/documents/archive-filters.svelte";
 import ArchiveLoading from "$lib/features/documents/archive-loading.svelte";
+import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
+import { DataTable, CheckboxCell } from "$lib/tables";
+import type { OrbisColumnDef, GridActionEvent } from "@orbis/svelte-grid";
 import { confirmStore } from "$lib/stores";
-import { File, Loader2, RefreshCw, Upload } from "@lucide/svelte";
+import { File, LayoutGrid, List, Loader2, Upload } from "@lucide/svelte";
 import type { Documents } from "@orbis/sdk-core";
 import { createOperationToast } from "$lib/shared/components/operation-toast";
 
@@ -23,6 +28,9 @@ let selectedAssetType = $state("");
 let selectedSchoolYear = $state("");
 let selectedTerm = $state("");
 let uploadCategory = $state("events");
+let viewMode = $state<"grid" | "table">("grid");
+let selectedIds = $state<Set<string>>(new Set());
+let academicPeriods = $state<any[]>([]);
 
 const archiveCategories = [
   ["events", "الفعاليات"],
@@ -35,14 +43,32 @@ const archiveCategories = [
 ] as const;
 let fileInput: HTMLInputElement | undefined = $state();
 let searchQuery = $state("");
+let debouncedSearchQuery = $state("");
 let isPreviewOpen = $state(false);
 let selectedDocument = $state<Documents | null>(null);
 let selectedDocumentUrl = $state("");
 let archiveScroller: HTMLDivElement | undefined = $state();
+
+$effect(() => {
+  commands.calendar.listAcademicPeriods().then((periods) => {
+    academicPeriods = periods || [];
+  }).catch(() => {
+    academicPeriods = [];
+  });
+});
+
+$effect(() => {
+  const nextSearch = searchQuery.trim();
+  const timeout = setTimeout(() => {
+    debouncedSearchQuery = nextSearch;
+  }, 250);
+  return () => clearTimeout(timeout);
+});
+
 const documentsQuery = useDocuments(() => ({
   entityType: "archive",
   category: selectedCategory,
-  search: searchQuery,
+  search: debouncedSearchQuery,
   assetType: selectedAssetType,
   schoolYear: selectedSchoolYear,
   term: selectedTerm,
@@ -80,10 +106,36 @@ async function handleDelete(id: string) {
   }
 }
 
+async function handleBulkDelete() {
+  const confirmed = await confirmStore.prompt({
+    description: `سيتم حذف ${selectedCount} ملفًا محددًا.`,
+    title: "حذف الملفات المحددة",
+    confirmText: m.common_action_delete(),
+    variant: "destructive",
+  });
+  if (!confirmed) return;
+
+  await Promise.all([...selectedIds].map((id) => deleteMutation.mutateAsync(id)));
+  selectedIds = new Set();
+  await documentsQuery.refetch();
+}
+
 // Flatten pages into a single array of documents
 let documents = $derived(
   documentsQuery.data?.pages.flatMap((p) => p.items) || [],
 );
+let availableCategories = $derived.by(() => {
+  const labels = new Map(archiveCategories);
+  const values = new Set(documents.map((document) => document.category).filter(Boolean));
+  return [...values].sort().map((value) => [value, labels.get(value) || value] as const);
+});
+function periodOption(period: any) {
+  const value = String(period.code || period.name || period.name_en || period.name_ar || period.id);
+  const label = period.name_ar || period.name || period.name_en || value;
+  return [value, label] as const;
+}
+let archiveTerms = $derived(academicPeriods.filter((period) => period.period_type === "term").map(periodOption));
+let archiveSchoolYears = $derived(academicPeriods.filter((period) => period.period_type === "academic_year" || period.period_type === "year").map(periodOption));
 let groupedDocs = $derived(
   documents.reduce(
     (acc: Record<string, Documents[]>, doc: Documents) => {
@@ -98,9 +150,59 @@ let groupedDocs = $derived(
 let groupedEntries = $derived(
   Object.entries(groupedDocs) as [string, Documents[]][],
 );
+let allVisibleSelected = $derived(documents.length > 0 && documents.every((document) => selectedIds.has(document.id)));
+let selectedCount = $derived(selectedIds.size);
+let tableSource = $derived(
+  documents.map((document) => ({
+    ...document,
+    __selected: selectedIds.has(document.id),
+    size_display: `${((document.size || 0) / 1024).toFixed(1)} KB`,
+    type_display: document.asset_type || document.extension?.toUpperCase() || "FILE",
+    date_display: document.created_at ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(document.created_at)) : "-",
+  })),
+);
+let archiveTableColumns = $derived<OrbisColumnDef[]>([
+  { id: "__selected", prop: "__selected", header: "", name: "", width: 44, size: 44, cell: CheckboxCell, sort: false },
+  { id: "name", prop: "name", header: "الملف", name: "الملف", width: 300, size: 300 },
+  { id: "category", prop: "category", header: "التصنيف", name: "التصنيف", width: 140, size: 140 },
+  { id: "type_display", prop: "type_display", header: "النوع", name: "النوع", width: 110, size: 110 },
+  { id: "size_display", prop: "size_display", header: "الحجم", name: "الحجم", width: 110, size: 110 },
+  { id: "date_display", prop: "date_display", header: "التاريخ", name: "التاريخ", width: 150, size: 150 },
+]);
 
 function openFilePicker() {
   fileInput?.click();
+}
+
+function toggleDocument(id: string, selected: boolean) {
+  const next = new Set(selectedIds);
+  if (selected) next.add(id);
+  else next.delete(id);
+  selectedIds = next;
+}
+
+function toggleAllVisible() {
+  if (allVisibleSelected) {
+    selectedIds = new Set();
+    return;
+  }
+  selectedIds = new Set(documents.map((document) => document.id));
+}
+
+function handleTableAction(event: GridActionEvent) {
+  if (event.actionId === "select-all") {
+    toggleAllVisible();
+    return;
+  }
+  if (event.actionId === "dblclick" && event.row?.id) {
+    const document = documents.find((item) => item.id === String(event.row.id));
+    if (document) openPreview(document);
+    return;
+  }
+  if (event.actionId !== "toggle-select" && event.actionId !== "select") return;
+  const id = String(event.row?.id || "");
+  if (!id) return;
+  toggleDocument(id, !selectedIds.has(id));
 }
 
 async function openPreview(doc: Documents) {
@@ -152,23 +254,34 @@ async function handleFileSelect(event: Event) {
 </script>
 
 <div bind:this={archiveScroller} class="flex flex-col gap-6 p-6 h-full overflow-auto scrollbar-hide">
-  <!-- Page Header -->
-  <div class="flex items-center justify-between pb-4 border-b border-border/40">
-    <div>
-      <h1 class="text-xl font-bold tracking-tight text-foreground">{m.settings_archive_title()}</h1>
-      <p class="text-xs text-muted-foreground mt-1">
-        {m.settings_archive_desc()}
-      </p>
-    </div>
-    <div class="flex items-center gap-2">
-      <Button variant="outline" size="icon-sm" onclick={() => documentsQuery.refetch()} disabled={documentsQuery.isFetching} title={m.common_control_refresh()}>
-        <RefreshCw size={14} class={documentsQuery.isFetching ? "animate-spin" : ""} />
-      </Button>
-      <select bind:value={uploadCategory} class="hidden h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground sm:block" aria-label="تصنيف الملفات الجديدة">
-        {#each archiveCategories as [value, label]}
-          <option value={value}>{label}</option>
-        {/each}
-      </select>
+  <div class="flex flex-col gap-3 border-b border-border/40 pb-4 lg:flex-row lg:items-center">
+    <ArchiveFilters
+      bind:searchQuery
+      bind:selectedCategory
+      bind:selectedAssetType
+      bind:selectedSchoolYear
+      bind:selectedTerm
+      categories={availableCategories.length > 0 ? availableCategories : archiveCategories}
+      terms={archiveTerms}
+      schoolYears={archiveSchoolYears}
+    />
+    <div class="flex shrink-0 items-center gap-2">
+      <div class="flex items-center rounded-md border border-border bg-background p-0.5" role="group" aria-label="طريقة عرض الأرشيف">
+        <Button variant={viewMode === "grid" ? "secondary" : "ghost"} size="icon-xs" onclick={() => viewMode = "grid"} title="عرض شبكي" aria-label="عرض شبكي">
+          <LayoutGrid class="h-3.5 w-3.5" />
+        </Button>
+        <Button variant={viewMode === "table" ? "secondary" : "ghost"} size="icon-xs" onclick={() => viewMode = "table"} title="عرض جدول" aria-label="عرض جدول">
+          <List class="h-3.5 w-3.5" />
+        </Button>
+      </div>
+      <Select type="single" value={uploadCategory} onValueChange={(value: string | undefined) => uploadCategory = value ?? "events"}>
+        <SelectTrigger class="h-8 w-32 text-xs"><span class="truncate">{archiveCategories.find(([value]) => value === uploadCategory)?.[1] || "تصنيف الرفع"}</span></SelectTrigger>
+        <SelectContent align="end">
+          {#each archiveCategories as [value, label]}
+            <SelectItem value={value}>{label}</SelectItem>
+          {/each}
+        </SelectContent>
+      </Select>
       <Button variant="default" size="sm" onclick={openFilePicker} disabled={uploadMutation.isPending}>
         {#if uploadMutation.isPending}<Loader2 size={14} class="me-1.5 animate-spin" />{:else}<Upload size={14} class="me-1.5" />{/if}
         {m.common_docs_btn_upload()}
@@ -176,15 +289,6 @@ async function handleFileSelect(event: Event) {
       <input bind:this={fileInput} type="file" accept="image/*,video/*" multiple class="hidden" onchange={handleFileSelect} />
     </div>
   </div>
-
-  <ArchiveFilters
-    bind:searchQuery
-    bind:selectedCategory
-    bind:selectedAssetType
-    bind:selectedSchoolYear
-    bind:selectedTerm
-    categories={archiveCategories}
-  />
 
   <!-- Loading Skeletons (Uses base Skeleton component styles) -->
   {#if documentsQuery.isLoading && documents.length === 0}
@@ -203,17 +307,28 @@ async function handleFileSelect(event: Event) {
       </Button>
     </div>
   {:else}
-    <!-- Document Groups -->
-    {#each groupedEntries as [category, docs]}
-      <div class="space-y-4">
-        <h2 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/40 pb-2">{category}</h2>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {#each docs as doc (doc.id)}
-            <ArchiveDocumentCard document={doc} onpreview={openPreview} ondelete={handleDelete} />
-          {/each}
+    {#if viewMode === "grid"}
+      {#each groupedEntries as [category, docs]}
+        <div class="space-y-4">
+          <h2 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/40 pb-2">{category}</h2>
+          <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+            {#each docs as doc (doc.id)}
+              <ArchiveDocumentCard document={doc} selected={selectedIds.has(doc.id)} onpreview={openPreview} ondelete={handleDelete} ontoggle={toggleDocument} />
+            {/each}
+          </div>
         </div>
-      </div>
-    {/each}
+      {/each}
+    {:else}
+      <DataTable
+        columns={archiveTableColumns}
+        source={tableSource}
+        height="min(70vh, 620px)"
+        rowSize={44}
+        rtl={true}
+        onaction={handleTableAction}
+        emptyTitle="لا توجد ملفات"
+      />
+    {/if}
     
     <!-- Infinite scroll sentinel and manual fallback -->
     <div use:infiniteScroll class="h-px w-full" aria-hidden="true"></div>
@@ -237,6 +352,18 @@ async function handleFileSelect(event: Event) {
     {/if}
   {/if}
 </div>
+
+<SettingsBottomBar
+  visible={selectedCount > 0}
+  isDirty={selectedCount > 0}
+  isSaving={deleteMutation.isPending}
+  message={`${selectedCount} ملف محدد`}
+  saveLabel="حذف المحدد"
+  savingLabel="جاري الحذف..."
+  resetLabel="إلغاء التحديد"
+  onsave={handleBulkDelete}
+  onreset={() => selectedIds = new Set()}
+/>
 
 <ArchivePreviewSheet
   bind:open={isPreviewOpen}

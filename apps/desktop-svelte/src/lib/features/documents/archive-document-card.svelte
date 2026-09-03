@@ -1,18 +1,23 @@
 <script lang="ts">
   import * as m from "$lib/paraglide/messages";
   import { Button } from "@orbis/ui-svelte/button";
-  import { createDocumentPreviewUrl, getDocumentSource, resolveDocumentUrl } from "$lib/features/documents/queries";
+  import { Checkbox } from "@orbis/ui-svelte/checkbox";
+  import { getDocumentSource, resolveDocumentUrl } from "$lib/features/documents/queries";
   import { Download, FileText, Music, Play, Trash2 } from "@lucide/svelte";
   import type { Documents } from "@orbis/sdk-core";
 
   let {
     document,
+    selected = false,
     onpreview,
     ondelete,
+    ontoggle,
   }: {
     document: Documents;
+    selected?: boolean;
     onpreview: (document: Documents) => void;
     ondelete: (id: string) => void;
+    ontoggle: (id: string, selected: boolean) => void;
   } = $props();
 
   const mimeType = $derived(document.mime_type?.toLowerCase() ?? "");
@@ -21,33 +26,48 @@
   const isAudio = $derived(mimeType.startsWith("audio/"));
   const source = $derived(getDocumentSource(document));
   const extension = $derived(document.extension?.toUpperCase() || "FILE");
+  let isNearViewport = $state(false);
 
   function stopPropagation(event: MouseEvent) {
     event.stopPropagation();
   }
 
-  async function resolveDisplayUrl(): Promise<string> {
-    const resolvedUrl = await resolveDocumentUrl(source);
-    return createDocumentPreviewUrl(resolvedUrl);
+  function loadWhenVisible(node: HTMLDivElement) {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        isNearViewport = true;
+        observer.disconnect();
+      },
+      { rootMargin: "240px" },
+    );
+    observer.observe(node);
+    return { destroy: () => observer.disconnect() };
   }
+
 </script>
 
 <article class="archive-card group">
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="archive-media relative cursor-pointer overflow-hidden rounded-lg bg-muted/30"
+    use:loadWhenVisible
     role="button"
     tabindex="0"
     onclick={() => onpreview(document)}
     onkeydown={(event) => event.key === "Enter" && onpreview(document)}
   >
-    {#if isImage}
-      {#await resolveDisplayUrl() then previewUrl}
-        <img src={previewUrl} alt={document.name} loading="lazy" decoding="async" width="320" height="240" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <div class="absolute inset-s-2 top-2 z-10 rounded-md bg-background/85 p-1 shadow-sm" onclick={(event) => event.stopPropagation()}>
+      <Checkbox checked={selected} onCheckedChange={(value) => ontoggle(document.id, value === true)} aria-label={`تحديد ${document.name}`} />
+    </div>
+    {#if isNearViewport && isImage}
+      {#await resolveDocumentUrl(source) then mediaUrl}
+        <img src={mediaUrl} alt={document.name} loading="lazy" decoding="async" width="320" height="240" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
       {:catch}
         <FileText class="m-auto h-8 w-8 text-muted-foreground/60" />
       {/await}
-    {:else if isVideo}
+    {:else if isNearViewport && isVideo}
       {#await resolveDocumentUrl(source) then sourceUrl}
         <video src={sourceUrl} muted preload="none" class="h-full w-full object-cover" aria-label={document.name}></video>
         <div class="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/10">
@@ -67,18 +87,20 @@
     {/if}
 
     <div class="absolute inset-0 flex items-center justify-center gap-2 bg-background/60 opacity-0 backdrop-blur-[2px] transition-opacity group-hover:opacity-100">
-      {#await resolveDocumentUrl(source) then sourceUrl}
-        <a
-          href={sourceUrl}
-          download={document.name}
-          class="rounded-md bg-background/95 p-2 text-foreground shadow-sm"
-          title={m.settings_archive_action_download()}
-          aria-label={m.settings_archive_action_download()}
-          onclick={stopPropagation}
-        >
-          <Download class="h-4 w-4" />
-        </a>
-      {/await}
+      {#if isNearViewport}
+        {#await resolveDocumentUrl(source) then sourceUrl}
+          <a
+            href={sourceUrl}
+            download={document.name}
+            class="rounded-md bg-background/95 p-2 text-foreground shadow-sm"
+            title={m.settings_archive_action_download()}
+            aria-label={m.settings_archive_action_download()}
+            onclick={stopPropagation}
+          >
+            <Download class="h-4 w-4" />
+          </a>
+        {/await}
+      {/if}
       <Button
         variant="destructive"
         size="icon-sm"

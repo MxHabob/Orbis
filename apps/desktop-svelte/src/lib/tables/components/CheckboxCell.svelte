@@ -3,7 +3,7 @@ import { Checkbox } from "@orbis/ui-svelte/checkbox";
 import { getContext } from "svelte";
 
 interface Props {
-  row: Record<string, any>;
+  row?: Record<string, any>;
   column: { id: string; meta?: Record<string, any> };
   api?: any;
 }
@@ -12,13 +12,14 @@ let { row, column }: Props = $props();
 
 const gridAction = getContext<((ev: any) => void) | undefined>("orbis-grid-onaction");
 
-const isChecked = $derived(!!row?.__selected || !!row?.[column?.id]);
+const isHeader = $derived(column?.meta?.isSelectionHeader === true);
+const isChecked = $derived(isHeader ? column?.meta?.selectedAll === true : !!row?.__selected || !!row?.[column?.id]);
 
 function toggle() {
   gridAction?.({
-    actionId: "toggle-select",
-    row,
-    rowIndex: row.__rowIndex ?? 0,
+    actionId: isHeader ? "select-all" : "toggle-select",
+    row: row ?? {},
+    rowIndex: row?.__rowIndex ?? -1,
     prop: column.id,
     originalEvent: new MouseEvent("click"),
   });

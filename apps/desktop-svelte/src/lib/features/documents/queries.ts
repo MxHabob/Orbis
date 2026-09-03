@@ -11,46 +11,7 @@ import { appDataDir, join } from "@tauri-apps/api/path";
 // --- Helpers ---
 
 const resolvedDocumentUrls = new Map<string, string>();
-const previewUrls = new Map<string, Promise<string>>();
-
-/** Create a small display preview while keeping the original URL for full preview/download. */
-export function createDocumentPreviewUrl(source: string): Promise<string> {
-  const cachedPreview = previewUrls.get(source);
-  if (cachedPreview) return cachedPreview;
-
-  const preview = new Promise<string>((resolve) => {
-    const image = new Image();
-    image.onload = () => {
-      const maxSize = 320;
-      const scale = Math.min(1, maxSize / Math.max(image.naturalWidth, image.naturalHeight));
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
-      const context = canvas.getContext("2d");
-
-      if (!context) {
-        resolve(source);
-        return;
-      }
-
-      try {
-        context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob(
-          (blob) => resolve(blob ? URL.createObjectURL(blob) : source),
-          "image/jpeg",
-          0.72,
-        );
-      } catch {
-        resolve(source);
-      }
-    };
-    image.onerror = () => resolve(source);
-    image.src = source;
-  });
-
-  previewUrls.set(source, preview);
-  return preview;
-}
+let storageDirectoryPromise: Promise<string> | undefined;
 
 /**
  * Transforms a generic document path from the API into a viewable URL.
@@ -70,7 +31,8 @@ export async function resolveDocumentUrl(
 
   try {
     // If running in Tauri desktop, get absolute path to app_data/storage
-    const dataDir = await appDataDir();
+    storageDirectoryPromise ??= appDataDir().then((dataDir) => join(dataDir, "storage"));
+    const storageDirectory = await storageDirectoryPromise;
     // Assuming backend path like "1/users/avatars/abc.png"
     // And base path is "app_data/storage" relative to dataDir
     // We construct absolute path: dataDir + "/storage/" + pathOrUrl (if path isn't absolute already)
@@ -81,7 +43,7 @@ export async function resolveDocumentUrl(
       relativePath = relativePath.replace("/storage/", "");
     }
 
-    const absolutePath = await join(dataDir, "storage", relativePath);
+    const absolutePath = await join(storageDirectory, relativePath);
     const resolvedUrl = convertFileSrc(absolutePath);
     resolvedDocumentUrls.set(pathOrUrl, resolvedUrl);
     return resolvedUrl;
@@ -123,6 +85,7 @@ export function useDocuments(filter: () => {
 }) {
   return createInfiniteQuery(() => ({
     queryKey: documentKeys.byFilter(filter()),
+    placeholderData: (previousData: any) => previousData,
     queryFn: ({ pageParam }) => {
       const currentFilter = filter();
       return commands.document.getDocuments({

@@ -63,6 +63,10 @@ let mappedColumns = $derived.by(() => {
       resize: col.resize !== false,
     };
 
+    if (col.headerCell) {
+      columnDef.header = { text: header, cell: col.headerCell };
+    }
+
     if (readonly || col.readonly) {
       columnDef.editor = null;
     }

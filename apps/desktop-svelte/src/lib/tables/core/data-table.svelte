@@ -25,6 +25,7 @@ import AiEmptyState from "$lib/shared/components/ai-empty-state.svelte";
 import { openPrintDialog } from "$lib/stores/print.svelte";
 import type { Snippet } from "svelte";
 import { DefaultCell } from "../index";
+import CheckboxCell from "../components/CheckboxCell.svelte";
 import { FilterTrigger } from "@orbis/ui-svelte/filter-builder";
 import type { UniversalFilter, FieldDefinition } from "@orbis/ui-svelte/filter-builder";
 
@@ -141,10 +142,16 @@ let localSearch = $state("");
 // ── Derived ───────────────────────────────────────────────────────────
 
 let mappedColumns = $derived(
-  columns.map((col) => ({
-    ...col,
-    cell: col.cell || DefaultCell,
-  })),
+  columns.map((col) => {
+    if (col.id !== "__selected") return { ...col, cell: col.cell || DefaultCell };
+    const selectedAll = source.length > 0 && source.every((row) => row.__selected === true);
+    return {
+      ...col,
+      cell: col.cell || CheckboxCell,
+      headerCell: col.headerCell || CheckboxCell,
+      meta: { ...col.meta, isSelectionHeader: true, selectedAll },
+    };
+  }),
 );
 
 let hasData = $derived(source.length > 0);

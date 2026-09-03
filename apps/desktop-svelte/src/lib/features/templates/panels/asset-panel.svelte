@@ -40,7 +40,7 @@ let searchQuery = $state("");
 let fileInput: HTMLInputElement;
 
 // --- Queries & Mutations ---
-const documentsQuery = useDocuments({ entityType: "template" });
+const documentsQuery = useDocuments(() => ({ entityType: "template" }));
 const uploadMutation = useUploadDocument();
 const deleteMutation = useDeleteDocument();
 

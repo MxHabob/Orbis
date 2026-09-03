@@ -40,11 +40,16 @@ pub async fn upload_file(
         .to_ascii_lowercase();
     let key = format!("{}.{}", file_uuid, extension);
 
-    // 2. Determine bucket (e.g., users, templates, students)
-    let bucket = match req.entity_type.as_str() {
-        "template" => format!("{}/shared/templates", ctx.org_id),
-        "user" | "student" => format!("{}/users/avatars", ctx.org_id),
-        _ => format!("{}/{}/{}", ctx.org_id, req.entity_type, req.entity_id),
+    // 2. Keep uploaded files isolated by organization and owning entity.
+    let entity_type = clean_path_segment(&req.entity_type);
+    let entity_id = clean_path_segment(&req.entity_id);
+    let bucket = match entity_type.as_str() {
+        "template" => format!("{}/templates/{}", ctx.org_id, entity_id),
+        "student" => format!("{}/students/{}/avatars", ctx.org_id, entity_id),
+        "user" | "teacher" | "employee" | "staff" => {
+            format!("{}/users/{}/avatars", ctx.org_id, entity_id)
+        }
+        _ => format!("{}/{}/{}", ctx.org_id, entity_type, entity_id),
     };
 
     // 3. Upload bytes to storage provider
@@ -61,8 +66,8 @@ pub async fn upload_file(
         id: file_uuid.clone(),
         org_id: ctx.org_id.clone(),
         uploaded_by: Some(ctx.actor.as_str().to_string()),
-        entity_type: Some(req.entity_type.clone()),
-        entity_id: Some(req.entity_id.clone()),
+        entity_type: Some(entity_type),
+        entity_id: Some(entity_id),
         name: req.file_name.clone(),
         description: None,
         category: req.category.clone(),
@@ -106,6 +111,14 @@ pub async fn upload_file(
     }).await?;
 
     Ok(created)
+}
+
+fn clean_path_segment(value: &str) -> String {
+    let cleaned: String = value
+        .chars()
+        .filter(|character| character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.'))
+        .collect();
+    if cleaned.is_empty() { "unknown".to_string() } else { cleaned }
 }
 
 pub async fn list(
