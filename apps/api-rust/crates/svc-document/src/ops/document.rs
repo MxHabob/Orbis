@@ -100,7 +100,7 @@ pub async fn list(
     category: Option<&str>,
     request: shared_kernel::pagination::CursorRequest,
 ) -> Result<shared_kernel::pagination::CursorPage<documents::Model>, AppError> {
-    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, QuerySelect, QueryOrder};
+    use sea_orm::{ColumnTrait, Condition, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
     use shared_kernel::pagination::CursorPage;
 
     ctx.permissions.check(&ctx.actor, Permission::DocumentRead).await?;
@@ -125,39 +125,24 @@ pub async fn list(
 
     let limit = request.effective_limit();
     
-    // We treat cursor as a literal OFFSET index for simplicity
     if let Some(ref cursor) = request.cursor {
-        if let Ok(offset) = cursor.parse::<u64>() {
-            query = query.offset(offset);
+        if let Some((created_at, id)) = cursor.split_once('|') {
+            query = query.filter(
+                Condition::any()
+                    .add(documents::Column::CreatedAt.lt(created_at))
+                    .add(
+                        Condition::all()
+                            .add(documents::Column::CreatedAt.eq(created_at))
+                            .add(documents::Column::Id.lt(id)),
+                    ),
+            );
         }
     }
 
     let items = query.limit(limit + 1).all(&ctx.db).await?;
-    
-    let effective_limit = limit.min(shared_kernel::pagination::CursorRequest::MAX_LIMIT).max(1) as usize;
-    let has_more = items.len() > effective_limit;
-    
-    let mut items = items;
-    if has_more {
-        items.truncate(effective_limit);
-    }
-    
-    let count = items.len();
-    
-    // The next cursor is the current offset + the number of items fetched this time
-    let next_cursor = if has_more {
-        let current_offset = request.cursor.as_deref().and_then(|c| c.parse::<u64>().ok()).unwrap_or(0);
-        Some((current_offset + count as u64).to_string())
-    } else {
-        None
-    };
-    
-    Ok(CursorPage {
-        items,
-        count,
-        next_cursor,
-        has_more,
-    })
+    Ok(CursorPage::from_items_with(items, limit, |document| {
+        format!("{}|{}", document.created_at, document.id)
+    }))
 }
 
 pub async fn delete(

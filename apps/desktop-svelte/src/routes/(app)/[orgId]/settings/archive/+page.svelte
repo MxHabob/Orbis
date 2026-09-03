@@ -5,6 +5,7 @@ import {
   useUploadDocument,
   useDeleteDocument,
   resolveDocumentUrl,
+  getDocumentSource,
 } from "$lib/features/documents/queries";
 import { page } from "$app/state";
 import { Button } from "@orbis/ui-svelte/button";
@@ -16,7 +17,7 @@ import { Trash2, File, Image as ImageIcon, Video, Loader2, Upload, RefreshCw, Do
 import type { Documents } from "@orbis/sdk-core";
 import { createOperationToast } from "$lib/shared/components/operation-toast";
 
-const documentsQuery = useDocuments({ ownerId: "all" });
+const documentsQuery = useDocuments({ category: "archive" });
 const uploadMutation = useUploadDocument({ invalidateOnSuccess: false });
 const deleteMutation = useDeleteDocument();
 const orgId = $derived(page.params.orgId ?? "");
@@ -25,6 +26,24 @@ let searchQuery = $state("");
 let isPreviewOpen = $state(false);
 let selectedDocument = $state<Documents | null>(null);
 let selectedDocumentUrl = $state("");
+let archiveScroller: HTMLDivElement | undefined = $state();
+
+async function loadNextPage() {
+  if (!documentsQuery.hasNextPage || documentsQuery.isFetchingNextPage) return;
+  await documentsQuery.fetchNextPage();
+}
+
+function infiniteScroll(node: HTMLDivElement) {
+  const observer = new IntersectionObserver(
+    ([entry]) => {
+      if (entry?.isIntersecting) loadNextPage();
+    },
+    { root: archiveScroller ?? null, rootMargin: "320px 0px" },
+  );
+
+  observer.observe(node);
+  return { destroy: () => observer.disconnect() };
+}
 
 async function handleDelete(id: string) {
   const confirmed = await confirmStore.prompt({
@@ -66,7 +85,7 @@ function openFilePicker() {
 
 async function openPreview(doc: Documents) {
   selectedDocument = doc;
-  selectedDocumentUrl = await resolveDocumentUrl(doc.url);
+  selectedDocumentUrl = await resolveDocumentUrl(getDocumentSource(doc));
   isPreviewOpen = true;
 }
 
@@ -112,7 +131,7 @@ async function handleFileSelect(event: Event) {
 }
 </script>
 
-<div class="flex flex-col gap-6 p-6 h-full overflow-auto scrollbar-hide">
+<div bind:this={archiveScroller} class="flex flex-col gap-6 p-6 h-full overflow-auto scrollbar-hide">
   <!-- Page Header -->
   <div class="flex items-center justify-between pb-4 border-b border-border/40">
     <div>
@@ -177,7 +196,7 @@ async function handleFileSelect(event: Event) {
       <div class="space-y-4">
         <h2 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/40 pb-2">{category}</h2>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {#each docs as doc}
+          {#each docs as doc (doc.id)}
             <div class="group relative flex flex-col items-center p-2.5 rounded-xl border border-border/40 bg-card hover:border-primary/40 hover:shadow-md transition-all duration-200">
               <!-- svelte-ignore a11y_no_static_element_interactions -->
               <div
@@ -188,13 +207,13 @@ async function handleFileSelect(event: Event) {
                 onkeydown={(event) => event.key === "Enter" && openPreview(doc)}
               >
                 {#if doc.mime_type?.startsWith("image/")}
-                  {#await resolveDocumentUrl(doc.url)}
+                  {#await resolveDocumentUrl(getDocumentSource(doc))}
                     <Skeleton class="w-full h-full rounded-lg" />
                   {:then srcUrl}
                     <img src={srcUrl} alt={doc.name} class="w-full h-full object-cover transition-transform group-hover:scale-105" />
                   {/await}
                 {:else if doc.mime_type?.startsWith("video/")}
-                  {#await resolveDocumentUrl(doc.url)}
+                  {#await resolveDocumentUrl(getDocumentSource(doc))}
                     <Skeleton class="w-full h-full rounded-lg" />
                   {:then srcUrl}
                     <video src={srcUrl} muted preload="metadata" class="w-full h-full object-cover" aria-label={doc.name}></video>
@@ -205,7 +224,7 @@ async function handleFileSelect(event: Event) {
                 
                 <!-- Overlay Actions -->
                 <div class="absolute inset-0 bg-background/60 backdrop-blur-xs opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity gap-2">
-                  {#await resolveDocumentUrl(doc.url) then srcUrl}
+                  {#await resolveDocumentUrl(getDocumentSource(doc)) then srcUrl}
                     <a
                       href={srcUrl}
                       download={doc.name}
@@ -240,14 +259,15 @@ async function handleFileSelect(event: Event) {
       </div>
     {/each}
     
-    <!-- Load More -->
+    <!-- Infinite scroll sentinel and manual fallback -->
+    <div use:infiniteScroll class="h-px w-full" aria-hidden="true"></div>
     {#if documentsQuery.hasNextPage}
       <div class="flex justify-center pt-6 pb-4">
         <Button 
           variant="outline" 
           size="sm"
           disabled={documentsQuery.isFetchingNextPage}
-          onclick={() => documentsQuery.fetchNextPage()}
+          onclick={loadNextPage}
           class="text-xs gap-2 rounded-xl"
         >
           {#if documentsQuery.isFetchingNextPage}

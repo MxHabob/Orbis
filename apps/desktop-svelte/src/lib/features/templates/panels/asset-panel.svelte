@@ -27,6 +27,7 @@ import {
   useUploadDocument,
   useDeleteDocument,
   resolveDocumentUrl,
+  getDocumentSource,
 } from "$lib/features/documents/queries";
 
 let {
@@ -64,7 +65,7 @@ let filteredAssets = $derived(
 
 async function handleAssetDragStart(e: DragEvent, doc: any) {
   e.dataTransfer?.setData("application/x-docforge-asset", doc.id);
-  const srcUrl = await resolveDocumentUrl(doc.url);
+  const srcUrl = await resolveDocumentUrl(getDocumentSource(doc));
   if (srcUrl) {
     e.dataTransfer?.setData("text/uri-list", srcUrl);
   }
@@ -74,7 +75,7 @@ async function handleAssetDragStart(e: DragEvent, doc: any) {
 // ── Insert asset as Image node ───────────────────────────────
 
 async function insertAssetAsImage(doc: any) {
-  const srcUrl = await resolveDocumentUrl(doc.url);
+  const srcUrl = await resolveDocumentUrl(getDocumentSource(doc));
   store.addAsset(doc.id, "image");
   store.addElement("Image", {
     assetRef: doc.id,
@@ -193,7 +194,7 @@ function triggerUpload() {
           >
             <!-- Thumbnail -->
             <div class="aspect-4/3 bg-muted/20 flex items-center justify-center overflow-hidden">
-              {#await resolveDocumentUrl(doc.url)}
+              {#await resolveDocumentUrl(getDocumentSource(doc))}
                 <Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
               {:then srcUrl}
                 <img

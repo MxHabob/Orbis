@@ -52,6 +52,13 @@ export async function resolveDocumentUrl(
   }
 }
 
+export function getDocumentSource(document: {
+  url?: string | null;
+  path?: string | null;
+}): string {
+  return document.url || document.path || "";
+}
+
 export const documentKeys = {
   all: ["documents"] as const,
   byFilter: (filter: {
@@ -77,7 +84,12 @@ export function useDocuments(filter: {
         limit: 50,
       }),
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage: any) => lastPage?.next_cursor,
+      getNextPageParam: (lastPage: any) => {
+        if (lastPage?.has_more && lastPage?.next_cursor) {
+          return lastPage.next_cursor;
+        }
+        return undefined;
+      },
   }));
 }
 

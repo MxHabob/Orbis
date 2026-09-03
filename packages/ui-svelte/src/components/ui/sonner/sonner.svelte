@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { CheckCircle2, Info, Loader2, TriangleAlert, X, XCircle } from "@lucide/svelte";
+  import { CheckCircle2, Info, TriangleAlert, X, XCircle } from "@lucide/svelte";
   import { Button } from "../button/index.js";
   import { Progress } from "../progress/index.js";
+  import Spinner from "../spinner.svelte";
   import { toastStore } from "./toast-state.svelte.js";
 
   let { ...restProps } = $props();
@@ -17,7 +18,7 @@
           {:else if item.variant === "error" || item.variant === "destructive"}<XCircle size={16} />
           {:else if item.variant === "warning"}<TriangleAlert size={16} />
           {:else if item.variant === "info" || item.variant === "ai"}<Info size={16} />
-          {:else}<Loader2 size={16} class="animate-spin" />{/if}
+          {:else}<Spinner size={16} />{/if}
         </div>
         <div class="toast-content">
           <div class="toast-heading">
