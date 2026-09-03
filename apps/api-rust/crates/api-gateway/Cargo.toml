@@ -1,0 +1,57 @@
+[package]
+name = "api-gateway"
+version = "2.0.0"
+edition = "2021"
+
+[lib]
+name = "api_gateway"
+path = "src/lib.rs"
+
+[[bin]]
+name = "api-gateway"
+path = "src/main.rs"
+[dependencies]
+svc-enrollment-workflow = { workspace = true }
+svc-calendar = { workspace = true }
+svc-iam = { workspace = true }
+svc-organization = { workspace = true }
+svc-academic = { workspace = true }
+svc-assessment = { workspace = true }
+svc-scheduling = { workspace = true }
+svc-finance = { workspace = true }
+svc-exam = { workspace = true }
+svc-document = { workspace = true }
+svc-report = { workspace = true }
+autopilot = { workspace = true }
+docforge-orbis = { path = "../docforge-orbis" }
+infra-persistence = { workspace = true }
+infra-integration = { workspace = true }
+infra-scheduler = { workspace = true }
+shared-kernel = { workspace = true }
+sea-orm = { workspace = true }
+
+# Web Framework
+axum = { workspace = true, features = ["multipart"] }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tower-http = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+# Multipart Upload Support
+axum-extra = { version = "0.9.4", features = ["multipart"] }
+
+# OpenAPI Specification Generation
+utoipa = { version = "4.2.3", features = ["axum_extras"] }
+
+# Security/Auth
+bcrypt = "0.15.1"
+jsonwebtoken = "9.3.0"
+
+# Import/Export
+csv = "1.3"
+async-trait = "0.1"
+platform-policy = { version = "0.1.0", path = "../platform-policy" }

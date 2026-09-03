@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "meta": { "name": "Student ID Card", "nameAr": "بطاقة هوية الطالب", "documentType": "ID_CARD", "entityType": "enrollment", "locale": "ar", "pageSetup": { "size": "ID_CARD", "orientation": "landscape", "margins": { "top": 3, "bottom": 3, "left": 3, "right": 3 }, "unit": "mm" } },
+  "variables": {},
+  "assets": { "org-fallback-logo": { "assetId": "orbis-feedback", "type": "logo" } },
+  "root": { "type": "Page", "id": "student-id-card-page", "children": [
+    { "type": "Header", "id": "standard-header", "props": { "height": 10 }, "children": [ { "type": "Image", "id": "organization-logo", "props": { "assetRef": "org-fallback-logo", "src": "{{org_logo_url}}", "position": { "x": 38, "y": 1, "width": 10, "height": 8 }, "width": 10, "height": 8, "fit": "contain" } }, { "type": "Text", "id": "organization-name", "props": { "content": "{{org_name | default:'اسم المنظمة'}}", "position": { "x": 4, "y": 3, "width": 77, "height": 5 }, "fontSize": 7, "fontFamily": "Tahoma", "fontWeight": "bold", "textAlign": "center", "direction": "rtl", "lineHeight": 1.1 } } ] },
+    { "type": "Text", "id": "card-title", "props": { "content": "بطاقة طالب", "position": { "x": 5, "y": 15, "width": 76, "height": 6 }, "fontSize": 9, "fontFamily": "Tahoma", "fontWeight": "bold", "textAlign": "center", "direction": "rtl", "lineHeight": 1.1 } },
+    { "type": "Text", "id": "student-name", "props": { "content": "{{student.nameAr | default:student.fullName}}", "position": { "x": 5, "y": 23, "width": 76, "height": 5 }, "fontSize": 7, "fontFamily": "Tahoma", "fontWeight": "bold", "textAlign": "center", "direction": "rtl", "lineHeight": 1.1 } },
+    { "type": "Text", "id": "student-name-en", "props": { "content": "{{student.nameEn | default:''}}", "position": { "x": 5, "y": 29, "width": 76, "height": 5 }, "fontSize": 6, "fontFamily": "Tahoma", "fontWeight": "bold", "textAlign": "center", "direction": "ltr", "lineHeight": 1.1 } },
+    { "type": "Text", "id": "student-number", "props": { "content": "الرقم الأكاديمي: {{studentNumber}}", "position": { "x": 7, "y": 36, "width": 72, "height": 4 }, "fontSize": 5.5, "fontFamily": "Tahoma", "textAlign": "center", "direction": "rtl", "lineHeight": 1.1 } },
+    { "type": "Text", "id": "student-class", "props": { "content": "الفصل: {{class.nameAr | default:class.name}}", "position": { "x": 7, "y": 40, "width": 72, "height": 4 }, "fontSize": 5.5, "fontFamily": "Tahoma", "textAlign": "center", "direction": "rtl", "lineHeight": 1.1 } },
+    { "type": "Barcode", "id": "student-barcode", "props": { "data": "{{studentNumber}}", "format": "code128", "position": { "x": 22, "y": 46, "width": 42, "height": 6 }, "height": 6, "showText": true } },
+    { "type": "Footer", "id": "standard-footer", "props": { "height": 5, "showPageNumber": false }, "children": [ { "type": "Text", "id": "footer-content", "props": { "content": "{{org_name | default:'اسم المنظمة'}}", "position": { "x": 5, "y": 51, "width": 76, "height": 3 }, "fontSize": 5, "fontFamily": "Tahoma", "textAlign": "center", "direction": "rtl", "lineHeight": 1.1 } } ] }
+  ] }
+}

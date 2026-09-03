@@ -1,169 +1,176 @@
-{
+﻿{
   "name": "@orbis/ui",
-  "version": "1.0.0",
   "private": true,
-  "sideEffects": false,
-  "files": [
-    "tailwind.config.ts",
-    "postcss.config.js",
-    "globals.css"
-  ],
-  "scripts": {
-    "clean": "rm -rf .turbo node_modules",
-    "lint": "biome check .",
-    "lint:fix": "biome check --write .",
-    "format": "biome format --write .",
-    "typecheck": "tsc --noEmit"
-  },
+  "version": "1.0.0",
+  "type": "module",
+  "svelte": "./src/components/ui/index.ts",
   "exports": {
-    "./animated-size-container": "./src/components/animated-size-container.tsx",
-    "./accordion": "./src/components/accordion.tsx",
-    "./alert-dialog": "./src/components/alert-dialog.tsx",
-    "./alert": "./src/components/alert.tsx",
-    "./chart": "./src/components/chart.tsx",
-    "./currency-input": "./src/components/currency-input.tsx",
-    "./submit-button": "./src/components/submit-button.tsx",
-    "./avatar": "./src/components/avatar.tsx",
-    "./button": "./src/components/button.tsx",
-    "./calendar": "./src/components/calendar.tsx",
-    "./card": "./src/components/card.tsx",
-    "./slider": "./src/components/slider.tsx",
-    "./carousel": "./src/components/carousel.tsx",
-    "./checkbox": "./src/components/checkbox.tsx",
-    "./collapsible": "./src/components/collapsible.tsx",
-    "./combobox": "./src/components/combobox.tsx",
-    "./combobox-dropdown": "./src/components/combobox-dropdown.tsx",
-    "./command": "./src/components/command.tsx",
-    "./context-menu": "./src/components/context-menu.tsx",
-    "./date-range-picker": "./src/components/date-range-picker.tsx",
-    "./dialog": "./src/components/dialog.tsx",
-    "./drawer": "./src/components/drawer.tsx",
-    "./dropdown-menu": "./src/components/dropdown-menu.tsx",
-    "./form": "./src/components/form.tsx",
-    "./editor": "./src/components/editor/index.tsx",
-    "./globals.css": "./src/globals.css",
-    "./hover-card": "./src/components/hover-card.tsx",
-    "./icons": "./src/components/icons.tsx",
-    "./input": "./src/components/input.tsx",
-    "./email-tag-input": "./src/components/email-tag-input.tsx",
-    "./input-otp": "./src/components/input-otp.tsx",
-    "./label": "./src/components/label.tsx",
-    "./navigation-menu": "./src/components/navigation-menu.tsx",
-    "./popover": "./src/components/popover.tsx",
-    "./postcss": "./postcss.config.js",
-    "./progress": "./src/components/progress.tsx",
-    "./radio-group": "./src/components/radio-group.tsx",
-    "./scroll-area": "./src/components/scroll-area.tsx",
-    "./select": "./src/components/select.tsx",
-    "./sheet": "./src/components/sheet.tsx",
-    "./badge": "./src/components/badge.tsx",
-    "./separator": "./src/components/separator.tsx",
-    "./skeleton": "./src/components/skeleton.tsx",
-    "./spinner": "./src/components/spinner.tsx",
-    "./switch": "./src/components/switch.tsx",
-    "./multiple-selector": "./src/components/multiple-selector.tsx",
-    "./table": "./src/components/table.tsx",
-    "./tabs": "./src/components/tabs.tsx",
-    "./tailwind.config": "./tailwind.config.ts",
-    "./textarea": "./src/components/textarea.tsx",
-    "./toast": "./src/components/toast.tsx",
-    "./toaster": "./src/components/toaster.tsx",
-    "./tooltip": "./src/components/tooltip.tsx",
-    "./time-range-input": "./src/components/time-range-input.tsx",
-    "./use-toast": "./src/components/use-toast.tsx",
-    "./cn": "./src/utils/cn.ts",
-    "./truncate": "./src/utils/truncate.ts",
-    "./hooks": "./src/hooks/index.ts",
-    "./quantity-input": "./src/components/quantity-input.tsx",
-    "./conversation": "./src/components/conversation.tsx",
-    "./loader": "./src/components/loader.tsx",
-    "./message": "./src/components/message.tsx",
-    "./prompt-input": "./src/components/prompt-input.tsx",
-    "./record-button": "./src/components/record-button.tsx",
-    "./reasoning": "./src/components/reasoning.tsx",
-    "./response": "./src/components/response.tsx",
-    "./sources": "./src/components/sources.tsx",
-    "./suggestion": "./src/components/suggestion.tsx",
-    "./text-shimmer": "./src/components/text-shimmer.tsx",
-    "./text-effect": "./src/components/text-effect.tsx",
-    "./toggle": "./src/components/toggle.tsx",
-    "./toggle-group": "./src/components/toggle-group.tsx",
-    "./tool-call-indicator": "./src/components/tool-call-indicator.tsx",
-    "./web-search-sources": "./src/components/web-search-sources.tsx"
+    ".": {
+      "svelte": "./src/components/ui/index.ts",
+      "default": "./src/components/ui/index.ts"
+    },
+    "./globals.css": "./globals.css",
+    "./utils": {
+      "svelte": "./src/utils.ts",
+      "default": "./src/utils.ts"
+    },
+    "./button": {
+      "svelte": "./src/components/ui/button/index.ts",
+      "default": "./src/components/ui/button/index.ts"
+    },
+    "./input": {
+      "svelte": "./src/components/ui/input/index.ts",
+      "default": "./src/components/ui/input/index.ts"
+    },
+    "./badge": {
+      "svelte": "./src/components/ui/badge/index.ts",
+      "default": "./src/components/ui/badge/index.ts"
+    },
+    "./card": {
+      "svelte": "./src/components/ui/card/index.ts",
+      "default": "./src/components/ui/card/index.ts"
+    },
+    "./dialog": {
+      "svelte": "./src/components/ui/dialog/index.ts",
+      "default": "./src/components/ui/dialog/index.ts"
+    },
+    "./sheet": {
+      "svelte": "./src/components/ui/sheet/index.ts",
+      "default": "./src/components/ui/sheet/index.ts"
+    },
+    "./skeleton": {
+      "svelte": "./src/components/ui/skeleton/index.ts",
+      "default": "./src/components/ui/skeleton/index.ts"
+    },
+    "./separator": {
+      "svelte": "./src/components/ui/separator/index.ts",
+      "default": "./src/components/ui/separator/index.ts"
+    },
+    "./label": {
+      "svelte": "./src/components/ui/label/index.ts",
+      "default": "./src/components/ui/label/index.ts"
+    },
+    "./form": {
+      "svelte": "./src/components/ui/form/index.ts",
+      "default": "./src/components/ui/form/index.ts"
+    },
+    "./select": {
+      "svelte": "./src/components/ui/select/index.ts",
+      "default": "./src/components/ui/select/index.ts"
+    },
+    "./tabs": {
+      "svelte": "./src/components/ui/tabs/index.ts",
+      "default": "./src/components/ui/tabs/index.ts"
+    },
+    "./tooltip": {
+      "svelte": "./src/components/ui/tooltip/index.ts",
+      "default": "./src/components/ui/tooltip/index.ts"
+    },
+    "./popover": {
+      "svelte": "./src/components/ui/popover/index.ts",
+      "default": "./src/components/ui/popover/index.ts"
+    },
+    "./combobox-dropdown": {
+      "svelte": "./src/components/ui/combobox-dropdown/index.ts",
+      "default": "./src/components/ui/combobox-dropdown/index.ts"
+    },
+    "./checkbox": {
+      "svelte": "./src/components/ui/checkbox/index.ts",
+      "default": "./src/components/ui/checkbox/index.ts"
+    },
+    "./switch": {
+      "svelte": "./src/components/ui/switch/index.ts",
+      "default": "./src/components/ui/switch/index.ts"
+    },
+    "./accordion": {
+      "svelte": "./src/components/ui/accordion/index.ts",
+      "default": "./src/components/ui/accordion/index.ts"
+    },
+    "./alert-dialog": {
+      "svelte": "./src/components/ui/alert-dialog/index.ts",
+      "default": "./src/components/ui/alert-dialog/index.ts"
+    },
+    "./avatar": {
+      "svelte": "./src/components/ui/avatar/index.ts",
+      "default": "./src/components/ui/avatar/index.ts"
+    },
+    "./progress": {
+      "svelte": "./src/components/ui/progress/index.ts",
+      "default": "./src/components/ui/progress/index.ts"
+    },
+    "./table": {
+      "svelte": "./src/components/ui/table/index.ts",
+      "default": "./src/components/ui/table/index.ts"
+    },
+    "./textarea": {
+      "svelte": "./src/components/ui/textarea/index.ts",
+      "default": "./src/components/ui/textarea/index.ts"
+    },
+    "./scroll-area": {
+      "svelte": "./src/components/ui/scroll-area/index.ts",
+      "default": "./src/components/ui/scroll-area/index.ts"
+    },
+    "./dropdown-menu": {
+      "svelte": "./src/components/ui/dropdown-menu/index.ts",
+      "default": "./src/components/ui/dropdown-menu/index.ts"
+    },
+    "./breadcrumb": {
+      "svelte": "./src/components/ui/breadcrumb/index.ts",
+      "default": "./src/components/ui/breadcrumb/index.ts"
+    },
+    "./calendar": {
+      "svelte": "./src/components/ui/calendar/index.ts",
+      "default": "./src/components/ui/calendar/index.ts"
+    },
+    "./timetable": {
+      "svelte": "./src/components/ui/timetable/index.ts",
+      "default": "./src/components/ui/timetable/index.ts"
+    },
+    "./logo": {
+      "svelte": "./src/components/ui/logo/index.ts",
+      "default": "./src/components/ui/logo/index.ts"
+    },
+    "./sonner": {
+      "svelte": "./src/components/ui/sonner/index.ts",
+      "default": "./src/components/ui/sonner/index.ts"
+    },
+    "./filter-builder": {
+      "svelte": "./src/filter-builder/index.ts",
+      "default": "./src/filter-builder/index.ts"
+    }
+  },
+  "peerDependencies": {
+    "svelte": "^5",
+    "tailwindcss": "^4"
   },
   "dependencies": {
+    "@fontsource-variable/rubik": "^5.2.8",
+    "@internationalized/date": "^3.12.0",
+    "@lucide/svelte": "^1.33.0",
     "@orbis/utils": "workspace:*",
-    "@radix-ui/react-accordion": "^1.2.11",
-    "@radix-ui/react-alert-dialog": "^1.1.14",
-    "@radix-ui/react-avatar": "^1.1.10",
-    "@radix-ui/react-checkbox": "^1.3.2",
-    "@radix-ui/react-collapsible": "^1.1.12",
-    "@radix-ui/react-context-menu": "^2.2.15",
-    "@radix-ui/react-dialog": "^1.1.14",
-    "@radix-ui/react-dropdown-menu": "^2.1.15",
-    "@radix-ui/react-hover-card": "^1.1.15",
-    "@radix-ui/react-icons": "^1.3.2",
-    "@radix-ui/react-label": "^2.1.7",
-    "@radix-ui/react-navigation-menu": "^1.2.13",
-    "@radix-ui/react-popover": "^1.1.14",
-    "@radix-ui/react-progress": "^1.1.7",
-    "@radix-ui/react-radio-group": "^1.3.7",
-    "@radix-ui/react-scroll-area": "^1.2.10",
-    "@radix-ui/react-select": "^2.2.6",
-    "@radix-ui/react-separator": "^1.1.7",
-    "@radix-ui/react-slider": "^1.3.5",
-    "@radix-ui/react-slot": "^1.2.3",
-    "@radix-ui/react-switch": "^1.2.5",
-    "@radix-ui/react-tabs": "^1.1.12",
-    "@radix-ui/react-toast": "^1.2.14",
-    "@radix-ui/react-toggle": "^1.1.10",
-    "@radix-ui/react-toggle-group": "^1.1.11",
-    "@radix-ui/react-tooltip": "^1.2.8",
-    "@radix-ui/react-use-controllable-state": "^1.2.2",
-    "@tiptap/extension-bold": "^2.12.0",
-    "@tiptap/extension-link": "^2.12.0",
-    "@tiptap/extension-placeholder": "^2.12.0",
-    "@tiptap/extension-underline": "^2.12.0",
-    "@tiptap/pm": "^2.12.0",
-    "@tiptap/react": "^2.12.0",
-    "@tiptap/starter-kit": "^2.12.0",
-    "@uidotdev/usehooks": "^2.4.1",
-    "ai": "5.0.87",
-    "class-variance-authority": "^0.7.1",
+    "bits-ui": "^2.16.3",
+    "class-variance-authority": "^0.7",
     "clsx": "^2.1.1",
-    "cmdk": "1.1.1",
-    "date-fns": "^4.1.0",
-    "embla-carousel-react": "^8.6.0",
-    "framer-motion": "^12.23.25",
-    "input-otp": "^1.4.2",
-    "lucide-react": "^0.542.0",
-    "next": "16.1.5",
-    "postcss": "^8.5.3",
-    "react-day-picker": "9.8.0",
-    "react-hook-form": "^7.71.1",
-    "react-icons": "^5.5.0",
-    "react-number-format": "^5.4.4",
-    "react-syntax-highlighter": "^15.6.6",
-    "recharts": "^2.15.3",
-    "tippy.js": "^6.3.7",
-    "streamdown": "1.2.0",
-    "tailwind-merge": "2.5.3",
-    "tailwindcss": "^3.4.13",
-    "tailwindcss-animate": "^1.0.7",
-    "use-stick-to-bottom": "^1.1.1",
-    "vaul": "^1.1.2"
+    "date-fns": "^4.4.0",
+    "tailwind-merge": "^3.6.0",
+    "tailwind-variants": "^3.3.0",
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
-    "@orbis/tsconfig": "workspace:*",
-    "@types/bun": "latest",
-    "@types/node": "^24.10.1",
-    "@types/react": "19.2.7",
-    "@types/react-dom": "19.2.3",
-    "@types/react-syntax-highlighter": "^15.5.13",
-    "autoprefixer": "^10.4.21",
-    "bun-types": "^1.3.8",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "typescript": "^5.9.3"
+    "@lucide/svelte": "^1.33.0",
+    "@tanstack/table-core": "^9.1.2",
+    "embla-carousel-svelte": "^8.6.0",
+    "formsnap": "^2.0.1",
+    "layerchart": "2.0.0-next.48",
+    "mode-watcher": "^1.1.0",
+    "paneforge": "^1.0.2",
+    "shadcn-svelte": "^1.3.0",
+    "svelte": "^5.56.1",
+    "sveltekit-superforms": "^2.30.0",
+    "tailwindcss": "^4.3.0",
+    "tw-animate-css": "^1.4.0",
+    "typescript": "^7.0.2",
+    "vaul-svelte": "^0.3.2"
   }
 }
+

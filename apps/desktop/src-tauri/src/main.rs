@@ -2,5 +2,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    orbis_lib::run()
+  orbis_svelte_lib::run();
 }
+

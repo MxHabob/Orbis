@@ -1,0 +1,21 @@
+[package]
+name = "svc-scheduling"
+version = "2.0.0"
+edition = "2021"
+description = "Orbis Scheduling domain — rooms, slots, availability, timetables"
+
+[dependencies]
+shared-kernel = { workspace = true }
+infra-persistence = { workspace = true }
+svc-academic = { workspace = true }
+svc-organization = { workspace = true }
+svc-iam = { workspace = true }
+infra-scheduler = { workspace = true }
+sea-orm = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+tokio = { workspace = true }
+utoipa = { version = "4.2.3", features = ["axum_extras"] }

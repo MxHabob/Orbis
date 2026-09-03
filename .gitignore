@@ -83,5 +83,11 @@ dist-ssr
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
 *.sw?
+
+# Rust build artifacts
+target/
+
+# Temp
+dashboard-midday/
+gitbutler/

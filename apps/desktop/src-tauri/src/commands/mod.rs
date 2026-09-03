@@ -1,0 +1,16 @@
+pub mod error;
+pub mod iam;
+pub mod organization;
+pub mod academic;
+pub mod assessment;
+pub mod scheduling;
+pub mod finance;
+pub mod exam;
+pub mod document;
+pub mod calendar;
+pub mod enrollment_workflow;
+pub mod platform_policy;
+pub mod ai;
+pub mod docforge;
+pub mod reporting;
+pub mod auto_register;

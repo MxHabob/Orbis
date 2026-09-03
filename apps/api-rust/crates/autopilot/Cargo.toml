@@ -1,0 +1,42 @@
+[package]
+name = "autopilot"
+version = "2.0.0"
+edition = "2021"
+description = "Orbis Autopilot Engine — automated lifecycle management with 3 execution modes"
+
+[dependencies]
+svc-calendar = { workspace = true }
+# Kernel
+shared-kernel = { workspace = true }
+
+# Domain crates (read-only access for evaluation)
+svc-organization = { workspace = true }
+svc-academic = { workspace = true }
+svc-assessment = { workspace = true }
+svc-finance = { workspace = true }
+svc-iam = { workspace = true }
+
+# Infrastructure
+infra-persistence = { workspace = true }
+
+# Database
+sea-orm = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Async
+tokio = { workspace = true }
+
+# Identifiers & Time
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+platform-policy = { version = "0.1.0", path = "../platform-policy" }
+async-trait = "0.1.80"

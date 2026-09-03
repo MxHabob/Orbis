@@ -1,0 +1,20 @@
+//! Assessment domain entities.
+
+pub mod grade;
+
+
+pub mod attendance;
+pub mod attendance_daily;
+pub mod attendance_summary;
+pub mod behavior_record;
+pub mod assessment_scheme;
+pub mod assessment_scheme_component;
+pub mod grade_scale;
+pub mod grade_scale_item;
+pub mod calculation_policy;
+pub mod pass_fail_policy;
+pub mod period_score;
+pub mod period_overall_result;
+pub mod ranking_policy;
+pub mod term_result;
+pub mod annual_result;

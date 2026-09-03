@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "meta": { "name": "Student Exam Seating Card", "nameAr": "بطاقة رقم جلوس الطالب", "documentType": "EXAM_CARD", "entityType": "exam", "locale": "ar", "pageSetup": { "size": "ID_CARD", "orientation": "landscape", "margins": { "top": 3, "bottom": 3, "left": 3, "right": 3 }, "unit": "mm" } },
+  "variables": {},
+  "assets": { "yemenStateEmblem": { "assetId": "orbis.yemen.state-emblem", "type": "logo" } },
+  "root": { "type": "Page", "id": "student-seating-card-page", "children": [
+    { "type": "Header", "id": "standard-header", "props": { "height": 10 }, "children": [ { "type": "Image", "id": "header-emblem", "props": { "assetRef": "yemenStateEmblem", "position": { "x": 38, "y": 1, "width": 10, "height": 8 }, "width": 10, "height": 8, "fit": "contain" } }, { "type": "Text", "id": "header-school-name", "props": { "content": "{{organization.nameAr | default:'اسم المدرسة'}}", "position": { "x": 4, "y": 3, "width": 77, "height": 5 }, "fontSize": 7, "fontFamily": "Tahoma", "fontWeight": "bold", "textAlign": "center", "direction": "rtl", "lineHeight": 1.1 } } ] },
+    { "type": "Text", "id": "card-title", "props": { "content": "بطاقة رقم الجلوس", "position": { "x": 5, "y": 15, "width": 76, "height": 6 }, "fontSize": 9, "fontFamily": "Tahoma", "fontWeight": "bold", "textAlign": "center", "direction": "rtl", "lineHeight": 1.1 } },
+    { "type": "Text", "id": "student-name", "props": { "content": "{{studentNameAr}}", "position": { "x": 5, "y": 25, "width": 76, "height": 6 }, "fontSize": 8, "fontFamily": "Tahoma", "fontWeight": "bold", "textAlign": "center", "direction": "rtl", "lineHeight": 1.1 } },
+    { "type": "Text", "id": "seating-number", "props": { "content": "رقم الجلوس: {{seatingNumber}}\n{{session.name}}", "position": { "x": 7, "y": 34, "width": 72, "height": 10 }, "fontSize": 7, "fontFamily": "Tahoma", "textAlign": "center", "direction": "rtl", "lineHeight": 1.2 } },
+    { "type": "QRCode", "id": "seating-qr", "props": { "data": "{{seatingNumber}}", "position": { "x": 35, "y": 45, "width": 12, "height": 7 }, "size": 7, "errorCorrection": "M" } },
+    { "type": "Footer", "id": "standard-footer", "props": { "height": 5, "showPageNumber": false }, "children": [ { "type": "Text", "id": "footer-content", "props": { "content": "{{session.academicYear}}", "position": { "x": 5, "y": 51, "width": 76, "height": 3 }, "fontSize": 5, "fontFamily": "Tahoma", "textAlign": "center", "direction": "rtl", "lineHeight": 1.1 } } ] }
+  ] }
+}

@@ -1,21 +1,25 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "build": {
-    "frontendDist": "../dist",
-    "devUrl": "http://localhost:1420",
-    "beforeDevCommand": "bun run dev",
-    "beforeBuildCommand": "bun run build"
-  },
   "productName": "Orbis",
   "identifier": "com.mulverse.orbis",
+  "version": "1.0.0",
+  "build": {
+    "beforeDevCommand": "bun run dev",
+    "beforeBuildCommand": "bun run build",
+    "devUrl": "http://localhost:1520",
+    "frontendDist": "../build"
+  },
   "app": {
     "macOSPrivateApi": true,
-    "withGlobalTauri": true,
     "security": {
-      "csp": null,
-      "dangerousDisableAssetCspModification": true,
-      "freezePrototype": false,
-      "capabilities": ["default"]
+      "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost blob: data:; style-src 'self' 'unsafe-inline'; script-src 'self'",
+      "dangerousDisableAssetCspModification": false,
+      "freezePrototype": true,
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["$APPDATA/**"]
+      },
+      "capabilities": ["default", "desktop-capability"]
     }
   },
   "bundle": {
@@ -42,11 +46,10 @@
       }
     },
     "updater": {
-      "active": true,
-      "endpoints": [
-        "https://releases.mulverse.com/{{target}}/{{current_version}}"
-      ],
-      "pubkey": "dW51c2VkdW51c2VkdW51c2VkdW51c2VkdW51c2VkdW51c2VkdW51c2VkdW51c2Vk"
+        "pubkey": "",
+        "endpoints": [],
+        "createUpdaterArtifacts": false,
+        "dangerousInsecureTransportProtocol": false
     }
   }
 }

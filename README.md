@@ -1,117 +1,84 @@
-<!-- Logo will be added here -->
+<div align="center">
+  <a href="https://orbis.mulverse.com">
+    <img src="logo.png" alt="Orbis Logo" width="100" height="100" />
+  </a>
 
-<p align="center">
-	<h1 align="center"><b>Orbis</b></h1>
-<p align="center">
-    The Open-Source School Management Platform
-    <br />
-    <br />
+  <h1>Orbis Enterprise</h1>
+
+  <p>
+    <strong>A next-generation, on-premise educational management ecosystem.</strong><br/>
+    Engineered for complete data sovereignty, offline-first performance, and multi-branch operations by <a href="https://github.com/mulverseco">Mulverse</a>.
+  </p>
+
+  <p>
     <a href="https://orbis.mulverse.com">Website</a>
     ·
-    <a href="https://github.com/mulverse/orbis/issues">Issues</a>
-    ·
-    <a href="docs/LOCAL-DEPLOYMENT.md">Self-Host Guide</a>
+    <a href="mailto:mulverseco@gmail.com">Contact Sales</a>
   </p>
-</p>
+</div>
 
+<br/>
 
-## About Orbis
+## Overview
 
-Orbis is a modern, self-hostable school management platform designed to run entirely on-premise — giving schools full ownership of their data with zero cloud dependency. Built as a monorepo with a focus on Arabic-first education workflows, Orbis provides everything a school needs to manage students, grades, attendance, schedules, and more from a single unified system.
+**Orbis** is a high-performance, **on-premise educational enterprise system** designed for complete data privacy and institutional sovereignty. Built for single educational organizations (universities, school networks, vocational institutes, and academies) managing one or multiple campuses/branches, Orbis delivers an all-in-one unified ecosystem for academic lifecycles, examination control rooms, student attendance, timetabling, and double-entry financial management — running entirely on your private local servers and native desktop clients without mandatory external cloud dependencies.
 
+## Key Architectural Principles
 
-## Features
+- **🏛️ Single Enterprise, Multi-Campus Hierarchy** — Central administration (HQ) with granular branch-level operational isolation and policy overrides.
+- **🔒 100% On-Premise & Data Sovereignty** — Runs on dedicated local servers or private intranets with zero external cloud lock-in.
+- **⚡ Local-First & Native Desktop Powered** — Hardware-accelerated native client (Tauri + Svelte) with full offline operation and local database engine (SQLite / Dedicated PostgreSQL).
+- **🎓 Multi-Institutional Flexibility** — Out-of-the-box support for K-12 schools (cohort-based), universities (credit hours & faculties), and training centers (modular blocks).
+- **📋 Unified Hierarchical Policies** — Centralized institutional rules with clean, cascading branch-level inheritance and a unified override workflow.
 
-**Student Management** — Register, enroll, and track students across academic years with support for class divisions, seating numbers, and custom metadata.<br/>
-**Grading & Assessments** — Create exams, quizzes, assignments, and oral assessments with weighted scoring, grade publishing, and per-month tracking.<br/>
-**Attendance Tracking** — Mark attendance per scheduled lesson with statuses like present, absent, late, excused, and sick — with teacher verification support.<br/>
-**Class Scheduling** — Build weekly timetables with time slots, subject-teacher assignments, and automatic conflict detection.<br/>
-**Academic Structure** — Manage academic years, terms, grades (1–9), and subjects with automatic seed data for quick setup.<br/>
-**Certificate Designer** — A Figma-inspired visual editor for designing and printing student certificates and reports.<br/>
-**Document Vault** — Secure S3-backed file storage with folders, pinning, and per-user document management.<br/>
-**Parent Portal** — Link parents to students with relationship types and primary contact designation.<br/>
-**Student Promotions** — Promote, retain, or transfer students between academic years with full audit trails.<br/>
-**Notifications** — In-app notifications for grades, attendance alerts, announcements, behavior reports, and more.<br/>
-**On-Premise Deployment** — Deploy to any school server with a single PowerShell command — no source code required on-site.<br/>
-**Desktop App** — Native desktop application built with Tauri for offline-capable access.
+## Core Capabilities
 
+<br/>
 
-## Get Started
+### 👥 Identity & Lifecycle Management
+- **Hierarchical Branch Modeling** — Manage main headquarters, satellite campuses, faculties, and departments in a unified tree.
+- **Party & Person Modeling** — Clean separation between human identity and user accounts (staff, guardians, students).
+- **Automated Academic Promotion** — Secure multi-stage student transition engines with rollback capabilities.
 
-Clone the repo and run the automated setup:
+<br/>
 
-```bash
-bun run setup:local
-```
+### 📊 Academics, Exams & Performance
+- **Unified Academic Engine** — Flexible period structures supporting semesters, trimesters, academic years, and short modular blocks.
+- **Arab Examination Control Room** — Comprehensive exam cycle management: automated seating numbers, encrypted secret numbers, hall allocation, and proctor scheduling.
+- **Algorithmic Timetabling** — Constraint-based scheduling sidecar with automated teacher and room conflict detection.
+- **Smart Attendance Tracking** — Granular lesson-by-lesson and daily attendance logs with medical excuse workflows.
 
-This will spin up PostgreSQL, Redis, and RustFS via Docker, run migrations, seed initial data (grades, subjects, terms), and print access URLs.
+<br/>
 
-Then start the dev server:
+### 💰 Centralized Double-Entry Accounting
+- **Unified Chart of Accounts** — Consolidated general ledger with multi-branch sub-treasuries and point-of-sale cash registers.
+- **Automated Invoicing & Tuition** — Configurable fee structures, discount rules, installments, and multi-currency receipt vouchers.
 
-```bash
-bun run dev
-```
+<br/>
 
-For detailed setup instructions, see the [Local Deployment Guide](docs/LOCAL-DEPLOYMENT.md).
+### 🛠 Tools & Local Infrastructure
+- **DocForge Certificate & Report Studio** — Visual canvas editor for generating pixel-perfect official certificates, transcripts, and ID cards.
+- **Private Document Vault** — Local filesystem and private on-premise storage (MinIO/S3-compatible) with strict role-based access control.
+- **Event-Driven Audit & Autopilot** — Comprehensive audit logging, autonomous background routines, and localized AI intelligence.
 
-For deploying to a school server (production), see the [School Deployment Guide](docs/school_deployment_guide.md).
+## Deployment Architecture
 
-## Architecture
+Orbis is built to deploy natively on your local infrastructure:
+- **Dedicated Local Server** — Deployed on institution hardware via Docker Compose / Linux server with PostgreSQL.
+- **Native Desktop Client** — Tauri-powered desktop application for Windows and macOS with embedded local processing.
+- **Zero Cloud Mandate** — Full operational capability over Local Area Networks (LAN) without internet connectivity.
 
-### Monorepo Structure
+---
 
-```
-apps/
-  api/           → Hono + tRPC API server (port 3002)
-  dashboard/     → Next.js admin dashboard (port 3001)
-  desktop/       → Tauri native desktop app
-packages/
-  auth/          → Better Auth integration
-  db/            → Drizzle ORM schema & migrations
-  cache/         → Redis caching layer
-  jobs/          → Background job worker (BullMQ)
-  storage/       → S3-compatible file storage (RustFS)
-  ui/            → Shared UI components (Shadcn)
-  email/         → Transactional emails (Resend)
-  encryption/    → Data encryption utilities
-  export/        → Data export (Excel/CSV)
-  import/        → Data import utilities
-  notifications/ → Notification system
-  logger/        → Structured logging (Pino)
-  location/      → Geolocation utilities
-  utils/         → Shared utilities
-cli/             → School server deployment CLI
-```
+<div align="center">
+  <p>
+    This software is licensed under the <strong>Mulverse M.U.V. Proprietary Software License</strong>.
+  </p>
+  <p>
+    Copyright © 2022–2026 <strong>Mulverse Inc.</strong>, Sana'a, Republic of Yemen.
+  </p>
+  <p>
+    <em>See the full <a href="LICENSE">LICENSE</a> file for details.</em>
+  </p>
+</div>
 
-### Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| **Runtime** | Bun |
-| **Language** | TypeScript |
-| **API** | Hono + tRPC |
-| **Frontend** | Next.js 16 + React 19 |
-| **Desktop** | Tauri |
-| **Styling** | TailwindCSS + Shadcn UI |
-| **Database** | PostgreSQL 17 (Drizzle ORM) |
-| **Cache** | Redis 7 |
-| **Storage** | RustFS (S3-compatible) |
-| **Auth** | Better Auth |
-| **Jobs** | BullMQ |
-| **Build** | Turborepo |
-
-### Hosting (Cloud Option)
-
-- **Vercel** — Dashboard
-- **Fly.io** — API
-- **GitHub Actions** — CI/CD
-
-## License
-
-This software is licensed under the **Mulverse M.U.V. Proprietary Software License**.
-
-Copyright © 2022–2026 **Mulverse Inc.**, Sana'a, Republic of Yemen.
-
-See the full [LICENSE](LICENSE) file for details.
-
-For commercial licensing inquiries, contact [mulverseco@gmail.com](mailto:mulverseco@gmail.com).

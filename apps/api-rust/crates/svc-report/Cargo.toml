@@ -1,0 +1,19 @@
+[package]
+name = "svc-report"
+version = "2.0.0"
+edition = "2021"
+description = "Orbis Report domain — report definitions, parameters, datasets, exporters"
+
+[dependencies]
+shared-kernel = { workspace = true }
+async-trait = { workspace = true }
+sea-orm = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+rust_xlsxwriter = "0.79"
+docforge-engine = { path = "../docforge-engine" }
+

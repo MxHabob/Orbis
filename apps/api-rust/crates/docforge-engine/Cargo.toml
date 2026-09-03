@@ -1,0 +1,55 @@
+[package]
+name = "docforge-engine"
+version = "0.2.0"
+edition = "2021"
+description = "Standalone document template rendering engine — Rust-native PDF generation with Arabic/RTL support"
+license = "MIT"
+
+# IMPORTANT: This crate has ZERO dependencies on Orbis.
+# It is a standalone library usable in any Rust project.
+
+[dependencies]
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Error handling
+thiserror = "1.0"
+
+# Async
+tokio = { version = "1.38", features = ["full"] }
+async-trait = "0.1"
+
+# Identifiers
+uuid = { version = "1.9", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Logging
+tracing = "0.1"
+
+# ── PDF Rendering Engine (~2MB total binary impact) ──────────
+# PDF document construction (wraps pdf-writer with high-level API)
+krilla = "0.5"
+
+# Text layout, shaping (rustybuzz/HarfBuzz), bidi, line breaking
+# Provides Arabic/RTL support via built-in rustybuzz + unicode-bidi
+cosmic-text = "0.12"
+
+# CSS Flexbox + Grid layout engine (used by Zed, Bevy, Lapce)
+taffy = "0.7"
+
+# Barcode generation (Code128, EAN13, Code39, etc.)
+barcoders = "2"
+
+# QR code generation
+qrcode = "0.14"
+
+# Image decoding (PNG, JPEG)
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+
+# Parallelism for batch rendering
+rayon = "1.10"
+num_cpus = "1.16"
+
+[dev-dependencies]
+tempfile = "3.27"

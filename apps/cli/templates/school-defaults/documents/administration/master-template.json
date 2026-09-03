@@ -1,0 +1,219 @@
+{
+  "version": "1.0",
+  "meta": {
+    "name": "Master Template",
+    "nameAr": "الترويسة والتذييل الافتراضي",
+    "documentType": "MASTER",
+    "entityType": "system",
+    "locale": "ar",
+    "pageSetup": {
+      "size": "A4",
+      "orientation": "portrait",
+      "margins": {
+        "top": 15,
+        "bottom": 15,
+        "left": 15,
+        "right": 15
+      },
+      "unit": "mm"
+    }
+  },
+  "variables": {
+    "org_name": {
+      "type": "string",
+      "required": true
+    },
+    "org_logo_url": {
+      "type": "string",
+      "required": false
+    },
+    "ministry_name": {
+      "type": "string",
+      "default_value": "وزارة التربية والتعليم"
+    },
+    "republic_name": {
+      "type": "string",
+      "default_value": "الجمهورية اليمنية"
+    },
+    "education_office": {
+      "type": "string",
+      "default_value": "مكتب التربية والتعليم"
+    },
+    "current_date": {
+      "type": "string",
+      "default_value": ""
+    }
+  },
+  "assets": {
+    "state_emblem": {
+      "type": "image",
+      "assetId": "orbis.yemen.state-emblem"
+    },
+    "org-fallback-logo": {
+      "assetId": "orbis-feedback",
+      "type": "image"
+    }
+  },
+  "root": {
+    "type": "Page",
+    "id": "master-template-page",
+    "children": [
+      {
+        "type": "Header",
+        "id": "master-header",
+        "props": {
+          "height": 40
+        },
+        "children": [
+          {
+            "type": "Text",
+            "id": "header-republic",
+            "props": {
+              "content": "{{republic_name}}",
+              "position": { "x": 130, "y": 5, "width": 65, "height": 6 },
+              "fontSize": 11,
+              "fontFamily": "Amiri",
+              "fontWeight": "bold",
+              "textAlign": "right",
+              "direction": "rtl"
+            }
+          },
+          {
+            "type": "Text",
+            "id": "header-ministry",
+            "props": {
+              "content": "{{ministry_name}}",
+              "position": { "x": 130, "y": 12, "width": 65, "height": 6 },
+              "fontSize": 11,
+              "fontFamily": "Amiri",
+              "fontWeight": "bold",
+              "textAlign": "right",
+              "direction": "rtl"
+            }
+          },
+          {
+            "type": "Text",
+            "id": "header-education-office",
+            "props": {
+              "content": "{{education_office}}",
+              "position": { "x": 130, "y": 19, "width": 65, "height": 6 },
+              "fontSize": 10,
+              "fontFamily": "Amiri",
+              "fontWeight": "normal",
+              "textAlign": "right",
+              "direction": "rtl"
+            }
+          },
+          {
+            "type": "Image",
+            "id": "header-state-emblem",
+            "props": {
+              "assetRef": "state_emblem",
+              "position": { "x": 95, "y": 5, "width": 20, "height": 22 },
+              "fit": "contain"
+            }
+          },
+          {
+            "type": "Text",
+            "id": "header-basmala",
+            "props": {
+              "content": "بسم الله الرحمن الرحيم",
+              "position": { "x": 75, "y": 30, "width": 60, "height": 6 },
+              "fontSize": 12,
+              "fontFamily": "Amiri",
+              "fontWeight": "bold",
+              "textAlign": "center",
+              "direction": "rtl"
+            }
+          },
+          {
+            "type": "Image",
+            "id": "header-org-logo",
+            "props": {
+              "assetRef": "org-fallback-logo",
+              "src": "{{org_logo_url}}",
+              "position": {
+                "x": 10,
+                "y": 5,
+                "width": 20,
+                "height": 22
+              },
+              "fit": "contain"
+            }
+          },
+          {
+            "type": "Text",
+            "id": "header-org-name",
+            "props": {
+              "content": "{{org_name}}",
+              "position": { "x": 15, "y": 27, "width": 60, "height": 8 },
+              "fontSize": 12,
+              "fontFamily": "Amiri",
+              "fontWeight": "bold",
+              "textAlign": "center",
+              "direction": "rtl",
+              "color": "#1f2937"
+            }
+          },
+          {
+            "type": "Separator",
+            "id": "header-separator",
+            "props": {
+              "direction": "horizontal",
+              "color": "#9ca3af",
+              "thickness": 0.5,
+              "position": { "x": 15, "y": 38, "width": 180, "height": 1 }
+            }
+          }
+        ]
+      },
+      {
+        "type": "Footer",
+        "id": "master-footer",
+        "props": {
+          "height": 15,
+          "showPageNumber": true,
+          "pageNumberFormat": "صفحة {page} من {pages}"
+        },
+        "children": [
+          {
+            "type": "Separator",
+            "id": "footer-separator",
+            "props": {
+              "direction": "horizontal",
+              "color": "#d1d5db",
+              "thickness": 0.5,
+              "position": { "x": 15, "y": 277, "width": 180, "height": 1 }
+            }
+          },
+          {
+            "type": "Text",
+            "id": "footer-date",
+            "props": {
+              "content": "تاريخ الطباعة: {{current_date}}",
+              "position": { "x": 150, "y": 281, "width": 45, "height": 6 },
+              "fontSize": 9,
+              "fontFamily": "Cairo",
+              "color": "#6b7280",
+              "textAlign": "right",
+              "direction": "rtl"
+            }
+          },
+          {
+            "type": "Text",
+            "id": "footer-text",
+            "props": {
+              "content": "تم الإنشاء بواسطة نظام Orbis لإدارة التعليم",
+              "position": { "x": 15, "y": 281, "width": 80, "height": 6 },
+              "fontSize": 9,
+              "fontFamily": "Cairo",
+              "color": "#6b7280",
+              "textAlign": "left",
+              "direction": "rtl"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
