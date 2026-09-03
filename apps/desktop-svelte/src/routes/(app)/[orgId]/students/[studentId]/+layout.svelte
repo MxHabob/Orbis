@@ -33,10 +33,10 @@ import {
   FileText,
   MoreHorizontal,
 } from "@lucide/svelte";
-import { createEnrollmentsQuery } from "$lib/features/students";
+import { createEnrollmentQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
 import type { Snippet } from "svelte";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 
 import { localizeHref } from "$lib/paraglide/runtime";
 import AskOrbisButton from "$lib/shared/components/ask-orbis-button.svelte";
@@ -47,12 +47,10 @@ const orgId = $derived(page.params.orgId || "");
 const studentId = $derived(page.params.studentId || "");
 
 // TanStack Queries
-const enrollmentsQuery = createEnrollmentsQuery(() => orgId);
+const studentQuery = createEnrollmentQuery(() => orgId, () => studentId);
 const classesQuery = createClassesQuery(() => orgId);
 
-const student = $derived(
-  enrollmentsQuery.data?.find((s) => s.id === studentId),
-);
+const student = $derived(studentQuery.data);
 const currentClass = $derived(
   student
     ? classesQuery.data?.find((c) => String(c.id) === String(student.class_id))

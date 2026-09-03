@@ -13,7 +13,7 @@ import {
 } from "@orbis/ui-svelte/select";
 import { ComboboxDropdown } from "@orbis/ui-svelte/combobox-dropdown";
 import { SheetFooter } from "@orbis/ui-svelte/sheet";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import {
   cashAccountInputSchema,
   entityAccountInputSchema,

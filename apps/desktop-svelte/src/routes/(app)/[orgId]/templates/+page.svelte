@@ -11,7 +11,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { createDocument } from "@docforge/core";
 
 import { l, isAr } from "$lib/core/i18n";

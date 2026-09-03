@@ -12,12 +12,12 @@ import { Input } from "@orbis/ui-svelte/input";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import ArchivePreviewSheet from "$lib/features/documents/archive-preview-sheet.svelte";
 import { confirmStore } from "$lib/stores";
-import { Trash2, File, Image as ImageIcon, Loader2, Upload, RefreshCw, Download, Search } from "@lucide/svelte";
+import { Trash2, File, Image as ImageIcon, Video, Loader2, Upload, RefreshCw, Download, Search } from "@lucide/svelte";
 import type { Documents } from "@orbis/sdk-core";
-    import { toast } from "svelte-sonner";
+import { createOperationToast } from "$lib/shared/components/operation-toast";
 
 const documentsQuery = useDocuments({ ownerId: "all" });
-const uploadMutation = useUploadDocument();
+const uploadMutation = useUploadDocument({ invalidateOnSuccess: false });
 const deleteMutation = useDeleteDocument();
 const orgId = $derived(page.params.orgId ?? "");
 let fileInput: HTMLInputElement | undefined = $state();
@@ -70,30 +70,45 @@ async function openPreview(doc: Documents) {
   isPreviewOpen = true;
 }
 
-function handleFileSelect(event: Event) {
+async function handleFileSelect(event: Event) {
   const target = event.currentTarget as HTMLInputElement;
   const file = target.files?.[0];
   if (!file) return;
 
-  uploadMutation.mutate(
-    {
-      file,
-      entity_type: "archive",
-      entity_id: orgId || "organization",
-      category: "archive",
-      visibility: "private",
-    },
-    {
-      onSuccess: () => {
-        toast.success(m.common_docs_upload_success());
-        target.value = "";
-      },
-      onError: (error) => {
-        toast.error((error as any)?.message || "Failed to upload file");
-        target.value = "";
-      },
-    },
-  );
+  const operation = createOperationToast({
+    title: `${m.common_docs_btn_upload()} (${target.files?.length ?? 1})`,
+    message: file.name,
+    actionLabel: m.common_control_refresh(),
+    onAction: () => documentsQuery.refetch(),
+  });
+  const files = Array.from(target.files ?? []);
+  operation.update(5, "Preparing files...");
+
+  try {
+    let completed = 0;
+    await Promise.all(
+      files.map(async (selectedFile) => {
+        await uploadMutation.mutateAsync({
+          file: selectedFile,
+          entity_type: "archive",
+          entity_id: orgId || "organization",
+          category: "archive",
+          visibility: "private",
+        });
+        completed += 1;
+        operation.update(
+          10 + (completed / files.length) * 85,
+          `${completed} / ${files.length} uploaded`,
+        );
+      }),
+    );
+    await documentsQuery.refetch();
+    operation.success(`${files.length} files uploaded`);
+  } catch (error) {
+    operation.error((error as any)?.message || "Failed to upload files");
+  } finally {
+    target.value = "";
+  }
 }
 </script>
 
@@ -118,7 +133,7 @@ function handleFileSelect(event: Event) {
         {#if uploadMutation.isPending}<Loader2 size={14} class="me-1.5 animate-spin" />{:else}<Upload size={14} class="me-1.5" />{/if}
         {m.common_docs_btn_upload()}
       </Button>
-      <input bind:this={fileInput} type="file" class="hidden" onchange={handleFileSelect} />
+      <input bind:this={fileInput} type="file" accept="image/*,video/*" multiple class="hidden" onchange={handleFileSelect} />
     </div>
   </div>
 
@@ -177,6 +192,12 @@ function handleFileSelect(event: Event) {
                     <Skeleton class="w-full h-full rounded-lg" />
                   {:then srcUrl}
                     <img src={srcUrl} alt={doc.name} class="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                  {/await}
+                {:else if doc.mime_type?.startsWith("video/")}
+                  {#await resolveDocumentUrl(doc.url)}
+                    <Skeleton class="w-full h-full rounded-lg" />
+                  {:then srcUrl}
+                    <video src={srcUrl} muted preload="metadata" class="w-full h-full object-cover" aria-label={doc.name}></video>
                   {/await}
                 {:else}
                   <File class="h-8 w-8 text-muted-foreground/70" />

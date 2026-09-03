@@ -25,6 +25,7 @@ let { data }: { data: { orgId: string } } = $props();
 // ── State ──────────────────────────────────────────────────────────────
 let auditLogs = $state<any[]>([]);
 let users = $state<any[]>([]);
+const usersById = $derived(new Map(users.map((user) => [String(user.id), user])));
 let isLoading = $state(true);
 let actionFilter = $state("all");
 let selectedLog = $state<any | null>(null);
@@ -60,14 +61,14 @@ onMount(() => {
 
 function getUserName(userId: string | null): string {
   if (!userId) return "System";
-  const user = users.find((u) => u.id === userId);
+  const user = usersById.get(String(userId));
   if (!user) return "System";
   return l(user.name_ar, user.full_name) || user.username || "System";
 }
 
 function getUserEmail(userId: string | null): string {
   if (!userId) return "system@orbis.local";
-  const user = users.find((u) => u.id === userId);
+  const user = usersById.get(String(userId));
   return user?.email || "system@orbis.local";
 }
 

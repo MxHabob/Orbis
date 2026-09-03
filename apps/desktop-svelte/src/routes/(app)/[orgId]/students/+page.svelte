@@ -32,7 +32,7 @@ import StudentsTableSkeleton from "$lib/shared/skeletons/students-table-skeleton
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import StudentTable from "$lib/features/students/student-table.svelte";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { goto } from "$app/navigation";
 import PeriodGateAction from "$lib/shared/components/period-gate-action.svelte";
 import OverrideRequestDialog from "$lib/shared/components/override-request-dialog.svelte";

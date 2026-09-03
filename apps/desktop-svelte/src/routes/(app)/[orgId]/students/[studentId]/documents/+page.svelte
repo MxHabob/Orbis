@@ -34,7 +34,7 @@ import {
   Paperclip,
 } from "@lucide/svelte";
 import { onMount } from "svelte";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { createEnrollmentsQuery } from "$lib/features/students";
 
 import { formatDate } from "$lib/core/i18n";

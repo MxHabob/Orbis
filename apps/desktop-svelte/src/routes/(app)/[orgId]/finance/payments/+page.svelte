@@ -8,6 +8,7 @@
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
+import { queryClient } from "$lib/core/query/client";
 import {
   Card,
   Table,
@@ -28,7 +29,7 @@ import {
   SelectItem,
 } from "@orbis/ui-svelte/select";
 import { ComboboxDropdown } from "@orbis/ui-svelte/combobox-dropdown";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import {
   Plus,
   CreditCard,
@@ -177,6 +178,7 @@ async function loadData() {
       commands.finance.listPayments(null, null),
       commands.finance.listAccounts().then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type) && account.is_active === 1 && account.is_control_account !== 1)),
       commands.academic.listEnrollments(),
+      loadCurrencies(),
     ]);
 
     payments = (paymentsList as any[]).map((p: any) => ({
@@ -196,7 +198,6 @@ async function loadData() {
       treasuryId = treasuries[0].id;
     }
 
-    await loadCurrencies();
   } catch (e) {
     console.error("Error loading data:", e);
     error = e instanceof Error ? e.message : String(e);
@@ -467,6 +468,10 @@ async function handleAdd() {
     }
 
     toast.success(`تم تسجيل سندات قبض بنجاح برقم ${randomRef}`);
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["payments", data.orgId] }),
+      queryClient.invalidateQueries({ queryKey: ["student-fees", data.orgId] }),
+    ]);
     await loadData();
     clearForm();
   } catch (e) {

@@ -1,6 +1,6 @@
 <script lang="ts">
 import { Save, X } from "@lucide/svelte";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { commands } from "$lib/core/ipc";
 import { createTimeSlotInputSchema } from "@orbis/schemas";
 import { Button } from "@orbis/ui-svelte/button";

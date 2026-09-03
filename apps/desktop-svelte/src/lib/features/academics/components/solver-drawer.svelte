@@ -21,7 +21,7 @@
     Sparkles,
   } from "@lucide/svelte";
   import { commands, extractErrorMessage } from "$lib/core/ipc";
-  import { toast } from "svelte-sonner";
+  import { toast } from "@orbis/ui-svelte";
   import * as m from "$lib/paraglide/messages";
 
   interface Props {

@@ -5,9 +5,8 @@ using <MainViewport>. Uses the shared SidebarNav component.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { page } from "$app/state";
-import { commands } from "$lib/core/ipc";
 import { onMount } from "svelte";
+import { createCashAccountsQuery, createStudentFeesQuery } from "$lib/features/finance";
 import {
   Wallet,
   CreditCard,
@@ -25,31 +24,29 @@ import type { Snippet } from "svelte";
 let { data, children }: { data: { orgId: string }; children: Snippet } =
   $props();
 
-// Sidebar live statistics
-let unpaidFeesCount = $state(0);
-let treasuriesCount = $state(0);
+let sidebarStatsReady = $state(false);
+const feesQuery = createStudentFeesQuery(
+  () => data.orgId,
+  true,
+  () => sidebarStatsReady,
+);
+const treasuriesQuery = createCashAccountsQuery(
+  () => data.orgId,
+  () => sidebarStatsReady,
+);
+const unpaidFeesCount = $derived(
+  (feesQuery.data ?? []).filter(
+    (fee: any) => fee.status === "unpaid" || fee.status === "partially_paid",
+  ).length,
+);
+const treasuriesCount = $derived(treasuriesQuery.data?.length ?? 0);
 
-async function loadSidebarStats() {
-  try {
-    const [feeList, treasuryList] = await Promise.all([
-      commands.finance.listStudentFeesByEnrollment("").catch(() => []),
-      commands.finance
-        .listAccounts()
-        .then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type)))
-        .catch(() => []),
-    ]);
-    unpaidFeesCount = feeList.filter(
-      (f) => f.status === "unpaid" || f.status === "partially_paid",
-    ).length;
-    treasuriesCount = treasuryList.length;
-  } catch (e) {
-    console.error("Error loading sidebar stats:", e);
-  }
-}
-
-// Load once on mount — not on every sub-route change
 onMount(() => {
-  if (data.orgId) loadSidebarStats();
+  const timer = setTimeout(() => {
+    sidebarStatsReady = true;
+  }, 150);
+
+  return () => clearTimeout(timer);
 });
 
 const basePath = $derived(`/${data.orgId}/finance`);

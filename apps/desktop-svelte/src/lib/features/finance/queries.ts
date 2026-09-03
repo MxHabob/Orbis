@@ -6,14 +6,17 @@ import { createQuery } from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
 
 /** Treasuries for an organization. */
-export function createCashAccountsQuery(orgId: () => string) {
+export function createCashAccountsQuery(
+  orgId: () => string,
+  enabled: () => boolean = () => true,
+) {
   return createQuery(() => ({
     queryKey: ["cash-accounts", orgId()],
     queryFn: () =>
       commands.finance
         .listAccounts()
         .then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type))),
-    enabled: !!orgId(),
+    enabled: !!orgId() && enabled(),
     staleTime: 5 * 60 * 1000,
   }));
 }
@@ -75,6 +78,7 @@ export function createFeeTemplatesQuery(orgId: string) {
 export function createStudentFeesQuery(
   orgOrEnrollmentId: () => string,
   isOrgId: boolean = true,
+  enabled: () => boolean = () => true,
 ) {
   return createQuery(() => ({
     queryKey: ["student-fees", orgOrEnrollmentId()],
@@ -82,7 +86,7 @@ export function createStudentFeesQuery(
       isOrgId
         ? commands.finance.listStudentFeesByOrg()
         : commands.finance.listStudentFeesByEnrollment(orgOrEnrollmentId()),
-    enabled: !!orgOrEnrollmentId(),
+    enabled: !!orgOrEnrollmentId() && enabled(),
     staleTime: 2 * 60 * 1000,
   }));
 }

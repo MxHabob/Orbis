@@ -10,7 +10,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { createPeriodInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { FormField } from "@orbis/ui-svelte";

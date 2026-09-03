@@ -9,7 +9,7 @@ import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui-svelte/button";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Separator } from "@orbis/ui-svelte/separator";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import {
   Scale,
   Plus,

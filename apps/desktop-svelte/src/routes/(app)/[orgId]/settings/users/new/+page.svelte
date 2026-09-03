@@ -10,7 +10,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 
 import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
 import { authStore } from "$lib/stores";

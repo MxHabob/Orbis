@@ -19,7 +19,7 @@ import { onMount } from "svelte";
 import { goto } from "$app/navigation";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { l } from "$lib/core/i18n";
 import { deserializeDocument, serializeDocument } from "@docforge/core";
 import { createEditorStore } from "$lib/features/templates/stores/editor-store.svelte";

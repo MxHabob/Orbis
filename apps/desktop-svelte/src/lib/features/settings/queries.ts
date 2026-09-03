@@ -52,6 +52,16 @@ export function createUsersQuery(orgId: () => string) {
   }));
 }
 
+/** Single user query shared by detail layouts and their tabs. */
+export function createUserQuery(orgId: () => string, userId: () => string) {
+  return createQuery(() => ({
+    queryKey: ["user", orgId(), userId()],
+    queryFn: () => commands.iam.getUser(userId()),
+    enabled: !!orgId() && !!userId(),
+    staleTime: 5 * 60 * 1000,
+  }));
+}
+
 import type { UniversalFilter } from "@orbis/ui-svelte/filter-builder";
 
 /** Paginated users query using Cursor-based infinite scrolling. */

@@ -17,11 +17,11 @@ import AttendanceTrendsCard from "$lib/features/metrics/cards/attendance-trends-
 import GradeDistributionCard from "$lib/features/metrics/cards/grade-distribution-card.svelte";
 import { BrainCircuit } from "@lucide/svelte";
 import { onMount } from "svelte";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { fade } from "svelte/transition";
 
 import { l } from "$lib/core/i18n";
-import { createEnrollmentsQuery } from "$lib/features/students";
+import { createEnrollmentQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { queryClient } from "$lib/core/query/client";
@@ -31,14 +31,13 @@ const orgId = $derived(page.params.orgId || "");
 const studentId = $derived(page.params.studentId || ""); // Enrollment ID
 
 // TanStack Queries
-const enrollmentsQuery = createEnrollmentsQuery(() => orgId);
+const studentQuery = createEnrollmentQuery(() => orgId, () => studentId);
 const classesQuery = createClassesQuery(() => orgId);
 
-const enrollments = $derived(enrollmentsQuery.data ?? []);
+const student = $derived(studentQuery.data as any);
 const classes = $derived(classesQuery.data ?? []);
-const student = $derived(enrollments.find((s) => s.id === studentId));
 const isLoading = $derived(
-  enrollmentsQuery.isLoading || classesQuery.isLoading,
+  studentQuery.isLoading || classesQuery.isLoading,
 );
 
 let isSaving = $state(false);

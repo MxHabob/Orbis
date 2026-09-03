@@ -2,7 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { extractErrorMessage } from "$lib/core/ipc";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 
 import { setLocale } from "$lib/paraglide/runtime";
 import {

@@ -24,17 +24,29 @@ onMount(async () => {
 </svelte:head>
 
 <div class="loading-root">
-	<Loader2 size={20} strokeWidth={2} />
+	<span class="loading-icon" aria-hidden="true">
+		<Loader2 size={20} strokeWidth={2} />
+	</span>
 </div>
 
 <style>
 	.loading-root {
+		position: fixed;
+		inset: 0;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 100vw;
-		height: 100vh;
 		color: hsl(var(--muted-foreground));
 		background-color: hsl(var(--muted));
+	}
+
+	.loading-icon {
+		animation: loading-spin 0.9s linear infinite;
+	}
+
+	@keyframes loading-spin {
+		to {
+			transform: rotate(360deg);
+		}
 	}
 </style>

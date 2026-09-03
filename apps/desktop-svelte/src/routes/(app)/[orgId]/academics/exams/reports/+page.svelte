@@ -10,7 +10,7 @@ import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui-svelte/button";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import {
   FileText,
   Calendar,

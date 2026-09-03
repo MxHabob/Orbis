@@ -10,7 +10,7 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Plus, Receipt } from "@lucide/svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/core/i18n";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import FeeTemplateSheet from "$lib/features/finance/components/fee-template-sheet.svelte";
 
 import { DataTable } from "$lib/tables";

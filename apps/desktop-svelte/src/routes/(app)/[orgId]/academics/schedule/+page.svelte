@@ -3,7 +3,7 @@
   import { goto } from "$app/navigation";
   import { commands, extractErrorMessage } from "$lib/core/ipc";
   import { getLocale, localizeHref } from "$lib/paraglide/runtime";
-  import { toast } from "svelte-sonner";
+  import { toast } from "@orbis/ui-svelte";
   import { createQuery, useQueryClient } from "@tanstack/svelte-query";
   import { TimetableGrid } from "@orbis/ui-svelte";
   import { Button } from "@orbis/ui-svelte/button";

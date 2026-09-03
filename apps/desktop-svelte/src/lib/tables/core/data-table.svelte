@@ -311,6 +311,7 @@ function handleSearchKeydown(e: KeyboardEvent) {
         {rtl}
         {height}
         {oncelledit}
+        {onbeforeedit}
         {onaction}
       />
     {:else if showEmpty}

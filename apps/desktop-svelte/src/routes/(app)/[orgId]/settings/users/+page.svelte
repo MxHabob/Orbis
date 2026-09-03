@@ -9,7 +9,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { getLocale } from "$lib/paraglide/runtime";
 import { l, isAr } from "$lib/core/i18n";
@@ -23,8 +23,10 @@ import { users as usersDef, withIndex } from "$lib/tables/definitions";
 import { createUsersPaginatedQuery } from "$lib/features/settings/queries";
 import type { UniversalFilter } from "@orbis/ui-svelte/filter-builder";
 import { userFilterFields } from "$lib/tables/definitions/filter-configs";
+import { useQueryClient } from "@tanstack/svelte-query";
 
 let { data }: { data: { orgId: string } } = $props();
+const queryClient = useQueryClient();
 
 import { goto } from "$app/navigation";
 import { ActionOverlay } from "$lib/tables";
@@ -124,6 +126,9 @@ async function handleAction(event: GridActionEvent) {
     if (confirmed) {
       try {
         await commands.iam.deleteUser(user.id);
+        await queryClient.invalidateQueries({ queryKey: ["users", data.orgId] });
+        await queryClient.invalidateQueries({ queryKey: ["users_paginated", data.orgId] });
+        queryClient.removeQueries({ queryKey: ["user", data.orgId, user.id] });
         toast.success("User deleted successfully");
         loadUsers();
       } catch (e) {

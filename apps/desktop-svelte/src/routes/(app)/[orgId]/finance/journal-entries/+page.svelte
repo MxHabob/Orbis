@@ -29,7 +29,7 @@ import { Badge } from "@orbis/ui-svelte/badge";
 import { Switch } from "@orbis/ui-svelte/switch";
 import { Card, CardContent } from "@orbis/ui-svelte/card";
 import { Separator } from "@orbis/ui-svelte/separator";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import {
   Search,
   Trash2,

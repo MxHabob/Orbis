@@ -12,7 +12,7 @@ import { Checkbox } from "@orbis/ui-svelte/checkbox";
 import { Card } from "@orbis/ui-svelte/card";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { fade } from "svelte/transition";
 import { l } from "$lib/core/i18n";
 import SearchField from "$lib/shared/components/search-field.svelte";

@@ -5,7 +5,7 @@ import { page } from "$app/state";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { themeStore, authStore } from "$lib/stores";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 
 import { getLocale, setLocale } from "$lib/paraglide/runtime";
 

@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import {

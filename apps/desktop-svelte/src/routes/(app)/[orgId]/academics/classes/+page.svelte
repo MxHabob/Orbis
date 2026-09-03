@@ -12,7 +12,7 @@ and triggers the class creation side sheet. Each card links to the class detail 
 	import { Skeleton } from "@orbis/ui-svelte/skeleton";
 	import { MetricProgress } from "@orbis/ui-svelte";
 	import { Plus, Users, GraduationCap } from "@lucide/svelte";
-	import { toast } from "svelte-sonner";
+	import { toast } from "@orbis/ui-svelte";
 	import { localizeHref } from "$lib/paraglide/runtime";
 	import { l } from "$lib/core/i18n/locale";
 	import { fade } from "svelte/transition";

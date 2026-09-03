@@ -16,7 +16,7 @@ import { Input } from "@orbis/ui-svelte/input";
 import { FormField } from "@orbis/ui-svelte";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui-svelte/select";
 import PeriodSelect from "$lib/features/academics/components/period-select.svelte";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { commands } from "$lib/core/ipc";
 import { examSessionInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";

@@ -13,7 +13,7 @@ import {
   TableCell,
 } from "@orbis/ui-svelte/table";
 import { Input } from "@orbis/ui-svelte/input";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { l, isAr } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
 import SearchField from "$lib/shared/components/search-field.svelte";

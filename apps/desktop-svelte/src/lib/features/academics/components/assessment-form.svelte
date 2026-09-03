@@ -13,7 +13,7 @@ import {
   SelectItem,
 } from "@orbis/ui-svelte/select";
 import { Award } from "@lucide/svelte";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
 let {

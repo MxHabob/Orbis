@@ -6,7 +6,7 @@ Shows a list of past promotion jobs with status, stats, and rollback option.
 import * as m from "$lib/paraglide/messages";
 
 import { extractErrorMessage } from "$lib/core/ipc";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import {
   createPromotionJobsQuery,
   createRollbackMutation,

@@ -4,7 +4,7 @@ import { onMount } from "svelte";
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { ShieldCheck, Lock, AlertTriangle } from "@lucide/svelte";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { slide } from "svelte/transition";
 import { academicContext, authStore } from "$lib/stores";
 import { getLocale } from "$lib/paraglide/runtime";

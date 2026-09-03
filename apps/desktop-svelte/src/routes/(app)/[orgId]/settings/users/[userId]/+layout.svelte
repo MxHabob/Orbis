@@ -6,7 +6,6 @@ Decomposed from the original 699-line monolith into a layout + 4 sub-pages.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
-import { onMount } from "svelte";
 import { goto } from "$app/navigation";
 import { confirmStore } from "$lib/stores";
 import { commands } from "$lib/core/ipc";
@@ -14,7 +13,7 @@ import type { User } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { Trash2 } from "@lucide/svelte";
 import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
@@ -24,6 +23,8 @@ import type { Snippet } from "svelte";
 
 import { localizeHref } from "$lib/paraglide/runtime";
 import UserResetPasswordDialog from "$lib/features/settings/components/user-reset-password-dialog.svelte";
+import { createUserQuery } from "$lib/features/settings/queries";
+import { useQueryClient } from "@tanstack/svelte-query";
 
 let { children }: { children: Snippet } = $props();
 
@@ -31,41 +32,27 @@ const orgId = $derived(page.params.orgId);
 const userId = $derived(page.params.userId);
 
 // Shared user state
-let user = $state<User | null>(null);
-let isLoading = $state(true);
-let fullName = $state("");
-let email = $state("");
-let role = $state("teacher");
-let isActiveState = $state(true);
-let avatarUrl = $state<string | null>(null);
+const userQuery = createUserQuery(() => String(orgId || ""), () => String(userId || ""));
+const queryClient = useQueryClient();
+const user = $derived((userQuery.data as any) ?? null);
+const isLoading = $derived(userQuery.isLoading);
+const fullName = $derived(user?.full_name ?? "");
+const email = $derived(user?.email ?? "");
+const role = $derived(user?.primary_role ?? user?.role ?? "teacher");
+const isActiveState = $derived(user?.is_active !== undefined ? Boolean(user.is_active) : true);
+const avatarUrl = $derived(user?.avatar_url || user?.avatar || null);
+
+function handleAvatarUpload(url: string) {
+  queryClient.setQueryData(["user", orgId, userId], (current: any) =>
+    current ? { ...current, avatar_url: url } : current,
+  );
+}
 
 // Reset password modal
 let showResetModal = $state(false);
 let newPassword = $state("");
 let confirmPassword = $state("");
 let isResettingPassword = $state(false);
-
-async function loadUser() {
-  if (!userId) return;
-  isLoading = true;
-  try {
-    const fetched = (await commands.iam.getUser(userId)) as any;
-    user = fetched;
-    fullName = fetched.full_name || "";
-    email = fetched.email || "";
-    role = fetched.primary_role || fetched.role || "teacher";
-    isActiveState =
-      fetched.is_active !== undefined ? Boolean(fetched.is_active) : true;
-    avatarUrl = fetched.avatar_url || fetched.avatar || null;
-  } catch (e) {
-    console.error("Failed to load user:", e);
-    toast.error(m.settings_user_detail_load_error());
-  } finally {
-    isLoading = false;
-  }
-}
-
-onMount(loadUser);
 
 async function handleResetPassword(e: Event) {
   e.preventDefault();
@@ -200,10 +187,11 @@ const menuItems = $derived([
         >
           <div class="w-full flex justify-start">
             <AvatarUpload
-              bind:avatarUrl
+              {avatarUrl}
               size={220}
               fallbackText={fullName}
               class="rounded-xl border border-border"
+              onupload={handleAvatarUpload}
             />
           </div>
 

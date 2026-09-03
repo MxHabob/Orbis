@@ -22,7 +22,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@orbis/ui-svelte/accordion";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 
 let {
   orgId,

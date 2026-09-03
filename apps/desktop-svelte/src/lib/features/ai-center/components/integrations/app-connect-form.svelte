@@ -10,7 +10,7 @@ import { Input } from "@orbis/ui-svelte/input";
 import { FormField } from "@orbis/ui-svelte";
 import { Switch } from "@orbis/ui-svelte/switch";
 import { l } from "$lib/core/i18n";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { createAppSettingsSchema } from "@orbis/schemas";
 import {
   Select,

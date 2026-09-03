@@ -17,7 +17,7 @@ import {
 } from "@orbis/ui-svelte/select";
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import type { ClassSubject, JsonRecord } from "@orbis/sdk-core";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 
 import {
   createPeriodsQuery,

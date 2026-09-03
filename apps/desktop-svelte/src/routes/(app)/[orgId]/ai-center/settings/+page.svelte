@@ -31,7 +31,7 @@ import { Switch } from "@orbis/ui-svelte/switch";
 import { Label } from "@orbis/ui-svelte/label";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Separator } from "@orbis/ui-svelte/separator";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
 let { data }: { data: { orgId: string } } = $props();

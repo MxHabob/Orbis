@@ -9,7 +9,7 @@ import { uiStore, authStore, aiContext } from "$lib/stores";
 import { fly } from "svelte/transition";
 import { getLocale } from "$lib/paraglide/runtime";
 import { isDesktopApp } from "$lib/core/ipc";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import ChatInput from "../components/chat-input.svelte";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";

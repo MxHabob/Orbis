@@ -3,7 +3,7 @@
   import { Input } from "@orbis/ui-svelte/input";
   import { Label } from "@orbis/ui-svelte/label";
   import { commands, extractErrorMessage } from "$lib/core/ipc";
-  import { toast } from "svelte-sonner";
+  import { toast } from "@orbis/ui-svelte";
 
   type AuthenticationSettings = {
     max_failed_logins: number;

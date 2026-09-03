@@ -7,7 +7,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/core/ipc";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { uniqueCurrencies } from "@orbis/location/currencies";
 import { ComboboxDropdown } from "@orbis/ui-svelte/combobox-dropdown";
 import { Button } from "@orbis/ui-svelte/button";

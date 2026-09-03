@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@orbis/ui-svelte/table";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { commands } from "$lib/core/ipc";
 import { goto } from "$app/navigation";
 import SearchField from "$lib/shared/components/search-field.svelte";

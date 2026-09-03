@@ -4,7 +4,7 @@ import { onMount } from "svelte";
 import { authStore } from "$lib/stores";
 import { commands } from "$lib/core/ipc";
 import type { UserSession } from "$lib/core/ipc";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 
 import { AccountPasswordCard, AccountSessionsCard } from "$lib/features/auth";
 import { Smartphone, Monitor } from "@lucide/svelte";

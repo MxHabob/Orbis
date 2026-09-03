@@ -30,7 +30,7 @@ import {
   createAutopilotDiagnosticsQuery,
   useRunAutopilotTick,
 } from "$lib/features/ai/queries";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { extractErrorMessage } from "$lib/core/ipc";
 import AutopilotSuggestions from "./autopilot-suggestions.svelte";
 

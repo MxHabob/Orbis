@@ -3,7 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { formatCurrency } from "$lib/core/i18n";
 import { paymentRecordInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";

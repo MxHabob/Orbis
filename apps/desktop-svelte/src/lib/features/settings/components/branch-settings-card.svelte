@@ -7,7 +7,7 @@
   import { Switch } from "@orbis/ui-svelte/switch";
   import { commands } from "$lib/core/ipc";
   import { extractErrorMessage } from "$lib/core/ipc";
-  import { toast } from "svelte-sonner";
+  import { toast } from "@orbis/ui-svelte";
 
   type BranchPolicy = {
     enabled: boolean;

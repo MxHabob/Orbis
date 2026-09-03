@@ -18,6 +18,7 @@ import { workflowInbox } from "$lib/stores/workflow-inbox.svelte";
 import { isDesktopApp } from "$lib/core/ipc";
 
 let bootstrapped = false;
+let unlistenCalendarSuggestions: (() => void) | null = null;
 
 /**
  * Bootstrap the application context.
@@ -44,6 +45,8 @@ export function bootstrapApp(orgId: string): void {
  */
 export function resetBootstrap(): void {
   bootstrapped = false;
+  unlistenCalendarSuggestions?.();
+  unlistenCalendarSuggestions = null;
 }
 
 async function registerTauriListeners(): Promise<void> {
@@ -51,7 +54,8 @@ async function registerTauriListeners(): Promise<void> {
     const { listen } = await import("@tauri-apps/api/event");
 
     // Startup automation sends pending calendar suggestions
-    listen<unknown[]>("calendar:pending-suggestions", (event) => {
+    unlistenCalendarSuggestions?.();
+    unlistenCalendarSuggestions = await listen<unknown[]>("calendar:pending-suggestions", (event) => {
       workflowInbox.addSuggestions(event.payload);
     });
   } catch (e) {

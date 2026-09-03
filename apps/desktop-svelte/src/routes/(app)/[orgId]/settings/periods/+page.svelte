@@ -6,7 +6,7 @@ import { extractErrorMessage } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Badge } from "@orbis/ui-svelte/badge";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { l } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
 import {

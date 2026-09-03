@@ -30,7 +30,7 @@ import {
 } from "@orbis/ui-svelte/tabs";
 import { Progress } from "@orbis/ui-svelte/progress";
 import { Separator } from "@orbis/ui-svelte/separator";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 
 import { getLocale } from "$lib/paraglide/runtime";
 import {

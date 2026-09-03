@@ -13,7 +13,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 
 let {
   orgId,

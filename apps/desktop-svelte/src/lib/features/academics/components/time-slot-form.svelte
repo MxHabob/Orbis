@@ -9,7 +9,7 @@
   import { FormField } from "@orbis/ui-svelte";
   import { Label } from "@orbis/ui-svelte/label";
   import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui-svelte/select";
-  import { toast } from "svelte-sonner";
+  import { toast } from "@orbis/ui-svelte";
   import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
   let {

@@ -9,6 +9,7 @@ import { l } from "$lib/core/i18n";
 import { goto } from "$app/navigation";
 import { confirmStore } from "$lib/stores";
 import { onMount } from "svelte";
+import { onDestroy } from "svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import {
   Select,
@@ -24,7 +25,7 @@ import {
 import { Checkbox } from "@orbis/ui-svelte/checkbox";
 import { Label } from "@orbis/ui-svelte/label";
 import { ArrowLeft, Upload, Columns3, Trash2, Info } from "@lucide/svelte";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 
 import { localizeHref } from "$lib/paraglide/runtime";
 import { commands, extractErrorMessage } from "$lib/core/ipc";
@@ -132,6 +133,10 @@ function runValidation() {
     }
   }, 300);
 }
+
+onDestroy(() => {
+  if (validationTimeout) clearTimeout(validationTimeout);
+});
 
 function handleTopClassChange(v: string) {
   selectedClassId = v;

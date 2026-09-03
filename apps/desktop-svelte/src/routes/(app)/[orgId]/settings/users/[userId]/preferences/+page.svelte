@@ -14,7 +14,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { fade } from "svelte/transition";
 import { Layout, Globe } from "@lucide/svelte";
 

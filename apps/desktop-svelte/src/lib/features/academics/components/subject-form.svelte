@@ -8,7 +8,7 @@ import { Input } from "@orbis/ui-svelte/input";
 import { FormField } from "@orbis/ui-svelte";
 import { SheetHeader, SheetTitle } from "@orbis/ui-svelte/sheet";
 import InputColor from "$lib/shared/components/input-color.svelte";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 type SubjectDraft = {
 	name: string;
 	name_ar: string;

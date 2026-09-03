@@ -5,8 +5,7 @@ using <MainViewport>. Uses the shared SidebarNav component.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { commands } from "$lib/core/ipc";
-import { onMount } from "svelte";
+import { createClassesQuery } from "$lib/features/academics";
 import {
   GraduationCap,
   Calendar,
@@ -26,22 +25,8 @@ import type { Snippet } from "svelte";
 let { data, children }: { data: { orgId: string }; children: Snippet } =
   $props();
 
-// Sidebar live statistics
-let classesCount = $state(0);
-
-async function loadSidebarStats() {
-  try {
-    const classList = await commands.academic.listClasses();
-    classesCount = classList.length;
-  } catch (e) {
-    console.error("Error loading sidebar stats:", e);
-  }
-}
-
-// Load once on mount — not on every sub-route change
-onMount(() => {
-  if (data.orgId) loadSidebarStats();
-});
+const classesQuery = createClassesQuery(() => data.orgId);
+const classesCount = $derived(classesQuery.data?.length ?? 0);
 
 const basePath = $derived(`/${data.orgId}/academics`);
 

@@ -2,7 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { Switch } from "@orbis/ui-svelte/switch";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
 import { Bell, Mail } from "@lucide/svelte";

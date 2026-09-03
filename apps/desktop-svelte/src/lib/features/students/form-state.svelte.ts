@@ -1,7 +1,7 @@
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
 import { commands } from "$lib/core/ipc";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 
 import { l } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";

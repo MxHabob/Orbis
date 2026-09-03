@@ -15,7 +15,7 @@ import {
   TableBody,
   TableCell,
 } from "@orbis/ui-svelte/table";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { fade } from "svelte/transition";
 import { ListOrdered, RefreshCw, Lock, Search } from "@lucide/svelte";
 

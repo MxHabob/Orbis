@@ -8,7 +8,7 @@ import * as m from "$lib/paraglide/messages";
 
 import { commands } from "$lib/core/ipc";
 import { extractErrorMessage } from "$lib/core/ipc";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { academicContext } from "$lib/stores";
 import { onMount } from "svelte";
 import {

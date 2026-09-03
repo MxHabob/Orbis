@@ -3,7 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { l } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
 import { Plus, DoorOpen } from "@lucide/svelte";

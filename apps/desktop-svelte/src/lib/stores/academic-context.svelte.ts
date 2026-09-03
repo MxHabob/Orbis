@@ -12,7 +12,7 @@ import type {
 } from "@orbis/sdk-core";
 import { commands } from "$lib/core/ipc";
 import { extractErrorMessage } from "$lib/core/ipc";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 
 class AcademicContextStore {
   currentYear = $state<AcademicYear | null>(null);

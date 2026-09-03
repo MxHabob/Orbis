@@ -29,7 +29,7 @@ import { Input } from "@orbis/ui-svelte/input";
 import { confirmStore } from "$lib/stores";
 import { Switch } from "@orbis/ui-svelte/switch";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import {
   Coins,
   RefreshCw,

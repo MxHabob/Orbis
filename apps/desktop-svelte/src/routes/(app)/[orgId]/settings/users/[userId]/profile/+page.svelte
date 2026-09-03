@@ -6,7 +6,6 @@ Follows S.C.R.A.P.S. design tokens, strict localization, and backend schema sync
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
-import { onMount } from "svelte";
 import { confirmStore } from "$lib/stores";
 import { commands } from "$lib/core/ipc";
 import type { User } from "$lib/core/ipc";
@@ -21,15 +20,19 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { fade } from "svelte/transition";
 import { l } from "$lib/core/i18n";
+import { createUserQuery } from "$lib/features/settings/queries";
+import { useQueryClient } from "@tanstack/svelte-query";
 
 const orgId = $derived(page.params.orgId);
 const userId = $derived(page.params.userId);
 
-let user = $state<User | null>(null);
-let isLoading = $state(true);
+const userQuery = createUserQuery(() => orgId, () => userId);
+const queryClient = useQueryClient();
+const user = $derived((userQuery.data as User | null) ?? null);
+const isLoading = $derived(userQuery.isLoading);
 let isSaving = $state(false);
 
 // Form fields
@@ -53,29 +56,19 @@ const systemRoles = [
   { value: "guardian", labelAr: "ولي أمر", labelEn: "Parent / Guardian" },
 ];
 
-async function loadUser() {
-  if (!userId) return;
-  isLoading = true;
-  try {
-    const fetched = (await commands.iam.getUser(userId)) as any;
-    user = fetched;
-    fullName = fetched.full_name || "";
-    nameAr = fetched.name_ar || "";
-    nameEn = fetched.name_en || "";
-    email = fetched.email || "";
-    phone = (fetched.phone as string) || "";
-    role = fetched.primary_role || fetched.role || "teacher";
-    isActiveState =
-      fetched.is_active !== undefined ? Boolean(fetched.is_active) : true;
-  } catch (e) {
-    console.error("Failed to load user:", e);
-    toast.error(m.settings_user_detail_load_error ? m.settings_user_detail_load_error() : l("فشل تحميل بيانات المستخدم", "Failed to load user"));
-  } finally {
-    isLoading = false;
-  }
-}
-
-onMount(loadUser);
+let initializedUserId = $state<string | null>(null);
+$effect(() => {
+  const fetched = user;
+  if (!fetched || initializedUserId === userId) return;
+  fullName = fetched.full_name || "";
+  nameAr = fetched.name_ar || "";
+  nameEn = fetched.name_en || "";
+  email = fetched.email || "";
+  phone = (fetched.phone as string) || "";
+  role = fetched.primary_role || fetched.role || "teacher";
+  isActiveState = fetched.is_active !== undefined ? Boolean(fetched.is_active) : true;
+  initializedUserId = userId;
+});
 
 async function toggleAccountStatus() {
   if (!userId || !user) return;
@@ -133,8 +126,12 @@ async function saveProfile() {
       await commands.iam.saveForUser(userId, roleList.length > 0 ? roleList : [role]);
     }
 
+    await queryClient.invalidateQueries({ queryKey: ["user", orgId, userId] });
+    await queryClient.invalidateQueries({ queryKey: ["users", orgId] });
+    await queryClient.invalidateQueries({ queryKey: ["users_paginated", orgId] });
+
     toast.success(m.settings_user_detail_saved ? m.settings_user_detail_saved() : l("تم حفظ البيانات بنجاح", "Profile saved successfully"));
-    await loadUser();
+    await userQuery.refetch();
   } catch (e: unknown) {
     toast.error((e as any)?.message || l("فشل الحفظ", "Save failed"));
   } finally {

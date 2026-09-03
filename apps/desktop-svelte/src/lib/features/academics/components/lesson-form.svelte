@@ -12,7 +12,7 @@
   import { SheetHeader, SheetTitle } from "@orbis/ui-svelte/sheet";
   import { Textarea } from "@orbis/ui-svelte/textarea";
   import { BookOpen, Clock, MapPin, ShieldAlert, User, Users } from "@lucide/svelte";
-  import { toast } from "svelte-sonner";
+  import { toast } from "@orbis/ui-svelte";
   import { FormController } from "$lib/shared/forms/form-controller.svelte";
   import { FormField } from "@orbis/ui-svelte";
 

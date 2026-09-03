@@ -9,7 +9,7 @@ import {
   useApproveAgentAction,
   useRejectAgentAction,
 } from "$lib/features/ai/queries";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { extractErrorMessage } from "$lib/core/ipc";
 
 let {

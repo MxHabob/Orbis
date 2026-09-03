@@ -37,7 +37,7 @@ export default defineConfig(({ mode }) => {
               if (id.includes("@lucide/svelte")) return "vendor-icons";
               if (id.includes("@tauri-apps")) return "vendor-tauri";
               if (id.includes("@tanstack")) return "vendor-query";
-              if (id.includes("svelte-sonner") || id.includes("zod"))
+              if (id.includes("zod"))
                 return "vendor-utils";
             }
           },

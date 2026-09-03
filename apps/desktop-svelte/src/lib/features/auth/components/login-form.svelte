@@ -8,7 +8,7 @@ import { FormField } from "@orbis/ui-svelte";
 import { Eye, EyeOff, Loader2 } from "@lucide/svelte";
 
 import { localizeHref } from "$lib/paraglide/runtime";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 
 import { loginInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";

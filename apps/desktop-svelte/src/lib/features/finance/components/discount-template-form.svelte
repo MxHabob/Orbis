@@ -18,7 +18,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@orbis/ui-svelte/accordion";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { discountTemplateInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { FormField } from "@orbis/ui-svelte";

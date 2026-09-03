@@ -7,11 +7,12 @@ Provides barcode/ID lookup, outstanding fee checklist, and payment history.
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
+import { queryClient } from "$lib/core/query/client";
 import { authStore } from "$lib/stores";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import {
   Search,
   ArrowLeft,
@@ -205,6 +206,10 @@ async function handlePaymentSubmit(e: SubmitEvent) {
 
     await commands.finance.record({ ...request, exchange_rate: undefined });
     toast.success(m.common_payment_toast_success());
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["payments", data.orgId] }),
+      queryClient.invalidateQueries({ queryKey: ["student-fees", data.orgId] }),
+    ]);
 
     // Clean form elements
     amount = null;

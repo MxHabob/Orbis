@@ -12,7 +12,7 @@ import { Button } from "@orbis/ui-svelte/button";
 import SearchField from "$lib/shared/components/search-field.svelte";
 import AiEmptyState from "$lib/shared/components/ai-empty-state.svelte";
 import { Zap, Bot, Play, AlertCircle } from "@lucide/svelte";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 
 let { data }: { data: { orgId: string } } = $props();
 

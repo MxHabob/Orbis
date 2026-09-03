@@ -10,7 +10,7 @@ import {
   AuthenticationSettingsCard,
 } from "$lib/features/settings";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { l } from "$lib/core/i18n";
 import { generalSettingsInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";

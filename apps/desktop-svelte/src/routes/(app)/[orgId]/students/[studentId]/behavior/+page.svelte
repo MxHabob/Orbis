@@ -15,7 +15,7 @@ import {
   Plus,
 } from "@lucide/svelte";
 import { onMount } from "svelte";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 
 import { formatDate } from "$lib/core/i18n";

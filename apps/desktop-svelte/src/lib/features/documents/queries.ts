@@ -10,6 +10,8 @@ import { appDataDir, join } from "@tauri-apps/api/path";
 
 // --- Helpers ---
 
+const resolvedDocumentUrls = new Map<string, string>();
+
 /**
  * Transforms a generic document path from the API into a viewable URL.
  * In a desktop context with local files, uses Tauri's convertFileSrc and appDataDir.
@@ -22,6 +24,9 @@ export async function resolveDocumentUrl(
   if (pathOrUrl.startsWith("http://") || pathOrUrl.startsWith("https://")) {
     return pathOrUrl;
   }
+
+  const cachedUrl = resolvedDocumentUrls.get(pathOrUrl);
+  if (cachedUrl) return cachedUrl;
 
   try {
     // If running in Tauri desktop, get absolute path to app_data/storage
@@ -37,7 +42,9 @@ export async function resolveDocumentUrl(
     }
 
     const absolutePath = await join(dataDir, "storage", relativePath);
-    return convertFileSrc(absolutePath);
+    const resolvedUrl = convertFileSrc(absolutePath);
+    resolvedDocumentUrls.set(pathOrUrl, resolvedUrl);
+    return resolvedUrl;
   } catch (e) {
     // Fallback if not in Tauri
     console.warn("Tauri path resolution failed, using fallback:", e);
@@ -76,7 +83,7 @@ export function useDocuments(filter: {
 
 // --- Mutations ---
 
-export function useUploadDocument() {
+export function useUploadDocument(options: { invalidateOnSuccess?: boolean } = {}) {
   const queryClient = useQueryClient();
 
   return createMutation(() => ({
@@ -99,6 +106,7 @@ export function useUploadDocument() {
       );
     },
     onSuccess: (data, variables) => {
+      if (options.invalidateOnSuccess === false) return;
       queryClient.invalidateQueries({
         queryKey: documentKeys.all,
       });

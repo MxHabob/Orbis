@@ -16,7 +16,7 @@ import {
   TableBody,
   TableCell,
 } from "@orbis/ui-svelte/table";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
 import {

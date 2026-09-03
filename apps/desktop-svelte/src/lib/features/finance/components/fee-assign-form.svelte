@@ -6,7 +6,7 @@ import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { FormField } from "@orbis/ui-svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 
 let {
   orgId,

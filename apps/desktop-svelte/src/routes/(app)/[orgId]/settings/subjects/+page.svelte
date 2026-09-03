@@ -21,7 +21,7 @@ import {
   Award,
   Search,
 } from "@lucide/svelte";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import { fade } from "svelte/transition";
 import SearchField from "$lib/shared/components/search-field.svelte";
 import SubjectCreateSheet from "$lib/features/academics/components/subject-create-sheet.svelte";

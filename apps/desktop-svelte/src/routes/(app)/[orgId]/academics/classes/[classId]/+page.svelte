@@ -23,7 +23,7 @@ import {
 import { fade } from "svelte/transition";
 import { academicContext } from "$lib/stores";
 import { getLocale } from "$lib/paraglide/runtime";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 
 import QuickActionButton from "$lib/shared/components/quick-action-button.svelte";
 import ClassScheduleWidget from "$lib/shared/components/class-schedule-widget.svelte";

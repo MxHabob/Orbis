@@ -10,7 +10,7 @@
   import { Button } from "@orbis/ui-svelte/button";
   import { Table, Download, Loader2 } from "@lucide/svelte";
   import { commands } from "@orbis/sdk-desktop";
-  import { toast } from "svelte-sonner";
+  import { toast } from "@orbis/ui-svelte";
   import * as m from "$lib/paraglide/messages";
 
   interface Props {

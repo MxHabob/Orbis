@@ -5,7 +5,7 @@
   import * as m from "$lib/paraglide/messages";
   import { commands, extractErrorMessage } from "$lib/core/ipc";
   import { createQuery, useQueryClient } from "@tanstack/svelte-query";
-  import { toast } from "svelte-sonner";
+  import { toast } from "@orbis/ui-svelte";
   import { Button } from "@orbis/ui-svelte/button";
   import { Badge } from "@orbis/ui-svelte/badge";
   import { Switch } from "@orbis/ui-svelte/switch";

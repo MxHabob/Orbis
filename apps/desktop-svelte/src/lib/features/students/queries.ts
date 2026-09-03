@@ -15,6 +15,19 @@ export function createEnrollmentsQuery(orgId: () => string) {
   }));
 }
 
+/** Single enriched enrollment for detail pages. */
+export function createEnrollmentQuery(
+  orgId: () => string,
+  enrollmentId: () => string,
+) {
+  return createQuery(() => ({
+    queryKey: ["enrollment", orgId(), enrollmentId()],
+    queryFn: () => commands.academic.getEnriched(enrollmentId()),
+    enabled: !!orgId() && !!enrollmentId(),
+    staleTime: 2 * 60 * 1000,
+  }));
+}
+
 /** Paginated enrollments query using Cursor-based infinite scrolling. */
 export function createEnrollmentsPaginatedQuery(
   orgId: () => string,

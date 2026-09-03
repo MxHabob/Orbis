@@ -22,7 +22,7 @@ import * as m from "$lib/paraglide/messages";
 
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { authStore } from "$lib/stores";
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import {
   Dialog,
   DialogContent,

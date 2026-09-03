@@ -3,7 +3,7 @@
   import { commands } from "$lib/core/ipc";
   import { Badge } from "@orbis/ui-svelte/badge";
   import { Button } from "@orbis/ui-svelte/button";
-  import { toast } from "svelte-sonner";
+  import { toast } from "@orbis/ui-svelte";
   import { getLocale } from "$lib/paraglide/runtime";
   import * as m from "$lib/paraglide/messages";
   import { academicContext } from "$lib/stores";

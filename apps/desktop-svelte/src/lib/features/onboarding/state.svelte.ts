@@ -1,4 +1,4 @@
-import { toast } from "svelte-sonner";
+import { toast } from "@orbis/ui-svelte";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
 import { INSTITUTION_PROFILES, DEFAULT_PERIOD_TEMPLATES } from "./templates";
