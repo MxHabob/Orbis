@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "cargo run --package api-gateway",
-    "build": "cargo build --package api-gateway --release || echo 'Cargo compiler not found, skipping local build'",
-    "clean": "cargo clean"
+    "build": "cargo build --package api-gateway --release"
   }
 }

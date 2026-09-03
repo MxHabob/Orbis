@@ -1,26 +1,6 @@
 {
-  "$schema": "https://turborepo.org/schema.json",
+  "$schema": "https://turborepo.dev/schema.json",
   "globalDependencies": ["**/.env", ".env.example"],
-  "globalEnv": [
-    "ALLOWED_API_ORIGINS",
-    "BETTER_AUTH_SECRET",
-    "BETTER_AUTH_URL",
-    "DATABASE_PRIMARY_URL",
-    "DATABASE_URL",
-    "FILE_KEY_SECRET",
-    "LOG_LEVEL",
-    "LOG_PRETTY",
-    "NEXT_PUBLIC_API_URL",
-    "NEXT_PUBLIC_URL",
-    "NODE_ENV",
-    "PORT",
-    "REDIS_URL",
-    "S3_ACCESS_KEY_ID",
-    "S3_BUCKET",
-    "S3_ENDPOINT_URL",
-    "S3_REGION",
-    "S3_SECRET_ACCESS_KEY"
-  ],
   "ui": "stream",
   "tasks": {
     "topo": {
@@ -37,26 +17,6 @@
         "dist/**",
         "build/**",
         "lib/**"
-      ],
-      "passThroughEnv": [
-        "ALLOWED_API_ORIGINS",
-        "BETTER_AUTH_SECRET",
-        "BETTER_AUTH_URL",
-        "DATABASE_PRIMARY_URL",
-        "DATABASE_URL",
-        "FILE_KEY_SECRET",
-        "LOG_LEVEL",
-        "LOG_PRETTY",
-        "NEXT_PUBLIC_API_URL",
-        "NEXT_PUBLIC_URL",
-        "NODE_ENV",
-        "PORT",
-        "REDIS_URL",
-        "S3_ACCESS_KEY_ID",
-        "S3_BUCKET",
-        "S3_ENDPOINT_URL",
-        "S3_REGION",
-        "S3_SECRET_ACCESS_KEY"
       ]
     },
     "start": {
@@ -69,26 +29,37 @@
       "inputs": ["$TURBO_DEFAULT$", ".env", ".env.example"],
       "persistent": true,
       "cache": false,
-      "passThroughEnv": [
-        "ALLOWED_API_ORIGINS",
-        "BETTER_AUTH_SECRET",
-        "BETTER_AUTH_URL",
-        "DATABASE_PRIMARY_URL",
-        "DATABASE_URL",
-        "FILE_KEY_SECRET",
-        "LOG_LEVEL",
-        "LOG_PRETTY",
-        "NEXT_PUBLIC_API_URL",
-        "NEXT_PUBLIC_URL",
-        "NODE_ENV",
+      "env": [
+        "APP_ENV",
+        "ORBIS_ENV",
         "PORT",
-        "REDIS_URL",
-        "S3_ACCESS_KEY_ID",
-        "S3_BUCKET",
-        "S3_ENDPOINT_URL",
-        "S3_REGION",
-        "S3_SECRET_ACCESS_KEY"
+        "JWT_EXPIRY_HOURS",
+        "JWT_REFRESH_DAYS",
+        "PUBLIC_REGISTRATION_ENABLED",
+        "SOLVER_SERVICE_URL",
+        "LLM_PROVIDER",
+        "OLLAMA_URL",
+        "OLLAMA_MODEL",
+        "CORS_ORIGINS",
+        "BIND_HOST",
+        "MAX_REQUEST_BYTES",
+        "TAURI_DEV_HOST"
+      ],
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "JWT_SECRET",
+        "GEMINI_API_KEY"
       ]
+    },
+    "start:tunnel": {
+      "persistent": true,
+      "cache": false
+    },
+    "android:device": {
+      "cache": false
+    },
+    "prebuild:clean": {
+      "cache": false
     },
     "jobs": {
       "persistent": true,

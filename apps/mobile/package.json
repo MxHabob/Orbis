@@ -34,7 +34,6 @@
   "scripts": {
     "start": "expo start",
     "start:tunnel": "expo start --tunnel",
-    "reset-project": "node ./scripts/reset-project.js",
     "android:device": "expo run:android --device",
     "prebuild:clean": "expo prebuild --clean",
     "web": "expo start --web",
