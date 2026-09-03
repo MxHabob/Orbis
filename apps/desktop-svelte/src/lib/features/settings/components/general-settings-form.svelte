@@ -6,6 +6,8 @@ import {
   RegionalSettingsCard,
   AvatarSettingsCard,
   DangerZoneSettingsCard,
+  BranchSettingsCard,
+  AuthenticationSettingsCard,
 } from "$lib/features/settings";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 import { toast } from "svelte-sonner";
@@ -179,6 +181,10 @@ function handleSaveAvatar(e: Event) {
         {isSaving}
         onLanguageChange={handleLanguageChange}
       />
+
+      <BranchSettingsCard {org} {isSaving} />
+
+      <AuthenticationSettingsCard {org} {isSaving} />
 
             <div class="border border-border rounded-md overflow-hidden flex flex-col">
               <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">

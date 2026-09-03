@@ -2,10 +2,13 @@
 
 use shared_kernel::context::ServiceContext;
 use shared_kernel::errors::AppError;
+use shared_kernel::traits::Permission;
 
 pub async fn students(
     ctx: &ServiceContext,
 ) -> Result<serde_json::Value, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::ExportData).await?;
+
     use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
     use svc_academic::entities::{enrollment, class};
     use svc_iam::entities::user;
@@ -46,7 +49,8 @@ pub async fn students(
 }
 
 pub async fn grades(
-    _ctx: &ServiceContext,
+    ctx: &ServiceContext,
 ) -> Result<serde_json::Value, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::ExportData).await?;
     Err(AppError::internal("Bulk export of grades is not implemented"))
 }

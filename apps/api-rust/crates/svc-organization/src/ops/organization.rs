@@ -5,6 +5,8 @@ use tracing::info;
 
 use shared_kernel::context::ServiceContext;
 use shared_kernel::errors::AppError;
+use shared_kernel::settings::BranchPolicy;
+use shared_kernel::settings::AuthenticationSettings;
 use shared_kernel::traits::{AuditEntry, Permission};
 
 use crate::contracts::commands::{CreateOrganizationCmd, UpdateOrganizationCmd};
@@ -349,6 +351,8 @@ pub async fn update(
 }
 
 pub async fn get_settings(ctx: &ServiceContext) -> Result<serde_json::Value, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::OrganizationRead).await?;
+
     let org = organization::Entity::find()
         .filter(organization::Column::Id.eq(&ctx.org_id))
         .one(&ctx.db)
@@ -370,10 +374,73 @@ pub async fn update_settings(
         .one(&ctx.db)
         .await?
         .ok_or_else(|| AppError::not_found("organization", &ctx.org_id))?;
+    let existing_settings = org
+        .settings
+        .as_deref()
+        .and_then(|value| serde_json::from_str::<serde_json::Value>(value).ok())
+        .unwrap_or_else(|| serde_json::json!({}));
+    let mut merged_settings = existing_settings;
+    merge_settings(&mut merged_settings, data);
+    validate_branch_policy(&merged_settings)?;
+    validate_authentication_settings(&merged_settings)?;
+
     let mut active: organization::ActiveModel = org.into();
-    active.settings = Set(Some(data.to_string()));
+    active.settings = Set(Some(merged_settings.to_string()));
     active.updated_at = Set(chrono::Utc::now().naive_utc().to_string());
     active.update(&ctx.db).await?;
+    Ok(())
+}
+
+fn merge_settings(base: &mut serde_json::Value, patch: serde_json::Value) {
+    match (base, patch) {
+        (serde_json::Value::Object(base), serde_json::Value::Object(patch)) => {
+            for (key, value) in patch {
+                merge_settings(base.entry(key).or_insert(serde_json::Value::Null), value);
+            }
+        }
+        (base, patch) => *base = patch,
+    }
+}
+
+fn validate_branch_policy(settings: &serde_json::Value) -> Result<(), AppError> {
+    let Some(policy) = settings.get("branch_policy") else {
+        return Ok(());
+    };
+    let policy: BranchPolicy = serde_json::from_value(policy.clone())
+        .map_err(|error| AppError::validation(format!("Invalid branch policy: {error}")))?;
+
+    if !matches!(policy.data_isolation.as_str(), "shared" | "isolated") {
+        return Err(AppError::validation("Branch data isolation must be shared or isolated"));
+    }
+    if policy.max_branches == Some(0) {
+        return Err(AppError::validation("Maximum branches must be greater than zero"));
+    }
+    Ok(())
+}
+
+fn validate_authentication_settings(settings: &serde_json::Value) -> Result<(), AppError> {
+    let Some(authentication) = settings.get("authentication") else {
+        return Ok(());
+    };
+    let authentication: AuthenticationSettings = serde_json::from_value(authentication.clone())
+        .map_err(|error| AppError::validation(format!("Invalid authentication settings: {error}")))?;
+
+    if !(1..=20).contains(&authentication.max_failed_logins) {
+        return Err(AppError::validation("Maximum failed logins must be between 1 and 20"));
+    }
+    if !(1..=1440).contains(&authentication.lockout_minutes) {
+        return Err(AppError::validation("Lockout duration must be between 1 and 1440 minutes"));
+    }
+    if !(1..=365).contains(&authentication.session_days) {
+        return Err(AppError::validation("Session duration must be between 1 and 365 days"));
+    }
+    if authentication.refresh_token_days < authentication.session_days
+        || authentication.refresh_token_days > 730
+    {
+        return Err(AppError::validation(
+            "Refresh token duration must be at least the session duration and no more than 730 days",
+        ));
+    }
     Ok(())
 }
 

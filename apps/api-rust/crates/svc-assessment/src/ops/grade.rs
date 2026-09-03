@@ -33,6 +33,17 @@ async fn check_period_open(ctx: &ServiceContext, period_id: &str) -> Result<(), 
     verdict.enforce()
 }
 
+async fn apply_branch_filter(
+    ctx: &ServiceContext,
+    query: sea_orm::Select<grade::Entity>,
+) -> Result<sea_orm::Select<grade::Entity>, AppError> {
+    if ctx.org_unit_id.is_none() {
+        return Ok(query);
+    }
+    let enrollment_ids = svc_academic::ops::scope::scoped_enrollment_ids(ctx).await?;
+    Ok(query.filter(grade::Column::EnrollmentId.is_in(enrollment_ids)))
+}
+
 /// Attempt to enqueue a snapshot generation job after a grade is saved.
 /// If no CalculationPolicy or GradeScale exists yet, this is a no-op (best effort).
 async fn try_enqueue_snapshot(
@@ -139,6 +150,7 @@ pub async fn list(
     let mut query = grade::Entity::find()
         .filter(grade::Column::OrgId.eq(&ctx.org_id))
         .filter(grade::Column::AssessmentId.eq(assessment_id));
+    query = apply_branch_filter(ctx, query).await?;
 
     if let Some(f) = filter {
         let condition = f.build_condition(|field| match field {
@@ -161,13 +173,12 @@ pub async fn list_by_period_and_class_subject(
 ) -> Result<Vec<grade::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::GradeRead).await?;
 
-    Ok(grade::Entity::find()
+    let mut query = grade::Entity::find()
         .filter(grade::Column::OrgId.eq(&ctx.org_id))
         .filter(grade::Column::PeriodId.eq(period_id))
-        .filter(grade::Column::ClassSubjectId.eq(class_subject_id))
-        .order_by_asc(grade::Column::EnrollmentId)
-        .all(&ctx.db)
-        .await?)
+        .filter(grade::Column::ClassSubjectId.eq(class_subject_id));
+    query = apply_branch_filter(ctx, query).await?;
+    Ok(query.order_by_asc(grade::Column::EnrollmentId).all(&ctx.db).await?)
 }
 
 /// Paginated grades list — cursor-based for large grade sheets.
@@ -184,6 +195,7 @@ pub async fn list_paginated(
         .filter(grade::Column::OrgId.eq(&ctx.org_id))
         .filter(grade::Column::AssessmentId.eq(assessment_id))
         .order_by_asc(grade::Column::Id);
+    query = apply_branch_filter(ctx, query).await?;
 
     if let Some(f) = request.filter.clone() {
         let condition = f.build_condition(|field| match field {
@@ -210,6 +222,7 @@ pub async fn report_card(
     period_id: &str,
 ) -> Result<GradeReportCard, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::GradeReport).await?;
+    svc_academic::ops::scope::ensure_enrollment_scope(ctx, enrollment_id).await?;
 
     // Delegate to existing service logic
     let query_repo = crate::repository::AssessmentQueryRepo::new(ctx.db.clone());
@@ -303,6 +316,7 @@ async fn persist_grade(
     req: CreateGradePayload,
     engine: &AssessmentEngine,
 ) -> Result<grade::Model, AppError> {
+    svc_academic::ops::scope::ensure_enrollment_scope(ctx, &req.enrollment_id).await?;
     check_period_open(ctx, &req.period_id).await?;
 
     let now = Utc::now().to_rfc3339();
@@ -364,6 +378,7 @@ pub async fn submit(
     req: CreateGradePayload,
 ) -> Result<grade::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::GradeWrite).await?;
+    svc_academic::ops::scope::ensure_enrollment_scope(ctx, &req.enrollment_id).await?;
 
     let engine = AssessmentEngine::for_period(&ctx.db, &ctx.org_id, &req.period_id).await?;
     let saved = persist_grade(ctx, req, &engine).await?;
@@ -418,9 +433,11 @@ pub async fn update(
     ctx.permissions.check(&ctx.actor, Permission::GradeWrite).await?;
 
     let existing = grade::Entity::find_by_id(grade_id.to_string())
+        .filter(grade::Column::OrgId.eq(&ctx.org_id))
         .one(&ctx.db)
         .await?
         .ok_or_else(|| AppError::not_found("grade", grade_id))?;
+    svc_academic::ops::scope::ensure_enrollment_scope(ctx, &existing.enrollment_id).await?;
 
     check_period_open(ctx, &existing.period_id).await?;
 

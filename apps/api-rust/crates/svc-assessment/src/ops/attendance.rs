@@ -48,7 +48,11 @@ pub async fn class_metrics(
     if let Some(c_id) = class_id {
         classes_query = classes_query.filter(svc_academic::entities::class::Column::Id.eq(c_id));
     }
+    if let Some(org_unit_id) = &ctx.org_unit_id {
+        classes_query = classes_query.filter(svc_academic::entities::class::Column::UnitId.eq(org_unit_id));
+    }
     let classes = classes_query.all(&ctx.db).await?;
+    let class_ids: Vec<String> = classes.iter().map(|class| class.id.clone()).collect();
 
     let mut enrollments_query = svc_academic::entities::enrollment::Entity::find()
         .filter(svc_academic::entities::enrollment::Column::OrgId.eq(&ctx.org_id))
@@ -56,6 +60,8 @@ pub async fn class_metrics(
         .filter(svc_academic::entities::enrollment::Column::Status.eq("active"));
     if let Some(c_id) = class_id {
         enrollments_query = enrollments_query.filter(svc_academic::entities::enrollment::Column::ClassId.eq(c_id));
+    } else if ctx.org_unit_id.is_some() {
+        enrollments_query = enrollments_query.filter(svc_academic::entities::enrollment::Column::ClassId.is_in(class_ids.clone()));
     }
     let enrollments = enrollments_query.all(&ctx.db).await?;
 
@@ -64,6 +70,8 @@ pub async fn class_metrics(
         .filter(attendance::Column::PeriodId.eq(period_id));
     if let Some(c_id) = class_id {
         attendance_query = attendance_query.filter(attendance::Column::ClassId.eq(c_id));
+    } else if ctx.org_unit_id.is_some() {
+        attendance_query = attendance_query.filter(attendance::Column::ClassId.is_in(class_ids.clone()));
     }
     let attendance_records = attendance_query.all(&ctx.db).await?;
 
@@ -72,6 +80,8 @@ pub async fn class_metrics(
         .filter(svc_academic::entities::class_subject::Column::IsActive.eq(1));
     if let Some(c_id) = class_id {
         class_subjects_query = class_subjects_query.filter(svc_academic::entities::class_subject::Column::ClassId.eq(c_id));
+    } else if ctx.org_unit_id.is_some() {
+        class_subjects_query = class_subjects_query.filter(svc_academic::entities::class_subject::Column::ClassId.is_in(class_ids));
     }
     let class_subjects = class_subjects_query.all(&ctx.db).await?;
 
@@ -151,6 +161,8 @@ pub async fn list(
 ) -> Result<Vec<attendance::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AttendanceRead).await?;
 
+    svc_academic::ops::scope::ensure_class_scope(ctx, class_id).await?;
+
     let mut query = attendance::Entity::find()
         .filter(attendance::Column::OrgId.eq(&ctx.org_id))
         .filter(attendance::Column::ClassId.eq(class_id))
@@ -168,6 +180,7 @@ pub async fn list(
     Ok(query.order_by_asc(attendance::Column::EnrollmentId).all(&ctx.db).await?)
 }
 
+
 /// Get attendance report for a student.
 pub async fn get_report(
     ctx: &ServiceContext,
@@ -175,6 +188,14 @@ pub async fn get_report(
     enrollment_id: &str,
 ) -> Result<AttendanceReport, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AttendanceReport).await?;
+
+    let enrollment = svc_academic::entities::enrollment::Entity::find()
+        .filter(svc_academic::entities::enrollment::Column::Id.eq(enrollment_id))
+        .filter(svc_academic::entities::enrollment::Column::OrgId.eq(&ctx.org_id))
+        .one(&ctx.db)
+        .await?
+        .ok_or_else(|| AppError::not_found("enrollment", enrollment_id))?;
+    svc_academic::ops::scope::ensure_class_scope(ctx, &enrollment.class_id).await?;
 
     let query_repo = crate::repository::AssessmentQueryRepo::new(ctx.db.clone());
     let cmd_repo = crate::repository::AssessmentCommandRepo::new(ctx.db.clone());
@@ -248,6 +269,15 @@ pub async fn record(
     req: CreateAttendancePayload,
 ) -> Result<attendance::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AttendanceWrite).await?;
+    svc_academic::ops::scope::ensure_class_scope(ctx, &req.class_id).await?;
+    let enrollment = svc_academic::entities::enrollment::Entity::find()
+        .filter(svc_academic::entities::enrollment::Column::Id.eq(&req.enrollment_id))
+        .filter(svc_academic::entities::enrollment::Column::OrgId.eq(&ctx.org_id))
+        .filter(svc_academic::entities::enrollment::Column::ClassId.eq(&req.class_id))
+        .one(&ctx.db)
+        .await?
+        .ok_or_else(|| AppError::not_found("enrollment", &req.enrollment_id))?;
+    svc_academic::ops::scope::ensure_class_scope(ctx, &enrollment.class_id).await?;
 
     // ── Period Gate: check period is active ──
     {
@@ -312,6 +342,7 @@ pub async fn record_bulk(
     req: BulkAttendancePayload,
 ) -> Result<Vec<attendance::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AttendanceWrite).await?;
+    svc_academic::ops::scope::ensure_class_scope(ctx, &req.class_id).await?;
 
     // ── Period Gate: single check for the entire bulk (same period) ──
     {
@@ -395,6 +426,7 @@ pub async fn report(
     end_date: &str,
 ) -> Result<Vec<attendance::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AttendanceReport).await?;
+    svc_academic::ops::scope::ensure_class_scope(ctx, class_id).await?;
 
     Ok(attendance::Entity::find()
         .filter(attendance::Column::OrgId.eq(&ctx.org_id))

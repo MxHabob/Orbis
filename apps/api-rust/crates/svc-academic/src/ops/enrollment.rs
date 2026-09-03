@@ -3,7 +3,7 @@
 //! Handles: enroll, withdraw, transfer + duplicate/capacity checks.
 
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, TransactionTrait};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, JoinType, QueryFilter, QueryOrder, QuerySelect, RelationTrait, TransactionTrait};
 use uuid::Uuid;
 
 use shared_kernel::context::ServiceContext;
@@ -141,6 +141,12 @@ pub async fn list(
     let mut query = enrollment::Entity::find()
         .filter(enrollment::Column::OrgId.eq(&ctx.org_id));
 
+    if let Some(org_unit_id) = &ctx.org_unit_id {
+        query = query
+            .join(JoinType::InnerJoin, enrollment::Relation::Class.def())
+            .filter(class::Column::UnitId.eq(org_unit_id));
+    }
+
     if let Some(f) = filter {
         let condition = f.build_condition(|field| match field {
             "student_number" => Some(enrollment::Column::StudentNumber.into_expr().into()),
@@ -167,6 +173,12 @@ pub async fn list_enriched(
 
     let mut query = enrollment::Entity::find()
         .filter(enrollment::Column::OrgId.eq(&ctx.org_id));
+
+    if let Some(org_unit_id) = &ctx.org_unit_id {
+        query = query
+            .join(JoinType::InnerJoin, enrollment::Relation::Class.def())
+            .filter(class::Column::UnitId.eq(org_unit_id));
+    }
 
     if let Some(f) = filter {
         let condition = f.build_condition(|field| match field {
@@ -199,6 +211,12 @@ pub async fn list_paginated(
     let mut query = enrollment::Entity::find()
         .filter(enrollment::Column::OrgId.eq(&ctx.org_id))
         .order_by_asc(enrollment::Column::Id);
+
+    if let Some(org_unit_id) = &ctx.org_unit_id {
+        query = query
+            .join(JoinType::InnerJoin, enrollment::Relation::Class.def())
+            .filter(class::Column::UnitId.eq(org_unit_id));
+    }
 
     if let Some(f) = request.filter.clone() {
         let condition = f.build_condition(|field| match field {
@@ -235,6 +253,12 @@ pub async fn list_paginated_enriched(
         .filter(enrollment::Column::OrgId.eq(&ctx.org_id))
         .order_by_asc(enrollment::Column::Id);
 
+    if let Some(org_unit_id) = &ctx.org_unit_id {
+        query = query
+            .join(JoinType::InnerJoin, enrollment::Relation::Class.def())
+            .filter(class::Column::UnitId.eq(org_unit_id));
+    }
+
     if let Some(f) = request.filter.clone() {
         let condition = f.build_condition(|field| match field {
             "student_number" => Some(enrollment::Column::StudentNumber.into_expr().into()),
@@ -265,7 +289,9 @@ pub async fn list_paginated_enriched(
 pub async fn get(ctx: &ServiceContext, id: &str) -> Result<enrollment::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::EnrollmentRead).await?;
 
-    enrollment::Entity::find_by_id(id.to_string())
+    enrollment::Entity::find()
+        .filter(enrollment::Column::Id.eq(id.to_string()))
+        .filter(enrollment::Column::OrgId.eq(&ctx.org_id))
         .one(&ctx.db)
         .await?
         .ok_or_else(|| AppError::not_found("enrollment", id))
@@ -275,7 +301,9 @@ pub async fn get(ctx: &ServiceContext, id: &str) -> Result<enrollment::Model, Ap
 pub async fn get_enriched(ctx: &ServiceContext, id: &str) -> Result<EnrichedEnrollmentResponse, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::EnrollmentRead).await?;
 
-    let enrollment = enrollment::Entity::find_by_id(id.to_string())
+    let enrollment = enrollment::Entity::find()
+        .filter(enrollment::Column::Id.eq(id.to_string()))
+        .filter(enrollment::Column::OrgId.eq(&ctx.org_id))
         .one(&ctx.db)
         .await?
         .ok_or_else(|| AppError::not_found("enrollment", id))?;
@@ -294,7 +322,6 @@ pub async fn get_enriched(ctx: &ServiceContext, id: &str) -> Result<EnrichedEnro
 /// - Mandatory fee assignment (via FeeAssigner trait)
 #[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct CreateEnrollmentPayload {
-    pub org_id: Option<String>,
     pub period_id: String,
     pub student_id: String,
     pub class_id: String,
@@ -307,7 +334,7 @@ pub async fn create(
 ) -> Result<enrollment::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::EnrollmentWrite).await?;
 
-    let org_id = req.org_id.clone().unwrap_or_else(|| ctx.org_id.clone());
+    let org_id = ctx.org_id.clone();
 
     // ── Period Gate: enrollment window + capacity + policy ──
     let verdict = ctx.period_gate
@@ -329,6 +356,7 @@ pub async fn create(
 
     // Business rule: no duplicate enrollment in the same period
     let existing = enrollment::Entity::find()
+        .filter(enrollment::Column::OrgId.eq(&ctx.org_id))
         .filter(enrollment::Column::StudentId.eq(&req.student_id))
         .filter(enrollment::Column::PeriodId.eq(&req.period_id))
         .filter(enrollment::Column::Status.ne("withdrawn"))
@@ -470,7 +498,9 @@ pub async fn transfer(
     ctx.permissions.check(&ctx.actor, Permission::EnrollmentTransfer).await?;
 
     // Verify new class exists
-    class::Entity::find_by_id(new_class_id.to_string())
+    class::Entity::find()
+        .filter(class::Column::Id.eq(new_class_id.to_string()))
+        .filter(class::Column::OrgId.eq(&ctx.org_id))
         .one(&ctx.db)
         .await?
         .ok_or_else(|| AppError::not_found("class", new_class_id))?;

@@ -7,10 +7,36 @@ use uuid::Uuid;
 use shared_kernel::context::ServiceContext;
 use shared_kernel::errors::AppError;
 use shared_kernel::event_bus::EventEnvelope;
+use shared_kernel::settings::AuthenticationSettings;
 use shared_kernel::traits::{AuditEntry, Permission};
 
 use crate::contracts::events::event_types;
 use crate::entities::{user, user_session};
+
+async fn authentication_settings(
+    db: &DatabaseConnection,
+    org_id: &str,
+) -> Result<AuthenticationSettings, AppError> {
+    use sea_orm::{ConnectionTrait, Statement};
+
+    let row = db
+        .query_one(Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "SELECT settings FROM organizations WHERE id = $1",
+            vec![org_id.into()],
+        ))
+        .await?;
+    let Some(row) = row else {
+        return Ok(AuthenticationSettings::default());
+    };
+    let settings_json = row.try_get::<Option<String>>("", "settings").unwrap_or(None);
+    let settings = settings_json
+        .and_then(|value| serde_json::from_str::<serde_json::Value>(&value).ok())
+        .and_then(|value| value.get("authentication").cloned())
+        .and_then(|value| serde_json::from_value(value).ok())
+        .unwrap_or_default();
+    Ok(settings)
+}
 
 /// Authenticate by email/phone + password.
 pub async fn login(
@@ -28,6 +54,7 @@ pub async fn login(
         )
         .one(db).await?
         .ok_or_else(|| AppError::unauthorized("Invalid credentials"))?;
+    let auth_settings = authentication_settings(db, &found.org_id).await?;
 
     // Check locked
     if let Some(ref locked) = found.locked_until {
@@ -43,12 +70,15 @@ pub async fn login(
     };
 
     if !valid_password {
-        // Increment failed logins
+        let failed_logins = found
+            .failed_logins
+            .unwrap_or_default()
+            .saturating_add(1);
         let mut active: user::ActiveModel = found.clone().into();
-        active.failed_logins = Set(Some(found.failed_logins.unwrap_or(0) + 1));
-        if found.failed_logins.unwrap_or(0) >= 4 {
+        active.failed_logins = Set(Some(failed_logins));
+        if failed_logins >= auth_settings.max_failed_logins.min(i32::MAX as u32) as i32 {
             active.locked_until = Set(Some(
-                (Utc::now() + chrono::Duration::minutes(15)).to_rfc3339()
+                (Utc::now() + chrono::Duration::minutes(auth_settings.lockout_minutes as i64)).to_rfc3339()
             ));
         }
         active.update(db).await?;
@@ -68,7 +98,7 @@ pub async fn login(
     // Create session
     let session_id = Uuid::new_v4().to_string();
     let token = Uuid::new_v4().to_string();
-    let expires = (Utc::now() + chrono::Duration::days(30)).to_rfc3339();
+    let expires = (Utc::now() + chrono::Duration::days(auth_settings.session_days as i64)).to_rfc3339();
 
     let session = user_session::Model {
         id: session_id.clone(),
@@ -86,7 +116,9 @@ pub async fn login(
         is_trusted: 0,
         mfa_verified: 0,
         expires_at: expires,
-        refresh_expires_at: None,
+        refresh_expires_at: Some(
+            (Utc::now() + chrono::Duration::days(auth_settings.refresh_token_days as i64)).to_rfc3339(),
+        ),
         last_active_at: Some(now.clone()),
         created_at: now,
     };
@@ -95,6 +127,48 @@ pub async fn login(
     let created_session = session_active.insert(db).await?;
 
     Ok((updated_user, created_session))
+}
+
+/// Rotate an active session using its refresh token.
+pub async fn refresh_session(
+    db: &DatabaseConnection,
+    refresh_token: &str,
+) -> Result<(user::Model, user_session::Model), AppError> {
+    let existing = user_session::Entity::find()
+        .filter(user_session::Column::RefreshToken.eq(refresh_token))
+        .filter(user_session::Column::IsCurrent.eq(1))
+        .one(db)
+        .await?
+        .ok_or_else(|| AppError::unauthorized("Invalid or expired refresh token"))?;
+
+    if let Some(refresh_expires_at) = existing.refresh_expires_at.as_deref() {
+        let expires_at = chrono::DateTime::parse_from_rfc3339(refresh_expires_at)
+            .map_err(|_| AppError::unauthorized("Invalid refresh token expiry"))?;
+        if expires_at.with_timezone(&Utc) <= Utc::now() {
+            return Err(AppError::unauthorized("Refresh token expired"));
+        }
+    }
+
+    let user = user::Entity::find_by_id(existing.user_id.clone())
+        .filter(user::Column::IsDeleted.eq(0))
+        .filter(user::Column::Status.eq("active"))
+        .one(db)
+        .await?
+        .ok_or_else(|| AppError::unauthorized("User account is inactive"))?;
+    let auth_settings = authentication_settings(db, &user.org_id).await?;
+
+    let now = Utc::now();
+    let mut active: user_session::ActiveModel = existing.into();
+    active.token = Set(Uuid::new_v4().to_string());
+    active.refresh_token = Set(Some(Uuid::new_v4().to_string()));
+    active.expires_at = Set((now + chrono::Duration::days(auth_settings.session_days as i64)).to_rfc3339());
+    active.refresh_expires_at = Set(Some(
+        (now + chrono::Duration::days(auth_settings.refresh_token_days as i64)).to_rfc3339(),
+    ));
+    active.last_active_at = Set(Some(now.to_rfc3339()));
+    let session = active.update(db).await?;
+
+    Ok((user, session))
 }
 
 /// Logout — invalidate session.

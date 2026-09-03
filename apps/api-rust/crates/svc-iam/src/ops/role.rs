@@ -10,7 +10,7 @@ use shared_kernel::event_bus::EventEnvelope;
 use shared_kernel::traits::{AuditEntry, Permission};
 
 use crate::contracts::events::event_types;
-use crate::entities::{role_permission, user_role};
+use crate::entities::{role_permission, user, user_role};
 
 #[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct PermissionPayload {
@@ -44,10 +44,32 @@ pub async fn assign(
 ) -> Result<user_role::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::UserRoleWrite).await?;
 
+    user::Entity::find()
+        .filter(user::Column::Id.eq(&req.user_id))
+        .filter(user::Column::OrgId.eq(&ctx.org_id))
+        .filter(user::Column::IsDeleted.eq(0))
+        .one(&ctx.db)
+        .await?
+        .ok_or_else(|| AppError::not_found("user", &req.user_id))?;
+
+    let scope_type = req.scope_type.trim().to_ascii_lowercase();
+    let is_global_scope = matches!(scope_type.as_str(), "global" | "organization" | "org");
+    let is_unit_scope = matches!(scope_type.as_str(), "branch" | "org_unit" | "unit" | "subtree");
+
+    if !is_global_scope && !is_unit_scope {
+        return Err(AppError::validation("Unsupported role scope type"));
+    }
+    if is_global_scope && req.scope_id.is_some() {
+        return Err(AppError::validation("Global role scopes cannot have a scope ID"));
+    }
+    if is_unit_scope && req.scope_id.as_deref().is_none_or(str::is_empty) {
+        return Err(AppError::validation("Organizational role scopes require a scope ID"));
+    }
+
     let id = Uuid::new_v4().to_string();
     let model = user_role::Model {
         id: id.clone(), user_id: req.user_id.clone(), role: req.role.clone(),
-        org_id: ctx.org_id.clone(), scope_type: req.scope_type, scope_id: req.scope_id,
+        org_id: ctx.org_id.clone(), scope_type, scope_id: req.scope_id,
         valid_from: None, valid_until: None, is_primary: 0,
         assigned_by: Some(ctx.actor.as_str().to_string()),
         assigned_at: Utc::now().to_rfc3339(),

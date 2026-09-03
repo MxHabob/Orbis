@@ -335,6 +335,34 @@ pub async fn academic_notification_mark_read(state: State<'_, Arc<AppState>>, no
 }
 
 #[tauri::command]
+pub async fn academic_scope_ensure_class_scope(state: State<'_, Arc<AppState>>, class_id: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    ops::scope::ensure_class_scope(&ctx, &class_id).await.map_err(CommandError::from)?;
+    Ok(serde_json::json!({}))
+}
+
+#[tauri::command]
+pub async fn academic_scope_ensure_enrollment_scope(state: State<'_, Arc<AppState>>, enrollment_id: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::scope::ensure_enrollment_scope(&ctx, &enrollment_id).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn academic_scope_scoped_enrollment_ids(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::scope::scoped_enrollment_ids(&ctx).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
+pub async fn academic_scope_scoped_class_ids(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::scope::scoped_class_ids(&ctx).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
 pub async fn academic_subject_list(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let result = ops::subject::list(&ctx).await.map_err(CommandError::from)?;

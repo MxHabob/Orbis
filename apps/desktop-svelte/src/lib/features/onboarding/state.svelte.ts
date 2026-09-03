@@ -782,7 +782,7 @@ class OnboardingState {
       const chosenCurrency = this.profile.currency || "SAR";
       const profileDef = INSTITUTION_PROFILES[this.profile.institutionType] || INSTITUTION_PROFILES.school;
       const settingsObj = {
-        registration_config: {
+        registration: {
           institution_type: this.profile.institutionType,
           student_number_pattern: this.profile.studentNumberPattern || profileDef.numberingPattern,
           academic_stages: this.academics.gradeLevels
@@ -814,7 +814,7 @@ class OnboardingState {
         };
         await commands.organization.updateOrganization(updateRequest).catch(e => console.warn("Update org warning:", e));
         await commands.organization.updateSettings({
-          registration: settingsObj.registration_config,
+          registration: settingsObj.registration,
         }).catch(e => console.warn("Update organization settings warning:", e));
       }
 

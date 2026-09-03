@@ -16,3 +16,4 @@ pub mod class_subject;
 pub mod guardian;
 pub mod document;
 pub mod notification;
+pub mod scope;

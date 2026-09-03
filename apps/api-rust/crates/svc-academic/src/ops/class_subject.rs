@@ -19,6 +19,7 @@ pub async fn list(
     period_id: Option<&str>,
 ) -> Result<Vec<class_subject::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ClassRead).await?;
+    crate::ops::scope::ensure_class_scope(ctx, class_id).await?;
 
     let mut query = class_subject::Entity::find()
         .filter(class_subject::Column::ClassId.eq(class_id))
@@ -38,12 +39,14 @@ pub async fn list_by_teacher(
 ) -> Result<Vec<class_subject::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ClassRead).await?;
 
-    Ok(class_subject::Entity::find()
+    let mut query = class_subject::Entity::find()
         .filter(class_subject::Column::PrimaryTeacherId.eq(teacher_id))
         .filter(class_subject::Column::PeriodId.eq(period_id))
-        .filter(class_subject::Column::IsActive.eq(1))
-        .all(&ctx.db)
-        .await?)
+        .filter(class_subject::Column::IsActive.eq(1));
+    if ctx.org_unit_id.is_some() {
+        query = query.filter(class_subject::Column::ClassId.is_in(crate::ops::scope::scoped_class_ids(ctx).await?));
+    }
+    Ok(query.all(&ctx.db).await?)
 }
 
 // ── Commands ────────────────────────────────────────────────────
@@ -64,6 +67,7 @@ pub async fn create(
     req: CreateClassSubjectPayload,
 ) -> Result<class_subject::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ClassWrite).await?;
+    crate::ops::scope::ensure_class_scope(ctx, &req.class_id).await?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
@@ -123,6 +127,7 @@ pub async fn update(
         .one(&ctx.db)
         .await?
         .ok_or_else(|| AppError::not_found("class_subject", id))?;
+    crate::ops::scope::ensure_class_scope(ctx, &existing.class_id).await?;
 
     let mut active: class_subject::ActiveModel = existing.into();
     if let Some(tid) = req.primary_teacher_id {
@@ -160,6 +165,7 @@ pub async fn delete(ctx: &ServiceContext, id: &str) -> Result<(), AppError> {
         .one(&ctx.db)
         .await?
         .ok_or_else(|| AppError::not_found("class_subject", id))?;
+    crate::ops::scope::ensure_class_scope(ctx, &existing.class_id).await?;
 
     let mut active: class_subject::ActiveModel = existing.into();
     active.is_active = Set(0);

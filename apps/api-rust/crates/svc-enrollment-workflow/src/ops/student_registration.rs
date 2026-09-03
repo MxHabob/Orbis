@@ -111,7 +111,9 @@ pub async fn register_student(
     }
     let class_id = req.class_id.as_deref().filter(|id| !id.trim().is_empty())
         .ok_or_else(|| AppError::validation("Class is required for student enrollment"))?;
-    let target_class = class::Entity::find_by_id(class_id.to_string())
+    let target_class = class::Entity::find()
+        .filter(class::Column::Id.eq(class_id.to_string()))
+        .filter(class::Column::OrgId.eq(&ctx.org_id))
         .one(&ctx.db)
         .await?
         .ok_or_else(|| AppError::not_found("class", class_id))?;

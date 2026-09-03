@@ -31,14 +31,48 @@ pub async fn list(ctx: &ServiceContext, period_id: &str, filter: Option<Universa
         query = query.filter(condition);
     }
 
-    Ok(query.order_by_desc(exam_session::Column::StartDate).all(&ctx.db).await?)
+    let sessions = query.order_by_desc(exam_session::Column::StartDate).all(&ctx.db).await?;
+    filter_sessions_by_branch(ctx, sessions).await
 }
 
 pub async fn get(ctx: &ServiceContext, session_id: &str) -> Result<exam_session::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ExamSessionRead).await?;
-    exam_session::Entity::find_by_id(session_id.to_string())
+    let session = exam_session::Entity::find_by_id(session_id.to_string())
+        .filter(exam_session::Column::OrgId.eq(&ctx.org_id))
         .one(&ctx.db).await?
-        .ok_or_else(|| AppError::not_found("exam_session", session_id))
+        .ok_or_else(|| AppError::not_found("exam_session", session_id))?;
+    let visible = filter_sessions_by_branch(ctx, vec![session]).await?;
+    visible.into_iter().next().ok_or_else(|| AppError::not_found("exam_session", session_id))
+}
+
+async fn filter_sessions_by_branch(
+    ctx: &ServiceContext,
+    sessions: Vec<exam_session::Model>,
+) -> Result<Vec<exam_session::Model>, AppError> {
+    let Some(org_unit_id) = &ctx.org_unit_id else {
+        return Ok(sessions);
+    };
+    let class_ids = svc_academic::entities::class::Entity::find()
+        .filter(svc_academic::entities::class::Column::OrgId.eq(&ctx.org_id))
+        .filter(svc_academic::entities::class::Column::UnitId.eq(org_unit_id))
+        .filter(svc_academic::entities::class::Column::IsDeleted.eq(0))
+        .all(&ctx.db)
+        .await?
+        .into_iter()
+        .map(|class| class.id)
+        .collect::<std::collections::HashSet<_>>();
+
+    Ok(sessions
+        .into_iter()
+        .filter(|session| {
+            let Some(raw_ids) = session.applicable_class_ids.as_deref() else {
+                return true;
+            };
+            serde_json::from_str::<Vec<String>>(raw_ids)
+                .map(|ids| ids.iter().any(|id| class_ids.contains(id)))
+                .unwrap_or(false)
+        })
+        .collect())
 }
 
 #[derive(serde::Deserialize)]

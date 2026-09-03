@@ -2,11 +2,14 @@
 
 use shared_kernel::context::ServiceContext;
 use shared_kernel::errors::AppError;
+use shared_kernel::traits::Permission;
 
 pub async fn students(
     ctx: &ServiceContext,
     data: serde_json::Value,
 ) -> Result<serde_json::Value, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::ImportData).await?;
+
     use svc_enrollment_workflow::ops::student_registration::{register_student, RegisterStudentRequest};
     
     let students_list = data.get("students")
@@ -30,8 +33,9 @@ pub async fn students(
 }
 
 pub async fn grades(
-    _ctx: &ServiceContext,
+    ctx: &ServiceContext,
     _data: serde_json::Value,
 ) -> Result<serde_json::Value, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::ImportData).await?;
     Err(AppError::internal("Bulk import of grades is not implemented"))
 }

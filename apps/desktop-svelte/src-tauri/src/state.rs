@@ -275,6 +275,74 @@ impl AppState {
         *self.session.write().await = Some(ctx);
     }
 
+    /// Select the active branch for the authenticated session.
+    ///
+    /// Branch access is resolved from the user's organization-scoped role
+    /// assignments. Organization administrators may select any active unit;
+    /// other users require a global, direct, or subtree assignment.
+    pub async fn set_active_org_unit(
+        &self,
+        org_unit_id: Option<String>,
+    ) -> Result<(), shared_kernel::errors::AppError> {
+        use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+
+        let mut session = self
+            .session
+            .write()
+            .await;
+        let current = session
+            .as_mut()
+            .ok_or_else(|| shared_kernel::errors::AppError::unauthorized("No active session"))?;
+
+        let Some(org_unit_id) = org_unit_id else {
+            current.org_unit_id = None;
+            return Ok(());
+        };
+
+        let unit = svc_organization::entities::org_unit::Entity::find()
+            .filter(svc_organization::entities::org_unit::Column::Id.eq(&org_unit_id))
+            .filter(svc_organization::entities::org_unit::Column::OrgId.eq(&current.org_id))
+            .filter(svc_organization::entities::org_unit::Column::IsActive.eq(1))
+            .one(&self.db())
+            .await?
+            .ok_or_else(|| shared_kernel::errors::AppError::not_found("org_unit", &org_unit_id))?;
+
+        let is_org_admin = current.roles.iter().any(|role| {
+            matches!(role.to_ascii_lowercase().as_str(), "admin" | "super_admin")
+        });
+
+        if !is_org_admin {
+            let assignments = svc_iam::entities::user_role::Entity::find()
+                .filter(svc_iam::entities::user_role::Column::UserId.eq(&current.user_id))
+                .filter(svc_iam::entities::user_role::Column::OrgId.eq(&current.org_id))
+                .all(&self.db())
+                .await?;
+
+            let allowed = assignments.iter().any(|assignment| {
+                match assignment.scope_type.to_ascii_lowercase().as_str() {
+                    "global" | "organization" | "org" => true,
+                    "branch" | "org_unit" | "unit" => {
+                        assignment.scope_id.as_deref() == Some(org_unit_id.as_str())
+                    }
+                    "subtree" => assignment.scope_id.as_deref().is_some_and(|scope_id| {
+                        unit.path == scope_id
+                            || unit.path.starts_with(&format!("{}/", scope_id.trim_end_matches('/')))
+                    }),
+                    _ => false,
+                }
+            });
+
+            if !allowed {
+                return Err(shared_kernel::errors::AppError::unauthorized(
+                    "You are not assigned to this organizational unit",
+                ));
+            }
+        }
+
+        current.org_unit_id = Some(org_unit_id);
+        Ok(())
+    }
+
     /// Set a Super Admin session with access to multiple orgs.
     pub async fn set_super_admin_session(
         &self,
@@ -313,9 +381,47 @@ impl AppState {
             .as_ref()
             .ok_or_else(|| shared_kernel::errors::AppError::unauthorized("No active session"))?;
 
+        let user_id = session.user_id.clone();
+        let org_id = session.org_id.clone();
+        let active_org_unit_id = session.org_unit_id.clone();
+        let roles = session.roles.clone();
+        drop(session_lock);
+
+        let settings = self.platform.settings.get_org_settings(&org_id).await?;
+
+        let is_org_admin = roles.iter().any(|role| {
+            matches!(role.to_ascii_lowercase().as_str(), "admin" | "super_admin")
+        });
+
+        if active_org_unit_id.is_none() && !is_org_admin {
+            use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+
+            let assignments = svc_iam::entities::user_role::Entity::find()
+                .filter(svc_iam::entities::user_role::Column::UserId.eq(&user_id))
+                .filter(svc_iam::entities::user_role::Column::OrgId.eq(&org_id))
+                .all(&self.db())
+                .await?;
+
+            let has_restricted_scope = assignments.iter().any(|assignment| {
+                !matches!(
+                    assignment.scope_type.to_ascii_lowercase().as_str(),
+                    "global" | "organization" | "org"
+                )
+            });
+
+            let branch_selection_required = settings.branch_policy.selection_required
+                || settings.branch_policy.data_isolation.eq_ignore_ascii_case("isolated");
+            if has_restricted_scope && branch_selection_required {
+                return Err(shared_kernel::errors::AppError::unauthorized(
+                    "Select an organizational unit before accessing scoped data",
+                ));
+            }
+        }
+
         let db = self.db();
-        let actor = Actor::User(session.user_id.clone());
-        let mut ctx = self.platform.context_for(db, &session.org_id, actor);
+        let actor = Actor::User(user_id);
+        let mut ctx = self.platform.context_for(db, &org_id, actor);
+        ctx.org_unit_id = active_org_unit_id;
         ctx.ensure_correlation_id();
         Ok(ctx)
     }

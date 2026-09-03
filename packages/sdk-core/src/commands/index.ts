@@ -12,6 +12,7 @@ import type { Enrollment_workflowCommands } from './enrollment_workflow.js';
 import type { Platform_policyCommands } from './platform_policy.js';
 import type { AiCommands } from './ai.js';
 import type { DocforgeCommands } from './docforge.js';
+import type { ReportingCommands } from './reporting.js';
 
 export interface OrbisCommands {
   iam: IamCommands;
@@ -27,6 +28,7 @@ export interface OrbisCommands {
   platform_policy: Platform_policyCommands;
   ai: AiCommands;
   docforge: DocforgeCommands;
+  reporting: ReportingCommands;
 }
 
 export type { IamCommands } from './iam.js';
@@ -42,3 +44,4 @@ export type { Enrollment_workflowCommands } from './enrollment_workflow.js';
 export type { Platform_policyCommands } from './platform_policy.js';
 export type { AiCommands } from './ai.js';
 export type { DocforgeCommands } from './docforge.js';
+export type { ReportingCommands } from './reporting.js';

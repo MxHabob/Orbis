@@ -22,6 +22,7 @@ import {
 } from "@orbis/ui-svelte";
 import { goto } from "$app/navigation";
 import { localizeHref } from "$lib/paraglide/runtime";
+import { commands } from "$lib/core/ipc";
 
 import { onMount } from "svelte";
 
@@ -36,6 +37,7 @@ let {
 let customProjects = $state<{ id: string; label: string; logoType: string }[]>(
   [],
 );
+let branches = $state<{ id: string; name: string; name_ar?: string | null }[]>([]);
 
 const orgNameDisplay = $derived.by(() => {
   if (initialOrgName && initialOrgName !== "Orbis School")
@@ -60,6 +62,13 @@ onMount(() => {
       customProjects = JSON.parse(storedCustom);
     } catch {}
   }
+  commands.organization.listOrgUnits()
+    .then((units) => {
+      branches = units.filter((unit) => unit.is_active === 1 && unit.unit_type === "branch");
+    })
+    .catch(() => {
+      branches = [];
+    });
 });
 
 let projects = $derived.by(() => {
@@ -106,6 +115,11 @@ function handleNavigate(path: string) {
 function handleSelect(id: string) {
   goto(localizeHref(`/${id}`));
 }
+
+async function handleBranchSelect(id: string) {
+  await commands.organization.selectOrgUnit(id);
+  await goto(localizeHref(`/${orgId}`));
+}
 </script>
 
 <DropdownMenu>
@@ -137,7 +151,7 @@ function handleSelect(id: string) {
     <!-- Header info -->
     <div class="flex items-center gap-3 px-3 py-2.5 border-b border-border/50">
       <Avatar
-        class="h-8 w-8 rounded-[8px] {activeColors.bg} font-bold text-xs"
+        class="h-8 w-8 rounded-xl {activeColors.bg} font-bold text-xs"
         style="box-shadow: 0 2px 0 0 {activeColors.shadow}, 0 0 0 1px {activeColors.shadow};"
       >
         <AvatarFallback class="{activeColors.bg} font-bold text-xs">
@@ -152,6 +166,14 @@ function handleSelect(id: string) {
 
     <!-- Items -->
     <div class="py-1">
+      {#if branches.length > 0}
+        {#each branches as branch}
+          <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleBranchSelect(branch.id)}>
+            {branch.name_ar || branch.name}
+          </DropdownMenuItem>
+        {/each}
+        <DropdownMenuSeparator class="bg-border/50" />
+      {/if}
       <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/settings`)}>
         {m.common_header_org_settings()}
       </DropdownMenuItem>

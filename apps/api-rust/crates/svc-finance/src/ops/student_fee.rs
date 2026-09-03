@@ -24,6 +24,7 @@ pub async fn list_by_enrollment(
     filter: Option<UniversalFilter>,
 ) -> Result<Vec<student_fee::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceRead).await?;
+    svc_academic::ops::scope::ensure_enrollment_scope(ctx, enrollment_id).await?;
     let mut query = student_fee::Entity::find()
         .filter(student_fee::Column::OrgId.eq(&ctx.org_id))
         .filter(student_fee::Column::EnrollmentId.eq(enrollment_id));
@@ -47,6 +48,11 @@ pub async fn list_by_org(
     ctx.permissions.check(&ctx.actor, Permission::FinanceRead).await?;
     let mut query = student_fee::Entity::find()
         .filter(student_fee::Column::OrgId.eq(&ctx.org_id));
+
+    if ctx.org_unit_id.is_some() {
+        let enrollment_ids = svc_academic::ops::scope::scoped_enrollment_ids(ctx).await?;
+        query = query.filter(student_fee::Column::EnrollmentId.is_in(enrollment_ids));
+    }
 
     if let Some(f) = filter {
         let condition = f.build_condition(|field| match field {
@@ -73,6 +79,7 @@ pub async fn assign(
         .one(&ctx.db)
         .await?
         .ok_or_else(|| AppError::not_found("enrollment", &cmd.enrollment_id))?;
+    svc_academic::ops::scope::ensure_enrollment_scope(ctx, &cmd.enrollment_id).await?;
 
     let student_account = ledger::get_or_create_sub_account(
         ctx,
@@ -166,3 +173,4 @@ pub async fn assign(
 
     Ok(created_fee)
 }
+

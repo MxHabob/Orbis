@@ -30,6 +30,11 @@ pub async fn list(
     let mut query = payment::Entity::find()
         .filter(payment::Column::OrgId.eq(&ctx.org_id));
 
+    if ctx.org_unit_id.is_some() {
+        let enrollment_ids = svc_academic::ops::scope::scoped_enrollment_ids(ctx).await?;
+        query = query.filter(payment::Column::EnrollmentId.is_in(enrollment_ids));
+    }
+
     if let Some(f) = filter {
         let condition = f.build_condition(|field| match field {
             "method" => Some(payment::Column::Method.into_expr().into()),
@@ -60,6 +65,7 @@ pub async fn record(
         .one(&ctx.db)
         .await?
         .ok_or_else(|| AppError::not_found("student_fee", &fee_id))?;
+    svc_academic::ops::scope::ensure_enrollment_scope(ctx, &fee.enrollment_id).await?;
 
     let student_id = infra_persistence::fee_assignment::enrollment_student_id(&ctx.db, &fee.enrollment_id).await?;
 
@@ -232,3 +238,4 @@ pub async fn record(
 
     Ok(payment_record)
 }
+

@@ -198,7 +198,83 @@ pub struct OrgSettings {
     pub finance: FinanceSettings,
     pub grading: GradingSettings,
     #[serde(default)]
+    pub authentication: AuthenticationSettings,
+    #[serde(default)]
+    pub branch_policy: BranchPolicy,
+    #[serde(default)]
     pub reporting: ReportingSettings,
+}
+
+/// Controls organization authentication and session behavior.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AuthenticationSettings {
+    /// Maximum consecutive failed login attempts before lockout.
+    #[serde(default = "default_max_failed_logins")]
+    pub max_failed_logins: u32,
+
+    /// Lockout duration in minutes.
+    #[serde(default = "default_lockout_minutes")]
+    pub lockout_minutes: u32,
+
+    /// Access session duration in days.
+    #[serde(default = "default_session_days")]
+    pub session_days: u32,
+
+    /// Refresh session duration in days.
+    #[serde(default = "default_refresh_token_days")]
+    pub refresh_token_days: u32,
+}
+
+impl Default for AuthenticationSettings {
+    fn default() -> Self {
+        Self {
+            max_failed_logins: default_max_failed_logins(),
+            lockout_minutes: default_lockout_minutes(),
+            session_days: default_session_days(),
+            refresh_token_days: default_refresh_token_days(),
+        }
+    }
+}
+
+/// Controls branch lifecycle and data-scope behavior for an organization.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BranchPolicy {
+    /// Whether branch units are enabled for this organization.
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+
+    /// Whether users with branch-scoped roles must select a branch first.
+    #[serde(default)]
+    pub selection_required: bool,
+
+    /// Data visibility mode: "shared" or "isolated".
+    #[serde(default = "default_branch_data_isolation")]
+    pub data_isolation: String,
+
+    /// Maximum active branch units. `None` means unlimited.
+    #[serde(default)]
+    pub max_branches: Option<u32>,
+
+    /// Whether creating a branch requires an approval workflow.
+    #[serde(default)]
+    pub creation_requires_approval: bool,
+
+    /// Optional branch selected automatically for new sessions.
+    #[serde(default)]
+    pub default_branch_id: Option<String>,
+}
+
+impl Default for BranchPolicy {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            selection_required: false,
+            data_isolation: default_branch_data_isolation(),
+            max_branches: None,
+            creation_requires_approval: false,
+            default_branch_id: None,
+        }
+    }
 }
 
 // ── Reporting Settings ──────────────────────────────────────────
@@ -304,6 +380,10 @@ fn default_institution_type() -> String {
     "school".to_string()
 }
 
+fn default_branch_data_isolation() -> String {
+    "shared".to_string()
+}
+
 fn default_number_pattern() -> String {
     "STU-{YEAR}-{SEQ}".to_string()
 }
@@ -377,6 +457,22 @@ fn default_passing_grade() -> f64 {
 
 fn default_max_grade() -> f64 {
     100.0
+}
+
+fn default_max_failed_logins() -> u32 {
+    5
+}
+
+fn default_lockout_minutes() -> u32 {
+    15
+}
+
+fn default_session_days() -> u32 {
+    30
+}
+
+fn default_refresh_token_days() -> u32 {
+    30
 }
 
 fn default_header_style() -> String {

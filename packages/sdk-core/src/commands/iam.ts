@@ -4,6 +4,7 @@ import type * as Types from '../types/index.js';
 export interface IamCommands {
   listAuditLogs(): Promise<Types.AuditLog[]>;
   login(identifier: string, passwordHash: string): Promise<[Types.User, Types.UserSession]>;
+  refreshSession(refreshToken: string): Promise<[Types.User, Types.UserSession]>;
   logout(token: string): Promise<void>;
   restoreSession(token: string): Promise<[Types.User, Types.UserSession]>;
   changePassword(userId: string, req: Types.ChangePasswordPayload): Promise<void>;

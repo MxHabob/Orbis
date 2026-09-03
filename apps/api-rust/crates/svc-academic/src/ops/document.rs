@@ -31,7 +31,9 @@ pub async fn list(
 pub async fn get(ctx: &ServiceContext, id: &str) -> Result<document::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::DocumentRead).await?;
 
-    document::Entity::find_by_id(id.to_string())
+    document::Entity::find()
+        .filter(document::Column::Id.eq(id.to_string()))
+        .filter(document::Column::OrgId.eq(&ctx.org_id))
         .one(&ctx.db)
         .await?
         .ok_or_else(|| AppError::not_found("document", id))

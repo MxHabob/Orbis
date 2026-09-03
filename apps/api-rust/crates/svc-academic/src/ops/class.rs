@@ -23,19 +23,25 @@ pub async fn list(
 ) -> Result<Vec<class::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ClassRead).await?;
 
-    Ok(class::Entity::find()
+    let mut query = class::Entity::find()
         .filter(class::Column::OrgId.eq(&ctx.org_id))
         .order_by_asc(class::Column::Level)
-        .order_by_asc(class::Column::Name)
-        .all(&ctx.db)
-        .await?)
+        .order_by_asc(class::Column::Name);
+
+    if let Some(org_unit_id) = &ctx.org_unit_id {
+        query = query.filter(class::Column::UnitId.eq(org_unit_id));
+    }
+
+    Ok(query.all(&ctx.db).await?)
 }
 
 /// Get a single class by ID.
 pub async fn get(ctx: &ServiceContext, id: &str) -> Result<class::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ClassRead).await?;
 
-    class::Entity::find_by_id(id.to_string())
+    class::Entity::find()
+        .filter(class::Column::Id.eq(id.to_string()))
+        .filter(class::Column::OrgId.eq(&ctx.org_id))
         .one(&ctx.db)
         .await?
         .ok_or_else(|| AppError::not_found("class", id))

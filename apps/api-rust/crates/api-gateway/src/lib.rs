@@ -62,6 +62,7 @@ pub async fn start_server(database_url: &str, port: u16) -> Result<(), Box<dyn s
         // Auth
         .route("/api/auth/register", post(handler::auth::post_register))
         .route("/api/auth/login", post(handler::auth::post_login))
+        .route("/api/auth/refresh", post(handler::auth::post_refresh))
         .route("/api/auth/me", get(handler::auth::get_me))
         .route("/api/auth/logout", post(handler::auth::post_logout))
         // Organization

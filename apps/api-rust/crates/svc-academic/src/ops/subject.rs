@@ -29,7 +29,9 @@ pub async fn list(ctx: &ServiceContext) -> Result<Vec<subject::Model>, AppError>
 pub async fn get(ctx: &ServiceContext, id: &str) -> Result<subject::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::SubjectRead).await?;
 
-    subject::Entity::find_by_id(id.to_string())
+    subject::Entity::find()
+        .filter(subject::Column::Id.eq(id.to_string()))
+        .filter(subject::Column::OrgId.eq(&ctx.org_id))
         .one(&ctx.db)
         .await?
         .ok_or_else(|| AppError::not_found("subject", id))

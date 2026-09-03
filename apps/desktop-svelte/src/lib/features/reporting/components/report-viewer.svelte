@@ -14,7 +14,7 @@
     definitionId: string;
   }
 
-  let { definitionId } = $props<Props>();
+  let { definitionId }: Props = $props();
 
   let isLoading = $state(true);
   let error = $state<string | null>(null);
@@ -119,7 +119,7 @@
         <div class="p-4 flex flex-col gap-4">
           {#each definition.parameters as param}
             <div class="flex flex-col gap-1.5">
-              <label class="text-xs font-medium flex items-center gap-1">
+              <label for={`report-param-${param.key}`} class="text-xs font-medium flex items-center gap-1">
                 {param.label}
                 {#if param.required}
                   <span class="text-destructive">*</span>
@@ -128,8 +128,9 @@
               
               <!-- Dynamic Filter Inputs (Simplified for MVP) -->
               <Input 
+                id={`report-param-${param.key}`}
                 type={param.paramType === 'number' ? 'number' : param.paramType === 'date' ? 'date' : 'text'}
-                bind:value={filters[param.id]}
+                bind:value={filters[param.key]}
                 placeholder={param.label}
                 class="h-8 text-xs"
               />
@@ -158,7 +159,7 @@
         <div class="w-full h-full p-2">
           <OrbisGrid
             columns={gridColumns}
-            source={dataset.rows}
+            source={dataset.rows as Array<Record<string, any>>}
             height="calc(100vh - 120px)"
             rtl={getLocale() === "ar"}
           />
@@ -181,4 +182,5 @@
   bind:open={isExportDialogOpen} 
   definitionId={definitionId} 
   {filters} 
+  onOpenChange={(value) => (isExportDialogOpen = value)}
 />

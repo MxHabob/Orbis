@@ -220,7 +220,6 @@ export interface EnrichedEnrollmentResponse {
 }
 
 export interface CreateEnrollmentPayload {
-  org_id?: string | null;
   period_id: string;
   student_id: string;
   class_id: string;

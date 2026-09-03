@@ -18,6 +18,7 @@ export const commands: OrbisCommands = {
   iam: {
     listAuditLogs: () => cmd("iam_audit_list", {}),
     login: (identifier: any, passwordHash: any) => cmd("iam_auth_login", { identifier, passwordHash }),
+    refreshSession: (refreshToken: any) => cmd("iam_auth_refresh_session", { refreshToken }),
     logout: (token: any) => cmd("iam_auth_logout", { token }),
     restoreSession: (token: any) => cmd("iam_auth_restore_session", { token }),
     changePassword: (userId: any, req: any) => cmd("iam_auth_change_password", { userId, req }),
@@ -74,6 +75,7 @@ export const commands: OrbisCommands = {
     updateRegistrationSettings: (cmdPayload: any) => cmd("organization_settings_update_registration_settings", { cmd: cmdPayload }),
     updateFinanceSettings: (cmdPayload: any) => cmd("organization_settings_update_finance_settings", { cmd: cmdPayload }),
     updateGradingSettings: (cmdPayload: any) => cmd("organization_settings_update_grading_settings", { cmd: cmdPayload }),
+    organizationSelectOrgUnit: (orgUnitId: any) => cmd("organization_select_org_unit", { orgUnitId }),
   },
   academic: {
     listClasses: () => cmd("academic_class_list", {}),
@@ -125,6 +127,10 @@ export const commands: OrbisCommands = {
     deleteGuardian: (linkId: any) => cmd("academic_guardian_delete", { linkId }),
     listNotifications: () => cmd("academic_notification_list", {}),
     markRead: (notificationId: any) => cmd("academic_notification_mark_read", { notificationId }),
+    ensureClassScope: (classId: any) => cmd("academic_scope_ensure_class_scope", { classId }),
+    ensureEnrollmentScope: (enrollmentId: any) => cmd("academic_scope_ensure_enrollment_scope", { enrollmentId }),
+    scopedEnrollmentIds: () => cmd("academic_scope_scoped_enrollment_ids", {}),
+    scopedClassIds: () => cmd("academic_scope_scoped_class_ids", {}),
     listSubjects: () => cmd("academic_subject_list", {}),
     getSubject: (id: any) => cmd("academic_subject_get", { id }),
     createSubject: (req: any) => cmd("academic_subject_create", { req }),
@@ -363,5 +369,11 @@ export const commands: OrbisCommands = {
     getMultiUpPrintStatus: (jobId: any) => cmd("get_multi_up_print_status", { jobId }),
     listTemplateVersions: (templateId: any) => cmd("list_template_versions", { templateId }),
     revertTemplateVersion: (templateId: any, version: any) => cmd("revert_template_version", { templateId, version }),
+  },
+  reporting: {
+    listReports: (module: any) => cmd("reporting_list_reports", { domain: module }),
+    getReportDefinition: (definitionId: any) => cmd("reporting_get_report_definition", { definitionId }),
+    queryReport: (definitionId: any, filters: any) => cmd("reporting_query_report", { definitionId, filters }),
+    exportReport: (definitionId: any, filters: any, format: any, templateId: any) => cmd("reporting_export_report", { definitionId, filters, format, templateId }),
   },
 };

@@ -33,7 +33,10 @@ pub async fn mark_read(
 ) -> Result<notification::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::NotificationRead).await?;
 
-    let existing = notification::Entity::find_by_id(notification_id.to_string())
+    let existing = notification::Entity::find()
+        .filter(notification::Column::Id.eq(notification_id.to_string()))
+        .filter(notification::Column::OrgId.eq(&ctx.org_id))
+        .filter(notification::Column::UserId.eq(ctx.actor.as_str()))
         .one(&ctx.db)
         .await?
         .ok_or_else(|| AppError::not_found("notification", notification_id))?;

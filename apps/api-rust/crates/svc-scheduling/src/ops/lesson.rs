@@ -16,6 +16,7 @@ pub async fn list_by_class(
     ctx: &ServiceContext, period_id: &str, class_id: &str,
 ) -> Result<Vec<scheduled_lesson::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleRead).await?;
+    svc_academic::ops::scope::ensure_class_scope(ctx, class_id).await?;
     Ok(scheduled_lesson::Entity::find()
         .filter(scheduled_lesson::Column::OrgId.eq(&ctx.org_id))
         .filter(scheduled_lesson::Column::PeriodId.eq(period_id))
@@ -29,61 +30,75 @@ pub async fn list_by_teacher(
     ctx: &ServiceContext, period_id: &str, teacher_id: &str,
 ) -> Result<Vec<scheduled_lesson::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleRead).await?;
-    Ok(scheduled_lesson::Entity::find()
+    let mut query = scheduled_lesson::Entity::find()
         .filter(scheduled_lesson::Column::OrgId.eq(&ctx.org_id))
         .filter(scheduled_lesson::Column::PeriodId.eq(period_id))
         .filter(scheduled_lesson::Column::TeacherId.eq(teacher_id))
-        .filter(scheduled_lesson::Column::Status.ne("cancelled"))
-        .order_by_asc(scheduled_lesson::Column::DayOfWeek)
-        .all(&ctx.db).await?)
+        .filter(scheduled_lesson::Column::Status.ne("cancelled"));
+    query = apply_branch_filter(ctx, query).await?;
+    Ok(query.order_by_asc(scheduled_lesson::Column::DayOfWeek).all(&ctx.db).await?)
 }
 
 pub async fn list_by_period(
     ctx: &ServiceContext, period_id: &str,
 ) -> Result<Vec<scheduled_lesson::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleRead).await?;
-    Ok(scheduled_lesson::Entity::find()
+    let mut query = scheduled_lesson::Entity::find()
         .filter(scheduled_lesson::Column::OrgId.eq(&ctx.org_id))
         .filter(scheduled_lesson::Column::PeriodId.eq(period_id))
-        .filter(scheduled_lesson::Column::Status.ne("cancelled"))
-        .order_by_asc(scheduled_lesson::Column::DayOfWeek)
-        .order_by_asc(scheduled_lesson::Column::TimeSlotId)
-        .all(&ctx.db).await?)
+        .filter(scheduled_lesson::Column::Status.ne("cancelled"));
+    query = apply_branch_filter(ctx, query).await?;
+    Ok(query.order_by_asc(scheduled_lesson::Column::DayOfWeek).order_by_asc(scheduled_lesson::Column::TimeSlotId).all(&ctx.db).await?)
 }
 
 pub async fn list_by_subject(
     ctx: &ServiceContext, period_id: &str, subject_id: &str,
 ) -> Result<Vec<scheduled_lesson::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleRead).await?;
-    Ok(scheduled_lesson::Entity::find()
+    let mut query = scheduled_lesson::Entity::find()
         .filter(scheduled_lesson::Column::OrgId.eq(&ctx.org_id))
         .filter(scheduled_lesson::Column::PeriodId.eq(period_id))
         .filter(scheduled_lesson::Column::SubjectId.eq(subject_id))
-        .filter(scheduled_lesson::Column::Status.ne("cancelled"))
-        .order_by_asc(scheduled_lesson::Column::DayOfWeek)
-        .order_by_asc(scheduled_lesson::Column::TimeSlotId)
-        .all(&ctx.db).await?)
+        .filter(scheduled_lesson::Column::Status.ne("cancelled"));
+    query = apply_branch_filter(ctx, query).await?;
+    Ok(query.order_by_asc(scheduled_lesson::Column::DayOfWeek).order_by_asc(scheduled_lesson::Column::TimeSlotId).all(&ctx.db).await?)
 }
 
 pub async fn list_by_room(
     ctx: &ServiceContext, period_id: &str, room_id: &str,
 ) -> Result<Vec<scheduled_lesson::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleRead).await?;
-    Ok(scheduled_lesson::Entity::find()
+    let mut query = scheduled_lesson::Entity::find()
         .filter(scheduled_lesson::Column::OrgId.eq(&ctx.org_id))
         .filter(scheduled_lesson::Column::PeriodId.eq(period_id))
         .filter(scheduled_lesson::Column::RoomId.eq(room_id))
-        .filter(scheduled_lesson::Column::Status.ne("cancelled"))
-        .order_by_asc(scheduled_lesson::Column::DayOfWeek)
-        .order_by_asc(scheduled_lesson::Column::TimeSlotId)
-        .all(&ctx.db).await?)
+        .filter(scheduled_lesson::Column::Status.ne("cancelled"));
+    query = apply_branch_filter(ctx, query).await?;
+    Ok(query.order_by_asc(scheduled_lesson::Column::DayOfWeek).order_by_asc(scheduled_lesson::Column::TimeSlotId).all(&ctx.db).await?)
 }
 
 pub async fn get(ctx: &ServiceContext, lesson_id: &str) -> Result<scheduled_lesson::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleRead).await?;
-    scheduled_lesson::Entity::find_by_id(lesson_id.to_string())
+    let lesson = scheduled_lesson::Entity::find_by_id(lesson_id.to_string())
+        .filter(scheduled_lesson::Column::OrgId.eq(&ctx.org_id))
         .one(&ctx.db).await?
-        .ok_or_else(|| AppError::not_found("scheduled_lesson", lesson_id))
+        .ok_or_else(|| AppError::not_found("scheduled_lesson", lesson_id))?;
+    svc_academic::ops::scope::ensure_class_scope(ctx, &lesson.class_id).await?;
+    Ok(lesson)
+}
+
+ 
+
+async fn apply_branch_filter(
+    ctx: &ServiceContext,
+    query: sea_orm::Select<scheduled_lesson::Entity>,
+) -> Result<sea_orm::Select<scheduled_lesson::Entity>, AppError> {
+    if ctx.org_unit_id.is_some() {
+        let class_ids = svc_academic::ops::scope::scoped_class_ids(ctx).await?;
+        Ok(query.filter(scheduled_lesson::Column::ClassId.is_in(class_ids)))
+    } else {
+        Ok(query)
+    }
 }
 
 #[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
@@ -103,6 +118,7 @@ pub async fn create(
     req: CreateLessonRequest,
 ) -> Result<scheduled_lesson::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleWrite).await?;
+    svc_academic::ops::scope::ensure_class_scope(ctx, &req.class_id).await?;
 
     validate_placement(ctx, &req.period_id, &req.class_id, &req.class_subject_id, &req.subject_id, &req.teacher_id, &req.time_slot_id, req.room_id.as_deref()).await?;
     let conflicts = check_conflicts_for_placement(
@@ -168,6 +184,7 @@ pub async fn update(
     ctx.permissions.check(&ctx.actor, Permission::ScheduleWrite).await?;
 
     let existing = get(ctx, lesson_id).await?;
+    svc_academic::ops::scope::ensure_class_scope(ctx, &existing.class_id).await?;
     let teacher_id = req.teacher_id.as_deref().unwrap_or(&existing.teacher_id);
     let time_slot_id = req.time_slot_id.as_deref().unwrap_or(&existing.time_slot_id);
     let day_of_week = req.day_of_week.unwrap_or(existing.day_of_week);

@@ -32,4 +32,5 @@ export interface OrganizationCommands {
   updateRegistrationSettings(cmd: Types.UpdateRegistrationSettingsCmd): Promise<unknown>;
   updateFinanceSettings(cmd: Types.UpdateFinanceSettingsCmd): Promise<unknown>;
   updateGradingSettings(cmd: Types.UpdateGradingSettingsCmd): Promise<unknown>;
+  organizationSelectOrgUnit(orgUnitId: string | null): Promise<unknown>;
 }

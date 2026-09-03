@@ -61,7 +61,7 @@
 </script>
 
 <Dialog bind:open {onOpenChange}>
-  <DialogContent class="sm:max-w-[425px]">
+  <DialogContent class="sm:max-w-106.25">
     <DialogHeader>
       <DialogTitle>{m.common_export()}</DialogTitle>
       <DialogDescription>

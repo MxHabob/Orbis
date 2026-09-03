@@ -22,6 +22,8 @@ pub async fn list(
 ) -> Result<Vec<behavior_record::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::BehaviorRead).await?;
 
+    svc_academic::ops::scope::ensure_enrollment_scope(ctx, enrollment_id).await?;
+
     let mut query = behavior_record::Entity::find()
         .filter(behavior_record::Column::OrgId.eq(&ctx.org_id))
         .filter(behavior_record::Column::EnrollmentId.eq(enrollment_id));
@@ -62,6 +64,7 @@ pub async fn submit_ai(
     req: SubmitAIBehaviorRequest,
 ) -> Result<behavior_record::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::BehaviorAI).await?;
+    svc_academic::ops::scope::ensure_enrollment_scope(ctx, &req.enrollment_id).await?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
@@ -132,7 +135,9 @@ pub async fn update(
 ) -> Result<behavior_record::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::BehaviorWrite).await?;
 
-    let existing = behavior_record::Entity::find_by_id(record_id.to_string())
+    let existing = behavior_record::Entity::find()
+        .filter(behavior_record::Column::Id.eq(record_id.to_string()))
+        .filter(behavior_record::Column::OrgId.eq(&ctx.org_id))
         .one(&ctx.db)
         .await?
         .ok_or_else(|| AppError::not_found("behavior_record", record_id))?;
@@ -175,7 +180,9 @@ pub async fn update(
 pub async fn delete(ctx: &ServiceContext, record_id: &str) -> Result<(), AppError> {
     ctx.permissions.check(&ctx.actor, Permission::BehaviorDelete).await?;
 
-    let existing = behavior_record::Entity::find_by_id(record_id.to_string())
+    let existing = behavior_record::Entity::find()
+        .filter(behavior_record::Column::Id.eq(record_id.to_string()))
+        .filter(behavior_record::Column::OrgId.eq(&ctx.org_id))
         .one(&ctx.db)
         .await?
         .ok_or_else(|| AppError::not_found("behavior_record", record_id))?;
@@ -195,3 +202,4 @@ pub async fn delete(ctx: &ServiceContext, record_id: &str) -> Result<(), AppErro
 
     Ok(())
 }
+

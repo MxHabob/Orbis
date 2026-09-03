@@ -41,6 +41,10 @@ export interface AcademicCommands {
   deleteGuardian(linkId: string): Promise<void>;
   listNotifications(): Promise<Types.Notification[]>;
   markRead(notificationId: string): Promise<Types.Notification>;
+  ensureClassScope(classId: string): Promise<void>;
+  ensureEnrollmentScope(enrollmentId: string): Promise<Types.Enrollment>;
+  scopedEnrollmentIds(): Promise<string[]>;
+  scopedClassIds(): Promise<string[]>;
   listSubjects(): Promise<Types.Subject[]>;
   getSubject(id: string): Promise<Types.Subject>;
   createSubject(req: Types.CreateSubjectPayload): Promise<Types.Subject>;

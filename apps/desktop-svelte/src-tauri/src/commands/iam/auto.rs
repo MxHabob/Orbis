@@ -13,6 +13,13 @@ pub async fn iam_audit_list(state: State<'_, Arc<AppState>>) -> CmdResult<serde_
 }
 
 #[tauri::command]
+pub async fn iam_auth_refresh_session(state: State<'_, Arc<AppState>>, refresh_token: String) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
+    let result = ops::auth::refresh_session(&ctx.db, &refresh_token).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
+}
+
+#[tauri::command]
 pub async fn iam_auth_change_password(state: State<'_, Arc<AppState>>, user_id: String, req: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
     let ctx = state.build_guarded_context().await.map_err(CommandError::from)?;
     let req_parsed = match req {

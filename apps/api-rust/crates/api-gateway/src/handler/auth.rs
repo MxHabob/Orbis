@@ -16,6 +16,30 @@ pub async fn post_login(
     ok!(r)
 }
 
+#[utoipa::path(post, path = "/api/auth/refresh")]
+pub async fn post_refresh(
+    State(state): State<AppState>,
+    Json(body): Json<serde_json::Value>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let refresh_token = body["refresh_token"].as_str().unwrap_or_default();
+    if refresh_token.is_empty() {
+        return Err((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({"success": false, "error": "Invalid refresh token"})),
+        ));
+    }
+
+    let result = svc_iam::ops::auth::refresh_session(&state.db, refresh_token)
+        .await
+        .map_err(|error| {
+            (
+                StatusCode::UNAUTHORIZED,
+                Json(json!({"success": false, "error": error.to_string()})),
+            )
+        })?;
+    ok!(result)
+}
+
 #[utoipa::path(post, path = "/api/auth/register")]
 pub async fn post_register(
     State(state): State<AppState>,

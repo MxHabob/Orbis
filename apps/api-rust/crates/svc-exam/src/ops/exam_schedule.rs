@@ -17,6 +17,7 @@ pub async fn list(
     filter: Option<UniversalFilter>,
 ) -> Result<Vec<exam_schedule::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ExamSessionRead).await?;
+    crate::ops::session::get(ctx, session_id).await?;
     let mut query = exam_schedule::Entity::find()
         .filter(exam_schedule::Column::ExamSessionId.eq(session_id));
 
@@ -43,6 +44,7 @@ pub async fn create(
     room_ids: Option<String>,
 ) -> Result<exam_schedule::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ExamSessionWrite).await?;
+    crate::ops::session::get(ctx, &exam_session_id).await?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
@@ -81,6 +83,7 @@ pub async fn update(
     let existing = exam_schedule::Entity::find_by_id(schedule_id.to_string())
         .one(&ctx.db).await?
         .ok_or_else(|| AppError::not_found("exam_schedule", schedule_id))?;
+    crate::ops::session::get(ctx, &existing.exam_session_id).await?;
 
     let mut active: exam_schedule::ActiveModel = existing.into();
     if let Some(d) = exam_date { active.exam_date = Set(d); }
@@ -96,6 +99,7 @@ pub async fn delete(ctx: &ServiceContext, schedule_id: &str) -> Result<(), AppEr
     let existing = exam_schedule::Entity::find_by_id(schedule_id.to_string())
         .one(&ctx.db).await?
         .ok_or_else(|| AppError::not_found("exam_schedule", schedule_id))?;
+    crate::ops::session::get(ctx, &existing.exam_session_id).await?;
     existing.delete(&ctx.db).await?;
     Ok(())
 }
