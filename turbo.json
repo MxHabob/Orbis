@@ -1,5 +1,4 @@
 {
-  "$schema": "https://turborepo.dev/schema.json",
   "globalDependencies": ["**/.env", ".env.example"],
   "ui": "stream",
   "tasks": {

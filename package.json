@@ -33,10 +33,6 @@
     "format": "biome format --write .",
     "lint": "turbo run lint && manypkg check",
     "typecheck": "turbo run typecheck",
-    "docker:up": "docker compose -f docker-compose.local.yml up -d",
-    "docker:down": "docker compose -f docker-compose.local.yml down",
-    "docker:reset": "docker compose -f docker-compose.local.yml down -v",
-    "docker:logs": "docker compose -f docker-compose.local.yml logs -f",
     "cli": "cargo run --manifest-path apps/cli/Cargo.toml",
     "cli:init": "cargo run --manifest-path apps/cli/Cargo.toml -- init"
   },
