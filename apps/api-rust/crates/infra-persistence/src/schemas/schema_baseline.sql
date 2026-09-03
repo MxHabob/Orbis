@@ -1669,9 +1669,6 @@ CREATE TABLE IF NOT EXISTS documents (
   FOREIGN KEY (org_id) REFERENCES organizations(id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_documents_archive_cursor ON documents(org_id, category, created_at, id);
-CREATE INDEX IF NOT EXISTS idx_documents_archive_type ON documents(org_id, asset_type, created_at, id);
-
 CREATE TABLE IF NOT EXISTS template_categories (
   id           TEXT PRIMARY KEY,
   org_id       TEXT NOT NULL,
