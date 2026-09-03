@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@svar-ui/svelte-grid": "^2.0.0",
-    "@orbis/ui-svelte": "workspace:*",
+    "@orbis/ui": "workspace:*",
     "@lucide/svelte": "^1.33.0"
   },
   "peerDependencies": {
