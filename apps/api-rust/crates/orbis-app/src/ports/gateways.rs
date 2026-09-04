@@ -7,11 +7,7 @@ pub trait LlmGatewayPort: Send + Sync {
     async fn generate_text(&self, ctx: &RequestContext, model: &str, system_prompt: &str, user_prompt: &str, temperature: f64) -> Result<String, DomainError>;
 }
 
-#[async_trait]
-pub trait ReportEnginePort: Send + Sync {
-    async fn generate_pdf(&self, ctx: &RequestContext, layout_body: Option<&str>, template_body: &str, data: &serde_json::Value) -> Result<Vec<u8>, DomainError>;
-    async fn generate_excel(&self, ctx: &RequestContext, layout_body: Option<&str>, template_body: &str, data: &serde_json::Value) -> Result<Vec<u8>, DomainError>;
-}
+
 
 #[async_trait]
 pub trait PaymentGatewayPort: Send + Sync {

@@ -41,7 +41,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let integration_repo = Arc::new(orbis_infra::repositories::integration_repos::IntegrationRepoImpl { db: db.clone() });
     let ai_repo = Arc::new(orbis_infra::repositories::ai_repos::AiRepoImpl { db: db.clone() });
     let workflow_repo = Arc::new(orbis_infra::repositories::workflow_repos::WorkflowRepoImpl { db: db.clone() });
-    let report_repo = Arc::new(orbis_infra::repositories::report_repos::ReportRepoImpl { db: db.clone() });
     
     let autopilot_engine = Arc::new(orbis_app::autopilot::engine::AutopilotEngine {
         policy_repo: Arc::new(orbis_infra::repositories::policy_repo::PgPolicyRepo { db: db.clone() }),
@@ -56,6 +55,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let integration_resolver = Arc::new(orbis_infra::adapters::resolver::IntegrationResolver::new(integration_repo.clone()));
     let permission_checker = Arc::new(DbPermissionChecker::new(db.clone()));
+
+    // ── Reporting System Wiring ─────────────────────────────────
+    use orbis_infra::repositories::report_repos::*;
+    use orbis_infra::adapters::report_adapter::*;
+    use orbis_app::ports::reporting::{DataProviderRegistry, RendererRegistry};
+
+    let report_definition_repo = Arc::new(ReportDefinitionRepoImpl { db: db.clone() });
+    let report_template_repo = Arc::new(ReportTemplateRepoImpl { db: db.clone() });
+    let report_job_repo = Arc::new(ReportJobRepoImpl { db: db.clone() });
+    let report_audit_repo = Arc::new(ReportAuditRepoImpl { db: db.clone() });
+
+    // Build data provider registry — register all available providers
+    let mut provider_registry = InMemoryDataProviderRegistry::new();
+    provider_registry.register_provider(Box::new(FeeCollectionDataProvider { db: db.clone() }));
+    provider_registry.register_provider(Box::new(StudentListDataProvider { db: db.clone() }));
+    let provider_registry = Arc::new(provider_registry);
+
+    // Build renderer registry — register all available renderers
+    let mut renderer_registry = InMemoryRendererRegistry::new();
+    renderer_registry.register_renderer(Box::new(DataOnlyRenderer));
+    renderer_registry.register_renderer(Box::new(JsonRenderer));
+    renderer_registry.register_renderer(Box::new(CsvRenderer));
+    renderer_registry.register_renderer(Box::new(HtmlRenderer));
+    renderer_registry.register_renderer(Box::new(PdfRenderer));
+    let renderer_registry = Arc::new(renderer_registry);
+
+    let org_context_resolver = Arc::new(DbOrgContextResolver { db: db.clone() });
 
     // Build AppState
     let state = AppState {
@@ -94,7 +120,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         integration_repo,
         ai_repo,
         workflow_repo,
-        report_repo,
         currency_repo: finance_repo.clone(),
         policy_repo,
         event_bus,
@@ -102,6 +127,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         password_hasher,
         integration_resolver,
         permission_checker,
+        // ── Reporting System ────────────────────────────────────
+        report_definition_repo,
+        report_template_repo,
+        report_job_repo,
+        report_audit_repo,
+        report_provider_registry: provider_registry,
+        report_renderer_registry: renderer_registry,
+        report_org_context_resolver: org_context_resolver,
     };
 
     // Build Axum Router

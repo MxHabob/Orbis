@@ -1,11 +1,11 @@
 use async_trait::async_trait;
-use orbis_app::ports::gateways::{LlmGatewayPort, ReportEnginePort, PaymentGatewayPort, SurveillancePort};
+use orbis_app::ports::gateways::{LlmGatewayPort, PaymentGatewayPort, SurveillancePort};
 use orbis_app::ports::repositories::IntegrationRepository;
 use orbis_domain::errors::DomainError;
 use orbis_app::context::RequestContext;
 use std::sync::Arc;
 
-use crate::adapters::{gemini::GeminiAdapter, mada::MadaAdapter, moyasar::MoyasarAdapter, hikvision::HikvisionAdapter, authen::AuthenAdapter, report_adapter::TeraReportAdapter};
+use crate::adapters::{gemini::GeminiAdapter, mada::MadaAdapter, moyasar::MoyasarAdapter, hikvision::HikvisionAdapter, authen::AuthenAdapter};
 
 pub struct IntegrationResolver {
     pub integration_repo: Arc<dyn IntegrationRepository>,
@@ -101,18 +101,6 @@ impl SurveillancePort for IntegrationResolver {
     }
 }
 
-#[async_trait]
-impl ReportEnginePort for IntegrationResolver {
-    async fn generate_pdf(&self, ctx: &RequestContext, layout_body: Option<&str>, template_body: &str, data: &serde_json::Value) -> Result<Vec<u8>, DomainError> {
-        let adapter = TeraReportAdapter::new();
-        adapter.generate_pdf(ctx, layout_body, template_body, data).await
-    }
-
-    async fn generate_excel(&self, ctx: &RequestContext, layout_body: Option<&str>, template_body: &str, data: &serde_json::Value) -> Result<Vec<u8>, DomainError> {
-        let adapter = TeraReportAdapter::new();
-        adapter.generate_excel(ctx, layout_body, template_body, data).await
-    }
-}
 
 use orbis_app::ports::gateways::NotificationPort;
 use crate::adapters::{email::EmailAdapter, whatsapp::WhatsAppAdapter};

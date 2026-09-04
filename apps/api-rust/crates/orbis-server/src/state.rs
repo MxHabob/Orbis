@@ -1,6 +1,8 @@
 use std::sync::Arc;
 use sea_orm::DatabaseConnection;
-use orbis_app::ports::repositories::{OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository, SessionRepository, AcademicYearRepository, AcademicPeriodRepository, PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository, EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository, ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository, ExamSessionRepository, ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository, ExamProctorRepository, AccountRepository, JournalEntryRepository, FeeTemplateRepository, StudentFeeRepository, PaymentRepository, DocumentRepository, IntegrationRepository, AiRepository, WorkflowRepository, ReportRepository, CurrencyRepository, PolicyRepository};
+use orbis_app::ports::repositories::{OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository, SessionRepository, AcademicYearRepository, AcademicPeriodRepository, PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository, EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository, ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository, ExamSessionRepository, ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository, ExamProctorRepository, AccountRepository, JournalEntryRepository, FeeTemplateRepository, StudentFeeRepository, PaymentRepository, DocumentRepository, IntegrationRepository, AiRepository, WorkflowRepository, CurrencyRepository, PolicyRepository};
+use orbis_app::ports::reporting::{ReportDefinitionRepository, ReportTemplateRepository, ReportJobRepository, ReportAuditRepository, DataProviderRegistry, RendererRegistry};
+use orbis_app::usecases::report::generate_report::OrgContextResolver;
 use orbis_app::ports::event_bus::EventBus;
 use orbis_app::ports::security::{TokenService, PasswordHasher};
 use orbis_app::ports::iam::PermissionCheckerPort;
@@ -42,7 +44,6 @@ pub struct AppState {
     pub integration_repo: Arc<dyn IntegrationRepository>,
     pub ai_repo: Arc<dyn AiRepository>,
     pub workflow_repo: Arc<dyn WorkflowRepository>,
-    pub report_repo: Arc<dyn ReportRepository>,
     pub currency_repo: Arc<dyn CurrencyRepository>,
     pub policy_repo: Arc<dyn PolicyRepository>,
     pub event_bus: Arc<dyn EventBus>,
@@ -50,4 +51,12 @@ pub struct AppState {
     pub password_hasher: Arc<dyn PasswordHasher>,
     pub integration_resolver: Arc<orbis_infra::adapters::resolver::IntegrationResolver>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
+    // ── Reporting System ────────────────────────────────────────
+    pub report_definition_repo: Arc<dyn ReportDefinitionRepository>,
+    pub report_template_repo: Arc<dyn ReportTemplateRepository>,
+    pub report_job_repo: Arc<dyn ReportJobRepository>,
+    pub report_audit_repo: Arc<dyn ReportAuditRepository>,
+    pub report_provider_registry: Arc<dyn DataProviderRegistry>,
+    pub report_renderer_registry: Arc<dyn RendererRegistry>,
+    pub report_org_context_resolver: Arc<dyn OrgContextResolver>,
 }

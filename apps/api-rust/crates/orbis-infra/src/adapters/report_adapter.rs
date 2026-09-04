@@ -16,7 +16,6 @@ use orbis_app::usecases::report::generate_report::OrgContextResolver;
 use orbis_domain::entities::report::*;
 use orbis_domain::errors::DomainError;
 use std::collections::HashMap;
-use std::sync::Arc;
 use uuid::Uuid;
 use sea_orm::DatabaseConnection;
 
@@ -428,8 +427,8 @@ impl ReportDataProvider for FeeCollectionDataProvider {
         &self,
         org_id: Uuid,
         org_context: &OrgReportContext,
-        parameters: &HashMap<String, ParamValue>,
-        locale: &ReportLocale,
+        _parameters: &HashMap<String, ParamValue>,
+        _locale: &ReportLocale,
     ) -> Result<ReportDataset, DomainError> {
         use sea_orm::{ConnectionTrait, Statement};
 

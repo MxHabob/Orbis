@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use orbis_app::ports::reporting::*;
 use orbis_domain::entities::report::*;
 use orbis_domain::errors::DomainError;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, Set, Condition};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, Set};
 use uuid::Uuid;
 
 use crate::models::report::{
@@ -48,19 +48,7 @@ fn model_to_definition(m: report_definition::Model) -> ReportDefinition {
     }
 }
 
-impl ReportDomain {
-    pub fn from_str(s: &str) -> Self {
-        match s {
-            "finance" => Self::Finance,
-            "academic" => Self::Academic,
-            "exam" => Self::Exam,
-            "attendance" => Self::Attendance,
-            "staff" => Self::Staff,
-            "system" => Self::System,
-            _ => Self::System,
-        }
-    }
-}
+
 
 #[async_trait]
 impl ReportDefinitionRepository for ReportDefinitionRepoImpl {

@@ -78,6 +78,19 @@ impl std::fmt::Display for ReportDomain {
     }
 }
 
+impl ReportDomain {
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "finance" => Self::Finance,
+            "academic" => Self::Academic,
+            "exam" => Self::Exam,
+            "attendance" => Self::Attendance,
+            "staff" => Self::Staff,
+            _ => Self::System,
+        }
+    }
+}
+
 // ── Parameter Schema ────────────────────────────────────────────
 
 /// Declarative definition of a single report parameter.

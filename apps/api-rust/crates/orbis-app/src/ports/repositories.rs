@@ -215,13 +215,6 @@ pub trait WorkflowRepository: Send + Sync {
     async fn save_execution(&self, execution: &orbis_domain::entities::workflow::WorkflowExecution) -> Result<(), DomainError>;
 }
 
-#[async_trait]
-pub trait ReportRepository: Send + Sync {
-    async fn find_template_by_id(&self, id: Uuid) -> Result<Option<orbis_domain::entities::report::ReportTemplate>, DomainError>;
-    async fn find_job_by_id(&self, id: Uuid) -> Result<Option<orbis_domain::entities::report::ReportJob>, DomainError>;
-    async fn save_job(&self, job: &orbis_domain::entities::report::ReportJob) -> Result<(), DomainError>;
-    async fn update_job_status(&self, job_id: Uuid, status: &str, file_path: Option<String>) -> Result<(), DomainError>;
-}
 
 #[async_trait]
 pub trait AcademicPeriodRepository: Send + Sync {
