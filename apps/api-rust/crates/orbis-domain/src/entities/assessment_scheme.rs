@@ -9,7 +9,6 @@ pub struct AssessmentScheme {
     pub name: String,
     pub description: Option<String>,
     pub max_score: f64,
-    pub pass_score: f64,
     pub formula: Option<serde_json::Value>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,

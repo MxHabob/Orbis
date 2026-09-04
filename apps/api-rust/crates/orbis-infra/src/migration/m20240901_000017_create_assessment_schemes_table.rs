@@ -16,7 +16,6 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(AssessmentSchemes::Name).string().not_null())
                     .col(ColumnDef::new(AssessmentSchemes::Description).string().null())
                     .col(ColumnDef::new(AssessmentSchemes::MaxScore).double().not_null())
-                    .col(ColumnDef::new(AssessmentSchemes::PassScore).double().not_null())
                     .col(ColumnDef::new(AssessmentSchemes::Formula).json().null())
                     .col(ColumnDef::new(AssessmentSchemes::CreatedAt).timestamp_with_time_zone().not_null())
                     .col(ColumnDef::new(AssessmentSchemes::UpdatedAt).timestamp_with_time_zone().not_null())
@@ -40,7 +39,6 @@ pub enum AssessmentSchemes {
     Name,
     Description,
     MaxScore,
-    PassScore,
     Formula,
     CreatedAt,
     UpdatedAt,

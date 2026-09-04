@@ -18,7 +18,6 @@ impl CreateAssessmentSchemeUseCase {
         name: String,
         description: Option<String>,
         max_score: f64,
-        pass_score: f64,
         formula: Option<serde_json::Value>,
     ) -> Result<AssessmentScheme, DomainError> {
         let now = Utc::now();
@@ -30,7 +29,6 @@ impl CreateAssessmentSchemeUseCase {
             name,
             description,
             max_score,
-            pass_score,
             formula,
             created_at: now,
             updated_at: now,

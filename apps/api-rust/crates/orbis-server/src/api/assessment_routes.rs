@@ -17,7 +17,6 @@ pub struct CreateAssessmentSchemeRequest {
     pub name: String,
     pub description: Option<String>,
     pub max_score: f64,
-    pub pass_score: f64,
     pub formula: Option<serde_json::Value>,
 }
 
@@ -69,7 +68,7 @@ async fn create_assessment_scheme(
         scheme_repo: state.assessment_scheme_repo.clone(),
     };
 
-    match use_case.execute(&ctx, payload.org_id, payload.name, payload.description, payload.max_score, payload.pass_score, payload.formula).await {
+    match use_case.execute(&ctx, payload.org_id, payload.name, payload.description, payload.max_score, payload.formula).await {
         Ok(scheme) => Ok(Json(AssessmentSchemeResponse {
             id: scheme.id,
         })),

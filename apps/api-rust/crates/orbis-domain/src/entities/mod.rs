@@ -11,6 +11,7 @@ pub mod class;
 pub mod class_subject;
 pub mod enrollment;
 pub mod student_guardian;
+pub mod pass_fail_policy;
 pub mod room;
 pub mod time_slot;
 pub mod scheduled_lesson;
