@@ -1,0 +1,10 @@
+pub mod org_repo;
+pub mod org_unit_repo;
+pub mod user_repo;
+pub mod person_repo;
+pub mod session_repo;
+pub mod calendar_repos;
+pub mod academic_repos;
+pub mod student_repos;
+pub mod scheduling_repos;
+pub mod assessment_repos;

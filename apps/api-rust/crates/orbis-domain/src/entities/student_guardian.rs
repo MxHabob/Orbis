@@ -1,0 +1,29 @@
+use uuid::Uuid;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StudentGuardian {
+    pub id: Uuid,
+    pub student_id: Uuid,
+    pub guardian_id: Uuid,
+    pub relationship: String,
+    pub relationship_ar: Option<String>,
+    pub is_primary: bool,
+    pub is_emergency_contact: bool,
+    pub is_authorized_pickup: bool,
+    pub can_view_grades: bool,
+    pub can_view_attendance: bool,
+    pub can_view_behavior: bool,
+    pub can_view_finance: bool,
+    pub can_view_schedule: bool,
+    pub can_receive_notifications: bool,
+    pub is_payer: bool,
+    pub payment_share_percent: Option<f64>,
+    pub occupation: Option<String>,
+    pub employer: Option<String>,
+    pub work_phone: Option<String>,
+    pub notes: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}

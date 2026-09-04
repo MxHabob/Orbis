@@ -1,0 +1,35 @@
+use uuid::Uuid;
+use serde::{Serialize, Deserialize};
+use chrono::{DateTime, Utc};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum DomainEvent {
+    OrganizationCreated { org_id: Uuid, name: String, timestamp: DateTime<Utc> },
+    OrganizationUpdated { org_id: Uuid, timestamp: DateTime<Utc> },
+    OrgUnitCreated { unit_id: Uuid, org_id: Uuid, parent_id: Option<Uuid>, unit_type: String, timestamp: DateTime<Utc> },
+    OrgUnitUpdated { unit_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    UserCreated { user_id: Uuid, person_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    UserLoggedIn { user_id: Uuid, org_id: Uuid, session_id: Uuid, timestamp: DateTime<Utc> },
+    UserRegistered { user_id: Uuid, email: String, org_id: Option<Uuid> },
+    UserEmailVerified { user_id: Uuid },
+    AcademicYearCreated { year_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    AcademicPeriodCreated { period_id: Uuid, year_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    
+    SubjectCreated { subject_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    ClassCreated { class_id: Uuid, org_id: Uuid, period_id: Uuid, timestamp: DateTime<Utc> },
+    ClassSubjectAssigned { class_subject_id: Uuid, class_id: Uuid, subject_id: Uuid, timestamp: DateTime<Utc> },
+
+    StudentEnrolled { enrollment_id: Uuid, student_id: Uuid, class_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    StudentWithdrawn { enrollment_id: Uuid, student_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    GuardianAssigned { student_guardian_id: Uuid, student_id: Uuid, guardian_id: Uuid, timestamp: DateTime<Utc> },
+
+    RoomCreated { room_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    TimeSlotCreated { time_slot_id: Uuid, period_id: Uuid, timestamp: DateTime<Utc> },
+    LessonScheduled { lesson_id: Uuid, class_subject_id: Uuid, time_slot_id: Uuid, timestamp: DateTime<Utc> },
+
+    GradeRecorded { grade_id: Uuid, student_id: Uuid, class_subject_id: Uuid, score: f64, timestamp: DateTime<Utc> },
+    AttendanceMarked { attendance_id: Uuid, student_id: Uuid, class_id: Uuid, status: String, timestamp: DateTime<Utc> },
+    BehaviorLogged { record_id: Uuid, student_id: Uuid, record_type: String, points: i32, timestamp: DateTime<Utc> },
+
+    PaymentProcessed { transaction_id: Uuid, amount: u64, org_id: Uuid },
+}

@@ -1,0 +1,7 @@
+pub mod iam_routes;
+pub mod org_routes;
+pub mod calendar_routes;
+pub mod academic_routes;
+pub mod student_routes;
+pub mod scheduling_routes;
+pub mod assessment_routes;

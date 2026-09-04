@@ -159,7 +159,7 @@ pub fn run() {
                 let _ = webview.set_focus();
             }
         })
-        .invoke_handler(crate::commands::auto_register::generate_handlers())
+        .invoke_handler(crate::commands::generate_handlers())
         .setup(move |app| {
             // Add updater plugin conditionally for desktop
             #[cfg(desktop)]
@@ -176,17 +176,9 @@ pub fn run() {
                 let state = AppState::init(&app_data_dir)
                     .await
                     .map_err(|e| format!("Database init failed: {e}"))?;
-                // Run docforge template database migrations on the current year's DB
-                let db = state.db();
-                docforge_orbis::schema::migrate_template_schema(&db)
-                    .await
-                    .map_err(|e| format!("Template schema migration failed: {e}"))?;
                 Ok::<AppState, String>(state)
             })?;
             app.manage(Arc::new(app_state));
-            // Create batch job manager state
-            let batch_job_manager = Arc::new(docforge_orbis::batch::BatchJobManager::new());
-            app.manage(batch_job_manager);
             let app_handle = app.handle().clone();
             let initial_url = WebviewUrl::App("index.html".into());
             // Clone app_handle before it gets moved into closures
