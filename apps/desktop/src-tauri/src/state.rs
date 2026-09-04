@@ -26,6 +26,7 @@ pub struct AppState {
     pub assessment_scheme_repo: Arc<dyn AssessmentSchemeRepository>,
     pub grade_repo: Arc<dyn GradeRepository>,
     pub attendance_repo: Arc<dyn AttendanceRepository>,
+    pub behavior_record_repo: Arc<dyn BehaviorRecordRepository>,
     pub exam_session_repo: Arc<dyn ExamSessionRepository>,
     pub exam_schedule_repo: Arc<dyn ExamScheduleRepository>,
     pub seating_number_repo: Arc<dyn SeatingNumberRepository>,
