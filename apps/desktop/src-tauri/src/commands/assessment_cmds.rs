@@ -30,9 +30,10 @@ pub async fn create_assessment_scheme(
 
     let usecase = CreateAssessmentSchemeUseCase {
         scheme_repo: state.assessment_scheme_repo.clone(),
+        permission_checker: state.permission_checker.clone(),
     };
-
-    match usecase.execute(&ctx, parsed_org_id, name, description, max_score, pass_score, formula).await {
+    
+    match usecase.execute(&ctx, parsed_org_id, name, description, max_score, formula).await {
         Ok(scheme) => Ok(scheme.id.to_string()),
         Err(e) => Err(e.to_string()),
     }
@@ -61,6 +62,7 @@ pub async fn record_grade(
     let usecase = RecordGradeUseCase {
         grade_repo: state.grade_repo.clone(),
         event_bus: state.event_bus.clone(),
+        permission_checker: state.permission_checker.clone(),
     };
 
     match usecase.execute(&ctx, parsed_student_id, parsed_class_subject_id, parsed_scheme_id, score, is_excused, notes).await {

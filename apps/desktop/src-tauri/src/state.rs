@@ -1,8 +1,9 @@
 use std::sync::Arc;
 use sea_orm::DatabaseConnection;
-use orbis_app::ports::repositories::{OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository, SessionRepository, AcademicYearRepository, AcademicPeriodRepository, PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository, EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository, ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository, ExamSessionRepository, ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository, ExamProctorRepository, AccountRepository, JournalEntryRepository, FeeTemplateRepository, StudentFeeRepository, PaymentRepository, DocumentRepository, IntegrationRepository, AiRepository, WorkflowRepository, ReportRepository};
+use orbis_app::ports::repositories::{OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository, SessionRepository, AcademicYearRepository, AcademicPeriodRepository, PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository, EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository, ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository, ExamSessionRepository, ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository, ExamProctorRepository, AccountRepository, JournalEntryRepository, FeeTemplateRepository, StudentFeeRepository, PaymentRepository, DocumentRepository, IntegrationRepository, AiRepository, WorkflowRepository, ReportRepository, CurrencyRepository, PolicyRepository};
 use orbis_app::ports::event_bus::EventBus;
 use orbis_app::ports::security::{TokenService, PasswordHasher};
+use orbis_app::ports::iam::PermissionCheckerPort;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -42,11 +43,14 @@ pub struct AppState {
     pub ai_repo: Arc<dyn AiRepository>,
     pub workflow_repo: Arc<dyn WorkflowRepository>,
     pub report_repo: Arc<dyn ReportRepository>,
+    pub currency_repo: Arc<dyn CurrencyRepository>,
+    pub policy_repo: Arc<dyn PolicyRepository>,
     pub event_bus: Arc<dyn EventBus>,
     pub token_service: Arc<dyn TokenService>,
     pub password_hasher: Arc<dyn PasswordHasher>,
     // Plug and Play Gateway / Resolver
     pub integration_resolver: Arc<orbis_infra::adapters::resolver::IntegrationResolver>,
+    pub permission_checker: Arc<dyn PermissionCheckerPort>,
 }
 
 impl AppState {
@@ -77,6 +81,10 @@ impl AppState {
         let workflow_repo = Arc::new(orbis_infra::repositories::workflow_repos::WorkflowRepoImpl { db: db.clone() });
         let report_repo = Arc::new(orbis_infra::repositories::report_repos::ReportRepoImpl { db: db.clone() });
         let policy_repo = Arc::new(orbis_infra::repositories::policy_repo::PgPolicyRepo { db: db.clone() });
+        
+        let permission_checker = Arc::new(orbis_infra::adapters::iam::db_permission_checker::DbPermissionChecker {
+            db: db.clone(),
+        });
         
         let autopilot_engine = Arc::new(orbis_app::autopilot::engine::AutopilotEngine {
             policy_repo: policy_repo.clone(),
@@ -121,16 +129,19 @@ impl AppState {
             journal_entry_repo: finance_repo.clone(),
             fee_template_repo: finance_repo.clone(),
             student_fee_repo: finance_repo.clone(),
-            payment_repo: finance_repo,
+            payment_repo: finance_repo.clone(),
             document_repo,
             integration_repo,
             ai_repo,
             workflow_repo,
             report_repo,
+            currency_repo: finance_repo.clone(),
+            policy_repo,
             event_bus,
             token_service,
             password_hasher,
             integration_resolver,
+            permission_checker,
         })
     }
 }

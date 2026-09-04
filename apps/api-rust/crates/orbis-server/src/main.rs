@@ -89,7 +89,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         journal_entry_repo: finance_repo.clone(),
         fee_template_repo: finance_repo.clone(),
         student_fee_repo: finance_repo.clone(),
-        payment_repo: finance_repo,
+        payment_repo: finance_repo.clone(),
         document_repo,
         integration_repo,
         ai_repo,

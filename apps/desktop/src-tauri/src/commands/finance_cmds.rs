@@ -63,14 +63,19 @@ pub async fn create_fee_template(
 #[tauri::command]
 pub async fn generate_student_fee(
     org_id: String,
-    enrollment_id: String,
+    student_id: String,
+    enrollment_id: Option<String>,
     fee_template_id: String,
     discount_amount: f64,
     due_date: String,
     state: State<'_, AppState>,
 ) -> Result<String, String> {
     let parsed_org_id = Uuid::parse_str(&org_id).map_err(|_| "Invalid org ID")?;
-    let enr_id = Uuid::parse_str(&enrollment_id).map_err(|_| "Invalid enrollment ID")?;
+    let parsed_student_id = Uuid::parse_str(&student_id).map_err(|_| "Invalid student ID")?;
+    let enr_id = match enrollment_id {
+        Some(id) => Some(Uuid::parse_str(&id).map_err(|_| "Invalid enrollment ID")?),
+        None => None,
+    };
     let fee_tpl_id = Uuid::parse_str(&fee_template_id).map_err(|_| "Invalid fee template ID")?;
     let d_date = NaiveDate::parse_from_str(&due_date, "%Y-%m-%d").map_err(|_| "Invalid date")?;
 
@@ -82,7 +87,7 @@ pub async fn generate_student_fee(
         event_bus: state.event_bus.clone()
     };
     
-    match usecase.execute(&ctx, parsed_org_id, enr_id, fee_tpl_id, discount_amount, d_date).await {
+    match usecase.execute(&ctx, parsed_org_id, parsed_student_id, enr_id, fee_tpl_id, discount_amount, d_date).await {
         Ok(fee) => Ok(fee.id.to_string()),
         Err(e) => Err(e.to_string()),
     }
@@ -116,6 +121,10 @@ pub async fn process_payment(
         event_bus: state.event_bus.clone(),
         payment_gateway: state.integration_resolver.clone(),
         notification_gateway: state.integration_resolver.clone(),
+        permission_checker: state.permission_checker.clone(),
+        currency_repo: state.currency_repo.clone(),
+        policy_repo: state.policy_repo.clone(),
+        account_repo: state.account_repo.clone(),
     };
     
     match usecase.execute(&ctx, parsed_org_id, parsed_fee_id, acc_id, amount, method, reference, source).await {
