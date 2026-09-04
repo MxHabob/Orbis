@@ -9,3 +9,4 @@ pub mod scheduling;
 pub mod assessment;
 pub mod exam;
 pub mod finance;
+pub mod document;

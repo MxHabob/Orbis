@@ -7,6 +7,7 @@ pub mod scheduling_cmds;
 pub mod assessment_cmds;
 pub mod exam_cmds;
 pub mod finance_cmds;
+pub mod document_cmds;
 
 use tauri::generate_handler;
 
@@ -38,5 +39,7 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         finance_cmds::create_fee_template,
         finance_cmds::generate_student_fee,
         finance_cmds::process_payment,
+        document_cmds::upload_document,
+        document_cmds::delete_document,
     ]
 }

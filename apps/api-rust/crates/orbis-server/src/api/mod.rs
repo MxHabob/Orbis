@@ -7,3 +7,4 @@ pub mod scheduling_routes;
 pub mod assessment_routes;
 pub mod exam_routes;
 pub mod finance_routes;
+pub mod document_routes;

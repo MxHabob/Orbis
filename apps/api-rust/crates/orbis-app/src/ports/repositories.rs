@@ -29,6 +29,7 @@ use orbis_domain::entities::journal_entry::JournalEntry;
 use orbis_domain::entities::fee_template::FeeTemplate;
 use orbis_domain::entities::student_fee::StudentFee;
 use orbis_domain::entities::payment::Payment;
+use orbis_domain::entities::document::Document;
 use orbis_domain::errors::DomainError;
 use uuid::Uuid;
 
@@ -174,6 +175,13 @@ pub trait AcademicYearRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<AcademicYear>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<AcademicYear>, DomainError>;
     async fn save(&self, year: &AcademicYear) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait DocumentRepository: Send + Sync {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<Document>, DomainError>;
+    async fn save(&self, document: &Document) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 
 #[async_trait]

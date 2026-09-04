@@ -10,3 +10,4 @@ pub mod scheduling_repos;
 pub mod assessment_repos;
 pub mod exam_repos;
 pub mod finance_repos;
+pub mod document_repos;

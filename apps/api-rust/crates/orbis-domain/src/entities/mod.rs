@@ -28,3 +28,4 @@ pub mod journal_entry;
 pub mod fee_template;
 pub mod student_fee;
 pub mod payment;
+pub mod document;

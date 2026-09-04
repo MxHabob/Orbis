@@ -36,6 +36,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let assessment_repo = Arc::new(orbis_infra::repositories::assessment_repos::AssessmentRepoImpl { db: db.clone() });
     let exam_repo = Arc::new(orbis_infra::repositories::exam_repos::ExamRepoImpl { db: db.clone() });
     let finance_repo = Arc::new(orbis_infra::repositories::finance_repos::FinanceRepoImpl { db: db.clone() });
+    let document_repo = Arc::new(orbis_infra::repositories::document_repos::DocumentRepoImpl { db: db.clone() });
     let event_bus = Arc::new(MemoryEventBus);
     let token_service = Arc::new(JwtTokenService::new("super-secret-key-for-dev".to_string()));
     let password_hasher = Arc::new(BcryptHasher);
@@ -73,6 +74,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         fee_template_repo: finance_repo.clone(),
         student_fee_repo: finance_repo.clone(),
         payment_repo: finance_repo,
+        document_repo,
         event_bus,
         token_service,
         password_hasher,
