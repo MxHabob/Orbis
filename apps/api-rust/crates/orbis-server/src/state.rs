@@ -1,8 +1,9 @@
 use std::sync::Arc;
 use sea_orm::DatabaseConnection;
-use orbis_app::ports::repositories::{OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository, SessionRepository, AcademicYearRepository, AcademicPeriodRepository, PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository, EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository, ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository, ExamSessionRepository, ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository, ExamProctorRepository, AccountRepository, JournalEntryRepository, FeeTemplateRepository, StudentFeeRepository, PaymentRepository, DocumentRepository, IntegrationRepository, AiRepository, WorkflowRepository, ReportRepository};
+use orbis_app::ports::repositories::{OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository, SessionRepository, AcademicYearRepository, AcademicPeriodRepository, PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository, EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository, ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository, ExamSessionRepository, ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository, ExamProctorRepository, AccountRepository, JournalEntryRepository, FeeTemplateRepository, StudentFeeRepository, PaymentRepository, DocumentRepository, IntegrationRepository, AiRepository, WorkflowRepository, ReportRepository, CurrencyRepository, PolicyRepository};
 use orbis_app::ports::event_bus::EventBus;
 use orbis_app::ports::security::{TokenService, PasswordHasher};
+use orbis_app::ports::iam::PermissionCheckerPort;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -42,9 +43,11 @@ pub struct AppState {
     pub ai_repo: Arc<dyn AiRepository>,
     pub workflow_repo: Arc<dyn WorkflowRepository>,
     pub report_repo: Arc<dyn ReportRepository>,
+    pub currency_repo: Arc<dyn CurrencyRepository>,
+    pub policy_repo: Arc<dyn PolicyRepository>,
     pub event_bus: Arc<dyn EventBus>,
     pub token_service: Arc<dyn TokenService>,
     pub password_hasher: Arc<dyn PasswordHasher>,
-    // Plug and Play Gateway / Resolver
     pub integration_resolver: Arc<orbis_infra::adapters::resolver::IntegrationResolver>,
+    pub permission_checker: Arc<dyn PermissionCheckerPort>,
 }

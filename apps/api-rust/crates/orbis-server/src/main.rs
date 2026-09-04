@@ -4,6 +4,7 @@ use orbis_server::state::AppState;
 use orbis_infra::repositories::{org_repo::OrgRepoImpl, user_repo::UserRepoImpl, person_repo::PersonRepoImpl, session_repo::SessionRepoImpl};
 use orbis_infra::event_bus::MemoryEventBus;
 use orbis_infra::security::{jwt::JwtTokenService, bcrypt::BcryptHasher};
+use orbis_infra::adapters::iam::db_permission_checker::DbPermissionChecker;
 use sea_orm::Database;
 use std::sync::Arc;
 use tokio::net::TcpListener;
@@ -45,6 +46,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let autopilot_engine = Arc::new(orbis_app::autopilot::engine::AutopilotEngine {
         policy_repo: Arc::new(orbis_infra::repositories::policy_repo::PgPolicyRepo { db: db.clone() }),
     });
+    let policy_repo = Arc::new(orbis_infra::repositories::policy_repo::PgPolicyRepo { db: db.clone() });
 
     let event_bus = Arc::new(MemoryEventBus {
         workflow_engine: Some(autopilot_engine),
@@ -53,6 +55,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let password_hasher = Arc::new(BcryptHasher);
 
     let integration_resolver = Arc::new(orbis_infra::adapters::resolver::IntegrationResolver::new(integration_repo.clone()));
+    let permission_checker = Arc::new(DbPermissionChecker::new(db.clone()));
 
     // Build AppState
     let state = AppState {
@@ -92,10 +95,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ai_repo,
         workflow_repo,
         report_repo,
+        currency_repo: finance_repo.clone(),
+        policy_repo,
         event_bus,
         token_service,
         password_hasher,
         integration_resolver,
+        permission_checker,
     };
 
     // Build Axum Router

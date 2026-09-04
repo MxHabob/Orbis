@@ -66,6 +66,7 @@ async fn create_assessment_scheme(
 
     let use_case = CreateAssessmentSchemeUseCase {
         scheme_repo: state.assessment_scheme_repo.clone(),
+        permission_checker: state.permission_checker.clone(),
     };
 
     match use_case.execute(&ctx, payload.org_id, payload.name, payload.description, payload.max_score, payload.formula).await {
@@ -89,6 +90,7 @@ async fn record_grade(
     let use_case = RecordGradeUseCase {
         grade_repo: state.grade_repo.clone(),
         event_bus: state.event_bus.clone(),
+        permission_checker: state.permission_checker.clone(),
     };
 
     match use_case.execute(&ctx, payload.student_id, payload.class_subject_id, payload.scheme_id, payload.score, payload.is_excused, payload.notes).await {

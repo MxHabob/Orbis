@@ -8,6 +8,8 @@ use orbis_domain::entities::journal_entry::JournalEntry as DomainJournalEntry;
 use orbis_domain::entities::fee_template::FeeTemplate as DomainFeeTemplate;
 use orbis_domain::entities::student_fee::StudentFee as DomainStudentFee;
 use orbis_domain::entities::payment::Payment as DomainPayment;
+use orbis_domain::entities::currency::Currency as DomainCurrency;
+use orbis_domain::entities::exchange_rate::ExchangeRate as DomainExchangeRate;
 use orbis_domain::errors::DomainError;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
 use uuid::Uuid;
@@ -18,6 +20,8 @@ use crate::models::{
     fee_template::{self, Entity as FeeTemplateEntity},
     student_fee::{self, Entity as StudentFeeEntity},
     payment::{self, Entity as PaymentEntity},
+    currency::{self, Entity as CurrencyEntity},
+    exchange_rate::{self, Entity as ExchangeRateEntity},
 };
 
 pub struct FinanceRepoImpl {
@@ -181,5 +185,32 @@ impl PaymentRepository for FinanceRepoImpl {
             active.insert(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
+    }
+}
+
+#[async_trait]
+impl orbis_app::ports::repositories::CurrencyRepository for FinanceRepoImpl {
+    async fn find_currency_by_id(&self, id: &str) -> Result<Option<DomainCurrency>, DomainError> {
+        let model = CurrencyEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(model.map(|m| DomainCurrency {
+            id: m.id, name: m.name, name_ar: m.name_ar, symbol: m.symbol,
+            decimal_places: m.decimal_places, is_active: m.is_active,
+            created_at: m.created_at.into()
+        }))
+    }
+
+    async fn get_exchange_rate(&self, org_id: Uuid, base_currency_id: &str, target_currency_id: &str) -> Result<Option<DomainExchangeRate>, DomainError> {
+        use sea_orm::{ColumnTrait, QueryFilter};
+        let model = ExchangeRateEntity::find()
+            .filter(exchange_rate::Column::OrgId.eq(org_id))
+            .filter(exchange_rate::Column::BaseCurrencyId.eq(base_currency_id))
+            .filter(exchange_rate::Column::TargetCurrencyId.eq(target_currency_id))
+            .one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+            
+        Ok(model.map(|m| DomainExchangeRate {
+            id: m.id, org_id: m.org_id, base_currency_id: m.base_currency_id,
+            target_currency_id: m.target_currency_id, rate: m.rate,
+            effective_date: m.effective_date.into(), created_at: m.created_at.into()
+        }))
     }
 }

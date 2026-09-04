@@ -36,6 +36,7 @@ pub mod workflow;
 pub mod settings;
 pub mod report;
 pub mod currency;
+pub mod exchange_rate;
 pub mod student_subject;
 pub mod role;
 pub mod role_permission;

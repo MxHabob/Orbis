@@ -30,6 +30,8 @@ use orbis_domain::entities::journal_entry::JournalEntry;
 use orbis_domain::entities::fee_template::FeeTemplate;
 use orbis_domain::entities::student_fee::StudentFee;
 use orbis_domain::entities::payment::Payment;
+use orbis_domain::entities::currency::Currency;
+use orbis_domain::entities::exchange_rate::ExchangeRate;
 use orbis_domain::entities::document::Document;
 use orbis_domain::errors::DomainError;
 use uuid::Uuid;
@@ -169,6 +171,12 @@ pub trait StudentFeeRepository: Send + Sync {
 pub trait PaymentRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Payment>, DomainError>;
     async fn save(&self, payment: &Payment) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait CurrencyRepository: Send + Sync {
+    async fn find_currency_by_id(&self, id: &str) -> Result<Option<Currency>, DomainError>;
+    async fn get_exchange_rate(&self, org_id: Uuid, base_currency_id: &str, target_currency_id: &str) -> Result<Option<ExchangeRate>, DomainError>;
 }
 
 #[async_trait]

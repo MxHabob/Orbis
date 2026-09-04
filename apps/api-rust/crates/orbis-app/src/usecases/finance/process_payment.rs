@@ -1,6 +1,8 @@
-use crate::ports::repositories::{PaymentRepository, JournalEntryRepository, StudentFeeRepository, FeeTemplateRepository};
+use crate::ports::repositories::{PaymentRepository, JournalEntryRepository, StudentFeeRepository, FeeTemplateRepository, CurrencyRepository, PolicyRepository, AccountRepository};
 use crate::ports::event_bus::EventBus;
 use crate::ports::gateways::{PaymentGatewayPort, NotificationPort};
+use crate::ports::iam::PermissionCheckerPort;
+use orbis_domain::iam::permission::Permission;
 use crate::context::RequestContext;
 use orbis_domain::entities::payment::Payment;
 use orbis_domain::entities::journal_entry::JournalEntry;
@@ -18,12 +20,16 @@ pub struct ProcessPaymentUseCase {
     pub event_bus: Arc<dyn EventBus>,
     pub payment_gateway: Arc<dyn PaymentGatewayPort>,
     pub notification_gateway: Arc<dyn NotificationPort>,
+    pub permission_checker: Arc<dyn PermissionCheckerPort>,
+    pub currency_repo: Arc<dyn CurrencyRepository>,
+    pub policy_repo: Arc<dyn PolicyRepository>,
+    pub account_repo: Arc<dyn AccountRepository>,
 }
 
 impl ProcessPaymentUseCase {
     pub async fn execute(
         &self,
-        _ctx: &RequestContext,
+        ctx: &RequestContext,
         org_id: Uuid,
         fee_id: Option<Uuid>,
         account_id: Uuid,
@@ -32,19 +38,42 @@ impl ProcessPaymentUseCase {
         reference: Option<String>,
         source: Option<String>,
     ) -> Result<Payment, DomainError> {
+        self.permission_checker.check(ctx, Permission::ProcessPayment).await?;
+
         let now = Utc::now();
         let accounting_date = now.date_naive();
         
         let journal_entry_id = Uuid::new_v4();
         let payment_id = Uuid::new_v4();
 
+        // Fetch org settings to determine base currency
+        let org_settings = self.policy_repo.get_settings(org_id).await?;
+        let base_currency = org_settings.finance.currency;
+        
+        // Fetch target account to determine transaction currency
+        let account = self.account_repo.find_by_id(account_id).await?
+            .ok_or_else(|| DomainError::Validation(format!("Account {} not found", account_id)))?;
+        let transaction_currency = account.currency;
+        
+        let mut exchange_rate_value = 1.0;
+        
+        if transaction_currency != base_currency {
+            let rate_opt = self.currency_repo.get_exchange_rate(org_id, &base_currency, &transaction_currency).await?;
+            if let Some(rate) = rate_opt {
+                exchange_rate_value = rate.rate;
+            } else {
+                return Err(DomainError::Validation(format!(
+                    "Exchange rate not found from {} to {}", 
+                    base_currency, transaction_currency
+                )));
+            }
+        }
+
         // Gateway processing for electronic payments
         let mut final_reference = reference.clone();
         if method == "credit_card" || method == "mada" || method == "applepay" {
             if let Some(src) = source {
-                // Determine currency based on fee/account later, assume SAR for now
-                let currency = "SAR";
-                let gateway_ref = self.payment_gateway.process_payment(_ctx, amount, currency, &src).await?;
+                let gateway_ref = self.payment_gateway.process_payment(ctx, amount, &transaction_currency, &src).await?;
                 final_reference = Some(gateway_ref);
             } else {
                 return Err(DomainError::Validation(format!("Payment method '{}' requires a source token", method)));
@@ -73,9 +102,9 @@ impl ProcessPaymentUseCase {
             transaction_ref: format!("PAY-{}", payment_id.to_string().chars().take(8).collect::<String>()),
             accounting_date,
             amount,
-            base_amount: amount,
-            currency_id: "SAR".to_string(),
-            exchange_rate: 1.0,
+            base_amount: amount * exchange_rate_value,
+            currency_id: transaction_currency,
+            exchange_rate: exchange_rate_value,
             debit_account_id: account_id, // Cash/Bank
             credit_account_id: receivable_acct, // AR
             description: "Payment Received".to_string(),
@@ -99,13 +128,13 @@ impl ProcessPaymentUseCase {
         self.payment_repo.save(&payment).await?;
 
         // 4. Publish Events
-        let _ = self.event_bus.publish(_ctx, &DomainEvent::JournalEntryPosted {
+        let _ = self.event_bus.publish(ctx, &DomainEvent::JournalEntryPosted {
             entry_id: journal_entry_id,
             amount,
             timestamp: now,
         }).await;
 
-        let _ = self.event_bus.publish(_ctx, &DomainEvent::PaymentReceived {
+        let _ = self.event_bus.publish(ctx, &DomainEvent::PaymentReceived {
             payment_id,
             fee_id,
             amount,
@@ -115,8 +144,8 @@ impl ProcessPaymentUseCase {
         // 5. Send Notification (fire and forget pattern for receipt)
         // We log the result but do not block the payment success on notification success
         let receipt_body = format!("Payment of {} received successfully. Reference: {:?}", amount, payment.reference);
-        let _ = self.notification_gateway.send_email(_ctx, "parent@example.com", "Payment Receipt", &receipt_body).await;
-        // let _ = self.notification_gateway.send_whatsapp(_ctx, "+123456789", &receipt_body).await;
+        let _ = self.notification_gateway.send_email(ctx, "parent@example.com", "Payment Receipt", &receipt_body).await;
+        // let _ = self.notification_gateway.send_whatsapp(ctx, "+123456789", &receipt_body).await;
 
         Ok(payment)
     }

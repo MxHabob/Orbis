@@ -128,6 +128,10 @@ async fn process_payment(
         event_bus: state.event_bus.clone(),
         payment_gateway: state.integration_resolver.clone(),
         notification_gateway: state.integration_resolver.clone(),
+        permission_checker: state.permission_checker.clone(),
+        currency_repo: state.currency_repo.clone(),
+        policy_repo: state.policy_repo.clone(),
+        account_repo: state.account_repo.clone(),
     };
     match use_case.execute(&ctx, payload.org_id, payload.fee_id, payload.account_id, payload.amount, payload.method, payload.reference, payload.source).await {
         Ok(payment) => Ok(Json(PaymentResponse { id: payment.id })),

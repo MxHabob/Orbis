@@ -4,6 +4,8 @@ use orbis_domain::errors::DomainError;
 use crate::context::RequestContext;
 use crate::ports::repositories::GradeRepository;
 use crate::ports::event_bus::EventBus;
+use crate::ports::iam::PermissionCheckerPort;
+use orbis_domain::iam::permission::Permission;
 use std::sync::Arc;
 use uuid::Uuid;
 use chrono::Utc;
@@ -11,6 +13,7 @@ use chrono::Utc;
 pub struct RecordGradeUseCase {
     pub grade_repo: Arc<dyn GradeRepository>,
     pub event_bus: Arc<dyn EventBus>,
+    pub permission_checker: Arc<dyn PermissionCheckerPort>,
 }
 
 impl RecordGradeUseCase {
@@ -24,6 +27,8 @@ impl RecordGradeUseCase {
         is_excused: bool,
         notes: Option<String>,
     ) -> Result<Grade, DomainError> {
+        self.permission_checker.check(ctx, Permission::GradeWrite).await?;
+
         let now = Utc::now();
         let grade_id = Uuid::new_v4();
 
