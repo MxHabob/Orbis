@@ -26,7 +26,7 @@ pub async fn create_account(
         None => None,
     };
 
-    let ctx = RequestContext { tenant_id: parsed_org_id, actor_id: Uuid::new_v4(), request_id: Uuid::new_v4().to_string() };
+    let ctx = RequestContext { tenant_id: parsed_org_id, actor: orbis_domain::iam::actor::Actor::System, request_id: Uuid::new_v4().to_string() };
     
     let usecase = CreateAccountUseCase { account_repo: state.account_repo.clone() };
     
@@ -50,7 +50,7 @@ pub async fn create_fee_template(
     let rev_acc = Uuid::parse_str(&revenue_account_id).map_err(|_| "Invalid revenue account ID")?;
     let rec_acc = Uuid::parse_str(&receivable_account_id).map_err(|_| "Invalid receivable account ID")?;
 
-    let ctx = RequestContext { tenant_id: parsed_org_id, actor_id: Uuid::new_v4(), request_id: Uuid::new_v4().to_string() };
+    let ctx = RequestContext { tenant_id: parsed_org_id, actor: orbis_domain::iam::actor::Actor::System, request_id: Uuid::new_v4().to_string() };
     
     let usecase = CreateFeeTemplateUseCase { fee_template_repo: state.fee_template_repo.clone() };
     
@@ -74,7 +74,7 @@ pub async fn generate_student_fee(
     let fee_tpl_id = Uuid::parse_str(&fee_template_id).map_err(|_| "Invalid fee template ID")?;
     let d_date = NaiveDate::parse_from_str(&due_date, "%Y-%m-%d").map_err(|_| "Invalid date")?;
 
-    let ctx = RequestContext { tenant_id: parsed_org_id, actor_id: Uuid::new_v4(), request_id: Uuid::new_v4().to_string() };
+    let ctx = RequestContext { tenant_id: parsed_org_id, actor: orbis_domain::iam::actor::Actor::System, request_id: Uuid::new_v4().to_string() };
     
     let usecase = GenerateStudentFeeUseCase { 
         student_fee_repo: state.student_fee_repo.clone(),
@@ -106,7 +106,7 @@ pub async fn process_payment(
     };
     let acc_id = Uuid::parse_str(&account_id).map_err(|_| "Invalid account ID")?;
 
-    let ctx = RequestContext { tenant_id: parsed_org_id, actor_id: Uuid::new_v4(), request_id: Uuid::new_v4().to_string() };
+    let ctx = RequestContext { tenant_id: parsed_org_id, actor: orbis_domain::iam::actor::Actor::System, request_id: Uuid::new_v4().to_string() };
     
     let usecase = ProcessPaymentUseCase { 
         payment_repo: state.payment_repo.clone(),

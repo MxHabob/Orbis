@@ -18,7 +18,7 @@ pub async fn connect_app_cmd(
     secrets: HashMap<String, String>,
 ) -> Result<serde_json::Value, String> {
     let ctx = RequestContext {
-        actor_id: Uuid::new_v4(), // Mock
+        actor: orbis_domain::iam::actor::Actor::System, // Mock
         tenant_id: Uuid::nil(),   // Mock
         request_id: Uuid::new_v4().to_string(),
     };
@@ -53,7 +53,7 @@ pub async fn get_connected_apps_cmd(
     state: State<'_, AppState>,
 ) -> Result<serde_json::Value, String> {
     let ctx = RequestContext {
-        actor_id: Uuid::new_v4(),
+        actor: orbis_domain::iam::actor::Actor::System,
         tenant_id: Uuid::nil(),
         request_id: Uuid::new_v4().to_string(),
     };

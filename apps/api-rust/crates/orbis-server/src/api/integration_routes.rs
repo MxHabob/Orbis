@@ -43,7 +43,7 @@ async fn get_connected_apps(
     // We assume the middleware extracts user/tenant into extensions, but for simplicity, we mock ctx
     use orbis_app::context::RequestContext;
     let ctx = RequestContext {
-        actor_id: Uuid::new_v4(), // Mocked
+        actor: orbis_domain::iam::actor::Actor::System, // Mocked
         tenant_id: Uuid::nil(),   // Mocked
         request_id: Uuid::new_v4().to_string(),
     };
@@ -72,7 +72,7 @@ async fn connect_app(
 ) -> Result<Json<IntegrationConfigResponse>, String> {
     use orbis_app::context::RequestContext;
     let ctx = RequestContext {
-        actor_id: Uuid::new_v4(),
+        actor: orbis_domain::iam::actor::Actor::System,
         tenant_id: Uuid::nil(),
         request_id: Uuid::new_v4().to_string(),
     };

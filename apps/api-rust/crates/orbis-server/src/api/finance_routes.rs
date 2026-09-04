@@ -75,7 +75,7 @@ async fn create_account(
     State(state): State<AppState>,
     Json(payload): Json<CreateAccountRequest>,
 ) -> Result<Json<AccountResponse>, String> {
-    let ctx = RequestContext { tenant_id: payload.org_id, actor_id: Uuid::new_v4(), request_id: Uuid::new_v4().to_string() };
+    let ctx = RequestContext { tenant_id: payload.org_id, actor: orbis_domain::iam::actor::Actor::System, request_id: Uuid::new_v4().to_string() };
     let use_case = CreateAccountUseCase { account_repo: state.account_repo.clone() };
     match use_case.execute(&ctx, payload.org_id, payload.code, payload.name, payload.account_type, payload.parent_id, payload.currency).await {
         Ok(acc) => Ok(Json(AccountResponse { id: acc.id })),
@@ -87,7 +87,7 @@ async fn create_fee_template(
     State(state): State<AppState>,
     Json(payload): Json<CreateFeeTemplateRequest>,
 ) -> Result<Json<FeeTemplateResponse>, String> {
-    let ctx = RequestContext { tenant_id: payload.org_id, actor_id: Uuid::new_v4(), request_id: Uuid::new_v4().to_string() };
+    let ctx = RequestContext { tenant_id: payload.org_id, actor: orbis_domain::iam::actor::Actor::System, request_id: Uuid::new_v4().to_string() };
     let use_case = CreateFeeTemplateUseCase { fee_template_repo: state.fee_template_repo.clone() };
     match use_case.execute(&ctx, payload.org_id, payload.name, payload.default_amount, payload.revenue_account_id, payload.receivable_account_id, payload.is_mandatory).await {
         Ok(tpl) => Ok(Json(FeeTemplateResponse { id: tpl.id })),
@@ -99,7 +99,7 @@ async fn generate_student_fee(
     State(state): State<AppState>,
     Json(payload): Json<GenerateStudentFeeRequest>,
 ) -> Result<Json<StudentFeeResponse>, String> {
-    let ctx = RequestContext { tenant_id: payload.org_id, actor_id: Uuid::new_v4(), request_id: Uuid::new_v4().to_string() };
+    let ctx = RequestContext { tenant_id: payload.org_id, actor: orbis_domain::iam::actor::Actor::System, request_id: Uuid::new_v4().to_string() };
     let due_date = NaiveDate::parse_from_str(&payload.due_date, "%Y-%m-%d").map_err(|_| "Invalid due date")?;
     
     let use_case = GenerateStudentFeeUseCase { 
@@ -117,7 +117,7 @@ async fn process_payment(
     State(state): State<AppState>,
     Json(payload): Json<ProcessPaymentRequest>,
 ) -> Result<Json<PaymentResponse>, String> {
-    let ctx = RequestContext { tenant_id: payload.org_id, actor_id: Uuid::new_v4(), request_id: Uuid::new_v4().to_string() };
+    let ctx = RequestContext { tenant_id: payload.org_id, actor: orbis_domain::iam::actor::Actor::System, request_id: Uuid::new_v4().to_string() };
     
     let use_case = ProcessPaymentUseCase { 
         payment_repo: state.payment_repo.clone(),

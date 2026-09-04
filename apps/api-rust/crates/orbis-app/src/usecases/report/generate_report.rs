@@ -33,7 +33,7 @@ impl GenerateReportUseCase {
             id: Uuid::new_v4(),
             org_id: _ctx.tenant_id,
             template_id,
-            requested_by: _ctx.actor_id,
+            requested_by: _ctx.actor.id().unwrap_or_default(),
             parameters: parameters.clone(),
             status: "pending".to_string(),
             file_path: None,

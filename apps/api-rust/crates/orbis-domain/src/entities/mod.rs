@@ -32,4 +32,5 @@ pub mod document;
 pub mod integration;
 pub mod ai;
 pub mod workflow;
+pub mod settings;
 pub mod report;

@@ -23,7 +23,7 @@ pub async fn create_subject(
 
     let ctx = RequestContext {
         tenant_id: parsed_org_id,
-        actor_id: Uuid::new_v4(),
+        actor: orbis_domain::iam::actor::Actor::System,
         request_id: Uuid::new_v4().to_string(),
     };
 
@@ -53,7 +53,7 @@ pub async fn create_class(
 
     let ctx = RequestContext {
         tenant_id: parsed_org_id,
-        actor_id: Uuid::new_v4(),
+        actor: orbis_domain::iam::actor::Actor::System,
         request_id: Uuid::new_v4().to_string(),
     };
 
@@ -84,7 +84,7 @@ pub async fn assign_class_subject(
 
     let ctx = RequestContext {
         tenant_id: Uuid::new_v4(), // From session
-        actor_id: Uuid::new_v4(),
+        actor: orbis_domain::iam::actor::Actor::System,
         request_id: Uuid::new_v4().to_string(),
     };
 

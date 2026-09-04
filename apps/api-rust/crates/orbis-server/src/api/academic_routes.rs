@@ -60,7 +60,7 @@ async fn create_subject(
 ) -> Result<Json<SubjectResponse>, String> {
     let ctx = RequestContext {
         tenant_id: payload.org_id,
-        actor_id: Uuid::new_v4(),
+        actor: orbis_domain::iam::actor::Actor::System,
         request_id: Uuid::new_v4().to_string(),
     };
 
@@ -84,7 +84,7 @@ async fn create_class(
 ) -> Result<Json<ClassResponse>, String> {
     let ctx = RequestContext {
         tenant_id: payload.org_id,
-        actor_id: Uuid::new_v4(),
+        actor: orbis_domain::iam::actor::Actor::System,
         request_id: Uuid::new_v4().to_string(),
     };
 
@@ -108,7 +108,7 @@ async fn assign_class_subject(
 ) -> Result<Json<ClassSubjectResponse>, String> {
     let ctx = RequestContext {
         tenant_id: Uuid::new_v4(), // Should be derived from session
-        actor_id: Uuid::new_v4(),
+        actor: orbis_domain::iam::actor::Actor::System,
         request_id: Uuid::new_v4().to_string(),
     };
 

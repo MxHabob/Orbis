@@ -36,6 +36,23 @@ pub struct Model {
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
+pub enum Relation {
+    #[sea_orm(has_many = "super::role::Entity")]
+    Roles,
+    #[sea_orm(has_many = "super::autopilot_task::Entity")]
+    AutopilotTasks,
+}
+
+impl Related<super::role::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Roles.def()
+    }
+}
+
+impl Related<super::autopilot_task::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::AutopilotTasks.def()
+    }
+}
 
 impl ActiveModelBehavior for ActiveModel {}

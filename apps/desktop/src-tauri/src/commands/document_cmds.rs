@@ -41,7 +41,7 @@ pub async fn upload_document(
         None => None,
     };
 
-    let ctx = RequestContext { tenant_id: parsed_org_id, actor_id: Uuid::new_v4(), request_id: Uuid::new_v4().to_string() };
+    let ctx = RequestContext { tenant_id: parsed_org_id, actor: orbis_domain::iam::actor::Actor::System, request_id: Uuid::new_v4().to_string() };
     
     let usecase = UploadDocumentUseCase { 
         document_repo: state.document_repo.clone(),
@@ -66,7 +66,7 @@ pub async fn delete_document(
 ) -> Result<bool, String> {
     let parsed_document_id = Uuid::parse_str(&document_id).map_err(|_| "Invalid document ID")?;
     
-    let ctx = RequestContext { tenant_id: Uuid::new_v4(), actor_id: Uuid::new_v4(), request_id: Uuid::new_v4().to_string() };
+    let ctx = RequestContext { tenant_id: Uuid::new_v4(), actor: orbis_domain::iam::actor::Actor::System, request_id: Uuid::new_v4().to_string() };
     
     let usecase = DeleteDocumentUseCase { 
         document_repo: state.document_repo.clone(),

@@ -59,7 +59,7 @@ async fn create_assessment_scheme(
 ) -> Result<Json<AssessmentSchemeResponse>, String> {
     let ctx = RequestContext {
         tenant_id: payload.org_id,
-        actor_id: Uuid::new_v4(),
+        actor: orbis_domain::iam::actor::Actor::System,
         request_id: Uuid::new_v4().to_string(),
     };
 
@@ -81,7 +81,7 @@ async fn record_grade(
 ) -> Result<Json<GradeResponse>, String> {
     let ctx = RequestContext {
         tenant_id: Uuid::new_v4(),
-        actor_id: Uuid::new_v4(),
+        actor: orbis_domain::iam::actor::Actor::System,
         request_id: Uuid::new_v4().to_string(),
     };
 
@@ -104,7 +104,7 @@ async fn mark_attendance(
 ) -> Result<Json<AttendanceResponse>, String> {
     let ctx = RequestContext {
         tenant_id: Uuid::new_v4(),
-        actor_id: Uuid::new_v4(),
+        actor: orbis_domain::iam::actor::Actor::System,
         request_id: Uuid::new_v4().to_string(),
     };
 

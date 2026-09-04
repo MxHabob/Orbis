@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use orbis_domain::entities::organization::Organization;
+use orbis_domain::entities::settings::OrganizationSettings;
 use orbis_domain::entities::org_unit::OrgUnit;
 use orbis_domain::entities::user::User;
 use orbis_domain::entities::person::Person;
@@ -260,4 +261,9 @@ pub trait PersonRepository: Send + Sync {
 pub trait SessionRepository: Send + Sync {
     async fn find_by_token(&self, token: &str) -> Result<Option<Session>, DomainError>;
     async fn save(&self, session: &Session) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait PolicyRepository: Send + Sync {
+    async fn get_settings(&self, org_id: Uuid) -> Result<OrganizationSettings, DomainError>;
 }

@@ -49,7 +49,7 @@ async fn create_year(
 ) -> Result<Json<YearResponse>, String> {
     let ctx = RequestContext {
         tenant_id: payload.org_id,
-        actor_id: Uuid::new_v4(),
+        actor: orbis_domain::iam::actor::Actor::System,
         request_id: Uuid::new_v4().to_string(),
     };
 
@@ -74,7 +74,7 @@ async fn create_period(
 ) -> Result<Json<PeriodResponse>, String> {
     let ctx = RequestContext {
         tenant_id: payload.org_id,
-        actor_id: Uuid::new_v4(),
+        actor: orbis_domain::iam::actor::Actor::System,
         request_id: Uuid::new_v4().to_string(),
     };
 

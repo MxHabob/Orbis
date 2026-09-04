@@ -46,7 +46,7 @@ async fn upload_document(
     State(state): State<AppState>,
     Json(payload): Json<UploadDocumentRequest>,
 ) -> Result<Json<DocumentResponse>, String> {
-    let ctx = RequestContext { tenant_id: payload.org_id, actor_id: Uuid::new_v4(), request_id: Uuid::new_v4().to_string() };
+    let ctx = RequestContext { tenant_id: payload.org_id, actor: orbis_domain::iam::actor::Actor::System, request_id: Uuid::new_v4().to_string() };
     
     let usecase = UploadDocumentUseCase { 
         document_repo: state.document_repo.clone(),
@@ -69,7 +69,7 @@ async fn delete_document(
     State(state): State<AppState>,
     Path(document_id): Path<Uuid>,
 ) -> Result<Json<SuccessResponse>, String> {
-    let ctx = RequestContext { tenant_id: Uuid::new_v4(), actor_id: Uuid::new_v4(), request_id: Uuid::new_v4().to_string() };
+    let ctx = RequestContext { tenant_id: Uuid::new_v4(), actor: orbis_domain::iam::actor::Actor::System, request_id: Uuid::new_v4().to_string() };
     
     let usecase = DeleteDocumentUseCase { 
         document_repo: state.document_repo.clone(),

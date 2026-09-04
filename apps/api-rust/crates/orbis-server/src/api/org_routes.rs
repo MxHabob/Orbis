@@ -43,7 +43,7 @@ async fn create_org(
 ) -> Result<Json<OrgResponse>, String> {
     let ctx = RequestContext {
         tenant_id: Uuid::new_v4(),
-        actor_id: Uuid::new_v4(),
+        actor: orbis_domain::iam::actor::Actor::System,
         request_id: Uuid::new_v4().to_string(),
     };
 
@@ -68,7 +68,7 @@ async fn create_org_unit(
 ) -> Result<Json<OrgUnitResponse>, String> {
     let ctx = RequestContext {
         tenant_id: payload.org_id,
-        actor_id: Uuid::new_v4(),
+        actor: orbis_domain::iam::actor::Actor::System,
         request_id: Uuid::new_v4().to_string(),
     };
 
