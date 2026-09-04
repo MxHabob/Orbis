@@ -10,6 +10,8 @@ pub struct OrbisError {
 
 pub mod iam_routes;
 pub mod org_routes;
+
+pub mod report_routes;
 pub mod calendar_routes;
 pub mod academic_routes;
 pub mod student_routes;

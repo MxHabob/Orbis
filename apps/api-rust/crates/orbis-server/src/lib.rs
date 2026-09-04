@@ -50,5 +50,6 @@ pub fn app_router(state: AppState) -> Router {
         .merge(api::finance_routes::routes())
         .merge(api::document_routes::routes())
         .merge(api::integration_routes::routes())
+        .merge(api::report_routes::routes())
         .with_state(state)
 }

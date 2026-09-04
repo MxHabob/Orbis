@@ -1,4 +1,4 @@
-pub mod docforge;
+pub mod report_adapter;
 pub mod gemini;
 pub mod mada;
 pub mod moyasar;

@@ -5,7 +5,7 @@ use orbis_domain::errors::DomainError;
 use orbis_app::context::RequestContext;
 use std::sync::Arc;
 
-use crate::adapters::{gemini::GeminiAdapter, mada::MadaAdapter, moyasar::MoyasarAdapter, hikvision::HikvisionAdapter, authen::AuthenAdapter, docforge::DocforgeAdapter};
+use crate::adapters::{gemini::GeminiAdapter, mada::MadaAdapter, moyasar::MoyasarAdapter, hikvision::HikvisionAdapter, authen::AuthenAdapter, report_adapter::TeraReportAdapter};
 
 pub struct IntegrationResolver {
     pub integration_repo: Arc<dyn IntegrationRepository>,
@@ -104,13 +104,12 @@ impl SurveillancePort for IntegrationResolver {
 #[async_trait]
 impl ReportEnginePort for IntegrationResolver {
     async fn generate_pdf(&self, ctx: &RequestContext, template_body: &str, data: &serde_json::Value) -> Result<Vec<u8>, DomainError> {
-        // Here we could also dynamically resolve, but for now we just wrap Docforge
-        let adapter = DocforgeAdapter {};
+        let adapter = TeraReportAdapter::new();
         adapter.generate_pdf(ctx, template_body, data).await
     }
 
     async fn generate_excel(&self, ctx: &RequestContext, template_body: &str, data: &serde_json::Value) -> Result<Vec<u8>, DomainError> {
-        let adapter = DocforgeAdapter {};
+        let adapter = TeraReportAdapter::new();
         adapter.generate_excel(ctx, template_body, data).await
     }
 }

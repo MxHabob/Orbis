@@ -5,6 +5,7 @@ use orbis_app::usecases::assessment::{
     assessment_scheme::CreateAssessmentSchemeUseCase,
     grade::RecordGradeUseCase,
     attendance::MarkAttendanceUseCase,
+    calculate_grades::CalculateGradesUseCase,
 };
 use uuid::Uuid;
 use chrono::NaiveDate;
@@ -17,6 +18,7 @@ pub struct CreateAssessmentSchemeRequest {
     pub description: Option<String>,
     pub max_score: f64,
     pub pass_score: f64,
+    pub formula: Option<serde_json::Value>,
 }
 
 #[derive(Serialize)]
@@ -67,7 +69,7 @@ async fn create_assessment_scheme(
         scheme_repo: state.assessment_scheme_repo.clone(),
     };
 
-    match use_case.execute(&ctx, payload.org_id, payload.name, payload.description, payload.max_score, payload.pass_score).await {
+    match use_case.execute(&ctx, payload.org_id, payload.name, payload.description, payload.max_score, payload.pass_score, payload.formula).await {
         Ok(scheme) => Ok(Json(AssessmentSchemeResponse {
             id: scheme.id,
         })),
@@ -123,9 +125,42 @@ async fn mark_attendance(
     }
 }
 
+#[derive(Deserialize)]
+pub struct CalculateGradesRequest {
+    pub scheme_id: Uuid,
+    pub student_id: Uuid,
+}
+
+#[derive(Serialize)]
+pub struct CalculateGradesResponse {
+    pub final_score: f64,
+}
+
+async fn calculate_grades_handler(
+    State(state): State<AppState>,
+    Json(payload): Json<CalculateGradesRequest>,
+) -> Result<Json<CalculateGradesResponse>, String> {
+    let ctx = RequestContext {
+        tenant_id: Uuid::new_v4(), // Mocked
+        actor: orbis_domain::iam::actor::Actor::System,
+        request_id: Uuid::new_v4().to_string(),
+    };
+
+    let use_case = CalculateGradesUseCase {
+        scheme_repo: state.assessment_scheme_repo.clone(),
+        grade_repo: state.grade_repo.clone(),
+    };
+
+    match use_case.execute(&ctx, payload.scheme_id, payload.student_id).await {
+        Ok(score) => Ok(Json(CalculateGradesResponse { final_score: score })),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/assessment/schemes", post(create_assessment_scheme))
         .route("/assessment/grades", post(record_grade))
         .route("/assessment/attendance", post(mark_attendance))
+        .route("/assessment/calculate", post(calculate_grades_handler))
 }

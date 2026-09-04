@@ -19,6 +19,7 @@ impl CreateAssessmentSchemeUseCase {
         description: Option<String>,
         max_score: f64,
         pass_score: f64,
+        formula: Option<serde_json::Value>,
     ) -> Result<AssessmentScheme, DomainError> {
         let now = Utc::now();
         let scheme_id = Uuid::new_v4();
@@ -30,6 +31,7 @@ impl CreateAssessmentSchemeUseCase {
             description,
             max_score,
             pass_score,
+            formula,
             created_at: now,
             updated_at: now,
         };

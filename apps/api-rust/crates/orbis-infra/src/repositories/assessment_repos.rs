@@ -25,7 +25,7 @@ impl AssessmentSchemeRepository for AssessmentRepoImpl {
         let model = AssessmentSchemeEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(|m| DomainAssessmentScheme {
             id: m.id, org_id: m.org_id, name: m.name, description: m.description,
-            max_score: m.max_score, pass_score: m.pass_score,
+            max_score: m.max_score, pass_score: m.pass_score, formula: m.formula,
             created_at: m.created_at, updated_at: m.updated_at
         }))
     }
@@ -34,7 +34,7 @@ impl AssessmentSchemeRepository for AssessmentRepoImpl {
         let active = assessment_scheme::ActiveModel {
             id: Set(scheme.id), org_id: Set(scheme.org_id), name: Set(scheme.name.clone()),
             description: Set(scheme.description.clone()), max_score: Set(scheme.max_score),
-            pass_score: Set(scheme.pass_score), created_at: Set(scheme.created_at),
+            pass_score: Set(scheme.pass_score), formula: Set(scheme.formula.clone()), created_at: Set(scheme.created_at),
             updated_at: Set(scheme.updated_at),
         };
 
