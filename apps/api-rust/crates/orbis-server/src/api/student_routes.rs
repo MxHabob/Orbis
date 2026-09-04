@@ -7,6 +7,8 @@ use orbis_app::usecases::student::{
     enrollment::EnrollStudentUseCase,
     student_guardian::AssignGuardianUseCase,
 };
+use orbis_domain::queries::filter::UniversalFilter;
+use orbis_domain::queries::pagination::CursorRequest;
 use uuid::Uuid;
 use crate::state::AppState;
 
@@ -46,6 +48,20 @@ pub struct AssignGuardianRequest {
 #[derive(Serialize)]
 pub struct GuardianResponse {
     pub id: Uuid,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct SearchStudentsRequest {
+    pub org_id: Uuid,
+    pub filter: Option<UniversalFilter>,
+    pub pagination: Option<CursorRequest>,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct SearchStudentsResponse {
+    pub data: Vec<serde_json::Value>, // Using Value for simplicity in this example
+    pub next_cursor: Option<String>,
+    pub total_count: Option<u64>,
 }
 
 async fn enroll_student(
@@ -94,8 +110,31 @@ async fn assign_guardian(
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/v1/student/search",
+    request_body = SearchStudentsRequest,
+    responses(
+        (status = 200, description = "Students retrieved successfully", body = SearchStudentsResponse)
+    ),
+    tag = "Student"
+)]
+async fn search_students(
+    State(_state): State<AppState>,
+    Json(_payload): Json<SearchStudentsRequest>,
+) -> Result<Json<SearchStudentsResponse>, String> {
+    // In a real implementation, this would call a use case that utilizes filter_builder
+    // and CursorRequest to fetch from student_repo.
+    Ok(Json(SearchStudentsResponse {
+        data: vec![],
+        next_cursor: None,
+        total_count: Some(0),
+    }))
+}
+
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/student/enroll", post(enroll_student))
         .route("/student/guardian", post(assign_guardian))
+        .route("/student/search", post(search_students))
 }

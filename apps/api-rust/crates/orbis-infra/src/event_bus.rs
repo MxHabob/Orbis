@@ -3,11 +3,11 @@ use orbis_app::context::RequestContext;
 use orbis_app::ports::event_bus::EventBus;
 use orbis_domain::events::DomainEvent;
 use orbis_domain::errors::DomainError;
-use orbis_app::usecases::workflow::engine::WorkflowEngine;
+use orbis_app::autopilot::engine::AutopilotEngine;
 use std::sync::Arc;
 
 pub struct MemoryEventBus {
-    pub workflow_engine: Option<Arc<WorkflowEngine>>,
+    pub workflow_engine: Option<Arc<AutopilotEngine>>,
 }
 
 #[async_trait]

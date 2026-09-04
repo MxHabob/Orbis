@@ -42,12 +42,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let workflow_repo = Arc::new(orbis_infra::repositories::workflow_repos::WorkflowRepoImpl { db: db.clone() });
     let report_repo = Arc::new(orbis_infra::repositories::report_repos::ReportRepoImpl { db: db.clone() });
     
-    let workflow_engine = Arc::new(orbis_app::usecases::workflow::engine::WorkflowEngine {
-        workflow_repo: workflow_repo.clone(),
+    let autopilot_engine = Arc::new(orbis_app::autopilot::engine::AutopilotEngine {
+        policy_repo: Arc::new(orbis_infra::repositories::policy_repo::PgPolicyRepo { db: db.clone() }),
     });
 
     let event_bus = Arc::new(MemoryEventBus {
-        workflow_engine: Some(workflow_engine),
+        workflow_engine: Some(autopilot_engine),
     });
     let token_service = Arc::new(JwtTokenService::new("super-secret-key-for-dev".to_string()));
     let password_hasher = Arc::new(BcryptHasher);

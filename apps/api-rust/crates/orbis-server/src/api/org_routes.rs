@@ -5,6 +5,7 @@ use orbis_app::usecases::organization::{CreateOrganizationUseCase, UpdateOrganiz
 use orbis_app::usecases::org_unit::CreateOrgUnitUseCase;
 use uuid::Uuid;
 use crate::state::AppState;
+use orbis_infra::adapters::bootstrap_adapter::{BootstrapPayload, bootstrap_full};
 
 use utoipa::ToSchema;
 
@@ -89,6 +90,25 @@ async fn create_org(
 
 #[utoipa::path(
     post,
+    path = "/api/v1/organizations/bootstrap",
+    request_body(content = BootstrapPayload, description = "The initialization data for a new organization"),
+    responses(
+        (status = 200, description = "Organization bootstrapped successfully")
+    ),
+    tag = "Organization"
+)]
+async fn bootstrap_org(
+    State(state): State<AppState>,
+    Json(payload): Json<BootstrapPayload>,
+) -> Result<Json<serde_json::Value>, String> {
+    match bootstrap_full(&state.db, payload).await {
+        Ok(res) => Ok(Json(serde_json::json!(res))),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+#[utoipa::path(
+    post,
     path = "/api/v1/organizations/units",
     request_body = CreateOrgUnitRequest,
     responses(
@@ -125,5 +145,6 @@ async fn create_org_unit(
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/organizations", post(create_org))
+        .route("/api/v1/organizations/bootstrap", post(bootstrap_org))
         .route("/api/v1/organizations/units", post(create_org_unit))
 }

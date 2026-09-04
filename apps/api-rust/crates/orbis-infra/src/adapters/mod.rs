@@ -9,3 +9,4 @@ pub mod iam;
 pub mod email;
 pub mod whatsapp;
 pub mod resolver;
+pub mod bootstrap_adapter;
