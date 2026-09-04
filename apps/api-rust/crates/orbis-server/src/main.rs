@@ -34,6 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let student_repo = Arc::new(orbis_infra::repositories::student_repos::StudentRepoImpl { db: db.clone() });
     let scheduling_repo = Arc::new(orbis_infra::repositories::scheduling_repos::SchedulingRepoImpl { db: db.clone() });
     let assessment_repo = Arc::new(orbis_infra::repositories::assessment_repos::AssessmentRepoImpl { db: db.clone() });
+    let exam_repo = Arc::new(orbis_infra::repositories::exam_repos::ExamRepoImpl { db: db.clone() });
     let event_bus = Arc::new(MemoryEventBus);
     let token_service = Arc::new(JwtTokenService::new("super-secret-key-for-dev".to_string()));
     let password_hasher = Arc::new(BcryptHasher);
@@ -61,6 +62,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         grade_repo: assessment_repo.clone(),
         attendance_repo: assessment_repo.clone(),
         behavior_record_repo: assessment_repo,
+        exam_session_repo: exam_repo.clone(),
+        exam_schedule_repo: exam_repo.clone(),
+        seating_number_repo: exam_repo.clone(),
+        secret_number_repo: exam_repo.clone(),
+        exam_proctor_repo: exam_repo,
         event_bus,
         token_service,
         password_hasher,

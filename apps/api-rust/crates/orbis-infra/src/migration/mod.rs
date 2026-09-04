@@ -20,6 +20,11 @@ pub mod m20240901_000017_create_assessment_schemes_table;
 pub mod m20240901_000018_create_grades_table;
 pub mod m20240901_000019_create_attendances_table;
 pub mod m20240901_000020_create_behavior_records_table;
+pub mod m20240901_000021_create_exam_sessions_table;
+pub mod m20240901_000022_create_exam_schedules_table;
+pub mod m20240901_000023_create_seating_numbers_table;
+pub mod m20240901_000024_create_secret_numbers_table;
+pub mod m20240901_000025_create_exam_proctors_table;
 
 pub struct Migrator;
 
@@ -47,6 +52,11 @@ impl MigratorTrait for Migrator {
             Box::new(m20240901_000018_create_grades_table::Migration),
             Box::new(m20240901_000019_create_attendances_table::Migration),
             Box::new(m20240901_000020_create_behavior_records_table::Migration),
+            Box::new(m20240901_000021_create_exam_sessions_table::Migration),
+            Box::new(m20240901_000022_create_exam_schedules_table::Migration),
+            Box::new(m20240901_000023_create_seating_numbers_table::Migration),
+            Box::new(m20240901_000024_create_secret_numbers_table::Migration),
+            Box::new(m20240901_000025_create_exam_proctors_table::Migration),
         ]
     }
 }

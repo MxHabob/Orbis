@@ -5,6 +5,7 @@ pub mod academic_cmds;
 pub mod student_cmds;
 pub mod scheduling_cmds;
 pub mod assessment_cmds;
+pub mod exam_cmds;
 
 use tauri::generate_handler;
 
@@ -27,5 +28,10 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         assessment_cmds::create_assessment_scheme,
         assessment_cmds::record_grade,
         assessment_cmds::mark_attendance,
+        exam_cmds::create_exam_session,
+        exam_cmds::schedule_exam,
+        exam_cmds::assign_seating_number,
+        exam_cmds::assign_secret_number,
+        exam_cmds::assign_proctor,
     ]
 }

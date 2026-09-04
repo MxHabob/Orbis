@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use sea_orm::DatabaseConnection;
-use orbis_app::ports::repositories::{OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository, SessionRepository, AcademicYearRepository, AcademicPeriodRepository, PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository, EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository, ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository};
+use orbis_app::ports::repositories::{OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository, SessionRepository, AcademicYearRepository, AcademicPeriodRepository, PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository, EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository, ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository, ExamSessionRepository, ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository, ExamProctorRepository};
 use orbis_app::ports::event_bus::EventBus;
 use orbis_app::ports::security::{TokenService, PasswordHasher};
 
@@ -26,7 +26,11 @@ pub struct AppState {
     pub assessment_scheme_repo: Arc<dyn AssessmentSchemeRepository>,
     pub grade_repo: Arc<dyn GradeRepository>,
     pub attendance_repo: Arc<dyn AttendanceRepository>,
-    pub behavior_record_repo: Arc<dyn BehaviorRecordRepository>,
+    pub exam_session_repo: Arc<dyn ExamSessionRepository>,
+    pub exam_schedule_repo: Arc<dyn ExamScheduleRepository>,
+    pub seating_number_repo: Arc<dyn SeatingNumberRepository>,
+    pub secret_number_repo: Arc<dyn SecretNumberRepository>,
+    pub exam_proctor_repo: Arc<dyn ExamProctorRepository>,
     pub event_bus: Arc<dyn EventBus>,
     pub token_service: Arc<dyn TokenService>,
     pub password_hasher: Arc<dyn PasswordHasher>,
@@ -52,6 +56,7 @@ impl AppState {
         let student_repo = Arc::new(orbis_infra::repositories::student_repos::StudentRepoImpl { db: db.clone() });
         let scheduling_repo = Arc::new(orbis_infra::repositories::scheduling_repos::SchedulingRepoImpl { db: db.clone() });
         let assessment_repo = Arc::new(orbis_infra::repositories::assessment_repos::AssessmentRepoImpl { db: db.clone() });
+        let exam_repo = Arc::new(orbis_infra::repositories::exam_repos::ExamRepoImpl { db: db.clone() });
         let event_bus = Arc::new(orbis_infra::event_bus::MemoryEventBus);
         let token_service = Arc::new(orbis_infra::security::jwt::JwtTokenService::new("desktop-secret".to_string()));
         let password_hasher = Arc::new(orbis_infra::security::bcrypt::BcryptHasher);
@@ -78,6 +83,11 @@ impl AppState {
             grade_repo: assessment_repo.clone(),
             attendance_repo: assessment_repo.clone(),
             behavior_record_repo: assessment_repo,
+            exam_session_repo: exam_repo.clone(),
+            exam_schedule_repo: exam_repo.clone(),
+            seating_number_repo: exam_repo.clone(),
+            secret_number_repo: exam_repo.clone(),
+            exam_proctor_repo: exam_repo,
             event_bus,
             token_service,
             password_hasher,

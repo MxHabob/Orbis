@@ -19,6 +19,11 @@ use orbis_domain::entities::assessment_scheme::AssessmentScheme;
 use orbis_domain::entities::grade::Grade;
 use orbis_domain::entities::attendance::Attendance;
 use orbis_domain::entities::behavior_record::BehaviorRecord;
+use orbis_domain::entities::exam_session::ExamSession;
+use orbis_domain::entities::exam_schedule::ExamSchedule;
+use orbis_domain::entities::seating_number::SeatingNumber;
+use orbis_domain::entities::secret_number::SecretNumber;
+use orbis_domain::entities::exam_proctor::ExamProctor;
 use orbis_domain::errors::DomainError;
 use uuid::Uuid;
 
@@ -100,6 +105,33 @@ pub trait AttendanceRepository: Send + Sync {
 pub trait BehaviorRecordRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<BehaviorRecord>, DomainError>;
     async fn save(&self, record: &BehaviorRecord) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait ExamSessionRepository: Send + Sync {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<ExamSession>, DomainError>;
+    async fn save(&self, session: &ExamSession) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait ExamScheduleRepository: Send + Sync {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<ExamSchedule>, DomainError>;
+    async fn save(&self, schedule: &ExamSchedule) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait SeatingNumberRepository: Send + Sync {
+    async fn save(&self, seating: &SeatingNumber) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait SecretNumberRepository: Send + Sync {
+    async fn save(&self, secret: &SecretNumber) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait ExamProctorRepository: Send + Sync {
+    async fn save(&self, proctor: &ExamProctor) -> Result<(), DomainError>;
 }
 
 #[async_trait]

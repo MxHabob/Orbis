@@ -8,3 +8,4 @@ pub mod academic_repos;
 pub mod student_repos;
 pub mod scheduling_repos;
 pub mod assessment_repos;
+pub mod exam_repos;

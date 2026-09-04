@@ -31,5 +31,9 @@ pub enum DomainEvent {
     AttendanceMarked { attendance_id: Uuid, student_id: Uuid, class_id: Uuid, status: String, timestamp: DateTime<Utc> },
     BehaviorLogged { record_id: Uuid, student_id: Uuid, record_type: String, points: i32, timestamp: DateTime<Utc> },
 
+    ExamSessionCreated { session_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    ExamScheduled { schedule_id: Uuid, session_id: Uuid, timestamp: DateTime<Utc> },
+    SeatingNumberAssigned { student_id: Uuid, session_id: Uuid, seating_number: String, timestamp: DateTime<Utc> },
+
     PaymentProcessed { transaction_id: Uuid, amount: u64, org_id: Uuid },
 }

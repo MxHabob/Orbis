@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use sea_orm::DatabaseConnection;
-use orbis_app::ports::repositories::{OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository, SessionRepository, AcademicYearRepository, AcademicPeriodRepository, PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository, EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository, ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository};
+use orbis_app::ports::repositories::{OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository, SessionRepository, AcademicYearRepository, AcademicPeriodRepository, PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository, EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository, ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository, ExamSessionRepository, ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository, ExamProctorRepository};
 use orbis_app::ports::event_bus::EventBus;
 use orbis_app::ports::security::{TokenService, PasswordHasher};
 
@@ -27,6 +27,11 @@ pub struct AppState {
     pub grade_repo: Arc<dyn GradeRepository>,
     pub attendance_repo: Arc<dyn AttendanceRepository>,
     pub behavior_record_repo: Arc<dyn BehaviorRecordRepository>,
+    pub exam_session_repo: Arc<dyn ExamSessionRepository>,
+    pub exam_schedule_repo: Arc<dyn ExamScheduleRepository>,
+    pub seating_number_repo: Arc<dyn SeatingNumberRepository>,
+    pub secret_number_repo: Arc<dyn SecretNumberRepository>,
+    pub exam_proctor_repo: Arc<dyn ExamProctorRepository>,
     pub event_bus: Arc<dyn EventBus>,
     pub token_service: Arc<dyn TokenService>,
     pub password_hasher: Arc<dyn PasswordHasher>,
