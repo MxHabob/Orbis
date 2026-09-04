@@ -14,6 +14,7 @@ use tracing::info;
 pub mod entities;
 pub mod app_state;
 pub mod platform;
+pub mod openapi;
 
 #[macro_use]
 mod handler;
@@ -59,6 +60,7 @@ pub async fn start_server(database_url: &str, port: u16) -> Result<(), Box<dyn s
         .route("/health", get(get_status))
         .route("/ready", get(get_ready))
         .route("/api/status", get(get_status))
+        .route("/api/openapi.json", get(get_openapi))
         // Auth
         .route("/api/auth/register", post(handler::auth::post_register))
         .route("/api/auth/login", post(handler::auth::post_login))
@@ -211,4 +213,11 @@ async fn get_ready(State(state): axum::extract::State<AppState>) -> impl IntoRes
             Json(json!({ "success": false, "status": "not_ready" })),
         ),
     }
+}
+
+async fn get_openapi() -> impl IntoResponse {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/json")],
+        openapi::json(),
+    )
 }

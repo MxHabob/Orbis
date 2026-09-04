@@ -124,7 +124,7 @@ pub async fn get_report_definition(
 
 // ── Generate Report (Data Only) ─────────────────────────────────
 
-#[utoipa::path(post, path = "/api/reports/generate")]
+#[utoipa::path(post, path = "/api/reports/generate", request_body = serde_json::Value)]
 pub async fn post_generate_report(
     State(state): State<AppState>,
     AuthenticatedUser(user): AuthenticatedUser,
@@ -148,7 +148,7 @@ pub async fn post_generate_report(
 
 // ── Export Report (File Download) ───────────────────────────────
 
-#[utoipa::path(post, path = "/api/reports/export")]
+#[utoipa::path(post, path = "/api/reports/export", request_body = serde_json::Value)]
 pub async fn post_export_report(
     State(state): State<AppState>,
     AuthenticatedUser(user): AuthenticatedUser,

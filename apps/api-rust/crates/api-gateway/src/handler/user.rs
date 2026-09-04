@@ -48,7 +48,7 @@ pub async fn delete_user(State(state): State<AppState>, AuthenticatedUser(user):
     ok!(json!({"deleted": true}))
 }
 
-#[utoipa::path(put, path = "/api/users/{id}/role")]
+#[utoipa::path(post, path = "/api/users/{id}/role")]
 pub async fn post_user_role(
     Path(id): Path<String>,
     AuthenticatedUser(user): AuthenticatedUser,
