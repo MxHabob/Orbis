@@ -45,5 +45,7 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         document_cmds::upload_document,
         document_cmds::delete_document,
         report_cmds::generate_report,
+        report_cmds::get_report_job_status,
+        report_cmds::download_report_file,
     ]
 }

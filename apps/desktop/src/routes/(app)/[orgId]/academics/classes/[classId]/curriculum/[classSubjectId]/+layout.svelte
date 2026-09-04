@@ -7,7 +7,7 @@
   import { getLocale } from "$lib/paraglide/runtime";
   import { academicContext } from "$lib/stores";
   import AssessmentSchemeSheet from "$lib/features/assessment/assessment-scheme-sheet.svelte";
-    import { Clock } from "@lucide/svelte";
+  import ReportViewer from "$lib/shared/components/report-viewer.svelte";
 
   let { children } = $props();
 
@@ -17,6 +17,7 @@
   const isArabic = $derived(getLocale() === "ar");
 
   let showConfigSheet = $state(false);
+  let showPrintDialog = $state(false);
 
   // Subject Offering Details
   const subjectQuery = createQuery(() => ({
@@ -99,7 +100,7 @@
         variant="outline"
         size="sm"
         class="h-8 gap-1.5 text-xs font-semibold"
-        onclick={() => window.print()}
+        onclick={() => showPrintDialog = true}
       >
         <span class="hidden sm:inline">{isArabic ? "طباعة" : "Print"}</span>
       </Button>
@@ -117,3 +118,10 @@
 {#if showConfigSheet}
   <AssessmentSchemeSheet bind:open={showConfigSheet} {classSubjectId} periodId={academicContext.effectivePeriodId || ""} />
 {/if}
+
+<ReportViewer
+  bind:open={showPrintDialog}
+  templateId="class_subject_gradebook_template"
+  parameters={{ class_subject_id: classSubjectId, period_id: academicContext.effectivePeriodId }}
+  reportTitle={isArabic ? "طباعة سجل الدرجات" : "Print Gradebook"}
+/>

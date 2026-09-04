@@ -22,6 +22,15 @@ impl ReportRepository for ReportRepoImpl {
         }))
     }
 
+    async fn find_job_by_id(&self, id: Uuid) -> Result<Option<DomainReportJob>, DomainError> {
+        let model = report_job::Entity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(model.map(|m| DomainReportJob {
+            id: m.id, org_id: m.org_id, template_id: m.template_id, requested_by: m.requested_by,
+            parameters: m.parameters, status: m.status, file_path: m.file_path,
+            created_at: m.created_at.into(), completed_at: m.completed_at.map(|d| d.into()),
+        }))
+    }
+
     async fn save_job(&self, job: &DomainReportJob) -> Result<(), DomainError> {
         let active = report_job::ActiveModel {
             id: Set(job.id), org_id: Set(job.org_id), template_id: Set(job.template_id),

@@ -48,7 +48,7 @@ import {
 import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
 
-import PrintDialog from "$lib/shared/components/print-dialog.svelte";
+import ReportViewer from "$lib/shared/components/report-viewer.svelte";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -161,8 +161,9 @@ const studentName = $derived(
 );
 
 // Dialog and Printing states
-let showQrModal = $state(false);
-let printMode = $state<"list" | "voucher">("list");
+let printReportOpen = $state(false);
+let printTemplateId = $state("");
+let printParameters = $state({});
 
 const paymentMethods = [
   { value: "Cash", label: m.finance_pos_cash() },
@@ -490,10 +491,13 @@ function handleVoid() {
 }
 
 function handlePrintList() {
-  printMode = "list";
-  setTimeout(() => {
-    window.print();
-  }, 50);
+  printTemplateId = "payments_list_template_id"; // Replace with actual backend template ID
+  printParameters = {
+    method: methodFilter,
+    start_date: startDateFilter,
+    end_date: endDateFilter
+  };
+  printReportOpen = true;
 }
 
 function handlePrintVoucher() {
@@ -501,19 +505,9 @@ function handlePrintVoucher() {
     toast.error("الرجاء اختيار سند من الجدول أولاً");
     return;
   }
-  printMode = "voucher";
-  payments = payments.map((p) => {
-    if (p.id === selectedPayment.id) {
-      const updatedCount = (p.prints_count || 0) + 1;
-      selectedPayment.prints_count = updatedCount;
-      return { ...p, prints_count: updatedCount };
-    }
-    return p;
-  });
-
-  setTimeout(() => {
-    window.print();
-  }, 50);
+  printTemplateId = "payment_receipt_template_id"; // Replace with actual backend template ID
+  printParameters = { payment_id: selectedPayment.id };
+  printReportOpen = true;
 }
 
 function getMethodLabel(methodStr: string) {
@@ -578,7 +572,7 @@ const filteredPayments = $derived.by(() => {
 
 <div class="h-full flex flex-col overflow-hidden bg-background p-4 font-sans text-start">
   <!-- Main Content Scroll Area (Form + Table) -->
-  <div class="flex-1 overflow-y-auto py-3 space-y-4 print:hidden">
+  <div class="flex-1 overflow-y-auto py-3 space-y-4">
     
     <!-- Redesigned Receipt Voucher Input Form Card -->
     <Card class="border border-border/60 shadow-sm overflow-hidden bg-card">
@@ -965,7 +959,7 @@ const filteredPayments = $derived.by(() => {
           <Button 
             variant="outline" 
             size="sm" 
-            onclick={() => printDialogOpen = true} 
+            onclick={() => { printTemplateId = "payments_bulk_template_id"; printParameters = { ids: Array.from(selectedPaymentIds) }; printReportOpen = true; }} 
             class="h-8 text-[11px] flex items-center gap-1.5 cursor-pointer hover:bg-muted border-primary/30 text-primary"
           >
             <Printer size={12} />
@@ -1097,108 +1091,11 @@ const filteredPayments = $derived.by(() => {
     </div>
   {/if}
 
-  <!-- Print View Container -->
-  <div class="hidden print:flex flex-col gap-6 text-start p-8 select-none bg-white text-black h-full w-full">
-    {#if printMode === 'voucher' && selectedPayment}
-      <div class="text-center pb-6 border-b-2 border-emerald-500/50 flex justify-between items-center">
-        <div class="text-start">
-          <h2 class="text-xl font-bold text-zinc-800">{m.finance_journal_print_org_name()}</h2>
-          <p class="text-xs text-zinc-500">{m.finance_payments_customer_receipt()}</p>
-        </div>
-        <h1 class="text-2xl font-extrabold text-emerald-600">
-          سند قبض #{receiptNumber}
-        </h1>
-        <div class="text-end text-xs text-zinc-600">
-          <p>{m.finance_journal_date_label()}{formatDate(paymentDate)}</p>
-          <p>{m.finance_payments_cash_account_label()}{selectedPayment.cash_account_name || treasuries.find((t) => t.id === selectedPayment.cash_account_id)?.name || m.finance_payments_collections_cash_account()}</p>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-2 gap-4 my-6 text-sm">
-        <div class="border border-zinc-200 p-3 rounded-lg col-span-2 flex justify-between items-center">
-          <div>
-            <span class="text-xs text-zinc-500 block">{m.finance_payments_received_from()}</span>
-            <span class="font-bold text-lg text-zinc-800">{studentName}</span>
-          </div>
-          <div class="text-end">
-            <span class="text-xs text-zinc-500 block">{m.finance_payments_amount_received()}</span>
-            <span class="font-mono font-extrabold text-emerald-600 text-lg">{formatCurrency(amount || 0, currency)}</span>
-          </div>
-        </div>
-        <div class="border border-zinc-200 p-3 rounded-lg">
-          <span class="text-xs text-zinc-500 block">{m.finance_fees_col_method()}</span>
-          <span class="font-bold text-zinc-800">{getMethodLabel(paymentMethod)}</span>
-        </div>
-        <div class="border border-zinc-200 p-3 rounded-lg col-span-2">
-          <span class="text-xs text-zinc-500 block">{m.common_docs_form_desc_label()}</span>
-          <span class="font-medium text-zinc-700">{notes}</span>
-        </div>
-      </div>
-
-      <div class="flex justify-between items-center mt-20 text-xs font-semibold text-zinc-600">
-        <div class="text-center w-32 border-t border-zinc-300 pt-2">{m.finance_payments_cashier()}</div>
-        <div class="text-center w-32 border-t border-zinc-300 pt-2">{m.finance_payments_recipient()}</div>
-        <div class="text-center w-32 border-t border-zinc-300 pt-2">{m.finance_payments_admin()}</div>
-      </div>
-    {:else}
-      <div class="text-center pb-6 border-b border-zinc-300">
-        <h1 class="text-2xl font-bold">{m.finance_payments_receipts_ledger()}</h1>
-        <p class="text-xs text-zinc-500">{m.finance_payments_vouchers_list()}</p>
-      </div>
-      <table class="w-full border-collapse mt-6 text-xs border border-zinc-200">
-        <thead>
-          <tr class="bg-zinc-100 border-b border-zinc-300 text-zinc-700">
-            <th class="p-2 text-start">{m.common_word_number()}</th>
-            <th class="p-2 text-start">{m.common_overview_date()}</th>
-            <th class="p-2 text-start">{m.finance_fees_col_method()}</th>
-            <th class="p-2 text-end">{m.common_ft_col_amount()}</th>
-            <th class="p-2 text-start">{m.common_ledger_tab_cash_account()}</th>
-            <th class="p-2 text-start">{m.finance_payments_customer_account()}</th>
-            <th class="p-2 text-start">{m.common_calendar_field_description()}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each filteredPayments as p}
-            {#if showUserRecords || p.user === "U78"}
-              <tr class="border-b border-zinc-200 text-zinc-800">
-                <td class="p-2 font-mono font-bold">{p.receipt_number || p.id.slice(0, 8)}</td>
-                <td class="p-2">{formatDate(p.payment_date || p.created_at)}</td>
-                <td class="p-2">{getMethodLabel(p.payment_method)}</td>
-                <td class="p-2 text-end font-mono">{formatCurrency(p.amount, p.currency)}</td>
-                <td class="p-2">{p.cash_account_name || treasuries.find((t) => t.id === p.cash_account_id)?.name || m.finance_payments_collections_cash_account()}</td>
-                <td class="p-2">{p.student_name || '-'}</td>
-                <td class="p-2">{p.notes || '-'}</td>
-              </tr>
-            {/if}
-          {/each}
-        </tbody>
-      </table>
-    {/if}
-  </div>
-
-  <PrintDialog
-    bind:open={printDialogOpen}
-    entityType="payment"
-    entityIds={Array.from(selectedPaymentIds)}
+  <ReportViewer
+    bind:open={printReportOpen}
+    templateId={printTemplateId}
+    parameters={printParameters}
+    reportTitle="طباعة المقبوضات"
   />
 
 </div>
-
-<style>
-/* Printing style overrides */
-@media print {
-  :global(body) {
-    background-color: white !important;
-    color: black !important;
-  }
-  :global(main), :global(#app) {
-    background-color: white !important;
-  }
-  .print\:hidden {
-    display: none !important;
-  }
-  .print\:flex {
-    display: flex !important;
-  }
-}
-</style>

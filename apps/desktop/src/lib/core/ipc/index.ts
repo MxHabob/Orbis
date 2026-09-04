@@ -1,23 +1,11 @@
 // ── Core IPC Layer ─────────────────────────────────────────────────
 // Single entry point for all Tauri IPC communication.
 
-// We export a mocked commands object temporarily to satisfy existing imports.
-// Eventually, these should be replaced with `api` from `$lib/api/client.ts`.
-import { invoke } from "@tauri-apps/api/core";
+// We export the `api` object directly from our unified client layer.
+// This ensures that all frontend features use a single, strongly-typed
+// source of truth whether running in Local (SQLite/Tauri) or Remote (HTTP) mode.
 
-export const commands: any = new Proxy({}, {
-  get(target: any, domain: string) {
-    return new Proxy({}, {
-      get(target: any, operation: string) {
-        return async (...args: any[]) => {
-          const tauriCommand = `${domain}_${operation.replace(/[A-Z]/g, letter => '_' + letter.toLowerCase())}`;
-          const payload = args[0] || {};
-          return await invoke(tauriCommand, { ...payload });
-        };
-      }
-    });
-  }
-});
+export { api as commands } from "$lib/api/client"; // Temporary alias to satisfy existing imports until fully migrated
 
 export const isDesktopApp = typeof window !== 'undefined' && !!(window as any).__TAURI_INTERNALS__;
 export const listenForDeepLinks = () => {};

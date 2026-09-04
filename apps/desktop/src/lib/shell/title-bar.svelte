@@ -40,9 +40,7 @@ const currentPeriodName = $derived.by(() => {
     (c) => String(c.id) === academicContext.effectivePeriodId,
   );
   if (active) {
-    return active.name_ar && getLocale() === "ar"
-      ? active.name_ar
-      : active.name;
+    return active.name;
   }
   return m.titlebar_period();
 });

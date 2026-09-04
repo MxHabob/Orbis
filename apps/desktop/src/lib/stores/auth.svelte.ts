@@ -1,7 +1,7 @@
 // ── Auth Store ───────────────────────────────────────────────────────
 // Svelte 5 Runes-based authentication state.
 
-import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api/client";
 import type { User } from "$lib/core/ipc";
 import { extractErrorMessage } from "$lib/core/ipc";
 
@@ -23,7 +23,7 @@ class AuthStore {
     this.isLoading = true;
     this.error = null;
     try {
-      const res = await commands.iam.login(email, password);
+      const res = await api.iam.login(email, password);
       this.user = res.user;
       this.token = res.access_token;
       this.restorePromise = null;
@@ -40,7 +40,7 @@ class AuthStore {
 
   async logout() {
     if (this.token) {
-      await commands.iam.logout(this.token).catch(() => {});
+      await api.iam.logout(this.token).catch(() => {});
     }
     this.user = null;
     this.token = null;
@@ -70,7 +70,7 @@ class AuthStore {
       );
       if (token && userStr) {
         try {
-          const res = await commands.iam.restoreSession(token);
+          const res = await api.iam.restoreSession(token);
           this.token = res.access_token;
           this.user = res.user;
           if (isSetupCompleteStr !== null) {
@@ -93,7 +93,7 @@ class AuthStore {
       return;
     }
     try {
-      const res = await commands.organization.checkSetup();
+      const res = await api.organizations.checkSetup();
       const isComplete =
         typeof res === "boolean" ? res : Boolean(res?.setup_completed ?? true);
       this.isSetupComplete = isComplete;

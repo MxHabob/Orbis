@@ -10,7 +10,7 @@ import type {
   AcademicContextResponse,
   AcademicPeriod,
 } from "@orbis/sdk";
-import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api/client";
 import { extractErrorMessage } from "$lib/core/ipc";
 import { toast } from "@orbis/ui";
 
@@ -125,8 +125,8 @@ class AcademicContextStore {
     this.orgId = orgId;
     this.isLoading = true;
     try {
-      const current_year = await commands.calendar.getCurrent();
-      const all_years = await commands.calendar.listAcademicPeriods();
+      const current_year = await api.calendar.getCurrent();
+      const all_years = await api.calendar.listAcademicPeriods();
       const ctx: AcademicContextResponse = {
         current_year,
         all_years: all_years || [],
@@ -163,7 +163,7 @@ class AcademicContextStore {
     try {
       const id = orgId || this.orgId;
       if (!id) return;
-      this.currentYear = await commands.calendar.getCurrent();
+      this.currentYear = await api.calendar.getCurrent();
     } catch (e: unknown) {
       console.warn("Failed to load current year:", extractErrorMessage(e));
     }
@@ -171,7 +171,7 @@ class AcademicContextStore {
 
   async loadYears(orgId: string) {
     try {
-      this.allYears = await commands.calendar.listAcademicPeriods();
+      this.allYears = await api.calendar.listAcademicPeriods();
     } catch (e: unknown) {
       toast.error(extractErrorMessage(e));
     }
@@ -181,7 +181,7 @@ class AcademicContextStore {
     if (this.isSwitching) return;
     this.isSwitching = true;
     try {
-      await commands.calendar.getAcademicPeriod(periodId);
+      await api.calendar.getAcademicPeriod(periodId);
       await this.loadCurrentYear();
       toast.success(`Switched to ${this.yearLabel}`);
     } catch (e: unknown) {
@@ -198,14 +198,14 @@ class AcademicContextStore {
   async loadAssessmentConfig() {
     try {
       // Load grade scales → pick the first one → load its items
-      const scales: any[] = await commands.assessment.listGradeScales();
+      const scales: any[] = await api.assessment.listGradeScales();
       if (scales && scales.length > 0) {
-        const items = await commands.assessment.listGradeScaleItems(scales[0].id);
+        const items = await api.assessment.listGradeScaleItems(scales[0].id);
         this.gradeScaleItems = items || [];
       }
 
       // Load calculation policies → pick the first one
-      const policies: any[] = await commands.assessment.listCalculationPolicies();
+      const policies: any[] = await api.assessment.listCalculationPolicies();
       this.activeCalcPolicy = policies?.[0] ?? null;
     } catch (e) {
       console.warn("Assessment config load failed:", e);
