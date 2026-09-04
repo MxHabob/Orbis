@@ -35,5 +35,8 @@ pub mod workflow;
 pub mod report;
 pub mod role;
 pub mod role_permission;
-pub mod user_role;
+
 pub mod autopilot_task;
+pub mod currency;
+pub mod student_subject;
+pub mod user_role_assignment;

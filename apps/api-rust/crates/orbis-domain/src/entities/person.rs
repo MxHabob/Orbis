@@ -5,7 +5,7 @@ use uuid::Uuid;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Person {
     pub id: Uuid,
-    pub party_id: Option<Uuid>,
+    
     pub org_id: Option<Uuid>,
     pub first_name: String,
     pub last_name: String,

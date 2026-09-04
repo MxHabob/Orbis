@@ -8,7 +8,7 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
     pub person_id: Uuid,
-    pub party_id: Option<Uuid>,
+    
     pub org_id: Uuid,
     pub email: Option<String>,
     pub email_verified: bool,
@@ -17,7 +17,7 @@ pub struct Model {
     pub password_hash: Option<String>,
     pub mfa_enabled: bool,
     pub full_name: String,
-    pub primary_role: String,
+    
     pub status: String,
     pub login_count: i32,
     pub failed_logins: i32,

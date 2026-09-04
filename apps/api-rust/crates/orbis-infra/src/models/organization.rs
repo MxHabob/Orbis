@@ -19,6 +19,7 @@ pub struct Model {
     pub max_users: i32,
     pub max_students: i32,
     pub max_storage_gb: i32,
+    pub base_currency_id: Option<String>,
     pub settings: Option<serde_json::Value>,
     pub features: Option<serde_json::Value>,
     pub logo: Option<String>,

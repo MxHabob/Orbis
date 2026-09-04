@@ -13,7 +13,6 @@ impl MigrationTrait for Migration {
                     .table(Person::Table)
                     .if_not_exists()
                     .col(pk_uuid(Person::Id))
-                    .col(uuid_null(Person::PartyId))
                     .col(uuid_null(Person::OrgId))
                     .col(string(Person::FirstName))
                     .col(string(Person::LastName))
@@ -48,7 +47,6 @@ impl MigrationTrait for Migration {
 pub enum Person {
     Table,
     Id,
-    PartyId,
     OrgId,
     FirstName,
     LastName,

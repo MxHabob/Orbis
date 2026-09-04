@@ -13,7 +13,9 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(ColumnDef::new(Attendances::Id).uuid().not_null().primary_key())
                     .col(ColumnDef::new(Attendances::StudentId).uuid().not_null())
-                    .col(ColumnDef::new(Attendances::ClassId).uuid().not_null())
+                    .col(ColumnDef::new(Attendances::ClassId).uuid().null())
+                    .col(ColumnDef::new(Attendances::ClassSubjectId).uuid().null())
+                    .col(ColumnDef::new(Attendances::ScheduledLessonId).uuid().null())
                     .col(ColumnDef::new(Attendances::Date).date().not_null())
                     .col(ColumnDef::new(Attendances::Status).string().not_null())
                     .col(ColumnDef::new(Attendances::Notes).string().null())
@@ -37,6 +39,8 @@ pub enum Attendances {
     Id,
     StudentId,
     ClassId,
+    ClassSubjectId,
+    ScheduledLessonId,
     Date,
     Status,
     Notes,

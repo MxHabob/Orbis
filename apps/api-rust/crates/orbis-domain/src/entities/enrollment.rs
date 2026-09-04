@@ -8,7 +8,7 @@ pub struct Enrollment {
     pub org_id: Uuid,
     pub period_id: Uuid,
     pub student_id: Uuid,
-    pub class_id: Uuid,
+    pub class_id: Option<Uuid>,
     pub student_number: String,
     pub status: String,
     pub enrollment_date: DateTime<Utc>,

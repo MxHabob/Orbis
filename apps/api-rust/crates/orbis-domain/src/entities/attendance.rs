@@ -6,7 +6,9 @@ use serde::{Deserialize, Serialize};
 pub struct Attendance {
     pub id: Uuid,
     pub student_id: Uuid,
-    pub class_id: Uuid,
+    pub class_id: Option<Uuid>,
+    pub class_subject_id: Option<Uuid>,
+    pub scheduled_lesson_id: Option<Uuid>,
     pub date: NaiveDate,
     pub status: String, // Present, Absent, Late, Excused
     pub notes: Option<String>,

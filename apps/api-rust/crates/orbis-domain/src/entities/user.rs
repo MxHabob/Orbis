@@ -29,7 +29,7 @@ impl ToString for Role {
 pub struct User {
     pub id: Uuid,
     pub person_id: Uuid,
-    pub party_id: Option<Uuid>,
+    
     pub org_id: Uuid,
     pub email: Option<String>,
     pub email_verified: bool,
@@ -38,7 +38,7 @@ pub struct User {
     pub password_hash: Option<String>,
     pub mfa_enabled: bool,
     pub full_name: String,
-    pub primary_role: Role,
+    
     pub status: String,
     pub login_count: i32,
     pub failed_logins: i32,

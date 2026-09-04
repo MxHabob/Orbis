@@ -35,6 +35,9 @@ pub mod m20240901_000032_create_integrations_tables;
 pub mod m20240901_000033_create_ai_tables;
 pub mod m20240901_000034_create_workflow_tables;
 pub mod m20240901_000035_create_report_tables;
+pub mod m20240901_000036_create_iam_tables;
+pub mod m20240901_000037_create_currencies_tables;
+pub mod m20240901_000038_create_student_subjects_table;
 
 pub struct Migrator;
 
@@ -77,6 +80,9 @@ impl MigratorTrait for Migrator {
             Box::new(m20240901_000033_create_ai_tables::Migration),
             Box::new(m20240901_000034_create_workflow_tables::Migration),
             Box::new(m20240901_000035_create_report_tables::Migration),
+            Box::new(m20240901_000036_create_iam_tables::Migration),
+            Box::new(m20240901_000037_create_currencies_tables::Migration),
+            Box::new(m20240901_000038_create_student_subjects_table::Migration),
         ]
     }
 }

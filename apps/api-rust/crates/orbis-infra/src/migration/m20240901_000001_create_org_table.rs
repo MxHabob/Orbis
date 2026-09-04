@@ -23,6 +23,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Organizations::MaxUsers).integer().not_null().default(1000))
                     .col(ColumnDef::new(Organizations::MaxStudents).integer().not_null().default(5000))
                     .col(ColumnDef::new(Organizations::MaxStorageGb).integer().not_null().default(100))
+                    .col(ColumnDef::new(Organizations::BaseCurrencyId).string().null())
                     .col(ColumnDef::new(Organizations::Settings).json().null())
                     .col(ColumnDef::new(Organizations::Features).json().null())
                     .col(ColumnDef::new(Organizations::Logo).string().null())
@@ -64,6 +65,7 @@ pub enum Organizations {
     MaxUsers,
     MaxStudents,
     MaxStorageGb,
+    BaseCurrencyId,
     Settings,
     Features,
     Logo,

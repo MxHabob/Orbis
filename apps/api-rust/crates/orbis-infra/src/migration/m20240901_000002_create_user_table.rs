@@ -14,7 +14,6 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(pk_uuid(User::Id))
                     .col(uuid(User::PersonId))
-                    .col(uuid_null(User::PartyId))
                     .col(uuid_null(User::OrgId))
                     .col(string_null(User::Email).unique_key())
                     .col(boolean(User::EmailVerified).default(false))
@@ -23,7 +22,6 @@ impl MigrationTrait for Migration {
                     .col(string_null(User::PasswordHash))
                     .col(boolean(User::MfaEnabled).default(false))
                     .col(string(User::FullName))
-                    .col(string(User::PrimaryRole))
                     .col(string(User::Status).default("active"))
                     .col(integer(User::LoginCount).default(0))
                     .col(integer(User::FailedLogins).default(0))
@@ -56,7 +54,6 @@ pub enum User {
     Table,
     Id,
     PersonId,
-    PartyId,
     OrgId,
     Email,
     EmailVerified,
@@ -65,7 +62,6 @@ pub enum User {
     PasswordHash,
     MfaEnabled,
     FullName,
-    PrimaryRole,
     Status,
     LoginCount,
     FailedLogins,

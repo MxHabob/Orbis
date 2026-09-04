@@ -6,7 +6,8 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
     pub org_id: Uuid,
-    pub enrollment_id: Uuid,
+    pub student_id: Uuid,
+    pub enrollment_id: Option<Uuid>,
     pub fee_template_id: Uuid,
     pub original_amount: f64,
     pub discount_amount: f64,

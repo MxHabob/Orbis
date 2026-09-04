@@ -16,6 +16,9 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(JournalEntries::TransactionRef).string().not_null())
                     .col(ColumnDef::new(JournalEntries::AccountingDate).date().not_null())
                     .col(ColumnDef::new(JournalEntries::Amount).double().not_null())
+                    .col(ColumnDef::new(JournalEntries::CurrencyId).string().not_null())
+                    .col(ColumnDef::new(JournalEntries::ExchangeRate).double().not_null().default(1.0))
+                    .col(ColumnDef::new(JournalEntries::BaseAmount).double().not_null())
                     .col(ColumnDef::new(JournalEntries::DebitAccountId).uuid().not_null())
                     .col(ColumnDef::new(JournalEntries::CreditAccountId).uuid().not_null())
                     .col(ColumnDef::new(JournalEntries::Description).string().not_null())
@@ -40,6 +43,9 @@ enum JournalEntries {
     TransactionRef,
     AccountingDate,
     Amount,
+    CurrencyId,
+    ExchangeRate,
+    BaseAmount,
     DebitAccountId,
     CreditAccountId,
     Description,

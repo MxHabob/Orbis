@@ -31,8 +31,6 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(AcademicPeriods::IsGradeEntryOpen).boolean().not_null().default(false))
                     .col(ColumnDef::new(AcademicPeriods::ExamStart).timestamp_with_time_zone().null())
                     .col(ColumnDef::new(AcademicPeriods::ExamEnd).timestamp_with_time_zone().null())
-                    .col(ColumnDef::new(AcademicPeriods::ScaleId).uuid().null())
-                    .col(ColumnDef::new(AcademicPeriods::PassFailPolicyId).uuid().null())
                     .col(ColumnDef::new(AcademicPeriods::Status).string().not_null())
                     .col(ColumnDef::new(AcademicPeriods::IsLocked).boolean().not_null().default(false))
                     .col(ColumnDef::new(AcademicPeriods::LockedAt).timestamp_with_time_zone().null())
@@ -76,8 +74,6 @@ pub enum AcademicPeriods {
     IsGradeEntryOpen,
     ExamStart,
     ExamEnd,
-    ScaleId,
-    PassFailPolicyId,
     Status,
     IsLocked,
     LockedAt,

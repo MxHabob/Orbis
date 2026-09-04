@@ -30,8 +30,8 @@ pub struct AcademicPeriod {
     pub exam_start: Option<DateTime<Utc>>,
     pub exam_end: Option<DateTime<Utc>>,
 
-    pub scale_id: Option<Uuid>,
-    pub pass_fail_policy_id: Option<Uuid>,
+    
+    
 
     pub status: String, // planned, active, grading, closed
     pub is_locked: bool,

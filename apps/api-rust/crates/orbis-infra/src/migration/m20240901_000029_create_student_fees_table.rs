@@ -13,7 +13,8 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(ColumnDef::new(StudentFees::Id).uuid().not_null().primary_key())
                     .col(ColumnDef::new(StudentFees::OrgId).uuid().not_null())
-                    .col(ColumnDef::new(StudentFees::EnrollmentId).uuid().not_null())
+                    .col(ColumnDef::new(StudentFees::StudentId).uuid().not_null())
+                    .col(ColumnDef::new(StudentFees::EnrollmentId).uuid().null())
                     .col(ColumnDef::new(StudentFees::FeeTemplateId).uuid().not_null())
                     .col(ColumnDef::new(StudentFees::OriginalAmount).double().not_null())
                     .col(ColumnDef::new(StudentFees::DiscountAmount).double().not_null())
@@ -39,6 +40,7 @@ enum StudentFees {
     Table,
     Id,
     OrgId,
+    StudentId,
     EnrollmentId,
     FeeTemplateId,
     OriginalAmount,

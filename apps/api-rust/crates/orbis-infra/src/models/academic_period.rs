@@ -25,8 +25,8 @@ pub struct Model {
     pub is_grade_entry_open: bool,
     pub exam_start: Option<DateTime<Utc>>,
     pub exam_end: Option<DateTime<Utc>>,
-    pub scale_id: Option<Uuid>,
-    pub pass_fail_policy_id: Option<Uuid>,
+    
+    
     pub status: String,
     pub is_locked: bool,
     pub locked_at: Option<DateTime<Utc>>,

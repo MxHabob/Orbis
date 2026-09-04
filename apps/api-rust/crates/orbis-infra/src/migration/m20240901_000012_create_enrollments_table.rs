@@ -15,7 +15,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Enrollments::OrgId).uuid().not_null())
                     .col(ColumnDef::new(Enrollments::PeriodId).uuid().not_null())
                     .col(ColumnDef::new(Enrollments::StudentId).uuid().not_null())
-                    .col(ColumnDef::new(Enrollments::ClassId).uuid().not_null())
+                    .col(ColumnDef::new(Enrollments::ClassId).uuid().null())
                     .col(ColumnDef::new(Enrollments::StudentNumber).string().not_null().unique_key())
                     .col(ColumnDef::new(Enrollments::Status).string().not_null())
                     .col(ColumnDef::new(Enrollments::EnrollmentDate).timestamp_with_time_zone().not_null())
