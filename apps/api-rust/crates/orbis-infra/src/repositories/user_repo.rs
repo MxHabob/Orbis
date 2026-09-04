@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel, Set, ColumnTrait, QueryFilter};
+use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set, ColumnTrait, QueryFilter};
 use uuid::Uuid;
 
 use orbis_app::ports::repositories::UserRepository;

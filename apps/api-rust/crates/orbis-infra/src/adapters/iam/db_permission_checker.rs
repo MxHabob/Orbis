@@ -1,11 +1,10 @@
 use async_trait::async_trait;
 use orbis_app::ports::iam::PermissionCheckerPort;
-use orbis_domain::iam::actor::Actor;
 use orbis_domain::iam::permission::Permission;
 use orbis_domain::errors::DomainError;
 use orbis_app::context::RequestContext;
 use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter, ColumnTrait};
-use crate::models::{user_role, role_permission, role};
+use crate::models::{user_role, role_permission};
 
 pub struct DbPermissionChecker {
     pub db: DatabaseConnection,

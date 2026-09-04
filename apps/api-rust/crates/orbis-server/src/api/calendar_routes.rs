@@ -4,7 +4,6 @@ use orbis_app::context::RequestContext;
 use orbis_app::usecases::calendar::{
     academic_year::CreateAcademicYearUseCase,
     academic_period::CreateAcademicPeriodUseCase,
-    period_template::CreatePeriodTemplateUseCase,
 };
 use uuid::Uuid;
 use chrono::{DateTime, Utc};

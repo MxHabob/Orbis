@@ -103,14 +103,14 @@ impl SurveillancePort for IntegrationResolver {
 
 #[async_trait]
 impl ReportEnginePort for IntegrationResolver {
-    async fn generate_pdf(&self, ctx: &RequestContext, template_body: &str, data: &serde_json::Value) -> Result<Vec<u8>, DomainError> {
+    async fn generate_pdf(&self, ctx: &RequestContext, layout_body: Option<&str>, template_body: &str, data: &serde_json::Value) -> Result<Vec<u8>, DomainError> {
         let adapter = TeraReportAdapter::new();
-        adapter.generate_pdf(ctx, template_body, data).await
+        adapter.generate_pdf(ctx, layout_body, template_body, data).await
     }
 
-    async fn generate_excel(&self, ctx: &RequestContext, template_body: &str, data: &serde_json::Value) -> Result<Vec<u8>, DomainError> {
+    async fn generate_excel(&self, ctx: &RequestContext, layout_body: Option<&str>, template_body: &str, data: &serde_json::Value) -> Result<Vec<u8>, DomainError> {
         let adapter = TeraReportAdapter::new();
-        adapter.generate_excel(ctx, template_body, data).await
+        adapter.generate_excel(ctx, layout_body, template_body, data).await
     }
 }
 

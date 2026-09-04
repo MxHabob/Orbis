@@ -1,10 +1,9 @@
 use std::sync::Arc;
-use orbis_domain::autopilot::task::{AutopilotTask, TaskStatus, TaskType};
+use orbis_domain::autopilot::task::{AutopilotTask, TaskType};
 use orbis_domain::events::DomainEvent;
 use orbis_domain::errors::DomainError;
 use crate::context::RequestContext;
 use crate::ports::repositories::PolicyRepository;
-use crate::ports::event_bus::EventBus;
 
 pub struct AutopilotEngine {
     pub policy_repo: Arc<dyn PolicyRepository>,
@@ -53,7 +52,7 @@ impl AutopilotEngine {
     }
 
     /// Evaluates domain events on-the-fly to decide if an immediate task should be scheduled or executed.
-    pub async fn handle_event(&self, ctx: &RequestContext, event: &DomainEvent) -> Result<(), DomainError> {
+    pub async fn handle_event(&self, _ctx: &RequestContext, event: &DomainEvent) -> Result<(), DomainError> {
         // e.g. DomainEvent::StudentFeeGenerated -> Schedule a TaskType::SendDelayNotification if unpaid by due_date
         println!("Autopilot Engine analyzed event: {:?}", event);
         Ok(())

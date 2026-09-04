@@ -520,6 +520,49 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
         vec![org_settings.to_string().into(), org_id.clone().into()]
     )).await.ok();
 
+    // 3j. Default Report Templates
+    let report_templates = vec![
+        (
+            "44444444-4444-4444-4444-444444444444",
+            "Master Layout",
+            "layout",
+            include_str!("../../../../../../apps/cli/templates/reports/master_layout.html")
+        ),
+        (
+            "11111111-1111-1111-1111-111111111111",
+            "Payment Receipt",
+            "payment_receipt",
+            include_str!("../../../../../../apps/cli/templates/reports/payment_receipt.html")
+        ),
+        (
+            "22222222-2222-2222-2222-222222222222",
+            "Bulk Payments Receipt",
+            "payments_bulk",
+            include_str!("../../../../../../apps/cli/templates/reports/payments_bulk.html")
+        ),
+        (
+            "33333333-3333-3333-3333-333333333333",
+            "Class Subject Gradebook",
+            "class_subject_gradebook",
+            include_str!("../../../../../../apps/cli/templates/reports/class_subject_gradebook.html")
+        ),
+    ];
+
+    for (t_id, name, t_type, t_body) in report_templates {
+        db.execute(Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "INSERT INTO report_templates (id, org_id, name, template_type, template_body, is_active, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, 1, $6, $7)",
+            vec![
+                t_id.into(),
+                org_id.clone().into(),
+                name.into(),
+                t_type.into(),
+                t_body.into(),
+                now.clone().into(),
+                now.clone().into(),
+            ]
+        )).await.ok();
+    }
 
 
     info!("Bootstrap completed for org_id={} type={}", org_id, payload.org_type);

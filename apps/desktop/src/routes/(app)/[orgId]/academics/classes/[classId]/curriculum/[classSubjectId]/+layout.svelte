@@ -121,7 +121,7 @@
 
 <ReportViewer
   bind:open={showPrintDialog}
-  templateId="class_subject_gradebook_template"
+  templateId="33333333-3333-3333-3333-333333333333"
   parameters={{ class_subject_id: classSubjectId, period_id: academicContext.effectivePeriodId }}
   reportTitle={isArabic ? "طباعة سجل الدرجات" : "Print Gradebook"}
 />

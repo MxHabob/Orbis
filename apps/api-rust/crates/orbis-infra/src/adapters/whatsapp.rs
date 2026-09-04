@@ -3,7 +3,6 @@ use orbis_app::ports::gateways::NotificationPort;
 use orbis_domain::errors::DomainError;
 use orbis_app::context::RequestContext;
 use reqwest::Client;
-use serde_json::json;
 
 pub struct WhatsAppAdapter {
     pub account_sid: String,

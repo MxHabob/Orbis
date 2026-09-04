@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set, ColumnTrait, QueryFilter};
-use uuid::Uuid;
 
 use orbis_app::ports::repositories::SessionRepository;
 use orbis_domain::entities::session::Session;

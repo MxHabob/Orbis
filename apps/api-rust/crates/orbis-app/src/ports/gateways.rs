@@ -9,8 +9,8 @@ pub trait LlmGatewayPort: Send + Sync {
 
 #[async_trait]
 pub trait ReportEnginePort: Send + Sync {
-    async fn generate_pdf(&self, ctx: &RequestContext, template_body: &str, data: &serde_json::Value) -> Result<Vec<u8>, DomainError>;
-    async fn generate_excel(&self, ctx: &RequestContext, template_body: &str, data: &serde_json::Value) -> Result<Vec<u8>, DomainError>;
+    async fn generate_pdf(&self, ctx: &RequestContext, layout_body: Option<&str>, template_body: &str, data: &serde_json::Value) -> Result<Vec<u8>, DomainError>;
+    async fn generate_excel(&self, ctx: &RequestContext, layout_body: Option<&str>, template_body: &str, data: &serde_json::Value) -> Result<Vec<u8>, DomainError>;
 }
 
 #[async_trait]

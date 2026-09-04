@@ -52,7 +52,6 @@ impl ProcessPaymentUseCase {
         }
         
         // 1. Update StudentFee if fee_id is provided
-        let mut revenue_acct = Uuid::new_v4(); // Default fallback
         let mut receivable_acct = Uuid::new_v4();
         
         if let Some(f_id) = fee_id {
@@ -62,7 +61,6 @@ impl ProcessPaymentUseCase {
                 self.student_fee_repo.save(&fee).await?;
                 
                 if let Some(template) = self.fee_template_repo.find_by_id(fee.fee_template_id).await? {
-                    revenue_acct = template.revenue_account_id;
                     receivable_acct = template.receivable_account_id;
                 }
             }

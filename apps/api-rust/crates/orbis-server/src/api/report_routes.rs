@@ -6,7 +6,6 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::state::AppState;
-use orbis_domain::errors::DomainError;
 use orbis_domain::queries::pagination::CursorRequest;
 use orbis_app::usecases::report::generate_report::GenerateReportUseCase;
 

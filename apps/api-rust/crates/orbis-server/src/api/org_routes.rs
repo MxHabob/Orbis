@@ -1,7 +1,7 @@
 use axum::{extract::State, Json, routing::post, Router};
 use serde::{Deserialize, Serialize};
 use orbis_app::context::RequestContext;
-use orbis_app::usecases::organization::{CreateOrganizationUseCase, UpdateOrganizationUseCase};
+use orbis_app::usecases::organization::CreateOrganizationUseCase;
 use orbis_app::usecases::org_unit::CreateOrgUnitUseCase;
 use uuid::Uuid;
 use crate::state::AppState;

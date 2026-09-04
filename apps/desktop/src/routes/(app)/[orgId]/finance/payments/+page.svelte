@@ -491,7 +491,7 @@ function handleVoid() {
 }
 
 function handlePrintList() {
-  printTemplateId = "payments_list_template_id"; // Replace with actual backend template ID
+  printTemplateId = "22222222-2222-2222-2222-222222222222"; // Bulk Receipts Template
   printParameters = {
     method: methodFilter,
     start_date: startDateFilter,
@@ -505,7 +505,7 @@ function handlePrintVoucher() {
     toast.error("الرجاء اختيار سند من الجدول أولاً");
     return;
   }
-  printTemplateId = "payment_receipt_template_id"; // Replace with actual backend template ID
+  printTemplateId = "11111111-1111-1111-1111-111111111111"; // Payment Receipt Template
   printParameters = { payment_id: selectedPayment.id };
   printReportOpen = true;
 }
@@ -959,7 +959,7 @@ const filteredPayments = $derived.by(() => {
           <Button 
             variant="outline" 
             size="sm" 
-            onclick={() => { printTemplateId = "payments_bulk_template_id"; printParameters = { ids: Array.from(selectedPaymentIds) }; printReportOpen = true; }} 
+            onclick={() => { printTemplateId = "22222222-2222-2222-2222-222222222222"; printParameters = { ids: Array.from(selectedPaymentIds) }; printReportOpen = true; }} 
             class="h-8 text-[11px] flex items-center gap-1.5 cursor-pointer hover:bg-muted border-primary/30 text-primary"
           >
             <Printer size={12} />

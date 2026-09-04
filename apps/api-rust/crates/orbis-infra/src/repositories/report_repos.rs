@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use orbis_app::ports::repositories::ReportRepository;
 use orbis_domain::entities::report::{ReportTemplate as DomainReportTemplate, ReportJob as DomainReportJob};
 use orbis_domain::errors::DomainError;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set, ColumnTrait, QueryFilter};
+use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
 use uuid::Uuid;
 
 use crate::models::report::{report_template, report_job};

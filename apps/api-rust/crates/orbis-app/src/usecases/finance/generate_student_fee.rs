@@ -44,7 +44,7 @@ impl GenerateStudentFeeUseCase {
 
         self.student_fee_repo.save(&fee).await?;
 
-        self.event_bus.publish(_ctx, &DomainEvent::StudentFeeGenerated {
+        let _ = self.event_bus.publish(_ctx, &DomainEvent::StudentFeeGenerated {
             fee_id: fee.id,
             enrollment_id,
             net_amount,

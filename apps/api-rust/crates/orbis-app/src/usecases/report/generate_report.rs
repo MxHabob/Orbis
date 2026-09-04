@@ -28,6 +28,11 @@ impl GenerateReportUseCase {
             return Err(DomainError::Validation("Template is not active".into()));
         }
 
+        // 1b. Fetch Master Layout Template (if it exists)
+        let layout_id = Uuid::parse_str("44444444-4444-4444-4444-444444444444").unwrap();
+        let layout_template = self.report_repo.find_template_by_id(layout_id).await?;
+        let layout_body = layout_template.map(|t| t.template_body);
+
         // 2. Create Job Record
         let job = ReportJob {
             id: Uuid::new_v4(),
@@ -48,9 +53,9 @@ impl GenerateReportUseCase {
 
         // 4. Generate Document
         let result = if format == "pdf" {
-            self.report_engine.generate_pdf(_ctx, &template.template_body, &parameters).await
+            self.report_engine.generate_pdf(_ctx, layout_body.as_deref(), &template.template_body, &parameters).await
         } else {
-            self.report_engine.generate_excel(_ctx, &template.template_body, &parameters).await
+            self.report_engine.generate_excel(_ctx, layout_body.as_deref(), &template.template_body, &parameters).await
         };
 
         match result {

@@ -1,11 +1,10 @@
 use axum::{
-    extract::{State, Path},
+    extract::State,
     routing::{get, post},
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::state::AppState;
