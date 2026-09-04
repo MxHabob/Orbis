@@ -76,13 +76,14 @@ impl AppState {
         let ai_repo = Arc::new(orbis_infra::repositories::ai_repos::AiRepoImpl { db: db.clone() });
         let workflow_repo = Arc::new(orbis_infra::repositories::workflow_repos::WorkflowRepoImpl { db: db.clone() });
         let report_repo = Arc::new(orbis_infra::repositories::report_repos::ReportRepoImpl { db: db.clone() });
+        let policy_repo = Arc::new(orbis_infra::repositories::policy_repo::PgPolicyRepo { db: db.clone() });
         
-        let workflow_engine = Arc::new(orbis_app::usecases::workflow::engine::WorkflowEngine {
-            workflow_repo: workflow_repo.clone(),
+        let autopilot_engine = Arc::new(orbis_app::autopilot::engine::AutopilotEngine {
+            policy_repo: policy_repo.clone(),
         });
 
         let event_bus = Arc::new(orbis_infra::event_bus::MemoryEventBus {
-            workflow_engine: Some(workflow_engine),
+            workflow_engine: Some(autopilot_engine),
         });
         let token_service = Arc::new(orbis_infra::security::jwt::JwtTokenService::new("desktop-secret".to_string()));
         let password_hasher = Arc::new(orbis_infra::security::bcrypt::BcryptHasher);

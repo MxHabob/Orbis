@@ -76,6 +76,7 @@ export type ExamSession = {
     name_ar?: string | null;
     period_id: string;
     start_date: string;
+    status: string;
 };
 
 export type ExamSubject = {

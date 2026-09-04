@@ -9,6 +9,7 @@ pub mod exam_cmds;
 pub mod finance_cmds;
 pub mod document_cmds;
 pub mod integration_cmds;
+pub mod report_cmds;
 
 use tauri::generate_handler;
 
@@ -31,6 +32,7 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         assessment_cmds::create_assessment_scheme,
         assessment_cmds::record_grade,
         assessment_cmds::mark_attendance,
+        assessment_cmds::calculate_grades,
         exam_cmds::create_exam_session,
         exam_cmds::schedule_exam,
         exam_cmds::assign_seating_number,
@@ -42,5 +44,6 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         finance_cmds::process_payment,
         document_cmds::upload_document,
         document_cmds::delete_document,
+        report_cmds::generate_report,
     ]
 }
