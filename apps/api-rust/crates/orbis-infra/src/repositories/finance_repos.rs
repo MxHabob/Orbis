@@ -62,6 +62,9 @@ impl JournalEntryRepository for FinanceRepoImpl {
         Ok(model.map(|m| DomainJournalEntry {
             id: m.id, org_id: m.org_id, transaction_ref: m.transaction_ref,
             accounting_date: m.accounting_date, amount: m.amount,
+            base_amount: m.base_amount,
+            currency_id: m.currency_id,
+            exchange_rate: m.exchange_rate,
             debit_account_id: m.debit_account_id, credit_account_id: m.credit_account_id,
             description: m.description, created_at: m.created_at.into()
         }))
@@ -71,7 +74,10 @@ impl JournalEntryRepository for FinanceRepoImpl {
         let active = journal_entry::ActiveModel {
             id: Set(entry.id), org_id: Set(entry.org_id),
             transaction_ref: Set(entry.transaction_ref.clone()), accounting_date: Set(entry.accounting_date),
-            amount: Set(entry.amount), debit_account_id: Set(entry.debit_account_id),
+            amount: Set(entry.amount),
+            base_amount: Set(entry.base_amount),
+            currency_id: Set(entry.currency_id.clone()),
+            exchange_rate: Set(entry.exchange_rate), debit_account_id: Set(entry.debit_account_id),
             credit_account_id: Set(entry.credit_account_id), description: Set(entry.description.clone()),
             created_at: Set(entry.created_at.into()),
         };
@@ -119,7 +125,8 @@ impl StudentFeeRepository for FinanceRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainStudentFee>, DomainError> {
         let model = StudentFeeEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(|m| DomainStudentFee {
-            id: m.id, org_id: m.org_id, enrollment_id: m.enrollment_id,
+            id: m.id, org_id: m.org_id, student_id: m.student_id,
+            enrollment_id: m.enrollment_id,
             fee_template_id: m.fee_template_id, original_amount: m.original_amount,
             discount_amount: m.discount_amount, net_amount: m.net_amount,
             status: m.status, due_date: m.due_date,
@@ -129,7 +136,8 @@ impl StudentFeeRepository for FinanceRepoImpl {
 
     async fn save(&self, fee: &DomainStudentFee) -> Result<(), DomainError> {
         let active = student_fee::ActiveModel {
-            id: Set(fee.id), org_id: Set(fee.org_id), enrollment_id: Set(fee.enrollment_id),
+            id: Set(fee.id), org_id: Set(fee.org_id), student_id: Set(fee.student_id),
+            enrollment_id: Set(fee.enrollment_id),
             fee_template_id: Set(fee.fee_template_id), original_amount: Set(fee.original_amount),
             discount_amount: Set(fee.discount_amount), net_amount: Set(fee.net_amount),
             status: Set(fee.status.clone()), due_date: Set(fee.due_date),
@@ -151,7 +159,8 @@ impl PaymentRepository for FinanceRepoImpl {
         let model = PaymentEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(|m| DomainPayment {
             id: m.id, org_id: m.org_id, fee_id: m.fee_id,
-            account_id: m.account_id, amount: m.amount, method: m.method,
+            account_id: m.account_id, amount: m.amount,
+            method: m.method,
             reference: m.reference, journal_entry_id: m.journal_entry_id,
             paid_at: m.paid_at.into(), created_at: m.created_at.into()
         }))

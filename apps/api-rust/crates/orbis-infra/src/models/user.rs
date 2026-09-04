@@ -43,9 +43,7 @@ pub enum Relation {
     Person,
     #[sea_orm(has_many = "super::user_session::Entity")]
     UserSessions,
-    #[sea_orm(has_many = "super::user_role::Entity")]
-    UserRoles,
-}
+    }
 
 impl Related<super::organization::Entity> for Entity {
     fn to() -> RelationDef {
@@ -65,10 +63,5 @@ impl Related<super::user_session::Entity> for Entity {
     }
 }
 
-impl Related<super::user_role::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::UserRoles.def()
-    }
-}
 
 impl ActiveModelBehavior for ActiveModel {}

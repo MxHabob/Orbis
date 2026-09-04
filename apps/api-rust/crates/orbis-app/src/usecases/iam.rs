@@ -49,8 +49,7 @@ impl RegisterUserUseCase {
 
         let person = Person {
             id: person_id,
-            party_id: None,
-            org_id: Some(actual_org_id),
+                        org_id: Some(actual_org_id),
             first_name,
             last_name,
             full_name: Some(full_name.clone()),
@@ -72,8 +71,7 @@ impl RegisterUserUseCase {
         let user = User {
             id: user_id,
             person_id,
-            party_id: None,
-            org_id: actual_org_id,
+                        org_id: actual_org_id,
             email,
             email_verified: false,
             phone: None,
@@ -81,8 +79,7 @@ impl RegisterUserUseCase {
             password_hash,
             mfa_enabled: false,
             full_name,
-            primary_role: role,
-            status: "active".to_string(),
+                        status: "active".to_string(),
             login_count: 0,
             failed_logins: 0,
             locked_until: None,

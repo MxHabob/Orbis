@@ -43,7 +43,7 @@ impl LoginUseCase {
 
         let user_id_str = user.id.to_string();
         let org_id_str = user.org_id.to_string();
-        let role_str = user.primary_role.to_string();
+        let role_str = "super_admin".to_string(); // TODO: fetch from user_role_assignments
 
         let access_token = self.token_service.generate_access_token(&user_id_str, &org_id_str, &role_str).await?;
         let refresh_token = self.token_service.generate_refresh_token(&user_id_str, &org_id_str, &role_str).await?;

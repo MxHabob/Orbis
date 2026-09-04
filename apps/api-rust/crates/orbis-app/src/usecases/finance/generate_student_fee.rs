@@ -19,7 +19,8 @@ impl GenerateStudentFeeUseCase {
         &self,
         _ctx: &RequestContext,
         org_id: Uuid,
-        enrollment_id: Uuid,
+        student_id: Uuid,
+        enrollment_id: Option<Uuid>,
         fee_template_id: Uuid,
         discount_amount: f64,
         due_date: NaiveDate,
@@ -31,6 +32,7 @@ impl GenerateStudentFeeUseCase {
         let fee = StudentFee {
             id: Uuid::new_v4(),
             org_id,
+            student_id,
             enrollment_id,
             fee_template_id,
             original_amount: template.default_amount,
@@ -46,6 +48,7 @@ impl GenerateStudentFeeUseCase {
 
         let _ = self.event_bus.publish(_ctx, &DomainEvent::StudentFeeGenerated {
             fee_id: fee.id,
+            student_id,
             enrollment_id,
             net_amount,
             timestamp: Utc::now(),

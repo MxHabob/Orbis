@@ -32,7 +32,7 @@ impl EnrollStudentUseCase {
             org_id,
             period_id,
             student_id,
-            class_id,
+            class_id: Some(class_id),
             student_number,
             status: "Active".to_string(),
             enrollment_date: now,
@@ -49,7 +49,7 @@ impl EnrollStudentUseCase {
         let event = DomainEvent::StudentEnrolled {
             enrollment_id,
             student_id,
-            class_id,
+            class_id: Some(class_id),
             org_id,
             timestamp: now,
         };

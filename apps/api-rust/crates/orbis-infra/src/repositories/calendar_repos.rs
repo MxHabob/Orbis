@@ -77,7 +77,7 @@ impl AcademicPeriodRepository for CalendarRepoImpl {
             enrollment_end: m.enrollment_end, is_enrollment_open: m.is_enrollment_open,
             grade_entry_start: m.grade_entry_start, grade_entry_end: m.grade_entry_end,
             is_grade_entry_open: m.is_grade_entry_open, exam_start: m.exam_start,
-            exam_end: m.exam_end, scale_id: m.scale_id, pass_fail_policy_id: m.pass_fail_policy_id,
+            exam_end: m.exam_end, 
             status: m.status, is_locked: m.is_locked, locked_at: m.locked_at,
             locked_by: m.locked_by, sort_order: m.sort_order, metadata: m.metadata,
             created_at: m.created_at, updated_at: m.updated_at
@@ -94,7 +94,7 @@ impl AcademicPeriodRepository for CalendarRepoImpl {
             enrollment_end: m.enrollment_end, is_enrollment_open: m.is_enrollment_open,
             grade_entry_start: m.grade_entry_start, grade_entry_end: m.grade_entry_end,
             is_grade_entry_open: m.is_grade_entry_open, exam_start: m.exam_start,
-            exam_end: m.exam_end, scale_id: m.scale_id, pass_fail_policy_id: m.pass_fail_policy_id,
+            exam_end: m.exam_end, 
             status: m.status, is_locked: m.is_locked, locked_at: m.locked_at,
             locked_by: m.locked_by, sort_order: m.sort_order, metadata: m.metadata,
             created_at: m.created_at, updated_at: m.updated_at
@@ -112,8 +112,7 @@ impl AcademicPeriodRepository for CalendarRepoImpl {
             enrollment_end: Set(period.enrollment_end), is_enrollment_open: Set(period.is_enrollment_open),
             grade_entry_start: Set(period.grade_entry_start), grade_entry_end: Set(period.grade_entry_end),
             is_grade_entry_open: Set(period.is_grade_entry_open), exam_start: Set(period.exam_start),
-            exam_end: Set(period.exam_end), scale_id: Set(period.scale_id),
-            pass_fail_policy_id: Set(period.pass_fail_policy_id), status: Set(period.status.clone()),
+            exam_end: Set(period.exam_end),  status: Set(period.status.clone()),
             is_locked: Set(period.is_locked), locked_at: Set(period.locked_at),
             locked_by: Set(period.locked_by), sort_order: Set(period.sort_order),
             metadata: Set(period.metadata.clone()), created_at: Set(period.created_at),

@@ -29,7 +29,9 @@ impl MarkAttendanceUseCase {
         let attendance = Attendance {
             id: attendance_id,
             student_id,
-            class_id,
+            class_id: Some(class_id),
+            class_subject_id: None,
+            scheduled_lesson_id: None,
             date,
             status: status.clone(),
             notes,
@@ -42,7 +44,9 @@ impl MarkAttendanceUseCase {
         let event = DomainEvent::AttendanceMarked {
             attendance_id,
             student_id,
-            class_id,
+            class_id: Some(class_id),
+            class_subject_id: None,
+            scheduled_lesson_id: None,
             status,
             timestamp: now,
         };

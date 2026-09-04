@@ -21,7 +21,7 @@ impl PersonRepository for PersonRepoImpl {
 
         Ok(model.map(|m| Person {
             id: m.id,
-            party_id: m.party_id,
+            
             org_id: m.org_id,
             first_name: m.first_name,
             last_name: m.last_name,
@@ -38,7 +38,7 @@ impl PersonRepository for PersonRepoImpl {
     async fn save(&self, person: &Person) -> Result<(), DomainError> {
         let active_model = person::ActiveModel {
             id: Set(person.id),
-            party_id: Set(person.party_id),
+            
             org_id: Set(person.org_id),
             first_name: Set(person.first_name.clone()),
             last_name: Set(person.last_name.clone()),

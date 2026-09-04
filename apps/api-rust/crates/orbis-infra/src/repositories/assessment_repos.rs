@@ -91,6 +91,8 @@ impl AttendanceRepository for AssessmentRepoImpl {
         let model = AttendanceEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(|m| DomainAttendance {
             id: m.id, student_id: m.student_id, class_id: m.class_id,
+            class_subject_id: m.class_subject_id,
+            scheduled_lesson_id: m.scheduled_lesson_id,
             date: m.date, status: m.status, notes: m.notes,
             created_at: m.created_at, updated_at: m.updated_at
         }))
@@ -99,7 +101,9 @@ impl AttendanceRepository for AssessmentRepoImpl {
     async fn save(&self, attendance: &DomainAttendance) -> Result<(), DomainError> {
         let active = attendance::ActiveModel {
             id: Set(attendance.id), student_id: Set(attendance.student_id),
-            class_id: Set(attendance.class_id), date: Set(attendance.date),
+            class_id: Set(attendance.class_id),
+            class_subject_id: Set(attendance.class_subject_id),
+            scheduled_lesson_id: Set(attendance.scheduled_lesson_id), date: Set(attendance.date),
             status: Set(attendance.status.clone()), notes: Set(attendance.notes.clone()),
             created_at: Set(attendance.created_at), updated_at: Set(attendance.updated_at),
         };

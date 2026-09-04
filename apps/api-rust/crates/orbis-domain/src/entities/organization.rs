@@ -62,6 +62,7 @@ impl Organization {
             max_users: 1000,
             max_students: 5000,
             max_storage_gb: 100,
+            base_currency_id: None,
             settings: Some(serde_json::json!({})),
             features: Some(serde_json::json!({})),
             logo: None,

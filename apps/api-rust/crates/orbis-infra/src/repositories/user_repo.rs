@@ -22,7 +22,7 @@ impl UserRepository for UserRepoImpl {
         Ok(model.map(|m| User {
             id: m.id,
             person_id: m.person_id,
-            party_id: m.party_id,
+            
             org_id: m.org_id,
             email: m.email,
             email_verified: m.email_verified,
@@ -31,7 +31,7 @@ impl UserRepository for UserRepoImpl {
             password_hash: m.password_hash,
             mfa_enabled: m.mfa_enabled,
             full_name: m.full_name,
-            primary_role: Role::Custom(m.primary_role),
+            
             status: m.status,
             login_count: m.login_count,
             failed_logins: m.failed_logins,
@@ -52,7 +52,7 @@ impl UserRepository for UserRepoImpl {
         Ok(model.map(|m| User {
             id: m.id,
             person_id: m.person_id,
-            party_id: m.party_id,
+            
             org_id: m.org_id,
             email: m.email,
             email_verified: m.email_verified,
@@ -61,7 +61,7 @@ impl UserRepository for UserRepoImpl {
             password_hash: m.password_hash,
             mfa_enabled: m.mfa_enabled,
             full_name: m.full_name,
-            primary_role: Role::Custom(m.primary_role),
+            
             status: m.status,
             login_count: m.login_count,
             failed_logins: m.failed_logins,
@@ -76,7 +76,7 @@ impl UserRepository for UserRepoImpl {
         let active_model = user::ActiveModel {
             id: Set(user.id),
             person_id: Set(user.person_id),
-            party_id: Set(user.party_id),
+            
             org_id: Set(user.org_id),
             email: Set(user.email.clone()),
             email_verified: Set(user.email_verified),
@@ -85,7 +85,7 @@ impl UserRepository for UserRepoImpl {
             password_hash: Set(user.password_hash.clone()),
             mfa_enabled: Set(user.mfa_enabled),
             full_name: Set(user.full_name.clone()),
-            primary_role: Set(user.primary_role.to_string()),
+            
             status: Set(user.status.clone()),
             login_count: Set(user.login_count),
             failed_logins: Set(user.failed_logins),

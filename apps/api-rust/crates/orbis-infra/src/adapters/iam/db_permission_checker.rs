@@ -4,7 +4,7 @@ use orbis_domain::iam::permission::Permission;
 use orbis_domain::errors::DomainError;
 use orbis_app::context::RequestContext;
 use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter, ColumnTrait};
-use crate::models::{user_role, role_permission};
+use crate::models::{user_role_assignment, role_permission};
 
 pub struct DbPermissionChecker {
     pub db: DatabaseConnection,
@@ -28,8 +28,8 @@ impl PermissionCheckerPort for DbPermissionChecker {
         let perm_str = permission.as_str();
 
         // 1. Get all roles for the user
-        let user_roles = user_role::Entity::find()
-            .filter(user_role::Column::UserId.eq(actor_id))
+        let user_roles = user_role_assignment::Entity::find()
+            .filter(user_role_assignment::Column::UserId.eq(actor_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -38,12 +38,12 @@ impl PermissionCheckerPort for DbPermissionChecker {
             return Err(DomainError::Unauthorized(format!("User has no roles, missing permission: {}", perm_str)));
         }
 
-        let role_ids: Vec<uuid::Uuid> = user_roles.into_iter().map(|ur| ur.role_id).collect();
+        let role_ids: Vec<String> = user_roles.into_iter().map(|ur| ur.role_id).collect();
 
         // 2. Check if any of these roles have the requested permission
         let role_permissions = role_permission::Entity::find()
             .filter(role_permission::Column::RoleId.is_in(role_ids))
-            .filter(role_permission::Column::PermissionCode.eq(perm_str))
+            .filter(role_permission::Column::Resource.eq(perm_str))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;

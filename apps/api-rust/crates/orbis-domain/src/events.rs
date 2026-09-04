@@ -19,7 +19,7 @@ pub enum DomainEvent {
     ClassCreated { class_id: Uuid, org_id: Uuid, period_id: Uuid, timestamp: DateTime<Utc> },
     ClassSubjectAssigned { class_subject_id: Uuid, class_id: Uuid, subject_id: Uuid, timestamp: DateTime<Utc> },
 
-    StudentEnrolled { enrollment_id: Uuid, student_id: Uuid, class_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
+    StudentEnrolled { enrollment_id: Uuid, student_id: Uuid, class_id: Option<Uuid>, org_id: Uuid, timestamp: DateTime<Utc> },
     StudentWithdrawn { enrollment_id: Uuid, student_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
     GuardianAssigned { student_guardian_id: Uuid, student_id: Uuid, guardian_id: Uuid, timestamp: DateTime<Utc> },
 
@@ -28,14 +28,14 @@ pub enum DomainEvent {
     LessonScheduled { lesson_id: Uuid, class_subject_id: Uuid, time_slot_id: Uuid, timestamp: DateTime<Utc> },
 
     GradeRecorded { grade_id: Uuid, student_id: Uuid, class_subject_id: Uuid, score: f64, timestamp: DateTime<Utc> },
-    AttendanceMarked { attendance_id: Uuid, student_id: Uuid, class_id: Uuid, status: String, timestamp: DateTime<Utc> },
+    AttendanceMarked { attendance_id: Uuid, student_id: Uuid, class_id: Option<Uuid>, class_subject_id: Option<Uuid>, scheduled_lesson_id: Option<Uuid>, status: String, timestamp: DateTime<Utc> },
     BehaviorLogged { record_id: Uuid, student_id: Uuid, record_type: String, points: i32, timestamp: DateTime<Utc> },
 
     ExamSessionCreated { session_id: Uuid, org_id: Uuid, timestamp: DateTime<Utc> },
     ExamScheduled { schedule_id: Uuid, session_id: Uuid, timestamp: DateTime<Utc> },
     SeatingNumberAssigned { student_id: Uuid, session_id: Uuid, seating_number: String, timestamp: DateTime<Utc> },
 
-    StudentFeeGenerated { fee_id: Uuid, enrollment_id: Uuid, net_amount: f64, timestamp: DateTime<Utc> },
+    StudentFeeGenerated { fee_id: Uuid, student_id: Uuid, enrollment_id: Option<Uuid>, net_amount: f64, timestamp: DateTime<Utc> },
     PaymentReceived { payment_id: Uuid, fee_id: Option<Uuid>, amount: f64,timestamp: DateTime<Utc> },
     DocumentUploaded { document_id: Uuid, entity_type: Option<String>, entity_id: Option<Uuid>, timestamp: DateTime<Utc> },
     DocumentDeleted { document_id: Uuid, timestamp: DateTime<Utc> },

@@ -73,6 +73,9 @@ impl ProcessPaymentUseCase {
             transaction_ref: format!("PAY-{}", payment_id.to_string().chars().take(8).collect::<String>()),
             accounting_date,
             amount,
+            base_amount: amount,
+            currency_id: "SAR".to_string(),
+            exchange_rate: 1.0,
             debit_account_id: account_id, // Cash/Bank
             credit_account_id: receivable_acct, // AR
             description: "Payment Received".to_string(),

@@ -44,7 +44,8 @@ pub struct FeeTemplateResponse {
 #[derive(Deserialize)]
 pub struct GenerateStudentFeeRequest {
     pub org_id: Uuid,
-    pub enrollment_id: Uuid,
+    pub student_id: Uuid,
+    pub enrollment_id: Option<Uuid>,
     pub fee_template_id: Uuid,
     pub discount_amount: f64,
     pub due_date: String,
@@ -107,7 +108,7 @@ async fn generate_student_fee(
         fee_template_repo: state.fee_template_repo.clone(),
         event_bus: state.event_bus.clone()
     };
-    match use_case.execute(&ctx, payload.org_id, payload.enrollment_id, payload.fee_template_id, payload.discount_amount, due_date).await {
+    match use_case.execute(&ctx, payload.org_id, payload.student_id, payload.enrollment_id, payload.fee_template_id, payload.discount_amount, due_date).await {
         Ok(fee) => Ok(Json(StudentFeeResponse { id: fee.id })),
         Err(e) => Err(e.to_string()),
     }
