@@ -114,20 +114,11 @@ pub async fn execute() -> Result<()> {
         .await
         .map_err(|e| anyhow!("Failed to connect to database: {}", e))?;
 
-    let schema_sql = if db_url.starts_with("postgres://") || db_url.starts_with("postgresql://") {
-        include_str!(
-            "../../../api-rust/crates/infra-persistence/src/schemas/schema_baseline_pg.sql"
-        )
-    } else {
-        include_str!("../../../api-rust/crates/infra-persistence/src/schemas/schema_baseline.sql")
-    };
-    db.execute_unprepared(schema_sql).await?;
-    infra_persistence::schema_migrations::run_p0_migrations(&db)
+    use orbis_infra::migration::Migrator;
+    use sea_orm_migration::MigratorTrait;
+    Migrator::up(&db, None)
         .await
-        .map_err(|e| anyhow!("Failed running P0 migrations: {}", e))?;
-    infra_persistence::schema_migrations::run_p4_migrations(&db)
-        .await
-        .map_err(|e| anyhow!("Failed running P4 migrations: {}", e))?;
+        .map_err(|e| anyhow!("Failed running migrations: {}", e))?;
 
     output::print_progress_ok("Database schema created successfully");
 
@@ -289,7 +280,7 @@ pub async fn execute() -> Result<()> {
         "Creating organization, admin account, chart of accounts, and cash/bank accounts...",
     );
     let hashed_password = hash(&admin_password, DEFAULT_COST).unwrap_or_default();
-    let payload = svc_organization::ops::bootstrap::BootstrapPayload {
+    let payload = orbis_infra::adapters::bootstrap_adapter::BootstrapPayload {
         org_name: org_name.clone(),
         org_name_ar: Some(org_name_ar.clone()),
         org_type: blueprint,
@@ -301,7 +292,7 @@ pub async fn execute() -> Result<()> {
         admin_password_hash: hashed_password,
     };
 
-    let result = svc_organization::ops::bootstrap::bootstrap_full(&db, payload).await?;
+    let result = orbis_infra::adapters::bootstrap_adapter::bootstrap_full(&db, payload).await?;
     let org_id = result.org_id;
     output::print_progress_ok(
         "Organization, chart of accounts, and cash/bank accounts created successfully",

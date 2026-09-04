@@ -61,22 +61,21 @@ pub async fn execute() -> Result<()> {
         execute_with_values(
             &txn,
             backend,
-            "INSERT INTO persons (id, party_id, org_id, first_name, last_name, full_name, name_ar, name_en, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO persons (id, party_id, org_id, first_name, last_name, full_name, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             vec![
                 person_id.clone().into(), party_id.into(), org_id.clone().into(),
                 first_name.clone().into(), "".into(), first_name.clone().into(),
-                first_name_ar.into(), first_name.clone().into(), now.clone().into(), now.clone().into(),
+                now.clone().into(), now.clone().into(),
             ],
         ).await?;
         execute_with_values(
             &txn,
             backend,
-            "INSERT INTO users (id, person_id, org_id, email, email_verified, password_hash, full_name, primary_role, status, prefs, meta, is_deleted, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO users (id, person_id, org_id, email, email_verified, password_hash, full_name, primary_role, status, is_deleted, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             vec![
                 user_id.into(), person_id.into(), org_id.clone().into(), email.into(),
                 1i32.into(), password_hash.clone().into(), first_name.into(),
-                "teacher".into(), "active".into(), "{}".into(), "{}".into(),
-                0i32.into(), now.clone().into(), now.clone().into(),
+                "teacher".into(), "active".into(), 0i32.into(), now.clone().into(), now.clone().into(),
             ],
         ).await?;
         created += 1;

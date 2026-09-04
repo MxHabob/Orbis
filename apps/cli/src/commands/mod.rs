@@ -4,4 +4,3 @@ pub mod doctor;
 pub mod init;
 pub mod license;
 pub mod start;
-pub mod templates;
