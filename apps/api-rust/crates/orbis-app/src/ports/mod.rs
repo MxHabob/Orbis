@@ -4,3 +4,4 @@ pub mod security;
 pub mod integrations;
 pub mod gateways;
 pub mod iam;
+pub mod reporting;
