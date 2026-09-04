@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use sea_orm::DatabaseConnection;
-use orbis_app::ports::repositories::{OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository, SessionRepository, AcademicYearRepository, AcademicPeriodRepository, PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository, EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository, ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository, ExamSessionRepository, ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository, ExamProctorRepository, AccountRepository, JournalEntryRepository, FeeTemplateRepository, StudentFeeRepository, PaymentRepository, DocumentRepository};
+use orbis_app::ports::repositories::{OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository, SessionRepository, AcademicYearRepository, AcademicPeriodRepository, PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository, EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository, ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository, ExamSessionRepository, ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository, ExamProctorRepository, AccountRepository, JournalEntryRepository, FeeTemplateRepository, StudentFeeRepository, PaymentRepository, DocumentRepository, IntegrationRepository, AiRepository, WorkflowRepository, ReportRepository};
 use orbis_app::ports::event_bus::EventBus;
 use orbis_app::ports::security::{TokenService, PasswordHasher};
 
@@ -38,9 +38,15 @@ pub struct AppState {
     pub student_fee_repo: Arc<dyn StudentFeeRepository>,
     pub payment_repo: Arc<dyn PaymentRepository>,
     pub document_repo: Arc<dyn DocumentRepository>,
+    pub integration_repo: Arc<dyn IntegrationRepository>,
+    pub ai_repo: Arc<dyn AiRepository>,
+    pub workflow_repo: Arc<dyn WorkflowRepository>,
+    pub report_repo: Arc<dyn ReportRepository>,
     pub event_bus: Arc<dyn EventBus>,
     pub token_service: Arc<dyn TokenService>,
     pub password_hasher: Arc<dyn PasswordHasher>,
+    // Plug and Play Gateway / Resolver
+    pub integration_resolver: Arc<orbis_infra::adapters::resolver::IntegrationResolver>,
 }
 
 impl AppState {
@@ -66,9 +72,22 @@ impl AppState {
         let exam_repo = Arc::new(orbis_infra::repositories::exam_repos::ExamRepoImpl { db: db.clone() });
         let finance_repo = Arc::new(orbis_infra::repositories::finance_repos::FinanceRepoImpl { db: db.clone() });
         let document_repo = Arc::new(orbis_infra::repositories::document_repos::DocumentRepoImpl { db: db.clone() });
-        let event_bus = Arc::new(orbis_infra::event_bus::MemoryEventBus);
+        let integration_repo = Arc::new(orbis_infra::repositories::integration_repos::IntegrationRepoImpl { db: db.clone() });
+        let ai_repo = Arc::new(orbis_infra::repositories::ai_repos::AiRepoImpl { db: db.clone() });
+        let workflow_repo = Arc::new(orbis_infra::repositories::workflow_repos::WorkflowRepoImpl { db: db.clone() });
+        let report_repo = Arc::new(orbis_infra::repositories::report_repos::ReportRepoImpl { db: db.clone() });
+        
+        let workflow_engine = Arc::new(orbis_app::usecases::workflow::engine::WorkflowEngine {
+            workflow_repo: workflow_repo.clone(),
+        });
+
+        let event_bus = Arc::new(orbis_infra::event_bus::MemoryEventBus {
+            workflow_engine: Some(workflow_engine),
+        });
         let token_service = Arc::new(orbis_infra::security::jwt::JwtTokenService::new("desktop-secret".to_string()));
         let password_hasher = Arc::new(orbis_infra::security::bcrypt::BcryptHasher);
+
+        let integration_resolver = Arc::new(orbis_infra::adapters::resolver::IntegrationResolver::new(integration_repo.clone()));
 
         Ok(Self {
             db,
@@ -103,9 +122,14 @@ impl AppState {
             student_fee_repo: finance_repo.clone(),
             payment_repo: finance_repo,
             document_repo,
+            integration_repo,
+            ai_repo,
+            workflow_repo,
+            report_repo,
             event_bus,
             token_service,
             password_hasher,
+            integration_resolver,
         })
     }
 }

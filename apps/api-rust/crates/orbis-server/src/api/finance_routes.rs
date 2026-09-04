@@ -63,6 +63,7 @@ pub struct ProcessPaymentRequest {
     pub amount: f64,
     pub method: String,
     pub reference: Option<String>,
+    pub source: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -123,9 +124,11 @@ async fn process_payment(
         journal_repo: state.journal_entry_repo.clone(),
         student_fee_repo: state.student_fee_repo.clone(),
         fee_template_repo: state.fee_template_repo.clone(),
-        event_bus: state.event_bus.clone()
+        event_bus: state.event_bus.clone(),
+        payment_gateway: state.integration_resolver.clone(),
+        notification_gateway: state.integration_resolver.clone(),
     };
-    match use_case.execute(&ctx, payload.org_id, payload.fee_id, payload.account_id, payload.amount, payload.method, payload.reference).await {
+    match use_case.execute(&ctx, payload.org_id, payload.fee_id, payload.account_id, payload.amount, payload.method, payload.reference, payload.source).await {
         Ok(payment) => Ok(Json(PaymentResponse { id: payment.id })),
         Err(e) => Err(e.to_string()),
     }

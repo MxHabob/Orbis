@@ -31,6 +31,10 @@ pub mod m20240901_000028_create_fee_templates_table;
 pub mod m20240901_000029_create_student_fees_table;
 pub mod m20240901_000030_create_payments_table;
 pub mod m20240901_000031_create_documents_table;
+pub mod m20240901_000032_create_integrations_tables;
+pub mod m20240901_000033_create_ai_tables;
+pub mod m20240901_000034_create_workflow_tables;
+pub mod m20240901_000035_create_report_tables;
 
 pub struct Migrator;
 
@@ -69,6 +73,10 @@ impl MigratorTrait for Migrator {
             Box::new(m20240901_000029_create_student_fees_table::Migration),
             Box::new(m20240901_000030_create_payments_table::Migration),
             Box::new(m20240901_000031_create_documents_table::Migration),
+            Box::new(m20240901_000032_create_integrations_tables::Migration),
+            Box::new(m20240901_000033_create_ai_tables::Migration),
+            Box::new(m20240901_000034_create_workflow_tables::Migration),
+            Box::new(m20240901_000035_create_report_tables::Migration),
         ]
     }
 }

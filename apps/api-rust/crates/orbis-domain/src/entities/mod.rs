@@ -29,3 +29,7 @@ pub mod fee_template;
 pub mod student_fee;
 pub mod payment;
 pub mod document;
+pub mod integration;
+pub mod ai;
+pub mod workflow;
+pub mod report;

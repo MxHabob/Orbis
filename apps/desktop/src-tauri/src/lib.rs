@@ -323,6 +323,10 @@ pub fn run() {
                 .build(app)?;
             Ok(())
         })
+        .invoke_handler(tauri::generate_handler![
+            commands::integration_cmds::connect_app_cmd,
+            commands::integration_cmds::get_connected_apps_cmd,
+        ])
         .build(tauri::generate_context!())
         .expect("error while building tauri app")
         .run(|app_handle, event| match event {

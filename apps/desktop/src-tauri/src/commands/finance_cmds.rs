@@ -96,6 +96,7 @@ pub async fn process_payment(
     amount: f64,
     method: String,
     reference: Option<String>,
+    source: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<String, String> {
     let parsed_org_id = Uuid::parse_str(&org_id).map_err(|_| "Invalid org ID")?;
@@ -112,10 +113,12 @@ pub async fn process_payment(
         journal_repo: state.journal_entry_repo.clone(),
         student_fee_repo: state.student_fee_repo.clone(),
         fee_template_repo: state.fee_template_repo.clone(),
-        event_bus: state.event_bus.clone()
+        event_bus: state.event_bus.clone(),
+        payment_gateway: state.integration_resolver.clone(),
+        notification_gateway: state.integration_resolver.clone(),
     };
     
-    match usecase.execute(&ctx, parsed_org_id, parsed_fee_id, acc_id, amount, method, reference).await {
+    match usecase.execute(&ctx, parsed_org_id, parsed_fee_id, acc_id, amount, method, reference, source).await {
         Ok(payment) => Ok(payment.id.to_string()),
         Err(e) => Err(e.to_string()),
     }

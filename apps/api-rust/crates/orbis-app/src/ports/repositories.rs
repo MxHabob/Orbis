@@ -185,6 +185,35 @@ pub trait DocumentRepository: Send + Sync {
 }
 
 #[async_trait]
+pub trait IntegrationRepository: Send + Sync {
+    async fn find_configs_by_org(&self, org_id: Uuid) -> Result<Vec<orbis_domain::entities::integration::IntegrationConfig>, DomainError>;
+    async fn get_secrets_by_config(&self, config_id: Uuid) -> Result<Vec<orbis_domain::entities::integration::IntegrationSecret>, DomainError>;
+    async fn save_config(&self, config: &orbis_domain::entities::integration::IntegrationConfig) -> Result<(), DomainError>;
+    async fn save_secret(&self, secret: &orbis_domain::entities::integration::IntegrationSecret) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait AiRepository: Send + Sync {
+    async fn find_agent_by_id(&self, id: uuid::Uuid) -> Result<Option<orbis_domain::entities::ai::AiAgent>, DomainError>;
+    async fn find_active_agents(&self, org_id: uuid::Uuid) -> Result<Vec<orbis_domain::entities::ai::AiAgent>, DomainError>;
+    async fn save_insight(&self, insight: &orbis_domain::entities::ai::AiInsight) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait WorkflowRepository: Send + Sync {
+    async fn find_rules_by_trigger(&self, org_id: Uuid, trigger_event: &str) -> Result<Vec<orbis_domain::entities::workflow::WorkflowRule>, DomainError>;
+    async fn find_actions_by_rule(&self, rule_id: Uuid) -> Result<Vec<orbis_domain::entities::workflow::WorkflowAction>, DomainError>;
+    async fn save_execution(&self, execution: &orbis_domain::entities::workflow::WorkflowExecution) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait ReportRepository: Send + Sync {
+    async fn find_template_by_id(&self, id: Uuid) -> Result<Option<orbis_domain::entities::report::ReportTemplate>, DomainError>;
+    async fn save_job(&self, job: &orbis_domain::entities::report::ReportJob) -> Result<(), DomainError>;
+    async fn update_job_status(&self, job_id: Uuid, status: &str, file_path: Option<String>) -> Result<(), DomainError>;
+}
+
+#[async_trait]
 pub trait AcademicPeriodRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<AcademicPeriod>, DomainError>;
     async fn find_by_year(&self, year_id: Uuid) -> Result<Vec<AcademicPeriod>, DomainError>;

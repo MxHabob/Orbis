@@ -10,3 +10,7 @@ pub mod assessment;
 pub mod exam;
 pub mod finance;
 pub mod document;
+pub mod ai;
+pub mod report;
+pub mod workflow;
+pub mod integrations;

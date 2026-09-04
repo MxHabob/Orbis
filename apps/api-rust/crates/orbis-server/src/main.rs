@@ -37,9 +37,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let exam_repo = Arc::new(orbis_infra::repositories::exam_repos::ExamRepoImpl { db: db.clone() });
     let finance_repo = Arc::new(orbis_infra::repositories::finance_repos::FinanceRepoImpl { db: db.clone() });
     let document_repo = Arc::new(orbis_infra::repositories::document_repos::DocumentRepoImpl { db: db.clone() });
-    let event_bus = Arc::new(MemoryEventBus);
+    let integration_repo = Arc::new(orbis_infra::repositories::integration_repos::IntegrationRepoImpl { db: db.clone() });
+    let ai_repo = Arc::new(orbis_infra::repositories::ai_repos::AiRepoImpl { db: db.clone() });
+    let workflow_repo = Arc::new(orbis_infra::repositories::workflow_repos::WorkflowRepoImpl { db: db.clone() });
+    let report_repo = Arc::new(orbis_infra::repositories::report_repos::ReportRepoImpl { db: db.clone() });
+    
+    let workflow_engine = Arc::new(orbis_app::usecases::workflow::engine::WorkflowEngine {
+        workflow_repo: workflow_repo.clone(),
+    });
+
+    let event_bus = Arc::new(MemoryEventBus {
+        workflow_engine: Some(workflow_engine),
+    });
     let token_service = Arc::new(JwtTokenService::new("super-secret-key-for-dev".to_string()));
     let password_hasher = Arc::new(BcryptHasher);
+
+    let integration_resolver = Arc::new(orbis_infra::adapters::resolver::IntegrationResolver::new(integration_repo.clone()));
 
     // Build AppState
     let state = AppState {
@@ -75,9 +88,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         student_fee_repo: finance_repo.clone(),
         payment_repo: finance_repo,
         document_repo,
+        integration_repo,
+        ai_repo,
+        workflow_repo,
+        report_repo,
         event_bus,
         token_service,
         password_hasher,
+        integration_resolver,
     };
 
     // Build Axum Router

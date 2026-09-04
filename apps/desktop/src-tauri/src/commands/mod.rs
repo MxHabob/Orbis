@@ -8,6 +8,7 @@ pub mod assessment_cmds;
 pub mod exam_cmds;
 pub mod finance_cmds;
 pub mod document_cmds;
+pub mod integration_cmds;
 
 use tauri::generate_handler;
 
