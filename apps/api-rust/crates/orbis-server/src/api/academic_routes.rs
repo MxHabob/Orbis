@@ -1,5 +1,7 @@
 use axum::{extract::State, Json, routing::post, Router};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
+use chrono::{DateTime, Utc};
 use orbis_app::context::RequestContext;
 use orbis_app::usecases::academic::{
     subject::CreateSubjectUseCase,
@@ -8,6 +10,50 @@ use orbis_app::usecases::academic::{
 };
 use uuid::Uuid;
 use crate::state::AppState;
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct AcademicYear {
+    pub id: Uuid,
+    pub org_id: Uuid,
+    pub code: String,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub start_date: DateTime<Utc>,
+    pub end_date: DateTime<Utc>,
+    pub is_active: bool,
+    pub is_locked: i32,
+    pub status: String,
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct AcademicPeriod {
+    pub id: Uuid,
+    pub year_id: Uuid,
+    pub name: String,
+    pub start_date: DateTime<Utc>,
+    pub end_date: DateTime<Utc>,
+    pub period_type: String,
+    pub status: String,
+    pub is_grade_entry_open: i32,
+    pub is_enrollment_open: i32,
+    pub exam_start: Option<String>,
+    pub exam_end: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct AcademicYearInfo {
+    pub year: AcademicYear,
+    pub periods: Vec<AcademicPeriod>,
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct AcademicContextResponse {
+    pub current_year: Option<AcademicYearInfo>,
+    pub all_years: Vec<AcademicYearInfo>,
+    pub periods: Vec<AcademicPeriod>,
+    pub year_status: String,
+    pub is_read_only: bool,
+}
 
 #[derive(Deserialize)]
 pub struct CreateSubjectRequest {

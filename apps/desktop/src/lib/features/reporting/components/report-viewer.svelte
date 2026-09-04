@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { commands } from "@orbis/sdk-desktop";
-  import type { ReportDefinition, ReportDataset, ColumnDef } from "@orbis/sdk-core";
+  import { commands } from "@orbis/sdk";
+  import type { ReportDefinition, ReportDataset, ColumnDef } from "@orbis/sdk";
   import { Button } from "@orbis/ui/button";
   import { Input } from "@orbis/ui/input";
   import { Loader2, Download, Filter, RefreshCw, AlertCircle } from "@lucide/svelte";

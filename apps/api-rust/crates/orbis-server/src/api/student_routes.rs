@@ -1,5 +1,7 @@
 use axum::{extract::State, Json, routing::post, Router};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
+use chrono::{DateTime, Utc};
 use orbis_app::context::RequestContext;
 use orbis_app::usecases::student::{
     enrollment::EnrollStudentUseCase,
@@ -7,6 +9,16 @@ use orbis_app::usecases::student::{
 };
 use uuid::Uuid;
 use crate::state::AppState;
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct Enrollment {
+    pub id: Uuid,
+    pub student_id: Uuid,
+    pub class_id: Uuid,
+    pub academic_year_id: Uuid,
+    pub status: String,
+    pub enrollment_date: DateTime<Utc>,
+}
 
 #[derive(Deserialize)]
 pub struct EnrollStudentRequest {

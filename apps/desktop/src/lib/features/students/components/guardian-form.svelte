@@ -17,7 +17,7 @@ import {
 } from "@orbis/ui/select";
 import * as Sheet from "@orbis/ui/sheet";
 import { commands, extractErrorMessage } from "$lib/core/ipc";
-import type { JsonRecord } from "@orbis/sdk-core";
+import type { JsonRecord } from "@orbis/sdk";
 import { toast } from "@orbis/ui";
 import { guardianFormInputSchema } from "@orbis/schemas";
 import type { GuardianFormInput } from "@orbis/schemas";

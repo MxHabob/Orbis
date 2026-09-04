@@ -30,8 +30,7 @@
         "@orbis/avatar-engine": "workspace:*",
         "@orbis/location": "workspace:*",
         "@orbis/schemas": "workspace:*",
-        "@orbis/sdk-core": "workspace:*",
-        "@orbis/sdk-desktop": "workspace:*",
+        "@orbis/sdk": "workspace:*",
         "@orbis/svelte-grid": "workspace:*",
         "@orbis/ui": "workspace:*",
         "@orbis/utils": "workspace:*",
@@ -145,56 +144,14 @@
     },
     "packages/sdk": {
       "name": "@orbis/sdk",
-      "version": "0.1.0",
+      "version": "1.0.0",
+      "dependencies": {
+        "@hey-api/client-fetch": "^0.13.1",
+      },
       "devDependencies": {
         "@hey-api/openapi-ts": "^0.99.0",
-        "@orbis/tsconfig": "workspace:*",
-        "@types/bun": "latest",
-        "@types/node": "^26.1.1",
-        "typescript": "5.8.3",
+        "typescript": "^5.4.0",
       },
-    },
-    "packages/sdk-core": {
-      "name": "@orbis/sdk-core",
-      "version": "1.0.0",
-      "devDependencies": {
-        "@orbis/tsconfig": "workspace:*",
-        "@types/bun": "latest",
-        "@types/node": "^26.1.1",
-        "typescript": "^7.0.2",
-      },
-    },
-    "packages/sdk-desktop": {
-      "name": "@orbis/sdk-desktop",
-      "version": "1.0.0",
-      "dependencies": {
-        "@orbis/sdk-core": "workspace:*",
-      },
-      "devDependencies": {
-        "@orbis/tsconfig": "workspace:*",
-        "typescript": "^7.0.2",
-      },
-      "peerDependencies": {
-        "@tauri-apps/api": "^2.0.0",
-      },
-    },
-    "packages/sdk-web": {
-      "name": "@orbis/sdk-web",
-      "version": "1.0.0",
-      "dependencies": {
-        "@orbis/sdk-core": "workspace:*",
-      },
-      "devDependencies": {
-        "@orbis/tsconfig": "workspace:*",
-        "@tanstack/react-query": "^5.0.0",
-        "typescript": "^7.0.2",
-      },
-      "peerDependencies": {
-        "@tanstack/react-query": "^5.0.0",
-      },
-      "optionalPeers": [
-        "@tanstack/react-query",
-      ],
     },
     "packages/storage": {
       "name": "@orbis/storage",
@@ -554,6 +511,8 @@
 
     "@hapi/topo": ["@hapi/topo@5.1.0", "", { "dependencies": { "@hapi/hoek": "^9.0.0" } }, "sha512-foQZKJig7Ob0BMAYBfcJk8d77QtOe7Wo4ox7ff1lQYoNNAb6jwcY1ncdoy2e9wQZzvNy7ODZCYJkK8kzmcAnAg=="],
 
+    "@hey-api/client-fetch": ["@hey-api/client-fetch@0.13.1", "", { "peerDependencies": { "@hey-api/openapi-ts": "< 2" } }, "sha512-29jBRYNdxVGlx5oewFgOrkulZckpIpBIRHth3uHFn1PrL2ucMy52FvWOY3U3dVx2go1Z3kUmMi6lr07iOpUqqA=="],
+
     "@hey-api/codegen-core": ["@hey-api/codegen-core@0.9.1", "", { "dependencies": { "@hey-api/types": "0.1.4", "ansi-colors": "4.1.3", "c12": "3.3.4", "color-support": "1.1.3" } }, "sha512-s97jL1dgTMuiMHv2BZ1X4Tgd99Mf9GOvGdNqNcGwIMmnR+PgYNoraj4Zvp134MKsNCap/m7k0r0vKKnl56pj4w=="],
 
     "@hey-api/json-schema-ref-parser": ["@hey-api/json-schema-ref-parser@1.4.4", "", { "dependencies": { "@jsdevtools/ono": "7.1.3", "@types/json-schema": "7.0.15", "js-yaml": "4.2.0" } }, "sha512-otmd+zCxbYVBIp/mlMTnGkvlNYLkVKgs3VOIq0kSnenhB1+fRwLPQIeSwyWM6E51oXhUedkYjVsVpkVexeuJOA=="],
@@ -705,12 +664,6 @@
     "@orbis/schemas": ["@orbis/schemas@workspace:packages/schemas"],
 
     "@orbis/sdk": ["@orbis/sdk@workspace:packages/sdk"],
-
-    "@orbis/sdk-core": ["@orbis/sdk-core@workspace:packages/sdk-core"],
-
-    "@orbis/sdk-desktop": ["@orbis/sdk-desktop@workspace:packages/sdk-desktop"],
-
-    "@orbis/sdk-web": ["@orbis/sdk-web@workspace:packages/sdk-web"],
 
     "@orbis/storage": ["@orbis/storage@workspace:packages/storage"],
 
@@ -923,8 +876,6 @@
     "@tanstack/pacer-lite": ["@tanstack/pacer-lite@0.1.1", "", {}, "sha512-y/xtNPNt/YeyoVxE/JCx+T7yjEzpezmbb+toK8DDD1P4m7Kzs5YR956+7OKexG3f8aXgC3rLZl7b1V+yNUSy5w=="],
 
     "@tanstack/query-core": ["@tanstack/query-core@5.102.1", "", {}, "sha512-bJTsrO2ODWSgg+x1leTsK036GBtmNNjnrF1Vk06J5fg/phYZLQIdXrBe0uf5xTItXYvIW1MtbLhyPw7cPMqUUQ=="],
-
-    "@tanstack/react-query": ["@tanstack/react-query@5.101.0", "", { "dependencies": { "@tanstack/query-core": "5.101.0" }, "peerDependencies": { "react": "^18 || ^19" } }, "sha512-rLlJXSpkqfizLWgkR5+eLeIk0MvTx/meEIR7LRjxic+qxiQP8zVjq7BqQkiCMNLQBlLfuOLqqr6KO5GtrDlmSg=="],
 
     "@tanstack/store": ["@tanstack/store@0.11.1", "", {}, "sha512-mzTOBhypOuDJAy/D8n2MfUZ1HFkXnmSETviRyhqEC8LUE7/IZQExOTxMANj3KjTofYTkFNpBY67qaVrT41YccA=="],
 
@@ -2182,11 +2133,7 @@
 
     "@orbis/mobile/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
 
-    "@orbis/sdk/@types/node": ["@types/node@26.2.0", "", { "dependencies": { "undici-types": "~8.3.0" } }, "sha512-5IviulTZeRNp2vAJ514cc/HUlY5nZ9fCbq9DMyC52BrhFZACo3nI0R7qBxhQmo/d27NFe96ur/b7Wwxklda+kg=="],
-
     "@orbis/sdk/typescript": ["typescript@5.8.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ=="],
-
-    "@orbis/sdk-core/@types/node": ["@types/node@26.2.0", "", { "dependencies": { "undici-types": "~8.3.0" } }, "sha512-5IviulTZeRNp2vAJ514cc/HUlY5nZ9fCbq9DMyC52BrhFZACo3nI0R7qBxhQmo/d27NFe96ur/b7Wwxklda+kg=="],
 
     "@orbis/storage/@types/node": ["@types/node@26.2.0", "", { "dependencies": { "undici-types": "~8.3.0" } }, "sha512-5IviulTZeRNp2vAJ514cc/HUlY5nZ9fCbq9DMyC52BrhFZACo3nI0R7qBxhQmo/d27NFe96ur/b7Wwxklda+kg=="],
 
@@ -2223,8 +2170,6 @@
     "@tailwindcss/oxide-wasm32-wasi/@tybys/wasm-util": ["@tybys/wasm-util@0.10.2", "", { "dependencies": { "tslib": "^2.4.0" }, "bundled": true }, "sha512-RoBvJ2X0wuKlWFIjrwffGw1IqZHKQqzIchKaadZZfnNpsAYp2mM0h36JtPCjNDAHGgYez/15uMBpfGwchhiMgg=="],
 
     "@tailwindcss/oxide-wasm32-wasi/tslib": ["tslib@2.8.1", "", { "bundled": true }, "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w=="],
-
-    "@tanstack/react-query/@tanstack/query-core": ["@tanstack/query-core@5.101.0", "", {}, "sha512-cQetA74EB+seWySv1TTKr828TnP0u39m6LykwDXIo84SNortpDkp30TMEjkqtYCNP9c40uT/iwl6MLiufEt0Ow=="],
 
     "@types/papaparse/@types/node": ["@types/node@25.9.2", "", { "dependencies": { "undici-types": ">=7.24.0 <7.24.7" } }, "sha512-G05zqtJhcDLb8uslf5EjCxXg9G1KQxiV8OS0R26IC//Eoyitzqe8z37I7cqvnZlrlSfgocQRfSn/AHBZJJFyGw=="],
 

@@ -1,3 +1,13 @@
+use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct OrbisError {
+    pub code: String,
+    pub message: String,
+    pub details: Option<serde_json::Value>,
+}
+
 pub mod iam_routes;
 pub mod org_routes;
 pub mod calendar_routes;

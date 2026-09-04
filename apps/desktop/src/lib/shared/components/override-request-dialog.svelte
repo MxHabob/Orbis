@@ -35,7 +35,7 @@ import { Textarea } from "@orbis/ui/textarea";
 import { Label } from "@orbis/ui/label";
 import { Badge } from "@orbis/ui/badge";
 import { Loader2, AlertTriangle, Shield } from "@lucide/svelte";
-import type { OverrideType, RiskLevel } from "@orbis/sdk-core";
+import type { OverrideType, RiskLevel } from "@orbis/sdk";
 
 interface Props {
   open: boolean;

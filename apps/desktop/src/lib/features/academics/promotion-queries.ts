@@ -8,7 +8,7 @@ import {
   useQueryClient,
 } from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
-import type { PromotionConfig } from "@orbis/sdk-core";
+import type { PromotionConfig } from "@orbis/sdk";
 
 export function createPromotionJobsQuery(orgId: () => string) {
   return createQuery(() => ({

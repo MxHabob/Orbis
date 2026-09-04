@@ -1,0 +1,26 @@
+{
+  "name": "@orbis/sdk",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Generated API Client for Orbis",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "generate": "openapi-ts"
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "^0.99.0",
+    "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "@hey-api/client-fetch": "^0.13.1"
+  }
+}

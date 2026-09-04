@@ -5,7 +5,7 @@
 <script lang="ts">
 import * as Sheet from "@orbis/ui/sheet";
 import GuardianForm from "$lib/features/students/components/guardian-form.svelte";
-import type { GuardianLink } from "@orbis/sdk-core";
+import type { GuardianLink } from "@orbis/sdk";
 import * as m from "$lib/paraglide/messages";
 
 let {

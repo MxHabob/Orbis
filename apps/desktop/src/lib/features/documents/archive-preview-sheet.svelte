@@ -7,7 +7,7 @@ import {
   SheetFooter,
 } from "@orbis/ui/sheet";
 import { Download, File, Trash2, ZoomIn, ZoomOut, Maximize2 } from "@lucide/svelte";
-import type { Documents } from "@orbis/sdk-core";
+import type { Documents } from "@orbis/sdk";
 
 let {
   open = $bindable(false),

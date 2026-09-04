@@ -5,7 +5,7 @@
 <script lang="ts">
 import * as Sheet from "@orbis/ui/sheet";
 import ClassSubjectForm from "$lib/features/academics/components/class-subject-form.svelte";
-import type { ClassSubject } from "@orbis/sdk-core";
+import type { ClassSubject } from "@orbis/sdk";
 
 let {
   open = $bindable(false),

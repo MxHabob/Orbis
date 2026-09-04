@@ -1,11 +1,23 @@
 use axum::{extract::State, Json, routing::post, Router};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use orbis_app::context::RequestContext;
 use orbis_app::usecases::iam::RegisterUserUseCase;
 use orbis_app::usecases::login::LoginUseCase;
 use orbis_domain::entities::user::Role;
 use uuid::Uuid;
 use crate::state::AppState;
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct User {
+    pub id: Uuid,
+    pub org_id: Uuid,
+    pub username: String,
+    pub email: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub is_active: bool,
+}
 
 #[derive(Deserialize)]
 pub struct RegisterUserRequest {

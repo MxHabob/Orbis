@@ -20,7 +20,7 @@ import { DataTable, CheckboxCell } from "$lib/tables";
 import type { OrbisColumnDef, GridActionEvent } from "@orbis/svelte-grid";
 import { confirmStore } from "$lib/stores";
 import { File, LayoutGrid, List, Loader2, Upload } from "@lucide/svelte";
-import type { Documents } from "@orbis/sdk-core";
+import type { Documents } from "@orbis/sdk";
 import { createOperationToast } from "$lib/shared/components/operation-toast";
 
 let selectedCategory = $state("");

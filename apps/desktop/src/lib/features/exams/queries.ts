@@ -9,7 +9,7 @@ import {
   useQueryClient,
 } from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
-import type { ExamSession, ExamSubject } from "@orbis/sdk-core";
+import type { ExamSession, ExamSubject } from "@orbis/sdk";
 
 /** Get all exam sessions for a period. */
 export function createExamSessionsQuery(periodId: () => string | undefined) {

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { onMount } from "svelte";
-  import { commands } from "@orbis/sdk-desktop";
+  import { commands } from "@orbis/sdk";
   import { Button } from "@orbis/ui/button";
   import { Skeleton } from "@orbis/ui/skeleton";
   import { BarChart3, FileText, AlertCircle } from "@lucide/svelte";

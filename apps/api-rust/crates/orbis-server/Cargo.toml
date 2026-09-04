@@ -17,3 +17,9 @@ tracing-subscriber.workspace = true
 sea-orm.workspace = true
 sea-orm-migration = { version = "1.1.0", features = ["sqlx-postgres", "sqlx-sqlite", "runtime-tokio-native-tls"] }
 uuid.workspace = true
+utoipa = { version = "4.2.3", features = ["axum_extras", "uuid", "chrono"] }
+utoipa-swagger-ui = { version = "6.0.0", features = ["axum"] }
+
+[[bin]]
+name = "export_openapi"
+path = "src/bin/export_openapi.rs"

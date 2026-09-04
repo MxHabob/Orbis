@@ -2,7 +2,7 @@
 // Svelte 5 Runes-based exam sessions and related UI state.
 // No server data is stored directly in $state lists.
 
-import type { ExamSession, ExamSubject } from "@orbis/sdk-core";
+import type { ExamSession, ExamSubject } from "@orbis/sdk";
 
 class ExamsStore {
   // UI-only selection state

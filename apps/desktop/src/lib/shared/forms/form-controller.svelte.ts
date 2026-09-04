@@ -1,4 +1,4 @@
-import { OrbisError } from "@orbis/sdk-core";
+import { OrbisError } from "@orbis/sdk";
 import { createForm } from "@tanstack/svelte-form";
 import { z } from "zod";
 

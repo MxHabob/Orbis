@@ -1,5 +1,7 @@
 use axum::{extract::State, Json, routing::post, Router};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
+use chrono::{DateTime, Utc};
 use orbis_app::context::RequestContext;
 use orbis_app::usecases::exam::{
     exam_session::CreateExamSessionUseCase,
@@ -9,6 +11,28 @@ use orbis_app::usecases::exam::{
 use uuid::Uuid;
 use chrono::{NaiveDate, NaiveTime};
 use crate::state::AppState;
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct ExamSession {
+    pub id: Uuid,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub start_date: DateTime<Utc>,
+    pub end_date: DateTime<Utc>,
+    pub period_id: Uuid,
+    pub is_active: bool,
+    pub status: String,
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct ExamSubject {
+    pub id: Uuid,
+    pub session_id: Uuid,
+    pub subject_id: Uuid,
+    pub date: DateTime<Utc>,
+    pub max_score: f64,
+    pub passing_score: f64,
+}
 
 #[derive(Deserialize)]
 pub struct CreateExamSessionRequest {

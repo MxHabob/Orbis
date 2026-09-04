@@ -9,7 +9,7 @@ import type {
   AcademicYearInfo,
   AcademicContextResponse,
   AcademicPeriod,
-} from "@orbis/sdk-core";
+} from "@orbis/sdk";
 import { commands } from "$lib/core/ipc";
 import { extractErrorMessage } from "$lib/core/ipc";
 import { toast } from "@orbis/ui";

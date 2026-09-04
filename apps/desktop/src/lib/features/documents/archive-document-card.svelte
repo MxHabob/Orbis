@@ -4,7 +4,7 @@
   import { Checkbox } from "@orbis/ui/checkbox";
   import { getDocumentSource, resolveDocumentUrl } from "$lib/features/documents/queries";
   import { Download, FileText, Music, Play, Trash2 } from "@lucide/svelte";
-  import type { Documents } from "@orbis/sdk-core";
+  import type { Documents } from "@orbis/sdk";
 
   let {
     document,

@@ -6,22 +6,37 @@ use orbis_app::usecases::org_unit::CreateOrgUnitUseCase;
 use uuid::Uuid;
 use crate::state::AppState;
 
-#[derive(Deserialize)]
+use utoipa::ToSchema;
+
+#[derive(Deserialize, ToSchema)]
 pub struct CreateOrgRequest {
+    #[schema(example = "Orbis High School")]
+    pub name: String,
+    #[schema(example = "orbis-high")]
+    pub slug: String,
+    #[schema(example = "Asia/Riyadh")]
+    pub timezone: String,
+    #[schema(example = "ar-SA")]
+    pub locale: String,
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct Organization {
+    pub id: Uuid,
     pub name: String,
     pub slug: String,
     pub timezone: String,
     pub locale: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct OrgResponse {
     pub id: Uuid,
     pub name: String,
     pub slug: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct CreateOrgUnitRequest {
     pub org_id: Uuid,
     pub name: String,
@@ -30,13 +45,23 @@ pub struct CreateOrgUnitRequest {
     pub data_isolation: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct OrgUnitResponse {
     pub id: Uuid,
     pub path: String,
     pub depth: i32,
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/v1/organizations",
+    request_body = CreateOrgRequest,
+    responses(
+        (status = 200, description = "Organization created successfully", body = OrgResponse),
+        (status = 500, description = "Internal server error")
+    ),
+    tag = "Organization"
+)]
 async fn create_org(
     State(state): State<AppState>,
     Json(payload): Json<CreateOrgRequest>,
@@ -62,6 +87,16 @@ async fn create_org(
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/v1/organizations/units",
+    request_body = CreateOrgUnitRequest,
+    responses(
+        (status = 200, description = "Organization Unit created successfully", body = OrgUnitResponse),
+        (status = 500, description = "Internal server error")
+    ),
+    tag = "Organization"
+)]
 async fn create_org_unit(
     State(state): State<AppState>,
     Json(payload): Json<CreateOrgUnitRequest>,
@@ -89,6 +124,6 @@ async fn create_org_unit(
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/organizations", post(create_org))
-        .route("/organizations/units", post(create_org_unit))
+        .route("/api/v1/organizations", post(create_org))
+        .route("/api/v1/organizations/units", post(create_org_unit))
 }

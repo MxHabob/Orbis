@@ -16,7 +16,7 @@ import {
   SelectItem,
 } from "@orbis/ui/select";
 import { commands, extractErrorMessage } from "$lib/core/ipc";
-import type { ClassSubject, JsonRecord } from "@orbis/sdk-core";
+import type { ClassSubject, JsonRecord } from "@orbis/sdk";
 import { toast } from "@orbis/ui";
 
 import {

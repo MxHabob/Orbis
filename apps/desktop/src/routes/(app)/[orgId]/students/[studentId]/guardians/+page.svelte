@@ -13,7 +13,7 @@ import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
 import { Plus, Users2, Edit2, Trash2 } from "@lucide/svelte";
 import { commands } from "$lib/core/ipc";
-import type { GuardianLink, JsonRecord } from "@orbis/sdk-core";
+import type { GuardianLink, JsonRecord } from "@orbis/sdk";
 import GuardianLinkSheet from "$lib/features/students/components/guardian-link-sheet.svelte";
 
 const orgId = $derived(page.params.orgId ?? "");
