@@ -25,6 +25,11 @@ pub mod m20240901_000022_create_exam_schedules_table;
 pub mod m20240901_000023_create_seating_numbers_table;
 pub mod m20240901_000024_create_secret_numbers_table;
 pub mod m20240901_000025_create_exam_proctors_table;
+pub mod m20240901_000026_create_accounts_table;
+pub mod m20240901_000027_create_journal_entries_table;
+pub mod m20240901_000028_create_fee_templates_table;
+pub mod m20240901_000029_create_student_fees_table;
+pub mod m20240901_000030_create_payments_table;
 
 pub struct Migrator;
 
@@ -57,6 +62,11 @@ impl MigratorTrait for Migrator {
             Box::new(m20240901_000023_create_seating_numbers_table::Migration),
             Box::new(m20240901_000024_create_secret_numbers_table::Migration),
             Box::new(m20240901_000025_create_exam_proctors_table::Migration),
+            Box::new(m20240901_000026_create_accounts_table::Migration),
+            Box::new(m20240901_000027_create_journal_entries_table::Migration),
+            Box::new(m20240901_000028_create_fee_templates_table::Migration),
+            Box::new(m20240901_000029_create_student_fees_table::Migration),
+            Box::new(m20240901_000030_create_payments_table::Migration),
         ]
     }
 }

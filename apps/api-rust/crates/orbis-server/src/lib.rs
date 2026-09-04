@@ -14,5 +14,6 @@ pub fn app_router(state: AppState) -> Router {
         .merge(api::scheduling_routes::routes())
         .merge(api::assessment_routes::routes())
         .merge(api::exam_routes::routes())
+        .merge(api::finance_routes::routes())
         .with_state(state)
 }

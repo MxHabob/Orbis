@@ -35,5 +35,9 @@ pub enum DomainEvent {
     ExamScheduled { schedule_id: Uuid, session_id: Uuid, timestamp: DateTime<Utc> },
     SeatingNumberAssigned { student_id: Uuid, session_id: Uuid, seating_number: String, timestamp: DateTime<Utc> },
 
+    StudentFeeGenerated { fee_id: Uuid, enrollment_id: Uuid, net_amount: f64, timestamp: DateTime<Utc> },
+    PaymentReceived { payment_id: Uuid, fee_id: Option<Uuid>, amount: f64, timestamp: DateTime<Utc> },
+    JournalEntryPosted { entry_id: Uuid, amount: f64, timestamp: DateTime<Utc> },
+
     PaymentProcessed { transaction_id: Uuid, amount: u64, org_id: Uuid },
 }

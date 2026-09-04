@@ -23,3 +23,8 @@ pub mod exam_schedule;
 pub mod seating_number;
 pub mod secret_number;
 pub mod exam_proctor;
+pub mod account;
+pub mod journal_entry;
+pub mod fee_template;
+pub mod student_fee;
+pub mod payment;

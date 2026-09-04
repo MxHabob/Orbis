@@ -6,6 +6,7 @@ pub mod student_cmds;
 pub mod scheduling_cmds;
 pub mod assessment_cmds;
 pub mod exam_cmds;
+pub mod finance_cmds;
 
 use tauri::generate_handler;
 
@@ -33,5 +34,9 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         exam_cmds::assign_seating_number,
         exam_cmds::assign_secret_number,
         exam_cmds::assign_proctor,
+        finance_cmds::create_account,
+        finance_cmds::create_fee_template,
+        finance_cmds::generate_student_fee,
+        finance_cmds::process_payment,
     ]
 }

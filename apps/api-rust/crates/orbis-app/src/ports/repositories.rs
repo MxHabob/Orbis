@@ -24,6 +24,11 @@ use orbis_domain::entities::exam_schedule::ExamSchedule;
 use orbis_domain::entities::seating_number::SeatingNumber;
 use orbis_domain::entities::secret_number::SecretNumber;
 use orbis_domain::entities::exam_proctor::ExamProctor;
+use orbis_domain::entities::account::Account;
+use orbis_domain::entities::journal_entry::JournalEntry;
+use orbis_domain::entities::fee_template::FeeTemplate;
+use orbis_domain::entities::student_fee::StudentFee;
+use orbis_domain::entities::payment::Payment;
 use orbis_domain::errors::DomainError;
 use uuid::Uuid;
 
@@ -132,6 +137,36 @@ pub trait SecretNumberRepository: Send + Sync {
 #[async_trait]
 pub trait ExamProctorRepository: Send + Sync {
     async fn save(&self, proctor: &ExamProctor) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait AccountRepository: Send + Sync {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<Account>, DomainError>;
+    async fn save(&self, account: &Account) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait JournalEntryRepository: Send + Sync {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<JournalEntry>, DomainError>;
+    async fn save(&self, entry: &JournalEntry) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait FeeTemplateRepository: Send + Sync {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<FeeTemplate>, DomainError>;
+    async fn save(&self, template: &FeeTemplate) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait StudentFeeRepository: Send + Sync {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<StudentFee>, DomainError>;
+    async fn save(&self, fee: &StudentFee) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait PaymentRepository: Send + Sync {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<Payment>, DomainError>;
+    async fn save(&self, payment: &Payment) -> Result<(), DomainError>;
 }
 
 #[async_trait]
