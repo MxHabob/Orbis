@@ -15,3 +15,8 @@
 - **Local Desktop:** Svelte -> `LocalClient` -> Tauri IPC -> `Application Core` -> SQLite (No HTTP overhead).
 - **Remote / Mobile:** App -> `RemoteClient` -> `@orbis/sdk` -> HTTP Axum -> PostgreSQL.
 - **OpenAPI:** Acts purely as the HTTP Contract. Does not infect the Domain layer.
+
+## Reporting Architecture Update
+- **Templates Engine**: Legacy CLI-based template generation (`apps/cli/templates`) was removed completely. We implemented a unified rendering pipeline using Tera templates via `HtmlRenderer`.
+- **Default Templates**: Core templates (Master, Report Card, Receipt, ID Card, Timetable) are stored as statically-typed strings in `orbis-infra/src/adapters/report_defaults.rs`.
+- **Bootstrap Seeding**: Report Definitions, Templates, and format Bindings (PDF, HTML) are now dynamically seeded during the organization creation process (`bootstrap_adapter.rs`), adhering strictly to Hexagonal modular monolith architecture.
