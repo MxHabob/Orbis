@@ -40,7 +40,7 @@ let {
 } = $props();
 
 async function openUrl(url: string) {
-  if (isDesktopApp()) {
+  if (isDesktopApp) {
     try {
       const { openUrl: openExternalUrl } = await import("@tauri-apps/plugin-opener");
       await openExternalUrl(url);

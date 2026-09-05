@@ -128,7 +128,7 @@ function handleClose() {
 }
 
 async function openStandaloneWindow() {
-  if (isDesktopApp()) {
+  if (isDesktopApp) {
     try {
       await commands.ai.agentOpenStandalone();
       uiStore.setAskOrbis(false);

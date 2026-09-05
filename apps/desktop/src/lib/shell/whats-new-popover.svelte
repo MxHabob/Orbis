@@ -15,7 +15,7 @@ import mulverseOrbis from "$lib/assets/mulverse-orbis.png";
 
 const handleLearnMore = async () => {
   const url = "https://mulverse.com";
-  if (isDesktopApp()) {
+  if (isDesktopApp) {
     try {
       const { openUrl } = await import("@tauri-apps/plugin-opener");
       await openUrl(url);

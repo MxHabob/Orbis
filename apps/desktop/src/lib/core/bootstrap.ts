@@ -35,7 +35,7 @@ export function bootstrapApp(orgId: string): void {
   workflowInbox.loadCount();
 
   // 3. Register Tauri event listeners for calendar automation
-  if (isDesktopApp()) {
+  if (isDesktopApp) {
     registerTauriListeners();
   }
 }

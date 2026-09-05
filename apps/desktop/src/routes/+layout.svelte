@@ -21,7 +21,7 @@ $effect(() => {
 
 // Add desktop class to html element for Tauri shell styling
 onMount(() => {
-  if (isDesktopApp()) {
+  if (isDesktopApp) {
     document.documentElement.classList.add("desktop");
   }
 });

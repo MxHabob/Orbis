@@ -102,7 +102,7 @@ onMount(() => {
   let unlistenResize: any;
   let isMounted = true;
 
-  if (isDesktopApp()) {
+  if (isDesktopApp) {
     (async () => {
       try {
         const { getCurrentWindow } = await import("@tauri-apps/api/window");
