@@ -212,18 +212,18 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
     let formula_json = serde_json::json!({
         "type": "weighted_sum",
         "items": [
-            { "node": { "type": "variable", "name": "coursework" }, "weight": 0.5 },
-            { "node": { "type": "variable", "name": "final_exam" }, "weight": 0.5 }
+            { "node": { "type": "variable", "name": "coursework" }, "weight": blueprint.coursework_weight / 100.0 },
+            { "node": { "type": "variable", "name": "final_exam" }, "weight": blueprint.exam_weight / 100.0 }
         ]
     });
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO assessment_schemes (id, org_id, name, description, max_score, pass_score, formula, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+        "INSERT INTO assessment_schemes (id, org_id, name, description, max_score, formula, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
         vec![
             scheme_id.clone().into(), org_id.clone().into(),
-            "Standard 100-Point Scheme".into(),
-            "50% Coursework, 50% Final Exam".into(),
-            100.0f64.into(), 50.0f64.into(),
+            blueprint.assessment_scheme_name.clone().into(),
+            "Standard Assessment Scheme".into(),
+            100.0f64.into(),
             formula_json.to_string().into(),
             now.clone().into(), now.clone().into(),
         ]
@@ -305,9 +305,12 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
     // 3h-3. System Roles & Admin Assignment
     let default_roles = vec![
         ("super_admin", "Super Administrator", "مدير نظام عام"),
-        ("teacher", "Teacher", "معلم"),
+        ("admin", "Administrator", "مدير النظام"),
+        ("principal", "Principal", "مدير المدرسة/الجامعة"),
+        ("teacher", "Teacher", "معلم/محاضر"),
         ("student", "Student", "طالب"),
-        ("guardian", "Guardian", "ولي أمر"),
+        ("parent", "Parent/Guardian", "ولي أمر"),
+        ("staff", "Staff", "موظف"),
         ("auditor", "Financial Auditor", "مراجع مالي"),
     ];
     for (role_id, name_en, name_ar) in default_roles {
@@ -325,29 +328,41 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
     let assignment_id = Uuid::new_v4().to_string();
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO user_role_assignments (id, user_id, role_id, org_id, scope_type, scope_id, assigned_by, created_at) VALUES ($1, $2, 'super_admin', $3, 'global', NULL, 'system', $4)",
+        "INSERT INTO user_role_assignments (id, user_id, role_id, org_id, scope_type, scope_id, assigned_by, created_at) VALUES ($1, $2, 'super_admin', $3, 'global', NULL, NULL, $4)",
         vec![
             assignment_id.into(), admin_id.clone().into(),
             org_id.clone().into(), now.clone().into(),
         ]
     )).await.ok();
 
-    // 3h-4. Currencies
-    let default_currencies = vec![
-        ("SAR", "Saudi Riyal", "ريال سعودي", "ر.س"),
-        ("USD", "US Dollar", "دولار أمريكي", "$"),
-        ("EUR", "Euro", "يورو", "€"),
-    ];
-    for (code, name_en, name_ar, symbol) in default_currencies {
-        db.execute(Statement::from_sql_and_values(
-            db.get_database_backend(),
-            "INSERT INTO currencies (id, name, name_ar, symbol, decimal_places, is_active, created_at) VALUES ($1, $2, $3, $4, 2, 1, $5) ON CONFLICT DO NOTHING",
-            vec![
-                code.into(), name_en.into(), name_ar.into(), symbol.into(),
-                now.clone().into(),
-            ]
-        )).await.ok();
+    for perm in default_role_permissions() {
+        for action in perm.actions {
+            let perm_id = Uuid::new_v4().to_string();
+            db.execute(Statement::from_sql_and_values(
+                db.get_database_backend(),
+                "INSERT INTO role_permissions (id, role_id, org_id, resource, action, effect, created_at) VALUES ($1, $2, $3, $4, $5, 'allow', $6)",
+                vec![
+                    perm_id.into(),
+                    perm.role.clone().into(),
+                    org_id.clone().into(),
+                    perm.document_type.clone().into(),
+                    action.clone().into(),
+                    now.clone().into(),
+                ]
+            )).await.ok();
+        }
     }
+
+    // 3h-4. Currencies
+    let code = payload.currency.clone();
+    db.execute(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "INSERT INTO currencies (id, name, name_ar, symbol, decimal_places, is_active, created_at) VALUES ($1, $2, $3, $4, 2, 1, $5) ON CONFLICT DO NOTHING",
+        vec![
+            code.clone().into(), currency_name(&code).into(), currency_name_ar(&code).into(), currency_symbol(&code).into(),
+            now.clone().into(),
+        ]
+    )).await.ok();
 
     // 3i. OrgSettings Initialization
     let org_settings = serde_json::json!({
@@ -375,49 +390,7 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
         vec![org_settings.to_string().into(), org_id.clone().into()]
     )).await.ok();
 
-    // 3j. Default Report Templates
-    let report_templates = vec![
-        (
-            "44444444-4444-4444-4444-444444444444",
-            "Master Layout",
-            "layout",
-            include_str!("../../../../../../apps/cli/templates/reports/master_layout.html")
-        ),
-        (
-            "11111111-1111-1111-1111-111111111111",
-            "Payment Receipt",
-            "payment_receipt",
-            include_str!("../../../../../../apps/cli/templates/reports/payment_receipt.html")
-        ),
-        (
-            "22222222-2222-2222-2222-222222222222",
-            "Bulk Payments Receipt",
-            "payments_bulk",
-            include_str!("../../../../../../apps/cli/templates/reports/payments_bulk.html")
-        ),
-        (
-            "33333333-3333-3333-3333-333333333333",
-            "Class Subject Gradebook",
-            "class_subject_gradebook",
-            include_str!("../../../../../../apps/cli/templates/reports/class_subject_gradebook.html")
-        ),
-    ];
 
-    for (t_id, name, t_type, t_body) in report_templates {
-        db.execute(Statement::from_sql_and_values(
-            db.get_database_backend(),
-            "INSERT INTO report_templates (id, org_id, name, template_type, template_body, is_active, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, 1, $6, $7)",
-            vec![
-                t_id.into(),
-                org_id.clone().into(),
-                name.into(),
-                t_type.into(),
-                t_body.into(),
-                now.clone().into(),
-                now.clone().into(),
-            ]
-        )).await.ok();
-    }
 
 
     info!("Bootstrap completed for org_id={} type={}", org_id, payload.org_type);

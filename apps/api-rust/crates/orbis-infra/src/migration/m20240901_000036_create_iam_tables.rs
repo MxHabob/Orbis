@@ -31,7 +31,10 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(ColumnDef::new(RolePermissions::Id).uuid().not_null().primary_key())
                     .col(ColumnDef::new(RolePermissions::RoleId).string().not_null())
+                    .col(ColumnDef::new(RolePermissions::OrgId).uuid().not_null())
+                    .col(ColumnDef::new(RolePermissions::Resource).string().not_null())
                     .col(ColumnDef::new(RolePermissions::Action).string().not_null())
+                    .col(ColumnDef::new(RolePermissions::Condition).string().null())
                     .col(ColumnDef::new(RolePermissions::Effect).string().not_null().default("allow"))
                     .col(ColumnDef::new(RolePermissions::CreatedAt).timestamp_with_time_zone().not_null())
                     .to_owned(),
@@ -81,7 +84,10 @@ enum RolePermissions {
     Table,
     Id,
     RoleId,
+    OrgId,
+    Resource,
     Action,
+    Condition,
     Effect,
     CreatedAt,
 }
