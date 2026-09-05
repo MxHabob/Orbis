@@ -402,6 +402,114 @@ export interface IntegrationDto {
   isActive: boolean;
 }
 
+// ── Template ────────────────────────────────────────────────────
+
+export interface TemplateDto {
+  id: string;
+  name: string;
+  nameAr?: string | null;
+  description?: string | null;
+  descriptionAr?: string | null;
+  documentType: string;
+  entityType: string;
+  status: string;
+  version: number;
+  publishedVersion?: number | null;
+  pageSize: string;
+  pageWidthMm?: number | null;
+  pageHeightMm?: number | null;
+  orientation: string;
+  marginsJson: string;
+  documentJson: string;
+  locale: string;
+  masterTemplateId?: string | null;
+  code?: string | null;
+  tags?: string | null;
+  isSystem: boolean;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTemplateRequest {
+  name: string;
+  nameAr?: string | null;
+  description?: string | null;
+  descriptionAr?: string | null;
+  documentType: string;
+  entityType: string;
+  pageSize?: string | null;
+  pageWidthMm?: number | null;
+  pageHeightMm?: number | null;
+  orientation?: string | null;
+  marginsJson?: string | null;
+  documentJson?: string | null;
+  locale?: string | null;
+  code?: string | null;
+  tags?: string | null;
+  masterTemplateId?: string | null;
+}
+
+export interface UpdateTemplateRequest {
+  name?: string | null;
+  nameAr?: string | null;
+  description?: string | null;
+  descriptionAr?: string | null;
+  pageSize?: string | null;
+  orientation?: string | null;
+  marginsJson?: string | null;
+  documentJson?: string | null;
+}
+
+export interface TemplateVersionDto {
+  id: string;
+  templateId: string;
+  version: number;
+  changeSummary?: string | null;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface TemplateBindingDto {
+  id: string;
+  reportDefinitionId: string;
+  templateId: string;
+  locale: string;
+  format: string;
+  isDefault: boolean;
+  createdAt: string;
+}
+
+export interface ValidationResult {
+  valid: boolean;
+  errors: ValidationIssue[];
+  warnings: ValidationIssue[];
+}
+
+export interface ValidationIssue {
+  nodeId?: string | null;
+  path: string;
+  message: string;
+  severity: string;
+}
+
+// ── Report Definition ───────────────────────────────────────────
+
+export interface ReportDefinitionDto {
+  id: string;
+  code: string;
+  name: string;
+  nameAr: string;
+  domain: string;
+  category: string;
+  description?: string | null;
+  descriptionAr?: string | null;
+  supportedFormats: string[];
+  parameters: any[];
+  isSystem: boolean;
+  isActive: boolean;
+}
+
 // ═══════════════════════════════════════════════════════════════
 // API CLIENT INTERFACE
 // ═══════════════════════════════════════════════════════════════
@@ -485,4 +593,26 @@ export interface OrbisApiClient {
 
   // ── Integration ─────────────────────────────────────────────
   listIntegrations(): Promise<IntegrationDto[]>;
+
+  // ── Templates ───────────────────────────────────────────────
+  createTemplate(req: CreateTemplateRequest): Promise<TemplateDto>;
+  getTemplate(id: string): Promise<TemplateDto>;
+  listTemplates(filter?: { documentType?: string; entityType?: string; status?: string }): Promise<TemplateDto[]>;
+  updateTemplate(id: string, req: UpdateTemplateRequest): Promise<TemplateDto>;
+  deleteTemplate(id: string): Promise<void>;
+  publishTemplate(id: string): Promise<TemplateDto>;
+  archiveTemplate(id: string): Promise<void>;
+  getTemplateVersions(id: string): Promise<TemplateVersionDto[]>;
+  revertTemplateVersion(id: string, targetVersion: number): Promise<TemplateDto>;
+  previewTemplate(documentJson: string, contextData: any, locale?: string): Promise<Uint8Array>;
+  validateTemplate(documentJson: string): Promise<ValidationResult>;
+
+  // ── Template Bindings ───────────────────────────────────────
+  listTemplateBindings(definitionId: string): Promise<TemplateBindingDto[]>;
+  createTemplateBinding(definitionId: string, templateId: string, locale: string, format: string): Promise<TemplateBindingDto>;
+
+  // ── Report Definitions ──────────────────────────────────────
+  listReportDefinitions(domain?: string, category?: string): Promise<ReportDefinitionDto[]>;
+  getReportDefinition(code: string): Promise<ReportDefinitionDto>;
 }
+

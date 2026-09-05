@@ -22,6 +22,9 @@ import type {
   AccountDto, FeeTemplateDto, StudentFeeDto, PaymentDto, CurrencyDto,
   DocumentDto,
   IntegrationDto,
+  TemplateDto, CreateTemplateRequest, UpdateTemplateRequest,
+  TemplateVersionDto, TemplateBindingDto,
+  ValidationResult, ReportDefinitionDto,
 } from './types';
 
 function unwrap<T>(response: { data: T }): T {

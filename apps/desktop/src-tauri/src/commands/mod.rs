@@ -12,6 +12,7 @@ pub mod finance_cmds;
 pub mod document_cmds;
 pub mod integration_cmds;
 pub mod report_cmds;
+pub mod template_cmds;
 
 use tauri::generate_handler;
 
@@ -92,10 +93,28 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         document_cmds::document_delete,
         // ── Integration ─────────────────────────────────────────
         integration_cmds::integration_list,
-        // ── Report (kept from existing, to be updated later) ────
+        // ── Report Generation ───────────────────────────────────
         report_cmds::generate_report,
         report_cmds::get_report_job_status,
         report_cmds::download_report_file,
         report_cmds::batch_print,
+        // ── Template Management ─────────────────────────────────
+        template_cmds::template_create,
+        template_cmds::template_get,
+        template_cmds::template_list,
+        template_cmds::template_update,
+        template_cmds::template_delete,
+        template_cmds::template_publish,
+        template_cmds::template_archive,
+        template_cmds::template_get_versions,
+        template_cmds::template_revert_version,
+        template_cmds::template_list_bindings,
+        template_cmds::template_create_binding,
+        template_cmds::template_preview,
+        template_cmds::template_validate,
+        // ── Report Definitions (read-only) ──────────────────────
+        template_cmds::report_list_definitions,
+        template_cmds::report_get_definition,
     ]
 }
+

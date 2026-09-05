@@ -1,22 +1,12 @@
 use tauri::State;
 use crate::state::AppState;
 use orbis_app::usecases::report::generate_report::{GenerateReportUseCase, GenerateReportInput};
-use orbis_app::context::RequestContext;
 use uuid::Uuid;
 use std::collections::HashMap;
-use std::path::PathBuf;
 use orbis_domain::entities::report::{ParamValue, OutputFormat, ReportLocale, BatchPrintConfig, ColumnDef};
-use chrono::Utc;
 
-// ── Helper ──────────────────────────────────────────────────────
+use super::make_ctx;
 
-fn make_ctx() -> RequestContext {
-    RequestContext {
-        tenant_id: Uuid::new_v4(), // Mocked for now, should be from session
-        actor: orbis_domain::iam::actor::Actor::System,
-        request_id: Uuid::new_v4().to_string(),
-    }
-}
 
 // ── Commands ────────────────────────────────────────────────────
 
@@ -28,7 +18,7 @@ pub async fn generate_report(
     _query: Option<serde_json::Value>, 
     state: State<'_, AppState>,
 ) -> Result<String, String> {
-    let ctx = make_ctx();
+    let ctx = make_ctx(&state);
     let usecase = GenerateReportUseCase {
         definition_repo: state.report_definition_repo.clone(),
         template_repo: state.report_template_repo.clone(),
@@ -129,7 +119,7 @@ pub async fn batch_print(
     batch_config: serde_json::Value,
     state: State<'_, AppState>,
 ) -> Result<String, String> {
-    let ctx = make_ctx();
+    let ctx = make_ctx(&state);
     
     let config: BatchPrintConfig = serde_json::from_value(batch_config)
         .map_err(|e| format!("Invalid batch config: {}", e))?;
