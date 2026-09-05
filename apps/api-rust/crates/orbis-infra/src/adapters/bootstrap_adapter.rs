@@ -367,11 +367,7 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
     // 3i. OrgSettings Initialization
     let org_settings = serde_json::json!({
         "academic": {
-            "default_grading_system": blueprint.grading_system,
-            "default_passing_score": blueprint.passing_grade,
-            "min_attendance_rate": 75.0,
-            "grade_entry_auto_close_days": 7,
-            "allow_grade_edit_after_close": false
+            "default_grading_system": blueprint.grading_system
         },
         "enrollment": {
             "registration_enabled": true,
@@ -404,7 +400,9 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
             "mode": "automatic",
             "max_retries": 3,
             "auto_advance_periods": false,
-            "auto_lock_grades": false
+            "auto_lock_grades": false,
+            "grade_entry_auto_close_days": 7,
+            "allow_grade_edit_after_close": false
         }
     });
 

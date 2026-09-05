@@ -18,20 +18,12 @@ pub struct OrganizationSettings {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AcademicSettings {
     pub default_grading_system: String, // e.g., "percentage", "letter", "gpa"
-    pub default_passing_score: f64,
-    pub min_attendance_rate: f64,
-    pub grade_entry_auto_close_days: i32,
-    pub allow_grade_edit_after_close: bool,
 }
 
 impl Default for AcademicSettings {
     fn default() -> Self {
         Self {
             default_grading_system: "percentage".to_string(),
-            default_passing_score: 50.0,
-            min_attendance_rate: 75.0,
-            grade_entry_auto_close_days: 7,
-            allow_grade_edit_after_close: false,
         }
     }
 }
@@ -122,6 +114,8 @@ pub struct AutopilotSettings {
     pub max_retries: i32,
     pub auto_advance_periods: bool,
     pub auto_lock_grades: bool,
+    pub grade_entry_auto_close_days: i32,
+    pub allow_grade_edit_after_close: bool,
 }
 
 impl Default for AutopilotSettings {
@@ -132,6 +126,8 @@ impl Default for AutopilotSettings {
             max_retries: 3,
             auto_advance_periods: false,
             auto_lock_grades: false,
+            grade_entry_auto_close_days: 7,
+            allow_grade_edit_after_close: false,
         }
     }
 }

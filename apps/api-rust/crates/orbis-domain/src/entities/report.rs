@@ -776,3 +776,217 @@ mod tests {
         assert!(json.contains("تقرير تحصيل الرسوم"));
     }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// BATCH PRINTING / MULTI-UP LAYOUT
+// ═══════════════════════════════════════════════════════════════
+
+/// Configuration for batch printing — placing multiple items on one physical sheet.
+/// Supports ID cards, seating cards, certificates, labels, etc.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BatchPrintConfig {
+    /// Physical sheet size
+    pub sheet_size: SheetSize,
+    /// Sheet orientation
+    #[serde(default)]
+    pub sheet_orientation: String,
+    /// Sheet margins in mm
+    #[serde(default)]
+    pub margins: PrintMargins,
+    /// Template/card width in mm
+    pub item_width_mm: f64,
+    /// Template/card height in mm
+    pub item_height_mm: f64,
+    /// Gap between items in mm
+    #[serde(default = "default_gap")]
+    pub gap_mm: f64,
+    /// Fill order: "ltr" (left-to-right) or "rtl" (right-to-left)
+    #[serde(default = "default_fill_order")]
+    pub fill_order: FillOrder,
+    /// Output mode
+    #[serde(default)]
+    pub output_mode: BatchOutputMode,
+    /// Whether to show cut lines between items
+    #[serde(default)]
+    pub show_cut_lines: bool,
+    /// Forced grid dimensions (overrides auto-compute)
+    pub forced_columns: Option<u32>,
+    pub forced_rows: Option<u32>,
+}
+
+/// Physical sheet size for printing.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", content = "value")]
+pub enum SheetSize {
+    A4,
+    A3,
+    A5,
+    Letter,
+    Legal,
+    Custom { width_mm: f64, height_mm: f64 },
+}
+
+impl SheetSize {
+    pub fn dimensions_mm(&self) -> (f64, f64) {
+        match self {
+            SheetSize::A4 => (210.0, 297.0),
+            SheetSize::A3 => (297.0, 420.0),
+            SheetSize::A5 => (148.0, 210.0),
+            SheetSize::Letter => (216.0, 279.0),
+            SheetSize::Legal => (216.0, 356.0),
+            SheetSize::Custom { width_mm, height_mm } => (*width_mm, *height_mm),
+        }
+    }
+}
+
+impl Default for SheetSize {
+    fn default() -> Self { SheetSize::A4 }
+}
+
+/// Margins for printing (mm).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PrintMargins {
+    pub top: f64,
+    pub bottom: f64,
+    pub left: f64,
+    pub right: f64,
+}
+
+impl Default for PrintMargins {
+    fn default() -> Self {
+        Self { top: 10.0, bottom: 10.0, left: 10.0, right: 10.0 }
+    }
+}
+
+/// Fill order for multi-up layout.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum FillOrder {
+    /// Left→Right, Top→Bottom (LTR)
+    Ltr,
+    /// Right→Left, Top→Bottom (RTL, default for Arabic)
+    Rtl,
+}
+
+impl Default for FillOrder {
+    fn default() -> Self { FillOrder::Rtl }
+}
+
+/// Output mode for batch printing.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum BatchOutputMode {
+    /// All items merged into a single multi-page document (default)
+    Merged,
+    /// Each item produces a separate file
+    Individual,
+    /// Individual files bundled into a ZIP archive
+    Zip,
+}
+
+impl Default for BatchOutputMode {
+    fn default() -> Self { BatchOutputMode::Merged }
+}
+
+fn default_gap() -> f64 { 3.0 }
+fn default_fill_order() -> FillOrder { FillOrder::Rtl }
+
+/// Computed multi-up layout slot position (in mm).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SlotPosition {
+    pub x_mm: f64,
+    pub y_mm: f64,
+    pub width_mm: f64,
+    pub height_mm: f64,
+    pub column: u32,
+    pub row: u32,
+}
+
+/// Computed multi-up layout result.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MultiUpLayout {
+    pub columns: u32,
+    pub rows: u32,
+    pub items_per_sheet: u32,
+    pub slots: Vec<SlotPosition>,
+    pub sheet_width_mm: f64,
+    pub sheet_height_mm: f64,
+}
+
+impl BatchPrintConfig {
+    /// Compute optimal multi-up layout for this configuration.
+    pub fn compute_layout(&self) -> MultiUpLayout {
+        let (mut sheet_w, mut sheet_h) = self.sheet_size.dimensions_mm();
+        if self.sheet_orientation == "landscape" {
+            std::mem::swap(&mut sheet_w, &mut sheet_h);
+        }
+
+        let printable_w = sheet_w - self.margins.left - self.margins.right;
+        let printable_h = sheet_h - self.margins.top - self.margins.bottom;
+
+        // Compute grid
+        let columns = self.forced_columns.unwrap_or_else(|| {
+            ((printable_w + self.gap_mm) / (self.item_width_mm + self.gap_mm)).floor() as u32
+        }).max(1);
+
+        let rows = self.forced_rows.unwrap_or_else(|| {
+            ((printable_h + self.gap_mm) / (self.item_height_mm + self.gap_mm)).floor() as u32
+        }).max(1);
+
+        let items_per_sheet = columns * rows;
+
+        // Center items on sheet
+        let total_items_w = columns as f64 * self.item_width_mm + (columns as f64 - 1.0) * self.gap_mm;
+        let total_items_h = rows as f64 * self.item_height_mm + (rows as f64 - 1.0) * self.gap_mm;
+        let offset_x = self.margins.left + (printable_w - total_items_w) / 2.0;
+        let offset_y = self.margins.top + (printable_h - total_items_h) / 2.0;
+
+        // Generate slot positions
+        let mut slots = Vec::with_capacity(items_per_sheet as usize);
+        for row_idx in 0..rows {
+            for col_idx in 0..columns {
+                let actual_col = match self.fill_order {
+                    FillOrder::Ltr => col_idx,
+                    FillOrder::Rtl => columns - 1 - col_idx,
+                };
+                let x = offset_x + actual_col as f64 * (self.item_width_mm + self.gap_mm);
+                let y = offset_y + row_idx as f64 * (self.item_height_mm + self.gap_mm);
+                slots.push(SlotPosition {
+                    x_mm: x,
+                    y_mm: y,
+                    width_mm: self.item_width_mm,
+                    height_mm: self.item_height_mm,
+                    column: actual_col,
+                    row: row_idx,
+                });
+            }
+        }
+
+        MultiUpLayout {
+            columns,
+            rows,
+            items_per_sheet,
+            slots,
+            sheet_width_mm: sheet_w,
+            sheet_height_mm: sheet_h,
+        }
+    }
+
+    /// Compute how many physical sheets are needed for a given number of records.
+    pub fn total_sheets(&self, total_records: usize) -> u32 {
+        let layout = self.compute_layout();
+        if layout.items_per_sheet == 0 { return 0; }
+        ((total_records as f64) / (layout.items_per_sheet as f64)).ceil() as u32
+    }
+
+    /// Paginate a list of items into sheets.
+    pub fn paginate<T: Clone>(&self, items: &[T]) -> Vec<Vec<T>> {
+        let layout = self.compute_layout();
+        if layout.items_per_sheet == 0 { return vec![]; }
+        items
+            .chunks(layout.items_per_sheet as usize)
+            .map(|chunk| chunk.to_vec())
+            .collect()
+    }
+}
