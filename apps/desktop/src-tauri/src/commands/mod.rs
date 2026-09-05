@@ -1,3 +1,5 @@
+//! Tauri command registration — all IPC handlers.
+
 pub mod org_cmds;
 pub mod iam_cmds;
 pub mod calendar_cmds;
@@ -13,37 +15,84 @@ pub mod report_cmds;
 
 use tauri::generate_handler;
 
+/// Build a `RequestContext` from the managed `AppState`.
+///
+/// In a full implementation, this reads the active session from
+/// `AppState` (set during `auth_login`). For now, it uses the
+/// default org and System actor — to be replaced once session
+/// management is wired up in the Tauri managed state.
+pub(crate) fn make_ctx(state: &crate::state::AppState) -> orbis_app::context::RequestContext {
+    // TODO: Read active session from managed state once login flow stores it.
+    orbis_app::context::RequestContext {
+        tenant_id: state.active_org_id.unwrap_or_default(),
+        actor: orbis_domain::iam::actor::Actor::System,
+        request_id: uuid::Uuid::new_v4().to_string(),
+    }
+}
+
 pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
     generate_handler![
-        org_cmds::create_organization,
-        org_cmds::create_org_unit,
-        iam_cmds::register_user,
-        iam_cmds::login_user,
-        calendar_cmds::create_academic_year,
-        calendar_cmds::create_academic_period,
-        academic_cmds::create_subject,
-        academic_cmds::create_class,
-        academic_cmds::assign_class_subject,
-        student_cmds::enroll_student,
-        student_cmds::assign_guardian,
-        scheduling_cmds::create_room,
-        scheduling_cmds::create_time_slot,
-        scheduling_cmds::schedule_lesson,
-        assessment_cmds::create_assessment_scheme,
-        assessment_cmds::record_grade,
-        assessment_cmds::mark_attendance,
-        assessment_cmds::calculate_grades,
-        exam_cmds::create_exam_session,
-        exam_cmds::schedule_exam,
-        exam_cmds::assign_seating_number,
-        exam_cmds::assign_secret_number,
-        exam_cmds::assign_proctor,
-        finance_cmds::create_account,
-        finance_cmds::create_fee_template,
-        finance_cmds::generate_student_fee,
-        finance_cmds::process_payment,
-        document_cmds::upload_document,
-        document_cmds::delete_document,
+        // ── Auth & IAM ──────────────────────────────────────────
+        iam_cmds::auth_login,
+        iam_cmds::auth_get_session,
+        iam_cmds::auth_logout,
+        iam_cmds::iam_register_user,
+        iam_cmds::iam_list_users,
+        iam_cmds::iam_get_user,
+        // ── Organization ────────────────────────────────────────
+        org_cmds::org_get_current,
+        org_cmds::org_update_current,
+        org_cmds::org_get_settings,
+        org_cmds::org_update_settings,
+        org_cmds::org_get_dashboard,
+        org_cmds::org_create_unit,
+        org_cmds::org_list_units,
+        org_cmds::org_get_unit,
+        org_cmds::org_delete_unit,
+        // ── Calendar ────────────────────────────────────────────
+        calendar_cmds::calendar_list_years,
+        calendar_cmds::calendar_get_context,
+        calendar_cmds::calendar_get_year,
+        calendar_cmds::calendar_list_periods,
+        calendar_cmds::calendar_get_period,
+        calendar_cmds::calendar_list_period_templates,
+        // ── Academic ────────────────────────────────────────────
+        academic_cmds::academic_list_subjects,
+        academic_cmds::academic_get_subject,
+        academic_cmds::academic_list_classes,
+        academic_cmds::academic_get_class,
+        academic_cmds::academic_list_class_subjects,
+        // ── Student ─────────────────────────────────────────────
+        student_cmds::student_list_enrollments,
+        student_cmds::student_get_enrollment,
+        student_cmds::student_list_guardians,
+        // ── Scheduling ──────────────────────────────────────────
+        scheduling_cmds::scheduling_list_rooms,
+        scheduling_cmds::scheduling_get_room,
+        scheduling_cmds::scheduling_list_time_slots,
+        scheduling_cmds::scheduling_list_lessons,
+        // ── Assessment ──────────────────────────────────────────
+        assessment_cmds::assessment_list_schemes,
+        assessment_cmds::assessment_get_scheme,
+        assessment_cmds::assessment_list_grades,
+        assessment_cmds::assessment_list_attendance,
+        // ── Exam ────────────────────────────────────────────────
+        exam_cmds::exam_list_sessions,
+        exam_cmds::exam_get_session,
+        exam_cmds::exam_list_schedules,
+        // ── Finance ─────────────────────────────────────────────
+        finance_cmds::finance_list_accounts,
+        finance_cmds::finance_list_fee_templates,
+        finance_cmds::finance_list_student_fees,
+        finance_cmds::finance_list_payments,
+        finance_cmds::finance_list_currencies,
+        // ── Document ────────────────────────────────────────────
+        document_cmds::document_list,
+        document_cmds::document_get,
+        document_cmds::document_delete,
+        // ── Integration ─────────────────────────────────────────
+        integration_cmds::integration_list,
+        // ── Report (kept from existing, to be updated later) ────
         report_cmds::generate_report,
         report_cmds::get_report_job_status,
         report_cmds::download_report_file,

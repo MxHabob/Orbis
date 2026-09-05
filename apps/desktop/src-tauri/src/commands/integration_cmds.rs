@@ -1,79 +1,24 @@
+//! Tauri IPC commands — Integration.
+
 use tauri::State;
-use std::sync::Arc;
-use orbis_app::usecases::integrations::connect_app::ConnectAppUseCase;
-use orbis_app::usecases::integrations::get_connected_apps::GetConnectedAppsUseCase;
-use orbis_app::context::RequestContext;
-use uuid::Uuid;
-use std::collections::HashMap;
-
+use serde::Serialize;
 use crate::state::AppState;
+use super::make_ctx;
+use super::org_cmds::ApiResponse;
+fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
 
-#[tauri::command]
-pub async fn connect_app_cmd(
-    state: State<'_, AppState>,
-    provider_name: String,
-    category: String,
-    env: String,
-    settings: serde_json::Value,
-    secrets: HashMap<String, String>,
-) -> Result<serde_json::Value, String> {
-    let ctx = RequestContext {
-        actor: orbis_domain::iam::actor::Actor::System, // Mock
-        tenant_id: Uuid::nil(),   // Mock
-        request_id: Uuid::new_v4().to_string(),
-    };
-
-    let use_case = ConnectAppUseCase {
-        integration_repo: state.integration_repo.clone(),
-    };
-
-    let config = use_case.execute(
-        &ctx,
-        provider_name,
-        category,
-        env,
-        settings,
-        secrets
-    ).await.map_err(|e| e.to_string())?;
-
-    let json = serde_json::json!({
-        "id": config.id,
-        "provider_name": config.provider_name,
-        "category": config.category,
-        "is_enabled": config.is_enabled,
-        "env": config.env,
-        "settings": config.settings,
-    });
-
-    Ok(json)
+#[derive(Serialize)]
+pub struct IntegrationDto {
+    pub id: String, pub org_id: String, pub app_key: String,
+    pub app_name: String, pub is_active: bool,
 }
 
 #[tauri::command]
-pub async fn get_connected_apps_cmd(
-    state: State<'_, AppState>,
-) -> Result<serde_json::Value, String> {
-    let ctx = RequestContext {
-        actor: orbis_domain::iam::actor::Actor::System,
-        tenant_id: Uuid::nil(),
-        request_id: Uuid::new_v4().to_string(),
-    };
-
-    let use_case = GetConnectedAppsUseCase {
-        integration_repo: state.integration_repo.clone(),
-    };
-
-    let configs = use_case.execute(&ctx).await.map_err(|e| e.to_string())?;
-
-    let arr: Vec<_> = configs.into_iter().map(|c| {
-        serde_json::json!({
-            "id": c.id,
-            "provider_name": c.provider_name,
-            "category": c.category,
-            "is_enabled": c.is_enabled,
-            "env": c.env,
-            "settings": c.settings,
-        })
-    }).collect();
-
-    Ok(serde_json::Value::Array(arr))
+pub async fn integration_list(state: State<'_, AppState>) -> Result<ApiResponse<Vec<IntegrationDto>>, String> {
+    let ctx = make_ctx(&state);
+    let items = state.integration_repo.find_configs_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
+    Ok(ok(items.into_iter().map(|c| IntegrationDto {
+        id: c.id.to_string(), org_id: c.org_id.to_string(),
+        app_key: c.app_key, app_name: c.app_name, is_active: c.is_active,
+    }).collect()))
 }

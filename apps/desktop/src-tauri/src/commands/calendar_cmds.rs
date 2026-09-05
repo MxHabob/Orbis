@@ -1,74 +1,99 @@
+//! Tauri IPC commands — Calendar (Academic Years, Periods, Templates).
+
 use tauri::State;
+use serde::Serialize;
 use crate::state::AppState;
-use orbis_app::usecases::calendar::{
-    academic_year::CreateAcademicYearUseCase,
-    academic_period::CreateAcademicPeriodUseCase,
-};
-use orbis_app::context::RequestContext;
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
+use super::make_ctx;
+use super::org_cmds::ApiResponse;
+fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
 
-#[tauri::command]
-pub async fn create_academic_year(
-    org_id: String,
-    name: String,
-    start_date: String,
-    end_date: String,
-    state: State<'_, AppState>,
-) -> Result<String, String> {
-    let parsed_org_id = Uuid::parse_str(&org_id).map_err(|_| "Invalid org ID")?;
-    let parsed_start = DateTime::parse_from_rfc3339(&start_date).map_err(|_| "Invalid start date")?.with_timezone(&Utc);
-    let parsed_end = DateTime::parse_from_rfc3339(&end_date).map_err(|_| "Invalid end date")?.with_timezone(&Utc);
+#[derive(Serialize)]
+pub struct AcademicYearDto {
+    pub id: String, pub org_id: String, pub code: String,
+    pub name: String, pub name_ar: Option<String>,
+    pub start_date: String, pub end_date: String,
+    pub is_active: bool, pub status: String,
+}
 
-    let ctx = RequestContext {
-        tenant_id: parsed_org_id,
-        actor: orbis_domain::iam::actor::Actor::System,
-        request_id: Uuid::new_v4().to_string(),
-    };
+#[derive(Serialize)]
+pub struct AcademicPeriodDto {
+    pub id: String, pub year_id: String, pub name: String,
+    pub start_date: String, pub end_date: String,
+    pub period_type: String, pub status: String,
+}
 
-    let usecase = CreateAcademicYearUseCase {
-        year_repo: state.year_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
+#[derive(Serialize)]
+pub struct AcademicContextResponse {
+    pub current_year: Option<AcademicYearDto>,
+    pub all_years: Vec<AcademicYearDto>,
+    pub periods: Vec<AcademicPeriodDto>,
+}
 
-    match usecase.execute(&ctx, parsed_org_id, name, parsed_start, parsed_end).await {
-        Ok(year) => Ok(year.id.to_string()),
-        Err(e) => Err(e.to_string()),
+#[derive(Serialize)]
+pub struct PeriodTemplateDto { pub id: String, pub name: String }
+
+fn year_dto(y: orbis_domain::entities::academic_year::AcademicYear) -> AcademicYearDto {
+    AcademicYearDto {
+        id: y.id.to_string(), org_id: y.org_id.to_string(), code: y.code,
+        name: y.name, name_ar: y.name_ar,
+        start_date: y.start_date.to_rfc3339(), end_date: y.end_date.to_rfc3339(),
+        is_active: y.is_active, status: y.status,
+    }
+}
+
+fn period_dto(p: orbis_domain::entities::academic_period::AcademicPeriod) -> AcademicPeriodDto {
+    AcademicPeriodDto {
+        id: p.id.to_string(), year_id: p.year_id.to_string(), name: p.name,
+        start_date: p.start_date.to_rfc3339(), end_date: p.end_date.to_rfc3339(),
+        period_type: p.period_type, status: p.status,
     }
 }
 
 #[tauri::command]
-pub async fn create_academic_period(
-    org_id: String,
-    year_id: String,
-    parent_id: Option<String>,
-    name: String,
-    period_type: String,
-    start_date: String,
-    end_date: String,
-    state: State<'_, AppState>,
-) -> Result<String, String> {
-    let parsed_org_id = Uuid::parse_str(&org_id).map_err(|_| "Invalid org ID")?;
-    let parsed_year_id = Uuid::parse_str(&year_id).map_err(|_| "Invalid year ID")?;
-    let parsed_parent_id = parent_id.map(|id| Uuid::parse_str(&id).unwrap());
-    
-    let parsed_start = DateTime::parse_from_rfc3339(&start_date).map_err(|_| "Invalid start date")?.with_timezone(&Utc);
-    let parsed_end = DateTime::parse_from_rfc3339(&end_date).map_err(|_| "Invalid end date")?.with_timezone(&Utc);
+pub async fn calendar_list_years(state: State<'_, AppState>) -> Result<ApiResponse<Vec<AcademicYearDto>>, String> {
+    let ctx = make_ctx(&state);
+    let years = state.year_repo.find_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
+    Ok(ok(years.into_iter().map(year_dto).collect()))
+}
 
-    let ctx = RequestContext {
-        tenant_id: parsed_org_id,
-        actor: orbis_domain::iam::actor::Actor::System,
-        request_id: Uuid::new_v4().to_string(),
-    };
+#[tauri::command]
+pub async fn calendar_get_context(state: State<'_, AppState>) -> Result<ApiResponse<AcademicContextResponse>, String> {
+    let ctx = make_ctx(&state);
+    let all = state.year_repo.find_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
+    let current = state.year_repo.find_current(ctx.tenant_id).await.map_err(|e| e.to_string())?;
+    let periods = state.period_repo.find_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
+    Ok(ok(AcademicContextResponse {
+        current_year: current.map(year_dto),
+        all_years: all.into_iter().map(year_dto).collect(),
+        periods: periods.into_iter().map(period_dto).collect(),
+    }))
+}
 
-    let usecase = CreateAcademicPeriodUseCase {
-        period_repo: state.period_repo.clone(),
-        year_repo: state.year_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
+#[tauri::command]
+pub async fn calendar_get_year(id: String, state: State<'_, AppState>) -> Result<ApiResponse<AcademicYearDto>, String> {
+    let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
+    let y = state.year_repo.find_by_id(uid).await.map_err(|e| e.to_string())?.ok_or("Year not found")?;
+    Ok(ok(year_dto(y)))
+}
 
-    match usecase.execute(&ctx, parsed_org_id, parsed_year_id, parsed_parent_id, name, period_type, parsed_start, parsed_end).await {
-        Ok(period) => Ok(period.id.to_string()),
-        Err(e) => Err(e.to_string()),
-    }
+#[tauri::command]
+pub async fn calendar_list_periods(state: State<'_, AppState>) -> Result<ApiResponse<Vec<AcademicPeriodDto>>, String> {
+    let ctx = make_ctx(&state);
+    let periods = state.period_repo.find_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
+    Ok(ok(periods.into_iter().map(period_dto).collect()))
+}
+
+#[tauri::command]
+pub async fn calendar_get_period(id: String, state: State<'_, AppState>) -> Result<ApiResponse<AcademicPeriodDto>, String> {
+    let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
+    let p = state.period_repo.find_by_id(uid).await.map_err(|e| e.to_string())?.ok_or("Period not found")?;
+    Ok(ok(period_dto(p)))
+}
+
+#[tauri::command]
+pub async fn calendar_list_period_templates(state: State<'_, AppState>) -> Result<ApiResponse<Vec<PeriodTemplateDto>>, String> {
+    let ctx = make_ctx(&state);
+    let templates = state.period_template_repo.find_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
+    Ok(ok(templates.into_iter().map(|t| PeriodTemplateDto { id: t.id.to_string(), name: t.name }).collect()))
 }

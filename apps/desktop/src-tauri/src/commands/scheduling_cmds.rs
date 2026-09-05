@@ -1,106 +1,63 @@
+//! Tauri IPC commands — Scheduling (Rooms, TimeSlots, Lessons).
+
 use tauri::State;
+use serde::{Deserialize, Serialize};
 use crate::state::AppState;
-use orbis_app::usecases::scheduling::{
-    room::CreateRoomUseCase,
-    time_slot::CreateTimeSlotUseCase,
-    scheduled_lesson::ScheduleLessonUseCase,
-};
-use orbis_app::context::RequestContext;
 use uuid::Uuid;
-use chrono::NaiveTime;
+use super::make_ctx;
+use super::org_cmds::ApiResponse;
+fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
 
-#[tauri::command]
-pub async fn create_room(
-    org_id: String,
-    name: String,
-    capacity: i32,
-    room_type: String,
-    state: State<'_, AppState>,
-) -> Result<String, String> {
-    let parsed_org_id = Uuid::parse_str(&org_id).map_err(|_| "Invalid org ID")?;
+#[derive(Serialize)]
+pub struct RoomDto { pub id: String, pub org_id: String, pub name: String, pub room_type: String, pub capacity: i32 }
+#[derive(Serialize)]
+pub struct TimeSlotDto { pub id: String, pub period_id: String, pub day_of_week: i32, pub start_time: String, pub end_time: String, pub label: String }
+#[derive(Serialize)]
+pub struct ScheduledLessonDto { pub id: String, pub class_subject_id: String, pub time_slot_id: String, pub room_id: Option<String>, pub teacher_id: Option<String> }
 
-    let ctx = RequestContext {
-        tenant_id: parsed_org_id,
-        actor: orbis_domain::iam::actor::Actor::System,
-        request_id: Uuid::new_v4().to_string(),
-    };
-
-    let usecase = CreateRoomUseCase {
-        room_repo: state.room_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
-
-    match usecase.execute(&ctx, parsed_org_id, name, capacity, room_type).await {
-        Ok(room) => Ok(room.id.to_string()),
-        Err(e) => Err(e.to_string()),
-    }
+#[derive(Deserialize, Default)]
+pub struct LessonFilter {
+    #[serde(rename = "classSubjectId")]
+    pub class_subject_id: Option<String>,
+    #[serde(rename = "periodId")]
+    pub period_id: Option<String>,
 }
 
 #[tauri::command]
-pub async fn create_time_slot(
-    period_id: String,
-    day_of_week: i16,
-    start_time: String,
-    end_time: String,
-    slot_index: i32,
-    state: State<'_, AppState>,
-) -> Result<String, String> {
-    let parsed_period_id = Uuid::parse_str(&period_id).map_err(|_| "Invalid period ID")?;
-    
-    let start = NaiveTime::parse_from_str(&start_time, "%H:%M:%S").map_err(|_| "Invalid start time format")?;
-    let end = NaiveTime::parse_from_str(&end_time, "%H:%M:%S").map_err(|_| "Invalid end time format")?;
-
-    let ctx = RequestContext {
-        tenant_id: Uuid::new_v4(),
-        actor: orbis_domain::iam::actor::Actor::System,
-        request_id: Uuid::new_v4().to_string(),
-    };
-
-    let usecase = CreateTimeSlotUseCase {
-        time_slot_repo: state.time_slot_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
-
-    match usecase.execute(&ctx, parsed_period_id, day_of_week, start, end, slot_index).await {
-        Ok(slot) => Ok(slot.id.to_string()),
-        Err(e) => Err(e.to_string()),
-    }
+pub async fn scheduling_list_rooms(state: State<'_, AppState>) -> Result<ApiResponse<Vec<RoomDto>>, String> {
+    let ctx = make_ctx(&state);
+    let items = state.room_repo.find_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
+    Ok(ok(items.into_iter().map(|r| RoomDto { id: r.id.to_string(), org_id: r.org_id.to_string(), name: r.name, room_type: r.room_type, capacity: r.capacity }).collect()))
 }
 
 #[tauri::command]
-pub async fn schedule_lesson(
-    class_subject_id: String,
-    room_id: Option<String>,
-    time_slot_id: String,
-    teacher_id: Option<String>,
-    state: State<'_, AppState>,
-) -> Result<String, String> {
-    let parsed_class_subject_id = Uuid::parse_str(&class_subject_id).map_err(|_| "Invalid class subject ID")?;
-    let parsed_time_slot_id = Uuid::parse_str(&time_slot_id).map_err(|_| "Invalid time slot ID")?;
-    
-    let parsed_room_id = match room_id {
-        Some(id) => Some(Uuid::parse_str(&id).map_err(|_| "Invalid room ID")?),
-        None => None,
-    };
-    
-    let parsed_teacher_id = match teacher_id {
-        Some(id) => Some(Uuid::parse_str(&id).map_err(|_| "Invalid teacher ID")?),
-        None => None,
-    };
+pub async fn scheduling_get_room(id: String, state: State<'_, AppState>) -> Result<ApiResponse<RoomDto>, String> {
+    let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
+    let r = state.room_repo.find_by_id(uid).await.map_err(|e| e.to_string())?.ok_or("Room not found")?;
+    Ok(ok(RoomDto { id: r.id.to_string(), org_id: r.org_id.to_string(), name: r.name, room_type: r.room_type, capacity: r.capacity }))
+}
 
-    let ctx = RequestContext {
-        tenant_id: Uuid::new_v4(),
-        actor: orbis_domain::iam::actor::Actor::System,
-        request_id: Uuid::new_v4().to_string(),
-    };
+#[tauri::command]
+pub async fn scheduling_list_time_slots(period_id: String, state: State<'_, AppState>) -> Result<ApiResponse<Vec<TimeSlotDto>>, String> {
+    let pid = Uuid::parse_str(&period_id).map_err(|_| "Invalid period ID")?;
+    let items = state.time_slot_repo.find_by_period(pid).await.map_err(|e| e.to_string())?;
+    Ok(ok(items.into_iter().map(|t| TimeSlotDto {
+        id: t.id.to_string(), period_id: t.period_id.to_string(), day_of_week: t.day_of_week,
+        start_time: t.start_time, end_time: t.end_time, label: t.label,
+    }).collect()))
+}
 
-    let usecase = ScheduleLessonUseCase {
-        lesson_repo: state.lesson_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
-
-    match usecase.execute(&ctx, parsed_class_subject_id, parsed_room_id, parsed_time_slot_id, parsed_teacher_id).await {
-        Ok(lesson) => Ok(lesson.id.to_string()),
-        Err(e) => Err(e.to_string()),
-    }
+#[tauri::command]
+pub async fn scheduling_list_lessons(filter: Option<LessonFilter>, state: State<'_, AppState>) -> Result<ApiResponse<Vec<ScheduledLessonDto>>, String> {
+    let f = filter.unwrap_or_default();
+    let items = if let Some(csid) = f.class_subject_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()) {
+        state.lesson_repo.find_by_class_subject(csid).await
+    } else if let Some(pid) = f.period_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()) {
+        state.lesson_repo.find_by_period(pid).await
+    } else { Ok(vec![]) }.map_err(|e| e.to_string())?;
+    Ok(ok(items.into_iter().map(|l| ScheduledLessonDto {
+        id: l.id.to_string(), class_subject_id: l.class_subject_id.to_string(),
+        time_slot_id: l.time_slot_id.to_string(),
+        room_id: l.room_id.map(|r| r.to_string()), teacher_id: l.teacher_id.map(|t| t.to_string()),
+    }).collect()))
 }

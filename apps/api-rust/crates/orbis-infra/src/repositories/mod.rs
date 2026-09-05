@@ -16,3 +16,5 @@ pub mod integration_repos;
 pub mod ai_repos;
 pub mod workflow_repos;
 pub mod report_repos;
+pub mod settings_repo;
+pub mod dashboard_repo;

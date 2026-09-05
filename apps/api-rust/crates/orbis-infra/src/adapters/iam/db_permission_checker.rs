@@ -54,4 +54,27 @@ impl PermissionCheckerPort for DbPermissionChecker {
 
         Ok(())
     }
+
+    async fn has_permission(&self, user_id: uuid::Uuid, _org_id: uuid::Uuid, permission: &str) -> Result<bool, DomainError> {
+        let user_roles = user_role_assignment::Entity::find()
+            .filter(user_role_assignment::Column::UserId.eq(user_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        if user_roles.is_empty() {
+            return Ok(false);
+        }
+
+        let role_ids: Vec<String> = user_roles.into_iter().map(|ur| ur.role_id).collect();
+
+        let role_permissions = role_permission::Entity::find()
+            .filter(role_permission::Column::RoleId.is_in(role_ids))
+            .filter(role_permission::Column::Resource.eq(permission))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        Ok(!role_permissions.is_empty())
+    }
 }

@@ -1,129 +1,80 @@
+//! Tauri IPC commands — Assessment (Schemes, Grades, Attendance).
+
 use tauri::State;
+use serde::{Deserialize, Serialize};
 use crate::state::AppState;
-use orbis_app::usecases::assessment::{
-    assessment_scheme::CreateAssessmentSchemeUseCase,
-    grade::RecordGradeUseCase,
-    attendance::MarkAttendanceUseCase,
-    calculate_grades::CalculateGradesUseCase,
-};
-use orbis_app::context::RequestContext;
 use uuid::Uuid;
-use chrono::NaiveDate;
+use super::make_ctx;
+use super::org_cmds::ApiResponse;
+fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
 
-#[tauri::command]
-pub async fn create_assessment_scheme(
-    org_id: String,
-    name: String,
-    description: Option<String>,
-    max_score: f64,
-    pass_score: f64,
-    formula: Option<serde_json::Value>,
-    state: State<'_, AppState>,
-) -> Result<String, String> {
-    let parsed_org_id = Uuid::parse_str(&org_id).map_err(|_| "Invalid org ID")?;
+#[derive(Serialize)]
+pub struct AssessmentSchemeDto { pub id: String, pub org_id: String, pub name: String, pub grading_type: String }
 
-    let ctx = RequestContext {
-        tenant_id: parsed_org_id,
-        actor: orbis_domain::iam::actor::Actor::System,
-        request_id: Uuid::new_v4().to_string(),
-    };
+#[derive(Serialize)]
+pub struct GradeDto {
+    pub id: String, pub student_id: String, pub class_subject_id: String,
+    pub assessment_type: String, pub score: f64, pub max_score: f64,
+    pub letter_grade: Option<String>,
+}
 
-    let usecase = CreateAssessmentSchemeUseCase {
-        scheme_repo: state.assessment_scheme_repo.clone(),
-        permission_checker: state.permission_checker.clone(),
-    };
-    
-    match usecase.execute(&ctx, parsed_org_id, name, description, max_score, formula).await {
-        Ok(scheme) => Ok(scheme.id.to_string()),
-        Err(e) => Err(e.to_string()),
-    }
+#[derive(Serialize)]
+pub struct AttendanceDto {
+    pub id: String, pub student_id: String, pub class_id: Option<String>,
+    pub class_subject_id: Option<String>, pub scheduled_lesson_id: Option<String>,
+    pub date: String, pub status: String, pub note: Option<String>,
+}
+
+#[derive(Deserialize, Default)]
+pub struct GradeFilter {
+    #[serde(rename = "studentId")]
+    pub student_id: Option<String>,
+    #[serde(rename = "classSubjectId")]
+    pub class_subject_id: Option<String>,
 }
 
 #[tauri::command]
-pub async fn record_grade(
-    student_id: String,
-    class_subject_id: String,
-    scheme_id: String,
-    score: f64,
-    is_excused: bool,
-    notes: Option<String>,
-    state: State<'_, AppState>,
-) -> Result<String, String> {
-    let parsed_student_id = Uuid::parse_str(&student_id).map_err(|_| "Invalid student ID")?;
-    let parsed_class_subject_id = Uuid::parse_str(&class_subject_id).map_err(|_| "Invalid class subject ID")?;
-    let parsed_scheme_id = Uuid::parse_str(&scheme_id).map_err(|_| "Invalid scheme ID")?;
-
-    let ctx = RequestContext {
-        tenant_id: Uuid::new_v4(),
-        actor: orbis_domain::iam::actor::Actor::System,
-        request_id: Uuid::new_v4().to_string(),
-    };
-
-    let usecase = RecordGradeUseCase {
-        grade_repo: state.grade_repo.clone(),
-        event_bus: state.event_bus.clone(),
-        permission_checker: state.permission_checker.clone(),
-    };
-
-    match usecase.execute(&ctx, parsed_student_id, parsed_class_subject_id, parsed_scheme_id, score, is_excused, notes).await {
-        Ok(grade) => Ok(grade.id.to_string()),
-        Err(e) => Err(e.to_string()),
-    }
+pub async fn assessment_list_schemes(state: State<'_, AppState>) -> Result<ApiResponse<Vec<AssessmentSchemeDto>>, String> {
+    let ctx = make_ctx(&state);
+    let items = state.assessment_scheme_repo.find_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
+    Ok(ok(items.into_iter().map(|s| AssessmentSchemeDto {
+        id: s.id.to_string(), org_id: s.org_id.to_string(), name: s.name, grading_type: s.grading_type,
+    }).collect()))
 }
 
 #[tauri::command]
-pub async fn mark_attendance(
-    student_id: String,
-    class_id: String,
-    date: String,
-    status: String,
-    notes: Option<String>,
-    state: State<'_, AppState>,
-) -> Result<String, String> {
-    let parsed_student_id = Uuid::parse_str(&student_id).map_err(|_| "Invalid student ID")?;
-    let parsed_class_id = Uuid::parse_str(&class_id).map_err(|_| "Invalid class ID")?;
-    
-    let parsed_date = NaiveDate::parse_from_str(&date, "%Y-%m-%d").map_err(|_| "Invalid date format")?;
-
-    let ctx = RequestContext {
-        tenant_id: Uuid::new_v4(),
-        actor: orbis_domain::iam::actor::Actor::System,
-        request_id: Uuid::new_v4().to_string(),
-    };
-
-    let usecase = MarkAttendanceUseCase {
-        attendance_repo: state.attendance_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
-
-    match usecase.execute(&ctx, parsed_student_id, parsed_class_id, parsed_date, status, notes).await {
-        Ok(att) => Ok(att.id.to_string()),
-        Err(e) => Err(e.to_string()),
-    }
+pub async fn assessment_get_scheme(id: String, state: State<'_, AppState>) -> Result<ApiResponse<AssessmentSchemeDto>, String> {
+    let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
+    let s = state.assessment_scheme_repo.find_by_id(uid).await.map_err(|e| e.to_string())?.ok_or("Scheme not found")?;
+    Ok(ok(AssessmentSchemeDto { id: s.id.to_string(), org_id: s.org_id.to_string(), name: s.name, grading_type: s.grading_type }))
 }
 
 #[tauri::command]
-pub async fn calculate_grades(
-    scheme_id: String,
-    student_id: String,
-    state: State<'_, AppState>,
-) -> Result<f64, String> {
-    let parsed_scheme_id = Uuid::parse_str(&scheme_id).map_err(|_| "Invalid scheme ID")?;
-    let parsed_student_id = Uuid::parse_str(&student_id).map_err(|_| "Invalid student ID")?;
+pub async fn assessment_list_grades(filter: Option<GradeFilter>, state: State<'_, AppState>) -> Result<ApiResponse<Vec<GradeDto>>, String> {
+    let f = filter.unwrap_or_default();
+    let items = if let Some(sid) = f.student_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()) {
+        state.grade_repo.find_by_student(sid).await
+    } else if let Some(csid) = f.class_subject_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()) {
+        state.grade_repo.find_by_class_subject(csid).await
+    } else { Ok(vec![]) }.map_err(|e| e.to_string())?;
+    Ok(ok(items.into_iter().map(|g| GradeDto {
+        id: g.id.to_string(), student_id: g.student_id.to_string(),
+        class_subject_id: g.class_subject_id.to_string(),
+        assessment_type: g.assessment_type, score: g.score, max_score: g.max_score,
+        letter_grade: g.letter_grade,
+    }).collect()))
+}
 
-    let ctx = RequestContext {
-        tenant_id: Uuid::new_v4(),
-        actor: orbis_domain::iam::actor::Actor::System,
-        request_id: Uuid::new_v4().to_string(),
-    };
-
-    let usecase = CalculateGradesUseCase {
-        scheme_repo: state.assessment_scheme_repo.clone(),
-        grade_repo: state.grade_repo.clone(),
-    };
-
-    match usecase.execute(&ctx, parsed_scheme_id, parsed_student_id).await {
-        Ok(score) => Ok(score),
-        Err(e) => Err(e.to_string()),
-    }
+#[tauri::command]
+pub async fn assessment_list_attendance(class_id: String, date: String, state: State<'_, AppState>) -> Result<ApiResponse<Vec<AttendanceDto>>, String> {
+    let cid = Uuid::parse_str(&class_id).map_err(|_| "Invalid class ID")?;
+    let parsed_date = chrono::NaiveDate::parse_from_str(&date, "%Y-%m-%d").map_err(|_| "Invalid date format, use YYYY-MM-DD")?;
+    let items = state.attendance_repo.find_by_class_and_date(cid, parsed_date).await.map_err(|e| e.to_string())?;
+    Ok(ok(items.into_iter().map(|a| AttendanceDto {
+        id: a.id.to_string(), student_id: a.student_id.to_string(),
+        class_id: a.class_id.map(|c| c.to_string()),
+        class_subject_id: a.class_subject_id.map(|c| c.to_string()),
+        scheduled_lesson_id: a.scheduled_lesson_id.map(|s| s.to_string()),
+        date: a.date.to_string(), status: a.status, note: a.note,
+    }).collect()))
 }

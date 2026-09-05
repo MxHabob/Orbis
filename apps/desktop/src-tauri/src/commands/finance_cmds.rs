@@ -1,134 +1,89 @@
+//! Tauri IPC commands — Finance (Accounts, FeeTemplates, StudentFees, Payments, Currencies).
+
 use tauri::State;
+use serde::{Deserialize, Serialize};
 use crate::state::AppState;
-use orbis_app::usecases::finance::{
-    create_account::CreateAccountUseCase,
-    create_fee_template::CreateFeeTemplateUseCase,
-    generate_student_fee::GenerateStudentFeeUseCase,
-    process_payment::ProcessPaymentUseCase,
-};
-use orbis_app::context::RequestContext;
 use uuid::Uuid;
-use chrono::NaiveDate;
+use super::make_ctx;
+use super::org_cmds::ApiResponse;
+fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
 
-#[tauri::command]
-pub async fn create_account(
-    org_id: String,
-    code: String,
-    name: String,
-    account_type: String,
-    parent_id: Option<String>,
-    currency: String,
-    state: State<'_, AppState>,
-) -> Result<String, String> {
-    let parsed_org_id = Uuid::parse_str(&org_id).map_err(|_| "Invalid org ID")?;
-    let parsed_parent_id = match parent_id {
-        Some(id) => Some(Uuid::parse_str(&id).map_err(|_| "Invalid parent ID")?),
-        None => None,
-    };
+#[derive(Serialize)]
+pub struct AccountDto { pub id: String, pub org_id: String, pub code: String, pub name: String, pub account_type: String, pub balance: f64 }
+#[derive(Serialize)]
+pub struct FeeTemplateDto { pub id: String, pub org_id: String, pub name: String, pub amount: f64, pub fee_type: String, pub is_active: bool }
+#[derive(Serialize)]
+pub struct StudentFeeDto { pub id: String, pub student_id: String, pub enrollment_id: Option<String>, pub template_id: String, pub net_amount: f64, pub paid_amount: f64, pub status: String }
+#[derive(Serialize)]
+pub struct PaymentDto { pub id: String, pub fee_id: Option<String>, pub amount: f64, pub method: String, pub status: String, pub paid_at: Option<String> }
+#[derive(Serialize)]
+pub struct CurrencyDto { pub id: String, pub name: String, pub symbol: String }
 
-    let ctx = RequestContext { tenant_id: parsed_org_id, actor: orbis_domain::iam::actor::Actor::System, request_id: Uuid::new_v4().to_string() };
-    
-    let usecase = CreateAccountUseCase { account_repo: state.account_repo.clone() };
-    
-    match usecase.execute(&ctx, parsed_org_id, code, name, account_type, parsed_parent_id, currency).await {
-        Ok(account) => Ok(account.id.to_string()),
-        Err(e) => Err(e.to_string()),
-    }
+#[derive(Deserialize, Default)]
+pub struct FeeFilter {
+    #[serde(rename = "enrollmentId")]
+    pub enrollment_id: Option<String>,
+    #[serde(rename = "studentId")]
+    pub student_id: Option<String>,
+}
+
+#[derive(Deserialize, Default)]
+pub struct PaymentFilter {
+    #[serde(rename = "feeId")]
+    pub fee_id: Option<String>,
 }
 
 #[tauri::command]
-pub async fn create_fee_template(
-    org_id: String,
-    name: String,
-    default_amount: f64,
-    revenue_account_id: String,
-    receivable_account_id: String,
-    is_mandatory: bool,
-    state: State<'_, AppState>,
-) -> Result<String, String> {
-    let parsed_org_id = Uuid::parse_str(&org_id).map_err(|_| "Invalid org ID")?;
-    let rev_acc = Uuid::parse_str(&revenue_account_id).map_err(|_| "Invalid revenue account ID")?;
-    let rec_acc = Uuid::parse_str(&receivable_account_id).map_err(|_| "Invalid receivable account ID")?;
-
-    let ctx = RequestContext { tenant_id: parsed_org_id, actor: orbis_domain::iam::actor::Actor::System, request_id: Uuid::new_v4().to_string() };
-    
-    let usecase = CreateFeeTemplateUseCase { fee_template_repo: state.fee_template_repo.clone() };
-    
-    match usecase.execute(&ctx, parsed_org_id, name, default_amount, rev_acc, rec_acc, is_mandatory).await {
-        Ok(template) => Ok(template.id.to_string()),
-        Err(e) => Err(e.to_string()),
-    }
+pub async fn finance_list_accounts(state: State<'_, AppState>) -> Result<ApiResponse<Vec<AccountDto>>, String> {
+    let ctx = make_ctx(&state);
+    let items = state.account_repo.find_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
+    Ok(ok(items.into_iter().map(|a| AccountDto {
+        id: a.id.to_string(), org_id: a.org_id.to_string(), code: a.code, name: a.name, account_type: a.account_type, balance: a.balance,
+    }).collect()))
 }
 
 #[tauri::command]
-pub async fn generate_student_fee(
-    org_id: String,
-    student_id: String,
-    enrollment_id: Option<String>,
-    fee_template_id: String,
-    discount_amount: f64,
-    due_date: String,
-    state: State<'_, AppState>,
-) -> Result<String, String> {
-    let parsed_org_id = Uuid::parse_str(&org_id).map_err(|_| "Invalid org ID")?;
-    let parsed_student_id = Uuid::parse_str(&student_id).map_err(|_| "Invalid student ID")?;
-    let enr_id = match enrollment_id {
-        Some(id) => Some(Uuid::parse_str(&id).map_err(|_| "Invalid enrollment ID")?),
-        None => None,
-    };
-    let fee_tpl_id = Uuid::parse_str(&fee_template_id).map_err(|_| "Invalid fee template ID")?;
-    let d_date = NaiveDate::parse_from_str(&due_date, "%Y-%m-%d").map_err(|_| "Invalid date")?;
-
-    let ctx = RequestContext { tenant_id: parsed_org_id, actor: orbis_domain::iam::actor::Actor::System, request_id: Uuid::new_v4().to_string() };
-    
-    let usecase = GenerateStudentFeeUseCase { 
-        student_fee_repo: state.student_fee_repo.clone(),
-        fee_template_repo: state.fee_template_repo.clone(),
-        event_bus: state.event_bus.clone()
-    };
-    
-    match usecase.execute(&ctx, parsed_org_id, parsed_student_id, enr_id, fee_tpl_id, discount_amount, d_date).await {
-        Ok(fee) => Ok(fee.id.to_string()),
-        Err(e) => Err(e.to_string()),
-    }
+pub async fn finance_list_fee_templates(state: State<'_, AppState>) -> Result<ApiResponse<Vec<FeeTemplateDto>>, String> {
+    let ctx = make_ctx(&state);
+    let items = state.fee_template_repo.find_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
+    Ok(ok(items.into_iter().map(|t| FeeTemplateDto {
+        id: t.id.to_string(), org_id: t.org_id.to_string(), name: t.name, amount: t.amount, fee_type: t.fee_type, is_active: t.is_active,
+    }).collect()))
 }
 
 #[tauri::command]
-pub async fn process_payment(
-    org_id: String,
-    fee_id: Option<String>,
-    account_id: String,
-    amount: f64,
-    method: String,
-    reference: Option<String>,
-    source: Option<String>,
-    state: State<'_, AppState>,
-) -> Result<String, String> {
-    let parsed_org_id = Uuid::parse_str(&org_id).map_err(|_| "Invalid org ID")?;
-    let parsed_fee_id = match fee_id {
-        Some(id) => Some(Uuid::parse_str(&id).map_err(|_| "Invalid fee ID")?),
-        None => None,
-    };
-    let acc_id = Uuid::parse_str(&account_id).map_err(|_| "Invalid account ID")?;
+pub async fn finance_list_student_fees(filter: Option<FeeFilter>, state: State<'_, AppState>) -> Result<ApiResponse<Vec<StudentFeeDto>>, String> {
+    let f = filter.unwrap_or_default();
+    let items = if let Some(eid) = f.enrollment_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()) {
+        state.student_fee_repo.find_by_enrollment(eid).await
+    } else if let Some(sid) = f.student_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()) {
+        state.student_fee_repo.find_by_student(sid).await
+    } else { Ok(vec![]) }.map_err(|e| e.to_string())?;
+    Ok(ok(items.into_iter().map(|f| StudentFeeDto {
+        id: f.id.to_string(), student_id: f.student_id.to_string(),
+        enrollment_id: f.enrollment_id.map(|e| e.to_string()), template_id: f.template_id.to_string(),
+        net_amount: f.net_amount, paid_amount: f.paid_amount, status: f.status,
+    }).collect()))
+}
 
-    let ctx = RequestContext { tenant_id: parsed_org_id, actor: orbis_domain::iam::actor::Actor::System, request_id: Uuid::new_v4().to_string() };
-    
-    let usecase = ProcessPaymentUseCase { 
-        payment_repo: state.payment_repo.clone(),
-        journal_repo: state.journal_entry_repo.clone(),
-        student_fee_repo: state.student_fee_repo.clone(),
-        fee_template_repo: state.fee_template_repo.clone(),
-        event_bus: state.event_bus.clone(),
-        payment_gateway: state.integration_resolver.clone(),
-        notification_gateway: state.integration_resolver.clone(),
-        permission_checker: state.permission_checker.clone(),
-        currency_repo: state.currency_repo.clone(),
-        policy_repo: state.policy_repo.clone(),
-        account_repo: state.account_repo.clone(),
-    };
-    
-    match usecase.execute(&ctx, parsed_org_id, parsed_fee_id, acc_id, amount, method, reference, source).await {
-        Ok(payment) => Ok(payment.id.to_string()),
-        Err(e) => Err(e.to_string()),
-    }
+#[tauri::command]
+pub async fn finance_list_payments(filter: Option<PaymentFilter>, state: State<'_, AppState>) -> Result<ApiResponse<Vec<PaymentDto>>, String> {
+    let ctx = make_ctx(&state);
+    let f = filter.unwrap_or_default();
+    let items = if let Some(fid) = f.fee_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()) {
+        state.payment_repo.find_by_fee(fid).await
+    } else {
+        state.payment_repo.find_by_org(ctx.tenant_id).await
+    }.map_err(|e| e.to_string())?;
+    Ok(ok(items.into_iter().map(|p| PaymentDto {
+        id: p.id.to_string(), fee_id: p.fee_id.map(|f| f.to_string()),
+        amount: p.amount, method: p.method, status: p.status,
+        paid_at: p.paid_at.map(|d| d.to_rfc3339()),
+    }).collect()))
+}
+
+#[tauri::command]
+pub async fn finance_list_currencies(state: State<'_, AppState>) -> Result<ApiResponse<Vec<CurrencyDto>>, String> {
+    let items = state.currency_repo.find_all().await.map_err(|e| e.to_string())?;
+    Ok(ok(items.into_iter().map(|c| CurrencyDto { id: c.id, name: c.name, symbol: c.symbol }).collect()))
 }

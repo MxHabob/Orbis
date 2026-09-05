@@ -1,100 +1,73 @@
+//! Tauri IPC commands — Academic (Subjects, Classes, ClassSubjects).
+
 use tauri::State;
+use serde::Serialize;
 use crate::state::AppState;
-use orbis_app::usecases::academic::{
-    subject::CreateSubjectUseCase,
-    class::CreateClassUseCase,
-    class_subject::AssignClassSubjectUseCase,
-};
-use orbis_app::context::RequestContext;
 use uuid::Uuid;
+use super::make_ctx;
+use super::org_cmds::ApiResponse;
+fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
 
-#[tauri::command]
-pub async fn create_subject(
-    org_id: String,
-    unit_id: Option<String>,
-    code: String,
-    name: String,
-    credit_hours: Option<i32>,
-    is_core: bool,
-    state: State<'_, AppState>,
-) -> Result<String, String> {
-    let parsed_org_id = Uuid::parse_str(&org_id).map_err(|_| "Invalid org ID")?;
-    let parsed_unit_id = unit_id.map(|id| Uuid::parse_str(&id).unwrap());
+#[derive(Serialize)]
+pub struct SubjectDto {
+    pub id: String, pub org_id: String, pub code: String,
+    pub name: String, pub credit_hours: Option<i32>, pub is_core: bool,
+}
 
-    let ctx = RequestContext {
-        tenant_id: parsed_org_id,
-        actor: orbis_domain::iam::actor::Actor::System,
-        request_id: Uuid::new_v4().to_string(),
-    };
+#[derive(Serialize)]
+pub struct ClassDto {
+    pub id: String, pub org_id: String, pub unit_id: String,
+    pub period_id: String, pub name: String, pub level: String,
+}
 
-    let usecase = CreateSubjectUseCase {
-        subject_repo: state.subject_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
-
-    match usecase.execute(&ctx, parsed_org_id, parsed_unit_id, code, name, credit_hours, is_core).await {
-        Ok(subject) => Ok(subject.id.to_string()),
-        Err(e) => Err(e.to_string()),
-    }
+#[derive(Serialize)]
+pub struct ClassSubjectDto {
+    pub id: String, pub class_id: String, pub subject_id: String,
+    pub period_id: String, pub primary_teacher_id: String, pub weekly_hours: Option<i32>,
 }
 
 #[tauri::command]
-pub async fn create_class(
-    org_id: String,
-    unit_id: String,
-    period_id: String,
-    name: String,
-    level: String,
-    state: State<'_, AppState>,
-) -> Result<String, String> {
-    let parsed_org_id = Uuid::parse_str(&org_id).map_err(|_| "Invalid org ID")?;
-    let parsed_unit_id = Uuid::parse_str(&unit_id).map_err(|_| "Invalid unit ID")?;
-    let parsed_period_id = Uuid::parse_str(&period_id).map_err(|_| "Invalid period ID")?;
-
-    let ctx = RequestContext {
-        tenant_id: parsed_org_id,
-        actor: orbis_domain::iam::actor::Actor::System,
-        request_id: Uuid::new_v4().to_string(),
-    };
-
-    let usecase = CreateClassUseCase {
-        class_repo: state.class_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
-
-    match usecase.execute(&ctx, parsed_org_id, parsed_unit_id, parsed_period_id, name, level).await {
-        Ok(class) => Ok(class.id.to_string()),
-        Err(e) => Err(e.to_string()),
-    }
+pub async fn academic_list_subjects(state: State<'_, AppState>) -> Result<ApiResponse<Vec<SubjectDto>>, String> {
+    let ctx = make_ctx(&state);
+    let items = state.subject_repo.find_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
+    Ok(ok(items.into_iter().map(|s| SubjectDto {
+        id: s.id.to_string(), org_id: s.org_id.to_string(), code: s.code,
+        name: s.name, credit_hours: s.credit_hours, is_core: s.is_core,
+    }).collect()))
 }
 
 #[tauri::command]
-pub async fn assign_class_subject(
-    class_id: String,
-    subject_id: String,
-    period_id: String,
-    primary_teacher_id: String,
-    weekly_hours: Option<i32>,
-    state: State<'_, AppState>,
-) -> Result<String, String> {
-    let parsed_class_id = Uuid::parse_str(&class_id).map_err(|_| "Invalid class ID")?;
-    let parsed_subject_id = Uuid::parse_str(&subject_id).map_err(|_| "Invalid subject ID")?;
-    let parsed_period_id = Uuid::parse_str(&period_id).map_err(|_| "Invalid period ID")?;
-    let parsed_primary_teacher_id = Uuid::parse_str(&primary_teacher_id).map_err(|_| "Invalid primary teacher ID")?;
+pub async fn academic_get_subject(id: String, state: State<'_, AppState>) -> Result<ApiResponse<SubjectDto>, String> {
+    let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
+    let s = state.subject_repo.find_by_id(uid).await.map_err(|e| e.to_string())?.ok_or("Subject not found")?;
+    Ok(ok(SubjectDto { id: s.id.to_string(), org_id: s.org_id.to_string(), code: s.code, name: s.name, credit_hours: s.credit_hours, is_core: s.is_core }))
+}
 
-    let ctx = RequestContext {
-        tenant_id: Uuid::new_v4(), // From session
-        actor: orbis_domain::iam::actor::Actor::System,
-        request_id: Uuid::new_v4().to_string(),
-    };
+#[tauri::command]
+pub async fn academic_list_classes(state: State<'_, AppState>) -> Result<ApiResponse<Vec<ClassDto>>, String> {
+    let ctx = make_ctx(&state);
+    let items = state.class_repo.find_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
+    Ok(ok(items.into_iter().map(|c| ClassDto {
+        id: c.id.to_string(), org_id: c.org_id.to_string(), unit_id: c.unit_id.to_string(),
+        period_id: c.period_id.to_string(), name: c.name, level: c.level,
+    }).collect()))
+}
 
-    let usecase = AssignClassSubjectUseCase {
-        class_subject_repo: state.class_subject_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
+#[tauri::command]
+pub async fn academic_get_class(id: String, state: State<'_, AppState>) -> Result<ApiResponse<ClassDto>, String> {
+    let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
+    let c = state.class_repo.find_by_id(uid).await.map_err(|e| e.to_string())?.ok_or("Class not found")?;
+    Ok(ok(ClassDto { id: c.id.to_string(), org_id: c.org_id.to_string(), unit_id: c.unit_id.to_string(), period_id: c.period_id.to_string(), name: c.name, level: c.level }))
+}
 
-    match usecase.execute(&ctx, parsed_class_id, parsed_subject_id, parsed_period_id, parsed_primary_teacher_id, weekly_hours).await {
-        Ok(class_subject) => Ok(class_subject.id.to_string()),
-        Err(e) => Err(e.to_string()),
-    }
+#[tauri::command]
+pub async fn academic_list_class_subjects(class_id: String, period_id: String, state: State<'_, AppState>) -> Result<ApiResponse<Vec<ClassSubjectDto>>, String> {
+    let cid = Uuid::parse_str(&class_id).map_err(|_| "Invalid class ID")?;
+    let pid = Uuid::parse_str(&period_id).map_err(|_| "Invalid period ID")?;
+    let items = state.class_subject_repo.find_by_class_and_period(cid, pid).await.map_err(|e| e.to_string())?;
+    Ok(ok(items.into_iter().map(|cs| ClassSubjectDto {
+        id: cs.id.to_string(), class_id: cs.class_id.to_string(), subject_id: cs.subject_id.to_string(),
+        period_id: cs.period_id.to_string(), primary_teacher_id: cs.primary_teacher_id.to_string(),
+        weekly_hours: cs.weekly_hours,
+    }).collect()))
 }

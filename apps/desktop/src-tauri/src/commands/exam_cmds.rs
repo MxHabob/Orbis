@@ -1,159 +1,57 @@
+//! Tauri IPC commands — Exam (Sessions, Schedules).
+
 use tauri::State;
+use serde::Serialize;
 use crate::state::AppState;
-use orbis_app::usecases::exam::{
-    exam_session::CreateExamSessionUseCase,
-    exam_schedule::ScheduleExamUseCase,
-};
-use orbis_app::context::RequestContext;
 use uuid::Uuid;
-use chrono::{NaiveDate, NaiveTime};
+use super::org_cmds::ApiResponse;
+fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
 
-#[tauri::command]
-pub async fn create_exam_session(
-    org_id: String,
-    academic_period_id: String,
-    name: String,
-    start_date: String,
-    end_date: String,
-    state: State<'_, AppState>,
-) -> Result<String, String> {
-    let parsed_org_id = Uuid::parse_str(&org_id).map_err(|_| "Invalid org ID")?;
-    let parsed_academic_period_id = Uuid::parse_str(&academic_period_id).map_err(|_| "Invalid period ID")?;
-    let parsed_start_date = NaiveDate::parse_from_str(&start_date, "%Y-%m-%d").map_err(|_| "Invalid start date")?;
-    let parsed_end_date = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d").map_err(|_| "Invalid end date")?;
+#[derive(Serialize)]
+pub struct ExamSessionDto {
+    pub id: String, pub org_id: String, pub period_id: String,
+    pub name: String, pub name_ar: Option<String>,
+    pub start_date: String, pub end_date: String,
+    pub status: String, pub is_active: bool,
+}
 
-    let ctx = RequestContext {
-        tenant_id: parsed_org_id,
-        actor: orbis_domain::iam::actor::Actor::System,
-        request_id: Uuid::new_v4().to_string(),
-    };
-
-    let usecase = CreateExamSessionUseCase {
-        session_repo: state.exam_session_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
-
-    match usecase.execute(&ctx, parsed_org_id, parsed_academic_period_id, name, parsed_start_date, parsed_end_date).await {
-        Ok(session) => Ok(session.id.to_string()),
-        Err(e) => Err(e.to_string()),
-    }
+#[derive(Serialize)]
+pub struct ExamScheduleDto {
+    pub id: String, pub session_id: String, pub subject_id: String,
+    pub date: String, pub max_score: f64, pub passing_score: f64,
 }
 
 #[tauri::command]
-pub async fn schedule_exam(
-    exam_session_id: String,
-    class_subject_id: String,
-    exam_date: String,
-    start_time: String,
-    end_time: String,
-    state: State<'_, AppState>,
-) -> Result<String, String> {
-    let parsed_exam_session_id = Uuid::parse_str(&exam_session_id).map_err(|_| "Invalid exam session ID")?;
-    let parsed_class_subject_id = Uuid::parse_str(&class_subject_id).map_err(|_| "Invalid class subject ID")?;
-    
-    let parsed_exam_date = NaiveDate::parse_from_str(&exam_date, "%Y-%m-%d").map_err(|_| "Invalid date format")?;
-    let parsed_start_time = NaiveTime::parse_from_str(&start_time, "%H:%M:%S").map_err(|_| "Invalid start time")?;
-    let parsed_end_time = NaiveTime::parse_from_str(&end_time, "%H:%M:%S").map_err(|_| "Invalid end time")?;
-
-    let ctx = RequestContext {
-        tenant_id: Uuid::new_v4(),
-        actor: orbis_domain::iam::actor::Actor::System,
-        request_id: Uuid::new_v4().to_string(),
-    };
-
-    let usecase = ScheduleExamUseCase {
-        schedule_repo: state.exam_schedule_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
-
-    match usecase.execute(&ctx, parsed_exam_session_id, parsed_class_subject_id, parsed_exam_date, parsed_start_time, parsed_end_time).await {
-        Ok(schedule) => Ok(schedule.id.to_string()),
-        Err(e) => Err(e.to_string()),
-    }
+pub async fn exam_list_sessions(period_id: String, state: State<'_, AppState>) -> Result<ApiResponse<Vec<ExamSessionDto>>, String> {
+    let pid = Uuid::parse_str(&period_id).map_err(|_| "Invalid period ID")?;
+    let items = state.exam_session_repo.find_by_period(pid).await.map_err(|e| e.to_string())?;
+    Ok(ok(items.into_iter().map(|s| ExamSessionDto {
+        id: s.id.to_string(), org_id: s.org_id.to_string(), period_id: s.period_id.to_string(),
+        name: s.name, name_ar: s.name_ar,
+        start_date: s.start_date.to_rfc3339(), end_date: s.end_date.to_rfc3339(),
+        status: s.status, is_active: s.is_active,
+    }).collect()))
 }
 
 #[tauri::command]
-pub async fn assign_seating_number(
-    exam_session_id: String,
-    student_id: String,
-    seating_number: String,
-    room_id: Option<String>,
-    state: State<'_, AppState>,
-) -> Result<String, String> {
-    let parsed_exam_session_id = Uuid::parse_str(&exam_session_id).map_err(|_| "Invalid session ID")?;
-    let parsed_student_id = Uuid::parse_str(&student_id).map_err(|_| "Invalid student ID")?;
-    let parsed_room_id = match room_id {
-        Some(id) => Some(Uuid::parse_str(&id).map_err(|_| "Invalid room ID")?),
-        None => None,
-    };
-
-    let ctx = RequestContext {
-        tenant_id: Uuid::new_v4(),
-        actor: orbis_domain::iam::actor::Actor::System,
-        request_id: Uuid::new_v4().to_string(),
-    };
-
-    let usecase = orbis_app::usecases::exam::seating_number::AssignSeatingNumberUseCase {
-        seating_repo: state.seating_number_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
-
-    match usecase.execute(&ctx, parsed_exam_session_id, parsed_student_id, seating_number, parsed_room_id).await {
-        Ok(seating) => Ok(seating.id.to_string()),
-        Err(e) => Err(e.to_string()),
-    }
+pub async fn exam_get_session(id: String, state: State<'_, AppState>) -> Result<ApiResponse<ExamSessionDto>, String> {
+    let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
+    let s = state.exam_session_repo.find_by_id(uid).await.map_err(|e| e.to_string())?.ok_or("Session not found")?;
+    Ok(ok(ExamSessionDto {
+        id: s.id.to_string(), org_id: s.org_id.to_string(), period_id: s.period_id.to_string(),
+        name: s.name, name_ar: s.name_ar,
+        start_date: s.start_date.to_rfc3339(), end_date: s.end_date.to_rfc3339(),
+        status: s.status, is_active: s.is_active,
+    }))
 }
 
 #[tauri::command]
-pub async fn assign_secret_number(
-    exam_schedule_id: String,
-    student_id: String,
-    secret_number: String,
-    state: State<'_, AppState>,
-) -> Result<String, String> {
-    let parsed_exam_schedule_id = Uuid::parse_str(&exam_schedule_id).map_err(|_| "Invalid schedule ID")?;
-    let parsed_student_id = Uuid::parse_str(&student_id).map_err(|_| "Invalid student ID")?;
-
-    let ctx = RequestContext {
-        tenant_id: Uuid::new_v4(),
-        actor: orbis_domain::iam::actor::Actor::System,
-        request_id: Uuid::new_v4().to_string(),
-    };
-
-    let usecase = orbis_app::usecases::exam::secret_number::AssignSecretNumberUseCase {
-        secret_repo: state.secret_number_repo.clone(),
-    };
-
-    match usecase.execute(&ctx, parsed_exam_schedule_id, parsed_student_id, secret_number).await {
-        Ok(secret) => Ok(secret.id.to_string()),
-        Err(e) => Err(e.to_string()),
-    }
-}
-
-#[tauri::command]
-pub async fn assign_proctor(
-    exam_schedule_id: String,
-    room_id: String,
-    teacher_id: String,
-    is_chief: bool,
-    state: State<'_, AppState>,
-) -> Result<String, String> {
-    let parsed_exam_schedule_id = Uuid::parse_str(&exam_schedule_id).map_err(|_| "Invalid schedule ID")?;
-    let parsed_room_id = Uuid::parse_str(&room_id).map_err(|_| "Invalid room ID")?;
-    let parsed_teacher_id = Uuid::parse_str(&teacher_id).map_err(|_| "Invalid teacher ID")?;
-
-    let ctx = RequestContext {
-        tenant_id: Uuid::new_v4(),
-        actor: orbis_domain::iam::actor::Actor::System,
-        request_id: Uuid::new_v4().to_string(),
-    };
-
-    let usecase = orbis_app::usecases::exam::exam_proctor::AssignProctorUseCase {
-        proctor_repo: state.exam_proctor_repo.clone(),
-    };
-
-    match usecase.execute(&ctx, parsed_exam_schedule_id, parsed_room_id, parsed_teacher_id, is_chief).await {
-        Ok(proctor) => Ok(proctor.id.to_string()),
-        Err(e) => Err(e.to_string()),
-    }
+pub async fn exam_list_schedules(session_id: String, state: State<'_, AppState>) -> Result<ApiResponse<Vec<ExamScheduleDto>>, String> {
+    let sid = Uuid::parse_str(&session_id).map_err(|_| "Invalid session ID")?;
+    let items = state.exam_schedule_repo.find_by_session(sid).await.map_err(|e| e.to_string())?;
+    Ok(ok(items.into_iter().map(|s| ExamScheduleDto {
+        id: s.id.to_string(), session_id: s.session_id.to_string(),
+        subject_id: s.subject_id.to_string(), date: s.date.to_string(),
+        max_score: s.max_score, passing_score: s.passing_score,
+    }).collect()))
 }

@@ -1,15 +1,19 @@
 use std::sync::Arc;
 use sea_orm::DatabaseConnection;
-use orbis_app::ports::repositories::{OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository, SessionRepository, AcademicYearRepository, AcademicPeriodRepository, PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository, EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository, ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository, ExamSessionRepository, ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository, ExamProctorRepository, AccountRepository, JournalEntryRepository, FeeTemplateRepository, StudentFeeRepository, PaymentRepository, DocumentRepository, IntegrationRepository, AiRepository, WorkflowRepository, CurrencyRepository, PolicyRepository};
+use orbis_app::ports::repositories::{OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository, SessionRepository, AcademicYearRepository, AcademicPeriodRepository, PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository, EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository, ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository, ExamSessionRepository, ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository, ExamProctorRepository, AccountRepository, JournalEntryRepository, FeeTemplateRepository, StudentFeeRepository, PaymentRepository, DocumentRepository, IntegrationRepository, AiRepository, WorkflowRepository, CurrencyRepository, PolicyRepository, SettingsRepository, DashboardRepository};
 use orbis_app::ports::reporting::{ReportDefinitionRepository, ReportTemplateRepository, ReportJobRepository, ReportAuditRepository, DataProviderRegistry, RendererRegistry};
 use orbis_app::usecases::report::generate_report::OrgContextResolver;
 use orbis_app::ports::event_bus::EventBus;
 use orbis_app::ports::security::{TokenService, PasswordHasher};
 use orbis_app::ports::iam::PermissionCheckerPort;
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct AppState {
     pub db: DatabaseConnection,
+    /// The active organization ID for the current desktop session.
+    /// Set during login and used by `make_ctx()` to scope all queries.
+    pub active_org_id: Option<Uuid>,
     pub org_repo: Arc<dyn OrganizationRepository>,
     pub org_unit_repo: Arc<dyn OrgUnitRepository>,
     pub user_repo: Arc<dyn UserRepository>,
@@ -53,10 +57,11 @@ pub struct AppState {
     pub report_org_context_resolver: Arc<dyn OrgContextResolver>,
     pub currency_repo: Arc<dyn CurrencyRepository>,
     pub policy_repo: Arc<dyn PolicyRepository>,
+    pub settings_repo: Arc<dyn SettingsRepository>,
+    pub dashboard_repo: Arc<dyn DashboardRepository>,
     pub event_bus: Arc<dyn EventBus>,
     pub token_service: Arc<dyn TokenService>,
     pub password_hasher: Arc<dyn PasswordHasher>,
-    // Plug and Play Gateway / Resolver
     pub integration_resolver: Arc<orbis_infra::adapters::resolver::IntegrationResolver>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
 }
@@ -92,6 +97,8 @@ impl AppState {
         let report_job_repo = Arc::new(orbis_infra::repositories::report_repos::ReportJobRepoImpl { db: db.clone() });
         let report_audit_repo = Arc::new(orbis_infra::repositories::report_repos::ReportAuditRepoImpl { db: db.clone() });
         let policy_repo = Arc::new(orbis_infra::repositories::policy_repo::PgPolicyRepo { db: db.clone() });
+        let settings_repo = Arc::new(orbis_infra::repositories::settings_repo::SettingsRepoImpl { db: db.clone() });
+        let dashboard_repo = Arc::new(orbis_infra::repositories::dashboard_repo::DashboardRepoImpl { db: db.clone() });
 
         use orbis_infra::adapters::report_adapter::*;
         let mut provider_registry = InMemoryDataProviderRegistry::new();
@@ -108,11 +115,11 @@ impl AppState {
         let report_renderer_registry = Arc::new(renderer_registry);
 
         let report_org_context_resolver = Arc::new(DbOrgContextResolver { db: db.clone() });
-        
+
         let permission_checker = Arc::new(orbis_infra::adapters::iam::db_permission_checker::DbPermissionChecker {
             db: db.clone(),
         });
-        
+
         let autopilot_engine = Arc::new(orbis_app::autopilot::engine::AutopilotEngine {
             policy_repo: policy_repo.clone(),
         });
@@ -127,6 +134,7 @@ impl AppState {
 
         Ok(Self {
             db,
+            active_org_id: None,
             org_repo,
             org_unit_repo,
             user_repo,
@@ -170,6 +178,8 @@ impl AppState {
             report_org_context_resolver,
             currency_repo: finance_repo.clone(),
             policy_repo,
+            settings_repo,
+            dashboard_repo,
             event_bus,
             token_service,
             password_hasher,
