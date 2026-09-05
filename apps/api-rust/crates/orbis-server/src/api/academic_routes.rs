@@ -1,78 +1,43 @@
-use axum::{extract::State, Json, routing::post, Router};
+//! Academic routes — Subjects, Classes, ClassSubjects.
+
+use axum::{extract::{State, Path}, routing::{get, post}, Json, Router};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-use chrono::{DateTime, Utc};
-use orbis_app::context::RequestContext;
+use uuid::Uuid;
+
+use super::{ApiError, ApiResponse};
+use super::extractors::AuthContext;
+use crate::state::AppState;
 use orbis_app::usecases::academic::{
     subject::CreateSubjectUseCase,
     class::CreateClassUseCase,
     class_subject::AssignClassSubjectUseCase,
 };
-use uuid::Uuid;
-use crate::state::AppState;
 
-#[derive(Serialize, Deserialize, ToSchema)]
-pub struct AcademicYear {
+// ── DTOs ────────────────────────────────────────────────────────
+
+#[derive(Serialize, ToSchema)]
+pub struct SubjectDto {
     pub id: Uuid,
     pub org_id: Uuid,
-    pub code: String,
-    pub name: String,
-    pub name_ar: Option<String>,
-    pub start_date: DateTime<Utc>,
-    pub end_date: DateTime<Utc>,
-    pub is_active: bool,
-    pub is_locked: i32,
-    pub status: String,
-}
-
-#[derive(Serialize, Deserialize, ToSchema)]
-pub struct AcademicPeriod {
-    pub id: Uuid,
-    pub year_id: Uuid,
-    pub name: String,
-    pub start_date: DateTime<Utc>,
-    pub end_date: DateTime<Utc>,
-    pub period_type: String,
-    pub status: String,
-    pub is_grade_entry_open: i32,
-    pub is_enrollment_open: i32,
-    pub exam_start: Option<String>,
-    pub exam_end: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, ToSchema)]
-pub struct AcademicYearInfo {
-    pub year: AcademicYear,
-    pub periods: Vec<AcademicPeriod>,
-}
-
-#[derive(Serialize, Deserialize, ToSchema)]
-pub struct AcademicContextResponse {
-    pub current_year: Option<AcademicYearInfo>,
-    pub all_years: Vec<AcademicYearInfo>,
-    pub periods: Vec<AcademicPeriod>,
-    pub year_status: String,
-    pub is_read_only: bool,
-}
-
-#[derive(Deserialize)]
-pub struct CreateSubjectRequest {
-    pub org_id: Uuid,
-    pub unit_id: Option<Uuid>,
     pub code: String,
     pub name: String,
     pub credit_hours: Option<i32>,
     pub is_core: bool,
 }
 
-#[derive(Serialize)]
-pub struct SubjectResponse {
-    pub id: Uuid,
+#[derive(Deserialize, ToSchema)]
+pub struct CreateSubjectRequest {
+    pub code: String,
     pub name: String,
+    pub unit_id: Option<Uuid>,
+    pub credit_hours: Option<i32>,
+    pub is_core: bool,
 }
 
-#[derive(Deserialize)]
-pub struct CreateClassRequest {
+#[derive(Serialize, ToSchema)]
+pub struct ClassDto {
+    pub id: Uuid,
     pub org_id: Uuid,
     pub unit_id: Uuid,
     pub period_id: Uuid,
@@ -80,13 +45,25 @@ pub struct CreateClassRequest {
     pub level: String,
 }
 
-#[derive(Serialize)]
-pub struct ClassResponse {
-    pub id: Uuid,
+#[derive(Deserialize, ToSchema)]
+pub struct CreateClassRequest {
+    pub unit_id: Uuid,
+    pub period_id: Uuid,
     pub name: String,
+    pub level: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, ToSchema)]
+pub struct ClassSubjectDto {
+    pub id: Uuid,
+    pub class_id: Uuid,
+    pub subject_id: Uuid,
+    pub period_id: Uuid,
+    pub primary_teacher_id: Uuid,
+    pub weekly_hours: Option<i32>,
+}
+
+#[derive(Deserialize, ToSchema)]
 pub struct AssignClassSubjectRequest {
     pub class_id: Uuid,
     pub subject_id: Uuid,
@@ -95,85 +72,161 @@ pub struct AssignClassSubjectRequest {
     pub weekly_hours: Option<i32>,
 }
 
-#[derive(Serialize)]
-pub struct ClassSubjectResponse {
-    pub id: Uuid,
-}
+// ── Handlers ────────────────────────────────────────────────────
 
+#[utoipa::path(post, path = "/api/v1/subjects", request_body = CreateSubjectRequest,
+    responses((status = 201, body = SubjectDto)),
+    security(("bearer" = [])), tag = "Academic")]
 async fn create_subject(
+    ctx: AuthContext,
     State(state): State<AppState>,
-    Json(payload): Json<CreateSubjectRequest>,
-) -> Result<Json<SubjectResponse>, String> {
-    let ctx = RequestContext {
-        tenant_id: payload.org_id,
-        actor: orbis_domain::iam::actor::Actor::System,
-        request_id: Uuid::new_v4().to_string(),
-    };
-
-    let use_case = CreateSubjectUseCase {
+    Json(p): Json<CreateSubjectRequest>,
+) -> Result<Json<ApiResponse<SubjectDto>>, ApiError> {
+    let uc = CreateSubjectUseCase {
         subject_repo: state.subject_repo.clone(),
         event_bus: state.event_bus.clone(),
     };
-
-    match use_case.execute(&ctx, payload.org_id, payload.unit_id, payload.code, payload.name, payload.credit_hours, payload.is_core).await {
-        Ok(subject) => Ok(Json(SubjectResponse {
-            id: subject.id,
-            name: subject.name,
-        })),
-        Err(e) => Err(e.to_string()),
-    }
+    let s = uc.execute(&ctx, ctx.tenant_id, p.unit_id, p.code, p.name, p.credit_hours, p.is_core).await?;
+    Ok(ApiResponse::ok(SubjectDto {
+        id: s.id, org_id: s.org_id, code: s.code, name: s.name,
+        credit_hours: s.credit_hours, is_core: s.is_core,
+    }))
 }
 
-async fn create_class(
+#[utoipa::path(get, path = "/api/v1/subjects",
+    responses((status = 200, body = Vec<SubjectDto>)),
+    security(("bearer" = [])), tag = "Academic")]
+async fn list_subjects(
+    ctx: AuthContext,
     State(state): State<AppState>,
-    Json(payload): Json<CreateClassRequest>,
-) -> Result<Json<ClassResponse>, String> {
-    let ctx = RequestContext {
-        tenant_id: payload.org_id,
-        actor: orbis_domain::iam::actor::Actor::System,
-        request_id: Uuid::new_v4().to_string(),
-    };
+) -> Result<Json<ApiResponse<Vec<SubjectDto>>>, ApiError> {
+    let subjects = state.subject_repo.find_by_org(ctx.tenant_id).await?;
+    let dtos = subjects.into_iter().map(|s| SubjectDto {
+        id: s.id, org_id: s.org_id, code: s.code, name: s.name,
+        credit_hours: s.credit_hours, is_core: s.is_core,
+    }).collect();
+    Ok(ApiResponse::ok(dtos))
+}
 
-    let use_case = CreateClassUseCase {
+#[utoipa::path(get, path = "/api/v1/subjects/{id}",
+    params(("id" = Uuid, Path)),
+    responses((status = 200, body = SubjectDto)),
+    security(("bearer" = [])), tag = "Academic")]
+async fn get_subject(
+    _ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<SubjectDto>>, ApiError> {
+    let s = state.subject_repo.find_by_id(id).await?
+        .ok_or_else(|| ApiError::not_found(format!("Subject {} not found", id)))?;
+    Ok(ApiResponse::ok(SubjectDto {
+        id: s.id, org_id: s.org_id, code: s.code, name: s.name,
+        credit_hours: s.credit_hours, is_core: s.is_core,
+    }))
+}
+
+#[utoipa::path(post, path = "/api/v1/classes", request_body = CreateClassRequest,
+    responses((status = 201, body = ClassDto)),
+    security(("bearer" = [])), tag = "Academic")]
+async fn create_class(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(p): Json<CreateClassRequest>,
+) -> Result<Json<ApiResponse<ClassDto>>, ApiError> {
+    let uc = CreateClassUseCase {
         class_repo: state.class_repo.clone(),
         event_bus: state.event_bus.clone(),
     };
-
-    match use_case.execute(&ctx, payload.org_id, payload.unit_id, payload.period_id, payload.name, payload.level).await {
-        Ok(class) => Ok(Json(ClassResponse {
-            id: class.id,
-            name: class.name,
-        })),
-        Err(e) => Err(e.to_string()),
-    }
+    let c = uc.execute(&ctx, ctx.tenant_id, p.unit_id, p.period_id, p.name, p.level).await?;
+    Ok(ApiResponse::ok(ClassDto {
+        id: c.id, org_id: c.org_id, unit_id: c.unit_id,
+        period_id: c.period_id, name: c.name, level: c.level,
+    }))
 }
 
-async fn assign_class_subject(
+#[utoipa::path(get, path = "/api/v1/classes",
+    responses((status = 200, body = Vec<ClassDto>)),
+    security(("bearer" = [])), tag = "Academic")]
+async fn list_classes(
+    ctx: AuthContext,
     State(state): State<AppState>,
-    Json(payload): Json<AssignClassSubjectRequest>,
-) -> Result<Json<ClassSubjectResponse>, String> {
-    let ctx = RequestContext {
-        tenant_id: Uuid::new_v4(), // Should be derived from session
-        actor: orbis_domain::iam::actor::Actor::System,
-        request_id: Uuid::new_v4().to_string(),
-    };
+) -> Result<Json<ApiResponse<Vec<ClassDto>>>, ApiError> {
+    let classes = state.class_repo.find_by_org(ctx.tenant_id).await?;
+    let dtos = classes.into_iter().map(|c| ClassDto {
+        id: c.id, org_id: c.org_id, unit_id: c.unit_id,
+        period_id: c.period_id, name: c.name, level: c.level,
+    }).collect();
+    Ok(ApiResponse::ok(dtos))
+}
 
-    let use_case = AssignClassSubjectUseCase {
+#[utoipa::path(get, path = "/api/v1/classes/{id}",
+    params(("id" = Uuid, Path)),
+    responses((status = 200, body = ClassDto)),
+    security(("bearer" = [])), tag = "Academic")]
+async fn get_class(
+    _ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<ClassDto>>, ApiError> {
+    let c = state.class_repo.find_by_id(id).await?
+        .ok_or_else(|| ApiError::not_found(format!("Class {} not found", id)))?;
+    Ok(ApiResponse::ok(ClassDto {
+        id: c.id, org_id: c.org_id, unit_id: c.unit_id,
+        period_id: c.period_id, name: c.name, level: c.level,
+    }))
+}
+
+#[utoipa::path(post, path = "/api/v1/class-subjects", request_body = AssignClassSubjectRequest,
+    responses((status = 201, body = ClassSubjectDto)),
+    security(("bearer" = [])), tag = "Academic")]
+async fn assign_class_subject(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(p): Json<AssignClassSubjectRequest>,
+) -> Result<Json<ApiResponse<ClassSubjectDto>>, ApiError> {
+    let uc = AssignClassSubjectUseCase {
         class_subject_repo: state.class_subject_repo.clone(),
         event_bus: state.event_bus.clone(),
     };
-
-    match use_case.execute(&ctx, payload.class_id, payload.subject_id, payload.period_id, payload.primary_teacher_id, payload.weekly_hours).await {
-        Ok(class_subject) => Ok(Json(ClassSubjectResponse {
-            id: class_subject.id,
-        })),
-        Err(e) => Err(e.to_string()),
-    }
+    let cs = uc.execute(&ctx, p.class_id, p.subject_id, p.period_id, p.primary_teacher_id, p.weekly_hours).await?;
+    Ok(ApiResponse::ok(ClassSubjectDto {
+        id: cs.id, class_id: cs.class_id, subject_id: cs.subject_id,
+        period_id: cs.period_id, primary_teacher_id: cs.primary_teacher_id,
+        weekly_hours: cs.weekly_hours,
+    }))
 }
+
+#[utoipa::path(get, path = "/api/v1/class-subjects",
+    params(("class_id" = Uuid, Query), ("period_id" = Uuid, Query)),
+    responses((status = 200, body = Vec<ClassSubjectDto>)),
+    security(("bearer" = [])), tag = "Academic")]
+async fn list_class_subjects(
+    _ctx: AuthContext,
+    State(state): State<AppState>,
+    axum::extract::Query(params): axum::extract::Query<ClassSubjectQuery>,
+) -> Result<Json<ApiResponse<Vec<ClassSubjectDto>>>, ApiError> {
+    let items = state.class_subject_repo.find_by_class_and_period(params.class_id, params.period_id).await?;
+    let dtos = items.into_iter().map(|cs| ClassSubjectDto {
+        id: cs.id, class_id: cs.class_id, subject_id: cs.subject_id,
+        period_id: cs.period_id, primary_teacher_id: cs.primary_teacher_id,
+        weekly_hours: cs.weekly_hours,
+    }).collect();
+    Ok(ApiResponse::ok(dtos))
+}
+
+#[derive(Deserialize)]
+pub struct ClassSubjectQuery {
+    pub class_id: Uuid,
+    pub period_id: Uuid,
+}
+
+// ── Router ──────────────────────────────────────────────────────
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/academic/subjects", post(create_subject))
-        .route("/academic/classes", post(create_class))
-        .route("/academic/class-subjects", post(assign_class_subject))
+        .route("/api/v1/subjects", post(create_subject).get(list_subjects))
+        .route("/api/v1/subjects/{id}", get(get_subject))
+        .route("/api/v1/classes", post(create_class).get(list_classes))
+        .route("/api/v1/classes/{id}", get(get_class))
+        .route("/api/v1/class-subjects", post(assign_class_subject).get(list_class_subjects))
 }

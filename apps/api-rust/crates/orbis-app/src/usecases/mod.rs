@@ -14,3 +14,5 @@ pub mod ai;
 pub mod report;
 pub mod workflow;
 pub mod integrations;
+pub mod settings;
+pub mod dashboard;

@@ -33,8 +33,109 @@ use orbis_domain::entities::payment::Payment;
 use orbis_domain::entities::currency::Currency;
 use orbis_domain::entities::exchange_rate::ExchangeRate;
 use orbis_domain::entities::document::Document;
+use orbis_domain::entities::role::Role;
+use orbis_domain::entities::role_permission::RolePermission;
+use orbis_domain::entities::user_role_assignment::UserRoleAssignment;
 use orbis_domain::errors::DomainError;
 use uuid::Uuid;
+
+// ═══════════════════════════════════════════════════════════════
+// ORGANIZATION & TENANT
+// ═══════════════════════════════════════════════════════════════
+
+#[async_trait]
+pub trait OrganizationRepository: Send + Sync {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<Organization>, DomainError>;
+    async fn find_by_slug(&self, slug: &str) -> Result<Option<Organization>, DomainError>;
+    async fn save(&self, org: &Organization) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait OrgUnitRepository: Send + Sync {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<OrgUnit>, DomainError>;
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<OrgUnit>, DomainError>;
+    async fn find_children(&self, parent_id: Uuid) -> Result<Vec<OrgUnit>, DomainError>;
+    async fn find_descendants(&self, org_id: Uuid, path_prefix: &str) -> Result<Vec<OrgUnit>, DomainError>;
+    async fn count_branches(&self, org_id: Uuid) -> Result<u32, DomainError>;
+    async fn save(&self, unit: &OrgUnit) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait SettingsRepository: Send + Sync {
+    async fn get_settings(&self, org_id: Uuid) -> Result<OrganizationSettings, DomainError>;
+    async fn save_settings(&self, org_id: Uuid, settings: &OrganizationSettings) -> Result<(), DomainError>;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// IAM — Users, Roles, Sessions
+// ═══════════════════════════════════════════════════════════════
+
+#[async_trait]
+pub trait UserRepository: Send + Sync {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<User>, DomainError>;
+    async fn find_by_email(&self, email: &str) -> Result<Option<User>, DomainError>;
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<User>, DomainError>;
+    async fn save(&self, user: &User) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait PersonRepository: Send + Sync {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<Person>, DomainError>;
+    async fn save(&self, person: &Person) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait SessionRepository: Send + Sync {
+    async fn find_by_token(&self, token: &str) -> Result<Option<Session>, DomainError>;
+    async fn save(&self, session: &Session) -> Result<(), DomainError>;
+    async fn invalidate(&self, token: &str) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait RoleRepository: Send + Sync {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<Role>, DomainError>;
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Role>, DomainError>;
+    async fn save(&self, role: &Role) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait UserRoleAssignmentRepository: Send + Sync {
+    async fn find_by_user(&self, user_id: Uuid) -> Result<Vec<UserRoleAssignment>, DomainError>;
+    async fn save(&self, assignment: &UserRoleAssignment) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CALENDAR — Academic Years & Periods
+// ═══════════════════════════════════════════════════════════════
+
+#[async_trait]
+pub trait AcademicYearRepository: Send + Sync {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<AcademicYear>, DomainError>;
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<AcademicYear>, DomainError>;
+    async fn find_current(&self, org_id: Uuid) -> Result<Option<AcademicYear>, DomainError>;
+    async fn save(&self, year: &AcademicYear) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait AcademicPeriodRepository: Send + Sync {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<AcademicPeriod>, DomainError>;
+    async fn find_by_year(&self, year_id: Uuid) -> Result<Vec<AcademicPeriod>, DomainError>;
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<AcademicPeriod>, DomainError>;
+    async fn save(&self, period: &AcademicPeriod) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait PeriodTemplateRepository: Send + Sync {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<PeriodTemplate>, DomainError>;
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<PeriodTemplate>, DomainError>;
+    async fn save(&self, template: &PeriodTemplate) -> Result<(), DomainError>;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ACADEMIC — Subjects, Classes, ClassSubjects
+// ═══════════════════════════════════════════════════════════════
 
 #[async_trait]
 pub trait SubjectRepository: Send + Sync {
@@ -47,6 +148,7 @@ pub trait SubjectRepository: Send + Sync {
 pub trait ClassRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Class>, DomainError>;
     async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<Class>, DomainError>;
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Class>, DomainError>;
     async fn save(&self, class: &Class) -> Result<(), DomainError>;
 }
 
@@ -54,13 +156,20 @@ pub trait ClassRepository: Send + Sync {
 pub trait ClassSubjectRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<ClassSubject>, DomainError>;
     async fn find_by_class(&self, class_id: Uuid) -> Result<Vec<ClassSubject>, DomainError>;
+    async fn find_by_class_and_period(&self, class_id: Uuid, period_id: Uuid) -> Result<Vec<ClassSubject>, DomainError>;
     async fn save(&self, class_subject: &ClassSubject) -> Result<(), DomainError>;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// STUDENT — Enrollments, Guardians
+// ═══════════════════════════════════════════════════════════════
 
 #[async_trait]
 pub trait EnrollmentRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Enrollment>, DomainError>;
     async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<Enrollment>, DomainError>;
+    async fn find_by_class(&self, class_id: Uuid) -> Result<Vec<Enrollment>, DomainError>;
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Enrollment>, DomainError>;
     async fn save(&self, enrollment: &Enrollment) -> Result<(), DomainError>;
 }
 
@@ -70,6 +179,10 @@ pub trait StudentGuardianRepository: Send + Sync {
     async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<StudentGuardian>, DomainError>;
     async fn save(&self, guardian: &StudentGuardian) -> Result<(), DomainError>;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// SCHEDULING — Rooms, TimeSlots, Lessons
+// ═══════════════════════════════════════════════════════════════
 
 #[async_trait]
 pub trait RoomRepository: Send + Sync {
@@ -88,12 +201,19 @@ pub trait TimeSlotRepository: Send + Sync {
 #[async_trait]
 pub trait ScheduledLessonRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<ScheduledLesson>, DomainError>;
+    async fn find_by_class_subject(&self, class_subject_id: Uuid) -> Result<Vec<ScheduledLesson>, DomainError>;
+    async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<ScheduledLesson>, DomainError>;
     async fn save(&self, lesson: &ScheduledLesson) -> Result<(), DomainError>;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// ASSESSMENT — Schemes, Grades, Attendance, Behavior
+// ═══════════════════════════════════════════════════════════════
 
 #[async_trait]
 pub trait AssessmentSchemeRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<AssessmentScheme>, DomainError>;
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<AssessmentScheme>, DomainError>;
     async fn save(&self, scheme: &AssessmentScheme) -> Result<(), DomainError>;
 }
 
@@ -101,51 +221,69 @@ pub trait AssessmentSchemeRepository: Send + Sync {
 pub trait GradeRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Grade>, DomainError>;
     async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<Grade>, DomainError>;
+    async fn find_by_class_subject(&self, class_subject_id: Uuid) -> Result<Vec<Grade>, DomainError>;
     async fn save(&self, grade: &Grade) -> Result<(), DomainError>;
 }
 
 #[async_trait]
 pub trait AttendanceRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Attendance>, DomainError>;
+    async fn find_by_class_and_date(&self, class_id: Uuid, date: chrono::NaiveDate) -> Result<Vec<Attendance>, DomainError>;
+    async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<Attendance>, DomainError>;
     async fn save(&self, attendance: &Attendance) -> Result<(), DomainError>;
 }
 
 #[async_trait]
 pub trait BehaviorRecordRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<BehaviorRecord>, DomainError>;
+    async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<BehaviorRecord>, DomainError>;
     async fn save(&self, record: &BehaviorRecord) -> Result<(), DomainError>;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// EXAM — Sessions, Schedules, Seating, Secrets, Proctors
+// ═══════════════════════════════════════════════════════════════
 
 #[async_trait]
 pub trait ExamSessionRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<ExamSession>, DomainError>;
+    async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<ExamSession>, DomainError>;
     async fn save(&self, session: &ExamSession) -> Result<(), DomainError>;
 }
 
 #[async_trait]
 pub trait ExamScheduleRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<ExamSchedule>, DomainError>;
+    async fn find_by_session(&self, session_id: Uuid) -> Result<Vec<ExamSchedule>, DomainError>;
     async fn save(&self, schedule: &ExamSchedule) -> Result<(), DomainError>;
 }
 
 #[async_trait]
 pub trait SeatingNumberRepository: Send + Sync {
+    async fn find_by_session(&self, session_id: Uuid) -> Result<Vec<SeatingNumber>, DomainError>;
     async fn save(&self, seating: &SeatingNumber) -> Result<(), DomainError>;
 }
 
 #[async_trait]
 pub trait SecretNumberRepository: Send + Sync {
+    async fn find_by_schedule(&self, schedule_id: Uuid) -> Result<Vec<SecretNumber>, DomainError>;
     async fn save(&self, secret: &SecretNumber) -> Result<(), DomainError>;
 }
 
 #[async_trait]
 pub trait ExamProctorRepository: Send + Sync {
+    async fn find_by_schedule(&self, schedule_id: Uuid) -> Result<Vec<ExamProctor>, DomainError>;
     async fn save(&self, proctor: &ExamProctor) -> Result<(), DomainError>;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// FINANCE — Accounts, FeeTemplates, StudentFees, Payments
+// ═══════════════════════════════════════════════════════════════
 
 #[async_trait]
 pub trait AccountRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Account>, DomainError>;
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Account>, DomainError>;
     async fn save(&self, account: &Account) -> Result<(), DomainError>;
 }
 
@@ -158,40 +296,48 @@ pub trait JournalEntryRepository: Send + Sync {
 #[async_trait]
 pub trait FeeTemplateRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<FeeTemplate>, DomainError>;
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<FeeTemplate>, DomainError>;
     async fn save(&self, template: &FeeTemplate) -> Result<(), DomainError>;
 }
 
 #[async_trait]
 pub trait StudentFeeRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<StudentFee>, DomainError>;
+    async fn find_by_enrollment(&self, enrollment_id: Uuid) -> Result<Vec<StudentFee>, DomainError>;
+    async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<StudentFee>, DomainError>;
     async fn save(&self, fee: &StudentFee) -> Result<(), DomainError>;
 }
 
 #[async_trait]
 pub trait PaymentRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Payment>, DomainError>;
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Payment>, DomainError>;
+    async fn find_by_fee(&self, fee_id: Uuid) -> Result<Vec<Payment>, DomainError>;
     async fn save(&self, payment: &Payment) -> Result<(), DomainError>;
 }
 
 #[async_trait]
 pub trait CurrencyRepository: Send + Sync {
     async fn find_currency_by_id(&self, id: &str) -> Result<Option<Currency>, DomainError>;
+    async fn find_all(&self) -> Result<Vec<Currency>, DomainError>;
     async fn get_exchange_rate(&self, org_id: Uuid, base_currency_id: &str, target_currency_id: &str) -> Result<Option<ExchangeRate>, DomainError>;
 }
 
-#[async_trait]
-pub trait AcademicYearRepository: Send + Sync {
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<AcademicYear>, DomainError>;
-    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<AcademicYear>, DomainError>;
-    async fn save(&self, year: &AcademicYear) -> Result<(), DomainError>;
-}
+// ═══════════════════════════════════════════════════════════════
+// DOCUMENT
+// ═══════════════════════════════════════════════════════════════
 
 #[async_trait]
 pub trait DocumentRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Document>, DomainError>;
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Document>, DomainError>;
     async fn save(&self, document: &Document) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// INTEGRATIONS
+// ═══════════════════════════════════════════════════════════════
 
 #[async_trait]
 pub trait IntegrationRepository: Send + Sync {
@@ -200,6 +346,10 @@ pub trait IntegrationRepository: Send + Sync {
     async fn save_config(&self, config: &orbis_domain::entities::integration::IntegrationConfig) -> Result<(), DomainError>;
     async fn save_secret(&self, secret: &orbis_domain::entities::integration::IntegrationSecret) -> Result<(), DomainError>;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// AI & WORKFLOW
+// ═══════════════════════════════════════════════════════════════
 
 #[async_trait]
 pub trait AiRepository: Send + Sync {
@@ -215,57 +365,47 @@ pub trait WorkflowRepository: Send + Sync {
     async fn save_execution(&self, execution: &orbis_domain::entities::workflow::WorkflowExecution) -> Result<(), DomainError>;
 }
 
-
-#[async_trait]
-pub trait AcademicPeriodRepository: Send + Sync {
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<AcademicPeriod>, DomainError>;
-    async fn find_by_year(&self, year_id: Uuid) -> Result<Vec<AcademicPeriod>, DomainError>;
-    async fn save(&self, period: &AcademicPeriod) -> Result<(), DomainError>;
-}
-
-#[async_trait]
-pub trait PeriodTemplateRepository: Send + Sync {
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<PeriodTemplate>, DomainError>;
-    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<PeriodTemplate>, DomainError>;
-    async fn save(&self, template: &PeriodTemplate) -> Result<(), DomainError>;
-}
-
-#[async_trait]
-pub trait OrganizationRepository: Send + Sync {
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<Organization>, DomainError>;
-    async fn find_by_slug(&self, slug: &str) -> Result<Option<Organization>, DomainError>;
-    async fn save(&self, org: &Organization) -> Result<(), DomainError>;
-}
-
-#[async_trait]
-pub trait OrgUnitRepository: Send + Sync {
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<OrgUnit>, DomainError>;
-    async fn find_children(&self, parent_id: Uuid) -> Result<Vec<OrgUnit>, DomainError>;
-    async fn find_descendants(&self, org_id: Uuid, path_prefix: &str) -> Result<Vec<OrgUnit>, DomainError>;
-    async fn count_branches(&self, org_id: Uuid) -> Result<u32, DomainError>;
-    async fn save(&self, unit: &OrgUnit) -> Result<(), DomainError>;
-}
-
-#[async_trait]
-pub trait UserRepository: Send + Sync {
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<User>, DomainError>;
-    async fn find_by_email(&self, email: &str) -> Result<Option<User>, DomainError>;
-    async fn save(&self, user: &User) -> Result<(), DomainError>;
-}
-
-#[async_trait]
-pub trait PersonRepository: Send + Sync {
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<Person>, DomainError>;
-    async fn save(&self, person: &Person) -> Result<(), DomainError>;
-}
-
-#[async_trait]
-pub trait SessionRepository: Send + Sync {
-    async fn find_by_token(&self, token: &str) -> Result<Option<Session>, DomainError>;
-    async fn save(&self, session: &Session) -> Result<(), DomainError>;
-}
+// ═══════════════════════════════════════════════════════════════
+// POLICIES (read-only for now)
+// ═══════════════════════════════════════════════════════════════
 
 #[async_trait]
 pub trait PolicyRepository: Send + Sync {
     async fn get_settings(&self, org_id: Uuid) -> Result<OrganizationSettings, DomainError>;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DASHBOARD AGGREGATION
+// ═══════════════════════════════════════════════════════════════
+
+#[async_trait]
+pub trait DashboardRepository: Send + Sync {
+    async fn get_counts(&self, org_id: Uuid) -> Result<DashboardCounts, DomainError>;
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct DashboardCounts {
+    pub total_students: u64,
+    pub total_teachers: u64,
+    pub total_classes: u64,
+    pub total_enrollments: u64,
+    pub total_subjects: u64,
+    pub active_academic_year: Option<String>,
+    pub total_payments_amount: f64,
+    pub pending_fees_amount: f64,
+}
+
+impl Default for DashboardCounts {
+    fn default() -> Self {
+        Self {
+            total_students: 0,
+            total_teachers: 0,
+            total_classes: 0,
+            total_enrollments: 0,
+            total_subjects: 0,
+            active_academic_year: None,
+            total_payments_amount: 0.0,
+            pending_fees_amount: 0.0,
+        }
+    }
 }

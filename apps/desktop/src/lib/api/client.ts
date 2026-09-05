@@ -7,10 +7,21 @@ export interface ApiClient {
         restoreSession(token: string): Promise<any>;
         listUsers(params: any): Promise<any[]>;
     };
-    organizations: {
+    organization: {
         create(data: any): Promise<any>;
         createUnit(data: any): Promise<any>;
         checkSetup(): Promise<any>;
+        listOrgUnits(): Promise<any[]>;
+        selectOrgUnit(id: string): Promise<void>;
+        getOrganization(): Promise<any>;
+        updateOrganization(data: any): Promise<any>;
+        updateSettings(data: any): Promise<any>;
+        getDashboardStats(): Promise<any>;
+        getMain(): Promise<any>;
+        getPeriodTemplates(): Promise<any[]>;
+        createOrgUnit(data: any): Promise<any>;
+        deleteOrgUnit(id: string): Promise<void>;
+        updateOrgUnit(id: string, data: any): Promise<any>;
     };
     calendar: {
         getCurrent(): Promise<any>;
@@ -58,10 +69,21 @@ export class RemoteClient implements ApiClient {
         restoreSession: async (t: string) => { throw new Error('Not implemented'); },
         listUsers: async (params: any) => []
     };
-    organizations = {
+    organization = {
         create: async (data: any) => { throw new Error('Not implemented'); },
         createUnit: async (data: any) => { throw new Error('Not implemented'); },
-        checkSetup: async () => { throw new Error('Not implemented'); }
+        checkSetup: async () => { throw new Error('Not implemented'); },
+        listOrgUnits: async () => [],
+        selectOrgUnit: async (id: string) => {},
+        getOrganization: async () => ({}),
+        updateOrganization: async (data: any) => ({}),
+        updateSettings: async (data: any) => ({}),
+        getDashboardStats: async () => ({}),
+        getMain: async () => ({}),
+        getPeriodTemplates: async () => [],
+        createOrgUnit: async (data: any) => ({}),
+        deleteOrgUnit: async (id: string) => {},
+        updateOrgUnit: async (id: string, data: any) => ({})
     };
     calendar = {
         getCurrent: async () => { throw new Error('Not implemented'); },
@@ -115,7 +137,7 @@ export class LocalClient implements ApiClient {
         },
         listUsers: async (params: any) => invoke<any[]>('list_users', { params })
     };
-    organizations = {
+    organization = {
         create: async (data: any) => {
             const id = await invoke<string>('create_organization', data);
             return { id };
@@ -124,7 +146,21 @@ export class LocalClient implements ApiClient {
             const id = await invoke<string>('create_org_unit', data);
             return { id };
         },
-        checkSetup: async () => { return true; }
+        checkSetup: async () => { return true; },
+        listOrgUnits: async () => [],
+        selectOrgUnit: async (id: string) => {},
+        getOrganization: async () => ({}),
+        updateOrganization: async (data: any) => ({}),
+        updateSettings: async (data: any) => ({}),
+        getDashboardStats: async () => ({}),
+        getMain: async () => ({}),
+        getPeriodTemplates: async () => [],
+        createOrgUnit: async (data: any) => {
+            const id = await invoke<string>('create_org_unit', data);
+            return { id };
+        },
+        deleteOrgUnit: async (id: string) => {},
+        updateOrgUnit: async (id: string, data: any) => ({})
     };
     calendar = {
         getCurrent: async () => { return { id: "1", name: "2024-2025", status: "active" }; },

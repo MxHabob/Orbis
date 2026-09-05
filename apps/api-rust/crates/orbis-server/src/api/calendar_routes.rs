@@ -1,32 +1,61 @@
-use axum::{extract::State, Json, routing::post, Router};
+//! Calendar routes — Academic Years & Periods.
+
+use axum::{extract::{State, Path}, routing::{get, post}, Json, Router};
 use serde::{Deserialize, Serialize};
-use orbis_app::context::RequestContext;
+use utoipa::ToSchema;
+use chrono::{DateTime, Utc};
+use uuid::Uuid;
+
+use super::{ApiError, ApiResponse};
+use super::extractors::AuthContext;
+use crate::state::AppState;
 use orbis_app::usecases::calendar::{
     academic_year::CreateAcademicYearUseCase,
     academic_period::CreateAcademicPeriodUseCase,
 };
-use uuid::Uuid;
-use chrono::{DateTime, Utc};
-use crate::state::AppState;
 
-#[derive(Deserialize)]
-pub struct CreateYearRequest {
+// ── DTOs ────────────────────────────────────────────────────────
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct AcademicYearDto {
+    pub id: Uuid,
     pub org_id: Uuid,
+    pub code: String,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub start_date: DateTime<Utc>,
+    pub end_date: DateTime<Utc>,
+    pub is_active: bool,
+    pub status: String,
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct AcademicPeriodDto {
+    pub id: Uuid,
+    pub year_id: Uuid,
+    pub name: String,
+    pub start_date: DateTime<Utc>,
+    pub end_date: DateTime<Utc>,
+    pub period_type: String,
+    pub status: String,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct AcademicContextResponse {
+    pub current_year: Option<AcademicYearDto>,
+    pub all_years: Vec<AcademicYearDto>,
+    pub periods: Vec<AcademicPeriodDto>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct CreateYearRequest {
     pub name: String,
     pub start_date: DateTime<Utc>,
     pub end_date: DateTime<Utc>,
 }
 
-#[derive(Serialize)]
-pub struct YearResponse {
-    pub id: Uuid,
-    pub name: String,
-    pub status: String,
-}
-
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct CreatePeriodRequest {
-    pub org_id: Uuid,
     pub year_id: Uuid,
     pub parent_id: Option<Uuid>,
     pub name: String,
@@ -35,69 +64,182 @@ pub struct CreatePeriodRequest {
     pub end_date: DateTime<Utc>,
 }
 
-#[derive(Serialize)]
-pub struct PeriodResponse {
+#[derive(Serialize, ToSchema)]
+pub struct PeriodTemplateDto {
     pub id: Uuid,
     pub name: String,
-    pub period_type: String,
 }
 
+// ── Handlers ────────────────────────────────────────────────────
+
+#[utoipa::path(post, path = "/api/v1/academic-years", request_body = CreateYearRequest,
+    responses((status = 201, body = AcademicYearDto)),
+    security(("bearer" = [])), tag = "Calendar")]
 async fn create_year(
+    ctx: AuthContext,
     State(state): State<AppState>,
     Json(payload): Json<CreateYearRequest>,
-) -> Result<Json<YearResponse>, String> {
-    let ctx = RequestContext {
-        tenant_id: payload.org_id,
-        actor: orbis_domain::iam::actor::Actor::System,
-        request_id: Uuid::new_v4().to_string(),
-    };
-
-    let use_case = CreateAcademicYearUseCase {
+) -> Result<Json<ApiResponse<AcademicYearDto>>, ApiError> {
+    let uc = CreateAcademicYearUseCase {
         year_repo: state.year_repo.clone(),
         event_bus: state.event_bus.clone(),
     };
-
-    match use_case.execute(&ctx, payload.org_id, payload.name, payload.start_date, payload.end_date).await {
-        Ok(year) => Ok(Json(YearResponse {
-            id: year.id,
-            name: year.name,
-            status: year.status,
-        })),
-        Err(e) => Err(e.to_string()),
-    }
+    let year = uc.execute(&ctx, ctx.tenant_id, payload.name, payload.start_date, payload.end_date).await?;
+    Ok(ApiResponse::ok(AcademicYearDto {
+        id: year.id, org_id: year.org_id, code: year.code, name: year.name,
+        name_ar: year.name_ar, start_date: year.start_date, end_date: year.end_date,
+        is_active: year.is_active, status: year.status,
+    }))
 }
 
+#[utoipa::path(get, path = "/api/v1/academic-years",
+    responses((status = 200, body = Vec<AcademicYearDto>)),
+    security(("bearer" = [])), tag = "Calendar")]
+async fn list_years(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+) -> Result<Json<ApiResponse<Vec<AcademicYearDto>>>, ApiError> {
+    let years = state.year_repo.find_by_org(ctx.tenant_id).await?;
+    let dtos = years.into_iter().map(|y| AcademicYearDto {
+        id: y.id, org_id: y.org_id, code: y.code, name: y.name,
+        name_ar: y.name_ar, start_date: y.start_date, end_date: y.end_date,
+        is_active: y.is_active, status: y.status,
+    }).collect();
+    Ok(ApiResponse::ok(dtos))
+}
+
+#[utoipa::path(get, path = "/api/v1/academic-years/current",
+    responses((status = 200, body = AcademicContextResponse)),
+    security(("bearer" = [])), tag = "Calendar")]
+async fn get_current_context(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+) -> Result<Json<ApiResponse<AcademicContextResponse>>, ApiError> {
+    let all_years = state.year_repo.find_by_org(ctx.tenant_id).await?;
+    let current = state.year_repo.find_current(ctx.tenant_id).await?;
+    let periods = state.period_repo.find_by_org(ctx.tenant_id).await?;
+
+    let year_dtos: Vec<AcademicYearDto> = all_years.into_iter().map(|y| AcademicYearDto {
+        id: y.id, org_id: y.org_id, code: y.code, name: y.name,
+        name_ar: y.name_ar, start_date: y.start_date, end_date: y.end_date,
+        is_active: y.is_active, status: y.status,
+    }).collect();
+
+    let period_dtos: Vec<AcademicPeriodDto> = periods.into_iter().map(|p| AcademicPeriodDto {
+        id: p.id, year_id: p.year_id, name: p.name,
+        start_date: p.start_date, end_date: p.end_date,
+        period_type: p.period_type, status: p.status,
+    }).collect();
+
+    let current_dto = current.map(|y| AcademicYearDto {
+        id: y.id, org_id: y.org_id, code: y.code, name: y.name,
+        name_ar: y.name_ar, start_date: y.start_date, end_date: y.end_date,
+        is_active: y.is_active, status: y.status,
+    });
+
+    Ok(ApiResponse::ok(AcademicContextResponse {
+        current_year: current_dto,
+        all_years: year_dtos,
+        periods: period_dtos,
+    }))
+}
+
+#[utoipa::path(get, path = "/api/v1/academic-years/{id}",
+    params(("id" = Uuid, Path)),
+    responses((status = 200, body = AcademicYearDto)),
+    security(("bearer" = [])), tag = "Calendar")]
+async fn get_year(
+    _ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<AcademicYearDto>>, ApiError> {
+    let y = state.year_repo.find_by_id(id).await?
+        .ok_or_else(|| ApiError::not_found(format!("Academic year {} not found", id)))?;
+    Ok(ApiResponse::ok(AcademicYearDto {
+        id: y.id, org_id: y.org_id, code: y.code, name: y.name,
+        name_ar: y.name_ar, start_date: y.start_date, end_date: y.end_date,
+        is_active: y.is_active, status: y.status,
+    }))
+}
+
+#[utoipa::path(post, path = "/api/v1/academic-periods", request_body = CreatePeriodRequest,
+    responses((status = 201, body = AcademicPeriodDto)),
+    security(("bearer" = [])), tag = "Calendar")]
 async fn create_period(
+    ctx: AuthContext,
     State(state): State<AppState>,
     Json(payload): Json<CreatePeriodRequest>,
-) -> Result<Json<PeriodResponse>, String> {
-    let ctx = RequestContext {
-        tenant_id: payload.org_id,
-        actor: orbis_domain::iam::actor::Actor::System,
-        request_id: Uuid::new_v4().to_string(),
-    };
-
-    let use_case = CreateAcademicPeriodUseCase {
+) -> Result<Json<ApiResponse<AcademicPeriodDto>>, ApiError> {
+    let uc = CreateAcademicPeriodUseCase {
         period_repo: state.period_repo.clone(),
         year_repo: state.year_repo.clone(),
         event_bus: state.event_bus.clone(),
     };
-
-    match use_case.execute(
-        &ctx, payload.org_id, payload.year_id, payload.parent_id,
-        payload.name, payload.period_type, payload.start_date, payload.end_date
-    ).await {
-        Ok(period) => Ok(Json(PeriodResponse {
-            id: period.id,
-            name: period.name,
-            period_type: period.period_type,
-        })),
-        Err(e) => Err(e.to_string()),
-    }
+    let p = uc.execute(&ctx, ctx.tenant_id, payload.year_id, payload.parent_id,
+        payload.name, payload.period_type, payload.start_date, payload.end_date).await?;
+    Ok(ApiResponse::ok(AcademicPeriodDto {
+        id: p.id, year_id: p.year_id, name: p.name,
+        start_date: p.start_date, end_date: p.end_date,
+        period_type: p.period_type, status: p.status,
+    }))
 }
+
+#[utoipa::path(get, path = "/api/v1/academic-periods",
+    responses((status = 200, body = Vec<AcademicPeriodDto>)),
+    security(("bearer" = [])), tag = "Calendar")]
+async fn list_periods(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+) -> Result<Json<ApiResponse<Vec<AcademicPeriodDto>>>, ApiError> {
+    let periods = state.period_repo.find_by_org(ctx.tenant_id).await?;
+    let dtos = periods.into_iter().map(|p| AcademicPeriodDto {
+        id: p.id, year_id: p.year_id, name: p.name,
+        start_date: p.start_date, end_date: p.end_date,
+        period_type: p.period_type, status: p.status,
+    }).collect();
+    Ok(ApiResponse::ok(dtos))
+}
+
+#[utoipa::path(get, path = "/api/v1/academic-periods/{id}",
+    params(("id" = Uuid, Path)),
+    responses((status = 200, body = AcademicPeriodDto)),
+    security(("bearer" = [])), tag = "Calendar")]
+async fn get_period(
+    _ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<AcademicPeriodDto>>, ApiError> {
+    let p = state.period_repo.find_by_id(id).await?
+        .ok_or_else(|| ApiError::not_found(format!("Academic period {} not found", id)))?;
+    Ok(ApiResponse::ok(AcademicPeriodDto {
+        id: p.id, year_id: p.year_id, name: p.name,
+        start_date: p.start_date, end_date: p.end_date,
+        period_type: p.period_type, status: p.status,
+    }))
+}
+
+#[utoipa::path(get, path = "/api/v1/period-templates",
+    responses((status = 200, body = Vec<PeriodTemplateDto>)),
+    security(("bearer" = [])), tag = "Calendar")]
+async fn list_period_templates(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+) -> Result<Json<ApiResponse<Vec<PeriodTemplateDto>>>, ApiError> {
+    let templates = state.period_template_repo.find_by_org(ctx.tenant_id).await?;
+    let dtos = templates.into_iter().map(|t| PeriodTemplateDto {
+        id: t.id, name: t.name,
+    }).collect();
+    Ok(ApiResponse::ok(dtos))
+}
+
+// ── Router ──────────────────────────────────────────────────────
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/calendar/years", post(create_year))
-        .route("/calendar/periods", post(create_period))
+        .route("/api/v1/academic-years", post(create_year).get(list_years))
+        .route("/api/v1/academic-years/current", get(get_current_context))
+        .route("/api/v1/academic-years/{id}", get(get_year))
+        .route("/api/v1/academic-periods", post(create_period).get(list_periods))
+        .route("/api/v1/academic-periods/{id}", get(get_period))
+        .route("/api/v1/period-templates", get(list_period_templates))
 }

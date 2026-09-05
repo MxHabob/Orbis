@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use sea_orm::DatabaseConnection;
-use orbis_app::ports::repositories::{OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository, SessionRepository, AcademicYearRepository, AcademicPeriodRepository, PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository, EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository, ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository, ExamSessionRepository, ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository, ExamProctorRepository, AccountRepository, JournalEntryRepository, FeeTemplateRepository, StudentFeeRepository, PaymentRepository, DocumentRepository, IntegrationRepository, AiRepository, WorkflowRepository, CurrencyRepository, PolicyRepository};
+use orbis_app::ports::repositories::{OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository, SessionRepository, AcademicYearRepository, AcademicPeriodRepository, PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository, EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository, ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository, ExamSessionRepository, ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository, ExamProctorRepository, AccountRepository, JournalEntryRepository, FeeTemplateRepository, StudentFeeRepository, PaymentRepository, DocumentRepository, IntegrationRepository, AiRepository, WorkflowRepository, CurrencyRepository, PolicyRepository, SettingsRepository, DashboardRepository};
 use orbis_app::ports::reporting::{ReportDefinitionRepository, ReportTemplateRepository, ReportJobRepository, ReportAuditRepository, DataProviderRegistry, RendererRegistry};
 use orbis_app::usecases::report::generate_report::OrgContextResolver;
 use orbis_app::ports::event_bus::EventBus;
@@ -46,6 +46,8 @@ pub struct AppState {
     pub workflow_repo: Arc<dyn WorkflowRepository>,
     pub currency_repo: Arc<dyn CurrencyRepository>,
     pub policy_repo: Arc<dyn PolicyRepository>,
+    pub settings_repo: Arc<dyn SettingsRepository>,
+    pub dashboard_repo: Arc<dyn DashboardRepository>,
     pub event_bus: Arc<dyn EventBus>,
     pub token_service: Arc<dyn TokenService>,
     pub password_hasher: Arc<dyn PasswordHasher>,
