@@ -18,6 +18,7 @@ use orbis_domain::errors::DomainError;
 use std::collections::HashMap;
 use uuid::Uuid;
 use sea_orm::DatabaseConnection;
+use tera::{Tera, Context};
 
 // ═══════════════════════════════════════════════════════════════
 // DATA PROVIDER REGISTRY
@@ -208,113 +209,6 @@ impl DocumentRenderer for CsvRenderer {
 
 pub struct HtmlRenderer;
 
-impl HtmlRenderer {
-    fn render_html(dataset: &ReportDataset) -> String {
-        let is_rtl = dataset.org.name_ar.len() > dataset.org.name.len();
-        let dir = if is_rtl { "rtl" } else { "ltr" };
-        let org_name = if is_rtl { &dataset.org.name_ar } else { &dataset.org.name };
-        let report_title = if is_rtl { &dataset.report_name_ar } else { &dataset.report_name };
-
-        let mut html = format!(r#"<!DOCTYPE html>
-<html dir="{dir}" lang="{lang}">
-<head>
-<meta charset="UTF-8">
-<title>{title}</title>
-<style>
-body {{ font-family: 'Noto Sans Arabic', 'Segoe UI', sans-serif; margin: 0; padding: 20px; direction: {dir}; }}
-.header {{ text-align: center; margin-bottom: 20px; border-bottom: 2px solid {color}; padding-bottom: 10px; }}
-.header h1 {{ margin: 5px 0; color: {color}; font-size: 18px; }}
-.header h2 {{ margin: 5px 0; font-size: 14px; color: #333; }}
-.params {{ margin-bottom: 15px; font-size: 12px; color: #666; }}
-.params span {{ margin-inline-end: 15px; }}
-table {{ width: 100%; border-collapse: collapse; font-size: 11px; }}
-th {{ background: {color}; color: white; padding: 6px 8px; text-align: start; font-weight: 600; }}
-td {{ padding: 5px 8px; border-bottom: 1px solid #e0e0e0; }}
-tr:nth-child(even) {{ background: #f8f9fa; }}
-.totals td {{ font-weight: 700; border-top: 2px solid {color}; background: #f0f0f0; }}
-.footer {{ margin-top: 15px; font-size: 10px; color: #999; text-align: center; }}
-@media print {{ body {{ padding: 0; }} }}
-</style>
-</head>
-<body>"#,
-            dir = dir,
-            lang = if is_rtl { "ar" } else { "en" },
-            title = report_title,
-            color = dataset.org.primary_color.as_deref().unwrap_or("#6366f1"),
-        );
-
-        // Header
-        html.push_str(&format!(
-            r#"<div class="header"><h1>{}</h1><h2>{}</h2></div>"#,
-            org_name, report_title
-        ));
-
-        // Parameter summary
-        if !dataset.parameter_summary.is_empty() {
-            html.push_str(r#"<div class="params">"#);
-            for p in &dataset.parameter_summary {
-                let label = if is_rtl { &p.label_ar } else { &p.label };
-                let value = if is_rtl { &p.value_ar } else { &p.value };
-                html.push_str(&format!("<span><b>{}:</b> {}</span>", label, value));
-            }
-            html.push_str("</div>");
-        }
-
-        // Table
-        let visible_cols: Vec<&ColumnDef> = dataset.columns.iter().filter(|c| c.visible).collect();
-        html.push_str("<table><thead><tr>");
-        for col in &visible_cols {
-            let header = if is_rtl { &col.header_ar } else { &col.header };
-            html.push_str(&format!("<th>{}</th>", header));
-        }
-        html.push_str("</tr></thead><tbody>");
-
-        for row in &dataset.rows {
-            html.push_str("<tr>");
-            for col in &visible_cols {
-                let val = row.get(&col.key)
-                    .map(|v| match v {
-                        serde_json::Value::String(s) => s.clone(),
-                        serde_json::Value::Number(n) => n.to_string(),
-                        serde_json::Value::Bool(b) => b.to_string(),
-                        serde_json::Value::Null => String::new(),
-                        _ => v.to_string(),
-                    })
-                    .unwrap_or_default();
-                html.push_str(&format!("<td>{}</td>", val));
-            }
-            html.push_str("</tr>");
-        }
-
-        // Totals row
-        if let Some(ref aggs) = dataset.aggregations {
-            html.push_str(r#"<tr class="totals">"#);
-            for col in &visible_cols {
-                let val = aggs.totals.get(&col.key)
-                    .map(|v| match v {
-                        serde_json::Value::Number(n) => n.to_string(),
-                        _ => v.to_string().trim_matches('"').to_string(),
-                    })
-                    .unwrap_or_default();
-                html.push_str(&format!("<td>{}</td>", val));
-            }
-            html.push_str("</tr>");
-        }
-
-        html.push_str("</tbody></table>");
-
-        // Footer
-        html.push_str(&format!(
-            r#"<div class="footer">Generated: {} | Total rows: {}</div>"#,
-            dataset.generated_at.format("%Y-%m-%d %H:%M"),
-            dataset.total_count
-        ));
-
-        html.push_str("</body></html>");
-        html
-    }
-}
-
 #[async_trait]
 impl DocumentRenderer for HtmlRenderer {
     fn supported_format(&self) -> OutputFormat { OutputFormat::Html }
@@ -322,11 +216,66 @@ impl DocumentRenderer for HtmlRenderer {
     async fn render(
         &self,
         dataset: &ReportDataset,
-        _template: Option<&ReportTemplate>,
-        _master: Option<&ReportTemplate>,
+        template: Option<&ReportTemplate>,
+        master: Option<&ReportTemplate>,
     ) -> Result<ExportResult, DomainError> {
-        let html = Self::render_html(dataset);
-        let bytes = html.into_bytes();
+        let is_rtl = dataset.org.name_ar.len() > dataset.org.name.len();
+        
+        let mut context = Context::new();
+        context.insert("is_rtl", &is_rtl);
+        context.insert("org_name", &dataset.org.name);
+        context.insert("org_name_ar", &dataset.org.name_ar);
+        context.insert("org_type", &dataset.org.org_type);
+        context.insert("org_type_ar", &dataset.org.org_type_ar);
+        context.insert("primary_color", &dataset.org.primary_color);
+        context.insert("report_name", &dataset.report_name);
+        context.insert("report_name_ar", &dataset.report_name_ar);
+        context.insert("generated_at", &dataset.generated_at.format("%Y-%m-%d %H:%M").to_string());
+        context.insert("printed_by", &dataset.printed_by);
+        context.insert("total_pages", &1);
+        context.insert("current_page", &1);
+
+        let mut param_map = HashMap::new();
+        for p in &dataset.parameter_summary {
+            param_map.insert(
+                if is_rtl { p.label_ar.clone() } else { p.label.clone() },
+                if is_rtl { p.value_ar.clone() } else { p.value.clone() }
+            );
+        }
+        context.insert("parameters", &param_map);
+        context.insert("has_parameters", &!param_map.is_empty());
+        context.insert("columns", &dataset.columns);
+        context.insert("rows", &dataset.rows);
+        
+        if let Some(aggs) = &dataset.aggregations {
+            context.insert("totals", &aggs.totals);
+        }
+
+        let mut tera = Tera::default();
+
+        let inner_template_str = template
+            .and_then(|t| t.document_json.as_ref())
+            .map(|d| d.to_string())
+            .unwrap_or_else(|| crate::adapters::report_defaults::TABULAR_REPORT_HTML.to_string());
+        
+        tera.add_raw_template("inner", &inner_template_str)
+            .map_err(|e| DomainError::Internal(format!("Tera inner parse error: {}", e)))?;
+
+        let inner_html = tera.render("inner", &context)
+            .map_err(|e| DomainError::Internal(format!("Tera inner render error: {}", e)))?;
+
+        let final_html = if let Some(m) = master {
+            context.insert("inner_content", &inner_html);
+            let master_str = m.document_json.as_deref().unwrap_or(crate::adapters::report_defaults::MASTER_TEMPLATE_HTML);
+            tera.add_raw_template("master", master_str)
+                .map_err(|e| DomainError::Internal(format!("Tera master parse error: {}", e)))?;
+            tera.render("master", &context)
+                .map_err(|e| DomainError::Internal(format!("Tera master render error: {}", e)))?
+        } else {
+            inner_html
+        };
+
+        let bytes = final_html.into_bytes();
         let size = bytes.len() as u64;
         Ok(ExportResult {
             format: OutputFormat::Html,
@@ -352,22 +301,12 @@ impl DocumentRenderer for PdfRenderer {
     async fn render(
         &self,
         dataset: &ReportDataset,
-        _template: Option<&ReportTemplate>,
-        _master: Option<&ReportTemplate>,
+        template: Option<&ReportTemplate>,
+        master: Option<&ReportTemplate>,
     ) -> Result<ExportResult, DomainError> {
-        // Generate print-optimized HTML as the PDF output
-        // This is the correct architecture: the adapter can be swapped
-        // for a real PDF pipeline without changing Domain/Application.
-        let html = HtmlRenderer::render_html(dataset);
-        let bytes = html.into_bytes();
-        let size = bytes.len() as u64;
-        Ok(ExportResult {
-            format: OutputFormat::Pdf,
-            mime_type: "text/html; charset=utf-8".into(),
-            filename: format!("{}.html", dataset.report_code.replace('.', "_")),
-            data: bytes,
-            size,
-        })
+        let mut result = HtmlRenderer.render(dataset, template, master).await?;
+        result.format = OutputFormat::Pdf;
+        Ok(result)
     }
 }
 
