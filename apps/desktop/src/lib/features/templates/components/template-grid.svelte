@@ -98,8 +98,8 @@ let {
       <Card class="flex flex-col h-full">
         <CardHeader class="p-4 pb-2">
           <div class="flex items-start justify-between gap-3">
-            <CardTitle class="text-sm font-bold text-foreground line-clamp-1 leading-snug" title={l(template.name_ar, template.name)}>
-              {l(template.name_ar, template.name)}
+            <CardTitle class="text-sm font-bold text-foreground line-clamp-1 leading-snug" title={l(template.nameAr ?? template.name_ar, template.name)}>
+              {l(template.nameAr ?? template.name_ar, template.name)}
             </CardTitle>
             <Badge variant={template.status === 'published' ? 'success' : (template.status === 'archived' ? 'outline' : 'secondary')} class="shrink-0 h-5 px-1.5 text-[10px] leading-none">
               {template.status === 'published' ? m.common_phase_active() : (template.status === 'archived' ? m.common_year_status_archived() : m.common_status_draft())}
@@ -113,9 +113,9 @@ let {
           </p>
           
           <div class="mt-auto pt-1 flex flex-wrap items-center gap-1.5">
-            <Badge variant="secondary" class="h-5 px-1.5 text-[10px] bg-muted/50 font-normal hover:bg-muted/50">{template.document_type}</Badge>
-            <Badge variant="secondary" class="h-5 px-1.5 text-[10px] bg-muted/50 font-normal hover:bg-muted/50">{template.entity_type}</Badge>
-            <Badge variant="secondary" class="h-5 px-1.5 text-[10px] bg-muted/50 font-normal hover:bg-muted/50">{template.page_size}</Badge>
+            <Badge variant="secondary" class="h-5 px-1.5 text-[10px] bg-muted/50 font-normal hover:bg-muted/50">{template.documentType ?? template.document_type}</Badge>
+            <Badge variant="secondary" class="h-5 px-1.5 text-[10px] bg-muted/50 font-normal hover:bg-muted/50">{template.entityType ?? template.entity_type}</Badge>
+            <Badge variant="secondary" class="h-5 px-1.5 text-[10px] bg-muted/50 font-normal hover:bg-muted/50">{template.pageSize ?? template.page_size}</Badge>
             <span class="text-[10px] text-muted-foreground/50 font-mono ms-auto">v{template.version}</span>
           </div>
         </CardContent>

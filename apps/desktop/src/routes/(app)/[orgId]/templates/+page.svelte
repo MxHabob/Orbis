@@ -2,7 +2,8 @@
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
-import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api/client";
+import type { CreateTemplateRequest, TemplateDto } from "$lib/api/types";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import {
@@ -28,7 +29,7 @@ import {
 import { confirmStore } from "$lib/stores";
 
 // State runes
-let templates = $state<any[]>([]);
+let templates = $state<TemplateDto[]>([]);
 let dataSchemas = $state<Record<string, any>>({});
 let loading = $state(true);
 let searchQuery = $state("");
@@ -52,17 +53,22 @@ async function loadTemplates() {
   if (!orgId) return;
   loading = true;
   try {
-    const listParams: any = { org_id: orgId };
-    if (filterEntityType !== "all") listParams.entity_type = filterEntityType;
-    if (filterDocType !== "all") listParams.document_type = filterDocType;
-    if (searchQuery.trim() !== "") listParams.search = searchQuery.trim();
+    const listFilter: any = {};
+    if (filterEntityType !== "all") listFilter.entityType = filterEntityType;
+    if (filterDocType !== "all") listFilter.documentType = filterDocType;
 
-    const [response, schemas] = await Promise.all([
-      commands.docforge.listTemplates(listParams),
-      commands.docforge.listDataSchemas(),
-    ]);
-    templates = response || [];
-    dataSchemas = schemas || {};
+    const response = await api.listTemplates(listFilter);
+    let result = response || [];
+    if (searchQuery.trim() !== "") {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter(
+        (t) =>
+          t.name.toLowerCase().includes(q) ||
+          (t.nameAr && t.nameAr.includes(q)) ||
+          (t.description && t.description.toLowerCase().includes(q))
+      );
+    }
+    templates = result;
   } catch (e: unknown) {
     console.error("Failed to load templates:", e);
     const msg = (e as any)?.message || "Failed to load templates";
@@ -177,23 +183,19 @@ async function handleCreateTemplate() {
   try {
     const pageSetup = getDefaultPageSetup();
     const defaultDocJson = JSON.stringify(buildInitialDocument());
-    const createRequest = {
+    const createRequest: CreateTemplateRequest = {
       name: newTemplateName,
-      name_ar: newTemplateNameAr || null,
+      nameAr: newTemplateNameAr || null,
       description: newTemplateDesc || null,
-      description_ar: null,
-      document_type: newTemplateDocType,
-      entity_type: newTemplateEntityType,
-      category_id: null,
-      code: null,
-      page_size: pageSetup.size,
+      documentType: newTemplateDocType,
+      entityType: newTemplateEntityType,
+      pageSize: pageSetup.size,
       orientation: pageSetup.orientation,
-      document_json: defaultDocJson,
+      documentJson: defaultDocJson,
       locale: isAr() ? "ar" : "en",
-      tags: null,
     };
 
-    const response = await commands.docforge.createTemplate(createRequest);
+    const response = await api.createTemplate(createRequest);
 
     toast.success("Template created successfully");
     isCreateDialogOpen = false;
@@ -220,7 +222,7 @@ async function confirmDelete(id: string) {
   if (!confirmed) return;
 
   try {
-    await commands.docforge.deleteTemplate(id);
+    await api.deleteTemplate(id);
     toast.success("Template deleted successfully");
     loadTemplates();
   } catch (e: unknown) {
@@ -233,7 +235,7 @@ async function confirmDelete(id: string) {
 // Handle Template Publishing/Activation
 async function publishTemplate(id: string) {
   try {
-    await commands.docforge.publishTemplate(id);
+    await api.publishTemplate(id);
     toast.success(m.settings_templates_publish_success());
     loadTemplates();
   } catch (e: unknown) {
@@ -246,7 +248,7 @@ async function publishTemplate(id: string) {
 // Handle Template Archiving
 async function archiveTemplate(id: string) {
   try {
-    await commands.docforge.archiveTemplate(id);
+    await api.archiveTemplate(id);
     toast.success(m.settings_templates_archive_success());
     loadTemplates();
   } catch (e: unknown) {
@@ -259,7 +261,7 @@ async function archiveTemplate(id: string) {
 // Handle Template Restoring
 async function restoreTemplate(id: string) {
   try {
-    await commands.docforge.restoreTemplate(id);
+    await api.publishTemplate(id);
     toast.success(m.settings_templates_restore_success());
     loadTemplates();
   } catch (e: unknown) {

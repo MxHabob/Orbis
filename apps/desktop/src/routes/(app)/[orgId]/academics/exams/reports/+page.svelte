@@ -34,6 +34,7 @@ import { createPeriodsQuery } from "$lib/features/academics";
 import { createQuery } from "@tanstack/svelte-query";
 import { readable } from "svelte/store";
 import { commands, extractErrorMessage } from "$lib/core/ipc";
+import { api } from "$lib/api/client";
 import { localizeHref } from "$lib/paraglide/runtime";
 
 let { data }: { data: { orgId: string } } = $props();
@@ -77,9 +78,8 @@ const examSessions = $derived((examSessionsQuery.data as any[]) ?? []);
 // System Document Templates Query
 const documentTemplatesQuery = createQuery(() => ({
   queryKey: ["document-templates", data.orgId],
-  queryFn: () => commands.docforge.listTemplates({
-    org_id: data.orgId,
-    document_type: "EXAM_REGISTER",
+  queryFn: () => api.listTemplates({
+    documentType: "EXAM_REGISTER",
   }),
   enabled: !!data.orgId,
   staleTime: 5 * 60 * 1000,

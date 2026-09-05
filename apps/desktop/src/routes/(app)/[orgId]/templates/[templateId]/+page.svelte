@@ -17,7 +17,8 @@
 import { page } from "$app/state";
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
-import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api/client";
+import type { TemplateDto, UpdateTemplateRequest } from "$lib/api/types";
 import { Button } from "@orbis/ui/button";
 import { toast } from "@orbis/ui";
 import { l } from "$lib/core/i18n";
@@ -46,7 +47,7 @@ const templateId = $derived(page.params.templateId);
 
 // ── State ────────────────────────────────────────────────────
 
-let templateRecord = $state<any>(null);
+let templateRecord = $state<TemplateDto | null>(null);
 let isSaving = $state(false);
 let isPreviewLoading = $state(false);
 let previewPdfUrl = $state<string | null>(null);
@@ -84,16 +85,11 @@ async function initEditor() {
   isLoading = true;
   error = null;
   try {
-    const [templateRecordData, schemas] = await Promise.all([
-      commands.docforge.getTemplate(templateId || ""),
-      commands.docforge.listDataSchemas(),
-    ]);
+    const data = await api.getTemplate(templateId || "");
+    templateRecord = data;
 
-    templateRecord = templateRecordData;
-    store.setSystemSchemas(schemas);
-
-    const doc = deserializeDocument(templateRecord.document_json);
-    doc.meta = { ...doc.meta, id: templateId || templateRecord.id };
+    const doc = deserializeDocument(data.documentJson ?? (data as any).document_json);
+    doc.meta = { ...doc.meta, id: templateId || data.id };
     store.loadDocument(doc);
     isLoading = false;
   } catch (e: unknown) {
@@ -109,37 +105,27 @@ async function initEditor() {
 async function renameTemplate(newName: string) {
   if (!templateRecord || !newName || newName.trim() === "") return;
   const currentName = templateRecord.name;
-  const currentNameAr = templateRecord.name_ar;
+  const currentNameAr = templateRecord.nameAr ?? templateRecord.name_ar;
 
   // Optimistic UI update
   templateRecord.name = newName;
-  templateRecord.name_ar = newName;
+  templateRecord.nameAr = newName;
 
   try {
     const docJson = serializeDocument(store.document);
     const setup = store.document.meta.pageSetup;
 
-    const updateRequest = {
+    const updateRequest: UpdateTemplateRequest = {
       name: newName,
-      name_ar: newName,
-      description: templateRecord.description,
-      category_id: templateRecord.category_id,
-      code: templateRecord.code,
-      page_size: setup.size,
-      page_width_mm: setup.width,
-      page_height_mm: setup.height,
+      nameAr: newName,
+      pageSize: setup.size,
       orientation: setup.orientation,
-      margins_json: JSON.stringify(setup.margins),
-      document_json: docJson,
-      locale: templateRecord.locale || "ar",
-      tags: templateRecord.tags,
+      marginsJson: JSON.stringify(setup.margins),
+      documentJson: docJson,
     };
 
-    await commands.docforge.updateTemplate(templateId || "", updateRequest);
+    await api.updateTemplate(templateId || "", updateRequest);
 
-    // We don't mark store as saved here to not interfere with document changes,
-    // though the document is technically saved. If it was dirty, it's now saved.
-    // So we should markSaved() if it was dirty.
     if (store.isDirty) {
       store.markSaved();
     }
@@ -148,7 +134,7 @@ async function renameTemplate(newName: string) {
     toast.error(msg);
     // revert
     templateRecord.name = currentName;
-    templateRecord.name_ar = currentNameAr;
+    templateRecord.nameAr = currentNameAr;
   }
 }
 
@@ -161,23 +147,18 @@ async function saveTemplate() {
     const docJson = serializeDocument(store.document);
     const setup = store.document.meta.pageSetup;
 
-    const updateRequest = {
+    const updateRequest: UpdateTemplateRequest = {
       name: templateRecord.name,
-      name_ar: templateRecord.name_ar,
+      nameAr: templateRecord.nameAr ?? templateRecord.name_ar,
       description: templateRecord.description,
-      category_id: templateRecord.category_id,
-      code: templateRecord.code,
-      page_size: setup.size,
-      page_width_mm: setup.width,
-      page_height_mm: setup.height,
+      descriptionAr: templateRecord.descriptionAr ?? templateRecord.description_ar,
+      pageSize: setup.size,
       orientation: setup.orientation,
-      margins_json: JSON.stringify(setup.margins),
-      document_json: docJson,
-      locale: templateRecord.locale || "ar",
-      tags: templateRecord.tags,
+      marginsJson: JSON.stringify(setup.margins),
+      documentJson: docJson,
     };
 
-    await commands.docforge.updateTemplate(templateId || "", updateRequest);
+    await api.updateTemplate(templateId || "", updateRequest);
 
     store.markSaved();
     toast.success(
@@ -193,22 +174,19 @@ async function saveTemplate() {
 
 // ── Preview ──────────────────────────────────────────────────
 
-function uint8ArrayToBase64(bytes: number[]): string {
-  let binary = "";
-  const len = bytes.length;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]!);
-  }
-  return window.btoa(binary);
-}
-
 async function generatePreview() {
   isPreviewLoading = true;
   try {
     const docJson = serializeDocument(store.document);
-    // TODO: Connect to the new document engine when ready
-    // const pdfBytes = await commands.document.previewDocumentTemplate(docJson, ...);
-    toast.error("Preview generation is temporarily disabled in the backend.");
+    const pdfBytes = await api.previewTemplate(
+      docJson,
+      {},
+      templateRecord?.locale ?? "ar"
+    );
+    const blob = new Blob([pdfBytes as unknown as BlobPart], { type: "application/pdf" });
+    if (previewPdfUrl) URL.revokeObjectURL(previewPdfUrl);
+    previewPdfUrl = URL.createObjectURL(blob);
+    toast.success("Preview generated successfully");
   } catch (e: unknown) {
     const msg = (e as any)?.message || "Failed to generate preview";
     toast.error(msg);

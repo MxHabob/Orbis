@@ -22,6 +22,9 @@ import type {
   AccountDto, FeeTemplateDto, StudentFeeDto, PaymentDto, CurrencyDto,
   DocumentDto,
   IntegrationDto,
+  TemplateDto, CreateTemplateRequest, UpdateTemplateRequest,
+  TemplateVersionDto, TemplateBindingDto,
+  ValidationResult, ReportDefinitionDto,
   OrbisError,
 } from './types';
 
@@ -261,5 +264,61 @@ export class RemoteClient implements OrbisApiClient {
   // ── Integration ─────────────────────────────────────────────
   async listIntegrations(): Promise<IntegrationDto[]> {
     return this.get('/api/v1/integrations');
+  }
+
+  // ── Templates ───────────────────────────────────────────────
+  async createTemplate(req: CreateTemplateRequest): Promise<TemplateDto> {
+    return this.post('/api/v1/templates', req);
+  }
+  async getTemplate(id: string): Promise<TemplateDto> {
+    return this.get(`/api/v1/templates/${id}`);
+  }
+  async listTemplates(filter?: { documentType?: string; entityType?: string; status?: string }): Promise<TemplateDto[]> {
+    return this.get('/api/v1/templates', {
+      document_type: filter?.documentType,
+      entity_type: filter?.entityType,
+      status: filter?.status,
+    });
+  }
+  async updateTemplate(id: string, req: UpdateTemplateRequest): Promise<TemplateDto> {
+    return this.put(`/api/v1/templates/${id}`, req);
+  }
+  async deleteTemplate(id: string): Promise<void> {
+    await this.del(`/api/v1/templates/${id}`);
+  }
+  async publishTemplate(id: string): Promise<TemplateDto> {
+    return this.post(`/api/v1/templates/${id}/publish`);
+  }
+  async archiveTemplate(id: string): Promise<void> {
+    await this.post(`/api/v1/templates/${id}/archive`);
+  }
+  async getTemplateVersions(id: string): Promise<TemplateVersionDto[]> {
+    return this.get(`/api/v1/templates/${id}/versions`);
+  }
+  async revertTemplateVersion(id: string, targetVersion: number): Promise<TemplateDto> {
+    return this.post(`/api/v1/templates/${id}/revert`, { targetVersion });
+  }
+  async previewTemplate(documentJson: string, contextData: any, locale?: string): Promise<Uint8Array> {
+    const res = await this.post<string>('/api/v1/templates/preview', { documentJson, contextData, locale });
+    return new TextEncoder().encode(res);
+  }
+  async validateTemplate(documentJson: string): Promise<ValidationResult> {
+    return this.post('/api/v1/templates/validate', { documentJson });
+  }
+
+  // ── Template Bindings ───────────────────────────────────────
+  async listTemplateBindings(definitionId: string): Promise<TemplateBindingDto[]> {
+    return this.get(`/api/v1/report-definitions/${definitionId}/bindings`);
+  }
+  async createTemplateBinding(definitionId: string, templateId: string, locale: string, format: string): Promise<TemplateBindingDto> {
+    return this.post(`/api/v1/report-definitions/${definitionId}/bindings`, { templateId, locale, format });
+  }
+
+  // ── Report Definitions ──────────────────────────────────────
+  async listReportDefinitions(domain?: string, category?: string): Promise<ReportDefinitionDto[]> {
+    return this.get('/api/v1/report-definitions', { domain, category });
+  }
+  async getReportDefinition(code: string): Promise<ReportDefinitionDto> {
+    return this.get(`/api/v1/report-definitions/${code}`);
   }
 }

@@ -204,4 +204,61 @@ export class LocalClient implements OrbisApiClient {
   async listIntegrations(): Promise<IntegrationDto[]> {
     return unwrap(await invoke('integration_list'));
   }
+
+  // ── Templates ───────────────────────────────────────────────
+  async createTemplate(req: CreateTemplateRequest): Promise<TemplateDto> {
+    return unwrap(await invoke('template_create', { input: req }));
+  }
+  async getTemplate(id: string): Promise<TemplateDto> {
+    return unwrap(await invoke('template_get', { id }));
+  }
+  async listTemplates(filter?: { documentType?: string; entityType?: string; status?: string }): Promise<TemplateDto[]> {
+    return unwrap(await invoke('template_list', { filter: filter ?? null }));
+  }
+  async updateTemplate(id: string, req: UpdateTemplateRequest): Promise<TemplateDto> {
+    return unwrap(await invoke('template_update', { id, input: req }));
+  }
+  async deleteTemplate(id: string): Promise<void> {
+    await invoke('template_delete', { id });
+  }
+  async publishTemplate(id: string): Promise<TemplateDto> {
+    return unwrap(await invoke('template_publish', { id }));
+  }
+  async archiveTemplate(id: string): Promise<void> {
+    await invoke('template_archive', { id });
+  }
+  async getTemplateVersions(id: string): Promise<TemplateVersionDto[]> {
+    return unwrap(await invoke('template_get_versions', { id }));
+  }
+  async revertTemplateVersion(id: string, targetVersion: number): Promise<TemplateDto> {
+    return unwrap(await invoke('template_revert_version', { id, targetVersion }));
+  }
+  async previewTemplate(documentJson: string, contextData: any, locale?: string): Promise<Uint8Array> {
+    const bytes = await invoke<number[]>('template_preview', {
+      documentJson,
+      contextData,
+      locale: locale ?? null,
+      pageIndex: null,
+    });
+    return new Uint8Array(bytes);
+  }
+  async validateTemplate(documentJson: string): Promise<ValidationResult> {
+    return unwrap(await invoke('template_validate', { documentJson }));
+  }
+
+  // ── Template Bindings ───────────────────────────────────────
+  async listTemplateBindings(definitionId: string): Promise<TemplateBindingDto[]> {
+    return unwrap(await invoke('template_list_bindings', { definitionId }));
+  }
+  async createTemplateBinding(definitionId: string, templateId: string, locale: string, format: string): Promise<TemplateBindingDto> {
+    return unwrap(await invoke('template_create_binding', { definitionId, templateId, locale, format }));
+  }
+
+  // ── Report Definitions ──────────────────────────────────────
+  async listReportDefinitions(domain?: string, category?: string): Promise<ReportDefinitionDto[]> {
+    return unwrap(await invoke('report_list_definitions', { domain: domain ?? null, category: category ?? null }));
+  }
+  async getReportDefinition(code: string): Promise<ReportDefinitionDto> {
+    return unwrap(await invoke('report_get_definition', { code }));
+  }
 }

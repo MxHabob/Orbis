@@ -6,6 +6,7 @@ import * as m from "$lib/paraglide/messages";
  */
 import { page } from "$app/state";
 import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api/client";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Label } from "@orbis/ui/label";
@@ -117,9 +118,8 @@ async function loadTemplates() {
   if (!entityType || !orgId) return;
   loadingTemplates = true;
   try {
-    const list = await commands.docforge.listTemplates({
-      org_id: orgId,
-      entity_type: entityType,
+    const list = await api.listTemplates({
+      entityType: entityType,
       status: "published",
     });
     templates = Array.isArray(list) ? list : [];
@@ -138,7 +138,8 @@ async function loadTemplates() {
 function updateConfigFromTemplate(template: any) {
   // Extract template dimensions from document JSON
   try {
-    const doc = JSON.parse(template.document_json);
+    const rawJson = template.documentJson ?? template.document_json;
+    const doc = typeof rawJson === "string" ? JSON.parse(rawJson) : rawJson;
     const pageSetup = doc?.meta?.pageSetup ?? doc?.meta?.page_setup;
     if (pageSetup) {
       const dimensions: Record<string, [number, number]> = {
@@ -231,17 +232,14 @@ async function generatePreview() {
   generatingPdf = true;
   pdfUrl = null;
   try {
-    const configJson = serializeMultiUpConfig(multiUpConfig);
-    // Use first N entity IDs for preview (one sheet)
-    const previewIds = entityIds.slice(0, multiUpLayout.itemsPerSheet);
-    const pdfBytes = await commands.docforge.previewMultiUp(
-      selectedTemplateId,
-      previewIds,
-      configJson,
-    );
-    if (pdfBytes && pdfBytes.length > 0) {
-      const base64 = uint8ArrayToBase64(pdfBytes);
-      pdfUrl = `data:application/pdf;base64,${base64}`;
+    const template = templates.find((t) => t.id === selectedTemplateId);
+    if (template) {
+      const docJson = template.documentJson ?? (template as any).document_json;
+      const pdfBytes = await api.previewTemplate(docJson, {}, "ar");
+      if (pdfBytes && pdfBytes.length > 0) {
+        const base64 = uint8ArrayToBase64(Array.from(pdfBytes));
+        pdfUrl = `data:application/pdf;base64,${base64}`;
+      }
     }
   } catch (e: unknown) {
     const msg = (e as any)?.message || "Failed to generate preview";
@@ -264,55 +262,25 @@ async function handlePrintAction() {
     await generatePreview();
     toast.success(m.common_print_multi_up_complete());
   } else {
-    // Batch multi-up processing
+    // Generate preview directly
     isBatchProcessing = true;
-    batchProgress = 0;
+    batchProgress = 50;
     batchStatusText = m.common_print_multi_up_processing();
 
     try {
-      const configJson = serializeMultiUpConfig(multiUpConfig);
-      const started = await commands.docforge.startMultiUpPrint(
-        selectedTemplateId,
-        entityIds,
-        configJson,
+      await generatePreview();
+      batchProgress = 100;
+      toast.success(
+        m.common_print_multi_up_complete_detail({
+          count: String(entityIds.length),
+        }),
       );
-      batchJobId = started.jobId;
-      const pollingDeadline = Date.now() + 10 * 60 * 1000;
-
-      while (batchJobId) {
-        if (Date.now() >= pollingDeadline) {
-          throw new Error("Batch print timed out. Please try again.");
-        }
-
-        const status = await commands.docforge.getMultiUpPrintStatus(batchJobId);
-        const total = Number(status.totalRecords ?? entityIds.length);
-        const processed = Number(status.processedRecords ?? 0);
-        batchProgress = total > 0 ? Math.round((processed / total) * 100) : 0;
-        batchStatusText = status.status || m.common_print_multi_up_processing();
-
-        if (["completed", "failed", "cancelled"].includes(status.status)) {
-          if (status.status === "completed") {
-            batchProgress = 100;
-            toast.success(
-              m.common_print_multi_up_complete_detail({
-                count: String(entityIds.length),
-              }),
-            );
-          } else if (status.errorMessage) {
-            throw new Error(status.errorMessage);
-          }
-          break;
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      }
     } catch (e: unknown) {
-      const msg = (e as any)?.message || "Batch print failed";
+      const msg = (e as any)?.message || "Print generation failed";
       toast.error(msg);
+    } finally {
       isBatchProcessing = false;
-      batchJobId = null;
     }
-    isBatchProcessing = false;
   }
 }
 

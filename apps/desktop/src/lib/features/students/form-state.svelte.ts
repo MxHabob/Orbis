@@ -1,6 +1,7 @@
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
 import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api/client";
 import { toast } from "@orbis/ui";
 
 import { l } from "$lib/core/i18n";
@@ -570,7 +571,7 @@ export class StudentFormState {
     }
     this.isDownloadingForm = true;
     try {
-      const templateRecord = await commands.docforge.getTemplate(
+      const templateRecord = await api.getTemplate(
         this.selectedTemplateId,
       );
       if (!templateRecord) {
@@ -579,7 +580,7 @@ export class StudentFormState {
         );
         return;
       }
-      const documentModel = JSON.parse((templateRecord as any).document_json as string);
+      const docJson = templateRecord.documentJson ?? (templateRecord as any).document_json;
 
       const printVariables = {
         orgName: this.orgName,
@@ -602,20 +603,15 @@ export class StudentFormState {
         net_fees: this.netTotal.toString(),
       };
 
-      // const pdfBytes = await commands.docforge.previewDocumentTemplate(
-      //   JSON.stringify(documentModel),
-      //   JSON.stringify(printVariables),
-      // );
-      const pdfBytes: number[] = [];
-      toast.error("Preview is temporarily disabled in the backend.");
+      const pdfBytes = await api.previewTemplate(
+        docJson,
+        printVariables,
+        "ar",
+      );
 
       if (pdfBytes && pdfBytes.length > 0) {
-        let binary = "";
-        const len = pdfBytes.length;
-        for (let i = 0; i < len; i++)
-          binary += String.fromCharCode(pdfBytes[i]);
-        const base64 = window.btoa(binary);
-        const pdfUrl = `data:application/pdf;base64,${base64}`;
+        const blob = new Blob([pdfBytes as unknown as BlobPart], { type: "application/pdf" });
+        const pdfUrl = URL.createObjectURL(blob);
 
         const link = document.createElement("a");
         link.href = pdfUrl;
@@ -623,6 +619,7 @@ export class StudentFormState {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(pdfUrl);
 
         toast.success("تم توليد وتحميل المستند بنجاح");
       } else {

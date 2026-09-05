@@ -5,6 +5,7 @@ members = [
     "crates/orbis-app",
     "crates/orbis-infra",
     "crates/orbis-server",
+    "crates/docforge-engine",
 ]
 
 [workspace.dependencies]
@@ -38,6 +39,7 @@ orbis-domain = { path = "crates/orbis-domain" }
 orbis-app = { path = "crates/orbis-app" }
 orbis-infra = { path = "crates/orbis-infra" }
 orbis-server = { path = "crates/orbis-server" }
+docforge-engine = { path = "crates/docforge-engine" }
 
 # HTTP client (solver sidecar)
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
