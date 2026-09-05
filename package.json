@@ -24,7 +24,6 @@
     "build": "turbo run build",
     "dev": "turbo run dev --continue",
     "test": "turbo run test",
-    "dev:desktop": "turbo run dev --filter=@orbis/desktop",
     "dev:mobile": "turbo run dev --filter=@orbis/mobile",
     "dev:mobile:tunnel": "turbo run start:tunnel --filter=@orbis/mobile",
     "mobile:android": "turbo run android:device --filter=@orbis/mobile",
