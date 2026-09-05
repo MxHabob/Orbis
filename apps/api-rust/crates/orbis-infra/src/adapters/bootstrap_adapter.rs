@@ -366,21 +366,45 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
 
     // 3i. OrgSettings Initialization
     let org_settings = serde_json::json!({
-        "registration": {
-            "require_approval": false,
-            "allow_no_guardian": false,
-            "auto_assign_fees": true,
-            "allow_duplicate_national_id": false
-        },
-        "finance": {
-            
-            "tax_rate": 0.0,
-            "auto_invoice_on_enrollment": true
-        },
-        "grading": {
+        "academic": {
             "default_grading_system": blueprint.grading_system,
             "default_passing_score": blueprint.passing_grade,
-            "default_max_score": 100.0
+            "min_attendance_rate": 75.0,
+            "grade_entry_auto_close_days": 7,
+            "allow_grade_edit_after_close": false
+        },
+        "enrollment": {
+            "registration_enabled": true,
+            "require_admin_approval": true,
+            "allow_waitlist": true,
+            "sibling_priority_enabled": true,
+            "max_class_size_default": 25,
+            "allow_late_enrollment": false
+        },
+        "finance": {
+            "currency": payload.currency.clone(),
+            "tax_rate": 0.15,
+            "invoice_due_days": 14,
+            "late_fee_type": "fixed",
+            "late_fee_value": 0.0,
+            "allow_partial_payments": false,
+            "primary_payment_gateway_id": null,
+            "invoicing_integration_id": null
+        },
+        "notifications": {
+            "email_integration_id": null,
+            "sms_integration_id": null,
+            "whatsapp_integration_id": null,
+            "notify_parents_on_absence": true,
+            "notify_parents_on_grade_publish": true,
+            "finance_reminder_days": [7, 3, 1]
+        },
+        "autopilot": {
+            "enabled": true,
+            "mode": "automatic",
+            "max_retries": 3,
+            "auto_advance_periods": false,
+            "auto_lock_grades": false
         }
     });
 
