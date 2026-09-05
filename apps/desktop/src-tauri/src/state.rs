@@ -1,6 +1,8 @@
 use std::sync::Arc;
 use sea_orm::DatabaseConnection;
-use orbis_app::ports::repositories::{OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository, SessionRepository, AcademicYearRepository, AcademicPeriodRepository, PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository, EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository, ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository, ExamSessionRepository, ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository, ExamProctorRepository, AccountRepository, JournalEntryRepository, FeeTemplateRepository, StudentFeeRepository, PaymentRepository, DocumentRepository, IntegrationRepository, AiRepository, WorkflowRepository, ReportRepository, CurrencyRepository, PolicyRepository};
+use orbis_app::ports::repositories::{OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository, SessionRepository, AcademicYearRepository, AcademicPeriodRepository, PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository, EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository, ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository, ExamSessionRepository, ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository, ExamProctorRepository, AccountRepository, JournalEntryRepository, FeeTemplateRepository, StudentFeeRepository, PaymentRepository, DocumentRepository, IntegrationRepository, AiRepository, WorkflowRepository, CurrencyRepository, PolicyRepository};
+use orbis_app::ports::reporting::{ReportDefinitionRepository, ReportTemplateRepository, ReportJobRepository, ReportAuditRepository, DataProviderRegistry, RendererRegistry};
+use orbis_app::usecases::report::generate_report::OrgContextResolver;
 use orbis_app::ports::event_bus::EventBus;
 use orbis_app::ports::security::{TokenService, PasswordHasher};
 use orbis_app::ports::iam::PermissionCheckerPort;
@@ -42,7 +44,13 @@ pub struct AppState {
     pub integration_repo: Arc<dyn IntegrationRepository>,
     pub ai_repo: Arc<dyn AiRepository>,
     pub workflow_repo: Arc<dyn WorkflowRepository>,
-    pub report_repo: Arc<dyn ReportRepository>,
+    pub report_definition_repo: Arc<dyn ReportDefinitionRepository>,
+    pub report_template_repo: Arc<dyn ReportTemplateRepository>,
+    pub report_job_repo: Arc<dyn ReportJobRepository>,
+    pub report_audit_repo: Arc<dyn ReportAuditRepository>,
+    pub report_provider_registry: Arc<dyn DataProviderRegistry>,
+    pub report_renderer_registry: Arc<dyn RendererRegistry>,
+    pub report_org_context_resolver: Arc<dyn OrgContextResolver>,
     pub currency_repo: Arc<dyn CurrencyRepository>,
     pub policy_repo: Arc<dyn PolicyRepository>,
     pub event_bus: Arc<dyn EventBus>,
@@ -79,8 +87,27 @@ impl AppState {
         let integration_repo = Arc::new(orbis_infra::repositories::integration_repos::IntegrationRepoImpl { db: db.clone() });
         let ai_repo = Arc::new(orbis_infra::repositories::ai_repos::AiRepoImpl { db: db.clone() });
         let workflow_repo = Arc::new(orbis_infra::repositories::workflow_repos::WorkflowRepoImpl { db: db.clone() });
-        let report_repo = Arc::new(orbis_infra::repositories::report_repos::ReportRepoImpl { db: db.clone() });
+        let report_definition_repo = Arc::new(orbis_infra::repositories::report_repos::ReportDefinitionRepoImpl { db: db.clone() });
+        let report_template_repo = Arc::new(orbis_infra::repositories::report_repos::ReportTemplateRepoImpl { db: db.clone() });
+        let report_job_repo = Arc::new(orbis_infra::repositories::report_repos::ReportJobRepoImpl { db: db.clone() });
+        let report_audit_repo = Arc::new(orbis_infra::repositories::report_repos::ReportAuditRepoImpl { db: db.clone() });
         let policy_repo = Arc::new(orbis_infra::repositories::policy_repo::PgPolicyRepo { db: db.clone() });
+
+        use orbis_infra::adapters::report_adapter::*;
+        let mut provider_registry = InMemoryDataProviderRegistry::new();
+        provider_registry.register_provider(Box::new(FeeCollectionDataProvider { db: db.clone() }));
+        provider_registry.register_provider(Box::new(StudentListDataProvider { db: db.clone() }));
+        let report_provider_registry = Arc::new(provider_registry);
+
+        let mut renderer_registry = InMemoryRendererRegistry::new();
+        renderer_registry.register_renderer(Box::new(DataOnlyRenderer));
+        renderer_registry.register_renderer(Box::new(JsonRenderer));
+        renderer_registry.register_renderer(Box::new(CsvRenderer));
+        renderer_registry.register_renderer(Box::new(HtmlRenderer));
+        renderer_registry.register_renderer(Box::new(PdfRenderer));
+        let report_renderer_registry = Arc::new(renderer_registry);
+
+        let report_org_context_resolver = Arc::new(DbOrgContextResolver { db: db.clone() });
         
         let permission_checker = Arc::new(orbis_infra::adapters::iam::db_permission_checker::DbPermissionChecker {
             db: db.clone(),
@@ -134,7 +161,13 @@ impl AppState {
             integration_repo,
             ai_repo,
             workflow_repo,
-            report_repo,
+            report_definition_repo,
+            report_template_repo,
+            report_job_repo,
+            report_audit_repo,
+            report_provider_registry,
+            report_renderer_registry,
+            report_org_context_resolver,
             currency_repo: finance_repo.clone(),
             policy_repo,
             event_bus,

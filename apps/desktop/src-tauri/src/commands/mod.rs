@@ -47,5 +47,6 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         report_cmds::generate_report,
         report_cmds::get_report_job_status,
         report_cmds::download_report_file,
+        report_cmds::batch_print,
     ]
 }
