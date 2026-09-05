@@ -6,3 +6,4 @@
 pub mod generate_report;
 pub mod manage_template;
 pub mod list_reports;
+

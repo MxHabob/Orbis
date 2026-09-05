@@ -413,6 +413,12 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
     )).await.ok();
 
 
+    // 3j. Seed Default Reports
+    if let Err(e) = seed_default_reports(db, &org_id, &now).await {
+        info!("Note: Report seeding warning: {}", e);
+    }
+
+
 
 
     info!("Bootstrap completed for org_id={} type={}", org_id, payload.org_type);
@@ -827,4 +833,123 @@ fn currency_symbol(code: &str) -> String {
         "GBP" => "£".into(),
         _ => code.to_string(),
     }
+}
+
+// ── Default Reports Seeding Implementation ──────────────────────
+
+async fn seed_default_reports<C: ConnectionTrait>(
+    db: &C,
+    org_id: &str,
+    now: &str,
+) -> Result<(), DomainError> {
+    info!("Seeding default reports for org_id={}", org_id);
+
+    let templates = vec![
+        (
+            "administration.master-template",
+            "Master Template",
+            "الترويسة والتذييل الافتراضي",
+            "system",
+            "MASTER",
+            crate::adapters::report_defaults::MASTER_TEMPLATE_HTML,
+        ),
+        (
+            "academic.student-term-report-card",
+            "Student Term Report Card",
+            "كشف درجات الطالب للفصل الدراسي",
+            "academic",
+            "REPORT",
+            crate::adapters::report_defaults::TABULAR_REPORT_HTML,
+        ),
+        (
+            "finance.payment-receipt",
+            "Payment Receipt",
+            "سند قبض",
+            "finance",
+            "RECEIPT",
+            crate::adapters::report_defaults::PAYMENT_RECEIPT_HTML,
+        ),
+        (
+            "identification.student-id-card",
+            "Student ID Card",
+            "بطاقة هوية الطالب",
+            "identification",
+            "ID_CARD",
+            crate::adapters::report_defaults::STUDENT_ID_CARD_HTML,
+        ),
+        (
+            "scheduling.class-timetable",
+            "Class Timetable",
+            "الجدول الدراسي للفصل",
+            "academic",
+            "SCHEDULE",
+            crate::adapters::report_defaults::CLASS_TIMETABLE_HTML,
+        ),
+    ];
+
+    for (code, name_en, name_ar, domain, doc_type, html_content) in templates {
+        // 1. Definition
+        let def_id = Uuid::new_v4().to_string();
+        db.execute(Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "INSERT INTO report_definitions (id, org_id, code, name, name_ar, domain, category, data_provider_key, is_system, is_active, parameters, required_permissions, supported_formats, sort_order, version, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 1, 1, '[]', '[]', '[\"pdf\", \"html\"]', 0, 1, $9, $10) ON CONFLICT(org_id, code) DO NOTHING",
+            vec![
+                def_id.clone().into(), org_id.to_string().into(), code.into(),
+                name_en.into(), name_ar.into(), domain.into(), doc_type.into(), code.into(),
+                now.to_string().into(), now.to_string().into(),
+            ]
+        )).await.map_err(|e| DomainError::Internal(format!("Failed to seed report_definitions for {code}: {e}")))?;
+
+        // Need the def_id (it might already exist)
+        let def_row = db.query_one(Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "SELECT id FROM report_definitions WHERE org_id = $1 AND code = $2 LIMIT 1",
+            vec![org_id.to_string().into(), code.into()]
+        )).await.map_err(|e| DomainError::Internal(e.to_string()))?.ok_or_else(|| DomainError::NotFound("Report definition not found".into()))?;
+        let real_def_id: String = def_row.try_get("", "id").unwrap();
+
+        // 2. Template
+        let tmpl_id = Uuid::new_v4().to_string();
+        db.execute(Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "INSERT INTO report_templates (id, org_id, code, name, name_ar, document_type, entity_type, status, version, published_version, page_size, orientation, margins_json, document_json, locale, is_system, is_default, created_by, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, 'system', 'published', 1, 1, 'A4', 'portrait', '{\"top\":15,\"bottom\":15,\"left\":15,\"right\":15}', $7, 'ar', 1, 1, '00000000-0000-0000-0000-000000000000', $8, $9) ON CONFLICT(org_id, code) DO NOTHING",
+            vec![
+                tmpl_id.clone().into(), org_id.to_string().into(), code.into(),
+                name_en.into(), name_ar.into(), doc_type.into(),
+                html_content.into(),
+                now.to_string().into(), now.to_string().into(),
+            ]
+        )).await.map_err(|e| DomainError::Internal(format!("Failed to seed report_templates for {code}: {e}")))?;
+
+        // Get actual template id
+        let tmpl_row = db.query_one(Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "SELECT id FROM report_templates WHERE org_id = $1 AND code = $2 LIMIT 1",
+            vec![org_id.to_string().into(), code.into()]
+        )).await.map_err(|e| DomainError::Internal(e.to_string()))?.ok_or_else(|| DomainError::NotFound("Template not found".into()))?;
+        let real_tmpl_id: String = tmpl_row.try_get("", "id").unwrap();
+
+        // 3. Binding
+        let binding_id = Uuid::new_v4().to_string();
+        db.execute(Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "INSERT INTO report_template_bindings (id, report_definition_id, template_id, locale, format, is_default, created_at) SELECT $1, $2, $3, 'ar', 'pdf', 1, $4 WHERE NOT EXISTS (SELECT 1 FROM report_template_bindings WHERE report_definition_id = $2 AND format = 'pdf')",
+            vec![
+                binding_id.into(), real_def_id.clone().into(), real_tmpl_id.clone().into(),
+                now.to_string().into(),
+            ]
+        )).await.ok();
+
+        let binding_id_html = Uuid::new_v4().to_string();
+        db.execute(Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "INSERT INTO report_template_bindings (id, report_definition_id, template_id, locale, format, is_default, created_at) SELECT $1, $2, $3, 'ar', 'html', 1, $4 WHERE NOT EXISTS (SELECT 1 FROM report_template_bindings WHERE report_definition_id = $2 AND format = 'html')",
+            vec![
+                binding_id_html.into(), real_def_id.into(), real_tmpl_id.into(),
+                now.to_string().into(),
+            ]
+        )).await.ok();
+    }
+
+    Ok(())
 }

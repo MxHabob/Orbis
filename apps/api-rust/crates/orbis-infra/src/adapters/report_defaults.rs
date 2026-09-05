@@ -130,3 +130,172 @@ pub const PAYMENT_RECEIPT_HTML: &str = r##"
     </div>
 </div>
 "##;
+
+pub const STUDENT_ID_CARD_HTML: &str = r##"
+<style>
+.id-card { width: 85.6mm; height: 53.98mm; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; font-family: 'Noto Sans Arabic', sans-serif; position: relative; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin: 10px; display: inline-block; }
+.id-header { background: {{ primary_color | default(value="#2563eb") }}; color: white; padding: 5px; text-align: center; font-size: 10px; }
+.id-body { padding: 10px; display: flex; gap: 10px; }
+.id-photo { width: 60px; height: 75px; background: #eee; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #999; }
+.id-details { flex: 1; font-size: 9px; line-height: 1.4; }
+.id-details strong { color: {{ primary_color | default(value="#2563eb") }}; }
+.id-footer { position: absolute; bottom: 0; width: 100%; text-align: center; font-size: 8px; background: #f8f9fa; border-top: 1px solid #eee; padding: 3px 0; }
+.batch-container { display: flex; flex-wrap: wrap; justify-content: center; }
+</style>
+<div class="batch-container">
+{% for row in rows %}
+<div class="id-card">
+    <div class="id-header">
+        <strong>{% if is_rtl %}{{ org_name_ar }}{% else %}{{ org_name }}{% endif %}</strong><br>
+        {% if is_rtl %}بطاقة طالب{% else %}Student ID Card{% endif %}
+    </div>
+    <div class="id-body">
+        <div class="id-photo">{% if is_rtl %}صورة{% else %}Photo{% endif %}</div>
+        <div class="id-details">
+            <strong>{% if is_rtl %}الاسم:{% else %}Name:{% endif %}</strong> {{ row.student_name | default(value="---") }}<br>
+            <strong>{% if is_rtl %}الرقم:{% else %}ID:{% endif %}</strong> {{ row.student_id | default(value="---") }}<br>
+            <strong>{% if is_rtl %}الصف:{% else %}Grade:{% endif %}</strong> {{ row.grade | default(value="---") }}<br>
+            <strong>{% if is_rtl %}تاريخ الميلاد:{% else %}DOB:{% endif %}</strong> {{ row.dob | default(value="---") }}
+        </div>
+    </div>
+    <div class="id-footer">
+        {% if is_rtl %}هذه البطاقة ملك للمدرسة، الرجاء إعادتها عند العثور عليها.{% else %}Property of the school. Please return if found.{% endif %}
+    </div>
+</div>
+{% endfor %}
+</div>
+"##;
+
+pub const CLASS_TIMETABLE_HTML: &str = r##"
+<style>
+.timetable { width: 100%; border-collapse: collapse; text-align: center; margin-top: 10px; }
+.timetable th, .timetable td { border: 1px solid #ccc; padding: 8px; }
+.timetable th { background: {{ primary_color | default(value="#4f46e5") }}; color: white; font-size: 12px; }
+.timetable td { font-size: 11px; height: 50px; vertical-align: middle; }
+.subject { font-weight: bold; color: #333; }
+.teacher { font-size: 9px; color: #666; margin-top: 4px; }
+.period-time { font-size: 9px; color: #eed; display: block; }
+</style>
+<h3>{% if is_rtl %}الجدول الدراسي - {% else %}Class Timetable - {% endif %} {{ parameters.class_name | default(value="---") }}</h3>
+<table class="timetable">
+    <thead>
+        <tr>
+            <th>{% if is_rtl %}اليوم \ الحصة{% else %}Day \ Period{% endif %}</th>
+            {% for period in parameters.periods | default(value=["1","2","3","4","5","6","7"]) %}
+            <th>
+                {% if is_rtl %}الحصة{% else %}Period{% endif %} {{ period }}
+            </th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for day in parameters.days | default(value=["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"]) %}
+        <tr>
+            <td style="background: #f8f9fa; font-weight: bold;">
+                {{ day }}
+            </td>
+            {% for period in parameters.periods | default(value=["1","2","3","4","5","6","7"]) %}
+            <td>
+                <!-- We simulate finding a matching row for (day, period) from the dataset rows -->
+                {% set found = false %}
+                {% for row in rows %}
+                    {% if row.day == day and row.period == period %}
+                        <div class="subject">{{ row.subject | default(value="---") }}</div>
+                        <div class="teacher">{{ row.teacher | default(value="---") }}</div>
+                        {% set_global found = true %}
+                    {% endif %}
+                {% endfor %}
+                {% if not found %}
+                    <span style="color:#ccc">-</span>
+                {% endif %}
+            </td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+"##;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tera::{Tera, Context};
+
+    #[test]
+    fn test_master_template_compiles() {
+        let mut tera = Tera::default();
+        tera.add_raw_template("master", MASTER_TEMPLATE_HTML).expect("Failed to parse master template");
+        
+        let mut ctx = Context::new();
+        ctx.insert("is_rtl", &true);
+        ctx.insert("org_name", &"Test Org");
+        ctx.insert("org_name_ar", &"Test Org AR");
+        ctx.insert("org_type", &"School");
+        ctx.insert("org_type_ar", &"مدرسة");
+        ctx.insert("report_name", &"Test Report");
+        ctx.insert("report_name_ar", &"Test Report AR");
+        ctx.insert("generated_at", &"2023-01-01 10:00");
+        ctx.insert("printed_by", &"System");
+        ctx.insert("has_parameters", &false);
+        ctx.insert("inner_content", &"<p>Inner</p>");
+        
+        let result = tera.render("master", &ctx).expect("Failed to render master template");
+        assert!(result.contains("Test Org AR"));
+    }
+
+    #[test]
+    fn test_tabular_report_compiles() {
+        let mut tera = Tera::default();
+        tera.add_raw_template("tabular", TABULAR_REPORT_HTML).expect("Failed to parse tabular template");
+        
+        let mut ctx = Context::new();
+        ctx.insert("is_rtl", &true);
+        ctx.insert("columns", &Vec::<String>::new()); // dummy
+        ctx.insert("rows", &Vec::<String>::new());
+        
+        let result = tera.render("tabular", &ctx).expect("Failed to render tabular template");
+        assert!(result.contains("<table>"));
+    }
+
+    #[test]
+    fn test_payment_receipt_compiles() {
+        let mut tera = Tera::default();
+        tera.add_raw_template("receipt", PAYMENT_RECEIPT_HTML).expect("Failed to parse payment receipt template");
+        
+        let mut ctx = Context::new();
+        ctx.insert("is_rtl", &true);
+        ctx.insert("rows", &Vec::<String>::new());
+        ctx.insert("printed_by", &"System");
+        ctx.insert("generated_at", &"2023-01-01 10:00");
+        
+        let result = tera.render("receipt", &ctx).expect("Failed to render payment receipt template");
+        assert!(result.contains("Payment Receipt") || result.contains("سند قبض"));
+    }
+
+    #[test]
+    fn test_student_id_card_compiles() {
+        let mut tera = Tera::default();
+        tera.add_raw_template("id_card", STUDENT_ID_CARD_HTML).expect("Failed to parse id card template");
+        
+        let mut ctx = Context::new();
+        ctx.insert("is_rtl", &true);
+        ctx.insert("rows", &Vec::<String>::new());
+        
+        let result = tera.render("id_card", &ctx).expect("Failed to render id card template");
+        assert!(result.contains("batch-container"));
+    }
+
+    #[test]
+    fn test_class_timetable_compiles() {
+        let mut tera = Tera::default();
+        tera.add_raw_template("timetable", CLASS_TIMETABLE_HTML).expect("Failed to parse timetable template");
+        
+        let mut ctx = Context::new();
+        ctx.insert("is_rtl", &true);
+        ctx.insert("rows", &Vec::<String>::new());
+        ctx.insert("parameters", &std::collections::HashMap::<String, String>::new());
+        
+        let result = tera.render("timetable", &ctx).expect("Failed to render timetable template");
+        assert!(result.contains("timetable"));
+    }
+}

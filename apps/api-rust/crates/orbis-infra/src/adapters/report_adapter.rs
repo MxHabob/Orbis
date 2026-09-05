@@ -225,13 +225,16 @@ impl DocumentRenderer for HtmlRenderer {
         context.insert("is_rtl", &is_rtl);
         context.insert("org_name", &dataset.org.name);
         context.insert("org_name_ar", &dataset.org.name_ar);
-        context.insert("org_type", &dataset.org.org_type);
-        context.insert("org_type_ar", &dataset.org.org_type_ar);
         context.insert("primary_color", &dataset.org.primary_color);
+        context.insert("org_website", &dataset.org.website);
         context.insert("report_name", &dataset.report_name);
         context.insert("report_name_ar", &dataset.report_name_ar);
         context.insert("generated_at", &dataset.generated_at.format("%Y-%m-%d %H:%M").to_string());
-        context.insert("printed_by", &dataset.printed_by);
+        
+        // generated_by is Option<Uuid>, use System if None
+        let printed_by = dataset.generated_by.map(|u| u.to_string()).unwrap_or_else(|| "System".to_string());
+        context.insert("printed_by", &printed_by);
+        
         context.insert("total_pages", &1);
         context.insert("current_page", &1);
 
@@ -254,8 +257,7 @@ impl DocumentRenderer for HtmlRenderer {
         let mut tera = Tera::default();
 
         let inner_template_str = template
-            .and_then(|t| t.document_json.as_ref())
-            .map(|d| d.to_string())
+            .and_then(|t| t.document_json.clone().into())
             .unwrap_or_else(|| crate::adapters::report_defaults::TABULAR_REPORT_HTML.to_string());
         
         tera.add_raw_template("inner", &inner_template_str)
@@ -266,7 +268,7 @@ impl DocumentRenderer for HtmlRenderer {
 
         let final_html = if let Some(m) = master {
             context.insert("inner_content", &inner_html);
-            let master_str = m.document_json.as_deref().unwrap_or(crate::adapters::report_defaults::MASTER_TEMPLATE_HTML);
+            let master_str = m.document_json.as_str();
             tera.add_raw_template("master", master_str)
                 .map_err(|e| DomainError::Internal(format!("Tera master parse error: {}", e)))?;
             tera.render("master", &context)
