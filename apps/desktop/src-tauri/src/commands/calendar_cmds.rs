@@ -87,7 +87,7 @@ pub async fn calendar_get_period(id: String, state: State<'_, AppState>) -> Resu
 pub async fn calendar_get_context(state: State<'_, AppState>) -> Result<ApiResponse<AcademicContextResponse>, String> {
     let ctx = make_ctx(&state);
     let years = state.year_repo.find_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
-    let current = state.year_repo.find_active(ctx.tenant_id).await.map_err(|e| e.to_string())?;
+    let current = years.iter().find(|y| y.status == "active").cloned();
     let periods = if let Some(ref cur) = current {
         state.period_repo.find_by_year(cur.id).await.map_err(|e| e.to_string())?
     } else { vec![] };

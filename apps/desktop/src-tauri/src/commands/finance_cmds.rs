@@ -62,7 +62,7 @@ pub async fn finance_list_student_fees(filter: Option<FeeFilter>, state: State<'
     Ok(ok(items.into_iter().map(|f| StudentFeeDto {
         id: f.id.to_string(), student_id: f.student_id.to_string(),
         enrollment_id: f.enrollment_id.map(|e| e.to_string()), fee_template_id: f.fee_template_id.to_string(),
-        net_amount: f.net_amount, paid_amount: f.paid_amount, status: f.status,
+        net_amount: f.net_amount, paid_amount: f.original_amount - f.net_amount, status: f.status,
     }).collect()))
 }
 

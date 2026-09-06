@@ -20,8 +20,8 @@ fn doc_dto(d: orbis_domain::entities::document::Document) -> DocumentDto {
     DocumentDto {
         id: d.id.to_string(), org_id: d.org_id.to_string(),
         entity_type: d.entity_type, entity_id: d.entity_id.map(|e| e.to_string()),
-        file_name: d.title, mime_type: d.mime_type.unwrap_or_else(|| "application/octet-stream".to_string()),
-        size_bytes: d.byte_size.unwrap_or(0),
+        file_name: d.name, mime_type: d.mime_type.unwrap_or_else(|| "application/octet-stream".to_string()),
+        size_bytes: d.size.unwrap_or(0) as i64,
         created_at: d.created_at.to_rfc3339(),
     }
 }
