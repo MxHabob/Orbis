@@ -356,6 +356,10 @@ export type GenerateFeeRequest = {
     student_id: string;
 };
 
+export type GoogleAuthRequest = {
+    id_token: string;
+};
+
 export type GradeDto = {
     class_subject_id: string;
     id: string;
@@ -401,6 +405,29 @@ export type MarkAttendanceRequest = {
     notes?: string | null;
     status: string;
     student_id: string;
+};
+
+export type MfaChallengeRequest = {
+    code: string;
+    device_id?: string | null;
+    remember_device?: boolean | null;
+    user_id: string;
+};
+
+export type MfaEnrollRequest = {
+    factor_name?: string | null;
+};
+
+export type MfaEnrollResponse = {
+    factor_id: string;
+    qr_code_uri: string;
+    recovery_codes: Array<string>;
+    secret: string;
+};
+
+export type MfaVerifyEnrollmentRequest = {
+    code: string;
+    factor_id: string;
 };
 
 export type NotificationSettingsDto = {
@@ -610,12 +637,31 @@ export type UploadDocumentRequest = {
     visibility?: string | null;
 };
 
+export type UserDeviceDto = {
+    browser?: string | null;
+    device_id: string;
+    device_name: string;
+    device_type: string;
+    id: string;
+    is_trusted: boolean;
+    last_active_at: string;
+    os?: string | null;
+};
+
 export type UserDto = {
     email?: string | null;
     full_name: string;
     id: string;
     org_id: string;
     status: string;
+};
+
+export type UserIdentityDto = {
+    connected_at: string;
+    email?: string | null;
+    id: string;
+    provider: string;
+    provider_user_id: string;
 };
 
 export type ListPeriodsData = {
@@ -824,6 +870,73 @@ export type MarkAttendanceResponses = {
 
 export type MarkAttendanceResponse = MarkAttendanceResponses[keyof MarkAttendanceResponses];
 
+export type ListDevicesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/devices';
+};
+
+export type ListDevicesResponses = {
+    /**
+     * List of user devices
+     */
+    200: Array<UserDeviceDto>;
+};
+
+export type ListDevicesResponse = ListDevicesResponses[keyof ListDevicesResponses];
+
+export type RevokeDeviceData = {
+    body?: never;
+    path: {
+        /**
+         * Device ID to revoke
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/auth/devices/{id}';
+};
+
+export type RevokeDeviceResponses = {
+    /**
+     * Device revoked successfully
+     */
+    200: unknown;
+};
+
+export type GoogleLinkData = {
+    body: GoogleAuthRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/identities/google/link';
+};
+
+export type GoogleLinkResponses = {
+    /**
+     * Google identity linked successfully
+     */
+    200: UserIdentityDto;
+};
+
+export type GoogleLinkResponse = GoogleLinkResponses[keyof GoogleLinkResponses];
+
+export type GoogleLoginData = {
+    body: GoogleAuthRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/identities/google/login';
+};
+
+export type GoogleLoginResponses = {
+    /**
+     * Logged in with Google
+     */
+    200: LoginResponse;
+};
+
+export type GoogleLoginResponse = GoogleLoginResponses[keyof GoogleLoginResponses];
+
 export type LoginData = {
     body: LoginRequest;
     path?: never;
@@ -846,6 +959,52 @@ export type LoginResponses = {
 };
 
 export type LoginResponse2 = LoginResponses[keyof LoginResponses];
+
+export type MfaChallengeData = {
+    body: MfaChallengeRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/mfa/challenge';
+};
+
+export type MfaChallengeResponses = {
+    /**
+     * MFA Challenge resolved and session issued
+     */
+    200: LoginResponse;
+};
+
+export type MfaChallengeResponse = MfaChallengeResponses[keyof MfaChallengeResponses];
+
+export type MfaEnrollData = {
+    body: MfaEnrollRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/mfa/enroll';
+};
+
+export type MfaEnrollResponses = {
+    /**
+     * MFA Enrollment initiated
+     */
+    200: MfaEnrollResponse;
+};
+
+export type MfaEnrollResponse2 = MfaEnrollResponses[keyof MfaEnrollResponses];
+
+export type MfaVerifyEnrollmentData = {
+    body: MfaVerifyEnrollmentRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/mfa/verify-enrollment';
+};
+
+export type MfaVerifyEnrollmentResponses = {
+    /**
+     * MFA Factor verified and activated
+     */
+    200: unknown;
+};
 
 export type GetSessionData = {
     body?: never;
