@@ -1,57 +1,115 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardContent,
 } from "@orbis/ui/card";
+import { ShieldCheck, LogOut, Laptop, Smartphone, Monitor } from "@lucide/svelte";
 
-interface Props {
-  activeSessions: any[];
+interface SessionItem {
+  id: string;
+  device: string;
+  location?: string;
+  ip?: string;
+  active?: boolean;
+  isTrusted?: boolean;
+  isCurrent?: boolean;
+  lastActive?: string;
+  icon?: any;
 }
 
-let { activeSessions, ...restProps }: Props & Record<string, any> = $props();
+interface Props {
+  activeSessions: SessionItem[];
+  onRevoke?: (id: string) => void;
+}
+
+let { activeSessions, onRevoke, ...restProps }: Props & Record<string, any> = $props();
 </script>
 
-<Card {...restProps}>
-  <CardHeader class="bg-muted/50 px-6 py-3 border-b border-border">
-    <CardTitle class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-      {m.settings_security_sessions()}
-    </CardTitle>
-  </CardHeader>
-  <CardContent>
-    <div class="flex flex-col">
-      <div class="px-6 py-3 bg-muted/20 border-b border-border text-[11px] text-muted-foreground text-start select-none">
-        {m.settings_security_sessions_desc()}
+<Card class="border border-border/80 shadow-sm rounded-2xl overflow-hidden" {...restProps}>
+  <CardHeader class="bg-muted/40 px-6 py-4 border-b border-border/60">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="p-2 rounded-xl bg-primary/10 text-primary">
+          <Monitor size={20} class="stroke-[2.2]" />
+        </div>
+        <div>
+          <CardTitle class="text-sm font-bold text-foreground">
+            {m.settings_security_sessions()}
+          </CardTitle>
+          <p class="text-xs text-muted-foreground mt-0.5">
+            {m.settings_security_sessions_desc()}
+          </p>
+        </div>
       </div>
+    </div>
+  </CardHeader>
 
-      <div class="flex flex-col">
-        {#each activeSessions as session (session.id)}
-          <div class="flex items-center justify-between px-6 py-4 border-b border-border/40 last:border-b-0">
-            <div class="flex items-center gap-3">
-              <div class="p-2.5 rounded-lg bg-muted text-foreground">
+  <CardContent class="p-0">
+    <div class="flex flex-col divide-y divide-border/40">
+      {#each activeSessions as session (session.id)}
+        <div class="flex items-center justify-between px-6 py-4 hover:bg-muted/20 transition-colors">
+          <div class="flex items-center gap-3.5">
+            <div class="p-2.5 rounded-xl bg-muted/80 text-foreground border border-border/40 shrink-0">
+              {#if session.icon}
                 <session.icon size={18} />
-              </div>
-              <div class="flex flex-col text-start gap-0.5">
-                <span class="text-xs font-bold text-foreground">{session.device}</span>
-                <span class="text-[10px] text-muted-foreground">{session.location} • {session.ip}</span>
-              </div>
+              {:else}
+                <Laptop size={18} />
+              {/if}
             </div>
-            
-            {#if session.active}
-              <Badge variant="success" class="text-[9px] font-bold uppercase py-0.5 px-2 rounded-full">
+            <div class="flex flex-col text-start gap-1">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-foreground">{session.device}</span>
+                {#if session.isCurrent}
+                  <Badge variant="default" class="text-[9px] font-bold uppercase py-0.5 px-2 rounded-full bg-primary/15 text-primary border-primary/20">
+                    This Device
+                  </Badge>
+                {/if}
+                {#if session.isTrusted}
+                  <Badge variant="success" class="text-[9px] font-bold uppercase py-0.5 px-2 rounded-full flex items-center gap-1">
+                    <ShieldCheck size={10} />
+                    <span>Trusted Device (30d)</span>
+                  </Badge>
+                {/if}
+              </div>
+              <span class="text-[11px] text-muted-foreground">
+                {session.location || "Active Session"} • {session.ip || "Local Network"}
+                {#if session.lastActive}
+                  • Last active {session.lastActive}
+                {/if}
+              </span>
+            </div>
+          </div>
+          
+          <div class="flex items-center gap-2">
+            {#if !session.isCurrent && onRevoke}
+              <Button
+                variant="ghost"
+                size="sm"
+                class="rounded-xl text-xs font-medium text-destructive hover:bg-destructive/10 hover:text-destructive gap-1.5 h-8 px-2.5"
+                onclick={() => onRevoke(session.id)}
+              >
+                <LogOut size={13} />
+                <span>Revoke</span>
+              </Button>
+            {:else if session.isCurrent}
+              <Badge variant="success" class="text-[9px] font-bold uppercase py-0.5 px-2.5 rounded-full">
                 Active Now
-              </Badge>
-            {:else}
-              <Badge variant="secondary" class="text-[9px] font-bold uppercase py-0.5 px-2 rounded-full">
-                Logged out
               </Badge>
             {/if}
           </div>
-        {/each}
-      </div>
+        </div>
+      {/each}
+
+      {#if activeSessions.length === 0}
+        <div class="py-8 text-center text-xs text-muted-foreground">
+          No other active sessions recorded.
+        </div>
+      {/if}
     </div>
   </CardContent>
 </Card>

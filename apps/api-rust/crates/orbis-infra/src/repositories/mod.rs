@@ -18,3 +18,6 @@ pub mod workflow_repos;
 pub mod report_repos;
 pub mod settings_repo;
 pub mod dashboard_repo;
+pub mod identity_repo;
+pub mod mfa_repo;
+pub mod device_repo;

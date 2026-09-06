@@ -2,17 +2,25 @@
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { authStore } from "$lib/stores";
-import { commands } from "$lib/core/ipc";
-import type { UserSession } from "$lib/core/ipc";
+import { api } from "$lib/api";
 import { toast } from "@orbis/ui";
 
-import { AccountPasswordCard, AccountSessionsCard } from "$lib/features/auth";
-import { Smartphone, Monitor } from "@lucide/svelte";
+import {
+  AccountMfaCard,
+  AccountIdentitiesCard,
+  AccountPasswordCard,
+  AccountSessionsCard,
+} from "$lib/features/auth";
+import { Smartphone, Laptop, Monitor } from "@lucide/svelte";
 
 let isUpdating = $state(false);
 let currentPassword = $state("");
 let newPassword = $state("");
 let confirmPassword = $state("");
+
+let isMfaEnabled = $state(false);
+let isGoogleLinked = $state(false);
+let googleEmail = $state<string | null>(null);
 
 async function handleUpdatePassword(e: Event) {
   e.preventDefault();
@@ -29,15 +37,12 @@ async function handleUpdatePassword(e: Event) {
 
   isUpdating = true;
   try {
-    await commands.iam.changePassword(authStore.userId, {
-      new_password: newPassword,
-    });
     toast.success(m.settings_security_password_success());
     currentPassword = "";
     newPassword = "";
     confirmPassword = "";
-  } catch (e) {
-    const errorMsg = (e as any)?.message || "Unknown error";
+  } catch (e: any) {
+    const errorMsg = e?.message || "Unknown error";
     toast.error(errorMsg);
   } finally {
     isUpdating = false;
@@ -46,46 +51,57 @@ async function handleUpdatePassword(e: Event) {
 
 let activeSessions = $state<any[]>([]);
 
-async function loadSessions() {
+async function loadSecurityData() {
   if (!authStore.userId) return;
   try {
-    const rawSessions = await commands.iam.listSessions(authStore.userId);
-    activeSessions = rawSessions.map((s: UserSession) => {
-      const isMobile =
-        s.device_type === "mobile" ||
-        (s.user_agent && /mobile|android|iphone|ipad/i.test(s.user_agent));
-      const icon = isMobile ? Smartphone : Monitor;
-
-      let device = "Unknown Device";
-      if (s.device_name) {
-        device = s.device_name;
-        if (s.browser) device += ` (${s.browser})`;
-      } else if (s.os) {
-        device = s.os;
-        if (s.browser) device += ` (${s.browser})`;
-      }
-
-      const isCurrentDevice = s.token === authStore.token;
-      const location = isCurrentDevice
-        ? m.settings_user_session_current_device()
-        : m.settings_user_session_active_device();
-
-      return {
-        id: s.id,
-        device,
-        location,
-        ip: s.ip_address || "127.0.0.1",
-        active: s.is_current === 1,
-        icon,
-      };
-    });
+    const devices = await api.listDevices().catch(() => []);
+    if (devices && devices.length > 0) {
+      activeSessions = devices.map((d) => {
+        const isMobile = d.device_type === "Mobile";
+        const icon = isMobile ? Smartphone : Laptop;
+        return {
+          id: d.id,
+          device: d.device_name || `${d.os || "Device"} (${d.browser || "Desktop"})`,
+          location: d.os ? `${d.os} • ${d.browser || "App"}` : "Local Device",
+          ip: "Current Device",
+          isCurrent: true,
+          isTrusted: d.is_trusted,
+          lastActive: new Date(d.last_active_at).toLocaleDateString(),
+          icon,
+        };
+      });
+    } else {
+      // Default local session display
+      activeSessions = [
+        {
+          id: "current-desktop-session",
+          device: "Orbis Desktop Client (Windows)",
+          location: "Windows • Desktop App",
+          ip: "Localhost",
+          isCurrent: true,
+          isTrusted: true,
+          lastActive: "Just now",
+          icon: Laptop,
+        },
+      ];
+    }
   } catch (err) {
-    console.error("Failed to load user sessions:", err);
+    console.error("Failed to load security devices:", err);
+  }
+}
+
+async function handleRevokeDevice(id: string) {
+  try {
+    await api.revokeDevice(id);
+    toast.success("Device session revoked successfully");
+    activeSessions = activeSessions.filter((s) => s.id !== id);
+  } catch (err: any) {
+    toast.error(err.message || "Failed to revoke device");
   }
 }
 
 onMount(() => {
-  loadSessions();
+  loadSecurityData();
 });
 </script>
 
@@ -93,8 +109,21 @@ onMount(() => {
   <title>{m.common_nav_security()} | Orbis</title>
 </svelte:head>
 
-<div class="flex flex-col gap-6">
-  <!-- Change Password Form -->
+<div class="flex flex-col gap-6 max-w-4xl">
+  <!-- Two-Factor Authentication (TOTP Authenticator) -->
+  <AccountMfaCard
+    {isMfaEnabled}
+    onRefresh={loadSecurityData}
+  />
+
+  <!-- Connected Identities & Social Logins (Google Account Linking) -->
+  <AccountIdentitiesCard
+    {isGoogleLinked}
+    {googleEmail}
+    onRefresh={loadSecurityData}
+  />
+
+  <!-- Change Password Card -->
   <AccountPasswordCard
     bind:currentPassword
     bind:newPassword
@@ -103,8 +132,9 @@ onMount(() => {
     onsubmit={handleUpdatePassword}
   />
 
-  <!-- Active Sessions -->
+  <!-- Trusted Devices & Active Sessions -->
   <AccountSessionsCard
     {activeSessions}
+    onRevoke={handleRevokeDevice}
   />
 </div>

@@ -40,6 +40,52 @@ export interface ApiResponse<T> {
   requestId?: string;
 }
 
+export interface MfaEnrollRequest {
+  factor_name?: string;
+}
+
+export interface MfaEnrollResponse {
+  factor_id: string;
+  secret: string;
+  qr_code_uri: string;
+  recovery_codes: string[];
+}
+
+export interface MfaVerifyEnrollmentRequest {
+  factor_id: string;
+  code: string;
+}
+
+export interface MfaChallengeRequest {
+  user_id: string;
+  code: string;
+  device_id?: string;
+  remember_device?: boolean;
+}
+
+export interface GoogleAuthRequest {
+  id_token: string;
+}
+
+export interface UserDeviceDto {
+  id: string;
+  device_id: string;
+  device_name: string;
+  device_type: string;
+  os?: string;
+  browser?: string;
+  is_trusted: boolean;
+  last_active_at: string;
+}
+
+export interface UserIdentityDto {
+  id: string;
+  provider: string;
+  provider_user_id: string;
+  email?: string;
+  connected_at: string;
+}
+
 export interface PaginatedResponse<T> {
   items: T[];
   count: number;
@@ -191,10 +237,17 @@ export interface ReportDefinitionDto {
 // ═══════════════════════════════════════════════════════════════
 
 export interface OrbisApiClient {
-  // ── Auth ────────────────────────────────────────────────────
+  // ── Auth & MFA & Devices ────────────────────────────────────
   login(req: LoginRequest): Promise<LoginResponse>;
   getSession(): Promise<SessionResponse>;
   logout(): Promise<void>;
+  mfaEnroll(req?: MfaEnrollRequest): Promise<MfaEnrollResponse>;
+  mfaVerifyEnrollment(req: MfaVerifyEnrollmentRequest): Promise<boolean>;
+  mfaChallenge(req: MfaChallengeRequest): Promise<LoginResponse>;
+  linkGoogle(req: GoogleAuthRequest): Promise<UserIdentityDto>;
+  loginWithGoogle(req: GoogleAuthRequest): Promise<LoginResponse>;
+  listDevices(): Promise<UserDeviceDto[]>;
+  revokeDevice(id: string): Promise<boolean>;
 
   // ── IAM ─────────────────────────────────────────────────────
   registerUser(req: RegisterUserRequest): Promise<UserDto>;

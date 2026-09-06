@@ -39,9 +39,16 @@ use api::{
         (name = "Report", description = "Report definitions, templates, generation"),
     ),
     paths(
-        // Auth
+        // Auth & MFA & Devices
         api::iam_routes::login,
         api::iam_routes::get_session,
+        api::iam_routes::mfa_enroll,
+        api::iam_routes::mfa_verify_enrollment,
+        api::iam_routes::mfa_challenge,
+        api::iam_routes::google_link,
+        api::iam_routes::google_login,
+        api::iam_routes::list_devices,
+        api::iam_routes::revoke_device,
         api::iam_routes::register_user,
         api::iam_routes::list_users,
         api::iam_routes::get_user,
@@ -130,12 +137,19 @@ use api::{
         schemas(
             // Shared
             api::OrbisErrorBody,
-            // IAM
+            // IAM & MFA & Devices
             api::iam_routes::LoginRequest,
             api::iam_routes::LoginResponse,
             api::iam_routes::RegisterUserRequest,
             api::iam_routes::UserDto,
             api::iam_routes::SessionResponse,
+            api::iam_routes::MfaEnrollRequest,
+            api::iam_routes::MfaEnrollResponse,
+            api::iam_routes::MfaVerifyEnrollmentRequest,
+            api::iam_routes::MfaChallengeRequest,
+            api::iam_routes::GoogleAuthRequest,
+            api::iam_routes::UserDeviceDto,
+            api::iam_routes::UserIdentityDto,
             // Org
             api::org_routes::CreateOrgRequest,
             api::org_routes::UpdateOrgRequest,

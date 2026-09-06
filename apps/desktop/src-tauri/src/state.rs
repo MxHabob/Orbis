@@ -64,6 +64,13 @@ pub struct AppState {
     pub password_hasher: Arc<dyn PasswordHasher>,
     pub integration_resolver: Arc<orbis_infra::adapters::resolver::IntegrationResolver>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
+    // ── Identity, MFA & Devices ─────────────────────────────────
+    pub identity_repo: Arc<dyn orbis_app::ports::repositories::UserIdentityRepository>,
+    pub mfa_factor_repo: Arc<dyn orbis_app::ports::repositories::MfaFactorRepository>,
+    pub recovery_code_repo: Arc<dyn orbis_app::ports::repositories::MfaRecoveryCodeRepository>,
+    pub device_repo: Arc<dyn orbis_app::ports::repositories::UserDeviceRepository>,
+    pub totp_service: Arc<dyn orbis_app::ports::security::TotpService>,
+    pub oidc_service: Arc<dyn orbis_app::ports::security::OidcService>,
 }
 
 impl AppState {
@@ -132,6 +139,13 @@ impl AppState {
 
         let integration_resolver = Arc::new(orbis_infra::adapters::resolver::IntegrationResolver::new(integration_repo.clone()));
 
+        let identity_repo = Arc::new(orbis_infra::repositories::identity_repo::UserIdentityRepoImpl { db: db.clone() });
+        let mfa_factor_repo = Arc::new(orbis_infra::repositories::mfa_repo::MfaFactorRepoImpl { db: db.clone() });
+        let recovery_code_repo = Arc::new(orbis_infra::repositories::mfa_repo::MfaRecoveryCodeRepoImpl { db: db.clone() });
+        let device_repo = Arc::new(orbis_infra::repositories::device_repo::UserDeviceRepoImpl { db: db.clone() });
+        let totp_service = Arc::new(orbis_infra::security::totp::TotpServiceImpl);
+        let oidc_service = Arc::new(orbis_infra::security::google_oidc::GoogleOidcService::new());
+
         Ok(Self {
             db,
             active_org_id: None,
@@ -185,6 +199,12 @@ impl AppState {
             password_hasher,
             integration_resolver,
             permission_checker,
+            identity_repo,
+            mfa_factor_repo,
+            recovery_code_repo,
+            device_repo,
+            totp_service,
+            oidc_service,
         })
     }
 }

@@ -16,6 +16,9 @@ impl MigrationTrait for Migration {
                     .col(uuid(UserSessions::UserId))
                     .col(string(UserSessions::Token))
                     .col(string_null(UserSessions::RefreshToken))
+                    .col(uuid_null(UserSessions::DeviceId))
+                    .col(string_null(UserSessions::FamilyId))
+                    .col(boolean(UserSessions::IsRevoked).default(false))
                     .col(boolean(UserSessions::IsCurrent).default(true))
                     .col(boolean(UserSessions::IsTrusted).default(false))
                     .col(boolean(UserSessions::MfaVerified).default(false))
@@ -50,6 +53,9 @@ pub enum UserSessions {
     UserId,
     Token,
     RefreshToken,
+    DeviceId,
+    FamilyId,
+    IsRevoked,
     IsCurrent,
     IsTrusted,
     MfaVerified,

@@ -41,7 +41,7 @@ function unwrap<T>(response: { data: T } | T): T {
 }
 
 export class LocalClient implements OrbisApiClient {
-  // ── Auth ────────────────────────────────────────────────────
+  // ── Auth & MFA & Devices ────────────────────────────────────
   async login(req: LoginRequest): Promise<LoginResponse> {
     return unwrap(await invoke('auth_login', { request: req }));
   }
@@ -50,6 +50,27 @@ export class LocalClient implements OrbisApiClient {
   }
   async logout(): Promise<void> {
     await invoke('auth_logout');
+  }
+  async mfaEnroll(req?: import('./types').MfaEnrollRequest): Promise<import('./types').MfaEnrollResponse> {
+    return unwrap(await invoke('auth_mfa_enroll', { request: req ?? {} }));
+  }
+  async mfaVerifyEnrollment(req: import('./types').MfaVerifyEnrollmentRequest): Promise<boolean> {
+    return unwrap(await invoke('auth_mfa_verify_enrollment', { request: req }));
+  }
+  async mfaChallenge(req: import('./types').MfaChallengeRequest): Promise<LoginResponse> {
+    return unwrap(await invoke('auth_mfa_challenge', { request: req }));
+  }
+  async linkGoogle(req: import('./types').GoogleAuthRequest): Promise<import('./types').UserIdentityDto> {
+    return unwrap(await invoke('auth_link_google', { request: req }));
+  }
+  async loginWithGoogle(req: import('./types').GoogleAuthRequest): Promise<LoginResponse> {
+    return unwrap(await invoke('auth_login_google', { request: req }));
+  }
+  async listDevices(): Promise<import('./types').UserDeviceDto[]> {
+    return unwrap(await invoke('auth_list_devices'));
+  }
+  async revokeDevice(id: string): Promise<boolean> {
+    return unwrap(await invoke('auth_revoke_device', { id }));
   }
 
   // ── IAM ─────────────────────────────────────────────────────

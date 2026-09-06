@@ -41,3 +41,6 @@ pub mod student_subject;
 pub mod role;
 pub mod role_permission;
 pub mod user_role_assignment;
+pub mod identity;
+pub mod mfa;
+pub mod device;

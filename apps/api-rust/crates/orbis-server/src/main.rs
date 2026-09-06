@@ -59,6 +59,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let integration_resolver = Arc::new(orbis_infra::adapters::resolver::IntegrationResolver::new(integration_repo.clone()));
     let permission_checker = Arc::new(DbPermissionChecker::new(db.clone()));
 
+    let identity_repo = Arc::new(orbis_infra::repositories::identity_repo::UserIdentityRepoImpl { db: db.clone() });
+    let mfa_factor_repo = Arc::new(orbis_infra::repositories::mfa_repo::MfaFactorRepoImpl { db: db.clone() });
+    let recovery_code_repo = Arc::new(orbis_infra::repositories::mfa_repo::MfaRecoveryCodeRepoImpl { db: db.clone() });
+    let device_repo = Arc::new(orbis_infra::repositories::device_repo::UserDeviceRepoImpl { db: db.clone() });
+    let totp_service = Arc::new(orbis_infra::security::totp::TotpServiceImpl);
+    let oidc_service = Arc::new(orbis_infra::security::google_oidc::GoogleOidcService::new());
+
     // ── Reporting System Wiring ─────────────────────────────────
     use orbis_infra::repositories::report_repos::*;
     use orbis_infra::adapters::report_adapter::*;
@@ -132,6 +139,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         password_hasher,
         integration_resolver,
         permission_checker,
+        // ── Identity, MFA & Devices ─────────────────────────────
+        identity_repo,
+        mfa_factor_repo,
+        recovery_code_repo,
+        device_repo,
+        totp_service,
+        oidc_service,
         // ── Reporting System ────────────────────────────────────
         report_definition_repo,
         report_template_repo,

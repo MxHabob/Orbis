@@ -19,3 +19,16 @@ pub trait PasswordHasher: Send + Sync {
     async fn hash(&self, password: &str) -> Result<String, DomainError>;
     async fn verify(&self, password: &str, hash: &str) -> Result<bool, DomainError>;
 }
+
+#[async_trait]
+pub trait TotpService: Send + Sync {
+    fn generate_secret(&self) -> String;
+    fn generate_qr_uri(&self, issuer: &str, account_name: &str, secret: &str) -> String;
+    fn generate_recovery_codes(&self, count: usize) -> Vec<String>;
+    fn verify_code(&self, secret: &str, code: &str) -> bool;
+}
+
+#[async_trait]
+pub trait OidcService: Send + Sync {
+    async fn verify_google_token(&self, id_token: &str) -> Result<orbis_domain::entities::identity::IdentityProfile, DomainError>;
+}

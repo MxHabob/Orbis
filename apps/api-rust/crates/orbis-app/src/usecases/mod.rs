@@ -16,3 +16,4 @@ pub mod workflow;
 pub mod integrations;
 pub mod settings;
 pub mod dashboard;
+pub mod auth;

@@ -53,6 +53,13 @@ pub struct AppState {
     pub password_hasher: Arc<dyn PasswordHasher>,
     pub integration_resolver: Arc<orbis_infra::adapters::resolver::IntegrationResolver>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
+    // ── Identity, MFA & Devices ─────────────────────────────────
+    pub identity_repo: Arc<dyn orbis_app::ports::repositories::UserIdentityRepository>,
+    pub mfa_factor_repo: Arc<dyn orbis_app::ports::repositories::MfaFactorRepository>,
+    pub recovery_code_repo: Arc<dyn orbis_app::ports::repositories::MfaRecoveryCodeRepository>,
+    pub device_repo: Arc<dyn orbis_app::ports::repositories::UserDeviceRepository>,
+    pub totp_service: Arc<dyn orbis_app::ports::security::TotpService>,
+    pub oidc_service: Arc<dyn orbis_app::ports::security::OidcService>,
     // ── Reporting System ────────────────────────────────────────
     pub report_definition_repo: Arc<dyn ReportDefinitionRepository>,
     pub report_template_repo: Arc<dyn ReportTemplateRepository>,

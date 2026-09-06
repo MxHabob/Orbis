@@ -6,10 +6,13 @@ use uuid::Uuid;
 pub struct Session {
     pub id: Uuid,
     pub user_id: Uuid,
+    pub device_id: Option<Uuid>,
     pub token: String,
     pub refresh_token: Option<String>,
+    pub family_id: Option<String>,
     pub is_current: bool,
     pub is_trusted: bool,
+    pub is_revoked: bool,
     pub mfa_verified: bool,
     pub expires_at: DateTime<Utc>,
     pub refresh_expires_at: Option<DateTime<Utc>>,

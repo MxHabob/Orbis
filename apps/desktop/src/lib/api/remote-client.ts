@@ -97,7 +97,7 @@ export class RemoteClient implements OrbisApiClient {
     return this.request<T>('DELETE', path);
   }
 
-  // ── Auth ────────────────────────────────────────────────────
+  // ── Auth & MFA & Devices ────────────────────────────────────
   async login(req: LoginRequest): Promise<LoginResponse> {
     const res = await this.post<LoginResponse>('/api/v1/auth/login', req);
     this.token = res.token;
@@ -108,6 +108,31 @@ export class RemoteClient implements OrbisApiClient {
   }
   async logout(): Promise<void> {
     this.token = null;
+  }
+  async mfaEnroll(req?: import('./types').MfaEnrollRequest): Promise<import('./types').MfaEnrollResponse> {
+    return this.post('/api/v1/auth/mfa/enroll', req ?? {});
+  }
+  async mfaVerifyEnrollment(req: import('./types').MfaVerifyEnrollmentRequest): Promise<boolean> {
+    return this.post('/api/v1/auth/mfa/verify-enrollment', req);
+  }
+  async mfaChallenge(req: import('./types').MfaChallengeRequest): Promise<LoginResponse> {
+    const res = await this.post<LoginResponse>('/api/v1/auth/mfa/challenge', req);
+    this.token = res.token;
+    return res;
+  }
+  async linkGoogle(req: import('./types').GoogleAuthRequest): Promise<import('./types').UserIdentityDto> {
+    return this.post('/api/v1/auth/identities/google/link', req);
+  }
+  async loginWithGoogle(req: import('./types').GoogleAuthRequest): Promise<LoginResponse> {
+    const res = await this.post<LoginResponse>('/api/v1/auth/identities/google/login', req);
+    this.token = res.token;
+    return res;
+  }
+  async listDevices(): Promise<import('./types').UserDeviceDto[]> {
+    return this.get('/api/v1/auth/devices');
+  }
+  async revokeDevice(id: string): Promise<boolean> {
+    return this.del(`/api/v1/auth/devices/${id}`);
   }
 
   // ── IAM ─────────────────────────────────────────────────────

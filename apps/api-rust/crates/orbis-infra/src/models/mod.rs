@@ -42,3 +42,7 @@ pub mod currency;
 pub mod exchange_rate;
 pub mod student_subject;
 pub mod user_role_assignment;
+pub mod user_identity;
+pub mod mfa_factor;
+pub mod mfa_recovery_code;
+pub mod user_device;

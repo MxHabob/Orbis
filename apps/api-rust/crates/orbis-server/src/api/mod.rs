@@ -160,7 +160,8 @@ impl From<DomainError> for ApiError {
             DomainError::Conflict(_) => Self::conflict(err.to_string()),
             DomainError::BusinessRule(_) => Self::bad_request(err.to_string()),
             DomainError::AuthenticationFailed => Self::unauthorized("Authentication failed"),
-            DomainError::Unauthorized(_) => Self::forbidden(err.to_string()),
+            DomainError::Unauthorized(_) => Self::unauthorized(err.to_string()),
+            DomainError::Forbidden(_) => Self::forbidden(err.to_string()),
             DomainError::Internal(_) => Self::internal(err.to_string()),
         }
     }

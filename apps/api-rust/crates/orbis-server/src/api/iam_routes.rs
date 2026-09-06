@@ -231,12 +231,282 @@ async fn get_user(
     }))
 }
 
+// ── MFA & Identity DTOs ─────────────────────────────────────────
+
+#[derive(Deserialize, ToSchema)]
+pub struct MfaEnrollRequest {
+    pub factor_name: Option<String>,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct MfaEnrollResponse {
+    pub factor_id: Uuid,
+    pub secret: String,
+    pub qr_code_uri: String,
+    pub recovery_codes: Vec<String>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct MfaVerifyEnrollmentRequest {
+    pub factor_id: Uuid,
+    pub code: String,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct MfaChallengeRequest {
+    pub user_id: Uuid,
+    pub code: String,
+    pub device_id: Option<String>,
+    pub remember_device: Option<bool>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct GoogleAuthRequest {
+    pub id_token: String,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct UserDeviceDto {
+    pub id: Uuid,
+    pub device_id: String,
+    pub device_name: String,
+    pub device_type: String,
+    pub os: Option<String>,
+    pub browser: Option<String>,
+    pub is_trusted: bool,
+    pub last_active_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct UserIdentityDto {
+    pub id: Uuid,
+    pub provider: String,
+    pub provider_user_id: String,
+    pub email: Option<String>,
+    pub connected_at: chrono::DateTime<chrono::Utc>,
+}
+
+// ── MFA & Identity Handlers ─────────────────────────────────────
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/auth/mfa/enroll",
+    request_body = MfaEnrollRequest,
+    responses((status = 200, description = "MFA Enrollment initiated", body = MfaEnrollResponse)),
+    security(("bearer" = [])),
+    tag = "Auth"
+)]
+async fn mfa_enroll(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(payload): Json<MfaEnrollRequest>,
+) -> Result<Json<ApiResponse<MfaEnrollResponse>>, ApiError> {
+    let use_case = orbis_app::usecases::auth::EnrollTotpUseCase {
+        user_repo: state.user_repo.clone(),
+        mfa_factor_repo: state.mfa_factor_repo.clone(),
+        recovery_code_repo: state.recovery_code_repo.clone(),
+        totp_service: state.totp_service.clone(),
+        password_hasher: state.password_hasher.clone(),
+    };
+    let res = use_case.execute(&ctx, payload.factor_name).await?;
+    Ok(ApiResponse::ok(MfaEnrollResponse {
+        factor_id: res.factor_id,
+        secret: res.secret,
+        qr_code_uri: res.qr_code_uri,
+        recovery_codes: res.recovery_codes,
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/auth/mfa/verify-enrollment",
+    request_body = MfaVerifyEnrollmentRequest,
+    responses((status = 200, description = "MFA Factor verified and activated")),
+    security(("bearer" = [])),
+    tag = "Auth"
+)]
+async fn mfa_verify_enrollment(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(payload): Json<MfaVerifyEnrollmentRequest>,
+) -> Result<Json<ApiResponse<bool>>, ApiError> {
+    let use_case = orbis_app::usecases::auth::VerifyTotpEnrollmentUseCase {
+        user_repo: state.user_repo.clone(),
+        mfa_factor_repo: state.mfa_factor_repo.clone(),
+        totp_service: state.totp_service.clone(),
+    };
+    let verified = use_case.execute(&ctx, payload.factor_id, &payload.code).await?;
+    Ok(ApiResponse::ok(verified))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/auth/mfa/challenge",
+    request_body = MfaChallengeRequest,
+    responses((status = 200, description = "MFA Challenge resolved and session issued", body = LoginResponse)),
+    tag = "Auth"
+)]
+async fn mfa_challenge(
+    State(state): State<AppState>,
+    Json(payload): Json<MfaChallengeRequest>,
+) -> Result<Json<ApiResponse<LoginResponse>>, ApiError> {
+    let use_case = orbis_app::usecases::auth::VerifyMfaChallengeUseCase {
+        user_repo: state.user_repo.clone(),
+        mfa_factor_repo: state.mfa_factor_repo.clone(),
+        recovery_code_repo: state.recovery_code_repo.clone(),
+        device_repo: state.device_repo.clone(),
+        session_repo: state.session_repo.clone(),
+        totp_service: state.totp_service.clone(),
+        token_service: state.token_service.clone(),
+        password_hasher: state.password_hasher.clone(),
+    };
+    let res = use_case.execute(
+        payload.user_id,
+        &payload.code,
+        payload.device_id,
+        payload.remember_device.unwrap_or(false),
+    ).await?;
+
+    let user = state.user_repo.find_by_id(payload.user_id).await?
+        .ok_or_else(|| ApiError::not_found("User not found"))?;
+
+    Ok(ApiResponse::ok(LoginResponse {
+        token: res.token,
+        refresh_token: res.refresh_token,
+        user: UserDto {
+            id: user.id,
+            org_id: user.org_id,
+            email: user.email,
+            full_name: user.full_name,
+            status: user.status,
+        },
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/auth/identities/google/link",
+    request_body = GoogleAuthRequest,
+    responses((status = 200, description = "Google identity linked successfully", body = UserIdentityDto)),
+    security(("bearer" = [])),
+    tag = "Auth"
+)]
+async fn google_link(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(payload): Json<GoogleAuthRequest>,
+) -> Result<Json<ApiResponse<UserIdentityDto>>, ApiError> {
+    let use_case = orbis_app::usecases::auth::LinkGoogleAccountUseCase {
+        identity_repo: state.identity_repo.clone(),
+        oidc_service: state.oidc_service.clone(),
+    };
+    let identity = use_case.execute(&ctx, &payload.id_token).await?;
+    Ok(ApiResponse::ok(UserIdentityDto {
+        id: identity.id,
+        provider: identity.provider.to_string(),
+        provider_user_id: identity.provider_user_id,
+        email: identity.email,
+        connected_at: identity.connected_at,
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/auth/identities/google/login",
+    request_body = GoogleAuthRequest,
+    responses((status = 200, description = "Logged in with Google", body = LoginResponse)),
+    tag = "Auth"
+)]
+async fn google_login(
+    State(state): State<AppState>,
+    Json(payload): Json<GoogleAuthRequest>,
+) -> Result<Json<ApiResponse<LoginResponse>>, ApiError> {
+    let use_case = orbis_app::usecases::auth::LoginWithGoogleUseCase {
+        identity_repo: state.identity_repo.clone(),
+        user_repo: state.user_repo.clone(),
+        session_repo: state.session_repo.clone(),
+        oidc_service: state.oidc_service.clone(),
+        token_service: state.token_service.clone(),
+    };
+    let res = use_case.execute(&payload.id_token).await?;
+    let user = state.user_repo.find_by_id(res.user_id).await?
+        .ok_or_else(|| ApiError::not_found("User not found"))?;
+
+    Ok(ApiResponse::ok(LoginResponse {
+        token: res.token,
+        refresh_token: res.refresh_token,
+        user: UserDto {
+            id: user.id,
+            org_id: user.org_id,
+            email: user.email,
+            full_name: user.full_name,
+            status: user.status,
+        },
+    }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/auth/devices",
+    responses((status = 200, description = "List of user devices", body = Vec<UserDeviceDto>)),
+    security(("bearer" = [])),
+    tag = "Auth"
+)]
+async fn list_devices(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+) -> Result<Json<ApiResponse<Vec<UserDeviceDto>>>, ApiError> {
+    let use_case = orbis_app::usecases::auth::DeviceManagementUseCase {
+        device_repo: state.device_repo.clone(),
+    };
+    let devices = use_case.list_devices(&ctx).await?;
+    let dtos: Vec<UserDeviceDto> = devices.into_iter().map(|d| UserDeviceDto {
+        id: d.id,
+        device_id: d.device_id,
+        device_name: d.device_name,
+        device_type: d.device_type.to_string(),
+        os: d.os,
+        browser: d.browser,
+        is_trusted: d.is_trusted,
+        last_active_at: d.last_active_at,
+    }).collect();
+    Ok(ApiResponse::ok(dtos))
+}
+
+#[utoipa::path(
+    delete,
+    path = "/api/v1/auth/devices/{id}",
+    params(("id" = Uuid, Path, description = "Device ID to revoke")),
+    responses((status = 200, description = "Device revoked successfully")),
+    security(("bearer" = [])),
+    tag = "Auth"
+)]
+async fn revoke_device(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    axum::extract::Path(id): axum::extract::Path<Uuid>,
+) -> Result<Json<ApiResponse<bool>>, ApiError> {
+    let use_case = orbis_app::usecases::auth::DeviceManagementUseCase {
+        device_repo: state.device_repo.clone(),
+    };
+    use_case.revoke_device(&ctx, id).await?;
+    Ok(ApiResponse::ok(true))
+}
+
 // ── Router ──────────────────────────────────────────────────────
 
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/auth/login", post(login))
         .route("/api/v1/auth/session", get(get_session))
+        .route("/api/v1/auth/mfa/enroll", post(mfa_enroll))
+        .route("/api/v1/auth/mfa/verify-enrollment", post(mfa_verify_enrollment))
+        .route("/api/v1/auth/mfa/challenge", post(mfa_challenge))
+        .route("/api/v1/auth/identities/google/link", post(google_link))
+        .route("/api/v1/auth/identities/google/login", post(google_login))
+        .route("/api/v1/auth/devices", get(list_devices))
+        .route("/api/v1/auth/devices/{id}", axum::routing::delete(revoke_device))
         .route("/api/v1/iam/users", post(register_user).get(list_users))
         .route("/api/v1/iam/users/{id}", get(get_user))
 }
+

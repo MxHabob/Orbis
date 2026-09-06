@@ -36,6 +36,9 @@ use orbis_domain::entities::document::Document;
 use orbis_domain::entities::role::Role;
 use orbis_domain::entities::role_permission::RolePermission;
 use orbis_domain::entities::user_role_assignment::UserRoleAssignment;
+use orbis_domain::entities::identity::UserIdentity;
+use orbis_domain::entities::mfa::{MfaFactor, MfaRecoveryCode};
+use orbis_domain::entities::device::UserDevice;
 use orbis_domain::errors::DomainError;
 use uuid::Uuid;
 
@@ -408,4 +411,39 @@ impl Default for DashboardCounts {
             pending_fees_amount: 0.0,
         }
     }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// IDENTITY, MFA & DEVICES
+// ═══════════════════════════════════════════════════════════════
+
+#[async_trait]
+pub trait UserIdentityRepository: Send + Sync {
+    async fn find_by_provider(&self, provider: &str, provider_user_id: &str) -> Result<Option<UserIdentity>, DomainError>;
+    async fn find_by_user(&self, user_id: Uuid) -> Result<Vec<UserIdentity>, DomainError>;
+    async fn save(&self, identity: &UserIdentity) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait MfaFactorRepository: Send + Sync {
+    async fn find_by_user(&self, user_id: Uuid) -> Result<Vec<MfaFactor>, DomainError>;
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<MfaFactor>, DomainError>;
+    async fn save(&self, factor: &MfaFactor) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait MfaRecoveryCodeRepository: Send + Sync {
+    async fn find_active_by_user(&self, user_id: Uuid) -> Result<Vec<MfaRecoveryCode>, DomainError>;
+    async fn save_all(&self, codes: &[MfaRecoveryCode]) -> Result<(), DomainError>;
+    async fn mark_used(&self, id: Uuid) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait UserDeviceRepository: Send + Sync {
+    async fn find_by_user(&self, user_id: Uuid) -> Result<Vec<UserDevice>, DomainError>;
+    async fn find_by_device_id(&self, user_id: Uuid, device_id: &str) -> Result<Option<UserDevice>, DomainError>;
+    async fn save(&self, device: &UserDevice) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }

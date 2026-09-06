@@ -40,6 +40,7 @@ pub mod m20240901_000037_create_currencies_tables;
 pub mod m20240901_000038_create_student_subjects_table;
 pub mod m20240901_000039_create_pass_fail_policies_table;
 pub mod m20240901_000040_rebuild_report_tables;
+pub mod m20240901_000041_create_identity_and_mfa_tables;
 
 pub struct Migrator;
 
@@ -87,6 +88,8 @@ impl MigratorTrait for Migrator {
             Box::new(m20240901_000038_create_student_subjects_table::Migration),
             Box::new(m20240901_000039_create_pass_fail_policies_table::Migration),
             Box::new(m20240901_000040_rebuild_report_tables::Migration),
+            Box::new(m20240901_000041_create_identity_and_mfa_tables::Migration),
         ]
     }
 }
+
