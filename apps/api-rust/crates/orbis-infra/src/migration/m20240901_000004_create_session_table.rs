@@ -1,5 +1,5 @@
 use sea_orm_migration::{prelude::*, schema::*};
-use super::m20240901_000002_create_user_table::User;
+use super::m20240901_000002_create_user_table::Users;
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -10,24 +10,24 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(Session::Table)
+                    .table(UserSessions::Table)
                     .if_not_exists()
-                    .col(pk_uuid(Session::Id))
-                    .col(uuid(Session::UserId))
-                    .col(string(Session::Token))
-                    .col(string_null(Session::RefreshToken))
-                    .col(boolean(Session::IsCurrent).default(true))
-                    .col(boolean(Session::IsTrusted).default(false))
-                    .col(boolean(Session::MfaVerified).default(false))
-                    .col(timestamp_with_time_zone(Session::ExpiresAt))
-                    .col(timestamp_with_time_zone_null(Session::RefreshExpiresAt))
-                    .col(timestamp_with_time_zone_null(Session::LastActiveAt))
-                    .col(timestamp_with_time_zone(Session::CreatedAt))
+                    .col(pk_uuid(UserSessions::Id))
+                    .col(uuid(UserSessions::UserId))
+                    .col(string(UserSessions::Token))
+                    .col(string_null(UserSessions::RefreshToken))
+                    .col(boolean(UserSessions::IsCurrent).default(true))
+                    .col(boolean(UserSessions::IsTrusted).default(false))
+                    .col(boolean(UserSessions::MfaVerified).default(false))
+                    .col(timestamp_with_time_zone(UserSessions::ExpiresAt))
+                    .col(timestamp_with_time_zone_null(UserSessions::RefreshExpiresAt))
+                    .col(timestamp_with_time_zone_null(UserSessions::LastActiveAt))
+                    .col(timestamp_with_time_zone(UserSessions::CreatedAt))
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk-session-user_id")
-                            .from(Session::Table, Session::UserId)
-                            .to(User::Table, User::Id)
+                            .from(UserSessions::Table, UserSessions::UserId)
+                            .to(Users::Table, Users::Id)
                             .on_delete(ForeignKeyAction::Cascade)
                             .on_update(ForeignKeyAction::Cascade),
                     )
@@ -38,13 +38,13 @@ impl MigrationTrait for Migration {
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
-            .drop_table(Table::drop().table(Session::Table).to_owned())
+            .drop_table(Table::drop().table(UserSessions::Table).to_owned())
             .await
     }
 }
 
 #[derive(DeriveIden)]
-pub enum Session {
+pub enum UserSessions {
     Table,
     Id,
     UserId,

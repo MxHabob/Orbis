@@ -10,23 +10,23 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(Person::Table)
+                    .table(Persons::Table)
                     .if_not_exists()
-                    .col(pk_uuid(Person::Id))
-                    .col(uuid_null(Person::OrgId))
-                    .col(string(Person::FirstName))
-                    .col(string(Person::LastName))
-                    .col(string_null(Person::FullName))
-                    .col(string_null(Person::NationalId))
-                    .col(string_null(Person::Gender))
-                    .col(string_null(Person::DateOfBirth))
-                    .col(string_null(Person::Nationality))
-                    .col(timestamp_with_time_zone(Person::CreatedAt))
-                    .col(timestamp_with_time_zone(Person::UpdatedAt))
+                    .col(pk_uuid(Persons::Id))
+                    .col(uuid_null(Persons::OrgId))
+                    .col(string(Persons::FirstName))
+                    .col(string(Persons::LastName))
+                    .col(string_null(Persons::FullName))
+                    .col(string_null(Persons::NationalId))
+                    .col(string_null(Persons::Gender))
+                    .col(string_null(Persons::DateOfBirth))
+                    .col(string_null(Persons::Nationality))
+                    .col(timestamp_with_time_zone(Persons::CreatedAt))
+                    .col(timestamp_with_time_zone(Persons::UpdatedAt))
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk-person-org_id")
-                            .from(Person::Table, Person::OrgId)
+                            .from(Persons::Table, Persons::OrgId)
                             .to(Organizations::Table, Organizations::Id)
                             .on_delete(ForeignKeyAction::SetNull)
                             .on_update(ForeignKeyAction::Cascade),
@@ -38,13 +38,13 @@ impl MigrationTrait for Migration {
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
-            .drop_table(Table::drop().table(Person::Table).to_owned())
+            .drop_table(Table::drop().table(Persons::Table).to_owned())
             .await
     }
 }
 
 #[derive(DeriveIden)]
-pub enum Person {
+pub enum Persons {
     Table,
     Id,
     OrgId,

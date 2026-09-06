@@ -10,29 +10,29 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(User::Table)
+                    .table(Users::Table)
                     .if_not_exists()
-                    .col(pk_uuid(User::Id))
-                    .col(uuid(User::PersonId))
-                    .col(uuid_null(User::OrgId))
-                    .col(string_null(User::Email).unique_key())
-                    .col(boolean(User::EmailVerified).default(false))
-                    .col(string_null(User::Phone))
-                    .col(boolean(User::PhoneVerified).default(false))
-                    .col(string_null(User::PasswordHash))
-                    .col(boolean(User::MfaEnabled).default(false))
-                    .col(string(User::FullName))
-                    .col(string(User::Status).default("active"))
-                    .col(integer(User::LoginCount).default(0))
-                    .col(integer(User::FailedLogins).default(0))
-                    .col(timestamp_with_time_zone_null(User::LockedUntil))
-                    .col(boolean(User::IsDeleted).default(false))
-                    .col(timestamp_with_time_zone(User::CreatedAt))
-                    .col(timestamp_with_time_zone(User::UpdatedAt))
+                    .col(pk_uuid(Users::Id))
+                    .col(uuid(Users::PersonId))
+                    .col(uuid_null(Users::OrgId))
+                    .col(string_null(Users::Email).unique_key())
+                    .col(boolean(Users::EmailVerified).default(false))
+                    .col(string_null(Users::Phone))
+                    .col(boolean(Users::PhoneVerified).default(false))
+                    .col(string_null(Users::PasswordHash))
+                    .col(boolean(Users::MfaEnabled).default(false))
+                    .col(string(Users::FullName))
+                    .col(string(Users::Status).default("active"))
+                    .col(integer(Users::LoginCount).default(0))
+                    .col(integer(Users::FailedLogins).default(0))
+                    .col(timestamp_with_time_zone_null(Users::LockedUntil))
+                    .col(boolean(Users::IsDeleted).default(false))
+                    .col(timestamp_with_time_zone(Users::CreatedAt))
+                    .col(timestamp_with_time_zone(Users::UpdatedAt))
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk-user-org_id")
-                            .from(User::Table, User::OrgId)
+                            .from(Users::Table, Users::OrgId)
                             .to(Organizations::Table, Organizations::Id)
                             .on_delete(ForeignKeyAction::SetNull)
                             .on_update(ForeignKeyAction::Cascade),
@@ -44,13 +44,13 @@ impl MigrationTrait for Migration {
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
-            .drop_table(Table::drop().table(User::Table).to_owned())
+            .drop_table(Table::drop().table(Users::Table).to_owned())
             .await
     }
 }
 
 #[derive(DeriveIden)]
-pub enum User {
+pub enum Users {
     Table,
     Id,
     PersonId,

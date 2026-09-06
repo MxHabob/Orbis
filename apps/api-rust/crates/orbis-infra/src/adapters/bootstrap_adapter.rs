@@ -97,7 +97,7 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
 
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO person (id, org_id, first_name, last_name, full_name, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        "INSERT INTO persons (id, org_id, first_name, last_name, full_name, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)",
         vec![
             person_id.clone().into(),
             org_id.clone().into(),
@@ -112,7 +112,7 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
     // ── 2. Admin User ──────────────────────────────────────────
     db.execute(Statement::from_sql_and_values(
         db.get_database_backend(),
-        "INSERT INTO user (id, person_id, org_id, email, full_name, password_hash, status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, 'active', $7, $8)",
+        "INSERT INTO users (id, person_id, org_id, email, full_name, password_hash, status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, 'active', $7, $8)",
         vec![
             admin_id.clone().into(),
             person_id.clone().into(),
