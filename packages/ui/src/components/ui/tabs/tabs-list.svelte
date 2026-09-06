@@ -5,6 +5,7 @@ export { tabsListVariants, type TabsListVariant } from "./variants.js";
 <script lang="ts">
 	import { Tabs as TabsPrimitive } from "bits-ui";
 	import { cn } from "../../../utils.js";
+	import { tabsListVariants } from "./variants.js";
 
 	let {
 		ref = $bindable(null),

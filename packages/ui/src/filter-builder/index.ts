@@ -1,5 +1,5 @@
-export * from './types';
-export * from './applyFilter';
+export * from './types.js';
+export * from './applyFilter.js';
 export { default as FilterBuilder } from './FilterBuilder.svelte';
 export { default as FilterRow } from './FilterRow.svelte';
 export { default as FilterFieldPicker } from './FilterFieldPicker.svelte';

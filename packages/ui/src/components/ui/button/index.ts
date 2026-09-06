@@ -4,7 +4,7 @@ import {
   type ButtonSize,
   type ButtonVariant,
   buttonVariants,
-} from "./variants";
+} from "./variants.js";
 
 export {
   Root,

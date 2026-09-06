@@ -5,7 +5,7 @@ import Trigger from "./tabs-trigger.svelte";
 import {
   tabsListVariants,
   type TabsListVariant,
-} from "./variants";
+} from "./variants.js";
 
 export {
   Root,

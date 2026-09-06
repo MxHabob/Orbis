@@ -8,6 +8,9 @@ export {
 </script>
 
 <script lang="ts">
+	import { cn } from "../../../utils.js";
+	import { buttonVariants } from "./variants.js";
+
 	let {
 		class: className,
 		variant = "default",
