@@ -1,52 +1,43 @@
 /**
- * Students domain queries — enrollments.
- * Wraps IPC commands with TanStack Query for automatic caching.
+ * Students domain queries — enrollments and guardians.
+ * Wraps OrbisApiClient with TanStack Query and queryKeys factory.
  */
-import { createQuery, createInfiniteQuery } from "@tanstack/svelte-query";
-import { commands } from "$lib/core/ipc";
+import { createQuery } from "@tanstack/svelte-query";
+import { api, queryKeys } from "$lib/api";
 
 /** All enrollments for an organization. */
-export function createEnrollmentsQuery(orgId: () => string) {
+export function createEnrollmentsQuery(
+  orgId: () => string,
+  filter?: () => { classId?: string; studentId?: string } | undefined,
+) {
   return createQuery(() => ({
-    queryKey: ["enrollments", orgId()],
-    queryFn: () => commands.academic.listEnriched(),
+    queryKey: queryKeys.student.enrollments(filter?.()),
+    queryFn: () => api.listEnrollments(filter?.()),
     enabled: !!orgId(),
-    staleTime: 2 * 60 * 1000, // Student data changes more frequently — 2 min
+    staleTime: 2 * 60 * 1000,
   }));
 }
 
-/** Single enriched enrollment for detail pages. */
+/** Single enrollment for detail pages. */
 export function createEnrollmentQuery(
-  orgId: () => string,
   enrollmentId: () => string,
 ) {
   return createQuery(() => ({
-    queryKey: ["enrollment", orgId(), enrollmentId()],
-    queryFn: () => commands.academic.getEnriched(enrollmentId()),
-    enabled: !!orgId() && !!enrollmentId(),
+    queryKey: queryKeys.student.enrollment(enrollmentId()),
+    queryFn: () => api.getEnrollment(enrollmentId()),
+    enabled: !!enrollmentId(),
     staleTime: 2 * 60 * 1000,
   }));
 }
 
-/** Paginated enrollments query using Cursor-based infinite scrolling. */
-export function createEnrollmentsPaginatedQuery(
-  orgId: () => string,
-  limit: number = 50,
+/** Guardians list for a student. */
+export function createGuardiansQuery(
+  studentId: () => string,
 ) {
-  return createInfiniteQuery(() => ({
-    queryKey: ["enrollments_paginated", orgId(), limit],
-    queryFn: async ({ pageParam }) => {
-      return commands.academic.listPaginatedEnriched(pageParam as string | null, limit);
-    },
-    initialPageParam: null as string | null,
-    getNextPageParam: (lastPage: any) => {
-      // If there's a next_cursor and has_more is true, return next_cursor
-      if (lastPage?.has_more && lastPage?.next_cursor) {
-        return lastPage.next_cursor;
-      }
-      return undefined;
-    },
-    enabled: !!orgId(),
-    staleTime: 2 * 60 * 1000,
+  return createQuery(() => ({
+    queryKey: queryKeys.student.guardians(studentId()),
+    queryFn: () => api.listGuardians(studentId()),
+    enabled: !!studentId(),
+    staleTime: 5 * 60 * 1000,
   }));
 }

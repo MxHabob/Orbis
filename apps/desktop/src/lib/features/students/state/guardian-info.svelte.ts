@@ -1,4 +1,4 @@
-import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api";
 
 export interface GuardianLink {
   id?: string;
@@ -47,23 +47,20 @@ export class GuardianState {
   async populate() {
     if (!this.studentId) return;
     try {
-      const gList = await commands.academic.listGuardiansByStudent(
-        this.orgId,
-        this.studentId,
-      );
+      const gList = await api.listGuardians(this.studentId);
       if (gList && gList.length > 0) {
         this.linkedGuardians = gList.map((g: any) => ({
           id: String(g.id),
-          user_id: g.user_id ? String(g.user_id) : undefined,
+          user_id: g.guardian_id ? String(g.guardian_id) : undefined,
           full_name: g.name || g.name_ar || "",
           phone: g.phone || "",
           email: g.email || "",
           national_id: g.national_id || "",
           relationship: g.relationship || "",
-          relationship_ar: g.relationship_ar || "",
-          is_primary: g.is_primary === 1,
-          is_emergency_contact: g.is_emergency_contact === 1,
-          is_payer: g.is_payer === 1,
+          relationship_ar: g.relationship_ar || g.relationship || "",
+          is_primary: g.is_primary === 1 || g.is_primary === true,
+          is_emergency_contact: g.is_emergency_contact === 1 || g.is_emergency_contact === true,
+          is_payer: g.is_payer === 1 || g.is_payer === true,
           payment_share_percent: g.payment_share_percent,
           occupation: g.occupation,
         }));
@@ -72,6 +69,7 @@ export class GuardianState {
       console.warn("Failed to load guardians:", e);
     }
   }
+
 
   addGuardian() {
     this.linkedGuardians = [

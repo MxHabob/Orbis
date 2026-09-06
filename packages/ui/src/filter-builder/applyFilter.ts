@@ -6,7 +6,6 @@ export function applyFilter<T extends Record<string, any>>(items: T[], filter: U
 
   return items.filter((item) => {
     // 1. Search term (applies across all string fields heuristically, or standard search behavior if needed)
-    // Note: Most pages implement search separately, but if search is in UniversalFilter:
     if (filter.search) {
       const q = filter.search.toLowerCase();
       const matchesSearch = Object.values(item).some(
@@ -21,28 +20,35 @@ export function applyFilter<T extends Record<string, any>>(items: T[], filter: U
     const evaluateCondition = (cond: FilterCondition, data: T): boolean => {
       const val = data[cond.field];
       const target = cond.value;
+      const op = String(cond.operator).toLowerCase();
 
-      switch (cond.operator) {
+      switch (op) {
         case "eq": return val === target;
+        case "ne":
         case "neq": return val !== target;
-        case "gt": return val > target;
-        case "gte": return val >= target;
-        case "lt": return val < target;
-        case "lte": return val <= target;
-        case "contains": return String(val).toLowerCase().includes(String(target).toLowerCase());
-        case "not_contains": return !String(val).toLowerCase().includes(String(target).toLowerCase());
-        case "starts_with": return String(val).toLowerCase().startsWith(String(target).toLowerCase());
-        case "ends_with": return String(val).toLowerCase().endsWith(String(target).toLowerCase());
+        case "gt": return target !== undefined && target !== null && val > target;
+        case "gte": return target !== undefined && target !== null && val >= target;
+        case "lt": return target !== undefined && target !== null && val < target;
+        case "lte": return target !== undefined && target !== null && val <= target;
+        case "like":
+        case "contains": return String(val ?? "").toLowerCase().includes(String(target ?? "").toLowerCase());
+        case "notlike":
+        case "not_contains": return !String(val ?? "").toLowerCase().includes(String(target ?? "").toLowerCase());
+        case "starts_with": return String(val ?? "").toLowerCase().startsWith(String(target ?? "").toLowerCase());
+        case "ends_with": return String(val ?? "").toLowerCase().endsWith(String(target ?? "").toLowerCase());
         case "in": return Array.isArray(target) && target.includes(val);
+        case "notin":
         case "not_in": return Array.isArray(target) && !target.includes(val);
+        case "isnull":
         case "is_null": return val === null || val === undefined;
+        case "isnotnull":
         case "is_not_null": return val !== null && val !== undefined;
-        case "between": return Array.isArray(target) && val >= target[0] && val <= target[1];
+        case "between": return Array.isArray(target) && target.length >= 2 && val >= target[0] && val <= target[1];
         
         // Date operators
-        case "date_before": return val ? isBefore(new Date(val), new Date(target as string)) : false;
-        case "date_after": return val ? isAfter(new Date(val), new Date(target as string)) : false;
-        case "date_between": return val && Array.isArray(target) ? (new Date(val) >= new Date(target[0]) && new Date(val) <= new Date(target[1])) : false;
+        case "date_before": return val && typeof target === "string" ? isBefore(new Date(val), new Date(target)) : false;
+        case "date_after": return val && typeof target === "string" ? isAfter(new Date(val), new Date(target)) : false;
+        case "date_between": return val && Array.isArray(target) && target.length >= 2 ? (new Date(val) >= new Date(target[0]) && new Date(val) <= new Date(target[1])) : false;
         case "date_is_today": return val ? isSameDay(new Date(val), new Date()) : false;
         case "date_in_last": {
           if (!val) return false;

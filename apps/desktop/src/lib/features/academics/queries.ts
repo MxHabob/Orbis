@@ -1,30 +1,28 @@
 /**
  * Academic domain queries — periods, classes, subjects, schedules.
- * Wraps IPC commands with TanStack Query for automatic caching.
- *
- * Migrated: periods → periods, periodId → periodId/periodId.
+ * Wraps OrbisApiClient with TanStack Query for automatic caching.
  */
 import { createQuery } from "@tanstack/svelte-query";
-import { commands } from "$lib/core/ipc";
+import { api, queryKeys } from "$lib/api";
 
 /** All academic periods for current year. */
 export function createPeriodsQuery(orgId: () => string) {
   return createQuery(() => ({
-    queryKey: ["periods", orgId()],
-    queryFn: () => commands.calendar.listAcademicPeriods(),
+    queryKey: queryKeys.calendar.periods(),
+    queryFn: () => api.listAcademicPeriods(),
     enabled: !!orgId(),
     staleTime: 10 * 60 * 1000,
   }));
 }
 
-/** Periods for a specific year (cross-year queries). */
+/** Periods for a specific year. */
 export function createPeriodsByYearQuery(
   orgId: () => string,
   periodId: () => string,
 ) {
   return createQuery(() => ({
-    queryKey: ["periods", orgId(), periodId()],
-    queryFn: () => commands.calendar.listAcademicPeriodsByYear(periodId()),
+    queryKey: queryKeys.calendar.periods(),
+    queryFn: () => api.listAcademicPeriods(),
     enabled: !!orgId() && !!periodId(),
     staleTime: 10 * 60 * 1000,
   }));
@@ -33,8 +31,8 @@ export function createPeriodsByYearQuery(
 /** Classes for an organization. */
 export function createClassesQuery(orgId: () => string) {
   return createQuery(() => ({
-    queryKey: ["classes", orgId()],
-    queryFn: () => commands.academic.listClasses(),
+    queryKey: queryKeys.academic.classes(),
+    queryFn: () => api.listClasses(),
     enabled: !!orgId(),
     staleTime: 5 * 60 * 1000,
   }));
@@ -43,8 +41,8 @@ export function createClassesQuery(orgId: () => string) {
 /** Subjects for an organization. */
 export function createSubjectsQuery(orgId: () => string) {
   return createQuery(() => ({
-    queryKey: ["subjects", orgId()],
-    queryFn: () => commands.academic.listSubjects(),
+    queryKey: queryKeys.academic.subjects(),
+    queryFn: () => api.listSubjects(),
     enabled: !!orgId(),
     staleTime: 10 * 60 * 1000,
   }));
@@ -56,8 +54,8 @@ export function createClassSubjectsQuery(
   periodId: () => string | undefined,
 ) {
   return createQuery(() => ({
-    queryKey: ["class-subjects", classId(), periodId()],
-    queryFn: () => commands.academic.listClassSubjects(classId()!, periodId()!),
+    queryKey: queryKeys.academic.classSubjects(classId()!, periodId()!),
+    queryFn: () => api.listClassSubjects(classId()!, periodId()!),
     enabled: !!classId() && !!periodId(),
     staleTime: 5 * 60 * 1000,
   }));
@@ -71,27 +69,21 @@ export function createAssessmentsQuery(
   },
 ) {
   return createQuery(() => ({
-    queryKey: ["assessments", params().periodId, params().classSubjectId],
-    queryFn: () =>
-      params().classSubjectId
-        ? commands.assessment.listComponentsForClassSubject(
-            params().classSubjectId,
-            params().periodId!,
-          )
-        : commands.assessment.listAssessmentSchemes(),
+    queryKey: queryKeys.assessment.schemes(),
+    queryFn: () => api.listAssessmentSchemes(),
     enabled: !!params().periodId,
     staleTime: 2 * 60 * 1000,
   }));
 }
 
-/** Time slots for an academic year. */
+/** Time slots for an academic period. */
 export function createTimeSlotsQuery(
   orgId: () => string | undefined,
   periodId: () => string | undefined,
 ) {
   return createQuery(() => ({
-    queryKey: ["time-slots", orgId(), periodId()],
-    queryFn: () => commands.scheduling.listTimeSlots(periodId()!),
+    queryKey: queryKeys.scheduling.timeSlots(periodId()!),
+    queryFn: () => api.listTimeSlots(periodId()!),
     enabled: !!orgId() && !!periodId(),
     staleTime: 10 * 60 * 1000,
   }));
@@ -104,9 +96,8 @@ export function createClassScheduleQuery(
   classId: () => string | undefined,
 ) {
   return createQuery(() => ({
-    queryKey: ["class-schedule", orgId(), periodId(), classId()],
-    queryFn: () =>
-      commands.scheduling.listLessonsByClass(periodId()!, classId()!),
+    queryKey: queryKeys.scheduling.lessons({ periodId: periodId() }),
+    queryFn: () => api.listScheduledLessons({ periodId: periodId() }),
     enabled: !!orgId() && !!periodId() && !!classId(),
     staleTime: 2 * 60 * 1000,
   }));
@@ -119,10 +110,10 @@ export function createTeacherScheduleQuery(
   teacherId: () => string | undefined,
 ) {
   return createQuery(() => ({
-    queryKey: ["teacher-schedule", orgId(), periodId(), teacherId()],
-    queryFn: () =>
-      commands.scheduling.listLessonsByTeacher(periodId()!, teacherId()!),
+    queryKey: queryKeys.scheduling.lessons({ periodId: periodId() }),
+    queryFn: () => api.listScheduledLessons({ periodId: periodId() }),
     enabled: !!orgId() && !!periodId() && !!teacherId(),
     staleTime: 2 * 60 * 1000,
   }));
 }
+

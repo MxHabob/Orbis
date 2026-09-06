@@ -2,11 +2,11 @@
 // Svelte 5 Runes-based exam sessions and related UI state.
 // No server data is stored directly in $state lists.
 
-import type { ExamSession, ExamSubject } from "@orbis/sdk";
+import type { ExamSessionDto } from "@orbis/sdk";
 
 class ExamsStore {
   // UI-only selection state
-  activeSession = $state<ExamSession | null>(null);
+  activeSession = $state<ExamSessionDto | null>(null);
 
   // Filters
   searchQuery = $state("");
@@ -15,14 +15,11 @@ class ExamsStore {
   /**
    * Helper to filter session lists using the store's current filters.
    */
-  filterSessions(sessions: ExamSession[]): ExamSession[] {
+  filterSessions(sessions: ExamSessionDto[]): ExamSessionDto[] {
     return sessions.filter((s) => {
       const matchesSearch =
         !this.searchQuery ||
-        (s.name || "").toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-        (s.name_ar || "")
-          .toLowerCase()
-          .includes(this.searchQuery.toLowerCase());
+        (s.name || "").toLowerCase().includes(this.searchQuery.toLowerCase());
 
       const matchesStatus =
         this.statusFilter === "all" || s.status === this.statusFilter;
@@ -31,7 +28,7 @@ class ExamsStore {
     });
   }
 
-  setActiveSession(session: ExamSession | null) {
+  setActiveSession(session: ExamSessionDto | null) {
     this.activeSession = session;
   }
 
@@ -43,3 +40,4 @@ class ExamsStore {
 }
 
 export const examsStore = new ExamsStore();
+

@@ -1,7 +1,9 @@
 import { toast } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
+import { api } from "$lib/api";
 import { INSTITUTION_PROFILES, DEFAULT_PERIOD_TEMPLATES } from "./templates";
+
 import type {
   OnboardingPayload,
   PeriodTemplateDef,
@@ -184,8 +186,8 @@ class OnboardingState {
   save() {
     try {
       const data = {
-        completedSteps: this.completedSteps,
         activeStep: this.activeStep,
+        completedSteps: this.completedSteps,
         profile: this.profile.serialize(),
         calendar: this.calendar.serialize(),
         facilities: this.facilities.serialize(),
@@ -200,21 +202,22 @@ class OnboardingState {
 
   load() {
     try {
-      const saved = localStorage.getItem("orbis_onboarding_state");
-      if (saved) {
-        const data = JSON.parse(saved);
-        if (data.completedSteps) this.completedSteps = data.completedSteps;
-        if (data.activeStep) this.activeStep = data.activeStep;
-
-        // Handle migration from flat state to structured state
-        if (data.profile) {
-          this.profile.deserialize(data.profile);
-          this.calendar.deserialize(data.calendar);
-          this.facilities.deserialize(data.facilities);
-          this.academics.deserialize(data.academics);
-          this.finance.deserialize(data.finance);
-        } else {
-          // Fallback for old state format
+      const raw = localStorage.getItem("orbis_onboarding_state");
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (data && typeof data === "object") {
+          this.activeStep = data.activeStep ?? 0;
+          this.completedSteps = data.completedSteps ?? [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+          ];
           this.profile.deserialize(data);
           this.calendar.deserialize(data);
           this.facilities.deserialize(data);
@@ -230,59 +233,21 @@ class OnboardingState {
   async loadExistingOrg(orgId: string) {
     if (!orgId) return;
     try {
-      const { commands } = await import("$lib/core/ipc");
-      const org = await commands.organization.getMain().catch(() => null) || await commands.organization.getOrganization().catch(() => null);
+      const org = await api.getCurrentOrg().catch(() => null);
       if (org) {
         // Sync org profile from CLI-created data
         if (org.name) {
           this.profile.orgName = org.name;
           this.profile.rootUnitName = org.name;
         }
-        if (org.name_ar) {
-          this.profile.orgNameAr = org.name_ar;
-          this.profile.rootUnitNameAr = org.name_ar;
-        }
         if (org.timezone) this.profile.timezone = org.timezone;
         if (org.locale) this.profile.locale = org.locale;
-        if (org.currency) this.profile.currency = org.currency;
-
-        // Read institution type from org settings (set by CLI blueprint)
-        let detectedType = "";
-        if (org.settings) {
-          try {
-            const settings = typeof org.settings === 'string' ? JSON.parse(org.settings) : org.settings;
-            if (settings?.registration_config?.institution_type) {
-              detectedType = settings.registration_config.institution_type;
-            }
-          } catch { /* settings parsing is optional */ }
-        }
 
         // Fallback: check period templates if not found in settings
         await this.loadTemplates(orgId).catch(() => {});
-        if (!detectedType && this.calendar.periodTemplates && this.calendar.periodTemplates.length > 0) {
-          const tmpl = this.calendar.periodTemplates.find((t: any) => t.is_default || t.isDefault) || this.calendar.periodTemplates[0];
-          if (tmpl && ((tmpl as any).institution_type || (tmpl as any).institutionType)) {
-            detectedType = (tmpl as any).institution_type || (tmpl as any).institutionType;
-          }
-        }
+        this.selectInstitutionType("school");
 
-        if (detectedType) {
-          // Normalize alias if needed ("training_center" <-> "institute")
-          if (!INSTITUTION_PROFILES[detectedType]) {
-            if (detectedType === "training_center" && INSTITUTION_PROFILES["institute"]) {
-              detectedType = "institute";
-            } else if (detectedType === "institute" && INSTITUTION_PROFILES["training_center"]) {
-              detectedType = "training_center";
-            }
-          }
-          if (INSTITUTION_PROFILES[detectedType]) {
-            this.selectInstitutionType(detectedType);
-          }
-        } else if (!this.profile.institutionType) {
-          this.selectInstitutionType("school");
-        }
-
-        const units = await commands.organization.listOrgUnits().catch(() => []);
+        const units = await api.listOrgUnits().catch(() => []);
         const rootUnit = (units || []).find(
           (unit: any) =>
             !unit.parent_id &&
@@ -300,7 +265,7 @@ class OnboardingState {
           this.facilities.activeBuildingTab = this.facilities.buildings[0] || "";
         }
 
-        const rooms = await commands.scheduling.listRooms().catch(() => []);
+        const rooms = await api.listRooms().catch(() => []);
         if (rooms.length > 0) {
           this.facilities.rooms = (rooms || []).map((room: any): Room => ({
             id: String(room.id),
@@ -325,11 +290,11 @@ class OnboardingState {
       }
 
       // Sync currency from finance module (CLI seeds currencies)
-      const currencies = await commands.finance.listCurrencies().catch(() => []);
+      const currencies = await api.listCurrencies().catch(() => []);
       if (currencies && currencies.length > 0) {
-        const mainCurr = currencies.find((c: any) => c.isBase || c.is_base) || currencies[0];
-        if (mainCurr && mainCurr.code) {
-          this.profile.currency = mainCurr.code;
+        const mainCurr = currencies[0];
+        if (mainCurr && mainCurr.id) {
+          this.profile.currency = mainCurr.id;
         }
       }
     } catch (e) {
@@ -531,18 +496,9 @@ class OnboardingState {
   }
 
   // ── Step 5: Time Slot Management ──────────────────────────────────────
-  async loadTemplates(orgId: string) {
+  async loadTemplates(_orgId?: string) {
     try {
-      const { commands } = await import("$lib/core/ipc");
-      let fetched: any = null;
-      if (commands.organization?.getPeriodTemplates) {
-        fetched = await commands.organization.getPeriodTemplates().catch(() => null);
-      }
-      if (Array.isArray(fetched) && fetched.length > 0 && fetched.some((t: any) => t.structure)) {
-        this.calendar.periodTemplates = fetched;
-      } else {
-        this.calendar.periodTemplates = DEFAULT_PERIOD_TEMPLATES;
-      }
+      this.calendar.periodTemplates = DEFAULT_PERIOD_TEMPLATES;
       if (
         this.calendar.periodTemplates.length > 0 &&
         (!this.calendar.selectedTemplateId ||
@@ -674,50 +630,20 @@ class OnboardingState {
   }
 
   // ظ¤?ظ¤? Build Final Payload ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?ظ¤?
+  // ── Build Final Payload ────────────────────────────────────────────────
   buildPayload(orgId: string): OnboardingPayload {
-    // Use dynamic year-based ID instead of hardcoded Hijri 1447
     const yearStart = new Date(this.calendar.startDate).getFullYear();
     const periodPeriodId = `period-${yearStart}-${orgId}`;
-    const startMs = new Date(this.calendar.startDate).getTime();
-    const endMs = new Date(this.calendar.endDate).getTime();
-    const totalDays = Math.ceil((endMs - startMs) / (1000 * 60 * 60 * 24));
 
-    let periods: PeriodEntry[] = [
-      {
-        id: periodPeriodId,
-        parent_id: null,
-        name: this.calendar.academicYearName,
-        name_ar: this.calendar.academicYearNameAr,
-        start_date: this.calendar.startDate,
-        end_date: this.calendar.endDate,
-        period_type: "year",
-        weight: null,
-      },
-    ];
-
-    const template = this.calendar.periodTemplates.find(
-      (t) => t.id === this.calendar.selectedTemplateId,
-    );
-
-    if (template && template.structure) {
-      let currentTermStartMs = startMs;
-      template.structure.forEach((term, idx) => {
-        const termDurationDays = Math.round((term.weight / 100) * totalDays);
-        const termEntries = this.generatePeriodsFromTemplate(
-          term,
-          periodPeriodId,
-          orgId,
-          startMs,
-          totalDays,
-          currentTermStartMs,
-          totalDays,
-          1,
-          idx + 1,
-        );
-        periods = periods.concat(termEntries);
-        currentTermStartMs += termDurationDays * 24 * 60 * 60 * 1000;
-      });
-    }
+    const rooms: Room[] = this.facilities.rooms.map((r, i) => ({
+      id: r.id || `room-${i}-${orgId}`,
+      name: r.name,
+      name_ar: r.name_ar,
+      capacity: r.capacity || 30,
+      room_type: r.room_type || "classroom",
+      building: r.building,
+      floor: r.floor,
+    }));
 
     const classes: ClassEntry[] = [];
     for (const gl of this.academics.gradeLevels) {
@@ -734,36 +660,44 @@ class OnboardingState {
       }
     }
 
-    const activeSubjects: SubjectEntry[] = this.academics.subjects
-      .filter((s) => s.enabled)
+    const subjects: SubjectEntry[] = this.academics.subjects
+      .filter((s) => s.name.trim())
       .map((s, idx) => ({
         id: `subject-${s.code.toLowerCase()}-${orgId}`,
         code: s.code,
         name: s.name,
         name_ar: s.name_ar,
-        color: s.color,
-        icon: s.icon,
+        color: s.color || "#4F46E5",
+        icon: s.icon || "Book",
         sort_order: idx + 1,
       }));
 
     return {
       org_name: this.profile.orgName,
       org_name_ar: this.profile.orgNameAr,
+      currency: this.profile.currency,
       timezone: this.profile.timezone,
       locale: this.profile.locale,
-      currency: this.profile.currency,
       root_unit_id: `unit-${orgId}`,
       root_unit_name: this.profile.rootUnitName,
       root_unit_name_ar: this.profile.rootUnitNameAr,
-      periods,
-      time_slots: this.academics.timeSlots,
-      rooms: this.facilities.rooms.map((r) => ({
-        ...r,
-        id: `room-${r.id}-${orgId}`,
-      })),
-      subjects: activeSubjects,
+      periods: [
+        {
+          id: periodPeriodId,
+          parent_id: null,
+          name: this.calendar.academicYearName,
+          name_ar: this.calendar.academicYearNameAr,
+          start_date: this.calendar.startDate,
+          end_date: this.calendar.endDate,
+          period_type: "year",
+          weight: null,
+        },
+      ],
+      rooms,
       classes,
-      registration_fees: $state.snapshot(this.finance.registrationFees),
+      subjects,
+      time_slots: this.academics.timeSlots,
+      registration_fees: this.finance.registrationFees,
     };
   }
 
@@ -776,60 +710,27 @@ class OnboardingState {
       if (!orgId) throw new Error(m.onboarding_err_active_org());
 
       const payload = this.buildPayload(orgId);
-      const { commands } = await import("$lib/core/ipc");
 
       // ── Step 1: Update Organization Base Currency, Locale, Timezone ──
-      const chosenCurrency = this.profile.currency || "SAR";
-      const profileDef = INSTITUTION_PROFILES[this.profile.institutionType] || INSTITUTION_PROFILES.school;
-      const settingsObj = {
-        registration: {
-          institution_type: this.profile.institutionType,
-          student_number_pattern: this.profile.studentNumberPattern || profileDef.numberingPattern,
-          academic_stages: this.academics.gradeLevels
-            .filter((gl) => gl.enabled)
-            .map((gl) => gl.level),
-          required_fields: this.profile.requiredFields,
-          active_fields: this.profile.activeFields,
-          prevent_duplicates: this.profile.preventDuplicates,
-          required_documents: this.profile.requiredDocumentsList,
-          require_approval: profileDef.policySettings?.requires_approval ?? false,
-          allow_no_guardian: profileDef.policySettings?.allow_no_guardian ?? false,
-          auto_assign_fees: profileDef.policySettings?.auto_assign_fees ?? true,
-          allow_duplicate_national_id: profileDef.policySettings?.allow_duplicate_national_id ?? false,
-        },
-      };
-
-      const org = (await commands.organization.getOrganization().catch(() => null)) as any;
+      const org = await api.getCurrentOrg().catch(() => null);
       if (org) {
         const updateRequest = {
-          org_id: orgId,
           name: this.profile.orgName || org.name,
-          logo: org.logo || null,
           primary_color: org.primary_color,
-          currency: chosenCurrency, // Force user's selected base currency
           timezone: this.profile.timezone || org.timezone,
           locale: this.profile.locale || org.locale,
-          date_format: org.date_format,
-          hijri_enabled: org.hijri_enabled,
         };
-        await commands.organization.updateOrganization(updateRequest).catch(e => console.warn("Update org warning:", e));
-        await commands.organization.updateSettings({
-          registration: settingsObj.registration,
-        }).catch(e => console.warn("Update organization settings warning:", e));
+        await api.updateCurrentOrg(updateRequest).catch((e: any) => console.warn("Update org warning:", e));
       }
 
-      // Currency is already created by the backend bootstrap_full().
-      // Only ensure the base currency flag is set if needed.
-
       // ── Step 2: Create Organizational Structure (Org Units) ──────────
-      // Hierarchy: Organization (Root) -> Branch (فرع) -> Building (مبنى) -> Floor (طابق) -> Room (قاعة/مرفق)
       let rootUnitId = "";
       let branchUnitId = "";
       let existingUnits: any[] = [];
       try {
-        existingUnits = await commands.organization.listOrgUnits().catch(() => []);
+        existingUnits = await api.listOrgUnits().catch(() => []);
         
-        // 1. Root Organization Unit (المنظمة الرئيسية)
+        // 1. Root Organization Unit
         const root = existingUnits?.find(
           (u: any) =>
             (u.unit_type === "root" || u.unitType === "root") &&
@@ -838,10 +739,10 @@ class OnboardingState {
         if (root) {
           rootUnitId = root.id;
         } else {
-          const created = await commands.organization.createOrgUnit({
+          const created = await api.createOrgUnit({
             name: this.profile.rootUnitName || this.profile.orgName,
-            name_ar: this.profile.rootUnitNameAr || this.profile.orgNameAr,
             unit_type: "root",
+            data_isolation: "standard",
           });
           rootUnitId = created?.id || "";
           if (created) existingUnits = [...existingUnits, created];
@@ -850,7 +751,7 @@ class OnboardingState {
           throw new Error(m.onboarding_err_root_unit_creation());
         }
 
-        // 2. Main Branch Unit (الفرع الرئيسي) under Organization Root
+        // 2. Main Branch Unit
         const existingBranch = existingUnits?.find(
           (u: any) =>
             u.parent_id === rootUnitId &&
@@ -859,11 +760,11 @@ class OnboardingState {
         if (existingBranch) {
           branchUnitId = existingBranch.id;
         } else {
-          const createdBranch = await commands.organization.createOrgUnit({
+          const createdBranch = await api.createOrgUnit({
             name: "Main Branch",
-            name_ar: "الفرع الرئيسي",
             parent_id: rootUnitId,
             unit_type: "branch",
+            data_isolation: "standard",
           });
           branchUnitId = createdBranch?.id || rootUnitId;
           if (createdBranch) existingUnits = [...existingUnits, createdBranch];
@@ -874,7 +775,7 @@ class OnboardingState {
         );
       }
 
-      // 3. Buildings under Branch (parent_id = branchUnitId)
+      // 3. Buildings under Branch
       const buildingUnitIds: Record<string, string> = {};
       for (const bldName of this.facilities.buildings) {
         if (!bldName || !bldName.trim()) continue;
@@ -886,11 +787,11 @@ class OnboardingState {
               (unit.unit_type === "building" || unit.unitType === "building") &&
               String(unit.name || "").trim().toLowerCase() === normalizedBuildingName,
           );
-          const building = existingBuilding || await commands.organization.createOrgUnit({
+          const building = existingBuilding || await api.createOrgUnit({
               name: bldName.trim(),
-              name_ar: bldName.trim(),
               parent_id: branchUnitId,
               unit_type: "building",
+              data_isolation: "standard",
             });
           if (!building?.id) continue;
           buildingUnitIds[bldName] = building.id;
@@ -900,134 +801,34 @@ class OnboardingState {
         }
       }
 
-      // 4. Floors under Building (parent_id = buildingId)
-      const floorUnitIds: Record<string, string> = {};
-      for (const room of this.facilities.rooms) {
-        const buildingId = buildingUnitIds[room.building];
-        if (!buildingId) continue;
-
-        const floor = Number(room.floor) || 0;
-        const floorKey = `${room.building}:${floor}`;
-        if (!floorUnitIds[floorKey]) {
-          const floorName = `Floor ${floor}`;
-          const existingFloor = existingUnits?.find(
-            (unit: any) =>
-              unit.parent_id === buildingId &&
-              (unit.unit_type === "floor" || unit.unitType === "floor") &&
-              Number(unit.floor) === floor,
-          );
-          const floorUnit = existingFloor || await commands.organization.createOrgUnit({
-              name: floorName,
-              name_ar: `الطابق ${floor}`,
-              parent_id: buildingId,
-              unit_type: "floor",
-              building: room.building,
-              floor,
-            });
-          if (!floorUnit?.id) continue;
-          floorUnitIds[floorKey] = floorUnit.id;
-          if (!existingFloor) existingUnits = [...existingUnits, floorUnit];
-        }
-
-        // 5. Rooms under Floor (parent_id = floorUnitId)
-        const floorUnitId = floorUnitIds[floorKey];
-        const roomExists = existingUnits?.some(
-          (unit: any) =>
-            unit.parent_id === floorUnitId &&
-            (unit.unit_type === "room" || unit.unitType === "room") &&
-            String(unit.name || "").trim() === String(room.name || room.name_ar).trim(),
-        );
-        if (roomExists) continue;
-
-        try {
-          const roomUnit = await commands.organization.createOrgUnit({
-            name: room.name || room.name_ar,
-            name_ar: room.name_ar || room.name,
-            parent_id: floorUnitId,
-            unit_type: "room",
-            capacity: Number(room.capacity) || 0,
-            room_number: room.name || room.name_ar,
-            building: room.building,
-            floor,
-          });
-          if (roomUnit?.id) existingUnits = [...existingUnits, roomUnit];
-        } catch (e) {
-          console.warn(`Room unit "${room.name}" creation warning:`, e);
-        }
-      }
-
       // ── Step 3: Create Academic Year & Periods ────────────────────────
-      let rootPeriodId = "";
-      const todayStr = new Date().toISOString().slice(0, 10);
+      let rootYearId = "";
+      let activePeriodId = "";
       try {
-        const rootPeriod = await commands.calendar.createAcademicPeriod({
+        const rootYear = await api.createAcademicYear({
           name: this.calendar.academicYearName || "Academic Year",
-          name_ar: this.calendar.academicYearNameAr || "العام الدراسي",
           start_date: this.calendar.startDate,
           end_date: this.calendar.endDate,
-          period_type: "year",
-          parent_id: null,
-          status: "active",
-          is_enrollment_open: 1,
         });
-        rootPeriodId = rootPeriod?.id || "";
-        console.log("Root academic period created successfully with ID:", rootPeriodId);
+        rootYearId = rootYear?.id || "";
+
+        const rootPeriod = await api.createAcademicPeriod({
+          year_id: rootYearId,
+          name: "Semester 1",
+          start_date: this.calendar.startDate,
+          end_date: this.calendar.endDate,
+          period_type: "semester",
+        });
+        activePeriodId = rootPeriod?.id || "";
       } catch (e) {
-        console.error("Root period creation failed:", e);
+        console.error("Year/period creation failed:", e);
       }
 
-      // Create child periods (Semesters / Quarters) under rootPeriodId
-      const createdPeriodsMap: Record<string, string> = {};
-      if (rootPeriodId) {
-        createdPeriodsMap["root"] = rootPeriodId;
-        if (payload.periods.length > 0 && payload.periods[0].id) {
-          createdPeriodsMap[payload.periods[0].id] = rootPeriodId;
-        }
-
-        // Process child periods from payload
-        for (let pIdx = 0; pIdx < payload.periods.slice(1).length; pIdx++) {
-          const period = payload.periods.slice(1)[pIdx];
-          try {
-            let parentId = rootPeriodId;
-            if (period.parent_id && createdPeriodsMap[period.parent_id]) {
-              parentId = createdPeriodsMap[period.parent_id];
-            }
-
-            // The first semester / active period starts active and open for enrollment
-            const isFirstPeriod = pIdx === 0;
-            const periodStatus = isFirstPeriod || (period.start_date <= todayStr && todayStr <= period.end_date)
-              ? "active"
-              : "planned";
-            const isEnrollOpen = isFirstPeriod || (period.start_date <= todayStr && todayStr <= period.end_date)
-              ? 1
-              : 0;
-
-            const created = await commands.calendar.createAcademicPeriod({
-              parent_id: parentId,
-              name: period.name,
-              name_ar: period.name_ar,
-              start_date: period.start_date,
-              end_date: period.end_date,
-              period_type: period.period_type,
-              weight: period.weight ? Math.round(Number(period.weight)) : undefined,
-              status: periodStatus,
-              is_enrollment_open: isEnrollOpen,
-            });
-            if (created?.id && period.id) {
-              createdPeriodsMap[period.id] = created.id;
-            }
-          } catch (e) {
-            console.error(`Child period "${period.name}" creation failed:`, e);
-          }
-        }
-      }
-
-      const activePeriodId = rootPeriodId;
       if (!activePeriodId) {
-        throw new Error("Failed to create root academic period in database");
+        activePeriodId = rootYearId;
       }
 
-      // ── Step 4: Create Classes (الفصول) ───────────────────────────────
+      // ── Step 4: Create Classes ────────────────────────────────────────
       const createdClassIds: string[] = [];
       const targetClassOrgUnitId = branchUnitId || rootUnitId;
       for (const gl of this.academics.gradeLevels) {
@@ -1035,15 +836,11 @@ class OnboardingState {
 
         for (const div of gl.divisions) {
           try {
-            const createdClass = await commands.academic.createClass({
-              org_unit_id: targetClassOrgUnitId,
+            const createdClass = await api.createClass({
+              unit_id: targetClassOrgUnitId,
               period_id: activePeriodId,
               name: `${gl.name} - ${div}`,
-              name_ar: `${gl.name_ar} - الشعبة ${div}`,
-              grade_level: gl.level,
-              capacity: 30,
-              division: div,
-              color: gl.color,
+              level: gl.level,
             });
             if (createdClass?.id) {
               createdClassIds.push(createdClass.id);
@@ -1054,52 +851,43 @@ class OnboardingState {
         }
       }
 
-      // ── Step 5: Create Time Slots (الحصص اليومية) ─────────────────────
+      // ── Step 5: Create Time Slots ─────────────────────────────────────
       for (let i = 0; i < this.academics.timeSlots.length; i++) {
         const slot = this.academics.timeSlots[i];
-        const duration = calculateDurationMinutes(slot.start_time, slot.end_time);
         try {
-          await commands.scheduling.createTimeSlot({
+          await api.createTimeSlot({
             period_id: activePeriodId,
-            slot_number: i + 1,
-            name: slot.name,
-            name_ar: slot.name_ar,
+            slot_index: i + 1,
             start_time: slot.start_time,
             end_time: slot.end_time,
-            duration_minutes: duration,
-            is_break: slot.is_break,
-            break_type: slot.break_type,
-            applicable_days: slot.applicable_days.join(","),
+            day_of_week: 1,
           });
         } catch (e) {
           console.warn(`Time slot "${slot.name}" creation warning:`, e);
         }
       }
 
-      // ── Step 6: Create Rooms (القاعات الدراسية) ──────────────────────
+      // ── Step 6: Create Rooms ──────────────────────────────────────────
       for (const room of payload.rooms) {
         try {
-          await commands.scheduling.createRoom({
+          await api.createRoom({
             name: room.name,
-            name_ar: room.name_ar,
             capacity: room.capacity || 30,
             room_type: room.room_type || "classroom",
-            building: room.building,
-            floor: room.floor,
           });
         } catch (e) {
           console.warn(`Room "${room.name}" creation warning:`, e);
         }
       }
 
-      // ── Step 7: Create Subjects (المواد الدراسية) ─────────────────────
+      // ── Step 7: Create Subjects ───────────────────────────────────────
       const createdSubjectIds: string[] = [];
       for (const subj of payload.subjects) {
         try {
-          const createdSubj = await commands.academic.createSubject({
+          const createdSubj = await api.createSubject({
             code: subj.code,
             name: subj.name,
-            name_ar: subj.name_ar,
+            is_core: true,
           });
           if (createdSubj?.id) {
             createdSubjectIds.push(createdSubj.id);
@@ -1110,74 +898,19 @@ class OnboardingState {
       }
 
       // ── Step 7b: Auto-allocate Curriculum (class_subjects) ───────────
-      // For Schools: Curriculums/subjects are continuous throughout the entire academic year (applied to root year AND all semester periods).
-      // For Universities / Institutes: Allocated for the active semester/period.
-      const targetPeriodIds =
-        this.profile.institutionType === "school"
-          ? Array.from(new Set([activePeriodId, ...Object.values(createdPeriodsMap)].filter(Boolean)))
-          : [activePeriodId];
-
       for (const classId of createdClassIds) {
         for (const subjId of createdSubjectIds) {
-          for (const targetPeriodId of targetPeriodIds) {
-            try {
-              await commands.academic.createClassSubject({
-                class_id: classId,
-                subject_id: subjId,
-                period_id: targetPeriodId,
-                weekly_hours: 4,
-              });
-            } catch (csErr) {
-              console.warn("Class-subject allocation warning:", csErr);
-            }
-          }
-        }
-      }
-
-      // ── Step 8: Create Fee Templates (الرسوم) ────────────────────────
-      const revenueAccountCode =
-        this.profile.institutionType === "university"
-          ? "4101"
-          : this.profile.institutionType === "training_center" ||
-              this.profile.institutionType === "institute"
-            ? "4105"
-            : "4103";
-      const receivableAccountCode = "110301";
-
-      for (const gl of this.academics.gradeLevels) {
-        if (!gl.enabled) continue;
-        const amount = this.finance.registrationFees[gl.level] || 0;
-        if (amount > 0) {
-          const req = {
-            name: `${gl.name} Registration Fee`,
-            name_ar: `رسوم تسجيل ${gl.name_ar}`,
-            code: `REG_${gl.level.toUpperCase()}`,
-            category: "tuition",
-            default_amount: Number(amount),
-            revenue_account_id: `${orgId}-acc-${revenueAccountCode}`,
-            receivable_account_id: `${orgId}-acc-${receivableAccountCode}`,
-            applicable_levels: JSON.stringify({ levels: [gl.level] }),
-            frequency: "once",
-            installment_config: null,
-            late_fee_rules: null,
-            is_mandatory: true,
-            is_active: true,
-          };
           try {
-            await commands.finance.createFeeTemplate(req as any);
-          } catch (feeErr) {
-            console.warn(`Fee template for ${gl.level} warning:`, feeErr);
+            await api.assignClassSubject({
+              class_id: classId,
+              subject_id: subjId,
+              period_id: activePeriodId,
+              primary_teacher_id: "",
+            });
+          } catch (csErr) {
+            console.warn("Class-subject allocation warning:", csErr);
           }
         }
-      }
-
-      // ── Step 9: Autopilot Zero-Day Kickoff & Diagnostics ──────────────
-      try {
-        await commands.ai?.autopilotRunTick?.();
-        const diag = await commands.ai?.autopilotGetDiagnostics?.();
-        console.log("Autopilot zero-day kickoff completed:", diag);
-      } catch (apErr) {
-        console.warn("Autopilot kickoff notification:", apErr);
       }
 
       localStorage.removeItem("orbis_onboarding_state");

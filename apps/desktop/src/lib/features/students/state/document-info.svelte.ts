@@ -1,5 +1,5 @@
 import * as m from "$lib/paraglide/messages";
-import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api";
 
 export class DocumentInfoState {
   orgId: string;
@@ -29,12 +29,8 @@ export class DocumentInfoState {
     if (!originalStudent || !this.studentId) return;
 
     try {
-      const studentDocs = (await commands.document.listDocuments(
-        null,
-        originalStudent.student_id,
-        null,
-        null,
-      )) as any[];
+      const studentDocs = await api.listDocuments();
+
       const submitted: any[] = [];
       const requiredDocNames =
         this.orgRequiredDocuments.length > 0

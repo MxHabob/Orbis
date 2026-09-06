@@ -13,12 +13,15 @@
 
 export type { OrbisApiClient } from './types';
 export * from './types';
+export { queryKeys } from './query-keys';
+export { api } from './client';
 
 import type { OrbisApiClient } from './types';
 import { LocalClient } from './local-client';
 import { RemoteClient } from './remote-client';
 
 let _instance: OrbisApiClient | null = null;
+
 
 /**
  * Detect whether we are running inside a Tauri webview.

@@ -1,4 +1,4 @@
-import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api";
 
 export class FinancialInfoState {
   orgId: string;
@@ -20,12 +20,9 @@ export class FinancialInfoState {
   }
 
   async init() {
-    const [feeTpls, discountTpls] = await Promise.all([
-      commands.finance.listFeeTemplates(),
-      commands.finance.listDiscounts(),
-    ]);
+    const feeTpls = await api.listFeeTemplates().catch(() => []);
     this.feeTemplates = feeTpls || [];
-    this.discountTemplates = discountTpls || [];
+    this.discountTemplates = [];
 
     const feeMap: Record<string, { checked: boolean; amount: number }> = {};
     for (const fTpl of this.feeTemplates) {
@@ -57,9 +54,10 @@ export class FinancialInfoState {
 
     if (this.studentId) {
       try {
-        const studentFees = await commands.finance.listStudentFeesByEnrollment(
-          this.studentId,
-        );
+        const studentFees = await api.listStudentFees({
+          enrollmentId: this.studentId,
+        });
+
         for (const fee of studentFees as any[]) {
           const feeTemplateId = fee.fee_template_id as string;
           if (feeTemplateId && this.selectedOptionalFees[feeTemplateId]) {

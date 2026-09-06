@@ -1,9 +1,8 @@
-import * as m from "$lib/paraglide/messages";
 /**
  * Workflow & Approval queries.
  */
 import { createQuery } from "@tanstack/svelte-query";
-import { commands } from "$lib/core/ipc";
+import { api, queryKeys } from "$lib/api";
 
 export function createPendingApprovalsQuery(
   orgId: () => string,
@@ -11,7 +10,7 @@ export function createPendingApprovalsQuery(
 ) {
   return createQuery(() => ({
     queryKey: ["pending-approvals", orgId(), approverRole()],
-    queryFn: () => commands.enrollment_workflow.listJobs(),
+    queryFn: () => api.listEnrollments(),
     enabled: !!orgId() && !!approverRole(),
     staleTime: 60 * 1000,
   }));
@@ -23,8 +22,7 @@ export function createOverrideRequestsQuery(
 ) {
   return createQuery(() => ({
     queryKey: ["override-requests", orgId(), params ? params() : {}],
-    queryFn: () =>
-      commands.enrollment_workflow.listJobs(),
+    queryFn: () => api.listEnrollments(),
     enabled: !!orgId(),
     staleTime: 60 * 1000,
   }));
@@ -32,9 +30,10 @@ export function createOverrideRequestsQuery(
 
 export function createOverrideDetailQuery(requestId: () => string) {
   return createQuery(() => ({
-    queryKey: ["override-detail", requestId()],
-    queryFn: () => commands.enrollment_workflow.getJob(requestId()),
+    queryKey: queryKeys.student.enrollment(requestId()),
+    queryFn: () => api.getEnrollment(requestId()),
     enabled: !!requestId(),
     staleTime: 30 * 1000,
   }));
 }
+

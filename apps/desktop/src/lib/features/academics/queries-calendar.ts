@@ -1,12 +1,10 @@
-import * as m from "$lib/paraglide/messages";
 /**
  * Academic Calendar & Policy queries.
- * Migrated: calendar events → periods, periodId → periodId.
  */
 import { createQuery } from "@tanstack/svelte-query";
-import { commands } from "$lib/core/ipc";
+import { api, queryKeys } from "$lib/api";
 
-/** Periods for a given year (replaces calendar events). */
+/** Periods for a given year. */
 export function createCalendarEventsQuery(
   orgId: string | (() => string),
   periodId: string | (() => string),
@@ -14,19 +12,19 @@ export function createCalendarEventsQuery(
   const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
   const getPeriodId = typeof periodId === "function" ? periodId : () => periodId;
   return createQuery(() => ({
-    queryKey: ["calendar-periods", getOrgId(), getPeriodId()],
-    queryFn: () => commands.calendar.listAcademicPeriodsByYear(getPeriodId()),
+    queryKey: queryKeys.calendar.periods(),
+    queryFn: () => api.listAcademicPeriods(),
     enabled: !!getOrgId() && !!getPeriodId(),
     staleTime: 5 * 60 * 1000,
   }));
 }
 
-/** Pending/active periods (replaces pending calendar events). */
+/** Pending/active periods. */
 export function createPendingCalendarEventsQuery(orgId: string | (() => string)) {
   const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
   return createQuery(() => ({
-    queryKey: ["calendar-pending", getOrgId()],
-    queryFn: () => commands.calendar.listAcademicPeriods(),
+    queryKey: queryKeys.calendar.periods(),
+    queryFn: () => api.listAcademicPeriods(),
     enabled: !!getOrgId(),
     staleTime: 2 * 60 * 1000,
   }));
@@ -36,9 +34,10 @@ export function createPendingCalendarEventsQuery(orgId: string | (() => string))
 export function createOrgPolicyQuery(orgId: string | (() => string)) {
   const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
   return createQuery(() => ({
-    queryKey: ["org-policy", getOrgId()],
-    queryFn: () => commands.platform_policy.getAutopilotConfig(getOrgId()),
+    queryKey: queryKeys.org.settings(),
+    queryFn: () => api.getSettings(),
     enabled: !!getOrgId(),
     staleTime: 30 * 60 * 1000,
   }));
 }
+

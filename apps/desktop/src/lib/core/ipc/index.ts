@@ -28,3 +28,7 @@ export { dedup } from "./dedup";
 export { prefetchRouteData } from "./prefetch";
 export { loadPageBundle } from "./batch";
 export type { CursorRequest, CursorPage, PageBundleResult } from "./batch";
+
+export type { UserDto as User, SessionResponse as UserSession } from "$lib/api/types";
+export * from "$lib/api/types";
+

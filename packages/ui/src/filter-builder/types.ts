@@ -13,17 +13,26 @@ export enum FilterOperator {
     IsNotNull = "IsNotNull",
 }
 
-export type FilterValue = string | number | boolean | Array<string | number>;
+export type FilterOperatorType =
+    | FilterOperator
+    | "Eq" | "Ne" | "Gt" | "Gte" | "Lt" | "Lte" | "Like" | "NotLike" | "In" | "NotIn" | "IsNull" | "IsNotNull"
+    | "eq" | "neq" | "gt" | "gte" | "lt" | "lte" | "contains" | "not_contains"
+    | "starts_with" | "ends_with" | "in" | "not_in" | "is_null" | "is_not_null" | "between"
+    | "date_before" | "date_after" | "date_between" | "date_is_today" | "date_in_last"
+    | "date_is_this_week" | "date_is_this_month" | "bool_true" | "bool_false";
+
+export type FilterValue = string | number | boolean | Array<string | number> | undefined | null;
 
 export interface FilterCondition {
     field: string;
-    operator: FilterOperator;
+    operator: FilterOperatorType;
     value?: FilterValue;
 }
 
 export interface UniversalFilter {
     logic: "AND" | "OR";
     conditions: FilterCondition[];
+    search?: string;
     groups?: UniversalFilter[];
 }
 

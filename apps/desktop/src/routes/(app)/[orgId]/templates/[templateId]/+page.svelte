@@ -117,11 +117,11 @@ async function renameTemplate(newName: string) {
 
     const updateRequest: UpdateTemplateRequest = {
       name: newName,
-      nameAr: newName,
-      pageSize: setup.size,
+      name_ar: newName,
+      page_size: setup.size,
       orientation: setup.orientation,
-      marginsJson: JSON.stringify(setup.margins),
-      documentJson: docJson,
+      margins_json: JSON.stringify(setup.margins),
+      document_json: docJson,
     };
 
     await api.updateTemplate(templateId || "", updateRequest);
@@ -134,7 +134,7 @@ async function renameTemplate(newName: string) {
     toast.error(msg);
     // revert
     templateRecord.name = currentName;
-    templateRecord.nameAr = currentNameAr;
+    templateRecord.name_ar = currentNameAr;
   }
 }
 
@@ -149,13 +149,13 @@ async function saveTemplate() {
 
     const updateRequest: UpdateTemplateRequest = {
       name: templateRecord.name,
-      nameAr: templateRecord.nameAr ?? templateRecord.name_ar,
+      name_ar: templateRecord.name_ar,
       description: templateRecord.description,
-      descriptionAr: templateRecord.descriptionAr ?? templateRecord.description_ar,
-      pageSize: setup.size,
+      description_ar: templateRecord.description_ar,
+      page_size: setup.size,
       orientation: setup.orientation,
-      marginsJson: JSON.stringify(setup.margins),
-      documentJson: docJson,
+      margins_json: JSON.stringify(setup.margins),
+      document_json: docJson,
     };
 
     await api.updateTemplate(templateId || "", updateRequest);

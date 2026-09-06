@@ -2,15 +2,16 @@
  * Dashboard domain queries — stats overview.
  */
 import { createQuery } from "@tanstack/svelte-query";
-import { commands } from "$lib/core/ipc";
+import { api, queryKeys } from "$lib/api";
 
 /** Dashboard statistics for the overview page. */
 export function createDashboardStatsQuery(orgId: string | (() => string)) {
   const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
   return createQuery(() => ({
-    queryKey: ["dashboard-stats", getOrgId()],
-    queryFn: () => commands.organization.getDashboardStats(),
+    queryKey: queryKeys.org.dashboard(),
+    queryFn: () => api.getDashboard(),
     enabled: !!getOrgId(),
-    staleTime: 3 * 60 * 1000, // 3 minutes
+    staleTime: 3 * 60 * 1000,
   }));
 }
+

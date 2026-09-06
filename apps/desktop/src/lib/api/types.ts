@@ -6,8 +6,33 @@
  * this interface, ensuring transport-agnostic UI code.
  */
 
+export * from '@orbis/sdk';
+
+import type {
+  LoginRequest, LoginResponse, SessionResponse,
+  RegisterUserRequest, UserDto,
+  OrgDto, UpdateOrgRequest, OrgUnitDto, CreateOrgUnitRequest,
+  OrganizationSettingsDto, DashboardCountsDto,
+  AcademicYearDto, AcademicPeriodDto, AcademicContextResponse, PeriodTemplateDto,
+  CreateYearRequest, CreatePeriodRequest,
+  SubjectDto, ClassDto, ClassSubjectDto,
+  CreateSubjectRequest, CreateClassRequest, AssignClassSubjectRequest,
+  EnrollmentDto, GuardianDto,
+  EnrollStudentRequest, AssignGuardianRequest,
+  RoomDto, TimeSlotDto, ScheduledLessonDto,
+  CreateRoomRequest, CreateTimeSlotRequest, ScheduleLessonRequest,
+  AssessmentSchemeDto, GradeDto, AttendanceDto, CalculationResultDto,
+  CreateSchemeRequest, RecordGradeRequest, MarkAttendanceRequest, CalculateGradesRequest,
+  ExamSessionDto, ExamScheduleDto, SeatingDto, SecretDto, ProctorDto,
+  CreateExamSessionRequest, ScheduleExamRequest, AssignSeatingRequest, AssignSecretRequest, AssignProctorRequest,
+  AccountDto, FeeTemplateDto, StudentFeeDto, PaymentDto, CurrencyDto,
+  CreateAccountRequest, CreateFeeTemplateRequest, GenerateFeeRequest, ProcessPaymentRequest,
+  DocumentDto, UploadDocumentRequest,
+  IntegrationDto, ConnectAppRequest,
+} from '@orbis/sdk';
+
 // ═══════════════════════════════════════════════════════════════
-// SHARED TYPES
+// SHARED ENVELOPES
 // ═══════════════════════════════════════════════════════════════
 
 export interface ApiResponse<T> {
@@ -22,462 +47,115 @@ export interface PaginatedResponse<T> {
   hasMore: boolean;
 }
 
-export interface OrbisError {
+export class OrbisError extends Error {
   code: string;
-  message: string;
   details?: unknown;
   requestId?: string;
+
+  constructor(message: string, code = 'UNKNOWN_ERROR', details?: unknown, requestId?: string) {
+    super(message);
+    this.name = 'OrbisError';
+    this.code = code;
+    this.details = details;
+    this.requestId = requestId;
+  }
+
+  static fromUnknown(err: unknown): OrbisError {
+    if (err instanceof OrbisError) return err;
+    if (err instanceof Error) {
+      return new OrbisError(err.message, 'INTERNAL_ERROR', err);
+    }
+    if (typeof err === 'object' && err !== null) {
+      const record = err as Record<string, unknown>;
+      return new OrbisError(
+        typeof record.message === 'string' ? record.message : 'Unknown error',
+        typeof record.code === 'string' ? record.code : 'UNKNOWN_ERROR',
+        record.details ?? record,
+        typeof record.requestId === 'string' ? record.requestId : undefined,
+      );
+    }
+    return new OrbisError(String(err));
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
-// DOMAIN DTOs — These mirror the server-side DTOs exactly
+// DOCFORGE ENGINE & TEMPLATE DTOs
 // ═══════════════════════════════════════════════════════════════
-
-// ── Auth ────────────────────────────────────────────────────────
-
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface LoginResponse {
-  token: string;
-  refreshToken: string;
-  user: UserDto;
-}
-
-export interface SessionResponse {
-  user: UserDto;
-  orgId: string;
-}
-
-// ── IAM ─────────────────────────────────────────────────────────
-
-export interface UserDto {
-  id: string;
-  orgId: string;
-  email: string | null;
-  fullName: string;
-  status: string;
-}
-
-export interface RegisterUserRequest {
-  email: string;
-  fullName: string;
-  password?: string;
-  role: string;
-}
-
-// ── Organization ────────────────────────────────────────────────
-
-export interface OrgDto {
-  id: string;
-  name: string;
-  slug: string;
-  timezone: string;
-  locale: string;
-  primaryColor?: string | null;
-}
-
-export interface UpdateOrgRequest {
-  name?: string;
-  timezone?: string;
-  locale?: string;
-  primaryColor?: string;
-}
-
-export interface OrgUnitDto {
-  id: string;
-  orgId: string;
-  parentId?: string | null;
-  path: string;
-  depth: number;
-  name: string;
-  unitType: string;
-  isActive: boolean;
-}
-
-export interface CreateOrgUnitRequest {
-  name: string;
-  unitType: string;
-  parentId?: string | null;
-  dataIsolation: string;
-}
-
-export interface DashboardCounts {
-  totalStudents: number;
-  totalTeachers: number;
-  totalClasses: number;
-  totalEnrollments: number;
-  totalSubjects: number;
-  activeAcademicYear?: string | null;
-  totalPaymentsAmount: number;
-  pendingFeesAmount: number;
-}
-
-// ── Settings ────────────────────────────────────────────────────
-
-export interface OrganizationSettings {
-  academic: AcademicSettings;
-  enrollment: EnrollmentSettings;
-  finance: FinanceSettings;
-  notifications: NotificationSettings;
-  autopilot: AutopilotSettings;
-}
-
-export interface AcademicSettings {
-  defaultGradingSystem: string;
-}
-
-export interface EnrollmentSettings {
-  registrationEnabled: boolean;
-  requireAdminApproval: boolean;
-  allowWaitlist: boolean;
-  siblingPriorityEnabled: boolean;
-  maxClassSizeDefault: number;
-  allowLateEnrollment: boolean;
-}
-
-export interface FinanceSettings {
-  currency: string;
-  taxRate: number;
-  invoiceDueDays: number;
-  lateFeeType: string;
-  lateFeeValue: number;
-  allowPartialPayments: boolean;
-  primaryPaymentGatewayId?: string | null;
-  invoicingIntegrationId?: string | null;
-}
-
-export interface NotificationSettings {
-  emailIntegrationId?: string | null;
-  smsIntegrationId?: string | null;
-  whatsappIntegrationId?: string | null;
-  notifyParentsOnAbsence: boolean;
-  notifyParentsOnGradePublish: boolean;
-  financeReminderDays: number[];
-}
-
-export interface AutopilotSettings {
-  enabled: boolean;
-  mode: string;
-  maxRetries: number;
-  autoAdvancePeriods: boolean;
-  autoLockGrades: boolean;
-  gradeEntryAutoCloseDays: number;
-  allowGradeEditAfterClose: boolean;
-}
-
-// ── Calendar ────────────────────────────────────────────────────
-
-export interface AcademicYearDto {
-  id: string;
-  orgId: string;
-  code: string;
-  name: string;
-  nameAr?: string | null;
-  startDate: string;
-  endDate: string;
-  isActive: boolean;
-  status: string;
-}
-
-export interface AcademicPeriodDto {
-  id: string;
-  yearId: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  periodType: string;
-  status: string;
-}
-
-export interface AcademicContextResponse {
-  currentYear?: AcademicYearDto | null;
-  allYears: AcademicYearDto[];
-  periods: AcademicPeriodDto[];
-}
-
-export interface PeriodTemplateDto {
-  id: string;
-  name: string;
-}
-
-// ── Academic ────────────────────────────────────────────────────
-
-export interface SubjectDto {
-  id: string;
-  orgId: string;
-  code: string;
-  name: string;
-  creditHours?: number | null;
-  isCore: boolean;
-}
-
-export interface ClassDto {
-  id: string;
-  orgId: string;
-  unitId: string;
-  periodId: string;
-  name: string;
-  level: string;
-}
-
-export interface ClassSubjectDto {
-  id: string;
-  classId: string;
-  subjectId: string;
-  periodId: string;
-  primaryTeacherId: string;
-  weeklyHours?: number | null;
-}
-
-// ── Student ─────────────────────────────────────────────────────
-
-export interface EnrollmentDto {
-  id: string;
-  studentId: string;
-  classId: string;
-  periodId: string;
-  orgId: string;
-  studentNumber: string;
-  enrollmentType: string;
-  status: string;
-  enrollmentDate: string;
-}
-
-export interface GuardianDto {
-  id: string;
-  studentId: string;
-  guardianId: string;
-  relationship: string;
-  isPrimary: boolean;
-}
-
-// ── Scheduling ──────────────────────────────────────────────────
-
-export interface RoomDto {
-  id: string;
-  orgId: string;
-  name: string;
-  roomType: string;
-  capacity: number;
-}
-
-export interface TimeSlotDto {
-  id: string;
-  periodId: string;
-  dayOfWeek: number;
-  startTime: string;
-  endTime: string;
-  label: string;
-}
-
-export interface ScheduledLessonDto {
-  id: string;
-  classSubjectId: string;
-  timeSlotId: string;
-  roomId?: string | null;
-  teacherId?: string | null;
-}
-
-// ── Assessment ──────────────────────────────────────────────────
-
-export interface AssessmentSchemeDto {
-  id: string;
-  orgId: string;
-  name: string;
-  gradingType: string;
-}
-
-export interface GradeDto {
-  id: string;
-  studentId: string;
-  classSubjectId: string;
-  assessmentType: string;
-  score: number;
-  maxScore: number;
-  letterGrade?: string | null;
-}
-
-export interface AttendanceDto {
-  id: string;
-  studentId: string;
-  classId?: string | null;
-  classSubjectId?: string | null;
-  scheduledLessonId?: string | null;
-  date: string;
-  status: string;
-  note?: string | null;
-}
-
-// ── Exam ────────────────────────────────────────────────────────
-
-export interface ExamSessionDto {
-  id: string;
-  orgId: string;
-  periodId: string;
-  name: string;
-  nameAr?: string | null;
-  startDate: string;
-  endDate: string;
-  status: string;
-  isActive: boolean;
-}
-
-export interface ExamScheduleDto {
-  id: string;
-  sessionId: string;
-  subjectId: string;
-  date: string;
-  maxScore: number;
-  passingScore: number;
-}
-
-// ── Finance ─────────────────────────────────────────────────────
-
-export interface AccountDto {
-  id: string;
-  orgId: string;
-  code: string;
-  name: string;
-  accountType: string;
-  balance: number;
-}
-
-export interface FeeTemplateDto {
-  id: string;
-  orgId: string;
-  name: string;
-  amount: number;
-  feeType: string;
-  isActive: boolean;
-}
-
-export interface StudentFeeDto {
-  id: string;
-  studentId: string;
-  enrollmentId?: string | null;
-  templateId: string;
-  netAmount: number;
-  paidAmount: number;
-  status: string;
-}
-
-export interface PaymentDto {
-  id: string;
-  feeId?: string | null;
-  amount: number;
-  method: string;
-  status: string;
-  paidAt?: string | null;
-}
-
-export interface CurrencyDto {
-  id: string;
-  name: string;
-  symbol: string;
-}
-
-// ── Document ────────────────────────────────────────────────────
-
-export interface DocumentDto {
-  id: string;
-  orgId: string;
-  entityType?: string | null;
-  entityId?: string | null;
-  fileName: string;
-  mimeType: string;
-  sizeBytes: number;
-  createdAt: string;
-}
-
-// ── Integration ─────────────────────────────────────────────────
-
-export interface IntegrationDto {
-  id: string;
-  orgId: string;
-  appKey: string;
-  appName: string;
-  isActive: boolean;
-}
-
-// ── Template ────────────────────────────────────────────────────
 
 export interface TemplateDto {
   id: string;
   name: string;
-  nameAr?: string | null;
+  name_ar?: string | null;
   description?: string | null;
-  descriptionAr?: string | null;
-  documentType: string;
-  entityType: string;
+  description_ar?: string | null;
+  document_type: string;
+  entity_type: string;
   status: string;
   version: number;
-  publishedVersion?: number | null;
-  pageSize: string;
-  pageWidthMm?: number | null;
-  pageHeightMm?: number | null;
+  published_version?: number | null;
+  page_size: string;
+  page_width_mm?: number | null;
+  page_height_mm?: number | null;
   orientation: string;
-  marginsJson: string;
-  documentJson: string;
+  margins_json: string;
+  document_json: string;
   locale: string;
-  masterTemplateId?: string | null;
+  master_template_id?: string | null;
   code?: string | null;
   tags?: string | null;
-  isSystem: boolean;
-  isDefault: boolean;
-  createdAt: string;
-  updatedAt: string;
+  is_system: boolean;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CreateTemplateRequest {
   name: string;
-  nameAr?: string | null;
+  name_ar?: string | null;
   description?: string | null;
-  descriptionAr?: string | null;
-  documentType: string;
-  entityType: string;
-  pageSize?: string | null;
-  pageWidthMm?: number | null;
-  pageHeightMm?: number | null;
+  description_ar?: string | null;
+  document_type: string;
+  entity_type: string;
+  page_size?: string | null;
+  page_width_mm?: number | null;
+  page_height_mm?: number | null;
   orientation?: string | null;
-  marginsJson?: string | null;
-  documentJson?: string | null;
+  margins_json?: string | null;
+  document_json?: string | null;
   locale?: string | null;
   code?: string | null;
   tags?: string | null;
-  masterTemplateId?: string | null;
+  master_template_id?: string | null;
 }
 
 export interface UpdateTemplateRequest {
   name?: string | null;
-  nameAr?: string | null;
+  name_ar?: string | null;
   description?: string | null;
-  descriptionAr?: string | null;
-  pageSize?: string | null;
+  description_ar?: string | null;
+  page_size?: string | null;
   orientation?: string | null;
-  marginsJson?: string | null;
-  documentJson?: string | null;
+  margins_json?: string | null;
+  document_json?: string | null;
 }
 
 export interface TemplateVersionDto {
   id: string;
-  templateId: string;
+  template_id: string;
   version: number;
-  changeSummary?: string | null;
-  createdBy: string;
-  createdAt: string;
+  change_summary?: string | null;
+  created_by: string;
+  created_at: string;
 }
 
 export interface TemplateBindingDto {
   id: string;
-  reportDefinitionId: string;
-  templateId: string;
+  report_definition_id: string;
+  template_id: string;
   locale: string;
   format: string;
-  isDefault: boolean;
-  createdAt: string;
+  is_default: boolean;
+  created_at: string;
 }
 
 export interface ValidationResult {
@@ -493,31 +171,25 @@ export interface ValidationIssue {
   severity: string;
 }
 
-// ── Report Definition ───────────────────────────────────────────
-
 export interface ReportDefinitionDto {
   id: string;
   code: string;
   name: string;
-  nameAr: string;
+  name_ar: string;
   domain: string;
   category: string;
   description?: string | null;
-  descriptionAr?: string | null;
-  supportedFormats: string[];
+  description_ar?: string | null;
+  supported_formats: string[];
   parameters: any[];
-  isSystem: boolean;
-  isActive: boolean;
+  is_system: boolean;
+  is_active: boolean;
 }
 
 // ═══════════════════════════════════════════════════════════════
 // API CLIENT INTERFACE
 // ═══════════════════════════════════════════════════════════════
 
-/**
- * The unified API contract that every transport layer must implement.
- * UI code depends only on this interface — never on `invoke()` or `fetch()` directly.
- */
 export interface OrbisApiClient {
   // ── Auth ────────────────────────────────────────────────────
   login(req: LoginRequest): Promise<LoginResponse>;
@@ -532,9 +204,9 @@ export interface OrbisApiClient {
   // ── Organization ────────────────────────────────────────────
   getCurrentOrg(): Promise<OrgDto>;
   updateCurrentOrg(req: UpdateOrgRequest): Promise<OrgDto>;
-  getSettings(): Promise<OrganizationSettings>;
-  updateSettings(settings: OrganizationSettings): Promise<OrganizationSettings>;
-  getDashboard(): Promise<DashboardCounts>;
+  getSettings(): Promise<OrganizationSettingsDto>;
+  updateSettings(settings: OrganizationSettingsDto): Promise<OrganizationSettingsDto>;
+  getDashboard(): Promise<DashboardCountsDto>;
 
   // ── OrgUnits ────────────────────────────────────────────────
   createOrgUnit(req: CreateOrgUnitRequest): Promise<OrgUnitDto>;
@@ -543,55 +215,80 @@ export interface OrbisApiClient {
   deleteOrgUnit(id: string): Promise<void>;
 
   // ── Calendar ────────────────────────────────────────────────
+  createAcademicYear(req: CreateYearRequest): Promise<AcademicYearDto>;
   listAcademicYears(): Promise<AcademicYearDto[]>;
   getAcademicContext(): Promise<AcademicContextResponse>;
   getAcademicYear(id: string): Promise<AcademicYearDto>;
+  createAcademicPeriod(req: CreatePeriodRequest): Promise<AcademicPeriodDto>;
   listAcademicPeriods(): Promise<AcademicPeriodDto[]>;
   getAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
   listPeriodTemplates(): Promise<PeriodTemplateDto[]>;
 
   // ── Academic ────────────────────────────────────────────────
+  createSubject(req: CreateSubjectRequest): Promise<SubjectDto>;
   listSubjects(): Promise<SubjectDto[]>;
   getSubject(id: string): Promise<SubjectDto>;
+  createClass(req: CreateClassRequest): Promise<ClassDto>;
   listClasses(): Promise<ClassDto[]>;
   getClass(id: string): Promise<ClassDto>;
+  assignClassSubject(req: AssignClassSubjectRequest): Promise<ClassSubjectDto>;
   listClassSubjects(classId: string, periodId: string): Promise<ClassSubjectDto[]>;
 
   // ── Student ─────────────────────────────────────────────────
+  enrollStudent(req: EnrollStudentRequest): Promise<EnrollmentDto>;
   listEnrollments(filter?: { classId?: string; studentId?: string }): Promise<EnrollmentDto[]>;
   getEnrollment(id: string): Promise<EnrollmentDto>;
+  assignGuardian(req: AssignGuardianRequest): Promise<GuardianDto>;
   listGuardians(studentId: string): Promise<GuardianDto[]>;
 
   // ── Scheduling ──────────────────────────────────────────────
+  createRoom(req: CreateRoomRequest): Promise<RoomDto>;
   listRooms(): Promise<RoomDto[]>;
   getRoom(id: string): Promise<RoomDto>;
+  createTimeSlot(req: CreateTimeSlotRequest): Promise<TimeSlotDto>;
   listTimeSlots(periodId: string): Promise<TimeSlotDto[]>;
+  scheduleLesson(req: ScheduleLessonRequest): Promise<ScheduledLessonDto>;
   listScheduledLessons(filter?: { classSubjectId?: string; periodId?: string }): Promise<ScheduledLessonDto[]>;
 
   // ── Assessment ──────────────────────────────────────────────
+  createAssessmentScheme(req: CreateSchemeRequest): Promise<AssessmentSchemeDto>;
   listAssessmentSchemes(): Promise<AssessmentSchemeDto[]>;
   getAssessmentScheme(id: string): Promise<AssessmentSchemeDto>;
+  recordGrade(req: RecordGradeRequest): Promise<GradeDto>;
   listGrades(filter?: { studentId?: string; classSubjectId?: string }): Promise<GradeDto[]>;
+  calculateGrades(req: CalculateGradesRequest): Promise<CalculationResultDto>;
+  markAttendance(req: MarkAttendanceRequest): Promise<AttendanceDto>;
   listAttendance(classId: string, date: string): Promise<AttendanceDto[]>;
 
   // ── Exam ────────────────────────────────────────────────────
+  createExamSession(req: CreateExamSessionRequest): Promise<ExamSessionDto>;
   listExamSessions(periodId: string): Promise<ExamSessionDto[]>;
   getExamSession(id: string): Promise<ExamSessionDto>;
+  scheduleExam(req: ScheduleExamRequest): Promise<ExamScheduleDto>;
   listExamSchedules(sessionId: string): Promise<ExamScheduleDto[]>;
+  assignSeating(req: AssignSeatingRequest): Promise<SeatingDto>;
+  assignSecret(req: AssignSecretRequest): Promise<SecretDto>;
+  assignProctor(req: AssignProctorRequest): Promise<ProctorDto>;
 
   // ── Finance ─────────────────────────────────────────────────
+  createAccount(req: CreateAccountRequest): Promise<AccountDto>;
   listAccounts(): Promise<AccountDto[]>;
+  createFeeTemplate(req: CreateFeeTemplateRequest): Promise<FeeTemplateDto>;
   listFeeTemplates(): Promise<FeeTemplateDto[]>;
+  generateStudentFee(req: GenerateFeeRequest): Promise<StudentFeeDto>;
   listStudentFees(filter?: { enrollmentId?: string; studentId?: string }): Promise<StudentFeeDto[]>;
+  processPayment(req: ProcessPaymentRequest): Promise<PaymentDto>;
   listPayments(filter?: { feeId?: string }): Promise<PaymentDto[]>;
   listCurrencies(): Promise<CurrencyDto[]>;
 
   // ── Document ────────────────────────────────────────────────
+  uploadDocument(req: UploadDocumentRequest): Promise<DocumentDto>;
   listDocuments(): Promise<DocumentDto[]>;
   getDocument(id: string): Promise<DocumentDto>;
   deleteDocument(id: string): Promise<void>;
 
   // ── Integration ─────────────────────────────────────────────
+  connectApp(req: ConnectAppRequest): Promise<IntegrationDto>;
   listIntegrations(): Promise<IntegrationDto[]>;
 
   // ── Templates ───────────────────────────────────────────────
@@ -615,4 +312,3 @@ export interface OrbisApiClient {
   listReportDefinitions(domain?: string, category?: string): Promise<ReportDefinitionDto[]>;
   getReportDefinition(code: string): Promise<ReportDefinitionDto>;
 }
-

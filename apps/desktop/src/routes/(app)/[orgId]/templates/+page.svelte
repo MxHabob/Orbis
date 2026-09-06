@@ -54,8 +54,8 @@ async function loadTemplates() {
   loading = true;
   try {
     const listFilter: any = {};
-    if (filterEntityType !== "all") listFilter.entityType = filterEntityType;
-    if (filterDocType !== "all") listFilter.documentType = filterDocType;
+    if (filterEntityType !== "all") listFilter.entity_type = filterEntityType;
+    if (filterDocType !== "all") listFilter.document_type = filterDocType;
 
     const response = await api.listTemplates(listFilter);
     let result = response || [];
@@ -64,7 +64,7 @@ async function loadTemplates() {
       result = result.filter(
         (t) =>
           t.name.toLowerCase().includes(q) ||
-          (t.nameAr && t.nameAr.includes(q)) ||
+          (t.name_ar && t.name_ar.includes(q)) ||
           (t.description && t.description.toLowerCase().includes(q))
       );
     }
@@ -185,13 +185,13 @@ async function handleCreateTemplate() {
     const defaultDocJson = JSON.stringify(buildInitialDocument());
     const createRequest: CreateTemplateRequest = {
       name: newTemplateName,
-      nameAr: newTemplateNameAr || null,
+      name_ar: newTemplateNameAr || null,
       description: newTemplateDesc || null,
-      documentType: newTemplateDocType,
-      entityType: newTemplateEntityType,
-      pageSize: pageSetup.size,
+      document_type: newTemplateDocType,
+      entity_type: newTemplateEntityType,
+      page_size: pageSetup.size,
       orientation: pageSetup.orientation,
-      documentJson: defaultDocJson,
+      document_json: defaultDocJson,
       locale: isAr() ? "ar" : "en",
     };
 

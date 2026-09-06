@@ -2,7 +2,7 @@
 // Svelte 5 Runes-based students filters and UI state.
 // No server data is stored directly in $state.
 
-import type { Enrollment } from "$lib/core/ipc";
+import type { EnrollmentDto } from "$lib/api/types";
 import { matchStudent } from "$lib/shared/utils/search";
 
 class StudentsStore {
@@ -16,7 +16,7 @@ class StudentsStore {
   /**
    * Helper to filter a student list using the store's current filters.
    */
-  filterList(list: Enrollment[]): Enrollment[] {
+  filterList(list: EnrollmentDto[]): EnrollmentDto[] {
     return list.filter((student) => {
       // 1. Search Query Match
       if (this.searchQuery) {

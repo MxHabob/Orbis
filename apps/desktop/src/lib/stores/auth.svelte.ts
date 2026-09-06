@@ -2,11 +2,11 @@
 // Svelte 5 Runes-based authentication state.
 
 import { api } from "$lib/api/client";
-import type { User } from "$lib/core/ipc";
+import type { UserDto } from "$lib/api/types";
 import { extractErrorMessage } from "$lib/core/ipc";
 
 class AuthStore {
-  user = $state<User | null>(null);
+  user = $state<UserDto | null>(null);
   token = $state<string | null>(null);
   isLoading = $state(false);
   error = $state<string | null>(null);
@@ -23,11 +23,11 @@ class AuthStore {
     this.isLoading = true;
     this.error = null;
     try {
-      const res = await api.iam.login(email, password);
+      const res = await api.login({ email, password });
       this.user = res.user;
-      this.token = res.access_token;
+      this.token = res.token;
       this.restorePromise = null;
-      localStorage.setItem("orbis_token", res.access_token);
+      localStorage.setItem("orbis_token", res.token);
       localStorage.setItem("orbis_user", JSON.stringify(res.user));
       await this.checkSetupStatus();
     } catch (e) {
@@ -39,8 +39,10 @@ class AuthStore {
   }
 
   async logout() {
-    if (this.token) {
-      await api.iam.logout(this.token).catch(() => {});
+    try {
+      await api.logout();
+    } catch {
+      // Ignore network errors on logout
     }
     this.user = null;
     this.token = null;
@@ -70,8 +72,8 @@ class AuthStore {
       );
       if (token && userStr) {
         try {
-          const res = await api.iam.restoreSession(token);
-          this.token = res.access_token;
+          const res = await api.getSession();
+          this.token = token;
           this.user = res.user;
           if (isSetupCompleteStr !== null) {
             this.isSetupComplete = isSetupCompleteStr === "true";
@@ -93,9 +95,8 @@ class AuthStore {
       return;
     }
     try {
-      const res = await api.organizations.checkSetup();
-      const isComplete =
-        typeof res === "boolean" ? res : Boolean(res?.setup_completed ?? true);
+      const org = await api.getCurrentOrg();
+      const isComplete = Boolean(org?.id);
       this.isSetupComplete = isComplete;
       localStorage.setItem("orbis_is_setup_complete", String(isComplete));
     } catch (e) {

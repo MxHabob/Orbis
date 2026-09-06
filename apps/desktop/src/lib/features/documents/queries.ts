@@ -4,7 +4,7 @@ import {
   createMutation,
   useQueryClient,
 } from "@tanstack/svelte-query";
-import { commands } from "$lib/core/ipc";
+import { api, queryKeys } from "$lib/api";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { appDataDir, join } from "@tauri-apps/api/path";
 
@@ -30,14 +30,9 @@ export async function resolveDocumentUrl(
   if (cachedUrl) return cachedUrl;
 
   try {
-    // If running in Tauri desktop, get absolute path to app_data/storage
     storageDirectoryPromise ??= appDataDir().then((dataDir) => join(dataDir, "storage"));
     const storageDirectory = await storageDirectoryPromise;
-    // Assuming backend path like "1/users/avatars/abc.png"
-    // And base path is "app_data/storage" relative to dataDir
-    // We construct absolute path: dataDir + "/storage/" + pathOrUrl (if path isn't absolute already)
 
-    // Clean up if it starts with /storage/
     let relativePath = pathOrUrl;
     if (relativePath.startsWith("/storage/")) {
       relativePath = relativePath.replace("/storage/", "");
@@ -48,7 +43,6 @@ export async function resolveDocumentUrl(
     resolvedDocumentUrls.set(pathOrUrl, resolvedUrl);
     return resolvedUrl;
   } catch (e) {
-    // Fallback if not in Tauri
     console.warn("Tauri path resolution failed, using fallback:", e);
     return pathOrUrl;
   }
@@ -61,20 +55,6 @@ export function getDocumentSource(document: {
   return document.url || document.path || "";
 }
 
-export const documentKeys = {
-  all: ["documents"] as const,
-  byFilter: (filter: {
-    ownerId?: string;
-    entityType?: string;
-    category?: string;
-    search?: string;
-    assetType?: string;
-    schoolYear?: string;
-    term?: string;
-    entityId?: string;
-  }) => ["documents", "filter", filter] as const,
-};
-
 export function useDocuments(filter: () => {
   ownerId?: string;
   entityType?: string;
@@ -86,46 +66,24 @@ export function useDocuments(filter: () => {
   entityId?: string;
 }) {
   return createInfiniteQuery(() => ({
-    queryKey: documentKeys.byFilter(filter()),
+    queryKey: queryKeys.document.all,
     placeholderData: (previousData: any) => previousData,
-    queryFn: ({ pageParam }) => {
-      const currentFilter = filter();
-      return commands.document.getDocuments({
-        ownerId: currentFilter.ownerId,
-        entityType: currentFilter.entityType,
-        category: currentFilter.category || undefined,
-        cursor: pageParam,
-        limit: 50,
-        filter:
-          currentFilter.search?.trim() || currentFilter.entityId || currentFilter.assetType || currentFilter.schoolYear || currentFilter.term
-            ? {
-                search: currentFilter.search?.trim() || undefined,
-                conditions: [
-                  ...(currentFilter.entityId
-                    ? [{ field: "entity_id", operator: "eq", value: currentFilter.entityId }]
-                    : []),
-                  ...(currentFilter.assetType
-                    ? [{ field: "asset_type", operator: "eq", value: currentFilter.assetType }]
-                    : []),
-                  ...(currentFilter.schoolYear
-                    ? [{ field: "school_year", operator: "eq", value: currentFilter.schoolYear }]
-                    : []),
-                  ...(currentFilter.term
-                    ? [{ field: "term", operator: "eq", value: currentFilter.term }]
-                    : []),
-                ],
-                logic: "and",
-              }
-            : undefined,
-      });
+    queryFn: async () => {
+      const items = await api.listDocuments();
+      return {
+        items,
+        count: items.length,
+        has_more: false,
+        next_cursor: null,
+      };
     },
     initialPageParam: undefined as string | undefined,
-      getNextPageParam: (lastPage: any) => {
-        if (lastPage?.has_more && lastPage?.next_cursor) {
-          return lastPage.next_cursor;
-        }
-        return undefined;
-      },
+    getNextPageParam: (lastPage: any) => {
+      if (lastPage?.has_more && lastPage?.next_cursor) {
+        return lastPage.next_cursor;
+      }
+      return undefined;
+    },
   }));
 }
 
@@ -142,21 +100,21 @@ export function useUploadDocument(options: { invalidateOnSuccess?: boolean } = {
       category: string;
       visibility: string;
     }) => {
-      const bytes = Array.from(new Uint8Array(await payload.file.arrayBuffer()));
-      return commands.document.uploadDocument(
-        payload.file.name,
-        payload.file.type || "application/octet-stream",
-        bytes,
-        payload.entity_type,
-        payload.entity_id,
-        payload.category,
-        payload.visibility,
-      );
+      return api.uploadDocument({
+        name: payload.file.name,
+        mime_type: payload.file.type || "application/octet-stream",
+        entity_type: payload.entity_type,
+        entity_id: payload.entity_id,
+        category: payload.category,
+        visibility: payload.visibility,
+        path: payload.file.name,
+        size: payload.file.size,
+      });
     },
-    onSuccess: (data, variables) => {
+    onSuccess: () => {
       if (options.invalidateOnSuccess === false) return;
       queryClient.invalidateQueries({
-        queryKey: documentKeys.all,
+        queryKey: queryKeys.document.all,
       });
     },
   }));
@@ -166,9 +124,10 @@ export function useDeleteDocument() {
   const queryClient = useQueryClient();
 
   return createMutation(() => ({
-    mutationFn: (id: string) => commands.document.deleteDocument(id),
+    mutationFn: (id: string) => api.deleteDocument(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: documentKeys.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
     },
   }));
 }
+

@@ -1,22 +1,20 @@
-import * as m from "$lib/paraglide/messages";
 /**
  * Exams domain queries and mutations.
- * Wraps IPC commands with TanStack Query for automatic caching and state updates.
+ * Wraps OrbisApiClient with TanStack Query for automatic caching and state updates.
  */
 import {
   createQuery,
   createMutation,
   useQueryClient,
 } from "@tanstack/svelte-query";
-import { commands } from "$lib/core/ipc";
-import type { ExamSession, ExamSubject } from "@orbis/sdk";
+import { api, queryKeys } from "$lib/api";
+import type { ExamSessionDto, ExamScheduleDto, CreateExamSessionRequest, ScheduleExamRequest } from "@orbis/sdk";
 
 /** Get all exam sessions for a period. */
 export function createExamSessionsQuery(periodId: () => string | undefined) {
   return createQuery(() => ({
-    queryKey: ["exam-sessions", periodId()],
-    queryFn: () =>
-      commands.exam.listSessions(periodId()!) as Promise<ExamSession[]>,
+    queryKey: queryKeys.exam.sessions(periodId()!),
+    queryFn: () => api.listExamSessions(periodId()!),
     enabled: !!periodId(),
     staleTime: 5 * 60 * 1000,
   }));
@@ -26,20 +24,19 @@ export function createExamSessionsQuery(periodId: () => string | undefined) {
 export function createExamSessionQuery(sessionId: string | (() => string)) {
   const getSessionId = typeof sessionId === "function" ? sessionId : () => sessionId;
   return createQuery(() => ({
-    queryKey: ["exam-session", getSessionId()],
-    queryFn: () => commands.exam.getSession(getSessionId()) as Promise<ExamSession>,
+    queryKey: queryKeys.exam.session(getSessionId()),
+    queryFn: () => api.getExamSession(getSessionId()),
     enabled: !!getSessionId(),
     staleTime: 5 * 60 * 1000,
   }));
 }
 
-/** Get exam subjects. */
+/** Get exam schedules for a session. */
 export function createExamSubjectsQuery(sessionId: string | (() => string)) {
   const getSessionId = typeof sessionId === "function" ? sessionId : () => sessionId;
   return createQuery(() => ({
-    queryKey: ["exam-subjects", getSessionId()],
-    queryFn: () =>
-      commands.exam.listExamSubjects(getSessionId()) as Promise<ExamSubject[]>,
+    queryKey: queryKeys.exam.schedules(getSessionId()),
+    queryFn: () => api.listExamSchedules(getSessionId()),
     enabled: !!getSessionId(),
     staleTime: 5 * 60 * 1000,
   }));
@@ -49,76 +46,27 @@ export function createExamSubjectsQuery(sessionId: string | (() => string)) {
 export function createSessionMutation() {
   const queryClient = useQueryClient();
   return createMutation(() => ({
-    mutationFn: (variables: {
-      data: {
-        period_id: string;
-        name: string;
-        name_ar?: string;
-        session_type: string;
-        start_date: string;
-        end_date: string;
-      };
-    }) => commands.exam.createSession(variables.data) as Promise<ExamSession>,
+    mutationFn: (variables: { data: CreateExamSessionRequest }) =>
+      api.createExamSession(variables.data),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["exam-sessions"],
+        queryKey: queryKeys.exam.all,
       });
     },
   }));
 }
 
-/** Update exam session mutation. */
-export function updateSessionMutation() {
-  const queryClient = useQueryClient();
-  return createMutation(() => ({
-    mutationFn: (variables: {
-      orgId: string;
-      sessionId: string;
-      updates: {
-        name?: string;
-        status?: string;
-        start_date?: string;
-        end_date?: string;
-      };
-    }) =>
-      commands.exam.updateSession(
-        variables.sessionId,
-        variables.updates.name ?? null,
-        variables.updates.status ?? null,
-        variables.updates.start_date ?? null,
-        variables.updates.end_date ?? null,
-      ) as Promise<ExamSession>,
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ["exam-sessions"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["exam-session", variables.sessionId],
-      });
-    },
-  }));
-}
-
-/** Add exam subject mutation. */
+/** Schedule exam mutation. */
 export function addExamSubjectMutation() {
   const queryClient = useQueryClient();
   return createMutation(() => ({
-    mutationFn: (variables: {
-      sessionId: string;
-      data: {
-        session_id: string;
-        subject_id: string;
-        max_score: number;
-        class_subject_id?: string;
-        duration_minutes?: number;
-        exam_type?: string;
-      };
-    }) =>
-      commands.exam.add(variables.data) as Promise<ExamSubject>,
+    mutationFn: (variables: { data: ScheduleExamRequest }) =>
+      api.scheduleExam(variables.data),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ["exam-subjects", variables.sessionId],
+        queryKey: queryKeys.exam.schedules(variables.data.exam_session_id),
       });
     },
   }));
 }
+

@@ -323,8 +323,8 @@ export class BatchCommand implements EditorCommand {
 
   constructor(
     public commands: EditorCommand[],
-    description = "Multiple changes",
-    descriptionAr = m.template_cmd_multiple_changes(),
+    description: string = "Multiple changes",
+    descriptionAr: string = String(m.template_cmd_multiple_changes()),
   ) {
     this.description = description;
     this.descriptionAr = descriptionAr;
