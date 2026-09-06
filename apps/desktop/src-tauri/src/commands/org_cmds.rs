@@ -3,7 +3,7 @@
 use tauri::State;
 use serde::Serialize;
 use crate::state::AppState;
-use orbis_app::usecases::organization::{CreateOrganizationUseCase, UpdateOrganizationUseCase};
+use orbis_app::usecases::organization::UpdateOrganizationUseCase;
 use orbis_app::usecases::org_unit::CreateOrgUnitUseCase;
 use orbis_app::usecases::settings::{GetSettingsUseCase, UpdateSettingsUseCase};
 use orbis_app::usecases::dashboard::GetDashboardUseCase;

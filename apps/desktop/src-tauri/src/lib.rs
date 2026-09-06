@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use tauri::{
     Manager, WebviewUrl,
     WebviewWindowBuilder,
@@ -18,131 +17,7 @@ pub mod commands;
 pub mod features;
 pub mod events;
 use state::AppState;
-#[tauri::command]
-fn show_window<R: tauri::Runtime>(window: tauri::WebviewWindow<R>) -> Result<(), String> {
-    // Always target the main window specifically, not the calling window
-    let app_handle = window.app_handle();
-    let main_window = match app_handle.get_webview_window("main") {
-        Some(window) => window,
-        None => {
-            return Err("Main window not found".to_string());
-        }
-    };
-    main_window
-        .show()
-        .map_err(|e| format!("Failed to show window: {}", e))?;
-    main_window
-        .set_focus()
-        .map_err(|e| format!("Failed to set focus: {}", e))?;
-    Ok(())
-}
-pub(crate) async fn do_open_agent_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Result<(), String> {
-    if let Some(existing) = app.get_webview_window("orbis-agent") {
-        existing.show().map_err(|e| e.to_string())?;
-        existing.set_focus().map_err(|e| e.to_string())?;
-        return Ok(());
-    }
-    let main_window = app.get_webview_window("main");
-    let mut builder = WebviewWindowBuilder::new(
-        app,
-        "orbis-agent",
-        WebviewUrl::App("agent".into()),
-    )
-    .title("Orbis Agent")
-    .inner_size(420.0, 650.0)
-    .resizable(true)
-    .shadow(true)
-    .decorations(true)
-    .visible(false)
-    .on_page_load(|webview, payload| {
-        if payload.event() == tauri::webview::PageLoadEvent::Finished {
-            let _ = webview.show();
-            let _ = webview.set_focus();
-        }
-    });
-    if let Some(ref main) = main_window {
-        builder = builder.parent(main).map_err(|e| e.to_string())?;
-    }
-    builder.build().map_err(|e| e.to_string())?;
-    Ok(())
-}
 
-#[tauri::command]
-async fn open_agent_window<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<(), String> {
-    do_open_agent_window(&app).await
-}
-#[tauri::command]
-async fn check_for_updates<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<(), String> {
-    use tauri_plugin_dialog::{DialogExt, MessageDialogKind, MessageDialogButtons};
-    use tauri_plugin_updater::UpdaterExt;
-    #[cfg(desktop)]
-    {
-        // Try to check for updates
-        if let Ok(updater) = app.updater() {
-            match updater.check().await {
-                Ok(Some(update)) => {
-                    // Update available - show update dialog
-                    let answer = app.dialog()
-                        .message(format!("A new version {} is available. Would you like to update now?", update.version))
-                        .title("Update Available")
-                        .kind(MessageDialogKind::Info)
-                        .buttons(MessageDialogButtons::OkCancel)
-                        .blocking_show();
-                    if answer {
-                        // User wants to update - provide required callbacks
-                        let _ = update.download_and_install(
-                            |_chunk_length, _content_length| {
-                                // Progress callback - could show progress here
-                            },
-                            || {
-                                // Download finished callback
-                                println!("Update download finished");
-                            }
-                        ).await;
-                    }
-                }
-                Ok(None) => {
-                    // No update available - show current version info
-                    let version = app.package_info().version.to_string();
-                    app.dialog()
-                        .message(format!("Orbis\nversion {}\n\nYou're up to date!", version))
-                        .title("No Updates Available")
-                        .kind(MessageDialogKind::Info)
-                        .buttons(MessageDialogButtons::Ok)
-                        .blocking_show();
-                }
-                Err(e) => {
-                    // Error checking for updates
-                    app.dialog()
-                        .message(format!("Failed to check for updates: {}", e))
-                        .title("Update Check Failed")
-                        .kind(MessageDialogKind::Error)
-                        .buttons(MessageDialogButtons::Ok)
-                        .blocking_show();
-                }
-            }
-        } else {
-            // Updater not available
-            app.dialog()
-                .message("Update checking is not available in this build.")
-                .title("Updates Not Available")
-                .kind(MessageDialogKind::Warning)
-                .buttons(MessageDialogButtons::Ok)
-                .blocking_show();
-        }
-    }
-    #[cfg(not(desktop))]
-    {
-        // Mobile platforms don't support auto-updates
-        app.dialog()
-            .message("Updates are managed through your app store.")
-            .title("Check App Store")
-            .kind(MessageDialogKind::Info)
-            .buttons(MessageDialogButtons::Ok)
-            .blocking_show();
-    }
-    Ok(())
-}
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -178,7 +53,7 @@ pub fn run() {
                     .map_err(|e| format!("Database init failed: {e}"))?;
                 Ok::<AppState, String>(state)
             })?;
-            app.manage(Arc::new(app_state));
+            app.manage(app_state);
             let app_handle = app.handle().clone();
             let initial_url = WebviewUrl::App("index.html".into());
             // Clone app_handle before it gets moved into closures
@@ -294,7 +169,7 @@ pub fn run() {
                     if event.id == "check_updates" {
                         let app_handle = app.clone();
                         tauri::async_runtime::spawn(async move {
-                            let _ = check_for_updates(app_handle).await;
+                            let _ = commands::window_cmds::check_for_updates(app_handle).await;
                         });
                     } else if event.id == "exit" {
                         app.exit(0);

@@ -13,6 +13,7 @@ pub mod document_cmds;
 pub mod integration_cmds;
 pub mod report_cmds;
 pub mod template_cmds;
+pub mod window_cmds;
 
 use tauri::generate_handler;
 
@@ -115,6 +116,10 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         // ── Report Definitions (read-only) ──────────────────────
         template_cmds::report_list_definitions,
         template_cmds::report_get_definition,
+        // ── Window & System ─────────────────────────────────────
+        window_cmds::show_window,
+        window_cmds::open_agent_window,
+        window_cmds::check_for_updates,
     ]
 }
 
