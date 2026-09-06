@@ -9,13 +9,13 @@ use super::org_cmds::ApiResponse;
 fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
 
 #[derive(Serialize)]
-pub struct AccountDto { pub id: String, pub org_id: String, pub code: String, pub name: String, pub account_type: String, pub balance: f64 }
+pub struct AccountDto { pub id: String, pub org_id: String, pub code: String, pub name: String, pub account_type: String, pub currency: String, pub is_active: bool }
 #[derive(Serialize)]
-pub struct FeeTemplateDto { pub id: String, pub org_id: String, pub name: String, pub amount: f64, pub fee_type: String, pub is_active: bool }
+pub struct FeeTemplateDto { pub id: String, pub org_id: String, pub name: String, pub default_amount: f64, pub revenue_account_id: String, pub receivable_account_id: String, pub is_mandatory: bool }
 #[derive(Serialize)]
-pub struct StudentFeeDto { pub id: String, pub student_id: String, pub enrollment_id: Option<String>, pub template_id: String, pub net_amount: f64, pub paid_amount: f64, pub status: String }
+pub struct StudentFeeDto { pub id: String, pub student_id: String, pub enrollment_id: Option<String>, pub fee_template_id: String, pub net_amount: f64, pub paid_amount: f64, pub status: String }
 #[derive(Serialize)]
-pub struct PaymentDto { pub id: String, pub fee_id: Option<String>, pub amount: f64, pub method: String, pub status: String, pub paid_at: Option<String> }
+pub struct PaymentDto { pub id: String, pub fee_id: Option<String>, pub amount: f64, pub method: String, pub paid_at: String }
 #[derive(Serialize)]
 pub struct CurrencyDto { pub id: String, pub name: String, pub symbol: String }
 
@@ -38,7 +38,7 @@ pub async fn finance_list_accounts(state: State<'_, AppState>) -> Result<ApiResp
     let ctx = make_ctx(&state);
     let items = state.account_repo.find_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
     Ok(ok(items.into_iter().map(|a| AccountDto {
-        id: a.id.to_string(), org_id: a.org_id.to_string(), code: a.code, name: a.name, account_type: a.account_type, balance: a.balance,
+        id: a.id.to_string(), org_id: a.org_id.to_string(), code: a.code, name: a.name, account_type: a.account_type, currency: a.currency, is_active: a.is_active,
     }).collect()))
 }
 
@@ -47,7 +47,7 @@ pub async fn finance_list_fee_templates(state: State<'_, AppState>) -> Result<Ap
     let ctx = make_ctx(&state);
     let items = state.fee_template_repo.find_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
     Ok(ok(items.into_iter().map(|t| FeeTemplateDto {
-        id: t.id.to_string(), org_id: t.org_id.to_string(), name: t.name, amount: t.amount, fee_type: t.fee_type, is_active: t.is_active,
+        id: t.id.to_string(), org_id: t.org_id.to_string(), name: t.name, default_amount: t.default_amount, revenue_account_id: t.revenue_account_id.to_string(), receivable_account_id: t.receivable_account_id.to_string(), is_mandatory: t.is_mandatory,
     }).collect()))
 }
 
@@ -61,7 +61,7 @@ pub async fn finance_list_student_fees(filter: Option<FeeFilter>, state: State<'
     } else { Ok(vec![]) }.map_err(|e| e.to_string())?;
     Ok(ok(items.into_iter().map(|f| StudentFeeDto {
         id: f.id.to_string(), student_id: f.student_id.to_string(),
-        enrollment_id: f.enrollment_id.map(|e| e.to_string()), template_id: f.template_id.to_string(),
+        enrollment_id: f.enrollment_id.map(|e| e.to_string()), fee_template_id: f.fee_template_id.to_string(),
         net_amount: f.net_amount, paid_amount: f.paid_amount, status: f.status,
     }).collect()))
 }
@@ -77,8 +77,8 @@ pub async fn finance_list_payments(filter: Option<PaymentFilter>, state: State<'
     }.map_err(|e| e.to_string())?;
     Ok(ok(items.into_iter().map(|p| PaymentDto {
         id: p.id.to_string(), fee_id: p.fee_id.map(|f| f.to_string()),
-        amount: p.amount, method: p.method, status: p.status,
-        paid_at: p.paid_at.map(|d| d.to_rfc3339()),
+        amount: p.amount, method: p.method,
+        paid_at: p.paid_at.to_rfc3339(),
     }).collect()))
 }
 

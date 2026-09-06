@@ -575,7 +575,7 @@ fn validate_node_expressions(
             let close_count = content.matches("}}").count();
             if open_count != close_count {
                 errors.push(ValidationIssue {
-                    node_id: Some(text_node.base.id.clone()),
+                    node_id: Some(text_node.id.clone()),
                     path: format!("{}.content", path),
                     message: format!(
                         "Unbalanced expression brackets: {} opening vs {} closing",
@@ -606,11 +606,13 @@ fn validate_node_expressions(
             }
         }
         TemplateNode::Conditional(cond) => {
-            for (i, child) in cond.then_children.iter().enumerate() {
+            for (i, child) in cond.children.iter().enumerate() {
                 validate_node_expressions(child, errors, warnings, &format!("{}.then[{}]", path, i));
             }
-            for (i, child) in cond.else_children.iter().enumerate() {
-                validate_node_expressions(child, errors, warnings, &format!("{}.else[{}]", path, i));
+            if let Some(ref else_nodes) = cond.else_children {
+                for (i, child) in else_nodes.iter().enumerate() {
+                    validate_node_expressions(child, errors, warnings, &format!("{}.else[{}]", path, i));
+                }
             }
         }
         TemplateNode::Header(header) => {
