@@ -4,7 +4,7 @@
 //! multiple tables in a single pass per table.
 
 use async_trait::async_trait;
-use sea_orm::{DatabaseConnection, DbBackend, Statement, FromQueryResult, JsonValue};
+use sea_orm::{ConnectionTrait, DatabaseConnection, DbBackend, Statement};
 use orbis_app::ports::repositories::{DashboardRepository, DashboardCounts};
 use orbis_domain::errors::DomainError;
 use uuid::Uuid;
@@ -50,8 +50,7 @@ impl DashboardRepository for DashboardRepoImpl {
 
         // Active academic year
         let active_year = {
-            let result = sea_orm::DatabaseConnection::query_one(
-                &self.db,
+            let result = self.db.query_one(
                 Statement::from_sql_and_values(
                     DbBackend::Postgres,
                     "SELECT name FROM academic_years WHERE org_id = $1 AND is_active = true LIMIT 1",
@@ -91,8 +90,7 @@ impl DashboardRepository for DashboardRepoImpl {
 
 impl DashboardRepoImpl {
     async fn count_query(&self, sql: &str, org_id: &str) -> Result<u64, DomainError> {
-        let result = sea_orm::DatabaseConnection::query_one(
-            &self.db,
+        let result = self.db.query_one(
             Statement::from_sql_and_values(
                 DbBackend::Postgres,
                 sql,
@@ -110,8 +108,7 @@ impl DashboardRepoImpl {
     }
 
     async fn sum_query(&self, sql: &str, org_id: &str) -> Result<f64, DomainError> {
-        let result = sea_orm::DatabaseConnection::query_one(
-            &self.db,
+        let result = self.db.query_one(
             Statement::from_sql_and_values(
                 DbBackend::Postgres,
                 sql,
@@ -128,3 +125,4 @@ impl DashboardRepoImpl {
         }
     }
 }
+

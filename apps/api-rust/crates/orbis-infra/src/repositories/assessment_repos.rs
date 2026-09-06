@@ -30,6 +30,19 @@ impl AssessmentSchemeRepository for AssessmentRepoImpl {
         }))
     }
 
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainAssessmentScheme>, DomainError> {
+        let models = AssessmentSchemeEntity::find()
+            .filter(assessment_scheme::Column::OrgId.eq(org_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainAssessmentScheme {
+            id: m.id, org_id: m.org_id, name: m.name, description: m.description,
+            max_score: m.max_score, formula: m.formula,
+            created_at: m.created_at, updated_at: m.updated_at
+        }).collect())
+    }
+
     async fn save(&self, scheme: &DomainAssessmentScheme) -> Result<(), DomainError> {
         let active = assessment_scheme::ActiveModel {
             id: Set(scheme.id), org_id: Set(scheme.org_id), name: Set(scheme.name.clone()),
@@ -60,6 +73,19 @@ impl GradeRepository for AssessmentRepoImpl {
 
     async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<DomainGrade>, DomainError> {
         let models = GradeEntity::find().filter(grade::Column::StudentId.eq(student_id)).all(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainGrade {
+            id: m.id, student_id: m.student_id, class_subject_id: m.class_subject_id,
+            scheme_id: m.scheme_id, score: m.score, is_excused: m.is_excused,
+            notes: m.notes, created_at: m.created_at, updated_at: m.updated_at
+        }).collect())
+    }
+
+    async fn find_by_class_subject(&self, class_subject_id: Uuid) -> Result<Vec<DomainGrade>, DomainError> {
+        let models = GradeEntity::find()
+            .filter(grade::Column::ClassSubjectId.eq(class_subject_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(models.into_iter().map(|m| DomainGrade {
             id: m.id, student_id: m.student_id, class_subject_id: m.class_subject_id,
             scheme_id: m.scheme_id, score: m.score, is_excused: m.is_excused,
@@ -98,6 +124,37 @@ impl AttendanceRepository for AssessmentRepoImpl {
         }))
     }
 
+    async fn find_by_class_and_date(&self, class_id: Uuid, date: chrono::NaiveDate) -> Result<Vec<DomainAttendance>, DomainError> {
+        let models = AttendanceEntity::find()
+            .filter(attendance::Column::ClassId.eq(class_id))
+            .filter(attendance::Column::Date.eq(date))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainAttendance {
+            id: m.id, student_id: m.student_id, class_id: m.class_id,
+            class_subject_id: m.class_subject_id,
+            scheduled_lesson_id: m.scheduled_lesson_id,
+            date: m.date, status: m.status, notes: m.notes,
+            created_at: m.created_at, updated_at: m.updated_at
+        }).collect())
+    }
+
+    async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<DomainAttendance>, DomainError> {
+        let models = AttendanceEntity::find()
+            .filter(attendance::Column::StudentId.eq(student_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainAttendance {
+            id: m.id, student_id: m.student_id, class_id: m.class_id,
+            class_subject_id: m.class_subject_id,
+            scheduled_lesson_id: m.scheduled_lesson_id,
+            date: m.date, status: m.status, notes: m.notes,
+            created_at: m.created_at, updated_at: m.updated_at
+        }).collect())
+    }
+
     async fn save(&self, attendance: &DomainAttendance) -> Result<(), DomainError> {
         let active = attendance::ActiveModel {
             id: Set(attendance.id), student_id: Set(attendance.student_id),
@@ -129,6 +186,20 @@ impl BehaviorRecordRepository for AssessmentRepoImpl {
         }))
     }
 
+    async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<DomainBehaviorRecord>, DomainError> {
+        let models = BehaviorRecordEntity::find()
+            .filter(behavior_record::Column::StudentId.eq(student_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainBehaviorRecord {
+            id: m.id, student_id: m.student_id, org_id: m.org_id,
+            reporter_id: m.reporter_id, record_type: m.record_type,
+            description: m.description, points: m.points,
+            created_at: m.created_at, updated_at: m.updated_at
+        }).collect())
+    }
+
     async fn save(&self, record: &DomainBehaviorRecord) -> Result<(), DomainError> {
         let active = behavior_record::ActiveModel {
             id: Set(record.id), student_id: Set(record.student_id),
@@ -146,3 +217,4 @@ impl BehaviorRecordRepository for AssessmentRepoImpl {
         Ok(())
     }
 }
+

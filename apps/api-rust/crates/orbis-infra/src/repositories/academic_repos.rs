@@ -102,6 +102,23 @@ impl ClassRepository for AcademicRepoImpl {
         }).collect())
     }
 
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainClass>, DomainError> {
+        let models = ClassEntity::find()
+            .filter(class::Column::OrgId.eq(org_id))
+            .filter(class::Column::IsDeleted.eq(false))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainClass {
+            id: m.id, org_id: m.org_id, unit_id: m.unit_id, period_id: m.period_id,
+            name: m.name, name_ar: m.name_ar, level: m.level, division: m.division,
+            homeroom_teacher_id: m.homeroom_teacher_id, capacity: m.capacity,
+            current_students: m.current_students, room_id: m.room_id, color: m.color,
+            is_active: m.is_active, is_deleted: m.is_deleted, deleted_at: m.deleted_at,
+            created_at: m.created_at, updated_at: m.updated_at
+        }).collect())
+    }
+
     async fn save(&self, class: &DomainClass) -> Result<(), DomainError> {
         let active = class::ActiveModel {
             id: Set(class.id), org_id: Set(class.org_id), unit_id: Set(class.unit_id),
@@ -151,6 +168,25 @@ impl ClassSubjectRepository for AcademicRepoImpl {
             created_at: m.created_at, updated_at: m.updated_at
         }).collect())
     }
+
+    async fn find_by_class_and_period(&self, class_id: Uuid, period_id: Uuid) -> Result<Vec<DomainClassSubject>, DomainError> {
+        let models = ClassSubjectEntity::find()
+            .filter(class_subject::Column::ClassId.eq(class_id))
+            .filter(class_subject::Column::PeriodId.eq(period_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainClassSubject {
+            id: m.id, class_id: m.class_id, subject_id: m.subject_id, period_id: m.period_id,
+            primary_teacher_id: m.primary_teacher_id, assistant_teacher_id: m.assistant_teacher_id,
+            substitute_teacher_id: m.substitute_teacher_id, grade_groups: m.grade_groups,
+            weekly_hours: m.weekly_hours, theory_hours: m.theory_hours,
+            practical_hours: m.practical_hours, assessment_config: m.assessment_config,
+            scheme_id: m.scheme_id, is_active: m.is_active,
+            created_at: m.created_at, updated_at: m.updated_at
+        }).collect())
+    }
+
 
     async fn save(&self, class_subject: &DomainClassSubject) -> Result<(), DomainError> {
         let active = class_subject::ActiveModel {

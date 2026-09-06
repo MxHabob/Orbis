@@ -22,6 +22,26 @@ impl OrgUnitRepository for OrgUnitRepoImpl {
         Ok(model.map(into_domain))
     }
 
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainOrgUnit>, DomainError> {
+        let models = OrgUnitEntity::find()
+            .filter(org_unit::Column::OrgId.eq(org_id))
+            .filter(org_unit::Column::IsActive.eq(true))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        Ok(models.into_iter().map(into_domain).collect())
+    }
+
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
+        OrgUnitEntity::delete_by_id(id)
+            .exec(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(())
+    }
+
+
     async fn find_children(&self, parent_id: Uuid) -> Result<Vec<DomainOrgUnit>, DomainError> {
         let models = OrgUnitEntity::find()
             .filter(org_unit::Column::ParentId.eq(parent_id))

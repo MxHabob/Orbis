@@ -5,20 +5,14 @@ export type ClientOptions = {
 };
 
 export type AcademicContextResponse = {
-    all_years: Array<AcademicYearInfo>;
-    current_year?: AcademicYearInfo | null;
-    is_read_only: boolean;
-    periods: Array<AcademicPeriod>;
-    year_status: string;
+    all_years: Array<AcademicYearDto>;
+    current_year?: AcademicYearDto | null;
+    periods: Array<AcademicPeriodDto>;
 };
 
-export type AcademicPeriod = {
+export type AcademicPeriodDto = {
     end_date: string;
-    exam_end?: string | null;
-    exam_start?: string | null;
     id: string;
-    is_enrollment_open: number;
-    is_grade_entry_open: number;
     name: string;
     period_type: string;
     start_date: string;
@@ -26,12 +20,14 @@ export type AcademicPeriod = {
     year_id: string;
 };
 
-export type AcademicYear = {
-    code: string;
+export type AcademicSettingsDto = {
+    default_grading_system: string;
+};
+
+export type AcademicYearDto = {
     end_date: string;
     id: string;
     is_active: boolean;
-    is_locked: number;
     name: string;
     name_ar?: string | null;
     org_id: string;
@@ -39,9 +35,148 @@ export type AcademicYear = {
     status: string;
 };
 
-export type AcademicYearInfo = {
-    periods: Array<AcademicPeriod>;
-    year: AcademicYear;
+export type AccountDto = {
+    account_type: string;
+    balances: unknown;
+    code: string;
+    currency: string;
+    id: string;
+    is_active: boolean;
+    name: string;
+    org_id: string;
+    parent_id?: string | null;
+};
+
+export type AssessmentSchemeDto = {
+    description?: string | null;
+    id: string;
+    max_score: number;
+    name: string;
+    org_id: string;
+};
+
+export type AssignClassSubjectRequest = {
+    class_id: string;
+    period_id: string;
+    primary_teacher_id: string;
+    subject_id: string;
+    weekly_hours?: number | null;
+};
+
+export type AssignGuardianRequest = {
+    guardian_id: string;
+    is_primary: boolean;
+    relationship: string;
+    student_id: string;
+};
+
+export type AssignProctorRequest = {
+    exam_schedule_id: string;
+    is_chief: boolean;
+    room_id: string;
+    teacher_id: string;
+};
+
+export type AssignSeatingRequest = {
+    exam_session_id: string;
+    room_id?: string | null;
+    seating_number: string;
+    student_id: string;
+};
+
+export type AssignSecretRequest = {
+    exam_schedule_id: string;
+    secret_number: string;
+    student_id: string;
+};
+
+export type AttendanceDto = {
+    class_id?: string | null;
+    class_subject_id?: string | null;
+    date: string;
+    id: string;
+    notes?: string | null;
+    scheduled_lesson_id?: string | null;
+    status: string;
+    student_id: string;
+};
+
+export type AutopilotSettingsDto = {
+    allow_grade_edit_after_close: boolean;
+    auto_advance_periods: boolean;
+    auto_lock_grades: boolean;
+    enabled: boolean;
+    grade_entry_auto_close_days: number;
+    max_retries: number;
+    mode: string;
+};
+
+export type CalculateGradesRequest = {
+    scheme_id: string;
+    student_id: string;
+};
+
+export type CalculationResultDto = {
+    final_score: number;
+    message: string;
+};
+
+export type ClassDto = {
+    id: string;
+    level: string;
+    name: string;
+    org_id: string;
+    period_id: string;
+    unit_id: string;
+};
+
+export type ClassSubjectDto = {
+    class_id: string;
+    id: string;
+    period_id: string;
+    primary_teacher_id: string;
+    subject_id: string;
+    weekly_hours?: number | null;
+};
+
+export type ConnectAppRequest = {
+    category: string;
+    env: string;
+    provider_name: string;
+    secrets: {
+        [key: string]: string;
+    };
+    settings: unknown;
+};
+
+export type CreateAccountRequest = {
+    account_type: string;
+    code: string;
+    currency?: string | null;
+    name: string;
+    parent_id?: string | null;
+};
+
+export type CreateClassRequest = {
+    level: string;
+    name: string;
+    period_id: string;
+    unit_id: string;
+};
+
+export type CreateExamSessionRequest = {
+    academic_period_id: string;
+    end_date: string;
+    name: string;
+    start_date: string;
+};
+
+export type CreateFeeTemplateRequest = {
+    default_amount: number;
+    is_mandatory?: boolean | null;
+    name: string;
+    receivable_account_id: string;
+    revenue_account_id: string;
 };
 
 export type CreateOrgRequest = {
@@ -54,75 +189,1233 @@ export type CreateOrgRequest = {
 export type CreateOrgUnitRequest = {
     data_isolation: string;
     name: string;
-    org_id: string;
     parent_id?: string | null;
     unit_type: string;
 };
 
-export type Enrollment = {
-    academic_year_id: string;
-    class_id: string;
-    enrollment_date: string;
-    id: string;
-    status: string;
-    student_id: string;
+export type CreatePeriodRequest = {
+    end_date: string;
+    name: string;
+    parent_id?: string | null;
+    period_type: string;
+    start_date: string;
+    year_id: string;
 };
 
-export type ExamSession = {
+export type CreateRoomRequest = {
+    capacity: number;
+    name: string;
+    room_type: string;
+};
+
+export type CreateSchemeRequest = {
+    description?: string | null;
+    formula?: unknown;
+    max_score: number;
+    name: string;
+};
+
+export type CreateSubjectRequest = {
+    code: string;
+    credit_hours?: number | null;
+    is_core: boolean;
+    name: string;
+    unit_id?: string | null;
+};
+
+export type CreateTimeSlotRequest = {
+    day_of_week: number;
+    end_time: string;
+    period_id: string;
+    slot_index: number;
+    start_time: string;
+};
+
+export type CreateYearRequest = {
+    end_date: string;
+    name: string;
+    start_date: string;
+};
+
+export type CurrencyDto = {
+    id: string;
+    name: string;
+    symbol: string;
+};
+
+export type DashboardCountsDto = {
+    active_academic_year?: string | null;
+    pending_fees_amount: number;
+    total_classes: number;
+    total_enrollments: number;
+    total_payments_amount: number;
+    total_students: number;
+    total_subjects: number;
+    total_teachers: number;
+};
+
+export type DocumentDto = {
+    asset_type: string;
+    category: string;
+    created_at: string;
+    description?: string | null;
+    entity_id?: string | null;
+    entity_type?: string | null;
+    extension?: string | null;
+    id: string;
+    mime_type?: string | null;
+    name: string;
+    org_id: string;
+    path: string;
+    preview_path?: string | null;
+    school_year?: string | null;
+    size?: number | null;
+    storage_provider: string;
+    tags?: string | null;
+    term?: string | null;
+    thumbnail_path?: string | null;
+    uploaded_by?: string | null;
+    url?: string | null;
+    visibility: string;
+};
+
+export type EnrollStudentRequest = {
+    class_id: string;
+    enrollment_type: string;
+    period_id: string;
+    student_id: string;
+    student_number: string;
+};
+
+export type EnrollmentDto = {
+    class_id?: string | null;
+    enrollment_date: string;
+    enrollment_type: string;
+    id: string;
+    org_id: string;
+    period_id: string;
+    status: string;
+    student_id: string;
+    student_number: string;
+};
+
+export type EnrollmentSettingsDto = {
+    allow_late_enrollment: boolean;
+    allow_waitlist: boolean;
+    max_class_size_default: number;
+    registration_enabled: boolean;
+    require_admin_approval: boolean;
+    sibling_priority_enabled: boolean;
+};
+
+export type ExamScheduleDto = {
+    class_subject_id: string;
+    end_time: string;
+    exam_date: string;
+    exam_session_id: string;
+    id: string;
+    start_time: string;
+};
+
+export type ExamSessionDto = {
+    academic_period_id: string;
     end_date: string;
     id: string;
-    is_active: boolean;
     name: string;
-    name_ar?: string | null;
-    period_id: string;
+    org_id: string;
     start_date: string;
     status: string;
 };
 
-export type ExamSubject = {
-    date: string;
+export type FeeTemplateDto = {
+    default_amount: number;
     id: string;
-    max_score: number;
-    passing_score: number;
-    session_id: string;
-    subject_id: string;
+    is_mandatory: boolean;
+    name: string;
+    org_id: string;
+    receivable_account_id: string;
+    revenue_account_id: string;
 };
 
-export type OrbisError = {
+export type FinanceSettingsDto = {
+    allow_partial_payments: boolean;
+    currency: string;
+    invoice_due_days: number;
+    invoicing_integration_id?: string | null;
+    late_fee_type: string;
+    late_fee_value: number;
+    primary_payment_gateway_id?: string | null;
+    tax_rate: number;
+};
+
+export type GenerateFeeRequest = {
+    discount_amount?: number | null;
+    due_date: string;
+    enrollment_id?: string | null;
+    fee_template_id: string;
+    student_id: string;
+};
+
+export type GradeDto = {
+    class_subject_id: string;
+    id: string;
+    is_excused: boolean;
+    notes?: string | null;
+    scheme_id: string;
+    score: number;
+    student_id: string;
+};
+
+export type GuardianDto = {
+    guardian_id: string;
+    id: string;
+    is_primary: boolean;
+    relationship: string;
+    student_id: string;
+};
+
+export type IntegrationDto = {
+    category: string;
+    env: string;
+    id: string;
+    is_enabled: boolean;
+    org_id: string;
+    provider_name: string;
+    settings?: unknown;
+};
+
+export type LoginRequest = {
+    email: string;
+    password: string;
+};
+
+export type LoginResponse = {
+    refresh_token: string;
+    token: string;
+    user: UserDto;
+};
+
+export type MarkAttendanceRequest = {
+    class_id: string;
+    date: string;
+    notes?: string | null;
+    status: string;
+    student_id: string;
+};
+
+export type NotificationSettingsDto = {
+    email_integration_id?: string | null;
+    finance_reminder_days: Array<number>;
+    notify_parents_on_absence: boolean;
+    notify_parents_on_grade_publish: boolean;
+    sms_integration_id?: string | null;
+    whatsapp_integration_id?: string | null;
+};
+
+/**
+ * Uniform error response body.
+ */
+export type OrbisErrorBody = {
     code: string;
     details?: unknown;
     message: string;
+    request_id?: string | null;
 };
 
-export type OrgResponse = {
-    id: string;
-    name: string;
-    slug: string;
-};
-
-export type OrgUnitResponse = {
-    depth: number;
-    id: string;
-    path: string;
-};
-
-export type Organization = {
+export type OrgDto = {
     id: string;
     locale: string;
     name: string;
+    primary_color?: string | null;
     slug: string;
     timezone: string;
 };
 
-export type User = {
-    email: string;
-    first_name: string;
+export type OrgUnitDto = {
+    depth: number;
     id: string;
     is_active: boolean;
-    last_name: string;
+    name: string;
     org_id: string;
-    username: string;
+    parent_id?: string | null;
+    path: string;
+    unit_type: string;
 };
+
+export type OrganizationSettingsDto = {
+    academic?: AcademicSettingsDto;
+    autopilot?: AutopilotSettingsDto;
+    enrollment?: EnrollmentSettingsDto;
+    finance?: FinanceSettingsDto;
+    notifications?: NotificationSettingsDto;
+};
+
+export type PaymentDto = {
+    account_id: string;
+    amount: number;
+    fee_id?: string | null;
+    id: string;
+    journal_entry_id?: string | null;
+    method: string;
+    org_id: string;
+    paid_at: string;
+    reference?: string | null;
+};
+
+export type PeriodTemplateDto = {
+    id: string;
+    name: string;
+};
+
+export type ProcessPaymentRequest = {
+    account_id: string;
+    amount: number;
+    fee_id?: string | null;
+    method: string;
+    reference?: string | null;
+    source?: string | null;
+};
+
+export type ProctorDto = {
+    exam_schedule_id: string;
+    id: string;
+    is_chief: boolean;
+    room_id: string;
+    teacher_id: string;
+};
+
+export type RecordGradeRequest = {
+    class_subject_id: string;
+    is_excused: boolean;
+    notes?: string | null;
+    scheme_id: string;
+    score: number;
+    student_id: string;
+};
+
+export type RegisterUserRequest = {
+    email: string;
+    full_name: string;
+    password?: string | null;
+    role: string;
+};
+
+export type RoomDto = {
+    capacity: number;
+    id: string;
+    name: string;
+    org_id: string;
+    room_type: string;
+};
+
+export type ScheduleExamRequest = {
+    class_subject_id: string;
+    end_time: string;
+    exam_date: string;
+    exam_session_id: string;
+    start_time: string;
+};
+
+export type ScheduleLessonRequest = {
+    class_subject_id: string;
+    room_id?: string | null;
+    teacher_id?: string | null;
+    time_slot_id: string;
+};
+
+export type ScheduledLessonDto = {
+    class_subject_id: string;
+    id: string;
+    room_id?: string | null;
+    teacher_id?: string | null;
+    time_slot_id: string;
+};
+
+export type SeatingDto = {
+    exam_session_id: string;
+    id: string;
+    room_id?: string | null;
+    seating_number: string;
+    student_id: string;
+};
+
+export type SecretDto = {
+    exam_schedule_id: string;
+    id: string;
+    secret_number: string;
+    student_id: string;
+};
+
+export type SessionResponse = {
+    org_id: string;
+    user: UserDto;
+};
+
+export type StudentFeeDto = {
+    discount_amount: number;
+    due_date: string;
+    enrollment_id?: string | null;
+    fee_template_id: string;
+    id: string;
+    net_amount: number;
+    org_id: string;
+    original_amount: number;
+    status: string;
+    student_id: string;
+};
+
+export type SubjectDto = {
+    code: string;
+    credit_hours?: number | null;
+    id: string;
+    is_core: boolean;
+    name: string;
+    org_id: string;
+};
+
+export type TimeSlotDto = {
+    day_of_week: number;
+    end_time: string;
+    id: string;
+    period_id: string;
+    slot_index: number;
+    start_time: string;
+};
+
+export type UpdateOrgRequest = {
+    locale?: string | null;
+    name?: string | null;
+    primary_color?: string | null;
+    timezone?: string | null;
+};
+
+export type UploadDocumentRequest = {
+    asset_type?: string | null;
+    category?: string | null;
+    description?: string | null;
+    entity_id?: string | null;
+    entity_type?: string | null;
+    extension?: string | null;
+    mime_type?: string | null;
+    name: string;
+    path: string;
+    preview_path?: string | null;
+    school_year?: string | null;
+    size?: number | null;
+    storage_provider?: string | null;
+    tags?: string | null;
+    term?: string | null;
+    thumbnail_path?: string | null;
+    url?: string | null;
+    visibility?: string | null;
+};
+
+export type UserDto = {
+    email?: string | null;
+    full_name: string;
+    id: string;
+    org_id: string;
+    status: string;
+};
+
+export type ListPeriodsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/academic-periods';
+};
+
+export type ListPeriodsResponses = {
+    200: Array<AcademicPeriodDto>;
+};
+
+export type ListPeriodsResponse = ListPeriodsResponses[keyof ListPeriodsResponses];
+
+export type CreatePeriodData = {
+    body: CreatePeriodRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/academic-periods';
+};
+
+export type CreatePeriodResponses = {
+    201: AcademicPeriodDto;
+};
+
+export type CreatePeriodResponse = CreatePeriodResponses[keyof CreatePeriodResponses];
+
+export type GetPeriodData = {
+    body?: never;
+    path: {
+        /**
+         * Academic Period ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-periods/{id}';
+};
+
+export type GetPeriodResponses = {
+    200: AcademicPeriodDto;
+};
+
+export type GetPeriodResponse = GetPeriodResponses[keyof GetPeriodResponses];
+
+export type ListYearsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/academic-years';
+};
+
+export type ListYearsResponses = {
+    200: Array<AcademicYearDto>;
+};
+
+export type ListYearsResponse = ListYearsResponses[keyof ListYearsResponses];
+
+export type CreateYearData = {
+    body: CreateYearRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/academic-years';
+};
+
+export type CreateYearResponses = {
+    201: AcademicYearDto;
+};
+
+export type CreateYearResponse = CreateYearResponses[keyof CreateYearResponses];
+
+export type GetCurrentContextData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/academic-years/current';
+};
+
+export type GetCurrentContextResponses = {
+    200: AcademicContextResponse;
+};
+
+export type GetCurrentContextResponse = GetCurrentContextResponses[keyof GetCurrentContextResponses];
+
+export type GetYearData = {
+    body?: never;
+    path: {
+        /**
+         * Academic Year ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-years/{id}';
+};
+
+export type GetYearResponses = {
+    200: AcademicYearDto;
+};
+
+export type GetYearResponse = GetYearResponses[keyof GetYearResponses];
+
+export type ListAccountsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/accounts';
+};
+
+export type ListAccountsResponses = {
+    200: Array<AccountDto>;
+};
+
+export type ListAccountsResponse = ListAccountsResponses[keyof ListAccountsResponses];
+
+export type CreateAccountData = {
+    body: CreateAccountRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/accounts';
+};
+
+export type CreateAccountResponses = {
+    201: AccountDto;
+};
+
+export type CreateAccountResponse = CreateAccountResponses[keyof CreateAccountResponses];
+
+export type ListSchemesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/assessment-schemes';
+};
+
+export type ListSchemesResponses = {
+    200: Array<AssessmentSchemeDto>;
+};
+
+export type ListSchemesResponse = ListSchemesResponses[keyof ListSchemesResponses];
+
+export type CreateSchemeData = {
+    body: CreateSchemeRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/assessment-schemes';
+};
+
+export type CreateSchemeResponses = {
+    201: AssessmentSchemeDto;
+};
+
+export type CreateSchemeResponse = CreateSchemeResponses[keyof CreateSchemeResponses];
+
+export type GetSchemeData = {
+    body?: never;
+    path: {
+        /**
+         * Assessment Scheme ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/assessment-schemes/{id}';
+};
+
+export type GetSchemeResponses = {
+    200: AssessmentSchemeDto;
+};
+
+export type GetSchemeResponse = GetSchemeResponses[keyof GetSchemeResponses];
+
+export type ListAttendanceData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Class ID
+         */
+        class_id: string;
+        /**
+         * Attendance Date
+         */
+        date: string;
+    };
+    url: '/api/v1/attendance';
+};
+
+export type ListAttendanceResponses = {
+    200: Array<AttendanceDto>;
+};
+
+export type ListAttendanceResponse = ListAttendanceResponses[keyof ListAttendanceResponses];
+
+export type MarkAttendanceData = {
+    body: MarkAttendanceRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/attendance';
+};
+
+export type MarkAttendanceResponses = {
+    201: AttendanceDto;
+};
+
+export type MarkAttendanceResponse = MarkAttendanceResponses[keyof MarkAttendanceResponses];
+
+export type LoginData = {
+    body: LoginRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/login';
+};
+
+export type LoginErrors = {
+    /**
+     * Invalid credentials
+     */
+    401: unknown;
+};
+
+export type LoginResponses = {
+    /**
+     * Login successful
+     */
+    200: LoginResponse;
+};
+
+export type LoginResponse2 = LoginResponses[keyof LoginResponses];
+
+export type GetSessionData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/session';
+};
+
+export type GetSessionErrors = {
+    /**
+     * Not authenticated
+     */
+    401: unknown;
+};
+
+export type GetSessionResponses = {
+    /**
+     * Current session info
+     */
+    200: SessionResponse;
+};
+
+export type GetSessionResponse = GetSessionResponses[keyof GetSessionResponses];
+
+export type ListClassSubjectsData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Class ID
+         */
+        class_id: string;
+        /**
+         * Period ID
+         */
+        period_id: string;
+    };
+    url: '/api/v1/class-subjects';
+};
+
+export type ListClassSubjectsResponses = {
+    200: Array<ClassSubjectDto>;
+};
+
+export type ListClassSubjectsResponse = ListClassSubjectsResponses[keyof ListClassSubjectsResponses];
+
+export type AssignClassSubjectData = {
+    body: AssignClassSubjectRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/class-subjects';
+};
+
+export type AssignClassSubjectResponses = {
+    201: ClassSubjectDto;
+};
+
+export type AssignClassSubjectResponse = AssignClassSubjectResponses[keyof AssignClassSubjectResponses];
+
+export type ListClassesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/classes';
+};
+
+export type ListClassesResponses = {
+    200: Array<ClassDto>;
+};
+
+export type ListClassesResponse = ListClassesResponses[keyof ListClassesResponses];
+
+export type CreateClassData = {
+    body: CreateClassRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/classes';
+};
+
+export type CreateClassResponses = {
+    201: ClassDto;
+};
+
+export type CreateClassResponse = CreateClassResponses[keyof CreateClassResponses];
+
+export type GetClassData = {
+    body?: never;
+    path: {
+        /**
+         * Class ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/classes/{id}';
+};
+
+export type GetClassResponses = {
+    200: ClassDto;
+};
+
+export type GetClassResponse = GetClassResponses[keyof GetClassResponses];
+
+export type ListCurrenciesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/currencies';
+};
+
+export type ListCurrenciesResponses = {
+    200: Array<CurrencyDto>;
+};
+
+export type ListCurrenciesResponse = ListCurrenciesResponses[keyof ListCurrenciesResponses];
+
+export type ListDocumentsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/documents';
+};
+
+export type ListDocumentsResponses = {
+    200: Array<DocumentDto>;
+};
+
+export type ListDocumentsResponse = ListDocumentsResponses[keyof ListDocumentsResponses];
+
+export type UploadDocumentData = {
+    body: UploadDocumentRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/documents';
+};
+
+export type UploadDocumentResponses = {
+    201: DocumentDto;
+};
+
+export type UploadDocumentResponse = UploadDocumentResponses[keyof UploadDocumentResponses];
+
+export type DeleteDocumentData = {
+    body?: never;
+    path: {
+        /**
+         * Document ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{id}';
+};
+
+export type DeleteDocumentResponses = {
+    /**
+     * Deleted
+     */
+    204: void;
+};
+
+export type DeleteDocumentResponse = DeleteDocumentResponses[keyof DeleteDocumentResponses];
+
+export type GetDocumentData = {
+    body?: never;
+    path: {
+        /**
+         * Document ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{id}';
+};
+
+export type GetDocumentResponses = {
+    200: DocumentDto;
+};
+
+export type GetDocumentResponse = GetDocumentResponses[keyof GetDocumentResponses];
+
+export type ListEnrollmentsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/enrollments';
+};
+
+export type ListEnrollmentsResponses = {
+    200: Array<EnrollmentDto>;
+};
+
+export type ListEnrollmentsResponse = ListEnrollmentsResponses[keyof ListEnrollmentsResponses];
+
+export type EnrollStudentData = {
+    body: EnrollStudentRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/enrollments';
+};
+
+export type EnrollStudentResponses = {
+    201: EnrollmentDto;
+};
+
+export type EnrollStudentResponse = EnrollStudentResponses[keyof EnrollStudentResponses];
+
+export type GetEnrollmentData = {
+    body?: never;
+    path: {
+        /**
+         * Enrollment ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/enrollments/{id}';
+};
+
+export type GetEnrollmentResponses = {
+    200: EnrollmentDto;
+};
+
+export type GetEnrollmentResponse = GetEnrollmentResponses[keyof GetEnrollmentResponses];
+
+export type AssignProctorData = {
+    body: AssignProctorRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/exam-proctors';
+};
+
+export type AssignProctorResponses = {
+    201: ProctorDto;
+};
+
+export type AssignProctorResponse = AssignProctorResponses[keyof AssignProctorResponses];
+
+export type ListSchedulesData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Exam Session ID
+         */
+        session_id: string;
+    };
+    url: '/api/v1/exam-schedules';
+};
+
+export type ListSchedulesResponses = {
+    200: Array<ExamScheduleDto>;
+};
+
+export type ListSchedulesResponse = ListSchedulesResponses[keyof ListSchedulesResponses];
+
+export type ScheduleExamData = {
+    body: ScheduleExamRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/exam-schedules';
+};
+
+export type ScheduleExamResponses = {
+    201: ExamScheduleDto;
+};
+
+export type ScheduleExamResponse = ScheduleExamResponses[keyof ScheduleExamResponses];
+
+export type AssignSeatingData = {
+    body: AssignSeatingRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/exam-seating';
+};
+
+export type AssignSeatingResponses = {
+    201: SeatingDto;
+};
+
+export type AssignSeatingResponse = AssignSeatingResponses[keyof AssignSeatingResponses];
+
+export type AssignSecretData = {
+    body: AssignSecretRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/exam-secrets';
+};
+
+export type AssignSecretResponses = {
+    201: SecretDto;
+};
+
+export type AssignSecretResponse = AssignSecretResponses[keyof AssignSecretResponses];
+
+export type ListSessionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/exam-sessions';
+};
+
+export type ListSessionsResponses = {
+    200: Array<ExamSessionDto>;
+};
+
+export type ListSessionsResponse = ListSessionsResponses[keyof ListSessionsResponses];
+
+export type CreateSessionData = {
+    body: CreateExamSessionRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/exam-sessions';
+};
+
+export type CreateSessionResponses = {
+    201: ExamSessionDto;
+};
+
+export type CreateSessionResponse = CreateSessionResponses[keyof CreateSessionResponses];
+
+export type GetSession2Data = {
+    body?: never;
+    path: {
+        /**
+         * Exam Session ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/exam-sessions/{id}';
+};
+
+export type GetSession2Responses = {
+    200: ExamSessionDto;
+};
+
+export type GetSession2Response = GetSession2Responses[keyof GetSession2Responses];
+
+export type ListFeeTemplatesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/fee-templates';
+};
+
+export type ListFeeTemplatesResponses = {
+    200: Array<FeeTemplateDto>;
+};
+
+export type ListFeeTemplatesResponse = ListFeeTemplatesResponses[keyof ListFeeTemplatesResponses];
+
+export type CreateFeeTemplateData = {
+    body: CreateFeeTemplateRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/fee-templates';
+};
+
+export type CreateFeeTemplateResponses = {
+    201: FeeTemplateDto;
+};
+
+export type CreateFeeTemplateResponse = CreateFeeTemplateResponses[keyof CreateFeeTemplateResponses];
+
+export type ListGradesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/grades';
+};
+
+export type ListGradesResponses = {
+    200: Array<GradeDto>;
+};
+
+export type ListGradesResponse = ListGradesResponses[keyof ListGradesResponses];
+
+export type RecordGradeData = {
+    body: RecordGradeRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/grades';
+};
+
+export type RecordGradeResponses = {
+    201: GradeDto;
+};
+
+export type RecordGradeResponse = RecordGradeResponses[keyof RecordGradeResponses];
+
+export type CalculateGradesData = {
+    body: CalculateGradesRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/grades/actions/calculate';
+};
+
+export type CalculateGradesResponses = {
+    200: CalculationResultDto;
+};
+
+export type CalculateGradesResponse = CalculateGradesResponses[keyof CalculateGradesResponses];
+
+export type ListUsersData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/iam/users';
+};
+
+export type ListUsersResponses = {
+    /**
+     * List of users
+     */
+    200: Array<UserDto>;
+};
+
+export type ListUsersResponse = ListUsersResponses[keyof ListUsersResponses];
+
+export type RegisterUserData = {
+    body: RegisterUserRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/iam/users';
+};
+
+export type RegisterUserErrors = {
+    /**
+     * Email already exists
+     */
+    409: unknown;
+};
+
+export type RegisterUserResponses = {
+    /**
+     * User registered
+     */
+    201: UserDto;
+};
+
+export type RegisterUserResponse = RegisterUserResponses[keyof RegisterUserResponses];
+
+export type GetUserData = {
+    body?: never;
+    path: {
+        /**
+         * User ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/iam/users/{id}';
+};
+
+export type GetUserErrors = {
+    /**
+     * User not found
+     */
+    404: unknown;
+};
+
+export type GetUserResponses = {
+    /**
+     * User details
+     */
+    200: UserDto;
+};
+
+export type GetUserResponse = GetUserResponses[keyof GetUserResponses];
+
+export type ListIntegrationsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/integrations';
+};
+
+export type ListIntegrationsResponses = {
+    200: Array<IntegrationDto>;
+};
+
+export type ListIntegrationsResponse = ListIntegrationsResponses[keyof ListIntegrationsResponses];
+
+export type ConnectAppData = {
+    body: ConnectAppRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/integrations';
+};
+
+export type ConnectAppResponses = {
+    201: IntegrationDto;
+};
+
+export type ConnectAppResponse = ConnectAppResponses[keyof ConnectAppResponses];
+
+export type ListOrgUnitsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/org-units';
+};
+
+export type ListOrgUnitsResponses = {
+    /**
+     * List of org units
+     */
+    200: Array<OrgUnitDto>;
+};
+
+export type ListOrgUnitsResponse = ListOrgUnitsResponses[keyof ListOrgUnitsResponses];
+
+export type CreateOrgUnitData = {
+    body: CreateOrgUnitRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/org-units';
+};
+
+export type CreateOrgUnitResponses = {
+    /**
+     * OrgUnit created
+     */
+    201: OrgUnitDto;
+};
+
+export type CreateOrgUnitResponse = CreateOrgUnitResponses[keyof CreateOrgUnitResponses];
+
+export type DeleteOrgUnitData = {
+    body?: never;
+    path: {
+        /**
+         * OrgUnit ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/org-units/{id}';
+};
+
+export type DeleteOrgUnitResponses = {
+    /**
+     * OrgUnit deleted
+     */
+    204: void;
+};
+
+export type DeleteOrgUnitResponse = DeleteOrgUnitResponses[keyof DeleteOrgUnitResponses];
+
+export type GetOrgUnitData = {
+    body?: never;
+    path: {
+        /**
+         * OrgUnit ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/org-units/{id}';
+};
+
+export type GetOrgUnitResponses = {
+    /**
+     * OrgUnit details
+     */
+    200: OrgUnitDto;
+};
+
+export type GetOrgUnitResponse = GetOrgUnitResponses[keyof GetOrgUnitResponses];
 
 export type CreateOrgData = {
     body: CreateOrgRequest;
@@ -131,41 +1424,341 @@ export type CreateOrgData = {
     url: '/api/v1/organizations';
 };
 
-export type CreateOrgErrors = {
-    /**
-     * Internal server error
-     */
-    500: unknown;
-};
-
 export type CreateOrgResponses = {
     /**
-     * Organization created successfully
+     * Organization created
      */
-    200: OrgResponse;
+    201: OrgDto;
 };
 
 export type CreateOrgResponse = CreateOrgResponses[keyof CreateOrgResponses];
 
-export type CreateOrgUnitData = {
-    body: CreateOrgUnitRequest;
+export type BootstrapOrgData = {
+    body: unknown;
     path?: never;
     query?: never;
-    url: '/api/v1/organizations/units';
+    url: '/api/v1/organizations/bootstrap';
 };
 
-export type CreateOrgUnitErrors = {
+export type BootstrapOrgResponses = {
     /**
-     * Internal server error
+     * Organization bootstrapped
      */
-    500: unknown;
+    200: unknown;
 };
 
-export type CreateOrgUnitResponses = {
+export type GetCurrentOrgData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/organizations/current';
+};
+
+export type GetCurrentOrgResponses = {
     /**
-     * Organization Unit created successfully
+     * Current organization
      */
-    200: OrgUnitResponse;
+    200: OrgDto;
 };
 
-export type CreateOrgUnitResponse = CreateOrgUnitResponses[keyof CreateOrgUnitResponses];
+export type GetCurrentOrgResponse = GetCurrentOrgResponses[keyof GetCurrentOrgResponses];
+
+export type UpdateCurrentOrgData = {
+    body: UpdateOrgRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/organizations/current';
+};
+
+export type UpdateCurrentOrgResponses = {
+    /**
+     * Organization updated
+     */
+    200: OrgDto;
+};
+
+export type UpdateCurrentOrgResponse = UpdateCurrentOrgResponses[keyof UpdateCurrentOrgResponses];
+
+export type GetDashboardData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/organizations/current/dashboard';
+};
+
+export type GetDashboardResponses = {
+    /**
+     * Dashboard statistics
+     */
+    200: DashboardCountsDto;
+};
+
+export type GetDashboardResponse = GetDashboardResponses[keyof GetDashboardResponses];
+
+export type GetSettingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/organizations/current/settings';
+};
+
+export type GetSettingsResponses = {
+    /**
+     * Organization settings
+     */
+    200: OrganizationSettingsDto;
+};
+
+export type GetSettingsResponse = GetSettingsResponses[keyof GetSettingsResponses];
+
+export type UpdateSettingsData = {
+    body: OrganizationSettingsDto;
+    path?: never;
+    query?: never;
+    url: '/api/v1/organizations/current/settings';
+};
+
+export type UpdateSettingsResponses = {
+    /**
+     * Settings updated
+     */
+    200: OrganizationSettingsDto;
+};
+
+export type UpdateSettingsResponse = UpdateSettingsResponses[keyof UpdateSettingsResponses];
+
+export type ListPaymentsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/payments';
+};
+
+export type ListPaymentsResponses = {
+    200: Array<PaymentDto>;
+};
+
+export type ListPaymentsResponse = ListPaymentsResponses[keyof ListPaymentsResponses];
+
+export type ProcessPaymentData = {
+    body: ProcessPaymentRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/payments';
+};
+
+export type ProcessPaymentResponses = {
+    201: PaymentDto;
+};
+
+export type ProcessPaymentResponse = ProcessPaymentResponses[keyof ProcessPaymentResponses];
+
+export type ListPeriodTemplatesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/period-templates';
+};
+
+export type ListPeriodTemplatesResponses = {
+    200: Array<PeriodTemplateDto>;
+};
+
+export type ListPeriodTemplatesResponse = ListPeriodTemplatesResponses[keyof ListPeriodTemplatesResponses];
+
+export type ListRoomsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/rooms';
+};
+
+export type ListRoomsResponses = {
+    200: Array<RoomDto>;
+};
+
+export type ListRoomsResponse = ListRoomsResponses[keyof ListRoomsResponses];
+
+export type CreateRoomData = {
+    body: CreateRoomRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/rooms';
+};
+
+export type CreateRoomResponses = {
+    201: RoomDto;
+};
+
+export type CreateRoomResponse = CreateRoomResponses[keyof CreateRoomResponses];
+
+export type GetRoomData = {
+    body?: never;
+    path: {
+        /**
+         * Room ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/rooms/{id}';
+};
+
+export type GetRoomResponses = {
+    200: RoomDto;
+};
+
+export type GetRoomResponse = GetRoomResponses[keyof GetRoomResponses];
+
+export type ListLessonsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/scheduled-lessons';
+};
+
+export type ListLessonsResponses = {
+    200: Array<ScheduledLessonDto>;
+};
+
+export type ListLessonsResponse = ListLessonsResponses[keyof ListLessonsResponses];
+
+export type ScheduleLessonData = {
+    body: ScheduleLessonRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/scheduled-lessons';
+};
+
+export type ScheduleLessonResponses = {
+    201: ScheduledLessonDto;
+};
+
+export type ScheduleLessonResponse = ScheduleLessonResponses[keyof ScheduleLessonResponses];
+
+export type ListFeesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/student-fees';
+};
+
+export type ListFeesResponses = {
+    200: Array<StudentFeeDto>;
+};
+
+export type ListFeesResponse = ListFeesResponses[keyof ListFeesResponses];
+
+export type GenerateFeeData = {
+    body: GenerateFeeRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/student-fees';
+};
+
+export type GenerateFeeResponses = {
+    201: StudentFeeDto;
+};
+
+export type GenerateFeeResponse = GenerateFeeResponses[keyof GenerateFeeResponses];
+
+export type ListGuardiansData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Student ID
+         */
+        student_id: string;
+    };
+    url: '/api/v1/student-guardians';
+};
+
+export type ListGuardiansResponses = {
+    200: Array<GuardianDto>;
+};
+
+export type ListGuardiansResponse = ListGuardiansResponses[keyof ListGuardiansResponses];
+
+export type AssignGuardianData = {
+    body: AssignGuardianRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/student-guardians';
+};
+
+export type AssignGuardianResponses = {
+    201: GuardianDto;
+};
+
+export type AssignGuardianResponse = AssignGuardianResponses[keyof AssignGuardianResponses];
+
+export type ListSubjectsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/subjects';
+};
+
+export type ListSubjectsResponses = {
+    200: Array<SubjectDto>;
+};
+
+export type ListSubjectsResponse = ListSubjectsResponses[keyof ListSubjectsResponses];
+
+export type CreateSubjectData = {
+    body: CreateSubjectRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/subjects';
+};
+
+export type CreateSubjectResponses = {
+    201: SubjectDto;
+};
+
+export type CreateSubjectResponse = CreateSubjectResponses[keyof CreateSubjectResponses];
+
+export type GetSubjectData = {
+    body?: never;
+    path: {
+        /**
+         * Subject ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/subjects/{id}';
+};
+
+export type GetSubjectResponses = {
+    200: SubjectDto;
+};
+
+export type GetSubjectResponse = GetSubjectResponses[keyof GetSubjectResponses];
+
+export type ListTimeSlotsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/time-slots';
+};
+
+export type ListTimeSlotsResponses = {
+    200: Array<TimeSlotDto>;
+};
+
+export type ListTimeSlotsResponse = ListTimeSlotsResponses[keyof ListTimeSlotsResponses];
+
+export type CreateTimeSlotData = {
+    body: CreateTimeSlotRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/time-slots';
+};
+
+export type CreateTimeSlotResponses = {
+    201: TimeSlotDto;
+};
+
+export type CreateTimeSlotResponse = CreateTimeSlotResponses[keyof CreateTimeSlotResponses];

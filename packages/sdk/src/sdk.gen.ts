@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client/index.js';
-import type { CreateOrgData, CreateOrgErrors, CreateOrgResponses, CreateOrgUnitData, CreateOrgUnitErrors, CreateOrgUnitResponses } from './types.gen.js';
+import type { AssignClassSubjectData, AssignClassSubjectResponses, AssignGuardianData, AssignGuardianResponses, AssignProctorData, AssignProctorResponses, AssignSeatingData, AssignSeatingResponses, AssignSecretData, AssignSecretResponses, BootstrapOrgData, BootstrapOrgResponses, CalculateGradesData, CalculateGradesResponses, ConnectAppData, ConnectAppResponses, CreateAccountData, CreateAccountResponses, CreateClassData, CreateClassResponses, CreateFeeTemplateData, CreateFeeTemplateResponses, CreateOrgData, CreateOrgResponses, CreateOrgUnitData, CreateOrgUnitResponses, CreatePeriodData, CreatePeriodResponses, CreateRoomData, CreateRoomResponses, CreateSchemeData, CreateSchemeResponses, CreateSessionData, CreateSessionResponses, CreateSubjectData, CreateSubjectResponses, CreateTimeSlotData, CreateTimeSlotResponses, CreateYearData, CreateYearResponses, DeleteDocumentData, DeleteDocumentResponses, DeleteOrgUnitData, DeleteOrgUnitResponses, EnrollStudentData, EnrollStudentResponses, GenerateFeeData, GenerateFeeResponses, GetClassData, GetClassResponses, GetCurrentContextData, GetCurrentContextResponses, GetCurrentOrgData, GetCurrentOrgResponses, GetDashboardData, GetDashboardResponses, GetDocumentData, GetDocumentResponses, GetEnrollmentData, GetEnrollmentResponses, GetOrgUnitData, GetOrgUnitResponses, GetPeriodData, GetPeriodResponses, GetRoomData, GetRoomResponses, GetSchemeData, GetSchemeResponses, GetSession2Data, GetSession2Responses, GetSessionData, GetSessionErrors, GetSessionResponses, GetSettingsData, GetSettingsResponses, GetSubjectData, GetSubjectResponses, GetUserData, GetUserErrors, GetUserResponses, GetYearData, GetYearResponses, ListAccountsData, ListAccountsResponses, ListAttendanceData, ListAttendanceResponses, ListClassesData, ListClassesResponses, ListClassSubjectsData, ListClassSubjectsResponses, ListCurrenciesData, ListCurrenciesResponses, ListDocumentsData, ListDocumentsResponses, ListEnrollmentsData, ListEnrollmentsResponses, ListFeesData, ListFeesResponses, ListFeeTemplatesData, ListFeeTemplatesResponses, ListGradesData, ListGradesResponses, ListGuardiansData, ListGuardiansResponses, ListIntegrationsData, ListIntegrationsResponses, ListLessonsData, ListLessonsResponses, ListOrgUnitsData, ListOrgUnitsResponses, ListPaymentsData, ListPaymentsResponses, ListPeriodsData, ListPeriodsResponses, ListPeriodTemplatesData, ListPeriodTemplatesResponses, ListRoomsData, ListRoomsResponses, ListSchedulesData, ListSchedulesResponses, ListSchemesData, ListSchemesResponses, ListSessionsData, ListSessionsResponses, ListSubjectsData, ListSubjectsResponses, ListTimeSlotsData, ListTimeSlotsResponses, ListUsersData, ListUsersResponses, ListYearsData, ListYearsResponses, LoginData, LoginErrors, LoginResponses, MarkAttendanceData, MarkAttendanceResponses, ProcessPaymentData, ProcessPaymentResponses, RecordGradeData, RecordGradeResponses, RegisterUserData, RegisterUserErrors, RegisterUserResponses, ScheduleExamData, ScheduleExamResponses, ScheduleLessonData, ScheduleLessonResponses, UpdateCurrentOrgData, UpdateCurrentOrgResponses, UpdateSettingsData, UpdateSettingsResponses, UploadDocumentData, UploadDocumentResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -18,7 +18,256 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
     meta?: keyof ClientMeta extends never ? Record<string, unknown> : ClientMeta;
 };
 
-export const createOrg = <ThrowOnError extends boolean = false>(options: Options<CreateOrgData, ThrowOnError>): RequestResult<CreateOrgResponses, CreateOrgErrors, ThrowOnError> => (options.client ?? client).post<CreateOrgResponses, CreateOrgErrors, ThrowOnError>({
+export const listPeriods = <ThrowOnError extends boolean = false>(options?: Options<ListPeriodsData, ThrowOnError>): RequestResult<ListPeriodsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListPeriodsResponses, unknown, ThrowOnError>({ url: '/api/v1/academic-periods', ...options });
+
+export const createPeriod = <ThrowOnError extends boolean = false>(options: Options<CreatePeriodData, ThrowOnError>): RequestResult<CreatePeriodResponses, unknown, ThrowOnError> => (options.client ?? client).post<CreatePeriodResponses, unknown, ThrowOnError>({
+    url: '/api/v1/academic-periods',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const getPeriod = <ThrowOnError extends boolean = false>(options: Options<GetPeriodData, ThrowOnError>): RequestResult<GetPeriodResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetPeriodResponses, unknown, ThrowOnError>({ url: '/api/v1/academic-periods/{id}', ...options });
+
+export const listYears = <ThrowOnError extends boolean = false>(options?: Options<ListYearsData, ThrowOnError>): RequestResult<ListYearsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListYearsResponses, unknown, ThrowOnError>({ url: '/api/v1/academic-years', ...options });
+
+export const createYear = <ThrowOnError extends boolean = false>(options: Options<CreateYearData, ThrowOnError>): RequestResult<CreateYearResponses, unknown, ThrowOnError> => (options.client ?? client).post<CreateYearResponses, unknown, ThrowOnError>({
+    url: '/api/v1/academic-years',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const getCurrentContext = <ThrowOnError extends boolean = false>(options?: Options<GetCurrentContextData, ThrowOnError>): RequestResult<GetCurrentContextResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetCurrentContextResponses, unknown, ThrowOnError>({ url: '/api/v1/academic-years/current', ...options });
+
+export const getYear = <ThrowOnError extends boolean = false>(options: Options<GetYearData, ThrowOnError>): RequestResult<GetYearResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetYearResponses, unknown, ThrowOnError>({ url: '/api/v1/academic-years/{id}', ...options });
+
+export const listAccounts = <ThrowOnError extends boolean = false>(options?: Options<ListAccountsData, ThrowOnError>): RequestResult<ListAccountsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListAccountsResponses, unknown, ThrowOnError>({ url: '/api/v1/accounts', ...options });
+
+export const createAccount = <ThrowOnError extends boolean = false>(options: Options<CreateAccountData, ThrowOnError>): RequestResult<CreateAccountResponses, unknown, ThrowOnError> => (options.client ?? client).post<CreateAccountResponses, unknown, ThrowOnError>({
+    url: '/api/v1/accounts',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const listSchemes = <ThrowOnError extends boolean = false>(options?: Options<ListSchemesData, ThrowOnError>): RequestResult<ListSchemesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListSchemesResponses, unknown, ThrowOnError>({ url: '/api/v1/assessment-schemes', ...options });
+
+export const createScheme = <ThrowOnError extends boolean = false>(options: Options<CreateSchemeData, ThrowOnError>): RequestResult<CreateSchemeResponses, unknown, ThrowOnError> => (options.client ?? client).post<CreateSchemeResponses, unknown, ThrowOnError>({
+    url: '/api/v1/assessment-schemes',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const getScheme = <ThrowOnError extends boolean = false>(options: Options<GetSchemeData, ThrowOnError>): RequestResult<GetSchemeResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetSchemeResponses, unknown, ThrowOnError>({ url: '/api/v1/assessment-schemes/{id}', ...options });
+
+export const listAttendance = <ThrowOnError extends boolean = false>(options: Options<ListAttendanceData, ThrowOnError>): RequestResult<ListAttendanceResponses, unknown, ThrowOnError> => (options.client ?? client).get<ListAttendanceResponses, unknown, ThrowOnError>({ url: '/api/v1/attendance', ...options });
+
+export const markAttendance = <ThrowOnError extends boolean = false>(options: Options<MarkAttendanceData, ThrowOnError>): RequestResult<MarkAttendanceResponses, unknown, ThrowOnError> => (options.client ?? client).post<MarkAttendanceResponses, unknown, ThrowOnError>({
+    url: '/api/v1/attendance',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const login = <ThrowOnError extends boolean = false>(options: Options<LoginData, ThrowOnError>): RequestResult<LoginResponses, LoginErrors, ThrowOnError> => (options.client ?? client).post<LoginResponses, LoginErrors, ThrowOnError>({
+    url: '/api/v1/auth/login',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const getSession = <ThrowOnError extends boolean = false>(options?: Options<GetSessionData, ThrowOnError>): RequestResult<GetSessionResponses, GetSessionErrors, ThrowOnError> => (options?.client ?? client).get<GetSessionResponses, GetSessionErrors, ThrowOnError>({ url: '/api/v1/auth/session', ...options });
+
+export const listClassSubjects = <ThrowOnError extends boolean = false>(options: Options<ListClassSubjectsData, ThrowOnError>): RequestResult<ListClassSubjectsResponses, unknown, ThrowOnError> => (options.client ?? client).get<ListClassSubjectsResponses, unknown, ThrowOnError>({ url: '/api/v1/class-subjects', ...options });
+
+export const assignClassSubject = <ThrowOnError extends boolean = false>(options: Options<AssignClassSubjectData, ThrowOnError>): RequestResult<AssignClassSubjectResponses, unknown, ThrowOnError> => (options.client ?? client).post<AssignClassSubjectResponses, unknown, ThrowOnError>({
+    url: '/api/v1/class-subjects',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const listClasses = <ThrowOnError extends boolean = false>(options?: Options<ListClassesData, ThrowOnError>): RequestResult<ListClassesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListClassesResponses, unknown, ThrowOnError>({ url: '/api/v1/classes', ...options });
+
+export const createClass = <ThrowOnError extends boolean = false>(options: Options<CreateClassData, ThrowOnError>): RequestResult<CreateClassResponses, unknown, ThrowOnError> => (options.client ?? client).post<CreateClassResponses, unknown, ThrowOnError>({
+    url: '/api/v1/classes',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const getClass = <ThrowOnError extends boolean = false>(options: Options<GetClassData, ThrowOnError>): RequestResult<GetClassResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetClassResponses, unknown, ThrowOnError>({ url: '/api/v1/classes/{id}', ...options });
+
+export const listCurrencies = <ThrowOnError extends boolean = false>(options?: Options<ListCurrenciesData, ThrowOnError>): RequestResult<ListCurrenciesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListCurrenciesResponses, unknown, ThrowOnError>({ url: '/api/v1/currencies', ...options });
+
+export const listDocuments = <ThrowOnError extends boolean = false>(options?: Options<ListDocumentsData, ThrowOnError>): RequestResult<ListDocumentsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListDocumentsResponses, unknown, ThrowOnError>({ url: '/api/v1/documents', ...options });
+
+export const uploadDocument = <ThrowOnError extends boolean = false>(options: Options<UploadDocumentData, ThrowOnError>): RequestResult<UploadDocumentResponses, unknown, ThrowOnError> => (options.client ?? client).post<UploadDocumentResponses, unknown, ThrowOnError>({
+    url: '/api/v1/documents',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const deleteDocument = <ThrowOnError extends boolean = false>(options: Options<DeleteDocumentData, ThrowOnError>): RequestResult<DeleteDocumentResponses, unknown, ThrowOnError> => (options.client ?? client).delete<DeleteDocumentResponses, unknown, ThrowOnError>({ url: '/api/v1/documents/{id}', ...options });
+
+export const getDocument = <ThrowOnError extends boolean = false>(options: Options<GetDocumentData, ThrowOnError>): RequestResult<GetDocumentResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetDocumentResponses, unknown, ThrowOnError>({ url: '/api/v1/documents/{id}', ...options });
+
+export const listEnrollments = <ThrowOnError extends boolean = false>(options?: Options<ListEnrollmentsData, ThrowOnError>): RequestResult<ListEnrollmentsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListEnrollmentsResponses, unknown, ThrowOnError>({ url: '/api/v1/enrollments', ...options });
+
+export const enrollStudent = <ThrowOnError extends boolean = false>(options: Options<EnrollStudentData, ThrowOnError>): RequestResult<EnrollStudentResponses, unknown, ThrowOnError> => (options.client ?? client).post<EnrollStudentResponses, unknown, ThrowOnError>({
+    url: '/api/v1/enrollments',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const getEnrollment = <ThrowOnError extends boolean = false>(options: Options<GetEnrollmentData, ThrowOnError>): RequestResult<GetEnrollmentResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetEnrollmentResponses, unknown, ThrowOnError>({ url: '/api/v1/enrollments/{id}', ...options });
+
+export const assignProctor = <ThrowOnError extends boolean = false>(options: Options<AssignProctorData, ThrowOnError>): RequestResult<AssignProctorResponses, unknown, ThrowOnError> => (options.client ?? client).post<AssignProctorResponses, unknown, ThrowOnError>({
+    url: '/api/v1/exam-proctors',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const listSchedules = <ThrowOnError extends boolean = false>(options: Options<ListSchedulesData, ThrowOnError>): RequestResult<ListSchedulesResponses, unknown, ThrowOnError> => (options.client ?? client).get<ListSchedulesResponses, unknown, ThrowOnError>({ url: '/api/v1/exam-schedules', ...options });
+
+export const scheduleExam = <ThrowOnError extends boolean = false>(options: Options<ScheduleExamData, ThrowOnError>): RequestResult<ScheduleExamResponses, unknown, ThrowOnError> => (options.client ?? client).post<ScheduleExamResponses, unknown, ThrowOnError>({
+    url: '/api/v1/exam-schedules',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const assignSeating = <ThrowOnError extends boolean = false>(options: Options<AssignSeatingData, ThrowOnError>): RequestResult<AssignSeatingResponses, unknown, ThrowOnError> => (options.client ?? client).post<AssignSeatingResponses, unknown, ThrowOnError>({
+    url: '/api/v1/exam-seating',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const assignSecret = <ThrowOnError extends boolean = false>(options: Options<AssignSecretData, ThrowOnError>): RequestResult<AssignSecretResponses, unknown, ThrowOnError> => (options.client ?? client).post<AssignSecretResponses, unknown, ThrowOnError>({
+    url: '/api/v1/exam-secrets',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const listSessions = <ThrowOnError extends boolean = false>(options?: Options<ListSessionsData, ThrowOnError>): RequestResult<ListSessionsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListSessionsResponses, unknown, ThrowOnError>({ url: '/api/v1/exam-sessions', ...options });
+
+export const createSession = <ThrowOnError extends boolean = false>(options: Options<CreateSessionData, ThrowOnError>): RequestResult<CreateSessionResponses, unknown, ThrowOnError> => (options.client ?? client).post<CreateSessionResponses, unknown, ThrowOnError>({
+    url: '/api/v1/exam-sessions',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const getSession2 = <ThrowOnError extends boolean = false>(options: Options<GetSession2Data, ThrowOnError>): RequestResult<GetSession2Responses, unknown, ThrowOnError> => (options.client ?? client).get<GetSession2Responses, unknown, ThrowOnError>({ url: '/api/v1/exam-sessions/{id}', ...options });
+
+export const listFeeTemplates = <ThrowOnError extends boolean = false>(options?: Options<ListFeeTemplatesData, ThrowOnError>): RequestResult<ListFeeTemplatesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListFeeTemplatesResponses, unknown, ThrowOnError>({ url: '/api/v1/fee-templates', ...options });
+
+export const createFeeTemplate = <ThrowOnError extends boolean = false>(options: Options<CreateFeeTemplateData, ThrowOnError>): RequestResult<CreateFeeTemplateResponses, unknown, ThrowOnError> => (options.client ?? client).post<CreateFeeTemplateResponses, unknown, ThrowOnError>({
+    url: '/api/v1/fee-templates',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const listGrades = <ThrowOnError extends boolean = false>(options?: Options<ListGradesData, ThrowOnError>): RequestResult<ListGradesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListGradesResponses, unknown, ThrowOnError>({ url: '/api/v1/grades', ...options });
+
+export const recordGrade = <ThrowOnError extends boolean = false>(options: Options<RecordGradeData, ThrowOnError>): RequestResult<RecordGradeResponses, unknown, ThrowOnError> => (options.client ?? client).post<RecordGradeResponses, unknown, ThrowOnError>({
+    url: '/api/v1/grades',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const calculateGrades = <ThrowOnError extends boolean = false>(options: Options<CalculateGradesData, ThrowOnError>): RequestResult<CalculateGradesResponses, unknown, ThrowOnError> => (options.client ?? client).post<CalculateGradesResponses, unknown, ThrowOnError>({
+    url: '/api/v1/grades/actions/calculate',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const listUsers = <ThrowOnError extends boolean = false>(options?: Options<ListUsersData, ThrowOnError>): RequestResult<ListUsersResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListUsersResponses, unknown, ThrowOnError>({ url: '/api/v1/iam/users', ...options });
+
+export const registerUser = <ThrowOnError extends boolean = false>(options: Options<RegisterUserData, ThrowOnError>): RequestResult<RegisterUserResponses, RegisterUserErrors, ThrowOnError> => (options.client ?? client).post<RegisterUserResponses, RegisterUserErrors, ThrowOnError>({
+    url: '/api/v1/iam/users',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const getUser = <ThrowOnError extends boolean = false>(options: Options<GetUserData, ThrowOnError>): RequestResult<GetUserResponses, GetUserErrors, ThrowOnError> => (options.client ?? client).get<GetUserResponses, GetUserErrors, ThrowOnError>({ url: '/api/v1/iam/users/{id}', ...options });
+
+export const listIntegrations = <ThrowOnError extends boolean = false>(options?: Options<ListIntegrationsData, ThrowOnError>): RequestResult<ListIntegrationsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListIntegrationsResponses, unknown, ThrowOnError>({ url: '/api/v1/integrations', ...options });
+
+export const connectApp = <ThrowOnError extends boolean = false>(options: Options<ConnectAppData, ThrowOnError>): RequestResult<ConnectAppResponses, unknown, ThrowOnError> => (options.client ?? client).post<ConnectAppResponses, unknown, ThrowOnError>({
+    url: '/api/v1/integrations',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const listOrgUnits = <ThrowOnError extends boolean = false>(options?: Options<ListOrgUnitsData, ThrowOnError>): RequestResult<ListOrgUnitsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListOrgUnitsResponses, unknown, ThrowOnError>({ url: '/api/v1/org-units', ...options });
+
+export const createOrgUnit = <ThrowOnError extends boolean = false>(options: Options<CreateOrgUnitData, ThrowOnError>): RequestResult<CreateOrgUnitResponses, unknown, ThrowOnError> => (options.client ?? client).post<CreateOrgUnitResponses, unknown, ThrowOnError>({
+    url: '/api/v1/org-units',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const deleteOrgUnit = <ThrowOnError extends boolean = false>(options: Options<DeleteOrgUnitData, ThrowOnError>): RequestResult<DeleteOrgUnitResponses, unknown, ThrowOnError> => (options.client ?? client).delete<DeleteOrgUnitResponses, unknown, ThrowOnError>({ url: '/api/v1/org-units/{id}', ...options });
+
+export const getOrgUnit = <ThrowOnError extends boolean = false>(options: Options<GetOrgUnitData, ThrowOnError>): RequestResult<GetOrgUnitResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetOrgUnitResponses, unknown, ThrowOnError>({ url: '/api/v1/org-units/{id}', ...options });
+
+export const createOrg = <ThrowOnError extends boolean = false>(options: Options<CreateOrgData, ThrowOnError>): RequestResult<CreateOrgResponses, unknown, ThrowOnError> => (options.client ?? client).post<CreateOrgResponses, unknown, ThrowOnError>({
     url: '/api/v1/organizations',
     ...options,
     headers: {
@@ -27,8 +276,115 @@ export const createOrg = <ThrowOnError extends boolean = false>(options: Options
     }
 });
 
-export const createOrgUnit = <ThrowOnError extends boolean = false>(options: Options<CreateOrgUnitData, ThrowOnError>): RequestResult<CreateOrgUnitResponses, CreateOrgUnitErrors, ThrowOnError> => (options.client ?? client).post<CreateOrgUnitResponses, CreateOrgUnitErrors, ThrowOnError>({
-    url: '/api/v1/organizations/units',
+export const bootstrapOrg = <ThrowOnError extends boolean = false>(options: Options<BootstrapOrgData, ThrowOnError>): RequestResult<BootstrapOrgResponses, unknown, ThrowOnError> => (options.client ?? client).post<BootstrapOrgResponses, unknown, ThrowOnError>({
+    url: '/api/v1/organizations/bootstrap',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const getCurrentOrg = <ThrowOnError extends boolean = false>(options?: Options<GetCurrentOrgData, ThrowOnError>): RequestResult<GetCurrentOrgResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetCurrentOrgResponses, unknown, ThrowOnError>({ url: '/api/v1/organizations/current', ...options });
+
+export const updateCurrentOrg = <ThrowOnError extends boolean = false>(options: Options<UpdateCurrentOrgData, ThrowOnError>): RequestResult<UpdateCurrentOrgResponses, unknown, ThrowOnError> => (options.client ?? client).put<UpdateCurrentOrgResponses, unknown, ThrowOnError>({
+    url: '/api/v1/organizations/current',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const getDashboard = <ThrowOnError extends boolean = false>(options?: Options<GetDashboardData, ThrowOnError>): RequestResult<GetDashboardResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetDashboardResponses, unknown, ThrowOnError>({ url: '/api/v1/organizations/current/dashboard', ...options });
+
+export const getSettings = <ThrowOnError extends boolean = false>(options?: Options<GetSettingsData, ThrowOnError>): RequestResult<GetSettingsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetSettingsResponses, unknown, ThrowOnError>({ url: '/api/v1/organizations/current/settings', ...options });
+
+export const updateSettings = <ThrowOnError extends boolean = false>(options: Options<UpdateSettingsData, ThrowOnError>): RequestResult<UpdateSettingsResponses, unknown, ThrowOnError> => (options.client ?? client).put<UpdateSettingsResponses, unknown, ThrowOnError>({
+    url: '/api/v1/organizations/current/settings',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const listPayments = <ThrowOnError extends boolean = false>(options?: Options<ListPaymentsData, ThrowOnError>): RequestResult<ListPaymentsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListPaymentsResponses, unknown, ThrowOnError>({ url: '/api/v1/payments', ...options });
+
+export const processPayment = <ThrowOnError extends boolean = false>(options: Options<ProcessPaymentData, ThrowOnError>): RequestResult<ProcessPaymentResponses, unknown, ThrowOnError> => (options.client ?? client).post<ProcessPaymentResponses, unknown, ThrowOnError>({
+    url: '/api/v1/payments',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const listPeriodTemplates = <ThrowOnError extends boolean = false>(options?: Options<ListPeriodTemplatesData, ThrowOnError>): RequestResult<ListPeriodTemplatesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListPeriodTemplatesResponses, unknown, ThrowOnError>({ url: '/api/v1/period-templates', ...options });
+
+export const listRooms = <ThrowOnError extends boolean = false>(options?: Options<ListRoomsData, ThrowOnError>): RequestResult<ListRoomsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListRoomsResponses, unknown, ThrowOnError>({ url: '/api/v1/rooms', ...options });
+
+export const createRoom = <ThrowOnError extends boolean = false>(options: Options<CreateRoomData, ThrowOnError>): RequestResult<CreateRoomResponses, unknown, ThrowOnError> => (options.client ?? client).post<CreateRoomResponses, unknown, ThrowOnError>({
+    url: '/api/v1/rooms',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const getRoom = <ThrowOnError extends boolean = false>(options: Options<GetRoomData, ThrowOnError>): RequestResult<GetRoomResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetRoomResponses, unknown, ThrowOnError>({ url: '/api/v1/rooms/{id}', ...options });
+
+export const listLessons = <ThrowOnError extends boolean = false>(options?: Options<ListLessonsData, ThrowOnError>): RequestResult<ListLessonsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListLessonsResponses, unknown, ThrowOnError>({ url: '/api/v1/scheduled-lessons', ...options });
+
+export const scheduleLesson = <ThrowOnError extends boolean = false>(options: Options<ScheduleLessonData, ThrowOnError>): RequestResult<ScheduleLessonResponses, unknown, ThrowOnError> => (options.client ?? client).post<ScheduleLessonResponses, unknown, ThrowOnError>({
+    url: '/api/v1/scheduled-lessons',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const listFees = <ThrowOnError extends boolean = false>(options?: Options<ListFeesData, ThrowOnError>): RequestResult<ListFeesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListFeesResponses, unknown, ThrowOnError>({ url: '/api/v1/student-fees', ...options });
+
+export const generateFee = <ThrowOnError extends boolean = false>(options: Options<GenerateFeeData, ThrowOnError>): RequestResult<GenerateFeeResponses, unknown, ThrowOnError> => (options.client ?? client).post<GenerateFeeResponses, unknown, ThrowOnError>({
+    url: '/api/v1/student-fees',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const listGuardians = <ThrowOnError extends boolean = false>(options: Options<ListGuardiansData, ThrowOnError>): RequestResult<ListGuardiansResponses, unknown, ThrowOnError> => (options.client ?? client).get<ListGuardiansResponses, unknown, ThrowOnError>({ url: '/api/v1/student-guardians', ...options });
+
+export const assignGuardian = <ThrowOnError extends boolean = false>(options: Options<AssignGuardianData, ThrowOnError>): RequestResult<AssignGuardianResponses, unknown, ThrowOnError> => (options.client ?? client).post<AssignGuardianResponses, unknown, ThrowOnError>({
+    url: '/api/v1/student-guardians',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const listSubjects = <ThrowOnError extends boolean = false>(options?: Options<ListSubjectsData, ThrowOnError>): RequestResult<ListSubjectsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListSubjectsResponses, unknown, ThrowOnError>({ url: '/api/v1/subjects', ...options });
+
+export const createSubject = <ThrowOnError extends boolean = false>(options: Options<CreateSubjectData, ThrowOnError>): RequestResult<CreateSubjectResponses, unknown, ThrowOnError> => (options.client ?? client).post<CreateSubjectResponses, unknown, ThrowOnError>({
+    url: '/api/v1/subjects',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const getSubject = <ThrowOnError extends boolean = false>(options: Options<GetSubjectData, ThrowOnError>): RequestResult<GetSubjectResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetSubjectResponses, unknown, ThrowOnError>({ url: '/api/v1/subjects/{id}', ...options });
+
+export const listTimeSlots = <ThrowOnError extends boolean = false>(options?: Options<ListTimeSlotsData, ThrowOnError>): RequestResult<ListTimeSlotsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListTimeSlotsResponses, unknown, ThrowOnError>({ url: '/api/v1/time-slots', ...options });
+
+export const createTimeSlot = <ThrowOnError extends boolean = false>(options: Options<CreateTimeSlotData, ThrowOnError>): RequestResult<CreateTimeSlotResponses, unknown, ThrowOnError> => (options.client ?? client).post<CreateTimeSlotResponses, unknown, ThrowOnError>({
+    url: '/api/v1/time-slots',
     ...options,
     headers: {
         'Content-Type': 'application/json',

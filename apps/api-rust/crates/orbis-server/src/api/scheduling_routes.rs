@@ -30,23 +30,23 @@ pub struct CreateRoomRequest {
     pub capacity: i32,
 }
 
-#[derive(Serialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct TimeSlotDto {
     pub id: Uuid,
     pub period_id: Uuid,
-    pub day_of_week: i32,
-    pub start_time: String,
-    pub end_time: String,
-    pub label: String,
+    pub day_of_week: i16,
+    pub start_time: chrono::NaiveTime,
+    pub end_time: chrono::NaiveTime,
+    pub slot_index: i32,
 }
 
 #[derive(Deserialize, ToSchema)]
 pub struct CreateTimeSlotRequest {
     pub period_id: Uuid,
-    pub day_of_week: i32,
-    pub start_time: String,
-    pub end_time: String,
-    pub label: String,
+    pub day_of_week: i16,
+    pub start_time: chrono::NaiveTime,
+    pub end_time: chrono::NaiveTime,
+    pub slot_index: i32,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -80,7 +80,7 @@ async fn create_room(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<CreateRoomRequest>,
 ) -> Result<Json<ApiResponse<RoomDto>>, ApiError> {
     let uc = CreateRoomUseCase { room_repo: state.room_repo.clone(), event_bus: state.event_bus.clone() };
-    let r = uc.execute(&ctx, ctx.tenant_id, p.name, p.room_type, p.capacity).await?;
+    let r = uc.execute(&ctx, ctx.tenant_id, p.name, p.capacity, p.room_type).await?;
     Ok(ApiResponse::ok(RoomDto { id: r.id, org_id: r.org_id, name: r.name, room_type: r.room_type, capacity: r.capacity }))
 }
 
@@ -94,7 +94,7 @@ async fn list_rooms(
     Ok(ApiResponse::ok(dtos))
 }
 
-#[utoipa::path(get, path = "/api/v1/rooms/{id}", params(("id" = Uuid, Path)),
+#[utoipa::path(get, path = "/api/v1/rooms/{id}", params(("id" = Uuid, Path, description = "Room ID")),
     responses((status = 200, body = RoomDto)), security(("bearer" = [])), tag = "Scheduling")]
 async fn get_room(
     _ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
@@ -109,8 +109,8 @@ async fn create_time_slot(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<CreateTimeSlotRequest>,
 ) -> Result<Json<ApiResponse<TimeSlotDto>>, ApiError> {
     let uc = CreateTimeSlotUseCase { time_slot_repo: state.time_slot_repo.clone(), event_bus: state.event_bus.clone() };
-    let t = uc.execute(&ctx, p.period_id, p.day_of_week, p.start_time, p.end_time, p.label).await?;
-    Ok(ApiResponse::ok(TimeSlotDto { id: t.id, period_id: t.period_id, day_of_week: t.day_of_week, start_time: t.start_time, end_time: t.end_time, label: t.label }))
+    let t = uc.execute(&ctx, p.period_id, p.day_of_week, p.start_time, p.end_time, p.slot_index).await?;
+    Ok(ApiResponse::ok(TimeSlotDto { id: t.id, period_id: t.period_id, day_of_week: t.day_of_week, start_time: t.start_time, end_time: t.end_time, slot_index: t.slot_index }))
 }
 
 #[utoipa::path(get, path = "/api/v1/time-slots", responses((status = 200, body = Vec<TimeSlotDto>)),
@@ -122,9 +122,10 @@ async fn list_time_slots(
         Some(pid) => state.time_slot_repo.find_by_period(pid).await?,
         None => vec![],
     };
-    let dtos = slots.into_iter().map(|t| TimeSlotDto { id: t.id, period_id: t.period_id, day_of_week: t.day_of_week, start_time: t.start_time, end_time: t.end_time, label: t.label }).collect();
+    let dtos = slots.into_iter().map(|t| TimeSlotDto { id: t.id, period_id: t.period_id, day_of_week: t.day_of_week, start_time: t.start_time, end_time: t.end_time, slot_index: t.slot_index }).collect();
     Ok(ApiResponse::ok(dtos))
 }
+
 
 #[utoipa::path(post, path = "/api/v1/scheduled-lessons", request_body = ScheduleLessonRequest,
     responses((status = 201, body = ScheduledLessonDto)), security(("bearer" = [])), tag = "Scheduling")]
@@ -132,7 +133,7 @@ async fn schedule_lesson(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<ScheduleLessonRequest>,
 ) -> Result<Json<ApiResponse<ScheduledLessonDto>>, ApiError> {
     let uc = ScheduleLessonUseCase { lesson_repo: state.lesson_repo.clone(), event_bus: state.event_bus.clone() };
-    let l = uc.execute(&ctx, p.class_subject_id, p.time_slot_id, p.room_id, p.teacher_id).await?;
+    let l = uc.execute(&ctx, p.class_subject_id, p.room_id, p.time_slot_id, p.teacher_id).await?;
     Ok(ApiResponse::ok(ScheduledLessonDto { id: l.id, class_subject_id: l.class_subject_id, time_slot_id: l.time_slot_id, room_id: l.room_id, teacher_id: l.teacher_id }))
 }
 

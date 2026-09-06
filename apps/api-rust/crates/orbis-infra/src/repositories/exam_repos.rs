@@ -9,7 +9,7 @@ use orbis_domain::entities::seating_number::SeatingNumber as DomainSeatingNumber
 use orbis_domain::entities::secret_number::SecretNumber as DomainSecretNumber;
 use orbis_domain::entities::exam_proctor::ExamProctor as DomainExamProctor;
 use orbis_domain::errors::DomainError;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
+use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set, ColumnTrait, QueryFilter};
 use uuid::Uuid;
 
 use crate::models::{
@@ -33,6 +33,19 @@ impl ExamSessionRepository for ExamRepoImpl {
             name: m.name, start_date: m.start_date, end_date: m.end_date,
             status: m.status, created_at: m.created_at, updated_at: m.updated_at
         }))
+    }
+
+    async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<DomainExamSession>, DomainError> {
+        let models = ExamSessionEntity::find()
+            .filter(exam_session::Column::AcademicPeriodId.eq(period_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainExamSession {
+            id: m.id, org_id: m.org_id, academic_period_id: m.academic_period_id,
+            name: m.name, start_date: m.start_date, end_date: m.end_date,
+            status: m.status, created_at: m.created_at, updated_at: m.updated_at
+        }).collect())
     }
 
     async fn save(&self, session: &DomainExamSession) -> Result<(), DomainError> {
@@ -64,6 +77,19 @@ impl ExamScheduleRepository for ExamRepoImpl {
         }))
     }
 
+    async fn find_by_session(&self, session_id: Uuid) -> Result<Vec<DomainExamSchedule>, DomainError> {
+        let models = ExamScheduleEntity::find()
+            .filter(exam_schedule::Column::ExamSessionId.eq(session_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainExamSchedule {
+            id: m.id, exam_session_id: m.exam_session_id, class_subject_id: m.class_subject_id,
+            exam_date: m.exam_date, start_time: m.start_time, end_time: m.end_time,
+            created_at: m.created_at, updated_at: m.updated_at
+        }).collect())
+    }
+
     async fn save(&self, schedule: &DomainExamSchedule) -> Result<(), DomainError> {
         let active = exam_schedule::ActiveModel {
             id: Set(schedule.id), exam_session_id: Set(schedule.exam_session_id),
@@ -83,6 +109,20 @@ impl ExamScheduleRepository for ExamRepoImpl {
 
 #[async_trait]
 impl SeatingNumberRepository for ExamRepoImpl {
+    async fn find_by_session(&self, session_id: Uuid) -> Result<Vec<DomainSeatingNumber>, DomainError> {
+        let models = SeatingNumberEntity::find()
+            .filter(seating_number::Column::ExamSessionId.eq(session_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainSeatingNumber {
+            id: m.id, exam_session_id: m.exam_session_id,
+            student_id: m.student_id, seating_number: m.seating_number,
+            room_id: m.room_id, created_at: m.created_at,
+            updated_at: m.updated_at,
+        }).collect())
+    }
+
     async fn save(&self, seating: &DomainSeatingNumber) -> Result<(), DomainError> {
         let active = seating_number::ActiveModel {
             id: Set(seating.id), exam_session_id: Set(seating.exam_session_id),
@@ -102,6 +142,19 @@ impl SeatingNumberRepository for ExamRepoImpl {
 
 #[async_trait]
 impl SecretNumberRepository for ExamRepoImpl {
+    async fn find_by_schedule(&self, schedule_id: Uuid) -> Result<Vec<DomainSecretNumber>, DomainError> {
+        let models = SecretNumberEntity::find()
+            .filter(secret_number::Column::ExamScheduleId.eq(schedule_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainSecretNumber {
+            id: m.id, exam_schedule_id: m.exam_schedule_id,
+            student_id: m.student_id, secret_number: m.secret_number,
+            created_at: m.created_at, updated_at: m.updated_at,
+        }).collect())
+    }
+
     async fn save(&self, secret: &DomainSecretNumber) -> Result<(), DomainError> {
         let active = secret_number::ActiveModel {
             id: Set(secret.id), exam_schedule_id: Set(secret.exam_schedule_id),
@@ -120,6 +173,20 @@ impl SecretNumberRepository for ExamRepoImpl {
 
 #[async_trait]
 impl ExamProctorRepository for ExamRepoImpl {
+    async fn find_by_schedule(&self, schedule_id: Uuid) -> Result<Vec<DomainExamProctor>, DomainError> {
+        let models = ExamProctorEntity::find()
+            .filter(exam_proctor::Column::ExamScheduleId.eq(schedule_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainExamProctor {
+            id: m.id, exam_schedule_id: m.exam_schedule_id,
+            room_id: m.room_id, teacher_id: m.teacher_id,
+            is_chief: m.is_chief, created_at: m.created_at,
+            updated_at: m.updated_at,
+        }).collect())
+    }
+
     async fn save(&self, proctor: &DomainExamProctor) -> Result<(), DomainError> {
         let active = exam_proctor::ActiveModel {
             id: Set(proctor.id), exam_schedule_id: Set(proctor.exam_schedule_id),
@@ -136,3 +203,4 @@ impl ExamProctorRepository for ExamRepoImpl {
         Ok(())
     }
 }
+

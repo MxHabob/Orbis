@@ -5,7 +5,7 @@
 
 use axum::{
     extract::FromRequestParts,
-    http::{header, request::Parts, StatusCode},
+    http::{header, request::Parts},
 };
 use orbis_app::context::RequestContext;
 use orbis_domain::iam::actor::Actor;
@@ -36,6 +36,7 @@ impl std::ops::Deref for AuthContext {
     }
 }
 
+#[axum::async_trait]
 impl<S> FromRequestParts<S> for AuthContext
 where
     S: Send + Sync,
@@ -109,6 +110,7 @@ where
 /// Optional auth — doesn't reject if no token is present, but returns None.
 pub struct OptionalAuth(pub Option<RequestContext>);
 
+#[axum::async_trait]
 impl<S> FromRequestParts<S> for OptionalAuth
 where
     S: Send + Sync,
@@ -131,3 +133,4 @@ pub struct JwtClaims {
     pub role: String,
     pub exp: usize,
 }
+

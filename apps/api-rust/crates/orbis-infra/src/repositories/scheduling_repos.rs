@@ -99,7 +99,45 @@ impl ScheduledLessonRepository for SchedulingRepoImpl {
         }))
     }
 
+    async fn find_by_class_subject(&self, class_subject_id: Uuid) -> Result<Vec<DomainScheduledLesson>, DomainError> {
+        let models = ScheduledLessonEntity::find()
+            .filter(scheduled_lesson::Column::ClassSubjectId.eq(class_subject_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainScheduledLesson {
+            id: m.id, class_subject_id: m.class_subject_id, room_id: m.room_id,
+            time_slot_id: m.time_slot_id, teacher_id: m.teacher_id,
+            created_at: m.created_at, updated_at: m.updated_at
+        }).collect())
+    }
+
+    async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<DomainScheduledLesson>, DomainError> {
+        let slots = TimeSlotEntity::find()
+            .filter(time_slot::Column::PeriodId.eq(period_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        let slot_ids: Vec<Uuid> = slots.into_iter().map(|s| s.id).collect();
+
+        if slot_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let models = ScheduledLessonEntity::find()
+            .filter(scheduled_lesson::Column::TimeSlotId.is_in(slot_ids))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainScheduledLesson {
+            id: m.id, class_subject_id: m.class_subject_id, room_id: m.room_id,
+            time_slot_id: m.time_slot_id, teacher_id: m.teacher_id,
+            created_at: m.created_at, updated_at: m.updated_at
+        }).collect())
+    }
+
     async fn save(&self, lesson: &DomainScheduledLesson) -> Result<(), DomainError> {
+
         let active = scheduled_lesson::ActiveModel {
             id: Set(lesson.id), class_subject_id: Set(lesson.class_subject_id),
             room_id: Set(lesson.room_id), time_slot_id: Set(lesson.time_slot_id),

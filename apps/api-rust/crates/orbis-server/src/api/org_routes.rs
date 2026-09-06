@@ -158,49 +158,220 @@ async fn bootstrap_org(
     Ok(ApiResponse::ok(serde_json::json!(res)))
 }
 
-// ── Settings ────────────────────────────────────────────────────
+// ── Settings DTOs ───────────────────────────────────────────────
+
+#[derive(Serialize, Deserialize, ToSchema, Default)]
+pub struct OrganizationSettingsDto {
+    #[serde(default)]
+    pub academic: AcademicSettingsDto,
+    #[serde(default)]
+    pub enrollment: EnrollmentSettingsDto,
+    #[serde(default)]
+    pub finance: FinanceSettingsDto,
+    #[serde(default)]
+    pub notifications: NotificationSettingsDto,
+    #[serde(default)]
+    pub autopilot: AutopilotSettingsDto,
+}
+
+#[derive(Serialize, Deserialize, ToSchema, Default)]
+pub struct AcademicSettingsDto {
+    pub default_grading_system: String,
+}
+
+#[derive(Serialize, Deserialize, ToSchema, Default)]
+pub struct EnrollmentSettingsDto {
+    pub registration_enabled: bool,
+    pub require_admin_approval: bool,
+    pub allow_waitlist: bool,
+    pub sibling_priority_enabled: bool,
+    pub max_class_size_default: i32,
+    pub allow_late_enrollment: bool,
+}
+
+#[derive(Serialize, Deserialize, ToSchema, Default)]
+pub struct FinanceSettingsDto {
+    pub currency: String,
+    pub tax_rate: f64,
+    pub invoice_due_days: i32,
+    pub late_fee_type: String,
+    pub late_fee_value: f64,
+    pub allow_partial_payments: bool,
+    pub primary_payment_gateway_id: Option<Uuid>, 
+    pub invoicing_integration_id: Option<Uuid>,
+}
+
+#[derive(Serialize, Deserialize, ToSchema, Default)]
+pub struct NotificationSettingsDto {
+    pub email_integration_id: Option<Uuid>,
+    pub sms_integration_id: Option<Uuid>,
+    pub whatsapp_integration_id: Option<Uuid>,
+    pub notify_parents_on_absence: bool,
+    pub notify_parents_on_grade_publish: bool,
+    pub finance_reminder_days: Vec<i32>,
+}
+
+#[derive(Serialize, Deserialize, ToSchema, Default)]
+pub struct AutopilotSettingsDto {
+    pub enabled: bool,
+    pub mode: String,
+    pub max_retries: i32,
+    pub auto_advance_periods: bool,
+    pub auto_lock_grades: bool,
+    pub grade_entry_auto_close_days: i32,
+    pub allow_grade_edit_after_close: bool,
+}
+
+#[derive(Serialize, Deserialize, ToSchema, Default)]
+pub struct DashboardCountsDto {
+    pub total_students: u64,
+    pub total_teachers: u64,
+    pub total_classes: u64,
+    pub total_enrollments: u64,
+    pub total_subjects: u64,
+    pub active_academic_year: Option<String>,
+    pub total_payments_amount: f64,
+    pub pending_fees_amount: f64,
+}
+
+impl From<OrganizationSettings> for OrganizationSettingsDto {
+    fn from(s: OrganizationSettings) -> Self {
+        Self {
+            academic: AcademicSettingsDto { default_grading_system: s.academic.default_grading_system },
+            enrollment: EnrollmentSettingsDto {
+                registration_enabled: s.enrollment.registration_enabled,
+                require_admin_approval: s.enrollment.require_admin_approval,
+                allow_waitlist: s.enrollment.allow_waitlist,
+                sibling_priority_enabled: s.enrollment.sibling_priority_enabled,
+                max_class_size_default: s.enrollment.max_class_size_default,
+                allow_late_enrollment: s.enrollment.allow_late_enrollment,
+            },
+            finance: FinanceSettingsDto {
+                currency: s.finance.currency,
+                tax_rate: s.finance.tax_rate,
+                invoice_due_days: s.finance.invoice_due_days,
+                late_fee_type: s.finance.late_fee_type,
+                late_fee_value: s.finance.late_fee_value,
+                allow_partial_payments: s.finance.allow_partial_payments,
+                primary_payment_gateway_id: s.finance.primary_payment_gateway_id,
+                invoicing_integration_id: s.finance.invoicing_integration_id,
+            },
+            notifications: NotificationSettingsDto {
+                email_integration_id: s.notifications.email_integration_id,
+                sms_integration_id: s.notifications.sms_integration_id,
+                whatsapp_integration_id: s.notifications.whatsapp_integration_id,
+                notify_parents_on_absence: s.notifications.notify_parents_on_absence,
+                notify_parents_on_grade_publish: s.notifications.notify_parents_on_grade_publish,
+                finance_reminder_days: s.notifications.finance_reminder_days,
+            },
+            autopilot: AutopilotSettingsDto {
+                enabled: s.autopilot.enabled,
+                mode: s.autopilot.mode,
+                max_retries: s.autopilot.max_retries,
+                auto_advance_periods: s.autopilot.auto_advance_periods,
+                auto_lock_grades: s.autopilot.auto_lock_grades,
+                grade_entry_auto_close_days: s.autopilot.grade_entry_auto_close_days,
+                allow_grade_edit_after_close: s.autopilot.allow_grade_edit_after_close,
+            },
+        }
+    }
+}
+
+impl From<OrganizationSettingsDto> for OrganizationSettings {
+    fn from(s: OrganizationSettingsDto) -> Self {
+        Self {
+            academic: orbis_domain::entities::settings::AcademicSettings { default_grading_system: s.academic.default_grading_system },
+            enrollment: orbis_domain::entities::settings::EnrollmentSettings {
+                registration_enabled: s.enrollment.registration_enabled,
+                require_admin_approval: s.enrollment.require_admin_approval,
+                allow_waitlist: s.enrollment.allow_waitlist,
+                sibling_priority_enabled: s.enrollment.sibling_priority_enabled,
+                max_class_size_default: s.enrollment.max_class_size_default,
+                allow_late_enrollment: s.enrollment.allow_late_enrollment,
+            },
+            finance: orbis_domain::entities::settings::FinanceSettings {
+                currency: s.finance.currency,
+                tax_rate: s.finance.tax_rate,
+                invoice_due_days: s.finance.invoice_due_days,
+                late_fee_type: s.finance.late_fee_type,
+                late_fee_value: s.finance.late_fee_value,
+                allow_partial_payments: s.finance.allow_partial_payments,
+                primary_payment_gateway_id: s.finance.primary_payment_gateway_id,
+                invoicing_integration_id: s.finance.invoicing_integration_id,
+            },
+            notifications: orbis_domain::entities::settings::NotificationSettings {
+                email_integration_id: s.notifications.email_integration_id,
+                sms_integration_id: s.notifications.sms_integration_id,
+                whatsapp_integration_id: s.notifications.whatsapp_integration_id,
+                notify_parents_on_absence: s.notifications.notify_parents_on_absence,
+                notify_parents_on_grade_publish: s.notifications.notify_parents_on_grade_publish,
+                finance_reminder_days: s.notifications.finance_reminder_days,
+            },
+            autopilot: orbis_domain::entities::settings::AutopilotSettings {
+                enabled: s.autopilot.enabled,
+                mode: s.autopilot.mode,
+                max_retries: s.autopilot.max_retries,
+                auto_advance_periods: s.autopilot.auto_advance_periods,
+                auto_lock_grades: s.autopilot.auto_lock_grades,
+                grade_entry_auto_close_days: s.autopilot.grade_entry_auto_close_days,
+                allow_grade_edit_after_close: s.autopilot.allow_grade_edit_after_close,
+            },
+        }
+    }
+}
+
+// ── Settings Handlers ───────────────────────────────────────────
 
 #[utoipa::path(get, path = "/api/v1/organizations/current/settings",
-    responses((status = 200, description = "Organization settings")),
+    responses((status = 200, description = "Organization settings", body = OrganizationSettingsDto)),
     security(("bearer" = [])), tag = "Organization")]
 async fn get_settings(
     ctx: AuthContext,
     State(state): State<AppState>,
-) -> Result<Json<ApiResponse<OrganizationSettings>>, ApiError> {
+) -> Result<Json<ApiResponse<OrganizationSettingsDto>>, ApiError> {
     let uc = GetSettingsUseCase { settings_repo: state.settings_repo.clone() };
     let settings = uc.execute(&ctx).await?;
-    Ok(ApiResponse::ok(settings))
+    Ok(ApiResponse::ok(settings.into()))
 }
 
 #[utoipa::path(put, path = "/api/v1/organizations/current/settings",
-    request_body = OrganizationSettings,
-    responses((status = 200, description = "Settings updated")),
+    request_body = OrganizationSettingsDto,
+    responses((status = 200, description = "Settings updated", body = OrganizationSettingsDto)),
     security(("bearer" = [])), tag = "Organization")]
 async fn update_settings(
     ctx: AuthContext,
     State(state): State<AppState>,
-    Json(payload): Json<OrganizationSettings>,
-) -> Result<Json<ApiResponse<OrganizationSettings>>, ApiError> {
+    Json(payload): Json<OrganizationSettingsDto>,
+) -> Result<Json<ApiResponse<OrganizationSettingsDto>>, ApiError> {
     let uc = UpdateSettingsUseCase {
         settings_repo: state.settings_repo.clone(),
         permission_checker: state.permission_checker.clone(),
     };
-    let settings = uc.execute(&ctx, payload).await?;
-    Ok(ApiResponse::ok(settings))
+    let settings = uc.execute(&ctx, payload.into()).await?;
+    Ok(ApiResponse::ok(settings.into()))
 }
 
 // ── Dashboard ───────────────────────────────────────────────────
 
 #[utoipa::path(get, path = "/api/v1/organizations/current/dashboard",
-    responses((status = 200, description = "Dashboard statistics", body = DashboardCounts)),
+    responses((status = 200, description = "Dashboard statistics", body = DashboardCountsDto)),
     security(("bearer" = [])), tag = "Organization")]
 async fn get_dashboard(
     ctx: AuthContext,
     State(state): State<AppState>,
-) -> Result<Json<ApiResponse<DashboardCounts>>, ApiError> {
+) -> Result<Json<ApiResponse<DashboardCountsDto>>, ApiError> {
     let uc = GetDashboardUseCase { dashboard_repo: state.dashboard_repo.clone() };
     let counts = uc.execute(&ctx).await?;
-    Ok(ApiResponse::ok(counts))
+    Ok(ApiResponse::ok(DashboardCountsDto {
+        total_students: counts.total_students,
+        total_teachers: counts.total_teachers,
+        total_classes: counts.total_classes,
+        total_enrollments: counts.total_enrollments,
+        total_subjects: counts.total_subjects,
+        active_academic_year: counts.active_academic_year,
+        total_payments_amount: counts.total_payments_amount,
+        pending_fees_amount: counts.pending_fees_amount,
+    }))
 }
 
 // ── OrgUnits ────────────────────────────────────────────────────

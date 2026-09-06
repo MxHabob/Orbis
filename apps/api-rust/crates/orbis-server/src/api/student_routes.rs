@@ -18,7 +18,7 @@ use orbis_app::usecases::student::{
 pub struct EnrollmentDto {
     pub id: Uuid,
     pub student_id: Uuid,
-    pub class_id: Uuid,
+    pub class_id: Option<Uuid>,
     pub period_id: Uuid,
     pub org_id: Uuid,
     pub student_number: String,
@@ -112,7 +112,7 @@ async fn list_enrollments(
 }
 
 #[utoipa::path(get, path = "/api/v1/enrollments/{id}",
-    params(("id" = Uuid, Path)),
+    params(("id" = Uuid, Path, description = "Enrollment ID")),
     responses((status = 200, body = EnrollmentDto)),
     security(("bearer" = [])), tag = "Student")]
 async fn get_enrollment(
@@ -150,7 +150,7 @@ async fn assign_guardian(
 }
 
 #[utoipa::path(get, path = "/api/v1/student-guardians",
-    params(("student_id" = Uuid, Query)),
+    params(("student_id" = Uuid, Query, description = "Student ID")),
     responses((status = 200, body = Vec<GuardianDto>)),
     security(("bearer" = [])), tag = "Student")]
 async fn list_guardians(

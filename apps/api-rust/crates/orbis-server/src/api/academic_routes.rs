@@ -109,7 +109,7 @@ async fn list_subjects(
 }
 
 #[utoipa::path(get, path = "/api/v1/subjects/{id}",
-    params(("id" = Uuid, Path)),
+    params(("id" = Uuid, Path, description = "Subject ID")),
     responses((status = 200, body = SubjectDto)),
     security(("bearer" = [])), tag = "Academic")]
 async fn get_subject(
@@ -160,7 +160,7 @@ async fn list_classes(
 }
 
 #[utoipa::path(get, path = "/api/v1/classes/{id}",
-    params(("id" = Uuid, Path)),
+    params(("id" = Uuid, Path, description = "Class ID")),
     responses((status = 200, body = ClassDto)),
     security(("bearer" = [])), tag = "Academic")]
 async fn get_class(
@@ -197,7 +197,7 @@ async fn assign_class_subject(
 }
 
 #[utoipa::path(get, path = "/api/v1/class-subjects",
-    params(("class_id" = Uuid, Query), ("period_id" = Uuid, Query)),
+    params(("class_id" = Uuid, Query, description = "Class ID"), ("period_id" = Uuid, Query, description = "Period ID")),
     responses((status = 200, body = Vec<ClassSubjectDto>)),
     security(("bearer" = [])), tag = "Academic")]
 async fn list_class_subjects(

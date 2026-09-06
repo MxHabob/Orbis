@@ -1,19 +1,19 @@
 //! Finance routes — Accounts, FeeTemplates, StudentFees, Payments, Currencies.
 
-use axum::{extract::{State, Path, Query}, routing::{get, post}, Json, Router};
+use axum::{extract::{State, Query}, routing::{get, post}, Json, Router};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Utc, NaiveDate};
 use uuid::Uuid;
 
 use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
 use crate::state::AppState;
 use orbis_app::usecases::finance::{
-    account::CreateAccountUseCase,
-    fee_template::CreateFeeTemplateUseCase,
-    student_fee::GenerateStudentFeeUseCase,
-    payment::ProcessPaymentUseCase,
+    create_account::CreateAccountUseCase,
+    create_fee_template::CreateFeeTemplateUseCase,
+    generate_student_fee::GenerateStudentFeeUseCase,
+    process_payment::ProcessPaymentUseCase,
 };
 
 #[derive(Serialize, ToSchema)]
@@ -23,7 +23,10 @@ pub struct AccountDto {
     pub code: String,
     pub name: String,
     pub account_type: String,
-    pub balance: f64,
+    pub parent_id: Option<Uuid>,
+    pub currency: String,
+    pub is_active: bool,
+    pub balances: serde_json::Value,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -31,6 +34,8 @@ pub struct CreateAccountRequest {
     pub code: String,
     pub name: String,
     pub account_type: String,
+    pub parent_id: Option<Uuid>,
+    pub currency: Option<String>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -38,50 +43,65 @@ pub struct FeeTemplateDto {
     pub id: Uuid,
     pub org_id: Uuid,
     pub name: String,
-    pub amount: f64,
-    pub fee_type: String,
-    pub is_active: bool,
+    pub default_amount: f64,
+    pub revenue_account_id: Uuid,
+    pub receivable_account_id: Uuid,
+    pub is_mandatory: bool,
 }
 
 #[derive(Deserialize, ToSchema)]
 pub struct CreateFeeTemplateRequest {
     pub name: String,
-    pub amount: f64,
-    pub fee_type: String,
+    pub default_amount: f64,
+    pub revenue_account_id: Uuid,
+    pub receivable_account_id: Uuid,
+    pub is_mandatory: Option<bool>,
 }
 
 #[derive(Serialize, ToSchema)]
 pub struct StudentFeeDto {
     pub id: Uuid,
+    pub org_id: Uuid,
     pub student_id: Uuid,
     pub enrollment_id: Option<Uuid>,
-    pub template_id: Uuid,
+    pub fee_template_id: Uuid,
+    pub original_amount: f64,
+    pub discount_amount: f64,
     pub net_amount: f64,
-    pub paid_amount: f64,
     pub status: String,
+    pub due_date: NaiveDate,
 }
 
 #[derive(Deserialize, ToSchema)]
 pub struct GenerateFeeRequest {
-    pub enrollment_id: Uuid,
-    pub template_id: Uuid,
+    pub student_id: Uuid,
+    pub enrollment_id: Option<Uuid>,
+    pub fee_template_id: Uuid,
+    pub discount_amount: Option<f64>,
+    pub due_date: NaiveDate,
 }
 
 #[derive(Serialize, ToSchema)]
 pub struct PaymentDto {
     pub id: Uuid,
+    pub org_id: Uuid,
     pub fee_id: Option<Uuid>,
+    pub account_id: Uuid,
     pub amount: f64,
     pub method: String,
-    pub status: String,
-    pub paid_at: Option<DateTime<Utc>>,
+    pub reference: Option<String>,
+    pub journal_entry_id: Option<Uuid>,
+    pub paid_at: DateTime<Utc>,
 }
 
 #[derive(Deserialize, ToSchema)]
 pub struct ProcessPaymentRequest {
-    pub fee_id: Uuid,
+    pub fee_id: Option<Uuid>,
+    pub account_id: Uuid,
     pub amount: f64,
     pub method: String,
+    pub reference: Option<String>,
+    pub source: Option<String>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -105,8 +125,26 @@ async fn create_account(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<CreateAccountRequest>,
 ) -> Result<Json<ApiResponse<AccountDto>>, ApiError> {
     let uc = CreateAccountUseCase { account_repo: state.account_repo.clone() };
-    let a = uc.execute(&ctx, ctx.tenant_id, p.code, p.name, p.account_type).await?;
-    Ok(ApiResponse::ok(AccountDto { id: a.id, org_id: a.org_id, code: a.code, name: a.name, account_type: a.account_type, balance: a.balance }))
+    let a = uc.execute(
+        &ctx,
+        ctx.tenant_id,
+        p.code,
+        p.name,
+        p.account_type,
+        p.parent_id,
+        p.currency.unwrap_or_else(|| "SAR".to_string()),
+    ).await?;
+    Ok(ApiResponse::ok(AccountDto {
+        id: a.id,
+        org_id: a.org_id,
+        code: a.code,
+        name: a.name,
+        account_type: a.account_type,
+        parent_id: a.parent_id,
+        currency: a.currency,
+        is_active: a.is_active,
+        balances: a.balances,
+    }))
 }
 
 #[utoipa::path(get, path = "/api/v1/accounts",
@@ -115,7 +153,17 @@ async fn list_accounts(
     ctx: AuthContext, State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<AccountDto>>>, ApiError> {
     let accounts = state.account_repo.find_by_org(ctx.tenant_id).await?;
-    let dtos = accounts.into_iter().map(|a| AccountDto { id: a.id, org_id: a.org_id, code: a.code, name: a.name, account_type: a.account_type, balance: a.balance }).collect();
+    let dtos = accounts.into_iter().map(|a| AccountDto {
+        id: a.id,
+        org_id: a.org_id,
+        code: a.code,
+        name: a.name,
+        account_type: a.account_type,
+        parent_id: a.parent_id,
+        currency: a.currency,
+        is_active: a.is_active,
+        balances: a.balances,
+    }).collect();
     Ok(ApiResponse::ok(dtos))
 }
 
@@ -125,8 +173,24 @@ async fn create_fee_template(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<CreateFeeTemplateRequest>,
 ) -> Result<Json<ApiResponse<FeeTemplateDto>>, ApiError> {
     let uc = CreateFeeTemplateUseCase { fee_template_repo: state.fee_template_repo.clone() };
-    let t = uc.execute(&ctx, ctx.tenant_id, p.name, p.amount, p.fee_type).await?;
-    Ok(ApiResponse::ok(FeeTemplateDto { id: t.id, org_id: t.org_id, name: t.name, amount: t.amount, fee_type: t.fee_type, is_active: t.is_active }))
+    let t = uc.execute(
+        &ctx,
+        ctx.tenant_id,
+        p.name,
+        p.default_amount,
+        p.revenue_account_id,
+        p.receivable_account_id,
+        p.is_mandatory.unwrap_or(false),
+    ).await?;
+    Ok(ApiResponse::ok(FeeTemplateDto {
+        id: t.id,
+        org_id: t.org_id,
+        name: t.name,
+        default_amount: t.default_amount,
+        revenue_account_id: t.revenue_account_id,
+        receivable_account_id: t.receivable_account_id,
+        is_mandatory: t.is_mandatory,
+    }))
 }
 
 #[utoipa::path(get, path = "/api/v1/fee-templates",
@@ -135,7 +199,15 @@ async fn list_fee_templates(
     ctx: AuthContext, State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<FeeTemplateDto>>>, ApiError> {
     let templates = state.fee_template_repo.find_by_org(ctx.tenant_id).await?;
-    let dtos = templates.into_iter().map(|t| FeeTemplateDto { id: t.id, org_id: t.org_id, name: t.name, amount: t.amount, fee_type: t.fee_type, is_active: t.is_active }).collect();
+    let dtos = templates.into_iter().map(|t| FeeTemplateDto {
+        id: t.id,
+        org_id: t.org_id,
+        name: t.name,
+        default_amount: t.default_amount,
+        revenue_account_id: t.revenue_account_id,
+        receivable_account_id: t.receivable_account_id,
+        is_mandatory: t.is_mandatory,
+    }).collect();
     Ok(ApiResponse::ok(dtos))
 }
 
@@ -149,11 +221,26 @@ async fn generate_fee(
         fee_template_repo: state.fee_template_repo.clone(),
         event_bus: state.event_bus.clone(),
     };
-    let f = uc.execute(&ctx, p.enrollment_id, p.template_id).await?;
+    let f = uc.execute(
+        &ctx,
+        ctx.tenant_id,
+        p.student_id,
+        p.enrollment_id,
+        p.fee_template_id,
+        p.discount_amount.unwrap_or(0.0),
+        p.due_date,
+    ).await?;
     Ok(ApiResponse::ok(StudentFeeDto {
-        id: f.id, student_id: f.student_id, enrollment_id: f.enrollment_id,
-        template_id: f.template_id, net_amount: f.net_amount, paid_amount: f.paid_amount,
+        id: f.id,
+        org_id: f.org_id,
+        student_id: f.student_id,
+        enrollment_id: f.enrollment_id,
+        fee_template_id: f.fee_template_id,
+        original_amount: f.original_amount,
+        discount_amount: f.discount_amount,
+        net_amount: f.net_amount,
         status: f.status,
+        due_date: f.due_date,
     }))
 }
 
@@ -168,9 +255,16 @@ async fn list_fees(
         state.student_fee_repo.find_by_student(sid).await?
     } else { vec![] };
     let dtos = fees.into_iter().map(|f| StudentFeeDto {
-        id: f.id, student_id: f.student_id, enrollment_id: f.enrollment_id,
-        template_id: f.template_id, net_amount: f.net_amount, paid_amount: f.paid_amount,
+        id: f.id,
+        org_id: f.org_id,
+        student_id: f.student_id,
+        enrollment_id: f.enrollment_id,
+        fee_template_id: f.fee_template_id,
+        original_amount: f.original_amount,
+        discount_amount: f.discount_amount,
+        net_amount: f.net_amount,
         status: f.status,
+        due_date: f.due_date,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -182,13 +276,37 @@ async fn process_payment(
 ) -> Result<Json<ApiResponse<PaymentDto>>, ApiError> {
     let uc = ProcessPaymentUseCase {
         payment_repo: state.payment_repo.clone(),
+        journal_repo: state.journal_entry_repo.clone(),
         student_fee_repo: state.student_fee_repo.clone(),
+        fee_template_repo: state.fee_template_repo.clone(),
         event_bus: state.event_bus.clone(),
+        payment_gateway: state.integration_resolver.clone(),
+        notification_gateway: state.integration_resolver.clone(),
+        permission_checker: state.permission_checker.clone(),
+        currency_repo: state.currency_repo.clone(),
+        policy_repo: state.policy_repo.clone(),
+        account_repo: state.account_repo.clone(),
     };
-    let pay = uc.execute(&ctx, p.fee_id, p.amount, p.method).await?;
+    let pay = uc.execute(
+        &ctx,
+        ctx.tenant_id,
+        p.fee_id,
+        p.account_id,
+        p.amount,
+        p.method,
+        p.reference,
+        p.source,
+    ).await?;
     Ok(ApiResponse::ok(PaymentDto {
-        id: pay.id, fee_id: pay.fee_id, amount: pay.amount,
-        method: pay.method, status: pay.status, paid_at: pay.paid_at,
+        id: pay.id,
+        org_id: pay.org_id,
+        fee_id: pay.fee_id,
+        account_id: pay.account_id,
+        amount: pay.amount,
+        method: pay.method,
+        reference: pay.reference,
+        journal_entry_id: pay.journal_entry_id,
+        paid_at: pay.paid_at,
     }))
 }
 
@@ -203,8 +321,15 @@ async fn list_payments(
         state.payment_repo.find_by_org(ctx.tenant_id).await?
     };
     let dtos = payments.into_iter().map(|p| PaymentDto {
-        id: p.id, fee_id: p.fee_id, amount: p.amount,
-        method: p.method, status: p.status, paid_at: p.paid_at,
+        id: p.id,
+        org_id: p.org_id,
+        fee_id: p.fee_id,
+        account_id: p.account_id,
+        amount: p.amount,
+        method: p.method,
+        reference: p.reference,
+        journal_entry_id: p.journal_entry_id,
+        paid_at: p.paid_at,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -227,3 +352,4 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/payments", post(process_payment).get(list_payments))
         .route("/api/v1/currencies", get(list_currencies))
 }
+

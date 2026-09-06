@@ -13,44 +13,48 @@ use orbis_app::usecases::assessment::{
     assessment_scheme::CreateAssessmentSchemeUseCase,
     grade::RecordGradeUseCase,
     attendance::MarkAttendanceUseCase,
-    grade_calculation::CalculateGradesUseCase,
+    calculate_grades::CalculateGradesUseCase,
 };
 
-#[derive(Serialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct AssessmentSchemeDto {
     pub id: Uuid,
     pub org_id: Uuid,
     pub name: String,
-    pub grading_type: String,
+    pub description: Option<String>,
+    pub max_score: f64,
 }
 
 #[derive(Deserialize, ToSchema)]
 pub struct CreateSchemeRequest {
     pub name: String,
-    pub grading_type: String,
+    pub description: Option<String>,
+    pub max_score: f64,
+    pub formula: Option<serde_json::Value>,
 }
 
-#[derive(Serialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct GradeDto {
     pub id: Uuid,
     pub student_id: Uuid,
     pub class_subject_id: Uuid,
-    pub assessment_type: String,
+    pub scheme_id: Uuid,
     pub score: f64,
-    pub max_score: f64,
-    pub letter_grade: Option<String>,
+    pub is_excused: bool,
+    pub notes: Option<String>,
 }
 
 #[derive(Deserialize, ToSchema)]
 pub struct RecordGradeRequest {
     pub student_id: Uuid,
     pub class_subject_id: Uuid,
-    pub assessment_type: String,
+    pub scheme_id: Uuid,
     pub score: f64,
-    pub max_score: f64,
+    pub is_excused: bool,
+    pub notes: Option<String>,
 }
 
-#[derive(Serialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct AttendanceDto {
     pub id: Uuid,
     pub student_id: Uuid,
@@ -59,29 +63,27 @@ pub struct AttendanceDto {
     pub scheduled_lesson_id: Option<Uuid>,
     pub date: NaiveDate,
     pub status: String,
-    pub note: Option<String>,
+    pub notes: Option<String>,
 }
 
 #[derive(Deserialize, ToSchema)]
 pub struct MarkAttendanceRequest {
     pub student_id: Uuid,
-    pub class_id: Option<Uuid>,
-    pub class_subject_id: Option<Uuid>,
-    pub scheduled_lesson_id: Option<Uuid>,
+    pub class_id: Uuid,
     pub date: NaiveDate,
     pub status: String,
-    pub note: Option<String>,
+    pub notes: Option<String>,
 }
 
 #[derive(Deserialize, ToSchema)]
 pub struct CalculateGradesRequest {
-    pub class_subject_id: Uuid,
-    pub period_id: Uuid,
+    pub scheme_id: Uuid,
+    pub student_id: Uuid,
 }
 
 #[derive(Serialize, ToSchema)]
 pub struct CalculationResultDto {
-    pub processed: usize,
+    pub final_score: f64,
     pub message: String,
 }
 
@@ -98,9 +100,14 @@ pub struct AttendanceQuery { pub class_id: Uuid, pub date: NaiveDate }
 async fn create_scheme(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<CreateSchemeRequest>,
 ) -> Result<Json<ApiResponse<AssessmentSchemeDto>>, ApiError> {
-    let uc = CreateAssessmentSchemeUseCase { scheme_repo: state.assessment_scheme_repo.clone() };
-    let s = uc.execute(&ctx, ctx.tenant_id, p.name, p.grading_type).await?;
-    Ok(ApiResponse::ok(AssessmentSchemeDto { id: s.id, org_id: s.org_id, name: s.name, grading_type: s.grading_type }))
+    let uc = CreateAssessmentSchemeUseCase {
+        scheme_repo: state.assessment_scheme_repo.clone(),
+        permission_checker: state.permission_checker.clone(),
+    };
+    let s = uc.execute(&ctx, ctx.tenant_id, p.name, p.description, p.max_score, p.formula).await?;
+    Ok(ApiResponse::ok(AssessmentSchemeDto {
+        id: s.id, org_id: s.org_id, name: s.name, description: s.description, max_score: s.max_score,
+    }))
 }
 
 #[utoipa::path(get, path = "/api/v1/assessment-schemes",
@@ -109,17 +116,22 @@ async fn list_schemes(
     ctx: AuthContext, State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<AssessmentSchemeDto>>>, ApiError> {
     let schemes = state.assessment_scheme_repo.find_by_org(ctx.tenant_id).await?;
-    let dtos = schemes.into_iter().map(|s| AssessmentSchemeDto { id: s.id, org_id: s.org_id, name: s.name, grading_type: s.grading_type }).collect();
+    let dtos = schemes.into_iter().map(|s| AssessmentSchemeDto {
+        id: s.id, org_id: s.org_id, name: s.name, description: s.description, max_score: s.max_score,
+    }).collect();
     Ok(ApiResponse::ok(dtos))
 }
 
-#[utoipa::path(get, path = "/api/v1/assessment-schemes/{id}", params(("id" = Uuid, Path)),
+#[utoipa::path(get, path = "/api/v1/assessment-schemes/{id}",
+    params(("id" = Uuid, Path, description = "Assessment Scheme ID")),
     responses((status = 200, body = AssessmentSchemeDto)), security(("bearer" = [])), tag = "Assessment")]
 async fn get_scheme(
     _ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<AssessmentSchemeDto>>, ApiError> {
     let s = state.assessment_scheme_repo.find_by_id(id).await?.ok_or_else(|| ApiError::not_found("Scheme not found"))?;
-    Ok(ApiResponse::ok(AssessmentSchemeDto { id: s.id, org_id: s.org_id, name: s.name, grading_type: s.grading_type }))
+    Ok(ApiResponse::ok(AssessmentSchemeDto {
+        id: s.id, org_id: s.org_id, name: s.name, description: s.description, max_score: s.max_score,
+    }))
 }
 
 #[utoipa::path(post, path = "/api/v1/grades", request_body = RecordGradeRequest,
@@ -127,12 +139,15 @@ async fn get_scheme(
 async fn record_grade(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<RecordGradeRequest>,
 ) -> Result<Json<ApiResponse<GradeDto>>, ApiError> {
-    let uc = RecordGradeUseCase { grade_repo: state.grade_repo.clone(), event_bus: state.event_bus.clone() };
-    let g = uc.execute(&ctx, p.student_id, p.class_subject_id, p.assessment_type, p.score, p.max_score).await?;
+    let uc = RecordGradeUseCase {
+        grade_repo: state.grade_repo.clone(),
+        event_bus: state.event_bus.clone(),
+        permission_checker: state.permission_checker.clone(),
+    };
+    let g = uc.execute(&ctx, p.student_id, p.class_subject_id, p.scheme_id, p.score, p.is_excused, p.notes).await?;
     Ok(ApiResponse::ok(GradeDto {
         id: g.id, student_id: g.student_id, class_subject_id: g.class_subject_id,
-        assessment_type: g.assessment_type, score: g.score, max_score: g.max_score,
-        letter_grade: g.letter_grade,
+        scheme_id: g.scheme_id, score: g.score, is_excused: g.is_excused, notes: g.notes,
     }))
 }
 
@@ -148,8 +163,7 @@ async fn list_grades(
     } else { vec![] };
     let dtos = grades.into_iter().map(|g| GradeDto {
         id: g.id, student_id: g.student_id, class_subject_id: g.class_subject_id,
-        assessment_type: g.assessment_type, score: g.score, max_score: g.max_score,
-        letter_grade: g.letter_grade,
+        scheme_id: g.scheme_id, score: g.score, is_excused: g.is_excused, notes: g.notes,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -159,9 +173,15 @@ async fn list_grades(
 async fn calculate_grades(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<CalculateGradesRequest>,
 ) -> Result<Json<ApiResponse<CalculationResultDto>>, ApiError> {
-    let uc = CalculateGradesUseCase { grade_repo: state.grade_repo.clone(), enrollment_repo: state.enrollment_repo.clone() };
-    let count = uc.execute(&ctx, p.class_subject_id, p.period_id).await?;
-    Ok(ApiResponse::ok(CalculationResultDto { processed: count, message: "Grades calculated".into() }))
+    let uc = CalculateGradesUseCase {
+        scheme_repo: state.assessment_scheme_repo.clone(),
+        grade_repo: state.grade_repo.clone(),
+    };
+    let score = uc.execute(&ctx, p.scheme_id, p.student_id).await?;
+    Ok(ApiResponse::ok(CalculationResultDto {
+        final_score: score,
+        message: "Grade calculated successfully".into(),
+    }))
 }
 
 #[utoipa::path(post, path = "/api/v1/attendance", request_body = MarkAttendanceRequest,
@@ -169,17 +189,20 @@ async fn calculate_grades(
 async fn mark_attendance(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<MarkAttendanceRequest>,
 ) -> Result<Json<ApiResponse<AttendanceDto>>, ApiError> {
-    let uc = MarkAttendanceUseCase { attendance_repo: state.attendance_repo.clone(), event_bus: state.event_bus.clone() };
-    let a = uc.execute(&ctx, p.student_id, p.class_id, p.class_subject_id, p.scheduled_lesson_id, p.date, p.status, p.note).await?;
+    let uc = MarkAttendanceUseCase {
+        attendance_repo: state.attendance_repo.clone(),
+        event_bus: state.event_bus.clone(),
+    };
+    let a = uc.execute(&ctx, p.student_id, p.class_id, p.date, p.status, p.notes).await?;
     Ok(ApiResponse::ok(AttendanceDto {
         id: a.id, student_id: a.student_id, class_id: a.class_id,
         class_subject_id: a.class_subject_id, scheduled_lesson_id: a.scheduled_lesson_id,
-        date: a.date, status: a.status, note: a.note,
+        date: a.date, status: a.status, notes: a.notes,
     }))
 }
 
 #[utoipa::path(get, path = "/api/v1/attendance",
-    params(("class_id" = Uuid, Query), ("date" = NaiveDate, Query)),
+    params(("class_id" = Uuid, Query, description = "Class ID"), ("date" = NaiveDate, Query, description = "Attendance Date")),
     responses((status = 200, body = Vec<AttendanceDto>)), security(("bearer" = [])), tag = "Assessment")]
 async fn list_attendance(
     _ctx: AuthContext, State(state): State<AppState>, Query(q): Query<AttendanceQuery>,
@@ -188,7 +211,7 @@ async fn list_attendance(
     let dtos = records.into_iter().map(|a| AttendanceDto {
         id: a.id, student_id: a.student_id, class_id: a.class_id,
         class_subject_id: a.class_subject_id, scheduled_lesson_id: a.scheduled_lesson_id,
-        date: a.date, status: a.status, note: a.note,
+        date: a.date, status: a.status, notes: a.notes,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -201,3 +224,4 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/grades/actions/calculate", post(calculate_grades))
         .route("/api/v1/attendance", post(mark_attendance).get(list_attendance))
 }
+

@@ -20,7 +20,6 @@ use orbis_app::usecases::calendar::{
 pub struct AcademicYearDto {
     pub id: Uuid,
     pub org_id: Uuid,
-    pub code: String,
     pub name: String,
     pub name_ar: Option<String>,
     pub start_date: DateTime<Utc>,
@@ -86,9 +85,9 @@ async fn create_year(
     };
     let year = uc.execute(&ctx, ctx.tenant_id, payload.name, payload.start_date, payload.end_date).await?;
     Ok(ApiResponse::ok(AcademicYearDto {
-        id: year.id, org_id: year.org_id, code: year.code, name: year.name,
+        id: year.id, org_id: year.org_id, name: year.name,
         name_ar: year.name_ar, start_date: year.start_date, end_date: year.end_date,
-        is_active: year.is_active, status: year.status,
+        is_active: year.status == "active", status: year.status,
     }))
 }
 
@@ -101,9 +100,9 @@ async fn list_years(
 ) -> Result<Json<ApiResponse<Vec<AcademicYearDto>>>, ApiError> {
     let years = state.year_repo.find_by_org(ctx.tenant_id).await?;
     let dtos = years.into_iter().map(|y| AcademicYearDto {
-        id: y.id, org_id: y.org_id, code: y.code, name: y.name,
+        id: y.id, org_id: y.org_id, name: y.name,
         name_ar: y.name_ar, start_date: y.start_date, end_date: y.end_date,
-        is_active: y.is_active, status: y.status,
+        is_active: y.status == "active", status: y.status,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -120,9 +119,9 @@ async fn get_current_context(
     let periods = state.period_repo.find_by_org(ctx.tenant_id).await?;
 
     let year_dtos: Vec<AcademicYearDto> = all_years.into_iter().map(|y| AcademicYearDto {
-        id: y.id, org_id: y.org_id, code: y.code, name: y.name,
+        id: y.id, org_id: y.org_id, name: y.name,
         name_ar: y.name_ar, start_date: y.start_date, end_date: y.end_date,
-        is_active: y.is_active, status: y.status,
+        is_active: y.status == "active", status: y.status,
     }).collect();
 
     let period_dtos: Vec<AcademicPeriodDto> = periods.into_iter().map(|p| AcademicPeriodDto {
@@ -132,9 +131,9 @@ async fn get_current_context(
     }).collect();
 
     let current_dto = current.map(|y| AcademicYearDto {
-        id: y.id, org_id: y.org_id, code: y.code, name: y.name,
+        id: y.id, org_id: y.org_id, name: y.name,
         name_ar: y.name_ar, start_date: y.start_date, end_date: y.end_date,
-        is_active: y.is_active, status: y.status,
+        is_active: y.status == "active", status: y.status,
     });
 
     Ok(ApiResponse::ok(AcademicContextResponse {
@@ -145,7 +144,7 @@ async fn get_current_context(
 }
 
 #[utoipa::path(get, path = "/api/v1/academic-years/{id}",
-    params(("id" = Uuid, Path)),
+    params(("id" = Uuid, Path, description = "Academic Year ID")),
     responses((status = 200, body = AcademicYearDto)),
     security(("bearer" = [])), tag = "Calendar")]
 async fn get_year(
@@ -156,9 +155,9 @@ async fn get_year(
     let y = state.year_repo.find_by_id(id).await?
         .ok_or_else(|| ApiError::not_found(format!("Academic year {} not found", id)))?;
     Ok(ApiResponse::ok(AcademicYearDto {
-        id: y.id, org_id: y.org_id, code: y.code, name: y.name,
+        id: y.id, org_id: y.org_id, name: y.name,
         name_ar: y.name_ar, start_date: y.start_date, end_date: y.end_date,
-        is_active: y.is_active, status: y.status,
+        is_active: y.status == "active", status: y.status,
     }))
 }
 
@@ -201,7 +200,7 @@ async fn list_periods(
 }
 
 #[utoipa::path(get, path = "/api/v1/academic-periods/{id}",
-    params(("id" = Uuid, Path)),
+    params(("id" = Uuid, Path, description = "Academic Period ID")),
     responses((status = 200, body = AcademicPeriodDto)),
     security(("bearer" = [])), tag = "Calendar")]
 async fn get_period(
@@ -217,6 +216,7 @@ async fn get_period(
         period_type: p.period_type, status: p.status,
     }))
 }
+
 
 #[utoipa::path(get, path = "/api/v1/period-templates",
     responses((status = 200, body = Vec<PeriodTemplateDto>)),

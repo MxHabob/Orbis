@@ -47,6 +47,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     let policy_repo = Arc::new(orbis_infra::repositories::policy_repo::PgPolicyRepo { db: db.clone() });
 
+    let settings_repo = Arc::new(orbis_infra::repositories::settings_repo::SettingsRepoImpl { db: db.clone() });
+    let dashboard_repo = Arc::new(orbis_infra::repositories::dashboard_repo::DashboardRepoImpl { db: db.clone() });
+
     let event_bus = Arc::new(MemoryEventBus {
         workflow_engine: Some(autopilot_engine),
     });
@@ -122,6 +125,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         workflow_repo,
         currency_repo: finance_repo.clone(),
         policy_repo,
+        settings_repo,
+        dashboard_repo,
         event_bus,
         token_service,
         password_hasher,

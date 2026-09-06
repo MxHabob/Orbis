@@ -3,7 +3,7 @@ use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set, ColumnTrai
 use uuid::Uuid;
 
 use orbis_app::ports::repositories::UserRepository;
-use orbis_domain::entities::user::{User, Role};
+use orbis_domain::entities::user::User;
 use orbis_domain::errors::DomainError;
 use crate::models::user::{self, Entity as UserEntity};
 
@@ -71,6 +71,36 @@ impl UserRepository for UserRepoImpl {
             updated_at: m.updated_at,
         }))
     }
+
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<User>, DomainError> {
+        let models = UserEntity::find()
+            .filter(user::Column::OrgId.eq(org_id))
+            .filter(user::Column::IsDeleted.eq(false))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        Ok(models.into_iter().map(|m| User {
+            id: m.id,
+            person_id: m.person_id,
+            org_id: m.org_id,
+            email: m.email,
+            email_verified: m.email_verified,
+            phone: m.phone,
+            phone_verified: m.phone_verified,
+            password_hash: m.password_hash,
+            mfa_enabled: m.mfa_enabled,
+            full_name: m.full_name,
+            status: m.status,
+            login_count: m.login_count,
+            failed_logins: m.failed_logins,
+            locked_until: m.locked_until,
+            is_deleted: m.is_deleted,
+            created_at: m.created_at,
+            updated_at: m.updated_at,
+        }).collect())
+    }
+
 
     async fn save(&self, user: &User) -> Result<(), DomainError> {
         let active_model = user::ActiveModel {

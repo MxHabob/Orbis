@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use orbis_app::ports::repositories::{
     AccountRepository, JournalEntryRepository, FeeTemplateRepository,
-    StudentFeeRepository, PaymentRepository
+    StudentFeeRepository, PaymentRepository, CurrencyRepository
 };
 use orbis_domain::entities::account::Account as DomainAccount;
 use orbis_domain::entities::journal_entry::JournalEntry as DomainJournalEntry;
@@ -11,7 +11,7 @@ use orbis_domain::entities::payment::Payment as DomainPayment;
 use orbis_domain::entities::currency::Currency as DomainCurrency;
 use orbis_domain::entities::exchange_rate::ExchangeRate as DomainExchangeRate;
 use orbis_domain::errors::DomainError;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
+use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set, ColumnTrait, QueryFilter};
 use uuid::Uuid;
 
 use crate::models::{
@@ -20,7 +20,7 @@ use crate::models::{
     fee_template::{self, Entity as FeeTemplateEntity},
     student_fee::{self, Entity as StudentFeeEntity},
     payment::{self, Entity as PaymentEntity},
-    currency::{self, Entity as CurrencyEntity},
+    currency::Entity as CurrencyEntity,
     exchange_rate::{self, Entity as ExchangeRateEntity},
 };
 
@@ -38,6 +38,20 @@ impl AccountRepository for FinanceRepoImpl {
             currency: m.currency, is_active: m.is_active, balances: m.balances,
             created_at: m.created_at.into(), updated_at: m.updated_at.into()
         }))
+    }
+
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainAccount>, DomainError> {
+        let models = AccountEntity::find()
+            .filter(account::Column::OrgId.eq(org_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainAccount {
+            id: m.id, org_id: m.org_id, code: m.code, name: m.name,
+            account_type: m.account_type, parent_id: m.parent_id,
+            currency: m.currency, is_active: m.is_active, balances: m.balances,
+            created_at: m.created_at.into(), updated_at: m.updated_at.into()
+        }).collect())
     }
 
     async fn save(&self, account: &DomainAccount) -> Result<(), DomainError> {
@@ -106,6 +120,19 @@ impl FeeTemplateRepository for FinanceRepoImpl {
         }))
     }
 
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainFeeTemplate>, DomainError> {
+        let models = FeeTemplateEntity::find()
+            .filter(fee_template::Column::OrgId.eq(org_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainFeeTemplate {
+            id: m.id, org_id: m.org_id, name: m.name, default_amount: m.default_amount,
+            revenue_account_id: m.revenue_account_id, receivable_account_id: m.receivable_account_id,
+            is_mandatory: m.is_mandatory, created_at: m.created_at.into(), updated_at: m.updated_at.into()
+        }).collect())
+    }
+
     async fn save(&self, template: &DomainFeeTemplate) -> Result<(), DomainError> {
         let active = fee_template::ActiveModel {
             id: Set(template.id), org_id: Set(template.org_id),
@@ -136,6 +163,38 @@ impl StudentFeeRepository for FinanceRepoImpl {
             status: m.status, due_date: m.due_date,
             created_at: m.created_at.into(), updated_at: m.updated_at.into()
         }))
+    }
+
+    async fn find_by_enrollment(&self, enrollment_id: Uuid) -> Result<Vec<DomainStudentFee>, DomainError> {
+        let models = StudentFeeEntity::find()
+            .filter(student_fee::Column::EnrollmentId.eq(enrollment_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainStudentFee {
+            id: m.id, org_id: m.org_id, student_id: m.student_id,
+            enrollment_id: m.enrollment_id,
+            fee_template_id: m.fee_template_id, original_amount: m.original_amount,
+            discount_amount: m.discount_amount, net_amount: m.net_amount,
+            status: m.status, due_date: m.due_date,
+            created_at: m.created_at.into(), updated_at: m.updated_at.into()
+        }).collect())
+    }
+
+    async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<DomainStudentFee>, DomainError> {
+        let models = StudentFeeEntity::find()
+            .filter(student_fee::Column::StudentId.eq(student_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainStudentFee {
+            id: m.id, org_id: m.org_id, student_id: m.student_id,
+            enrollment_id: m.enrollment_id,
+            fee_template_id: m.fee_template_id, original_amount: m.original_amount,
+            discount_amount: m.discount_amount, net_amount: m.net_amount,
+            status: m.status, due_date: m.due_date,
+            created_at: m.created_at.into(), updated_at: m.updated_at.into()
+        }).collect())
     }
 
     async fn save(&self, fee: &DomainStudentFee) -> Result<(), DomainError> {
@@ -170,6 +229,36 @@ impl PaymentRepository for FinanceRepoImpl {
         }))
     }
 
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainPayment>, DomainError> {
+        let models = PaymentEntity::find()
+            .filter(payment::Column::OrgId.eq(org_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainPayment {
+            id: m.id, org_id: m.org_id, fee_id: m.fee_id,
+            account_id: m.account_id, amount: m.amount,
+            method: m.method,
+            reference: m.reference, journal_entry_id: m.journal_entry_id,
+            paid_at: m.paid_at.into(), created_at: m.created_at.into()
+        }).collect())
+    }
+
+    async fn find_by_fee(&self, fee_id: Uuid) -> Result<Vec<DomainPayment>, DomainError> {
+        let models = PaymentEntity::find()
+            .filter(payment::Column::FeeId.eq(fee_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainPayment {
+            id: m.id, org_id: m.org_id, fee_id: m.fee_id,
+            account_id: m.account_id, amount: m.amount,
+            method: m.method,
+            reference: m.reference, journal_entry_id: m.journal_entry_id,
+            paid_at: m.paid_at.into(), created_at: m.created_at.into()
+        }).collect())
+    }
+
     async fn save(&self, payment: &DomainPayment) -> Result<(), DomainError> {
         let active = payment::ActiveModel {
             id: Set(payment.id), org_id: Set(payment.org_id), fee_id: Set(payment.fee_id),
@@ -189,7 +278,7 @@ impl PaymentRepository for FinanceRepoImpl {
 }
 
 #[async_trait]
-impl orbis_app::ports::repositories::CurrencyRepository for FinanceRepoImpl {
+impl CurrencyRepository for FinanceRepoImpl {
     async fn find_currency_by_id(&self, id: &str) -> Result<Option<DomainCurrency>, DomainError> {
         let model = CurrencyEntity::find_by_id(id).one(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(|m| DomainCurrency {
@@ -199,8 +288,16 @@ impl orbis_app::ports::repositories::CurrencyRepository for FinanceRepoImpl {
         }))
     }
 
+    async fn find_all(&self) -> Result<Vec<DomainCurrency>, DomainError> {
+        let models = CurrencyEntity::find().all(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainCurrency {
+            id: m.id, name: m.name, name_ar: m.name_ar, symbol: m.symbol,
+            decimal_places: m.decimal_places, is_active: m.is_active,
+            created_at: m.created_at.into()
+        }).collect())
+    }
+
     async fn get_exchange_rate(&self, org_id: Uuid, base_currency_id: &str, target_currency_id: &str) -> Result<Option<DomainExchangeRate>, DomainError> {
-        use sea_orm::{ColumnTrait, QueryFilter};
         let model = ExchangeRateEntity::find()
             .filter(exchange_rate::Column::OrgId.eq(org_id))
             .filter(exchange_rate::Column::BaseCurrencyId.eq(base_currency_id))
@@ -214,3 +311,4 @@ impl orbis_app::ports::repositories::CurrencyRepository for FinanceRepoImpl {
         }))
     }
 }
+

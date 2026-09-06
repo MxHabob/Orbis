@@ -43,6 +43,23 @@ impl AcademicYearRepository for CalendarRepoImpl {
         }).collect())
     }
 
+    async fn find_current(&self, org_id: Uuid) -> Result<Option<DomainYear>, DomainError> {
+        let model = YearEntity::find()
+            .filter(academic_year::Column::OrgId.eq(org_id))
+            .filter(academic_year::Column::Status.eq("active"))
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(model.map(|m| DomainYear {
+            id: m.id, org_id: m.org_id, name: m.name, name_ar: m.name_ar,
+            start_date: m.start_date, end_date: m.end_date, hijri_start: m.hijri_start,
+            hijri_end: m.hijri_end, status: m.status, is_locked: m.is_locked,
+            locked_at: m.locked_at, locked_by: m.locked_by, lock_reason: m.lock_reason,
+            current_period_id: m.current_period_id, archived_at: m.archived_at,
+            archived_by: m.archived_by, notes: m.notes, created_at: m.created_at, updated_at: m.updated_at
+        }))
+    }
+
     async fn save(&self, year: &DomainYear) -> Result<(), DomainError> {
         let active = academic_year::ActiveModel {
             id: Set(year.id), org_id: Set(year.org_id), name: Set(year.name.clone()),
@@ -100,6 +117,24 @@ impl AcademicPeriodRepository for CalendarRepoImpl {
             created_at: m.created_at, updated_at: m.updated_at
         }).collect())
     }
+
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainPeriod>, DomainError> {
+        let models = PeriodEntity::find().filter(academic_period::Column::OrgId.eq(org_id)).all(&self.db).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainPeriod {
+            id: m.id, org_id: m.org_id, year_id: m.year_id, parent_id: m.parent_id,
+            name: m.name, name_ar: m.name_ar, code: m.code, period_type: m.period_type,
+            start_date: m.start_date, end_date: m.end_date, hijri_start: m.hijri_start,
+            hijri_end: m.hijri_end, enrollment_start: m.enrollment_start,
+            enrollment_end: m.enrollment_end, is_enrollment_open: m.is_enrollment_open,
+            grade_entry_start: m.grade_entry_start, grade_entry_end: m.grade_entry_end,
+            is_grade_entry_open: m.is_grade_entry_open, exam_start: m.exam_start,
+            exam_end: m.exam_end, 
+            status: m.status, is_locked: m.is_locked, locked_at: m.locked_at,
+            locked_by: m.locked_by, sort_order: m.sort_order, metadata: m.metadata,
+            created_at: m.created_at, updated_at: m.updated_at
+        }).collect())
+    }
+
 
     async fn save(&self, period: &DomainPeriod) -> Result<(), DomainError> {
         let active = academic_period::ActiveModel {

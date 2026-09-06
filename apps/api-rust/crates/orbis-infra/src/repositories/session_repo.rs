@@ -57,4 +57,13 @@ impl SessionRepository for SessionRepoImpl {
 
         Ok(())
     }
+
+    async fn invalidate(&self, token: &str) -> Result<(), DomainError> {
+        SessionEntity::delete_many()
+            .filter(user_session::Column::Token.eq(token))
+            .exec(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(())
+    }
 }

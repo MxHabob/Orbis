@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use orbis_app::ports::repositories::DocumentRepository;
 use orbis_domain::entities::document::Document as DomainDocument;
 use orbis_domain::errors::DomainError;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
+use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set, ColumnTrait, QueryFilter};
 use uuid::Uuid;
 
 use crate::models::document::{self, Entity as DocumentEntity};
@@ -28,6 +28,28 @@ impl DocumentRepository for DocumentRepoImpl {
             created_at: m.created_at.into(), updated_at: m.updated_at.into()
         }))
     }
+
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainDocument>, DomainError> {
+        let models = DocumentEntity::find()
+            .filter(document::Column::OrgId.eq(org_id))
+            .filter(document::Column::DeletedAt.is_null())
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainDocument {
+            id: m.id, org_id: m.org_id, uploaded_by: m.uploaded_by,
+            entity_type: m.entity_type, entity_id: m.entity_id,
+            name: m.name, description: m.description, category: m.category,
+            asset_type: m.asset_type, school_year: m.school_year, term: m.term,
+            tags: m.tags, visibility: m.visibility, size: m.size,
+            mime_type: m.mime_type, extension: m.extension,
+            storage_provider: m.storage_provider, path: m.path, url: m.url,
+            thumbnail_path: m.thumbnail_path, preview_path: m.preview_path,
+            deleted_at: m.deleted_at.map(|d| d.into()),
+            created_at: m.created_at.into(), updated_at: m.updated_at.into()
+        }).collect())
+    }
+
 
     async fn save(&self, document: &DomainDocument) -> Result<(), DomainError> {
         let active = document::ActiveModel {

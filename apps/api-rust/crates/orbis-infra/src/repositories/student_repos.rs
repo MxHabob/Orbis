@@ -39,6 +39,37 @@ impl EnrollmentRepository for StudentRepoImpl {
         }).collect())
     }
 
+    async fn find_by_class(&self, class_id: Uuid) -> Result<Vec<DomainEnrollment>, DomainError> {
+        let models = EnrollmentEntity::find()
+            .filter(enrollment::Column::ClassId.eq(class_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainEnrollment {
+            id: m.id, org_id: m.org_id, period_id: m.period_id, student_id: m.student_id,
+            class_id: m.class_id, student_number: m.student_number, status: m.status,
+            enrollment_date: m.enrollment_date, enrollment_type: m.enrollment_type,
+            withdrawal_date: m.withdrawal_date, withdrawal_reason: m.withdrawal_reason,
+            meta: m.meta, created_at: m.created_at, updated_at: m.updated_at
+        }).collect())
+    }
+
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainEnrollment>, DomainError> {
+        let models = EnrollmentEntity::find()
+            .filter(enrollment::Column::OrgId.eq(org_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainEnrollment {
+            id: m.id, org_id: m.org_id, period_id: m.period_id, student_id: m.student_id,
+            class_id: m.class_id, student_number: m.student_number, status: m.status,
+            enrollment_date: m.enrollment_date, enrollment_type: m.enrollment_type,
+            withdrawal_date: m.withdrawal_date, withdrawal_reason: m.withdrawal_reason,
+            meta: m.meta, created_at: m.created_at, updated_at: m.updated_at
+        }).collect())
+    }
+
+
     async fn save(&self, enrollment: &DomainEnrollment) -> Result<(), DomainError> {
         let active = enrollment::ActiveModel {
             id: Set(enrollment.id), org_id: Set(enrollment.org_id),
