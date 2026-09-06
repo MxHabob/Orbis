@@ -312,7 +312,7 @@ export class RemoteClient implements OrbisApiClient {
     return this.get('/api/v1/exam-schedules', { session_id: sessionId });
   }
   async assignSeating(req: AssignSeatingRequest): Promise<SeatingDto> {
-    return this.post('/api/v1/exam-seatings', req);
+    return this.post('/api/v1/exam-seating', req);
   }
   async assignSecret(req: AssignSecretRequest): Promise<SecretDto> {
     return this.post('/api/v1/exam-secrets', req);

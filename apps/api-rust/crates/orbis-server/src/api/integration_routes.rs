@@ -1,6 +1,6 @@
 //! Integration routes — Connect apps, List connected apps.
 
-use axum::{extract::State, routing::{get, post}, Json, Router};
+use axum::{extract::State, routing::get, Json, Router};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use utoipa::ToSchema;
@@ -77,6 +77,6 @@ async fn list_integrations(
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/api/v1/integrations", post(connect_app).get(list_integrations))
+        .route("/api/v1/integrations", get(list_integrations).post(connect_app))
 }
 

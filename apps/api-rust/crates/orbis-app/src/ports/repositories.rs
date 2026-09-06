@@ -34,7 +34,6 @@ use orbis_domain::entities::currency::Currency;
 use orbis_domain::entities::exchange_rate::ExchangeRate;
 use orbis_domain::entities::document::Document;
 use orbis_domain::entities::role::Role;
-use orbis_domain::entities::role_permission::RolePermission;
 use orbis_domain::entities::user_role_assignment::UserRoleAssignment;
 use orbis_domain::entities::identity::UserIdentity;
 use orbis_domain::entities::mfa::{MfaFactor, MfaRecoveryCode};

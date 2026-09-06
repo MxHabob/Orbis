@@ -40,30 +40,17 @@ pub async fn execute() -> Result<()> {
             continue;
         }
 
-        let person_id = format!("dev-person-{}", Uuid::new_v4());
-        let party_id = format!("dev-party-{}", Uuid::new_v4());
-        let user_id = format!("dev-teacher-{}", Uuid::new_v4());
+        let person_id = Uuid::new_v4().to_string();
+        let user_id = Uuid::new_v4().to_string();
+        let assignment_id = Uuid::new_v4().to_string();
         let first_name = format!("Dev Teacher {index}");
-        let first_name_ar = format!("معلم تجريبي {index}");
 
         execute_with_values(
             &txn,
             backend,
-            "INSERT INTO parties (id, party_type, created_at, updated_at) VALUES (?, ?, ?, ?)",
+            "INSERT INTO persons (id, org_id, first_name, last_name, full_name, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
             vec![
-                party_id.clone().into(),
-                "person".into(),
-                now.clone().into(),
-                now.clone().into(),
-            ],
-        )
-        .await?;
-        execute_with_values(
-            &txn,
-            backend,
-            "INSERT INTO persons (id, party_id, org_id, first_name, last_name, full_name, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            vec![
-                person_id.clone().into(), party_id.into(), org_id.clone().into(),
+                person_id.clone().into(), org_id.clone().into(),
                 first_name.clone().into(), "".into(), first_name.clone().into(),
                 now.clone().into(), now.clone().into(),
             ],
@@ -71,11 +58,19 @@ pub async fn execute() -> Result<()> {
         execute_with_values(
             &txn,
             backend,
-            "INSERT INTO users (id, person_id, org_id, email, email_verified, password_hash, full_name, primary_role, status, is_deleted, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO users (id, person_id, org_id, email, email_verified, password_hash, full_name, status, is_deleted, created_at, updated_at) VALUES (?, ?, ?, ?, 1, ?, ?, 'active', 0, ?, ?)",
             vec![
-                user_id.into(), person_id.into(), org_id.clone().into(), email.into(),
-                1i32.into(), password_hash.clone().into(), first_name.into(),
-                "teacher".into(), "active".into(), 0i32.into(), now.clone().into(), now.clone().into(),
+                user_id.clone().into(), person_id.into(), org_id.clone().into(), email.into(),
+                password_hash.clone().into(), first_name.into(),
+                now.clone().into(), now.clone().into(),
+            ],
+        ).await?;
+        execute_with_values(
+            &txn,
+            backend,
+            "INSERT INTO user_role_assignments (id, user_id, role_id, org_id, scope_type, scope_id, assigned_by, created_at) VALUES (?, ?, 'teacher', ?, 'global', NULL, NULL, ?)",
+            vec![
+                assignment_id.into(), user_id.into(), org_id.clone().into(), now.clone().into(),
             ],
         ).await?;
         created += 1;

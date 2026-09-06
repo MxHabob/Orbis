@@ -59,47 +59,72 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         org_cmds::org_get_unit,
         org_cmds::org_delete_unit,
         // ── Calendar ────────────────────────────────────────────
+        calendar_cmds::calendar_create_year,
         calendar_cmds::calendar_list_years,
         calendar_cmds::calendar_get_context,
         calendar_cmds::calendar_get_year,
+        calendar_cmds::calendar_create_period,
         calendar_cmds::calendar_list_periods,
         calendar_cmds::calendar_get_period,
         calendar_cmds::calendar_list_period_templates,
         // ── Academic ────────────────────────────────────────────
+        academic_cmds::academic_create_subject,
         academic_cmds::academic_list_subjects,
         academic_cmds::academic_get_subject,
+        academic_cmds::academic_create_class,
         academic_cmds::academic_list_classes,
         academic_cmds::academic_get_class,
+        academic_cmds::academic_assign_class_subject,
         academic_cmds::academic_list_class_subjects,
         // ── Student ─────────────────────────────────────────────
+        student_cmds::student_enroll_student,
         student_cmds::student_list_enrollments,
         student_cmds::student_get_enrollment,
+        student_cmds::student_assign_guardian,
         student_cmds::student_list_guardians,
         // ── Scheduling ──────────────────────────────────────────
+        scheduling_cmds::scheduling_create_room,
         scheduling_cmds::scheduling_list_rooms,
         scheduling_cmds::scheduling_get_room,
+        scheduling_cmds::scheduling_create_time_slot,
         scheduling_cmds::scheduling_list_time_slots,
+        scheduling_cmds::scheduling_schedule_lesson,
         scheduling_cmds::scheduling_list_lessons,
         // ── Assessment ──────────────────────────────────────────
+        assessment_cmds::assessment_create_scheme,
         assessment_cmds::assessment_list_schemes,
         assessment_cmds::assessment_get_scheme,
+        assessment_cmds::assessment_record_grade,
         assessment_cmds::assessment_list_grades,
+        assessment_cmds::assessment_calculate_grades,
+        assessment_cmds::assessment_mark_attendance,
         assessment_cmds::assessment_list_attendance,
         // ── Exam ────────────────────────────────────────────────
+        exam_cmds::exam_create_session,
         exam_cmds::exam_list_sessions,
         exam_cmds::exam_get_session,
+        exam_cmds::exam_schedule_exam,
         exam_cmds::exam_list_schedules,
+        exam_cmds::exam_assign_seating,
+        exam_cmds::exam_assign_secret,
+        exam_cmds::exam_assign_proctor,
         // ── Finance ─────────────────────────────────────────────
+        finance_cmds::finance_create_account,
         finance_cmds::finance_list_accounts,
+        finance_cmds::finance_create_fee_template,
         finance_cmds::finance_list_fee_templates,
+        finance_cmds::finance_generate_fee,
         finance_cmds::finance_list_student_fees,
+        finance_cmds::finance_process_payment,
         finance_cmds::finance_list_payments,
         finance_cmds::finance_list_currencies,
         // ── Document ────────────────────────────────────────────
+        document_cmds::document_upload,
         document_cmds::document_list,
         document_cmds::document_get,
         document_cmds::document_delete,
         // ── Integration ─────────────────────────────────────────
+        integration_cmds::integration_connect_app,
         integration_cmds::integration_list,
         // ── Report Generation ───────────────────────────────────
         report_cmds::generate_report,
@@ -129,4 +154,3 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         window_cmds::check_for_updates,
     ]
 }
-

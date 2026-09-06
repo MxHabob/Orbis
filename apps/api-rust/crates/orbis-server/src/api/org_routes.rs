@@ -1,6 +1,6 @@
 //! Organization routes — Org CRUD, OrgUnits, Settings, Dashboard, Bootstrap.
 
-use axum::{extract::{State, Path}, routing::{get, post, put, delete}, Json, Router};
+use axum::{extract::{State, Path}, routing::{get, post}, Json, Router};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -12,7 +12,6 @@ use orbis_app::usecases::organization::{CreateOrganizationUseCase, UpdateOrganiz
 use orbis_app::usecases::org_unit::CreateOrgUnitUseCase;
 use orbis_app::usecases::settings::{GetSettingsUseCase, UpdateSettingsUseCase};
 use orbis_app::usecases::dashboard::GetDashboardUseCase;
-use orbis_app::ports::repositories::DashboardCounts;
 use orbis_domain::entities::settings::OrganizationSettings;
 use orbis_infra::adapters::bootstrap_adapter::{BootstrapPayload, bootstrap_full};
 
@@ -466,5 +465,5 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/organizations/current/settings", get(get_settings).put(update_settings))
         .route("/api/v1/organizations/current/dashboard", get(get_dashboard))
         .route("/api/v1/org-units", post(create_org_unit).get(list_org_units))
-        .route("/api/v1/org-units/{id}", get(get_org_unit).delete(delete_org_unit))
+        .route("/api/v1/org-units/:id", get(get_org_unit).delete(delete_org_unit))
 }

@@ -464,9 +464,9 @@ pub async fn template_create_binding(
 pub async fn template_preview(
     document_json: String,
     context_data: serde_json::Value,
-    locale: Option<String>,
-    page_index: Option<u32>,
-    state: State<'_, AppState>,
+    _locale: Option<String>,
+    _page_index: Option<u32>,
+    _state: State<'_, AppState>,
 ) -> Result<Vec<u8>, String> {
     use docforge_engine::model::document::TemplateDocument;
     use docforge_engine::layout::engine::LayoutEngine;

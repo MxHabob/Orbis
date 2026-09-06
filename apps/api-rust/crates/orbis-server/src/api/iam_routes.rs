@@ -505,8 +505,8 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/auth/identities/google/link", post(google_link))
         .route("/api/v1/auth/identities/google/login", post(google_login))
         .route("/api/v1/auth/devices", get(list_devices))
-        .route("/api/v1/auth/devices/{id}", axum::routing::delete(revoke_device))
+        .route("/api/v1/auth/devices/:id", axum::routing::delete(revoke_device))
         .route("/api/v1/iam/users", post(register_user).get(list_users))
-        .route("/api/v1/iam/users/{id}", get(get_user))
+        .route("/api/v1/iam/users/:id", get(get_user))
 }
 

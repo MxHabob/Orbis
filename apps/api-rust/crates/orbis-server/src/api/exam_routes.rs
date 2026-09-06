@@ -224,7 +224,7 @@ async fn assign_proctor(
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/exam-sessions", post(create_session).get(list_sessions))
-        .route("/api/v1/exam-sessions/{id}", get(get_session))
+        .route("/api/v1/exam-sessions/:id", get(get_session))
         .route("/api/v1/exam-schedules", post(schedule_exam).get(list_schedules))
         .route("/api/v1/exam-seating", post(assign_seating))
         .route("/api/v1/exam-secrets", post(assign_secret))

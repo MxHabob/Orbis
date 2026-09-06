@@ -25,7 +25,7 @@ impl RegisterUserUseCase {
         full_name: String,
         email: Option<String>,
         password_plain: Option<String>,
-        role: Role,
+        _role: Role,
         org_id: Option<Uuid>,
     ) -> Result<User, DomainError> {
         let actual_org_id = org_id.unwrap_or(ctx.tenant_id);

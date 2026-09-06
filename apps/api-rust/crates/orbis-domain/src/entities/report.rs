@@ -678,7 +678,6 @@ fn default_true() -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
 
     #[test]
     fn test_output_format_round_trip() {

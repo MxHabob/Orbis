@@ -522,6 +522,7 @@ async fn seed_chart_of_accounts<C: ConnectionTrait>(
 
 // ── Internal Blueprint Definitions ──────────────────────────────
 
+#[allow(dead_code)]
 struct GradeItem {
     label: String,
     min_score: f64,
@@ -530,12 +531,14 @@ struct GradeItem {
     is_passing: bool,
 }
 
+#[allow(dead_code)]
 struct RolePermission {
     role: String,
     document_type: String,
     actions: Vec<String>,
 }
 
+#[allow(dead_code)]
 struct AssessmentComponent {
     name: String,
     component_type: String,
@@ -544,6 +547,7 @@ struct AssessmentComponent {
     passing_score: f64,
 }
 
+#[allow(dead_code)]
 struct InstitutionBlueprint {
     grading_system: String,
     passing_grade: f64,

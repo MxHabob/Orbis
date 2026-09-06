@@ -238,8 +238,8 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/academic-years", post(create_year).get(list_years))
         .route("/api/v1/academic-years/current", get(get_current_context))
-        .route("/api/v1/academic-years/{id}", get(get_year))
+        .route("/api/v1/academic-years/:id", get(get_year))
         .route("/api/v1/academic-periods", post(create_period).get(list_periods))
-        .route("/api/v1/academic-periods/{id}", get(get_period))
+        .route("/api/v1/academic-periods/:id", get(get_period))
         .route("/api/v1/period-templates", get(list_period_templates))
 }

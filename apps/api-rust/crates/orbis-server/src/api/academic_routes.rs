@@ -225,8 +225,8 @@ pub struct ClassSubjectQuery {
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/subjects", post(create_subject).get(list_subjects))
-        .route("/api/v1/subjects/{id}", get(get_subject))
+        .route("/api/v1/subjects/:id", get(get_subject))
         .route("/api/v1/classes", post(create_class).get(list_classes))
-        .route("/api/v1/classes/{id}", get(get_class))
+        .route("/api/v1/classes/:id", get(get_class))
         .route("/api/v1/class-subjects", post(assign_class_subject).get(list_class_subjects))
 }

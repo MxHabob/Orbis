@@ -1,6 +1,6 @@
 //! Document routes — Upload, List, Get, Delete.
 
-use axum::{extract::{State, Path}, routing::{get, post, delete}, Json, Router};
+use axum::{extract::{State, Path}, routing::{get, post}, Json, Router};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use chrono::{DateTime, Utc};
@@ -207,6 +207,6 @@ async fn delete_document(
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/documents", post(upload_document).get(list_documents))
-        .route("/api/v1/documents/{id}", get(get_document).delete(delete_document))
+        .route("/api/v1/documents/:id", get(get_document).delete(delete_document))
 }
 

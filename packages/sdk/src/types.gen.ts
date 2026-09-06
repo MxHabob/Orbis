@@ -111,6 +111,13 @@ export type AutopilotSettingsDto = {
     mode: string;
 };
 
+export type BatchPrintRequest = {
+    batch_config: unknown;
+    locale?: string | null;
+    parameters?: unknown;
+    report_code: string;
+};
+
 export type CalculateGradesRequest = {
     scheme_id: string;
     student_id: string;
@@ -221,6 +228,32 @@ export type CreateSubjectRequest = {
     is_core: boolean;
     name: string;
     unit_id?: string | null;
+};
+
+export type CreateTemplateBindingRequest = {
+    format: string;
+    is_default?: boolean | null;
+    locale: string;
+    template_id: string;
+};
+
+export type CreateTemplateRequest = {
+    code?: string | null;
+    description?: string | null;
+    description_ar?: string | null;
+    document_json?: string | null;
+    document_type: string;
+    entity_type: string;
+    locale?: string | null;
+    margins_json?: string | null;
+    master_template_id?: string | null;
+    name: string;
+    name_ar?: string | null;
+    orientation?: string | null;
+    page_height_mm?: number | null;
+    page_size?: string | null;
+    page_width_mm?: number | null;
+    tags?: string | null;
 };
 
 export type CreateTimeSlotRequest = {
@@ -354,6 +387,18 @@ export type GenerateFeeRequest = {
     enrollment_id?: string | null;
     fee_template_id: string;
     student_id: string;
+};
+
+export type GenerateReportRequest = {
+    format?: string | null;
+    locale?: string | null;
+    parameters?: unknown;
+    report_code: string;
+};
+
+export type GenerateReportResponse = {
+    job_id: string;
+    status: string;
 };
 
 export type GoogleAuthRequest = {
@@ -494,6 +539,12 @@ export type PeriodTemplateDto = {
     name: string;
 };
 
+export type PreviewTemplateRequest = {
+    context_data: unknown;
+    document_json: string;
+    locale?: string | null;
+};
+
 export type ProcessPaymentRequest = {
     account_id: string;
     amount: number;
@@ -525,6 +576,32 @@ export type RegisterUserRequest = {
     full_name: string;
     password?: string | null;
     role: string;
+};
+
+export type ReportDefinitionDto = {
+    category: string;
+    code: string;
+    description?: string | null;
+    description_ar?: string | null;
+    domain: string;
+    id: string;
+    is_active: boolean;
+    is_system: boolean;
+    name: string;
+    name_ar: string;
+    supported_formats: Array<string>;
+};
+
+export type ReportJobStatusResponse = {
+    error_message?: string | null;
+    job_id: string;
+    output_path?: string | null;
+    output_size_bytes?: number | null;
+    status: string;
+};
+
+export type RevertVersionRequest = {
+    version: number;
 };
 
 export type RoomDto = {
@@ -600,6 +677,52 @@ export type SubjectDto = {
     org_id: string;
 };
 
+export type TemplateBindingDto = {
+    created_at: string;
+    format: string;
+    id: string;
+    is_default: boolean;
+    locale: string;
+    report_definition_id: string;
+    template_id: string;
+};
+
+export type TemplateDto = {
+    code?: string | null;
+    created_at: string;
+    description?: string | null;
+    description_ar?: string | null;
+    document_json: string;
+    document_type: string;
+    entity_type: string;
+    id: string;
+    is_default: boolean;
+    is_system: boolean;
+    locale: string;
+    margins_json: string;
+    master_template_id?: string | null;
+    name: string;
+    name_ar?: string | null;
+    orientation: string;
+    page_height_mm?: number | null;
+    page_size: string;
+    page_width_mm?: number | null;
+    published_version?: number | null;
+    status: string;
+    tags?: string | null;
+    updated_at: string;
+    version: number;
+};
+
+export type TemplateVersionDto = {
+    change_summary?: string | null;
+    created_at: string;
+    created_by: string;
+    id: string;
+    template_id: string;
+    version: number;
+};
+
 export type TimeSlotDto = {
     day_of_week: number;
     end_time: string;
@@ -614,6 +737,17 @@ export type UpdateOrgRequest = {
     name?: string | null;
     primary_color?: string | null;
     timezone?: string | null;
+};
+
+export type UpdateTemplateRequest = {
+    description?: string | null;
+    description_ar?: string | null;
+    document_json?: string | null;
+    margins_json?: string | null;
+    name?: string | null;
+    name_ar?: string | null;
+    orientation?: string | null;
+    page_size?: string | null;
 };
 
 export type UploadDocumentRequest = {
@@ -662,6 +796,23 @@ export type UserIdentityDto = {
     id: string;
     provider: string;
     provider_user_id: string;
+};
+
+export type ValidateTemplateRequest = {
+    document_json: string;
+};
+
+export type ValidationIssueDto = {
+    message: string;
+    node_id?: string | null;
+    path: string;
+    severity: string;
+};
+
+export type ValidationResultDto = {
+    errors: Array<ValidationIssueDto>;
+    valid: boolean;
+    warnings: Array<ValidationIssueDto>;
 };
 
 export type ListPeriodsData = {
@@ -1725,6 +1876,133 @@ export type ListPeriodTemplatesResponses = {
 
 export type ListPeriodTemplatesResponse = ListPeriodTemplatesResponses[keyof ListPeriodTemplatesResponses];
 
+export type ListReportDefinitionsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        domain?: string | null;
+        category?: string | null;
+    };
+    url: '/api/v1/report-definitions';
+};
+
+export type ListReportDefinitionsResponses = {
+    /**
+     * List report definitions
+     */
+    200: unknown;
+};
+
+export type GetReportDefinitionData = {
+    body?: never;
+    path: {
+        code: string;
+    };
+    query?: never;
+    url: '/api/v1/report-definitions/{code}';
+};
+
+export type GetReportDefinitionResponses = {
+    /**
+     * Get report definition
+     */
+    200: unknown;
+};
+
+export type ListTemplateBindingsData = {
+    body?: never;
+    path: {
+        definition_id: string;
+    };
+    query?: never;
+    url: '/api/v1/report-definitions/{definition_id}/bindings';
+};
+
+export type ListTemplateBindingsResponses = {
+    /**
+     * List template bindings
+     */
+    200: unknown;
+};
+
+export type CreateTemplateBindingData = {
+    body: CreateTemplateBindingRequest;
+    path: {
+        definition_id: string;
+    };
+    query?: never;
+    url: '/api/v1/report-definitions/{definition_id}/bindings';
+};
+
+export type CreateTemplateBindingResponses = {
+    /**
+     * Create template binding
+     */
+    201: unknown;
+};
+
+export type BatchPrintData = {
+    body: BatchPrintRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/reports/batch-print';
+};
+
+export type BatchPrintResponses = {
+    /**
+     * Batch print HTML
+     */
+    200: unknown;
+};
+
+export type GenerateReportData = {
+    body: GenerateReportRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/reports/generate';
+};
+
+export type GenerateReportResponses = {
+    /**
+     * Generate report
+     */
+    200: unknown;
+};
+
+export type DownloadReportFileData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/reports/jobs/{id}/download';
+};
+
+export type DownloadReportFileResponses = {
+    /**
+     * Download report file
+     */
+    200: Blob | File;
+};
+
+export type DownloadReportFileResponse = DownloadReportFileResponses[keyof DownloadReportFileResponses];
+
+export type GetReportJobStatusData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/reports/jobs/{id}/status';
+};
+
+export type GetReportJobStatusResponses = {
+    /**
+     * Get report job status
+     */
+    200: unknown;
+};
+
 export type ListRoomsData = {
     body?: never;
     path?: never;
@@ -1895,6 +2173,184 @@ export type GetSubjectResponses = {
 };
 
 export type GetSubjectResponse = GetSubjectResponses[keyof GetSubjectResponses];
+
+export type ListTemplatesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        document_type?: string | null;
+        entity_type?: string | null;
+        status?: string | null;
+    };
+    url: '/api/v1/templates';
+};
+
+export type ListTemplatesResponses = {
+    /**
+     * List templates
+     */
+    200: unknown;
+};
+
+export type CreateTemplateData = {
+    body: CreateTemplateRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/templates';
+};
+
+export type CreateTemplateResponses = {
+    /**
+     * Create template
+     */
+    201: unknown;
+};
+
+export type PreviewTemplateData = {
+    body: PreviewTemplateRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/templates/preview';
+};
+
+export type PreviewTemplateResponses = {
+    /**
+     * Preview template as byte array
+     */
+    200: Blob | File;
+};
+
+export type PreviewTemplateResponse = PreviewTemplateResponses[keyof PreviewTemplateResponses];
+
+export type ValidateTemplateData = {
+    body: ValidateTemplateRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/templates/validate';
+};
+
+export type ValidateTemplateResponses = {
+    /**
+     * Validate template
+     */
+    200: unknown;
+};
+
+export type DeleteTemplateData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/templates/{id}';
+};
+
+export type DeleteTemplateResponses = {
+    /**
+     * Delete template
+     */
+    204: void;
+};
+
+export type DeleteTemplateResponse = DeleteTemplateResponses[keyof DeleteTemplateResponses];
+
+export type GetTemplateData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/templates/{id}';
+};
+
+export type GetTemplateResponses = {
+    /**
+     * Get template
+     */
+    200: unknown;
+};
+
+export type UpdateTemplateData = {
+    body: UpdateTemplateRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/templates/{id}';
+};
+
+export type UpdateTemplateResponses = {
+    /**
+     * Update template
+     */
+    200: unknown;
+};
+
+export type ArchiveTemplateData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/templates/{id}/archive';
+};
+
+export type ArchiveTemplateResponses = {
+    /**
+     * Archive template
+     */
+    204: void;
+};
+
+export type ArchiveTemplateResponse = ArchiveTemplateResponses[keyof ArchiveTemplateResponses];
+
+export type PublishTemplateData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/templates/{id}/publish';
+};
+
+export type PublishTemplateResponses = {
+    /**
+     * Publish template
+     */
+    200: unknown;
+};
+
+export type RevertTemplateVersionData = {
+    body: RevertVersionRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/templates/{id}/revert';
+};
+
+export type RevertTemplateVersionResponses = {
+    /**
+     * Revert template version
+     */
+    200: unknown;
+};
+
+export type GetTemplateVersionsData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/templates/{id}/versions';
+};
+
+export type GetTemplateVersionsResponses = {
+    /**
+     * Get template versions
+     */
+    200: unknown;
+};
 
 export type ListTimeSlotsData = {
     body?: never;

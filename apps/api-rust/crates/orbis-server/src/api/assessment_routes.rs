@@ -219,7 +219,7 @@ async fn list_attendance(
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/assessment-schemes", post(create_scheme).get(list_schemes))
-        .route("/api/v1/assessment-schemes/{id}", get(get_scheme))
+        .route("/api/v1/assessment-schemes/:id", get(get_scheme))
         .route("/api/v1/grades", post(record_grade).get(list_grades))
         .route("/api/v1/grades/actions/calculate", post(calculate_grades))
         .route("/api/v1/attendance", post(mark_attendance).get(list_attendance))

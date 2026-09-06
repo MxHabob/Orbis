@@ -169,6 +169,6 @@ async fn list_guardians(
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/enrollments", post(enroll_student).get(list_enrollments))
-        .route("/api/v1/enrollments/{id}", get(get_enrollment))
+        .route("/api/v1/enrollments/:id", get(get_enrollment))
         .route("/api/v1/student-guardians", post(assign_guardian).get(list_guardians))
 }

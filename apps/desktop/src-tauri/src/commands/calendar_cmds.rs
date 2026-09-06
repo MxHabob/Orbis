@@ -1,26 +1,63 @@
 //! Tauri IPC commands — Calendar (Academic Years, Periods, Templates).
 
 use tauri::State;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use crate::state::AppState;
 use uuid::Uuid;
+use chrono::{DateTime, Utc};
+use orbis_app::usecases::calendar::{
+    academic_year::CreateAcademicYearUseCase,
+    academic_period::CreateAcademicPeriodUseCase,
+};
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
 fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
 
 #[derive(Serialize)]
 pub struct AcademicYearDto {
-    pub id: String, pub org_id: String,
-    pub name: String, pub name_ar: Option<String>,
-    pub start_date: String, pub end_date: String,
-    pub is_active: bool, pub status: String,
+    pub id: String,
+    pub org_id: String,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub start_date: String,
+    pub end_date: String,
+    pub is_active: bool,
+    pub status: String,
+}
+
+#[derive(Deserialize)]
+pub struct CreateYearInput {
+    pub name: String,
+    #[serde(rename = "startDate")]
+    pub start_date: String,
+    #[serde(rename = "endDate")]
+    pub end_date: String,
 }
 
 #[derive(Serialize)]
 pub struct AcademicPeriodDto {
-    pub id: String, pub year_id: String, pub name: String,
-    pub start_date: String, pub end_date: String,
-    pub period_type: String, pub status: String,
+    pub id: String,
+    pub year_id: String,
+    pub name: String,
+    pub start_date: String,
+    pub end_date: String,
+    pub period_type: String,
+    pub status: String,
+}
+
+#[derive(Deserialize)]
+pub struct CreatePeriodInput {
+    #[serde(rename = "yearId")]
+    pub year_id: String,
+    #[serde(rename = "parentId")]
+    pub parent_id: Option<String>,
+    pub name: String,
+    #[serde(rename = "periodType")]
+    pub period_type: String,
+    #[serde(rename = "startDate")]
+    pub start_date: String,
+    #[serde(rename = "endDate")]
+    pub end_date: String,
 }
 
 #[derive(Serialize)]
@@ -31,24 +68,56 @@ pub struct AcademicContextResponse {
 }
 
 #[derive(Serialize)]
-pub struct PeriodTemplateDto { pub id: String, pub name: String }
+pub struct PeriodTemplateDto {
+    pub id: String,
+    pub name: String,
+}
 
 fn year_dto(y: orbis_domain::entities::academic_year::AcademicYear) -> AcademicYearDto {
     let is_active = y.status == "active";
     AcademicYearDto {
-        id: y.id.to_string(), org_id: y.org_id.to_string(),
-        name: y.name, name_ar: y.name_ar,
-        start_date: y.start_date.to_string(), end_date: y.end_date.to_string(),
-        is_active, status: y.status,
+        id: y.id.to_string(),
+        org_id: y.org_id.to_string(),
+        name: y.name,
+        name_ar: y.name_ar,
+        start_date: y.start_date.to_rfc3339(),
+        end_date: y.end_date.to_rfc3339(),
+        is_active,
+        status: y.status,
     }
 }
 
 fn period_dto(p: orbis_domain::entities::academic_period::AcademicPeriod) -> AcademicPeriodDto {
     AcademicPeriodDto {
-        id: p.id.to_string(), year_id: p.year_id.to_string(), name: p.name,
-        start_date: p.start_date.to_string(), end_date: p.end_date.to_string(),
-        period_type: p.period_type, status: p.status,
+        id: p.id.to_string(),
+        year_id: p.year_id.to_string(),
+        name: p.name,
+        start_date: p.start_date.to_rfc3339(),
+        end_date: p.end_date.to_rfc3339(),
+        period_type: p.period_type,
+        status: p.status,
     }
+}
+
+#[tauri::command]
+pub async fn calendar_create_year(request: CreateYearInput, state: State<'_, AppState>) -> Result<ApiResponse<AcademicYearDto>, String> {
+    let ctx = make_ctx(&state);
+    let uc = CreateAcademicYearUseCase {
+        year_repo: state.year_repo.clone(),
+        event_bus: state.event_bus.clone(),
+    };
+    let start_date = DateTime::parse_from_rfc3339(&request.start_date)
+        .map(|d| d.with_timezone(&Utc))
+        .map_err(|_| "Invalid start_date format")?;
+    let end_date = DateTime::parse_from_rfc3339(&request.end_date)
+        .map(|d| d.with_timezone(&Utc))
+        .map_err(|_| "Invalid end_date format")?;
+
+    let y = uc.execute(&ctx, ctx.tenant_id, request.name, start_date, end_date)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(year_dto(y)))
 }
 
 #[tauri::command]
@@ -63,6 +132,30 @@ pub async fn calendar_get_year(id: String, state: State<'_, AppState>) -> Result
     let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
     let year = state.year_repo.find_by_id(uid).await.map_err(|e| e.to_string())?;
     Ok(ok(year.map(year_dto)))
+}
+
+#[tauri::command]
+pub async fn calendar_create_period(request: CreatePeriodInput, state: State<'_, AppState>) -> Result<ApiResponse<AcademicPeriodDto>, String> {
+    let ctx = make_ctx(&state);
+    let uc = CreateAcademicPeriodUseCase {
+        period_repo: state.period_repo.clone(),
+        year_repo: state.year_repo.clone(),
+        event_bus: state.event_bus.clone(),
+    };
+    let year_id = Uuid::parse_str(&request.year_id).map_err(|_| "Invalid yearId")?;
+    let parent_id = request.parent_id.and_then(|p| Uuid::parse_str(&p).ok());
+    let start_date = DateTime::parse_from_rfc3339(&request.start_date)
+        .map(|d| d.with_timezone(&Utc))
+        .map_err(|_| "Invalid start_date format")?;
+    let end_date = DateTime::parse_from_rfc3339(&request.end_date)
+        .map(|d| d.with_timezone(&Utc))
+        .map_err(|_| "Invalid end_date format")?;
+
+    let p = uc.execute(&ctx, ctx.tenant_id, year_id, parent_id, request.name, request.period_type, start_date, end_date)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(period_dto(p)))
 }
 
 #[tauri::command]

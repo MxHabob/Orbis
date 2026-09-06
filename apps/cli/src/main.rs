@@ -2,7 +2,6 @@ use anyhow::{Result, anyhow};
 use clap::{Parser, Subcommand};
 use colored::*;
 use sea_orm::{ConnectionTrait, Database, DbBackend, Statement, TransactionTrait};
-use std::path::PathBuf;
 
 pub mod commands;
 pub mod core;
@@ -80,41 +79,41 @@ fn build_menu(status: &core::database::SystemStatus) -> Vec<MenuItem> {
 
     let mut push = |label: &str, choice: MenuChoice| {
         items.push(MenuItem {
-            label: format!("{}. {}", idx, label),
+            label: format!("{:<2} {}", format!("{}.", idx), label),
             choice,
         });
         idx += 1;
     };
 
     if status.is_setup_complete() {
-        push("Start System", MenuChoice::Start);
-        push("Run Diagnostics (Doctor)", MenuChoice::Doctor);
-        push("Backup Database", MenuChoice::Backup);
-        push("Manage License", MenuChoice::License);
-        push("Repair / Reinstall", MenuChoice::Init);
-        push("Reset Database (Wipe All Data)", MenuChoice::ResetDatabase);
+        push("▶  Start System                  Launch Desktop App or Backend", MenuChoice::Start);
+        push("🩺 System Diagnostics (Doctor)    Inspect SQLite/Postgres DB & Binary Health", MenuChoice::Doctor);
+        push("💾 Secure Database Backup         Generate Compressed Snapshot (.zip)", MenuChoice::Backup);
+        push("🔑 License & Entitlements         Manage Plan Activation & Seat Limits", MenuChoice::License);
+        push("⚙  Reconfigure Workspace (Init)   Re-run Workspace & Admin Provisioning", MenuChoice::Init);
+        push("🗑  Reset Database Store          Wipe All Tables & Reset To Clean Slate", MenuChoice::ResetDatabase);
     } else if status.is_initialized() {
-        push("Start System (Complete Onboarding)", MenuChoice::Start);
-        push("Run Diagnostics (Doctor)", MenuChoice::Doctor);
-        push("Manage License", MenuChoice::License);
-        push("Repair / Reinstall", MenuChoice::Init);
-        push("Backup Database", MenuChoice::Backup);
-        push("Reset Database (Wipe All Data)", MenuChoice::ResetDatabase);
+        push("▶  Start System                  Complete Desktop Onboarding", MenuChoice::Start);
+        push("🩺 System Diagnostics (Doctor)    Inspect Health & Database Status", MenuChoice::Doctor);
+        push("🔑 License & Entitlements         Inspect Activation Plan", MenuChoice::License);
+        push("⚙  Reconfigure Workspace (Init)   Re-run Workspace & Admin Provisioning", MenuChoice::Init);
+        push("💾 Secure Database Backup         Create Snapshot", MenuChoice::Backup);
+        push("🗑  Reset Database Store          Wipe All Tables & Reset To Clean Slate", MenuChoice::ResetDatabase);
     } else {
-        push("Initialize System (Required)", MenuChoice::Init);
-        push("Manage License", MenuChoice::License);
-        push("Run Diagnostics (Doctor)", MenuChoice::Doctor);
-        push("Reset Database (Wipe All Data)", MenuChoice::ResetDatabase);
+        push("⚙  Initialize Workspace (Init)    Configure Database, Organization & Super Admin", MenuChoice::Init);
+        push("🔑 Manage Product License         Inspect or Activate License Key", MenuChoice::License);
+        push("🩺 System Diagnostics (Doctor)    Verify System Requirements & Connectivity", MenuChoice::Doctor);
+        push("🗑  Reset Database Store          Clean Up Existing Data Files", MenuChoice::ResetDatabase);
     }
 
     if is_development_environment() {
         push(
-            "Create Default Development Data",
+            "⚡ Seed Development Records       Create Mock Students, Teachers & Ledgers",
             MenuChoice::SeedDefaultData,
         );
     }
 
-    push("Exit", MenuChoice::Exit);
+    push("⏏  Exit Management Console       Close session", MenuChoice::Exit);
     items
 }
 
@@ -252,6 +251,19 @@ async fn reset_postgres(url: &str) -> Result<()> {
     Ok(())
 }
 
+async fn ensure_authenticated(status: &core::database::SystemStatus) -> Result<Option<core::auth::AuthenticatedAdmin>> {
+    if !status.is_initialized() {
+        return Ok(None);
+    }
+
+    let config = core::config::CliConfig::default();
+    let db = Database::connect(&config.db_url).await
+        .map_err(|e| anyhow!("Failed to connect to database for authentication: {e}"))?;
+
+    let admin = core::auth::authenticate_admin(&db).await?;
+    Ok(Some(admin))
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     // Enable ANSI escape codes on Windows CMD/PowerShell
@@ -264,23 +276,53 @@ async fn main() -> Result<()> {
         .init();
 
     let cli = Cli::parse();
+    let initial_status = core::database::get_full_status().await;
 
     if let Some(cmd) = &cli.command {
         // Run specific command passed via CLI args directly
-        let (db_exists, setup_completed) = core::database::get_system_status().await;
+        let (db_exists, setup_completed) =
+            (initial_status.is_initialized(), initial_status.is_setup_complete());
         ui::output::print_banner(db_exists, setup_completed);
+
+        // Enforce authentication if system is initialized (except for init if uninitialized)
+        ensure_authenticated(&initial_status).await?;
+
         handle_command(cmd).await?;
     } else {
-        // Interactive Launcher Mode (when double-clicked without arguments)
+        // Interactive Launcher Mode (when double-clicked or run without arguments)
+        let (db_exists, setup_completed) =
+            (initial_status.is_initialized(), initial_status.is_setup_complete());
+        ui::output::print_banner(db_exists, setup_completed);
+
+        // Enforce authentication gate upon opening CLI if system is initialized
+        let auth_admin = ensure_authenticated(&initial_status).await?;
+
         loop {
             let status = core::database::get_full_status().await;
             let (db_exists, setup_completed) =
                 (status.is_initialized(), status.is_setup_complete());
             ui::output::print_banner(db_exists, setup_completed);
 
-            // Show org name if available
+            // Show active org & authenticated admin
             if let Some(ref name) = status.org_name {
-                println!("  Organization: {}\n", name.bold());
+                let dot = "•".truecolor(ui::output::COLOR_MUTED.0, ui::output::COLOR_MUTED.1, ui::output::COLOR_MUTED.2);
+                if let Some(ref admin) = auth_admin {
+                    println!("  {} {} {}  {}  {} {} ({})\n",
+                        "✦".truecolor(ui::output::COLOR_PURPLE.0, ui::output::COLOR_PURPLE.1, ui::output::COLOR_PURPLE.2),
+                        "Workspace:".truecolor(ui::output::COLOR_MUTED.0, ui::output::COLOR_MUTED.1, ui::output::COLOR_MUTED.2),
+                        name.truecolor(ui::output::COLOR_WHITE.0, ui::output::COLOR_WHITE.1, ui::output::COLOR_WHITE.2).bold(),
+                        dot,
+                        "Admin:".truecolor(ui::output::COLOR_MUTED.0, ui::output::COLOR_MUTED.1, ui::output::COLOR_MUTED.2),
+                        admin.full_name.truecolor(ui::output::COLOR_WHITE.0, ui::output::COLOR_WHITE.1, ui::output::COLOR_WHITE.2).bold(),
+                        admin.role.truecolor(ui::output::COLOR_EMERALD.0, ui::output::COLOR_EMERALD.1, ui::output::COLOR_EMERALD.2)
+                    );
+                } else {
+                    println!("  {} {} {}\n",
+                        "✦".truecolor(ui::output::COLOR_PURPLE.0, ui::output::COLOR_PURPLE.1, ui::output::COLOR_PURPLE.2),
+                        "Workspace:".truecolor(ui::output::COLOR_MUTED.0, ui::output::COLOR_MUTED.1, ui::output::COLOR_MUTED.2),
+                        name.truecolor(ui::output::COLOR_WHITE.0, ui::output::COLOR_WHITE.1, ui::output::COLOR_WHITE.2).bold()
+                    );
+                }
             }
 
             let menu = build_menu(&status);

@@ -75,7 +75,10 @@ pub struct AppState {
 
 impl AppState {
     pub async fn init(app_data_dir: &std::path::Path) -> Result<Self, String> {
-        let db_url = format!("sqlite://{}/orbis_local.db?mode=rwc", app_data_dir.display());
+        let db_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| {
+            let db_path = app_data_dir.join("orbis.db");
+            format!("sqlite://{}?mode=rwc", db_path.display())
+        });
         let db = sea_orm::Database::connect(&db_url).await.map_err(|e| e.to_string())?;
 
         // Run migrations

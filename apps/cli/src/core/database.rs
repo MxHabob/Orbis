@@ -72,7 +72,7 @@ pub async fn get_full_status() -> SystemStatus {
     let has_admin = match db
         .query_one(Statement::from_string(
             DatabaseBackend::Sqlite,
-            "SELECT COUNT(*) as cnt FROM users WHERE primary_role = 'super_admin';".to_owned(),
+            "SELECT COUNT(*) as cnt FROM user_role_assignments WHERE role_id IN ('super_admin', 'admin');".to_owned(),
         ))
         .await
     {

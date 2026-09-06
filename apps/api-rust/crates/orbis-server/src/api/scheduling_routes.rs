@@ -154,7 +154,7 @@ async fn list_lessons(
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/rooms", post(create_room).get(list_rooms))
-        .route("/api/v1/rooms/{id}", get(get_room))
+        .route("/api/v1/rooms/:id", get(get_room))
         .route("/api/v1/time-slots", post(create_time_slot).get(list_time_slots))
         .route("/api/v1/scheduled-lessons", post(schedule_lesson).get(list_lessons))
 }

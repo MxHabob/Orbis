@@ -32,7 +32,7 @@ pub async fn execute() -> Result<()> {
 
     println!(
         "\n  Welcome to the {}. Let's get you set up.\n",
-        "Orbis Setup Wizard".truecolor(0, 204, 255).bold()
+        "Orbis Setup Wizard".truecolor(output::COLOR_PURPLE.0, output::COLOR_PURPLE.1, output::COLOR_PURPLE.2).bold()
     );
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
