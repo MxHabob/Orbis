@@ -59,16 +59,17 @@ const OrganicPebble = React.memo<OrganicPebbleProps>(({ size, variantIndex, chil
         },
       ]}>
       {/* Organic Hand-drawn Pebble Background */}
-      <Svg
-        width={size}
-        height={size}
-        viewBox="0 0 100 100"
-        style={StyleSheet.absoluteFill}>
-        <Path
-          d={pathD}
-          fill="#FFFFFF"
-        />
-      </Svg>
+      <View pointerEvents="none" style={[StyleSheet.absoluteFill, { width: size, height: size }]}>
+        <Svg
+          width={size}
+          height={size}
+          viewBox="0 0 100 100">
+          <Path
+            d={pathD}
+            fill="#FFFFFF"
+          />
+        </Svg>
+      </View>
 
       {/* Centered Content with Counter-Rotation for Visual Stability */}
       <View

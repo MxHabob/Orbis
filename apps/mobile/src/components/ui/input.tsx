@@ -59,11 +59,14 @@ export function Input({
         {icon && <View style={styles.iconBox}>{icon}</View>}
 
         <TextInput
-          style={[styles.input, { color: theme.text }, style]}
+          style={[styles.input, { color: theme.text, backgroundColor: 'transparent' }, style]}
           placeholderTextColor={theme.textMuted}
           secureTextEntry={isActualSecure}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
+          cursorColor={theme.primary}
+          selectionColor={theme.primaryLight}
+          underlineColorAndroid="transparent"
           {...props}
         />
 

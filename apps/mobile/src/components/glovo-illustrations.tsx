@@ -38,7 +38,7 @@ export function OrganicBubbleRing({
   const pathD = RING_PATHS[variantIndex % RING_PATHS.length];
 
   return (
-    <View style={{ width: size, height: size, position: 'absolute' }}>
+    <View pointerEvents="none" style={{ width: size, height: size, position: 'absolute' }}>
       <Svg width={size} height={size} viewBox="0 0 102 102">
         <Path
           d={pathD}
