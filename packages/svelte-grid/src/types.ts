@@ -1,73 +1,135 @@
 import type { Component } from "svelte";
 
+export type ColumnType =
+  | "text"
+  | "number"
+  | "integer"
+  | "decimal"
+  | "currency"
+  | "percentage"
+  | "date"
+  | "datetime"
+  | "boolean"
+  | "enum"
+  | "relation"
+  | "status"
+  | "badge"
+  | "avatar"
+  | "computed"
+  | "formula"
+  | "action"
+  | "custom";
+
+export type FilterOperator =
+  | "eq"
+  | "neq"
+  | "contains"
+  | "not_contains"
+  | "starts_with"
+  | "ends_with"
+  | "gt"
+  | "gte"
+  | "lt"
+  | "lte"
+  | "between"
+  | "in"
+  | "not_in"
+  | "is_null"
+  | "is_not_null"
+  | "bool_true"
+  | "bool_false";
+
+export type SortDir = "asc" | "desc";
+
+export type Align = "start" | "center" | "end";
+
+export type PinSide = "left" | "right" | "colPinStart" | "colPinEnd";
+
+export type GridRow = Record<string, unknown>;
+
+export interface FilterCondition {
+  field: string;
+  operator: FilterOperator | string;
+  value?: unknown;
+}
+
+export interface GridFilter {
+  logic: "AND" | "OR";
+  conditions: FilterCondition[];
+  search?: string;
+  groups?: GridFilter[];
+  sort_by?: string;
+  sort_dir?: SortDir;
+}
+
+export interface SortSpec {
+  id: string;
+  dir: SortDir;
+}
+
+export interface EnumOption {
+  value: string | number | boolean;
+  label: string;
+}
+
+export interface ColumnValidateResult {
+  ok: boolean;
+  message?: string;
+  value?: unknown;
+}
+
 export interface OrbisColumnDef {
-  /** Column property key (maps to SVAR 'id') */
   id?: string;
-  /** Display name / header label (maps to SVAR 'header') */
   header?: string;
-  /** Width in pixels */
   width?: number;
-  /** Flex grow sizing */
   flexgrow?: number;
-  /** Whether the column is hidden */
   hidden?: boolean;
-  /** Enable sorting */
-  sort?: boolean | ((a: any, b: any) => number);
-  /** Inline editor type or configuration */
-  editor?: string | any;
-  /** Custom Svelte component for rendering */
-  cell?: Component<any>;
-  /** Custom Svelte component for rendering the column header */
-  headerCell?: Component<any>;
-  /** Alignment of text in the column */
-  align?: "start" | "center" | "end";
-  /** Optional cell CSS class */
+  sort?: boolean | ((a: unknown, b: unknown) => number);
+  editor?: string | Record<string, unknown> | null;
+  cell?: Component<Record<string, unknown>>;
+  headerCell?: Component<Record<string, unknown>>;
+  align?: Align;
   cellClass?: string;
-  /** Whether column is read-only */
   readonly?: boolean;
-  /** Extra custom meta information */
-  meta?: Record<string, any>;
-  /** Compatibility fields for old pages */
+  meta?: Record<string, unknown>;
   prop?: string;
   name?: string;
   size?: number;
-  cellRenderer?: any;
-  pin?: string;
-  cellProperties?: (row: any) => Record<string, any>;
+  cellRenderer?: unknown;
+  pin?: PinSide;
+  cellProperties?: (row: GridRow) => Record<string, unknown>;
   sortable?: boolean;
   resize?: boolean;
-  options?: any[];
-  editorConfig?: Record<string, any>;
+  options?: EnumOption[];
+  editorConfig?: Record<string, unknown>;
+  type?: ColumnType;
+  format?: string;
+  currency?: string;
+  accessor?: (row: GridRow) => unknown;
+  validate?: (value: unknown, row: GridRow) => boolean | string | ColumnValidateResult;
+  filterable?: boolean;
+  aggregate?: AggregateFn;
 }
 
+export type AggregateFn = "sum" | "avg" | "min" | "max" | "count" | "count_distinct";
+
 export interface CellEditEvent {
-  /** Row data object */
-  row: Record<string, any>;
-  /** Row index in the data source */
+  row: GridRow;
   rowIndex: number;
-  /** Column ID */
   columnId: string;
-  /** Previous value */
-  oldValue: any;
-  /** New value */
-  newValue: any;
-  /** Event action */
+  oldValue: unknown;
+  newValue: unknown;
   action?: string;
-  /** Event source object */
-  event?: any;
+  event?: unknown;
+  prop?: string;
 }
 
 export interface GridActionEvent {
-  /** Action identifier */
   actionId: string;
-  /** Row data */
-  row: Record<string, any>;
-  /** Row index in source array */
+  row: GridRow;
   rowIndex: number;
-  /** Column property key */
   prop: string;
-  /** Original DOM MouseEvent */
-  originalEvent: MouseEvent;
+  originalEvent: MouseEvent | KeyboardEvent;
 }
 
 export interface ActionItem {
@@ -82,11 +144,117 @@ export interface ActionItem {
     | "outline"
     | "ghost"
     | "link";
-  visible?: (row: any) => boolean;
-  disabled?: (row: any) => boolean;
+  visible?: (row: GridRow) => boolean;
+  disabled?: (row: GridRow) => boolean;
 }
 
 export interface CellValidation {
-  validate: (value: any, row: any) => boolean | string;
+  validate: (value: unknown, row: GridRow) => boolean | string;
   errorMessage?: string;
+}
+
+export interface CellRange {
+  startRow: number;
+  startCol: number;
+  endRow: number;
+  endCol: number;
+}
+
+export type SelectScope = "filtered" | "visible" | "page" | "allLoaded";
+
+export interface SelectionSnapshot {
+  /** explicit: only ids. allMatching: all filtered except ids (exclusions). */
+  mode: "explicit" | "allMatching";
+  ids: Set<string>;
+  range: CellRange | null;
+  active: { row: number; col: number } | null;
+}
+
+export interface BulkCellError {
+  rowIndex: number;
+  columnId: string;
+  value: unknown;
+  message: string;
+}
+
+export interface BulkResult<T = GridRow> {
+  accepted: T[];
+  rejected: Array<{ rowIndex: number; row: T; errors: BulkCellError[] }>;
+  acceptedCount: number;
+  rejectedCount: number;
+}
+
+export interface VirtualWindow {
+  start: number;
+  end: number;
+  offset: number;
+  count: number;
+}
+
+export interface GroupNode<T = GridRow> {
+  key: string;
+  value: unknown;
+  rows: T[];
+  aggregates: Record<string, number | string | null>;
+  collapsed: boolean;
+}
+
+export interface ExportOptions {
+  format: "csv" | "tsv" | "json";
+  scope: "all" | "visible" | "selected" | "filtered";
+  columns?: string[];
+}
+
+export interface DataPage<T = GridRow> {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface GridDataSource<T = GridRow> {
+  mode: "client" | "server";
+  load: (query: DataQuery) => Promise<DataPage<T>>;
+  create?: (rows: Partial<T>[]) => Promise<BulkResult<T>>;
+  update?: (rows: Array<{ id: string; patch: Partial<T> }>) => Promise<BulkResult<T>>;
+  delete?: (ids: string[]) => Promise<BulkResult<{ id: string }>>;
+}
+
+export interface DataQuery {
+  page: number;
+  pageSize: number;
+  filter?: GridFilter;
+  sorts?: SortSpec[];
+  search?: string;
+}
+
+export function columnId(col: OrbisColumnDef): string {
+  return String(col.id || col.prop || "");
+}
+
+export function columnHeader(col: OrbisColumnDef): string {
+  return String(col.header || col.name || columnId(col));
+}
+
+export function columnWidth(col: OrbisColumnDef): number {
+  return col.width ?? col.size ?? 120;
+}
+
+export function isColumnPinnedLeft(col: OrbisColumnDef): boolean {
+  return col.pin === "left" || col.pin === "colPinStart";
+}
+
+export function isColumnPinnedRight(col: OrbisColumnDef): boolean {
+  return col.pin === "right" || col.pin === "colPinEnd";
+}
+
+export function isColumnSortable(col: OrbisColumnDef): boolean {
+  if (col.sortable === false || col.sort === false) return false;
+  return col.sort !== undefined || col.sortable === true || !!col.type;
+}
+
+export function getCellValue(row: GridRow, col: OrbisColumnDef): unknown {
+  if (col.accessor) return col.accessor(row);
+  return row[columnId(col)];
 }

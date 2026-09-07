@@ -1,6 +1,16 @@
 export { DataTable } from "./core";
 export { withIndex } from "./definitions";
 export * as tableDefs from "./definitions";
+export {
+  asPage,
+  createClientSource,
+  createServerSource,
+  partitionBulk,
+  shouldUseServerFilter,
+  describeSelectAll,
+} from "./data-source";
+export { loadViews, saveView, deleteView } from "./views";
+export type { TableViewState } from "./views";
 
 // Cells
 export { default as AvatarCell } from "./components/AvatarCell.svelte";

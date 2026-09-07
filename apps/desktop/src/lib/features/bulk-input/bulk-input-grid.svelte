@@ -6,7 +6,6 @@ real-time validation, and error highlighting.
 <script lang="ts">
 import { OrbisGrid } from "@orbis/svelte-grid";
 import type { CellEditEvent } from "@orbis/svelte-grid";
-import { addRowIndices } from "$lib/tables";
 import { getLocale } from "$lib/paraglide/runtime";
 import { type BulkInputType, getColumnsForType } from "./config";
 import { getDataProps } from "./config";
@@ -41,12 +40,7 @@ const locale = getLocale();
 const isRtl = locale === "ar";
 
 let gridWrapper = $state<HTMLElement | null>(null);
-
-// ── Dynamic Columns ────────────────────────────────────────────────
 let config = $derived(getColumnsForType(type, labels));
-
-// Add row indices for display
-let indexedSource = $derived(addRowIndices(rows));
 
 // ── Validation ─────────────────────────────────────────────────────
 let validationTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -202,11 +196,15 @@ $effect(() => {
 >
   <OrbisGrid
     columns={config.columns}
-    source={indexedSource}
+    bind:source={rows}
     height="100%"
     rtl={isRtl}
     readonly={false}
+    clipboard
+    range
+    createEmptyRow={() => config.emptyRow()}
     oncelledit={handleCellEdit}
+    onpasteResult={() => runValidation()}
   />
 </div>
 

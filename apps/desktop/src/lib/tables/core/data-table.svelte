@@ -1,66 +1,44 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 /**
- * DataTable — Universal table shell component
- *
- * Wraps OrbisGrid with a professional toolbar, search, empty states,
- * and loading skeletons. Used system-wide for all data tables.
+ * DataTable — toolbar + empty/loading shell around the Orbis grid engine.
  */
 import {
   OrbisGrid,
-  type OrbisColumnDef,
+  downloadText,
+  exportRows,
+  type BulkResult,
   type CellEditEvent,
   type GridActionEvent,
+  type OrbisColumnDef,
 } from "@orbis/svelte-grid";
 import { Input } from "@orbis/ui/input";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
-import {
-  Search,
-  Download,
-  RefreshCcw,
-  Printer,
-} from "@lucide/svelte";
+import { Search, Download, RefreshCcw, Printer } from "@lucide/svelte";
 import AiEmptyState from "$lib/shared/components/ai-empty-state.svelte";
 import { openPrintDialog } from "$lib/stores/print.svelte";
 import type { Snippet } from "svelte";
-import { DefaultCell } from "../index";
+import DefaultCell from "../components/DefaultCell.svelte";
 import CheckboxCell from "../components/CheckboxCell.svelte";
 import { FilterTrigger } from "@orbis/ui/filter-builder";
 import type { UniversalFilter, FieldDefinition } from "@orbis/ui/filter-builder";
 
-// ── Props ──────────────────────────────────────────────────────────────
-
 interface Props {
-  /** Column definitions for the grid */
   columns: OrbisColumnDef[];
-  /** Data source array */
   source: Record<string, unknown>[];
-
-  /** Loading state — shows skeleton */
   loading?: boolean;
-
-  /** Enable search bar */
   searchable?: boolean;
-  /** Search input placeholder */
   searchPlaceholder?: string;
-  /** Search callback — filters are handled by the parent */
   onSearch?: (query: string) => void;
-  /** Current search value (for controlled mode) */
   searchValue?: string;
-
-  /** Empty state configuration */
-  emptyIcon?: any;
+  emptyIcon?: unknown;
   emptyTitle?: string;
   emptyDescription?: string;
-
-  /** Universal Filter configuration */
   filterable?: boolean;
   filterFields?: FieldDefinition[];
   filterValue?: UniversalFilter;
   onFilter?: (filter: UniversalFilter) => void;
-
-  /** Grid options */
   readonly?: boolean;
   rtl?: boolean;
   height?: string;
@@ -69,15 +47,11 @@ interface Props {
   range?: boolean;
   clipboard?: boolean;
   autoSize?: boolean;
-
-  /** Cell edit callback */
   oncelledit?: (event: CellEditEvent) => void;
-  /** Before edit callback (return false to prevent) */
   onbeforeedit?: (event: CellEditEvent) => boolean | void;
-  /** Action click callback */
   onaction?: (event: GridActionEvent) => void;
-
-  /** Toolbar customization */
+  onpasteResult?: (result: BulkResult) => void;
+  clientQuery?: boolean;
   actions?: Snippet;
   exportable?: boolean;
   onExport?: () => void;
@@ -85,26 +59,20 @@ interface Props {
   onRefresh?: () => void;
   printable?: boolean;
   onPrint?: () => void;
-  printType?: string; // Entity type for bulk print
-
-  /** Title displayed above the grid */
+  printType?: string;
   title?: string;
-  /** Subtitle / description */
   subtitle?: string;
-
-  /** Number of rows for skeleton loading */
   skeletonRows?: number;
 }
 
 let {
   columns,
-  source,
+  source = $bindable(),
   loading = false,
   searchable = false,
   searchPlaceholder = "Search...",
   onSearch,
   searchValue = $bindable(""),
-  emptyIcon,
   emptyTitle = "No data",
   emptyDescription = "",
   filterable = false,
@@ -115,13 +83,14 @@ let {
   rtl = false,
   height = "100%",
   rowSize = 42,
-  theme = "compact",
-  range = false,
-  clipboard = false,
+  range = true,
+  clipboard = true,
   autoSize = false,
   oncelledit,
   onbeforeedit,
   onaction,
+  onpasteResult,
+  clientQuery = false,
   actions,
   exportable = false,
   onExport,
@@ -135,11 +104,7 @@ let {
   skeletonRows = 8,
 }: Props = $props();
 
-// ── Internal State ────────────────────────────────────────────────────
-
 let localSearch = $state("");
-
-// ── Derived ───────────────────────────────────────────────────────────
 
 let mappedColumns = $derived(
   columns.map((col) => {
@@ -155,6 +120,7 @@ let mappedColumns = $derived(
 );
 
 let hasData = $derived(source.length > 0);
+let useClientQuery = $derived(clientQuery || (searchable && !onSearch));
 let showGrid = $derived(!loading && hasData);
 let showEmpty = $derived(!loading && !hasData);
 let showToolbar = $derived(
@@ -162,7 +128,14 @@ let showToolbar = $derived(
 );
 let effectiveSearch = $derived(searchValue || localSearch);
 
-// ── Handlers ──────────────────────────────────────────────────────────
+function handleExport() {
+  if (onExport) {
+    onExport();
+    return;
+  }
+  const text = exportRows(source, columns, { format: "csv", scope: "filtered" });
+  downloadText("orbis-export.csv", text, "text/csv;charset=utf-8");
+}
 
 function handleSearchInput(e: Event) {
   const value = (e.target as HTMLInputElement).value;
@@ -178,13 +151,9 @@ function handleSearchKeydown(e: KeyboardEvent) {
     onSearch?.("");
   }
 }
-
 </script>
 
-<div
-  class="orbis-data-table flex flex-col h-full w-full overflow-hidden"
->
-  <!-- ── Header ───────────────────────────────────────────────────────── -->
+<div class="orbis-data-table flex flex-col h-full w-full overflow-hidden">
   {#if title || subtitle}
     <div class="flex flex-col gap-0.5 px-1 pb-3">
       {#if title}
@@ -196,7 +165,6 @@ function handleSearchKeydown(e: KeyboardEvent) {
     </div>
   {/if}
 
-  <!-- ── Toolbar ──────────────────────────────────────────────────────── -->
   {#if showToolbar}
     <div class="flex items-center gap-2 pb-3 flex-nowrap shrink-0">
       {#if searchable}
@@ -220,9 +188,9 @@ function handleSearchKeydown(e: KeyboardEvent) {
 
       <div class="flex items-center gap-1.5 flex-nowrap shrink-0">
         {#if filterable && filterFields.length > 0}
-          <FilterTrigger 
-            bind:filter={filterValue} 
-            fields={filterFields} 
+          <FilterTrigger
+            bind:filter={filterValue}
+            fields={filterFields}
             translations={{
               filter: m.common_filter(),
               advancedFilter: m.common_filter_advanced(),
@@ -236,9 +204,9 @@ function handleSearchKeydown(e: KeyboardEvent) {
               addSubGroup: m.common_filter_add_sub_group(),
               removeCondition: m.common_filter_remove_condition(),
               clearAll: m.common_filter_clear_all(),
-              applyFilter: m.common_filter_apply()
+              applyFilter: m.common_filter_apply(),
             }}
-            onApply={onFilter} 
+            onApply={onFilter}
           />
           <div class="w-px h-4 bg-border mx-1"></div>
         {/if}
@@ -262,7 +230,7 @@ function handleSearchKeydown(e: KeyboardEvent) {
           <Button
             variant="ghost"
             size="icon-sm"
-            onclick={() => onPrint ? onPrint() : (printType ? openPrintDialog(printType, []) : null)}
+            onclick={() => (onPrint ? onPrint() : printType ? openPrintDialog(printType, []) : null)}
             class="text-muted-foreground"
             title="Print"
           >
@@ -271,30 +239,22 @@ function handleSearchKeydown(e: KeyboardEvent) {
         {/if}
 
         {#if exportable}
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onclick={() => onExport?.()}
-            class="text-muted-foreground"
-          >
+          <Button variant="ghost" size="icon-sm" onclick={() => handleExport()} class="text-muted-foreground">
             <Download size={14} />
           </Button>
         {/if}
-
       </div>
     </div>
   {/if}
 
-  <!-- ── Content Area ─────────────────────────────────────────────────── -->
   <div class="flex-1 min-h-0 rounded-sm overflow-hidden">
     {#if loading}
       <div class="p-0">
-        <div class="flex items-center h-10  px-3 gap-4">
+        <div class="flex items-center h-10 px-3 gap-4">
           {#each columns.slice(0, 6) as col}
             <Skeleton class="h-3 rounded" style="width: {Math.min(col.size ?? 100, 150)}px" />
           {/each}
         </div>
-        <!-- Skeleton rows -->
         {#each Array(skeletonRows) as _, i}
           <div
             class="flex items-center h-[{rowSize}px] border-b border-border/40 px-3 gap-4"
@@ -310,19 +270,25 @@ function handleSearchKeydown(e: KeyboardEvent) {
         {/each}
       </div>
     {:else if showGrid}
-      <!-- OrbisGrid -->
       <OrbisGrid
         columns={mappedColumns}
-        {source}
+        bind:source
         {readonly}
         {rtl}
         {height}
+        {rowSize}
+        {range}
+        {clipboard}
+        {autoSize}
+        clientQuery={useClientQuery}
+        search={effectiveSearch}
+        filter={filterValue}
         {oncelledit}
         {onbeforeedit}
         {onaction}
+        {onpasteResult}
       />
     {:else if showEmpty}
-      <!-- Universal AI Avatar Empty State Centered Vertically & Horizontally -->
       <div class="h-full w-full flex flex-col items-center justify-center p-6">
         <AiEmptyState
           text={emptyDescription ? `${emptyTitle} ${emptyDescription}` : emptyTitle}

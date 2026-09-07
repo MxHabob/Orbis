@@ -1,6 +1,6 @@
 {
   "name": "@orbis/svelte-grid",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "svelte": "./src/index.ts",
@@ -18,10 +18,17 @@
     "./types": {
       "svelte": "./src/types.ts",
       "default": "./src/types.ts"
+    },
+    "./engine": {
+      "svelte": "./src/engine/index.ts",
+      "default": "./src/engine/index.ts"
     }
   },
+  "scripts": {
+    "test": "bun test src/engine",
+    "bench": "bun test src/engine/engine.test.ts -t performance"
+  },
   "dependencies": {
-    "@svar-ui/svelte-grid": "^2.0.0",
     "@orbis/ui": "workspace:*",
     "@lucide/svelte": "^1.33.0"
   },

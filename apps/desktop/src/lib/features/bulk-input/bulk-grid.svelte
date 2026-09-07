@@ -277,11 +277,16 @@ $effect(() => {
     <OrbisGrid
       bind:this={gridRef}
       {columns}
-      source={indexedSource}
+      bind:source={rows}
       height="100%"
       rtl={isRtl}
       readonly={false}
+      clipboard
+      range
+      rowIdKey="id"
+      createEmptyRow={createEmptyRow}
       oncelledit={handleCellEdit}
+      onpasteResult={() => onrowschange?.(rows)}
     />
   </div>
 </div>
