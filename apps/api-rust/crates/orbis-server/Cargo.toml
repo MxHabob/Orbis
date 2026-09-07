@@ -2,6 +2,11 @@
 name = "orbis-server"
 version = "0.1.0"
 edition = "2024"
+default-run = "orbis-server"
+
+[[bin]]
+name = "orbis-server"
+path = "src/main.rs"
 
 [dependencies]
 orbis-domain.workspace = true
