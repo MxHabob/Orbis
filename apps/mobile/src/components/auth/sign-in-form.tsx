@@ -1,8 +1,8 @@
 /**
  * @module @orbis/mobile/components/auth/sign-in-form
  *
- * Highly refined, minimal SignIn Form Card.
- * Includes credentials inputs, validation, Google SSO, and student admission link.
+ * Minimalist, high-aesthetic SignIn Form Card.
+ * Streamlined credentials form, tactile submit button, Google SSO, and admission link.
  */
 
 import React, { useState } from 'react';
@@ -57,18 +57,11 @@ export const SignInForm = React.memo<SignInFormProps>(
 
     return (
       <View style={styles.container}>
-        {/* Main Clean Card */}
+        {/* Main Minimalist Card */}
         <Card variant="elevated" style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={[styles.title, { color: theme.text }]}>{t('auth_card_title')}</Text>
-            <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-              {t('auth_card_subtitle')}
-            </Text>
-          </View>
-
           {error && (
             <View style={[styles.errorBox, { backgroundColor: theme.errorLight }]}>
-              <Ionicons name="alert-circle" size={18} color={theme.error} />
+              <Ionicons name="alert-circle" size={16} color={theme.error} />
               <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
             </View>
           )}
@@ -86,7 +79,7 @@ export const SignInForm = React.memo<SignInFormProps>(
               autoCorrect={false}
               keyboardType="email-address"
               returnKeyType="next"
-              icon={<Ionicons name="mail-outline" size={20} color={theme.textMuted} />}
+              icon={<Ionicons name="mail-outline" size={18} color={theme.textMuted} />}
             />
 
             <Input
@@ -100,7 +93,7 @@ export const SignInForm = React.memo<SignInFormProps>(
               secureTextEntry
               returnKeyType="done"
               onSubmitEditing={handleSubmit}
-              icon={<Ionicons name="lock-closed-outline" size={20} color={theme.textMuted} />}
+              icon={<Ionicons name="lock-closed-outline" size={18} color={theme.textMuted} />}
             />
 
             <View style={styles.forgotRow}>
@@ -134,37 +127,24 @@ export const SignInForm = React.memo<SignInFormProps>(
               onPress={handleGoogle}
               variant="secondary"
               fullWidth
-              icon={<Ionicons name="logo-google" size={18} color={theme.text} />}
+              icon={<Ionicons name="logo-google" size={16} color={theme.foreground} />}
             />
           </View>
         </Card>
 
-        {/* Student Admission / Registration Card */}
-        <Card
-          variant="flat"
-          style={[
-            styles.admissionCard,
-            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-          ]}>
-          <View style={styles.admissionContent}>
-            <View style={[styles.admissionIconBox, { backgroundColor: theme.primaryLight }]}>
-              <Ionicons name="person-add-outline" size={22} color={theme.primary} />
-            </View>
-            <View style={styles.admissionTextGroup}>
-              <Text style={[styles.admissionPrompt, { color: theme.text }]}>
-                {t('auth_no_account')}
+        {/* Clean Student Admission Footer Link */}
+        <View style={styles.footerRow}>
+          <Text style={[styles.footerPrompt, { color: theme.textSecondary }]}>
+            {t('auth_no_account')}
+          </Text>
+          <Link href="/(auth)/register" asChild>
+            <Pressable hitSlop={8}>
+              <Text style={[styles.footerLink, { color: theme.primary }]}>
+                {t('auth_register_link')}
               </Text>
-              <Link href="/(auth)/register" asChild>
-                <Pressable hitSlop={8} style={styles.admissionLinkBtn}>
-                  <Text style={[styles.admissionLinkText, { color: theme.primary }]}>
-                    {t('auth_register_link')}
-                  </Text>
-                  <Ionicons name="arrow-back" size={14} color={theme.primary} />
-                </Pressable>
-              </Link>
-            </View>
-          </View>
-        </Card>
+            </Pressable>
+          </Link>
+        </View>
       </View>
     );
   },
@@ -175,33 +155,22 @@ SignInForm.displayName = 'SignInForm';
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    gap: Spacing.four,
+    gap: Spacing.three,
   },
   card: {
     padding: Spacing.four,
     gap: Spacing.three,
   },
-  cardHeader: {
-    gap: 4,
-    marginBottom: Spacing.one,
-  },
-  title: {
-    ...Typography.h2,
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  subtitle: {
-    ...Typography.caption,
-  },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
-    padding: Spacing.three,
+    padding: Spacing.two + 2,
     borderRadius: Radii.md,
   },
   errorText: {
     ...Typography.captionBold,
+    fontSize: 12,
     flex: 1,
   },
   fields: {
@@ -209,16 +178,17 @@ const styles = StyleSheet.create({
   },
   forgotRow: {
     alignItems: 'flex-end',
-    marginTop: -2,
+    marginTop: -4,
   },
   linkText: {
     ...Typography.captionBold,
+    fontSize: 12,
   },
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
-    marginVertical: Spacing.one,
+    gap: Spacing.two,
+    marginVertical: 2,
   },
   dividerLine: {
     flex: 1,
@@ -226,38 +196,22 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     ...Typography.caption,
+    fontSize: 11,
   },
-  admissionCard: {
-    padding: Spacing.three,
-    borderWidth: 1,
-    borderRadius: Radii.lg,
-  },
-  admissionContent: {
+  footerRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.three,
-  },
-  admissionIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    paddingVertical: Spacing.two,
   },
-  admissionTextGroup: {
-    flex: 1,
-    gap: 2,
-  },
-  admissionPrompt: {
+  footerPrompt: {
     ...Typography.caption,
+    fontSize: 13,
   },
-  admissionLinkBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  admissionLinkText: {
-    ...Typography.bodyBold,
-    fontSize: 14,
+  footerLink: {
+    ...Typography.captionBold,
+    fontSize: 13,
   },
 });

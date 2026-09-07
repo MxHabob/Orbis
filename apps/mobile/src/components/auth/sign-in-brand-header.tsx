@@ -1,8 +1,8 @@
 /**
  * @module @orbis/mobile/components/auth/sign-in-brand-header
  *
- * Highly refined, minimal Organization Brand Header for the Sign-In flow.
- * Displays official organization logo, language toggle, and institutional identity.
+ * Minimal, ultra-clean Organization Brand Header for the Sign-In flow.
+ * Displays official organization logo and name without redundant clutter.
  */
 
 import React from 'react';
@@ -31,7 +31,7 @@ export const SignInBrandHeader = React.memo(() => {
 
   return (
     <View style={styles.container}>
-      {/* Top Language Switcher Bar */}
+      {/* Top Language Switcher Toggle */}
       <View style={styles.topBar}>
         <Pressable
           onPress={toggleLanguage}
@@ -43,40 +43,25 @@ export const SignInBrandHeader = React.memo(() => {
               opacity: pressed ? 0.8 : 1,
             },
           ]}>
-          <Ionicons name="globe-outline" size={14} color={theme.textSecondary} />
+          <Ionicons name="globe-outline" size={13} color={theme.textSecondary} />
           <Text style={[styles.langText, { color: theme.text }]}>
             {locale === 'ar' ? 'English' : 'العربية'}
           </Text>
         </Pressable>
       </View>
 
-      {/* Official Organization / Institution Vector Logo */}
+      {/* Official Organization Logo */}
       <OrganizationLogo
-        size={46}
+        size={52}
         color={isDark ? '#FFFFFF' : orgColor}
         dotColor="#A821D9"
         withContainer
       />
 
-      {/* Organization Title & System Subtitle */}
-      <View style={styles.textWrapper}>
-        <View style={styles.badgeRow}>
-          <View style={[styles.portalPill, { backgroundColor: theme.primaryLight }]}>
-            <View style={[styles.onlineDot, { backgroundColor: orgColor }]} />
-            <Text style={[styles.portalText, { color: orgColor }]}>
-              {t('auth_org_portal')}
-            </Text>
-          </View>
-        </View>
-
-        <Text style={[styles.title, { color: theme.text }]} numberOfLines={2}>
-          {orgName}
-        </Text>
-
-        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-          {t('auth_brand_subtitle')}
-        </Text>
-      </View>
+      {/* Organization Name */}
+      <Text style={[styles.title, { color: theme.text }]} numberOfLines={2}>
+        {orgName}
+      </Text>
     </View>
   );
 });
@@ -86,64 +71,35 @@ SignInBrandHeader.displayName = 'SignInBrandHeader';
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    gap: Spacing.three,
-    marginBottom: Spacing.two,
+    gap: Spacing.two,
+    marginBottom: Spacing.three,
     width: '100%',
   },
   topBar: {
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginBottom: -Spacing.two,
+    marginBottom: Spacing.one,
   },
   langPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: 6,
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: Radii.full,
     borderWidth: 1,
   },
   langText: {
     ...Typography.captionBold,
-    fontSize: 12,
-  },
-  textWrapper: {
-    alignItems: 'center',
-    gap: Spacing.one,
-    paddingHorizontal: Spacing.two,
-  },
-  badgeRow: {
-    marginBottom: Spacing.one,
-  },
-  portalPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: 4,
-    borderRadius: Radii.full,
-  },
-  onlineDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  portalText: {
-    ...Typography.captionBold,
-    fontSize: 11,
-    letterSpacing: 0.2,
+    fontSize: 11.5,
   },
   title: {
     ...Typography.h1,
-    fontSize: 24,
+    fontSize: 22,
     textAlign: 'center',
     fontWeight: '800',
-  },
-  subtitle: {
-    ...Typography.caption,
-    textAlign: 'center',
-    maxWidth: 280,
+    marginTop: Spacing.one,
+    maxWidth: '90%',
   },
 });
