@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { api, } from "@orbis/sdk";
+  import { api } from "$lib/api";
   import type { ReportDefinition, ReportDataset, ColumnDef } from "@orbis/sdk";
   import { Button } from "@orbis/ui/button";
   import { Input } from "@orbis/ui/input";

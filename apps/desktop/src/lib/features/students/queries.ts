@@ -18,6 +18,8 @@ export function createEnrollmentsQuery(
   }));
 }
 
+
+
 /** Single enrollment for detail pages. */
 export function createEnrollmentQuery(
   enrollmentId: () => string,

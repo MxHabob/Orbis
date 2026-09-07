@@ -24,7 +24,7 @@ import { fly } from "svelte/transition";
 import { quintOut } from "svelte/easing";
 import {
   studentsStore,
-  createEnrollmentsPaginatedQuery,
+  createEnrollmentsQuery,
 } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
 import { academicContext, authStore } from "$lib/stores";
@@ -45,25 +45,15 @@ import { debounce } from "$lib/shared/utils/debounce";
 let { data }: { data: { orgId: string } } = $props();
 
 // TanStack Queries
-const enrollmentsQuery = createEnrollmentsPaginatedQuery(() => data.orgId);
+const enrollmentsQuery = createEnrollmentsQuery(() => data.orgId);
 const classesQuery = createClassesQuery(() => data.orgId);
 
 // Derived data from queries
-const enrollments = $derived(
-  enrollmentsQuery.data?.pages?.flatMap((page: any) => page.items) ?? [],
-);
+const enrollments = $derived(enrollmentsQuery.data ?? []);
 const classes = $derived(classesQuery.data ?? []);
 const filteredStudents = $derived(studentsStore.filterList(enrollments));
 
-// Capability-based enrollment
-const canCreateStudent = $derived(
-  !academicContext.isReadOnly && academicContext.canEnroll,
-);
-const canRequestLateEnrollment = $derived(
-  !academicContext.isReadOnly &&
-    !academicContext.canEnroll &&
-    ["admin", "registrar", "super_admin"].includes(authStore.user?.primary_role ?? ""),
-);
+
 let showOverrideDialog = $state(false);
 const isLoading = $derived(
   enrollmentsQuery.isLoading || classesQuery.isLoading,

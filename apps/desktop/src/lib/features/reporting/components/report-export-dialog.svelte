@@ -9,7 +9,7 @@
   } from "@orbis/ui/dialog";
   import { Button } from "@orbis/ui/button";
   import { Table, Download, Loader2 } from "@lucide/svelte";
-  import { api, } from "@orbis/sdk";
+  import { api } from "$lib/api";
   import { toast } from "@orbis/ui";
   import * as m from "$lib/paraglide/messages";
 
