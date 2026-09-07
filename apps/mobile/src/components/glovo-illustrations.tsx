@@ -1,0 +1,310 @@
+/**
+ * @module @orbis/mobile/components/glovo-illustrations
+ *
+ * Pixel-perfect pure React Native illustrations and visual elements
+ * for the Glovo-inspired Home Hub.
+ * Built with 100% native views and vectors for maximum performance,
+ * zero native binary linking issues, and universal cross-platform support.
+ */
+
+import React from 'react';
+import { View, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Radii } from '@/constants/theme';
+
+export interface IllustrationProps {
+  size?: number;
+}
+
+/**
+ * Hand-drawn golden circle ring outline for Glovo-style bubbles
+ */
+export function OrganicBubbleRing({ size = 118 }: { size?: number }) {
+  return (
+    <View
+      style={[
+        styles.ringBase,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+        },
+      ]}
+    />
+  );
+}
+
+/**
+ * Student 1 / High School Senior (Cap & Books)
+ */
+export function StudentSeniorIllustration({ size = 68 }: IllustrationProps) {
+  return (
+    <View
+      style={[
+        styles.avatarContainer,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: '#EDE9FE',
+        },
+      ]}>
+      <Ionicons name="school" size={size * 0.55} color="#7C3AED" />
+      <View style={styles.miniBadgeSenior}>
+        <Ionicons name="star" size={10} color="#F59E0B" />
+      </View>
+    </View>
+  );
+}
+
+/**
+ * Student 2 / High School Sophomore (Books & Backpack)
+ */
+export function StudentSophomoreIllustration({ size = 68 }: IllustrationProps) {
+  return (
+    <View
+      style={[
+        styles.avatarContainer,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: '#FCE7F3',
+        },
+      ]}>
+      <Ionicons name="book" size={size * 0.55} color="#EC4899" />
+      <View style={styles.miniBadgeSophomore}>
+        <Ionicons name="sparkles" size={10} color="#EC4899" />
+      </View>
+    </View>
+  );
+}
+
+/**
+ * Student 3 / Middle School (Sport & Active)
+ */
+export function StudentMiddleIllustration({ size = 56 }: IllustrationProps) {
+  return (
+    <View
+      style={[
+        styles.avatarContainer,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: '#E0E7FF',
+        },
+      ]}>
+      <Ionicons name="person" size={size * 0.55} color="#4F46E5" />
+    </View>
+  );
+}
+
+/**
+ * Student 4 / Elementary School (Art & Creativity)
+ */
+export function StudentElementaryIllustration({ size = 56 }: IllustrationProps) {
+  return (
+    <View
+      style={[
+        styles.avatarContainer,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: '#FEF3C7',
+        },
+      ]}>
+      <Ionicons name="color-palette" size={size * 0.55} color="#D97706" />
+    </View>
+  );
+}
+
+/**
+ * Student 5 / Kindergarten (Joy & Smiles)
+ */
+export function StudentKGIllustration({ size = 56 }: IllustrationProps) {
+  return (
+    <View
+      style={[
+        styles.avatarContainer,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: '#CCFBF1',
+        },
+      ]}>
+      <Ionicons name="happy" size={size * 0.55} color="#0D9488" />
+    </View>
+  );
+}
+
+/**
+ * Organic curved wave transitioning between golden hero and white sheet
+ */
+export function WaveCurveDivider({
+  width,
+  height = 36,
+  primaryColor = '#FFC244',
+  sheetColor = '#FFFFFF',
+}: {
+  width: number;
+  height?: number;
+  primaryColor?: string;
+  sheetColor?: string;
+}) {
+  return (
+    <View style={[styles.waveContainer, { width, height, backgroundColor: primaryColor }]}>
+      <View
+        style={[
+          styles.waveSheetArc,
+          {
+            width: width * 1.08,
+            height: height * 2.2,
+            backgroundColor: sheetColor,
+          },
+        ]}
+      />
+    </View>
+  );
+}
+
+/**
+ * Illustrated Feature Cards (Attendance, Grades, Behavior, Schedule)
+ */
+export function AttendanceFeatureIllustration({ size = 44 }: IllustrationProps) {
+  return (
+    <View
+      style={[
+        styles.featureBox,
+        { width: size, height: size, backgroundColor: '#D1FAE5', borderRadius: Radii.lg },
+      ]}>
+      <Ionicons name="checkmark-done-circle" size={size * 0.65} color="#059669" />
+    </View>
+  );
+}
+
+export function GradesFeatureIllustration({ size = 44 }: IllustrationProps) {
+  return (
+    <View
+      style={[
+        styles.featureBox,
+        { width: size, height: size, backgroundColor: '#EDE9FE', borderRadius: Radii.lg },
+      ]}>
+      <Ionicons name="ribbon" size={size * 0.65} color="#7C3AED" />
+    </View>
+  );
+}
+
+export function BehaviorFeatureIllustration({ size = 44 }: IllustrationProps) {
+  return (
+    <View
+      style={[
+        styles.featureBox,
+        { width: size, height: size, backgroundColor: '#FEF3C7', borderRadius: Radii.lg },
+      ]}>
+      <Ionicons name="sparkles" size={size * 0.65} color="#D97706" />
+    </View>
+  );
+}
+
+export function ScheduleFeatureIllustration({ size = 44 }: IllustrationProps) {
+  return (
+    <View
+      style={[
+        styles.featureBox,
+        { width: size, height: size, backgroundColor: '#CCFBF1', borderRadius: Radii.lg },
+      ]}>
+      <Ionicons name="calendar" size={size * 0.65} color="#0D9488" />
+    </View>
+  );
+}
+
+/**
+ * PRIME Banner Right Side Mascot Artwork
+ */
+export function PrimeScooterMascot({ size = 78 }: IllustrationProps) {
+  return (
+    <View style={[styles.mascotContainer, { width: size, height: size }]}>
+      {/* Royal Purple Backdrop Circle */}
+      <View style={styles.mascotBackdrop} />
+      {/* Scooter / Educational Delivery Icon */}
+      <View style={styles.mascotIconBox}>
+        <Ionicons name="bicycle" size={38} color="#FFC244" />
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  ringBase: {
+    position: 'absolute',
+    borderWidth: 3.5,
+    borderColor: '#E5A100',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  avatarContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  miniBadgeSenior: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 8,
+    padding: 2,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+  },
+  miniBadgeSophomore: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 2,
+    borderWidth: 1,
+    borderColor: '#FCE7F3',
+  },
+  waveContainer: {
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  waveSheetArc: {
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
+    marginBottom: -4,
+  },
+  featureBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mascotContainer: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mascotBackdrop: {
+    position: 'absolute',
+    right: -10,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#4338CA',
+  },
+  mascotIconBox: {
+    position: 'absolute',
+    right: 0,
+    top: 14,
+    transform: [{ rotate: '-6deg' }],
+  },
+});
