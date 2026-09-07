@@ -127,6 +127,19 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
         ]
     )).await.map_err(|e| DomainError::Internal(format!("Failed to create admin user: {e}")))?;
 
+    // ── 2.5 Admin Role Assignment ──────────────────────────────
+    let assignment_id_uuid = Uuid::new_v4();
+    db.execute(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "INSERT INTO user_role_assignments (id, user_id, role_id, org_id, scope_type, created_at) VALUES ($1, $2, 'super_admin', $3, 'global', $4)",
+        vec![
+            assignment_id_uuid.into(),
+            admin_id_uuid.into(),
+            org_id_uuid.into(),
+            now.clone().into(),
+        ]
+    )).await.map_err(|e| DomainError::Internal(format!("Failed to assign super_admin role: {e}")))?;
+
     // ── 3. Blueprint-specific setup ────────────────────────────
     let blueprint = match payload.org_type.as_str() {
         "university" => university_blueprint(),

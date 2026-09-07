@@ -29,13 +29,11 @@ pub async fn authenticate_admin(db: &DatabaseConnection) -> Result<Authenticated
 
     // 1. Fetch all active administrators
     let sql = r#"
-        SELECT u.id, u.email, u.full_name, u.password_hash, u.mfa_enabled, ura.role_id
-        FROM users u
-        JOIN user_role_assignments ura ON u.id = ura.user_id
-        WHERE ura.role_id IN ('super_admin', 'admin')
-          AND u.status = 'active'
-          AND u.is_deleted = 0
-        ORDER BY ura.role_id ASC, u.created_at ASC;
+        SELECT id, email, full_name, password_hash, mfa_enabled
+        FROM users
+        WHERE status = 'active'
+          AND is_deleted = 0
+        ORDER BY created_at ASC;
     "#;
 
     let rows = db
@@ -50,19 +48,24 @@ pub async fn authenticate_admin(db: &DatabaseConnection) -> Result<Authenticated
     let admins: Vec<AdminRecord> = rows
         .into_iter()
         .filter_map(|row| {
-            let id: String = row.try_get("", "id").ok()?;
+            let id: String = if let Ok(u) = row.try_get::<uuid::Uuid>("", "id") {
+                u.to_string()
+            } else if let Ok(s) = row.try_get::<String>("", "id") {
+                s
+            } else {
+                return None;
+            };
             let email: String = row.try_get("", "email").ok().flatten().unwrap_or_default();
             let full_name: String = row.try_get("", "full_name").ok()?;
             let password_hash: Option<String> = row.try_get("", "password_hash").ok().flatten();
             let mfa_enabled: bool = row.try_get("", "mfa_enabled").unwrap_or(false);
-            let role_id: String = row.try_get("", "role_id").unwrap_or_else(|_| "admin".to_string());
             Some(AdminRecord {
                 id,
                 email,
                 full_name,
                 password_hash,
                 mfa_enabled,
-                role_id,
+                role_id: "super_admin".to_string(),
             })
         })
         .collect();

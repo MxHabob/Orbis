@@ -9,11 +9,11 @@ use crate::core::validator;
 
 pub fn get_render_config() -> RenderConfig<'static> {
     let mut render_config = RenderConfig::default_colored();
-    render_config.prompt_prefix = Styled::new("  > ").with_fg(Color::LightCyan);
-    render_config.answered_prompt_prefix = Styled::new("  ✔ ").with_fg(Color::LightGreen);
+    render_config.prompt_prefix = Styled::new("> ").with_fg(Color::LightCyan);
+    render_config.answered_prompt_prefix = Styled::new("✔ ").with_fg(Color::LightGreen);
     render_config.highlighted_option_prefix = Styled::new("  > ").with_fg(Color::LightMagenta);
-    render_config.scroll_up_prefix = Styled::new("  ▲ ");
-    render_config.scroll_down_prefix = Styled::new("  ▼ ");
+    render_config.scroll_up_prefix = Styled::new("▲ ");
+    render_config.scroll_down_prefix = Styled::new("▼ ");
     render_config.help_message = StyleSheet::new().with_fg(Color::DarkGrey);
     render_config
 }
@@ -36,7 +36,9 @@ pub fn prompt_text_with_default(message: &str, default: &str) -> Result<String> 
 
 pub fn prompt_password(message: &str, help: Option<&str>) -> Result<String> {
     init_theme();
-    let mut prompt = Password::new(message).without_confirmation();
+    let mut prompt = Password::new(message)
+        .with_display_mode(PasswordDisplayMode::Masked)
+        .without_confirmation();
     if let Some(h) = help {
         prompt = prompt.with_help_message(h);
     }
