@@ -43,6 +43,9 @@ import {
   toggleSort,
   toTsv,
   visibleWindow,
+  autoscrollDelta,
+  colFromOffset,
+  rowFromOffset,
   type ContextMenuItem,
 } from "./engine";
 
@@ -107,7 +110,9 @@ let pasteBanner = $state<BulkResult | null>(null);
 let columnWidths = $state<Record<string, number>>({});
 let resizing = $state<{ id: string; startX: number; startW: number } | null>(null);
 let origin = $state<{ row: number; col: number } | null>(null);
-let editorEl: HTMLInputElement | null = $state(null);
+let editorEl: HTMLInputElement | HTMLSelectElement | null = $state(null);
+let dragging = $state(false);
+let skipBlur = $state(false);
 
 setContext("orbis-grid-onaction", (event: GridActionEvent) => {
   onaction?.(event);
@@ -199,6 +204,12 @@ function commitOverlay(rowIndex: number, col: OrbisColumnDef, newValue: unknown)
 function startEdit(row: number, col: number, seed?: string) {
   const column = visibleCols[col];
   if (!column || readonly || column.readonly) return;
+  const type = column.type;
+  if (type === "boolean" || column.editor === "checkbox") {
+    const current = displayRows[row] ? getCellValue(displayRows[row]!, column) : false;
+    commitOverlay(row, column, !(current === true || current === 1 || current === "true"));
+    return;
+  }
   const value = displayRows[row] ? getCellValue(displayRows[row]!, column) : "";
   editing = { row, col, draft: seed ?? (value == null ? "" : String(value)) };
 }
@@ -214,6 +225,7 @@ function commitEdit(moveRow = 0, moveCol = 0) {
 }
 
 function cancelEdit() {
+  skipBlur = true;
   editing = null;
 }
 
@@ -263,9 +275,47 @@ async function pasteFromClipboard() {
   if (text) pasteText(text);
 }
 
-function handlePointer(row: number, col: number, e: MouseEvent) {
-  if (e.shiftKey && origin) setActive(row, col, true);
-  else setActive(row, col, false);
+function hitFromEvent(e: PointerEvent): { row: number; col: number } | null {
+  const node = document.elementFromPoint(e.clientX, e.clientY);
+  const cell = node instanceof Element ? node.closest("[data-grid-r]") : null;
+  if (cell instanceof HTMLElement && cell.dataset.gridR != null && cell.dataset.gridC != null) {
+    return { row: Number(cell.dataset.gridR), col: Number(cell.dataset.gridC) };
+  }
+  if (!bodyEl || !displayRows.length) return null;
+  const rect = bodyEl.getBoundingClientRect();
+  const relY = e.clientY - rect.top + bodyEl.scrollTop;
+  const localX = e.clientX - rect.left;
+  const relX = rtl ? bodyEl.scrollWidth - (localX + Math.max(0, bodyEl.scrollLeft)) : localX + bodyEl.scrollLeft;
+  return {
+    row: rowFromOffset(relY, HEADER_H, rowSize, displayRows.length),
+    col: colFromOffset(relX, visibleCols.map(widthOf)),
+  };
+}
+
+function maybeAutoScroll(e: PointerEvent) {
+  if (!bodyEl) return;
+  const rect = bodyEl.getBoundingClientRect();
+  const dy = autoscrollDelta(e.clientY, rect.top + HEADER_H, rect.bottom);
+  const dx = autoscrollDelta(e.clientX, rect.left, rect.right);
+  if (dy) bodyEl.scrollTop += dy;
+  if (dx) bodyEl.scrollLeft += rtl ? -dx : dx;
+}
+
+function handlePointer(row: number, col: number, e: PointerEvent) {
+  if (e.button !== 0) return;
+  if ((e.target as HTMLElement | null)?.closest(".resize-handle")) return;
+  e.preventDefault();
+  root?.focus();
+  if (e.ctrlKey || e.metaKey) {
+    const data = displayRows[row];
+    if (data) {
+      selection = toggleId(selection, rowKey(data, row));
+      onselection?.(selection);
+    }
+    return;
+  }
+  setActive(row, col, e.shiftKey && !!origin);
+  if (range && !editing) dragging = true;
   const data = displayRows[row];
   if (data) {
     onaction?.({
@@ -457,13 +507,37 @@ function onResizeStart(col: OrbisColumnDef, e: PointerEvent) {
 }
 
 function onPointerMove(e: PointerEvent) {
-  if (!resizing) return;
-  const delta = rtl ? resizing.startX - e.clientX : e.clientX - resizing.startX;
-  columnWidths = { ...columnWidths, [resizing.id]: Math.max(48, resizing.startW + delta) };
+  if (resizing) {
+    const delta = rtl ? resizing.startX - e.clientX : e.clientX - resizing.startX;
+    columnWidths = { ...columnWidths, [resizing.id]: Math.max(48, resizing.startW + delta) };
+    return;
+  }
+  if (!dragging || !range || editing) return;
+  maybeAutoScroll(e);
+  const hit = hitFromEvent(e);
+  if (hit) setActive(hit.row, hit.col, true);
 }
 
 function onPointerUp() {
   resizing = null;
+  dragging = false;
+}
+
+function editorInputType(col: OrbisColumnDef): string {
+  switch (col.type) {
+    case "integer":
+    case "number":
+    case "decimal":
+    case "currency":
+    case "percentage":
+      return "number";
+    case "date":
+      return "date";
+    case "datetime":
+      return "datetime-local";
+    default:
+      return "text";
+  }
 }
 
 function cellClass(row: GridRow, col: OrbisColumnDef, r: number, c: number): string {
@@ -554,6 +628,7 @@ export function scrollToColumnProp(prop: string) {
   bind:this={root}
   class="orbis-grid"
   class:is-rtl={rtl}
+  class:is-selecting={dragging}
   style:height
   style:--row-h="{rowSize}px"
   style:--header-h="{HEADER_H}px"
@@ -567,11 +642,11 @@ export function scrollToColumnProp(prop: string) {
 >
   {#if pasteBanner}
     <div class="orbis-paste-banner" role="status">
-      <span>{pasteBanner.acceptedCount} accepted</span>
+      <span class="ok">{pasteBanner.acceptedCount} accepted</span>
       {#if pasteBanner.rejectedCount}
         <span class="rej">{pasteBanner.rejectedCount} rejected</span>
       {/if}
-      <button type="button" onclick={() => (pasteBanner = null)}>Dismiss</button>
+      <button type="button" class="banner-dismiss" onclick={() => (pasteBanner = null)}>Dismiss</button>
     </div>
   {/if}
 
@@ -642,6 +717,8 @@ export function scrollToColumnProp(prop: string) {
                   class={cellClass(row, col, r, c)}
                   role="gridcell"
                   tabindex="-1"
+                  data-grid-r={r}
+                  data-grid-c={c}
                   aria-colindex={c + 1}
                   aria-selected={selection.active?.row === r && selection.active?.col === c}
                   style:width="{widthOf(col)}px"
@@ -651,25 +728,58 @@ export function scrollToColumnProp(prop: string) {
                   oncontextmenu={(e) => onContext(r, c, e)}
                 >
                   {#if isEdit && editing}
-                    <input
-                      class="orbis-editor"
-                      bind:this={editorEl}
-                      bind:value={editing.draft}
-                      onblur={() => commitEdit()}
-                      onkeydown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          commitEdit(e.shiftKey ? -1 : 1, 0);
-                        } else if (e.key === "Tab") {
-                          e.preventDefault();
-                          commitEdit(0, e.shiftKey ? (rtl ? 1 : -1) : rtl ? -1 : 1);
-                        } else if (e.key === "Escape") {
-                          e.preventDefault();
-                          cancelEdit();
-                        }
-                        e.stopPropagation();
-                      }}
-                    />
+                    {#if col.options?.length}
+                      <select
+                        class="orbis-editor"
+                        bind:this={editorEl}
+                        bind:value={editing.draft}
+                        onblur={() => {
+                          if (skipBlur) {
+                            skipBlur = false;
+                            return;
+                          }
+                          commitEdit();
+                        }}
+                        onkeydown={(e) => {
+                          if (e.key === "Escape") {
+                            e.preventDefault();
+                            cancelEdit();
+                          }
+                          e.stopPropagation();
+                        }}
+                      >
+                        {#each col.options as opt}
+                          <option value={String(opt.value)}>{opt.label}</option>
+                        {/each}
+                      </select>
+                    {:else}
+                      <input
+                        class="orbis-editor"
+                        type={editorInputType(col)}
+                        bind:this={editorEl}
+                        bind:value={editing.draft}
+                        onblur={() => {
+                          if (skipBlur) {
+                            skipBlur = false;
+                            return;
+                          }
+                          commitEdit();
+                        }}
+                        onkeydown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            commitEdit(e.shiftKey ? -1 : 1, 0);
+                          } else if (e.key === "Tab") {
+                            e.preventDefault();
+                            commitEdit(0, e.shiftKey ? (rtl ? 1 : -1) : rtl ? -1 : 1);
+                          } else if (e.key === "Escape") {
+                            e.preventDefault();
+                            cancelEdit();
+                          }
+                          e.stopPropagation();
+                        }}
+                      />
+                    {/if}
                   {:else if Cell}
                     <Cell {row} column={{ ...col, id }} />
                   {:else}
@@ -715,28 +825,53 @@ export function scrollToColumnProp(prop: string) {
     flex-direction: column;
     width: 100%;
     min-height: 0;
-    background: var(--background);
-    color: var(--foreground);
+    background: var(--card);
+    color: var(--card-foreground);
     border: 1px solid var(--border);
+    border-radius: var(--radius);
     overflow: hidden;
-    font-family: "Rubik", system-ui, sans-serif;
-    font-size: 12.5px;
+    font-family: var(--font-sans, "Rubik", system-ui, sans-serif);
+    font-size: 0.75rem;
+    line-height: 1.25;
     outline: none;
   }
   .orbis-grid:focus-visible {
-    box-shadow: inset 0 0 0 1px var(--primary);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 35%, transparent);
+  }
+  .orbis-grid.is-selecting {
+    user-select: none;
+    cursor: cell;
   }
   .orbis-paste-banner {
     display: flex;
-    gap: 8px;
+    gap: 0.5rem;
     align-items: center;
-    padding: 4px 8px;
-    font-size: 11px;
-    background: var(--muted);
+    padding: 0.375rem 0.75rem;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    background: var(--secondary);
+    color: var(--secondary-foreground);
     border-bottom: 1px solid var(--border);
   }
+  .orbis-paste-banner .ok {
+    color: var(--brand-lime-dark, var(--foreground));
+  }
   .orbis-paste-banner .rej {
-    color: rgb(239, 68, 68);
+    color: var(--destructive);
+  }
+  .banner-dismiss {
+    margin-inline-start: auto;
+    border: 0;
+    background: transparent;
+    color: var(--muted-foreground);
+    font: inherit;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    padding: 0.125rem 0.375rem;
+  }
+  .banner-dismiss:hover {
+    background: var(--accent);
+    color: var(--accent-foreground);
   }
   .orbis-grid-head {
     display: flex;
@@ -744,6 +879,7 @@ export function scrollToColumnProp(prop: string) {
     top: 0;
     height: var(--header-h);
     background: var(--muted);
+    color: var(--muted-foreground);
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
     z-index: 3;
@@ -752,12 +888,18 @@ export function scrollToColumnProp(prop: string) {
     position: relative;
     display: flex;
     align-items: center;
-    padding: 0 8px;
+    padding: 0 0.625rem;
     font-weight: 600;
+    letter-spacing: 0.01em;
     border-inline-end: 1px solid var(--border);
     user-select: none;
     flex: 0 0 auto;
     min-width: 0;
+    cursor: pointer;
+  }
+  .orbis-hcell:hover {
+    color: var(--foreground);
+    background: color-mix(in oklab, var(--accent) 80%, var(--muted));
   }
   .hlabel {
     overflow: hidden;
@@ -774,11 +916,15 @@ export function scrollToColumnProp(prop: string) {
     border: 0;
     background: transparent;
   }
+  .resize-handle:hover {
+    background: color-mix(in oklab, var(--ring) 45%, transparent);
+  }
   .orbis-grid-body {
     flex: 1;
     min-height: 0;
     overflow: auto;
     position: relative;
+    background: var(--card);
   }
   .orbis-window {
     will-change: transform;
@@ -786,42 +932,46 @@ export function scrollToColumnProp(prop: string) {
   .orbis-row {
     display: flex;
     height: var(--row-h);
-    border-bottom: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+    border-bottom: 1px solid var(--border);
+    background: var(--card);
   }
   .orbis-row:hover {
     background: var(--accent);
   }
   .orbis-row.selected {
-    background: color-mix(in oklab, var(--accent) 80%, var(--primary) 20%);
+    background: color-mix(in oklab, var(--primary) 8%, var(--card));
   }
   .orbis-cell {
     display: flex;
     align-items: center;
     height: 100%;
-    padding: 0 8px;
-    border-inline-end: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+    padding: 0 0.625rem;
+    border-inline-end: 1px solid var(--border);
     min-width: 0;
     overflow: hidden;
     flex: 0 0 auto;
+    color: var(--foreground);
   }
   .orbis-cell.align-end {
     justify-content: flex-end;
     text-align: end;
+    font-variant-numeric: tabular-nums;
   }
   .orbis-cell.align-center {
     justify-content: center;
     text-align: center;
   }
   .orbis-cell.is-ranged {
-    background: color-mix(in oklab, var(--primary) 12%, transparent);
+    background: color-mix(in oklab, var(--primary) 14%, transparent);
   }
   .orbis-cell.is-active {
-    box-shadow: inset 0 0 0 2px var(--primary);
+    box-shadow: inset 0 0 0 1.5px var(--ring);
     z-index: 1;
+    background: var(--card);
   }
   .orbis-cell.is-error {
-    background: rgba(239, 68, 68, 0.15);
-    box-shadow: inset 0 0 0 1px rgb(239, 68, 68);
+    background: color-mix(in oklab, var(--destructive) 16%, var(--card));
+    box-shadow: inset 0 0 0 1px var(--destructive);
   }
   .orbis-text {
     overflow: hidden;
@@ -833,23 +983,28 @@ export function scrollToColumnProp(prop: string) {
     width: 100%;
     height: calc(100% - 2px);
     border: 0;
-    background: var(--background);
-    color: inherit;
+    background: var(--input);
+    color: var(--foreground);
     font: inherit;
     outline: none;
+    border-radius: var(--radius-sm);
+    padding: 0 0.25rem;
+  }
+  .orbis-editor:focus {
+    box-shadow: inset 0 0 0 1px var(--ring);
   }
   .orbis-menu {
     position: fixed;
     z-index: 80;
     margin: 0;
-    padding: 4px;
+    padding: 0.25rem;
     list-style: none;
-    min-width: 180px;
-    background: var(--popover, var(--background));
-    color: var(--popover-foreground, var(--foreground));
+    min-width: 11.5rem;
+    background: var(--popover);
+    color: var(--popover-foreground);
     border: 1px solid var(--border);
-    border-radius: 6px;
-    box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 28px var(--overlay);
   }
   .orbis-menu button {
     display: block;
@@ -859,15 +1014,19 @@ export function scrollToColumnProp(prop: string) {
     background: transparent;
     color: inherit;
     font: inherit;
-    font-size: 12px;
-    padding: 6px 8px;
-    border-radius: 4px;
+    font-size: 0.75rem;
+    padding: 0.375rem 0.5rem;
+    border-radius: var(--radius-sm);
     cursor: pointer;
   }
   .orbis-menu button:hover {
     background: var(--accent);
+    color: var(--accent-foreground);
   }
   .orbis-menu button.danger {
-    color: rgb(239, 68, 68);
+    color: var(--destructive);
+  }
+  .orbis-menu button.danger:hover {
+    background: color-mix(in oklab, var(--destructive) 12%, var(--popover));
   }
 </style>

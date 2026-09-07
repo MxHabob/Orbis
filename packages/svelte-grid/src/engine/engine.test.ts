@@ -15,6 +15,7 @@ import { interpretKey, clampIndex } from "./keyboard";
 import { visibleWindow } from "./virtual";
 import { groupRows, grandTotals } from "./grouping";
 import { queryClient } from "./query";
+import { autoscrollDelta, colFromOffset, rowFromOffset } from "./pointer";
 import { coerceValue } from "./coerce";
 import type { GridRow, OrbisColumnDef } from "../types";
 
@@ -183,6 +184,20 @@ describe("query + coerce", () => {
     expect(coerceValue("nope", { type: "integer" }).ok).toBe(false);
     expect(coerceValue("نعم", { type: "boolean" }).value).toBe(true);
     expect(coerceValue("31/12/2024", { type: "date" }).value).toBe("2024-12-31");
+  });
+});
+
+describe("pointer hit testing", () => {
+  test("row and column from offsets", () => {
+    expect(rowFromOffset(36 + 72, 36, 36, 10)).toBe(2);
+    expect(colFromOffset(150, [100, 80, 120])).toBe(1);
+    expect(colFromOffset(0, [100, 80])).toBe(0);
+    expect(colFromOffset(999, [100, 80])).toBe(1);
+  });
+  test("autoscroll at edges", () => {
+    expect(autoscrollDelta(10, 0, 400)).toBeLessThan(0);
+    expect(autoscrollDelta(390, 0, 400)).toBeGreaterThan(0);
+    expect(autoscrollDelta(200, 0, 400)).toBe(0);
   });
 });
 

@@ -247,7 +247,7 @@ function handleSearchKeydown(e: KeyboardEvent) {
     </div>
   {/if}
 
-  <div class="flex-1 min-h-0 rounded-sm overflow-hidden">
+  <div class="flex-1 min-h-0 overflow-hidden rounded-[var(--radius)]">
     {#if loading}
       <div class="p-0">
         <div class="flex items-center h-10 px-3 gap-4">

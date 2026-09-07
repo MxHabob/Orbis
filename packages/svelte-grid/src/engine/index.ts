@@ -10,3 +10,4 @@ export * from "./export";
 export * from "./format";
 export * from "./query";
 export * from "./context-menu";
+export * from "./pointer";
