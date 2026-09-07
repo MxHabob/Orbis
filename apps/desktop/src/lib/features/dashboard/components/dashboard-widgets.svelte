@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api/client";
 import WelcomeSection from "./welcome-section.svelte";
 import QuickActions from "./quick-actions.svelte";
 import WidgetCards from "./widget-cards.svelte";
@@ -19,7 +19,7 @@ async function fetchStats() {
   isLoading = true;
   error = null;
   try {
-    stats = await commands.organization.getDashboardStats();
+    stats = await api.getDashboard();
   } catch (e) {
     error = e instanceof Error ? e.message : String(e);
     console.error("Error loading dashboard stats:", e);

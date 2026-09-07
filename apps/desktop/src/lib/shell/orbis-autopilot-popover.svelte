@@ -122,7 +122,7 @@ async function handleRunTick() {
               aria-label={m.common_autopilot_popover_title()}
             >
               <Activity size={16} strokeWidth={1.8} class="text-foreground" />
-              {#if diagnostics && (diagnostics.stuck_tasks.length > 0 || diagnostics.overdue_tasks.length > 0)}
+              {#if diagnostics && (((diagnostics.stuck_tasks?.length ?? 0) > 0) || ((diagnostics.overdue_tasks?.length ?? 0) > 0))}
                 <span class="absolute -top-0.5 -inset-e-0.5 w-1.5 h-1.5 rounded-full bg-destructive border border-background animate-pulse"></span>
               {:else if config?.autopilot_enabled === 1}
                 <span class="absolute -top-0.5 -inset-e-0.5 w-1.5 h-1.5 rounded-full bg-brand-lime border border-background"></span>
@@ -175,11 +175,11 @@ async function handleRunTick() {
     </div>
 
     <!-- Diagnostics Panel (Stuck / Overdue Alerts) -->
-    {#if diagnostics && (diagnostics.stuck_tasks.length > 0 || diagnostics.overdue_tasks.length > 0)}
+    {#if diagnostics && (((diagnostics.stuck_tasks?.length ?? 0) > 0) || ((diagnostics.overdue_tasks?.length ?? 0) > 0))}
       <div class="px-4 py-2 border-b border-destructive/15 bg-destructive/5 text-[10px] text-destructive flex items-center gap-1.5">
           <AlertTriangle size={12} class="shrink-0" />
           <span class="font-bold">{m.common_autopilot_popover_diagnostics_warning()}</span>
-          <span class="ms-auto text-[9px] text-destructive/80">{diagnostics.stuck_tasks.length + diagnostics.overdue_tasks.length}</span>
+          <span class="ms-auto text-[9px] text-destructive/80">{(diagnostics.stuck_tasks?.length ?? 0) + (diagnostics.overdue_tasks?.length ?? 0)}</span>
       </div>
     {/if}
 
