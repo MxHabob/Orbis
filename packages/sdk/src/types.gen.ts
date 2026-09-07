@@ -800,6 +800,7 @@ export type UserDto = {
     email?: string | null;
     full_name: string;
     id: string;
+    mfa_enabled?: boolean | null;
     org_id: string;
     status: string;
 };

@@ -14,7 +14,6 @@ fn main() {
     } else {
         vec![
             "apps/api-rust/openapi.json".to_string(),
-            "openapi.json".to_string(),
         ]
     };
 
