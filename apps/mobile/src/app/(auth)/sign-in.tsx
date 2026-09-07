@@ -2,7 +2,7 @@
  * @module @orbis/mobile/app/(auth)/sign-in
  *
  * Primary Authentication Screen for Orbis Mobile.
- * Supports Email/Password, Google OAuth, and One-Tap Demo Profiles.
+ * Clean, declarative component composition.
  */
 
 import React, { useState } from 'react';
@@ -13,50 +13,31 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
-  Alert,
 } from 'react-native';
-import { router, Link } from 'expo-router';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/lib/api';
 import { useTheme } from '@/hooks/use-theme';
 import { useI18n } from '@/lib/i18n';
-import { useEffectiveContext } from '@/providers/effective-context';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Radii, Spacing, Typography } from '@/constants/theme';
+import { SignInForm } from '@/components/auth';
+import { Spacing, Typography } from '@/constants/theme';
 
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const { t } = useI18n();
-  const { login, loginWithGoogle, setSession } = useAuth();
-  const { setRole } = useEffectiveContext();
-
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { login, loginWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const handleSignIn = async () => {
-    if (!email.trim() || !password) {
-      setError(t('auth_error_required'));
-      return;
-    }
-
+  const handleSignIn = async (email: string, pass: string) => {
     setLoading(true);
-    setError(null);
     try {
-      const res = await login(email.trim(), password);
+      const res = await login(email, pass);
       if (res?.token && res?.user) {
         router.replace('/(app)/(tabs)');
       }
-    } catch (err: any) {
-      setError(err?.message || t('auth_error_failed'));
     } finally {
       setLoading(false);
     }
@@ -64,14 +45,11 @@ export default function SignInScreen() {
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
-    setError(null);
     try {
       const res = await loginWithGoogle('google-oauth-token');
       if (res?.token && res?.user) {
         router.replace('/(app)/(tabs)');
       }
-    } catch (err: any) {
-      setError(err?.message || t('auth_error_google'));
     } finally {
       setLoading(false);
     }
@@ -101,95 +79,12 @@ export default function SignInScreen() {
           </Text>
         </View>
 
-        {/* Login Form Card */}
-        <Card variant="elevated" style={styles.formCard}>
-          <Text style={[styles.cardTitle, { color: theme.text }]}>{t('auth_card_title')}</Text>
-          <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>
-            {t('auth_card_subtitle')}
-          </Text>
-
-          {error && (
-            <View style={[styles.errorBox, { backgroundColor: theme.errorLight }]}>
-              <Ionicons name="alert-circle" size={18} color={theme.error} />
-              <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
-            </View>
-          )}
-
-          <View style={styles.fields}>
-            <Input
-              label={t('auth_email_label')}
-              placeholder={t('auth_email_placeholder')}
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                setError(null);
-              }}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              icon={<Ionicons name="mail-outline" size={20} color={theme.textMuted} />}
-            />
-
-            <Input
-              label={t('auth_password_label')}
-              placeholder="••••••••"
-              value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                setError(null);
-              }}
-              secureTextEntry
-              icon={<Ionicons name="lock-closed-outline" size={20} color={theme.textMuted} />}
-            />
-
-            <View style={styles.forgotRow}>
-              <Link href="/(auth)/forgot-password" asChild>
-                <Pressable hitSlop={8}>
-                  <Text style={[styles.linkText, { color: theme.primary }]}>
-                    {t('auth_forgot_password')}
-                  </Text>
-                </Pressable>
-              </Link>
-            </View>
-
-            <Button
-              title={t('auth_submit')}
-              onPress={handleSignIn}
-              loading={loading}
-              fullWidth
-              size="lg"
-            />
-
-            <View style={styles.dividerRow}>
-              <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
-              <Text style={[styles.dividerText, { color: theme.textMuted }]}>
-                {t('auth_or_divider')}
-              </Text>
-              <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
-            </View>
-
-            <Button
-              title={t('auth_continue_google')}
-              onPress={handleGoogleSignIn}
-              variant="secondary"
-              fullWidth
-              icon={<Ionicons name="logo-google" size={18} color={theme.text} />}
-            />
-          </View>
-        </Card>
-
-        {/* Registration Link Footer */}
-        <View style={styles.footerRow}>
-          <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-            {t('auth_no_account')}
-          </Text>
-          <Link href="/(auth)/register" asChild>
-            <Pressable hitSlop={8}>
-              <Text style={[styles.registerLink, { color: theme.primary }]}>
-                {t('auth_register_link')}
-              </Text>
-            </Pressable>
-          </Link>
-        </View>
+        {/* Modular SignIn Form */}
+        <SignInForm
+          onSignIn={handleSignIn}
+          onGoogleSignIn={handleGoogleSignIn}
+          loading={loading}
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -206,84 +101,23 @@ const styles = StyleSheet.create({
   },
   brandSection: {
     alignItems: 'center',
+    gap: Spacing.two,
     marginBottom: Spacing.two,
   },
   logoBadge: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.three,
+    marginBottom: Spacing.one,
   },
   brandTitle: {
     ...Typography.h1,
-    letterSpacing: -0.5,
+    fontSize: 26,
   },
   brandSubtitle: {
-    ...Typography.caption,
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  formCard: {
-    width: '100%',
-    maxWidth: 440,
-    padding: Spacing.five,
-  },
-  cardTitle: {
-    ...Typography.h2,
-    marginBottom: 4,
-  },
-  cardSubtitle: {
-    ...Typography.caption,
-    marginBottom: Spacing.four,
-  },
-  errorBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: Spacing.three,
-    borderRadius: Radii.md,
-    gap: Spacing.two,
-    marginBottom: Spacing.three,
-  },
-  errorText: {
-    ...Typography.captionBold,
-    flex: 1,
-  },
-  fields: {
-    gap: Spacing.three,
-  },
-  forgotRow: {
-    alignItems: 'flex-start',
-    marginTop: -2,
-    marginBottom: 4,
-  },
-  linkText: {
-    ...Typography.captionBold,
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: Spacing.two,
-    gap: Spacing.three,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
     ...Typography.small,
-  },
-  footerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: Spacing.two,
-  },
-  footerText: {
-    ...Typography.body,
-  },
-  registerLink: {
-    ...Typography.bodyBold,
+    textAlign: 'center',
   },
 });
