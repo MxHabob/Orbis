@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/hooks/use-theme';
+import { useI18n } from '@/lib/i18n';
 import { Header } from '@/components/header';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,8 +19,8 @@ import { Radii, Spacing, Typography } from '@/constants/theme';
 export default function PreferencesScreen() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
+  const { locale, setLocale, t } = useI18n();
 
-  const [lang, setLang] = useState<'ar' | 'en'>('ar');
   const [themePref, setThemePref] = useState<'system' | 'dark' | 'light'>('system');
   const [notifyAbsence, setNotifyAbsence] = useState(true);
   const [notifyGrades, setNotifyGrades] = useState(true);
@@ -28,7 +29,7 @@ export default function PreferencesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Header title="التفضيلات والإشعارات" showBack />
+      <Header title={t('pref_title')} showBack />
 
       <ScrollView
         contentContainerStyle={[
@@ -38,17 +39,17 @@ export default function PreferencesScreen() {
         showsVerticalScrollIndicator={false}>
         {/* Language Selection */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>لغة التطبيق (Language)</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>{t('pref_language')}</Text>
           <Card variant="elevated" style={styles.card}>
             {[
-              { code: 'ar', name: 'العربية (Arabic)', native: 'اللغة الأساسية' },
-              { code: 'en', name: 'English', native: 'English Interface' },
+              { code: 'ar' as const, name: t('pref_language_ar'), native: t('pref_language_ar_sub') },
+              { code: 'en' as const, name: t('pref_language_en'), native: t('pref_language_en_sub') },
             ].map((l, idx) => {
-              const isSelected = lang === l.code;
+              const isSelected = locale === l.code;
               return (
                 <Pressable
                   key={l.code}
-                  onPress={() => setLang(l.code as any)}
+                  onPress={() => setLocale(l.code)}
                   style={[
                     styles.prefRow,
                     idx > 0 && { borderTopWidth: 1, borderTopColor: theme.borderSubtle },
@@ -68,29 +69,29 @@ export default function PreferencesScreen() {
 
         {/* Theme Appearance */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>مظهر التطبيق</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>{t('pref_theme')}</Text>
           <Card variant="elevated" style={styles.card}>
             {[
-              { key: 'system', name: 'تلقائي (حسب إعدادات النظام)', icon: 'phone-portrait-outline' },
-              { key: 'dark', name: 'الوضع الداكن (Dark Mode)', icon: 'moon-outline' },
-              { key: 'light', name: 'الوضع الفاتح (Light Mode)', icon: 'sunny-outline' },
-            ].map((t, idx) => {
-              const isSelected = themePref === t.key;
+              { key: 'system', name: t('pref_theme_system'), icon: 'phone-portrait-outline' },
+              { key: 'dark', name: t('pref_theme_dark'), icon: 'moon-outline' },
+              { key: 'light', name: t('pref_theme_light'), icon: 'sunny-outline' },
+            ].map((th, idx) => {
+              const isSelected = themePref === th.key;
               return (
                 <Pressable
-                  key={t.key}
-                  onPress={() => setThemePref(t.key as any)}
+                  key={th.key}
+                  onPress={() => setThemePref(th.key as any)}
                   style={[
                     styles.prefRow,
                     idx > 0 && { borderTopWidth: 1, borderTopColor: theme.borderSubtle },
                   ]}>
                   <Ionicons
-                    name={t.icon as any}
+                    name={th.icon as any}
                     size={22}
                     color={isSelected ? theme.primary : theme.textSecondary}
                     style={{ marginRight: Spacing.two }}
                   />
-                  <Text style={[styles.prefTitle, { color: theme.text, flex: 1 }]}>{t.name}</Text>
+                  <Text style={[styles.prefTitle, { color: theme.text, flex: 1 }]}>{th.name}</Text>
                   {isSelected && (
                     <Ionicons name="checkmark-circle" size={22} color={theme.primary} />
                   )}
@@ -102,13 +103,13 @@ export default function PreferencesScreen() {
 
         {/* Notification Preferences */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>إشعارات وتنبيهات النظام</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>{t('pref_notifications')}</Text>
           <Card variant="elevated" style={styles.card}>
             <View style={styles.switchRow}>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.prefTitle, { color: theme.text }]}>تنبيهات الغياب والتأخر</Text>
+                <Text style={[styles.prefTitle, { color: theme.text }]}>{t('pref_notify_absence')}</Text>
                 <Text style={[styles.prefSub, { color: theme.textSecondary }]}>
-                  إشعار فوري عند رصد غياب أو تأخر
+                  {t('pref_notify_absence_desc')}
                 </Text>
               </View>
               <Switch
@@ -120,9 +121,9 @@ export default function PreferencesScreen() {
 
             <View style={[styles.switchRow, { borderTopWidth: 1, borderTopColor: theme.borderSubtle }]}>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.prefTitle, { color: theme.text }]}>إعلان الدرجات والتقييمات</Text>
+                <Text style={[styles.prefTitle, { color: theme.text }]}>{t('pref_notify_grades')}</Text>
                 <Text style={[styles.prefSub, { color: theme.textSecondary }]}>
-                  إشعار عند رصد أو نشر نتائج اختبار
+                  {t('pref_notify_grades_desc')}
                 </Text>
               </View>
               <Switch
@@ -134,9 +135,9 @@ export default function PreferencesScreen() {
 
             <View style={[styles.switchRow, { borderTopWidth: 1, borderTopColor: theme.borderSubtle }]}>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.prefTitle, { color: theme.text }]}>تذكيرات مواعيد الاختبارات</Text>
+                <Text style={[styles.prefTitle, { color: theme.text }]}>{t('pref_notify_exams')}</Text>
                 <Text style={[styles.prefSub, { color: theme.textSecondary }]}>
-                  تذكير قبل موعد الاختبار بـ 24 ساعة
+                  {t('pref_notify_exams_desc')}
                 </Text>
               </View>
               <Switch
@@ -148,9 +149,9 @@ export default function PreferencesScreen() {
 
             <View style={[styles.switchRow, { borderTopWidth: 1, borderTopColor: theme.borderSubtle }]}>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.prefTitle, { color: theme.text }]}>التعاميم والأخبار العامة</Text>
+                <Text style={[styles.prefTitle, { color: theme.text }]}>{t('pref_notify_announcements')}</Text>
                 <Text style={[styles.prefSub, { color: theme.textSecondary }]}>
-                  إشعارات الفعاليات والمناسبات المدرسية
+                  {t('pref_notify_announcements_desc')}
                 </Text>
               </View>
               <Switch

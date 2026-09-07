@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/lib/api';
 import { useTheme } from '@/hooks/use-theme';
+import { useI18n } from '@/lib/i18n';
 import { useEffectiveContext } from '@/providers/effective-context';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -32,6 +33,7 @@ import { Radii, Spacing, Typography } from '@/constants/theme';
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
+  const { t } = useI18n();
   const { login, loginWithGoogle, setSession } = useAuth();
   const { setRole } = useEffectiveContext();
 
@@ -42,7 +44,7 @@ export default function SignInScreen() {
 
   const handleSignIn = async () => {
     if (!email.trim() || !password) {
-      setError('يرجى إدخال البريد الإلكتروني وكلمة المرور');
+      setError(t('auth_error_required'));
       return;
     }
 
@@ -54,7 +56,7 @@ export default function SignInScreen() {
         router.replace('/(app)/(tabs)');
       }
     } catch (err: any) {
-      setError(err?.message || 'فشل تسجيل الدخول. يرجى التحقق من البيانات.');
+      setError(err?.message || t('auth_error_failed'));
     } finally {
       setLoading(false);
     }
@@ -69,7 +71,7 @@ export default function SignInScreen() {
         router.replace('/(app)/(tabs)');
       }
     } catch (err: any) {
-      setError(err?.message || 'فشل تسجيل الدخول عبر Google');
+      setError(err?.message || t('auth_error_google'));
     } finally {
       setLoading(false);
     }
@@ -95,15 +97,15 @@ export default function SignInScreen() {
           </View>
           <Text style={[styles.brandTitle, { color: theme.text }]}>Orbis Mobile</Text>
           <Text style={[styles.brandSubtitle, { color: theme.textSecondary }]}>
-            منصة الإدارة التعليمية والعمليات الموحدة
+            {t('auth_brand_subtitle')}
           </Text>
         </View>
 
         {/* Login Form Card */}
         <Card variant="elevated" style={styles.formCard}>
-          <Text style={[styles.cardTitle, { color: theme.text }]}>تسجيل الدخول</Text>
+          <Text style={[styles.cardTitle, { color: theme.text }]}>{t('auth_card_title')}</Text>
           <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>
-            أدخل بريدك الإلكتروني المؤسسي وكلمة المرور للمتابعة
+            {t('auth_card_subtitle')}
           </Text>
 
           {error && (
@@ -115,8 +117,8 @@ export default function SignInScreen() {
 
           <View style={styles.fields}>
             <Input
-              label="البريد الإلكتروني"
-              placeholder="name@school.edu.sa"
+              label={t('auth_email_label')}
+              placeholder={t('auth_email_placeholder')}
               value={email}
               onChangeText={(text) => {
                 setEmail(text);
@@ -128,7 +130,7 @@ export default function SignInScreen() {
             />
 
             <Input
-              label="كلمة المرور"
+              label={t('auth_password_label')}
               placeholder="••••••••"
               value={password}
               onChangeText={(text) => {
@@ -143,14 +145,14 @@ export default function SignInScreen() {
               <Link href="/(auth)/forgot-password" asChild>
                 <Pressable hitSlop={8}>
                   <Text style={[styles.linkText, { color: theme.primary }]}>
-                    نسيت كلمة المرور؟
+                    {t('auth_forgot_password')}
                   </Text>
                 </Pressable>
               </Link>
             </View>
 
             <Button
-              title="دخول"
+              title={t('auth_submit')}
               onPress={handleSignIn}
               loading={loading}
               fullWidth
@@ -159,12 +161,14 @@ export default function SignInScreen() {
 
             <View style={styles.dividerRow}>
               <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
-              <Text style={[styles.dividerText, { color: theme.textMuted }]}>أو</Text>
+              <Text style={[styles.dividerText, { color: theme.textMuted }]}>
+                {t('auth_or_divider')}
+              </Text>
               <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
             </View>
 
             <Button
-              title="المتابعة باستخدام Google"
+              title={t('auth_continue_google')}
               onPress={handleGoogleSignIn}
               variant="secondary"
               fullWidth
@@ -176,11 +180,13 @@ export default function SignInScreen() {
         {/* Registration Link Footer */}
         <View style={styles.footerRow}>
           <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-            ليس لديك حساب بعد؟
+            {t('auth_no_account')}
           </Text>
           <Link href="/(auth)/register" asChild>
             <Pressable hitSlop={8}>
-              <Text style={[styles.registerLink, { color: theme.primary }]}>تسجيل حساب جديد</Text>
+              <Text style={[styles.registerLink, { color: theme.primary }]}>
+                {t('auth_register_link')}
+              </Text>
             </Pressable>
           </Link>
         </View>

@@ -24,6 +24,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/lib/api';
+import { useI18n, l } from '@/lib/i18n';
 import { useEffectiveContext } from '@/providers/effective-context';
 import {
   useClassesQuery,
@@ -85,10 +86,11 @@ export default function HomeScreen() {
     await Promise.all([refetchOrg(), refetchDash(), refetchClasses(), refetchEnrollments()]);
   }, [refetchOrg, refetchDash, refetchClasses, refetchEnrollments]);
 
+  const { t } = useI18n();
   const effectiveId = targetStudentId || user?.id || '';
   const effectiveClassId = selectedClassId || (classesData && classesData[0]?.id) || '';
   const firstName = user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || '';
-  const campusName = orgData?.name || 'مجمع الرياض التعليمي';
+  const campusName = orgData?.name || t('nav_campus_default');
 
   const handleStudentPress = useCallback(
     (childId: string) => {
@@ -132,41 +134,41 @@ export default function HomeScreen() {
     return [
       {
         id: 'grades',
-        title: 'الدرجات',
+        title: t('domain_grades'),
         type: 'student_domain' as const,
         route: `/(app)/student/${effectiveId}/grades`,
         Illustration: GradesFeatureIllustration,
       },
       {
         id: 'attendance',
-        title: 'الحضور',
+        title: t('domain_attendance'),
         type: 'student_domain' as const,
         route: `/(app)/student/${effectiveId}/attendance`,
         Illustration: AttendanceFeatureIllustration,
       },
       {
         id: 'schedule',
-        title: 'الجدول',
+        title: t('domain_schedule'),
         type: 'student_domain' as const,
         route: `/(app)/student/${effectiveId}/schedule`,
         Illustration: ScheduleFeatureIllustration,
       },
       {
         id: 'behavior',
-        title: 'السلوك',
+        title: t('domain_behavior'),
         type: 'student_domain' as const,
         route: '/(app)/(tabs)/behavior',
         Illustration: BehaviorFeatureIllustration,
       },
       {
         id: 'exams',
-        title: 'الاختبارات',
+        title: t('domain_exams'),
         type: 'student_domain' as const,
         route: `/(app)/student/${effectiveId}/exams`,
         Illustration: StudentSeniorIllustration,
       },
     ];
-  }, [isParent, isTeacher, childrenList, classesData, effectiveId]);
+  }, [isParent, isTeacher, childrenList, classesData, effectiveId, t]);
 
   const topTwo = useMemo(() => bubbleItems.slice(0, 2), [bubbleItems]);
   const bottomItems = useMemo(() => bubbleItems.slice(2, 5), [bubbleItems]);
@@ -306,7 +308,9 @@ export default function HomeScreen() {
               <Skeleton width={180} height={24} />
             ) : (
               <Text style={styles.personalizedTitle}>
-                {firstName ? `${firstName}، هذه مخصصة لك` : 'هذه مخصصة لك'}
+                {firstName
+                  ? t('nav_for_you_user', { name: firstName })
+                  : t('nav_for_you')}
               </Text>
             )}
             <Pressable hitSlop={8}>
@@ -337,7 +341,7 @@ export default function HomeScreen() {
                   <AttendanceFeatureIllustration size={44} />
                 </View>
                 <Text style={styles.featureLabel} numberOfLines={1}>
-                  سجل الحضور
+                  {t('domain_attendance_log')}
                 </Text>
               </Pressable>
 
@@ -354,7 +358,7 @@ export default function HomeScreen() {
                   <GradesFeatureIllustration size={44} />
                 </View>
                 <Text style={styles.featureLabel} numberOfLines={1}>
-                  الدرجات
+                  {t('domain_grades')}
                 </Text>
               </Pressable>
 
@@ -369,7 +373,7 @@ export default function HomeScreen() {
                   <BehaviorFeatureIllustration size={44} />
                 </View>
                 <Text style={styles.featureLabel} numberOfLines={1}>
-                  التميز والسلوك
+                  {t('domain_excellence_behavior')}
                 </Text>
               </Pressable>
 
@@ -386,7 +390,7 @@ export default function HomeScreen() {
                   <ScheduleFeatureIllustration size={44} />
                 </View>
                 <Text style={styles.featureLabel} numberOfLines={1}>
-                  الجدول
+                  {t('domain_schedule')}
                 </Text>
               </Pressable>
             </View>
@@ -411,11 +415,15 @@ export default function HomeScreen() {
             <View style={styles.primeLeft}>
               <View style={styles.primeBadge}>
                 <Ionicons name="sparkles" size={13} color="#FFFFFF" />
-                <Text style={styles.primeBadgeText}>PRIME</Text>
+                <Text style={styles.primeBadgeText}>{t('prime_badge')}</Text>
               </View>
 
-              <Text style={styles.primeTitle}>متابعة ذكية وتقارير غير محدودة</Text>
-              <Text style={styles.primeSub}>تحليل فوري بالذكاء الاصطناعي مجاناً</Text>
+              <Text style={styles.primeTitle}>
+                {t('prime_title')}
+              </Text>
+              <Text style={styles.primeSub}>
+                {t('prime_subtitle')}
+              </Text>
             </View>
 
             {/* Right Mascot Artwork & Button */}

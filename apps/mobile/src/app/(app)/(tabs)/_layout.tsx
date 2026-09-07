@@ -9,16 +9,17 @@
  * Styled as an elevated floating capsule pill above the bottom screen bezel.
  */
 
-import React from 'react';
 import { Tabs } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Typography, Radii } from '@/constants/theme';
+import { useI18n } from '@/lib/i18n';
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
   const floatingBottom = Math.max(insets.bottom, 12) + 8;
 
   return (
@@ -61,7 +62,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'الرئيسية',
+          title: t('tab_home'),
           tabBarIcon: ({ focused }) => (
             <View
               style={[
@@ -80,7 +81,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="behavior"
         options={{
-          title: 'السلوك والذكاء',
+          title: t('tab_behavior_ai'),
           tabBarIcon: ({ focused }) => (
             <View
               style={[
@@ -99,7 +100,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'حسابي',
+          title: t('tab_profile'),
           tabBarIcon: ({ focused }) => (
             <View
               style={[

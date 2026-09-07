@@ -16,6 +16,7 @@ import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { AuthProvider } from '@/lib/api';
 import { AppQueryProvider } from '@/providers/query-provider';
 import { EffectiveContextProvider } from '@/providers/effective-context';
+import { I18nProvider } from '@/lib/i18n';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -29,24 +30,26 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <AuthProvider>
-      <AppQueryProvider>
-        <EffectiveContextProvider>
-          <ThemeProvider value={theme}>
-            <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-            <AnimatedSplashOverlay />
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                animation: 'slide_from_right',
-              }}>
-              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-              <Stack.Screen name="(app)" options={{ headerShown: false }} />
-              <Stack.Screen name="+not-found" options={{ title: 'Oops!', headerShown: true }} />
-            </Stack>
-          </ThemeProvider>
-        </EffectiveContextProvider>
-      </AppQueryProvider>
-    </AuthProvider>
+    <I18nProvider>
+      <AuthProvider>
+        <AppQueryProvider>
+          <EffectiveContextProvider>
+            <ThemeProvider value={theme}>
+              <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+              <AnimatedSplashOverlay />
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  animation: 'slide_from_right',
+                }}>
+                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                <Stack.Screen name="(app)" options={{ headerShown: false }} />
+                <Stack.Screen name="+not-found" options={{ title: 'Oops!', headerShown: true }} />
+              </Stack>
+            </ThemeProvider>
+          </EffectiveContextProvider>
+        </AppQueryProvider>
+      </AuthProvider>
+    </I18nProvider>
   );
 }

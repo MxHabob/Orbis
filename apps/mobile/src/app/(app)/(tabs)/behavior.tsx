@@ -23,6 +23,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/hooks/use-theme';
+import { useI18n, l, t } from '@/lib/i18n';
 import { useEffectiveContext } from '@/providers/effective-context';
 import { useAttendanceQuery, useGradesQuery } from '@/hooks/use-api-queries';
 import { Card } from '@/components/ui/card';
@@ -46,6 +47,7 @@ export interface BehaviorRecordItem {
 export default function BehaviorScreen() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
+  const { t } = useI18n();
   const { isTeacher, isParent, selectedChild, targetStudentId } = useEffectiveContext();
 
   const [filter, setFilter] = useState<'all' | 'merit' | 'violation'>('all');
@@ -54,7 +56,7 @@ export default function BehaviorScreen() {
   // New behavior logging form state (for teachers)
   const [newStudent, setNewStudent] = useState('');
   const [newType, setNewType] = useState<'merit' | 'violation'>('merit');
-  const [newCategory, setNewCategory] = useState('المشاركة الفعالة');
+  const [newCategory, setNewCategory] = useState('');
   const [newPoints, setNewPoints] = useState('2');
   const [newDesc, setNewDesc] = useState('');
 
@@ -84,19 +86,19 @@ export default function BehaviorScreen() {
     const item: BehaviorRecordItem = {
       id: `rec-${Date.now()}`,
       type: newType,
-      category: newCategory,
+      category: newCategory || t('behavior_modal_type_merit'),
       points:
         newType === 'merit'
           ? Math.abs(parseInt(newPoints, 10) || 1)
           : -Math.abs(parseInt(newPoints, 10) || 1),
       description: newDesc.trim(),
-      reportedBy: 'أنت (معلم)',
-      date: 'الآن',
+      reportedBy: t('common_you_teacher'),
+      date: t('common_now'),
     };
     setRecords((prev) => [item, ...prev]);
     setShowLogModal(false);
     setNewDesc('');
-  }, [newDesc, newType, newCategory, newPoints]);
+  }, [newDesc, newType, newCategory, newPoints, t]);
 
   const filteredRecords = useMemo(() => {
     return records.filter((r) => {
@@ -124,19 +126,21 @@ export default function BehaviorScreen() {
         ]}>
         <View style={styles.headerRow}>
           <View style={styles.titleCol}>
-            <Text style={[styles.screenTitle, { color: theme.text }]}>السلوك والذكاء الاصطناعي</Text>
+            <Text style={[styles.screenTitle, { color: theme.text }]}>
+              {t('behavior_title')}
+            </Text>
             <Text style={[styles.screenSubtitle, { color: theme.textSecondary }]}>
               {isParent
-                ? `سجل ${selectedChild?.name || 'الطالب'}`
+                ? (selectedChild?.name ? t('behavior_sub_parent', { name: selectedChild.name }) : t('behavior_sub_parent_default'))
                 : isTeacher
-                  ? 'رصد ومتابعة السلوك الصفي'
-                  : 'سجل الانضباط والنقاط الإيجابية'}
+                  ? t('behavior_sub_teacher')
+                  : t('behavior_sub_student')}
             </Text>
           </View>
 
           {isTeacher ? (
             <Button
-              title="رصد سلوك"
+              title={t('behavior_btn_log')}
               onPress={() => setShowLogModal(true)}
               size="sm"
               icon={<Ionicons name="add-circle" size={16} color="#FFFFFF" />}
@@ -166,17 +170,17 @@ export default function BehaviorScreen() {
             <View style={styles.scoreRow}>
               <View style={styles.scoreCol}>
                 <Text style={[styles.scoreLabel, { color: theme.textSecondary }]}>
-                  صافي النقاط السلوكية
+                  {t('behavior_score_net')}
                 </Text>
                 <Text
                   style={[
                     styles.scoreValue,
                     { color: totalPoints >= 0 ? theme.success : theme.error },
                   ]}>
-                  {totalPoints > 0 ? `+${totalPoints}` : totalPoints} نقطة
+                  {t('behavior_score_unit', { count: totalPoints > 0 ? `+${totalPoints}` : totalPoints })}
                 </Text>
                 <Text style={[styles.scoreStatus, { color: theme.textSecondary }]}>
-                  مستوى الانضباط العام: منتظم ومتميز
+                  {t('behavior_status_regular')}
                 </Text>
               </View>
 
@@ -203,15 +207,17 @@ export default function BehaviorScreen() {
             <View style={styles.aiHeader}>
               <View style={styles.aiTitleBox}>
                 <Ionicons name="sparkles" size={18} color="#7C3AED" />
-                <Text style={[styles.aiTitle, { color: theme.text }]}>تحليل الذكاء الاصطناعي</Text>
+                <Text style={[styles.aiTitle, { color: theme.text }]}>
+                  {t('behavior_ai_title')}
+                </Text>
               </View>
-              <Badge label="تحديث مباشر" variant="primary" size="sm" />
+              <Badge label={t('behavior_badge_live')} variant="primary" size="sm" />
             </View>
 
             <Text style={[styles.aiSummary, { color: theme.textSecondary }]}>
               {records.length > 0
-                ? 'يظهر الطالب التزاماً عالياً بالمواعيد والأنشطة الصفية المشتركة. يُنصح بتعزيز مهارات القيادة والمبادرة في المشاريع الجماعية.'
-                : 'يتم رصد السلوك والتفاعل بانتظام. سيتم توليد تقرير الذكاء الاصطناعي فور تسجيل مؤشرات الحضور والمشاركة.'}
+                ? t('behavior_ai_summary_active')
+                : t('behavior_ai_summary_empty')}
             </Text>
           </Card>
         )}
@@ -220,9 +226,9 @@ export default function BehaviorScreen() {
         <View style={styles.filterSection}>
           <View style={[styles.filterBar, { backgroundColor: theme.backgroundElement }]}>
             {[
-              { key: 'all', label: 'الكل' },
-              { key: 'merit', label: 'إيجابي' },
-              { key: 'violation', label: 'ملاحظات' },
+              { key: 'all', label: t('behavior_filter_all') },
+              { key: 'merit', label: t('behavior_filter_merit') },
+              { key: 'violation', label: t('behavior_filter_violation') },
             ].map((f) => {
               const isSelected = filter === f.key;
               return (
@@ -256,8 +262,8 @@ export default function BehaviorScreen() {
           ) : filteredRecords.length === 0 ? (
             <EmptyState
               icon="shield-checkmark-outline"
-              title="لا توجد ملاحظات سلوكية مسجلة"
-              description="سيتم إدراج الملاحظات والنقاط الإيجابية هنا فور رصدها من الكادر التعليمي."
+              title={t('behavior_empty_title')}
+              description={t('behavior_empty_desc')}
             />
           ) : (
             filteredRecords.map((item) => {
@@ -312,7 +318,9 @@ export default function BehaviorScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContainer, { backgroundColor: theme.card }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: theme.text }]}>رصد ملاحظة سلوكية</Text>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>
+                {t('behavior_modal_title')}
+              </Text>
               <Pressable onPress={() => setShowLogModal(false)}>
                 <Ionicons name="close" size={24} color={theme.textSecondary} />
               </Pressable>
@@ -321,24 +329,26 @@ export default function BehaviorScreen() {
             <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
               <View style={styles.modalFields}>
                 <Input
-                  label="اسم الطالب أو الرقم الأكاديمي"
-                  placeholder="عمر خالد المنصور"
+                  label={t('behavior_modal_student_label')}
+                  placeholder={t('behavior_modal_student_placeholder')}
                   value={newStudent}
                   onChangeText={setNewStudent}
                 />
 
                 <View style={{ gap: 6 }}>
-                  <Text style={[Typography.captionBold, { color: theme.text }]}>نوع الملاحظة</Text>
+                  <Text style={[Typography.captionBold, { color: theme.text }]}>
+                    {t('behavior_modal_type_label')}
+                  </Text>
                   <View style={{ flexDirection: 'row', gap: Spacing.two }}>
                     <Button
-                      title="سلوك إيجابي (نقطة تميز)"
+                      title={t('behavior_modal_type_merit')}
                       onPress={() => setNewType('merit')}
                       variant={newType === 'merit' ? 'primary' : 'outline'}
                       size="sm"
                       style={{ flex: 1 }}
                     />
                     <Button
-                      title="ملاحظة غير منضبطة"
+                      title={t('behavior_modal_type_violation')}
                       onPress={() => setNewType('violation')}
                       variant={newType === 'violation' ? 'danger' : 'outline'}
                       size="sm"
@@ -348,14 +358,14 @@ export default function BehaviorScreen() {
                 </View>
 
                 <Input
-                  label="التصنيف"
-                  placeholder="المشاركة الفعالة، الانضباط..."
+                  label={t('behavior_modal_category_label')}
+                  placeholder={t('behavior_modal_category_placeholder')}
                   value={newCategory}
                   onChangeText={setNewCategory}
                 />
 
                 <Input
-                  label="النقاط المستحقة"
+                  label={t('behavior_modal_points_label')}
                   placeholder="2"
                   keyboardType="numeric"
                   value={newPoints}
@@ -363,8 +373,8 @@ export default function BehaviorScreen() {
                 />
 
                 <Input
-                  label="التفاصيل والملاحظة"
-                  placeholder="اكتب وصف الموقف السلوكي بالتفصيل..."
+                  label={t('behavior_modal_desc_label')}
+                  placeholder={t('behavior_modal_desc_placeholder')}
                   multiline
                   numberOfLines={3}
                   value={newDesc}
@@ -375,13 +385,13 @@ export default function BehaviorScreen() {
 
             <View style={styles.modalFooter}>
               <Button
-                title="إلغاء"
+                title={t('behavior_modal_cancel')}
                 onPress={() => setShowLogModal(false)}
                 variant="ghost"
                 style={{ flex: 1 }}
               />
               <Button
-                title="حفظ وإرسال التقرير"
+                title={t('behavior_modal_submit')}
                 onPress={handleSaveRecord}
                 variant="primary"
                 style={{ flex: 2 }}

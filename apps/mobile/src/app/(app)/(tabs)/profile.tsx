@@ -24,6 +24,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/lib/api';
 import { useTheme } from '@/hooks/use-theme';
+import { useI18n, l, t } from '@/lib/i18n';
 import { useEffectiveContext } from '@/providers/effective-context';
 import { useUserQuery } from '@/hooks/use-api-queries';
 import { Card } from '@/components/ui/card';
@@ -35,6 +36,7 @@ import { Radii, Spacing, Typography } from '@/constants/theme';
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
+  const { t } = useI18n();
   const { user, logout } = useAuth();
   const {
     role,
@@ -48,20 +50,24 @@ export default function ProfileScreen() {
   const { data: userProfile, isLoading: isUserLoading } = useUserQuery(user?.id);
 
   const handleLogout = useCallback(() => {
-    Alert.alert('تسجيل الخروج', 'هل أنت متأكد من رغبتك في تسجيل الخروج من التطبيق؟', [
-      { text: 'إلغاء', style: 'cancel' },
-      {
-        text: 'تسجيل الخروج',
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-          router.replace('/(auth)/sign-in');
+    Alert.alert(
+      t('profile_sign_out'),
+      t('profile_sign_out_confirm'),
+      [
+        { text: t('common_cancel'), style: 'cancel' },
+        {
+          text: t('profile_sign_out'),
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+            router.replace('/(auth)/sign-in');
+          },
         },
-      },
-    ]);
-  }, [logout]);
+      ],
+    );
+  }, [logout, t]);
 
-  const fullName = userProfile?.full_name || user?.full_name || 'مستخدم Orbis';
+  const fullName = userProfile?.full_name || user?.full_name || t('profile_user_default');
   const email = userProfile?.email || user?.email || 'user@orbis.edu.sa';
 
   return (
@@ -77,7 +83,7 @@ export default function ProfileScreen() {
             borderBottomColor: theme.borderSubtle,
           },
         ]}>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>الملف الشخصي</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>{t('profile_title')}</Text>
       </View>
 
       <ScrollView
@@ -111,18 +117,18 @@ export default function ProfileScreen() {
                   <Badge
                     label={
                       role === 'student'
-                        ? 'طالب'
+                        ? t('profile_role_student')
                         : role === 'parent'
-                          ? 'ولي أمر'
+                          ? t('profile_role_parent')
                           : role === 'teacher'
-                            ? 'معلم'
-                            : 'مشرف'
+                            ? t('profile_role_teacher')
+                            : t('profile_role_admin')
                     }
                     variant="primary"
                     size="sm"
                   />
                   <Text style={[styles.orgName, { color: theme.textMuted }]}>
-                    مجمع الرياض التعليمي
+                    {t('nav_campus_default')}
                   </Text>
                 </View>
               </View>
@@ -134,7 +140,9 @@ export default function ProfileScreen() {
         {isParent && childrenList.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>الأبناء المرتبطون</Text>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                {t('profile_linked_children')}
+              </Text>
             </View>
 
             <View style={styles.childrenGrid}>
@@ -186,30 +194,32 @@ export default function ProfileScreen() {
 
         {/* Quick Settings Navigation Menu */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>إعدادات الحساب والنظام</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
+            {t('profile_settings_title')}
+          </Text>
           <Card variant="flat" style={styles.menuCard}>
             {[
               {
                 id: 'account',
-                title: 'معلومات الحساب الشخصي',
+                title: t('profile_menu_account'),
                 icon: 'person-circle-outline',
                 route: '/(app)/settings/account',
               },
               {
                 id: 'security',
-                title: 'الأمان وكلمة المرور (MFA)',
+                title: t('profile_menu_security'),
                 icon: 'shield-checkmark-outline',
                 route: '/(app)/settings/security',
               },
               {
                 id: 'linked',
-                title: 'الحسابات المرتبطة',
+                title: t('profile_menu_linked'),
                 icon: 'link-outline',
                 route: '/(app)/settings/linked-accounts',
               },
               {
                 id: 'preferences',
-                title: 'التفضيلات والإشعارات',
+                title: t('profile_menu_preferences'),
                 icon: 'notifications-outline',
                 route: '/(app)/settings/preferences',
               },
@@ -241,7 +251,7 @@ export default function ProfileScreen() {
 
         {/* Logout Button */}
         <Button
-          title="تسجيل الخروج من الحساب"
+          title={t('profile_sign_out_button')}
           onPress={handleLogout}
           variant="danger"
           size="lg"
