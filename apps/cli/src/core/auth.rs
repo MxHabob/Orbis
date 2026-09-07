@@ -4,7 +4,7 @@ use sea_orm::{ConnectionTrait, DatabaseConnection, Statement};
 use orbis_app::ports::security::TotpService;
 use orbis_infra::security::totp::TotpServiceImpl;
 
-use crate::ui::output::{self, COLOR_BORDER, COLOR_CYAN, COLOR_EMERALD, COLOR_MUTED, COLOR_PURPLE, COLOR_ROSE, COLOR_WHITE};
+use crate::ui::output::{self, COLOR_CYAN, COLOR_EMERALD, COLOR_MUTED, COLOR_PURPLE, COLOR_ROSE, COLOR_WHITE};
 
 #[derive(Debug, Clone)]
 pub struct AuthenticatedAdmin {
@@ -71,18 +71,13 @@ pub async fn authenticate_admin(db: &DatabaseConnection) -> Result<Authenticated
         return Err(anyhow!("No valid administrator credentials found."));
     }
 
-    let border_color = |s: &str| s.truecolor(COLOR_BORDER.0, COLOR_BORDER.1, COLOR_BORDER.2);
-
-    println!();
-    println!("  {}", border_color("╭─ Security Verification ─────────────────────────────────────"));
-    println!("  {}  {} {}", border_color("│"), "✦".truecolor(COLOR_PURPLE.0, COLOR_PURPLE.1, COLOR_PURPLE.2), "Administrator authentication required to continue.".truecolor(COLOR_WHITE.0, COLOR_WHITE.1, COLOR_WHITE.2));
-    println!("  {}", border_color("╰─────────────────────────────────────────────────────────────"));
-    println!();
+    println!("  {} {}", "●".truecolor(COLOR_PURPLE.0, COLOR_PURPLE.1, COLOR_PURPLE.2), "Administrator authentication required to continue.".truecolor(COLOR_WHITE.0, COLOR_WHITE.1, COLOR_WHITE.2).bold());
 
     // 2. Select admin account if multiple, or select the single admin
     let selected_admin = if admins.len() == 1 {
         let admin = &admins[0];
-        println!("  {} Account: {} ({})", "●".truecolor(COLOR_CYAN.0, COLOR_CYAN.1, COLOR_CYAN.2), admin.full_name.truecolor(COLOR_WHITE.0, COLOR_WHITE.1, COLOR_WHITE.2).bold(), admin.email.truecolor(COLOR_MUTED.0, COLOR_MUTED.1, COLOR_MUTED.2));
+        println!("    {} {} ({})", "Account:".truecolor(COLOR_MUTED.0, COLOR_MUTED.1, COLOR_MUTED.2), admin.full_name.truecolor(COLOR_WHITE.0, COLOR_WHITE.1, COLOR_WHITE.2).bold(), admin.email.truecolor(COLOR_MUTED.0, COLOR_MUTED.1, COLOR_MUTED.2));
+        println!();
         admin
     } else {
         let options: Vec<String> = admins
@@ -109,9 +104,9 @@ pub async fn authenticate_admin(db: &DatabaseConnection) -> Result<Authenticated
 
     for attempt in 1..=max_attempts {
         let prompt_msg = if attempt == 1 {
-            "Administrator Password:"
+            "Admin Password:"
         } else {
-            "Re-enter Password:"
+            "Re-enter Admin Password:"
         };
 
         let password = crate::ui::prompts::prompt_password(prompt_msg, None)?;
@@ -157,11 +152,7 @@ pub async fn authenticate_admin(db: &DatabaseConnection) -> Result<Authenticated
     let requires_mfa = selected_admin.mfa_enabled || mfa_row.is_some();
 
     if requires_mfa {
-        println!();
-        println!("  {}", border_color("╭─ Two-Factor Authentication (MFA) ───────────────────────────"));
-        println!("  {}  {} {}", border_color("│"), "✦".truecolor(COLOR_CYAN.0, COLOR_CYAN.1, COLOR_CYAN.2), "Enter 6-digit TOTP code or an 8-character recovery code.".truecolor(COLOR_WHITE.0, COLOR_WHITE.1, COLOR_WHITE.2));
-        println!("  {}", border_color("╰─────────────────────────────────────────────────────────────"));
-        println!();
+        println!("  {} {}", "●".truecolor(COLOR_CYAN.0, COLOR_CYAN.1, COLOR_CYAN.2), "Two-Factor Verification (TOTP / Recovery Code)".truecolor(COLOR_WHITE.0, COLOR_WHITE.1, COLOR_WHITE.2).bold());
 
         let totp_service = TotpServiceImpl;
         let secret = mfa_row.as_ref().and_then(|r| r.try_get::<String>("", "secret_encrypted").ok());
@@ -243,10 +234,7 @@ pub async fn authenticate_admin(db: &DatabaseConnection) -> Result<Authenticated
         }
     }
 
-    output::print_success(&format!(
-        "Authenticated as {} ({})",
-        selected_admin.full_name, selected_admin.email
-    ));
+    println!("  {} {} ({})\n", "✔ Verified:".truecolor(COLOR_EMERALD.0, COLOR_EMERALD.1, COLOR_EMERALD.2).bold(), selected_admin.full_name.truecolor(COLOR_WHITE.0, COLOR_WHITE.1, COLOR_WHITE.2).bold(), selected_admin.email.truecolor(COLOR_MUTED.0, COLOR_MUTED.1, COLOR_MUTED.2));
 
     Ok(AuthenticatedAdmin {
         user_id: selected_admin.id.clone(),

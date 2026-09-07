@@ -79,41 +79,41 @@ fn build_menu(status: &core::database::SystemStatus) -> Vec<MenuItem> {
 
     let mut push = |label: &str, choice: MenuChoice| {
         items.push(MenuItem {
-            label: format!("{:<2} {}", format!("{}.", idx), label),
+            label: format!("{}. {}", idx, label),
             choice,
         });
         idx += 1;
     };
 
     if status.is_setup_complete() {
-        push("▶  Start System                  Launch Desktop App or Backend", MenuChoice::Start);
-        push("🩺 System Diagnostics (Doctor)    Inspect SQLite/Postgres DB & Binary Health", MenuChoice::Doctor);
-        push("💾 Secure Database Backup         Generate Compressed Snapshot (.zip)", MenuChoice::Backup);
-        push("🔑 License & Entitlements         Manage Plan Activation & Seat Limits", MenuChoice::License);
-        push("⚙  Reconfigure Workspace (Init)   Re-run Workspace & Admin Provisioning", MenuChoice::Init);
-        push("🗑  Reset Database Store          Wipe All Tables & Reset To Clean Slate", MenuChoice::ResetDatabase);
+        push("Start System (Launch Desktop)", MenuChoice::Start);
+        push("Run Diagnostics (Doctor)", MenuChoice::Doctor);
+        push("Backup Database Snapshot", MenuChoice::Backup);
+        push("Manage License & Plan", MenuChoice::License);
+        push("Workspace Setup / Repair", MenuChoice::Init);
+        push("Reset Database Store", MenuChoice::ResetDatabase);
     } else if status.is_initialized() {
-        push("▶  Start System                  Complete Desktop Onboarding", MenuChoice::Start);
-        push("🩺 System Diagnostics (Doctor)    Inspect Health & Database Status", MenuChoice::Doctor);
-        push("🔑 License & Entitlements         Inspect Activation Plan", MenuChoice::License);
-        push("⚙  Reconfigure Workspace (Init)   Re-run Workspace & Admin Provisioning", MenuChoice::Init);
-        push("💾 Secure Database Backup         Create Snapshot", MenuChoice::Backup);
-        push("🗑  Reset Database Store          Wipe All Tables & Reset To Clean Slate", MenuChoice::ResetDatabase);
+        push("Start System (Complete Onboarding)", MenuChoice::Start);
+        push("Run Diagnostics (Doctor)", MenuChoice::Doctor);
+        push("Manage License & Plan", MenuChoice::License);
+        push("Workspace Setup / Repair", MenuChoice::Init);
+        push("Backup Database Snapshot", MenuChoice::Backup);
+        push("Reset Database Store", MenuChoice::ResetDatabase);
     } else {
-        push("⚙  Initialize Workspace (Init)    Configure Database, Organization & Super Admin", MenuChoice::Init);
-        push("🔑 Manage Product License         Inspect or Activate License Key", MenuChoice::License);
-        push("🩺 System Diagnostics (Doctor)    Verify System Requirements & Connectivity", MenuChoice::Doctor);
-        push("🗑  Reset Database Store          Clean Up Existing Data Files", MenuChoice::ResetDatabase);
+        push("Initialize Workspace (Setup Database & Admin)", MenuChoice::Init);
+        push("Manage Product License", MenuChoice::License);
+        push("Run Diagnostics (Doctor)", MenuChoice::Doctor);
+        push("Reset Database Store", MenuChoice::ResetDatabase);
     }
 
     if is_development_environment() {
         push(
-            "⚡ Seed Development Records       Create Mock Students, Teachers & Ledgers",
+            "Seed Development Records (Mock Data)",
             MenuChoice::SeedDefaultData,
         );
     }
 
-    push("⏏  Exit Management Console       Close session", MenuChoice::Exit);
+    push("Exit Console", MenuChoice::Exit);
     items
 }
 
@@ -284,8 +284,15 @@ async fn main() -> Result<()> {
             (initial_status.is_initialized(), initial_status.is_setup_complete());
         ui::output::print_banner(db_exists, setup_completed);
 
-        // Enforce authentication if system is initialized (except for init if uninitialized)
-        ensure_authenticated(&initial_status).await?;
+        // Enforce authentication for protected commands when initialized
+        let needs_auth = match cmd {
+            Commands::Doctor | Commands::Init => false,
+            _ => initial_status.is_initialized(),
+        };
+
+        if needs_auth {
+            ensure_authenticated(&initial_status).await?;
+        }
 
         handle_command(cmd).await?;
     } else {

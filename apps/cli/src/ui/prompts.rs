@@ -9,11 +9,11 @@ use crate::core::validator;
 
 pub fn get_render_config() -> RenderConfig<'static> {
     let mut render_config = RenderConfig::default_colored();
-    render_config.prompt_prefix = Styled::new(" ✦ ").with_fg(Color::LightMagenta);
-    render_config.answered_prompt_prefix = Styled::new(" ✔ ").with_fg(Color::LightGreen);
-    render_config.highlighted_option_prefix = Styled::new(" ❯ ").with_fg(Color::LightCyan);
-    render_config.scroll_up_prefix = Styled::new(" ▲ ");
-    render_config.scroll_down_prefix = Styled::new(" ▼ ");
+    render_config.prompt_prefix = Styled::new("  > ").with_fg(Color::LightCyan);
+    render_config.answered_prompt_prefix = Styled::new("  ✔ ").with_fg(Color::LightGreen);
+    render_config.highlighted_option_prefix = Styled::new("  > ").with_fg(Color::LightMagenta);
+    render_config.scroll_up_prefix = Styled::new("  ▲ ");
+    render_config.scroll_down_prefix = Styled::new("  ▼ ");
     render_config.help_message = StyleSheet::new().with_fg(Color::DarkGrey);
     render_config
 }
@@ -46,7 +46,7 @@ pub fn prompt_password(message: &str, help: Option<&str>) -> Result<String> {
 pub fn prompt_select<'a>(message: &str, options: Vec<&'a str>) -> Result<&'a str> {
     init_theme();
     Ok(Select::new(message, options)
-        .with_help_message("Use ↑/↓ arrow keys to navigate • Press Enter to select")
+        .with_help_message("Use ↑/↓ to navigate • Enter to select")
         .prompt()?)
 }
 
@@ -57,7 +57,6 @@ pub fn prompt_confirm(message: &str, default: bool) -> Result<bool> {
 
 // ── Validated Prompts ─────────────────────────────────────────────────
 
-/// Prompts for text input, retrying until the validator passes.
 pub fn prompt_text_validated<F>(message: &str, validate: F) -> Result<String>
 where
     F: Fn(&str) -> Result<()>,
@@ -68,13 +67,12 @@ where
         match validate(&value) {
             Ok(()) => return Ok(value),
             Err(e) => {
-                println!("  {} {}", "▲".yellow(), e.to_string().yellow());
+                println!("    {} {}", "▲".yellow(), e.to_string().yellow());
             }
         }
     }
 }
 
-/// Prompts for text input with a default value, retrying until the validator passes.
 pub fn prompt_text_validated_with_default<F>(
     message: &str,
     default: &str,
@@ -89,33 +87,28 @@ where
         match validate(&value) {
             Ok(()) => return Ok(value),
             Err(e) => {
-                println!("  {} {}", "▲".yellow(), e.to_string().yellow());
+                println!("    {} {}", "▲".yellow(), e.to_string().yellow());
             }
         }
     }
 }
 
-/// Prompts for an organization name with validation.
 pub fn prompt_org_name(message: &str) -> Result<String> {
     prompt_text_validated(message, |v| validator::validate_org_name(v))
 }
 
-/// Prompts for a slug with validation.
 pub fn prompt_slug(message: &str, default: &str) -> Result<String> {
     prompt_text_validated_with_default(message, default, |v| validator::validate_slug(v))
 }
 
-/// Prompts for an email address with validation.
 pub fn prompt_email(message: &str) -> Result<String> {
     prompt_text_validated(message, |v| validator::validate_email(v))
 }
 
-/// Prompts for a full name with validation.
 pub fn prompt_full_name(message: &str) -> Result<String> {
     prompt_text_validated(message, |v| validator::validate_full_name(v))
 }
 
-/// Prompts for a password with confirmation and strength indicator.
 pub fn prompt_password_confirmed(message: &str) -> Result<String> {
     init_theme();
     loop {
@@ -125,23 +118,11 @@ pub fn prompt_password_confirmed(message: &str) -> Result<String> {
             .without_confirmation()
             .prompt()?;
 
-        // Validate strength
         if let Err(e) = validator::validate_password(&password) {
-            println!("  {} {}", "▲".yellow(), e.to_string().yellow());
+            println!("    {} {}", "▲".yellow(), e.to_string().yellow());
             continue;
         }
 
-        let strength = validator::password_strength(&password);
-        let strength_display = match strength {
-            "Weak" => strength.red().bold(),
-            "Fair" => strength.yellow().bold(),
-            "Strong" => strength.green().bold(),
-            "Very Strong" => strength.green().bold(),
-            _ => strength.normal(),
-        };
-        println!("  {} Security Level: {}", "ℹ".cyan(), strength_display);
-
-        // Confirmation
         let confirm = Password::new("Confirm password:")
             .with_display_mode(PasswordDisplayMode::Masked)
             .without_confirmation()
@@ -149,7 +130,7 @@ pub fn prompt_password_confirmed(message: &str) -> Result<String> {
 
         if password != confirm {
             println!(
-                "  {} Passwords do not match. Please try again.",
+                "    {} Passwords do not match. Please try again.",
                 "▲".yellow()
             );
             continue;
@@ -159,7 +140,6 @@ pub fn prompt_password_confirmed(message: &str) -> Result<String> {
     }
 }
 
-/// Prompts for a license key with format validation.
 pub fn prompt_license_key(message: &str) -> Result<String> {
     prompt_text_validated(message, |v| validator::validate_license_key(v))
 }
