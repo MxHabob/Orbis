@@ -60,12 +60,11 @@ Analyze images and documents — useful for OCR, document verification, and visu
       description: "The default Gemini model to use.",
       type: "select",
       required: true,
-      value: "gemini-2.0-flash",
+      value: "gemini-2.5-flash",
       options: [
+        { label: "Gemini 2.5 Flash", value: "gemini-2.5-flash" },
+        { label: "Gemini 2.5 Pro", value: "gemini-2.5-pro" },
         { label: "Gemini 2.0 Flash", value: "gemini-2.0-flash" },
-        { label: "Gemini 2.0 Pro", value: "gemini-2.0-pro" },
-        { label: "Gemini 1.5 Pro", value: "gemini-1.5-pro" },
-        { label: "Gemini 1.5 Flash", value: "gemini-1.5-flash" },
       ],
     },
     {

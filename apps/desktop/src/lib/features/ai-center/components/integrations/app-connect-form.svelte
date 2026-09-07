@@ -96,6 +96,7 @@ function handleSubmit(e: SubmitEvent) {
           required={setting.required}
           min={setting.validation?.min}
           max={setting.validation?.max}
+          step={setting.type === "number" ? "any" : undefined}
           class="h-9 w-full text-xs"
         />
         <p class="text-[10px] text-muted-foreground/70">
