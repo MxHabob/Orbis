@@ -22,7 +22,14 @@ export async function resolveDocumentUrl(
 ): Promise<string> {
   if (!pathOrUrl) return "";
 
-  if (pathOrUrl.startsWith("http://") || pathOrUrl.startsWith("https://")) {
+  // 1. Direct URLs (web, data, blob, Tauri asset protocol)
+  if (
+    pathOrUrl.startsWith("http://") ||
+    pathOrUrl.startsWith("https://") ||
+    pathOrUrl.startsWith("data:") ||
+    pathOrUrl.startsWith("blob:") ||
+    pathOrUrl.startsWith("asset:")
+  ) {
     return pathOrUrl;
   }
 
@@ -30,13 +37,33 @@ export async function resolveDocumentUrl(
   if (cachedUrl) return cachedUrl;
 
   try {
+    // 2. If it's already an absolute Windows or Unix path, convert directly
+    const isWindowsAbsolute = /^[a-zA-Z]:[\\/]/.test(pathOrUrl) || pathOrUrl.startsWith("\\\\");
+    const isPosixAbsolute = pathOrUrl.startsWith("/") && !pathOrUrl.startsWith("/storage/");
+
+    if (isWindowsAbsolute || isPosixAbsolute) {
+      const resolvedUrl = convertFileSrc(pathOrUrl);
+      resolvedDocumentUrls.set(pathOrUrl, resolvedUrl);
+      return resolvedUrl;
+    }
+
+    // 3. Handle relative storage paths
     storageDirectoryPromise ??= appDataDir().then((dataDir) => join(dataDir, "storage"));
     const storageDirectory = await storageDirectoryPromise;
 
     let relativePath = pathOrUrl;
     if (relativePath.startsWith("/storage/")) {
-      relativePath = relativePath.replace("/storage/", "");
+      relativePath = relativePath.slice(9);
+    } else if (relativePath.startsWith("\\storage\\")) {
+      relativePath = relativePath.slice(9);
+    } else if (relativePath.startsWith("storage/")) {
+      relativePath = relativePath.slice(8);
+    } else if (relativePath.startsWith("storage\\")) {
+      relativePath = relativePath.slice(8);
     }
+
+    // Clean any leading slash or backslash
+    relativePath = relativePath.replace(/^[/\\]+/, "");
 
     const absolutePath = await join(storageDirectory, relativePath);
     const resolvedUrl = convertFileSrc(absolutePath);

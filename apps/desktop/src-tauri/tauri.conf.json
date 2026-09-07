@@ -17,7 +17,7 @@
       "freezePrototype": false,
       "assetProtocol": {
         "enable": true,
-        "scope": ["$APPDATA/**"]
+        "scope": ["$APPDATA/**", "$LOCALAPPDATA/**", "$RESOURCE/**", "$TEMP/**"]
       },
       "capabilities": ["default", "desktop-capability"]
     }
