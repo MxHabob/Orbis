@@ -3,44 +3,69 @@
  *
  * Root Layout for Orbis Mobile.
  * Configures Theme, Query Provider, Auth Provider, Effective Context Provider,
- * and declares root Stack navigation.
+ * and declares root Stack navigation with synchronized StatusBar background and SystemUI window color.
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Stack, DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
 import { useColorScheme } from 'react-native';
 
+import { Colors } from '@/constants/theme';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { AuthProvider } from '@/lib/api';
 import { AppQueryProvider } from '@/providers/query-provider';
 import { EffectiveContextProvider } from '@/providers/effective-context';
 import { I18nProvider } from '@/lib/i18n';
+import { ThemedStatusBar } from '@/components/ui/themed-status-bar';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const theme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
+  const isDark = colorScheme === 'dark';
+  const currentColors = Colors[isDark ? 'dark' : 'light'];
+
+  const navigationTheme = useMemo(() => {
+    const base = isDark ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      colors: {
+        ...base.colors,
+        background: currentColors.background,
+        card: currentColors.card,
+        text: currentColors.text,
+        border: currentColors.border,
+        primary: currentColors.primary,
+      },
+    };
+  }, [isDark, currentColors]);
 
   useEffect(() => {
     // Hide native splash screen after mount
     SplashScreen.hideAsync().catch(() => {});
   }, []);
 
+  useEffect(() => {
+    // Dynamically synchronize the root OS window background color with active theme
+    SystemUI.setBackgroundColorAsync(currentColors.background).catch(() => {});
+  }, [currentColors.background]);
+
   return (
     <I18nProvider>
       <AuthProvider>
         <AppQueryProvider>
           <EffectiveContextProvider>
-            <ThemeProvider value={theme}>
-              <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+            <ThemeProvider value={navigationTheme}>
+              {/* StatusBar background perfectly matched with active theme background */}
+              <ThemedStatusBar backgroundColor={currentColors.background} />
               <AnimatedSplashOverlay />
               <Stack
                 screenOptions={{
                   headerShown: false,
                   animation: 'slide_from_right',
+                  contentStyle: { backgroundColor: currentColors.background },
                 }}>
                 <Stack.Screen name="(auth)" options={{ headerShown: false }} />
                 <Stack.Screen name="(app)" options={{ headerShown: false }} />

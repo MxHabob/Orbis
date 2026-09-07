@@ -13,3 +13,4 @@ export * from './input';
 export * from './keyboard-aware-view';
 export * from './organization-logo';
 export * from './skeleton';
+export * from './themed-status-bar';

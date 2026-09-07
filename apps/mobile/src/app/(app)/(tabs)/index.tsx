@@ -8,7 +8,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, Dimensions } from 'react-native';
 import { router } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
+import { ThemedStatusBar } from '@/components/ui/themed-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/lib/api';
@@ -159,7 +159,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="dark" />
+      <ThemedStatusBar style="dark" backgroundColor="#FFB800" />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[

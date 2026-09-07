@@ -8,7 +8,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
+import { ThemedStatusBar } from '@/components/ui/themed-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/hooks/use-theme';
@@ -74,7 +74,7 @@ export default function BehaviorScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <StatusBar style="auto" />
+      <ThemedStatusBar backgroundColor={theme.card} />
       {/* Header */}
       <View
         style={[

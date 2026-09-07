@@ -9,7 +9,7 @@ import React, { useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
+import { ThemedStatusBar } from '@/components/ui/themed-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/lib/api';
@@ -64,7 +64,7 @@ export default function ProfileScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <StatusBar style="auto" />
+      <ThemedStatusBar backgroundColor={theme.card} />
       {/* Header */}
       <View
         style={[
