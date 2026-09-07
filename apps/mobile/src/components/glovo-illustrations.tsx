@@ -7,21 +7,21 @@
  * zero native binary linking issues, and universal cross-platform support.
  */
 
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
-import { Ionicons } from '@expo/vector-icons';
+import React from "react";
+import { View, StyleSheet } from "react-native";
+import Svg, { Path } from "react-native-svg";
+import { Ionicons } from "@expo/vector-icons";
 
 export interface IllustrationProps {
   size?: number;
 }
 
 const RING_PATHS = [
-  'M 50,2 C 79,-1 100,20 101,50 C 102,79 79,99 50,100 C 21,101 1,79 2,50 C 3,21 21,3 50,2 Z',
-  'M 48,1 C 78,2 100,24 99,53 C 98,81 76,100 48,99 C 20,98 2,78 1,48 C 0,18 18,0 48,1 Z',
-  'M 52,2 C 80,0 99,21 99,50 C 99,78 78,99 49,99 C 20,99 1,77 1,49 C 1,21 25,4 52,2 Z',
-  'M 50,2 C 78,-1 100,21 99,52 C 98,81 79,100 50,101 C 21,102 1,79 2,50 C 3,21 23,5 50,2 Z',
-  'M 49,0 C 78,-1 100,20 101,49 C 102,78 78,100 49,99 C 20,98 1,77 2,48 C 3,19 21,1 49,0 Z',
+  "M 50,2 C 79,-1 100,20 101,50 C 102,79 79,99 50,100 C 21,101 1,79 2,50 C 3,21 21,3 50,2 Z",
+  "M 48,1 C 78,2 100,24 99,53 C 98,81 76,100 48,99 C 20,98 2,78 1,48 C 0,18 18,0 48,1 Z",
+  "M 52,2 C 80,0 99,21 99,50 C 99,78 78,99 49,99 C 20,99 1,77 1,49 C 1,21 25,4 52,2 Z",
+  "M 50,2 C 78,-1 100,21 99,52 C 98,81 79,100 50,101 C 21,102 1,79 2,50 C 3,21 23,5 50,2 Z",
+  "M 49,0 C 78,-1 100,20 101,49 C 102,78 78,100 49,99 C 20,98 1,77 2,48 C 3,19 21,1 49,0 Z",
 ];
 
 /**
@@ -37,7 +37,10 @@ export function OrganicBubbleRing({
   const pathD = RING_PATHS[variantIndex % RING_PATHS.length];
 
   return (
-    <View pointerEvents="none" style={{ width: size, height: size, position: 'absolute' }}>
+    <View
+      pointerEvents="none"
+      style={{ width: size, height: size, position: "absolute" }}
+    >
       <Svg width={size} height={size} viewBox="0 0 102 102">
         <Path
           d={pathD}
@@ -62,9 +65,10 @@ export function StudentSeniorIllustration({ size = 68 }: IllustrationProps) {
         {
           width: size,
           height: size,
-          backgroundColor: 'transparent',
+          backgroundColor: "transparent",
         },
-      ]}>
+      ]}
+    >
       <Ionicons name="school" size={size * 0.62} color="#7C3AED" />
     </View>
   );
@@ -81,9 +85,10 @@ export function StudentSophomoreIllustration({ size = 68 }: IllustrationProps) {
         {
           width: size,
           height: size,
-          backgroundColor: 'transparent',
+          backgroundColor: "transparent",
         },
-      ]}>
+      ]}
+    >
       <Ionicons name="book" size={size * 0.62} color="#EC4899" />
     </View>
   );
@@ -100,9 +105,10 @@ export function StudentMiddleIllustration({ size = 56 }: IllustrationProps) {
         {
           width: size,
           height: size,
-          backgroundColor: 'transparent',
+          backgroundColor: "transparent",
         },
-      ]}>
+      ]}
+    >
       <Ionicons name="person" size={size * 0.62} color="#4F46E5" />
     </View>
   );
@@ -111,7 +117,9 @@ export function StudentMiddleIllustration({ size = 56 }: IllustrationProps) {
 /**
  * Student 4 / Elementary School (Art & Creativity)
  */
-export function StudentElementaryIllustration({ size = 56 }: IllustrationProps) {
+export function StudentElementaryIllustration({
+  size = 56,
+}: IllustrationProps) {
   return (
     <View
       style={[
@@ -119,9 +127,10 @@ export function StudentElementaryIllustration({ size = 56 }: IllustrationProps) 
         {
           width: size,
           height: size,
-          backgroundColor: 'transparent',
+          backgroundColor: "transparent",
         },
-      ]}>
+      ]}
+    >
       <Ionicons name="color-palette" size={size * 0.62} color="#D97706" />
     </View>
   );
@@ -138,40 +147,11 @@ export function StudentKGIllustration({ size = 56 }: IllustrationProps) {
         {
           width: size,
           height: size,
-          backgroundColor: 'transparent',
+          backgroundColor: "transparent",
         },
-      ]}>
+      ]}
+    >
       <Ionicons name="happy" size={size * 0.62} color="#0D9488" />
-    </View>
-  );
-}
-
-/**
- * Organic curved wave transitioning between golden hero and white sheet
- */
-export function WaveCurveDivider({
-  width,
-  height = 36,
-  primaryColor = '#7C3AED',
-  sheetColor = '#FAFAFA',
-}: {
-  width: number;
-  height?: number;
-  primaryColor?: string;
-  sheetColor?: string;
-}) {
-  return (
-    <View style={[styles.waveContainer, { width, height, backgroundColor: primaryColor }]}>
-      <View
-        style={[
-          styles.waveSheetArc,
-          {
-            width: width * 1.08,
-            height: height * 2.2,
-            backgroundColor: sheetColor,
-          },
-        ]}
-      />
     </View>
   );
 }
@@ -179,14 +159,21 @@ export function WaveCurveDivider({
 /**
  * Illustrated Feature Cards (Attendance, Grades, Behavior, Schedule)
  */
-export function AttendanceFeatureIllustration({ size = 44 }: IllustrationProps) {
+export function AttendanceFeatureIllustration({
+  size = 44,
+}: IllustrationProps) {
   return (
     <View
       style={[
         styles.featureBox,
-        { width: size, height: size, backgroundColor: 'transparent' },
-      ]}>
-      <Ionicons name="checkmark-done-circle" size={size * 0.75} color="#059669" />
+        { width: size, height: size, backgroundColor: "transparent" },
+      ]}
+    >
+      <Ionicons
+        name="checkmark-done-circle"
+        size={size * 0.75}
+        color="#059669"
+      />
     </View>
   );
 }
@@ -196,8 +183,9 @@ export function GradesFeatureIllustration({ size = 44 }: IllustrationProps) {
     <View
       style={[
         styles.featureBox,
-        { width: size, height: size, backgroundColor: 'transparent' },
-      ]}>
+        { width: size, height: size, backgroundColor: "transparent" },
+      ]}
+    >
       <Ionicons name="ribbon" size={size * 0.75} color="#7C3AED" />
     </View>
   );
@@ -208,8 +196,9 @@ export function BehaviorFeatureIllustration({ size = 44 }: IllustrationProps) {
     <View
       style={[
         styles.featureBox,
-        { width: size, height: size, backgroundColor: 'transparent' },
-      ]}>
+        { width: size, height: size, backgroundColor: "transparent" },
+      ]}
+    >
       <Ionicons name="sparkles" size={size * 0.75} color="#D97706" />
     </View>
   );
@@ -220,8 +209,9 @@ export function ScheduleFeatureIllustration({ size = 44 }: IllustrationProps) {
     <View
       style={[
         styles.featureBox,
-        { width: size, height: size, backgroundColor: 'transparent' },
-      ]}>
+        { width: size, height: size, backgroundColor: "transparent" },
+      ]}
+    >
       <Ionicons name="calendar" size={size * 0.75} color="#0D9488" />
     </View>
   );
@@ -232,10 +222,15 @@ export function ScheduleFeatureIllustration({ size = 44 }: IllustrationProps) {
  */
 export function PrimeScooterMascot({
   size = 54,
-  iconColor = '#7C3AED',
+  iconColor = "#7C3AED",
 }: IllustrationProps & { iconColor?: string }) {
   return (
-    <View style={[styles.mascotContainer, { width: size, height: size, backgroundColor: 'transparent' }]}>
+    <View
+      style={[
+        styles.mascotContainer,
+        { width: size, height: size, backgroundColor: "transparent" },
+      ]}
+    >
       <Ionicons name="sparkles" size={size * 0.65} color={iconColor} />
     </View>
   );
@@ -243,28 +238,18 @@ export function PrimeScooterMascot({
 
 const styles = StyleSheet.create({
   avatarContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
-  },
-  waveContainer: {
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-  },
-  waveSheetArc: {
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-    marginBottom: -4,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "transparent",
   },
   featureBox: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "transparent",
   },
   mascotContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "transparent",
   },
 });

@@ -6,7 +6,7 @@
  */
 
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, Dimensions } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import { ThemedStatusBar } from '@/components/ui/themed-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -37,7 +37,6 @@ import {
   AttendanceFeatureIllustration,
   ScheduleFeatureIllustration,
   BehaviorFeatureIllustration,
-  WaveCurveDivider,
 } from '@/components/glovo-illustrations';
 import { useTheme } from '@/hooks/use-theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -53,8 +52,6 @@ import {
 } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const ILLUSTRATION_LIST = [
   StudentSeniorIllustration,
@@ -106,6 +103,7 @@ export default function HomeScreen() {
         id: child.id,
         title: child.name,
         sub: child.className || child.gradeLevel || '',
+        avatarUrl: child.avatarUrl,
         type: 'child' as const,
         Illustration: ILLUSTRATION_LIST[idx % ILLUSTRATION_LIST.length],
       }));
@@ -195,15 +193,7 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* 2. Themed Wave Curve Divider */}
-        <WaveCurveDivider
-          width={SCREEN_WIDTH}
-          height={38}
-          primaryColor={theme.primary}
-          sheetColor={theme.background}
-        />
-
-        {/* 3. Features & Prime Banner Sheet extending to the bottom */}
+        {/* 2. Features & Prime Banner Sheet extending to the bottom */}
         <View
           style={[
             styles.sheet,
@@ -302,9 +292,9 @@ const styles = StyleSheet.create({
   sheet: {
     flex: 1,
     minHeight: 450,
-    marginTop: -2,
+    marginTop: 0,
     paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.three,
+    paddingTop: 0,
     gap: Spacing.four,
   },
 });

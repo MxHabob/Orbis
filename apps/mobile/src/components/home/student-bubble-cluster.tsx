@@ -10,6 +10,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { OrganicBubbleRing } from '@/components/glovo-illustrations';
 import { SkeletonBubble } from '@/components/ui/skeleton';
+import { Avatar } from '@/components/ui/avatar';
 import { useTheme } from '@/hooks/use-theme';
 import { Radii, Spacing, Typography } from '@/constants/theme';
 
@@ -17,6 +18,7 @@ export interface BubbleItemData {
   id: string;
   title: string;
   sub?: string;
+  avatarUrl?: string | null;
   type: 'child' | 'class' | 'student_domain';
   route?: string;
   Illustration: React.ComponentType<{ size: number }>;
@@ -123,7 +125,11 @@ export const StudentBubbleCluster = React.memo<StudentBubbleClusterProps>(
                 <View style={styles.ringWrapperLarge}>
                   <OrganicBubbleRing size={118} variantIndex={idx} />
                   <OrganicPebble size={96} variantIndex={idx}>
-                    <ItemIllustration size={68} />
+                    {item.type === 'child' ? (
+                      <Avatar name={item.title} imageUrl={item.avatarUrl} size={68} />
+                    ) : (
+                      <ItemIllustration size={68} />
+                    )}
                   </OrganicPebble>
                   <View
                     style={[
@@ -168,7 +174,11 @@ export const StudentBubbleCluster = React.memo<StudentBubbleClusterProps>(
                   <View style={styles.ringWrapperSmall}>
                     <OrganicBubbleRing size={100} variantIndex={globalIdx} />
                     <OrganicPebble size={80} variantIndex={globalIdx}>
-                      <ItemIllustration size={56} />
+                      {item.type === 'child' ? (
+                        <Avatar name={item.title} imageUrl={item.avatarUrl} size={56} />
+                      ) : (
+                        <ItemIllustration size={56} />
+                      )}
                     </OrganicPebble>
                     <View
                       style={[
