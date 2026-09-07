@@ -176,6 +176,9 @@ export class RemoteClient implements OrbisApiClient {
   async deleteOrgUnit(id: string): Promise<void> {
     await this.del(`/api/v1/org-units/${id}`);
   }
+  async selectOrgUnit(_id?: string): Promise<void> {
+    // No-op for remote HTTP client or set header
+  }
 
   // ── Calendar ────────────────────────────────────────────────
   async createAcademicYear(req: CreateYearRequest): Promise<AcademicYearDto> {

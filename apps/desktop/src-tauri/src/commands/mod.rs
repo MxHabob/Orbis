@@ -17,17 +17,15 @@ pub mod window_cmds;
 
 use tauri::generate_handler;
 
-/// Build a `RequestContext` from the managed `AppState`.
-///
-/// In a full implementation, this reads the active session from
-/// `AppState` (set during `auth_login`). For now, it uses the
-/// default org and System actor — to be replaced once session
-/// management is wired up in the Tauri managed state.
 pub(crate) fn make_ctx(state: &crate::state::AppState) -> orbis_app::context::RequestContext {
-    // TODO: Read active session from managed state once login flow stores it.
+    let session = state.get_active_session();
+    let (tenant_id, actor) = match session {
+        Some(s) => (s.org_id, orbis_domain::iam::actor::Actor::User(s.user_id)),
+        None => (uuid::Uuid::nil(), orbis_domain::iam::actor::Actor::System),
+    };
     orbis_app::context::RequestContext {
-        tenant_id: state.active_org_id.unwrap_or_default(),
-        actor: orbis_domain::iam::actor::Actor::System,
+        tenant_id,
+        actor,
         request_id: uuid::Uuid::new_v4().to_string(),
     }
 }
@@ -58,6 +56,7 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         org_cmds::org_list_units,
         org_cmds::org_get_unit,
         org_cmds::org_delete_unit,
+        org_cmds::org_select_unit,
         // ── Calendar ────────────────────────────────────────────
         calendar_cmds::calendar_create_year,
         calendar_cmds::calendar_list_years,

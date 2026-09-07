@@ -266,6 +266,7 @@ export interface OrbisApiClient {
   listOrgUnits(): Promise<OrgUnitDto[]>;
   getOrgUnit(id: string): Promise<OrgUnitDto>;
   deleteOrgUnit(id: string): Promise<void>;
+  selectOrgUnit(id?: string): Promise<void>;
 
   // ── Calendar ────────────────────────────────────────────────
   createAcademicYear(req: CreateYearRequest): Promise<AcademicYearDto>;

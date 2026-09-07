@@ -48,21 +48,87 @@ pub async fn auth_login(request: serde_json::Value, state: State<'_, AppState>) 
     let res = uc.execute(&ctx, email, password).await.map_err(|e| e.to_string())?;
     let user = state.user_repo.find_by_email(email).await.map_err(|e| e.to_string())?
         .ok_or_else(|| "User not found".to_string())?;
+
+    state.set_active_session(crate::state::ActiveSession {
+        user_id: user.id,
+        org_id: user.org_id,
+        active_unit_id: None,
+        token: res.token.clone(),
+    });
+
     Ok(ok(LoginResponse { token: res.token, refresh_token: res.refresh_token, user: user_to_dto(user) }))
 }
 
 #[tauri::command]
-pub async fn auth_get_session(state: State<'_, AppState>) -> Result<ApiResponse<SessionResponse>, String> {
-    let ctx = make_ctx(&state);
-    let user_id = ctx.actor.id().ok_or_else(|| "No user session".to_string())?;
-    let user = state.user_repo.find_by_id(user_id).await.map_err(|e| e.to_string())?
-        .ok_or_else(|| "User not found".to_string())?;
-    Ok(ok(SessionResponse { org_id: ctx.tenant_id.to_string(), user: user_to_dto(user) }))
+pub async fn auth_get_session(request: Option<serde_json::Value>, state: State<'_, AppState>) -> Result<ApiResponse<SessionResponse>, String> {
+    // 1. Check in-memory active session
+    if let Some(session) = state.get_active_session() {
+        if let Ok(Some(user)) = state.user_repo.find_by_id(session.user_id).await {
+            return Ok(ok(SessionResponse { org_id: session.org_id.to_string(), user: user_to_dto(user) }));
+        }
+    }
+
+    // 2. Check token from request
+    let token_opt = request.as_ref()
+        .and_then(|r| r.get("token"))
+        .and_then(|v| v.as_str());
+
+    if let Some(token_str) = token_opt {
+        if !token_str.is_empty() {
+            if let Ok(Some(db_session)) = state.session_repo.find_by_token(token_str).await {
+                if !db_session.is_revoked {
+                    if let Ok(Some(user)) = state.user_repo.find_by_id(db_session.user_id).await {
+                        state.set_active_session(crate::state::ActiveSession {
+                            user_id: user.id,
+                            org_id: user.org_id,
+                            active_unit_id: None,
+                            token: token_str.to_string(),
+                        });
+                        return Ok(ok(SessionResponse { org_id: user.org_id.to_string(), user: user_to_dto(user) }));
+                    }
+                }
+            }
+            if let Ok(claims) = state.token_service.validate_token(token_str).await {
+                if let (Ok(uid), Ok(oid)) = (Uuid::parse_str(&claims.sub), Uuid::parse_str(&claims.org_id)) {
+                    if let Ok(Some(user)) = state.user_repo.find_by_id(uid).await {
+                        state.set_active_session(crate::state::ActiveSession {
+                            user_id: uid,
+                            org_id: oid,
+                            active_unit_id: None,
+                            token: token_str.to_string(),
+                        });
+                        return Ok(ok(SessionResponse { org_id: oid.to_string(), user: user_to_dto(user) }));
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. Desktop local mode single-tenant fallback
+    if let Ok(Some(org)) = state.org_repo.find_first().await {
+        if let Ok(users) = state.user_repo.find_by_org(org.id).await {
+            if users.len() == 1 {
+                let u = &users[0];
+                state.set_active_session(crate::state::ActiveSession {
+                    user_id: u.id,
+                    org_id: org.id,
+                    active_unit_id: None,
+                    token: "desktop-local-token".to_string(),
+                });
+                return Ok(ok(SessionResponse { org_id: org.id.to_string(), user: user_to_dto(u.clone()) }));
+            }
+        }
+    }
+
+    Err("No user session".to_string())
 }
 
 #[tauri::command]
-pub async fn auth_logout(_state: State<'_, AppState>) -> Result<(), String> {
-    // TODO: invalidate session in managed state
+pub async fn auth_logout(state: State<'_, AppState>) -> Result<(), String> {
+    if let Some(session) = state.get_active_session() {
+        let _ = state.session_repo.invalidate(&session.token).await;
+    }
+    state.clear_active_session();
     Ok(())
 }
 
@@ -178,6 +244,14 @@ pub async fn auth_mfa_challenge(request: serde_json::Value, state: State<'_, App
     let res = uc.execute(user_id, code, device_id, remember_device).await.map_err(|e| e.to_string())?;
     let user = state.user_repo.find_by_id(user_id).await.map_err(|e| e.to_string())?
         .ok_or_else(|| "User not found".to_string())?;
+
+    state.set_active_session(crate::state::ActiveSession {
+        user_id: user.id,
+        org_id: user.org_id,
+        active_unit_id: None,
+        token: res.token.clone(),
+    });
+
     Ok(ok(LoginResponse {
         token: res.token,
         refresh_token: res.refresh_token,
@@ -216,6 +290,14 @@ pub async fn auth_login_google(request: serde_json::Value, state: State<'_, AppS
     let res = uc.execute(id_token).await.map_err(|e| e.to_string())?;
     let user = state.user_repo.find_by_id(res.user_id).await.map_err(|e| e.to_string())?
         .ok_or_else(|| "User not found".to_string())?;
+
+    state.set_active_session(crate::state::ActiveSession {
+        user_id: user.id,
+        org_id: user.org_id,
+        active_unit_id: None,
+        token: res.token.clone(),
+    });
+
     Ok(ok(LoginResponse {
         token: res.token,
         refresh_token: res.refresh_token,

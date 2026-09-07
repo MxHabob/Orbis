@@ -46,7 +46,8 @@ export class LocalClient implements OrbisApiClient {
     return unwrap(await invoke('auth_login', { request: req }));
   }
   async getSession(): Promise<SessionResponse> {
-    return unwrap(await invoke('auth_get_session'));
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('orbis_token') : null;
+    return unwrap(await invoke('auth_get_session', { request: { token } }));
   }
   async logout(): Promise<void> {
     await invoke('auth_logout');
@@ -113,6 +114,9 @@ export class LocalClient implements OrbisApiClient {
   }
   async deleteOrgUnit(id: string): Promise<void> {
     await invoke('org_delete_unit', { id });
+  }
+  async selectOrgUnit(id?: string): Promise<void> {
+    await invoke('org_select_unit', { unitId: id ?? null });
   }
 
   // ── Calendar ────────────────────────────────────────────────

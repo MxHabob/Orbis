@@ -28,8 +28,12 @@ pub struct OrgDto {
 #[tauri::command]
 pub async fn org_get_current(state: State<'_, AppState>) -> Result<ApiResponse<OrgDto>, String> {
     let ctx = make_ctx(&state);
-    let org = state.org_repo.find_by_id(ctx.tenant_id).await.map_err(|e| e.to_string())?
-        .ok_or_else(|| "Organization not found".to_string())?;
+    let org = if ctx.tenant_id != Uuid::nil() {
+        state.org_repo.find_by_id(ctx.tenant_id).await.map_err(|e| e.to_string())?
+    } else {
+        state.org_repo.find_first().await.map_err(|e| e.to_string())?
+    };
+    let org = org.ok_or_else(|| "Organization not found".to_string())?;
     Ok(ok(OrgDto {
         id: org.id.to_string(), name: org.name, slug: org.slug,
         timezone: org.timezone, locale: org.locale, primary_color: org.primary_color,
@@ -129,3 +133,14 @@ pub async fn org_delete_unit(id: String, state: State<'_, AppState>) -> Result<(
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
     state.org_unit_repo.delete(uid).await.map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+pub async fn org_select_unit(unit_id: Option<String>, state: State<'_, AppState>) -> Result<(), String> {
+    let uid = match unit_id {
+        Some(s) if !s.is_empty() => Some(Uuid::parse_str(&s).map_err(|_| "Invalid unit ID")?),
+        _ => None,
+    };
+    state.set_active_unit(uid);
+    Ok(())
+}
+

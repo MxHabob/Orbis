@@ -22,7 +22,7 @@ import {
 } from "@orbis/ui";
 import { goto } from "$app/navigation";
 import { localizeHref } from "$lib/paraglide/runtime";
-import { commands } from "$lib/core/ipc";
+import { api } from "$lib/api/client";
 
 import { onMount } from "svelte";
 
@@ -62,9 +62,9 @@ onMount(() => {
       customProjects = JSON.parse(storedCustom);
     } catch {}
   }
-  commands.organization.listOrgUnits()
+  api.listOrgUnits()
     .then((units) => {
-      branches = units.filter((unit) => unit.is_active === 1 && unit.unit_type === "branch");
+      branches = units.filter((unit) => unit.is_active && unit.unit_type === "branch");
     })
     .catch(() => {
       branches = [];
@@ -117,7 +117,7 @@ function handleSelect(id: string) {
 }
 
 async function handleBranchSelect(id: string) {
-  await commands.organization.selectOrgUnit(id);
+  await api.selectOrgUnit(id);
   await goto(localizeHref(`/${orgId}`));
 }
 </script>

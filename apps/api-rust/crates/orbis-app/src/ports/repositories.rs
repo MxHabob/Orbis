@@ -49,6 +49,7 @@ use uuid::Uuid;
 pub trait OrganizationRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Organization>, DomainError>;
     async fn find_by_slug(&self, slug: &str) -> Result<Option<Organization>, DomainError>;
+    async fn find_first(&self) -> Result<Option<Organization>, DomainError>;
     async fn save(&self, org: &Organization) -> Result<(), DomainError>;
 }
 

@@ -7,13 +7,22 @@ use orbis_app::ports::event_bus::EventBus;
 use orbis_app::ports::security::{TokenService, PasswordHasher};
 use orbis_app::ports::iam::PermissionCheckerPort;
 use uuid::Uuid;
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ActiveSession {
+    pub user_id: Uuid,
+    pub org_id: Uuid,
+    pub active_unit_id: Option<Uuid>,
+    pub token: String,
+}
 
 #[derive(Clone)]
 pub struct AppState {
     pub db: DatabaseConnection,
-    /// The active organization ID for the current desktop session.
-    /// Set during login and used by `make_ctx()` to scope all queries.
-    pub active_org_id: Option<Uuid>,
+    /// The active session for the current desktop application.
+    /// Set during login/session hydration and used by `make_ctx()` to scope all queries.
+    pub active_session: Arc<std::sync::RwLock<Option<ActiveSession>>>,
     pub org_repo: Arc<dyn OrganizationRepository>,
     pub org_unit_repo: Arc<dyn OrgUnitRepository>,
     pub user_repo: Arc<dyn UserRepository>,
@@ -149,9 +158,11 @@ impl AppState {
         let totp_service = Arc::new(orbis_infra::security::totp::TotpServiceImpl);
         let oidc_service = Arc::new(orbis_infra::security::google_oidc::GoogleOidcService::new());
 
+        let active_session = Arc::new(std::sync::RwLock::new(None));
+
         Ok(Self {
             db,
-            active_org_id: None,
+            active_session,
             org_repo,
             org_unit_repo,
             user_repo,
@@ -209,5 +220,29 @@ impl AppState {
             totp_service,
             oidc_service,
         })
+    }
+
+    pub fn get_active_session(&self) -> Option<ActiveSession> {
+        self.active_session.read().ok().and_then(|guard| guard.clone())
+    }
+
+    pub fn set_active_session(&self, session: ActiveSession) {
+        if let Ok(mut guard) = self.active_session.write() {
+            *guard = Some(session);
+        }
+    }
+
+    pub fn set_active_unit(&self, unit_id: Option<Uuid>) {
+        if let Ok(mut guard) = self.active_session.write() {
+            if let Some(ref mut session) = *guard {
+                session.active_unit_id = unit_id;
+            }
+        }
+    }
+
+    pub fn clear_active_session(&self) {
+        if let Ok(mut guard) = self.active_session.write() {
+            *guard = None;
+        }
     }
 }

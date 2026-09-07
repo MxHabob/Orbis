@@ -72,16 +72,30 @@ class AuthStore {
       );
       if (token && userStr) {
         try {
-          const res = await api.getSession();
+          // Optimistically load cached user to prevent layout flicker & accidental redirects
           this.token = token;
-          this.user = res.user;
+          this.user = JSON.parse(userStr);
           if (isSetupCompleteStr !== null) {
             this.isSetupComplete = isSetupCompleteStr === "true";
           }
+          const res = await api.getSession();
+          if (res?.user) {
+            this.user = res.user;
+            localStorage.setItem("orbis_user", JSON.stringify(res.user));
+          }
         } catch (e) {
-          console.error("Failed to restore session on backend:", e);
-          this.token = null;
-          this.user = null;
+          console.warn("Session revalidation notice:", e);
+          const errMessage = extractErrorMessage(e);
+          if (
+            errMessage.toLowerCase().includes("unauthorized") ||
+            errMessage.toLowerCase().includes("revoked") ||
+            errMessage.toLowerCase().includes("invalid token")
+          ) {
+            this.token = null;
+            this.user = null;
+            localStorage.removeItem("orbis_token");
+            localStorage.removeItem("orbis_user");
+          }
         }
       }
     } catch {
@@ -100,7 +114,7 @@ class AuthStore {
       this.isSetupComplete = isComplete;
       localStorage.setItem("orbis_is_setup_complete", String(isComplete));
     } catch (e) {
-      console.error("Error checking setup status:", e);
+      console.warn("Notice checking setup status:", e);
       const cached = localStorage.getItem("orbis_is_setup_complete");
       if (cached !== null) {
         this.isSetupComplete = cached === "true";
