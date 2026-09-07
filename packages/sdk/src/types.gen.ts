@@ -47,6 +47,16 @@ export type AccountDto = {
     parent_id?: string | null;
 };
 
+export type ApprovalStepDto = {
+    approver_id?: string | null;
+    approver_name?: string | null;
+    approver_role: string;
+    decision_at?: string | null;
+    notes?: string | null;
+    status: string;
+    step_order: number;
+};
+
 export type AssessmentSchemeDto = {
     description?: string | null;
     id: string;
@@ -64,8 +74,10 @@ export type AssignClassSubjectRequest = {
 };
 
 export type AssignGuardianRequest = {
+    can_pickup?: boolean | null;
     guardian_id: string;
-    is_primary: boolean;
+    is_emergency?: boolean | null;
+    is_primary?: boolean | null;
     relationship: string;
     student_id: string;
 };
@@ -128,6 +140,11 @@ export type CalculationResultDto = {
     message: string;
 };
 
+export type ChangeStudyModeRequest = {
+    new_mode: string;
+    reason?: string | null;
+};
+
 export type ClassDto = {
     id: string;
     level: string;
@@ -161,7 +178,9 @@ export type CreateAccountRequest = {
     code: string;
     currency?: string | null;
     name: string;
+    name_ar?: string | null;
     parent_id?: string | null;
+    sub_type?: string | null;
 };
 
 export type CreateClassRequest = {
@@ -179,9 +198,16 @@ export type CreateExamSessionRequest = {
 };
 
 export type CreateFeeTemplateRequest = {
-    default_amount: number;
+    applicable_levels?: Array<string> | null;
+    applicable_study_modes?: Array<string> | null;
+    category?: string | null;
+    code?: string | null;
+    currency?: string | null;
+    default_amount: string;
+    frequency?: string | null;
     is_mandatory?: boolean | null;
     name: string;
+    name_ar?: string | null;
     receivable_account_id: string;
     revenue_account_id: string;
 };
@@ -224,8 +250,8 @@ export type CreateSchemeRequest = {
 
 export type CreateSubjectRequest = {
     code: string;
-    credit_hours?: number | null;
-    is_core: boolean;
+    credit_hours?: string | null;
+    is_core?: boolean | null;
     name: string;
     unit_id?: string | null;
 };
@@ -271,7 +297,7 @@ export type CreateYearRequest = {
 };
 
 export type CurrencyDto = {
-    id: string;
+    code: string;
     name: string;
     symbol: string;
 };
@@ -313,23 +339,27 @@ export type DocumentDto = {
 };
 
 export type EnrollStudentRequest = {
-    class_id: string;
-    enrollment_type: string;
+    class_id?: string | null;
     period_id: string;
     student_id: string;
     student_number: string;
+    study_mode?: string | null;
 };
 
 export type EnrollmentDto = {
     class_id?: string | null;
     enrollment_date: string;
-    enrollment_type: string;
     id: string;
+    is_attendance_exempt: boolean;
+    is_grade_exempt: boolean;
     org_id: string;
     period_id: string;
     status: string;
     student_id: string;
     student_number: string;
+    study_mode: string;
+    withdrawal_date?: string | null;
+    withdrawal_reason?: string | null;
 };
 
 export type EnrollmentSettingsDto = {
@@ -361,10 +391,14 @@ export type ExamSessionDto = {
 };
 
 export type FeeTemplateDto = {
-    default_amount: number;
+    category: string;
+    code: string;
+    currency: string;
+    default_amount: string;
     id: string;
     is_mandatory: boolean;
     name: string;
+    name_ar?: string | null;
     org_id: string;
     receivable_account_id: string;
     revenue_account_id: string;
@@ -382,10 +416,11 @@ export type FinanceSettingsDto = {
 };
 
 export type GenerateFeeRequest = {
-    discount_amount?: number | null;
+    discount_amount?: string | null;
     due_date: string;
     enrollment_id?: string | null;
     fee_template_id: string;
+    period_id: string;
     student_id: string;
 };
 
@@ -407,17 +442,24 @@ export type GoogleAuthRequest = {
 
 export type GradeDto = {
     class_subject_id: string;
+    component_id?: string | null;
+    enrollment_id?: string | null;
     id: string;
     is_excused: boolean;
+    is_exempt: boolean;
+    max_score: string;
     notes?: string | null;
-    scheme_id: string;
-    score: number;
+    org_id: string;
+    period_id: string;
+    score: string;
     student_id: string;
 };
 
 export type GuardianDto = {
+    can_pickup: boolean;
     guardian_id: string;
     id: string;
+    is_emergency: boolean;
     is_primary: boolean;
     relationship: string;
     student_id: string;
@@ -528,9 +570,34 @@ export type OrganizationSettingsDto = {
     notifications?: NotificationSettingsDto;
 };
 
+export type OverrideRequestDto = {
+    approval_chain: Array<ApprovalStepDto>;
+    created_at: string;
+    current_approver_role?: string | null;
+    entity_id: string;
+    entity_type: string;
+    expires_at?: string | null;
+    field_name?: string | null;
+    id: string;
+    new_value?: string | null;
+    old_value?: string | null;
+    org_id: string;
+    override_type: string;
+    reason: string;
+    requested_by: string;
+    requested_by_name?: string | null;
+    resolution_notes?: string | null;
+    resolved_at?: string | null;
+    resolved_by?: string | null;
+    resolved_by_name?: string | null;
+    risk_level: string;
+    status: string;
+    updated_at: string;
+};
+
 export type PaymentDto = {
     account_id: string;
-    amount: number;
+    amount: string;
     fee_id?: string | null;
     id: string;
     journal_entry_id?: string | null;
@@ -553,11 +620,15 @@ export type PreviewTemplateRequest = {
 
 export type ProcessPaymentRequest = {
     account_id: string;
-    amount: number;
+    amount: string;
+    enrollment_id?: string | null;
     fee_id?: string | null;
     method: string;
+    payer_name?: string | null;
+    payer_phone?: string | null;
     reference?: string | null;
     source?: string | null;
+    student_id?: string | null;
 };
 
 export type ProctorDto = {
@@ -570,11 +641,33 @@ export type ProctorDto = {
 
 export type RecordGradeRequest = {
     class_subject_id: string;
-    is_excused: boolean;
+    component_id?: string | null;
+    enrollment_id?: string | null;
+    is_excused?: boolean | null;
+    is_exempt?: boolean | null;
+    max_score?: string | null;
     notes?: string | null;
-    scheme_id: string;
-    score: number;
+    period_id: string;
+    score: string;
     student_id: string;
+};
+
+export type RegisterStudentRequest = {
+    blood_type?: string | null;
+    date_of_birth?: string | null;
+    first_name: string;
+    gender: string;
+    last_name: string;
+    medical_notes?: string | null;
+    name_ar?: string | null;
+    national_id?: string | null;
+    nationality?: string | null;
+    passport_number?: string | null;
+    person_id?: string | null;
+    place_of_birth?: string | null;
+    special_needs_notes?: string | null;
+    student_number: string;
+    user_id?: string | null;
 };
 
 export type RegisterUserRequest = {
@@ -604,6 +697,10 @@ export type ReportJobStatusResponse = {
     output_path?: string | null;
     output_size_bytes?: number | null;
     status: string;
+};
+
+export type ResolveOverrideRequest = {
+    notes?: string | null;
 };
 
 export type RevertVersionRequest = {
@@ -661,26 +758,67 @@ export type SessionResponse = {
     user: UserDto;
 };
 
+export type StudentDto = {
+    admitted_at: string;
+    blood_type?: string | null;
+    created_at: string;
+    date_of_birth?: string | null;
+    first_name: string;
+    full_name: string;
+    gender: string;
+    graduated_at?: string | null;
+    id: string;
+    last_name: string;
+    medical_notes?: string | null;
+    name_ar?: string | null;
+    national_id?: string | null;
+    nationality?: string | null;
+    org_id: string;
+    passport_number?: string | null;
+    person_id: string;
+    special_needs_notes?: string | null;
+    standing: string;
+    status: string;
+    student_number: string;
+    updated_at: string;
+    user_id?: string | null;
+};
+
 export type StudentFeeDto = {
-    discount_amount: number;
+    balance_due: string;
+    discount_amount: string;
     due_date: string;
     enrollment_id?: string | null;
     fee_template_id: string;
     id: string;
-    net_amount: number;
+    net_amount: string;
     org_id: string;
-    original_amount: number;
+    original_amount: string;
+    paid_amount: string;
+    period_id: string;
     status: string;
     student_id: string;
 };
 
 export type SubjectDto = {
     code: string;
-    credit_hours?: number | null;
+    credit_hours?: string | null;
     id: string;
     is_core: boolean;
     name: string;
     org_id: string;
+};
+
+export type SubmitOverrideRequest = {
+    approver_role?: string | null;
+    entity_id: string;
+    entity_type: string;
+    field_name?: string | null;
+    new_value?: string | null;
+    old_value?: string | null;
+    override_type: string;
+    reason: string;
+    risk_level?: string | null;
 };
 
 export type TemplateBindingDto = {
@@ -747,6 +885,11 @@ export type UpdateOrgRequest = {
     name?: string | null;
     primary_color?: string | null;
     timezone?: string | null;
+};
+
+export type UpdateStudentStatusRequest = {
+    new_status: string;
+    reason?: string | null;
 };
 
 export type UpdateTemplateRequest = {
@@ -1004,16 +1147,7 @@ export type GetSchemeResponse = GetSchemeResponses[keyof GetSchemeResponses];
 export type ListAttendanceData = {
     body?: never;
     path?: never;
-    query: {
-        /**
-         * Class ID
-         */
-        class_id: string;
-        /**
-         * Attendance Date
-         */
-        date: string;
-    };
+    query?: never;
     url: '/api/v1/attendance';
 };
 
@@ -1395,6 +1529,24 @@ export type GetEnrollmentResponses = {
 };
 
 export type GetEnrollmentResponse = GetEnrollmentResponses[keyof GetEnrollmentResponses];
+
+export type ChangeStudyModeData = {
+    body: ChangeStudyModeRequest;
+    path: {
+        /**
+         * Enrollment ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/enrollments/{id}/study-mode';
+};
+
+export type ChangeStudyModeResponses = {
+    200: EnrollmentDto;
+};
+
+export type ChangeStudyModeResponse = ChangeStudyModeResponses[keyof ChangeStudyModeResponses];
 
 export type AssignProctorData = {
     body: AssignProctorRequest;
@@ -1925,6 +2077,80 @@ export type UpdateSettingsResponses = {
 
 export type UpdateSettingsResponse = UpdateSettingsResponses[keyof UpdateSettingsResponses];
 
+export type ListOverridesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/overrides';
+};
+
+export type ListOverridesResponses = {
+    200: Array<OverrideRequestDto>;
+};
+
+export type ListOverridesResponse = ListOverridesResponses[keyof ListOverridesResponses];
+
+export type SubmitOverrideData = {
+    body: SubmitOverrideRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/overrides';
+};
+
+export type SubmitOverrideResponses = {
+    201: OverrideRequestDto;
+};
+
+export type SubmitOverrideResponse = SubmitOverrideResponses[keyof SubmitOverrideResponses];
+
+export type GetOverrideData = {
+    body?: never;
+    path: {
+        /**
+         * Override Request ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/overrides/{id}';
+};
+
+export type GetOverrideResponses = {
+    200: OverrideRequestDto;
+};
+
+export type GetOverrideResponse = GetOverrideResponses[keyof GetOverrideResponses];
+
+export type ApproveOverrideData = {
+    body: ResolveOverrideRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/overrides/{id}/approve';
+};
+
+export type ApproveOverrideResponses = {
+    200: OverrideRequestDto;
+};
+
+export type ApproveOverrideResponse = ApproveOverrideResponses[keyof ApproveOverrideResponses];
+
+export type RejectOverrideData = {
+    body: ResolveOverrideRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/overrides/{id}/reject';
+};
+
+export type RejectOverrideResponses = {
+    200: OverrideRequestDto;
+};
+
+export type RejectOverrideResponse = RejectOverrideResponses[keyof RejectOverrideResponses];
+
 export type ListPaymentsData = {
     body?: never;
     path?: never;
@@ -2217,6 +2443,68 @@ export type AssignGuardianResponses = {
 };
 
 export type AssignGuardianResponse = AssignGuardianResponses[keyof AssignGuardianResponses];
+
+export type ListStudentsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/students';
+};
+
+export type ListStudentsResponses = {
+    200: Array<StudentDto>;
+};
+
+export type ListStudentsResponse = ListStudentsResponses[keyof ListStudentsResponses];
+
+export type RegisterStudentData = {
+    body: RegisterStudentRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/students';
+};
+
+export type RegisterStudentResponses = {
+    201: StudentDto;
+};
+
+export type RegisterStudentResponse = RegisterStudentResponses[keyof RegisterStudentResponses];
+
+export type GetStudentData = {
+    body?: never;
+    path: {
+        /**
+         * Student ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/students/{id}';
+};
+
+export type GetStudentResponses = {
+    200: StudentDto;
+};
+
+export type GetStudentResponse = GetStudentResponses[keyof GetStudentResponses];
+
+export type UpdateStudentStatusData = {
+    body: UpdateStudentStatusRequest;
+    path: {
+        /**
+         * Student ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/students/{id}/status';
+};
+
+export type UpdateStudentStatusResponses = {
+    200: StudentDto;
+};
+
+export type UpdateStudentStatusResponse = UpdateStudentStatusResponses[keyof UpdateStudentStatusResponses];
 
 export type ListSubjectsData = {
     body?: never;

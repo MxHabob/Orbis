@@ -95,7 +95,7 @@ fn period_dto(p: orbis_domain::entities::academic_period::AcademicPeriod) -> Aca
         start_date: p.start_date.to_rfc3339(),
         end_date: p.end_date.to_rfc3339(),
         period_type: p.period_type,
-        status: p.status,
+        status: p.state.to_string(),
     }
 }
 

@@ -9,7 +9,7 @@ pub struct Model {
     pub org_id: Uuid,
     pub base_currency_id: String,
     pub target_currency_id: String,
-    pub rate: f64,
+    pub rate: Decimal,
     pub effective_date: DateTimeUtc,
     pub created_at: DateTimeUtc,
 }

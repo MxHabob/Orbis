@@ -14,6 +14,7 @@ dependencies = [
  "orbis-domain",
  "orbis-infra",
  "reqwest 0.13.4",
+ "rust_decimal",
  "sea-orm",
  "sea-orm-migration",
  "serde",
@@ -3683,6 +3684,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "orbis-domain",
+ "rust_decimal",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -3695,6 +3697,7 @@ name = "orbis-domain"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "rust_decimal",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -3714,6 +3717,7 @@ dependencies = [
  "orbis-app",
  "orbis-domain",
  "reqwest 0.12.28",
+ "rust_decimal",
  "sea-orm",
  "sea-orm-migration",
  "serde",

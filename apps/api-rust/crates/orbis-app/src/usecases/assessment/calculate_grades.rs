@@ -28,9 +28,12 @@ impl CalculateGradesUseCase {
 
         let grades = self.grade_repo.find_by_student(student_id).await?;
         
+use rust_decimal::prelude::ToPrimitive;
+
         let mut engine = CalcEngine::new();
         for grade in grades {
-            engine.set_variable(&grade.scheme_id.to_string(), grade.score);
+            let var_name = grade.component_id.map(|cid| cid.to_string()).unwrap_or_else(|| grade.class_subject_id.to_string());
+            engine.set_variable(&var_name, grade.score.to_f64().unwrap_or(0.0));
         }
 
         let final_score = engine.evaluate(&formula)?;

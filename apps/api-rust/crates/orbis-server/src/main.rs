@@ -43,6 +43,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let integration_repo = Arc::new(orbis_infra::repositories::integration_repos::IntegrationRepoImpl { db: db.clone() });
     let ai_repo = Arc::new(orbis_infra::repositories::ai_repos::AiRepoImpl { db: db.clone() });
     let workflow_repo = Arc::new(orbis_infra::repositories::workflow_repos::WorkflowRepoImpl { db: db.clone() });
+    let override_repo = Arc::new(orbis_infra::repositories::override_repos::OverrideRepoImpl { db: db.clone() });
+    let progression_repo = Arc::new(orbis_infra::repositories::progression_repos::ProgressionRepoImpl { db: db.clone() });
     
     let autopilot_engine = Arc::new(orbis_app::autopilot::engine::AutopilotEngine {
         policy_repo: Arc::new(orbis_infra::repositories::policy_repo::PgPolicyRepo { db: db.clone() }),
@@ -97,6 +99,60 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let org_context_resolver = Arc::new(DbOrgContextResolver { db: db.clone() });
 
+    // Build Domain Services
+    let student_service = Arc::new(orbis_app::services::StudentService::new(
+        student_repo.clone(),
+        person_repo.clone(),
+        student_repo.clone(),
+        student_repo.clone(),
+        event_bus.clone(),
+        permission_checker.clone(),
+    ));
+
+    let progression_service = Arc::new(orbis_app::services::ProgressionService::new(
+        progression_repo.clone(),
+        student_repo.clone(),
+        student_repo.clone(),
+        event_bus.clone(),
+        permission_checker.clone(),
+    ));
+
+    let academic_service = Arc::new(orbis_app::services::AcademicService::new(
+        academic_repo.clone(),
+        academic_repo.clone(),
+        academic_repo.clone(),
+        academic_repo.clone(),
+        assessment_repo.clone(),
+        event_bus.clone(),
+        permission_checker.clone(),
+    ));
+
+    let finance_service = Arc::new(orbis_app::services::FinanceService::new(
+        finance_repo.clone(),
+        finance_repo.clone(),
+        finance_repo.clone(),
+        finance_repo.clone(),
+        finance_repo.clone(),
+        finance_repo.clone(),
+        policy_repo.clone(),
+        event_bus.clone(),
+        integration_resolver.clone(),
+        integration_resolver.clone(),
+        permission_checker.clone(),
+    ));
+
+    let assessment_service = Arc::new(orbis_app::services::AssessmentService::new(
+        assessment_repo.clone(),
+        assessment_repo.clone(),
+        assessment_repo.clone(),
+        assessment_repo.clone(),
+        assessment_repo.clone(),
+        academic_repo.clone(),
+        academic_repo.clone(),
+        event_bus.clone(),
+        permission_checker.clone(),
+    ));
+
     // Build AppState
     let state = AppState {
         db,
@@ -110,9 +166,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         period_template_repo: calendar_repo,
         subject_repo: academic_repo.clone(),
         class_repo: academic_repo.clone(),
-        class_subject_repo: academic_repo,
+        class_subject_repo: academic_repo.clone(),
         enrollment_repo: student_repo.clone(),
+        student_repo: student_repo.clone(),
         student_guardian_repo: student_repo,
+        override_repo,
+        prerequisite_repo: academic_repo,
+        gpa_repo: assessment_repo.clone(),
+        promotion_repo: progression_repo,
+        discount_template_repo: finance_repo.clone(),
         room_repo: scheduling_repo.clone(),
         time_slot_repo: scheduling_repo.clone(),
         lesson_repo: scheduling_repo,
@@ -150,6 +212,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         device_repo,
         totp_service,
         oidc_service,
+        // ── Domain Services ─────────────────────────────────────
+        student_service,
+        progression_service,
+        academic_service,
+        finance_service,
+        assessment_service,
         // ── Reporting System ────────────────────────────────────
         report_definition_repo,
         report_template_repo,

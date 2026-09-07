@@ -9,7 +9,7 @@ use utoipa_swagger_ui::SwaggerUi;
 
 use api::{
     iam_routes, org_routes, calendar_routes, academic_routes,
-    student_routes, scheduling_routes, assessment_routes, exam_routes,
+    student_routes, override_routes, scheduling_routes, assessment_routes, exam_routes,
     finance_routes, document_routes, integration_routes, report_routes,
 };
 
@@ -30,6 +30,7 @@ use api::{
         (name = "Calendar", description = "Academic years, periods, templates"),
         (name = "Academic", description = "Subjects, classes, class-subject assignments"),
         (name = "Student", description = "Enrollments, guardians"),
+        (name = "Override", description = "Academic & Financial override requests and approval workflow"),
         (name = "Scheduling", description = "Rooms, time slots, scheduled lessons"),
         (name = "Assessment", description = "Assessment schemes, grades, attendance"),
         (name = "Exam", description = "Exam sessions, schedules, seating, proctors"),
@@ -84,11 +85,22 @@ use api::{
         api::academic_routes::assign_class_subject,
         api::academic_routes::list_class_subjects,
         // Student
+        api::student_routes::register_student,
+        api::student_routes::list_students,
+        api::student_routes::get_student,
+        api::student_routes::update_student_status,
         api::student_routes::enroll_student,
         api::student_routes::list_enrollments,
         api::student_routes::get_enrollment,
+        api::student_routes::change_study_mode,
         api::student_routes::assign_guardian,
         api::student_routes::list_guardians,
+        // Override & Workflow
+        api::override_routes::submit_override,
+        api::override_routes::list_overrides,
+        api::override_routes::get_override,
+        api::override_routes::approve_override,
+        api::override_routes::reject_override,
         // Scheduling
         api::scheduling_routes::create_room,
         api::scheduling_routes::list_rooms,
@@ -203,10 +215,19 @@ use api::{
             api::academic_routes::ClassSubjectDto,
             api::academic_routes::AssignClassSubjectRequest,
             // Student
+            api::student_routes::StudentDto,
+            api::student_routes::RegisterStudentRequest,
             api::student_routes::EnrollmentDto,
             api::student_routes::EnrollStudentRequest,
+            api::student_routes::ChangeStudyModeRequest,
+            api::student_routes::UpdateStudentStatusRequest,
             api::student_routes::GuardianDto,
             api::student_routes::AssignGuardianRequest,
+            // Override & Workflow
+            api::override_routes::OverrideRequestDto,
+            api::override_routes::SubmitOverrideRequest,
+            api::override_routes::ResolveOverrideRequest,
+            api::override_routes::ApprovalStepDto,
             // Scheduling
             api::scheduling_routes::RoomDto,
             api::scheduling_routes::CreateRoomRequest,
@@ -259,15 +280,15 @@ use api::{
             api::report_routes::TemplateVersionDto,
             api::report_routes::TemplateBindingDto,
             api::report_routes::CreateTemplateBindingRequest,
+            api::report_routes::GenerateReportRequest,
+            api::report_routes::GenerateReportResponse,
+            api::report_routes::ReportJobStatusResponse,
+            api::report_routes::BatchPrintRequest,
             api::report_routes::PreviewTemplateRequest,
             api::report_routes::ValidateTemplateRequest,
             api::report_routes::ValidationResultDto,
             api::report_routes::ValidationIssueDto,
             api::report_routes::ReportDefinitionDto,
-            api::report_routes::GenerateReportRequest,
-            api::report_routes::GenerateReportResponse,
-            api::report_routes::ReportJobStatusResponse,
-            api::report_routes::BatchPrintRequest,
             api::report_routes::RevertVersionRequest,
         )
     ),
@@ -287,6 +308,7 @@ pub fn app_router(state: state::AppState) -> Router {
         .merge(calendar_routes::routes())
         .merge(academic_routes::routes())
         .merge(student_routes::routes())
+        .merge(override_routes::routes())
         .merge(scheduling_routes::routes())
         .merge(assessment_routes::routes())
         .merge(exam_routes::routes())

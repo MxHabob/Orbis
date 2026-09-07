@@ -4,12 +4,13 @@ use crate::ports::gateways::{PaymentGatewayPort, NotificationPort};
 use crate::ports::iam::PermissionCheckerPort;
 use orbis_domain::iam::permission::Permission;
 use crate::context::RequestContext;
-use orbis_domain::entities::payment::Payment;
-use orbis_domain::entities::journal_entry::JournalEntry;
+use orbis_domain::entities::payment::{Payment, PaymentMethod};
+use orbis_domain::entities::journal_entry::{JournalEntry, JournalEntryLine, JournalPostingStatus};
 use orbis_domain::events::DomainEvent;
 use orbis_domain::errors::DomainError;
 use uuid::Uuid;
 use chrono::Utc;
+use rust_decimal::Decimal;
 use std::sync::Arc;
 
 pub struct ProcessPaymentUseCase {
@@ -32,13 +33,21 @@ impl ProcessPaymentUseCase {
         ctx: &RequestContext,
         org_id: Uuid,
         fee_id: Option<Uuid>,
+        student_id: Option<Uuid>,
+        enrollment_id: Option<Uuid>,
         account_id: Uuid,
-        amount: f64,
-        method: String,
+        amount: Decimal,
+        method: PaymentMethod,
+        payer_name: Option<String>,
+        payer_phone: Option<String>,
         reference: Option<String>,
         source: Option<String>,
     ) -> Result<Payment, DomainError> {
         self.permission_checker.check(ctx, Permission::ProcessPayment).await?;
+
+        if amount <= Decimal::ZERO {
+            return Err(DomainError::Validation("Payment amount must be greater than zero".into()));
+        }
 
         let now = Utc::now();
         let accounting_date = now.date_naive();
@@ -55,7 +64,7 @@ impl ProcessPaymentUseCase {
             .ok_or_else(|| DomainError::Validation(format!("Account {} not found", account_id)))?;
         let transaction_currency = account.currency;
         
-        let mut exchange_rate_value = 1.0;
+        let mut exchange_rate_value = Decimal::from(1);
         
         if transaction_currency != base_currency {
             let rate_opt = self.currency_repo.get_exchange_rate(org_id, &base_currency, &transaction_currency).await?;
@@ -71,9 +80,10 @@ impl ProcessPaymentUseCase {
 
         // Gateway processing for electronic payments
         let mut final_reference = reference.clone();
-        if method == "credit_card" || method == "mada" || method == "applepay" {
+        if matches!(method, PaymentMethod::CreditCard | PaymentMethod::Mada | PaymentMethod::ApplePay) {
             if let Some(src) = source {
-                let gateway_ref = self.payment_gateway.process_payment(ctx, amount, &transaction_currency, &src).await?;
+                let amount_f64 = rust_decimal::prelude::ToPrimitive::to_f64(&amount).unwrap_or(0.0);
+                let gateway_ref = self.payment_gateway.process_payment(ctx, amount_f64, &transaction_currency, &src).await?;
                 final_reference = Some(gateway_ref);
             } else {
                 return Err(DomainError::Validation(format!("Payment method '{}' requires a source token", method)));
@@ -81,12 +91,15 @@ impl ProcessPaymentUseCase {
         }
         
         // 1. Update StudentFee if fee_id is provided
-        let mut receivable_acct = Uuid::new_v4();
+        let mut receivable_acct = account_id;
+        let mut student_resolved_id = student_id;
+        let mut enrollment_resolved_id = enrollment_id;
         
         if let Some(f_id) = fee_id {
             if let Some(mut fee) = self.student_fee_repo.find_by_id(f_id).await? {
-                fee.status = "Paid".to_string(); // Simplified for now
-                fee.updated_at = now;
+                student_resolved_id = Some(fee.student_id);
+                enrollment_resolved_id = fee.enrollment_id;
+                fee.apply_payment(amount);
                 self.student_fee_repo.save(&fee).await?;
                 
                 if let Some(template) = self.fee_template_repo.find_by_id(fee.fee_template_id).await? {
@@ -95,21 +108,58 @@ impl ProcessPaymentUseCase {
             }
         }
 
-        // 2. Create Journal Entry
+        let base_amount = amount * exchange_rate_value;
+
+        // 2. Construct balanced multi-line double entry voucher
+        let lines = vec![
+            JournalEntryLine {
+                id: Uuid::new_v4(),
+                account_id, // Debit Cash/Bank
+                debit: amount,
+                credit: Decimal::ZERO,
+                description: Some(format!("Payment received for student fee")),
+                entity_type: Some("student".into()),
+                entity_id: student_resolved_id,
+            },
+            JournalEntryLine {
+                id: Uuid::new_v4(),
+                account_id: receivable_acct, // Credit Accounts Receivable / Revenue
+                debit: Decimal::ZERO,
+                credit: amount,
+                description: Some(format!("AR settlement")),
+                entity_type: Some("student".into()),
+                entity_id: student_resolved_id,
+            },
+        ];
+
         let entry = JournalEntry {
             id: journal_entry_id,
             org_id,
             transaction_ref: format!("PAY-{}", payment_id.to_string().chars().take(8).collect::<String>()),
             accounting_date,
             amount,
-            base_amount: amount * exchange_rate_value,
-            currency_id: transaction_currency,
+            currency_id: transaction_currency.clone(),
             exchange_rate: exchange_rate_value,
-            debit_account_id: account_id, // Cash/Bank
-            credit_account_id: receivable_acct, // AR
-            description: "Payment Received".to_string(),
+            base_amount,
+            debit_account_id: account_id,
+            credit_account_id: receivable_acct,
+            description: format!("Payment Receipt for Student"),
+            description_ar: Some("إيصال قبض دفعة رسوم دراسية".into()),
+            source_type: "student_payment".into(),
+            source_id: Some(payment_id),
+            status: JournalPostingStatus::Posted,
+            lines,
+            is_reversed: false,
+            reversed_by: None,
+            reversal_reason: None,
+            created_by: ctx.user_id(),
             created_at: now,
         };
+
+        if let Err(e) = entry.validate_balance() {
+            return Err(DomainError::Validation(e));
+        }
+
         self.journal_repo.save(&entry).await?;
 
         // 3. Create Payment
@@ -117,12 +167,22 @@ impl ProcessPaymentUseCase {
             id: payment_id,
             org_id,
             fee_id,
+            enrollment_id: enrollment_resolved_id,
+            student_id: student_resolved_id,
             account_id,
             amount,
+            currency: transaction_currency,
+            exchange_rate: exchange_rate_value,
+            base_amount,
             method,
-            reference: final_reference,
+            reference: final_reference.clone(),
+            receipt_number: Some(format!("REC-{}", payment_id.to_string().chars().take(8).collect::<String>())),
             journal_entry_id: Some(journal_entry_id),
+            payer_name,
+            payer_phone,
+            notes: None,
             paid_at: now,
+            created_by: ctx.user_id(),
             created_at: now,
         };
         self.payment_repo.save(&payment).await?;
@@ -141,11 +201,9 @@ impl ProcessPaymentUseCase {
             timestamp: now,
         }).await;
 
-        // 5. Send Notification (fire and forget pattern for receipt)
-        // We log the result but do not block the payment success on notification success
+        // 5. Send Notification
         let receipt_body = format!("Payment of {} received successfully. Reference: {:?}", amount, payment.reference);
         let _ = self.notification_gateway.send_email(ctx, "parent@example.com", "Payment Receipt", &receipt_body).await;
-        // let _ = self.notification_gateway.send_whatsapp(ctx, "+123456789", &receipt_body).await;
 
         Ok(payment)
     }

@@ -57,7 +57,7 @@ impl CreateAcademicPeriodUseCase {
             is_grade_entry_open: false,
             exam_start: None,
             exam_end: None,
-                                    status: "planned".to_string(),
+            state: orbis_domain::entities::academic_period::AcademicPeriodState::Planning,
             is_locked: false,
             locked_at: None,
             locked_by: None,

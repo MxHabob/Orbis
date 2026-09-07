@@ -4,10 +4,7 @@ use tauri::State;
 use serde::{Deserialize, Serialize};
 use crate::state::AppState;
 use uuid::Uuid;
-use orbis_app::usecases::student::{
-    enrollment::EnrollStudentUseCase,
-    student_guardian::AssignGuardianUseCase,
-};
+use orbis_domain::entities::enrollment::StudyMode;
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
 fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
@@ -20,7 +17,7 @@ pub struct EnrollmentDto {
     pub period_id: String,
     pub org_id: String,
     pub student_number: String,
-    pub enrollment_type: String,
+    pub study_mode: String,
     pub status: String,
     pub enrollment_date: String,
 }
@@ -32,11 +29,11 @@ pub struct EnrollStudentInput {
     #[serde(rename = "studentId")]
     pub student_id: String,
     #[serde(rename = "classId")]
-    pub class_id: String,
+    pub class_id: Option<String>,
     #[serde(rename = "studentNumber")]
     pub student_number: String,
-    #[serde(rename = "enrollmentType")]
-    pub enrollment_type: String,
+    #[serde(rename = "studyMode")]
+    pub study_mode: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -70,15 +67,22 @@ pub struct EnrollmentFilter {
 #[tauri::command]
 pub async fn student_enroll_student(request: EnrollStudentInput, state: State<'_, AppState>) -> Result<ApiResponse<EnrollmentDto>, String> {
     let ctx = make_ctx(&state);
-    let uc = EnrollStudentUseCase {
-        enrollment_repo: state.enrollment_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
     let period_id = Uuid::parse_str(&request.period_id).map_err(|_| "Invalid periodId")?;
     let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid studentId")?;
-    let class_id = Uuid::parse_str(&request.class_id).map_err(|_| "Invalid classId")?;
+    let class_id = request.class_id.and_then(|c| Uuid::parse_str(&c).ok());
 
-    let e = uc.execute(&ctx, ctx.tenant_id, period_id, student_id, class_id, request.student_number, request.enrollment_type)
+    let study_mode = match request.study_mode.as_deref() {
+        Some("homeschooled") | Some("homeschool") => StudyMode::Homeschooled,
+        Some("auditor") => StudyMode::Auditor,
+        Some("visiting") => StudyMode::Visiting,
+        Some("distance_learning") => StudyMode::DistanceLearning,
+        Some("part_time") => StudyMode::PartTime,
+        Some("exchange") => StudyMode::Exchange,
+        Some("special_needs") => StudyMode::SpecialNeeds,
+        _ => StudyMode::Regular,
+    };
+
+    let e = state.student_service.enroll_student(&ctx, ctx.tenant_id, period_id, student_id, class_id, request.student_number, study_mode)
         .await
         .map_err(|err| err.to_string())?;
 
@@ -89,33 +93,32 @@ pub async fn student_enroll_student(request: EnrollStudentInput, state: State<'_
         period_id: e.period_id.to_string(),
         org_id: e.org_id.to_string(),
         student_number: e.student_number,
-        enrollment_type: e.enrollment_type,
-        status: e.status,
+        study_mode: e.study_mode.to_string(),
+        status: e.status.to_string(),
         enrollment_date: e.enrollment_date.to_rfc3339(),
     }))
 }
 
 #[tauri::command]
 pub async fn student_list_enrollments(filter: Option<EnrollmentFilter>, state: State<'_, AppState>) -> Result<ApiResponse<Vec<EnrollmentDto>>, String> {
-    let ctx = make_ctx(&state);
     let f = filter.unwrap_or_default();
-    let enrollments = if let Some(cid) = f.class_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()) {
+    let items = if let Some(cid) = f.class_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()) {
         state.enrollment_repo.find_by_class(cid).await
     } else if let Some(sid) = f.student_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()) {
         state.enrollment_repo.find_by_student(sid).await
     } else {
-        state.enrollment_repo.find_by_org(ctx.tenant_id).await
+        Ok(vec![])
     }.map_err(|e| e.to_string())?;
 
-    Ok(ok(enrollments.into_iter().map(|e| EnrollmentDto {
+    Ok(ok(items.into_iter().map(|e| EnrollmentDto {
         id: e.id.to_string(),
         student_id: e.student_id.to_string(),
         class_id: e.class_id.map(|c| c.to_string()),
         period_id: e.period_id.to_string(),
         org_id: e.org_id.to_string(),
         student_number: e.student_number,
-        enrollment_type: e.enrollment_type,
-        status: e.status,
+        study_mode: e.study_mode.to_string(),
+        status: e.status.to_string(),
         enrollment_date: e.enrollment_date.to_rfc3339(),
     }).collect()))
 }
@@ -131,8 +134,8 @@ pub async fn student_get_enrollment(id: String, state: State<'_, AppState>) -> R
         period_id: e.period_id.to_string(),
         org_id: e.org_id.to_string(),
         student_number: e.student_number,
-        enrollment_type: e.enrollment_type,
-        status: e.status,
+        study_mode: e.study_mode.to_string(),
+        status: e.status.to_string(),
         enrollment_date: e.enrollment_date.to_rfc3339(),
     }))
 }
@@ -140,16 +143,12 @@ pub async fn student_get_enrollment(id: String, state: State<'_, AppState>) -> R
 #[tauri::command]
 pub async fn student_assign_guardian(request: AssignGuardianInput, state: State<'_, AppState>) -> Result<ApiResponse<GuardianDto>, String> {
     let ctx = make_ctx(&state);
-    let uc = AssignGuardianUseCase {
-        student_guardian_repo: state.student_guardian_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
     let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid studentId")?;
     let guardian_id = Uuid::parse_str(&request.guardian_id).map_err(|_| "Invalid guardianId")?;
 
-    let g = uc.execute(&ctx, student_id, guardian_id, request.relationship, request.is_primary)
+    let g = state.student_service.assign_guardian(&ctx, student_id, guardian_id, request.relationship, request.is_primary)
         .await
-        .map_err(|err| err.to_string())?;
+        .map_err(|e| e.to_string())?;
 
     Ok(ok(GuardianDto {
         id: g.id.to_string(),
@@ -162,8 +161,8 @@ pub async fn student_assign_guardian(request: AssignGuardianInput, state: State<
 
 #[tauri::command]
 pub async fn student_list_guardians(student_id: String, state: State<'_, AppState>) -> Result<ApiResponse<Vec<GuardianDto>>, String> {
-    let uid = Uuid::parse_str(&student_id).map_err(|_| "Invalid ID")?;
-    let items = state.student_guardian_repo.find_by_student(uid).await.map_err(|e| e.to_string())?;
+    let sid = Uuid::parse_str(&student_id).map_err(|_| "Invalid student ID")?;
+    let items = state.student_guardian_repo.find_by_student(sid).await.map_err(|e| e.to_string())?;
     Ok(ok(items.into_iter().map(|g| GuardianDto {
         id: g.id.to_string(),
         student_id: g.student_id.to_string(),

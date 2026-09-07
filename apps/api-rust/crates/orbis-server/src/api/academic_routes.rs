@@ -8,11 +8,8 @@ use uuid::Uuid;
 use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
 use crate::state::AppState;
-use orbis_app::usecases::academic::{
-    subject::CreateSubjectUseCase,
-    class::CreateClassUseCase,
-    class_subject::AssignClassSubjectUseCase,
-};
+
+use rust_decimal::Decimal;
 
 // ── DTOs ────────────────────────────────────────────────────────
 
@@ -22,7 +19,7 @@ pub struct SubjectDto {
     pub org_id: Uuid,
     pub code: String,
     pub name: String,
-    pub credit_hours: Option<i32>,
+    pub credit_hours: Option<Decimal>,
     pub is_core: bool,
 }
 
@@ -31,8 +28,8 @@ pub struct CreateSubjectRequest {
     pub code: String,
     pub name: String,
     pub unit_id: Option<Uuid>,
-    pub credit_hours: Option<i32>,
-    pub is_core: bool,
+    pub credit_hours: Option<Decimal>,
+    pub is_core: Option<bool>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -82,11 +79,15 @@ async fn create_subject(
     State(state): State<AppState>,
     Json(p): Json<CreateSubjectRequest>,
 ) -> Result<Json<ApiResponse<SubjectDto>>, ApiError> {
-    let uc = CreateSubjectUseCase {
-        subject_repo: state.subject_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
-    let s = uc.execute(&ctx, ctx.tenant_id, p.unit_id, p.code, p.name, p.credit_hours, p.is_core).await?;
+    let s = state.academic_service.create_subject(
+        &ctx,
+        ctx.tenant_id,
+        p.unit_id,
+        p.code,
+        p.name,
+        p.credit_hours,
+        p.is_core.unwrap_or(true),
+    ).await?;
     Ok(ApiResponse::ok(SubjectDto {
         id: s.id, org_id: s.org_id, code: s.code, name: s.name,
         credit_hours: s.credit_hours, is_core: s.is_core,
@@ -100,7 +101,7 @@ async fn list_subjects(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<SubjectDto>>>, ApiError> {
-    let subjects = state.subject_repo.find_by_org(ctx.tenant_id).await?;
+    let subjects = state.academic_service.list_subjects(ctx.tenant_id).await?;
     let dtos = subjects.into_iter().map(|s| SubjectDto {
         id: s.id, org_id: s.org_id, code: s.code, name: s.name,
         credit_hours: s.credit_hours, is_core: s.is_core,
@@ -117,7 +118,7 @@ async fn get_subject(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<SubjectDto>>, ApiError> {
-    let s = state.subject_repo.find_by_id(id).await?
+    let s = state.academic_service.get_subject(id).await?
         .ok_or_else(|| ApiError::not_found(format!("Subject {} not found", id)))?;
     Ok(ApiResponse::ok(SubjectDto {
         id: s.id, org_id: s.org_id, code: s.code, name: s.name,
@@ -133,11 +134,7 @@ async fn create_class(
     State(state): State<AppState>,
     Json(p): Json<CreateClassRequest>,
 ) -> Result<Json<ApiResponse<ClassDto>>, ApiError> {
-    let uc = CreateClassUseCase {
-        class_repo: state.class_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
-    let c = uc.execute(&ctx, ctx.tenant_id, p.unit_id, p.period_id, p.name, p.level).await?;
+    let c = state.academic_service.create_class(&ctx, ctx.tenant_id, p.unit_id, p.period_id, p.name, p.level).await?;
     Ok(ApiResponse::ok(ClassDto {
         id: c.id, org_id: c.org_id, unit_id: c.unit_id,
         period_id: c.period_id, name: c.name, level: c.level,
@@ -151,7 +148,7 @@ async fn list_classes(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<ClassDto>>>, ApiError> {
-    let classes = state.class_repo.find_by_org(ctx.tenant_id).await?;
+    let classes = state.academic_service.list_classes(ctx.tenant_id).await?;
     let dtos = classes.into_iter().map(|c| ClassDto {
         id: c.id, org_id: c.org_id, unit_id: c.unit_id,
         period_id: c.period_id, name: c.name, level: c.level,
@@ -168,7 +165,7 @@ async fn get_class(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<ClassDto>>, ApiError> {
-    let c = state.class_repo.find_by_id(id).await?
+    let c = state.academic_service.get_class(id).await?
         .ok_or_else(|| ApiError::not_found(format!("Class {} not found", id)))?;
     Ok(ApiResponse::ok(ClassDto {
         id: c.id, org_id: c.org_id, unit_id: c.unit_id,
@@ -184,11 +181,7 @@ async fn assign_class_subject(
     State(state): State<AppState>,
     Json(p): Json<AssignClassSubjectRequest>,
 ) -> Result<Json<ApiResponse<ClassSubjectDto>>, ApiError> {
-    let uc = AssignClassSubjectUseCase {
-        class_subject_repo: state.class_subject_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
-    let cs = uc.execute(&ctx, p.class_id, p.subject_id, p.period_id, p.primary_teacher_id, p.weekly_hours).await?;
+    let cs = state.academic_service.assign_class_subject(&ctx, p.class_id, p.subject_id, p.period_id, p.primary_teacher_id, p.weekly_hours).await?;
     Ok(ApiResponse::ok(ClassSubjectDto {
         id: cs.id, class_id: cs.class_id, subject_id: cs.subject_id,
         period_id: cs.period_id, primary_teacher_id: cs.primary_teacher_id,
@@ -205,7 +198,7 @@ async fn list_class_subjects(
     State(state): State<AppState>,
     axum::extract::Query(params): axum::extract::Query<ClassSubjectQuery>,
 ) -> Result<Json<ApiResponse<Vec<ClassSubjectDto>>>, ApiError> {
-    let items = state.class_subject_repo.find_by_class_and_period(params.class_id, params.period_id).await?;
+    let items = state.academic_service.list_class_subjects(params.class_id, params.period_id).await?;
     let dtos = items.into_iter().map(|cs| ClassSubjectDto {
         id: cs.id, class_id: cs.class_id, subject_id: cs.subject_id,
         period_id: cs.period_id, primary_teacher_id: cs.primary_teacher_id,

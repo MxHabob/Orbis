@@ -41,6 +41,14 @@ pub mod m20240901_000038_create_student_subjects_table;
 pub mod m20240901_000039_create_pass_fail_policies_table;
 pub mod m20240901_000040_rebuild_report_tables;
 pub mod m20240901_000041_create_identity_and_mfa_tables;
+pub mod m20240901_000042_create_students_table;
+pub mod m20240901_000043_create_academic_override_requests_table;
+pub mod m20240901_000044_create_course_prerequisites_table;
+pub mod m20240901_000045_create_gpa_records_table;
+pub mod m20240901_000046_create_promotion_tables;
+pub mod m20240901_000047_create_journal_entry_lines_table;
+pub mod m20240901_000048_create_discount_templates_table;
+pub mod m20240901_000049_update_enrollments_table;
 
 pub struct Migrator;
 
@@ -89,7 +97,14 @@ impl MigratorTrait for Migrator {
             Box::new(m20240901_000039_create_pass_fail_policies_table::Migration),
             Box::new(m20240901_000040_rebuild_report_tables::Migration),
             Box::new(m20240901_000041_create_identity_and_mfa_tables::Migration),
+            Box::new(m20240901_000042_create_students_table::Migration),
+            Box::new(m20240901_000043_create_academic_override_requests_table::Migration),
+            Box::new(m20240901_000044_create_course_prerequisites_table::Migration),
+            Box::new(m20240901_000045_create_gpa_records_table::Migration),
+            Box::new(m20240901_000046_create_promotion_tables::Migration),
+            Box::new(m20240901_000047_create_journal_entry_lines_table::Migration),
+            Box::new(m20240901_000048_create_discount_templates_table::Migration),
+            Box::new(m20240901_000049_update_enrollments_table::Migration),
         ]
     }
 }
-

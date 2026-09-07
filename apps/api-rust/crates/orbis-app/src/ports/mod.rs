@@ -5,3 +5,5 @@ pub mod integrations;
 pub mod gateways;
 pub mod iam;
 pub mod reporting;
+pub mod transactions;
+

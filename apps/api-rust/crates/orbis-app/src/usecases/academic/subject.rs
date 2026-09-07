@@ -7,6 +7,7 @@ use crate::ports::event_bus::EventBus;
 use std::sync::Arc;
 use uuid::Uuid;
 use chrono::Utc;
+use rust_decimal::Decimal;
 
 pub struct CreateSubjectUseCase {
     pub subject_repo: Arc<dyn SubjectRepository>,
@@ -21,7 +22,7 @@ impl CreateSubjectUseCase {
         unit_id: Option<Uuid>,
         code: String,
         name: String,
-        credit_hours: Option<i32>,
+        credit_hours: Option<Decimal>,
         is_core: bool,
     ) -> Result<Subject, DomainError> {
         let now = Utc::now();
@@ -36,19 +37,15 @@ impl CreateSubjectUseCase {
             name_ar: None,
             name_en: None,
             description: None,
-            short_description: None,
             is_core,
             is_elective: !is_core,
             credit_hours,
+            theory_hours: None,
+            practical_hours: None,
             requires_lab: false,
-            requires_practical: false,
             max_students_per_class: None,
-            default_grade_groups: None,
-            prerequisites: None,
-            learning_outcomes: None,
             color: None,
             icon: None,
-            cover_image: None,
             sort_order: None,
             is_active: true,
             created_at: now,

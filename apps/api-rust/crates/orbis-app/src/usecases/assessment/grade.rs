@@ -9,6 +9,7 @@ use orbis_domain::iam::permission::Permission;
 use std::sync::Arc;
 use uuid::Uuid;
 use chrono::Utc;
+use rust_decimal::Decimal;
 
 pub struct RecordGradeUseCase {
     pub grade_repo: Arc<dyn GradeRepository>,
@@ -20,11 +21,16 @@ impl RecordGradeUseCase {
     pub async fn execute(
         &self,
         ctx: &RequestContext,
+        org_id: Uuid,
+        period_id: Uuid,
         student_id: Uuid,
+        enrollment_id: Option<Uuid>,
         class_subject_id: Uuid,
-        scheme_id: Uuid,
-        score: f64,
+        component_id: Option<Uuid>,
+        score: Decimal,
+        max_score: Decimal,
         is_excused: bool,
+        is_exempt: bool,
         notes: Option<String>,
     ) -> Result<Grade, DomainError> {
         self.permission_checker.check(ctx, Permission::GradeWrite).await?;
@@ -34,11 +40,21 @@ impl RecordGradeUseCase {
 
         let grade = Grade {
             id: grade_id,
+            org_id,
+            period_id,
             student_id,
+            enrollment_id,
             class_subject_id,
-            scheme_id,
+            component_id,
             score,
+            max_score,
+            weight: None,
+            letter_grade: None,
+            is_final: false,
             is_excused,
+            is_exempt,
+            change_reason: None,
+            recorded_by: ctx.user_id(),
             notes,
             created_at: now,
             updated_at: now,
@@ -58,3 +74,4 @@ impl RecordGradeUseCase {
         Ok(grade)
     }
 }
+

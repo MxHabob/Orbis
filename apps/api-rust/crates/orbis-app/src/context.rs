@@ -7,3 +7,10 @@ pub struct RequestContext {
     pub actor: Actor,
     pub request_id: String,
 }
+
+impl RequestContext {
+    pub fn user_id(&self) -> Option<Uuid> {
+        self.actor.id()
+    }
+}
+

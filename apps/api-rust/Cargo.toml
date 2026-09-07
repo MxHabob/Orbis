@@ -13,8 +13,8 @@ members = [
 axum = "0.7.5"
 tokio = { version = "1.38", features = ["full"] }
 
-# Database (SeaORM + SQLite)
-sea-orm = { version = "1.1.0", features = ["sqlx-sqlite", "sqlx-postgres", "runtime-tokio-native-tls", "macros"] }
+# Database (SeaORM + SQLite + Postgres + Decimals)
+sea-orm = { version = "1.1.0", features = ["sqlx-sqlite", "sqlx-postgres", "runtime-tokio-native-tls", "macros", "with-rust_decimal"] }
 
 # Serialization
 serde = { version = "1.0.204", features = ["derive"] }
@@ -25,6 +25,10 @@ bcrypt = "0.15.1"
 uuid = { version = "1.9.1", features = ["v4", "serde"] }
 chrono = { version = "0.4.38", features = ["serde"] }
 jsonwebtoken = "9.3.0"
+
+# Decimals & Mathematics
+rust_decimal = { version = "1.36", features = ["serde", "maths"] }
+rust_decimal_macros = "1.36"
 
 # Logs & Monitoring
 tracing = "0.1.40"

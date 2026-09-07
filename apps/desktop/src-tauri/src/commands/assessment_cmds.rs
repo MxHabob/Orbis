@@ -5,12 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::state::AppState;
 use uuid::Uuid;
 use chrono::NaiveDate;
-use orbis_app::usecases::assessment::{
-    assessment_scheme::CreateAssessmentSchemeUseCase,
-    grade::RecordGradeUseCase,
-    attendance::MarkAttendanceUseCase,
-    calculate_grades::CalculateGradesUseCase,
-};
+use rust_decimal::Decimal;
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
 fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
@@ -36,25 +31,38 @@ pub struct CreateSchemeInput {
 #[derive(Serialize)]
 pub struct GradeDto {
     pub id: String,
+    pub org_id: String,
+    pub period_id: String,
     pub student_id: String,
+    pub enrollment_id: Option<String>,
     pub class_subject_id: String,
-    pub scheme_id: String,
-    pub score: f64,
+    pub component_id: Option<String>,
+    pub score: Decimal,
+    pub max_score: Decimal,
     pub is_excused: bool,
+    pub is_exempt: bool,
     pub notes: Option<String>,
 }
 
 #[derive(Deserialize)]
 pub struct RecordGradeInput {
+    #[serde(rename = "periodId")]
+    pub period_id: String,
     #[serde(rename = "studentId")]
     pub student_id: String,
+    #[serde(rename = "enrollmentId")]
+    pub enrollment_id: Option<String>,
     #[serde(rename = "classSubjectId")]
     pub class_subject_id: String,
-    #[serde(rename = "schemeId")]
-    pub scheme_id: String,
-    pub score: f64,
+    #[serde(rename = "componentId")]
+    pub component_id: Option<String>,
+    pub score: Decimal,
+    #[serde(rename = "maxScore")]
+    pub max_score: Option<Decimal>,
     #[serde(rename = "isExcused", default)]
     pub is_excused: bool,
+    #[serde(rename = "isExempt", default)]
+    pub is_exempt: bool,
     pub notes: Option<String>,
 }
 
@@ -87,6 +95,8 @@ pub struct CalculateGradesInput {
     pub scheme_id: String,
     #[serde(rename = "studentId")]
     pub student_id: String,
+    #[serde(rename = "classSubjectId")]
+    pub class_subject_id: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -105,11 +115,7 @@ pub struct GradeFilter {
 #[tauri::command]
 pub async fn assessment_create_scheme(request: CreateSchemeInput, state: State<'_, AppState>) -> Result<ApiResponse<AssessmentSchemeDto>, String> {
     let ctx = make_ctx(&state);
-    let uc = CreateAssessmentSchemeUseCase {
-        scheme_repo: state.assessment_scheme_repo.clone(),
-        permission_checker: state.permission_checker.clone(),
-    };
-    let s = uc.execute(&ctx, ctx.tenant_id, request.name, request.description, request.max_score, request.formula)
+    let s = state.assessment_service.create_assessment_scheme(&ctx, ctx.tenant_id, request.name, request.max_score, request.formula)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -125,7 +131,7 @@ pub async fn assessment_create_scheme(request: CreateSchemeInput, state: State<'
 #[tauri::command]
 pub async fn assessment_list_schemes(state: State<'_, AppState>) -> Result<ApiResponse<Vec<AssessmentSchemeDto>>, String> {
     let ctx = make_ctx(&state);
-    let items = state.assessment_scheme_repo.find_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
+    let items = state.assessment_service.list_assessment_schemes(ctx.tenant_id).await.map_err(|e| e.to_string())?;
     Ok(ok(items.into_iter().map(|s| AssessmentSchemeDto {
         id: s.id.to_string(),
         org_id: s.org_id.to_string(),
@@ -151,26 +157,38 @@ pub async fn assessment_get_scheme(id: String, state: State<'_, AppState>) -> Re
 #[tauri::command]
 pub async fn assessment_record_grade(request: RecordGradeInput, state: State<'_, AppState>) -> Result<ApiResponse<GradeDto>, String> {
     let ctx = make_ctx(&state);
-    let uc = RecordGradeUseCase {
-        grade_repo: state.grade_repo.clone(),
-        event_bus: state.event_bus.clone(),
-        permission_checker: state.permission_checker.clone(),
-    };
+    let period_id = Uuid::parse_str(&request.period_id).map_err(|_| "Invalid periodId")?;
     let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid studentId")?;
     let class_subject_id = Uuid::parse_str(&request.class_subject_id).map_err(|_| "Invalid classSubjectId")?;
-    let scheme_id = Uuid::parse_str(&request.scheme_id).map_err(|_| "Invalid schemeId")?;
+    let component_id = request.component_id.and_then(|c| Uuid::parse_str(&c).ok());
+    let max_score = request.max_score.unwrap_or_else(|| Decimal::from(100));
 
-    let g = uc.execute(&ctx, student_id, class_subject_id, scheme_id, request.score, request.is_excused, request.notes)
-        .await
-        .map_err(|e| e.to_string())?;
+    let g = state.assessment_service.record_grade(
+        &ctx,
+        ctx.tenant_id,
+        period_id,
+        student_id,
+        class_subject_id,
+        component_id,
+        request.score,
+        max_score,
+        false,
+    )
+    .await
+    .map_err(|e| e.to_string())?;
 
     Ok(ok(GradeDto {
         id: g.id.to_string(),
+        org_id: g.org_id.to_string(),
+        period_id: g.period_id.to_string(),
         student_id: g.student_id.to_string(),
+        enrollment_id: g.enrollment_id.map(|e| e.to_string()),
         class_subject_id: g.class_subject_id.to_string(),
-        scheme_id: g.scheme_id.to_string(),
+        component_id: g.component_id.map(|c| c.to_string()),
         score: g.score,
+        max_score: g.max_score,
         is_excused: g.is_excused,
+        is_exempt: g.is_exempt,
         notes: g.notes,
     }))
 }
@@ -188,11 +206,16 @@ pub async fn assessment_list_grades(filter: Option<GradeFilter>, state: State<'_
 
     Ok(ok(items.into_iter().map(|g| GradeDto {
         id: g.id.to_string(),
+        org_id: g.org_id.to_string(),
+        period_id: g.period_id.to_string(),
         student_id: g.student_id.to_string(),
+        enrollment_id: g.enrollment_id.map(|e| e.to_string()),
         class_subject_id: g.class_subject_id.to_string(),
-        scheme_id: g.scheme_id.to_string(),
+        component_id: g.component_id.map(|c| c.to_string()),
         score: g.score,
+        max_score: g.max_score,
         is_excused: g.is_excused,
+        is_exempt: g.is_exempt,
         notes: g.notes,
     }).collect()))
 }
@@ -200,15 +223,11 @@ pub async fn assessment_list_grades(filter: Option<GradeFilter>, state: State<'_
 #[tauri::command]
 pub async fn assessment_mark_attendance(request: MarkAttendanceInput, state: State<'_, AppState>) -> Result<ApiResponse<AttendanceDto>, String> {
     let ctx = make_ctx(&state);
-    let uc = MarkAttendanceUseCase {
-        attendance_repo: state.attendance_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
     let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid studentId")?;
     let class_id = Uuid::parse_str(&request.class_id).map_err(|_| "Invalid classId")?;
     let date = NaiveDate::parse_from_str(&request.date, "%Y-%m-%d").map_err(|_| "Invalid date format, use YYYY-MM-DD")?;
 
-    let a = uc.execute(&ctx, student_id, class_id, date, request.status, request.notes)
+    let a = state.assessment_service.mark_attendance(&ctx, ctx.tenant_id, Uuid::nil(), student_id, Some(class_id), None, date, request.status, request.notes)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -244,14 +263,11 @@ pub async fn assessment_list_attendance(class_id: String, date: String, state: S
 #[tauri::command]
 pub async fn assessment_calculate_grades(request: CalculateGradesInput, state: State<'_, AppState>) -> Result<ApiResponse<CalculationResultDto>, String> {
     let ctx = make_ctx(&state);
-    let uc = CalculateGradesUseCase {
-        scheme_repo: state.assessment_scheme_repo.clone(),
-        grade_repo: state.grade_repo.clone(),
-    };
     let scheme_id = Uuid::parse_str(&request.scheme_id).map_err(|_| "Invalid schemeId")?;
     let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid studentId")?;
+    let class_subject_id = request.class_subject_id.and_then(|cs| Uuid::parse_str(&cs).ok()).unwrap_or_else(Uuid::nil);
 
-    let final_score = uc.execute(&ctx, scheme_id, student_id)
+    let final_score = state.assessment_service.calculate_scheme_grades(&ctx, scheme_id, student_id, class_subject_id)
         .await
         .map_err(|e| e.to_string())?;
 

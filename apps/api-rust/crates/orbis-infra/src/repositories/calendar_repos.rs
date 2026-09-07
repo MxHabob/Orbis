@@ -82,6 +82,20 @@ impl AcademicYearRepository for CalendarRepoImpl {
     }
 }
 
+use orbis_domain::entities::academic_period::AcademicPeriodState;
+
+fn str_to_period_state(s: &str) -> AcademicPeriodState {
+    match s {
+        "planning" => AcademicPeriodState::Planning,
+        "enrollment_open" => AcademicPeriodState::EnrollmentOpen,
+        "active_teaching" => AcademicPeriodState::ActiveTeaching,
+        "final_exams" => AcademicPeriodState::FinalExams,
+        "grade_submission" => AcademicPeriodState::GradeSubmission,
+        "archived" => AcademicPeriodState::Archived,
+        _ => AcademicPeriodState::Closed,
+    }
+}
+
 #[async_trait]
 impl AcademicPeriodRepository for CalendarRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainPeriod>, DomainError> {
@@ -89,13 +103,14 @@ impl AcademicPeriodRepository for CalendarRepoImpl {
         Ok(model.map(|m| DomainPeriod {
             id: m.id, org_id: m.org_id, year_id: m.year_id, parent_id: m.parent_id,
             name: m.name, name_ar: m.name_ar, code: m.code, period_type: m.period_type,
+            state: str_to_period_state(&m.status),
             start_date: m.start_date, end_date: m.end_date, hijri_start: m.hijri_start,
             hijri_end: m.hijri_end, enrollment_start: m.enrollment_start,
             enrollment_end: m.enrollment_end, is_enrollment_open: m.is_enrollment_open,
             grade_entry_start: m.grade_entry_start, grade_entry_end: m.grade_entry_end,
             is_grade_entry_open: m.is_grade_entry_open, exam_start: m.exam_start,
             exam_end: m.exam_end, 
-            status: m.status, is_locked: m.is_locked, locked_at: m.locked_at,
+            is_locked: m.is_locked, locked_at: m.locked_at,
             locked_by: m.locked_by, sort_order: m.sort_order, metadata: m.metadata,
             created_at: m.created_at, updated_at: m.updated_at
         }))
@@ -106,13 +121,14 @@ impl AcademicPeriodRepository for CalendarRepoImpl {
         Ok(models.into_iter().map(|m| DomainPeriod {
             id: m.id, org_id: m.org_id, year_id: m.year_id, parent_id: m.parent_id,
             name: m.name, name_ar: m.name_ar, code: m.code, period_type: m.period_type,
+            state: str_to_period_state(&m.status),
             start_date: m.start_date, end_date: m.end_date, hijri_start: m.hijri_start,
             hijri_end: m.hijri_end, enrollment_start: m.enrollment_start,
             enrollment_end: m.enrollment_end, is_enrollment_open: m.is_enrollment_open,
             grade_entry_start: m.grade_entry_start, grade_entry_end: m.grade_entry_end,
             is_grade_entry_open: m.is_grade_entry_open, exam_start: m.exam_start,
             exam_end: m.exam_end, 
-            status: m.status, is_locked: m.is_locked, locked_at: m.locked_at,
+            is_locked: m.is_locked, locked_at: m.locked_at,
             locked_by: m.locked_by, sort_order: m.sort_order, metadata: m.metadata,
             created_at: m.created_at, updated_at: m.updated_at
         }).collect())
@@ -123,18 +139,41 @@ impl AcademicPeriodRepository for CalendarRepoImpl {
         Ok(models.into_iter().map(|m| DomainPeriod {
             id: m.id, org_id: m.org_id, year_id: m.year_id, parent_id: m.parent_id,
             name: m.name, name_ar: m.name_ar, code: m.code, period_type: m.period_type,
+            state: str_to_period_state(&m.status),
             start_date: m.start_date, end_date: m.end_date, hijri_start: m.hijri_start,
             hijri_end: m.hijri_end, enrollment_start: m.enrollment_start,
             enrollment_end: m.enrollment_end, is_enrollment_open: m.is_enrollment_open,
             grade_entry_start: m.grade_entry_start, grade_entry_end: m.grade_entry_end,
             is_grade_entry_open: m.is_grade_entry_open, exam_start: m.exam_start,
             exam_end: m.exam_end, 
-            status: m.status, is_locked: m.is_locked, locked_at: m.locked_at,
+            is_locked: m.is_locked, locked_at: m.locked_at,
             locked_by: m.locked_by, sort_order: m.sort_order, metadata: m.metadata,
             created_at: m.created_at, updated_at: m.updated_at
         }).collect())
     }
 
+    async fn find_current(&self, org_id: Uuid) -> Result<Option<DomainPeriod>, DomainError> {
+        let model = PeriodEntity::find()
+            .filter(academic_period::Column::OrgId.eq(org_id))
+            .filter(academic_period::Column::Status.eq("active").or(academic_period::Column::Status.eq("open")))
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(model.map(|m| DomainPeriod {
+            id: m.id, org_id: m.org_id, year_id: m.year_id, parent_id: m.parent_id,
+            name: m.name, name_ar: m.name_ar, code: m.code, period_type: m.period_type,
+            state: str_to_period_state(&m.status),
+            start_date: m.start_date, end_date: m.end_date, hijri_start: m.hijri_start,
+            hijri_end: m.hijri_end, enrollment_start: m.enrollment_start,
+            enrollment_end: m.enrollment_end, is_enrollment_open: m.is_enrollment_open,
+            grade_entry_start: m.grade_entry_start, grade_entry_end: m.grade_entry_end,
+            is_grade_entry_open: m.is_grade_entry_open, exam_start: m.exam_start,
+            exam_end: m.exam_end, 
+            is_locked: m.is_locked, locked_at: m.locked_at,
+            locked_by: m.locked_by, sort_order: m.sort_order, metadata: m.metadata,
+            created_at: m.created_at, updated_at: m.updated_at
+        }))
+    }
 
     async fn save(&self, period: &DomainPeriod) -> Result<(), DomainError> {
         let active = academic_period::ActiveModel {
@@ -147,7 +186,7 @@ impl AcademicPeriodRepository for CalendarRepoImpl {
             enrollment_end: Set(period.enrollment_end), is_enrollment_open: Set(period.is_enrollment_open),
             grade_entry_start: Set(period.grade_entry_start), grade_entry_end: Set(period.grade_entry_end),
             is_grade_entry_open: Set(period.is_grade_entry_open), exam_start: Set(period.exam_start),
-            exam_end: Set(period.exam_end),  status: Set(period.status.clone()),
+            exam_end: Set(period.exam_end),  status: Set(period.state.to_string()),
             is_locked: Set(period.is_locked), locked_at: Set(period.locked_at),
             locked_by: Set(period.locked_by), sort_order: Set(period.sort_order),
             metadata: Set(period.metadata.clone()), created_at: Set(period.created_at),

@@ -1967,6 +1967,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "orbis-domain",
+ "rust_decimal",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -1979,6 +1980,7 @@ name = "orbis-domain"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "rust_decimal",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -1998,6 +2000,7 @@ dependencies = [
  "orbis-app",
  "orbis-domain",
  "reqwest",
+ "rust_decimal",
  "sea-orm",
  "sea-orm-migration",
  "serde",
@@ -2019,6 +2022,7 @@ dependencies = [
  "orbis-app",
  "orbis-domain",
  "orbis-infra",
+ "rust_decimal",
  "sea-orm",
  "sea-orm-migration",
  "serde",

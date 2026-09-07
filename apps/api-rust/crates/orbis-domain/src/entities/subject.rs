@@ -1,6 +1,7 @@
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use rust_decimal::Decimal;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Subject {
@@ -12,19 +13,15 @@ pub struct Subject {
     pub name_ar: Option<String>,
     pub name_en: Option<String>,
     pub description: Option<String>,
-    pub short_description: Option<String>,
     pub is_core: bool,
     pub is_elective: bool,
-    pub credit_hours: Option<i32>,
+    pub credit_hours: Option<Decimal>,
+    pub theory_hours: Option<Decimal>,
+    pub practical_hours: Option<Decimal>,
     pub requires_lab: bool,
-    pub requires_practical: bool,
-    pub max_students_per_class: Option<i32>,
-    pub default_grade_groups: Option<serde_json::Value>,
-    pub prerequisites: Option<serde_json::Value>,
-    pub learning_outcomes: Option<serde_json::Value>,
+    pub max_students_per_class: Option<u32>,
     pub color: Option<String>,
     pub icon: Option<String>,
-    pub cover_image: Option<String>,
     pub sort_order: Option<i32>,
     pub is_active: bool,
     pub created_at: DateTime<Utc>,

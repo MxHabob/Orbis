@@ -12,3 +12,4 @@ pub mod whatsapp;
 pub mod resolver;
 pub mod bootstrap_adapter;
 pub mod report_defaults;
+pub mod solver_adapter;

@@ -21,3 +21,5 @@ pub mod dashboard_repo;
 pub mod identity_repo;
 pub mod mfa_repo;
 pub mod device_repo;
+pub mod override_repos;
+pub mod progression_repos;

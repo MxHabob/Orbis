@@ -1,5 +1,4 @@
 use sea_orm::entity::prelude::*;
-use chrono::{DateTime, Utc};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "enrollments")]
@@ -13,16 +12,32 @@ pub struct Model {
     #[sea_orm(unique)]
     pub student_number: String,
     pub status: String,
-    pub enrollment_date: DateTime<Utc>,
-    pub enrollment_type: String,
-    pub withdrawal_date: Option<DateTime<Utc>>,
+    pub study_mode: Option<String>,
+    pub is_attendance_exempt: Option<bool>,
+    pub is_grade_exempt: Option<bool>,
+    pub enrollment_date: DateTimeWithTimeZone,
+    pub enrollment_type: Option<String>,
+    pub withdrawal_date: Option<DateTimeWithTimeZone>,
     pub withdrawal_reason: Option<String>,
-    pub meta: Option<serde_json::Value>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub meta: Option<Json>,
+    pub created_at: DateTimeWithTimeZone,
+    pub updated_at: DateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
+pub enum Relation {
+    #[sea_orm(
+        belongs_to = "super::student::Entity",
+        from = "Column::StudentId",
+        to = "super::student::Column::Id"
+    )]
+    Student,
+}
+
+impl Related<super::student::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Student.def()
+    }
+}
 
 impl ActiveModelBehavior for ActiveModel {}

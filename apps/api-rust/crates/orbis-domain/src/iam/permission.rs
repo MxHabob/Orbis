@@ -49,6 +49,11 @@ pub enum Permission {
     GradeReport,
 
     // --- Students & Guardians ---
+    StudentRead,
+    StudentWrite,
+    StudentCreate,
+    StudentUpdate,
+    StudentDelete,
     GuardianRead,
     GuardianWrite,
     GuardianDelete,
@@ -56,6 +61,13 @@ pub enum Permission {
     EnrollmentWrite,
     EnrollmentPromote,
     EnrollmentTransfer,
+
+    // --- Workflows & Approvals ---
+    WorkflowRead,
+    WorkflowWrite,
+    WorkflowApprove,
+    WorkflowExecute,
+
 
     // --- Attendance & Behavior ---
     AttendanceRead,
@@ -163,6 +175,11 @@ impl Permission {
             Permission::GradeEntryManage => "grade:entry_manage",
             Permission::GradeAnalytics => "grade:analytics",
             Permission::GradeReport => "grade:report",
+            Permission::StudentRead => "student:read",
+            Permission::StudentWrite => "student:write",
+            Permission::StudentCreate => "student:create",
+            Permission::StudentUpdate => "student:update",
+            Permission::StudentDelete => "student:delete",
             Permission::GuardianRead => "guardian:read",
             Permission::GuardianWrite => "guardian:write",
             Permission::GuardianDelete => "guardian:delete",
@@ -170,6 +187,10 @@ impl Permission {
             Permission::EnrollmentWrite => "enrollment:write",
             Permission::EnrollmentPromote => "enrollment:promote",
             Permission::EnrollmentTransfer => "enrollment:transfer",
+            Permission::WorkflowRead => "workflow:read",
+            Permission::WorkflowWrite => "workflow:write",
+            Permission::WorkflowApprove => "workflow:approve",
+            Permission::WorkflowExecute => "workflow:execute",
             Permission::AttendanceRead => "attendance:read",
             Permission::AttendanceWrite => "attendance:write",
             Permission::AttendanceAnalytics => "attendance:analytics",
@@ -238,7 +259,9 @@ impl Permission {
             Permission::ClassRead, Permission::ClassWrite, Permission::ClassDelete, Permission::SubjectRead, Permission::SubjectWrite, Permission::SubjectDelete,
             Permission::ScheduleRead, Permission::ScheduleWrite, Permission::ScheduleDelete,
             Permission::AssessmentRead, Permission::AssessmentWrite, Permission::AssessmentDelete, Permission::GradeRead, Permission::GradeWrite, Permission::GradeEntryManage, Permission::GradeAnalytics, Permission::GradeReport,
+            Permission::StudentRead, Permission::StudentWrite, Permission::StudentCreate, Permission::StudentUpdate, Permission::StudentDelete,
             Permission::GuardianRead, Permission::GuardianWrite, Permission::GuardianDelete, Permission::EnrollmentRead, Permission::EnrollmentWrite, Permission::EnrollmentPromote, Permission::EnrollmentTransfer,
+            Permission::WorkflowRead, Permission::WorkflowWrite, Permission::WorkflowApprove, Permission::WorkflowExecute,
             Permission::AttendanceRead, Permission::AttendanceWrite, Permission::AttendanceAnalytics, Permission::AttendanceReport, Permission::BehaviorRead, Permission::BehaviorWrite, Permission::BehaviorDelete, Permission::BehaviorAI,
             Permission::DocumentRead, Permission::DocumentWrite, Permission::DocumentDelete, Permission::TemplateRead, Permission::TemplateWrite, Permission::TemplatePublish, Permission::TemplateDelete, Permission::TemplateImport, Permission::TemplateExport, Permission::TemplateGenerateSingle, Permission::TemplateGenerateBatch, Permission::TemplateGenerateDownload, Permission::TemplateAssetUpload, Permission::TemplateAssetDelete, Permission::TemplateComponentWrite, Permission::TemplateComponentDelete,
             Permission::ExamSessionRead, Permission::ExamSessionWrite, Permission::ExamSessionActivate, Permission::ExamSessionDelete, Permission::SeatingNumberGenerate, Permission::SeatingNumberRead, Permission::SecretNumberGenerate, Permission::SecretNumberRead, Permission::SecretNumberReveal, Permission::ExamHallRead, Permission::ExamHallWrite, Permission::ExamHallAllocate, Permission::ProctorRead, Permission::ProctorAssign, Permission::StudentOrderRead, Permission::StudentOrderRebuild, Permission::StudentOrderFreeze, Permission::ExamScheduleRead, Permission::ExamScheduleWrite,

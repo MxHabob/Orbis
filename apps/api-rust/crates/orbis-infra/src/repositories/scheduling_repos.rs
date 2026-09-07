@@ -112,6 +112,41 @@ impl ScheduledLessonRepository for SchedulingRepoImpl {
         }).collect())
     }
 
+    async fn find_by_class(&self, class_id: Uuid) -> Result<Vec<DomainScheduledLesson>, DomainError> {
+        let class_subjects = crate::models::class_subject::Entity::find()
+            .filter(crate::models::class_subject::Column::ClassId.eq(class_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        let cs_ids: Vec<Uuid> = class_subjects.into_iter().map(|cs| cs.id).collect();
+        if cs_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let models = ScheduledLessonEntity::find()
+            .filter(scheduled_lesson::Column::ClassSubjectId.is_in(cs_ids))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainScheduledLesson {
+            id: m.id, class_subject_id: m.class_subject_id, room_id: m.room_id,
+            time_slot_id: m.time_slot_id, teacher_id: m.teacher_id,
+            created_at: m.created_at, updated_at: m.updated_at
+        }).collect())
+    }
+
+    async fn find_by_teacher(&self, teacher_id: Uuid) -> Result<Vec<DomainScheduledLesson>, DomainError> {
+        let models = ScheduledLessonEntity::find()
+            .filter(scheduled_lesson::Column::TeacherId.eq(teacher_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(|m| DomainScheduledLesson {
+            id: m.id, class_subject_id: m.class_subject_id, room_id: m.room_id,
+            time_slot_id: m.time_slot_id, teacher_id: m.teacher_id,
+            created_at: m.created_at, updated_at: m.updated_at
+        }).collect())
+    }
+
     async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<DomainScheduledLesson>, DomainError> {
         let slots = TimeSlotEntity::find()
             .filter(time_slot::Column::PeriodId.eq(period_id))
