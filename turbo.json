@@ -34,6 +34,8 @@
         "PORT",
         "JWT_EXPIRY_HOURS",
         "JWT_REFRESH_DAYS",
+        "JWT_ACCESS_EXPIRY_HOURS",
+        "JWT_REFRESH_EXPIRY_DAYS",
         "PUBLIC_REGISTRATION_ENABLED",
         "SOLVER_SERVICE_URL",
         "LLM_PROVIDER",
@@ -42,12 +44,15 @@
         "CORS_ORIGINS",
         "BIND_HOST",
         "MAX_REQUEST_BYTES",
-        "TAURI_DEV_HOST"
+        "TAURI_DEV_HOST",
+        "VITE_API_URL",
+        "EXPO_PUBLIC_API_URL"
       ],
       "passThroughEnv": [
         "DATABASE_URL",
         "JWT_SECRET",
-        "GEMINI_API_KEY"
+        "GEMINI_API_KEY",
+        "OPENAI_API_KEY"
       ]
     },
     "start:tunnel": {

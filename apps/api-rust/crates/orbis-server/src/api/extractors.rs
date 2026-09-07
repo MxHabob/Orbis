@@ -1,7 +1,8 @@
 //! Auth extractors for the HTTP API layer.
 //!
 //! Provides `AuthContext` — an Axum extractor that reads the `Authorization: Bearer <token>`
-//! header, validates the JWT, and produces a `RequestContext` for downstream handlers.
+//! header, validates the JWT via the shared `TokenService` in `AppState`, and produces
+//! a `RequestContext` for downstream handlers.
 
 use axum::{
     extract::FromRequestParts,
@@ -11,22 +12,15 @@ use orbis_app::context::RequestContext;
 use orbis_domain::iam::actor::Actor;
 use uuid::Uuid;
 
+use crate::state::AppState;
 use super::ApiError;
 
 /// Extractor that produces a validated `RequestContext` from the incoming request.
 ///
 /// - **Authenticated path**: reads `Authorization: Bearer <token>`, validates JWT via
-///   `TokenService`, and populates `tenant_id` + `actor` from claims.
+///   `AppState::token_service`, and populates `tenant_id` + `actor` from claims.
 /// - **Fallback (dev-only)**: if no token is provided and the `ORBIS_DEV_MODE` env var
 ///   is set, produces a system context (useful for Swagger/testing).
-///
-/// Usage in a handler:
-/// ```ignore
-/// async fn my_handler(ctx: AuthContext, ...) -> Result<..., ApiError> {
-///     let tenant = ctx.tenant_id;
-///     // ...
-/// }
-/// ```
 pub struct AuthContext(pub RequestContext);
 
 impl std::ops::Deref for AuthContext {
@@ -37,13 +31,10 @@ impl std::ops::Deref for AuthContext {
 }
 
 #[axum::async_trait]
-impl<S> FromRequestParts<S> for AuthContext
-where
-    S: Send + Sync,
-{
+impl FromRequestParts<AppState> for AuthContext {
     type Rejection = ApiError;
 
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Self::Rejection> {
         let request_id = Uuid::new_v4();
 
         // Extract bearer token from Authorization header
@@ -55,20 +46,16 @@ where
 
         match token {
             Some(token_str) => {
-                // Decode the JWT claims directly (simple decode without full TokenService DI).
-                // In production, you'd inject TokenService via State, but for an extractor
-                // we use the same JWT secret and decode inline.
-                let secret = std::env::var("JWT_SECRET").unwrap_or_else(|_| "super-secret-key-for-dev".to_string());
-                let decoding = jsonwebtoken::DecodingKey::from_secret(secret.as_bytes());
-                let validation = jsonwebtoken::Validation::default();
-
-                let token_data = jsonwebtoken::decode::<JwtClaims>(token_str, &decoding, &validation)
+                // Enterprise DI: Delegate 100% of token verification to the injected TokenService
+                let claims = state
+                    .token_service
+                    .validate_token(token_str)
+                    .await
                     .map_err(|e| {
                         ApiError::unauthorized(format!("Invalid or expired token: {}", e))
                             .with_request_id(request_id.to_string())
                     })?;
 
-                let claims = token_data.claims;
                 let user_id = Uuid::parse_str(&claims.sub)
                     .map_err(|_| ApiError::unauthorized("Invalid user ID in token"))?;
                 let org_id = Uuid::parse_str(&claims.org_id)
@@ -83,7 +70,6 @@ where
             None => {
                 // Allow unauthenticated access in dev mode for Swagger testing
                 if std::env::var("ORBIS_DEV_MODE").is_ok() {
-                    // Check for X-Org-Id header (dev override)
                     let dev_org_id = parts
                         .headers
                         .get("x-org-id")
@@ -111,26 +97,13 @@ where
 pub struct OptionalAuth(pub Option<RequestContext>);
 
 #[axum::async_trait]
-impl<S> FromRequestParts<S> for OptionalAuth
-where
-    S: Send + Sync,
-{
+impl FromRequestParts<AppState> for OptionalAuth {
     type Rejection = std::convert::Infallible;
 
-    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Self::Rejection> {
         match AuthContext::from_request_parts(parts, state).await {
             Ok(ctx) => Ok(OptionalAuth(Some(ctx.0))),
             Err(_) => Ok(OptionalAuth(None)),
         }
     }
 }
-
-/// JWT claims structure matching what `JwtTokenService` produces.
-#[derive(Debug, serde::Deserialize, serde::Serialize)]
-pub struct JwtClaims {
-    pub sub: String,
-    pub org_id: String,
-    pub role: String,
-    pub exp: usize,
-}
-

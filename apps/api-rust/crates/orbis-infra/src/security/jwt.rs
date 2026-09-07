@@ -23,10 +23,20 @@ pub struct JwtTokenService {
 
 impl JwtTokenService {
     pub fn new(secret: String) -> Self {
+        let access_token_expiry_hours = std::env::var("JWT_ACCESS_EXPIRY_HOURS")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(24 * 7); // 7 days default for seamless mobile session persistence
+
+        let refresh_token_expiry_days = std::env::var("JWT_REFRESH_EXPIRY_DAYS")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(30);
+
         Self {
             secret,
-            access_token_expiry_hours: 2,
-            refresh_token_expiry_days: 7,
+            access_token_expiry_hours,
+            refresh_token_expiry_days,
         }
     }
 }
