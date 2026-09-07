@@ -1,7 +1,10 @@
 /**
  * @module @orbis/mobile/components/auth
  *
- * Modular components for Authentication screens.
+ * Modular Auth & Admission components barrel export.
  */
 
-export { SignInForm } from './sign-in-form';
+export * from './sign-in-brand-header';
+export * from './sign-in-form';
+export * from './student-registration-form';
+export * from './student-registration-success';

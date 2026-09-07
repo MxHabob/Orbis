@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   iconBox: {
-    marginRight: Spacing.two,
+    marginEnd: Spacing.two,
   },
   input: {
     flex: 1,

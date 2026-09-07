@@ -1,40 +1,26 @@
 /**
  * @module @orbis/mobile/app/(auth)/sign-in
  *
- * Primary Authentication Screen for Orbis Mobile.
- * Clean, declarative component composition.
+ * Minimalist, elegant Authentication Screen for Orbis Mobile.
+ * Thin orchestrator delegating presentation to SignInBrandHeader and SignInForm.
  */
 
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { StyleSheet } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/lib/api';
 import { useTheme } from '@/hooks/use-theme';
-import { useI18n } from '@/lib/i18n';
-import { useCurrentOrgQuery } from '@/hooks/use-api-queries';
-import { SignInForm } from '@/components/auth';
+import { SignInBrandHeader, SignInForm } from '@/components/auth';
 import { KeyboardAwareView } from '@/components/ui/keyboard-aware-view';
-import { Spacing, Typography } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
-  const { t } = useI18n();
   const { login, loginWithGoogle } = useAuth();
-  const { data: orgData } = useCurrentOrgQuery();
   const [loading, setLoading] = useState(false);
-
-  const orgName = orgData?.name || t('nav_campus_default');
 
   const handleSignIn = async (email: string, pass: string) => {
     setLoading(true);
@@ -70,18 +56,10 @@ export default function SignInScreen() {
           paddingBottom: insets.bottom + Spacing.six,
         },
       ]}>
-      {/* Brand Header */}
-      <View style={styles.brandSection}>
-        <View style={[styles.logoBadge, { backgroundColor: theme.primaryLight }]}>
-          <Ionicons name="school" size={40} color={theme.primary} />
-        </View>
-        <Text style={[styles.brandTitle, { color: theme.text }]}>{orgName}</Text>
-        <Text style={[styles.brandSubtitle, { color: theme.textSecondary }]}>
-          {t('auth_brand_subtitle')}
-        </Text>
-      </View>
+      {/* Organization Logo & Identity Header */}
+      <SignInBrandHeader />
 
-      {/* Modular SignIn Form */}
+      {/* Elegant Minimalist SignIn Form & Admission Entry */}
       <SignInForm
         onSignIn={handleSignIn}
         onGoogleSignIn={handleGoogleSignIn}
@@ -98,27 +76,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: Spacing.four,
     alignItems: 'center',
-    gap: Spacing.four,
-  },
-  brandSection: {
-    alignItems: 'center',
-    gap: Spacing.two,
-    marginBottom: Spacing.two,
-  },
-  logoBadge: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.one,
-  },
-  brandTitle: {
-    ...Typography.h1,
-    fontSize: 26,
-  },
-  brandSubtitle: {
-    ...Typography.small,
-    textAlign: 'center',
+    gap: Spacing.three,
   },
 });
