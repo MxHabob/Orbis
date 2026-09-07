@@ -41,7 +41,35 @@ export const SignInForm = React.memo<SignInFormProps>(
       try {
         await onSignIn(email.trim(), password);
       } catch (err: any) {
-        setError(err?.message || t('auth_error_failed'));
+        const msg = String(err?.message || '');
+        const code = String(err?.code || '');
+        if (
+          code === 'NETWORK_ERROR' ||
+          msg.includes('ConnectException') ||
+          msg.includes('Network request failed') ||
+          msg.includes('Failed to connect') ||
+          msg.includes('NetworkError') ||
+          msg.includes('fetch failed') ||
+          msg.includes('ECONNREFUSED') ||
+          msg.includes('ENOTFOUND') ||
+          msg.includes('ETIMEDOUT')
+        ) {
+          setError(t('auth_error_network'));
+        } else if (
+          err?.status === 401 ||
+          code === 'UNAUTHORIZED' ||
+          code === 'INVALID_CREDENTIALS' ||
+          msg.toLowerCase().includes('invalid credentials') ||
+          msg.toLowerCase().includes('unauthorized') ||
+          msg.toLowerCase().includes('user not found') ||
+          msg.toLowerCase().includes('password')
+        ) {
+          setError(t('auth_error_invalid_credentials'));
+        } else if (msg && !msg.includes('java.') && !msg.includes('http') && msg.length < 120) {
+          setError(msg);
+        } else {
+          setError(t('auth_error_failed'));
+        }
       }
     };
 
@@ -51,7 +79,18 @@ export const SignInForm = React.memo<SignInFormProps>(
       try {
         await onGoogleSignIn();
       } catch (err: any) {
-        setError(err?.message || t('auth_error_google'));
+        const msg = String(err?.message || '');
+        const code = String(err?.code || '');
+        if (
+          code === 'NETWORK_ERROR' ||
+          msg.includes('ConnectException') ||
+          msg.includes('Network request failed') ||
+          msg.includes('Failed to connect')
+        ) {
+          setError(t('auth_error_network'));
+        } else {
+          setError(t('auth_error_google'));
+        }
       }
     };
 
@@ -60,8 +99,15 @@ export const SignInForm = React.memo<SignInFormProps>(
         {/* Main Minimalist Card */}
         <Card variant="elevated" style={styles.card}>
           {error && (
-            <View style={[styles.errorBox, { backgroundColor: theme.errorLight }]}>
-              <Ionicons name="alert-circle" size={16} color={theme.error} />
+            <View
+              style={[
+                styles.errorBox,
+                {
+                  backgroundColor: theme.errorLight,
+                  borderColor: theme.error,
+                },
+              ]}>
+              <Ionicons name="alert-circle" size={18} color={theme.error} />
               <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
             </View>
           )}
@@ -165,13 +211,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
-    padding: Spacing.two + 2,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two + 2,
     borderRadius: Radii.md,
+    borderWidth: 1,
   },
   errorText: {
     ...Typography.captionBold,
-    fontSize: 12,
+    fontSize: 12.5,
     flex: 1,
+    lineHeight: 18,
   },
   fields: {
     gap: Spacing.three,

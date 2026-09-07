@@ -35,12 +35,14 @@ export const SignInBrandHeader = React.memo(() => {
       <View style={styles.topBar}>
         <Pressable
           onPress={toggleLanguage}
+          hitSlop={8}
           style={({ pressed }) => [
             styles.langPill,
             {
               backgroundColor: theme.backgroundElement,
               borderColor: theme.border,
-              opacity: pressed ? 0.8 : 1,
+              opacity: pressed ? 0.75 : 1,
+              transform: [{ translateY: pressed ? 1 : 0 }],
             },
           ]}>
           <Ionicons name="globe-outline" size={13} color={theme.textSecondary} />
@@ -79,20 +81,22 @@ const styles = StyleSheet.create({
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginBottom: Spacing.one,
+    paddingHorizontal: Spacing.one,
+    marginBottom: Spacing.two,
   },
   langPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: Radii.full,
     borderWidth: 1,
+    borderBottomWidth: 2,
   },
   langText: {
     ...Typography.captionBold,
-    fontSize: 11.5,
+    fontSize: 12,
   },
   title: {
     ...Typography.h1,

@@ -153,6 +153,8 @@ export const en: Record<TranslationKey, string> = {
   auth_password_label: 'Password',
   auth_error_required: 'Please enter email and password',
   auth_error_failed: 'Sign in failed. Please verify credentials.',
+  auth_error_network: 'Cannot connect to the server. Please verify your network and server status.',
+  auth_error_invalid_credentials: 'Invalid email address or password.',
   auth_error_google: 'Google sign-in failed',
   auth_or_divider: 'or',
   auth_continue_google: 'Continue with Google',

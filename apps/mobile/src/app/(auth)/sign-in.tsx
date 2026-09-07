@@ -52,8 +52,8 @@ export default function SignInScreen() {
       contentContainerStyle={[
         styles.scrollContent,
         {
-          paddingTop: insets.top + Spacing.six,
-          paddingBottom: insets.bottom + Spacing.six,
+          paddingTop: Math.max(insets.top, 24) + Spacing.two,
+          paddingBottom: Math.max(insets.bottom, 24) + Spacing.six,
         },
       ]}>
       {/* Organization Logo & Identity Header */}

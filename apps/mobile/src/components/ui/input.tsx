@@ -100,6 +100,9 @@ export const Input = React.memo<InputProps>(
             cursorColor={theme.primary}
             selectionColor={theme.primaryLight}
             underlineColorAndroid="transparent"
+            importantForAutofill="no"
+            autoComplete="off"
+            textContentType="none"
             {...props}
           />
 

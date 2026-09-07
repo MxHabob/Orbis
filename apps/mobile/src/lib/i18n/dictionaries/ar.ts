@@ -151,6 +151,8 @@ export const ar = {
   auth_password_label: 'كلمة المرور',
   auth_error_required: 'يرجى إدخال البريد الإلكتروني وكلمة المرور',
   auth_error_failed: 'فشل تسجيل الدخول. يرجى التحقق من صحة البيانات.',
+  auth_error_network: 'تعذر الاتصال بالخادم. يرجى التأكد من تشغيل الخادم والاتصال بالشبكة.',
+  auth_error_invalid_credentials: 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
   auth_error_google: 'فشل تسجيل الدخول عبر Google',
   auth_or_divider: 'أو',
   auth_continue_google: 'المتابعة باستخدام Google',
