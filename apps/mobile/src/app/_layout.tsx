@@ -19,6 +19,8 @@ import { AppQueryProvider } from '@/providers/query-provider';
 import { EffectiveContextProvider } from '@/providers/effective-context';
 import { I18nProvider } from '@/lib/i18n';
 import { ThemedStatusBar } from '@/components/ui/themed-status-bar';
+import { ToastProvider } from '@/components/ui/toast';
+import { AppErrorBoundary } from '@/components/ui/error-boundary';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -58,19 +60,23 @@ export default function RootLayout() {
         <AppQueryProvider>
           <EffectiveContextProvider>
             <ThemeProvider value={navigationTheme}>
-              {/* StatusBar background perfectly matched with active theme background */}
-              <ThemedStatusBar backgroundColor={currentColors.background} />
-              <AnimatedSplashOverlay />
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  animation: 'slide_from_right',
-                  contentStyle: { backgroundColor: currentColors.background },
-                }}>
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                <Stack.Screen name="(app)" options={{ headerShown: false }} />
-                <Stack.Screen name="+not-found" options={{ title: 'Oops!', headerShown: true }} />
-              </Stack>
+              <ToastProvider>
+                <AppErrorBoundary>
+                  {/* StatusBar background perfectly matched with active theme background */}
+                  <ThemedStatusBar backgroundColor={currentColors.background} />
+                  <AnimatedSplashOverlay />
+                  <Stack
+                    screenOptions={{
+                      headerShown: false,
+                      animation: 'slide_from_right',
+                      contentStyle: { backgroundColor: currentColors.background },
+                    }}>
+                    <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                    <Stack.Screen name="(app)" options={{ headerShown: false }} />
+                    <Stack.Screen name="+not-found" options={{ title: 'Oops!', headerShown: true }} />
+                  </Stack>
+                </AppErrorBoundary>
+              </ToastProvider>
             </ThemeProvider>
           </EffectiveContextProvider>
         </AppQueryProvider>

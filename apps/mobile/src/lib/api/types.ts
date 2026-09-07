@@ -237,7 +237,10 @@ export interface OrbisApiClient {
   listGrades(filter?: { studentId?: string; classSubjectId?: string }): Promise<GradeDto[]>;
   calculateGrades(req: CalculateGradesRequest): Promise<CalculationResultDto>;
   markAttendance(req: MarkAttendanceRequest): Promise<AttendanceDto>;
-  listAttendance(classId: string, date: string): Promise<AttendanceDto[]>;
+  listAttendance(
+    classIdOrFilter?: string | { classId?: string; studentId?: string; date?: string },
+    date?: string,
+  ): Promise<AttendanceDto[]>;
 
   // ── Exam ────────────────────────────────────────────────────
   createExamSession(req: CreateExamSessionRequest): Promise<ExamSessionDto>;

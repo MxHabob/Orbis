@@ -1,32 +1,30 @@
 /**
  * @module @orbis/mobile/hooks/use-api-queries
  *
- * Centralized, performance-optimized React Query hooks using @orbis/sdk.
+ * Centralized, performance-optimized React Query hooks using the authenticated MobileApiClient.
  * Completely eliminates manual useEffect data fetching, providing instant cache,
  * background revalidation, and type-safe query results.
  * Guaranteed to never return `undefined` to satisfy TanStack Query v5 contracts.
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  getCurrentOrg,
-  getDashboard,
-  getCurrentContext,
-  listClasses,
-  getClass,
-  listEnrollments,
-  listGrades,
-  listAttendance,
-  listSchedules,
-  listFees,
-  listGuardians,
-  getUser,
-  getSettings,
-  markAttendance,
-  recordGrade,
-  type MarkAttendanceRequest,
-  type RecordGradeRequest,
-} from '@orbis/sdk';
+import { api } from '@/lib/api/client';
+import type {
+  OrgDto,
+  DashboardCountsDto,
+  AcademicContextResponse,
+  ClassDto,
+  EnrollmentDto,
+  GradeDto,
+  AttendanceDto,
+  ScheduledLessonDto,
+  StudentFeeDto,
+  GuardianDto,
+  UserDto,
+  OrganizationSettingsDto,
+  MarkAttendanceRequest,
+  RecordGradeRequest,
+} from '@/lib/api/types';
 import { queryKeys } from '@/lib/api/query-keys';
 
 const STALE_TIME = 1000 * 60 * 5; // 5 minutes cache
@@ -38,10 +36,10 @@ const GC_TIME = 1000 * 60 * 15; // 15 minutes garbage collection
 export function useCurrentOrgQuery() {
   return useQuery({
     queryKey: queryKeys.org.current(),
-    queryFn: async () => {
+    queryFn: async (): Promise<OrgDto | null> => {
       try {
-        const res = await getCurrentOrg();
-        return res?.data ?? null;
+        const res = await api.getCurrentOrg();
+        return res ?? null;
       } catch {
         return null;
       }
@@ -57,10 +55,10 @@ export function useCurrentOrgQuery() {
 export function useDashboardQuery() {
   return useQuery({
     queryKey: queryKeys.org.dashboard(),
-    queryFn: async () => {
+    queryFn: async (): Promise<DashboardCountsDto | null> => {
       try {
-        const res = await getDashboard();
-        return res?.data ?? null;
+        const res = await api.getDashboard();
+        return res ?? null;
       } catch {
         return null;
       }
@@ -76,10 +74,10 @@ export function useDashboardQuery() {
 export function useAcademicContextQuery() {
   return useQuery({
     queryKey: queryKeys.calendar.context(),
-    queryFn: async () => {
+    queryFn: async (): Promise<AcademicContextResponse | null> => {
       try {
-        const res = await getCurrentContext();
-        return res?.data ?? null;
+        const res = await api.getAcademicContext();
+        return res ?? null;
       } catch {
         return null;
       }
@@ -95,10 +93,10 @@ export function useAcademicContextQuery() {
 export function useClassesQuery() {
   return useQuery({
     queryKey: queryKeys.academic.classes(),
-    queryFn: async () => {
+    queryFn: async (): Promise<ClassDto[]> => {
       try {
-        const res = await listClasses();
-        return res?.data ?? [];
+        const res = await api.listClasses();
+        return res ?? [];
       } catch {
         return [];
       }
@@ -114,11 +112,11 @@ export function useClassesQuery() {
 export function useClassQuery(classId?: string) {
   return useQuery({
     queryKey: queryKeys.academic.class(classId || ''),
-    queryFn: async () => {
+    queryFn: async (): Promise<ClassDto | null> => {
       if (!classId) return null;
       try {
-        const res = await getClass({ path: { id: classId } });
-        return res?.data ?? null;
+        const res = await api.getClass(classId);
+        return res ?? null;
       } catch {
         return null;
       }
@@ -135,15 +133,10 @@ export function useClassQuery(classId?: string) {
 export function useEnrollmentsQuery(filter?: { classId?: string; studentId?: string }) {
   return useQuery({
     queryKey: queryKeys.student.enrollments(filter),
-    queryFn: async () => {
+    queryFn: async (): Promise<EnrollmentDto[]> => {
       try {
-        const res = await listEnrollments({
-          query: {
-            class_id: filter?.classId,
-            student_id: filter?.studentId,
-          } as any,
-        });
-        return res?.data ?? [];
+        const res = await api.listEnrollments(filter);
+        return res ?? [];
       } catch {
         return [];
       }
@@ -159,15 +152,10 @@ export function useEnrollmentsQuery(filter?: { classId?: string; studentId?: str
 export function useGradesQuery(filter?: { studentId?: string; classSubjectId?: string }) {
   return useQuery({
     queryKey: queryKeys.assessment.grades(filter),
-    queryFn: async () => {
+    queryFn: async (): Promise<GradeDto[]> => {
       try {
-        const res = await listGrades({
-          query: {
-            student_id: filter?.studentId,
-            class_subject_id: filter?.classSubjectId,
-          } as any,
-        });
-        return res?.data ?? [];
+        const res = await api.listGrades(filter);
+        return res ?? [];
       } catch {
         return [];
       }
@@ -183,15 +171,10 @@ export function useGradesQuery(filter?: { studentId?: string; classSubjectId?: s
 export function useAttendanceQuery(filter?: { classId?: string; studentId?: string; date?: string }) {
   return useQuery({
     queryKey: queryKeys.assessment.attendance(filter?.classId || '', filter?.date || ''),
-    queryFn: async () => {
+    queryFn: async (): Promise<AttendanceDto[]> => {
       try {
-        const res = await listAttendance({
-          query: {
-            class_id: filter?.classId,
-            date: filter?.date,
-          } as any,
-        });
-        return res?.data ?? [];
+        const res = await api.listAttendance(filter);
+        return res ?? [];
       } catch {
         return [];
       }
@@ -207,12 +190,10 @@ export function useAttendanceQuery(filter?: { classId?: string; studentId?: stri
 export function useSchedulesQuery(sessionId?: string) {
   return useQuery({
     queryKey: queryKeys.scheduling.lessons({ periodId: sessionId }),
-    queryFn: async () => {
+    queryFn: async (): Promise<ScheduledLessonDto[]> => {
       try {
-        const res = await listSchedules({
-          query: { session_id: sessionId } as any,
-        });
-        return res?.data ?? [];
+        const res = await api.listScheduledLessons({ periodId: sessionId });
+        return res ?? [];
       } catch {
         return [];
       }
@@ -228,13 +209,11 @@ export function useSchedulesQuery(sessionId?: string) {
 export function useFeesQuery(studentId?: string) {
   return useQuery({
     queryKey: queryKeys.finance.studentFees({ studentId }),
-    queryFn: async () => {
+    queryFn: async (): Promise<StudentFeeDto[]> => {
       if (!studentId) return [];
       try {
-        const res = await listFees({
-          query: { student_id: studentId } as any,
-        });
-        return res?.data ?? [];
+        const res = await api.listStudentFees({ studentId });
+        return res ?? [];
       } catch {
         return [];
       }
@@ -251,13 +230,11 @@ export function useFeesQuery(studentId?: string) {
 export function useGuardiansQuery(studentId?: string) {
   return useQuery({
     queryKey: queryKeys.student.guardians(studentId || ''),
-    queryFn: async () => {
+    queryFn: async (): Promise<GuardianDto[]> => {
       if (!studentId) return [];
       try {
-        const res = await listGuardians({
-          query: { student_id: studentId } as any,
-        });
-        return res?.data ?? [];
+        const res = await api.listGuardians(studentId);
+        return res ?? [];
       } catch {
         return [];
       }
@@ -274,11 +251,11 @@ export function useGuardiansQuery(studentId?: string) {
 export function useUserQuery(userId?: string) {
   return useQuery({
     queryKey: queryKeys.auth.user(userId || ''),
-    queryFn: async () => {
+    queryFn: async (): Promise<UserDto | null> => {
       if (!userId) return null;
       try {
-        const res = await getUser({ path: { id: userId } });
-        return res?.data ?? null;
+        const res = await api.getUser(userId);
+        return res ?? null;
       } catch {
         return null;
       }
@@ -292,10 +269,10 @@ export function useUserQuery(userId?: string) {
 export function useSystemSettingsQuery() {
   return useQuery({
     queryKey: queryKeys.org.settings(),
-    queryFn: async () => {
+    queryFn: async (): Promise<OrganizationSettingsDto | null> => {
       try {
-        const res = await getSettings({});
-        return res?.data ?? null;
+        const res = await api.getSettings();
+        return res ?? null;
       } catch {
         return null;
       }
@@ -312,10 +289,7 @@ export function useMarkAttendanceMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (variables: MarkAttendanceRequest) => {
-      const res = await markAttendance({
-        body: variables,
-      });
-      return res.data;
+      return await api.markAttendance(variables);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.assessment.all });
@@ -331,10 +305,7 @@ export function useRecordGradeMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (variables: RecordGradeRequest) => {
-      const res = await recordGrade({
-        body: variables,
-      });
-      return res.data;
+      return await api.recordGrade(variables);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.assessment.all });

@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/hooks/use-theme';
 import { useI18n } from '@/lib/i18n';
+import { useToast } from '@/components/ui/toast';
 import { Header } from '@/components/header';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +20,7 @@ import { Radii, Spacing, Typography } from '@/constants/theme';
 export default function PreferencesScreen() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
+  const toast = useToast();
   const { locale, setLocale, t } = useI18n();
 
   const [themePref, setThemePref] = useState<'system' | 'dark' | 'light'>('system');
@@ -26,6 +28,21 @@ export default function PreferencesScreen() {
   const [notifyGrades, setNotifyGrades] = useState(true);
   const [notifyExams, setNotifyExams] = useState(true);
   const [notifyAnnouncements, setNotifyAnnouncements] = useState(false);
+
+  const handleLanguageChange = (lang: 'ar' | 'en') => {
+    setLocale(lang);
+    toast.success(lang === 'ar' ? 'تم تحويل اللغة إلى العربية' : 'Language switched to English');
+  };
+
+  const handleThemeChange = (pref: 'system' | 'dark' | 'light') => {
+    setThemePref(pref);
+    toast.success(t('pref_theme') + ': ' + t(`pref_theme_${pref}`));
+  };
+
+  const handleToggle = (setter: React.Dispatch<React.SetStateAction<boolean>>, current: boolean, label: string) => {
+    setter(!current);
+    toast.info(`${label}: ${!current ? 'مفعّل' : 'معطّل'}`);
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -49,7 +66,7 @@ export default function PreferencesScreen() {
               return (
                 <Pressable
                   key={l.code}
-                  onPress={() => setLocale(l.code)}
+                  onPress={() => handleLanguageChange(l.code)}
                   style={[
                     styles.prefRow,
                     idx > 0 && { borderTopWidth: 1, borderTopColor: theme.borderSubtle },
@@ -72,15 +89,15 @@ export default function PreferencesScreen() {
           <Text style={[styles.sectionTitle, { color: theme.text }]}>{t('pref_theme')}</Text>
           <Card variant="elevated" style={styles.card}>
             {[
-              { key: 'system', name: t('pref_theme_system'), icon: 'phone-portrait-outline' },
-              { key: 'dark', name: t('pref_theme_dark'), icon: 'moon-outline' },
-              { key: 'light', name: t('pref_theme_light'), icon: 'sunny-outline' },
+              { key: 'system' as const, name: t('pref_theme_system'), icon: 'phone-portrait-outline' },
+              { key: 'dark' as const, name: t('pref_theme_dark'), icon: 'moon-outline' },
+              { key: 'light' as const, name: t('pref_theme_light'), icon: 'sunny-outline' },
             ].map((th, idx) => {
               const isSelected = themePref === th.key;
               return (
                 <Pressable
                   key={th.key}
-                  onPress={() => setThemePref(th.key as any)}
+                  onPress={() => handleThemeChange(th.key)}
                   style={[
                     styles.prefRow,
                     idx > 0 && { borderTopWidth: 1, borderTopColor: theme.borderSubtle },
@@ -114,7 +131,7 @@ export default function PreferencesScreen() {
               </View>
               <Switch
                 value={notifyAbsence}
-                onValueChange={setNotifyAbsence}
+                onValueChange={() => handleToggle(setNotifyAbsence, notifyAbsence, t('pref_notify_absence'))}
                 trackColor={{ false: theme.border, true: theme.primary }}
               />
             </View>
@@ -128,7 +145,7 @@ export default function PreferencesScreen() {
               </View>
               <Switch
                 value={notifyGrades}
-                onValueChange={setNotifyGrades}
+                onValueChange={() => handleToggle(setNotifyGrades, notifyGrades, t('pref_notify_grades'))}
                 trackColor={{ false: theme.border, true: theme.primary }}
               />
             </View>
@@ -142,7 +159,7 @@ export default function PreferencesScreen() {
               </View>
               <Switch
                 value={notifyExams}
-                onValueChange={setNotifyExams}
+                onValueChange={() => handleToggle(setNotifyExams, notifyExams, t('pref_notify_exams'))}
                 trackColor={{ false: theme.border, true: theme.primary }}
               />
             </View>
@@ -156,7 +173,7 @@ export default function PreferencesScreen() {
               </View>
               <Switch
                 value={notifyAnnouncements}
-                onValueChange={setNotifyAnnouncements}
+                onValueChange={() => handleToggle(setNotifyAnnouncements, notifyAnnouncements, t('pref_notify_announcements'))}
                 trackColor={{ false: theme.border, true: theme.primary }}
               />
             </View>

@@ -15,6 +15,7 @@ import {
 } from '@/components/glovo-illustrations';
 import { Skeleton, SkeletonFeedCard } from '@/components/ui/skeleton';
 import { useI18n } from '@/lib/i18n';
+import { useTheme } from '@/hooks/use-theme';
 import { Radii, Spacing, Typography } from '@/constants/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -37,6 +38,7 @@ export const PersonalizedFeaturesGrid = React.memo<PersonalizedFeaturesGridProps
     onBehaviorPress,
     onSchedulePress,
   }) => {
+    const theme = useTheme();
     const { t } = useI18n();
     const cardSize = (SCREEN_WIDTH - 56) / 4;
 
@@ -47,12 +49,12 @@ export const PersonalizedFeaturesGrid = React.memo<PersonalizedFeaturesGridProps
           {isLoading ? (
             <Skeleton width={180} height={24} />
           ) : (
-            <Text style={styles.title}>
+            <Text style={[styles.title, { color: theme.text }]}>
               {userName ? t('nav_for_you_user', { name: userName }) : t('nav_for_you')}
             </Text>
           )}
           <Pressable hitSlop={8}>
-            <Ionicons name="information-circle-outline" size={22} color="#71717A" />
+            <Ionicons name="information-circle-outline" size={22} color={theme.textSecondary} />
           </Pressable>
         </View>
 
@@ -73,10 +75,17 @@ export const PersonalizedFeaturesGrid = React.memo<PersonalizedFeaturesGridProps
                 styles.featureItem,
                 pressed && { opacity: 0.85, transform: [{ scale: 0.96 }] },
               ]}>
-              <View style={styles.squircleBox}>
+              <View
+                style={[
+                  styles.squircleBox,
+                  {
+                    backgroundColor: theme.card,
+                    borderColor: theme.border,
+                  },
+                ]}>
                 <AttendanceFeatureIllustration size={44} />
               </View>
-              <Text style={styles.featureLabel} numberOfLines={1}>
+              <Text style={[styles.featureLabel, { color: theme.text }]} numberOfLines={1}>
                 {t('domain_attendance_log')}
               </Text>
             </Pressable>
@@ -88,10 +97,17 @@ export const PersonalizedFeaturesGrid = React.memo<PersonalizedFeaturesGridProps
                 styles.featureItem,
                 pressed && { opacity: 0.85, transform: [{ scale: 0.96 }] },
               ]}>
-              <View style={styles.squircleBox}>
+              <View
+                style={[
+                  styles.squircleBox,
+                  {
+                    backgroundColor: theme.card,
+                    borderColor: theme.border,
+                  },
+                ]}>
                 <GradesFeatureIllustration size={44} />
               </View>
-              <Text style={styles.featureLabel} numberOfLines={1}>
+              <Text style={[styles.featureLabel, { color: theme.text }]} numberOfLines={1}>
                 {t('domain_grades')}
               </Text>
             </Pressable>
@@ -103,10 +119,17 @@ export const PersonalizedFeaturesGrid = React.memo<PersonalizedFeaturesGridProps
                 styles.featureItem,
                 pressed && { opacity: 0.85, transform: [{ scale: 0.96 }] },
               ]}>
-              <View style={styles.squircleBox}>
+              <View
+                style={[
+                  styles.squircleBox,
+                  {
+                    backgroundColor: theme.card,
+                    borderColor: theme.border,
+                  },
+                ]}>
                 <BehaviorFeatureIllustration size={44} />
               </View>
-              <Text style={styles.featureLabel} numberOfLines={1}>
+              <Text style={[styles.featureLabel, { color: theme.text }]} numberOfLines={1}>
                 {t('domain_excellence_behavior')}
               </Text>
             </Pressable>
@@ -118,10 +141,17 @@ export const PersonalizedFeaturesGrid = React.memo<PersonalizedFeaturesGridProps
                 styles.featureItem,
                 pressed && { opacity: 0.85, transform: [{ scale: 0.96 }] },
               ]}>
-              <View style={styles.squircleBox}>
+              <View
+                style={[
+                  styles.squircleBox,
+                  {
+                    backgroundColor: theme.card,
+                    borderColor: theme.border,
+                  },
+                ]}>
                 <ScheduleFeatureIllustration size={44} />
               </View>
-              <Text style={styles.featureLabel} numberOfLines={1}>
+              <Text style={[styles.featureLabel, { color: theme.text }]} numberOfLines={1}>
                 {t('domain_schedule')}
               </Text>
             </Pressable>
@@ -130,8 +160,8 @@ export const PersonalizedFeaturesGrid = React.memo<PersonalizedFeaturesGridProps
 
         {/* Pagination Dots */}
         <View style={styles.paginationRow}>
-          <View style={[styles.dot, styles.dotActive]} />
-          <View style={styles.dot} />
+          <View style={[styles.dot, styles.dotActive, { backgroundColor: theme.primary }]} />
+          <View style={[styles.dot, { backgroundColor: theme.border }]} />
         </View>
       </View>
     );

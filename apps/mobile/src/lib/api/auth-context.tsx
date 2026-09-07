@@ -14,6 +14,7 @@ import {
   type MfaChallengeRequest,
   type MfaVerifyEnrollmentRequest,
   OrbisError,
+  ApiRequestError,
 } from './types';
 
 export interface AuthState {
@@ -208,8 +209,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } catch (sessionErr) {
           console.warn('[Auth] Session validation notice:', sessionErr);
-          const err = OrbisError.fromUnknown(sessionErr);
-          if (err.message.toLowerCase().includes('unauthorized') || err.code === 'UNAUTHORIZED') {
+          const isInvalidToken =
+            (sessionErr instanceof ApiRequestError && (sessionErr.status === 401 || sessionErr.status === 403)) ||
+            (sessionErr instanceof Error &&
+              (sessionErr.message.toLowerCase().includes('unauthorized') ||
+                sessionErr.message.toLowerCase().includes('invalid or expired token') ||
+                sessionErr.message.toLowerCase().includes('invalidsignature')));
+
+          if (isInvalidToken) {
             await logout();
           }
         }

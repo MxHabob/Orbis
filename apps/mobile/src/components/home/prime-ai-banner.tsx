@@ -9,6 +9,8 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PrimeScooterMascot } from '@/components/glovo-illustrations';
 import { useI18n } from '@/lib/i18n';
+import { useTheme } from '@/hooks/use-theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Radii, Spacing, Typography } from '@/constants/theme';
 
 interface PrimeAiBannerProps {
@@ -16,6 +18,9 @@ interface PrimeAiBannerProps {
 }
 
 export const PrimeAiBanner = React.memo<PrimeAiBannerProps>(({ onPress }) => {
+  const theme = useTheme();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const { t } = useI18n();
 
   return (
@@ -23,24 +28,35 @@ export const PrimeAiBanner = React.memo<PrimeAiBannerProps>(({ onPress }) => {
       onPress={onPress}
       style={({ pressed }) => [
         styles.banner,
+        {
+          backgroundColor: isDark ? theme.card : theme.primaryLight,
+          borderColor: isDark ? theme.border : theme.primary + '30',
+        },
         pressed && { opacity: 0.92, transform: [{ scale: 0.99 }] },
       ]}>
       {/* Left Content */}
       <View style={styles.left}>
-        <View style={styles.badge}>
+        <View style={[styles.badge, { backgroundColor: theme.primary }]}>
           <Ionicons name="sparkles" size={13} color="#FFFFFF" />
           <Text style={styles.badgeText}>{t('prime_badge')}</Text>
         </View>
 
-        <Text style={styles.title}>{t('prime_title')}</Text>
-        <Text style={styles.subtitle}>{t('prime_subtitle')}</Text>
+        <Text style={[styles.title, { color: theme.text }]}>{t('prime_title')}</Text>
+        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>{t('prime_subtitle')}</Text>
       </View>
 
       {/* Right Mascot Artwork & Button */}
       <View style={styles.right}>
-        <PrimeScooterMascot size={78} />
-        <View style={styles.chevronButton}>
-          <Ionicons name="chevron-forward" size={18} color="#18181B" />
+        <PrimeScooterMascot size={78} iconColor={theme.primary} />
+        <View
+          style={[
+            styles.chevronButton,
+            {
+              backgroundColor: theme.background,
+              borderColor: theme.border,
+            },
+          ]}>
+          <Ionicons name="chevron-forward" size={18} color={theme.primary} />
         </View>
       </View>
     </Pressable>
@@ -51,18 +67,18 @@ PrimeAiBanner.displayName = 'PrimeAiBanner';
 
 const styles = StyleSheet.create({
   banner: {
-    backgroundColor: '#FFE380',
     borderRadius: 24,
+    borderWidth: 1,
     paddingVertical: Spacing.four,
     paddingHorizontal: Spacing.four,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
     marginTop: Spacing.two,
   },
   left: {
@@ -73,7 +89,6 @@ const styles = StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#18181B',
     paddingVertical: 3,
     paddingHorizontal: 8,
     borderRadius: Radii.full,
@@ -92,12 +107,10 @@ const styles = StyleSheet.create({
     ...Typography.bodyBold,
     fontSize: 15,
     fontWeight: '800',
-    color: '#18181B',
   },
   subtitle: {
     ...Typography.small,
     fontSize: 12,
-    color: '#52525B',
   },
   right: {
     flexDirection: 'row',
@@ -108,12 +121,12 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
   },

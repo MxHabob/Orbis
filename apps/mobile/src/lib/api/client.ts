@@ -481,8 +481,18 @@ export class MobileApiClient implements OrbisApiClient {
     return this.post<AttendanceDto>('/api/v1/attendance', req);
   }
 
-  async listAttendance(classId: string, date: string): Promise<AttendanceDto[]> {
-    return this.get<AttendanceDto[]>('/api/v1/attendance', { class_id: classId, date });
+  async listAttendance(
+    classIdOrFilter?: string | { classId?: string; studentId?: string; date?: string },
+    date?: string,
+  ): Promise<AttendanceDto[]> {
+    if (typeof classIdOrFilter === 'string') {
+      return this.get<AttendanceDto[]>('/api/v1/attendance', { class_id: classIdOrFilter, date });
+    }
+    return this.get<AttendanceDto[]>('/api/v1/attendance', {
+      class_id: classIdOrFilter?.classId,
+      student_id: classIdOrFilter?.studentId,
+      date: classIdOrFilter?.date ?? date,
+    });
   }
 
   // ── 10. Exam ────────────────────────────────────────────────

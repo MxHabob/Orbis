@@ -18,13 +18,16 @@ interface ProfileIdentityCardProps {
   fullName: string;
   email: string;
   role: 'student' | 'parent' | 'teacher' | 'admin';
+  orgName?: string;
   isLoading?: boolean;
 }
 
 export const ProfileIdentityCard = React.memo<ProfileIdentityCardProps>(
-  ({ fullName, email, role, isLoading = false }) => {
+  ({ fullName, email, role, orgName, isLoading = false }) => {
     const theme = useTheme();
     const { t } = useI18n();
+
+    const displayOrgName = orgName || t('nav_campus_default');
 
     const roleLabel =
       role === 'student'
@@ -58,8 +61,8 @@ export const ProfileIdentityCard = React.memo<ProfileIdentityCardProps>(
 
               <View style={styles.badgeRow}>
                 <Badge label={roleLabel} variant="primary" size="sm" />
-                <Text style={[styles.orgName, { color: theme.textMuted }]}>
-                  {t('nav_campus_default')}
+                <Text style={[styles.orgName, { color: theme.textMuted }]} numberOfLines={1}>
+                  {displayOrgName}
                 </Text>
               </View>
             </View>

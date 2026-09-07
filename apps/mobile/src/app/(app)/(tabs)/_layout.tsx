@@ -6,7 +6,7 @@
  * 2. السلوك والذكاء
  * 3. حسابي
  *
- * Styled as an elevated floating capsule pill above the bottom screen bezel.
+ * Styled as an elevated floating capsule pill with side margins and theme support.
  */
 
 import { Tabs } from 'expo-router';
@@ -16,37 +16,42 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Typography, Radii } from '@/constants/theme';
 import { useI18n } from '@/lib/i18n';
+import { useTheme } from '@/hooks/use-theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  const theme = useTheme();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const { t } = useI18n();
-  const floatingBottom = Math.max(insets.bottom, 12) + 8;
+  const floatingBottom = Math.max(insets.bottom, 12) + 6;
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#18181B',
-        tabBarInactiveTintColor: '#71717A',
+        tabBarActiveTintColor: theme.primary,
+        tabBarInactiveTintColor: theme.textSecondary,
         tabBarShowLabel: true,
         tabBarStyle: {
           position: 'absolute',
           bottom: floatingBottom,
           left: 20,
           right: 20,
-          height: 66,
-          borderRadius: 33,
-          backgroundColor: '#FFFFFF',
+          height: 64,
+          borderRadius: 32,
+          backgroundColor: isDark ? theme.card : '#FFFFFF',
           borderWidth: 1,
-          borderColor: '#F4F4F5',
-          paddingBottom: 8,
-          paddingTop: 8,
+          borderColor: theme.border,
+          paddingBottom: 6,
+          paddingTop: 6,
           paddingHorizontal: 12,
-          elevation: 16,
+          elevation: 14,
           shadowColor: '#000000',
-          shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.14,
-          shadowRadius: 20,
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: isDark ? 0.4 : 0.12,
+          shadowRadius: 18,
         },
         tabBarLabelStyle: {
           ...Typography.small,
@@ -67,12 +72,15 @@ export default function TabsLayout() {
             <View
               style={[
                 styles.iconWrapper,
-                focused && styles.activeIconCircle,
+                focused && [
+                  styles.activeIconCircle,
+                  { backgroundColor: isDark ? theme.primaryLight : '#F5F3FF' },
+                ],
               ]}>
               <Ionicons
                 name={focused ? 'home' : 'home-outline'}
                 size={22}
-                color="#18181B"
+                color={focused ? theme.primary : theme.textSecondary}
               />
             </View>
           ),
@@ -86,12 +94,15 @@ export default function TabsLayout() {
             <View
               style={[
                 styles.iconWrapper,
-                focused && styles.activeIconCircle,
+                focused && [
+                  styles.activeIconCircle,
+                  { backgroundColor: isDark ? theme.primaryLight : '#F5F3FF' },
+                ],
               ]}>
               <Ionicons
                 name={focused ? 'sparkles' : 'sparkles-outline'}
                 size={22}
-                color={focused ? '#18181B' : '#71717A'}
+                color={focused ? theme.primary : theme.textSecondary}
               />
             </View>
           ),
@@ -105,12 +116,15 @@ export default function TabsLayout() {
             <View
               style={[
                 styles.iconWrapper,
-                focused && styles.activeIconCircle,
+                focused && [
+                  styles.activeIconCircle,
+                  { backgroundColor: isDark ? theme.primaryLight : '#F5F3FF' },
+                ],
               ]}>
               <Ionicons
                 name={focused ? 'person' : 'person-outline'}
                 size={22}
-                color={focused ? '#18181B' : '#71717A'}
+                color={focused ? theme.primary : theme.textSecondary}
               />
             </View>
           ),
@@ -123,12 +137,11 @@ export default function TabsLayout() {
 const styles = StyleSheet.create({
   iconWrapper: {
     width: 46,
-    height: 30,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
   activeIconCircle: {
-    backgroundColor: '#FFE380',
     borderRadius: Radii.full,
   },
 });

@@ -22,7 +22,7 @@ export const SignInBrandHeader = React.memo(() => {
   const { t, locale, setLocale } = useI18n();
   const { data: orgData } = useCurrentOrgQuery();
 
-  const orgName = orgData?.name || t('nav_campus_default');
+  const orgName = orgData?.name || t('auth_org_portal');
   const orgColor = orgData?.primary_color || theme.primary;
 
   const toggleLanguage = () => {

@@ -14,6 +14,14 @@ import { useTheme } from '@/hooks/use-theme';
 import { Header } from '@/components/header';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/components/ui/toast';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+} from '@/components/ui/drop-down-menu';
 import { Radii, Spacing, Typography } from '@/constants/theme';
 
 interface AttendanceLog {
@@ -27,9 +35,11 @@ interface AttendanceLog {
 export default function StudentAttendanceScreen() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
+  const toast = useToast();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [refreshing, setRefreshing] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'ALL' | AttendanceLog['status']>('ALL');
 
   const logs: AttendanceLog[] = [
     {
@@ -84,6 +94,25 @@ export default function StudentAttendanceScreen() {
     }
   };
 
+  const handleFilterSelect = (filter: 'ALL' | AttendanceLog['status']) => {
+    setStatusFilter(filter);
+    const filterLabel =
+      filter === 'ALL'
+        ? 'عرض جميع السجلات'
+        : filter === 'Present'
+        ? 'تصفية: حاضر'
+        : filter === 'Late'
+        ? 'تصفية: متأخر'
+        : filter === 'Excused'
+        ? 'تصفية: غياب بعذر'
+        : 'تصفية: غير مبرر';
+    toast.info(filterLabel);
+  };
+
+  const filteredLogs = statusFilter === 'ALL'
+    ? logs
+    : logs.filter((l) => l.status === statusFilter);
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Header title="سجل الحضور والمواظبة" showBack />
@@ -135,13 +164,61 @@ export default function StudentAttendanceScreen() {
           </View>
         </Card>
 
-        {/* Detailed Timeline */}
+        {/* Detailed Timeline Header with Dropdown Filter */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>سجل الأيام والحصص</Text>
+
+          <DropdownMenu itemCount={5} menuWidth={190}>
+            <DropdownMenuTrigger>
+              <View style={[styles.filterTrigger, { backgroundColor: theme.card, borderColor: theme.border }]}>
+                <Ionicons name="filter-outline" size={15} color={theme.primary} />
+                <Text style={[styles.filterTriggerText, { color: theme.text }]}>
+                  {statusFilter === 'ALL'
+                    ? 'الكل'
+                    : statusFilter === 'Present'
+                    ? 'حاضر'
+                    : statusFilter === 'Late'
+                    ? 'متأخر'
+                    : statusFilter === 'Excused'
+                    ? 'بعذر'
+                    : 'غير مبرر'}
+                </Text>
+                <Ionicons name="chevron-down" size={14} color={theme.textSecondary} />
+              </View>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuLabel>تصفية الحالات</DropdownMenuLabel>
+              <DropdownMenuItem
+                selected={statusFilter === 'ALL'}
+                onSelect={() => handleFilterSelect('ALL')}>
+                جميع الحالات
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                selected={statusFilter === 'Present'}
+                onSelect={() => handleFilterSelect('Present')}>
+                حاضر
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                selected={statusFilter === 'Late'}
+                onSelect={() => handleFilterSelect('Late')}>
+                متأخر
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                selected={statusFilter === 'Excused'}
+                onSelect={() => handleFilterSelect('Excused')}>
+                غياب بعذر
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                selected={statusFilter === 'Absent'}
+                onSelect={() => handleFilterSelect('Absent')}>
+                غياب غير مبرر
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </View>
 
         <View style={styles.logsList}>
-          {logs.map((log, idx) => (
+          {filteredLogs.map((log, idx) => (
             <Card key={idx} variant="flat" style={styles.logCard}>
               <View style={styles.logHeader}>
                 <View>
@@ -226,10 +303,26 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginTop: Spacing.two,
   },
   sectionTitle: {
     ...Typography.h3,
+  },
+  filterTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: Radii.full,
+    borderWidth: 1,
+  },
+  filterTriggerText: {
+    ...Typography.small,
+    fontWeight: '700',
   },
   logsList: {
     gap: Spacing.two,

@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/lib/api';
 import { useTheme } from '@/hooks/use-theme';
+import { useToast } from '@/components/ui/toast';
 import { SignInBrandHeader, SignInForm } from '@/components/auth';
 import { KeyboardAwareView } from '@/components/ui/keyboard-aware-view';
 import { Spacing } from '@/constants/theme';
@@ -19,6 +20,7 @@ import { Spacing } from '@/constants/theme';
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
+  const toast = useToast();
   const { login, loginWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
 
@@ -27,8 +29,13 @@ export default function SignInScreen() {
     try {
       const res = await login(email, pass);
       if (res?.token && res?.user) {
+        toast.success(`مرحباً بك ${res.user.full_name || ''}`);
         router.replace('/(app)/(tabs)');
+      } else {
+        toast.error('بيانات الدخول غير صحيحة، يرجى التحقق والمحاولة مجدداً');
       }
+    } catch (err: any) {
+      toast.error(err?.message || 'تعذر تسجيل الدخول، يرجى المحاولة لاحقاً');
     } finally {
       setLoading(false);
     }
@@ -39,8 +46,11 @@ export default function SignInScreen() {
     try {
       const res = await loginWithGoogle('google-oauth-token');
       if (res?.token && res?.user) {
+        toast.success(`مرحباً بك ${res.user.full_name || ''}`);
         router.replace('/(app)/(tabs)');
       }
+    } catch (err: any) {
+      toast.error(err?.message || 'تعذر تسجيل الدخول بواسطة Google');
     } finally {
       setLoading(false);
     }

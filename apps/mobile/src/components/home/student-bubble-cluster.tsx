@@ -10,6 +10,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { OrganicBubbleRing } from '@/components/glovo-illustrations';
 import { SkeletonBubble } from '@/components/ui/skeleton';
+import { useTheme } from '@/hooks/use-theme';
 import { Radii, Spacing, Typography } from '@/constants/theme';
 
 export interface BubbleItemData {
@@ -45,6 +46,7 @@ interface OrganicPebbleProps {
 }
 
 const OrganicPebble = React.memo<OrganicPebbleProps>(({ size, variantIndex, children }) => {
+  const theme = useTheme();
   const pathD = PEBBLE_PATHS[variantIndex % PEBBLE_PATHS.length];
   const tilt = PEBBLE_TILTS[variantIndex % PEBBLE_TILTS.length];
 
@@ -60,14 +62,8 @@ const OrganicPebble = React.memo<OrganicPebbleProps>(({ size, variantIndex, chil
       ]}>
       {/* Organic Hand-drawn Pebble Background */}
       <View pointerEvents="none" style={[StyleSheet.absoluteFill, { width: size, height: size }]}>
-        <Svg
-          width={size}
-          height={size}
-          viewBox="0 0 100 100">
-          <Path
-            d={pathD}
-            fill="#FFFFFF"
-          />
+        <Svg width={size} height={size} viewBox="0 0 100 100">
+          <Path d={pathD} fill={theme.card} />
         </Svg>
       </View>
 
@@ -89,6 +85,8 @@ OrganicPebble.displayName = 'OrganicPebble';
 
 export const StudentBubbleCluster = React.memo<StudentBubbleClusterProps>(
   ({ items, isLoading = false, onItemPress }) => {
+    const theme = useTheme();
+
     if (isLoading) {
       return (
         <View style={styles.cluster}>
@@ -127,8 +125,17 @@ export const StudentBubbleCluster = React.memo<StudentBubbleClusterProps>(
                   <OrganicPebble size={96} variantIndex={idx}>
                     <ItemIllustration size={68} />
                   </OrganicPebble>
-                  <View style={styles.pill}>
-                    <Text style={styles.pillText} numberOfLines={1}>
+                  <View
+                    style={[
+                      styles.pill,
+                      {
+                        backgroundColor: theme.card,
+                        borderColor: theme.border,
+                      },
+                    ]}>
+                    <Text
+                      style={[styles.pillText, { color: theme.text }]}
+                      numberOfLines={1}>
                       {item.title}
                     </Text>
                   </View>
@@ -163,8 +170,17 @@ export const StudentBubbleCluster = React.memo<StudentBubbleClusterProps>(
                     <OrganicPebble size={80} variantIndex={globalIdx}>
                       <ItemIllustration size={56} />
                     </OrganicPebble>
-                    <View style={styles.pill}>
-                      <Text style={styles.pillText} numberOfLines={1}>
+                    <View
+                      style={[
+                        styles.pill,
+                        {
+                          backgroundColor: theme.card,
+                          borderColor: theme.border,
+                        },
+                      ]}>
+                      <Text
+                        style={[styles.pillText, { color: theme.text }]}
+                        numberOfLines={1}>
                         {item.title}
                       </Text>
                     </View>
@@ -242,12 +258,10 @@ const styles = StyleSheet.create({
   pill: {
     position: 'absolute',
     bottom: -10,
-    backgroundColor: '#FFFFFF',
     paddingVertical: 3,
     paddingHorizontal: 12,
     borderRadius: Radii.full,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -259,7 +273,6 @@ const styles = StyleSheet.create({
     ...Typography.small,
     fontWeight: '700',
     fontSize: 12,
-    color: '#18181B',
     textAlign: 'center',
   },
 });

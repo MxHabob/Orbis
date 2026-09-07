@@ -7,6 +7,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/hooks/use-theme';
 import { Radii, Spacing, Typography } from '@/constants/theme';
 
 interface CampusHeaderPillProps {
@@ -15,16 +16,25 @@ interface CampusHeaderPillProps {
 }
 
 export const CampusHeaderPill = React.memo<CampusHeaderPillProps>(({ campusName, onPress }) => {
+  const theme = useTheme();
+
   return (
     <View style={styles.container}>
       <Pressable
         onPress={onPress}
-        style={({ pressed }) => [styles.pill, pressed && { opacity: 0.85 }]}>
-        <Ionicons name="home-outline" size={18} color="#18181B" />
-        <Text style={styles.text} numberOfLines={1}>
+        style={({ pressed }) => [
+          styles.pill,
+          {
+            backgroundColor: theme.card,
+            borderColor: theme.border,
+          },
+          pressed && { opacity: 0.85 },
+        ]}>
+        <Ionicons name="school-outline" size={17} color={theme.primary} />
+        <Text style={[styles.text, { color: theme.text }]} numberOfLines={1}>
           {campusName}
         </Text>
-        <Ionicons name="chevron-down" size={16} color="#18181B" />
+        <Ionicons name="chevron-down" size={15} color={theme.textSecondary} />
       </Pressable>
     </View>
   );
@@ -40,10 +50,10 @@ const styles = StyleSheet.create({
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
     paddingVertical: 7,
     paddingHorizontal: 16,
     borderRadius: Radii.full,
+    borderWidth: 1,
     gap: 6,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
@@ -54,7 +64,6 @@ const styles = StyleSheet.create({
   },
   text: {
     ...Typography.bodyBold,
-    color: '#18181B',
-    fontSize: 14,
+    fontSize: 13,
   },
 });

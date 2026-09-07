@@ -11,7 +11,6 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { Radii } from '@/constants/theme';
 
 export interface IllustrationProps {
   size?: number;
@@ -63,14 +62,10 @@ export function StudentSeniorIllustration({ size = 68 }: IllustrationProps) {
         {
           width: size,
           height: size,
-          borderRadius: size / 2,
-          backgroundColor: '#EDE9FE',
+          backgroundColor: 'transparent',
         },
       ]}>
-      <Ionicons name="school" size={size * 0.55} color="#7C3AED" />
-      <View style={styles.miniBadgeSenior}>
-        <Ionicons name="star" size={10} color="#F59E0B" />
-      </View>
+      <Ionicons name="school" size={size * 0.62} color="#7C3AED" />
     </View>
   );
 }
@@ -86,14 +81,10 @@ export function StudentSophomoreIllustration({ size = 68 }: IllustrationProps) {
         {
           width: size,
           height: size,
-          borderRadius: size / 2,
-          backgroundColor: '#FCE7F3',
+          backgroundColor: 'transparent',
         },
       ]}>
-      <Ionicons name="book" size={size * 0.55} color="#EC4899" />
-      <View style={styles.miniBadgeSophomore}>
-        <Ionicons name="sparkles" size={10} color="#EC4899" />
-      </View>
+      <Ionicons name="book" size={size * 0.62} color="#EC4899" />
     </View>
   );
 }
@@ -109,11 +100,10 @@ export function StudentMiddleIllustration({ size = 56 }: IllustrationProps) {
         {
           width: size,
           height: size,
-          borderRadius: size / 2,
-          backgroundColor: '#E0E7FF',
+          backgroundColor: 'transparent',
         },
       ]}>
-      <Ionicons name="person" size={size * 0.55} color="#4F46E5" />
+      <Ionicons name="person" size={size * 0.62} color="#4F46E5" />
     </View>
   );
 }
@@ -129,11 +119,10 @@ export function StudentElementaryIllustration({ size = 56 }: IllustrationProps) 
         {
           width: size,
           height: size,
-          borderRadius: size / 2,
-          backgroundColor: '#FEF3C7',
+          backgroundColor: 'transparent',
         },
       ]}>
-      <Ionicons name="color-palette" size={size * 0.55} color="#D97706" />
+      <Ionicons name="color-palette" size={size * 0.62} color="#D97706" />
     </View>
   );
 }
@@ -149,11 +138,10 @@ export function StudentKGIllustration({ size = 56 }: IllustrationProps) {
         {
           width: size,
           height: size,
-          borderRadius: size / 2,
-          backgroundColor: '#CCFBF1',
+          backgroundColor: 'transparent',
         },
       ]}>
-      <Ionicons name="happy" size={size * 0.55} color="#0D9488" />
+      <Ionicons name="happy" size={size * 0.62} color="#0D9488" />
     </View>
   );
 }
@@ -164,8 +152,8 @@ export function StudentKGIllustration({ size = 56 }: IllustrationProps) {
 export function WaveCurveDivider({
   width,
   height = 36,
-  primaryColor = '#FFC244',
-  sheetColor = '#FFFFFF',
+  primaryColor = '#7C3AED',
+  sheetColor = '#FAFAFA',
 }: {
   width: number;
   height?: number;
@@ -196,9 +184,9 @@ export function AttendanceFeatureIllustration({ size = 44 }: IllustrationProps) 
     <View
       style={[
         styles.featureBox,
-        { width: size, height: size, backgroundColor: '#D1FAE5', borderRadius: Radii.lg },
+        { width: size, height: size, backgroundColor: 'transparent' },
       ]}>
-      <Ionicons name="checkmark-done-circle" size={size * 0.65} color="#059669" />
+      <Ionicons name="checkmark-done-circle" size={size * 0.75} color="#059669" />
     </View>
   );
 }
@@ -208,9 +196,9 @@ export function GradesFeatureIllustration({ size = 44 }: IllustrationProps) {
     <View
       style={[
         styles.featureBox,
-        { width: size, height: size, backgroundColor: '#EDE9FE', borderRadius: Radii.lg },
+        { width: size, height: size, backgroundColor: 'transparent' },
       ]}>
-      <Ionicons name="ribbon" size={size * 0.65} color="#7C3AED" />
+      <Ionicons name="ribbon" size={size * 0.75} color="#7C3AED" />
     </View>
   );
 }
@@ -220,9 +208,9 @@ export function BehaviorFeatureIllustration({ size = 44 }: IllustrationProps) {
     <View
       style={[
         styles.featureBox,
-        { width: size, height: size, backgroundColor: '#FEF3C7', borderRadius: Radii.lg },
+        { width: size, height: size, backgroundColor: 'transparent' },
       ]}>
-      <Ionicons name="sparkles" size={size * 0.65} color="#D97706" />
+      <Ionicons name="sparkles" size={size * 0.75} color="#D97706" />
     </View>
   );
 }
@@ -232,9 +220,9 @@ export function ScheduleFeatureIllustration({ size = 44 }: IllustrationProps) {
     <View
       style={[
         styles.featureBox,
-        { width: size, height: size, backgroundColor: '#CCFBF1', borderRadius: Radii.lg },
+        { width: size, height: size, backgroundColor: 'transparent' },
       ]}>
-      <Ionicons name="calendar" size={size * 0.65} color="#0D9488" />
+      <Ionicons name="calendar" size={size * 0.75} color="#0D9488" />
     </View>
   );
 }
@@ -242,55 +230,22 @@ export function ScheduleFeatureIllustration({ size = 44 }: IllustrationProps) {
 /**
  * PRIME Banner Right Side Mascot Artwork
  */
-export function PrimeScooterMascot({ size = 78 }: IllustrationProps) {
+export function PrimeScooterMascot({
+  size = 54,
+  iconColor = '#7C3AED',
+}: IllustrationProps & { iconColor?: string }) {
   return (
-    <View style={[styles.mascotContainer, { width: size, height: size }]}>
-      {/* Royal Purple Backdrop Circle */}
-      <View style={styles.mascotBackdrop} />
-      {/* Scooter / Educational Delivery Icon */}
-      <View style={styles.mascotIconBox}>
-        <Ionicons name="bicycle" size={38} color="#FFC244" />
-      </View>
+    <View style={[styles.mascotContainer, { width: size, height: size, backgroundColor: 'transparent' }]}>
+      <Ionicons name="sparkles" size={size * 0.65} color={iconColor} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  ringBase: {
-    position: 'absolute',
-    borderWidth: 3.5,
-    borderColor: '#E5A100',
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 4,
-  },
   avatarContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
-  },
-  miniBadgeSenior: {
-    position: 'absolute',
-    top: 2,
-    right: 2,
-    backgroundColor: '#FEF3C7',
-    borderRadius: 8,
-    padding: 2,
-    borderWidth: 1,
-    borderColor: '#F59E0B',
-  },
-  miniBadgeSophomore: {
-    position: 'absolute',
-    top: 2,
-    right: 2,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    padding: 2,
-    borderWidth: 1,
-    borderColor: '#FCE7F3',
+    backgroundColor: 'transparent',
   },
   waveContainer: {
     overflow: 'hidden',
@@ -305,24 +260,11 @@ const styles = StyleSheet.create({
   featureBox: {
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'transparent',
   },
   mascotContainer: {
-    position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  mascotBackdrop: {
-    position: 'absolute',
-    right: -10,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#4338CA',
-  },
-  mascotIconBox: {
-    position: 'absolute',
-    right: 0,
-    top: 14,
-    transform: [{ rotate: '-6deg' }],
+    backgroundColor: 'transparent',
   },
 });

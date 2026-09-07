@@ -5,8 +5,8 @@
  * Clean, declarative component composition powered by @orbis/sdk & TanStack Query.
  */
 
-import React, { useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedStatusBar } from '@/components/ui/themed-status-bar';
@@ -16,8 +16,17 @@ import { useAuth } from '@/lib/api';
 import { useTheme } from '@/hooks/use-theme';
 import { useI18n } from '@/lib/i18n';
 import { useEffectiveContext } from '@/providers/effective-context';
-import { useUserQuery } from '@/hooks/use-api-queries';
+import { useUserQuery, useCurrentOrgQuery } from '@/hooks/use-api-queries';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import {
   ProfileIdentityCard,
   LinkedChildrenSection,
@@ -28,8 +37,10 @@ import { Spacing, Typography } from '@/constants/theme';
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
+  const toast = useToast();
   const { t } = useI18n();
   const { user, logout } = useAuth();
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const {
     role,
     isParent,
@@ -40,24 +51,14 @@ export default function ProfileScreen() {
 
   // ── TanStack Query Hook (Zero useEffect) ───────────────────────────────
   const { data: userProfile, isLoading: isUserLoading } = useUserQuery(user?.id);
+  const { data: orgData, isLoading: isOrgLoading } = useCurrentOrgQuery();
 
-  const handleLogout = useCallback(() => {
-    Alert.alert(
-      t('profile_sign_out'),
-      t('profile_sign_out_confirm'),
-      [
-        { text: t('common_cancel'), style: 'cancel' },
-        {
-          text: t('profile_sign_out'),
-          style: 'destructive',
-          onPress: async () => {
-            await logout();
-            router.replace('/(auth)/sign-in');
-          },
-        },
-      ],
-    );
-  }, [logout, t]);
+  const handleConfirmLogout = useCallback(async () => {
+    setShowLogoutDialog(false);
+    toast.info(t('profile_sign_out'));
+    await logout();
+    router.replace('/(auth)/sign-in');
+  }, [logout, t, toast]);
 
   const fullName = userProfile?.full_name || user?.full_name || t('profile_user_default');
   const email = userProfile?.email || user?.email || 'user@orbis.edu.sa';
@@ -89,7 +90,8 @@ export default function ProfileScreen() {
           fullName={fullName}
           email={email}
           role={role as any}
-          isLoading={isUserLoading}
+          orgName={orgData?.name}
+          isLoading={isUserLoading || isOrgLoading}
         />
 
         {/* 2. Linked Children for Parent */}
@@ -107,7 +109,7 @@ export default function ProfileScreen() {
         {/* 4. Logout Button */}
         <Button
           title={t('profile_sign_out_button')}
-          onPress={handleLogout}
+          onPress={() => setShowLogoutDialog(true)}
           variant="danger"
           size="lg"
           icon={<Ionicons name="log-out-outline" size={20} color="#FFFFFF" />}
@@ -115,6 +117,30 @@ export default function ProfileScreen() {
           style={{ marginTop: Spacing.two }}
         />
       </ScrollView>
+
+      {/* Logout Confirmation Dialog */}
+      <Dialog visible={showLogoutDialog} onClose={() => setShowLogoutDialog(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('profile_sign_out')}</DialogTitle>
+            <DialogDescription>{t('profile_sign_out_confirm')}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              title={t('common_cancel')}
+              variant="outline"
+              size="md"
+              onPress={() => setShowLogoutDialog(false)}
+            />
+            <Button
+              title={t('profile_sign_out')}
+              variant="destructive"
+              size="md"
+              onPress={handleConfirmLogout}
+            />
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </View>
   );
 }
