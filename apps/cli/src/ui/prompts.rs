@@ -2,10 +2,36 @@ use anyhow::Result;
 use colored::*;
 use inquire::{
     ui::{Color, RenderConfig, StyleSheet, Styled},
-    Confirm, Password, PasswordDisplayMode, Select, Text,
+    Autocomplete, Confirm, CustomUserError, Password, PasswordDisplayMode, Select, Text,
 };
 
 use crate::core::validator;
+
+#[derive(Clone)]
+pub struct ValueAutocompleter {
+    pub value: String,
+}
+
+impl Autocomplete for ValueAutocompleter {
+    fn get_suggestions(&mut self, _input: &str) -> Result<Vec<String>, CustomUserError> {
+        Ok(vec![])
+    }
+
+    fn get_completion(
+        &mut self,
+        input: &str,
+        highlighted_suggestion: Option<String>,
+    ) -> Result<Option<String>, CustomUserError> {
+        if let Some(s) = highlighted_suggestion {
+            return Ok(Some(s));
+        }
+        if input.is_empty() || self.value.starts_with(input) {
+            Ok(Some(self.value.clone()))
+        } else {
+            Ok(None)
+        }
+    }
+}
 
 pub fn get_render_config() -> RenderConfig<'static> {
     let mut render_config = RenderConfig::default_colored();
@@ -15,6 +41,8 @@ pub fn get_render_config() -> RenderConfig<'static> {
     render_config.scroll_up_prefix = Styled::new("▲ ");
     render_config.scroll_down_prefix = Styled::new("▼ ");
     render_config.help_message = StyleSheet::new().with_fg(Color::DarkGrey);
+    render_config.placeholder = StyleSheet::new().with_fg(Color::DarkGrey);
+    render_config.default_value = StyleSheet::new().with_fg(Color::DarkGrey);
     render_config
 }
 
@@ -31,7 +59,18 @@ pub fn prompt_text(message: &str) -> Result<String> {
 
 pub fn prompt_text_with_default(message: &str, default: &str) -> Result<String> {
     init_theme();
-    Ok(Text::new(message).with_default(default).prompt()?)
+    let autocompleter = ValueAutocompleter {
+        value: default.to_string(),
+    };
+    let val = Text::new(message)
+        .with_placeholder(default)
+        .with_autocomplete(autocompleter)
+        .prompt()?;
+    if val.trim().is_empty() {
+        Ok(default.to_string())
+    } else {
+        Ok(val.trim().to_string())
+    }
 }
 
 pub fn prompt_password(message: &str, help: Option<&str>) -> Result<String> {
@@ -83,11 +122,31 @@ pub fn prompt_text_validated_with_default<F>(
 where
     F: Fn(&str) -> Result<()>,
 {
+    prompt_text_validated_with_placeholder(message, default, validate)
+}
+
+pub fn prompt_text_validated_with_placeholder<F>(
+    message: &str,
+    placeholder: &str,
+    validate: F,
+) -> Result<String>
+where
+    F: Fn(&str) -> Result<()>,
+{
     init_theme();
+    let autocompleter = ValueAutocompleter {
+        value: placeholder.to_string(),
+    };
     loop {
-        let value = Text::new(message).with_default(default).prompt()?;
-        match validate(&value) {
-            Ok(()) => return Ok(value),
+        let value = Text::new(message)
+            .with_placeholder(placeholder)
+            .with_autocomplete(autocompleter.clone())
+            .prompt()?;
+        
+        let final_value = value.trim().to_string();
+
+        match validate(&final_value) {
+            Ok(()) => return Ok(final_value),
             Err(e) => {
                 println!("    {} {}", "▲".yellow(), e.to_string().yellow());
             }
@@ -100,11 +159,15 @@ pub fn prompt_org_name(message: &str) -> Result<String> {
 }
 
 pub fn prompt_slug(message: &str, default: &str) -> Result<String> {
-    prompt_text_validated_with_default(message, default, |v| validator::validate_slug(v))
+    prompt_text_validated_with_placeholder(message, default, |v| validator::validate_slug(v))
 }
 
 pub fn prompt_email(message: &str) -> Result<String> {
-    prompt_text_validated(message, |v| validator::validate_email(v))
+    prompt_text_validated_with_placeholder(message, "admin@orbis.edu", |v| validator::validate_email(v))
+}
+
+pub fn prompt_email_with_default(message: &str, default: &str) -> Result<String> {
+    prompt_text_validated_with_placeholder(message, default, |v| validator::validate_email(v))
 }
 
 pub fn prompt_full_name(message: &str) -> Result<String> {
