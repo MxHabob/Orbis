@@ -16,7 +16,7 @@
     },
     {
       path: "security",
-      label: m.common_nav_security(),
+      label: m.common_account_menu_security(),
     },
   ]);
 </script>

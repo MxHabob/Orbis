@@ -1,22 +1,24 @@
 <!--
 @component TimezoneSettings
-A reusable timezone selection component using `@orbis/location` and `ComboboxDropdown`.
+A reusable timezone selection row using `@orbis/location`, `ComboboxDropdown`, and `SettingsRow`.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { Label } from "@orbis/ui/label";
 import { getTimezones } from "@orbis/location/timezones";
 import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
+import SettingsRow from "$lib/shared/components/settings-row.svelte";
 
 let {
   title = "Timezone",
   description = "Choose the default timezone for the organization.",
   currentTimezone = $bindable("UTC"),
+  last = false,
   onchange,
 }: {
   title?: string;
   description?: string;
   currentTimezone?: string;
+  last?: boolean;
   onchange?: (timezone: string) => void;
 } = $props();
 
@@ -38,14 +40,8 @@ function handleSelect(item: { id: string; label: string; value: string }) {
 }
 </script>
 
-<div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
-  <div class="flex flex-col gap-1 text-start">
-    <Label class="text-xs font-semibold text-foreground">
-      {title}
-    </Label>
-    <span class="text-[11px] text-muted-foreground leading-relaxed">{description}</span>
-  </div>
-  <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+<SettingsRow {title} {description} {last}>
+  {#snippet children()}
     <ComboboxDropdown
       placeholder="Select timezone..."
       searchPlaceholder="Search timezone..."
@@ -54,5 +50,5 @@ function handleSelect(item: { id: string; label: string; value: string }) {
       onSelect={handleSelect}
       class="w-full"
     />
-  </div>
-</div>
+  {/snippet}
+</SettingsRow>

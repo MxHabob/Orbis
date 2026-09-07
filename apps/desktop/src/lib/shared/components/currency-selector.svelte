@@ -1,14 +1,15 @@
 <!--
   @component CurrencySelector
-  Reusable currency selection component.
+  Reusable currency selection component using `SettingsRow`.
   Relying 100% on active currencies from the backend database via `api.listCurrencies()`.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { Label } from "@orbis/ui/label";
 import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
+import SettingsRow from "$lib/shared/components/settings-row.svelte";
+import { Label } from "@orbis/ui/label";
 
 let {
   title = m.finance_ledger_currency(),
@@ -18,6 +19,7 @@ let {
   allLabel = "All currencies",
   compact = false,
   disabled = false,
+  last = false,
   onchange,
 }: {
   title?: string;
@@ -27,6 +29,7 @@ let {
   allLabel?: string;
   compact?: boolean;
   disabled?: boolean;
+  last?: boolean;
   onchange?: (currency: string) => void;
 } = $props();
 
@@ -83,24 +86,38 @@ function handleSelect(item: { id: string; label: string; value: string }) {
 }
 </script>
 
-<div class={compact ? "flex flex-col gap-1" : "px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4 last:border-b-0"}>
-  <div class="flex flex-col gap-1 text-start">
-    <Label class={compact ? "text-[9px] font-bold text-muted-foreground" : "text-xs font-semibold text-foreground"}>
+{#if compact}
+  <div class="flex flex-col gap-1">
+    <Label class="text-[9px] font-bold text-muted-foreground">
       {title}
     </Label>
     {#if description}
       <span class="text-[11px] text-muted-foreground leading-relaxed">{description}</span>
     {/if}
+    <div class="w-full">
+      <ComboboxDropdown
+        placeholder={isLoading ? "Loading currencies..." : "Select currency..."}
+        searchPlaceholder="Search currency..."
+        {selectedItem}
+        {items}
+        disabled={disabled || isLoading}
+        onSelect={handleSelect}
+        class="w-full"
+      />
+    </div>
   </div>
-  <div class={compact ? "w-full" : "w-full md:w-120 shrink-0 flex items-center justify-end"}>
-    <ComboboxDropdown
-      placeholder={isLoading ? "Loading currencies..." : "Select currency..."}
-      searchPlaceholder="Search currency..."
-      {selectedItem}
-      {items}
-      disabled={disabled || isLoading}
-      onSelect={handleSelect}
-      class="w-full"
-    />
-  </div>
-</div>
+{:else}
+  <SettingsRow {title} {description} {last}>
+    {#snippet children()}
+      <ComboboxDropdown
+        placeholder={isLoading ? "Loading currencies..." : "Select currency..."}
+        searchPlaceholder="Search currency..."
+        {selectedItem}
+        {items}
+        disabled={disabled || isLoading}
+        onSelect={handleSelect}
+        class="w-full"
+      />
+    {/snippet}
+  </SettingsRow>
+{/if}

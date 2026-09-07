@@ -1,22 +1,24 @@
 <!--
 @component LocaleSettings
-A reusable locale/language selection card using `@orbis/location` and `ComboboxDropdown`.
+A reusable locale/language selection row using `@orbis/location`, `ComboboxDropdown`, and `SettingsRow`.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { Label } from "@orbis/ui/label";
 import { countries } from "@orbis/location/countries-intl";
 import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
+import SettingsRow from "$lib/shared/components/settings-row.svelte";
 
 let {
-  title = "Language & Region",
-  description = "Choose your preferred language for the interface.",
+  title = m.settings_appearance_language ? m.settings_appearance_language() : "Language & Region",
+  description = m.common_account_preferences_lang_desc ? m.common_account_preferences_lang_desc() : "Choose your preferred language for the interface.",
   currentLocale = $bindable("ar"),
+  last = false,
   onchange,
 }: {
   title?: string;
   description?: string;
   currentLocale?: string;
+  last?: boolean;
   onchange?: (locale: string) => void;
 } = $props();
 
@@ -38,14 +40,8 @@ function handleSelect(item: { id: string; label: string; value: string }) {
 }
 </script>
 
-<div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
-  <div class="flex flex-col gap-1 text-start">
-    <Label class="text-xs font-semibold text-foreground">
-      {title}
-    </Label>
-    <span class="text-[11px] text-muted-foreground leading-relaxed">{description}</span>
-  </div>
-  <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+<SettingsRow {title} {description} {last}>
+  {#snippet children()}
     <ComboboxDropdown
       placeholder="Select language..."
       searchPlaceholder="Search language..."
@@ -54,6 +50,5 @@ function handleSelect(item: { id: string; label: string; value: string }) {
       onSelect={handleSelect}
       class="w-full"
     />
-  </div>
-</div>
-
+  {/snippet}
+</SettingsRow>

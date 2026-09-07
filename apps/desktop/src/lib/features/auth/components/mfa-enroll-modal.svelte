@@ -1,13 +1,13 @@
 <script lang="ts">
-import { onMount } from "svelte";
+import * as m from "$lib/paraglide/messages";
 import QRCode from "qrcode";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@orbis/ui/dialog";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-import { Badge } from "@orbis/ui/badge";
+import { Label } from "@orbis/ui/label";
 import { toast } from "@orbis/ui";
 import { api, type MfaEnrollResponse } from "$lib/api";
-import { ShieldCheck, Copy, Check, Download, KeyRound, AlertTriangle, ArrowRight, ArrowLeft } from "@lucide/svelte";
+import { ShieldCheck, Copy, Check, Download, AlertTriangle, ArrowRight, ArrowLeft } from "@lucide/svelte";
 
 interface Props {
   open: boolean;
@@ -36,7 +36,7 @@ async function startEnrollment() {
     enrollData = res;
     if (res.qr_code_uri) {
       qrDataUrl = await QRCode.toDataURL(res.qr_code_uri, {
-        width: 200,
+        width: 170,
         margin: 1.5,
         color: {
           dark: "#000000",
@@ -68,7 +68,7 @@ async function copyToClipboard(text: string, type: "secret" | "codes") {
       copiedCodes = true;
       setTimeout(() => (copiedCodes = false), 2000);
     }
-    toast.success("Copied to clipboard!");
+    toast.success(m.common_mfa_enroll_copied());
   } catch {
     toast.error("Failed to copy");
   }
@@ -86,7 +86,7 @@ function downloadRecoveryCodes() {
   link.download = `orbis-recovery-codes-${Date.now()}.txt`;
   link.click();
   URL.revokeObjectURL(url);
-  toast.success("Recovery codes saved to file");
+  toast.success(m.common_mfa_enroll_download_txt());
 }
 
 async function handleVerifyAndActivate() {
@@ -99,11 +99,11 @@ async function handleVerifyAndActivate() {
       code: verifyCode.trim(),
     });
     if (ok) {
-      toast.success("Two-Factor Authentication activated successfully!");
+      toast.success(m.common_mfa_enroll_success());
       open = false;
       onSuccess();
     } else {
-      errorMessage = "Invalid verification code. Please try again.";
+      errorMessage = m.common_mfa_enroll_invalid_code();
       toast.error(errorMessage);
     }
   } catch (err: any) {
@@ -116,73 +116,67 @@ async function handleVerifyAndActivate() {
 </script>
 
 <Dialog bind:open onOpenChange={(val) => !val && onClose()}>
-  <DialogContent class="sm:max-w-[500px] p-0 overflow-hidden border border-border/80 shadow-2xl bg-card rounded-2xl">
-    <DialogHeader class="px-6 pt-6 pb-4 border-b border-border/50 bg-muted/20">
-      <div class="flex items-center gap-3">
-        <div class="p-2.5 rounded-xl bg-primary/10 text-primary">
-          <ShieldCheck size={22} class="stroke-[2.2]" />
-        </div>
-        <div>
-          <DialogTitle class="text-base font-bold text-foreground">
-            Setup Two-Factor Authentication
-          </DialogTitle>
-          <DialogDescription class="text-xs text-muted-foreground mt-0.5">
-            Protect your account with Google or Microsoft Authenticator
-          </DialogDescription>
-        </div>
-      </div>
-      <!-- Steps Indicator -->
-      <div class="flex items-center gap-2 mt-4">
-        <div class="flex-1 h-1.5 rounded-full transition-all duration-300 {step === 'qr' ? 'bg-primary' : 'bg-primary/40'}"></div>
-        <div class="flex-1 h-1.5 rounded-full transition-all duration-300 {step === 'codes' ? 'bg-primary' : (step === 'verify' ? 'bg-primary/40' : 'bg-muted')}"></div>
-        <div class="flex-1 h-1.5 rounded-full transition-all duration-300 {step === 'verify' ? 'bg-primary' : 'bg-muted'}"></div>
+  <DialogContent class="max-w-md text-start font-sans">
+    <DialogHeader>
+      <DialogTitle class="text-sm font-bold flex items-center gap-2">
+        <ShieldCheck class="w-4.5 h-4.5 text-primary" />
+        <span>{m.common_mfa_enroll_dialog_title()}</span>
+      </DialogTitle>
+      <DialogDescription class="text-xs text-muted-foreground">
+        {m.common_mfa_enroll_dialog_desc()}
+      </DialogDescription>
+
+      <!-- Steps Progress -->
+      <div class="flex items-center gap-1.5 pt-2">
+        <div class="flex-1 h-1 rounded-full transition-all {step === 'qr' ? 'bg-primary' : 'bg-primary/40'}"></div>
+        <div class="flex-1 h-1 rounded-full transition-all {step === 'codes' ? 'bg-primary' : (step === 'verify' ? 'bg-primary/40' : 'bg-muted')}"></div>
+        <div class="flex-1 h-1 rounded-full transition-all {step === 'verify' ? 'bg-primary' : 'bg-muted'}"></div>
       </div>
     </DialogHeader>
 
-    <div class="p-6">
+    <div class="py-2">
       {#if isLoading}
         <div class="py-12 flex flex-col items-center justify-center gap-3 text-muted-foreground">
-          <div class="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-          <span class="text-xs font-medium">Generating secure keys...</span>
+          <div class="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+          <span class="text-xs">Generating keys...</span>
         </div>
       {:else if enrollData}
         <!-- Step 1: QR Code & Secret Key -->
         {#if step === 'qr'}
-          <div class="flex flex-col items-center gap-4 text-center">
-            <p class="text-xs text-muted-foreground">
-              Scan this QR code in your Authenticator app (e.g. Google Authenticator, 1Password, Microsoft Authenticator):
+          <div class="flex flex-col items-center gap-3 text-center">
+            <p class="text-xs text-muted-foreground text-start w-full">
+              {m.common_mfa_enroll_qr_step_info()}
             </p>
 
-            <div class="p-3 bg-white rounded-2xl border border-border shadow-sm">
+            <div class="p-2 bg-white rounded-lg border border-border shadow-xs">
               {#if qrDataUrl}
-                <img src={qrDataUrl} alt="TOTP QR Code" class="w-44 h-44 rounded-lg object-contain" />
+                <img src={qrDataUrl} alt="TOTP QR Code" class="w-36 h-36 rounded object-contain" />
               {/if}
             </div>
 
-            <div class="w-full flex flex-col gap-1.5 text-start">
-              <label for="manual-key" class="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Or enter key manually
-              </label>
+            <div class="w-full flex flex-col gap-1.5 text-start pt-1">
+              <Label class="text-[11px] font-semibold text-muted-foreground">
+                {m.common_mfa_enroll_manual_key()}
+              </Label>
               <div class="flex items-center gap-2">
-                <input
-                  id="manual-key"
+                <Input
                   type="text"
                   readonly
                   value={enrollData.secret}
-                  class="flex-1 px-3 py-2 text-xs font-mono bg-muted/40 border border-border rounded-xl text-foreground focus:outline-none select-all"
+                  class="flex-1 font-mono text-xs bg-muted/40 h-9"
                 />
                 <Button
                   variant="outline"
                   size="sm"
-                  class="h-9 px-3 rounded-xl gap-1.5 text-xs font-medium"
+                  class="h-9 px-3 gap-1.5 text-xs font-medium"
                   onclick={() => copyToClipboard(enrollData!.secret, "secret")}
                 >
                   {#if copiedSecret}
-                    <Check size={14} class="text-emerald-500" />
-                    <span>Copied</span>
+                    <Check class="w-3.5 h-3.5 text-emerald-500" />
+                    <span>{m.common_mfa_enroll_copied()}</span>
                   {:else}
-                    <Copy size={14} />
-                    <span>Copy</span>
+                    <Copy class="w-3.5 h-3.5" />
+                    <span>{m.common_mfa_enroll_copy()}</span>
                   {/if}
                 </Button>
               </div>
@@ -191,20 +185,22 @@ async function handleVerifyAndActivate() {
 
         <!-- Step 2: Emergency Recovery Codes -->
         {:else if step === 'codes'}
-          <div class="flex flex-col gap-4 text-start">
-            <div class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-3 text-amber-600 dark:text-amber-400">
-              <AlertTriangle size={18} class="shrink-0 mt-0.5" />
+          <div class="flex flex-col gap-3 text-start">
+            <div class="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-start gap-2.5 text-amber-600 dark:text-amber-400">
+              <AlertTriangle class="w-4 h-4 shrink-0 mt-0.5" />
               <div class="text-xs leading-relaxed">
-                <strong class="font-bold">Save your recovery codes!</strong>
-                <p class="mt-0.5 text-muted-foreground">If you lose access to your authenticator app, these 8 one-time codes are the only way to recover your account.</p>
+                <strong class="font-semibold">{m.common_mfa_enroll_codes_warning_title()}</strong>
+                <p class="text-[11px] text-muted-foreground mt-0.5">
+                  {m.common_mfa_enroll_codes_warning_desc()}
+                </p>
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-2 p-3 bg-muted/30 border border-border rounded-xl font-mono text-xs text-foreground">
+            <div class="grid grid-cols-2 gap-1.5 p-2.5 bg-muted/30 border border-border rounded-lg font-mono text-xs">
               {#each enrollData.recovery_codes as code, index}
-                <div class="flex items-center gap-2 py-1 px-2 rounded bg-background/50 border border-border/40">
-                  <span class="text-[10px] text-muted-foreground w-4">{index + 1}.</span>
-                  <span class="font-bold tracking-wider">{code}</span>
+                <div class="flex items-center gap-2 py-1 px-2 rounded bg-background border border-border/50">
+                  <span class="text-[10px] text-muted-foreground w-3.5">{index + 1}.</span>
+                  <span class="font-semibold text-foreground tracking-wider">{code}</span>
                 </div>
               {/each}
             </div>
@@ -213,45 +209,45 @@ async function handleVerifyAndActivate() {
               <Button
                 variant="outline"
                 size="sm"
-                class="flex-1 h-9 rounded-xl gap-1.5 text-xs font-medium"
+                class="flex-1 h-9 gap-1.5 text-xs font-medium"
                 onclick={() => copyToClipboard(enrollData!.recovery_codes.join("\n"), "codes")}
               >
                 {#if copiedCodes}
-                  <Check size={14} class="text-emerald-500" />
-                  <span>Codes Copied</span>
+                  <Check class="w-3.5 h-3.5 text-emerald-500" />
+                  <span>{m.common_mfa_enroll_copied()}</span>
                 {:else}
-                  <Copy size={14} />
-                  <span>Copy All</span>
+                  <Copy class="w-3.5 h-3.5" />
+                  <span>{m.common_mfa_enroll_copy_all_codes()}</span>
                 {/if}
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                class="flex-1 h-9 rounded-xl gap-1.5 text-xs font-medium"
+                class="flex-1 h-9 gap-1.5 text-xs font-medium"
                 onclick={downloadRecoveryCodes}
               >
-                <Download size={14} />
-                <span>Download .txt</span>
+                <Download class="w-3.5 h-3.5" />
+                <span>{m.common_mfa_enroll_download_txt()}</span>
               </Button>
             </div>
           </div>
 
         <!-- Step 3: Confirmation Code Verification -->
         {:else if step === 'verify'}
-          <div class="flex flex-col gap-4 text-center">
-            <div class="p-3 rounded-xl bg-primary/5 border border-primary/10 text-xs text-muted-foreground">
-              Enter the 6-digit code currently shown in your Authenticator app to confirm everything is configured properly.
-            </div>
+          <div class="flex flex-col gap-3 text-center">
+            <p class="text-xs text-muted-foreground text-start">
+              {m.common_mfa_enroll_verify_info()}
+            </p>
 
             <div class="flex flex-col items-center gap-2 py-2">
-              <input
+              <Input
                 type="text"
                 maxlength={6}
                 placeholder="000000"
                 bind:value={verifyCode}
-                class="w-48 text-center tracking-[0.4em] font-mono text-2xl font-bold py-2.5 px-4 rounded-xl border-2 border-primary/40 focus:border-primary focus:outline-none bg-background text-foreground"
+                class="w-48 text-center tracking-[0.4em] font-mono text-xl font-bold h-11"
               />
-              <span class="text-[11px] text-muted-foreground">6-digit dynamic code</span>
+              <span class="text-[11px] text-muted-foreground">{m.common_mfa_enroll_digit_hint()}</span>
             </div>
 
             {#if errorMessage}
@@ -265,41 +261,41 @@ async function handleVerifyAndActivate() {
     </div>
 
     <!-- Footer Actions -->
-    <DialogFooter class="px-6 py-4 border-t border-border/50 bg-muted/20 flex items-center justify-between">
+    <DialogFooter class="border-t border-border pt-3 mt-2 flex items-center justify-between">
       {#if step === 'qr'}
-        <Button variant="ghost" size="sm" class="rounded-xl text-xs" onclick={() => { open = false; onClose(); }}>
-          Cancel
+        <Button variant="ghost" size="sm" class="text-xs" onclick={() => { open = false; onClose(); }}>
+          {m.common_titlebar_close ? m.common_titlebar_close() : "Cancel"}
         </Button>
-        <Button size="sm" class="rounded-xl gap-1.5 text-xs font-bold" onclick={() => (step = 'codes')}>
-          <span>Next: Save Codes</span>
-          <ArrowRight size={14} />
+        <Button size="sm" class="text-xs font-semibold gap-1.5" onclick={() => (step = 'codes')}>
+          <span>{m.common_mfa_enroll_step_codes_btn()}</span>
+          <ArrowRight class="w-3.5 h-3.5 rtl:rotate-180" />
         </Button>
       {:else if step === 'codes'}
-        <Button variant="ghost" size="sm" class="rounded-xl gap-1 text-xs" onclick={() => (step = 'qr')}>
-          <ArrowLeft size={14} />
-          <span>Back</span>
+        <Button variant="ghost" size="sm" class="text-xs gap-1" onclick={() => (step = 'qr')}>
+          <ArrowLeft class="w-3.5 h-3.5 rtl:rotate-180" />
+          <span>{m.common_titlebar_close ? m.common_titlebar_close() : "Back"}</span>
         </Button>
-        <Button size="sm" class="rounded-xl gap-1.5 text-xs font-bold" onclick={() => (step = 'verify')}>
-          <span>Next: Verify Code</span>
-          <ArrowRight size={14} />
+        <Button size="sm" class="text-xs font-semibold gap-1.5" onclick={() => (step = 'verify')}>
+          <span>{m.common_mfa_enroll_step_verify_btn()}</span>
+          <ArrowRight class="w-3.5 h-3.5 rtl:rotate-180" />
         </Button>
       {:else if step === 'verify'}
-        <Button variant="ghost" size="sm" class="rounded-xl gap-1 text-xs" onclick={() => (step = 'codes')}>
-          <ArrowLeft size={14} />
-          <span>Back</span>
+        <Button variant="ghost" size="sm" class="text-xs gap-1" onclick={() => (step = 'codes')}>
+          <ArrowLeft class="w-3.5 h-3.5 rtl:rotate-180" />
+          <span>{m.common_titlebar_close ? m.common_titlebar_close() : "Back"}</span>
         </Button>
         <Button
           size="sm"
-          class="rounded-xl gap-1.5 text-xs font-bold bg-primary text-primary-foreground"
+          class="text-xs font-semibold gap-1.5"
           disabled={verifyCode.length < 6 || isSubmitting}
           onclick={handleVerifyAndActivate}
         >
           {#if isSubmitting}
             <div class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"></div>
-            <span>Verifying...</span>
+            <span>...</span>
           {:else}
-            <ShieldCheck size={15} />
-            <span>Confirm & Enable</span>
+            <ShieldCheck class="w-3.5 h-3.5" />
+            <span>{m.common_mfa_enroll_confirm_btn()}</span>
           {/if}
         </Button>
       {/if}

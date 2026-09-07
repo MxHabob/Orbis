@@ -1,12 +1,10 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { page } from "$app/state";
 import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { themeStore, authStore } from "$lib/stores";
 import { toast } from "@orbis/ui";
-import { l } from "$lib/core/i18n";
 import { getLocale, setLocale } from "$lib/paraglide/runtime";
 
 // Component imports
@@ -106,11 +104,11 @@ async function handleSaveDetails(e: Event) {
     // 3. Save Theme Preference
     themeStore.set(selectedTheme);
 
-    toast.success(l("تم حفظ تفاصيل الحساب بنجاح", "Account details saved successfully"));
+    toast.success(m.common_account_save_success());
   } catch (e) {
     console.error("Failed to update user details:", e);
     const msg = (e as any)?.message || String(e);
-    toast.error(l(`خطأ أثناء حفظ تفاصيل الحساب: ${msg}`, `Failed to save account details: ${msg}`));
+    toast.error(m.common_account_save_error({ error: msg }));
   } finally {
     isSavingDetails = false;
   }
@@ -130,11 +128,11 @@ async function handleSaveAvatar(e: Event) {
       localStorage.setItem("orbis_user", JSON.stringify(updatedUser));
     }
 
-    toast.success(l("تم حفظ الصورة الرمزية بنجاح", "Avatar saved successfully"));
+    toast.success(m.settings_general_avatar_save ? m.settings_general_avatar_save() : "Avatar saved successfully");
   } catch (e) {
     console.error("Failed to update avatar:", e);
     const msg = (e as any)?.message || String(e);
-    toast.error(l(`خطأ أثناء حفظ الصورة: ${msg}`, `Failed to save avatar: ${msg}`));
+    toast.error(msg);
   } finally {
     isSavingAvatar = false;
   }
@@ -142,58 +140,56 @@ async function handleSaveAvatar(e: Event) {
 </script>
 
 <svelte:head>
-  <title>
-    {l('إعدادات الحساب', 'Account Settings')} | Orbis
-  </title>
+  <title>{m.common_account_settings_title()} | Orbis</title>
 </svelte:head>
 
 <div class="flex flex-col gap-6">
-    {#if isLoading}
-      <!-- Loading state skeleton -->
-      <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card">
-        <div class="bg-muted/20 px-6 py-4 border-b border-border">
-          <div class="h-4 w-28 bg-muted rounded animate-pulse"></div>
-        </div>
-        <div class="p-6 flex flex-col gap-4">
-          <div class="h-9 w-full bg-muted rounded animate-pulse"></div>
-          <div class="h-9 w-full bg-muted rounded animate-pulse"></div>
-        </div>
+  {#if isLoading}
+    <!-- Loading state skeleton -->
+    <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card">
+      <div class="bg-muted/20 px-6 py-4 border-b border-border">
+        <div class="h-4 w-28 bg-muted rounded animate-pulse"></div>
       </div>
-    {:else}
-      <form onsubmit={handleSaveDetails} class="flex flex-col gap-6">
-        <AccountDetailsCard
-          bind:fullName
-          {userId}
-          {isSavingDetails}
-        />
-
-        <AccountPreferencesCard
-          bind:selectedTheme
-          bind:selectedLanguage
-          {isSavingDetails}
-          onThemeChange={handleThemeChange}
-          onLanguageChange={handleLanguageChange}
-        />
-
-        <!-- Action Button for Details and Preferences -->
-        <div class="flex justify-end gap-3 pb-2">
-          <Button
-            type="submit"
-            class="px-6 font-semibold h-9 text-xs"
-            disabled={isSavingDetails}
-          >
-            {isSavingDetails ? l("جاري الحفظ...", "Saving...") : l("حفظ التغييرات", "Save Changes")}
-          </Button>
-        </div>
-      </form>
-
-      <AccountAvatarCard
-        bind:avatarUrl
-        {fullName}
+      <div class="p-6 flex flex-col gap-4">
+        <div class="h-9 w-full bg-muted rounded animate-pulse"></div>
+        <div class="h-9 w-full bg-muted rounded animate-pulse"></div>
+      </div>
+    </div>
+  {:else}
+    <form onsubmit={handleSaveDetails} class="flex flex-col gap-6">
+      <AccountDetailsCard
+        bind:fullName
         {userId}
-        bind:useGravatar
-        {isSavingAvatar}
-        onsave={handleSaveAvatar}
+        {isSavingDetails}
       />
-    {/if}
+
+      <AccountPreferencesCard
+        bind:selectedTheme
+        bind:selectedLanguage
+        {isSavingDetails}
+        onThemeChange={handleThemeChange}
+        onLanguageChange={handleLanguageChange}
+      />
+
+      <!-- Action Button for Details and Preferences -->
+      <div class="flex justify-start pb-2">
+        <Button
+          type="submit"
+          class="px-6 font-semibold h-9 text-xs"
+          disabled={isSavingDetails}
+        >
+          {isSavingDetails ? (m.common_state_saving ? m.common_state_saving() : "Saving...") : m.settings_action_save_changes()}
+        </Button>
+      </div>
+    </form>
+
+    <AccountAvatarCard
+      bind:avatarUrl
+      {fullName}
+      {userId}
+      bind:useGravatar
+      {isSavingAvatar}
+      onsave={handleSaveAvatar}
+    />
+  {/if}
 </div>

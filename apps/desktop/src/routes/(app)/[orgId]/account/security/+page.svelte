@@ -1,17 +1,17 @@
 <script lang="ts">
+import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { authStore } from "$lib/stores";
 import { api } from "$lib/api";
 import { toast } from "@orbis/ui";
-import { l } from "$lib/core/i18n";
 
 import {
-  AccountMfaCard,
   AccountIdentitiesCard,
+  AccountMfaCard,
   AccountPasswordCard,
   AccountSessionsCard,
 } from "$lib/features/auth";
-import { Smartphone, Laptop, Monitor } from "@lucide/svelte";
+import { Smartphone, Laptop } from "@lucide/svelte";
 
 let isUpdating = $state(false);
 let currentPassword = $state("");
@@ -26,7 +26,7 @@ async function handleUpdatePassword(e: Event) {
   e.preventDefault();
 
   if (newPassword !== confirmPassword) {
-    toast.error(l("كلمات المرور غير متطابقة", "Passwords do not match"));
+    toast.error(m.common_account_password_match_error());
     return;
   }
 
@@ -37,7 +37,7 @@ async function handleUpdatePassword(e: Event) {
 
   isUpdating = true;
   try {
-    toast.success(l("تم تحديث كلمة المرور بنجاح", "Password updated successfully"));
+    toast.success(m.common_account_password_update_success());
     currentPassword = "";
     newPassword = "";
     confirmPassword = "";
@@ -93,7 +93,7 @@ async function loadSecurityData() {
 async function handleRevokeDevice(id: string) {
   try {
     await api.revokeDevice(id);
-    toast.success("Device session revoked successfully");
+    toast.success(m.common_account_sessions_revoke_success());
     activeSessions = activeSessions.filter((s) => s.id !== id);
   } catch (err: any) {
     toast.error(err.message || "Failed to revoke device");
@@ -106,20 +106,20 @@ onMount(() => {
 </script>
 
 <svelte:head>
-  <title>{l('الأمان وكلمة المرور', 'Security')} | Orbis</title>
+  <title>{m.common_account_security_title()} | Orbis</title>
 </svelte:head>
 
-<div class="flex flex-col gap-6 max-w-4xl">
-  <!-- Two-Factor Authentication (TOTP Authenticator) -->
-  <AccountMfaCard
-    {isMfaEnabled}
-    onRefresh={loadSecurityData}
-  />
-
+<div class="flex flex-col gap-6">
   <!-- Connected Identities & Social Logins (Google Account Linking) -->
   <AccountIdentitiesCard
     {isGoogleLinked}
     {googleEmail}
+    onRefresh={loadSecurityData}
+  />
+
+  <!-- Two-Factor Authentication (TOTP Authenticator) -->
+  <AccountMfaCard
+    {isMfaEnabled}
     onRefresh={loadSecurityData}
   />
 
