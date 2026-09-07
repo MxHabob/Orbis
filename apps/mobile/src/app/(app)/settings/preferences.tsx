@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Switch, Pressable } from 'react-native';
+import { Appearance, View, Text, StyleSheet, ScrollView, Switch, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -36,6 +36,7 @@ export default function PreferencesScreen() {
 
   const handleThemeChange = (pref: 'system' | 'dark' | 'light') => {
     setThemePref(pref);
+    Appearance.setColorScheme(pref === 'system' ? 'unspecified' : pref);
     toast.success(t('pref_theme') + ': ' + t(`pref_theme_${pref}`));
   };
 
