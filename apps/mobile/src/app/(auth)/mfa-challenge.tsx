@@ -23,6 +23,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/header';
+import { KeyboardAwareView } from '@/components/ui/keyboard-aware-view';
 import { Radii, Spacing, Typography } from '@/constants/theme';
 
 export default function MfaChallengeScreen() {
@@ -64,14 +65,14 @@ export default function MfaChallengeScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Header title="التحقق بخطوتين (MFA)" showBack />
 
-      <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + Spacing.six }]}
-        showsVerticalScrollIndicator={false}>
+      <KeyboardAwareView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + Spacing.six },
+        ]}>
         <Card variant="elevated" style={styles.card}>
           <View style={[styles.iconCircle, { backgroundColor: theme.primaryLight }]}>
             <Ionicons name="shield-checkmark" size={36} color={theme.primary} />
@@ -109,8 +110,8 @@ export default function MfaChallengeScreen() {
             size="lg"
           />
         </Card>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAwareView>
+    </View>
   );
 }
 

@@ -22,6 +22,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/header';
+import { KeyboardAwareView } from '@/components/ui/keyboard-aware-view';
 import { Radii, Spacing, Typography } from '@/constants/theme';
 
 export default function ForgotPasswordScreen() {
@@ -42,7 +43,6 @@ export default function ForgotPasswordScreen() {
     setLoading(true);
     setError(null);
     try {
-      // Simulate API call for password reset request
       await new Promise((resolve) => setTimeout(resolve, 800));
       setSubmitted(true);
     } catch (err: any) {
@@ -53,14 +53,14 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Header title="استعادة كلمة المرور" showBack />
 
-      <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + Spacing.six }]}
-        showsVerticalScrollIndicator={false}>
+      <KeyboardAwareView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + Spacing.six },
+        ]}>
         <Card variant="elevated" style={styles.card}>
           {submitted ? (
             <View style={styles.successBox}>
@@ -117,8 +117,8 @@ export default function ForgotPasswordScreen() {
             </>
           )}
         </Card>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAwareView>
+    </View>
   );
 }
 

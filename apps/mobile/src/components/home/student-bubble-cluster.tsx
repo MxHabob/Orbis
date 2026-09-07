@@ -2,10 +2,12 @@
  * @module @orbis/mobile/components/home/student-bubble-cluster
  *
  * Staggered 5-bubble cluster presenting students, classes, or academic domains.
+ * Designed with Glovo's signature organic hand-drawn pebble curvature.
  */
 
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { OrganicBubbleRing } from '@/components/glovo-illustrations';
 import { SkeletonBubble } from '@/components/ui/skeleton';
 import { Radii, Spacing, Typography } from '@/constants/theme';
@@ -24,6 +26,65 @@ interface StudentBubbleClusterProps {
   isLoading?: boolean;
   onItemPress: (item: BubbleItemData) => void;
 }
+
+// 5 unique organic hand-drawn pebble contours for a lively, non-perfect circle aesthetic
+const PEBBLE_PATHS = [
+  'M 50,4 C 77,2 96,22 97,50 C 98,77 77,96 50,97 C 23,98 3,77 4,50 C 5,23 23,6 50,4 Z',
+  'M 48,3 C 76,4 97,25 96,52 C 95,78 74,97 48,96 C 22,95 4,76 3,48 C 2,21 20,2 48,3 Z',
+  'M 52,5 C 77,3 96,23 96,49 C 96,75 76,96 49,96 C 23,96 4,75 4,49 C 4,23 27,7 52,5 Z',
+  'M 50,6 C 75,3 97,23 96,51 C 95,78 77,96 50,97 C 23,98 3,77 4,50 C 5,23 25,9 50,6 Z',
+  'M 49,3 C 75,2 96,22 97,49 C 98,76 76,97 49,96 C 22,95 3,75 4,48 C 5,21 23,4 49,3 Z',
+];
+
+const PEBBLE_TILTS = [-2, 2.5, 1.5, -1, -3];
+
+interface OrganicPebbleProps {
+  size: number;
+  variantIndex: number;
+  children: React.ReactNode;
+}
+
+const OrganicPebble = React.memo<OrganicPebbleProps>(({ size, variantIndex, children }) => {
+  const pathD = PEBBLE_PATHS[variantIndex % PEBBLE_PATHS.length];
+  const tilt = PEBBLE_TILTS[variantIndex % PEBBLE_TILTS.length];
+
+  return (
+    <View
+      style={[
+        styles.pebbleContainer,
+        {
+          width: size,
+          height: size,
+          transform: [{ rotate: `${tilt}deg` }],
+        },
+      ]}>
+      {/* Organic Hand-drawn Pebble Background */}
+      <Svg
+        width={size}
+        height={size}
+        viewBox="0 0 100 100"
+        style={StyleSheet.absoluteFill}>
+        <Path
+          d={pathD}
+          fill="#FFFFFF"
+        />
+      </Svg>
+
+      {/* Centered Content with Counter-Rotation for Visual Stability */}
+      <View
+        style={[
+          styles.pebbleInner,
+          {
+            transform: [{ rotate: `${-tilt}deg` }],
+          },
+        ]}>
+        {children}
+      </View>
+    </View>
+  );
+});
+
+OrganicPebble.displayName = 'OrganicPebble';
 
 export const StudentBubbleCluster = React.memo<StudentBubbleClusterProps>(
   ({ items, isLoading = false, onItemPress }) => {
@@ -48,9 +109,9 @@ export const StudentBubbleCluster = React.memo<StudentBubbleClusterProps>(
 
     return (
       <View style={styles.cluster}>
-        {/* Top Row: 2 Large Bubbles */}
+        {/* Top Row: 2 Large Organic Bubbles */}
         <View style={styles.rowTop}>
-          {topItems.map((item) => {
+          {topItems.map((item, idx) => {
             const ItemIllustration = item.Illustration;
             return (
               <Pressable
@@ -61,10 +122,10 @@ export const StudentBubbleCluster = React.memo<StudentBubbleClusterProps>(
                   pressed && { transform: [{ scale: 0.94 }] },
                 ]}>
                 <View style={styles.ringWrapperLarge}>
-                  <OrganicBubbleRing size={118} />
-                  <View style={styles.circleLarge}>
+                  <OrganicBubbleRing size={118} variantIndex={idx} />
+                  <OrganicPebble size={96} variantIndex={idx}>
                     <ItemIllustration size={68} />
-                  </View>
+                  </OrganicPebble>
                   <View style={styles.pill}>
                     <Text style={styles.pillText} numberOfLines={1}>
                       {item.title}
@@ -76,11 +137,12 @@ export const StudentBubbleCluster = React.memo<StudentBubbleClusterProps>(
           })}
         </View>
 
-        {/* Bottom Row: 3 Small Bubbles in an Arc */}
+        {/* Bottom Row: 3 Small Organic Bubbles in an Arc */}
         {bottomItems.length > 0 && (
           <View style={styles.rowBottom}>
             {bottomItems.map((item, idx) => {
               const ItemIllustration = item.Illustration;
+              const globalIdx = idx + 2;
               const isMiddle = idx === 1;
               return (
                 <Pressable
@@ -96,10 +158,10 @@ export const StudentBubbleCluster = React.memo<StudentBubbleClusterProps>(
                     },
                   ]}>
                   <View style={styles.ringWrapperSmall}>
-                    <OrganicBubbleRing size={100} />
-                    <View style={styles.circleSmall}>
+                    <OrganicBubbleRing size={100} variantIndex={globalIdx} />
+                    <OrganicPebble size={80} variantIndex={globalIdx}>
                       <ItemIllustration size={56} />
-                    </View>
+                    </OrganicPebble>
                     <View style={styles.pill}>
                       <Text style={styles.pillText} numberOfLines={1}>
                         {item.title}
@@ -163,33 +225,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'relative',
   },
-  circleLarge: {
-    position: 'absolute',
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: '#FFFFFF',
+  pebbleContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
     elevation: 4,
   },
-  circleSmall: {
-    position: 'absolute',
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#FFFFFF',
+  pebbleInner: {
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
   },
   pill: {
     position: 'absolute',

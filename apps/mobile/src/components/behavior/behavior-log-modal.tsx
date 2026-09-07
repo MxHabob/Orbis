@@ -5,7 +5,18 @@
  */
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, ScrollView, Pressable } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  ScrollView,
+  Pressable,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,96 +62,109 @@ export const BehaviorLogModal = React.memo<BehaviorLogModalProps>(
 
     return (
       <Modal visible={visible} transparent animationType="slide">
-        <View style={styles.overlay}>
-          <View style={[styles.container, { backgroundColor: theme.card }]}>
-            {/* Header */}
-            <View style={styles.header}>
-              <Text style={[styles.title, { color: theme.text }]}>
-                {t('behavior_modal_title')}
-              </Text>
-              <Pressable onPress={onClose} hitSlop={8}>
-                <Ionicons name="close" size={24} color={theme.textSecondary} />
-              </Pressable>
-            </View>
-
-            {/* Form Fields */}
-            <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
-              <View style={styles.fields}>
-                <Input
-                  label={t('behavior_modal_student_label')}
-                  placeholder={t('behavior_modal_student_placeholder')}
-                  value={student}
-                  onChangeText={setStudent}
-                />
-
-                <View style={{ gap: 6 }}>
-                  <Text style={[Typography.captionBold, { color: theme.text }]}>
-                    {t('behavior_modal_type_label')}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.overlay}>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            <View style={styles.overlayTouchable}>
+              <View style={[styles.container, { backgroundColor: theme.card }]}>
+                {/* Header */}
+                <View style={styles.header}>
+                  <Text style={[styles.title, { color: theme.text }]}>
+                    {t('behavior_modal_title')}
                   </Text>
-                  <View style={{ flexDirection: 'row', gap: Spacing.two }}>
-                    <Button
-                      title={t('behavior_modal_type_merit')}
-                      onPress={() => setType('merit')}
-                      variant={type === 'merit' ? 'primary' : 'outline'}
-                      size="sm"
-                      style={{ flex: 1 }}
-                    />
-                    <Button
-                      title={t('behavior_modal_type_violation')}
-                      onPress={() => setType('violation')}
-                      variant={type === 'violation' ? 'danger' : 'outline'}
-                      size="sm"
-                      style={{ flex: 1 }}
-                    />
-                  </View>
+                  <Pressable onPress={onClose} hitSlop={8}>
+                    <Ionicons name="close" size={24} color={theme.textSecondary} />
+                  </Pressable>
                 </View>
 
-                <Input
-                  label={t('behavior_modal_category_label')}
-                  placeholder={t('behavior_modal_category_placeholder')}
-                  value={category}
-                  onChangeText={setCategory}
-                />
+                {/* Form Fields */}
+                <ScrollView
+                  style={{ maxHeight: 420 }}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}>
+                  <View style={styles.fields}>
+                    <Input
+                      label={t('behavior_modal_student_label')}
+                      placeholder={t('behavior_modal_student_placeholder')}
+                      value={student}
+                      onChangeText={setStudent}
+                    />
 
-                <Input
-                  label={t('behavior_modal_points_label')}
-                  placeholder="2"
-                  keyboardType="numeric"
-                  value={points}
-                  onChangeText={setPoints}
-                />
+                    <View style={{ gap: 6 }}>
+                      <Text style={[Typography.captionBold, { color: theme.text }]}>
+                        {t('behavior_modal_type_label')}
+                      </Text>
+                      <View style={{ flexDirection: 'row', gap: Spacing.two }}>
+                        <Button
+                          title={t('behavior_modal_type_merit')}
+                          onPress={() => setNewTypeSafely('merit')}
+                          variant={type === 'merit' ? 'primary' : 'outline'}
+                          size="sm"
+                          style={{ flex: 1 }}
+                        />
+                        <Button
+                          title={t('behavior_modal_type_violation')}
+                          onPress={() => setNewTypeSafely('violation')}
+                          variant={type === 'violation' ? 'danger' : 'outline'}
+                          size="sm"
+                          style={{ flex: 1 }}
+                        />
+                      </View>
+                    </View>
 
-                <Input
-                  label={t('behavior_modal_desc_label')}
-                  placeholder={t('behavior_modal_desc_placeholder')}
-                  multiline
-                  numberOfLines={3}
-                  value={desc}
-                  onChangeText={setDesc}
-                />
+                    <Input
+                      label={t('behavior_modal_category_label')}
+                      placeholder={t('behavior_modal_category_placeholder')}
+                      value={category}
+                      onChangeText={setCategory}
+                    />
+
+                    <Input
+                      label={t('behavior_modal_points_label')}
+                      placeholder="2"
+                      keyboardType="numeric"
+                      value={points}
+                      onChangeText={setPoints}
+                    />
+
+                    <Input
+                      label={t('behavior_modal_desc_label')}
+                      placeholder={t('behavior_modal_desc_placeholder')}
+                      multiline
+                      numberOfLines={3}
+                      value={desc}
+                      onChangeText={setDesc}
+                    />
+                  </View>
+                </ScrollView>
+
+                {/* Footer */}
+                <View style={styles.footer}>
+                  <Button
+                    title={t('behavior_modal_cancel')}
+                    onPress={onClose}
+                    variant="ghost"
+                    style={{ flex: 1 }}
+                  />
+                  <Button
+                    title={t('behavior_modal_submit')}
+                    onPress={handleSubmit}
+                    variant="primary"
+                    style={{ flex: 2 }}
+                    disabled={!desc.trim()}
+                  />
+                </View>
               </View>
-            </ScrollView>
-
-            {/* Footer */}
-            <View style={styles.footer}>
-              <Button
-                title={t('behavior_modal_cancel')}
-                onPress={onClose}
-                variant="ghost"
-                style={{ flex: 1 }}
-              />
-              <Button
-                title={t('behavior_modal_submit')}
-                onPress={handleSubmit}
-                variant="primary"
-                style={{ flex: 2 }}
-                disabled={!desc.trim()}
-              />
             </View>
-          </View>
-        </View>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
       </Modal>
     );
+
+    function setNewTypeSafely(nextType: 'merit' | 'violation') {
+      setType(nextType);
+    }
   },
 );
 
@@ -150,6 +174,10 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  overlayTouchable: {
+    flex: 1,
     justifyContent: 'flex-end',
   },
   container: {

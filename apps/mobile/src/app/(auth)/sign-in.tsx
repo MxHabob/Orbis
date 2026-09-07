@@ -21,7 +21,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/api';
 import { useTheme } from '@/hooks/use-theme';
 import { useI18n } from '@/lib/i18n';
+import { useCurrentOrgQuery } from '@/hooks/use-api-queries';
 import { SignInForm } from '@/components/auth';
+import { KeyboardAwareView } from '@/components/ui/keyboard-aware-view';
 import { Spacing, Typography } from '@/constants/theme';
 
 export default function SignInScreen() {
@@ -29,7 +31,10 @@ export default function SignInScreen() {
   const theme = useTheme();
   const { t } = useI18n();
   const { login, loginWithGoogle } = useAuth();
+  const { data: orgData } = useCurrentOrgQuery();
   const [loading, setLoading] = useState(false);
+
+  const orgName = orgData?.name || t('nav_campus_default');
 
   const handleSignIn = async (email: string, pass: string) => {
     setLoading(true);
@@ -56,37 +61,33 @@ export default function SignInScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[styles.container, { backgroundColor: theme.background }]}>
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          {
-            paddingTop: insets.top + Spacing.six,
-            paddingBottom: insets.bottom + Spacing.six,
-          },
-        ]}
-        showsVerticalScrollIndicator={false}>
-        {/* Brand Header */}
-        <View style={styles.brandSection}>
-          <View style={[styles.logoBadge, { backgroundColor: theme.primaryLight }]}>
-            <Ionicons name="school" size={40} color={theme.primary} />
-          </View>
-          <Text style={[styles.brandTitle, { color: theme.text }]}>Orbis Mobile</Text>
-          <Text style={[styles.brandSubtitle, { color: theme.textSecondary }]}>
-            {t('auth_brand_subtitle')}
-          </Text>
+    <KeyboardAwareView
+      style={[styles.container, { backgroundColor: theme.background }]}
+      contentContainerStyle={[
+        styles.scrollContent,
+        {
+          paddingTop: insets.top + Spacing.six,
+          paddingBottom: insets.bottom + Spacing.six,
+        },
+      ]}>
+      {/* Brand Header */}
+      <View style={styles.brandSection}>
+        <View style={[styles.logoBadge, { backgroundColor: theme.primaryLight }]}>
+          <Ionicons name="school" size={40} color={theme.primary} />
         </View>
+        <Text style={[styles.brandTitle, { color: theme.text }]}>{orgName}</Text>
+        <Text style={[styles.brandSubtitle, { color: theme.textSecondary }]}>
+          {t('auth_brand_subtitle')}
+        </Text>
+      </View>
 
-        {/* Modular SignIn Form */}
-        <SignInForm
-          onSignIn={handleSignIn}
-          onGoogleSignIn={handleGoogleSignIn}
-          loading={loading}
-        />
-      </ScrollView>
-    </KeyboardAvoidingView>
+      {/* Modular SignIn Form */}
+      <SignInForm
+        onSignIn={handleSignIn}
+        onGoogleSignIn={handleGoogleSignIn}
+        loading={loading}
+      />
+    </KeyboardAwareView>
   );
 }
 

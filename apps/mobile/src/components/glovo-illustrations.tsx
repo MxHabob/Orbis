@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { Radii } from '@/constants/theme';
 
@@ -16,21 +17,38 @@ export interface IllustrationProps {
   size?: number;
 }
 
+const RING_PATHS = [
+  'M 50,2 C 79,-1 100,20 101,50 C 102,79 79,99 50,100 C 21,101 1,79 2,50 C 3,21 21,3 50,2 Z',
+  'M 48,1 C 78,2 100,24 99,53 C 98,81 76,100 48,99 C 20,98 2,78 1,48 C 0,18 18,0 48,1 Z',
+  'M 52,2 C 80,0 99,21 99,50 C 99,78 78,99 49,99 C 20,99 1,77 1,49 C 1,21 25,4 52,2 Z',
+  'M 50,2 C 78,-1 100,21 99,52 C 98,81 79,100 50,101 C 21,102 1,79 2,50 C 3,21 23,5 50,2 Z',
+  'M 49,0 C 78,-1 100,20 101,49 C 102,78 78,100 49,99 C 20,98 1,77 2,48 C 3,19 21,1 49,0 Z',
+];
+
 /**
- * Hand-drawn golden circle ring outline for Glovo-style bubbles
+ * Hand-drawn golden organic circle ring outline for Glovo-style bubbles
  */
-export function OrganicBubbleRing({ size = 118 }: { size?: number }) {
+export function OrganicBubbleRing({
+  size = 118,
+  variantIndex = 0,
+}: {
+  size?: number;
+  variantIndex?: number;
+}) {
+  const pathD = RING_PATHS[variantIndex % RING_PATHS.length];
+
   return (
-    <View
-      style={[
-        styles.ringBase,
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-        },
-      ]}
-    />
+    <View style={{ width: size, height: size, position: 'absolute' }}>
+      <Svg width={size} height={size} viewBox="0 0 102 102">
+        <Path
+          d={pathD}
+          fill="none"
+          stroke="rgba(255, 255, 255, 0.42)"
+          strokeWidth="2.5"
+          strokeDasharray="160 3"
+        />
+      </Svg>
+    </View>
   );
 }
 
