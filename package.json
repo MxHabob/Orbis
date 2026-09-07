@@ -15,11 +15,7 @@
     "date-fns": "^4.1.0"
   },
   "scripts": {
-    "generate": "bun run scripts/generate-types.ts && bun run scripts/generate-rpc.ts",
-    "api:export-openapi": "cargo run --manifest-path apps/api-rust/Cargo.toml -p api-gateway --bin export-openapi",
-    "api:openapi": "bun run api:export-openapi && bun run --cwd packages/sdk generate",
-    "api:generate-client": "bun run api:export-openapi && bun run --cwd packages/sdk generate",
-    "api:check-generated": "git diff --exit-code -- packages/sdk/src/generated",
+    "generate": "cargo run --manifest-path apps/api-rust/Cargo.toml -p orbis-server --bin export_openapi && bun run --cwd packages/sdk generate",
     "i18n:audit": "bun run scripts/i18n-audit.ts",
     "build": "turbo run build",
     "dev": "turbo run dev --continue",

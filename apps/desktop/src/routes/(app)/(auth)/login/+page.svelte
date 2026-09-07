@@ -13,8 +13,6 @@ import BackgroundPattern from "$lib/features/auth/components/background-pattern.
 import LoginForm from "$lib/features/auth/components/login-form.svelte";
 import EnvironmentSelect from "$lib/features/auth/components/environment-select.svelte";
 
-let selectedBranch = $state("");
-let selectedYear = $state("");
 </script>
 
 <svelte:head>
