@@ -24,7 +24,50 @@ pub fn get_environment() -> (&'static str, colored::ColoredString) {
     }
 }
 
-/// Renders the authentic Antigravity / Gemini CLI Header Layout
+fn lerp_rgb(c1: (u8, u8, u8), c2: (u8, u8, u8), factor: f32) -> (u8, u8, u8) {
+    let f = factor.clamp(0.0, 1.0);
+    let r = (c1.0 as f32 + (c2.0 as f32 - c1.0 as f32) * f).round() as u8;
+    let g = (c1.1 as f32 + (c2.1 as f32 - c1.1 as f32) * f).round() as u8;
+    let b = (c1.2 as f32 + (c2.2 as f32 - c1.2 as f32) * f).round() as u8;
+    (r, g, b)
+}
+
+fn color_gradient_row(text: &str, is_shadow: bool) -> String {
+    let chars: Vec<char> = text.chars().collect();
+    let total_len = chars.len().max(1);
+    let mut out = String::new();
+
+    for (i, &ch) in chars.iter().enumerate() {
+        if ch == ' ' {
+            out.push(' ');
+            continue;
+        }
+
+        let t = (i as f32) / ((total_len - 1) as f32);
+        let (r, g, b) = if t <= 0.33 {
+            let factor = t / 0.33;
+            lerp_rgb(COLOR_CYAN, COLOR_INDIGO, factor)
+        } else if t <= 0.66 {
+            let factor = (t - 0.33) / 0.33;
+            lerp_rgb(COLOR_INDIGO, COLOR_PURPLE, factor)
+        } else {
+            let factor = (t - 0.66) / 0.34;
+            lerp_rgb(COLOR_PURPLE, COLOR_PINK, factor)
+        };
+
+        if is_shadow {
+            let sr = (r as f32 * 0.40) as u8;
+            let sg = (g as f32 * 0.40) as u8;
+            let sb = (b as f32 * 0.40) as u8;
+            out.push_str(&ch.to_string().truecolor(sr, sg, sb).to_string());
+        } else {
+            out.push_str(&ch.to_string().truecolor(r, g, b).bold().to_string());
+        }
+    }
+    out
+}
+
+/// Renders the authentic Antigravity / Gemini CLI Header Layout with 3D ORBIS CLI Banner
 pub fn print_banner(db_exists: bool, setup_completed: bool) {
     // Clear screen cleanly
     print!("{}[2J{}[1;1H", 27 as char, 27 as char);
@@ -36,8 +79,6 @@ pub fn print_banner(db_exists: bool, setup_completed: bool) {
     } else {
         "○ uninitialized".truecolor(COLOR_ROSE.0, COLOR_ROSE.1, COLOR_ROSE.2)
     };
-
-    let (_, _env_display) = get_environment();
 
     let license_text = match license::check_license_status() {
         license::LicenseStatus::Active => {
@@ -58,40 +99,49 @@ pub fn print_banner(db_exists: bool, setup_completed: bool) {
     };
 
     let c1 = |s: &str| s.truecolor(COLOR_CYAN.0, COLOR_CYAN.1, COLOR_CYAN.2).bold();
-    let c2 = |s: &str| s.truecolor(COLOR_INDIGO.0, COLOR_INDIGO.1, COLOR_INDIGO.2).bold();
     let c3 = |s: &str| s.truecolor(COLOR_PURPLE.0, COLOR_PURPLE.1, COLOR_PURPLE.2).bold();
-    let dot = |s: &str| s.truecolor(COLOR_DOT.0, COLOR_DOT.1, COLOR_DOT.2).bold();
-    let dot_core = |s: &str| s.truecolor(COLOR_PURPLE.0, COLOR_PURPLE.1, COLOR_PURPLE.2).bold();
     let w = |s: &str| s.truecolor(COLOR_WHITE.0, COLOR_WHITE.1, COLOR_WHITE.2);
     let m = |s: &str| s.truecolor(COLOR_MUTED.0, COLOR_MUTED.1, COLOR_MUTED.2);
 
-    // Pixel-art Orbis Orbit Logo (8 rows)
-    let logo_rows = [
-        format!("      {}        ", c1("▄▄██████▄▄")),
-        format!("    {}    {}", format!("{}{}", c1("████▀▀  ▀▀"), c2("████")), dot("▄██▄")),
-        format!("   {}        {}   {}", c1("████"), c2("▀▀▀"), dot_core("██████")),
-        format!("  {}                {}", c1("████"), dot("▀██▀")),
-        format!("  {}                    ", c1("████")),
-        format!("  {}                {}", c1("████"), c3("████")),
-        format!("   {}          {} ", c1("████▄▄"), c3("▄▄████")),
-        format!("     {}   ", format!("{}{}", c1("▀▀██████████████"), c3("▀▀"))),
-    ];
-
-    let meta_rows = [
-        format!("{}  {}  {}", w("Orbis CLI 1.0.0").bold(), m("•"), "by Mulverse".truecolor(COLOR_CYAN.0, COLOR_CYAN.1, COLOR_CYAN.2).bold()),
-        format!("{}  {}  {}", m("Enterprise Educational Platform"), m("•"), "https://www.mulverse.com".truecolor(COLOR_MUTED.0, COLOR_MUTED.1, COLOR_MUTED.2)),
-        format!("{}", m("SeaORM Dual-Engine • Embedded & Remote IPC/REST")),
-        format!("{}", "─────────────────────────────────────────────────────────────────".truecolor(COLOR_BORDER.0, COLOR_BORDER.1, COLOR_BORDER.2)),
-        format!("{}", m("Tips for getting started:")),
-        format!("  1. Run {} to configure organization and administrator identity.", c3("init")),
-        format!("  2. Run {} to check system requirements and database connectivity.", c1("doctor")),
-        format!("  3. Run {} to launch the desktop application or daemon.", c1("start")),
+    // 3D Block Letter Banner for "> ORBIS CLI"
+    let raw_rows = [
+        "███     ▄████▄   ██████▄  ██████▄   ███    ▄█████     ▄████▄   ██      ███",
+        " ███   ██▀  ▀██  ██   ▀██ ██   ▀██  ███   ██▀   ▀    ██▀  ▀▀   ██      ███",
+        "  ███  ██    ██  ██████▀  ███████   ███   ▀█████▄    ██        ██      ███",
+        "  ███  ██    ██  ██  ▀██▄ ██   ▀██  ███      ▀▀██    ██        ██      ███",
+        " ███   ██▄  ▄██  ██    ██ ██    ██  ███   ██   ██    ██▄  ▄▄   ██▄  ▄▄ ███",
+        "███     ▀████▀   ██    ██ ██████▀   ███   ▀█████▀     ▀████▀   ███████ ███",
+        "░░░      ░░░░    ░░    ░░ ░░░░░░    ░░░    ░░░░░       ░░░░    ░░░░░░░ ░░░",
     ];
 
     println!();
-    for (logo, meta) in logo_rows.iter().zip(meta_rows.iter()) {
-        println!("  {:<32}  {}", logo, meta);
+    for (i, row) in raw_rows.iter().enumerate() {
+        let is_shadow = i == raw_rows.len() - 1;
+        println!("  {}", color_gradient_row(row, is_shadow));
     }
+    println!();
+
+    // Metadata Subtitle
+    println!(
+        "  {}  {}  {}  {}  {}",
+        w("Orbis CLI 1.0.0").bold(),
+        m("•"),
+        "by Mulverse".truecolor(COLOR_CYAN.0, COLOR_CYAN.1, COLOR_CYAN.2).bold(),
+        m("•"),
+        "https://www.mulverse.com".truecolor(COLOR_MUTED.0, COLOR_MUTED.1, COLOR_MUTED.2)
+    );
+    println!(
+        "  {}",
+        m("Enterprise Educational Platform • SeaORM Dual-Engine Architecture")
+    );
+    println!();
+
+    // Tips for Getting Started
+    println!("  {}", m("Tips for getting started:"));
+    println!("  1. Run {} to configure organization and administrator identity.", c3("init"));
+    println!("  2. Run {} to check system requirements and database connectivity.", c1("doctor"));
+    println!("  3. Run {} to launch the desktop application or daemon.", c1("start"));
+    println!("  4. Run {} for complete command reference.", c1("--help"));
     println!();
 
     // Bottom status bar (Gemini CLI Style)
