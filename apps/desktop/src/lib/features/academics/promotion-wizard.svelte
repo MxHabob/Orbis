@@ -6,8 +6,8 @@ Steps: Configuration → Class Mapping → Preview → Execute.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 
-import { commands } from "$lib/core/ipc";
-import { extractErrorMessage } from "$lib/core/ipc";
+import { api, } from "$lib/api";
+import { extractErrorMessage } from "$lib/api";
 import { toast } from "@orbis/ui";
 import { academicContext } from "$lib/stores";
 import { onMount } from "svelte";
@@ -109,7 +109,7 @@ let policyLoaded = $state(false);
 // Load promotion policy and apply defaults (Policy-Driven Architecture)
 onMount(async () => {
   try {
-    const policy = await commands.platform_policy.getAutopilotConfig();
+    const policy = await api.platform_policy.getAutopilotConfig();
     if (policy) {
       // Apply policy values as defaults (user can still override)
       config.passing_score = policy.passing_score ?? 50;
@@ -179,9 +179,9 @@ function removeMapping(index: number) {
 async function runDryRun() {
   isAnalyzing = true;
   try {
-    previewJob = await commands.enrollment_workflow.startDryRun(config);
+    previewJob = await api.enrollment_workflow.startDryRun(config);
     if (previewJob) {
-      previewDetails = await commands.enrollment_workflow.getJob(
+      previewDetails = await api.enrollment_workflow.getJob(
         previewJob.id,
       );
       if (previewJob.dry_run_result) {
@@ -201,7 +201,7 @@ async function executePromotion() {
   showExecuteConfirm = false;
   isExecuting = true;
   try {
-    executionResult = await commands.enrollment_workflow.execute(previewJob.id);
+    executionResult = await api.enrollment_workflow.execute(previewJob.id);
     toast.success(m.common_promo_complete());
     currentStep = 3; // Move to results
   } catch (e: unknown) {

@@ -7,7 +7,7 @@ and triggers the class creation side sheet. Each card links to the class detail 
 	import * as m from "$lib/paraglide/messages";
 	import { onMount } from "svelte";
 	import { createQuery } from "@tanstack/svelte-query";
-	import { commands } from "$lib/core/ipc";
+	import { api, } from "$lib/api";
 	import { Button } from "@orbis/ui/button";
 	import { Skeleton } from "@orbis/ui/skeleton";
 	import { MetricProgress } from "@orbis/ui";
@@ -28,14 +28,14 @@ and triggers the class creation side sheet. Each card links to the class detail 
 
 	const periodsQuery = createQuery(() => ({
 		queryKey: ["classes-periods", data.orgId],
-		queryFn: () => commands.calendar.listAcademicPeriods(),
+		queryFn: () => api.listAcademicPeriods(),
 		enabled: !!data.orgId,
 		staleTime: 10 * 60 * 1000,
 	}));
 
 	const classMetricsQuery = createQuery(() => ({
 		queryKey: ["classes-metrics", data.orgId, activePeriodId],
-		queryFn: () => commands.assessment.classMetrics(activePeriodId),
+		queryFn: () => api.assessment.classMetrics(activePeriodId),
 		enabled: !!data.orgId && !!activePeriodId,
 		staleTime: 2 * 60 * 1000,
 	}));
@@ -60,7 +60,7 @@ and triggers the class creation side sheet. Each card links to the class detail 
 		isLoading = true;
 		error = null;
 		try {
-			const classData = await commands.academic.listClasses();
+			const classData = await api.listClasses();
 			classes = classData;
 		} catch (e) {
 			error = e instanceof Error ? e.message : String(e);

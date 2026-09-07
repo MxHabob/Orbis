@@ -7,7 +7,7 @@
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import {
   Table,
   TableBody,
@@ -79,7 +79,7 @@ async function loadCurrencies() {
   if (!orgId) return;
   isLoading = true;
   try {
-    currencies = await commands.finance.listCurrencies();
+    currencies = await api.listCurrencies();
   } catch (e) {
     console.error("Error loading currencies:", e);
     toast.error(m.settings_currencies_load_error());
@@ -122,7 +122,7 @@ async function handleEditCurrency(e: Event) {
 
   isSubmitting = true;
   try {
-    await commands.finance.updateCurrency(editCode, editExchangeRate, editIsActive);
+    await api.finance.updateCurrency(editCode, editExchangeRate, editIsActive);
     toast.success(m.settings_currencies_updated_success());
     showEditDialog = false;
     await loadCurrencies();
@@ -154,7 +154,7 @@ async function handleDeleteCurrency(currencyToDelete: any) {
   });
   if (!confirmed) return;
   try {
-    await commands.finance.deleteCurrency(currencyToDelete.code);
+    await api.finance.deleteCurrency(currencyToDelete.code);
     toast.success(
       m.settings_currencies_deleted_success({ code: currencyToDelete.code }),
     );
@@ -182,7 +182,7 @@ async function saveRateValue(code: string) {
     return;
   }
   try {
-    await commands.finance.updateCurrency(code, editRateValue, null);
+    await api.finance.updateCurrency(code, editRateValue, null);
     toast.success(m.settings_currencies_rate_updated_success());
     editingRateCode = null;
     await loadCurrencies();

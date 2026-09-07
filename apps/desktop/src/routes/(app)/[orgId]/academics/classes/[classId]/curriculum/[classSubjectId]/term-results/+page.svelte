@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { createQuery } from "@tanstack/svelte-query";
-  import { commands, extractErrorMessage } from "$lib/core/ipc";
+  import { api, extractErrorMessage } from "$lib/api";
   import { Badge } from "@orbis/ui/badge";
   import { Button } from "@orbis/ui/button";
   import { AlertCircle, RefreshCcw, FileCheck2, Printer, CheckCircle2, XCircle } from "@lucide/svelte";
@@ -14,7 +14,7 @@
 
   const termResultsQuery = createQuery(() => ({
     queryKey: ["term-results-enriched", selectedPeriodId, classSubjectId],
-    queryFn: () => commands.assessment.listTermResultsEnriched(selectedPeriodId, classSubjectId),
+    queryFn: () => api.assessment.listTermResultsEnriched(selectedPeriodId, classSubjectId),
     enabled: !!selectedPeriodId && !!classSubjectId,
   }));
 

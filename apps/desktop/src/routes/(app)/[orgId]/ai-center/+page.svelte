@@ -5,7 +5,7 @@ Main dashboard for AI Center — unified background, responsive grid, zero div b
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { fade } from "svelte/transition";
 import {
   Activity,
@@ -39,10 +39,10 @@ let isLoading = $state(true);
 onMount(async () => {
   try {
     const [tasks, diagnostics, sessions, config] = await Promise.all([
-      commands.ai.autopilotGetTasks().catch(() => []),
-      commands.ai.autopilotGetDiagnostics().catch(() => null),
-      commands.ai.agentGetSessions().catch(() => []),
-      commands.ai.aiGetAutopilotConfig(data.orgId).catch(() => null),
+      api.ai.autopilotGetTasks().catch(() => []),
+      api.ai.autopilotGetDiagnostics().catch(() => null),
+      api.ai.agentGetSessions().catch(() => []),
+      api.ai.aiGetAutopilotConfig(data.orgId).catch(() => null),
     ]);
 
     healthStatus = (diagnostics as any)?.is_healthy === false ? "degraded" : "healthy";

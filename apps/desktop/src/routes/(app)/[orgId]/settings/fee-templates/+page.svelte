@@ -5,7 +5,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Plus, Receipt } from "@lucide/svelte";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -33,7 +33,7 @@ let activeFilter = $state<UniversalFilter>({ logic: "AND", conditions: [], group
 async function loadTemplates() {
   isLoading = true;
   try {
-    templates = await commands.finance.listFeeTemplates();
+    templates = await api.listFeeTemplates();
   } catch (e) {
     toast.error((e as any)?.message || "Failed to load fee templates");
   } finally {

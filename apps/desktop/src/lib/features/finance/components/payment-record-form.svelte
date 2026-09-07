@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { toast } from "@orbis/ui";
@@ -72,11 +72,11 @@ async function loadDropdownData() {
   isLoadingDropdowns = true;
   try {
     const [studentList, treasuryList, currencyList] = await Promise.all([
-      commands.academic.listEnrollments(),
-			commands.finance
+      api.listEnrollments(),
+			api.finance
 				.listAccounts()
 				.then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type))),
-      commands.finance.listCurrencies(),
+      api.listCurrencies(),
     ]);
     students = studentList;
     treasuries = treasuryList;
@@ -100,7 +100,7 @@ async function loadStudentFees(enrollId: string) {
   if (!enrollId || !orgId) return;
   isLoadingFees = true;
   try {
-    const list = await commands.finance.listStudentFeesByEnrollment(enrollId);
+    const list = await api.listStudentFees(enrollId);
     fees = list.filter((f) => f.status !== "paid");
     if (fees.length > 0) {
       selectedFeeId = String(fees[0].id);
@@ -164,7 +164,7 @@ async function handleSubmit(e: SubmitEvent) {
       currency: currency.trim().toUpperCase(),
     };
 	const submitted = await form.submit(async (payload) => {
-		await commands.finance.record({ ...payload, exchange_rate: undefined });
+		await api.finance.record({ ...payload, exchange_rate: undefined });
 		toast.success(m.common_payment_toast_success());
 	});
 	if (submitted) {

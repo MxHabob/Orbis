@@ -8,7 +8,7 @@ import {
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Megaphone } from "@lucide/svelte";
-import { isDesktopApp } from "$lib/core/ipc";
+import { isDesktopApp } from "$lib/api";
 
 import orbisEcosystem from "$lib/assets/orbis-ecosystem.png";
 import mulverseOrbis from "$lib/assets/mulverse-orbis.png";

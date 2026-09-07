@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { onMount } from "svelte";
-  import { commands } from "@orbis/sdk";
+  import { api, } from "@orbis/sdk";
   import { Button } from "@orbis/ui/button";
   import { Skeleton } from "@orbis/ui/skeleton";
   import { BarChart3, FileText, AlertCircle } from "@lucide/svelte";
@@ -14,7 +14,7 @@
     try {
       isLoading = true;
       error = null;
-      reports = await commands.reporting.listReports("academics");
+      reports = await api.listReportDefinitions("academics");
     } catch (e: any) {
       error = e.message || "Failed to load reports";
     } finally {

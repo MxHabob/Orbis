@@ -15,7 +15,7 @@
 
 import { academicContext } from "$lib/stores/academic-context.svelte";
 import { workflowInbox } from "$lib/stores/workflow-inbox.svelte";
-import { isDesktopApp } from "$lib/core/ipc";
+import { isDesktopApp } from "$lib/api";
 
 let bootstrapped = false;
 let unlistenCalendarSuggestions: (() => void) | null = null;

@@ -1,14 +1,14 @@
 <!--
   @component CurrencySelector
   Reusable currency selection component.
-  Relying 100% on active currencies from the backend database via `commands.finance.listCurrencies()`.
+  Relying 100% on active currencies from the backend database via `api.listCurrencies()`.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { Label } from "@orbis/ui/label";
 import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 
 let {
   title = m.finance_ledger_currency(),
@@ -35,7 +35,7 @@ let isLoading = $state(true);
 
 onMount(async () => {
   try {
-    const list = await commands.finance.listCurrencies();
+    const list = await api.listCurrencies();
     if (Array.isArray(list)) {
       dbCurrencies = list;
     }

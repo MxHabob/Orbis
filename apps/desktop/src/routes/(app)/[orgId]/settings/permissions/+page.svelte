@@ -21,7 +21,7 @@ import {
   TableRow,
 } from "@orbis/ui/table";
 import { toast } from "@orbis/ui";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { goto } from "$app/navigation";
 import SearchField from "$lib/shared/components/search-field.svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
@@ -202,7 +202,7 @@ onMount(async () => {
 async function loadPermissions() {
   isLoading = true;
   try {
-    const rawRules: any[] = await commands.iam.getPermissions(null);
+    const rawRules: any[] = await api.iam.getPermissions(null);
     rules = (rawRules || []).map((r) => ({
       role: r.role,
       document_type: r.document_type,
@@ -223,7 +223,7 @@ async function loadPermissions() {
 async function loadUsers() {
   try {
     if (data.orgId) {
-      usersList = await commands.iam.listUsers({});
+      usersList = await api.listUsers({});
     }
   } catch (e) {
     console.error("Failed to load users list", e);
@@ -249,7 +249,7 @@ async function saveChanges() {
     ]);
     for (const r of rolesToSave) {
       const roleRules = rulesByRole[r] || [];
-      await commands.iam.savePermissions(r, roleRules);
+      await api.iam.savePermissions(r, roleRules);
     }
 
     toast.success(m.settings_permissions_save_success());

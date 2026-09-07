@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { createQuery } from "@tanstack/svelte-query";
-  import { commands } from "$lib/core/ipc";
+  import { api, } from "$lib/api";
   import { Button } from "@orbis/ui/button";
   import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
   import { getLocale } from "$lib/paraglide/runtime";
@@ -23,10 +23,10 @@
   const subjectQuery = createQuery(() => ({
     queryKey: ["subject-info-sub-layout", classId, classSubjectId],
     queryFn: async () => {
-      const offerings = await commands.academic.listClassSubjects(classId, academicContext.effectivePeriodId || "");
+      const offerings = await api.listClassSubjects(classId, academicContext.effectivePeriodId || "");
       const offering = offerings.find((o: any) => String(o.id) === classSubjectId);
       if (!offering) throw new Error("Subject not found");
-      const catalog = await commands.academic.listSubjects();
+      const catalog = await api.listSubjects();
       const catSub = catalog.find((s: any) => String(s.id) === String(offering.subject_id));
       return { ...offering, catalog: catSub };
     },
@@ -35,7 +35,7 @@
 
   const usersQuery = createQuery(() => ({
     queryKey: ["all-users-subject-sub-layout"],
-    queryFn: () => commands.iam.listUsers(null),
+    queryFn: () => api.listUsers(null),
     staleTime: 10 * 60 * 1000,
   }));
 

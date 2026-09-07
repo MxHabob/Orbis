@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { createSubjectInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { Button } from "@orbis/ui/button";
@@ -36,7 +36,7 @@ let {
 async function handleSubmit(e: SubmitEvent) {
 	e.preventDefault();
 	const submitted = await form.submit(async (draft) => {
-		await commands.academic.createSubject({
+		await api.createSubject({
 			...draft,
 			name: draft.name || draft.name_ar || "",
 		});

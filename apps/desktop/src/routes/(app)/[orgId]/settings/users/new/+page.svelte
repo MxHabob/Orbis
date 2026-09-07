@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
@@ -92,12 +92,12 @@ async function handleSubmit(e: SubmitEvent) {
       address,
     };
     const submitted = await form.submit(async (request) => {
-      const newUser = await commands.iam.createUser(request);
+      const newUser = await api.registerUser(request);
       const updateRequest: Record<string, any> = {};
       if (request.full_name.trim()) updateRequest.name_en = request.full_name.trim();
       if (request.address) updateRequest.address = request.address;
       if (Object.keys(updateRequest).length > 0) {
-        await commands.iam.updateUser(newUser.id, updateRequest);
+        await api.iam.updateUser(newUser.id, updateRequest);
       }
     });
     if (!submitted) {

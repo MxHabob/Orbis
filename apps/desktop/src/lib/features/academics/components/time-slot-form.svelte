@@ -1,6 +1,6 @@
 <script lang="ts">
   import * as m from "$lib/paraglide/messages";
-  import { commands, extractErrorMessage } from "$lib/core/ipc";
+  import { api, extractErrorMessage } from "$lib/api";
   import { createTimeSlotInputSchema } from "@orbis/schemas";
   import { Button } from "@orbis/ui/button";
   import { Checkbox } from "@orbis/ui/checkbox";
@@ -82,7 +82,7 @@
     }
 
     const submitted = await form.submit(async (values) => {
-      await commands.scheduling.createTimeSlot({
+      await api.createTimeSlot({
         ...values,
         break_type: isBreak ? breakType : null,
       } as any);

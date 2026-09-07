@@ -1,10 +1,9 @@
 /**
  * Smart Prefetching — warms TanStack Query cache before navigation.
  *
- * Called on sidebar `mouseenter` to preload data for the destination page.
- * By the time the user clicks, data is already in cache → instant page load.
+ * Preloads data for the destination page on user interaction.
  */
-import { queryClient } from "$lib/core/query/client";
+import { queryClient } from "$lib/api";
 import { api, queryKeys } from "$lib/api";
 
 export function prefetchRouteData(route: string, orgId: string) {
@@ -55,4 +54,3 @@ export function prefetchRouteData(route: string, orgId: string) {
       break;
   }
 }
-

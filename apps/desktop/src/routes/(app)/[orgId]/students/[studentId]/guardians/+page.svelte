@@ -12,7 +12,7 @@ import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
 import { Plus, Users2, Edit2, Trash2 } from "@lucide/svelte";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import type { GuardianLink, JsonRecord } from "@orbis/sdk";
 import GuardianLinkSheet from "$lib/features/students/components/guardian-link-sheet.svelte";
 
@@ -38,7 +38,7 @@ async function loadData() {
   if (!studentId) return;
   isLoading = true;
   try {
-    const links = await commands.academic.listGuardiansByStudent(studentId);
+    const links = await api.listGuardians(studentId);
     guardians = links;
 
     // Fetch guardian user details in parallel
@@ -46,7 +46,7 @@ async function loadData() {
     await Promise.all(
       links.map(async (link: any) => {
         try {
-          const u = await commands.iam.getUser(String(link.guardian_id));
+          const u = await api.getUser(String(link.guardian_id));
           if (u) userMap[String(link.guardian_id)] = u as unknown as JsonRecord;
         } catch {}
       }),
@@ -88,7 +88,7 @@ async function handleDelete(link: GuardianLink) {
   });
   if (!confirmed) return;
   try {
-    await commands.academic.deleteGuardian(String(link.id));
+    await api.academic.deleteGuardian(String(link.id));
     guardians = guardians.filter((g) => g.id !== link.id);
     toast.success(m.common_guardians_delete_success());
   } catch (e: unknown) {

@@ -8,7 +8,7 @@ Sidebar: CTA card + settings form + related apps.
 <script lang="ts">
 import { getAppById, getAppsByCategory, getCategoryName, getCategoryNameAr } from "@orbis/app-store";
 import type { OrbisApp } from "@orbis/app-store";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import AppIcon from "$lib/features/ai-center/components/integrations/app-icon.svelte";
 import AppConnectForm from "$lib/features/ai-center/components/integrations/app-connect-form.svelte";

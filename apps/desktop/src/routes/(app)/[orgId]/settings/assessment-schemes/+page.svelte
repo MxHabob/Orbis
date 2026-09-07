@@ -5,7 +5,7 @@ Each scheme has components (homework, quizzes, exams, etc.) with weights.
 Uses the Assessment Engine's assessment_scheme CRUD operations.
 -->
 <script lang="ts">
-import { commands, extractErrorMessage } from "$lib/core/ipc";
+import { api, extractErrorMessage } from "$lib/api";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
@@ -31,7 +31,7 @@ const queryClient = useQueryClient();
 // ── Queries ──────────────────────────────────────────────────
 const schemesQuery = createQuery(() => ({
   queryKey: ["assessment-schemes", orgId],
-  queryFn: () => commands.assessment.listAssessmentSchemes(),
+  queryFn: () => api.listAssessmentSchemes(),
 }));
 
 let selectedSchemeId = $state<string | null>(null);
@@ -41,7 +41,7 @@ const selectedScheme = $derived(
 
 const componentsQuery = createQuery(() => ({
   queryKey: ["scheme-components", selectedSchemeId],
-  queryFn: () => (selectedSchemeId ? commands.assessment.listComponents(selectedSchemeId) : []),
+  queryFn: () => (selectedSchemeId ? api.assessment.listComponents(selectedSchemeId) : []),
   enabled: !!selectedSchemeId,
 }));
 
@@ -60,7 +60,7 @@ async function handleCreateScheme() {
   if (!newSchemeName.trim()) return;
   isCreating = true;
   try {
-    await commands.assessment.createAssessmentScheme({
+    await api.createAssessmentScheme({
       name: newSchemeName,
       description: newSchemeDesc || null,
     });
@@ -116,10 +116,10 @@ async function handleSaveComponent() {
   isSavingComponent = true;
   try {
     if (editingComponentId) {
-      await commands.assessment.updateComponent(editingComponentId, componentForm);
+      await api.assessment.updateComponent(editingComponentId, componentForm);
       toast.success("تم تحديث المكوّن بنجاح");
     } else {
-      await commands.assessment.createComponent({
+      await api.assessment.createComponent({
         scheme_id: selectedSchemeId,
         ...componentForm,
       });
@@ -138,7 +138,7 @@ async function handleSaveComponent() {
 // ── Delete ───────────────────────────────────────────────────
 async function handleDeleteScheme(id: string) {
   try {
-    await commands.assessment.deleteAssessmentScheme(id);
+    await api.assessment.deleteAssessmentScheme(id);
     toast.success("تم حذف هيكل التقييم");
     if (selectedSchemeId === id) selectedSchemeId = null;
     queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
@@ -149,7 +149,7 @@ async function handleDeleteScheme(id: string) {
 
 async function handleDeleteComponent(id: string) {
   try {
-    await commands.assessment.deleteComponent(id);
+    await api.assessment.deleteComponent(id);
     toast.success("تم حذف المكوّن");
     queryClient.invalidateQueries({ queryKey: ["scheme-components"] });
   } catch (err: unknown) {

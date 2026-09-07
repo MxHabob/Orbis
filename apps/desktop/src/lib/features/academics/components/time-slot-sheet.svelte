@@ -18,7 +18,7 @@
     SelectItem,
   } from "@orbis/ui/select";
   import { Clock, Plus, Trash2, Edit2, Coffee, Save, X } from "@lucide/svelte";
-  import { commands, extractErrorMessage } from "$lib/core/ipc";
+  import { api, extractErrorMessage } from "$lib/api";
   import { toast } from "@orbis/ui";
   import * as m from "$lib/paraglide/messages";
   import { createTimeSlotInputSchema } from "@orbis/schemas";
@@ -125,7 +125,7 @@
     try {
       if (editingSlotId) {
         // Update
-        await commands.scheduling.updateTimeSlot(editingSlotId, {
+        await api.scheduling.updateTimeSlot(editingSlotId, {
           name: name.trim() || nameAr.trim(),
           name_ar: nameAr.trim(),
           start_time: startTime,
@@ -140,7 +140,7 @@
         const slotNumber =
           timeSlots.reduce((max, s) => Math.max(max, Number(s.slot_number) || 0), 0) + 1;
 
-        await commands.scheduling.createTimeSlot({
+        await api.createTimeSlot({
           period_id: periodId,
           slot_number: slotNumber,
           name: name.trim() || nameAr.trim(),
@@ -166,7 +166,7 @@
 
   async function handleDeleteSlot(id: string) {
     try {
-      await commands.scheduling.deleteTimeSlot(id);
+      await api.scheduling.deleteTimeSlot(id);
       toast.success(m.academics_schedule_time_slot_deleted());
       if (editingSlotId === id) resetForm();
       onSuccess?.();

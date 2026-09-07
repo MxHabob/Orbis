@@ -1,7 +1,7 @@
 <script lang="ts">
 import { Save, X } from "@lucide/svelte";
 import { toast } from "@orbis/ui";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { createTimeSlotInputSchema } from "@orbis/schemas";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -108,7 +108,7 @@ async function saveSlot(event: SubmitEvent) {
   };
   const submitted = await form.submit(async (payload) => {
     if (editingId) {
-      await commands.scheduling.updateTimeSlot(editingId, {
+      await api.scheduling.updateTimeSlot(editingId, {
         name: name.trim() || nameAr.trim(),
         name_ar: nameAr.trim(),
         start_time: startTime,
@@ -116,7 +116,7 @@ async function saveSlot(event: SubmitEvent) {
       });
       toast.success(m.academics_schedule_time_slot_updated());
     } else {
-      await commands.scheduling.createTimeSlot(payload);
+      await api.createTimeSlot(payload);
       toast.success(m.academics_schedule_time_slot_added());
     }
   });

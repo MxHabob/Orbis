@@ -3,7 +3,7 @@
 
 import { api } from "$lib/api/client";
 import type { UserDto } from "$lib/api/types";
-import { extractErrorMessage } from "$lib/core/ipc";
+import { extractErrorMessage } from "$lib/api";
 
 class AuthStore {
   user = $state<UserDto | null>(null);

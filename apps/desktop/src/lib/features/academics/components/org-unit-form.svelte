@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { orgUnitInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { FormField } from "@orbis/ui";
@@ -94,8 +94,8 @@ async function loadReferenceData() {
   if (!orgId) return;
   try {
     const [allUnits, allUsers] = await Promise.all([
-      commands.organization.listOrgUnits().catch(() => []),
-      commands.iam.listUsers().catch(() => []),
+      api.listOrgUnits().catch(() => []),
+      api.listUsers().catch(() => []),
     ]);
 
     unitsList = (allUnits || []).filter(
@@ -123,10 +123,10 @@ async function handleSubmit(e: SubmitEvent) {
       head_id: values.head_id || undefined,
     };
     if (isEdit && unit) {
-      await commands.organization.updateOrgUnit(unit.id, payload);
+      await api.organization.updateOrgUnit(unit.id, payload);
       toast.success(m.common_org_unit_update_success());
     } else {
-      await commands.organization.createOrgUnit(payload);
+      await api.createOrgUnit(payload);
       toast.success(m.common_org_unit_create_success());
     }
   });

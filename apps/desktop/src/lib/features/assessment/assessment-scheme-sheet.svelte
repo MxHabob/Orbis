@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createQuery } from "@tanstack/svelte-query";
-  import { commands } from "$lib/core/ipc";
+  import { api, } from "$lib/api";
   import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
   import { Badge } from "@orbis/ui/badge";
   import { Button } from "@orbis/ui/button";
@@ -14,7 +14,7 @@
 
   const componentsQuery = createQuery(() => ({
     queryKey: ["assessment-components", classSubjectId, periodId],
-    queryFn: () => commands.assessment.listComponentsForClassSubject(classSubjectId, periodId),
+    queryFn: () => api.assessment.listComponentsForClassSubject(classSubjectId, periodId),
     enabled: !!classSubjectId && !!periodId && open,
   }));
 

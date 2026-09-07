@@ -3,7 +3,7 @@ import * as m from "$lib/paraglide/messages";
  * Workflow Inbox Store — lightweight UI state for pending actions.
  */
 import { api } from "$lib/api/client";
-import { extractErrorMessage } from "$lib/core/ipc";
+import { extractErrorMessage } from "$lib/api";
 
 class WorkflowInboxStore {
   pendingApprovals = $state(0);

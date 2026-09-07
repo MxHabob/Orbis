@@ -23,8 +23,8 @@ import { fade } from "svelte/transition";
 import { l } from "$lib/core/i18n";
 import { createEnrollmentQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
-import { commands, extractErrorMessage } from "$lib/core/ipc";
-import { queryClient } from "$lib/core/query/client";
+import { api, extractErrorMessage } from "$lib/api";
+import { queryClient } from "$lib/api";
 import { academicContext } from "$lib/stores";
 
 const orgId = $derived(page.params.orgId || "");
@@ -134,13 +134,13 @@ onMount(async () => {
       academicContext.effectivePeriodId || student?.period_id || "";
     if (periodId && studentId) {
       const [gRes, aRes, bRes] = await Promise.all([
-        commands.assessment
+        api.assessment
           .reportCard(studentId, periodId)
           .catch(() => null),
-        commands.assessment
+        api.assessment
           .getReport(periodId, studentId)
           .catch(() => null),
-        commands.assessment.listBehaviors(studentId).catch(() => []),
+        api.assessment.listBehaviors(studentId).catch(() => []),
       ]);
       gradesReport = gRes;
       attendanceReport = aRes;
@@ -280,7 +280,7 @@ async function saveStudentDetails(e: Event) {
   isSaving = true;
   try {
     // 1. Verify parent control account '110301' exists in chart of accounts
-    const accounts = await commands.finance.listAccounts();
+    const accounts = await api.listAccounts();
     const hasControlAccount = accounts.some(
       (acc: any) => acc.code === "110301",
     );
@@ -303,11 +303,11 @@ async function saveStudentDetails(e: Event) {
     };
 
     // Update student user details
-    await commands.iam.updateUser(String(student.student_id), studentUserData);
+    await api.iam.updateUser(String(student.student_id), studentUserData);
 
     // If class has changed, invoke transfer command
     if (student.class_id !== classId) {
-      await commands.academic.transfer(studentId, classId);
+      await api.academic.transfer(studentId, classId);
     }
 
     // Transition enrollment status if it was draft/pending_review and active switch is checked
@@ -315,7 +315,7 @@ async function saveStudentDetails(e: Event) {
       (student.status === "draft" || student.status === "pending_review") &&
       isActiveState
     ) {
-      await commands.academic.withdraw(studentId);
+      await api.academic.withdraw(studentId);
     }
 
     toast.success(m.common_form_success_update());

@@ -7,7 +7,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import {
   Zap,
   ShieldAlert,
@@ -83,7 +83,7 @@ let initialSnapshot = $state("");
 
 onMount(async () => {
   try {
-    const config = await commands.ai.aiGetAutopilotConfig(data.orgId);
+    const config = await api.ai.aiGetAutopilotConfig(data.orgId);
     if (config) {
       Object.assign(autopilotSettings, config);
     }
@@ -129,7 +129,7 @@ function resetToInitial() {
 async function saveAllSettings() {
   isSaving = true;
   try {
-    await commands.ai.aiSaveAutopilotConfig(data.orgId, autopilotSettings);
+    await api.ai.aiSaveAutopilotConfig(data.orgId, autopilotSettings);
     initialSnapshot = currentSnapshot;
     toast.success(m.ai_center_settings_save_success());
   } catch (e) {

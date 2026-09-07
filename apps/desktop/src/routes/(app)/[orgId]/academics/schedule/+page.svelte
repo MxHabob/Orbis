@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
-  import { commands, extractErrorMessage } from "$lib/core/ipc";
+  import { api, extractErrorMessage } from "$lib/api";
   import { getLocale, localizeHref } from "$lib/paraglide/runtime";
   import { toast } from "@orbis/ui";
   import { createQuery, useQueryClient } from "@tanstack/svelte-query";
@@ -57,35 +57,35 @@
 
   const periodsQuery = createQuery(() => ({
     queryKey: ["periods", data.orgId],
-    queryFn: () => commands.calendar.listAcademicPeriods(),
+    queryFn: () => api.listAcademicPeriods(),
     enabled: !!data.orgId,
     staleTime: 10 * 60 * 1000,
   }));
 
   const classesQuery = createQuery(() => ({
     queryKey: ["classes", data.orgId],
-    queryFn: () => commands.academic.listClasses(),
+    queryFn: () => api.listClasses(),
     enabled: !!data.orgId,
     staleTime: 5 * 60 * 1000,
   }));
 
   const subjectsQuery = createQuery(() => ({
     queryKey: ["subjects", data.orgId],
-    queryFn: () => commands.academic.listSubjects(),
+    queryFn: () => api.listSubjects(),
     enabled: !!data.orgId,
     staleTime: 10 * 60 * 1000,
   }));
 
   const usersQuery = createQuery(() => ({
     queryKey: ["users", data.orgId],
-    queryFn: () => commands.iam.listUsers(null),
+    queryFn: () => api.listUsers(null),
     enabled: !!data.orgId,
     staleTime: 5 * 60 * 1000,
   }));
 
   const roomsQuery = createQuery(() => ({
     queryKey: ["rooms", data.orgId],
-    queryFn: () => commands.scheduling.listRooms(),
+    queryFn: () => api.listRooms(),
     enabled: !!data.orgId,
     staleTime: 10 * 60 * 1000,
   }));
@@ -156,7 +156,7 @@
   // Time Slots Query
   const timeSlotsQuery = createQuery(() => ({
     queryKey: ["time-slots", data.orgId, activePeriodId],
-    queryFn: () => commands.scheduling.listTimeSlots(),
+    queryFn: () => api.listTimeSlots(),
     enabled: !!data.orgId && !!activePeriodId,
     staleTime: 5 * 60 * 1000,
   }));
@@ -170,7 +170,7 @@
   // Schedule Query for active period
   const periodScheduleQuery = createQuery(() => ({
     queryKey: ["period-schedule", data.orgId, activePeriodId],
-    queryFn: () => commands.scheduling.listLessonsByPeriod(activePeriodId),
+    queryFn: () => api.listScheduledLessons(activePeriodId),
     enabled: !!data.orgId && !!activePeriodId,
     staleTime: 60 * 1000,
   }));
@@ -363,7 +363,7 @@
 
   async function handleMoveLesson(lesson: any, targetDay: number, targetSlotId: string) {
     try {
-      const conflicts = await commands.scheduling.checkConflicts(
+      const conflicts = await api.scheduling.checkConflicts(
         activePeriodId,
         lesson.class_id,
         lesson.teacher_id,
@@ -380,7 +380,7 @@
         return;
       }
 
-      await commands.scheduling.updateLesson(lesson.id, {
+      await api.scheduling.updateLesson(lesson.id, {
         day_of_week: targetDay,
         time_slot_id: targetSlotId,
       } as any);
@@ -394,7 +394,7 @@
 
   async function handleDeleteLesson(lessonId: string) {
     try {
-      await commands.scheduling.deleteLesson(lessonId);
+      await api.scheduling.deleteLesson(lessonId);
       toast.success(isArabic ? "تم حذف الحصة من الجدول" : "Lesson removed from schedule");
       refetchSchedule();
     } catch (err) {

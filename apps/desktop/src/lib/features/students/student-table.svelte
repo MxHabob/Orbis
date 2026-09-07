@@ -6,7 +6,7 @@ Matches the column layout and styling of the React dashboard precisely.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { DataTable, AvatarCell, BadgeCell, CheckboxCell } from "$lib/tables";
-import type { Enrollment } from "$lib/core/ipc";
+import type { Enrollment } from "$lib/api";
 
 import { formatDate, l } from "$lib/core/i18n";
 import type { OrbisColumnDef, GridActionEvent } from "@orbis/svelte-grid";

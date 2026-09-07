@@ -5,8 +5,7 @@ import * as m from "$lib/paraglide/messages";
  * Supports multiple documents per sheet with WYSIWYG preview.
  */
 import { page } from "$app/state";
-import { commands } from "$lib/core/ipc";
-import { api } from "$lib/api/client";
+import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Label } from "@orbis/ui/label";

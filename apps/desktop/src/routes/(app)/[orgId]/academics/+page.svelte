@@ -34,7 +34,7 @@ Right side: Linear-style diagnostics panel with Orbis Advisor insights.
   import { createPromotionJobsQuery } from "$lib/features/academics/promotion-queries";
   import { academicContext } from "$lib/stores";
   import { createExamSessionsQuery } from "$lib/features/exams/queries";
-  import { extractErrorMessage } from "$lib/core/ipc";
+  import { extractErrorMessage } from "$lib/api";
 
   let { data }: { data: { orgId: string } } = $props();
 

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { createQuery } from "@tanstack/svelte-query";
-  import { commands } from "$lib/core/ipc";
+  import { api, } from "$lib/api";
   import { Badge } from "@orbis/ui/badge";
   import { Skeleton } from "@orbis/ui/skeleton";
   import { Users, BookOpen, GraduationCap, ChevronRight } from "@lucide/svelte";
@@ -24,14 +24,14 @@
   // Class Info Query
   const classQuery = createQuery(() => ({
     queryKey: ["class-detail-master-layout", classId, periodId],
-    queryFn: () => commands.academic.getClass(classId),
+    queryFn: () => api.getClass(classId),
     enabled: !!classId,
   }));
 
   // Students Count Query
   const studentsQuery = createQuery(() => ({
     queryKey: ["class-students-count-master-layout", classId, periodId],
-    queryFn: () => commands.academic.listEnrichedStudents(classId),
+    queryFn: () => api.academic.listEnrichedStudents(classId),
     enabled: !!classId,
   }));
 
@@ -40,7 +40,7 @@
     queryKey: ["class-subject-title-layout", classId, classSubjectId, periodId],
     queryFn: async () => {
       if (!classSubjectId) return null;
-      const offerings = await commands.academic.listClassSubjects(
+      const offerings = await api.listClassSubjects(
         classId,
         periodId || "",
       );
@@ -48,7 +48,7 @@
         (o: any) => String(o.id) === String(classSubjectId),
       );
       if (!offering) return null;
-      const catalog = await commands.academic.listSubjects();
+      const catalog = await api.listSubjects();
       const catSub = catalog.find(
         (s: any) => String(s.id) === String(offering.subject_id),
       );

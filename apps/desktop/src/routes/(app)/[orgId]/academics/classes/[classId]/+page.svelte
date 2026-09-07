@@ -2,7 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { createQuery } from "@tanstack/svelte-query";
-import { commands, extractErrorMessage } from "$lib/core/ipc";
+import { api, extractErrorMessage } from "$lib/api";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
@@ -38,7 +38,7 @@ const isArabic = $derived(getLocale() === "ar");
 // ── TanStack Queries ──────────────────────────────────────────────────────────
 const classQuery = createQuery(() => ({
   queryKey: ["class-detail-page", classId, periodId],
-  queryFn: () => commands.academic.getClass(classId),
+  queryFn: () => api.getClass(classId),
   enabled: !!classId,
 }));
 
@@ -50,7 +50,7 @@ const classDisplayName = $derived.by(() => {
 
 const classMetricsQuery = createQuery(() => ({
   queryKey: ["class-metrics", classId, periodId],
-  queryFn: () => commands.assessment.classMetrics(periodId, classId).catch(() => []),
+  queryFn: () => api.assessment.classMetrics(periodId, classId).catch(() => []),
   enabled: !!classId && !!periodId,
   staleTime: 5 * 60 * 1000,
 }));

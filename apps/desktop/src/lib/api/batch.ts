@@ -1,17 +1,8 @@
 /**
- * IPC Page Bundles — batch multiple related API calls into a single Promise.
+ * API Page Bundles — batch multiple related API calls into a single Promise.
  *
  * Reduces waterfall requests when entering a page that needs multiple datasets.
  * Uses Promise.allSettled to ensure partial failures don't block the entire load.
- *
- * @example
- * ```ts
- * const { enrollments, classes, periods } = await loadPageBundle({
- *   enrollments: () => commands.academic.listEnrollments(),
- *   classes: () => commands.academic.listClasses(),
- *   periods: () => commands.calendar.listAcademicPeriods(),
- * });
- * ```
  */
 
 type BundleSpec = Record<string, () => Promise<any>>;
@@ -34,11 +25,7 @@ export interface PageBundleResult<T extends BundleSpec> {
 }
 
 /**
- * Execute multiple IPC calls in parallel and return results as a named bundle.
- *
- * - All calls run concurrently via `Promise.allSettled`.
- * - Failed calls return `null` in data and their error in `errors`.
- * - Successful calls return their value in `data`.
+ * Execute multiple API calls in parallel and return results as a named bundle.
  */
 export async function loadPageBundle<T extends BundleSpec>(
   spec: T,

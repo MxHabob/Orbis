@@ -9,7 +9,7 @@ import type {
   AcademicContextResponse,
 } from "@orbis/sdk";
 import { api } from "$lib/api/client";
-import { extractErrorMessage } from "$lib/core/ipc";
+import { extractErrorMessage } from "$lib/api";
 import { toast } from "@orbis/ui";
 
 class AcademicContextStore {

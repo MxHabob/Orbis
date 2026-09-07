@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
@@ -40,7 +40,7 @@ function fieldError(field: string): string | undefined {
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
 	const submitted = await form.submit(async (values) => {
-		await commands.academic.createClass({
+		await api.createClass({
 			...values,
 			name: values.name || values.name_ar,
 			name_ar: values.name_ar || values.name,

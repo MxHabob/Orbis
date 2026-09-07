@@ -8,12 +8,12 @@ import * as m from "$lib/paraglide/messages";
 import { uiStore, authStore, aiContext } from "$lib/stores";
 import { fly } from "svelte/transition";
 import { getLocale } from "$lib/paraglide/runtime";
-import { isDesktopApp } from "$lib/core/ipc";
+import { isDesktopApp } from "$lib/api";
 import { toast } from "@orbis/ui";
 import ChatInput from "../components/chat-input.svelte";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { createAgentSessionsQuery } from "$lib/features/ai/queries";
 import AgentHeader from "../components/agent-header.svelte";
 import AgentCockpit from "../components/agent-cockpit.svelte";
@@ -130,7 +130,7 @@ function handleClose() {
 async function openStandaloneWindow() {
   if (isDesktopApp) {
     try {
-      await commands.ai.agentOpenStandalone();
+      await api.ai.agentOpenStandalone();
       uiStore.setAskOrbis(false);
     } catch (e: unknown) {
       console.error("Failed to open Ask Orbis standalone window:", e);
@@ -147,7 +147,7 @@ async function openStandaloneWindow() {
 
 async function handleNewChat(agentType: string = "default") {
   try {
-    const newSession = await commands.ai.agentCreateSession(agentType);
+    const newSession = await api.ai.agentCreateSession(agentType);
     selectedSessionId = newSession.id;
     messages = [];
   } catch (e: unknown) {
@@ -174,7 +174,7 @@ async function submitMessage(queryText?: string) {
   try {
     let activeId = effectiveSessionId;
     if (!activeId) {
-      const newSession = await commands.ai.agentCreateSession("greeting");
+      const newSession = await api.ai.agentCreateSession("greeting");
       selectedSessionId = newSession.id;
       activeId = newSession.id;
     }
@@ -185,7 +185,7 @@ async function submitMessage(queryText?: string) {
       { id: assistantMessageId, role: "assistant", content: "" },
     ];
 
-    const response = await commands.ai.agentQuery(
+    const response = await api.ai.agentQuery(
       activeId,
       text,
       aiContext.context || undefined,

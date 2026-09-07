@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { feeAssignmentInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { FormField } from "@orbis/ui";
@@ -41,8 +41,8 @@ async function loadDropdownData() {
   isLoadingDropdowns = true;
   try {
     const [studentList, templateList] = await Promise.all([
-      commands.academic.listEnrollments(),
-	commands.finance.listFeeTemplates(),
+      api.listEnrollments(),
+	api.listFeeTemplates(),
     ]);
     students = studentList;
     templates = templateList;
@@ -81,7 +81,7 @@ $effect(() => {
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
 	const submitted = await form.submit(async (payload) => {
-		await commands.finance.assign(payload);
+		await api.finance.assign(payload);
     toast.success(m.common_fee_toast_success());
 		form.reset();
     description = "";

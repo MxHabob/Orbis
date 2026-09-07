@@ -5,7 +5,7 @@ Renders subject grades report card using OrbisGrid + summary analytics.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { GraduationCap, Award, Calendar, RefreshCcw } from "@lucide/svelte";
 import { onMount } from "svelte";
@@ -31,12 +31,12 @@ async function loadGrades() {
   isLoading = true;
   try {
     if (!orgId || !studentId || !periodId) return;
-    const enrollments = await commands.academic.listEnrollments();
+    const enrollments = await api.listEnrollments();
     const activeEnrollment = enrollments.find(
       (e: any) => e.student_id === studentId,
     );
     if (activeEnrollment) {
-      report = await commands.assessment.reportCard(
+      report = await api.assessment.reportCard(
         activeEnrollment.id,
         periodId,
       );

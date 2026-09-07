@@ -5,7 +5,7 @@ Attendance stats + log history using OrbisGrid.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { Calendar, UserCheck, Ban, Clock } from "@lucide/svelte";
 import { onMount } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -30,12 +30,12 @@ async function loadAttendance() {
   isLoading = true;
   try {
     if (!orgId || !studentId || !periodId) return;
-    const enrollments = await commands.academic.listEnrollments();
+    const enrollments = await api.listEnrollments();
     const activeEnrollment = enrollments.find(
       (e: any) => e.student_id === studentId,
     );
     if (activeEnrollment) {
-      report = await commands.assessment.getReport(
+      report = await api.assessment.getReport(
         periodId,
         activeEnrollment.id,
       );

@@ -9,7 +9,7 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { localizeHref } from "$lib/paraglide/runtime";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { fade } from "svelte/transition";
 import {
   Plus,
@@ -35,7 +35,7 @@ const orgId = $derived(data.orgId);
 const queryClient = useQueryClient();
 const periodsQuery = createQuery(() => ({
 	queryKey: ["exam-session-periods", orgId],
-	queryFn: () => commands.calendar.listAcademicPeriods(),
+	queryFn: () => api.listAcademicPeriods(),
 	enabled: !!orgId,
 	staleTime: 5 * 60 * 1000,
 }));

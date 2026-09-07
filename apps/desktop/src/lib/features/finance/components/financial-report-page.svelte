@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { createAccountsQuery, createCurrenciesQuery } from "$lib/features/finance";
-import { extractErrorMessage } from "$lib/core/ipc";
+import { extractErrorMessage } from "$lib/api";
 import { formatCurrency } from "$lib/core/i18n";
 import { DataTable } from "$lib/tables";
 import type { OrbisColumnDef } from "@orbis/svelte-grid";

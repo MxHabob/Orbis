@@ -2,7 +2,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import {
   Select,
@@ -45,8 +45,8 @@ async function loadData() {
   isLoading = true;
   try {
     const [accounts, currencies] = await Promise.all([
-      commands.finance.listAccounts().then((accounts) => accounts.filter((account: any) => !accounts.some((candidate: any) => candidate.parent_id === account.id))),
-      commands.finance.listCurrencies(),
+      api.listAccounts().then((accounts) => accounts.filter((account: any) => !accounts.some((candidate: any) => candidate.parent_id === account.id))),
+      api.listCurrencies(),
     ]);
     childAccounts = accounts;
     const base = currencies.find((c: any) => c.is_base === 1);

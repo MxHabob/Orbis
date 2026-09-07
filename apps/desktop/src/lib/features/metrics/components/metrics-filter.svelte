@@ -13,7 +13,7 @@ import {
 } from "@orbis/ui/dropdown-menu";
 import { Filter, ChevronDown } from "@lucide/svelte";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 
 import { getLocale } from "$lib/paraglide/runtime";
 
@@ -36,7 +36,7 @@ let classes = $state<any[]>([]);
 async function loadOptions() {
   try {
     // Load Terms (Periods of type 'term')
-    const periods = await commands.calendar.listAcademicPeriods();
+    const periods = await api.listAcademicPeriods();
     terms = periods
       ? periods.filter(
           (c) =>
@@ -47,7 +47,7 @@ async function loadOptions() {
       : [];
 
     // Load Classes
-    const cl = await commands.academic.listClasses();
+    const cl = await api.listClasses();
     classes = cl || [];
   } catch (e) {
     console.error("Error loading filter options:", e);

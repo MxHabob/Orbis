@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { commands, extractErrorMessage } from "$lib/core/ipc";
+import { api, extractErrorMessage } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import {
@@ -66,7 +66,7 @@ async function loadUnits() {
   isLoading = true;
   error = null;
   try {
-    const list = await commands.organization.listOrgUnits();
+    const list = await api.listOrgUnits();
     units = list;
   } catch (e) {
     error = extractErrorMessage(e);
@@ -290,7 +290,7 @@ async function handleDeleteUnit(unit: any) {
   if (!confirmed) return;
 
   try {
-    await commands.organization.deleteOrgUnit(unit.id);
+    await api.deleteOrgUnit(unit.id);
     toast.success("Organizational unit deleted successfully");
     loadUnits();
   } catch (e) {

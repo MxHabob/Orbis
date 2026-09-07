@@ -2,7 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import DragIndicator from "../components/drag-indicator.svelte";
 
 import { getLocale } from "$lib/paraglide/runtime";
@@ -29,7 +29,7 @@ let isLoading = $state(true);
 async function loadData() {
   isLoading = true;
   try {
-    const payments = await commands.finance.listPayments(10000, 0, {
+    const payments = await api.listPayments(10000, 0, {
       class_id: selectedClass === "all" ? null : selectedClass,
       period_id: selectedTerm === "all" ? null : selectedTerm,
     });

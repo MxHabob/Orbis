@@ -2,7 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/core/i18n";
 import { Button } from "@orbis/ui/button";
@@ -37,9 +37,9 @@ async function loadData() {
   error = null;
   try {
     const [accountList, currencyList, paymentList] = await Promise.all([
-      commands.finance.listAccounts(),
-      commands.finance.listCurrencies().catch(() => []),
-      commands.finance.listPayments(null, null).catch(() => []),
+      api.listAccounts(),
+      api.listCurrencies().catch(() => []),
+      api.listPayments(null, null).catch(() => []),
     ]);
     accounts = accountList || [];
     currencies = currencyList || [];

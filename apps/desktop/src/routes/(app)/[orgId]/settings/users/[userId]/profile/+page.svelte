@@ -7,8 +7,8 @@ Follows S.C.R.A.P.S. design tokens, strict localization, and backend schema sync
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { confirmStore } from "$lib/stores";
-import { commands } from "$lib/core/ipc";
-import type { User } from "$lib/core/ipc";
+import { api, } from "$lib/api";
+import type { User } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -87,7 +87,7 @@ async function toggleAccountStatus() {
   isSaving = true;
   try {
     const request = { ...user, is_active: nextState };
-    await commands.iam.updateUser(userId, request);
+    await api.iam.updateUser(userId, request);
     isActiveState = nextState;
     toast.success(
       nextState
@@ -114,16 +114,16 @@ async function saveProfile() {
       phone: phone || null,
       is_active: isActiveState,
     };
-    await commands.iam.updateUser(userId, request);
+    await api.iam.updateUser(userId, request);
 
     if (role) {
-      await commands.iam.changeRole(userId, { role });
-      const existingRoles = await commands.iam.listRolesByUser(userId);
+      await api.iam.changeRole(userId, { role });
+      const existingRoles = await api.iam.listRolesByUser(userId);
       const roleList = (existingRoles || []).map((r: any) => r.role);
       if (!roleList.includes(role)) {
         roleList.unshift(role);
       }
-      await commands.iam.saveForUser(userId, roleList.length > 0 ? roleList : [role]);
+      await api.iam.saveForUser(userId, roleList.length > 0 ? roleList : [role]);
     }
 
     await queryClient.invalidateQueries({ queryKey: ["user", orgId, userId] });

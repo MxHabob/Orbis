@@ -5,8 +5,8 @@
   import { Label } from "@orbis/ui/label";
   import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui/select";
   import { Switch } from "@orbis/ui/switch";
-  import { commands } from "$lib/core/ipc";
-  import { extractErrorMessage } from "$lib/core/ipc";
+  import { api, } from "$lib/api";
+  import { extractErrorMessage } from "$lib/api";
   import { toast } from "@orbis/ui";
 
   type BranchPolicy = {
@@ -67,7 +67,7 @@
 
   onMount(async () => {
     try {
-      const units = await commands.organization.listOrgUnits();
+      const units = await api.listOrgUnits();
       branches = units.filter((unit: Branch) => unit.is_active === 1 && unit.unit_type === "branch");
     } catch {
       branches = [];
@@ -94,7 +94,7 @@
 
     try {
       isSavingPolicy = true;
-      await commands.organization.updateSettings({ branch_policy: policy });
+      await api.updateSettings({ branch_policy: policy });
       savedPolicy = { ...policy };
       toast.success("تم حفظ إعدادات الفروع");
     } catch (error) {

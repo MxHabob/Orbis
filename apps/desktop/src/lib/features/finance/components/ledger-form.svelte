@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -63,8 +63,8 @@ async function loadFormData() {
   try {
     isLoading = true;
     const [ledgerList, currencyList] = await Promise.all([
-      commands.finance.listAccounts(),
-      commands.finance.listCurrencies(),
+      api.listAccounts(),
+      api.listCurrencies(),
     ]);
     ledgers = ledgerList;
     currencies = currencyList;
@@ -126,7 +126,7 @@ function handleTabChange(tab: "gl" | "cash_account" | "entity") {
 async function submitAccount(schema: any, values: Record<string, unknown>): Promise<boolean> {
   const form = new FormController({ initialValues: values, schema });
   const submitted = await form.submit(async (payload) => {
-    await commands.finance.createAccount(payload as any);
+    await api.createAccount(payload as any);
   });
   if (!submitted) toast.error(form.formError || m.common_ledger_error_name());
   return submitted;

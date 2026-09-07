@@ -4,7 +4,7 @@ Manages student ranking policies (scope, ranking method, tie handling, and metri
 Uses the Assessment Engine's ranking_policy CRUD operations.
 -->
 <script lang="ts">
-import { commands, extractErrorMessage } from "$lib/core/ipc";
+import { api, extractErrorMessage } from "$lib/api";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
@@ -32,7 +32,7 @@ const queryClient = useQueryClient();
 
 const policiesQuery = createQuery(() => ({
   queryKey: ["ranking-policies", orgId],
-  queryFn: () => commands.assessment.listRankingPolicies(),
+  queryFn: () => api.assessment.listRankingPolicies(),
 }));
 
 const policies = $derived(policiesQuery.data ?? []);
@@ -88,10 +88,10 @@ async function handleSave() {
   isSaving = true;
   try {
     if (editingId) {
-      await commands.assessment.updateRankingPolicy(editingId, form);
+      await api.assessment.updateRankingPolicy(editingId, form);
       toast.success("تم تحديث سياسة الترتيب بنجاح");
     } else {
-      await commands.assessment.createRankingPolicy(form);
+      await api.assessment.createRankingPolicy(form);
       toast.success("تم إنشاء سياسة الترتيب بنجاح");
     }
     queryClient.invalidateQueries({ queryKey: ["ranking-policies"] });
@@ -105,7 +105,7 @@ async function handleSave() {
 
 async function handleDelete(id: string) {
   try {
-    await commands.assessment.deleteRankingPolicy(id);
+    await api.assessment.deleteRankingPolicy(id);
     toast.success("تم حذف سياسة الترتيب بنجاح");
     queryClient.invalidateQueries({ queryKey: ["ranking-policies"] });
   } catch (e) {

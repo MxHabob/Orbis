@@ -4,7 +4,7 @@ Manages calculation policies (formulas for how grades are computed per period).
 Uses the Assessment Engine's calculation_policy CRUD operations.
 -->
 <script lang="ts">
-import { commands, extractErrorMessage } from "$lib/core/ipc";
+import { api, extractErrorMessage } from "$lib/api";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
@@ -34,7 +34,7 @@ const queryClient = useQueryClient();
 
 const policiesQuery = createQuery(() => ({
   queryKey: ["calc-policies", orgId],
-  queryFn: () => commands.assessment.listCalculationPolicies(),
+  queryFn: () => api.assessment.listCalculationPolicies(),
 }));
 
 // ── Create / Edit Dialog ─────────────────────────────────────
@@ -82,10 +82,10 @@ async function handleSave() {
   isSaving = true;
   try {
     if (editingId) {
-      await commands.assessment.updateCalculationPolicy(editingId, form);
+      await api.assessment.updateCalculationPolicy(editingId, form);
       toast.success("تم تحديث سياسة الحساب بنجاح");
     } else {
-      await commands.assessment.createCalculationPolicy(form);
+      await api.assessment.createCalculationPolicy(form);
       toast.success("تم إنشاء سياسة الحساب بنجاح");
     }
     queryClient.invalidateQueries({ queryKey: ["calc-policies"] });
@@ -100,7 +100,7 @@ async function handleSave() {
 
 async function handleDelete(id: string) {
   try {
-    await commands.assessment.deleteCalculationPolicy(id);
+    await api.assessment.deleteCalculationPolicy(id);
     toast.success("تم حذف سياسة الحساب");
     queryClient.invalidateQueries({ queryKey: ["calc-policies"] });
   } catch (err: unknown) {

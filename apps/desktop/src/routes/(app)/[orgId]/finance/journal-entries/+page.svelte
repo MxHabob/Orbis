@@ -6,7 +6,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { commands, dedup, extractErrorMessage } from "$lib/core/ipc";
+import { api, dedup, extractErrorMessage } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -87,10 +87,10 @@ async function loadData() {
   try {
     const [entriesList, ledgersList] = await Promise.all([
       dedup(`journal_entries:${data.orgId}`, () =>
-        commands.finance.listJournalEntries(),
+        api.finance.listJournalEntries(),
       ),
       dedup(`accounts:${data.orgId}`, () =>
-        commands.finance.listTransactionAccounts(),
+        api.finance.listTransactionAccounts(),
       ),
     ]);
 
@@ -114,7 +114,7 @@ async function loadData() {
 
 async function loadCurrencies() {
   try {
-    const list = await commands.finance.listCurrencies();
+    const list = await api.listCurrencies();
     if (list && list.length > 0) {
       currencies = list.map((c) => ({
         code: c.code,

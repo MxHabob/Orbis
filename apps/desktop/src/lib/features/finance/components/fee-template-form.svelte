@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n";
-import { commands, OrbisError } from "$lib/core/ipc";
+import { api, OrbisError } from "$lib/api";
 import { feeTemplateInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { FormField } from "@orbis/ui";
@@ -185,7 +185,7 @@ async function loadClasses() {
   if (!orgId) return;
   isLoadingClasses = true;
   try {
-    const list = await commands.academic.listClasses();
+    const list = await api.listClasses();
     classes = list;
 
     const levelNames: Record<string, { en: string; ar: string }> = {
@@ -243,12 +243,12 @@ async function handleSubmit() {
   const submitted = await form.submit(async (payload) => {
     const request = { ...payload, applicable_levels: applicableLevels };
     if (template) {
-      await commands.finance.updateFeeTemplate(template.id, request);
+      await api.finance.updateFeeTemplate(template.id, request);
       toast.success(
         m.common_ft_update_success(),
       );
     } else {
-      await commands.finance.createFeeTemplate(request);
+      await api.createFeeTemplate(request);
       toast.success(
         m.common_ft_create_success(),
       );

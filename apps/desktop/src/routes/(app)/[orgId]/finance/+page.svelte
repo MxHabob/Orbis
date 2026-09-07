@@ -11,7 +11,7 @@ import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { AlertCircle } from "@lucide/svelte";
 
-import { extractErrorMessage } from "$lib/core/ipc";
+import { extractErrorMessage } from "$lib/api";
 
 import {
   createStudentFeesQuery,

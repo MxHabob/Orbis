@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createQuery } from "@tanstack/svelte-query";
-  import { commands } from "$lib/core/ipc";
+  import { api, } from "$lib/api";
   import { Skeleton } from "@orbis/ui/skeleton";
   import { TimetableGrid } from "@orbis/ui";
   import { Clock, Calendar, ExternalLink } from "@lucide/svelte";
@@ -20,33 +20,33 @@
 
   const scheduleQuery = createQuery(() => ({
     queryKey: ["class-schedule", classId, periodId],
-    queryFn: () => commands.scheduling.listLessonsByClass(periodId || "", classId || ""),
+    queryFn: () => api.listScheduledLessons(periodId || "", classId || ""),
     enabled: !!classId && !!periodId,
     staleTime: 2 * 60 * 1000,
   }));
 
   const timeSlotsQuery = createQuery(() => ({
     queryKey: ["time-slots", periodId],
-    queryFn: () => commands.scheduling.listTimeSlots(),
+    queryFn: () => api.listTimeSlots(),
     enabled: !!periodId,
     staleTime: 5 * 60 * 1000,
   }));
 
   const subjectsQuery = createQuery(() => ({
     queryKey: ["all-subjects"],
-    queryFn: () => commands.academic.listSubjects(),
+    queryFn: () => api.listSubjects(),
     staleTime: 10 * 60 * 1000,
   }));
 
   const usersQuery = createQuery(() => ({
     queryKey: ["all-users"],
-    queryFn: () => commands.iam.listUsers(null),
+    queryFn: () => api.listUsers(null),
     staleTime: 5 * 60 * 1000,
   }));
 
   const roomsQuery = createQuery(() => ({
     queryKey: ["all-rooms"],
-    queryFn: () => commands.scheduling.listRooms(),
+    queryFn: () => api.listRooms(),
     staleTime: 10 * 60 * 1000,
   }));
 

@@ -5,7 +5,7 @@ Assigned fees + payment history using OrbisGrid, with summary statistics.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { CreditCard, Wallet, CheckCircle2, AlertCircle } from "@lucide/svelte";
 import { onMount } from "svelte";
@@ -38,14 +38,14 @@ async function loadFinance() {
   isLoading = true;
   try {
     if (!orgId || !studentId) return;
-    const enrollments = await commands.academic.listEnrollments();
+    const enrollments = await api.listEnrollments();
     const activeEnrollment = enrollments.find(
       (e: any) => e.student_id === studentId,
     );
     if (activeEnrollment) {
       const [f, p] = await Promise.all([
-        commands.finance.listStudentFeesByEnrollment(activeEnrollment.id),
-        commands.finance.listPayments(null, null),
+        api.listStudentFees(activeEnrollment.id),
+        api.listPayments(null, null),
       ]);
       fees = f;
       payments = p;

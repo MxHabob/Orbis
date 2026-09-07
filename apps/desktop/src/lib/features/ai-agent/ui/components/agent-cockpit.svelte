@@ -10,7 +10,7 @@ import {
   useRejectAgentAction,
 } from "$lib/features/ai/queries";
 import { toast } from "@orbis/ui";
-import { extractErrorMessage } from "$lib/core/ipc";
+import { extractErrorMessage } from "$lib/api";
 
 let {
   orgId = "",

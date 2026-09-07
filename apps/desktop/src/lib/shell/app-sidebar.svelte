@@ -35,7 +35,7 @@ import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
 import { onboardingState } from "$lib/features/onboarding/state.svelte";
 import { createOrganizationQuery } from "$lib/features/settings/queries";
 import { onMount } from "svelte";
-import { prefetchRouteData } from "$lib/core/ipc";
+import { prefetchRouteData } from "$lib/api";
 
 let {
   orgId,

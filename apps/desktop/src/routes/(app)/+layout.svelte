@@ -1,5 +1,5 @@
 <script lang="ts">
-import { isDesktopApp } from "$lib/core/ipc";
+import { isDesktopApp } from "$lib/api";
 import TitleBar from "$lib/shell/title-bar.svelte";
 import GlobalConfirmDialog from "$lib/shared/components/global-confirm-dialog.svelte";
 import { uiStore } from "$lib/stores";

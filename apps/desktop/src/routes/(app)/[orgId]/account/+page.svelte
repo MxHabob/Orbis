@@ -2,7 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { page } from "$app/state";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { themeStore, authStore } from "$lib/stores";
 import { toast } from "@orbis/ui";
@@ -106,7 +106,7 @@ async function handleSaveDetails(e: Event) {
   isSavingDetails = true;
   try {
     // 1. Update full name in database
-    const updatedUser = await commands.iam.updateUser(authStore.userId, {
+    const updatedUser = await api.iam.updateUser(authStore.userId, {
       full_name: fullName,
     });
 
@@ -141,7 +141,7 @@ async function handleSaveAvatar(e: Event) {
   isSavingAvatar = true;
   try {
     // Update avatar on backend
-    const updatedUser = await commands.iam.updateUser(authStore.userId, {
+    const updatedUser = await api.iam.updateUser(authStore.userId, {
       avatar: avatarUrl,
     });
 

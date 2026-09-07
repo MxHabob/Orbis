@@ -20,7 +20,7 @@
     Clock,
     Sparkles,
   } from "@lucide/svelte";
-  import { commands, extractErrorMessage } from "$lib/core/ipc";
+  import { api, extractErrorMessage } from "$lib/api";
   import { toast } from "@orbis/ui";
   import * as m from "$lib/paraglide/messages";
 
@@ -62,7 +62,7 @@
 
   async function loadJobs() {
     try {
-      const jobs = await commands.scheduling.listJobs(periodId);
+      const jobs = await api.scheduling.listJobs(periodId);
       solveJobs = jobs || [];
       if (jobs.length > 0) {
         activeJob = jobs[0];
@@ -75,7 +75,7 @@
   async function handleStartSolve() {
     isLaunching = true;
     try {
-      const res = await commands.scheduling.start(periodId);
+      const res = await api.scheduling.start(periodId);
       activeJob = res;
       toast.success(m.academics_schedule_solver_started());
       await loadJobs();
@@ -89,7 +89,7 @@
   async function handleApplySolve(jobId: string) {
     isApplying = true;
     try {
-      await commands.scheduling.apply(jobId);
+      await api.scheduling.apply(jobId);
       toast.success(m.academics_schedule_solver_applied());
       previewDraft = false;
       open = false;
@@ -103,7 +103,7 @@
 
   async function handleCancelJob(jobId: string) {
     try {
-      await commands.scheduling.cancel(jobId);
+      await api.scheduling.cancel(jobId);
       toast.info(m.academics_schedule_solver_cancelled());
       loadJobs();
     } catch (err) {

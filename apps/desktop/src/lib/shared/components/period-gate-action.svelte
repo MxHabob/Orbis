@@ -3,7 +3,7 @@
 Centralized smart action button that adapts based on Period Gate verdict.
 
 Replaces manual button logic across enrollment, grades, attendance pages.
-Calls `commands.academic.checkPeriodGate()` (or enrollment-specific) on mount,
+Calls `api.academic.checkPeriodGate()` (or enrollment-specific) on mount,
 then shows appropriate UI based on the verdict.
 
 Usage:
@@ -21,7 +21,7 @@ Usage:
   </PeriodGateAction>
 -->
 <script lang="ts">
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { createQuery } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
@@ -82,7 +82,7 @@ const gateQuery = createQuery(() => ({
   queryKey: ["period-gate", gateType, periodId, classId ?? ""],
   queryFn: async () => {
     if (gateType === "enrollment" && classId) {
-      return commands.academic.checkEligibility(periodId, classId);
+      return api.academic.checkEligibility(periodId, classId);
     }
     return { decision: "allowed" as const, allowed_actions: [] };
   },

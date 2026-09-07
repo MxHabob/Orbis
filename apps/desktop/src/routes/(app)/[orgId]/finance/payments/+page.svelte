@@ -7,8 +7,8 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
-import { queryClient } from "$lib/core/query/client";
+import { api, } from "$lib/api";
+import { queryClient } from "$lib/api";
 import {
   Card,
   Table,
@@ -176,9 +176,9 @@ async function loadData() {
   error = null;
   try {
     const [paymentsList, treasuriesList, studentsList] = await Promise.all([
-      commands.finance.listPayments(null, null),
-      commands.finance.listAccounts().then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type) && account.is_active === 1 && account.is_control_account !== 1)),
-      commands.academic.listEnrollments(),
+      api.listPayments(null, null),
+      api.listAccounts().then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type) && account.is_active === 1 && account.is_control_account !== 1)),
+      api.listEnrollments(),
       loadCurrencies(),
     ]);
 
@@ -209,7 +209,7 @@ async function loadData() {
 
 async function loadCurrencies() {
   try {
-    const list = await commands.finance.listCurrencies();
+    const list = await api.listCurrencies();
     if (list && list.length > 0) {
       currencies = list.map((c) => ({
         code: c.code,
@@ -292,7 +292,7 @@ async function handleStudentChange(index: number, studentId: string) {
 
   paymentRows[index].isLoadingFees = true;
   try {
-    const list = await commands.finance.listStudentFeesByEnrollment(studentId);
+    const list = await api.listStudentFees(studentId);
     paymentRows[index].availableFees = list.filter((f) => f.status !== "paid");
   } catch (e) {
     console.error("Failed to load student fees for row:", e);
@@ -353,7 +353,7 @@ async function selectRow(p: any) {
   let rowFees: any[] = [];
   if (enrollId && data.orgId) {
     try {
-      const list = await commands.finance.listStudentFeesByEnrollment(enrollId);
+      const list = await api.listStudentFees(enrollId);
       rowFees = list.filter(
         (f) => f.status !== "paid" || String(f.id) === String(p.fee_id),
       );
@@ -464,7 +464,7 @@ async function handleAdd() {
           cash_account_id: treasuryId,
           currency: currency.trim().toUpperCase(),
         };
-        await commands.finance.record({ ...request, exchange_rate: undefined });
+        await api.finance.record({ ...request, exchange_rate: undefined });
       }
     }
 

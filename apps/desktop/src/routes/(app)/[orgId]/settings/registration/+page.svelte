@@ -3,7 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { toast } from "@orbis/ui";
 
-import { commands, extractErrorMessage } from "$lib/core/ipc";
+import { api, extractErrorMessage } from "$lib/api";
 import {
   createOrganizationQuery,
   RegistrationSettingsForm,
@@ -37,7 +37,7 @@ async function handleSave(registrationConfig: any) {
 
   isSaving = true;
   try {
-    await commands.organization.updateSettings(settingsObj);
+    await api.updateSettings(settingsObj);
     toast.success(m.settings_registration_save_success());
   } catch (e: unknown) {
     toast.error(

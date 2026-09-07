@@ -19,7 +19,7 @@ import { toast } from "@orbis/ui";
 import { fade } from "svelte/transition";
 import { ListOrdered, RefreshCw, Lock, Search } from "@lucide/svelte";
 
-import { commands, extractErrorMessage } from "$lib/core/ipc";
+import { api, extractErrorMessage } from "$lib/api";
 import { authStore } from "$lib/stores";
 import SearchField from "$lib/shared/components/search-field.svelte";
 import {
@@ -55,7 +55,7 @@ async function loadOrdering() {
   }
   isLoading = true;
   try {
-    const result = await commands.exam.getOrdering(currentPeriodId);
+    const result = await api.exam.getOrdering(currentPeriodId);
     students = result as any[];
     totalOrdered = students.length;
   } catch (e) {
@@ -76,7 +76,7 @@ $effect(() => {
 async function loadPeriodsAndData() {
   isLoading = true;
   try {
-    const resPeriods = await commands.calendar.listAcademicPeriods();
+    const resPeriods = await api.listAcademicPeriods();
     periods = resPeriods || [];
     if (periods.length > 0) {
       currentPeriodId = periods[0].id;
@@ -101,7 +101,7 @@ async function handleRebuild() {
   }
   isRebuilding = true;
   try {
-    await commands.exam.rebuildOrdering(currentPeriodId, selectedStrategy);
+    await api.exam.rebuildOrdering(currentPeriodId, selectedStrategy);
     toast.success(m.common_exams_ordering_rebuild_success());
     await loadOrdering();
   } catch (e: unknown) {
@@ -115,7 +115,7 @@ async function handleFreeze() {
   if (!currentPeriodId) return;
   try {
     const userId = authStore.userId || authStore.user?.id || "desktop_user";
-    await commands.exam.freezeOrdering(currentPeriodId, userId);
+    await api.exam.freezeOrdering(currentPeriodId, userId);
     toast.success(m.common_exams_ordering_freeze_success());
     isFrozen = true;
   } catch (e: unknown) {

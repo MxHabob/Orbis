@@ -1,8 +1,8 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
-import { extractErrorMessage } from "$lib/core/ipc";
+import { api, } from "$lib/api";
+import { extractErrorMessage } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
@@ -41,9 +41,9 @@ async function loadPeriods() {
   isLoading = true;
   error = null;
   try {
-    const list = await (commands.calendar.listHierarchy
-      ? commands.calendar.listHierarchy()
-      : commands.calendar.listAcademicPeriods());
+    const list = await (api.calendar.listHierarchy
+      ? api.calendar.listHierarchy()
+      : api.listAcademicPeriods());
     periods = list || [];
   } catch (e: unknown) {
     error = extractErrorMessage(e);
@@ -87,7 +87,7 @@ async function requestActivate(periodId: string) {
   if (!confirmed) return;
 
   try {
-    await commands.calendar.unlock(periodId);
+    await api.calendar.unlock(periodId);
     toast.success(m.settings_periods_activate_success());
     loadPeriods();
   } catch (e: unknown) {
@@ -106,7 +106,7 @@ async function requestLock(periodId: string) {
   if (!confirmed) return;
 
   try {
-    await commands.calendar.lock(periodId);
+    await api.calendar.lock(periodId);
     toast.success(m.settings_periods_lock_success());
     loadPeriods();
   } catch (e: unknown) {
@@ -125,7 +125,7 @@ async function requestDelete(periodId: string) {
   if (!confirmed) return;
 
   try {
-    await commands.calendar.deleteAcademicPeriod(periodId);
+    await api.calendar.deleteAcademicPeriod(periodId);
     toast.success(m.common_action_delete());
     loadPeriods();
   } catch (e: unknown) {

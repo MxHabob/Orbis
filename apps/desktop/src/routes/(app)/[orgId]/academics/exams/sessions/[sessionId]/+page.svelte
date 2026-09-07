@@ -41,7 +41,7 @@ import {
 import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
 import SubjectAddSheet from "$lib/features/exams/components/subject-add-sheet.svelte";
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { authStore, aiContext, confirmStore } from "$lib/stores";
 
 let { data }: { data: { orgId: string } } = $props();
@@ -255,7 +255,7 @@ async function loadSession() {
   if (!data.orgId || !sessionId) return;
   isLoading = true;
   try {
-    session = await commands.exam.getSession(sessionId as string);
+    session = await api.exam.getSession(sessionId as string);
 
 		const [
 			loadedSubjects,
@@ -266,30 +266,30 @@ async function loadSession() {
 			loadedRooms,
 			[classList, subjectList],
 		] = await Promise.all([
-			commands.exam.listExamSubjects(sessionId as string).catch((err: unknown) => {
+			api.exam.listExamSubjects(sessionId as string).catch((err: unknown) => {
 				console.error("Failed to load subjects", err);
 				return [];
 			}),
-			commands.exam.listExamSchedules(sessionId as string).catch((err: unknown) => {
+			api.exam.listExamSchedules(sessionId as string).catch((err: unknown) => {
 				console.error("Failed to load schedules", err);
 				return [];
 			}),
-			commands.exam.listSecretNumbers(sessionId as string).catch((err: unknown) => {
+			api.exam.listSecretNumbers(sessionId as string).catch((err: unknown) => {
 				console.error("Failed to load seating numbers", err);
 				return [];
 			}),
-			commands.exam.listHalls().catch((err: unknown) => {
+			api.exam.listHalls().catch((err: unknown) => {
 				console.error("Failed to load halls", err);
 				return [];
 			}),
 			Promise.resolve([]),
-			commands.scheduling.listRooms().catch((err: unknown) => {
+			api.listRooms().catch((err: unknown) => {
 				console.error("Failed to load school rooms", err);
 				return [];
 			}),
 			Promise.all([
-				commands.academic.listClasses(),
-				commands.academic.listSubjects(),
+				api.listClasses(),
+				api.listSubjects(),
 			]).catch((err: unknown) => {
 				console.error("Failed to load classes/subjects catalogs", err);
 				return [[], []];
@@ -323,7 +323,7 @@ onMount(() => {
 
 // Quick actions
 async function handleGenerateSeating() {
-	const promise = commands.exam.generate2(sessionId as string);
+	const promise = api.exam.generate2(sessionId as string);
   toast.promise(promise, {
     loading: "جاري توليد أرقام الجلوس...",
     success: "تم توليد أرقام الجلوس بنجاح!",
@@ -378,7 +378,7 @@ async function startPollingJob(jobId: string) {
 
   pollingInterval = setInterval(async () => {
     try {
-      const job = await commands.exam.getSolveJob(jobId);
+      const job = await api.exam.getSolveJob(jobId);
       activeJob = job;
 
       if (
@@ -433,7 +433,7 @@ async function handleDeleteSchedule(scheduleId: string) {
     variant: "destructive",
   });
   if (!confirmed) return;
-	const promise = commands.exam.deleteExamSchedule(scheduleId);
+	const promise = api.exam.deleteExamSchedule(scheduleId);
   toast.promise(promise, {
     loading: m.academics_exams_sessions_sessionId_deleting_scheduled_exam(),
     success: m.academics_exams_sessions_sessionId_deleted_exam_successfully(),
@@ -458,7 +458,7 @@ async function handleToggleScheduleStatus(sched: any) {
       ? m.academics_exams_sessions_sessionId_deactivated_successfully()
       : m.academics_exams_sessions_sessionId_activated_successfully();
 
-	const promise = commands.exam.updateExamSchedule(
+	const promise = api.exam.updateExamSchedule(
 		sched.id,
 		sched.exam_date || null,
 		sched.start_time || null,
@@ -483,7 +483,7 @@ async function handleAllocateHalls() {
 
 async function handleActivate() {
   if (!session) return;
-	const promise = commands.exam.updateSession(
+	const promise = api.exam.updateSession(
 		sessionId as string,
 		null,
 		"active",
@@ -506,7 +506,7 @@ async function handleActivate() {
 }
 
 async function handleToggleHall(room: any) {
-  const promise = commands.exam.createHall({
+  const promise = api.exam.createHall({
     exam_session_id: sessionId,
     room_id: room.id,
     hall_number: room.room_number || room.name || "لجنة",

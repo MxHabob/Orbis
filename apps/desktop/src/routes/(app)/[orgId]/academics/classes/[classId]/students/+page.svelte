@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { createQuery } from "@tanstack/svelte-query";
-  import { commands, extractErrorMessage } from "$lib/core/ipc";
+  import { api, extractErrorMessage } from "$lib/api";
   import { Badge } from "@orbis/ui/badge";
   import { Button } from "@orbis/ui/button";
   import { Skeleton } from "@orbis/ui/skeleton";
@@ -16,7 +16,7 @@
 
   const studentsQuery = createQuery(() => ({
     queryKey: ["class-students-enriched-natural", classId],
-    queryFn: () => commands.academic.listEnrichedStudents(classId),
+    queryFn: () => api.academic.listEnrichedStudents(classId),
     enabled: !!classId,
     staleTime: 5 * 60 * 1000,
   }));

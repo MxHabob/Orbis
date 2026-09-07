@@ -16,7 +16,7 @@ import {
   SelectItem,
 } from "@orbis/ui/select";
 import * as Sheet from "@orbis/ui/sheet";
-import { commands, extractErrorMessage } from "$lib/core/ipc";
+import { api, extractErrorMessage } from "$lib/api";
 import type { JsonRecord } from "@orbis/sdk";
 import { toast } from "@orbis/ui";
 import { guardianFormInputSchema } from "@orbis/schemas";
@@ -141,7 +141,7 @@ $effect(() => {
   paymentSharePercent = editData ? Number(editData.payment_share_percent ?? 0) : 0;
 
   if (editData && editData.guardian_id) {
-    commands.iam
+    api.iam
       .getUser(String(editData.guardian_id))
       .then((u) => {
         if (u) {
@@ -279,13 +279,13 @@ async function handleSubmit() {
 
     if (!finalGuardianUserId) {
       // Check if user already exists in db by phone
-      const checkExisting = await commands.academic.search(phoneClean);
+      const checkExisting = await api.academic.search(phoneClean);
       if (checkExisting && checkExisting.length > 0) {
         finalGuardianUserId = String(
           checkExisting[0].guardian_id ?? checkExisting[0].id,
         );
         // Optionally update the existing user info
-        await commands.iam.updateUser(finalGuardianUserId, {
+        await api.iam.updateUser(finalGuardianUserId, {
           full_name: fullNameClean,
           phone: phoneClean || null,
         });
@@ -295,7 +295,7 @@ async function handleSubmit() {
         const guardEmail = emailClean || `parent.${Date.now()}@orbis.local`;
 
         // Create a new parent user
-        const guardUser = await commands.iam.createUser({
+        const guardUser = await api.registerUser({
           email: guardEmail,
           password_hash: tempPassword,
           full_name: fullNameClean,
@@ -306,7 +306,7 @@ async function handleSubmit() {
       }
     } else {
       // Update existing parent user details
-      await commands.iam.updateUser(finalGuardianUserId, {
+      await api.iam.updateUser(finalGuardianUserId, {
         full_name: fullNameClean,
         phone: phoneClean || null,
       });
@@ -339,7 +339,7 @@ async function handleSubmit() {
     };
 
     if (isEditMode && editData?.id) {
-      await commands.academic.updateGuardian(String(editData.id), request);
+      await api.academic.updateGuardian(String(editData.id), request);
       toast.success(m.common_guardians_update_success());
     } else {
       // Create link requires guardian_id. Let's make sure it is sent correctly.
@@ -347,7 +347,7 @@ async function handleSubmit() {
         ...request,
         guardian_id: finalGuardianUserId,
       };
-      await commands.academic.createGuardian(requestWithGuardian as any);
+      await api.assignGuardian(requestWithGuardian as any);
       toast.success(m.common_guardians_create_success());
     }
 

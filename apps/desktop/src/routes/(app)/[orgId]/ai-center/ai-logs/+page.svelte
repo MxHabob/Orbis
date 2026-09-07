@@ -5,7 +5,7 @@ Headerless activity logs page adhering to Orbis design tokens, with SearchField,
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { Card } from "@orbis/ui/card";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
@@ -28,8 +28,8 @@ let agentSessions = $state<any[]>([]);
 async function loadData() {
   try {
     const [tasksRes, sessionsRes] = await Promise.all([
-      commands.ai.autopilotGetTasks().catch(() => []),
-      commands.ai.agentGetSessions().catch(() => []),
+      api.ai.autopilotGetTasks().catch(() => []),
+      api.ai.agentGetSessions().catch(() => []),
     ]);
 
     tasks = Array.isArray(tasksRes) ? tasksRes : [];
@@ -49,7 +49,7 @@ onMount(() => {
 async function handleRunTick() {
   isExecuting = true;
   try {
-    await commands.ai.autopilotRunTick();
+    await api.ai.autopilotRunTick();
     await loadData();
     toast.success("تم تشغيل دورة الفحص وتحديث السجلات");
   } catch (e: any) {

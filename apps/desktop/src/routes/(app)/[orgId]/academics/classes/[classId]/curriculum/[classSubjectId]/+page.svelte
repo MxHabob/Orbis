@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { commands } from "$lib/core/ipc";
+  import { api, } from "$lib/api";
   import { Badge } from "@orbis/ui/badge";
   import { Button } from "@orbis/ui/button";
   import { toast } from "@orbis/ui";
@@ -35,7 +35,7 @@
   async function loadGradeMatrix() {
     isMatrixLoading = true;
     try {
-      const result = await commands.assessment.matrix(selectedPeriodId, classSubjectId);
+      const result = await api.assessment.matrix(selectedPeriodId, classSubjectId);
       matrixData = result;
       if (result?.students?.length > 0) {
         const first = result.students[0];
@@ -95,7 +95,7 @@
         return;
       }
 
-      await commands.assessment.bulkSubjectEntry({
+      await api.assessment.bulkSubjectEntry({
         period_id: selectedPeriodId,
         class_subject_id: classSubjectId,
         students: studentsToSave,

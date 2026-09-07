@@ -9,7 +9,7 @@
   } from "@orbis/ui/dialog";
   import { Button } from "@orbis/ui/button";
   import { Table, Download, Loader2 } from "@lucide/svelte";
-  import { commands } from "@orbis/sdk";
+  import { api, } from "@orbis/sdk";
   import { toast } from "@orbis/ui";
   import * as m from "$lib/paraglide/messages";
 
@@ -36,7 +36,7 @@
     if (!definitionId) return;
     try {
       isExporting = true;
-      const result = await commands.reporting.exportReport(definitionId, filters, selectedFormat, null);
+      const result = await api.reporting.exportReport(definitionId, filters, selectedFormat, null);
       
       // result is the byte array, we need to download it
       const blob = new Blob([new Uint8Array(result)], {

@@ -6,8 +6,8 @@ Provides barcode/ID lookup, outstanding fee checklist, and payment history.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
-import { queryClient } from "$lib/core/query/client";
+import { api, } from "$lib/api";
+import { queryClient } from "$lib/api";
 import { authStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -78,8 +78,8 @@ async function loadData() {
   isLoadingData = true;
   try {
     const [studentList, treasuryList] = await Promise.all([
-      commands.academic.listEnrollments(),
-      commands.finance.listAccounts().then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type) && account.is_active === 1 && account.is_control_account !== 1)),
+      api.listEnrollments(),
+      api.listAccounts().then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type) && account.is_active === 1 && account.is_control_account !== 1)),
     ]);
     students = studentList;
     treasuries = treasuryList;
@@ -106,8 +106,8 @@ async function loadStudentData(enrollId: string) {
   isLoadingStudentDetails = true;
   try {
     const [feesList, paymentsList] = await Promise.all([
-      commands.finance.listStudentFeesByEnrollment(enrollId),
-      commands.finance.listPayments(null, null),
+      api.listStudentFees(enrollId),
+      api.listPayments(null, null),
     ]);
 
     // Unpaid/Partially paid fees
@@ -204,7 +204,7 @@ async function handlePaymentSubmit(e: SubmitEvent) {
       currency: currency.trim().toUpperCase(),
     };
 
-    await commands.finance.record({ ...request, exchange_rate: undefined });
+    await api.finance.record({ ...request, exchange_rate: undefined });
     toast.success(m.common_payment_toast_success());
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["payments", data.orgId] }),

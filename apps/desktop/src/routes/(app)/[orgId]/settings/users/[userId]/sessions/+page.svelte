@@ -7,8 +7,8 @@ Extracted from the original monolith TabsContent "sessions".
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
-import type { UserSession } from "$lib/core/ipc";
+import { api, } from "$lib/api";
+import type { UserSession } from "$lib/api";
 import { Badge } from "@orbis/ui/badge";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Monitor, Smartphone } from "@lucide/svelte";
@@ -24,7 +24,7 @@ async function loadSessions() {
   if (!userId) return;
   isLoading = true;
   try {
-    const rawSessions = await commands.iam.listSessions(userId);
+    const rawSessions = await api.iam.listSessions(userId);
     activeSessions = rawSessions.map((s: UserSession) => {
       const isMobile =
         s.device_type === "mobile" ||

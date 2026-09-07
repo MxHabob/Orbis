@@ -13,7 +13,7 @@ import {
   DropdownMenuPortal,
 } from "@orbis/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@orbis/ui";
-import { isDesktopApp } from "$lib/core/ipc";
+import { isDesktopApp } from "$lib/api";
 import BackupCliDialog from "./backup-cli-dialog.svelte";
 import {
   MoreHorizontal,

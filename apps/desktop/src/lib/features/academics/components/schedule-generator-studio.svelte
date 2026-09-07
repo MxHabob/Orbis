@@ -3,7 +3,7 @@
   import { page } from "$app/state";
   import { getLocale, localizeHref } from "$lib/paraglide/runtime";
   import * as m from "$lib/paraglide/messages";
-  import { commands, extractErrorMessage } from "$lib/core/ipc";
+  import { api, extractErrorMessage } from "$lib/api";
   import { createQuery, useQueryClient } from "@tanstack/svelte-query";
   import { toast } from "@orbis/ui";
   import { Button } from "@orbis/ui/button";
@@ -75,35 +75,35 @@
 
   const periodsQuery = createQuery(() => ({
     queryKey: ["periods", orgId],
-    queryFn: () => commands.calendar.listAcademicPeriods(),
+    queryFn: () => api.listAcademicPeriods(),
     enabled: !!orgId,
     staleTime: 10 * 60 * 1000,
   }));
 
   const classesQuery = createQuery(() => ({
     queryKey: ["classes", orgId],
-    queryFn: () => commands.academic.listClasses(),
+    queryFn: () => api.listClasses(),
     enabled: !!orgId,
     staleTime: 5 * 60 * 1000,
   }));
 
   const subjectsQuery = createQuery(() => ({
     queryKey: ["subjects", orgId],
-    queryFn: () => commands.academic.listSubjects(),
+    queryFn: () => api.listSubjects(),
     enabled: !!orgId,
     staleTime: 10 * 60 * 1000,
   }));
 
   const usersQuery = createQuery(() => ({
     queryKey: ["users", orgId],
-    queryFn: () => commands.iam.listUsers(null),
+    queryFn: () => api.listUsers(null),
     enabled: !!orgId,
     staleTime: 5 * 60 * 1000,
   }));
 
   const roomsQuery = createQuery(() => ({
     queryKey: ["rooms", orgId],
-    queryFn: () => commands.scheduling.listRooms(),
+    queryFn: () => api.listRooms(),
     enabled: !!orgId,
     staleTime: 10 * 60 * 1000,
   }));
@@ -126,7 +126,7 @@
   // Time slots for active period
   const timeSlotsQuery = createQuery(() => ({
     queryKey: ["time-slots", orgId, activePeriodId],
-    queryFn: () => commands.scheduling.listTimeSlots(),
+    queryFn: () => api.listTimeSlots(),
     enabled: !!orgId && !!activePeriodId,
     staleTime: 5 * 60 * 1000,
   }));
@@ -140,7 +140,7 @@
   // Existing Lessons for this period
   const periodScheduleQuery = createQuery(() => ({
     queryKey: ["period-schedule", orgId, activePeriodId],
-    queryFn: () => commands.scheduling.listLessonsByPeriod(activePeriodId || ""),
+    queryFn: () => api.listScheduledLessons(activePeriodId || ""),
     enabled: !!orgId && !!activePeriodId,
     staleTime: 30 * 1000,
   }));
@@ -150,7 +150,7 @@
   // Solve Jobs Query
   const solveJobsQuery = createQuery(() => ({
     queryKey: ["solve-jobs", orgId, activePeriodId],
-    queryFn: () => commands.scheduling.listJobs(activePeriodId || ""),
+    queryFn: () => api.scheduling.listJobs(activePeriodId || ""),
     enabled: !!orgId && !!activePeriodId,
     staleTime: 5 * 1000,
   }));
@@ -163,7 +163,7 @@
     queryFn: async () => {
       if (!activePeriodId || classes.length === 0) return [];
       const results = await Promise.all(
-        classes.map((cls) => commands.academic.listClassSubjects(String(cls.id), activePeriodId))
+        classes.map((cls) => api.listClassSubjects(String(cls.id), activePeriodId))
       );
       return results.flat();
     },
@@ -201,7 +201,7 @@
       if (!pollInterval) {
         pollInterval = setInterval(async () => {
           if (activePeriodId) {
-            const jobs = await commands.scheduling.listJobs(activePeriodId);
+            const jobs = await api.scheduling.listJobs(activePeriodId);
             if (jobs.length > 0) {
               activeJob = jobs[0];
               if (activeJob.status === "completed" || activeJob.status === "failed") {
@@ -333,7 +333,7 @@
     if (!activePeriodId) return;
     isSolving = true;
     try {
-      const res = await commands.scheduling.start(activePeriodId);
+      const res = await api.scheduling.start(activePeriodId);
       activeJob = res;
       toast.success(m.academics_schedule_generate());
       queryClient.invalidateQueries({ queryKey: ["solve-jobs", orgId, activePeriodId] });
@@ -347,7 +347,7 @@
     if (!activeJob?.id) return;
     isApplying = true;
     try {
-      await commands.scheduling.apply(activeJob.id);
+      await api.scheduling.apply(activeJob.id);
       toast.success(m.academics_schedule_publish());
       queryClient.invalidateQueries({ queryKey: ["period-schedule"] });
       queryClient.invalidateQueries({ queryKey: ["class-schedule"] });
@@ -361,7 +361,7 @@
 
   async function handleUpdateClassSubjectHours(csId: string, hours: number) {
     try {
-      await commands.academic.updateClassSubject(csId, { weekly_hours: hours });
+      await api.academic.updateClassSubject(csId, { weekly_hours: hours });
       queryClient.invalidateQueries({ queryKey: ["all-class-subjects-matrix", orgId, activePeriodId] });
       toast.success(m.academics_studio_weekly_hours());
     } catch (err) {
@@ -371,7 +371,7 @@
 
   async function handleUpdateClassSubjectTeacher(csId: string, teacherId: string) {
     try {
-      await commands.academic.updateClassSubject(csId, { primary_teacher_id: teacherId || null });
+      await api.academic.updateClassSubject(csId, { primary_teacher_id: teacherId || null });
       queryClient.invalidateQueries({ queryKey: ["all-class-subjects-matrix", orgId, activePeriodId] });
       toast.success(m.academics_studio_assigned_teacher());
     } catch (err) {

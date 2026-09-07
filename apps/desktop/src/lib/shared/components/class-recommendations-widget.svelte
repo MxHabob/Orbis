@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createQuery } from "@tanstack/svelte-query";
-  import { commands } from "$lib/core/ipc";
+  import { api, } from "$lib/api";
   import { Skeleton } from "@orbis/ui/skeleton";
   import { Sparkles, AlertTriangle, CheckCircle2, Info } from "@lucide/svelte";
   import { getLocale } from "$lib/paraglide/runtime";
@@ -13,7 +13,7 @@
   // Fetch metrics to generate contextual recommendations
   const classMetricsQuery = createQuery(() => ({
     queryKey: ["class-metrics", classId, periodId],
-    queryFn: () => commands.assessment.classMetrics(periodId, classId).catch(() => []),
+    queryFn: () => api.assessment.classMetrics(periodId, classId).catch(() => []),
     enabled: !!classId && !!periodId,
     staleTime: 5 * 60 * 1000,
   }));

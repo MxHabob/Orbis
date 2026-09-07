@@ -5,7 +5,7 @@ Behavior records + AI summary using OrbisGrid.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import {
   ShieldCheck,
@@ -37,7 +37,7 @@ async function loadBehavior() {
   isLoading = true;
   try {
     if (!orgId || !studentId) return;
-    records = await commands.assessment.listBehaviors(studentId);
+    records = await api.assessment.listBehaviors(studentId);
   } catch (e) {
     console.error(e);
   } finally {
@@ -49,7 +49,7 @@ async function handleAISummarize() {
   isGeneratingAI = true;
   aiSummary = null;
   try {
-    const aiRes = await commands.assessment.submitAi({
+    const aiRes = await api.assessment.submitAi({
       enrollment_id: studentId,
       org_id: orgId,
     });

@@ -6,7 +6,7 @@ Roles tab for user detail — checklist of available system roles using official
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Card } from "@orbis/ui/card";
@@ -137,11 +137,11 @@ async function loadRoles() {
   if (!userId) return;
   isLoading = true;
   try {
-    const userRoles = await commands.iam.listRolesByUser(userId);
+    const userRoles = await api.iam.listRolesByUser(userId);
     const rolesFromDb = (userRoles || []).map((r: any) => r.role);
 
     // Fetch user details to get primary_role as fallback
-    const userDetails = (await commands.iam.getUser(userId)) as any;
+    const userDetails = (await api.getUser(userId)) as any;
     if (userDetails && userDetails.primary_role) {
       if (!rolesFromDb.includes(userDetails.primary_role)) {
         rolesFromDb.push(userDetails.primary_role);
@@ -180,14 +180,14 @@ async function saveRoles() {
   if (!userId) return;
   isSaving = true;
   try {
-    await commands.iam.saveForUser(userId, checkedRoles);
+    await api.iam.saveForUser(userId, checkedRoles);
 
     // Also update primary_role in users table if needed
     if (checkedRoles.length > 0) {
-      const userDetails = (await commands.iam.getUser(userId)) as any;
+      const userDetails = (await api.getUser(userId)) as any;
       const currentPrimary = userDetails?.primary_role;
       if (!currentPrimary || !checkedRoles.includes(currentPrimary)) {
-        await commands.iam.changeRole(userId, { role: checkedRoles[0] });
+        await api.iam.changeRole(userId, { role: checkedRoles[0] });
       }
     }
 

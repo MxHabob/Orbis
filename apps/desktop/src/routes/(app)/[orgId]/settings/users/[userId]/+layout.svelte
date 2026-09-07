@@ -8,8 +8,8 @@ import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
 import { confirmStore } from "$lib/stores";
-import { commands } from "$lib/core/ipc";
-import type { User } from "$lib/core/ipc";
+import { api, } from "$lib/api";
+import type { User } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Skeleton } from "@orbis/ui/skeleton";
@@ -63,7 +63,7 @@ async function handleResetPassword(e: Event) {
   if (!userId) return;
   isResettingPassword = true;
   try {
-    await commands.iam.changePassword(userId as string, {
+    await api.iam.changePassword(userId as string, {
       new_password: newPassword,
     });
     toast.success(m.settings_user_detail_reset_success());
@@ -87,7 +87,7 @@ async function handleDeleteUser() {
   });
   if (!confirmed) return;
   try {
-    await commands.iam.deleteUser(userId as string);
+    await api.iam.deleteUser(userId as string);
     toast.success(m.settings_user_detail_deleted());
     await goto(localizeHref(`/${orgId}/settings/users`));
   } catch (e: unknown) {

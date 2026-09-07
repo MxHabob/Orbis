@@ -4,7 +4,7 @@ Manages organization grade scales (percentage, GPA, pass/fail) and their items.
 Uses the Assessment Engine's grade_scale CRUD operations.
 -->
 <script lang="ts">
-import { commands, extractErrorMessage } from "$lib/core/ipc";
+import { api, extractErrorMessage } from "$lib/api";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
@@ -30,7 +30,7 @@ const queryClient = useQueryClient();
 // ── Queries ──────────────────────────────────────────────────
 const scalesQuery = createQuery(() => ({
   queryKey: ["grade-scales", orgId],
-  queryFn: () => commands.assessment.listGradeScales(),
+  queryFn: () => api.assessment.listGradeScales(),
 }));
 
 let selectedScaleId = $state<string | null>(null);
@@ -40,7 +40,7 @@ const selectedScale = $derived(
 
 const itemsQuery = createQuery(() => ({
   queryKey: ["grade-scale-items", selectedScaleId],
-  queryFn: () => (selectedScaleId ? commands.assessment.listGradeScaleItems(selectedScaleId) : []),
+  queryFn: () => (selectedScaleId ? api.assessment.listGradeScaleItems(selectedScaleId) : []),
   enabled: !!selectedScaleId,
 }));
 
@@ -54,7 +54,7 @@ async function handleCreateScale() {
   if (!newScaleName.trim()) return;
   isCreating = true;
   try {
-    await commands.assessment.createGradeScale({
+    await api.assessment.createGradeScale({
       name: newScaleName,
       type: newScaleType,
     });
@@ -79,7 +79,7 @@ async function handleCreateItem() {
   if (!selectedScaleId || !newItem.grade_label.trim()) return;
   isCreatingItem = true;
   try {
-    await commands.assessment.createGradeScaleItem({
+    await api.assessment.createGradeScaleItem({
       scale_id: selectedScaleId,
       ...newItem,
     });
@@ -97,7 +97,7 @@ async function handleCreateItem() {
 // ── Delete ───────────────────────────────────────────────────
 async function handleDeleteScale(id: string) {
   try {
-    await commands.assessment.deleteGradeScale(id);
+    await api.assessment.deleteGradeScale(id);
     toast.success("تم حذف مقياس الدرجات");
     if (selectedScaleId === id) selectedScaleId = null;
     queryClient.invalidateQueries({ queryKey: ["grade-scales"] });
@@ -108,7 +108,7 @@ async function handleDeleteScale(id: string) {
 
 async function handleDeleteItem(id: string) {
   try {
-    await commands.assessment.deleteGradeScaleItem(id);
+    await api.assessment.deleteGradeScaleItem(id);
     toast.success("تم حذف عنصر التقدير");
     queryClient.invalidateQueries({ queryKey: ["grade-scale-items"] });
   } catch (err: unknown) {

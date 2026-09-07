@@ -5,7 +5,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import {
   Select,
   SelectTrigger,
@@ -37,8 +37,8 @@ async function loadData() {
   isLoading = true;
   try {
     const [logsList, usersList] = await Promise.all([
-      commands.iam.listAuditLogs(),
-      commands.iam.listUsers(),
+      api.iam.listAuditLogs(),
+      api.listUsers(),
     ]);
     auditLogs = logsList.sort(
       (a: any, b: any) =>

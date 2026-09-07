@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { commands } from "@orbis/sdk";
+  import { api, } from "@orbis/sdk";
   import type { ReportDefinition, ReportDataset, ColumnDef } from "@orbis/sdk";
   import { Button } from "@orbis/ui/button";
   import { Input } from "@orbis/ui/input";
@@ -41,7 +41,7 @@
     try {
       isLoading = true;
       error = null;
-      definition = await commands.reporting.getReportDefinition(definitionId);
+      definition = await api.getReportDefinition(definitionId);
       // Initialize default filters
       if (definition) {
         filters = {};
@@ -61,7 +61,7 @@
     try {
       isLoading = true;
       error = null;
-      dataset = await commands.reporting.queryReport(definitionId, filters);
+      dataset = await api.reporting.queryReport(definitionId, filters);
       if (dataset) {
         gridColumns = buildGridColumns(dataset.columns);
       }

@@ -2,7 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import DragIndicator from "../components/drag-indicator.svelte";
 
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
@@ -35,8 +35,8 @@ async function loadData() {
     if (selectedClass !== "all") params.class_id = selectedClass;
     if (selectedTerm !== "all") params.period_id = selectedTerm;
 
-    const paymentsList = await commands.finance.listPayments();
-    const feesList = await commands.finance.listStudentFeesByOrg();
+    const paymentsList = await api.listPayments();
+    const feesList = await api.listStudentFees();
 
     if (paymentsList && paymentsList.length > 0) {
       const monthsMap: Record<string, { invoiced: number; collected: number }> =

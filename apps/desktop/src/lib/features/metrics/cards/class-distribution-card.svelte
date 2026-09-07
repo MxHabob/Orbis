@@ -3,7 +3,7 @@ import { BarChart, Users } from "@lucide/svelte";
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { getLocale } from "$lib/paraglide/runtime";
 import DragIndicator from "../components/drag-indicator.svelte";
 
@@ -32,7 +32,7 @@ async function loadData() {
     if (selectedClass !== "all") params.class_id = selectedClass;
     if (selectedTerm !== "all") params.cycle_id = selectedTerm;
 
-    const classes = await commands.academic.listClasses(params);
+    const classes = await api.listClasses(params);
     if (classes && classes.length > 0) {
       data = classes
         .map((c: any) => ({

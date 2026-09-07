@@ -28,7 +28,7 @@ import { ArrowLeft, Upload, Columns3, Trash2, Info } from "@lucide/svelte";
 import { toast } from "@orbis/ui";
 
 import { localizeHref } from "$lib/paraglide/runtime";
-import { commands, extractErrorMessage } from "$lib/core/ipc";
+import { api, extractErrorMessage } from "$lib/api";
 import { authStore } from "$lib/stores";
 import { useQueryClient } from "@tanstack/svelte-query";
 import { createClassesQuery } from "$lib/features/academics";
@@ -294,7 +294,7 @@ async function handleSubmit() {
 
     submitProgress = 10;
 
-    const result = (await commands.platform.createBulkStudents(
+    const result = (await api.platform.createBulkStudents(
       authStore.user?.id ?? "system",
       dataRows,
     )) as any;

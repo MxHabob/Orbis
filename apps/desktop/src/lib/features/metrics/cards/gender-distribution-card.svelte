@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import DragIndicator from "../components/drag-indicator.svelte";
 
 let {
@@ -30,7 +30,7 @@ async function loadData() {
     if (selectedClass !== "all") params.class_id = selectedClass;
     if (selectedTerm !== "all") params.cycle_id = selectedTerm;
 
-    const enrollments = await commands.academic.listEnrollments(params);
+    const enrollments = await api.listEnrollments(params);
     if (enrollments && enrollments.length > 0) {
       let female = 0;
       let male = 0;

@@ -1,15 +1,9 @@
 /**
- * IPC Request Deduplication.
+ * Request Deduplication.
  *
  * When multiple components request the same data simultaneously
  * (e.g., TitleBar + SearchModal both calling getPeriods), this ensures
- * only ONE IPC call is made and the result is shared.
- *
- * @example
- * ```ts
- * // Instead of: commands.academic.listClasses()
- * // Use: dedup(`classes:${orgId}`, () => commands.academic.listClasses())
- * ```
+ * only ONE API call is made and the result is shared.
  */
 const inflight = new Map<string, Promise<any>>();
 

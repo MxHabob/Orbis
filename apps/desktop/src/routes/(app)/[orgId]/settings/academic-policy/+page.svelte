@@ -11,7 +11,7 @@ Follows standard settings layout pattern (section headers, clean two-column grid
     createOrgAcademicPolicyQuery,
     useUpdateAcademicPolicy,
   } from "$lib/features/academics/queries-policy";
-  import { extractErrorMessage } from "$lib/core/ipc";
+  import { extractErrorMessage } from "$lib/api";
   import { Button } from "@orbis/ui/button";
   import { Input } from "@orbis/ui/input";
   import { Label } from "@orbis/ui/label";

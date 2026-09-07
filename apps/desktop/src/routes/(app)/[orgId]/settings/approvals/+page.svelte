@@ -7,7 +7,7 @@ Uses TanStack Query for data, supports approve/reject/escalate actions.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 
-import { commands, extractErrorMessage } from "$lib/core/ipc";
+import { api, extractErrorMessage } from "$lib/api";
 import { authStore, workflowInbox } from "$lib/stores";
 import { toast } from "@orbis/ui";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -93,7 +93,7 @@ async function processApproval(
       user_role: userRole,
       notes: actionNotes.trim() || null,
     };
-    await commands.platform.processApproval(requestId, approvalAction);
+    await api.platform.processApproval(requestId, approvalAction);
 
     const actionLabel =
       action === "approve"
@@ -125,7 +125,7 @@ async function processApproval(
 async function cancelRequest(requestId: string) {
   processingId = requestId;
   try {
-    await commands.platform.cancelOverride(requestId, userId);
+    await api.platform.cancelOverride(requestId, userId);
     toast.success(
       m.common_action_cancel ? m.common_action_cancel() : "Request cancelled",
     );

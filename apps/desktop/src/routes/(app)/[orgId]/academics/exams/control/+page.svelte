@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { commands, extractErrorMessage } from "$lib/core/ipc";
+import { api, extractErrorMessage } from "$lib/api";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { ShieldCheck, Lock, AlertTriangle } from "@lucide/svelte";
 import { toast } from "@orbis/ui";
@@ -81,8 +81,8 @@ async function loadInitialData() {
   isLoading = true;
   try {
     const [classList, subjectList] = await Promise.all([
-      commands.academic.listClasses(),
-      commands.academic.listSubjects(),
+      api.listClasses(),
+      api.listSubjects(),
     ]);
 
     classes = classList;
@@ -114,7 +114,7 @@ async function loadGradeMatrix() {
   gridSource = [];
   isDirty = false;
   try {
-    const result = (await (commands.assessment as any).getGradeMatrix(
+    const result = (await (api.assessment as any).getGradeMatrix(
       orgId,
       selectedPeriodId,
       selectedClassId,
@@ -205,7 +205,7 @@ async function handleSaveAll() {
       students,
     };
 
-    const result = await (commands.assessment as any).bulkSubjectGradeEntry(
+    const result = await (api.assessment as any).bulkSubjectGradeEntry(
       orgId,
       authStore.userId || "admin",
       request,

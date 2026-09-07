@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { commands, OrbisError } from "$lib/core/ipc";
+import { api, OrbisError } from "$lib/api";
 import { createAssessmentInputSchema } from "@orbis/schemas";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -66,7 +66,7 @@ const typeLabels: Record<"exam" | "quiz" | "homework" | "classwork", string> =
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   const submitted = await form.submit(async (payload) => {
-		await (commands.assessment as any).createAssessment(payload);
+		await (api.assessment as any).createAssessment(payload);
     toast.success(m.common_assessment_toast_success());
   });
   if (submitted) {

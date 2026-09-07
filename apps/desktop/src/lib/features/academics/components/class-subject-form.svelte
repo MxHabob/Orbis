@@ -15,7 +15,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { commands, extractErrorMessage } from "$lib/core/ipc";
+import { api, extractErrorMessage } from "$lib/api";
 import type { ClassSubject, JsonRecord } from "@orbis/sdk";
 import { toast } from "@orbis/ui";
 
@@ -137,13 +137,13 @@ async function handleSubmit() {
     };
 
     if (isEditMode && editData?.id) {
-      await commands.academic.updateClassSubject(
+      await api.academic.updateClassSubject(
         String(editData.id),
         request as any,
       );
       toast.success(m.common_cs_update_success());
     } else {
-      await commands.academic.createClassSubject(request as any);
+      await api.createClassSubject(request as any);
       toast.success(m.common_cs_create_success());
     }
 

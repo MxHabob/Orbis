@@ -7,7 +7,7 @@ Allows triggering FeeAssignSheet to bill a student.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import {
@@ -43,7 +43,7 @@ async function loadFees() {
   isLoading = true;
   error = null;
   try {
-    const list = await commands.finance.listStudentFeesByOrg();
+    const list = await api.listStudentFees();
     fees = list;
   } catch (e) {
     console.error("Error loading fees:", e);

@@ -5,7 +5,7 @@ Shows a list of past promotion jobs with status, stats, and rollback option.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 
-import { extractErrorMessage } from "$lib/core/ipc";
+import { extractErrorMessage } from "$lib/api";
 import { toast } from "@orbis/ui";
 import {
   createPromotionJobsQuery,

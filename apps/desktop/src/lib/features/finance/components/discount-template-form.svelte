@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { commands, extractErrorMessage } from "$lib/core/ipc";
+import { api, extractErrorMessage } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -148,7 +148,7 @@ async function handleSubmit() {
     };
 
     if (template) {
-      await commands.finance.updateDiscount(
+      await api.finance.updateDiscount(
         template.id,
         request.name,
         request.value,
@@ -158,7 +158,7 @@ async function handleSubmit() {
         m.common_dt_update_success(),
       );
     } else {
-      await commands.finance.createDiscount(request);
+      await api.finance.createDiscount(request);
       toast.success(
         m.common_dt_create_success(),
       );

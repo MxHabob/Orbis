@@ -17,7 +17,7 @@ import { FormField } from "@orbis/ui";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui/select";
 import PeriodSelect from "$lib/features/academics/components/period-select.svelte";
 import { toast } from "@orbis/ui";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { examSessionInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
@@ -70,7 +70,7 @@ $effect(() => {
 // Load academic periods on open
 $effect(() => {
   if (open && orgId) {
-    commands.calendar
+    api.calendar
       .listAcademicPeriods()
       .then((res: any) => {
         periodsList = res || [];
@@ -88,7 +88,7 @@ async function handleSubmit() {
   form.values = { name, name_ar: nameAr, session_type: sessionType, start_date: startDate, end_date: endDate, period_id: periodId };
   const submitted = await form.submit(async (payload) => {
     if (isEdit && session) {
-      await commands.exam.updateSession(
+      await api.exam.updateSession(
         session.id,
         payload.name || payload.name_ar,
         session.status || null,
@@ -96,7 +96,7 @@ async function handleSubmit() {
         payload.end_date,
       );
     } else {
-      await commands.exam.createSession({
+      await api.exam.createSession({
         name: payload.name || payload.name_ar,
 
         session_type: payload.session_type,

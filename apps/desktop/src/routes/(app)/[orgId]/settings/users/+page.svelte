@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { confirmStore } from "$lib/stores";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import {
   Select,
@@ -15,7 +15,7 @@ import { getLocale } from "$lib/paraglide/runtime";
 import { l, isAr } from "$lib/core/i18n";
 import { Plus, Users } from "@lucide/svelte";
 
-import type { User } from "$lib/core/ipc";
+import type { User } from "$lib/api";
 import { authStore } from "$lib/stores";
 
 import { DataTable } from "$lib/tables";
@@ -125,7 +125,7 @@ async function handleAction(event: GridActionEvent) {
     });
     if (confirmed) {
       try {
-        await commands.iam.deleteUser(user.id);
+        await api.iam.deleteUser(user.id);
         await queryClient.invalidateQueries({ queryKey: ["users", data.orgId] });
         await queryClient.invalidateQueries({ queryKey: ["users_paginated", data.orgId] });
         queryClient.removeQueries({ queryKey: ["user", data.orgId, user.id] });

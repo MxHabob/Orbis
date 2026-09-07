@@ -2,7 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import DragIndicator from "../components/drag-indicator.svelte";
 
 import { academicContext } from "$lib/stores";
@@ -38,7 +38,7 @@ async function loadData() {
       return;
     }
 
-    const scores = await commands.assessment.listPeriodScores(periodId, null);
+    const scores = await api.assessment.listPeriodScores(periodId, null);
     const gradeDistribution: Record<string, number> = {};
     for (const score of scores) {
       const label = String(score.grade_label || "").toUpperCase();

@@ -4,7 +4,7 @@ Shared dialog for creating override/approval requests.
 
 Used when a user attempts an action that is currently blocked
 (e.g., editing grades after grade_entry_close, late enrollment).
-Calls `commands.enrollment_workflow.getJob()` and shows success/error feedback.
+Calls `api.enrollment_workflow.getJob()` and shows success/error feedback.
 
 Usage:
   <OverrideRequestDialog
@@ -20,7 +20,7 @@ Usage:
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 
-import { commands, extractErrorMessage } from "$lib/core/ipc";
+import { api, extractErrorMessage } from "$lib/api";
 import { authStore } from "$lib/stores";
 import { toast } from "@orbis/ui";
 import {
@@ -172,7 +172,7 @@ async function submit() {
   }
   isSubmitting = true;
   try {
-    await commands.enrollment_workflow.getJob(entityId);
+    await api.enrollment_workflow.getJob(entityId);
     toast.success(
       m.common_override_submitted
         ? m.common_override_submitted()

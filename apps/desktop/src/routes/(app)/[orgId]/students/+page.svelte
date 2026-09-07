@@ -39,7 +39,7 @@ import OverrideRequestDialog from "$lib/shared/components/override-request-dialo
 
 import { localizeHref } from "$lib/paraglide/runtime";
 import { formatNumber, l } from "$lib/core/i18n";
-import { extractErrorMessage } from "$lib/core/ipc";
+import { extractErrorMessage } from "$lib/api";
 import { debounce } from "$lib/shared/utils/debounce";
 
 let { data }: { data: { orgId: string } } = $props();

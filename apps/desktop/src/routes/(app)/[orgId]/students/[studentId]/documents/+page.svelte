@@ -7,7 +7,7 @@ Excludes any hardcoded fake/placeholder data.
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { confirmStore } from "$lib/stores";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import {
   Table,
   TableBody,
@@ -79,7 +79,7 @@ async function loadDocuments() {
   error = null;
   try {
     // Fetch real documents for this student
-    documents = await commands.document.listDocuments(null, studentUserId, null, null);
+    documents = await api.listDocuments(null, studentUserId, null, null);
   } catch (e) {
     error = e instanceof Error ? e.message : String(e);
   } finally {
@@ -101,7 +101,7 @@ async function handleAddDocument() {
       key: newDocUrl.trim(),
     };
 
-    await commands.academic.createDocument(request);
+    await api.uploadDocument(request);
     toast.success(m.common_docs_create_success());
     showAddModal = false;
 
@@ -129,7 +129,7 @@ async function handleDelete(docId: string) {
   }
 
   try {
-    await commands.academic.deleteDocument(docId);
+    await api.deleteDocument(docId);
     toast.success(m.common_docs_delete_success());
     await loadDocuments();
   } catch (e: any) {
@@ -153,7 +153,7 @@ async function handleUploadFile() {
 
   try {
     // 1. Soft-delete the placeholder doc
-    await commands.academic.deleteDocument(selectedDoc.id);
+    await api.deleteDocument(selectedDoc.id);
 
     // 2. Create new doc entry with file url and details
     const sizeInBytes = uploadFileSize.includes("MB")
@@ -178,7 +178,7 @@ async function handleUploadFile() {
       tags: selectedDoc.tags,
     };
 
-    await commands.academic.createDocument(request);
+    await api.uploadDocument(request);
     toast.success(m.common_docs_upload_success());
     showUploadModal = false;
     await loadDocuments();

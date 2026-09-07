@@ -1,6 +1,6 @@
 <script lang="ts">
   import * as m from "$lib/paraglide/messages";
-  import { commands, extractErrorMessage } from "$lib/core/ipc";
+  import { api, extractErrorMessage } from "$lib/api";
   import { l } from "$lib/core/i18n";
   import { getLocale } from "$lib/paraglide/runtime";
   import { createClassSubjectsQuery } from "$lib/features/academics/queries";
@@ -122,7 +122,7 @@
     isCheckingConflict = true;
     conflictMessage = null;
     try {
-      const results = await commands.scheduling.checkConflicts(
+      const results = await api.scheduling.checkConflicts(
         periodId,
         selectedClassId,
         selectedTeacherId || "no_teacher",
@@ -172,7 +172,7 @@
         notes: notes.trim() || undefined,
       };
       if (isEditing) {
-        await commands.scheduling.updateLesson(lesson.id, {
+        await api.scheduling.updateLesson(lesson.id, {
           teacher_id: values.teacher_id || undefined,
           time_slot_id: values.time_slot_id,
           day_of_week: values.day_of_week,
@@ -180,7 +180,7 @@
           ...content,
         } as any);
       } else {
-        await commands.scheduling.createLesson({
+        await api.scheduling.createLesson({
           ...values,
           class_subject_id: selectedClassSubject.id,
           room_id: selectedRoomId || undefined,

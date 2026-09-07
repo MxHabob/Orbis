@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createQuery } from "@tanstack/svelte-query";
-  import { commands } from "$lib/core/ipc";
+  import { api, } from "$lib/api";
   import { Skeleton } from "@orbis/ui/skeleton";
   import { Badge } from "@orbis/ui/badge";
   import { Button } from "@orbis/ui/button";
@@ -17,8 +17,8 @@
   const subjectsQuery = createQuery(() => ({
     queryKey: ["class-subjects-widget", classId, periodId],
     queryFn: async () => {
-      const offerings = await commands.academic.listClassSubjects(classId, periodId);
-      const catalog = await commands.academic.listSubjects();
+      const offerings = await api.listClassSubjects(classId, periodId);
+      const catalog = await api.listSubjects();
       const byId = new Map(catalog.map((s: any) => [String(s.id), s]));
       return offerings.map((o: any) => ({ ...o, catalog: byId.get(String(o.subject_id)) }));
     },

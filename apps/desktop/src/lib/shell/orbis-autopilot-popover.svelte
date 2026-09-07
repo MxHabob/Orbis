@@ -31,7 +31,7 @@ import {
   useRunAutopilotTick,
 } from "$lib/features/ai/queries";
 import { toast } from "@orbis/ui";
-import { extractErrorMessage } from "$lib/core/ipc";
+import { extractErrorMessage } from "$lib/api";
 import AutopilotSuggestions from "./autopilot-suggestions.svelte";
 
 let { orgId = "" }: { orgId?: string } = $props();

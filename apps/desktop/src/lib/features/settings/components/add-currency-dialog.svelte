@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { toast } from "@orbis/ui";
 import { uniqueCurrencies } from "@orbis/location/currencies";
 import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
@@ -211,7 +211,7 @@ async function handleSubmit(e: Event) {
     is_base: isBase,
   };
   const submitted = await form.submit(async (values) => {
-    await commands.finance.createCurrency(
+    await api.createCurrency(
       values.code,
       values.name,
       values.name_ar ?? null,

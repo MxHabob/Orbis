@@ -27,7 +27,7 @@ import {
 } from "@lucide/svelte";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { createQuery } from "@tanstack/svelte-query";
-import { commands, extractErrorMessage } from "$lib/core/ipc";
+import { api, extractErrorMessage } from "$lib/api";
 import { academicContext } from "$lib/stores";
 import { createPeriodsQuery } from "$lib/features/academics";
 import SessionCreateSheet from "$lib/features/exams/components/session-create-sheet.svelte";
@@ -62,7 +62,7 @@ const isGradeEntryOpen = $derived(
 // Exam Sessions Query
 const examSessionsQuery = createQuery(() => ({
   queryKey: ["exam-sessions", data.orgId, activePeriodId],
-  queryFn: () => commands.exam.listSessions(activePeriodId),
+  queryFn: () => api.exam.listSessions(activePeriodId),
   enabled: !!data.orgId && !!activePeriodId,
   staleTime: 2 * 60 * 1000,
 }));

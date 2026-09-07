@@ -6,7 +6,7 @@ Clean Midday inspired layout with elegant subheadings.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import {
   Shield,
   ShieldAlert,
@@ -54,7 +54,7 @@ async function loadData() {
   try {
     const [registered, logs] = await Promise.all([
       (commands as any).aiCenter?.listRegisteredActions?.().catch(() => []) ?? Promise.resolve([]),
-      (commands as any).aiCenter?.listActionLogs?.(data.orgId).catch(() => []) ?? commands.iam?.listAuditLogs?.().catch(() => []) ?? Promise.resolve([]),
+      (commands as any).aiCenter?.listActionLogs?.(data.orgId).catch(() => []) ?? api.iam?.listAuditLogs?.().catch(() => []) ?? Promise.resolve([]),
     ]);
     actions = (registered as ActionDef[]) ?? [];
     pendingApprovals = ((logs as any[]) ?? []).filter((l: any) => l.status === "pending" && l.approval_required);

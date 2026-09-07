@@ -2,7 +2,7 @@
   import { Button } from "@orbis/ui/button";
   import { Input } from "@orbis/ui/input";
   import { Label } from "@orbis/ui/label";
-  import { commands, extractErrorMessage } from "$lib/core/ipc";
+  import { api, extractErrorMessage } from "$lib/api";
   import { toast } from "@orbis/ui";
 
   type AuthenticationSettings = {
@@ -61,7 +61,7 @@
       return;
     }
     try {
-      await commands.organization.updateSettings({ authentication: values });
+      await api.updateSettings({ authentication: values });
       savedValues = { ...values };
       toast.success("تم حفظ إعدادات المصادقة");
     } catch (error) {

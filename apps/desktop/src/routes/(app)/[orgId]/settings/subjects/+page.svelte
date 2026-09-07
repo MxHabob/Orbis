@@ -6,7 +6,7 @@ and triggers the subject creation side sheet.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import {
@@ -42,7 +42,7 @@ async function loadData() {
   isLoading = true;
   error = null;
   try {
-    const list = await commands.academic.listSubjects();
+    const list = await api.listSubjects();
     subjects = list;
   } catch (e) {
     error = e instanceof Error ? e.message : String(e);

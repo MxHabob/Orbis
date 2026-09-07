@@ -8,7 +8,7 @@ import {
   getDocumentSource,
 } from "$lib/features/documents/queries";
 import { page } from "$app/state";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui/select";
 import ArchivePreviewSheet from "$lib/features/documents/archive-preview-sheet.svelte";
@@ -50,7 +50,7 @@ let selectedDocumentUrl = $state("");
 let archiveScroller: HTMLDivElement | undefined = $state();
 
 $effect(() => {
-  commands.calendar.listAcademicPeriods().then((periods) => {
+  api.listAcademicPeriods().then((periods) => {
     academicPeriods = periods || [];
   }).catch(() => {
     academicPeriods = [];

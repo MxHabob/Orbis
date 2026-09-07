@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { toast } from "@orbis/ui";
 import { l } from "$lib/core/i18n";
@@ -30,7 +30,7 @@ let activeFilter = $state<UniversalFilter>({ logic: "AND", conditions: [], group
 async function loadRooms() {
   isLoading = true;
   try {
-    rooms = await commands.scheduling.listRooms();
+    rooms = await api.listRooms();
   } catch (e) {
     toast.error((e as any)?.message || "Failed to load rooms");
   } finally {

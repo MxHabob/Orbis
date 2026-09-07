@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { commands } from "$lib/core/ipc";
+import { api, } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { SheetHeader, SheetTitle } from "@orbis/ui/sheet";
@@ -85,9 +85,9 @@ const gradingLabels = $derived({
 async function loadParentOptions() {
   if (!orgId) return;
   try {
-    const list = await (commands.calendar.listHierarchy
-      ? commands.calendar.listHierarchy()
-      : commands.calendar.listAcademicPeriods());
+    const list = await (api.calendar.listHierarchy
+      ? api.calendar.listHierarchy()
+      : api.listAcademicPeriods());
     periodsList = (list || []).filter(
       (p: any) => !isEdit || String(p.id) !== String(period?.id),
     );
@@ -112,10 +112,10 @@ async function handleSubmit(e: SubmitEvent) {
       parent_id: payload.period_type !== "year" && payload.parent_id ? payload.parent_id : undefined,
     };
     if (isEdit && period) {
-      await commands.calendar.updateAcademicPeriod(period.id, request);
+      await api.calendar.updateAcademicPeriod(period.id, request);
       toast.success(m.common_action_save());
     } else {
-      await commands.calendar.createAcademicPeriod(request);
+      await api.createAcademicPeriod(request);
       toast.success(m.common_period_form_success());
     }
   });
