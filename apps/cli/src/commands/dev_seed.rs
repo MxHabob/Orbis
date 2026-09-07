@@ -77,15 +77,16 @@ pub async fn execute() -> Result<()> {
     }
 
     txn.commit().await?;
-    output::print_success(&format!("Created {created} development teacher(s)."));
-    if skipped > 0 {
-        output::print_info(&format!(
-            "Skipped {skipped} existing development teacher(s)."
-        ));
-    }
-    output::print_info(&format!(
-        "Test password for generated teachers: {DEV_PASSWORD}"
-    ));
+    
+    let created_str = created.to_string();
+    let skipped_str = skipped.to_string();
+    output::print_summary_box("DEVELOPMENT DATA SEEDED", &[
+        ("Created Teachers", &created_str),
+        ("Skipped (Existing)", &skipped_str),
+        ("Default Password", DEV_PASSWORD),
+        ("Assigned Role", "teacher (Global Scope)"),
+    ]);
+    output::print_success("Development data successfully seeded.");
     Ok(())
 }
 

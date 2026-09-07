@@ -67,8 +67,10 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
     payload: BootstrapPayload,
 ) -> Result<BootstrapResult, DomainError> {
     let now = Utc::now().to_rfc3339();
-    let org_id = Uuid::new_v4().to_string();
-    let admin_id = Uuid::new_v4().to_string();
+    let org_id_uuid = Uuid::new_v4();
+    let admin_id_uuid = Uuid::new_v4();
+    let org_id = org_id_uuid.to_string();
+    let admin_id = admin_id_uuid.to_string();
 
     info!("Bootstrapping full organization '{}' (type={})", payload.org_name, payload.org_type);
 
@@ -77,7 +79,7 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
         db.get_database_backend(),
         "INSERT INTO organizations (id, name, name_ar, slug, timezone, locale, base_currency_id, is_active, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, 1, $8, $9)",
         vec![
-            org_id.clone().into(),
+            org_id_uuid.into(),
             payload.org_name.clone().into(),
             payload.org_name_ar.clone().unwrap_or_default().into(),
             slug(&payload.org_name).into(),
@@ -90,7 +92,7 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
     )).await.map_err(|e| DomainError::Internal(format!("Failed to create organization: {e}")))?;
 
     // ── 1.5 Admin Party & Person ───────────────────────────────
-    let person_id = Uuid::new_v4().to_string();
+    let person_id_uuid = Uuid::new_v4();
     let name_parts: Vec<&str> = payload.admin_name.split_whitespace().collect();
     let first_name = name_parts.first().unwrap_or(&"").to_string();
     let last_name = if name_parts.len() > 1 { name_parts[1..].join(" ") } else { first_name.clone() };
@@ -99,8 +101,8 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
         db.get_database_backend(),
         "INSERT INTO persons (id, org_id, first_name, last_name, full_name, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)",
         vec![
-            person_id.clone().into(),
-            org_id.clone().into(),
+            person_id_uuid.into(),
+            org_id_uuid.into(),
             first_name.into(),
             last_name.into(),
             payload.admin_name.clone().into(),
@@ -114,9 +116,9 @@ async fn bootstrap_full_inner<C: ConnectionTrait>(
         db.get_database_backend(),
         "INSERT INTO users (id, person_id, org_id, email, full_name, password_hash, status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, 'active', $7, $8)",
         vec![
-            admin_id.clone().into(),
-            person_id.clone().into(),
-            org_id.clone().into(),
+            admin_id_uuid.into(),
+            person_id_uuid.into(),
+            org_id_uuid.into(),
             payload.admin_username.clone().into(),
             payload.admin_name.clone().into(),
             payload.admin_password_hash.clone().into(),
