@@ -14,9 +14,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize tracing
     tracing_subscriber::fmt::init();
 
-    // Use an in-memory SQLite DB for now, or real DB if provided
-    let db_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite::memory:".to_string());
-    
+    // Canonical Database URL Resolution (Shared with Desktop & CLI)
+    let db_url = orbis_infra::config::resolve_database_url();
+    tracing::info!("Connecting to database: {}", db_url);
+    println!("Connecting to database: {}", db_url);
+
     // Connect to database
     let db = Database::connect(&db_url).await?;
 
@@ -53,7 +55,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let event_bus = Arc::new(MemoryEventBus {
         workflow_engine: Some(autopilot_engine),
     });
-    let token_service = Arc::new(JwtTokenService::new("super-secret-key-for-dev".to_string()));
+    let jwt_secret = std::env::var("JWT_SECRET")
+        .unwrap_or_else(|_| "orbis_dev_super_secret_jwt_key_2026_educational_platform".to_string());
+    let token_service = Arc::new(JwtTokenService::new(jwt_secret));
     let password_hasher = Arc::new(BcryptHasher);
 
     let integration_resolver = Arc::new(orbis_infra::adapters::resolver::IntegrationResolver::new(integration_repo.clone()));
@@ -160,8 +164,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = app_router(state);
 
     // Start Server
-    let listener = TcpListener::bind("0.0.0.0:3000").await?;
-    println!("Server running on http://0.0.0.0:3000");
+    let bind_host = std::env::var("BIND_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
+    let port = std::env::var("PORT").unwrap_or_else(|_| "3000".to_string());
+    let addr = format!("{}:{}", bind_host, port);
+    let listener = TcpListener::bind(&addr).await?;
+    println!("Server running on http://{}", addr);
     
     serve(listener, app).await?;
 

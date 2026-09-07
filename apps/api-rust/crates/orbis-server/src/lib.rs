@@ -295,5 +295,6 @@ pub fn app_router(state: state::AppState) -> Router {
         .merge(integration_routes::routes())
         .merge(report_routes::routes())
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
+        .layer(tower_http::cors::CorsLayer::permissive())
         .with_state(state)
 }
