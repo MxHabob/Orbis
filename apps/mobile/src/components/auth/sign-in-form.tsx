@@ -29,6 +29,7 @@ export const SignInForm = React.memo<SignInFormProps>(
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const handleSubmit = async () => {
@@ -113,6 +114,22 @@ export const SignInForm = React.memo<SignInFormProps>(
           )}
 
           <View style={styles.fields}>
+            <Button
+              title={t('auth_continue_google')}
+              onPress={handleGoogle}
+              variant="secondary"
+              fullWidth
+              icon={<Ionicons name="logo-google" size={18} color={theme.foreground} />}
+            />
+
+            <View style={styles.dividerRow}>
+              <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
+              <Text style={[styles.dividerText, { color: theme.textMuted }]}>
+                {t('auth_or_divider')}
+              </Text>
+              <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
+            </View>
+
             <Input
               label={t('auth_email_label')}
               placeholder={t('auth_email_placeholder')}
@@ -142,7 +159,26 @@ export const SignInForm = React.memo<SignInFormProps>(
               icon={<Ionicons name="lock-closed-outline" size={18} color={theme.textMuted} />}
             />
 
-            <View style={styles.forgotRow}>
+            <View style={styles.optionsRow}>
+              <Pressable
+                onPress={() => setRememberMe((value) => !value)}
+                style={styles.rememberOption}
+                hitSlop={8}>
+                <View
+                  style={[
+                    styles.checkbox,
+                    {
+                      borderColor: rememberMe ? theme.primary : theme.textMuted,
+                      backgroundColor: rememberMe ? theme.primary : 'transparent',
+                    },
+                  ]}>
+                  {rememberMe && (
+                    <Ionicons name="checkmark" size={13} color={theme.primaryForeground} />
+                  )}
+                </View>
+                <Text style={[styles.optionText, { color: theme.textSecondary }]}>تذكرني</Text>
+              </Pressable>
+
               <Link href="/(auth)/forgot-password" asChild>
                 <Pressable hitSlop={10}>
                   <Text style={[styles.linkText, { color: theme.primary }]}>
@@ -159,38 +195,21 @@ export const SignInForm = React.memo<SignInFormProps>(
               fullWidth
               size="lg"
             />
+          </View>
 
-            <View style={styles.dividerRow}>
-              <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
-              <Text style={[styles.dividerText, { color: theme.textMuted }]}>
-                {t('auth_or_divider')}
-              </Text>
-              <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
-            </View>
-
-            <Button
-              title={t('auth_continue_google')}
-              onPress={handleGoogle}
-              variant="secondary"
-              fullWidth
-              icon={<Ionicons name="logo-google" size={16} color={theme.foreground} />}
-            />
+          <View style={styles.footerRow}>
+            <Text style={[styles.footerPrompt, { color: theme.textSecondary }]}> 
+              {t('auth_no_account')}
+            </Text>
+            <Link href="/(auth)/register" asChild>
+              <Pressable hitSlop={8}>
+                <Text style={[styles.footerLink, { color: theme.primary }]}> 
+                  {t('auth_register_link')}
+                </Text>
+              </Pressable>
+            </Link>
           </View>
         </Card>
-
-        {/* Clean Student Admission Footer Link */}
-        <View style={styles.footerRow}>
-          <Text style={[styles.footerPrompt, { color: theme.textSecondary }]}>
-            {t('auth_no_account')}
-          </Text>
-          <Link href="/(auth)/register" asChild>
-            <Pressable hitSlop={8}>
-              <Text style={[styles.footerLink, { color: theme.primary }]}>
-                {t('auth_register_link')}
-              </Text>
-            </Pressable>
-          </Link>
-        </View>
       </View>
     );
   },
@@ -202,6 +221,8 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     gap: Spacing.three,
+    marginTop: -Spacing.six,
+    zIndex: 1,
   },
   card: {
     padding: Spacing.four,
@@ -225,9 +246,28 @@ const styles = StyleSheet.create({
   fields: {
     gap: Spacing.three,
   },
-  forgotRow: {
-    alignItems: 'flex-end',
+  optionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginTop: -4,
+  },
+  rememberOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderRadius: Radii.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionText: {
+    ...Typography.body,
+    fontSize: 13,
   },
   linkText: {
     ...Typography.captionBold,

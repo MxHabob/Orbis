@@ -5,13 +5,14 @@
  * Thin orchestrator delegating presentation to SignInBrandHeader and SignInForm.
  */
 
-import React, { useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/lib/api';
 import { useTheme } from '@/hooks/use-theme';
+import { useI18n } from '@/lib/i18n';
 import { useToast } from '@/components/ui/toast';
 import { SignInBrandHeader, SignInForm } from '@/components/auth';
 import { KeyboardAwareView } from '@/components/ui/keyboard-aware-view';
@@ -19,7 +20,9 @@ import { Spacing } from '@/constants/theme';
 
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   const theme = useTheme();
+  const { locale } = useI18n();
   const toast = useToast();
   const { login, loginWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -57,25 +60,32 @@ export default function SignInScreen() {
   };
 
   return (
-    <KeyboardAwareView
-      style={[styles.container, { backgroundColor: theme.background }]}
-      contentContainerStyle={[
-        styles.scrollContent,
-        {
-          paddingTop: Math.max(insets.top, 24) + Spacing.two,
-          paddingBottom: Math.max(insets.bottom, 24) + Spacing.six,
-        },
-      ]}>
-      {/* Organization Logo & Identity Header */}
-      <SignInBrandHeader />
-
-      {/* Elegant Minimalist SignIn Form & Admission Entry */}
-      <SignInForm
-        onSignIn={handleSignIn}
-        onGoogleSignIn={handleGoogleSignIn}
-        loading={loading}
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View
+        pointerEvents="none"
+        style={[styles.topBackground, { backgroundColor: theme.primary, height: height * 0.5 }]}
       />
-    </KeyboardAwareView>
+      <KeyboardAwareView
+        style={styles.keyboardView}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingTop: Math.max(insets.top, 24) + Spacing.two,
+            paddingBottom: Math.max(insets.bottom, 24) + Spacing.six,
+            direction: locale === 'ar' ? 'rtl' : 'ltr',
+          },
+        ]}>
+        {/* Organization Logo & Identity Header */}
+        <SignInBrandHeader key={locale} />
+
+        {/* Elegant Minimalist SignIn Form & Admission Entry */}
+        <SignInForm
+          onSignIn={handleSignIn}
+          onGoogleSignIn={handleGoogleSignIn}
+          loading={loading}
+        />
+      </KeyboardAwareView>
+    </View>
   );
 }
 
@@ -83,9 +93,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  keyboardView: {
+    flex: 1,
+  },
+  topBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+  },
   scrollContent: {
-    paddingHorizontal: Spacing.four,
     alignItems: 'center',
-    gap: Spacing.three,
+    paddingHorizontal: Spacing.four,
+    gap: 0,
   },
 });

@@ -9,7 +9,6 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/use-theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useI18n } from '@/lib/i18n';
 import { useCurrentOrgQuery } from '@/hooks/use-api-queries';
 import { OrganizationLogo } from '@/components/ui/organization-logo';
@@ -17,24 +16,30 @@ import { Radii, Spacing, Typography } from '@/constants/theme';
 
 export const SignInBrandHeader = React.memo(() => {
   const theme = useTheme();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
   const { t, locale, setLocale } = useI18n();
   const { data: orgData } = useCurrentOrgQuery();
 
   const orgName = orgData?.name || t('auth_org_portal');
-  const orgColor = orgData?.primary_color || theme.primary;
 
-  const toggleLanguage = () => {
-    setLocale(locale === 'ar' ? 'en' : 'ar');
+  const toggleLanguage = async () => {
+    await setLocale(locale === 'ar' ? 'en' : 'ar');
   };
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: theme.primary,
+          marginHorizontal: -Spacing.four,
+          paddingHorizontal: Spacing.four,
+        },
+      ]}>
       {/* Top Language Switcher Toggle */}
       <View style={styles.topBar}>
         <Pressable
           onPress={toggleLanguage}
+          accessibilityRole="button"
           hitSlop={8}
           style={({ pressed }) => [
             styles.langPill,
@@ -55,14 +60,17 @@ export const SignInBrandHeader = React.memo(() => {
       {/* Official Organization Logo */}
       <OrganizationLogo
         size={52}
-        color={isDark ? '#FFFFFF' : orgColor}
+        color="#FFFFFF"
         dotColor="#A821D9"
-        withContainer
       />
 
       {/* Organization Name */}
-      <Text style={[styles.title, { color: theme.text }]} numberOfLines={2}>
+      <Text style={[styles.title, { color: '#FFFFFF' }]} numberOfLines={2}>
         {orgName}
+      </Text>
+
+      <Text style={[styles.subtitle, { color: '#FFFFFF' }]}>
+        {t('auth_welcome_sub')}
       </Text>
     </View>
   );
@@ -74,8 +82,9 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     gap: Spacing.two,
-    marginBottom: Spacing.three,
     width: '100%',
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.twelve,
   },
   topBar: {
     width: '100%',
@@ -104,6 +113,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '800',
     marginTop: Spacing.one,
+    maxWidth: '90%',
+  },
+  subtitle: {
+    ...Typography.body,
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: 'center',
     maxWidth: '90%',
   },
 });

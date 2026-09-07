@@ -160,7 +160,7 @@ export const en: Record<TranslationKey, string> = {
   auth_continue_google: 'Continue with Google',
   auth_no_account: 'Looking to register a new student?',
   auth_register_link: 'Submit Student Admission Application',
-  auth_org_portal: 'Educational Institution Portal',
+  auth_org_portal: 'Jeel Al Marifah Schools',
 
   // Student Admission & Registration (Parent applying for child)
   admission_title: 'New Student Registration',

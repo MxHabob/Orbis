@@ -158,7 +158,7 @@ export const ar = {
   auth_continue_google: 'المتابعة باستخدام Google',
   auth_no_account: 'هل ترغب بتسجيل طالب جديد؟',
   auth_register_link: 'تقديم طلب تسجيل طالب',
-  auth_org_portal: 'بوابة المنظمة التعليمية',
+  auth_org_portal: 'مدارس جيل المعرفة',
 
   // Student Admission & Registration (Parent applying for child)
   admission_title: 'طلب تسجيل طالب جديد',
