@@ -28,7 +28,8 @@ export default defineConfig(({ mode }) => {
     // ── Build Optimization ─────────────────────────────────────────────
     build: {
       target: "esnext",
-      minify: "esbuild",
+      minify: true,
+      manifest: true,
       rollupOptions: {
         output: {
           // Split heavy vendor libs into separate chunks for better caching

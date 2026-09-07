@@ -1,9 +1,9 @@
 <script lang="ts">
-import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { authStore } from "$lib/stores";
 import { api } from "$lib/api";
 import { toast } from "@orbis/ui";
+import { l } from "$lib/core/i18n";
 
 import {
   AccountMfaCard,
@@ -26,7 +26,7 @@ async function handleUpdatePassword(e: Event) {
   e.preventDefault();
 
   if (newPassword !== confirmPassword) {
-    toast.error(m.settings_security_password_mismatch());
+    toast.error(l("كلمات المرور غير متطابقة", "Passwords do not match"));
     return;
   }
 
@@ -37,7 +37,7 @@ async function handleUpdatePassword(e: Event) {
 
   isUpdating = true;
   try {
-    toast.success(m.settings_security_password_success());
+    toast.success(l("تم تحديث كلمة المرور بنجاح", "Password updated successfully"));
     currentPassword = "";
     newPassword = "";
     confirmPassword = "";
@@ -106,7 +106,7 @@ onMount(() => {
 </script>
 
 <svelte:head>
-  <title>{m.common_nav_security()} | Orbis</title>
+  <title>{l('الأمان وكلمة المرور', 'Security')} | Orbis</title>
 </svelte:head>
 
 <div class="flex flex-col gap-6 max-w-4xl">

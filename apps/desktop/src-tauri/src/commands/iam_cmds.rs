@@ -159,6 +159,27 @@ pub async fn iam_list_users(state: State<'_, AppState>) -> Result<ApiResponse<Ve
     Ok(ok(users.into_iter().map(user_to_dto).collect()))
 }
 
+#[tauri::command]
+pub async fn iam_get_user(id: String, state: State<'_, AppState>) -> Result<ApiResponse<UserDto>, String> {
+    let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
+    let user = state.user_repo.find_by_id(uid).await.map_err(|e| e.to_string())?
+        .ok_or_else(|| "User not found".to_string())?;
+    Ok(ok(user_to_dto(user)))
+}
+
+#[tauri::command]
+pub async fn iam_update_user(id: String, request: serde_json::Value, state: State<'_, AppState>) -> Result<ApiResponse<UserDto>, String> {
+    let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
+    let mut user = state.user_repo.find_by_id(uid).await.map_err(|e| e.to_string())?
+        .ok_or_else(|| "User not found".to_string())?;
+    if let Some(name) = request.get("fullName").or(request.get("full_name")).and_then(|v| v.as_str()) {
+        user.full_name = name.to_string();
+    }
+    user.updated_at = chrono::Utc::now();
+    state.user_repo.save(&user).await.map_err(|e| e.to_string())?;
+    Ok(ok(user_to_dto(user)))
+}
+
 #[derive(Serialize)]
 pub struct MfaEnrollResponse {
     pub factor_id: String,
@@ -334,12 +355,4 @@ pub async fn auth_revoke_device(id: String, state: State<'_, AppState>) -> Resul
     };
     uc.revoke_device(&ctx, device_uuid).await.map_err(|e| e.to_string())?;
     Ok(ok(true))
-}
-
-#[tauri::command]
-pub async fn iam_get_user(id: String, state: State<'_, AppState>) -> Result<ApiResponse<UserDto>, String> {
-    let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
-    let user = state.user_repo.find_by_id(uid).await.map_err(|e| e.to_string())?
-        .ok_or_else(|| "User not found".to_string())?;
-    Ok(ok(user_to_dto(user)))
 }

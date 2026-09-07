@@ -46,6 +46,7 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         iam_cmds::iam_register_user,
         iam_cmds::iam_list_users,
         iam_cmds::iam_get_user,
+        iam_cmds::iam_update_user,
         // ── Organization ────────────────────────────────────────
         org_cmds::org_get_current,
         org_cmds::org_update_current,
@@ -125,6 +126,9 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         // ── Integration ─────────────────────────────────────────
         integration_cmds::integration_connect_app,
         integration_cmds::integration_list,
+        integration_cmds::integration_get_status,
+        integration_cmds::integration_disconnect,
+        integration_cmds::integration_toggle,
         // ── Report Generation ───────────────────────────────────
         report_cmds::generate_report,
         report_cmds::get_report_job_status,

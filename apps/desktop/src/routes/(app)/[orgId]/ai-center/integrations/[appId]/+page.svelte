@@ -6,9 +6,10 @@ Main: App header + description + features.
 Sidebar: CTA card + settings form + related apps.
 -->
 <script lang="ts">
+import { onMount } from "svelte";
 import { getAppById, getAppsByCategory, getCategoryName, getCategoryNameAr } from "@orbis/app-store";
 import type { OrbisApp } from "@orbis/app-store";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import AppIcon from "$lib/features/ai-center/components/integrations/app-icon.svelte";
 import AppConnectForm from "$lib/features/ai-center/components/integrations/app-connect-form.svelte";
@@ -30,14 +31,16 @@ let isConnecting = $state(false);
 let isConnected = $state(false);
 let connectError = $state<string | null>(null);
 
-// Check current status on load
-$effect(() => {
+// Check current status on mount
+onMount(() => {
   if (data.appId) {
-    (commands as any).aiCenter?.getIntegrationStatus?.(data.appId)
-      ?.then((status: any) => {
+    api.getIntegrationStatus(data.appId)
+      .then((status) => {
         isConnected = status?.connected ?? false;
       })
-      ?.catch(() => { isConnected = false; });
+      .catch(() => {
+        isConnected = false;
+      });
   }
 });
 
@@ -54,9 +57,37 @@ async function handleConnect(values: Record<string, unknown>) {
   isConnecting = true;
   connectError = null;
   try {
-    if ((commands as any).aiCenter?.connectIntegration) {
-      await (commands as any).aiCenter.connectIntegration(data.appId, values);
+    const secrets: Record<string, string> = {};
+    const settings: Record<string, unknown> = {};
+
+    if (app) {
+      for (const s of app.settings) {
+        const val = values[s.id];
+        if (val !== undefined && val !== null && val !== "") {
+          if (s.type === "password" || s.id.includes("secret") || s.id.includes("key") || s.id.includes("token")) {
+            secrets[s.id] = String(val);
+          } else {
+            settings[s.id] = val;
+          }
+        }
+      }
     }
+    for (const [k, v] of Object.entries(values)) {
+      if (k in secrets || k in settings) continue;
+      if (k.includes("secret") || k.includes("key") || k.includes("token") || k.includes("password")) {
+        secrets[k] = String(v);
+      } else {
+        settings[k] = v;
+      }
+    }
+
+    await api.connectApp({
+      provider_name: data.appId,
+      category: app?.category ?? "other",
+      env: "production",
+      settings,
+      secrets,
+    });
     isConnected = true;
   } catch (e: any) {
     connectError = e?.message ?? "Connection failed";
@@ -67,9 +98,7 @@ async function handleConnect(values: Record<string, unknown>) {
 
 async function handleDisconnect() {
   try {
-    if ((commands as any).aiCenter?.disconnectIntegration) {
-      await (commands as any).aiCenter.disconnectIntegration(data.appId);
-    }
+    await api.disconnectApp(data.appId);
     isConnected = false;
   } catch (e: any) {
     console.error("[AI Center] Disconnect failed:", e);

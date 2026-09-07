@@ -55,9 +55,11 @@ let events = $state<CameraEvent[]>([]);
 
 onMount(async () => {
   try {
-    const status = await (commands as any).aiCenter?.getIntegrationStatus?.("hikvision-camera").catch(() => null);
+    const status = await api.getIntegrationStatus("hikvision-camera").catch(() => null);
     if (status && (status as any).cameras) {
       cameras = (status as any).cameras;
+    } else if (status?.config?.settings && (status.config.settings as any)?.cameras) {
+      cameras = (status.config.settings as any).cameras;
     }
   } catch (e) {
     console.warn("[AI Center] Camera status not available:", e);

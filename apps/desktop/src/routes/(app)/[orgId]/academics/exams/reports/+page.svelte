@@ -34,7 +34,6 @@ import { createPeriodsQuery } from "$lib/features/academics";
 import { createQuery } from "@tanstack/svelte-query";
 import { readable } from "svelte/store";
 import { api, extractErrorMessage } from "$lib/api";
-import { api } from "$lib/api/client";
 import { localizeHref } from "$lib/paraglide/runtime";
 
 let { data }: { data: { orgId: string } } = $props();

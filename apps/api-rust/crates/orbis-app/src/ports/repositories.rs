@@ -345,9 +345,12 @@ pub trait DocumentRepository: Send + Sync {
 #[async_trait]
 pub trait IntegrationRepository: Send + Sync {
     async fn find_configs_by_org(&self, org_id: Uuid) -> Result<Vec<orbis_domain::entities::integration::IntegrationConfig>, DomainError>;
+    async fn find_config_by_provider(&self, org_id: Uuid, provider_name: &str) -> Result<Option<orbis_domain::entities::integration::IntegrationConfig>, DomainError>;
     async fn get_secrets_by_config(&self, config_id: Uuid) -> Result<Vec<orbis_domain::entities::integration::IntegrationSecret>, DomainError>;
     async fn save_config(&self, config: &orbis_domain::entities::integration::IntegrationConfig) -> Result<(), DomainError>;
     async fn save_secret(&self, secret: &orbis_domain::entities::integration::IntegrationSecret) -> Result<(), DomainError>;
+    async fn delete_config(&self, config_id: Uuid) -> Result<(), DomainError>;
+    async fn delete_by_provider(&self, org_id: Uuid, provider_name: &str) -> Result<(), DomainError>;
 }
 
 // ═══════════════════════════════════════════════════════════════

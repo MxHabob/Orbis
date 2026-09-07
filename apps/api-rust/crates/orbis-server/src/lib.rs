@@ -52,6 +52,7 @@ use api::{
         api::iam_routes::register_user,
         api::iam_routes::list_users,
         api::iam_routes::get_user,
+        api::iam_routes::update_user,
         // Organization
         api::org_routes::create_org,
         api::org_routes::get_current_org,
@@ -132,6 +133,9 @@ use api::{
         // Integration
         api::integration_routes::connect_app,
         api::integration_routes::list_integrations,
+        api::integration_routes::get_integration_status,
+        api::integration_routes::disconnect_app,
+        api::integration_routes::toggle_integration,
         // Report & Templates
         api::report_routes::list_templates,
         api::report_routes::create_template,
@@ -161,6 +165,7 @@ use api::{
             api::iam_routes::LoginRequest,
             api::iam_routes::LoginResponse,
             api::iam_routes::RegisterUserRequest,
+            api::iam_routes::UpdateUserRequest,
             api::iam_routes::UserDto,
             api::iam_routes::SessionResponse,
             api::iam_routes::MfaEnrollRequest,
@@ -244,7 +249,9 @@ use api::{
             api::document_routes::UploadDocumentRequest,
             // Integration
             api::integration_routes::IntegrationDto,
+            api::integration_routes::IntegrationStatusDto,
             api::integration_routes::ConnectAppRequest,
+            api::integration_routes::ToggleIntegrationRequest,
             // Report & Template
             api::report_routes::TemplateDto,
             api::report_routes::CreateTemplateRequest,

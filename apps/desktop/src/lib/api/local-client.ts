@@ -84,6 +84,9 @@ export class LocalClient implements OrbisApiClient {
   async getUser(id: string): Promise<UserDto> {
     return unwrap(await invoke('iam_get_user', { id }));
   }
+  async updateUser(id: string, req: { full_name?: string }): Promise<UserDto> {
+    return unwrap(await invoke('iam_update_user', { id, request: req }));
+  }
 
   // ── Organization ────────────────────────────────────────────
   async getCurrentOrg(): Promise<OrgDto> {
@@ -312,6 +315,15 @@ export class LocalClient implements OrbisApiClient {
   }
   async listIntegrations(): Promise<IntegrationDto[]> {
     return unwrap(await invoke('integration_list'));
+  }
+  async getIntegrationStatus(providerName: string): Promise<IntegrationStatusResponse> {
+    return unwrap(await invoke('integration_get_status', { providerName }));
+  }
+  async disconnectApp(providerName: string): Promise<boolean> {
+    return unwrap(await invoke('integration_disconnect', { providerName }));
+  }
+  async toggleIntegration(providerName: string, isEnabled: boolean): Promise<boolean> {
+    return unwrap(await invoke('integration_toggle', { providerName, isEnabled }));
   }
 
   // ── Templates ───────────────────────────────────────────────

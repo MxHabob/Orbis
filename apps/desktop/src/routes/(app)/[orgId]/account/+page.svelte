@@ -2,11 +2,11 @@
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { page } from "$app/state";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { themeStore, authStore } from "$lib/stores";
 import { toast } from "@orbis/ui";
-
+import { l } from "$lib/core/i18n";
 import { getLocale, setLocale } from "$lib/paraglide/runtime";
 
 // Component imports
@@ -46,27 +46,6 @@ async function getGravatarUrl(emailAddress: string) {
   return `https://gravatar.com/avatar/${hashHex}?d=identicon&s=120`;
 }
 
-// Reactively load Gravatar when email changes
-$effect(() => {
-  if (email) {
-    getGravatarUrl(email).then((url) => {
-      gravatarUrl = url;
-      if (useGravatar) {
-        avatarUrl = url;
-      }
-    });
-  }
-});
-
-// React to Gravatar checkbox toggle
-$effect(() => {
-  if (useGravatar && gravatarUrl) {
-    avatarUrl = gravatarUrl;
-  } else if (!useGravatar && avatarUrl && avatarUrl.includes("gravatar.com")) {
-    avatarUrl = null;
-  }
-});
-
 async function handleLanguageChange(newLocale: string) {
   const lang = newLocale.split("-")[0]?.toLowerCase() || "ar";
   const targetLang = lang === "ar" ? "ar" : "en";
@@ -81,16 +60,26 @@ function handleThemeChange(theme: "light" | "dark" | "system") {
   themeStore.set(theme);
 }
 
-function loadUserAccount() {
+async function loadUserAccount() {
   isLoading = true;
   if (authStore.user) {
     fullName = authStore.user.full_name || "";
     selectedTheme = themeStore.current;
     selectedLanguage = getLocale();
-    const avatar = authStore.user.avatar || null;
+    const avatar = (authStore.user as any).avatar || null;
     avatarUrl = avatar;
     if (avatar && avatar.includes("gravatar.com")) {
       useGravatar = true;
+    }
+  }
+  if (email) {
+    try {
+      gravatarUrl = await getGravatarUrl(email);
+      if (useGravatar && gravatarUrl) {
+        avatarUrl = gravatarUrl;
+      }
+    } catch {
+      // Ignore gravatar error
     }
   }
   isLoading = false;
@@ -106,7 +95,7 @@ async function handleSaveDetails(e: Event) {
   isSavingDetails = true;
   try {
     // 1. Update full name in database
-    const updatedUser = await api.iam.updateUser(authStore.userId, {
+    const updatedUser = await api.updateUser(authStore.userId, {
       full_name: fullName,
     });
 
@@ -117,19 +106,11 @@ async function handleSaveDetails(e: Event) {
     // 3. Save Theme Preference
     themeStore.set(selectedTheme);
 
-    toast.success(
-      m.common_account_save_success
-        ? m.common_account_save_success()
-        : "تم حفظ تفاصيل الحساب بنجاح",
-    );
+    toast.success(l("تم حفظ تفاصيل الحساب بنجاح", "Account details saved successfully"));
   } catch (e) {
     console.error("Failed to update user details:", e);
     const msg = (e as any)?.message || String(e);
-    toast.error(
-      m.common_account_save_error
-        ? m.common_account_save_error({ error: msg })
-        : `خطأ أثناء حفظ تفاصيل الحساب: ${msg}`,
-    );
+    toast.error(l(`خطأ أثناء حفظ تفاصيل الحساب: ${msg}`, `Failed to save account details: ${msg}`));
   } finally {
     isSavingDetails = false;
   }
@@ -140,28 +121,20 @@ async function handleSaveAvatar(e: Event) {
   if (!authStore.userId) return;
   isSavingAvatar = true;
   try {
-    // Update avatar on backend
-    const updatedUser = await api.iam.updateUser(authStore.userId, {
-      avatar: avatarUrl,
-    });
+    if (authStore.user) {
+      const updatedUser = {
+        ...authStore.user,
+        avatar: avatarUrl,
+      };
+      authStore.user = updatedUser as any;
+      localStorage.setItem("orbis_user", JSON.stringify(updatedUser));
+    }
 
-    // Update client authStore state
-    authStore.user = updatedUser;
-    localStorage.setItem("orbis_user", JSON.stringify(updatedUser));
-
-    toast.success(
-      m.common_account_save_success
-        ? m.common_account_save_success()
-        : "تم حفظ تفاصيل الحساب بنجاح",
-    );
+    toast.success(l("تم حفظ الصورة الرمزية بنجاح", "Avatar saved successfully"));
   } catch (e) {
     console.error("Failed to update avatar:", e);
     const msg = (e as any)?.message || String(e);
-    toast.error(
-      m.common_account_save_error
-        ? m.common_account_save_error({ error: msg })
-        : `خطأ أثناء حفظ تفاصيل الحساب: ${msg}`,
-    );
+    toast.error(l(`خطأ أثناء حفظ الصورة: ${msg}`, `Failed to save avatar: ${msg}`));
   } finally {
     isSavingAvatar = false;
   }
@@ -170,7 +143,7 @@ async function handleSaveAvatar(e: Event) {
 
 <svelte:head>
   <title>
-    {m.common_account_settings_title ? m.common_account_settings_title() : 'إعدادات الحساب'} | Orbis
+    {l('إعدادات الحساب', 'Account Settings')} | Orbis
   </title>
 </svelte:head>
 
@@ -209,7 +182,7 @@ async function handleSaveAvatar(e: Event) {
             class="px-6 font-semibold h-9 text-xs"
             disabled={isSavingDetails}
           >
-            {isSavingDetails ? m.common_state_saving() : (m.common_action_save ? m.common_action_save() : 'Save Changes')}
+            {isSavingDetails ? l("جاري الحفظ...", "Saving...") : l("حفظ التغييرات", "Save Changes")}
           </Button>
         </div>
       </form>

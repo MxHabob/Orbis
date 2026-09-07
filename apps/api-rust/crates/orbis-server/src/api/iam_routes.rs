@@ -231,6 +231,51 @@ async fn get_user(
     }))
 }
 
+#[derive(Deserialize, ToSchema)]
+pub struct UpdateUserRequest {
+    pub full_name: Option<String>,
+}
+
+#[utoipa::path(
+    put,
+    path = "/api/v1/iam/users/{id}",
+    params(("id" = Uuid, Path, description = "User ID")),
+    request_body = UpdateUserRequest,
+    responses(
+        (status = 200, description = "User updated successfully", body = UserDto),
+        (status = 404, description = "User not found")
+    ),
+    security(("bearer" = [])),
+    tag = "IAM"
+)]
+pub async fn update_user(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    axum::extract::Path(id): axum::extract::Path<Uuid>,
+    Json(p): Json<UpdateUserRequest>,
+) -> Result<Json<ApiResponse<UserDto>>, ApiError> {
+    let mut user = state.user_repo.find_by_id(id).await?
+        .ok_or_else(|| ApiError::not_found(format!("User {} not found", id)))?;
+
+    if user.org_id != ctx.tenant_id && !ctx.actor.is_system() {
+        return Err(ApiError::forbidden("Access denied to this user"));
+    }
+
+    if let Some(name) = p.full_name {
+        user.full_name = name;
+    }
+    user.updated_at = chrono::Utc::now();
+    state.user_repo.save(&user).await?;
+
+    Ok(ApiResponse::ok(UserDto {
+        id: user.id,
+        org_id: user.org_id,
+        email: user.email,
+        full_name: user.full_name,
+        status: user.status,
+    }))
+}
+
 // ── MFA & Identity DTOs ─────────────────────────────────────────
 
 #[derive(Deserialize, ToSchema)]
@@ -507,6 +552,6 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/auth/devices", get(list_devices))
         .route("/api/v1/auth/devices/:id", axum::routing::delete(revoke_device))
         .route("/api/v1/iam/users", post(register_user).get(list_users))
-        .route("/api/v1/iam/users/:id", get(get_user))
+        .route("/api/v1/iam/users/:id", get(get_user).put(update_user))
 }
 

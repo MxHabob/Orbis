@@ -232,9 +232,11 @@ export interface ReportDefinitionDto {
   is_active: boolean;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// API CLIENT INTERFACE
-// ═══════════════════════════════════════════════════════════════
+export interface IntegrationStatusResponse {
+  connected: boolean;
+  is_enabled: boolean;
+  config?: IntegrationDto | null;
+}
 
 export interface OrbisApiClient {
   // ── Auth & MFA & Devices ────────────────────────────────────
@@ -253,6 +255,7 @@ export interface OrbisApiClient {
   registerUser(req: RegisterUserRequest): Promise<UserDto>;
   listUsers(): Promise<UserDto[]>;
   getUser(id: string): Promise<UserDto>;
+  updateUser(id: string, req: { full_name?: string }): Promise<UserDto>;
 
   // ── Organization ────────────────────────────────────────────
   getCurrentOrg(): Promise<OrgDto>;
@@ -344,6 +347,9 @@ export interface OrbisApiClient {
   // ── Integration ─────────────────────────────────────────────
   connectApp(req: ConnectAppRequest): Promise<IntegrationDto>;
   listIntegrations(): Promise<IntegrationDto[]>;
+  getIntegrationStatus(providerName: string): Promise<IntegrationStatusResponse>;
+  disconnectApp(providerName: string): Promise<boolean>;
+  toggleIntegration(providerName: string, isEnabled: boolean): Promise<boolean>;
 
   // ── Templates ───────────────────────────────────────────────
   createTemplate(req: CreateTemplateRequest): Promise<TemplateDto>;

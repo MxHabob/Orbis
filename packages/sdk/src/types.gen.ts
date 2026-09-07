@@ -433,6 +433,12 @@ export type IntegrationDto = {
     settings?: unknown;
 };
 
+export type IntegrationStatusDto = {
+    config?: IntegrationDto | null;
+    connected: boolean;
+    is_enabled: boolean;
+};
+
 export type LoginRequest = {
     email: string;
     password: string;
@@ -732,6 +738,10 @@ export type TimeSlotDto = {
     start_time: string;
 };
 
+export type ToggleIntegrationRequest = {
+    is_enabled: boolean;
+};
+
 export type UpdateOrgRequest = {
     locale?: string | null;
     name?: string | null;
@@ -748,6 +758,10 @@ export type UpdateTemplateRequest = {
     name_ar?: string | null;
     orientation?: string | null;
     page_size?: string | null;
+};
+
+export type UpdateUserRequest = {
+    full_name?: string | null;
 };
 
 export type UploadDocumentRequest = {
@@ -1627,6 +1641,34 @@ export type GetUserResponses = {
 
 export type GetUserResponse = GetUserResponses[keyof GetUserResponses];
 
+export type UpdateUserData = {
+    body: UpdateUserRequest;
+    path: {
+        /**
+         * User ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/iam/users/{id}';
+};
+
+export type UpdateUserErrors = {
+    /**
+     * User not found
+     */
+    404: unknown;
+};
+
+export type UpdateUserResponses = {
+    /**
+     * User updated successfully
+     */
+    200: UserDto;
+};
+
+export type UpdateUserResponse = UpdateUserResponses[keyof UpdateUserResponses];
+
 export type ListIntegrationsData = {
     body?: never;
     path?: never;
@@ -1652,6 +1694,51 @@ export type ConnectAppResponses = {
 };
 
 export type ConnectAppResponse = ConnectAppResponses[keyof ConnectAppResponses];
+
+export type DisconnectAppData = {
+    body?: never;
+    path: {
+        provider_name: string;
+    };
+    query?: never;
+    url: '/api/v1/integrations/{provider_name}';
+};
+
+export type DisconnectAppResponses = {
+    200: boolean;
+};
+
+export type DisconnectAppResponse = DisconnectAppResponses[keyof DisconnectAppResponses];
+
+export type GetIntegrationStatusData = {
+    body?: never;
+    path: {
+        provider_name: string;
+    };
+    query?: never;
+    url: '/api/v1/integrations/{provider_name}/status';
+};
+
+export type GetIntegrationStatusResponses = {
+    200: IntegrationStatusDto;
+};
+
+export type GetIntegrationStatusResponse = GetIntegrationStatusResponses[keyof GetIntegrationStatusResponses];
+
+export type ToggleIntegrationData = {
+    body: ToggleIntegrationRequest;
+    path: {
+        provider_name: string;
+    };
+    query?: never;
+    url: '/api/v1/integrations/{provider_name}/toggle';
+};
+
+export type ToggleIntegrationResponses = {
+    200: boolean;
+};
+
+export type ToggleIntegrationResponse = ToggleIntegrationResponses[keyof ToggleIntegrationResponses];
 
 export type ListOrgUnitsData = {
     body?: never;

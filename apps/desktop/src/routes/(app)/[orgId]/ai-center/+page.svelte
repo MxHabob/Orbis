@@ -38,16 +38,20 @@ let isLoading = $state(true);
 
 onMount(async () => {
   try {
-    const [tasks, diagnostics, sessions, config] = await Promise.all([
+    const [tasks, diagnostics, sessions, config, integrations] = await Promise.all([
       api.ai.autopilotGetTasks().catch(() => []),
       api.ai.autopilotGetDiagnostics().catch(() => null),
       api.ai.agentGetSessions().catch(() => []),
       api.ai.aiGetAutopilotConfig(data.orgId).catch(() => null),
+      api.listIntegrations().catch(() => []),
     ]);
 
     healthStatus = (diagnostics as any)?.is_healthy === false ? "degraded" : "healthy";
     activeSessions = Array.isArray(sessions) ? sessions : [];
     sessionCount = activeSessions.length;
+
+    connectedIntegrations = Array.isArray(integrations) ? integrations : [];
+    connectedAppsCount = connectedIntegrations.length;
 
     const taskList = Array.isArray(tasks) ? (tasks as any[]) : [];
     actionCount = taskList.length;
@@ -253,8 +257,8 @@ const healthInfo = $derived(healthConfig[healthStatus]);
                   <div class="flex items-center gap-2.5">
                     <Plug size={16} class="text-primary" />
                     <div>
-                      <h4 class="text-xs font-bold text-foreground">{item.name || item.id}</h4>
-                      <p class="text-[10px] text-muted-foreground">{item.provider || "خدمة متصلة"}</p>
+                      <h4 class="text-xs font-bold text-foreground">{item.provider_name || item.name || item.id}</h4>
+                      <p class="text-[10px] text-muted-foreground">{item.category || item.provider || "خدمة متصلة"}</p>
                     </div>
                   </div>
                   <span class="w-2 h-2 rounded-full bg-primary" title="متصل"></span>

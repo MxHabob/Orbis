@@ -33,9 +33,9 @@ let {
 }: Props & Record<string, any> = $props();
 
 const themes = [
-  { value: "light", label: m.settings_theme_light() },
-  { value: "dark", label: m.settings_theme_dark() },
-  { value: "system", label: m.settings_appearance_theme_system() },
+  { value: "light", label: "فاتح (Light)" },
+  { value: "dark", label: "داكن (Dark)" },
+  { value: "system", label: "تلقائي حسب النظام (System)" },
 ];
 </script>
 

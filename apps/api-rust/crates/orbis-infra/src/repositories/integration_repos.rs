@@ -71,4 +71,44 @@ impl IntegrationRepository for IntegrationRepoImpl {
         }
         Ok(())
     }
+
+    async fn find_config_by_provider(&self, org_id: Uuid, provider_name: &str) -> Result<Option<DomainIntegrationConfig>, DomainError> {
+        let model = integration_config::Entity::find()
+            .filter(integration_config::Column::OrgId.eq(org_id))
+            .filter(integration_config::Column::ProviderName.eq(provider_name))
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        Ok(model.map(|m| DomainIntegrationConfig {
+            id: m.id, org_id: m.org_id, provider_name: m.provider_name,
+            category: m.category, is_enabled: m.is_enabled, env: m.env,
+            settings: m.settings.map(|v| v.into()),
+            created_at: m.created_at.into(), updated_at: m.updated_at.into(),
+        }))
+    }
+
+    async fn delete_config(&self, config_id: Uuid) -> Result<(), DomainError> {
+        // Delete secrets first
+        integration_secret::Entity::delete_many()
+            .filter(integration_secret::Column::ConfigId.eq(config_id))
+            .exec(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        // Delete config
+        integration_config::Entity::delete_by_id(config_id)
+            .exec(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        Ok(())
+    }
+
+    async fn delete_by_provider(&self, org_id: Uuid, provider_name: &str) -> Result<(), DomainError> {
+        if let Some(cfg) = self.find_config_by_provider(org_id, provider_name).await? {
+            self.delete_config(cfg.id).await?;
+        }
+        Ok(())
+    }
 }

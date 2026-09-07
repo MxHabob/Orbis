@@ -33,12 +33,15 @@ let {
   onupload?: (url: string) => void;
 } = $props();
 
+import { onMount } from "svelte";
+
 const uploadMutation = useUploadDocument();
 let fileInputRef: HTMLInputElement | undefined = $state();
 let localPreviewUrl: string | null = $state(null);
 
 let resolvedAvatarUrl: string | null = $state(null);
-$effect(() => {
+
+onMount(() => {
   if (avatarUrl && !localPreviewUrl) {
     resolveDocumentUrl(avatarUrl).then((url) => {
       resolvedAvatarUrl = url;
@@ -46,7 +49,7 @@ $effect(() => {
   }
 });
 
-let displayUrl = $derived(localPreviewUrl || resolvedAvatarUrl);
+let displayUrl = $derived(localPreviewUrl || resolvedAvatarUrl || avatarUrl);
 
 function triggerFileInput() {
   if (isLoading || uploadMutation.isPending) return;

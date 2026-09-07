@@ -78,7 +78,7 @@ let {
       onclick={onsave}
       disabled={isSavingAvatar}
     >
-      {isSavingAvatar ? m.common_state_saving() : (m.common_action_save ? m.common_action_save() : 'Save Avatar')}
+      {isSavingAvatar ? (m.common_state_saving ? m.common_state_saving() : 'جاري الحفظ...') : (m.common_action_save ? m.common_action_save() : 'Save Avatar')}
     </Button>
   </CardFooter>
 </Card>

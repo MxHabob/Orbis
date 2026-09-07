@@ -145,6 +145,9 @@ export class RemoteClient implements OrbisApiClient {
   async getUser(id: string): Promise<UserDto> {
     return this.get(`/api/v1/iam/users/${id}`);
   }
+  async updateUser(id: string, req: { full_name?: string }): Promise<UserDto> {
+    return this.put(`/api/v1/iam/users/${id}`, req);
+  }
 
   // ── Organization ────────────────────────────────────────────
   async getCurrentOrg(): Promise<OrgDto> {
@@ -373,6 +376,15 @@ export class RemoteClient implements OrbisApiClient {
   }
   async listIntegrations(): Promise<IntegrationDto[]> {
     return this.get('/api/v1/integrations');
+  }
+  async getIntegrationStatus(providerName: string): Promise<IntegrationStatusResponse> {
+    return this.get(`/api/v1/integrations/${providerName}/status`);
+  }
+  async disconnectApp(providerName: string): Promise<boolean> {
+    return this.del(`/api/v1/integrations/${providerName}`);
+  }
+  async toggleIntegration(providerName: string, isEnabled: boolean): Promise<boolean> {
+    return this.put(`/api/v1/integrations/${providerName}/toggle`, { is_enabled: isEnabled });
   }
 
   // ── Templates ───────────────────────────────────────────────
