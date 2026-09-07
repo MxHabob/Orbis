@@ -46,30 +46,41 @@ impl DashboardRepository for DashboardRepoImpl {
             org_id,
         ).await.unwrap_or(0);
 
-        // Active academic year
+        // Active academic year (status = 'active')
         let active_year = {
             let result = self.db.query_one(
                 Statement::from_sql_and_values(
                     self.db.get_database_backend(),
-                    "SELECT name FROM academic_years WHERE org_id = $1 AND is_active = 1 LIMIT 1",
+                    "SELECT name FROM academic_years WHERE org_id = $1 AND status = 'active' LIMIT 1",
                     [org_id.into()],
                 ),
             ).await.map_err(|e| DomainError::Internal(e.to_string()))?;
 
-            result.and_then(|row| {
-                row.try_get::<String>("", "name").ok()
-            })
+            match result {
+                Some(row) => row.try_get::<String>("", "name").ok(),
+                None => {
+                    // Fallback to most recent academic year if none is marked 'active'
+                    let fallback = self.db.query_one(
+                        Statement::from_sql_and_values(
+                            self.db.get_database_backend(),
+                            "SELECT name FROM academic_years WHERE org_id = $1 ORDER BY created_at DESC LIMIT 1",
+                            [org_id.into()],
+                        ),
+                    ).await.map_err(|e| DomainError::Internal(e.to_string()))?;
+                    fallback.and_then(|row| row.try_get::<String>("", "name").ok())
+                }
+            }
         };
 
         // Sum of payment amounts
         let total_payments_amount = self.sum_query(
-            "SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE org_id = $1 AND status = 'completed'",
+            "SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE org_id = $1",
             org_id,
         ).await.unwrap_or(0.0);
 
         // Sum of pending fees
         let pending_fees_amount = self.sum_query(
-            "SELECT COALESCE(SUM(net_amount - paid_amount), 0) as total FROM student_fees WHERE org_id = $1 AND status != 'paid'",
+            "SELECT COALESCE(SUM(net_amount), 0) as total FROM student_fees WHERE org_id = $1 AND status != 'paid'",
             org_id,
         ).await.unwrap_or(0.0);
 

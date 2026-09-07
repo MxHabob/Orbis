@@ -17,14 +17,11 @@ onMount(async () => {
     goto(localizeHref("/login"), { replaceState: true });
     return;
   }
-  await authStore.checkSetupStatus();
-  if (authStore.isSetupComplete) {
-    goto(localizeHref(`/${authStore.orgId}`), { replaceState: true });
-    return;
-  }
 
   onboardingState.load();
-  await onboardingState.loadExistingOrg(authStore.orgId);
+  if (authStore.orgId) {
+    await onboardingState.loadExistingOrg(authStore.orgId);
+  }
 
   // Redirect to the correct localized URL based on onboardingState.locale
   const currentUrlLocale = getLocale();

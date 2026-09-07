@@ -220,12 +220,9 @@ const tasksList = $derived([
         
         <button
           onclick={() => {
-            if (!authStore.isSetupComplete) {
-              handleChecklistItemClick(idx);
-            }
+            handleChecklistItemClick(idx);
           }}
-          disabled={authStore.isSetupComplete}
-          class="flex items-start justify-between p-2.5 rounded-lg text-start w-full transition-all cursor-pointer font-sans disabled:opacity-100 border border-transparent {isActive ? 'bg-muted text-foreground font-semibold' : 'hover:bg-muted/60 text-foreground bg-transparent'}"
+          class="flex items-start justify-between p-2.5 rounded-lg text-start w-full transition-all cursor-pointer font-sans border border-transparent {isActive ? 'bg-muted text-foreground font-semibold' : 'hover:bg-muted/60 text-foreground bg-transparent'}"
         >
           <div class="flex items-start gap-2.5 flex-1 min-w-0">
             {#if isCompleted}

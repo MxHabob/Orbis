@@ -378,7 +378,10 @@ impl ReportDataProvider for FeeCollectionDataProvider {
             Statement::from_sql_and_values(
                 self.db.get_database_backend(),
                 r#"SELECT
-                    sf.id, sf.amount, sf.paid_amount, sf.status,
+                    sf.id,
+                    sf.net_amount as amount,
+                    COALESCE((SELECT SUM(amount) FROM payments p WHERE p.fee_id = sf.id), 0.0) as paid_amount,
+                    sf.status,
                     p.full_name as student_name,
                     ft.name as fee_name
                 FROM student_fees sf
@@ -386,7 +389,7 @@ impl ReportDataProvider for FeeCollectionDataProvider {
                 LEFT JOIN fee_templates ft ON sf.fee_template_id = ft.id
                 WHERE sf.org_id = $1
                 ORDER BY p.full_name"#,
-                vec![org_id.to_string().into()],
+                vec![org_id.into()],
             )
         ).await;
 
