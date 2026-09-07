@@ -25,7 +25,7 @@ let {
 } = $props();
 
 function parseMessageParts(text: string) {
-  const regex = /\[([^\]]+)\]\(([^)]+)\)|\[نتيجة الأداة ([^:]+):\s*([^\]]+)\]/g;
+  const regex = /\*\*([^*]+)\*\*|\[([^\]]+)\]\(([^)]+)\)|\[نتيجة الأداة ([^:]+):\s*([^\]]+)\]/g;
   const parts: any[] = [];
   let lastIndex = 0;
   let match;
@@ -38,15 +38,17 @@ function parseMessageParts(text: string) {
       });
     }
 
-    if (match[1] && match[2]) {
+    if (match[1]) {
+      parts.push({ type: "bold", content: match[1] });
+    } else if (match[2] && match[3]) {
       // Link
-      parts.push({ type: "link", label: match[1], href: match[2] });
-    } else if (match[3] && match[4]) {
+      parts.push({ type: "link", label: match[2], href: match[3] });
+    } else if (match[4] && match[5]) {
       // Tool result
       parts.push({
         type: "tool",
-        toolName: match[3].trim(),
-        result: match[4].trim(),
+        toolName: match[4].trim(),
+        result: match[5].trim(),
       });
     }
 
@@ -70,9 +72,11 @@ function parseMessageParts(text: string) {
       {#if msg.role === 'user'}
         <!-- User message bubble on the right -->
         <div class="flex justify-end w-full">
-          <div class="max-w-[85%] bg-muted text-foreground px-4 py-2.5 rounded-2xl text-[12.5px] leading-relaxed break-words font-medium shadow-sm">
+          <div class="max-w-[85%] bg-muted text-foreground px-4 py-2.5 rounded-2xl text-[12.5px] leading-relaxed break-words whitespace-pre-wrap font-medium shadow-sm">
             {#each parseMessageParts(msg.content) as part}
-              {#if part.type === 'link'}
+              {#if part.type === 'bold'}
+                <strong>{part.content}</strong>
+              {:else if part.type === 'link'}
                 <button
                   type="button"
                   onclick={() => onLinkClick(part.href!)}
@@ -96,11 +100,13 @@ function parseMessageParts(text: string) {
         </div>
       {:else}
         <!-- Agent response on the left -->
-        <div class="flex flex-col gap-3 w-full text-start text-[13px] text-foreground/90 leading-relaxed font-normal">
+        <div class="flex flex-col gap-3 w-full text-start text-[13px] text-foreground/90 leading-relaxed font-normal whitespace-pre-wrap">
           {#if msg.content}
             <div class="wrap-break-word">
               {#each parseMessageParts(msg.content) as part}
-                {#if part.type === 'link'}
+                {#if part.type === 'bold'}
+                  <strong>{part.content}</strong>
+                {:else if part.type === 'link'}
                   <button
                     type="button"
                     onclick={() => onLinkClick(part.href!)}
@@ -121,34 +127,13 @@ function parseMessageParts(text: string) {
                 {/if}
               {/each}
             </div>
-          {:else}
-            <p>
-              {#if orgName}
-                {m.common_agent_response_greeting_with_org({
-                  user: userName,
-                  org: orgName,
-                })}
-              {:else}
-                {m.common_agent_response_greeting_without_org({
-                  user: userName,
-                })}
-              {/if}
-            </p>
-            <p class="mt-1">
-              {m.common_agent_response_question()}
-            </p>
-            <ul class="list-disc ps-5 flex flex-col gap-2 mt-1">
-              <li>{m.common_agent_response_bullet_1()}</li>
-              <li>{m.common_agent_response_bullet_2()}</li>
-              <li>{m.common_agent_response_bullet_3()}</li>
-            </ul>
           {/if}
         </div>
       {/if}
     {/each}
 
     <!-- Thinking/loading skeleton -->
-    {#if isThinking}
+    {#if isThinking && messages.at(-1)?.role === "assistant" && !messages.at(-1)?.content.trim()}
       <div class="flex flex-col gap-3 w-full text-start mt-2">
         <Skeleton class="h-4 w-3/4 rounded-md" />
         <Skeleton class="h-4 w-5/6 rounded-md" />

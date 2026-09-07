@@ -82,7 +82,7 @@ async function handleConnect(values: Record<string, unknown>) {
     }
 
     await api.connectApp({
-      provider_name: data.appId,
+      provider_name: app?.adapter_name ?? data.appId,
       category: app?.category ?? "other",
       env: "production",
       settings,

@@ -146,14 +146,9 @@ async function openStandaloneWindow() {
 }
 
 async function handleNewChat(agentType: string = "default") {
-  try {
-    const newSession = await api.ai.agentCreateSession(agentType);
-    selectedSessionId = newSession.id;
-    messages = [];
-  } catch (e: unknown) {
-    console.error("Failed to create Ask Orbis session:", e);
-    toast.error(m.agent_toast_new_chat_failed());
-  }
+  void agentType;
+  selectedSessionId = null;
+  messages = [];
 }
 
 async function submitMessage(queryText?: string) {
@@ -169,52 +164,39 @@ async function submitMessage(queryText?: string) {
     { id: Math.random().toString(), role: "user", content: text },
   ];
   isThinking = true;
+  const assistantMessageId = Math.random().toString();
   scrollToBottom();
 
   try {
-    let activeId = effectiveSessionId;
-    if (!activeId) {
-      const newSession = await api.ai.agentCreateSession("greeting");
-      selectedSessionId = newSession.id;
-      activeId = newSession.id;
-    }
-
-    const assistantMessageId = Math.random().toString();
     messages = [
       ...messages,
       { id: assistantMessageId, role: "assistant", content: "" },
     ];
 
-    const response = await api.ai.agentQuery(
-      activeId,
-      text,
-      aiContext.context || undefined,
-      (chunk: string) => {
-        const msgIndex = messages.findIndex((m) => m.id === assistantMessageId);
-        if (msgIndex !== -1) {
-          messages[msgIndex].content = chunk;
-          scrollToBottom();
-        }
-      },
-    );
+    const response = await api.queryAgent({
+      message: text,
+      context: aiContext.context || undefined,
+    });
 
     // Ensure final response is set in case streaming didn't fire properly or at the end
     const finalMsgIndex = messages.findIndex(
       (m) => m.id === assistantMessageId,
     );
+    const responseText = typeof response === "string" ? response : response.message;
+    if (!responseText) {
+      throw new Error("AI provider returned an empty response");
+    }
     if (finalMsgIndex !== -1) {
-      messages[finalMsgIndex].content = response;
+      messages[finalMsgIndex].content = responseText;
     }
   } catch (e: unknown) {
     console.error("Ask Orbis query failed:", e);
-    messages = [
-      ...messages,
-      {
-        id: Math.random().toString(),
-        role: "assistant",
-        content: m.agent_error_response_failed(),
-      },
-    ];
+    const failedMessageIndex = messages.findIndex(
+      (m) => m.id === assistantMessageId,
+    );
+    if (failedMessageIndex !== -1 && !messages[failedMessageIndex].content.trim()) {
+      messages[failedMessageIndex].content = m.agent_error_response_failed();
+    }
   } finally {
     isThinking = false;
     scrollToBottom();
