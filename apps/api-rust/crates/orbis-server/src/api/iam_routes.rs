@@ -42,6 +42,18 @@ pub struct UserDto {
     pub email: Option<String>,
     pub full_name: String,
     pub status: String,
+    pub mfa_enabled: Option<bool>,
+}
+
+pub fn user_to_dto(u: orbis_domain::entities::user::User) -> UserDto {
+    UserDto {
+        id: u.id,
+        org_id: u.org_id,
+        email: u.email,
+        full_name: u.full_name,
+        status: u.status,
+        mfa_enabled: Some(u.mfa_enabled),
+    }
 }
 
 #[derive(Serialize, ToSchema)]
@@ -89,13 +101,7 @@ async fn login(
     Ok(ApiResponse::ok(LoginResponse {
         token: res.token,
         refresh_token: res.refresh_token,
-        user: UserDto {
-            id: user.id,
-            org_id: user.org_id,
-            email: user.email,
-            full_name: user.full_name,
-            status: user.status,
-        },
+        user: user_to_dto(user),
     }))
 }
 
@@ -121,13 +127,7 @@ async fn get_session(
 
     Ok(ApiResponse::ok(SessionResponse {
         org_id: ctx.tenant_id,
-        user: UserDto {
-            id: user.id,
-            org_id: user.org_id,
-            email: user.email,
-            full_name: user.full_name,
-            status: user.status,
-        },
+        user: user_to_dto(user),
     }))
 }
 
@@ -165,13 +165,7 @@ async fn register_user(
 
     let user = use_case.execute(&ctx, payload.full_name, Some(payload.email), payload.password, role, Some(ctx.tenant_id)).await?;
 
-    Ok(ApiResponse::ok(UserDto {
-        id: user.id,
-        org_id: user.org_id,
-        email: user.email,
-        full_name: user.full_name,
-        status: user.status,
-    }))
+    Ok(ApiResponse::ok(user_to_dto(user)))
 }
 
 #[utoipa::path(
@@ -188,13 +182,7 @@ async fn list_users(
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<UserDto>>>, ApiError> {
     let users = state.user_repo.find_by_org(ctx.tenant_id).await?;
-    let dtos: Vec<UserDto> = users.into_iter().map(|u| UserDto {
-        id: u.id,
-        org_id: u.org_id,
-        email: u.email,
-        full_name: u.full_name,
-        status: u.status,
-    }).collect();
+    let dtos: Vec<UserDto> = users.into_iter().map(user_to_dto).collect();
     Ok(ApiResponse::ok(dtos))
 }
 
@@ -222,13 +210,7 @@ async fn get_user(
         return Err(ApiError::forbidden("Access denied to this user"));
     }
 
-    Ok(ApiResponse::ok(UserDto {
-        id: user.id,
-        org_id: user.org_id,
-        email: user.email,
-        full_name: user.full_name,
-        status: user.status,
-    }))
+    Ok(ApiResponse::ok(user_to_dto(user)))
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -267,13 +249,7 @@ pub async fn update_user(
     user.updated_at = chrono::Utc::now();
     state.user_repo.save(&user).await?;
 
-    Ok(ApiResponse::ok(UserDto {
-        id: user.id,
-        org_id: user.org_id,
-        email: user.email,
-        full_name: user.full_name,
-        status: user.status,
-    }))
+    Ok(ApiResponse::ok(user_to_dto(user)))
 }
 
 // ── MFA & Identity DTOs ─────────────────────────────────────────
@@ -418,13 +394,7 @@ async fn mfa_challenge(
     Ok(ApiResponse::ok(LoginResponse {
         token: res.token,
         refresh_token: res.refresh_token,
-        user: UserDto {
-            id: user.id,
-            org_id: user.org_id,
-            email: user.email,
-            full_name: user.full_name,
-            status: user.status,
-        },
+        user: user_to_dto(user),
     }))
 }
 
@@ -444,6 +414,8 @@ async fn google_link(
     let use_case = orbis_app::usecases::auth::LinkGoogleAccountUseCase {
         identity_repo: state.identity_repo.clone(),
         oidc_service: state.oidc_service.clone(),
+        user_repo: state.user_repo.clone(),
+        integration_repo: Some(state.integration_repo.clone()),
     };
     let identity = use_case.execute(&ctx, &payload.id_token).await?;
     Ok(ApiResponse::ok(UserIdentityDto {
@@ -472,6 +444,7 @@ async fn google_login(
         session_repo: state.session_repo.clone(),
         oidc_service: state.oidc_service.clone(),
         token_service: state.token_service.clone(),
+        integration_repo: Some(state.integration_repo.clone()),
     };
     let res = use_case.execute(&payload.id_token).await?;
     let user = state.user_repo.find_by_id(res.user_id).await?
@@ -480,13 +453,7 @@ async fn google_login(
     Ok(ApiResponse::ok(LoginResponse {
         token: res.token,
         refresh_token: res.refresh_token,
-        user: UserDto {
-            id: user.id,
-            org_id: user.org_id,
-            email: user.email,
-            full_name: user.full_name,
-            status: user.status,
-        },
+        user: user_to_dto(user),
     }))
 }
 

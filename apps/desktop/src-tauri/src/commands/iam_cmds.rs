@@ -16,6 +16,7 @@ fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
 pub struct UserDto {
     pub id: String, pub org_id: String, pub email: Option<String>,
     pub full_name: String, pub status: String,
+    pub mfa_enabled: bool,
 }
 
 #[derive(Serialize)]
@@ -32,6 +33,7 @@ fn user_to_dto(u: orbis_domain::entities::user::User) -> UserDto {
     UserDto {
         id: u.id.to_string(), org_id: u.org_id.to_string(),
         email: u.email, full_name: u.full_name, status: u.status,
+        mfa_enabled: u.mfa_enabled,
     }
 }
 
@@ -287,6 +289,8 @@ pub async fn auth_link_google(request: serde_json::Value, state: State<'_, AppSt
     let uc = orbis_app::usecases::auth::LinkGoogleAccountUseCase {
         identity_repo: state.identity_repo.clone(),
         oidc_service: state.oidc_service.clone(),
+        user_repo: state.user_repo.clone(),
+        integration_repo: Some(state.integration_repo.clone()),
     };
     let identity = uc.execute(&ctx, id_token).await.map_err(|e| e.to_string())?;
     Ok(ok(UserIdentityDto {
@@ -307,6 +311,7 @@ pub async fn auth_login_google(request: serde_json::Value, state: State<'_, AppS
         session_repo: state.session_repo.clone(),
         oidc_service: state.oidc_service.clone(),
         token_service: state.token_service.clone(),
+        integration_repo: Some(state.integration_repo.clone()),
     };
     let res = uc.execute(id_token).await.map_err(|e| e.to_string())?;
     let user = state.user_repo.find_by_id(res.user_id).await.map_err(|e| e.to_string())?

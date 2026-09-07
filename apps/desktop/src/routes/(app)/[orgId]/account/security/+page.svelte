@@ -21,6 +21,8 @@ let confirmPassword = $state("");
 let isMfaEnabled = $state(false);
 let isGoogleLinked = $state(false);
 let googleEmail = $state<string | null>(null);
+let isMicrosoftLinked = $state(false);
+let microsoftEmail = $state<string | null>(null);
 
 async function handleUpdatePassword(e: Event) {
   e.preventDefault();
@@ -52,6 +54,22 @@ async function handleUpdatePassword(e: Event) {
 let activeSessions = $state<any[]>([]);
 
 async function loadSecurityData() {
+  await authStore.restore();
+  if (authStore.user) {
+    const cachedMfa = typeof window !== "undefined" && localStorage.getItem("orbis_mfa_enabled") === "true";
+    isMfaEnabled = !!(authStore.user as any).mfa_enabled || cachedMfa;
+
+    const cachedGoogle = typeof window !== "undefined" && localStorage.getItem("orbis_google_linked") === "true";
+    const cachedEmail = typeof window !== "undefined" ? localStorage.getItem("orbis_google_email") : null;
+    isGoogleLinked = cachedGoogle;
+    googleEmail = cachedEmail;
+
+    const cachedMs = typeof window !== "undefined" && localStorage.getItem("orbis_microsoft_linked") === "true";
+    const cachedMsEmail = typeof window !== "undefined" ? localStorage.getItem("orbis_microsoft_email") : null;
+    isMicrosoftLinked = cachedMs;
+    microsoftEmail = cachedMsEmail;
+  }
+
   if (!authStore.userId) return;
   try {
     const devices = await api.listDevices().catch(() => []);
@@ -90,6 +108,23 @@ async function loadSecurityData() {
   }
 }
 
+async function handleMfaRefresh() {
+  isMfaEnabled = true;
+  if (typeof window !== "undefined") {
+    localStorage.setItem("orbis_mfa_enabled", "true");
+  }
+  if (authStore.user) {
+    authStore.user = {
+      ...authStore.user,
+      mfa_enabled: true,
+    };
+    if (typeof window !== "undefined") {
+      localStorage.setItem("orbis_user", JSON.stringify(authStore.user));
+    }
+  }
+  await loadSecurityData();
+}
+
 async function handleRevokeDevice(id: string) {
   try {
     await api.revokeDevice(id);
@@ -110,17 +145,19 @@ onMount(() => {
 </svelte:head>
 
 <div class="flex flex-col gap-6">
-  <!-- Connected Identities & Social Logins (Google Account Linking) -->
+  <!-- Connected Identities & Social Logins (Google & Microsoft SSO) -->
   <AccountIdentitiesCard
     {isGoogleLinked}
     {googleEmail}
+    {isMicrosoftLinked}
+    {microsoftEmail}
     onRefresh={loadSecurityData}
   />
 
   <!-- Two-Factor Authentication (TOTP Authenticator) -->
   <AccountMfaCard
     {isMfaEnabled}
-    onRefresh={loadSecurityData}
+    onRefresh={handleMfaRefresh}
   />
 
   <!-- Change Password Card -->

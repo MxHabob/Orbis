@@ -156,7 +156,7 @@ impl AppState {
         let recovery_code_repo = Arc::new(orbis_infra::repositories::mfa_repo::MfaRecoveryCodeRepoImpl { db: db.clone() });
         let device_repo = Arc::new(orbis_infra::repositories::device_repo::UserDeviceRepoImpl { db: db.clone() });
         let totp_service = Arc::new(orbis_infra::security::totp::TotpServiceImpl);
-        let oidc_service = Arc::new(orbis_infra::security::google_oidc::GoogleOidcService::new());
+        let oidc_service = Arc::new(orbis_infra::adapters::identity::GoogleIdentityAdapter::new());
 
         let active_session = Arc::new(std::sync::RwLock::new(None));
 

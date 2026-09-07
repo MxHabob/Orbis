@@ -6,6 +6,7 @@ pub mod hikvision;
 pub mod authen;
 pub mod orbis_ai;
 pub mod iam;
+pub mod identity;
 pub mod email;
 pub mod whatsapp;
 pub mod resolver;

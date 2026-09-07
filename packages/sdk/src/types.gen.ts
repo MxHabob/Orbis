@@ -802,6 +802,7 @@ export type UserDto = {
     id: string;
     org_id: string;
     status: string;
+    mfa_enabled?: boolean;
 };
 
 export type UserIdentityDto = {

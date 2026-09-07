@@ -7,6 +7,7 @@ import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { toast } from "@orbis/ui";
 import { api, type MfaEnrollResponse } from "$lib/api";
+import { authStore } from "$lib/stores";
 import { ShieldCheck, Copy, Check, Download, AlertTriangle, ArrowRight, ArrowLeft } from "@lucide/svelte";
 
 interface Props {
@@ -31,13 +32,14 @@ async function startEnrollment() {
   isLoading = true;
   errorMessage = null;
   step = "qr";
+  verifyCode = "";
   try {
     const res = await api.mfaEnroll({ factor_name: "Authenticator App" });
     enrollData = res;
     if (res.qr_code_uri) {
       qrDataUrl = await QRCode.toDataURL(res.qr_code_uri, {
-        width: 170,
-        margin: 1.5,
+        width: 200,
+        margin: 1,
         color: {
           dark: "#000000",
           light: "#ffffff",
@@ -53,8 +55,13 @@ async function startEnrollment() {
 }
 
 $effect(() => {
-  if (open) {
+  if (open && !enrollData) {
     startEnrollment();
+  } else if (!open) {
+    enrollData = null;
+    qrDataUrl = "";
+    verifyCode = "";
+    step = "qr";
   }
 });
 
@@ -99,6 +106,14 @@ async function handleVerifyAndActivate() {
       code: verifyCode.trim(),
     });
     if (ok) {
+      if (authStore.user) {
+        authStore.user = {
+          ...authStore.user,
+          mfa_enabled: true,
+        };
+        localStorage.setItem("orbis_user", JSON.stringify(authStore.user));
+      }
+      localStorage.setItem("orbis_mfa_enabled", "true");
       toast.success(m.common_mfa_enroll_success());
       open = false;
       onSuccess();

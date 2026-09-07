@@ -64,7 +64,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let recovery_code_repo = Arc::new(orbis_infra::repositories::mfa_repo::MfaRecoveryCodeRepoImpl { db: db.clone() });
     let device_repo = Arc::new(orbis_infra::repositories::device_repo::UserDeviceRepoImpl { db: db.clone() });
     let totp_service = Arc::new(orbis_infra::security::totp::TotpServiceImpl);
-    let oidc_service = Arc::new(orbis_infra::security::google_oidc::GoogleOidcService::new());
+    let oidc_service = Arc::new(orbis_infra::adapters::identity::GoogleIdentityAdapter::new());
 
     // ── Reporting System Wiring ─────────────────────────────────
     use orbis_infra::repositories::report_repos::*;

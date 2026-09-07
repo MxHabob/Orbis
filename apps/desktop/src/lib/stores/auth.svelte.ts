@@ -38,6 +38,16 @@ class AuthStore {
     }
   }
 
+  async setSession(res: { token: string; user: UserDto }) {
+    this.user = res.user;
+    this.token = res.token;
+    this.error = null;
+    this.restorePromise = null;
+    localStorage.setItem("orbis_token", res.token);
+    localStorage.setItem("orbis_user", JSON.stringify(res.user));
+    await this.checkSetupStatus();
+  }
+
   async logout() {
     try {
       await api.logout();
