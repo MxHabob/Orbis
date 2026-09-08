@@ -10,11 +10,9 @@ use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
 use crate::state::AppState;
 use orbis_domain::entities::override_request::{
-    AcademicOverrideRequest, OverrideType, RiskLevel, ApprovalStep
+    AcademicOverrideRequest, OverrideType, RiskLevel, ApprovalStep, StepStatus
 };
-use orbis_app::usecases::workflow::override_request::{
-    SubmitOverrideRequestUseCase, ApproveOverrideRequestUseCase, RejectOverrideRequestUseCase
-};
+use orbis_app::services::SubmitOverrideInput;
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct ApprovalStepDto {
@@ -100,7 +98,7 @@ pub struct SubmitOverrideRequest {
     pub old_value: Option<String>,
     pub new_value: Option<String>,
     pub reason: String,
-    pub approver_role: Option<String>,
+    pub approver_role: String,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -124,12 +122,6 @@ pub async fn submit_override(
     State(state): State<AppState>,
     Json(p): Json<SubmitOverrideRequest>,
 ) -> Result<Json<ApiResponse<OverrideRequestDto>>, ApiError> {
-    let uc = SubmitOverrideRequestUseCase {
-        override_repo: state.override_repo.clone(),
-        event_bus: state.event_bus.clone(),
-        permission_checker: state.permission_checker.clone(),
-    };
-
     let override_type = match p.override_type.as_str() {
         "grade_change" | "post_lock_grade_change" => OverrideType::GradeChange,
         "prerequisite_bypass" => OverrideType::PrerequisiteBypass,
@@ -148,19 +140,34 @@ pub async fn submit_override(
         _ => RiskLevel::Medium,
     };
 
-    let req = uc.execute(
-        &ctx,
-        ctx.tenant_id,
+    let requested_by = ctx.actor.id().unwrap_or_default();
+    let chain = vec![
+        ApprovalStep {
+            step_order: 1,
+            approver_role: p.approver_role.clone(),
+            approver_id: None,
+            approver_name: None,
+            status: StepStatus::Pending,
+            decision_at: None,
+            notes: None,
+        }
+    ];
+
+    let input = SubmitOverrideInput {
         override_type,
         risk_level,
-        p.entity_type,
-        p.entity_id,
-        p.field_name,
-        p.old_value,
-        p.new_value,
-        p.reason,
-        p.approver_role,
-    ).await?;
+        entity_type: p.entity_type,
+        entity_id: p.entity_id,
+        field_name: p.field_name,
+        old_value: p.old_value,
+        new_value: p.new_value,
+        reason: p.reason,
+        requested_by,
+        requested_by_name: None,
+        approval_chain: chain,
+    };
+
+    let req = state.workflow_service.submit_override(&ctx, ctx.tenant_id, input).await?;
 
     Ok(ApiResponse::ok(req.into()))
 }
@@ -176,7 +183,7 @@ pub async fn list_overrides(
     let reqs = if let Some(role) = q.role {
         state.override_repo.find_pending_for_role(ctx.tenant_id, &role).await?
     } else {
-        state.override_repo.find_by_org(ctx.tenant_id, q.status.as_deref()).await?
+        state.workflow_service.list_overrides(ctx.tenant_id, q.status.as_deref()).await?
     };
 
     let dtos = reqs.into_iter().map(Into::into).collect();
@@ -192,7 +199,7 @@ pub async fn get_override(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<OverrideRequestDto>>, ApiError> {
-    let req = state.override_repo.find_by_id(id).await?
+    let req = state.workflow_service.get_override(id).await?
         .ok_or_else(|| ApiError::not_found(format!("Override request {} not found", id)))?;
     Ok(ApiResponse::ok(req.into()))
 }
@@ -206,12 +213,8 @@ pub async fn approve_override(
     Path(id): Path<Uuid>,
     Json(p): Json<ResolveOverrideRequest>,
 ) -> Result<Json<ApiResponse<OverrideRequestDto>>, ApiError> {
-    let uc = ApproveOverrideRequestUseCase {
-        override_repo: state.override_repo.clone(),
-        event_bus: state.event_bus.clone(),
-        permission_checker: state.permission_checker.clone(),
-    };
-    let req = uc.execute(&ctx, id, p.notes).await?;
+    let approver_id = ctx.actor.id().unwrap_or_default();
+    let req = state.workflow_service.approve_override(&ctx, id, approver_id, None, p.notes).await?;
     Ok(ApiResponse::ok(req.into()))
 }
 
@@ -224,12 +227,8 @@ pub async fn reject_override(
     Path(id): Path<Uuid>,
     Json(p): Json<ResolveOverrideRequest>,
 ) -> Result<Json<ApiResponse<OverrideRequestDto>>, ApiError> {
-    let uc = RejectOverrideRequestUseCase {
-        override_repo: state.override_repo.clone(),
-        event_bus: state.event_bus.clone(),
-        permission_checker: state.permission_checker.clone(),
-    };
-    let req = uc.execute(&ctx, id, p.notes.unwrap_or_else(|| "Rejected".into())).await?;
+    let rejecter_id = ctx.actor.id().unwrap_or_default();
+    let req = state.workflow_service.reject_override(&ctx, id, rejecter_id, None, p.notes.unwrap_or_else(|| "Rejected".into())).await?;
     Ok(ApiResponse::ok(req.into()))
 }
 

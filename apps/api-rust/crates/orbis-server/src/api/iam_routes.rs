@@ -8,8 +8,6 @@ use uuid::Uuid;
 use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
 use crate::state::AppState;
-use orbis_app::usecases::iam::RegisterUserUseCase;
-use orbis_app::usecases::login::LoginUseCase;
 use orbis_domain::entities::user::Role as DomainRole;
 
 // ── DTOs ────────────────────────────────────────────────────────
@@ -84,24 +82,12 @@ async fn login(
         request_id: Uuid::new_v4().to_string(),
     };
 
-    let use_case = LoginUseCase {
-        user_repo: state.user_repo.clone(),
-        session_repo: state.session_repo.clone(),
-        password_hasher: state.password_hasher.clone(),
-        token_service: state.token_service.clone(),
-        event_bus: state.event_bus.clone(),
-    };
-
-    let res = use_case.execute(&ctx, &payload.email, &payload.password).await?;
-
-    // Fetch user info to include in login response
-    let user = state.user_repo.find_by_email(&payload.email).await?
-        .ok_or_else(|| ApiError::internal("User not found after login"))?;
+    let res = state.auth_service.login(&ctx, &payload.email, &payload.password).await?;
 
     Ok(ApiResponse::ok(LoginResponse {
         token: res.token,
         refresh_token: res.refresh_token,
-        user: user_to_dto(user),
+        user: user_to_dto(res.user),
     }))
 }
 
@@ -122,7 +108,7 @@ async fn get_session(
     let user_id = ctx.actor.id()
         .ok_or_else(|| ApiError::unauthorized("No user identity in token"))?;
 
-    let user = state.user_repo.find_by_id(user_id).await?
+    let user = state.auth_service.get_user(user_id).await?
         .ok_or_else(|| ApiError::not_found("User not found"))?;
 
     Ok(ApiResponse::ok(SessionResponse {
@@ -147,13 +133,6 @@ async fn register_user(
     State(state): State<AppState>,
     Json(payload): Json<RegisterUserRequest>,
 ) -> Result<Json<ApiResponse<UserDto>>, ApiError> {
-    let use_case = RegisterUserUseCase {
-        user_repo: state.user_repo.clone(),
-        person_repo: state.person_repo.clone(),
-        event_bus: state.event_bus.clone(),
-        password_hasher: state.password_hasher.clone(),
-    };
-
     let role = match payload.role.as_str() {
         "SuperAdmin" => DomainRole::SuperAdmin,
         "OrgAdmin" => DomainRole::OrgAdmin,
@@ -163,7 +142,7 @@ async fn register_user(
         _ => DomainRole::Custom(payload.role.clone()),
     };
 
-    let user = use_case.execute(&ctx, payload.full_name, Some(payload.email), payload.password, role, Some(ctx.tenant_id)).await?;
+    let user = state.auth_service.register_user(&ctx, payload.full_name, Some(payload.email), payload.password, role, Some(ctx.tenant_id)).await?;
 
     Ok(ApiResponse::ok(user_to_dto(user)))
 }

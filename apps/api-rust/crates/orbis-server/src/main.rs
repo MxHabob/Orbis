@@ -153,6 +153,78 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         permission_checker.clone(),
     ));
 
+    let auth_service = Arc::new(orbis_app::services::AuthService::new(
+        user_repo.clone(),
+        person_repo.clone(),
+        session_repo.clone(),
+        mfa_factor_repo.clone(),
+        recovery_code_repo.clone(),
+        device_repo.clone(),
+        identity_repo.clone(),
+        token_service.clone(),
+        password_hasher.clone(),
+        event_bus.clone(),
+        permission_checker.clone(),
+    ));
+
+    let organization_service = Arc::new(orbis_app::services::OrganizationService::new(
+        org_repo.clone(),
+        org_unit_repo.clone(),
+        settings_repo.clone(),
+        dashboard_repo.clone(),
+        event_bus.clone(),
+        permission_checker.clone(),
+    ));
+
+    let calendar_service = Arc::new(orbis_app::services::CalendarService::new(
+        calendar_repo.clone(),
+        calendar_repo.clone(),
+        calendar_repo.clone(),
+        event_bus.clone(),
+        permission_checker.clone(),
+    ));
+
+    let scheduling_service = Arc::new(orbis_app::services::SchedulingService::new(
+        scheduling_repo.clone(),
+        scheduling_repo.clone(),
+        scheduling_repo.clone(),
+        exam_repo.clone(),
+        exam_repo.clone(),
+        exam_repo.clone(),
+        exam_repo.clone(),
+        exam_repo.clone(),
+        event_bus.clone(),
+        permission_checker.clone(),
+    ));
+
+    let document_service = Arc::new(orbis_app::services::DocumentService::new(
+        document_repo.clone(),
+        event_bus.clone(),
+        permission_checker.clone(),
+    ));
+
+    let integration_service = Arc::new(orbis_app::services::IntegrationService::new(
+        integration_repo.clone(),
+        permission_checker.clone(),
+    ));
+
+    let workflow_service = Arc::new(orbis_app::services::WorkflowService::new(
+        override_repo.clone(),
+        workflow_repo.clone(),
+        event_bus.clone(),
+        permission_checker.clone(),
+    ));
+
+    let report_service = Arc::new(orbis_app::services::ReportService::new(
+        report_definition_repo.clone(),
+        report_template_repo.clone(),
+        report_job_repo.clone(),
+        report_audit_repo.clone(),
+        provider_registry.clone(),
+        renderer_registry.clone(),
+        org_context_resolver.clone(),
+    ));
+
     // Build AppState
     let state = AppState {
         db,
@@ -218,6 +290,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         academic_service,
         finance_service,
         assessment_service,
+        auth_service,
+        organization_service,
+        calendar_service,
+        scheduling_service,
+        document_service,
+        integration_service,
+        workflow_service,
+        report_service,
         // ── Reporting System ────────────────────────────────────
         report_definition_repo,
         report_template_repo,

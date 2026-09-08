@@ -9,10 +9,6 @@ use uuid::Uuid;
 use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
 use crate::state::AppState;
-use orbis_app::usecases::calendar::{
-    academic_year::CreateAcademicYearUseCase,
-    academic_period::CreateAcademicPeriodUseCase,
-};
 
 // ── DTOs ────────────────────────────────────────────────────────
 
@@ -79,11 +75,9 @@ async fn create_year(
     State(state): State<AppState>,
     Json(payload): Json<CreateYearRequest>,
 ) -> Result<Json<ApiResponse<AcademicYearDto>>, ApiError> {
-    let uc = CreateAcademicYearUseCase {
-        year_repo: state.year_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
-    let year = uc.execute(&ctx, ctx.tenant_id, payload.name, payload.start_date, payload.end_date).await?;
+    let year = state.calendar_service.create_year(
+        &ctx, ctx.tenant_id, payload.name, payload.start_date, payload.end_date
+    ).await?;
     Ok(ApiResponse::ok(AcademicYearDto {
         id: year.id, org_id: year.org_id, name: year.name,
         name_ar: year.name_ar, start_date: year.start_date, end_date: year.end_date,
@@ -98,7 +92,7 @@ async fn list_years(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<AcademicYearDto>>>, ApiError> {
-    let years = state.year_repo.find_by_org(ctx.tenant_id).await?;
+    let years = state.calendar_service.list_years(ctx.tenant_id).await?;
     let dtos = years.into_iter().map(|y| AcademicYearDto {
         id: y.id, org_id: y.org_id, name: y.name,
         name_ar: y.name_ar, start_date: y.start_date, end_date: y.end_date,
@@ -114,9 +108,9 @@ async fn get_current_context(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<AcademicContextResponse>>, ApiError> {
-    let all_years = state.year_repo.find_by_org(ctx.tenant_id).await?;
-    let current = state.year_repo.find_current(ctx.tenant_id).await?;
-    let periods = state.period_repo.find_by_org(ctx.tenant_id).await?;
+    let all_years = state.calendar_service.list_years(ctx.tenant_id).await?;
+    let current = state.calendar_service.get_current_year(ctx.tenant_id).await?;
+    let periods = state.calendar_service.list_periods_by_org(ctx.tenant_id).await?;
 
     let year_dtos: Vec<AcademicYearDto> = all_years.into_iter().map(|y| AcademicYearDto {
         id: y.id, org_id: y.org_id, name: y.name,
@@ -127,7 +121,7 @@ async fn get_current_context(
     let period_dtos: Vec<AcademicPeriodDto> = periods.into_iter().map(|p| AcademicPeriodDto {
         id: p.id, year_id: p.year_id, name: p.name,
         start_date: p.start_date, end_date: p.end_date,
-        period_type: p.period_type, status: p.state.to_string(),
+        period_type: p.period_type, status: p.status,
     }).collect();
 
     let current_dto = current.map(|y| AcademicYearDto {
@@ -152,7 +146,7 @@ async fn get_year(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<AcademicYearDto>>, ApiError> {
-    let y = state.year_repo.find_by_id(id).await?
+    let y = state.calendar_service.get_year(id).await?
         .ok_or_else(|| ApiError::not_found(format!("Academic year {} not found", id)))?;
     Ok(ApiResponse::ok(AcademicYearDto {
         id: y.id, org_id: y.org_id, name: y.name,
@@ -169,17 +163,14 @@ async fn create_period(
     State(state): State<AppState>,
     Json(payload): Json<CreatePeriodRequest>,
 ) -> Result<Json<ApiResponse<AcademicPeriodDto>>, ApiError> {
-    let uc = CreateAcademicPeriodUseCase {
-        period_repo: state.period_repo.clone(),
-        year_repo: state.year_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
-    let p = uc.execute(&ctx, ctx.tenant_id, payload.year_id, payload.parent_id,
-        payload.name, payload.period_type, payload.start_date, payload.end_date).await?;
+    let p = state.calendar_service.create_period(
+        &ctx, ctx.tenant_id, payload.year_id, payload.parent_id,
+        payload.name, payload.period_type, payload.start_date, payload.end_date
+    ).await?;
     Ok(ApiResponse::ok(AcademicPeriodDto {
         id: p.id, year_id: p.year_id, name: p.name,
         start_date: p.start_date, end_date: p.end_date,
-        period_type: p.period_type, status: p.state.to_string(),
+        period_type: p.period_type, status: p.status,
     }))
 }
 
@@ -190,11 +181,11 @@ async fn list_periods(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<AcademicPeriodDto>>>, ApiError> {
-    let periods = state.period_repo.find_by_org(ctx.tenant_id).await?;
+    let periods = state.calendar_service.list_periods_by_org(ctx.tenant_id).await?;
     let dtos = periods.into_iter().map(|p| AcademicPeriodDto {
         id: p.id, year_id: p.year_id, name: p.name,
         start_date: p.start_date, end_date: p.end_date,
-        period_type: p.period_type, status: p.state.to_string(),
+        period_type: p.period_type, status: p.status,
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }

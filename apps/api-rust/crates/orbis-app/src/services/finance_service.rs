@@ -244,6 +244,7 @@ impl FinanceService {
         &self,
         ctx: &RequestContext,
         org_id: Uuid,
+        period_id: Uuid,
         student_id: Uuid,
         enrollment_id: Option<Uuid>,
         template_id: Uuid,
@@ -264,7 +265,7 @@ impl FinanceService {
         let fee = StudentFee {
             id: fee_id,
             org_id,
-            period_id: Uuid::new_v4(),
+            period_id,
             student_id,
             enrollment_id,
             fee_template_id: template_id,

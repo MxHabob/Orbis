@@ -8,11 +8,6 @@ use uuid::Uuid;
 use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
 use crate::state::AppState;
-use orbis_app::usecases::scheduling::{
-    room::CreateRoomUseCase,
-    time_slot::CreateTimeSlotUseCase,
-    scheduled_lesson::ScheduleLessonUseCase,
-};
 
 #[derive(Serialize, ToSchema)]
 pub struct RoomDto {
@@ -79,8 +74,7 @@ pub struct LessonQuery { pub class_subject_id: Option<Uuid>, pub period_id: Opti
 async fn create_room(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<CreateRoomRequest>,
 ) -> Result<Json<ApiResponse<RoomDto>>, ApiError> {
-    let uc = CreateRoomUseCase { room_repo: state.room_repo.clone(), event_bus: state.event_bus.clone() };
-    let r = uc.execute(&ctx, ctx.tenant_id, p.name, p.capacity, p.room_type).await?;
+    let r = state.scheduling_service.create_room(&ctx, ctx.tenant_id, p.name, p.capacity, p.room_type).await?;
     Ok(ApiResponse::ok(RoomDto { id: r.id, org_id: r.org_id, name: r.name, room_type: r.room_type, capacity: r.capacity }))
 }
 
@@ -89,7 +83,7 @@ async fn create_room(
 async fn list_rooms(
     ctx: AuthContext, State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<RoomDto>>>, ApiError> {
-    let rooms = state.room_repo.find_by_org(ctx.tenant_id).await?;
+    let rooms = state.scheduling_service.list_rooms(ctx.tenant_id).await?;
     let dtos = rooms.into_iter().map(|r| RoomDto { id: r.id, org_id: r.org_id, name: r.name, room_type: r.room_type, capacity: r.capacity }).collect();
     Ok(ApiResponse::ok(dtos))
 }
@@ -99,7 +93,7 @@ async fn list_rooms(
 async fn get_room(
     _ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<RoomDto>>, ApiError> {
-    let r = state.room_repo.find_by_id(id).await?.ok_or_else(|| ApiError::not_found("Room not found"))?;
+    let r = state.scheduling_service.get_room(id).await?.ok_or_else(|| ApiError::not_found("Room not found"))?;
     Ok(ApiResponse::ok(RoomDto { id: r.id, org_id: r.org_id, name: r.name, room_type: r.room_type, capacity: r.capacity }))
 }
 
@@ -108,8 +102,7 @@ async fn get_room(
 async fn create_time_slot(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<CreateTimeSlotRequest>,
 ) -> Result<Json<ApiResponse<TimeSlotDto>>, ApiError> {
-    let uc = CreateTimeSlotUseCase { time_slot_repo: state.time_slot_repo.clone(), event_bus: state.event_bus.clone() };
-    let t = uc.execute(&ctx, p.period_id, p.day_of_week, p.start_time, p.end_time, p.slot_index).await?;
+    let t = state.scheduling_service.create_time_slot(&ctx, p.period_id, p.day_of_week, p.start_time, p.end_time, p.slot_index).await?;
     Ok(ApiResponse::ok(TimeSlotDto { id: t.id, period_id: t.period_id, day_of_week: t.day_of_week, start_time: t.start_time, end_time: t.end_time, slot_index: t.slot_index }))
 }
 
@@ -119,21 +112,19 @@ async fn list_time_slots(
     _ctx: AuthContext, State(state): State<AppState>, Query(q): Query<TimeSlotQuery>,
 ) -> Result<Json<ApiResponse<Vec<TimeSlotDto>>>, ApiError> {
     let slots = match q.period_id {
-        Some(pid) => state.time_slot_repo.find_by_period(pid).await?,
+        Some(pid) => state.scheduling_service.list_time_slots(pid).await?,
         None => vec![],
     };
     let dtos = slots.into_iter().map(|t| TimeSlotDto { id: t.id, period_id: t.period_id, day_of_week: t.day_of_week, start_time: t.start_time, end_time: t.end_time, slot_index: t.slot_index }).collect();
     Ok(ApiResponse::ok(dtos))
 }
 
-
 #[utoipa::path(post, path = "/api/v1/scheduled-lessons", request_body = ScheduleLessonRequest,
     responses((status = 201, body = ScheduledLessonDto)), security(("bearer" = [])), tag = "Scheduling")]
 async fn schedule_lesson(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<ScheduleLessonRequest>,
 ) -> Result<Json<ApiResponse<ScheduledLessonDto>>, ApiError> {
-    let uc = ScheduleLessonUseCase { lesson_repo: state.lesson_repo.clone(), event_bus: state.event_bus.clone() };
-    let l = uc.execute(&ctx, p.class_subject_id, p.room_id, p.time_slot_id, p.teacher_id).await?;
+    let l = state.scheduling_service.schedule_lesson(&ctx, p.class_subject_id, p.time_slot_id, p.room_id, p.teacher_id).await?;
     Ok(ApiResponse::ok(ScheduledLessonDto { id: l.id, class_subject_id: l.class_subject_id, time_slot_id: l.time_slot_id, room_id: l.room_id, teacher_id: l.teacher_id }))
 }
 
@@ -143,9 +134,9 @@ async fn list_lessons(
     _ctx: AuthContext, State(state): State<AppState>, Query(q): Query<LessonQuery>,
 ) -> Result<Json<ApiResponse<Vec<ScheduledLessonDto>>>, ApiError> {
     let lessons = if let Some(csid) = q.class_subject_id {
-        state.lesson_repo.find_by_class_subject(csid).await?
+        state.scheduling_service.list_lessons_by_class_subject(csid).await?
     } else if let Some(pid) = q.period_id {
-        state.lesson_repo.find_by_period(pid).await?
+        state.scheduling_service.list_lessons_by_period(pid).await?
     } else { vec![] };
     let dtos = lessons.into_iter().map(|l| ScheduledLessonDto { id: l.id, class_subject_id: l.class_subject_id, time_slot_id: l.time_slot_id, room_id: l.room_id, teacher_id: l.teacher_id }).collect();
     Ok(ApiResponse::ok(dtos))

@@ -8,6 +8,7 @@ use uuid::Uuid;
 use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
 use crate::state::AppState;
+use orbis_domain::queries::filters::{SubjectFilter, ClassFilter, ClassSubjectFilter};
 
 use rust_decimal::Decimal;
 
@@ -101,8 +102,8 @@ async fn list_subjects(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<SubjectDto>>>, ApiError> {
-    let subjects = state.academic_service.list_subjects(ctx.tenant_id).await?;
-    let dtos = subjects.into_iter().map(|s| SubjectDto {
+    let subjects = state.academic_service.list_subjects(ctx.tenant_id, SubjectFilter::default()).await?;
+    let dtos = subjects.items.into_iter().map(|s| SubjectDto {
         id: s.id, org_id: s.org_id, code: s.code, name: s.name,
         credit_hours: s.credit_hours, is_core: s.is_core,
     }).collect();
@@ -148,8 +149,8 @@ async fn list_classes(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<ClassDto>>>, ApiError> {
-    let classes = state.academic_service.list_classes(ctx.tenant_id).await?;
-    let dtos = classes.into_iter().map(|c| ClassDto {
+    let classes = state.academic_service.list_classes(ctx.tenant_id, ClassFilter::default()).await?;
+    let dtos = classes.items.into_iter().map(|c| ClassDto {
         id: c.id, org_id: c.org_id, unit_id: c.unit_id,
         period_id: c.period_id, name: c.name, level: c.level,
     }).collect();
@@ -194,12 +195,17 @@ async fn assign_class_subject(
     responses((status = 200, body = Vec<ClassSubjectDto>)),
     security(("bearer" = [])), tag = "Academic")]
 async fn list_class_subjects(
-    _ctx: AuthContext,
+    ctx: AuthContext,
     State(state): State<AppState>,
     axum::extract::Query(params): axum::extract::Query<ClassSubjectQuery>,
 ) -> Result<Json<ApiResponse<Vec<ClassSubjectDto>>>, ApiError> {
-    let items = state.academic_service.list_class_subjects(params.class_id, params.period_id).await?;
-    let dtos = items.into_iter().map(|cs| ClassSubjectDto {
+    let filter = ClassSubjectFilter {
+        class_id: Some(params.class_id),
+        period_id: Some(params.period_id),
+        ..Default::default()
+    };
+    let items = state.academic_service.list_class_subjects(ctx.tenant_id, filter).await?;
+    let dtos = items.items.into_iter().map(|cs| ClassSubjectDto {
         id: cs.id, class_id: cs.class_id, subject_id: cs.subject_id,
         period_id: cs.period_id, primary_teacher_id: cs.primary_teacher_id,
         weekly_hours: cs.weekly_hours,

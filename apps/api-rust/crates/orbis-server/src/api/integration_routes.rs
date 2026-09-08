@@ -9,10 +9,6 @@ use uuid::Uuid;
 use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
 use crate::state::AppState;
-use orbis_app::usecases::integrations::{
-    connect_app::ConnectAppUseCase,
-    get_connected_apps::GetConnectedAppsUseCase,
-};
 
 #[derive(Serialize, ToSchema)]
 pub struct IntegrationDto {
@@ -51,10 +47,9 @@ pub struct ToggleIntegrationRequest {
 async fn connect_app(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<ConnectAppRequest>,
 ) -> Result<Json<ApiResponse<IntegrationDto>>, ApiError> {
-    let uc = ConnectAppUseCase {
-        integration_repo: state.integration_repo.clone(),
-    };
-    let config = uc.execute(&ctx, p.provider_name, p.category, p.env, p.settings, p.secrets).await?;
+    let config = state.integration_service.connect_app(
+        &ctx, ctx.tenant_id, p.provider_name, p.category, p.env, p.settings, p.secrets
+    ).await?;
     Ok(ApiResponse::ok(IntegrationDto {
         id: config.id,
         org_id: config.org_id,
@@ -71,10 +66,7 @@ async fn connect_app(
 async fn list_integrations(
     ctx: AuthContext, State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<IntegrationDto>>>, ApiError> {
-    let uc = GetConnectedAppsUseCase {
-        integration_repo: state.integration_repo.clone(),
-    };
-    let configs = uc.execute(&ctx).await?;
+    let configs = state.integration_service.list_integrations(ctx.tenant_id).await?;
     let dtos = configs.into_iter().map(|c| IntegrationDto {
         id: c.id,
         org_id: c.org_id,
@@ -92,7 +84,7 @@ async fn list_integrations(
 async fn get_integration_status(
     ctx: AuthContext, Path(provider_name): Path<String>, State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<IntegrationStatusDto>>, ApiError> {
-    let config_opt = state.integration_repo.find_config_by_provider(ctx.tenant_id, &provider_name).await?;
+    let config_opt = state.integration_service.get_integration_by_provider(ctx.tenant_id, &provider_name).await?;
     match config_opt {
         Some(c) => Ok(ApiResponse::ok(IntegrationStatusDto {
             connected: true,
@@ -120,7 +112,7 @@ async fn get_integration_status(
 async fn disconnect_app(
     ctx: AuthContext, Path(provider_name): Path<String>, State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<bool>>, ApiError> {
-    state.integration_repo.delete_by_provider(ctx.tenant_id, &provider_name).await?;
+    state.integration_service.delete_integration(&ctx, ctx.tenant_id, &provider_name).await?;
     Ok(ApiResponse::ok(true))
 }
 
@@ -129,7 +121,7 @@ async fn disconnect_app(
 async fn toggle_integration(
     ctx: AuthContext, Path(provider_name): Path<String>, State(state): State<AppState>, Json(body): Json<ToggleIntegrationRequest>,
 ) -> Result<Json<ApiResponse<bool>>, ApiError> {
-    if let Some(mut cfg) = state.integration_repo.find_config_by_provider(ctx.tenant_id, &provider_name).await? {
+    if let Some(mut cfg) = state.integration_service.get_integration_by_provider(ctx.tenant_id, &provider_name).await? {
         cfg.is_enabled = body.is_enabled;
         cfg.updated_at = chrono::Utc::now();
         state.integration_repo.save_config(&cfg).await?;

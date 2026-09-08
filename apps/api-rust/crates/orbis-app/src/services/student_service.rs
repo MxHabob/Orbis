@@ -256,6 +256,37 @@ impl StudentService {
         Ok(student)
     }
 
+    /// Change study mode for an active enrollment
+    pub async fn change_study_mode(
+        &self,
+        ctx: &RequestContext,
+        enrollment_id: Uuid,
+        new_mode: StudyMode,
+        _reason: Option<String>,
+    ) -> Result<Enrollment, DomainError> {
+        self.permission_checker.check(ctx, Permission::StudentUpdate).await?;
+
+        let mut enrollment = self.enrollment_repo.find_by_id(enrollment_id).await?
+            .ok_or_else(|| DomainError::NotFound(format!("Enrollment {} not found", enrollment_id)))?;
+
+        let old_mode = enrollment.study_mode;
+        enrollment.study_mode = new_mode;
+        enrollment.is_attendance_exempt = new_mode.default_attendance_exempt();
+        enrollment.is_grade_exempt = new_mode.default_grade_exempt();
+        enrollment.updated_at = Utc::now();
+
+        self.enrollment_repo.save(&enrollment).await?;
+
+        let _ = self.event_bus.publish(ctx, &DomainEvent::StudentStudyModeChanged {
+            student_id: enrollment.student_id,
+            old_mode: old_mode.to_string(),
+            new_mode: new_mode.to_string(),
+            timestamp: Utc::now(),
+        }).await;
+
+        Ok(enrollment)
+    }
+
     /// Assign guardian to student
     pub async fn assign_guardian(
         &self,

@@ -12,7 +12,6 @@ use super::extractors::AuthContext;
 use crate::state::AppState;
 use orbis_domain::entities::account::AccountType;
 use orbis_domain::entities::payment::PaymentMethod;
-use orbis_domain::entities::fee_template::FeeFrequency;
 
 #[derive(Serialize, ToSchema)]
 pub struct AccountDto {
@@ -259,8 +258,8 @@ pub async fn generate_fee(
         p.student_id,
         p.enrollment_id,
         p.fee_template_id,
-        p.discount_amount.unwrap_or(Decimal::ZERO),
-        p.due_date,
+        p.discount_amount,
+        Some(p.due_date),
     ).await?;
     Ok(ApiResponse::ok(StudentFeeDto {
         id: f.id,

@@ -8,10 +8,6 @@ use uuid::Uuid;
 use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
 use crate::state::AppState;
-use orbis_app::usecases::organization::{CreateOrganizationUseCase, UpdateOrganizationUseCase};
-use orbis_app::usecases::org_unit::CreateOrgUnitUseCase;
-use orbis_app::usecases::settings::{GetSettingsUseCase, UpdateSettingsUseCase};
-use orbis_app::usecases::dashboard::GetDashboardUseCase;
 use orbis_domain::entities::settings::OrganizationSettings;
 use orbis_infra::adapters::bootstrap_adapter::{BootstrapPayload, bootstrap_full};
 
@@ -82,12 +78,9 @@ async fn create_org(
         request_id: Uuid::new_v4().to_string(),
     };
 
-    let use_case = CreateOrganizationUseCase {
-        org_repo: state.org_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
-
-    let org = use_case.execute(&ctx, payload.name, payload.slug, payload.timezone, payload.locale).await?;
+    let org = state.organization_service.create_organization(
+        &ctx, payload.name, payload.slug, payload.timezone, payload.locale
+    ).await?;
 
     Ok(ApiResponse::ok(OrgDto {
         id: org.id,
@@ -106,7 +99,7 @@ async fn get_current_org(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<OrgDto>>, ApiError> {
-    let org = state.org_repo.find_by_id(ctx.tenant_id).await?
+    let org = state.organization_service.get_organization(ctx.tenant_id).await?
         .ok_or_else(|| ApiError::not_found("Organization not found"))?;
 
     Ok(ApiResponse::ok(OrgDto {
@@ -127,12 +120,9 @@ async fn update_current_org(
     State(state): State<AppState>,
     Json(payload): Json<UpdateOrgRequest>,
 ) -> Result<Json<ApiResponse<OrgDto>>, ApiError> {
-    let use_case = UpdateOrganizationUseCase {
-        org_repo: state.org_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
-
-    let org = use_case.execute(&ctx, ctx.tenant_id, payload.name, payload.timezone, payload.locale, payload.primary_color).await?;
+    let org = state.organization_service.update_organization(
+        &ctx, ctx.tenant_id, payload.name, payload.timezone, payload.locale, payload.primary_color
+    ).await?;
 
     Ok(ApiResponse::ok(OrgDto {
         id: org.id,
@@ -328,8 +318,7 @@ async fn get_settings(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<OrganizationSettingsDto>>, ApiError> {
-    let uc = GetSettingsUseCase { settings_repo: state.settings_repo.clone() };
-    let settings = uc.execute(&ctx).await?;
+    let settings = state.organization_service.get_settings(ctx.tenant_id).await?;
     Ok(ApiResponse::ok(settings.into()))
 }
 
@@ -342,11 +331,7 @@ async fn update_settings(
     State(state): State<AppState>,
     Json(payload): Json<OrganizationSettingsDto>,
 ) -> Result<Json<ApiResponse<OrganizationSettingsDto>>, ApiError> {
-    let uc = UpdateSettingsUseCase {
-        settings_repo: state.settings_repo.clone(),
-        permission_checker: state.permission_checker.clone(),
-    };
-    let settings = uc.execute(&ctx, payload.into()).await?;
+    let settings = state.organization_service.update_settings(&ctx, ctx.tenant_id, payload.into()).await?;
     Ok(ApiResponse::ok(settings.into()))
 }
 
@@ -359,8 +344,7 @@ async fn get_dashboard(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<DashboardCountsDto>>, ApiError> {
-    let uc = GetDashboardUseCase { dashboard_repo: state.dashboard_repo.clone() };
-    let counts = uc.execute(&ctx).await?;
+    let counts = state.organization_service.get_dashboard_counts(ctx.tenant_id).await?;
     Ok(ApiResponse::ok(DashboardCountsDto {
         total_students: counts.total_students,
         total_teachers: counts.total_teachers,
@@ -383,12 +367,7 @@ async fn create_org_unit(
     State(state): State<AppState>,
     Json(payload): Json<CreateOrgUnitRequest>,
 ) -> Result<Json<ApiResponse<OrgUnitDto>>, ApiError> {
-    let use_case = CreateOrgUnitUseCase {
-        org_unit_repo: state.org_unit_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
-
-    let unit = use_case.execute(&ctx, ctx.tenant_id, payload.name, payload.unit_type, payload.parent_id, payload.data_isolation).await?;
+    let unit = state.organization_service.create_org_unit(&ctx, ctx.tenant_id, payload.name, payload.unit_type, payload.parent_id, payload.data_isolation).await?;
 
     Ok(ApiResponse::ok(OrgUnitDto {
         id: unit.id,
@@ -409,7 +388,7 @@ async fn list_org_units(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<OrgUnitDto>>>, ApiError> {
-    let units = state.org_unit_repo.find_by_org(ctx.tenant_id).await?;
+    let units = state.organization_service.list_org_units(ctx.tenant_id).await?;
     let dtos: Vec<OrgUnitDto> = units.into_iter().map(|u| OrgUnitDto {
         id: u.id,
         org_id: u.org_id,
@@ -432,7 +411,7 @@ async fn get_org_unit(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<OrgUnitDto>>, ApiError> {
-    let u = state.org_unit_repo.find_by_id(id).await?
+    let u = state.organization_service.get_org_unit(id).await?
         .ok_or_else(|| ApiError::not_found(format!("OrgUnit {} not found", id)))?;
 
     Ok(ApiResponse::ok(OrgUnitDto {
@@ -447,11 +426,11 @@ async fn get_org_unit(
     responses((status = 204, description = "OrgUnit deleted")),
     security(("bearer" = [])), tag = "OrgUnits")]
 async fn delete_org_unit(
-    _ctx: AuthContext,
+    ctx: AuthContext,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<axum::http::StatusCode, ApiError> {
-    state.org_unit_repo.delete(id).await?;
+    state.organization_service.delete_org_unit(&ctx, id).await?;
     Ok(axum::http::StatusCode::NO_CONTENT)
 }
 

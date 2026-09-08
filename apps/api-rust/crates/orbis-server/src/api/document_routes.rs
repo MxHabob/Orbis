@@ -9,10 +9,7 @@ use uuid::Uuid;
 use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
 use crate::state::AppState;
-use orbis_app::usecases::document::{
-    upload_document::UploadDocumentUseCase,
-    delete_document::DeleteDocumentUseCase,
-};
+use orbis_app::services::CreateDocumentInput;
 
 #[derive(Serialize, ToSchema)]
 pub struct DocumentDto {
@@ -69,37 +66,32 @@ pub struct UploadDocumentRequest {
 async fn upload_document(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<UploadDocumentRequest>,
 ) -> Result<Json<ApiResponse<DocumentDto>>, ApiError> {
-    let uc = UploadDocumentUseCase {
-        document_repo: state.document_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
     let uploaded_by = match ctx.actor {
         orbis_domain::iam::actor::Actor::User(uid) => Some(uid),
         _ => None,
     };
-    let doc = uc.execute(
-        &ctx,
-        ctx.tenant_id,
+    let input = CreateDocumentInput {
         uploaded_by,
-        p.entity_type,
-        p.entity_id,
-        p.name,
-        p.description,
-        p.category.unwrap_or_else(|| "general".to_string()),
-        p.asset_type.unwrap_or_else(|| "file".to_string()),
-        p.school_year,
-        p.term,
-        p.tags,
-        p.visibility.unwrap_or_else(|| "internal".to_string()),
-        p.size,
-        p.mime_type,
-        p.extension,
-        p.storage_provider.unwrap_or_else(|| "local".to_string()),
-        p.path,
-        p.url,
-        p.thumbnail_path,
-        p.preview_path,
-    ).await?;
+        entity_type: p.entity_type,
+        entity_id: p.entity_id,
+        name: p.name,
+        description: p.description,
+        category: p.category.unwrap_or_else(|| "general".to_string()),
+        asset_type: p.asset_type.unwrap_or_else(|| "file".to_string()),
+        school_year: p.school_year,
+        term: p.term,
+        tags: p.tags,
+        visibility: p.visibility.unwrap_or_else(|| "internal".to_string()),
+        size: p.size,
+        mime_type: p.mime_type,
+        extension: p.extension,
+        storage_provider: p.storage_provider.unwrap_or_else(|| "local".to_string()),
+        path: p.path,
+        url: p.url,
+        thumbnail_path: p.thumbnail_path,
+        preview_path: p.preview_path,
+    };
+    let doc = state.document_service.create_document(&ctx, ctx.tenant_id, input).await?;
     Ok(ApiResponse::ok(DocumentDto {
         id: doc.id,
         org_id: doc.org_id,
@@ -131,7 +123,7 @@ async fn upload_document(
 async fn list_documents(
     ctx: AuthContext, State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<DocumentDto>>>, ApiError> {
-    let docs = state.document_repo.find_by_org(ctx.tenant_id).await?;
+    let docs = state.document_service.list_documents_by_org(ctx.tenant_id).await?;
     let dtos = docs.into_iter().map(|doc| DocumentDto {
         id: doc.id,
         org_id: doc.org_id,
@@ -164,7 +156,7 @@ async fn list_documents(
 async fn get_document(
     _ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<DocumentDto>>, ApiError> {
-    let doc = state.document_repo.find_by_id(id).await?.ok_or_else(|| ApiError::not_found("Document not found"))?;
+    let doc = state.document_service.get_document(id).await?.ok_or_else(|| ApiError::not_found("Document not found"))?;
     Ok(ApiResponse::ok(DocumentDto {
         id: doc.id,
         org_id: doc.org_id,
@@ -191,16 +183,12 @@ async fn get_document(
     }))
 }
 
-#[utoipa::path(delete, path = "/api/v1/documents/{id}", params(("id" = Uuid, Path, description = "Document ID")),
+#[utoipa::path(delete, path = "/api/v1/documents/{id}", params(("id" = Uuid, Path, description = "Document deleted")),
     responses((status = 204, description = "Deleted")), security(("bearer" = [])), tag = "Document")]
 async fn delete_document(
     ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
 ) -> Result<axum::http::StatusCode, ApiError> {
-    let uc = DeleteDocumentUseCase {
-        document_repo: state.document_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
-    uc.execute(&ctx, id).await?;
+    state.document_service.delete_document(&ctx, id).await?;
     Ok(axum::http::StatusCode::NO_CONTENT)
 }
 
@@ -209,4 +197,3 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/documents", post(upload_document).get(list_documents))
         .route("/api/v1/documents/:id", get(get_document).delete(delete_document))
 }
-

@@ -16,10 +16,6 @@ use uuid::Uuid;
 use super::extractors::AuthContext;
 use super::{ApiError, ApiResponse};
 use crate::state::AppState;
-use orbis_app::usecases::report::{
-    generate_report::{GenerateReportInput, GenerateReportUseCase},
-    manage_template::ManageTemplateUseCase,
-};
 use orbis_domain::entities::report::*;
 
 // ═══════════════════════════════════════════════════════════════

@@ -9,13 +9,6 @@ use uuid::Uuid;
 use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
 use crate::state::AppState;
-use orbis_app::usecases::exam::{
-    exam_session::CreateExamSessionUseCase,
-    exam_schedule::ScheduleExamUseCase,
-    seating_number::AssignSeatingNumberUseCase,
-    secret_number::AssignSecretNumberUseCase,
-    exam_proctor::AssignProctorUseCase,
-};
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct ExamSessionDto {
@@ -117,8 +110,7 @@ pub struct ScheduleQuery { pub session_id: Uuid }
 async fn create_session(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<CreateExamSessionRequest>,
 ) -> Result<Json<ApiResponse<ExamSessionDto>>, ApiError> {
-    let uc = CreateExamSessionUseCase { session_repo: state.exam_session_repo.clone(), event_bus: state.event_bus.clone() };
-    let s = uc.execute(&ctx, ctx.tenant_id, p.academic_period_id, p.name, p.start_date, p.end_date).await?;
+    let s = state.scheduling_service.create_exam_session(&ctx, ctx.tenant_id, p.academic_period_id, p.name, p.start_date, p.end_date).await?;
     Ok(ApiResponse::ok(ExamSessionDto {
         id: s.id, org_id: s.org_id, academic_period_id: s.academic_period_id,
         name: s.name, start_date: s.start_date, end_date: s.end_date, status: s.status,
@@ -131,7 +123,7 @@ async fn list_sessions(
     _ctx: AuthContext, State(state): State<AppState>, Query(q): Query<SessionQuery>,
 ) -> Result<Json<ApiResponse<Vec<ExamSessionDto>>>, ApiError> {
     let sessions = match q.period_id {
-        Some(pid) => state.exam_session_repo.find_by_period(pid).await?,
+        Some(pid) => state.scheduling_service.list_exam_sessions(pid).await?,
         None => vec![],
     };
     let dtos = sessions.into_iter().map(|s| ExamSessionDto {
@@ -146,7 +138,7 @@ async fn list_sessions(
 async fn get_session(
     _ctx: AuthContext, State(state): State<AppState>, Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<ExamSessionDto>>, ApiError> {
-    let s = state.exam_session_repo.find_by_id(id).await?.ok_or_else(|| ApiError::not_found("Exam session not found"))?;
+    let s = state.scheduling_service.get_exam_session(id).await?.ok_or_else(|| ApiError::not_found("Exam session not found"))?;
     Ok(ApiResponse::ok(ExamSessionDto {
         id: s.id, org_id: s.org_id, academic_period_id: s.academic_period_id,
         name: s.name, start_date: s.start_date, end_date: s.end_date, status: s.status,
@@ -158,8 +150,7 @@ async fn get_session(
 async fn schedule_exam(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<ScheduleExamRequest>,
 ) -> Result<Json<ApiResponse<ExamScheduleDto>>, ApiError> {
-    let uc = ScheduleExamUseCase { schedule_repo: state.exam_schedule_repo.clone(), event_bus: state.event_bus.clone() };
-    let s = uc.execute(&ctx, p.exam_session_id, p.class_subject_id, p.exam_date, p.start_time, p.end_time).await?;
+    let s = state.scheduling_service.schedule_exam(&ctx, p.exam_session_id, p.class_subject_id, p.exam_date, p.start_time, p.end_time).await?;
     Ok(ApiResponse::ok(ExamScheduleDto {
         id: s.id, exam_session_id: s.exam_session_id, class_subject_id: s.class_subject_id,
         exam_date: s.exam_date, start_time: s.start_time, end_time: s.end_time,
@@ -172,7 +163,7 @@ async fn schedule_exam(
 async fn list_schedules(
     _ctx: AuthContext, State(state): State<AppState>, Query(q): Query<ScheduleQuery>,
 ) -> Result<Json<ApiResponse<Vec<ExamScheduleDto>>>, ApiError> {
-    let schedules = state.exam_schedule_repo.find_by_session(q.session_id).await?;
+    let schedules = state.scheduling_service.list_exam_schedules(q.session_id).await?;
     let dtos = schedules.into_iter().map(|s| ExamScheduleDto {
         id: s.id, exam_session_id: s.exam_session_id, class_subject_id: s.class_subject_id,
         exam_date: s.exam_date, start_time: s.start_time, end_time: s.end_time,
@@ -185,8 +176,7 @@ async fn list_schedules(
 async fn assign_seating(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<AssignSeatingRequest>,
 ) -> Result<Json<ApiResponse<SeatingDto>>, ApiError> {
-    let uc = AssignSeatingNumberUseCase { seating_repo: state.seating_number_repo.clone(), event_bus: state.event_bus.clone() };
-    let s = uc.execute(&ctx, p.exam_session_id, p.student_id, p.seating_number, p.room_id).await?;
+    let s = state.scheduling_service.assign_seating_number(&ctx, p.exam_session_id, p.student_id, p.seating_number, p.room_id).await?;
     Ok(ApiResponse::ok(SeatingDto {
         id: s.id, exam_session_id: s.exam_session_id,
         student_id: s.student_id, seating_number: s.seating_number,
@@ -199,8 +189,7 @@ async fn assign_seating(
 async fn assign_secret(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<AssignSecretRequest>,
 ) -> Result<Json<ApiResponse<SecretDto>>, ApiError> {
-    let uc = AssignSecretNumberUseCase { secret_repo: state.secret_number_repo.clone() };
-    let s = uc.execute(&ctx, p.exam_schedule_id, p.student_id, p.secret_number).await?;
+    let s = state.scheduling_service.assign_secret_number(&ctx, p.exam_schedule_id, p.student_id, p.secret_number).await?;
     Ok(ApiResponse::ok(SecretDto {
         id: s.id, exam_schedule_id: s.exam_schedule_id,
         student_id: s.student_id, secret_number: s.secret_number,
@@ -212,8 +201,7 @@ async fn assign_secret(
 async fn assign_proctor(
     ctx: AuthContext, State(state): State<AppState>, Json(p): Json<AssignProctorRequest>,
 ) -> Result<Json<ApiResponse<ProctorDto>>, ApiError> {
-    let uc = AssignProctorUseCase { proctor_repo: state.exam_proctor_repo.clone() };
-    let pr = uc.execute(&ctx, p.exam_schedule_id, p.room_id, p.teacher_id, p.is_chief).await?;
+    let pr = state.scheduling_service.assign_proctor(&ctx, p.exam_schedule_id, p.room_id, p.teacher_id, p.is_chief).await?;
     Ok(ApiResponse::ok(ProctorDto {
         id: pr.id, exam_schedule_id: pr.exam_schedule_id,
         room_id: pr.room_id, teacher_id: pr.teacher_id,
