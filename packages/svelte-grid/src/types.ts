@@ -129,7 +129,7 @@ export interface GridActionEvent {
   row: GridRow;
   rowIndex: number;
   prop: string;
-  originalEvent: MouseEvent | KeyboardEvent;
+  originalEvent: MouseEvent | KeyboardEvent | PointerEvent;
 }
 
 export interface ActionItem {
