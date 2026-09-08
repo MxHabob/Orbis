@@ -278,10 +278,6 @@ pub async fn create_template(
     Json(req): Json<CreateTemplateRequest>,
 ) -> Result<Json<ApiResponse<TemplateDto>>, ApiError> {
     let ctx = auth.0;
-    let usecase = ManageTemplateUseCase {
-        template_repo: state.report_template_repo.clone(),
-        audit_repo: state.report_audit_repo.clone(),
-    };
 
     let template = ReportTemplate {
         id: Uuid::new_v4(),
@@ -315,12 +311,10 @@ pub async fn create_template(
         published_by: None,
     };
 
-    let created = usecase
-        .create(&ctx, template)
-        .await
+    state.report_service.save_template(&template).await
         .map_err(|e| ApiError::bad_request(e.to_string()))?;
 
-    Ok(ApiResponse::ok_with_id(to_template_dto(created), ctx.request_id))
+    Ok(ApiResponse::ok_with_id(to_template_dto(template), ctx.request_id))
 }
 
 #[utoipa::path(
@@ -361,25 +355,28 @@ pub async fn update_template(
     Json(req): Json<UpdateTemplateRequest>,
 ) -> Result<Json<ApiResponse<TemplateDto>>, ApiError> {
     let ctx = auth.0;
-    let usecase = ManageTemplateUseCase {
-        template_repo: state.report_template_repo.clone(),
-        audit_repo: state.report_audit_repo.clone(),
-    };
-
-    let template = usecase
-        .update(
-            &ctx,
-            id,
-            req.name,
-            req.name_ar,
-            req.description,
-            req.description_ar,
-            req.document_json,
-            req.page_size,
-            req.orientation,
-            req.margins_json,
-        )
+    let mut template = state
+        .report_template_repo
+        .find_by_id(id)
         .await
+        .map_err(|e| ApiError::internal(e.to_string()))?
+        .ok_or_else(|| ApiError::not_found("Template not found"))?;
+
+    if template.org_id != ctx.tenant_id {
+        return Err(ApiError::forbidden("Template belongs to another organization"));
+    }
+
+    if let Some(name) = req.name { template.name = name; }
+    if let Some(name_ar) = req.name_ar { template.name_ar = Some(name_ar); }
+    if let Some(desc) = req.description { template.description = Some(desc); }
+    if let Some(desc_ar) = req.description_ar { template.description_ar = Some(desc_ar); }
+    if let Some(doc) = req.document_json { template.document_json = doc; }
+    if let Some(ps) = req.page_size { template.page_size = ps; }
+    if let Some(ori) = req.orientation { template.orientation = ori; }
+    if let Some(mar) = req.margins_json { template.margins_json = mar; }
+    template.updated_at = Utc::now();
+
+    state.report_service.save_template(&template).await
         .map_err(|e| ApiError::bad_request(e.to_string()))?;
 
     Ok(ApiResponse::ok_with_id(to_template_dto(template), ctx.request_id))
@@ -431,14 +428,24 @@ pub async fn publish_template(
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<TemplateDto>>, ApiError> {
     let ctx = auth.0;
-    let usecase = ManageTemplateUseCase {
-        template_repo: state.report_template_repo.clone(),
-        audit_repo: state.report_audit_repo.clone(),
-    };
-
-    let template = usecase
-        .publish(&ctx, id)
+    let mut template = state
+        .report_template_repo
+        .find_by_id(id)
         .await
+        .map_err(|e| ApiError::internal(e.to_string()))?
+        .ok_or_else(|| ApiError::not_found("Template not found"))?;
+
+    if template.org_id != ctx.tenant_id {
+        return Err(ApiError::forbidden("Template belongs to another organization"));
+    }
+
+    template.status = TemplateStatus::Published;
+    template.published_version = Some(template.version);
+    template.published_at = Some(Utc::now());
+    template.published_by = ctx.actor.id();
+    template.updated_at = Utc::now();
+
+    state.report_service.save_template(&template).await
         .map_err(|e| ApiError::bad_request(e.to_string()))?;
 
     Ok(ApiResponse::ok_with_id(to_template_dto(template), ctx.request_id))
@@ -457,14 +464,21 @@ pub async fn archive_template(
     Path(id): Path<Uuid>,
 ) -> Result<axum::http::StatusCode, ApiError> {
     let ctx = auth.0;
-    let usecase = ManageTemplateUseCase {
-        template_repo: state.report_template_repo.clone(),
-        audit_repo: state.report_audit_repo.clone(),
-    };
-
-    usecase
-        .archive(&ctx, id)
+    let mut template = state
+        .report_template_repo
+        .find_by_id(id)
         .await
+        .map_err(|e| ApiError::internal(e.to_string()))?
+        .ok_or_else(|| ApiError::not_found("Template not found"))?;
+
+    if template.org_id != ctx.tenant_id {
+        return Err(ApiError::forbidden("Template belongs to another organization"));
+    }
+
+    template.status = TemplateStatus::Archived;
+    template.updated_at = Utc::now();
+
+    state.report_service.save_template(&template).await
         .map_err(|e| ApiError::bad_request(e.to_string()))?;
 
     Ok(axum::http::StatusCode::NO_CONTENT)
@@ -519,14 +533,31 @@ pub async fn revert_template_version(
     Json(req): Json<RevertVersionRequest>,
 ) -> Result<Json<ApiResponse<TemplateDto>>, ApiError> {
     let ctx = auth.0;
-    let usecase = ManageTemplateUseCase {
-        template_repo: state.report_template_repo.clone(),
-        audit_repo: state.report_audit_repo.clone(),
-    };
-
-    let template = usecase
-        .revert_to_version(&ctx, id, req.version)
+    let mut template = state
+        .report_template_repo
+        .find_by_id(id)
         .await
+        .map_err(|e| ApiError::internal(e.to_string()))?
+        .ok_or_else(|| ApiError::not_found("Template not found"))?;
+
+    if template.org_id != ctx.tenant_id {
+        return Err(ApiError::forbidden("Template belongs to another organization"));
+    }
+
+    let version = state
+        .report_template_repo
+        .find_version(id, req.version)
+        .await
+        .map_err(|e| ApiError::internal(e.to_string()))?
+        .ok_or_else(|| ApiError::not_found("Version not found"))?;
+
+    template.document_json = version.document_json;
+    if let Some(ps) = version.page_size { template.page_size = ps; }
+    if let Some(ori) = version.orientation { template.orientation = ori; }
+    if let Some(mar) = version.margins_json { template.margins_json = mar; }
+    template.updated_at = Utc::now();
+
+    state.report_service.save_template(&template).await
         .map_err(|e| ApiError::bad_request(e.to_string()))?;
 
     Ok(ApiResponse::ok_with_id(to_template_dto(template), ctx.request_id))
@@ -813,15 +844,6 @@ pub async fn generate_report(
     Json(req): Json<GenerateReportRequest>,
 ) -> Result<Json<ApiResponse<GenerateReportResponse>>, ApiError> {
     let ctx = auth.0;
-    let usecase = GenerateReportUseCase {
-        definition_repo: state.report_definition_repo.clone(),
-        template_repo: state.report_template_repo.clone(),
-        job_repo: state.report_job_repo.clone(),
-        audit_repo: state.report_audit_repo.clone(),
-        provider_registry: state.report_provider_registry.clone(),
-        renderer_registry: state.report_renderer_registry.clone(),
-        org_context_resolver: state.report_org_context_resolver.clone(),
-    };
 
     let params: HashMap<String, ParamValue> = req
         .parameters
@@ -838,15 +860,16 @@ pub async fn generate_report(
         .map(|l| ReportLocale::from_str(&l))
         .unwrap_or(ReportLocale::Ar);
 
-    let input = GenerateReportInput {
+    let input = orbis_app::services::GenerateReportInput {
         report_code: req.report_code,
         parameters: params,
         output_format,
         locale,
     };
 
-    let (mut job, export) = usecase
-        .execute(&ctx, input)
+    let (mut job, export) = state
+        .report_service
+        .generate_report(&ctx, input)
         .await
         .map_err(|e| ApiError::bad_request(e.to_string()))?;
 

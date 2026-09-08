@@ -5,7 +5,7 @@ use chrono::Utc;
 
 use orbis_domain::entities::report::{
     ReportDefinition, ReportTemplate, ReportJob, OutputFormat, ReportLocale,
-    ParamValue, ParameterDef, ParamType, JobStatus, ReportDataset, OrgReportContext,
+    ParamValue, ParameterDef, ParamType, JobStatus, OrgReportContext,
     ReportAuditEntry, ExportResult,
 };
 use orbis_domain::errors::DomainError;

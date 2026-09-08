@@ -5,10 +5,6 @@ use serde::{Deserialize, Serialize};
 use crate::state::AppState;
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
-use orbis_app::usecases::calendar::{
-    academic_year::CreateAcademicYearUseCase,
-    academic_period::CreateAcademicPeriodUseCase,
-};
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
 fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
@@ -102,10 +98,6 @@ fn period_dto(p: orbis_domain::entities::academic_period::AcademicPeriod) -> Aca
 #[tauri::command]
 pub async fn calendar_create_year(request: CreateYearInput, state: State<'_, AppState>) -> Result<ApiResponse<AcademicYearDto>, String> {
     let ctx = make_ctx(&state);
-    let uc = CreateAcademicYearUseCase {
-        year_repo: state.year_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
     let start_date = DateTime::parse_from_rfc3339(&request.start_date)
         .map(|d| d.with_timezone(&Utc))
         .map_err(|_| "Invalid start_date format")?;
@@ -113,7 +105,7 @@ pub async fn calendar_create_year(request: CreateYearInput, state: State<'_, App
         .map(|d| d.with_timezone(&Utc))
         .map_err(|_| "Invalid end_date format")?;
 
-    let y = uc.execute(&ctx, ctx.tenant_id, request.name, start_date, end_date)
+    let y = state.calendar_service.create_year(&ctx, ctx.tenant_id, request.name, start_date, end_date)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -123,25 +115,20 @@ pub async fn calendar_create_year(request: CreateYearInput, state: State<'_, App
 #[tauri::command]
 pub async fn calendar_list_years(state: State<'_, AppState>) -> Result<ApiResponse<Vec<AcademicYearDto>>, String> {
     let ctx = make_ctx(&state);
-    let years = state.year_repo.find_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
+    let years = state.calendar_service.list_years(ctx.tenant_id).await.map_err(|e| e.to_string())?;
     Ok(ok(years.into_iter().map(year_dto).collect()))
 }
 
 #[tauri::command]
 pub async fn calendar_get_year(id: String, state: State<'_, AppState>) -> Result<ApiResponse<Option<AcademicYearDto>>, String> {
     let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
-    let year = state.year_repo.find_by_id(uid).await.map_err(|e| e.to_string())?;
+    let year = state.calendar_service.get_year(uid).await.map_err(|e| e.to_string())?;
     Ok(ok(year.map(year_dto)))
 }
 
 #[tauri::command]
 pub async fn calendar_create_period(request: CreatePeriodInput, state: State<'_, AppState>) -> Result<ApiResponse<AcademicPeriodDto>, String> {
     let ctx = make_ctx(&state);
-    let uc = CreateAcademicPeriodUseCase {
-        period_repo: state.period_repo.clone(),
-        year_repo: state.year_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
     let year_id = Uuid::parse_str(&request.year_id).map_err(|_| "Invalid yearId")?;
     let parent_id = request.parent_id.and_then(|p| Uuid::parse_str(&p).ok());
     let start_date = DateTime::parse_from_rfc3339(&request.start_date)
@@ -151,7 +138,7 @@ pub async fn calendar_create_period(request: CreatePeriodInput, state: State<'_,
         .map(|d| d.with_timezone(&Utc))
         .map_err(|_| "Invalid end_date format")?;
 
-    let p = uc.execute(&ctx, ctx.tenant_id, year_id, parent_id, request.name, request.period_type, start_date, end_date)
+    let p = state.calendar_service.create_period(&ctx, ctx.tenant_id, year_id, parent_id, request.name, request.period_type, start_date, end_date)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -162,9 +149,9 @@ pub async fn calendar_create_period(request: CreatePeriodInput, state: State<'_,
 pub async fn calendar_list_periods(year_id: Option<String>, state: State<'_, AppState>) -> Result<ApiResponse<Vec<AcademicPeriodDto>>, String> {
     let ctx = make_ctx(&state);
     let periods = if let Some(yid) = year_id.and_then(|s| Uuid::parse_str(&s).ok()) {
-        state.period_repo.find_by_year(yid).await
+        state.calendar_service.list_periods_by_year(yid).await
     } else {
-        state.period_repo.find_by_org(ctx.tenant_id).await
+        state.calendar_service.list_periods_by_org(ctx.tenant_id).await
     }.map_err(|e| e.to_string())?;
     Ok(ok(periods.into_iter().map(period_dto).collect()))
 }
@@ -172,17 +159,17 @@ pub async fn calendar_list_periods(year_id: Option<String>, state: State<'_, App
 #[tauri::command]
 pub async fn calendar_get_period(id: String, state: State<'_, AppState>) -> Result<ApiResponse<Option<AcademicPeriodDto>>, String> {
     let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
-    let period = state.period_repo.find_by_id(uid).await.map_err(|e| e.to_string())?;
+    let period = state.calendar_service.get_period(uid).await.map_err(|e| e.to_string())?;
     Ok(ok(period.map(period_dto)))
 }
 
 #[tauri::command]
 pub async fn calendar_get_context(state: State<'_, AppState>) -> Result<ApiResponse<AcademicContextResponse>, String> {
     let ctx = make_ctx(&state);
-    let years = state.year_repo.find_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
+    let years = state.calendar_service.list_years(ctx.tenant_id).await.map_err(|e| e.to_string())?;
     let current = years.iter().find(|y| y.status == "active").cloned();
     let periods = if let Some(ref cur) = current {
-        state.period_repo.find_by_year(cur.id).await.map_err(|e| e.to_string())?
+        state.calendar_service.list_periods_by_year(cur.id).await.map_err(|e| e.to_string())?
     } else { vec![] };
     Ok(ok(AcademicContextResponse {
         current_year: current.map(year_dto),

@@ -1,8 +1,24 @@
 use std::sync::Arc;
 use sea_orm::DatabaseConnection;
-use orbis_app::ports::repositories::{OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository, SessionRepository, AcademicYearRepository, AcademicPeriodRepository, PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository, EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository, ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository, ExamSessionRepository, ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository, ExamProctorRepository, AccountRepository, JournalEntryRepository, FeeTemplateRepository, StudentFeeRepository, PaymentRepository, DocumentRepository, IntegrationRepository, AiRepository, WorkflowRepository, CurrencyRepository, PolicyRepository, SettingsRepository, DashboardRepository};
-use orbis_app::ports::reporting::{ReportDefinitionRepository, ReportTemplateRepository, ReportJobRepository, ReportAuditRepository, DataProviderRegistry, RendererRegistry};
-use orbis_app::usecases::report::generate_report::OrgContextResolver;
+use orbis_app::ports::repositories::{
+    OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository,
+    SessionRepository, AcademicYearRepository, AcademicPeriodRepository,
+    PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository,
+    EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository,
+    ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository,
+    AttendanceRepository, BehaviorRecordRepository, ExamSessionRepository,
+    ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository,
+    ExamProctorRepository, AccountRepository, JournalEntryRepository, FeeTemplateRepository,
+    StudentFeeRepository, PaymentRepository, DocumentRepository, IntegrationRepository,
+    AiRepository, WorkflowRepository, CurrencyRepository, PolicyRepository,
+    SettingsRepository, DashboardRepository, OverrideRequestRepository, CoursePrerequisiteRepository,
+    GpaRecordRepository, PromotionRepository, DiscountTemplateRepository,
+};
+use orbis_app::ports::reporting::{
+    ReportDefinitionRepository, ReportTemplateRepository, ReportJobRepository,
+    ReportAuditRepository, DataProviderRegistry, RendererRegistry,
+};
+use orbis_app::services::OrgContextResolver;
 use orbis_app::ports::event_bus::EventBus;
 use orbis_app::ports::security::{TokenService, PasswordHasher};
 use orbis_app::ports::iam::PermissionCheckerPort;
@@ -37,6 +53,11 @@ pub struct AppState {
     pub student_repo: Arc<dyn orbis_app::ports::repositories::StudentRepository>,
     pub enrollment_repo: Arc<dyn EnrollmentRepository>,
     pub student_guardian_repo: Arc<dyn StudentGuardianRepository>,
+    pub override_repo: Arc<dyn OverrideRequestRepository>,
+    pub prerequisite_repo: Arc<dyn CoursePrerequisiteRepository>,
+    pub gpa_repo: Arc<dyn GpaRecordRepository>,
+    pub promotion_repo: Arc<dyn PromotionRepository>,
+    pub discount_template_repo: Arc<dyn DiscountTemplateRepository>,
     pub room_repo: Arc<dyn RoomRepository>,
     pub time_slot_repo: Arc<dyn TimeSlotRepository>,
     pub lesson_repo: Arc<dyn ScheduledLessonRepository>,
@@ -81,6 +102,20 @@ pub struct AppState {
     pub device_repo: Arc<dyn orbis_app::ports::repositories::UserDeviceRepository>,
     pub totp_service: Arc<dyn orbis_app::ports::security::TotpService>,
     pub oidc_service: Arc<dyn orbis_app::ports::security::OidcService>,
+    // ── Domain Services ─────────────────────────────────────────
+    pub student_service: Arc<orbis_app::services::StudentService>,
+    pub progression_service: Arc<orbis_app::services::ProgressionService>,
+    pub academic_service: Arc<orbis_app::services::AcademicService>,
+    pub finance_service: Arc<orbis_app::services::FinanceService>,
+    pub assessment_service: Arc<orbis_app::services::AssessmentService>,
+    pub auth_service: Arc<orbis_app::services::AuthService>,
+    pub organization_service: Arc<orbis_app::services::OrganizationService>,
+    pub calendar_service: Arc<orbis_app::services::CalendarService>,
+    pub scheduling_service: Arc<orbis_app::services::SchedulingService>,
+    pub document_service: Arc<orbis_app::services::DocumentService>,
+    pub integration_service: Arc<orbis_app::services::IntegrationService>,
+    pub workflow_service: Arc<orbis_app::services::WorkflowService>,
+    pub report_service: Arc<orbis_app::services::ReportService>,
 }
 
 impl AppState {
@@ -112,6 +147,8 @@ impl AppState {
         let integration_repo = Arc::new(orbis_infra::repositories::integration_repos::IntegrationRepoImpl { db: db.clone() });
         let ai_repo = Arc::new(orbis_infra::repositories::ai_repos::AiRepoImpl { db: db.clone() });
         let workflow_repo = Arc::new(orbis_infra::repositories::workflow_repos::WorkflowRepoImpl { db: db.clone() });
+        let override_repo = Arc::new(orbis_infra::repositories::override_repos::OverrideRepoImpl { db: db.clone() });
+        let progression_repo = Arc::new(orbis_infra::repositories::progression_repos::ProgressionRepoImpl { db: db.clone() });
         let report_definition_repo = Arc::new(orbis_infra::repositories::report_repos::ReportDefinitionRepoImpl { db: db.clone() });
         let report_template_repo = Arc::new(orbis_infra::repositories::report_repos::ReportTemplateRepoImpl { db: db.clone() });
         let report_job_repo = Arc::new(orbis_infra::repositories::report_repos::ReportJobRepoImpl { db: db.clone() });
@@ -161,6 +198,135 @@ impl AppState {
 
         let active_session = Arc::new(std::sync::RwLock::new(None));
 
+        // Build Domain Services
+        let student_service = Arc::new(orbis_app::services::StudentService::new(
+            student_repo.clone(),
+            person_repo.clone(),
+            student_repo.clone(),
+            student_repo.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let progression_service = Arc::new(orbis_app::services::ProgressionService::new(
+            progression_repo.clone(),
+            student_repo.clone(),
+            student_repo.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let academic_service = Arc::new(orbis_app::services::AcademicService::new(
+            academic_repo.clone(),
+            academic_repo.clone(),
+            academic_repo.clone(),
+            academic_repo.clone(),
+            assessment_repo.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let finance_service = Arc::new(orbis_app::services::FinanceService::new(
+            finance_repo.clone(),
+            finance_repo.clone(),
+            finance_repo.clone(),
+            finance_repo.clone(),
+            finance_repo.clone(),
+            finance_repo.clone(),
+            policy_repo.clone(),
+            event_bus.clone(),
+            integration_resolver.clone(),
+            integration_resolver.clone(),
+            permission_checker.clone(),
+        ));
+
+        let assessment_service = Arc::new(orbis_app::services::AssessmentService::new(
+            assessment_repo.clone(),
+            assessment_repo.clone(),
+            assessment_repo.clone(),
+            assessment_repo.clone(),
+            assessment_repo.clone(),
+            academic_repo.clone(),
+            academic_repo.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let auth_service = Arc::new(orbis_app::services::AuthService::new(
+            user_repo.clone(),
+            person_repo.clone(),
+            session_repo.clone(),
+            mfa_factor_repo.clone(),
+            recovery_code_repo.clone(),
+            device_repo.clone(),
+            identity_repo.clone(),
+            token_service.clone(),
+            password_hasher.clone(),
+            totp_service.clone(),
+            oidc_service.clone(),
+            Some(integration_repo.clone()),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let organization_service = Arc::new(orbis_app::services::OrganizationService::new(
+            org_repo.clone(),
+            org_unit_repo.clone(),
+            settings_repo.clone(),
+            dashboard_repo.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let calendar_service = Arc::new(orbis_app::services::CalendarService::new(
+            calendar_repo.clone(),
+            calendar_repo.clone(),
+            calendar_repo.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let scheduling_service = Arc::new(orbis_app::services::SchedulingService::new(
+            scheduling_repo.clone(),
+            scheduling_repo.clone(),
+            scheduling_repo.clone(),
+            exam_repo.clone(),
+            exam_repo.clone(),
+            exam_repo.clone(),
+            exam_repo.clone(),
+            exam_repo.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let document_service = Arc::new(orbis_app::services::DocumentService::new(
+            document_repo.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let integration_service = Arc::new(orbis_app::services::IntegrationService::new(
+            integration_repo.clone(),
+            permission_checker.clone(),
+        ));
+
+        let workflow_service = Arc::new(orbis_app::services::WorkflowService::new(
+            override_repo.clone(),
+            workflow_repo.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        ));
+
+        let report_service = Arc::new(orbis_app::services::ReportService::new(
+            report_definition_repo.clone(),
+            report_template_repo.clone(),
+            report_job_repo.clone(),
+            report_audit_repo.clone(),
+            report_provider_registry.clone(),
+            report_renderer_registry.clone(),
+            report_org_context_resolver.clone(),
+        ));
+
         Ok(Self {
             db,
             active_session,
@@ -174,10 +340,15 @@ impl AppState {
             period_template_repo: calendar_repo,
             subject_repo: academic_repo.clone(),
             class_repo: academic_repo.clone(),
-            class_subject_repo: academic_repo,
+            class_subject_repo: academic_repo.clone(),
             student_repo: student_repo.clone(),
             enrollment_repo: student_repo.clone(),
             student_guardian_repo: student_repo,
+            override_repo,
+            prerequisite_repo: academic_repo,
+            gpa_repo: assessment_repo.clone(),
+            promotion_repo: progression_repo,
+            discount_template_repo: finance_repo.clone(),
             room_repo: scheduling_repo.clone(),
             time_slot_repo: scheduling_repo.clone(),
             lesson_repo: scheduling_repo,
@@ -221,6 +392,19 @@ impl AppState {
             device_repo,
             totp_service,
             oidc_service,
+            student_service,
+            progression_service,
+            academic_service,
+            finance_service,
+            assessment_service,
+            auth_service,
+            organization_service,
+            calendar_service,
+            scheduling_service,
+            document_service,
+            integration_service,
+            workflow_service,
+            report_service,
         })
     }
 

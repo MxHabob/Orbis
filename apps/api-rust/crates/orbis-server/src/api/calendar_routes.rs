@@ -121,7 +121,7 @@ async fn get_current_context(
     let period_dtos: Vec<AcademicPeriodDto> = periods.into_iter().map(|p| AcademicPeriodDto {
         id: p.id, year_id: p.year_id, name: p.name,
         start_date: p.start_date, end_date: p.end_date,
-        period_type: p.period_type, status: p.status,
+        period_type: p.period_type, status: p.state.to_string(),
     }).collect();
 
     let current_dto = current.map(|y| AcademicYearDto {
@@ -170,7 +170,7 @@ async fn create_period(
     Ok(ApiResponse::ok(AcademicPeriodDto {
         id: p.id, year_id: p.year_id, name: p.name,
         start_date: p.start_date, end_date: p.end_date,
-        period_type: p.period_type, status: p.status,
+        period_type: p.period_type, status: p.state.to_string(),
     }))
 }
 
@@ -185,7 +185,7 @@ async fn list_periods(
     let dtos = periods.into_iter().map(|p| AcademicPeriodDto {
         id: p.id, year_id: p.year_id, name: p.name,
         start_date: p.start_date, end_date: p.end_date,
-        period_type: p.period_type, status: p.status,
+        period_type: p.period_type, status: p.state.to_string(),
     }).collect();
     Ok(ApiResponse::ok(dtos))
 }

@@ -54,7 +54,7 @@ impl OrganizationService {
         locale: String,
     ) -> Result<Organization, DomainError> {
         let now = Utc::now();
-        let mut org = Organization::new(name.clone(), slug, timezone, locale)?;
+        let org = Organization::new(name.clone(), slug, timezone, locale)?;
         let org_id = org.id;
 
         self.org_repo.save(&org).await?;

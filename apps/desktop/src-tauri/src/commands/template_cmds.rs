@@ -13,7 +13,6 @@
 use tauri::State;
 use serde::{Deserialize, Serialize};
 use crate::state::AppState;
-use orbis_app::usecases::report::manage_template::ManageTemplateUseCase;
 use orbis_domain::entities::report::*;
 use uuid::Uuid;
 use chrono::Utc;
@@ -218,16 +217,6 @@ fn binding_dto(b: ReportTemplateBinding) -> BindingDto {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// USE CASE HELPERS
-// ═══════════════════════════════════════════════════════════════
-
-fn make_template_usecase(state: &AppState) -> ManageTemplateUseCase {
-    ManageTemplateUseCase {
-        template_repo: state.report_template_repo.clone(),
-        audit_repo: state.report_audit_repo.clone(),
-    }
-}
-
 // ═══════════════════════════════════════════════════════════════
 // TEMPLATE CRUD COMMANDS
 // ═══════════════════════════════════════════════════════════════
@@ -238,7 +227,6 @@ pub async fn template_create(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<TemplateDto>, String> {
     let ctx = make_ctx(&state);
-    let usecase = make_template_usecase(&state);
 
     let now = Utc::now();
     let template = ReportTemplate {
@@ -274,10 +262,9 @@ pub async fn template_create(
         updated_at: now,
     };
 
-    let created = usecase.create(&ctx, template).await
-        .map_err(|e| e.to_string())?;
+    state.report_service.save_template(&template).await.map_err(|e| e.to_string())?;
 
-    Ok(ok(template_dto(created)))
+    Ok(ok(template_dto(template)))
 }
 
 #[tauri::command]
@@ -319,23 +306,28 @@ pub async fn template_update(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<TemplateDto>, String> {
     let ctx = make_ctx(&state);
-    let usecase = make_template_usecase(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid template ID")?;
+    let mut template = state.report_template_repo.find_by_id(uid).await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Template not found".to_string())?;
 
-    let updated = usecase.update(
-        &ctx,
-        uid,
-        input.name,
-        input.name_ar,
-        input.description,
-        input.description_ar,
-        input.document_json,
-        input.page_size,
-        input.orientation,
-        input.margins_json,
-    ).await.map_err(|e| e.to_string())?;
+    if template.org_id != ctx.tenant_id {
+        return Err("Template belongs to another organization".to_string());
+    }
 
-    Ok(ok(template_dto(updated)))
+    if let Some(name) = input.name { template.name = name; }
+    if let Some(name_ar) = input.name_ar { template.name_ar = Some(name_ar); }
+    if let Some(desc) = input.description { template.description = Some(desc); }
+    if let Some(desc_ar) = input.description_ar { template.description_ar = Some(desc_ar); }
+    if let Some(doc) = input.document_json { template.document_json = doc; }
+    if let Some(ps) = input.page_size { template.page_size = ps; }
+    if let Some(o) = input.orientation { template.orientation = o; }
+    if let Some(m) = input.margins_json { template.margins_json = m; }
+    template.updated_at = Utc::now();
+
+    state.report_service.save_template(&template).await.map_err(|e| e.to_string())?;
+
+    Ok(ok(template_dto(template)))
 }
 
 #[tauri::command]
@@ -358,12 +350,23 @@ pub async fn template_publish(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<TemplateDto>, String> {
     let ctx = make_ctx(&state);
-    let usecase = make_template_usecase(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid template ID")?;
+    let mut template = state.report_template_repo.find_by_id(uid).await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Template not found".to_string())?;
 
-    let published = usecase.publish(&ctx, uid).await
-        .map_err(|e| e.to_string())?;
-    Ok(ok(template_dto(published)))
+    if template.org_id != ctx.tenant_id {
+        return Err("Template belongs to another organization".to_string());
+    }
+
+    template.status = TemplateStatus::Published;
+    template.published_version = Some(template.version);
+    template.published_at = Some(Utc::now());
+    template.published_by = ctx.actor.id();
+    template.updated_at = Utc::now();
+
+    state.report_service.save_template(&template).await.map_err(|e| e.to_string())?;
+    Ok(ok(template_dto(template)))
 }
 
 #[tauri::command]
@@ -372,11 +375,20 @@ pub async fn template_archive(
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     let ctx = make_ctx(&state);
-    let usecase = make_template_usecase(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid template ID")?;
+    let mut template = state.report_template_repo.find_by_id(uid).await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Template not found".to_string())?;
 
-    usecase.archive(&ctx, uid).await
-        .map_err(|e| e.to_string())
+    if template.org_id != ctx.tenant_id {
+        return Err("Template belongs to another organization".to_string());
+    }
+
+    template.status = TemplateStatus::Archived;
+    template.updated_at = Utc::now();
+
+    state.report_service.save_template(&template).await.map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -388,12 +400,8 @@ pub async fn template_get_versions(
     id: String,
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<VersionDto>>, String> {
-    let ctx = make_ctx(&state);
-    let usecase = make_template_usecase(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid template ID")?;
-
-    let versions = usecase.get_versions(&ctx, uid).await
-        .map_err(|e| e.to_string())?;
+    let versions = state.report_template_repo.find_versions(uid).await.map_err(|e| e.to_string())?;
     Ok(ok(versions.into_iter().map(version_dto).collect()))
 }
 
@@ -404,12 +412,25 @@ pub async fn template_revert_version(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<TemplateDto>, String> {
     let ctx = make_ctx(&state);
-    let usecase = make_template_usecase(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid template ID")?;
+    let version = state.report_template_repo.find_version(uid, target_version).await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("Version {} not found", target_version))?;
 
-    let reverted = usecase.revert_to_version(&ctx, uid, target_version).await
-        .map_err(|e| e.to_string())?;
-    Ok(ok(template_dto(reverted)))
+    let mut template = state.report_template_repo.find_by_id(uid).await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Template not found".to_string())?;
+
+    if template.org_id != ctx.tenant_id {
+        return Err("Template belongs to another organization".to_string());
+    }
+
+    template.document_json = version.document_json;
+    template.version += 1;
+    template.updated_at = Utc::now();
+
+    state.report_service.save_template(&template).await.map_err(|e| e.to_string())?;
+    Ok(ok(template_dto(template)))
 }
 
 // ═══════════════════════════════════════════════════════════════

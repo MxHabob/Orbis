@@ -4,10 +4,7 @@ use tauri::State;
 use serde::{Deserialize, Serialize};
 use crate::state::AppState;
 use uuid::Uuid;
-use orbis_app::usecases::document::{
-    upload_document::UploadDocumentUseCase,
-    delete_document::DeleteDocumentUseCase,
-};
+use orbis_app::services::CreateDocumentInput;
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
 fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
@@ -90,39 +87,37 @@ fn doc_dto(d: orbis_domain::entities::document::Document) -> DocumentDto {
 #[tauri::command]
 pub async fn document_upload(request: UploadDocumentInput, state: State<'_, AppState>) -> Result<ApiResponse<DocumentDto>, String> {
     let ctx = make_ctx(&state);
-    let uc = UploadDocumentUseCase {
-        document_repo: state.document_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
     let entity_id = request.entity_id.and_then(|e| Uuid::parse_str(&e).ok());
     let uploaded_by = match ctx.actor {
         orbis_domain::iam::actor::Actor::User(uid) => Some(uid),
         _ => None,
     };
 
-    let doc = uc.execute(
-        &ctx,
-        ctx.tenant_id,
+    let input = CreateDocumentInput {
         uploaded_by,
-        request.entity_type,
+        entity_type: request.entity_type,
         entity_id,
-        request.name,
-        request.description,
-        request.category.unwrap_or_else(|| "general".to_string()),
-        request.asset_type.unwrap_or_else(|| "file".to_string()),
-        request.school_year,
-        request.term,
-        request.tags,
-        request.visibility.unwrap_or_else(|| "internal".to_string()),
-        request.size,
-        request.mime_type,
-        request.extension,
-        request.storage_provider.unwrap_or_else(|| "local".to_string()),
-        request.path,
-        request.url,
-        request.thumbnail_path,
-        request.preview_path,
-    ).await.map_err(|e| e.to_string())?;
+        name: request.name,
+        description: request.description,
+        category: request.category.unwrap_or_else(|| "general".to_string()),
+        asset_type: request.asset_type.unwrap_or_else(|| "file".to_string()),
+        school_year: request.school_year,
+        term: request.term,
+        tags: request.tags,
+        visibility: request.visibility.unwrap_or_else(|| "internal".to_string()),
+        size: request.size,
+        mime_type: request.mime_type,
+        extension: request.extension,
+        storage_provider: request.storage_provider.unwrap_or_else(|| "local".to_string()),
+        path: request.path,
+        url: request.url,
+        thumbnail_path: request.thumbnail_path,
+        preview_path: request.preview_path,
+    };
+
+    let doc = state.document_service.create_document(&ctx, ctx.tenant_id, input)
+        .await
+        .map_err(|e| e.to_string())?;
 
     Ok(ok(doc_dto(doc)))
 }
@@ -130,14 +125,14 @@ pub async fn document_upload(request: UploadDocumentInput, state: State<'_, AppS
 #[tauri::command]
 pub async fn document_list(state: State<'_, AppState>) -> Result<ApiResponse<Vec<DocumentDto>>, String> {
     let ctx = make_ctx(&state);
-    let items = state.document_repo.find_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
+    let items = state.document_service.list_documents_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
     Ok(ok(items.into_iter().map(doc_dto).collect()))
 }
 
 #[tauri::command]
 pub async fn document_get(id: String, state: State<'_, AppState>) -> Result<ApiResponse<DocumentDto>, String> {
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
-    let d = state.document_repo.find_by_id(uid).await.map_err(|e| e.to_string())?.ok_or("Document not found")?;
+    let d = state.document_service.get_document(uid).await.map_err(|e| e.to_string())?.ok_or("Document not found")?;
     Ok(ok(doc_dto(d)))
 }
 
@@ -145,9 +140,5 @@ pub async fn document_get(id: String, state: State<'_, AppState>) -> Result<ApiR
 pub async fn document_delete(id: String, state: State<'_, AppState>) -> Result<(), String> {
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
-    let uc = DeleteDocumentUseCase {
-        document_repo: state.document_repo.clone(),
-        event_bus: state.event_bus.clone(),
-    };
-    uc.execute(&ctx, uid).await.map_err(|e| e.to_string())
+    state.document_service.delete_document(&ctx, uid).await.map_err(|e| e.to_string())
 }

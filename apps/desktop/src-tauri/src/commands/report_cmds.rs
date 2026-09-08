@@ -1,6 +1,5 @@
 use tauri::State;
 use crate::state::AppState;
-use orbis_app::usecases::report::generate_report::{GenerateReportUseCase, GenerateReportInput};
 use uuid::Uuid;
 use std::collections::HashMap;
 use orbis_domain::entities::report::{ParamValue, OutputFormat, ReportLocale, BatchPrintConfig, ColumnDef};
@@ -19,16 +18,6 @@ pub async fn generate_report(
     state: State<'_, AppState>,
 ) -> Result<String, String> {
     let ctx = make_ctx(&state);
-    let usecase = GenerateReportUseCase {
-        definition_repo: state.report_definition_repo.clone(),
-        template_repo: state.report_template_repo.clone(),
-        job_repo: state.report_job_repo.clone(),
-        audit_repo: state.report_audit_repo.clone(),
-        provider_registry: state.report_provider_registry.clone(),
-        renderer_registry: state.report_renderer_registry.clone(),
-        org_context_resolver: state.report_org_context_resolver.clone(),
-    };
-
     let report_code = template_id; // Mapping frontend's 'template_id' to 'report_code'
 
     // Parse parameters
@@ -44,14 +33,14 @@ pub async fn generate_report(
     // Default locale for now
     let report_locale = ReportLocale::Ar;
 
-    let input = GenerateReportInput {
+    let input = orbis_app::services::GenerateReportInput {
         report_code,
         parameters: params,
         output_format,
         locale: report_locale,
     };
 
-    let (mut job, export) = usecase.execute(&ctx, input).await
+    let (mut job, export) = state.report_service.generate_report(&ctx, input).await
         .map_err(|e| e.to_string())?;
 
     // Since the frontend expects to download a file later, we write it to a temp dir

@@ -10,7 +10,7 @@ use super::{ApiError, ApiResponse};
 use super::extractors::AuthContext;
 use crate::state::AppState;
 use orbis_domain::entities::override_request::{
-    AcademicOverrideRequest, OverrideType, RiskLevel, ApprovalStep, StepStatus
+    AcademicOverrideRequest, OverrideType, RiskLevel, ApprovalStep, OverrideStatus,
 };
 use orbis_app::services::SubmitOverrideInput;
 
@@ -147,7 +147,7 @@ pub async fn submit_override(
             approver_role: p.approver_role.clone(),
             approver_id: None,
             approver_name: None,
-            status: StepStatus::Pending,
+            status: OverrideStatus::Pending,
             decision_at: None,
             notes: None,
         }
@@ -165,6 +165,7 @@ pub async fn submit_override(
         requested_by,
         requested_by_name: None,
         approval_chain: chain,
+        metadata: None,
     };
 
     let req = state.workflow_service.submit_override(&ctx, ctx.tenant_id, input).await?;

@@ -3,10 +3,6 @@
 use tauri::State;
 use serde::Serialize;
 use crate::state::AppState;
-use orbis_app::usecases::organization::UpdateOrganizationUseCase;
-use orbis_app::usecases::org_unit::CreateOrgUnitUseCase;
-use orbis_app::usecases::settings::{GetSettingsUseCase, UpdateSettingsUseCase};
-use orbis_app::usecases::dashboard::GetDashboardUseCase;
 use orbis_domain::entities::settings::OrganizationSettings;
 use orbis_app::ports::repositories::DashboardCounts;
 use uuid::Uuid;
@@ -29,7 +25,7 @@ pub struct OrgDto {
 pub async fn org_get_current(state: State<'_, AppState>) -> Result<ApiResponse<OrgDto>, String> {
     let ctx = make_ctx(&state);
     let org = if ctx.tenant_id != Uuid::nil() {
-        state.org_repo.find_by_id(ctx.tenant_id).await.map_err(|e| e.to_string())?
+        state.organization_service.get_organization(ctx.tenant_id).await.map_err(|e| e.to_string())?
     } else {
         state.org_repo.find_first().await.map_err(|e| e.to_string())?
     };
@@ -43,12 +39,11 @@ pub async fn org_get_current(state: State<'_, AppState>) -> Result<ApiResponse<O
 #[tauri::command]
 pub async fn org_update_current(request: serde_json::Value, state: State<'_, AppState>) -> Result<ApiResponse<OrgDto>, String> {
     let ctx = make_ctx(&state);
-    let uc = UpdateOrganizationUseCase { org_repo: state.org_repo.clone(), event_bus: state.event_bus.clone() };
     let name = request.get("name").and_then(|v| v.as_str()).map(|s| s.to_string());
     let tz = request.get("timezone").and_then(|v| v.as_str()).map(|s| s.to_string());
     let locale = request.get("locale").and_then(|v| v.as_str()).map(|s| s.to_string());
     let color = request.get("primaryColor").and_then(|v| v.as_str()).map(|s| s.to_string());
-    let org = uc.execute(&ctx, ctx.tenant_id, name, tz, locale, color).await.map_err(|e| e.to_string())?;
+    let org = state.organization_service.update_organization(&ctx, ctx.tenant_id, name, tz, locale, color).await.map_err(|e| e.to_string())?;
     Ok(ok(OrgDto {
         id: org.id.to_string(), name: org.name, slug: org.slug,
         timezone: org.timezone, locale: org.locale, primary_color: org.primary_color,
@@ -60,16 +55,14 @@ pub async fn org_update_current(request: serde_json::Value, state: State<'_, App
 #[tauri::command]
 pub async fn org_get_settings(state: State<'_, AppState>) -> Result<ApiResponse<OrganizationSettings>, String> {
     let ctx = make_ctx(&state);
-    let uc = GetSettingsUseCase { settings_repo: state.settings_repo.clone() };
-    let settings = uc.execute(&ctx).await.map_err(|e| e.to_string())?;
+    let settings = state.organization_service.get_settings(ctx.tenant_id).await.map_err(|e| e.to_string())?;
     Ok(ok(settings))
 }
 
 #[tauri::command]
 pub async fn org_update_settings(settings: OrganizationSettings, state: State<'_, AppState>) -> Result<ApiResponse<OrganizationSettings>, String> {
     let ctx = make_ctx(&state);
-    let uc = UpdateSettingsUseCase { settings_repo: state.settings_repo.clone(), permission_checker: state.permission_checker.clone() };
-    let saved = uc.execute(&ctx, settings).await.map_err(|e| e.to_string())?;
+    let saved = state.organization_service.update_settings(&ctx, ctx.tenant_id, settings).await.map_err(|e| e.to_string())?;
     Ok(ok(saved))
 }
 
@@ -78,8 +71,7 @@ pub async fn org_update_settings(settings: OrganizationSettings, state: State<'_
 #[tauri::command]
 pub async fn org_get_dashboard(state: State<'_, AppState>) -> Result<ApiResponse<DashboardCounts>, String> {
     let ctx = make_ctx(&state);
-    let uc = GetDashboardUseCase { dashboard_repo: state.dashboard_repo.clone() };
-    let counts = uc.execute(&ctx).await.map_err(|e| e.to_string())?;
+    let counts = state.organization_service.get_dashboard_counts(ctx.tenant_id).await.map_err(|e| e.to_string())?;
     Ok(ok(counts))
 }
 
@@ -104,34 +96,34 @@ fn unit_to_dto(u: orbis_domain::entities::org_unit::OrgUnit) -> OrgUnitDto {
 #[tauri::command]
 pub async fn org_create_unit(request: serde_json::Value, state: State<'_, AppState>) -> Result<ApiResponse<OrgUnitDto>, String> {
     let ctx = make_ctx(&state);
-    let uc = CreateOrgUnitUseCase { org_unit_repo: state.org_unit_repo.clone(), event_bus: state.event_bus.clone() };
     let name = request["name"].as_str().unwrap_or_default().to_string();
     let unit_type = request["unitType"].as_str().unwrap_or_default().to_string();
     let parent_id = request["parentId"].as_str().and_then(|s| Uuid::parse_str(s).ok());
     let data_isolation = request["dataIsolation"].as_str().unwrap_or("none").to_string();
-    let unit = uc.execute(&ctx, ctx.tenant_id, name, unit_type, parent_id, data_isolation).await.map_err(|e| e.to_string())?;
+    let unit = state.organization_service.create_org_unit(&ctx, ctx.tenant_id, name, unit_type, parent_id, data_isolation).await.map_err(|e| e.to_string())?;
     Ok(ok(unit_to_dto(unit)))
 }
 
 #[tauri::command]
 pub async fn org_list_units(state: State<'_, AppState>) -> Result<ApiResponse<Vec<OrgUnitDto>>, String> {
     let ctx = make_ctx(&state);
-    let units = state.org_unit_repo.find_by_org(ctx.tenant_id).await.map_err(|e| e.to_string())?;
+    let units = state.organization_service.list_org_units(ctx.tenant_id).await.map_err(|e| e.to_string())?;
     Ok(ok(units.into_iter().map(unit_to_dto).collect()))
 }
 
 #[tauri::command]
 pub async fn org_get_unit(id: String, state: State<'_, AppState>) -> Result<ApiResponse<OrgUnitDto>, String> {
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
-    let u = state.org_unit_repo.find_by_id(uid).await.map_err(|e| e.to_string())?
+    let u = state.organization_service.get_org_unit(uid).await.map_err(|e| e.to_string())?
         .ok_or_else(|| "OrgUnit not found".to_string())?;
     Ok(ok(unit_to_dto(u)))
 }
 
 #[tauri::command]
 pub async fn org_delete_unit(id: String, state: State<'_, AppState>) -> Result<(), String> {
+    let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
-    state.org_unit_repo.delete(uid).await.map_err(|e| e.to_string())
+    state.organization_service.delete_org_unit(&ctx, uid).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -143,4 +135,3 @@ pub async fn org_select_unit(unit_id: Option<String>, state: State<'_, AppState>
     state.set_active_unit(uid);
     Ok(())
 }
-

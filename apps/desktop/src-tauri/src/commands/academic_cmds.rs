@@ -8,6 +8,7 @@ use super::make_ctx;
 use super::org_cmds::ApiResponse;
 fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
 
+use orbis_domain::queries::filters::{SubjectFilter, ClassFilter, ClassSubjectFilter};
 use rust_decimal::Decimal;
 
 #[derive(Serialize)]
@@ -97,8 +98,8 @@ pub async fn academic_create_subject(request: CreateSubjectInput, state: State<'
 #[tauri::command]
 pub async fn academic_list_subjects(state: State<'_, AppState>) -> Result<ApiResponse<Vec<SubjectDto>>, String> {
     let ctx = make_ctx(&state);
-    let items = state.academic_service.list_subjects(ctx.tenant_id).await.map_err(|e| e.to_string())?;
-    Ok(ok(items.into_iter().map(|s| SubjectDto {
+    let items = state.academic_service.list_subjects(ctx.tenant_id, SubjectFilter::default()).await.map_err(|e| e.to_string())?;
+    Ok(ok(items.items.into_iter().map(|s| SubjectDto {
         id: s.id.to_string(),
         org_id: s.org_id.to_string(),
         code: s.code,
@@ -145,8 +146,8 @@ pub async fn academic_create_class(request: CreateClassInput, state: State<'_, A
 #[tauri::command]
 pub async fn academic_list_classes(state: State<'_, AppState>) -> Result<ApiResponse<Vec<ClassDto>>, String> {
     let ctx = make_ctx(&state);
-    let items = state.academic_service.list_classes(ctx.tenant_id).await.map_err(|e| e.to_string())?;
-    Ok(ok(items.into_iter().map(|c| ClassDto {
+    let items = state.academic_service.list_classes(ctx.tenant_id, ClassFilter::default()).await.map_err(|e| e.to_string())?;
+    Ok(ok(items.items.into_iter().map(|c| ClassDto {
         id: c.id.to_string(),
         org_id: c.org_id.to_string(),
         unit_id: c.unit_id.to_string(),
@@ -194,10 +195,16 @@ pub async fn academic_assign_class_subject(request: AssignClassSubjectInput, sta
 
 #[tauri::command]
 pub async fn academic_list_class_subjects(class_id: String, period_id: String, state: State<'_, AppState>) -> Result<ApiResponse<Vec<ClassSubjectDto>>, String> {
+    let ctx = make_ctx(&state);
     let cid = Uuid::parse_str(&class_id).map_err(|_| "Invalid class ID")?;
     let pid = Uuid::parse_str(&period_id).map_err(|_| "Invalid period ID")?;
-    let items = state.academic_service.list_class_subjects(cid, pid).await.map_err(|e| e.to_string())?;
-    Ok(ok(items.into_iter().map(|cs| ClassSubjectDto {
+    let filter = ClassSubjectFilter {
+        class_id: Some(cid),
+        period_id: Some(pid),
+        ..Default::default()
+    };
+    let items = state.academic_service.list_class_subjects(ctx.tenant_id, filter).await.map_err(|e| e.to_string())?;
+    Ok(ok(items.items.into_iter().map(|cs| ClassSubjectDto {
         id: cs.id.to_string(),
         class_id: cs.class_id.to_string(),
         subject_id: cs.subject_id.to_string(),

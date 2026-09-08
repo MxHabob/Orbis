@@ -2,7 +2,7 @@ use std::sync::Arc;
 use sea_orm::DatabaseConnection;
 use orbis_app::ports::repositories::{OrganizationRepository, OrgUnitRepository, UserRepository, PersonRepository, SessionRepository, AcademicYearRepository, AcademicPeriodRepository, PeriodTemplateRepository, SubjectRepository, ClassRepository, ClassSubjectRepository, EnrollmentRepository, StudentGuardianRepository, RoomRepository, TimeSlotRepository, ScheduledLessonRepository, AssessmentSchemeRepository, GradeRepository, AttendanceRepository, BehaviorRecordRepository, ExamSessionRepository, ExamScheduleRepository, SeatingNumberRepository, SecretNumberRepository, ExamProctorRepository, AccountRepository, JournalEntryRepository, FeeTemplateRepository, StudentFeeRepository, PaymentRepository, DocumentRepository, IntegrationRepository, AiRepository, WorkflowRepository, CurrencyRepository, PolicyRepository, SettingsRepository, DashboardRepository};
 use orbis_app::ports::reporting::{ReportDefinitionRepository, ReportTemplateRepository, ReportJobRepository, ReportAuditRepository, DataProviderRegistry, RendererRegistry};
-use orbis_app::usecases::report::generate_report::OrgContextResolver;
+use orbis_app::services::OrgContextResolver;
 use orbis_app::ports::event_bus::EventBus;
 use orbis_app::ports::security::{TokenService, PasswordHasher};
 use orbis_app::ports::iam::PermissionCheckerPort;

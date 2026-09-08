@@ -247,8 +247,8 @@ pub async fn finance_generate_fee(request: GenerateFeeInput, state: State<'_, Ap
         student_id,
         enrollment_id,
         fee_template_id,
-        request.discount_amount.unwrap_or(Decimal::ZERO),
-        due_date,
+        request.discount_amount,
+        Some(due_date),
     ).await.map_err(|e| e.to_string())?;
 
     Ok(ok(StudentFeeDto {

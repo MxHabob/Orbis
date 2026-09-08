@@ -163,6 +163,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         identity_repo.clone(),
         token_service.clone(),
         password_hasher.clone(),
+        totp_service.clone(),
+        oidc_service.clone(),
+        Some(integration_repo.clone()),
         event_bus.clone(),
         permission_checker.clone(),
     ));

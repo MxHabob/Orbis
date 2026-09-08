@@ -4,10 +4,6 @@ use tauri::State;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use crate::state::AppState;
-use orbis_app::usecases::integrations::{
-    connect_app::ConnectAppUseCase,
-    get_connected_apps::GetConnectedAppsUseCase,
-};
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
 fn ok<T: Serialize>(data: T) -> ApiResponse<T> { ApiResponse { data } }
@@ -35,12 +31,9 @@ pub struct ConnectAppInput {
 #[tauri::command]
 pub async fn integration_connect_app(request: ConnectAppInput, state: State<'_, AppState>) -> Result<ApiResponse<IntegrationDto>, String> {
     let ctx = make_ctx(&state);
-    let uc = ConnectAppUseCase {
-        integration_repo: state.integration_repo.clone(),
-    };
-    let config = uc.execute(&ctx, request.provider_name, request.category, request.env, request.settings, request.secrets)
-        .await
-        .map_err(|e| e.to_string())?;
+    let config = state.integration_service.connect_app(
+        &ctx, ctx.tenant_id, request.provider_name, request.category, request.env, request.settings, request.secrets
+    ).await.map_err(|e| e.to_string())?;
 
     Ok(ok(IntegrationDto {
         id: config.id.to_string(),
@@ -63,7 +56,7 @@ pub struct IntegrationStatusDto {
 #[tauri::command]
 pub async fn integration_get_status(provider_name: String, state: State<'_, AppState>) -> Result<ApiResponse<IntegrationStatusDto>, String> {
     let ctx = make_ctx(&state);
-    let config_opt = state.integration_repo.find_config_by_provider(ctx.tenant_id, &provider_name)
+    let config_opt = state.integration_service.get_integration_by_provider(ctx.tenant_id, &provider_name)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -92,7 +85,7 @@ pub async fn integration_get_status(provider_name: String, state: State<'_, AppS
 #[tauri::command]
 pub async fn integration_disconnect(provider_name: String, state: State<'_, AppState>) -> Result<ApiResponse<bool>, String> {
     let ctx = make_ctx(&state);
-    state.integration_repo.delete_by_provider(ctx.tenant_id, &provider_name)
+    state.integration_service.delete_integration(&ctx, ctx.tenant_id, &provider_name)
         .await
         .map_err(|e| e.to_string())?;
     Ok(ok(true))
@@ -101,10 +94,7 @@ pub async fn integration_disconnect(provider_name: String, state: State<'_, AppS
 #[tauri::command]
 pub async fn integration_list(state: State<'_, AppState>) -> Result<ApiResponse<Vec<IntegrationDto>>, String> {
     let ctx = make_ctx(&state);
-    let uc = GetConnectedAppsUseCase {
-        integration_repo: state.integration_repo.clone(),
-    };
-    let configs = uc.execute(&ctx).await.map_err(|e| e.to_string())?;
+    let configs = state.integration_service.list_integrations(ctx.tenant_id).await.map_err(|e| e.to_string())?;
     Ok(ok(configs.into_iter().map(|c| IntegrationDto {
         id: c.id.to_string(),
         org_id: c.org_id.to_string(),

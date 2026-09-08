@@ -12,7 +12,7 @@
 
 use async_trait::async_trait;
 use orbis_app::ports::reporting::*;
-use orbis_app::usecases::report::generate_report::OrgContextResolver;
+use orbis_app::services::OrgContextResolver;
 use orbis_domain::entities::report::*;
 use orbis_domain::errors::DomainError;
 use std::collections::HashMap;
