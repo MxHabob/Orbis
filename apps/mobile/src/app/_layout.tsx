@@ -13,7 +13,6 @@ import * as SystemUI from 'expo-system-ui';
 import { useColorScheme } from 'react-native';
 
 import { Colors } from '@/constants/theme';
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { AuthProvider } from '@/lib/api';
 import { AppQueryProvider } from '@/providers/query-provider';
 import { EffectiveContextProvider } from '@/providers/effective-context';
@@ -62,9 +61,7 @@ export default function RootLayout() {
             <ThemeProvider value={navigationTheme}>
               <ToastProvider>
                 <AppErrorBoundary>
-                  {/* StatusBar background perfectly matched with active theme background */}
                   <ThemedStatusBar backgroundColor={currentColors.background} />
-                  <AnimatedSplashOverlay />
                   <Stack
                     screenOptions={{
                       headerShown: false,

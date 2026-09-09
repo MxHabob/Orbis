@@ -38,6 +38,7 @@ import {
   ScheduleFeatureIllustration,
   BehaviorFeatureIllustration,
 } from '@/components/glovo-illustrations';
+import { GradientHeader } from '@/components/gradient-header';
 import { useTheme } from '@/hooks/use-theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useToast } from '@/components/ui/toast';
@@ -186,6 +187,17 @@ export default function HomeScreen() {
         refreshControl={
           <RefreshControl refreshing={isQueryLoading} onRefresh={onRefresh} tintColor="#FFFFFF" />
         }>
+        <GradientHeader
+          colors={['#7628F5', '#893BF2', '#F8F3FA'] as const}
+          locations={[0, 0.62, 1] as const}
+          height={190}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.homeGradient}
+          animated
+          duration={16000}
+        />
+
         {/* 1. Primary Hero Header */}
         <View style={[styles.heroSection, { paddingTop: Math.max(insets.top, 16) + 4 }]}>
           <CampusHeaderPill campusName={campusName} />
@@ -286,6 +298,13 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+  },
+  homeGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    zIndex: 0,
   },
   heroSection: {
     paddingHorizontal: Spacing.four,

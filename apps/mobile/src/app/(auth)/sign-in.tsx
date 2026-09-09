@@ -15,6 +15,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useI18n } from '@/lib/i18n';
 import { useToast } from '@/components/ui/toast';
 import { SignInBrandHeader, SignInForm } from '@/components/auth';
+import { GradientHeader } from '@/components/gradient-header';
 import { KeyboardAwareView } from '@/components/ui/keyboard-aware-view';
 import { ThemedStatusBar } from '@/components/ui/themed-status-bar';
 import { Spacing } from '@/constants/theme';
@@ -63,9 +64,15 @@ export default function SignInScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <ThemedStatusBar backgroundColor={theme.primary} style="light" />
-      <View
-        pointerEvents="none"
-        style={[styles.topBackground, { backgroundColor: theme.primary, height: height * 0.5 }]}
+      <GradientHeader
+        colors={['#7628F5', '#893BF2', '#FFFFFF'] as const}
+        locations={[0, 0.82, 1] as const}
+        height={height * 0.5}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.topBackground}
+        animated
+        duration={16000}
       />
       <KeyboardAwareView
         style={styles.keyboardView}

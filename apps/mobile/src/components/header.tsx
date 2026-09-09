@@ -6,12 +6,13 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, type ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, Pressable, type StyleProp, type ViewStyle } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing, Typography } from '@/constants/theme';
+import { GradientHeader } from '@/components/gradient-header';
 
 export interface HeaderProps {
   title: string;
@@ -19,8 +20,10 @@ export interface HeaderProps {
   showBack?: boolean;
   onBack?: () => void;
   rightAction?: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   transparent?: boolean;
+  gradientColors?: readonly [string, string, ...string[]];
+  gradientLocations?: readonly [number, number, ...number[]];
 }
 
 export function Header({
@@ -31,6 +34,8 @@ export function Header({
   rightAction,
   style,
   transparent = false,
+  gradientColors = ['#7628F5', '#893BF2', '#A75AF0', '#FFFFFF'] as const,
+  gradientLocations = [0, 0.22, 0.62, 1] as const,
 }: HeaderProps) {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
@@ -56,6 +61,15 @@ export function Header({
         },
         style,
       ]}>
+      <GradientHeader
+        colors={gradientColors}
+        locations={gradientLocations}
+        height={72 + insets.top}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.gradientHeader}
+      />
+
       <View style={styles.contentRow}>
         <View style={styles.leftGroup}>
           {showBack && (
@@ -103,6 +117,14 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: Spacing.four,
     paddingBottom: 0,
+  },
+  gradientHeader: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
   },
   contentRow: {
     flexDirection: 'row',

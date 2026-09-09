@@ -5,7 +5,6 @@
  * or (auth)/sign-in if unauthenticated.
  */
 
-import React from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { Redirect } from 'expo-router';
 import { useAuth } from '@/lib/api';
