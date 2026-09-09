@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -16,7 +16,9 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Radii, Spacing, Typography } from '@/constants/theme';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useToast } from '@/components/ui/toast';
+import { Spacing, Typography } from '@/constants/theme';
 
 interface DeviceItem {
   id: string;
@@ -30,11 +32,17 @@ export default function SecuritySettingsScreen() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const { user } = useAuth();
+  const toast = useToast();
 
   const [currentPass, setCurrentPass] = useState('');
   const [newPass, setNewPass] = useState('');
   const [confirmPass, setConfirmPass] = useState('');
   const [mfaEnabled, setMfaEnabled] = useState(user?.mfa_enabled ?? true);
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [dialogMode, setDialogMode] = useState<'message' | 'confirm'>('message');
+  const [dialogTitle, setDialogTitle] = useState('');
+  const [dialogDescription, setDialogDescription] = useState('');
+  const [pendingDeviceId, setPendingDeviceId] = useState<string | null>(null);
   const [devices, setDevices] = useState<DeviceItem[]>([
     {
       id: 'dev-1',
@@ -59,30 +67,40 @@ export default function SecuritySettingsScreen() {
     },
   ]);
 
+  const openDialog = (title: string, description: string, mode: 'message' | 'confirm' = 'message') => {
+    setDialogTitle(title);
+    setDialogDescription(description);
+    setDialogMode(mode);
+    setDialogVisible(true);
+  };
+
   const handleRevokeDevice = (deviceId: string) => {
-    Alert.alert('إنهاء الجلسة', 'هل أنت متأكد من رغبتك في تسجيل الخروج من هذا الجهاز؟', [
-      { text: 'إلغاء', style: 'cancel' },
-      {
-        text: 'إنهاء الجلسة',
-        style: 'destructive',
-        onPress: () => {
-          setDevices(devices.filter((d) => d.id !== deviceId));
-          Alert.alert('تم', 'تم إنهاء الجلسة عن بعد بنجاح.');
-        },
-      },
-    ]);
+    setPendingDeviceId(deviceId);
+    openDialog('إنهاء الجلسة', 'هل أنت متأكد من رغبتك في تسجيل الخروج من هذا الجهاز؟', 'confirm');
+  };
+
+  const confirmRevokeDevice = () => {
+    if (pendingDeviceId) {
+      setDevices((currentDevices) => currentDevices.filter((d) => d.id !== pendingDeviceId));
+      toast.success('تم إنهاء الجلسة عن بعد بنجاح.');
+    }
+
+    setDialogVisible(false);
+    setPendingDeviceId(null);
   };
 
   const handleUpdatePassword = () => {
     if (!currentPass || !newPass) {
-      Alert.alert('تنبيه', 'يرجى إدخال كلمة المرور الحالية والجديدة.');
+      openDialog('تنبيه', 'يرجى إدخال كلمة المرور الحالية والجديدة.');
       return;
     }
     if (newPass !== confirmPass) {
-      Alert.alert('تنبيه', 'كلمات المرور الجديدة غير متطابقة.');
+      openDialog('تنبيه', 'كلمات المرور الجديدة غير متطابقة.');
       return;
     }
-    Alert.alert('تم التحديث', 'تم تغيير كلمة المرور بنجاح.');
+
+    openDialog('تم التحديث', 'تم تغيير كلمة المرور بنجاح.');
+    toast.success('تم تغيير كلمة المرور بنجاح.');
     setCurrentPass('');
     setNewPass('');
     setConfirmPass('');
@@ -120,8 +138,12 @@ export default function SecuritySettingsScreen() {
           <Button
             title={mfaEnabled ? 'إعادة ضبط مفاتيح المصادقة' : 'تفعيل التحقق بخطوتين'}
             onPress={() => {
-              setMfaEnabled(!mfaEnabled);
-              Alert.alert('حالة الأمان', mfaEnabled ? 'تم تعطيل التحقق بخطوتين.' : 'تم تفعيل التحقق بخطوتين.');
+              const nextMfa = !mfaEnabled;
+              setMfaEnabled(nextMfa);
+              openDialog(
+                'حالة الأمان',
+                nextMfa ? 'تم تفعيل التحقق بخطوتين.' : 'تم تعطيل التحقق بخطوتين.',
+              );
             }}
             variant="outline"
             size="sm"
@@ -197,6 +219,29 @@ export default function SecuritySettingsScreen() {
           ))}
         </View>
       </ScrollView>
+
+      <Dialog visible={dialogVisible} onClose={() => setDialogVisible(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{dialogTitle}</DialogTitle>
+          </DialogHeader>
+          <DialogDescription>{dialogDescription}</DialogDescription>
+          <DialogFooter>
+            {dialogMode === 'confirm' ? (
+              <>
+                <DialogClose>
+                  <Button title="إلغاء" onPress={() => {}} variant="outline" size="sm" />
+                </DialogClose>
+                <Button title="إنهاء الجلسة" onPress={confirmRevokeDevice} variant="destructive" size="sm" />
+              </>
+            ) : (
+              <DialogClose>
+                <Button title="تم" onPress={() => {}} variant="default" size="sm" />
+              </DialogClose>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </View>
   );
 }

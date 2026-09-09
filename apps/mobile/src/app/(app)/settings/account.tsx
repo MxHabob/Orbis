@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth, api } from '@/lib/api';
@@ -14,12 +14,14 @@ import { Header } from '@/components/header';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/toast';
 import { Spacing } from '@/constants/theme';
 
 export default function AccountSettingsScreen() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const { user } = useAuth();
+  const toast = useToast();
 
   const [fullName, setFullName] = useState(user?.full_name || '');
   const [email] = useState(user?.email || '');
@@ -32,9 +34,11 @@ export default function AccountSettingsScreen() {
       if (user?.id) {
         await api.updateUser(user.id, { full_name: fullName.trim() });
       }
-      Alert.alert('تم التحديث', 'تم حفظ التعديلات على ملفك الشخصي بنجاح.');
+
+      toast.success('تم حفظ التعديلات بنجاح');
     } catch (err: any) {
-      Alert.alert('خطأ', err?.message || 'فشل حفظ التعديلات.');
+      const msg = err?.message || 'فشل حفظ التعديلات.';
+      toast.error(msg);
     } finally {
       setSaving(false);
     }

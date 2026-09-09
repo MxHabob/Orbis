@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -14,31 +14,43 @@ import { Header } from '@/components/header';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Radii, Spacing, Typography } from '@/constants/theme';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useToast } from '@/components/ui/toast';
+import { Spacing, Typography } from '@/constants/theme';
 
 export default function LinkedAccountsScreen() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
+  const toast = useToast();
 
   const [googleLinked, setGoogleLinked] = useState(true);
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [dialogMode, setDialogMode] = useState<'confirm' | 'message'>('confirm');
+  const [dialogTitle, setDialogTitle] = useState('');
+  const [dialogDescription, setDialogDescription] = useState('');
+
+  const openDialog = (title: string, description: string, mode: 'confirm' | 'message' = 'message') => {
+    setDialogTitle(title);
+    setDialogDescription(description);
+    setDialogMode(mode);
+    setDialogVisible(true);
+  };
 
   const toggleGoogle = () => {
     if (googleLinked) {
-      Alert.alert('فصل الحساب', 'هل أنت متأكد من إلغاء ربط حساب Google؟', [
-        { text: 'إلغاء', style: 'cancel' },
-        {
-          text: 'فصل',
-          style: 'destructive',
-          onPress: () => {
-            setGoogleLinked(false);
-            Alert.alert('تم', 'تم إلغاء ربط الحساب.');
-          },
-        },
-      ]);
+      openDialog('فصل الحساب', 'هل أنت متأكد من إلغاء ربط حساب Google؟', 'confirm');
     } else {
       setGoogleLinked(true);
-      Alert.alert('تم الربط', 'تم ربط حساب Google بنجاح.');
+      toast.success('تم ربط حساب Google بنجاح.');
+      openDialog('تم الربط', 'تم ربط حساب Google بنجاح.');
     }
+  };
+
+  const confirmDisconnect = () => {
+    setGoogleLinked(false);
+    setDialogVisible(false);
+    toast.success('تم إلغاء ربط الحساب.');
+    openDialog('تم', 'تم إلغاء ربط الحساب.');
   };
 
   return (
@@ -84,6 +96,29 @@ export default function LinkedAccountsScreen() {
           />
         </Card>
       </ScrollView>
+
+      <Dialog visible={dialogVisible} onClose={() => setDialogVisible(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{dialogTitle}</DialogTitle>
+          </DialogHeader>
+          <DialogDescription>{dialogDescription}</DialogDescription>
+          <DialogFooter>
+            {dialogMode === 'confirm' ? (
+              <>
+                <DialogClose>
+                  <Button title="إلغاء" onPress={() => {}} variant="outline" size="sm" />
+                </DialogClose>
+                <Button title="فصل" onPress={confirmDisconnect} variant="destructive" size="sm" />
+              </>
+            ) : (
+              <DialogClose>
+                <Button title="تم" onPress={() => {}} variant="default" size="sm" />
+              </DialogClose>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </View>
   );
 }
