@@ -1,9 +1,8 @@
-import React, { PropsWithChildren, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { PropsWithChildren, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
-import { Radii, Spacing, Typography } from '@/constants/theme';
-import { ThemedText } from '@/components/themed-text';
+import {  Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export interface AccordionProps extends PropsWithChildren {
@@ -38,9 +37,9 @@ export function Accordion({
         disabled={disabled}
         onPress={toggle}
         style={({ pressed }) => [styles.trigger, pressed && styles.pressed]}>
-        <ThemedText type="smallBold" style={styles.title}>
+        <Text style={styles.title}>
           {title}
-        </ThemedText>
+        </Text>
         <Ionicons
           name={open ? 'chevron-up' : 'chevron-down'}
           size={18}

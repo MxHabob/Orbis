@@ -20,6 +20,7 @@ import { I18nProvider } from '@/lib/i18n';
 import { ThemedStatusBar } from '@/components/ui/themed-status-bar';
 import { ToastProvider } from '@/components/ui/toast';
 import { AppErrorBoundary } from '@/components/ui/error-boundary';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -57,6 +58,7 @@ export default function RootLayout() {
     <I18nProvider>
       <AuthProvider>
         <AppQueryProvider>
+          <GestureHandlerRootView>
           <EffectiveContextProvider>
             <ThemeProvider value={navigationTheme}>
               <ToastProvider>
@@ -76,6 +78,7 @@ export default function RootLayout() {
               </ToastProvider>
             </ThemeProvider>
           </EffectiveContextProvider>
+          </GestureHandlerRootView>
         </AppQueryProvider>
       </AuthProvider>
     </I18nProvider>
