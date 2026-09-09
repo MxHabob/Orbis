@@ -6,12 +6,12 @@
  */
 
 import React from 'react';
-import { View, StyleSheet, Pressable, type ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, Pressable, type ViewStyle } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/use-theme';
-import { Spacing } from '@/constants/theme';
+import { Spacing, Typography } from '@/constants/theme';
 
 export interface HeaderProps {
   title: string;
@@ -57,24 +57,43 @@ export function Header({
         style,
       ]}>
       <View style={styles.contentRow}>
-        <View style={styles.leftSlot}>
+        <View style={styles.leftGroup}>
           {showBack && (
-            <Pressable
-              onPress={handleBack}
-              style={({ pressed }) => [
-                styles.backButton,
-                { backgroundColor: theme.backgroundElement },
-                pressed && { opacity: 0.7 },
-              ]}
-              hitSlop={8}>
-              <Ionicons name="chevron-back" size={22} color={theme.text} />
-            </Pressable>
+            <View style={[styles.floatingLeft, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+              <Pressable
+                onPress={handleBack}
+                style={({ pressed }) => [
+                  styles.backButton,
+                  { backgroundColor: 'transparent' },
+                  pressed && { opacity: 0.7 },
+                ]}
+                hitSlop={8}>
+                <Ionicons name="chevron-back" size={22} color={theme.text} />
+              </Pressable>
+            </View>
           )}
+
+          <View style={[styles.titleWrap, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+            {title ? (
+              <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
+                {title}
+              </Text>
+            ) : null}
+            {subtitle ? (
+              <Text style={[styles.subtitle, { color: theme.textSecondary }]} numberOfLines={1}>
+                {subtitle}
+              </Text>
+            ) : null}
+          </View>
         </View>
 
-        <View style={styles.centerSlot} />
-
-        <View style={styles.rightSlot}>{rightAction}</View>
+        <View style={styles.rightSlot}>
+          {rightAction ? (
+            <View style={[styles.floatingRight, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+              {rightAction}
+            </View>
+          ) : null}
+        </View>
       </View>
     </View>
   );
@@ -89,23 +108,68 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 40,
+    minHeight: 56,
   },
-  leftSlot: {
-    width: 40,
-    alignItems: 'flex-start',
-    justifyContent: 'center',
+  leftGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexShrink: 1,
+    gap: Spacing.one,
   },
-  centerSlot: {
-    flex: 1,
+  floatingLeft: {
+    borderRadius: 20,
+    borderWidth: 1,
+    overflow: 'hidden',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.10,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  titleWrap: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one,
+    borderRadius: 22,
+    borderWidth: 1,
+    minWidth: 170,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  title: {
+    ...Typography.bodyBold,
+    fontSize: 17,
+    textAlign: 'center',
+  },
+  subtitle: {
+    ...Typography.caption,
+    fontSize: 11,
+    textAlign: 'center',
+    marginTop: 2,
   },
   rightSlot: {
-    width: 40,
+    width: 44,
     alignItems: 'flex-end',
     justifyContent: 'center',
+    marginLeft: Spacing.two,
+  },
+  floatingRight: {
+    minWidth: 38,
+    minHeight: 38,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.one,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.10,
+    shadowRadius: 8,
+    elevation: 3,
   },
   backButton: {
     width: 36,
