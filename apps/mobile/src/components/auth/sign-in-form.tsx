@@ -203,6 +203,15 @@ export const SignInForm = React.memo<SignInFormProps>(
               </Pressable>
             </Link>
           </View>
+
+          <View style={styles.demoRow}>
+            <Link href="/(auth)/wallet-setup" asChild>
+              <Pressable style={({ pressed }) => [styles.demoButton, pressed && styles.demoButtonPressed]} hitSlop={8}>
+                <Ionicons name="wallet-outline" size={18} color={theme.primary} />
+                <Text style={[styles.demoText, { color: theme.primary }]}>Open Wallet Setup</Text>
+              </Pressable>
+            </Link>
+          </View>
         </Card>
       </View>
     );
@@ -288,5 +297,27 @@ const styles = StyleSheet.create({
   footerLink: {
     ...Typography.captionBold,
     fontSize: 13,
+  },
+  demoRow: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -Spacing.one,
+  },
+  demoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRadius: Radii.full,
+    borderWidth: 1,
+    borderColor: '#DDD6FE',
+  },
+  demoButtonPressed: {
+    opacity: 0.8,
+  },
+  demoText: {
+    ...Typography.captionBold,
+    fontSize: 12,
   },
 });
