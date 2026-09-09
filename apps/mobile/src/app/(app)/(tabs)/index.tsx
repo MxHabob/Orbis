@@ -7,7 +7,7 @@
 
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
-import { router } from 'expo-router';
+import { router, useIsFocused } from 'expo-router';
 import { ThemedStatusBar } from '@/components/ui/themed-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -63,6 +63,7 @@ const ILLUSTRATION_LIST = [
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused();
   const theme = useTheme();
   const toast = useToast();
   const colorScheme = useColorScheme();
@@ -86,19 +87,21 @@ export default function HomeScreen() {
   const { data: enrollmentsData, isLoading: isEnrollmentsLoading, refetch: refetchEnrollments } =
     useEnrollmentsQuery(isParent ? {} : { studentId: user?.id });
 
-  const isQueryLoading = isOrgLoading || isDashLoading || isClassesLoading || isEnrollmentsLoading;
+  const isQueryLoading =
+    isOrgLoading ||
+    isDashLoading ||
+    (isParent ?  isClassesLoading : isEnrollmentsLoading);
 
   const onRefresh = useCallback(async () => {
     await Promise.all([refetchOrg(), refetchDash(), refetchClasses(), refetchEnrollments()]);
   }, [refetchOrg, refetchDash, refetchClasses, refetchEnrollments]);
 
   const effectiveId = targetStudentId || user?.id || '';
-  const firstName = user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || '';
-  const campusName = orgData?.name || t('nav_campus_default');
+  const campusName = orgData?.name;
 
   // ── Dynamic Bubble Items ───────────────────────────────────────────────
   const bubbleItems = useMemo<BubbleItemData[]>(() => {
-    if (isParent && childrenList.length > 0) {
+    if (isParent) {
       return childrenList.slice(0, 5).map((child, idx) => ({
         id: child.id,
         title: child.name,
@@ -175,7 +178,7 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.primary }]}>
-      <ThemedStatusBar style="light" backgroundColor={theme.primary} />
+      {isFocused && <ThemedStatusBar style="light" backgroundColor={theme.primary} />}
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -188,7 +191,7 @@ export default function HomeScreen() {
           <CampusHeaderPill campusName={campusName} />
           <StudentBubbleCluster
             items={bubbleItems}
-            isLoading={isClassesLoading}
+            isLoading={isParent}
             onItemPress={handleBubblePress}
           />
         </View>
@@ -203,7 +206,6 @@ export default function HomeScreen() {
             },
           ]}>
           <PersonalizedFeaturesGrid
-            userName={firstName}
             isLoading={isQueryLoading}
             onAttendancePress={() =>
               effectiveId && router.push(`/(app)/student/${effectiveId}/attendance` as any)

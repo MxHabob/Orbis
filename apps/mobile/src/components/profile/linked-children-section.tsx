@@ -8,6 +8,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '@/components/ui/card';
+import { Avatar } from '@/components/ui/avatar';
 import { useTheme } from '@/hooks/use-theme';
 import { useI18n } from '@/lib/i18n';
 import { Spacing, Typography } from '@/constants/theme';
@@ -53,21 +54,7 @@ export const LinkedChildrenSection = React.memo<LinkedChildrenSectionProps>(
                   isSelected && { borderColor: theme.primary, borderWidth: 1.5 },
                 ]}>
                 <View style={styles.row}>
-                  <View
-                    style={[
-                      styles.avatar,
-                      {
-                        backgroundColor: isSelected
-                          ? theme.primaryLight
-                          : theme.backgroundElement,
-                      },
-                    ]}>
-                    <Ionicons
-                      name="person"
-                      size={22}
-                      color={isSelected ? theme.primary : theme.textSecondary}
-                    />
-                  </View>
+                  <Avatar name={child.name} size={44} />
 
                   <View style={styles.info}>
                     <Text style={[styles.name, { color: theme.text }]}>{child.name}</Text>
@@ -112,13 +99,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   info: {
     flex: 1,

@@ -74,33 +74,17 @@ export default function BehaviorScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <ThemedStatusBar backgroundColor={theme.card} />
-      {/* Header */}
-      <View
-        style={[
-          styles.header,
-          {
-            paddingTop: insets.top + Spacing.two,
-            backgroundColor: theme.card,
-            borderBottomColor: theme.borderSubtle,
-          },
-        ]}>
-        <View style={styles.headerRow}>
-          <View style={styles.titleCol}>
-            <Text style={[styles.screenTitle, { color: theme.text }]}>{t('behavior_title')}</Text>
-            <Text style={[styles.screenSubtitle, { color: theme.textSecondary }]}>{subtitle}</Text>
-          </View>
-
-          {isTeacher && (
-            <Button
-              title={t('behavior_btn_log')}
-              onPress={() => setShowLogModal(true)}
-              size="sm"
-              icon={<Ionicons name="add-circle" size={16} color="#FFFFFF" />}
-            />
-          )}
+      <ThemedStatusBar backgroundColor={theme.background} />
+      {isTeacher && (
+        <View style={[styles.actionBar, { paddingTop: insets.top + Spacing.two }]}>
+          <Button
+            title={t('behavior_btn_log')}
+            onPress={() => setShowLogModal(true)}
+            size="sm"
+            icon={<Ionicons name="add-circle" size={16} color="#FFFFFF" />}
+          />
         </View>
-      </View>
+      )}
 
       <ScrollView
         contentContainerStyle={[
@@ -142,25 +126,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
+  actionBar: {
     paddingHorizontal: Spacing.four,
     paddingBottom: Spacing.three,
-    borderBottomWidth: 1,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  titleCol: {
-    gap: 2,
-  },
-  screenTitle: {
-    ...Typography.h2,
-    fontSize: 20,
-  },
-  screenSubtitle: {
-    ...Typography.small,
   },
   scrollContent: {
     padding: Spacing.four,

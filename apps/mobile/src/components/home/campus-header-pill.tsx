@@ -8,10 +8,11 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/use-theme';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Radii, Spacing, Typography } from '@/constants/theme';
 
 interface CampusHeaderPillProps {
-  campusName: string;
+  campusName?: string;
   onPress?: () => void;
 }
 
@@ -31,9 +32,13 @@ export const CampusHeaderPill = React.memo<CampusHeaderPillProps>(({ campusName,
           pressed && { opacity: 0.85 },
         ]}>
         <Ionicons name="school-outline" size={17} color={theme.primary} />
-        <Text style={[styles.text, { color: theme.text }]} numberOfLines={1}>
-          {campusName}
-        </Text>
+        {campusName ? (
+          <Text style={[styles.text, { color: theme.text }]} numberOfLines={1}>
+            {campusName}
+          </Text>
+        ) : (
+          <Skeleton width={150} height={16} />
+        )}
         <Ionicons name="chevron-down" size={15} color={theme.textSecondary} />
       </Pressable>
     </View>

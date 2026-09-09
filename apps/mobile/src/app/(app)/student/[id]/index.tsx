@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/use-theme';
 import { useEffectiveContext } from '@/providers/effective-context';
 import { Header } from '@/components/header';
+import { Avatar } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Radii, Spacing, Typography } from '@/constants/theme';
@@ -40,9 +41,7 @@ export default function StudentHubScreen() {
         {/* Student ID Profile Card */}
         <Card variant="elevated" style={styles.profileCard}>
           <View style={styles.profileRow}>
-            <View style={[styles.avatar, { backgroundColor: theme.primaryLight }]}>
-              <Ionicons name="school" size={32} color={theme.primary} />
-            </View>
+            <Avatar name={studentName || 'Student'} size={60} />
             <View style={styles.profileInfo}>
               <Text style={[styles.name, { color: theme.text }]}>{studentName}</Text>
               <Text style={[styles.meta, { color: theme.textSecondary }]}>
@@ -134,14 +133,6 @@ const styles = StyleSheet.create({
   profileRow: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.three,
   },
   profileInfo: {
     flex: 1,

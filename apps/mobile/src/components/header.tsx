@@ -6,12 +6,12 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, type ViewStyle } from 'react-native';
+import { View, StyleSheet, Pressable, type ViewStyle } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/use-theme';
-import { Spacing, Typography } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 
 export interface HeaderProps {
   title: string;
@@ -51,9 +51,8 @@ export function Header({
         styles.container,
         {
           paddingTop: insets.top + Spacing.two,
-          backgroundColor: transparent ? 'transparent' : theme.background,
-          borderBottomColor: transparent ? 'transparent' : theme.borderSubtle,
-          borderBottomWidth: transparent ? 0 : 1,
+          backgroundColor: 'transparent',
+          borderBottomWidth: 0,
         },
         style,
       ]}>
@@ -73,16 +72,7 @@ export function Header({
           )}
         </View>
 
-        <View style={styles.centerSlot}>
-          <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
-            {title}
-          </Text>
-          {subtitle && (
-            <Text style={[styles.subtitle, { color: theme.textSecondary }]} numberOfLines={1}>
-              {subtitle}
-            </Text>
-          )}
-        </View>
+        <View style={styles.centerSlot} />
 
         <View style={styles.rightSlot}>{rightAction}</View>
       </View>
@@ -93,7 +83,7 @@ export function Header({
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: Spacing.four,
-    paddingBottom: Spacing.three,
+    paddingBottom: 0,
   },
   contentRow: {
     flexDirection: 'row',
@@ -123,14 +113,5 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  title: {
-    ...Typography.h3,
-    textAlign: 'center',
-  },
-  subtitle: {
-    ...Typography.small,
-    marginTop: 2,
-    textAlign: 'center',
   },
 });

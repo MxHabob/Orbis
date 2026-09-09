@@ -183,13 +183,13 @@ export const Spacing = {
 
 export const Radii = {
   none: 0,
-  xs: 4,
-  sm: 6, // var(--radius-sm)
-  md: 8, // var(--radius-md) - default radius
-  lg: 10, // var(--radius-lg)
-  xl: 14, // var(--radius-xl)
-  '2xl': 18,
-  '3xl': 24,
+  xs: 2,
+  sm: 4,
+  md: 6,
+  lg: 8,
+  xl: 12,
+  '2xl': 16,
+  '3xl': 20,
   full: 9999,
 } as const;
 

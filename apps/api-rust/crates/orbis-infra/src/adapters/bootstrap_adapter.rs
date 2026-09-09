@@ -736,6 +736,7 @@ fn default_role_permissions() -> Vec<RolePermission> {
         RolePermission { role: "student".into(), document_type: "Exam".into(), actions: vec!["read_schedule".into()] },
 
         // Parent
+        RolePermission { role: "parent".into(), document_type: "guardian:read".into(), actions: vec!["read".into()] },
         RolePermission { role: "parent".into(), document_type: "Grade".into(), actions: vec!["read".into()] },
         RolePermission { role: "parent".into(), document_type: "Attendance".into(), actions: vec!["read".into()] },
         RolePermission { role: "parent".into(), document_type: "Schedule".into(), actions: vec!["read".into()] },

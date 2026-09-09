@@ -10,6 +10,7 @@ import { View, Text, StyleSheet, Pressable, Keyboard } from 'react-native';
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/use-theme';
@@ -164,18 +165,11 @@ export const SignInForm = React.memo<SignInFormProps>(
                 onPress={() => setRememberMe((value) => !value)}
                 style={styles.rememberOption}
                 hitSlop={8}>
-                <View
-                  style={[
-                    styles.checkbox,
-                    {
-                      borderColor: rememberMe ? theme.primary : theme.textMuted,
-                      backgroundColor: rememberMe ? theme.primary : 'transparent',
-                    },
-                  ]}>
-                  {rememberMe && (
-                    <Ionicons name="checkmark" size={13} color={theme.primaryForeground} />
-                  )}
-                </View>
+                <Checkbox
+                  value={rememberMe}
+                  onValueChange={setRememberMe}
+                  accessibilityLabel="تذكرني"
+                />
                 <Text style={[styles.optionText, { color: theme.textSecondary }]}>تذكرني</Text>
               </Pressable>
 
@@ -256,14 +250,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderWidth: 2,
-    borderRadius: Radii.xs,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   optionText: {
     ...Typography.body,

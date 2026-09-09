@@ -65,20 +65,7 @@ export default function ProfileScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <ThemedStatusBar backgroundColor={theme.card} />
-      {/* Header */}
-      <View
-        style={[
-          styles.header,
-          {
-            paddingTop: insets.top + Spacing.two,
-            backgroundColor: theme.card,
-            borderBottomColor: theme.borderSubtle,
-          },
-        ]}>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>{t('profile_title')}</Text>
-      </View>
-
+      <ThemedStatusBar backgroundColor={theme.background} />
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -148,15 +135,6 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    paddingHorizontal: Spacing.four,
-    paddingBottom: Spacing.three,
-    borderBottomWidth: 1,
-  },
-  headerTitle: {
-    ...Typography.h2,
-    fontSize: 20,
   },
   scrollContent: {
     padding: Spacing.four,

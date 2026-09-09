@@ -16,7 +16,7 @@ function getInitials(name: string) {
   return `${Array.from(words[0])[0]}${Array.from(words[1])[0]}`;
 }
 
-export const Avatar = React.memo<AvatarProps>(({ name, imageUrl, size = 64 }) => {
+export const Avatar = React.memo<AvatarProps>(({ name, imageUrl, size = 32 }) => {
   const theme = useTheme();
   const [imageError, setImageError] = useState(false);
   const initials = getInitials(name);
@@ -30,7 +30,8 @@ export const Avatar = React.memo<AvatarProps>(({ name, imageUrl, size = 64 }) =>
           width: size,
           height: size,
           borderRadius: size / 2,
-          backgroundColor: theme.primaryLight,
+          backgroundColor: theme.brandPink,
+          borderColor: theme.border,
         },
       ]}>
       {showImage ? (
@@ -41,7 +42,8 @@ export const Avatar = React.memo<AvatarProps>(({ name, imageUrl, size = 64 }) =>
           onError={() => setImageError(true)}
         />
       ) : (
-        <Text style={[styles.initials, { color: theme.primary, fontSize: size * 0.3 }]}>
+        <Text
+          style={[styles.initials, { color: theme.primaryForeground, fontSize: size * 0.3 }]}> 
           {initials}
         </Text>
       )}
@@ -56,6 +58,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+    borderWidth: 1,
   },
   initials: {
     ...Typography.bodyBold,

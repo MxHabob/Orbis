@@ -16,6 +16,7 @@ import { useI18n } from '@/lib/i18n';
 import { useToast } from '@/components/ui/toast';
 import { SignInBrandHeader, SignInForm } from '@/components/auth';
 import { KeyboardAwareView } from '@/components/ui/keyboard-aware-view';
+import { ThemedStatusBar } from '@/components/ui/themed-status-bar';
 import { Spacing } from '@/constants/theme';
 
 export default function SignInScreen() {
@@ -61,6 +62,7 @@ export default function SignInScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <ThemedStatusBar backgroundColor={theme.primary} style="light" />
       <View
         pointerEvents="none"
         style={[styles.topBackground, { backgroundColor: theme.primary, height: height * 0.5 }]}

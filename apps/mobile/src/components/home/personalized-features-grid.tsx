@@ -6,7 +6,6 @@
 
 import React from "react";
 import { View, Text, StyleSheet, Pressable, Dimensions } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import {
   AttendanceFeatureIllustration,
   GradesFeatureIllustration,
@@ -21,7 +20,6 @@ import { Radii, Spacing, Typography } from "@/constants/theme";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 interface PersonalizedFeaturesGridProps {
-  userName?: string;
   isLoading?: boolean;
   onAttendancePress: () => void;
   onGradesPress: () => void;
@@ -32,7 +30,6 @@ interface PersonalizedFeaturesGridProps {
 export const PersonalizedFeaturesGrid =
   React.memo<PersonalizedFeaturesGridProps>(
     ({
-      userName,
       isLoading = false,
       onAttendancePress,
       onGradesPress,
@@ -50,26 +47,6 @@ export const PersonalizedFeaturesGrid =
           ]}
         >
           <View style={[styles.content, { backgroundColor: theme.background }]}>
-            {/* Section Header */}
-            <View style={styles.headerRow}>
-              {isLoading ? (
-                <Skeleton width={180} height={24} />
-              ) : (
-                <Text style={[styles.title, { color: theme.text }]}>
-                  {userName
-                    ? t("nav_for_you_user", { name: userName })
-                    : t("nav_for_you")}
-                </Text>
-              )}
-              <Pressable hitSlop={8}>
-                <Ionicons
-                  name="information-circle-outline"
-                  size={22}
-                  color={theme.textSecondary}
-                />
-              </Pressable>
-            </View>
-
             {/* 4 Feature Cards */}
             {isLoading ? (
               <View style={styles.cardsRow}>
@@ -216,40 +193,28 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.three,
-    gap: Spacing.four,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.one,
-  },
-  title: {
-    ...Typography.h3,
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#18181B",
+    gap: Spacing.three,
   },
   cardsRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 8,
+    gap: Spacing.two,
   },
   featureItem: {
     flex: 1,
     alignItems: "center",
-    gap: 6,
+    gap: Spacing.one,
   },
   squircleBox: {
     width: "100%",
     aspectRatio: 1,
     maxWidth: 76,
     maxHeight: 76,
-    borderRadius: 20,
-    backgroundColor: "#F8F9FA",
+    borderRadius: Radii.xl,
+    backgroundColor: "transparent",
     borderWidth: 1,
-    borderColor: "#F0F0F2",
+    borderColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000000",
@@ -260,9 +225,7 @@ const styles = StyleSheet.create({
   },
   featureLabel: {
     ...Typography.small,
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#27272A",
+    ...Typography.captionBold,
     textAlign: "center",
   },
   paginationRow: {

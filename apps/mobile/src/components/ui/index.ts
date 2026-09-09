@@ -6,8 +6,10 @@
 
 export * from './badge';
 export * from './avatar';
+export * from './accordion';
 export * from './button';
 export * from './card';
+export * from './checkbox';
 export * from './collapsible';
 export * from './dialog';
 export * from './drawer';
@@ -19,5 +21,6 @@ export * from './input';
 export * from './keyboard-aware-view';
 export * from './organization-logo';
 export * from './skeleton';
+export * from './switch';
 export * from './themed-status-bar';
 export * from './toast';

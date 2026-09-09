@@ -21,7 +21,7 @@ export default function AuthLayout() {
 
   return (
     <>
-      <ThemedStatusBar backgroundColor={theme.primary} style="light" />
+      <ThemedStatusBar backgroundColor={theme.background} />
       <Stack
         screenOptions={{
           headerShown: false,

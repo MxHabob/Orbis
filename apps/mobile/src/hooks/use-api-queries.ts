@@ -36,14 +36,7 @@ const GC_TIME = 1000 * 60 * 15; // 15 minutes garbage collection
 export function useCurrentOrgQuery() {
   return useQuery({
     queryKey: queryKeys.org.current(),
-    queryFn: async (): Promise<OrgDto | null> => {
-      try {
-        const res = await api.getCurrentOrg();
-        return res ?? null;
-      } catch {
-        return null;
-      }
-    },
+    queryFn: () => api.getCurrentOrg(),
     staleTime: STALE_TIME,
     gcTime: GC_TIME,
   });

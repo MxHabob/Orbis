@@ -49,6 +49,7 @@ pub mod m20240901_000046_create_promotion_tables;
 pub mod m20240901_000047_create_journal_entry_lines_table;
 pub mod m20240901_000048_create_discount_templates_table;
 pub mod m20240901_000049_update_enrollments_table;
+pub mod m20240901_000050_extend_person_profile;
 
 pub struct Migrator;
 
@@ -105,6 +106,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20240901_000047_create_journal_entry_lines_table::Migration),
             Box::new(m20240901_000048_create_discount_templates_table::Migration),
             Box::new(m20240901_000049_update_enrollments_table::Migration),
+            Box::new(m20240901_000050_extend_person_profile::Migration),
         ]
     }
 }

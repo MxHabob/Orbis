@@ -8,7 +8,6 @@
 import React from 'react';
 import { View, StyleSheet, type ViewProps, type ViewStyle, Pressable } from 'react-native';
 import { useTheme } from '@/hooks/use-theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Radii, Spacing } from '@/constants/theme';
 
 export interface CardProps extends ViewProps {
@@ -28,8 +27,6 @@ export const Card = React.memo<CardProps>(
     ...props
   }) => {
     const theme = useTheme();
-    const colorScheme = useColorScheme();
-    const isDark = colorScheme === 'dark';
 
     const getVariantStyle = (): ViewStyle => {
       switch (variant) {
@@ -37,13 +34,9 @@ export const Card = React.memo<CardProps>(
         case 'interactive':
           return {
             backgroundColor: theme.card,
-            borderColor: theme.border,
-            borderWidth: 1,
-            shadowColor: '#000000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: isDark ? 0.35 : 0.06,
-            shadowRadius: isDark ? 8 : 6,
-            elevation: 2,
+            borderWidth: 0,
+            shadowOpacity: 0,
+            elevation: 0,
           };
         case 'outline':
           return {
@@ -52,21 +45,14 @@ export const Card = React.memo<CardProps>(
             borderWidth: 1,
           };
         case 'flat':
-          return {
-            backgroundColor: theme.backgroundElement,
-            borderWidth: 0,
-          };
+          return { backgroundColor: 'transparent', borderWidth: 0 };
         case 'default':
         default:
           return {
             backgroundColor: theme.card,
-            borderColor: theme.border,
-            borderWidth: 1,
-            shadowColor: '#000000',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: isDark ? 0.2 : 0.04,
-            shadowRadius: 3,
-            elevation: 1,
+            borderWidth: 0,
+            shadowOpacity: 0,
+            elevation: 0,
           };
       }
     };

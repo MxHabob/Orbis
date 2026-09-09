@@ -28,13 +28,15 @@ struct AdminRecord {
 pub async fn authenticate_admin(db: &DatabaseConnection) -> Result<AuthenticatedAdmin> {
     let backend = db.get_database_backend();
 
-    // 1. Fetch all active administrators
+        // 1. Fetch only active users with an administrator role
     let sql = r#"
-        SELECT id, email, full_name, password_hash, mfa_enabled
-        FROM users
-        WHERE status = 'active'
-          AND is_deleted = 0
-        ORDER BY created_at ASC;
+                SELECT u.id, u.email, u.full_name, u.password_hash, u.mfa_enabled, ura.role_id
+                FROM users u
+                INNER JOIN user_role_assignments ura ON ura.user_id = u.id
+                WHERE u.status = 'active'
+                    AND u.is_deleted = 0
+                    AND ura.role_id IN ('super_admin', 'admin')
+                ORDER BY u.created_at ASC;
     "#;
 
     let rows = db
@@ -60,13 +62,14 @@ pub async fn authenticate_admin(db: &DatabaseConnection) -> Result<Authenticated
             let full_name: String = row.try_get("", "full_name").ok()?;
             let password_hash: Option<String> = row.try_get("", "password_hash").ok().flatten();
             let mfa_enabled: bool = row.try_get("", "mfa_enabled").unwrap_or(false);
+            let role_id: String = row.try_get("", "role_id").ok()?;
             Some(AdminRecord {
                 id,
                 email,
                 full_name,
                 password_hash,
                 mfa_enabled,
-                role_id: "super_admin".to_string(),
+                role_id,
             })
         })
         .collect();

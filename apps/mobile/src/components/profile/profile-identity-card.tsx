@@ -6,8 +6,8 @@
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { Card } from '@/components/ui/card';
+import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/hooks/use-theme';
@@ -26,8 +26,6 @@ export const ProfileIdentityCard = React.memo<ProfileIdentityCardProps>(
   ({ fullName, email, role, orgName, isLoading = false }) => {
     const theme = useTheme();
     const { t } = useI18n();
-
-    const displayOrgName = orgName || t('nav_campus_default');
 
     const roleLabel =
       role === 'student'
@@ -51,9 +49,7 @@ export const ProfileIdentityCard = React.memo<ProfileIdentityCardProps>(
           </View>
         ) : (
           <View style={styles.row}>
-            <View style={[styles.avatarCircle, { backgroundColor: theme.primaryLight }]}>
-              <Ionicons name="person" size={36} color={theme.primary} />
-            </View>
+            <Avatar name={fullName} size={68} />
 
             <View style={styles.info}>
               <Text style={[styles.userName, { color: theme.text }]}>{fullName}</Text>
@@ -61,9 +57,13 @@ export const ProfileIdentityCard = React.memo<ProfileIdentityCardProps>(
 
               <View style={styles.badgeRow}>
                 <Badge label={roleLabel} variant="primary" size="sm" />
-                <Text style={[styles.orgName, { color: theme.textMuted }]} numberOfLines={1}>
-                  {displayOrgName}
-                </Text>
+                {orgName ? (
+                  <Text style={[styles.orgName, { color: theme.textMuted }]} numberOfLines={1}>
+                    {orgName}
+                  </Text>
+                ) : (
+                  <Skeleton width={110} height={14} />
+                )}
               </View>
             </View>
           </View>
@@ -83,13 +83,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.four,
-  },
-  avatarCircle: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   info: {
     flex: 1,

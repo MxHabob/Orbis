@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { Appearance, View, Text, StyleSheet, ScrollView, Switch, Pressable } from 'react-native';
+import { Appearance, View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -15,6 +15,8 @@ import { useToast } from '@/components/ui/toast';
 import { Header } from '@/components/header';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Accordion } from '@/components/ui/accordion';
+import { Switch } from '@/components/ui/switch';
 import { Radii, Spacing, Typography } from '@/constants/theme';
 
 export default function PreferencesScreen() {
@@ -120,9 +122,8 @@ export default function PreferencesScreen() {
         </View>
 
         {/* Notification Preferences */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>{t('pref_notifications')}</Text>
-          <Card variant="elevated" style={styles.card}>
+        <Accordion title={t('pref_notifications')} defaultOpen>
+          <View>
             <View style={styles.switchRow}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.prefTitle, { color: theme.text }]}>{t('pref_notify_absence')}</Text>
@@ -133,7 +134,7 @@ export default function PreferencesScreen() {
               <Switch
                 value={notifyAbsence}
                 onValueChange={() => handleToggle(setNotifyAbsence, notifyAbsence, t('pref_notify_absence'))}
-                trackColor={{ false: theme.border, true: theme.primary }}
+                accessibilityLabel={t('pref_notify_absence')}
               />
             </View>
 
@@ -147,7 +148,7 @@ export default function PreferencesScreen() {
               <Switch
                 value={notifyGrades}
                 onValueChange={() => handleToggle(setNotifyGrades, notifyGrades, t('pref_notify_grades'))}
-                trackColor={{ false: theme.border, true: theme.primary }}
+                accessibilityLabel={t('pref_notify_grades')}
               />
             </View>
 
@@ -161,7 +162,7 @@ export default function PreferencesScreen() {
               <Switch
                 value={notifyExams}
                 onValueChange={() => handleToggle(setNotifyExams, notifyExams, t('pref_notify_exams'))}
-                trackColor={{ false: theme.border, true: theme.primary }}
+                accessibilityLabel={t('pref_notify_exams')}
               />
             </View>
 
@@ -175,11 +176,11 @@ export default function PreferencesScreen() {
               <Switch
                 value={notifyAnnouncements}
                 onValueChange={() => handleToggle(setNotifyAnnouncements, notifyAnnouncements, t('pref_notify_announcements'))}
-                trackColor={{ false: theme.border, true: theme.primary }}
+                accessibilityLabel={t('pref_notify_announcements')}
               />
             </View>
-          </Card>
-        </View>
+          </View>
+        </Accordion>
       </ScrollView>
     </View>
   );

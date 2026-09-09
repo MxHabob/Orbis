@@ -121,7 +121,7 @@ async fn seed_test_families(
     ];
     let parent_name = "Mohamed Parent";
     let parent_email = "parent@orbis.edu";
-    let (_parent_user_id, parent_person_id) =
+        let (parent_user_id, _) =
         if let Some(identity) = find_user_identity(db, backend, org_id, parent_email).await? {
             update_user_password(db, backend, &identity.0, &password_hash).await?;
             identity
@@ -153,6 +153,7 @@ async fn seed_test_families(
                 find_user_identity(db, backend, org_id, student_email).await?
             {
                 update_user_password(db, backend, &student_user_id, &password_hash).await?;
+                repair_guardian_link(db, backend, org_id, student_email, &parent_user_id).await?;
             }
             skipped += 1;
             continue;
@@ -193,7 +194,7 @@ async fn seed_test_families(
             backend,
             "INSERT INTO student_guardians (id, student_id, guardian_id, relationship, relationship_ar, is_primary, is_emergency_contact, is_authorized_pickup, can_view_grades, can_view_attendance, can_view_behavior, can_view_finance, can_view_schedule, can_receive_notifications, is_payer, payment_share_percent, created_at, updated_at) VALUES (?, ?, ?, 'parent', 'ولي أمر', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 100, ?, ?)",
             vec![
-                Uuid::new_v4().into(), student_id.into(), parent_person_id.into(),
+                Uuid::new_v4().into(), student_id.into(), parent_user_id.into(),
                 now.into(), now.into(),
             ],
         )
@@ -202,6 +203,62 @@ async fn seed_test_families(
     }
 
     Ok((created, skipped))
+}
+
+async fn repair_guardian_link(
+    db: &sea_orm::DatabaseTransaction,
+    backend: DatabaseBackend,
+    org_id: &Uuid,
+    student_email: &str,
+    guardian_id: &Uuid,
+) -> Result<()> {
+    let student = db
+        .query_one(Statement::from_sql_and_values(
+            backend,
+            "SELECT s.id FROM students s JOIN users u ON u.id = s.user_id WHERE s.org_id = ? AND u.org_id = ? AND u.email = ? AND s.is_deleted = 0 LIMIT 1",
+            vec![
+                (*org_id).into(),
+                (*org_id).into(),
+                student_email.to_string().into(),
+            ],
+        ))
+        .await?
+        .ok_or_else(|| anyhow!("Student account not found for {student_email}"))?;
+    let student_id = student.try_get::<Uuid>("", "id")?;
+
+    let link_exists = db
+        .query_one(Statement::from_sql_and_values(
+            backend,
+            "SELECT id FROM student_guardians WHERE student_id = ? AND relationship = 'parent' LIMIT 1",
+            vec![student_id.into()],
+        ))
+        .await?
+        .is_some();
+
+    if link_exists {
+        execute_with_values(
+            db,
+            backend,
+            "UPDATE student_guardians SET guardian_id = ?, updated_at = ? WHERE student_id = ? AND relationship = 'parent'",
+            vec![(*guardian_id).into(), Utc::now().to_rfc3339().into(), student_id.into()],
+        )
+        .await
+    } else {
+        let now = Utc::now().to_rfc3339();
+        execute_with_values(
+            db,
+            backend,
+            "INSERT INTO student_guardians (id, student_id, guardian_id, relationship, relationship_ar, is_primary, is_emergency_contact, is_authorized_pickup, can_view_grades, can_view_attendance, can_view_behavior, can_view_finance, can_view_schedule, can_receive_notifications, is_payer, payment_share_percent, created_at, updated_at) VALUES (?, ?, ?, 'parent', 'ولي أمر', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 100, ?, ?)",
+            vec![
+                Uuid::new_v4().into(),
+                student_id.into(),
+                (*guardian_id).into(),
+                now.clone().into(),
+                now.into(),
+            ],
+        )
+        .await
+    }
 }
 
 async fn find_user_identity(
@@ -213,7 +270,7 @@ async fn find_user_identity(
     let row = db
         .query_one(Statement::from_sql_and_values(
             backend,
-            "SELECT id, person_id FROM users WHERE org_id = ? AND email = ? AND is_deleted = 0 LIMIT 1",
+            "SELECT id, person_id FROM users WHERE org_id = ? AND email = ? LIMIT 1",
             vec![org_id.to_string().into(), email.to_string().into()],
         ))
         .await?;
@@ -233,7 +290,7 @@ async fn user_exists(
     let row = db
         .query_one(Statement::from_sql_and_values(
             backend,
-            "SELECT id FROM users WHERE org_id = ? AND email = ? AND is_deleted = 0 LIMIT 1",
+            "SELECT id FROM users WHERE org_id = ? AND email = ? LIMIT 1",
             vec![org_id.to_string().into(), email.to_string().into()],
         ))
         .await?;
@@ -362,14 +419,15 @@ async fn find_organization(
 async fn teacher_exists(
     db: &sea_orm::DatabaseTransaction,
     backend: DatabaseBackend,
-    org_id: &Uuid,
+    _org_id: &Uuid,
     email: &str,
 ) -> Result<bool> {
     let row = db
         .query_one(Statement::from_sql_and_values(
             backend,
-            "SELECT id FROM users WHERE org_id = ? AND email = ? AND is_deleted = 0 LIMIT 1",
-            vec![(*org_id).into(), email.to_string().into()],
+            // users.email is globally unique, including soft-deleted users.
+            "SELECT id FROM users WHERE email = ? LIMIT 1",
+            vec![email.to_string().into()],
         ))
         .await?;
     Ok(row.is_some())
