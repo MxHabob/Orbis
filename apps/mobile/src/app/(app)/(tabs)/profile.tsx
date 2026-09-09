@@ -10,7 +10,7 @@ import { OrganizationLogo } from '@/components/ui/organization-logo';
 
 export default function ProfileScreen() {
   const theme = useTheme();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { data: orgData } = useCurrentOrgQuery();
 
   const current = new Date();
@@ -78,7 +78,7 @@ export default function ProfileScreen() {
           </View>
 
           <View style={styles.columnActions}>
-            {actionGroups.slice(2).map((item) => (
+            {actionGroups.slice(2, 4).map((item) => (
               <Button
                 key={item.title}
                 title={item.title}
@@ -93,30 +93,14 @@ export default function ProfileScreen() {
         </View>
 
         <Button
-          title="DIVE DEEPER"
-          variant="default"
+          title="LOG OUT"
+          variant="destructive"
           size="lg"
-          onPress={() => undefined}
+          onPress={async () => {
+            await logout();
+          }}
           style={styles.deepButton}
         />
-
-        <View style={[styles.notification, { backgroundColor: theme.backgroundSelected }]}>
-          <View style={styles.notificationLeft}>
-            <Text style={[styles.notificationIcon, { color: theme.card }]}>!</Text>
-            <Text style={[styles.notificationText, { color: theme.card }]}>NEW YEAR DETECTED</Text>
-          </View>
-          <Text style={[styles.closeText, { color: theme.card }]}>×</Text>
-        </View>
-
-        <View style={styles.navBar}>
-          {['HOME', 'FRIENDS', 'VOID', 'SHOP', 'YOU'].map((item, index) => (
-            <Text key={item} style={[styles.navItem, { color: index === 0 ? theme.foreground : theme.textMuted }]}>
-              {item}
-            </Text>
-          ))}
-        </View>
-
-        <View style={[styles.navThumb, { backgroundColor: theme.foreground }]} />
 
         <View style={styles.footer}>
           <View style={styles.footerBrand}>
@@ -248,16 +232,7 @@ const styles = StyleSheet.create({
     marginHorizontal: Spacing.one,
   },
   actionButton: {
-    borderRadius: Radii.md,
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.four,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionButtonText: {
-    ...Typography.bodyBold,
-    fontSize: 14,
+    marginBottom: Spacing.two,
   },
   deepButton: {
     width: 260,
