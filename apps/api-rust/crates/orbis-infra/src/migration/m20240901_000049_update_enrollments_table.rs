@@ -16,12 +16,28 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .default("regular"),
                     )
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .alter_table(
+                Table::alter()
+                    .table(Enrollments::Table)
                     .add_column(
                         ColumnDef::new(Enrollments::IsAttendanceExempt)
                             .boolean()
                             .not_null()
                             .default(false),
                     )
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .alter_table(
+                Table::alter()
+                    .table(Enrollments::Table)
                     .add_column(
                         ColumnDef::new(Enrollments::IsGradeExempt)
                             .boolean()
