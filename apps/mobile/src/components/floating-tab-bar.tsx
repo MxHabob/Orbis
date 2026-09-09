@@ -4,14 +4,14 @@
  * Floating iOS-like bottom tab bar extracted as a reusable component.
  */
 
-import React from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Radii, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Button } from '@/components/ui/button';
 
 type FloatingTabBarProps = {
   state: { index: number; routes: Array<{ key: string; name: string; params?: unknown }> };
@@ -55,11 +55,17 @@ export function FloatingTabBar({ state, navigation, descriptors }: FloatingTabBa
         const label = options.title ?? route.name;
 
         return (
-          <Pressable
+          <Button
             key={route.key}
-            accessibilityRole="button"
-            accessibilityState={focused ? { selected: true } : {}}
-            accessibilityLabel={label}
+            variant={focused ? 'default' : 'ghost'}
+            size="icon"
+            icon={
+              <Ionicons
+                name={getTabIcon(route.name, focused)}
+                size={22}
+                color={focused ? theme.primaryForeground : theme.textSecondary}
+              />
+            }
             onPress={() => {
               const event = navigation.emit({
                 type: 'tabPress',
@@ -71,19 +77,7 @@ export function FloatingTabBar({ state, navigation, descriptors }: FloatingTabBa
                 navigation.navigate(route.name, route.params);
               }
             }}
-            style={({ pressed }) => [
-              styles.tabItem,
-              focused && {
-                backgroundColor: theme.background,
-              },
-              pressed && { opacity: 0.9 },
-            ]}>
-            <Ionicons
-              name={getTabIcon(route.name, focused)}
-              size={22}
-              color={focused ? theme.primary : theme.textSecondary}
-            />
-          </Pressable>
+          />
         );
       })}
     </View>
@@ -93,13 +87,13 @@ export function FloatingTabBar({ state, navigation, descriptors }: FloatingTabBa
 const styles = StyleSheet.create({
   tabBar: {
     position: 'absolute',
-    left: 36,
-    right: 36,
-    minHeight: 48,
-    borderRadius: Radii.xl,
+    left: 64,
+    right: 64,
+    minHeight: 52,
+    borderRadius: Radii.lg,
     borderWidth: 1,
-    paddingVertical: 2,
-    paddingHorizontal: 8,
+    paddingVertical: 1,
+    paddingHorizontal: 2,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
@@ -111,10 +105,10 @@ const styles = StyleSheet.create({
   },
   tabItem: {
     flex: 1,
-    minHeight: 36,
+    minHeight: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: Radii.md,
+    borderRadius: Radii.sm,
     paddingVertical: 0,
   },
 });
