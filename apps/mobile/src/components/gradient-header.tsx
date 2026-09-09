@@ -1,10 +1,17 @@
 /**
  * @module @orbis/mobile/components/gradient-header
  *
- * Reusable animated gradient surface.
+ * Reusable animated gradient background.
+ *
+ * - Does not consume layout space.
+ * - Can be anchored to any edge by the parent.
+ * - Supports soft animated fluid blobs.
+ * - Does not control StatusBar.
  */
 
-import React, { useEffect } from 'react';
+import React, {
+  useEffect,
+} from 'react';
 
 import {
   StyleSheet,
@@ -13,7 +20,9 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { LinearGradient } from 'expo-linear-gradient';
+import {
+  LinearGradient,
+} from 'expo-linear-gradient';
 
 import Svg, {
   Defs,
@@ -30,20 +39,26 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-type GradientHeaderColors = readonly [
-  ColorValue,
-  ColorValue,
-  ...ColorValue[],
-];
 
-type GradientHeaderLocations = readonly [
-  number,
-  number,
-  ...number[],
-];
+type GradientHeaderColors =
+  readonly [
+    ColorValue,
+    ColorValue,
+    ...ColorValue[],
+  ];
+
+
+type GradientHeaderLocations =
+  readonly [
+    number,
+    number,
+    ...number[],
+  ];
+
 
 type GradientHeaderProps = {
   colors: GradientHeaderColors;
+
   locations?: GradientHeaderLocations;
 
   height?: number;
@@ -61,14 +76,20 @@ type GradientHeaderProps = {
   style?: StyleProp<ViewStyle>;
 
   animated?: boolean;
+
   duration?: number;
 
   blobPrimary?: string;
+
   blobSecondary?: string;
+
   blobTertiary?: string;
 };
 
-const AnimatedView = Animated.View;
+
+const AnimatedView =
+  Animated.View;
+
 
 function FluidBlob({
   size,
@@ -80,97 +101,151 @@ function FluidBlob({
   initialY = 0,
 }: {
   size: number;
+
   opacity: number;
+
   duration: number;
+
   delay?: number;
+
   color: string;
+
   initialX?: number;
+
   initialY?: number;
 }) {
-  const progress = useSharedValue(0);
+  const progress =
+    useSharedValue(0);
+
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      progress.value = withRepeat(
-        withTiming(1, {
-          duration,
-          easing: Easing.inOut(Easing.ease),
-        }),
-        -1,
-        true,
-      );
-    }, delay);
+    const timeout =
+      setTimeout(() => {
+        progress.value =
+          withRepeat(
+            withTiming(
+              1,
+              {
+                duration,
+                easing:
+                  Easing.inOut(
+                    Easing.ease,
+                  ),
+              },
+            ),
+            -1,
+            true,
+          );
+      }, delay);
+
 
     return () => {
       clearTimeout(timeout);
     };
-  }, [delay, duration, progress]);
+  }, [
+    delay,
+    duration,
+    progress,
+  ]);
 
-  const animatedStyle = useAnimatedStyle(() => {
-    const p = progress.value;
 
-    const waveX = Math.sin(p * Math.PI * 2);
-    const waveY = Math.cos(p * Math.PI * 2);
+  const animatedStyle =
+    useAnimatedStyle(() => {
+      const p =
+        progress.value;
 
-    return {
-      transform: [
-        {
-          translateX: initialX + waveX * 35,
-        },
-        {
-          translateY: initialY + waveY * 24,
-        },
-        {
-          scale: 1 + waveX * 0.06,
-        },
-        {
-          rotate: `${waveX * 4}deg`,
-        },
-      ],
-    };
-  });
 
-  const gradientId = `fluid-${size}-${delay}`;
+      const waveX =
+        Math.sin(
+          p * Math.PI * 2,
+        );
+
+
+      const waveY =
+        Math.cos(
+          p * Math.PI * 2,
+        );
+
+
+      return {
+        transform: [
+          {
+            translateX:
+              initialX +
+              waveX * 35,
+          },
+
+          {
+            translateY:
+              initialY +
+              waveY * 24,
+          },
+
+          {
+            scale:
+              1 +
+              waveX * 0.06,
+          },
+
+          {
+            rotate:
+              `${waveX * 4}deg`,
+          },
+        ],
+      };
+    });
+
+
+  const gradientId =
+    `fluid-${size}-${delay}`;
+
 
   return (
     <AnimatedView
       pointerEvents="none"
       style={[
         styles.blob,
+
         {
           width: size,
-          height: size * 0.72,
+          height:
+            size * 0.72,
           opacity,
         },
+
         animatedStyle,
       ]}>
+
       <Svg
         width="100%"
         height="100%"
         viewBox="0 0 100 72">
+
         <Defs>
+
           <RadialGradient
             id={gradientId}
             cx="50%"
             cy="50%"
             rx="50%"
             ry="50%">
+
             <Stop
               offset="0%"
               stopColor={color}
-              stopOpacity="0.9"
+              stopOpacity="0.75"
             />
 
             <Stop
               offset="45%"
               stopColor={color}
-              stopOpacity="0.45"
+              stopOpacity="0.35"
             />
 
             <Stop
               offset="75%"
               stopColor={color}
-              stopOpacity="0.12"
+              stopOpacity="0.10"
             />
 
             <Stop
@@ -178,8 +253,11 @@ function FluidBlob({
               stopColor={color}
               stopOpacity="0"
             />
+
           </RadialGradient>
+
         </Defs>
+
 
         <Ellipse
           cx="50"
@@ -188,13 +266,17 @@ function FluidBlob({
           ry="36"
           fill={`url(#${gradientId})`}
         />
+
       </Svg>
+
     </AnimatedView>
   );
 }
 
+
 export function GradientHeader({
   colors,
+
   locations,
 
   height = 500,
@@ -212,10 +294,13 @@ export function GradientHeader({
   style,
 
   animated = false,
-  duration = 16000,
+
+  duration = 18000,
 
   blobPrimary = '#7C3AED',
+
   blobSecondary = '#A855F7',
+
   blobTertiary = '#C084FC',
 }: GradientHeaderProps) {
   return (
@@ -223,53 +308,70 @@ export function GradientHeader({
       pointerEvents="none"
       style={[
         styles.container,
+
         {
           height,
         },
+
         style,
       ]}>
+
       <LinearGradient
         colors={colors}
         locations={locations}
         start={start}
         end={end}
-        style={StyleSheet.absoluteFill}
+        style={
+          StyleSheet.absoluteFill
+        }
       />
+
 
       {animated && (
         <AnimatedView
           pointerEvents="none"
-          style={StyleSheet.absoluteFill}>
+          style={
+            StyleSheet.absoluteFill
+          }>
+
           <FluidBlob
             size={430}
-            opacity={0.35}
+            opacity={0.20}
             duration={duration}
             color={blobPrimary}
             initialX={-80}
-            initialY={80}
+            initialY={40}
           />
+
 
           <FluidBlob
             size={360}
-            opacity={0.25}
-            duration={duration + 2600}
+            opacity={0.14}
+            duration={
+              duration + 2600
+            }
             delay={900}
             color={blobSecondary}
             initialX={100}
-            initialY={160}
+            initialY={150}
           />
+
 
           <FluidBlob
             size={300}
-            opacity={0.20}
-            duration={duration + 4200}
+            opacity={0.10}
+            duration={
+              duration + 4200
+            }
             delay={1800}
             color={blobTertiary}
             initialX={0}
-            initialY={220}
+            initialY={250}
           />
+
         </AnimatedView>
       )}
+
     </AnimatedView>
   );
 }
@@ -278,13 +380,15 @@ const styles = StyleSheet.create({
   container: {
     position: 'absolute',
 
+    top: 0,
     left: 0,
     right: 0,
-    bottom: 0,
 
     width: '100%',
 
     overflow: 'hidden',
+
+    zIndex: 0,
   },
 
   blob: {

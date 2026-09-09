@@ -8,9 +8,9 @@
     "scheme": "orbis",
     "userInterfaceStyle": "automatic",
     "androidStatusBar": {
-      "backgroundColor": "transparent",
+      "backgroundColor": "#00000000",
       "translucent": true,
-      "barStyle": "dark-content"
+      "barStyle": "light-content"
     },
     "androidNavigationBar": {
       "backgroundColor": "#FFFFFF",

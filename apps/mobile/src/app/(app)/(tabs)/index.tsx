@@ -2,24 +2,61 @@
  * @module @orbis/mobile/app/(app)/(tabs)/index
  *
  * Glovo-inspired Home Screen for Orbis Mobile.
- * Clean, declarative component composition powered by @orbis/sdk & TanStack Query.
+ *
+ * - Theme-aware gradient background.
+ * - Gradient does not consume layout space.
+ * - Gradient starts at the top of the viewport.
+ * - Gradient extends visually behind the StatusBar.
+ * - StatusBar is handled independently.
+ * - No hardcoded UI colors.
+ * - Clean declarative composition powered by @orbis/sdk & TanStack Query.
  */
 
-import React, { useCallback, useMemo, useState } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
-import { router, useIsFocused } from 'expo-router';
-import { ThemedStatusBar } from '@/components/ui/themed-status-bar';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, {
+  useCallback,
+  useMemo,
+  useState,
+} from 'react';
 
-import { useAuth } from '@/lib/api';
-import { useI18n } from '@/lib/i18n';
-import { useEffectiveContext } from '@/providers/effective-context';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  RefreshControl,
+  useWindowDimensions,
+} from 'react-native';
+
+import {
+  router,
+} from 'expo-router';
+
+import {
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
+
+import {
+  ThemedStatusBar,
+} from '@/components/ui/themed-status-bar';
+
+import {
+  useAuth,
+} from '@/lib/api';
+
+import {
+  useI18n,
+} from '@/lib/i18n';
+
+import {
+  useEffectiveContext,
+} from '@/providers/effective-context';
+
 import {
   useClassesQuery,
   useCurrentOrgQuery,
   useDashboardQuery,
   useEnrollmentsQuery,
 } from '@/hooks/use-api-queries';
+
 import {
   CampusHeaderPill,
   StudentBubbleCluster,
@@ -27,6 +64,7 @@ import {
   PrimeAiBanner,
   BubbleItemData,
 } from '@/components/home';
+
 import {
   StudentSeniorIllustration,
   StudentSophomoreIllustration,
@@ -38,10 +76,15 @@ import {
   ScheduleFeatureIllustration,
   BehaviorFeatureIllustration,
 } from '@/components/glovo-illustrations';
-import { GradientHeader } from '@/components/gradient-header';
-import { useTheme } from '@/hooks/use-theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useToast } from '@/components/ui/toast';
+
+import {
+  GradientHeader,
+} from '@/components/gradient-header';
+
+import {
+  useTheme,
+} from '@/hooks/use-theme';
+
 import {
   Drawer,
   DrawerContent,
@@ -51,8 +94,19 @@ import {
   DrawerOptionRow,
   DrawerSubmitButton,
 } from '@/components/ui';
-import { Spacing } from '@/constants/theme';
-import { Ionicons } from '@expo/vector-icons';
+
+import {
+  Spacing,
+} from '@/constants/theme';
+
+import {
+  Ionicons,
+} from '@expo/vector-icons';
+
+
+// ─────────────────────────────────────────────────────────────────────────
+// Illustrations
+// ─────────────────────────────────────────────────────────────────────────
 
 const ILLUSTRATION_LIST = [
   StudentSeniorIllustration,
@@ -62,16 +116,36 @@ const ILLUSTRATION_LIST = [
   StudentKGIllustration,
 ];
 
+
+// ─────────────────────────────────────────────────────────────────────────
+// Screen
+// ─────────────────────────────────────────────────────────────────────────
+
 export default function HomeScreen() {
-  const insets = useSafeAreaInsets();
-  const isFocused = useIsFocused();
-  const theme = useTheme();
-  const toast = useToast();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const { user } = useAuth();
-  const { t } = useI18n();
-  const [showPrimeDrawer, setShowPrimeDrawer] = useState(false);
+  const {
+    height,
+  } = useWindowDimensions();
+
+  const insets =
+    useSafeAreaInsets();
+
+  const theme =
+    useTheme();
+
+  const {
+    user,
+  } = useAuth();
+
+  const {
+    t,
+  } = useI18n();
+
+  const [
+    showPrimeDrawer,
+    setShowPrimeDrawer,
+  ] = useState(false);
+
+
   const {
     isTeacher,
     isParent,
@@ -81,253 +155,777 @@ export default function HomeScreen() {
     targetStudentId,
   } = useEffectiveContext();
 
-  // ── TanStack Query Data Fetching (Zero useEffect) ──────────────────────
-  const { data: orgData, isLoading: isOrgLoading, refetch: refetchOrg } = useCurrentOrgQuery();
-  const { data: dashboardData, isLoading: isDashLoading, refetch: refetchDash } = useDashboardQuery();
-  const { data: classesData, isLoading: isClassesLoading, refetch: refetchClasses } = useClassesQuery();
-  const { data: enrollmentsData, isLoading: isEnrollmentsLoading, refetch: refetchEnrollments } =
-    useEnrollmentsQuery(isParent ? {} : { studentId: user?.id });
+
+  // ───────────────────────────────────────────────────────────────────────
+  // TanStack Query
+  // ───────────────────────────────────────────────────────────────────────
+
+  const {
+    data: orgData,
+    isLoading: isOrgLoading,
+    refetch: refetchOrg,
+  } = useCurrentOrgQuery();
+
+
+  const {
+    isLoading: isDashLoading,
+    refetch: refetchDash,
+  } = useDashboardQuery();
+
+
+  const {
+    data: classesData,
+    isLoading: isClassesLoading,
+    refetch: refetchClasses,
+  } = useClassesQuery();
+
+
+  const {
+    isLoading: isEnrollmentsLoading,
+    refetch: refetchEnrollments,
+  } = useEnrollmentsQuery(
+    isParent
+      ? {}
+      : {
+          studentId: user?.id,
+        },
+  );
+
 
   const isQueryLoading =
     isOrgLoading ||
     isDashLoading ||
-    (isParent ?  isClassesLoading : isEnrollmentsLoading);
+    (
+      isParent
+        ? isClassesLoading
+        : isEnrollmentsLoading
+    );
 
-  const onRefresh = useCallback(async () => {
-    await Promise.all([refetchOrg(), refetchDash(), refetchClasses(), refetchEnrollments()]);
-  }, [refetchOrg, refetchDash, refetchClasses, refetchEnrollments]);
 
-  const effectiveId = targetStudentId || user?.id || '';
-  const campusName = orgData?.name;
-
-  // ── Dynamic Bubble Items ───────────────────────────────────────────────
-  const bubbleItems = useMemo<BubbleItemData[]>(() => {
-    if (isParent) {
-      return childrenList.slice(0, 5).map((child, idx) => ({
-        id: child.id,
-        title: child.name,
-        sub: child.className || child.gradeLevel || '',
-        avatarUrl: child.avatarUrl,
-        type: 'child' as const,
-        Illustration: ILLUSTRATION_LIST[idx % ILLUSTRATION_LIST.length],
-      }));
-    }
-
-    if (isTeacher && classesData && classesData.length > 0) {
-      return classesData.slice(0, 5).map((c, idx) => ({
-        id: c.id,
-        title: c.name,
-        sub: (c as any).grade_level || '',
-        type: 'class' as const,
-        Illustration: ILLUSTRATION_LIST[idx % ILLUSTRATION_LIST.length],
-      }));
-    }
-
-    return [
-      {
-        id: 'grades',
-        title: t('domain_grades'),
-        type: 'student_domain' as const,
-        route: `/(app)/student/${effectiveId}/grades`,
-        Illustration: GradesFeatureIllustration,
+  const onRefresh =
+    useCallback(
+      async () => {
+        await Promise.all([
+          refetchOrg(),
+          refetchDash(),
+          refetchClasses(),
+          refetchEnrollments(),
+        ]);
       },
-      {
-        id: 'attendance',
-        title: t('domain_attendance'),
-        type: 'student_domain' as const,
-        route: `/(app)/student/${effectiveId}/attendance`,
-        Illustration: AttendanceFeatureIllustration,
-      },
-      {
-        id: 'schedule',
-        title: t('domain_schedule'),
-        type: 'student_domain' as const,
-        route: `/(app)/student/${effectiveId}/schedule`,
-        Illustration: ScheduleFeatureIllustration,
-      },
-      {
-        id: 'behavior',
-        title: t('domain_behavior'),
-        type: 'student_domain' as const,
-        route: '/(app)/(tabs)/behavior',
-        Illustration: BehaviorFeatureIllustration,
-      },
-      {
-        id: 'exams',
-        title: t('domain_exams'),
-        type: 'student_domain' as const,
-        route: `/(app)/student/${effectiveId}/exams`,
-        Illustration: StudentSeniorIllustration,
-      },
-    ];
-  }, [isParent, isTeacher, childrenList, classesData, effectiveId, t]);
+      [
+        refetchOrg,
+        refetchDash,
+        refetchClasses,
+        refetchEnrollments,
+      ],
+    );
 
-  const handleBubblePress = useCallback(
-    (item: BubbleItemData) => {
-      if (item.type === 'child') {
-        setSelectedChildId(item.id);
-        router.push(`/(app)/student/${item.id}` as any);
-      } else if (item.type === 'class') {
-        setSelectedClassId(item.id);
-        router.push(`/(app)/class/${item.id}` as any);
-      } else if (item.route) {
-        router.push(item.route as any);
-      }
-    },
-    [setSelectedChildId, setSelectedClassId],
-  );
+
+  // ───────────────────────────────────────────────────────────────────────
+  // Effective Context
+  // ───────────────────────────────────────────────────────────────────────
+
+  const effectiveId =
+    targetStudentId ||
+    user?.id ||
+    '';
+
+
+  const campusName =
+    orgData?.name;
+
+
+  // ───────────────────────────────────────────────────────────────────────
+  // Dynamic Bubble Items
+  // ───────────────────────────────────────────────────────────────────────
+
+  const bubbleItems =
+    useMemo<BubbleItemData[]>(
+      () => {
+        // Parent → Children
+        if (isParent) {
+          return childrenList
+            .slice(0, 5)
+            .map(
+              (
+                child,
+                idx,
+              ) => ({
+                id:
+                  child.id,
+
+                title:
+                  child.name,
+
+                sub:
+                  child.className ||
+                  child.gradeLevel ||
+                  '',
+
+                avatarUrl:
+                  child.avatarUrl,
+
+                type:
+                  'child' as const,
+
+                Illustration:
+                  ILLUSTRATION_LIST[
+                    idx %
+                      ILLUSTRATION_LIST.length
+                  ],
+              }),
+            );
+        }
+
+
+        // Teacher → Classes
+        if (
+          isTeacher &&
+          classesData &&
+          classesData.length > 0
+        ) {
+          return classesData
+            .slice(0, 5)
+            .map(
+              (
+                c,
+                idx,
+              ) => ({
+                id:
+                  c.id,
+
+                title:
+                  c.name,
+
+                sub:
+                  (c as any)
+                    .grade_level ||
+                  '',
+
+                type:
+                  'class' as const,
+
+                Illustration:
+                  ILLUSTRATION_LIST[
+                    idx %
+                      ILLUSTRATION_LIST.length
+                  ],
+              }),
+            );
+        }
+
+
+        // Student → Domains
+        return [
+          {
+            id:
+              'grades',
+
+            title:
+              t('domain_grades'),
+
+            type:
+              'student_domain' as const,
+
+            route:
+              `/(app)/student/${effectiveId}/grades`,
+
+            Illustration:
+              GradesFeatureIllustration,
+          },
+
+          {
+            id:
+              'attendance',
+
+            title:
+              t('domain_attendance'),
+
+            type:
+              'student_domain' as const,
+
+            route:
+              `/(app)/student/${effectiveId}/attendance`,
+
+            Illustration:
+              AttendanceFeatureIllustration,
+          },
+
+          {
+            id:
+              'schedule',
+
+            title:
+              t('domain_schedule'),
+
+            type:
+              'student_domain' as const,
+
+            route:
+              `/(app)/student/${effectiveId}/schedule`,
+
+            Illustration:
+              ScheduleFeatureIllustration,
+          },
+
+          {
+            id:
+              'behavior',
+
+            title:
+              t('domain_behavior'),
+
+            type:
+              'student_domain' as const,
+
+            route:
+              '/(app)/(tabs)/behavior',
+
+            Illustration:
+              BehaviorFeatureIllustration,
+          },
+
+          {
+            id:
+              'exams',
+
+            title:
+              t('domain_exams'),
+
+            type:
+              'student_domain' as const,
+
+            route:
+              `/(app)/student/${effectiveId}/exams`,
+
+            Illustration:
+              StudentSeniorIllustration,
+          },
+        ];
+      },
+      [
+        isParent,
+        isTeacher,
+        childrenList,
+        classesData,
+        effectiveId,
+        t,
+      ],
+    );
+
+
+  // ───────────────────────────────────────────────────────────────────────
+  // Bubble Navigation
+  // ───────────────────────────────────────────────────────────────────────
+
+  const handleBubblePress =
+    useCallback(
+      (
+        item: BubbleItemData,
+      ) => {
+        // Parent → Child
+        if (
+          item.type === 'child'
+        ) {
+          setSelectedChildId(
+            item.id,
+          );
+
+          router.push(
+            `/(app)/student/${item.id}` as any,
+          );
+
+          return;
+        }
+
+
+        // Teacher → Class
+        if (
+          item.type === 'class'
+        ) {
+          setSelectedClassId(
+            item.id,
+          );
+
+          router.push(
+            `/(app)/class/${item.id}` as any,
+          );
+
+          return;
+        }
+
+
+        // Student → Domain
+        if (
+          item.route
+        ) {
+          router.push(
+            item.route as any,
+          );
+        }
+      },
+      [
+        setSelectedChildId,
+        setSelectedClassId,
+      ],
+    );
+
+
+  // ───────────────────────────────────────────────────────────────────────
+  // Render
+  // ───────────────────────────────────────────────────────────────────────
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={isQueryLoading} onRefresh={onRefresh} tintColor="#FFFFFF" />
-        }>
- <GradientHeader
-  height={300}
-  animated
-  duration={16000}
-  colors={[
-    '#7628F5',
-    '#893BF2',
-    '#A75AF0',
-    '#C98DF0',
-    '#E8CFF4',
-    '#F8F3FA',
-    '#FFFFFF',
-  ]}
-  locations={[
-    0,
-    0.12,
-    0.27,
-    0.43,
-    0.58,
-    0.72,
-    1,
-  ]}
-/>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor:
+            theme.background,
+        },
+      ]}>
 
-        {/* 1. Primary Hero Header */}
-        <View style={[styles.heroSection, { paddingTop: Math.max(insets.top, 16) + 4 }]}>
-          <CampusHeaderPill campusName={campusName} />
-          <StudentBubbleCluster
-            items={bubbleItems}
-            isLoading={isParent}
-            onItemPress={handleBubblePress}
+      {/* ─────────────────────────────────────────────────────────────
+          System Status Bar
+
+          IMPORTANT:
+          The StatusBar component does not participate in layout.
+          The gradient is positioned independently underneath it.
+        ───────────────────────────────────────────────────────────── */}
+
+      <ThemedStatusBar />
+
+
+      {/* ─────────────────────────────────────────────────────────────
+          HOME GRADIENT
+
+          Background layer only.
+
+          - Does not consume layout space.
+          - Starts from the very top of the viewport.
+          - Extends behind the StatusBar.
+          - Ends gradually before the bottom of the screen.
+          - Remains behind ScrollView.
+          - No hard horizontal section.
+        ───────────────────────────────────────────────────────────── */}
+
+      <GradientHeader
+        height={
+          height * 0.72
+        }
+
+        colors={
+          theme.homeGradient.colors
+        }
+
+        locations={[
+          0,
+          0.16,
+          0.34,
+          0.52,
+          0.68,
+          0.84,
+          1,
+        ]}
+
+        start={
+          theme.homeGradient.start
+        }
+
+        end={
+          theme.homeGradient.end
+        }
+
+        blobPrimary={
+          theme.homeGradient.blobPrimary
+        }
+
+        blobSecondary={
+          theme.homeGradient.blobSecondary
+        }
+
+        blobTertiary={
+          theme.homeGradient.blobTertiary
+        }
+
+        animated
+
+        duration={
+          18000
+        }
+
+        style={
+          styles.homeGradient
+        }
+      />
+
+
+      {/* ─────────────────────────────────────────────────────────────
+          Scroll Content
+
+          Content respects the Safe Area.
+          Gradient does NOT.
+        ───────────────────────────────────────────────────────────── */}
+
+      <ScrollView
+        style={
+          styles.scrollView
+        }
+
+        contentContainerStyle={
+          styles.scrollContent
+        }
+
+        showsVerticalScrollIndicator={
+          false
+        }
+
+        refreshControl={
+          <RefreshControl
+            refreshing={
+              isQueryLoading
+            }
+
+            onRefresh={
+              onRefresh
+            }
+
+            tintColor={
+              theme.primary
+            }
           />
+        }>
+
+        {/* ─────────────────────────────────────────────────────────
+            Hero
+          ───────────────────────────────────────────────────────── */}
+
+        <View
+          style={[
+            styles.heroSection,
+            {
+              paddingTop:
+                Math.max(
+                  insets.top,
+                  Spacing.four,
+                ) +
+                Spacing.one,
+            },
+          ]}>
+
+          <CampusHeaderPill
+            campusName={
+              campusName
+            }
+          />
+
+
+          <StudentBubbleCluster
+            items={
+              bubbleItems
+            }
+
+            isLoading={
+              isParent
+            }
+
+            onItemPress={
+              handleBubblePress
+            }
+          />
+
         </View>
 
-        {/* 2. Features & Prime Banner Sheet extending to the bottom */}
+
+        {/* ─────────────────────────────────────────────────────────
+            Features
+
+            No backgroundColor here.
+
+            The gradient is allowed to remain visible behind
+            the upper part of the content.
+          ───────────────────────────────────────────────────────── */}
+
         <View
           style={[
             styles.sheet,
             {
-              backgroundColor: theme.background,
-              paddingBottom: Math.max(insets.bottom, 16) + 100,
+              paddingBottom:
+                Math.max(
+                  insets.bottom,
+                  Spacing.four,
+                ) +
+                100,
             },
           ]}>
+
           <PersonalizedFeaturesGrid
-            isLoading={isQueryLoading}
+            isLoading={
+              isQueryLoading
+            }
+
             onAttendancePress={() =>
-              effectiveId && router.push(`/(app)/student/${effectiveId}/attendance` as any)
+              effectiveId &&
+              router.push(
+                `/(app)/student/${effectiveId}/attendance` as any,
+              )
             }
+
             onGradesPress={() =>
-              effectiveId && router.push(`/(app)/student/${effectiveId}/grades` as any)
+              effectiveId &&
+              router.push(
+                `/(app)/student/${effectiveId}/grades` as any,
+              )
             }
-            onBehaviorPress={() => router.push('/(app)/(tabs)/behavior' as any)}
+
+            onBehaviorPress={() =>
+              router.push(
+                '/(app)/(tabs)/behavior' as any,
+              )
+            }
+
             onSchedulePress={() =>
-              effectiveId && router.push(`/(app)/student/${effectiveId}/schedule` as any)
+              effectiveId &&
+              router.push(
+                `/(app)/student/${effectiveId}/schedule` as any,
+              )
             }
           />
-          <PrimeAiBanner onPress={() => setShowPrimeDrawer(true)} />
+
+
+          <PrimeAiBanner
+            onPress={() =>
+              setShowPrimeDrawer(
+                true,
+              )
+            }
+          />
+
         </View>
+
       </ScrollView>
 
-      {/* Prime AI Information Bottom Drawer */}
-      <Drawer visible={showPrimeDrawer} onClose={() => setShowPrimeDrawer(false)}>
+
+      {/* ─────────────────────────────────────────────────────────────
+          Prime AI Drawer
+        ───────────────────────────────────────────────────────────── */}
+
+      <Drawer
+        visible={
+          showPrimeDrawer
+        }
+
+        onClose={() =>
+          setShowPrimeDrawer(
+            false,
+          )
+        }>
+
         <DrawerContent>
+
           <DrawerHeader>
-            <Ionicons name="sparkles" size={28} color={theme.primary} />
-            <DrawerTitle>Orbis Prime AI</DrawerTitle>
+
+            <Ionicons
+              name="sparkles"
+              size={28}
+              color={
+                theme.primary
+              }
+            />
+
+            <DrawerTitle>
+              Orbis Prime AI
+            </DrawerTitle>
+
             <DrawerDescription>
-              تحليلات الذكاء الاصطناعي الأكاديمية والتنبؤ بالأداء الدراسي
+              تحليلات الذكاء الاصطناعي الأكاديمية
+              والتنبؤ بالأداء الدراسي
             </DrawerDescription>
+
           </DrawerHeader>
 
+
           <DrawerOptionRow
-            icon={<Ionicons name="analytics" size={20} color={theme.primary} />}
+            icon={
+              <Ionicons
+                name="analytics"
+                size={20}
+                color={
+                  theme.primary
+                }
+              />
+            }
+
             label="التحليل التنبؤي للدرجات"
+
             sublabel="توقعات مبكرة لمستوى التحصيل الدراسي"
+
             onPress={() => {
-              setShowPrimeDrawer(false);
-              router.push('/(app)/(tabs)/behavior' as any);
+              setShowPrimeDrawer(
+                false,
+              );
+
+              router.push(
+                '/(app)/(tabs)/behavior' as any,
+              );
             }}
           />
 
+
           <DrawerOptionRow
-            icon={<Ionicons name="bulb" size={20} color="#F59E0B" />}
+            icon={
+              <Ionicons
+                name="bulb"
+                size={20}
+                color={
+                  theme.warning
+                }
+              />
+            }
+
             label="توصيات دراسية مخصصة"
+
             sublabel="اقتراحات يومية لرفع الكفاءة التعليمية"
+
             onPress={() => {
-              setShowPrimeDrawer(false);
-              router.push('/(app)/(tabs)/behavior' as any);
+              setShowPrimeDrawer(
+                false,
+              );
+
+              router.push(
+                '/(app)/(tabs)/behavior' as any,
+              );
             }}
           />
 
+
           <DrawerOptionRow
-            icon={<Ionicons name="shield-checkmark" size={20} color="#10B981" />}
+            icon={
+              <Ionicons
+                name="shield-checkmark"
+                size={20}
+                color={
+                  theme.success
+                }
+              />
+            }
+
             label="رصد الحضور والسلوك الإيجابي"
+
             sublabel="إشعارات فورية وتقارير أسبوعية تفصيلية"
+
             isLast
+
             onPress={() => {
-              setShowPrimeDrawer(false);
-              router.push('/(app)/(tabs)/behavior' as any);
+              setShowPrimeDrawer(
+                false,
+              );
+
+              router.push(
+                '/(app)/(tabs)/behavior' as any,
+              );
             }}
           />
+
 
           <DrawerSubmitButton
             label="استكشاف جميع ميزات Prime"
+
             onPress={() => {
-              setShowPrimeDrawer(false);
-              router.push('/(app)/(tabs)/behavior' as any);
+              setShowPrimeDrawer(
+                false,
+              );
+
+              router.push(
+                '/(app)/(tabs)/behavior' as any,
+              );
             }}
           />
+
         </DrawerContent>
+
       </Drawer>
+
     </View>
   );
 }
 
+
+// ─────────────────────────────────────────────────────────────────────────
+// Styles
+// ─────────────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
+
+  /**
+   * Gradient background layer.
+   *
+   * IMPORTANT:
+   * `top: 0` is required.
+   *
+   * Do NOT use `bottom: 0` here because the gradient
+   * must originate from the top of the viewport.
+   */
+  homeGradient: {
+    position: 'absolute',
+
+    top: 0,
+
+    left: 0,
+
+    right: 0,
+
+    width: '100%',
+
+    zIndex: 0,
+  },
+
+
+  /**
+   * Main screen container.
+   */
   container: {
     flex: 1,
   },
+
+
+  /**
+   * ScrollView sits above the gradient.
+   */
   scrollView: {
     flex: 1,
+
+    zIndex: 1,
   },
+
+
+  /**
+   * Scroll content itself remains transparent.
+   *
+   * This is important because any opaque background
+   * here would hide the gradient.
+   */
   scrollContent: {
     flexGrow: 1,
   },
-  homeGradient: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    zIndex: 0,
-  },
+
+
+  /**
+   * Hero section.
+   *
+   * Safe-area padding is applied dynamically in JSX.
+   */
   heroSection: {
-    paddingHorizontal: Spacing.four,
-    paddingBottom: Spacing.four,
+    width: '100%',
   },
+
+
+  /**
+   * Features section.
+   *
+   * No backgroundColor.
+   */
   sheet: {
-    flex: 1,
-    minHeight: 450,
-    marginTop: 0,
-    paddingHorizontal: Spacing.four,
-    paddingTop: 0,
-    gap: Spacing.four,
+    width: '100%',
   },
 });

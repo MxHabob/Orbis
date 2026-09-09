@@ -28,15 +28,11 @@ export const PrimeAiBanner = React.memo<PrimeAiBannerProps>(({ onPress }) => {
       onPress={onPress}
       style={({ pressed }) => [
         styles.banner,
-        {
-          backgroundColor: isDark ? theme.card : theme.primaryLight,
-          borderColor: isDark ? theme.border : theme.primary + '30',
-        },
         pressed && { opacity: 0.92, transform: [{ scale: 0.99 }] },
       ]}>
       {/* Left Content */}
       <View style={styles.left}>
-        <View style={[styles.badge, { backgroundColor: theme.primary }]}>
+        <View style={styles.badge}>
           <Ionicons name="sparkles" size={13} color="#FFFFFF" />
           <Text style={styles.badgeText}>{t('prime_badge')}</Text>
         </View>
@@ -47,7 +43,7 @@ export const PrimeAiBanner = React.memo<PrimeAiBannerProps>(({ onPress }) => {
 
       {/* Right Mascot Artwork & Button */}
       <View style={styles.right}>
-        <PrimeScooterMascot size={78} iconColor={theme.primary} />
+        <PrimeScooterMascot size={78} />
         <View
           style={[
             styles.chevronButton,
@@ -67,18 +63,11 @@ PrimeAiBanner.displayName = 'PrimeAiBanner';
 
 const styles = StyleSheet.create({
   banner: {
-    borderRadius: 24,
-    borderWidth: 1,
     paddingVertical: Spacing.four,
     paddingHorizontal: Spacing.four,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 3,
     marginTop: Spacing.two,
   },
   left: {

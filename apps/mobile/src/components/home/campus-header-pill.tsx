@@ -31,7 +31,6 @@ export const CampusHeaderPill = React.memo<CampusHeaderPillProps>(({ campusName,
           },
           pressed && { opacity: 0.85 },
         ]}>
-        <Ionicons name="school-outline" size={17} color={theme.primary} />
         {campusName ? (
           <Text style={[styles.text, { color: theme.text }]} numberOfLines={1}>
             {campusName}
@@ -39,7 +38,6 @@ export const CampusHeaderPill = React.memo<CampusHeaderPillProps>(({ campusName,
         ) : (
           <Skeleton width={150} height={16} />
         )}
-        <Ionicons name="chevron-down" size={15} color={theme.textSecondary} />
       </Pressable>
     </View>
   );
@@ -60,11 +58,6 @@ const styles = StyleSheet.create({
     borderRadius: Radii.full,
     borderWidth: 1,
     gap: 6,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
     maxWidth: '90%',
   },
   text: {

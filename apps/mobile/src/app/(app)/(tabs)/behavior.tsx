@@ -5,8 +5,8 @@
  * Ultra-clean component orchestrator powered by @orbis/sdk & TanStack Query.
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { useState, useMemo, useCallback } from 'react';
+import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedStatusBar } from '@/components/ui/themed-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

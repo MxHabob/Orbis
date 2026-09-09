@@ -5,7 +5,6 @@
  * Enforces session requirement and mounts primary App Stack.
  */
 
-import React from 'react';
 import { Stack, Redirect } from 'expo-router';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAuth } from '@/lib/api';

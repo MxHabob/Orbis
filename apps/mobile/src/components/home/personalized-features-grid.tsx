@@ -46,7 +46,7 @@ export const PersonalizedFeaturesGrid =
             styles.card,
           ]}
         >
-          <View style={[styles.content, { backgroundColor: theme.background }]}>
+          <View style={styles.content}>
             {/* 4 Feature Cards */}
             {isLoading ? (
               <View style={styles.cardsRow}>
@@ -212,16 +212,8 @@ const styles = StyleSheet.create({
     maxWidth: 76,
     maxHeight: 76,
     borderRadius: Radii.xl,
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
   },
   featureLabel: {
     ...Typography.small,
@@ -239,10 +231,8 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#E4E4E7",
   },
   dotActive: {
     width: 16,
-    backgroundColor: "#18181B",
   },
 });

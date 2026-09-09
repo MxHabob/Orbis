@@ -4,7 +4,6 @@
  * Nested Stack Navigator for Student & Child Context Workflows.
  */
 
-import React from 'react';
 import { Stack } from 'expo-router';
 
 export default function StudentContextLayout() {
