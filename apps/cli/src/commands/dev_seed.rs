@@ -35,7 +35,7 @@ pub async fn execute() -> Result<()> {
     let mut skipped = 0u32;
 
     for index in 1..=count {
-        let email = format!("dev.teacher.{index}@example.test");
+        let email = format!("teacher{index}@orbis.edu");
         if teacher_exists(&txn, backend, &org_id, &email).await? {
             skipped += 1;
             continue;
