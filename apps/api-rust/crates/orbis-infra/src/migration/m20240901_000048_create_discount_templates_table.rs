@@ -17,7 +17,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(DiscountTemplates::Name).string().not_null())
                     .col(ColumnDef::new(DiscountTemplates::NameAr).string().null())
                     .col(ColumnDef::new(DiscountTemplates::DiscountType).string().not_null())
-                    .col(ColumnDef::new(DiscountTemplates::Value).decimal_len(18, 4).not_null().default(0.0))
+                    .col(ColumnDef::new(DiscountTemplates::Value).decimal_len(16, 4).not_null().default(0.0))
                     .col(ColumnDef::new(DiscountTemplates::EligibilityRules).json().null())
                     .col(ColumnDef::new(DiscountTemplates::RequiresApproval).boolean().not_null().default(false))
                     .col(ColumnDef::new(DiscountTemplates::IsAutoApply).boolean().not_null().default(false))
