@@ -123,6 +123,7 @@ async fn seed_test_families(
     let parent_email = "parent@orbis.edu";
     let (_parent_user_id, parent_person_id) =
         if let Some(identity) = find_user_identity(db, backend, org_id, parent_email).await? {
+            update_user_password(db, backend, &identity.0, &password_hash).await?;
             identity
         } else {
             let parent_person_id = Uuid::new_v4();
@@ -148,6 +149,11 @@ async fn seed_test_families(
 
     for (student_name, student_email, student_number, gender) in families {
         if user_exists(db, backend, org_id, student_email).await? {
+            if let Some((student_user_id, _)) =
+                find_user_identity(db, backend, org_id, student_email).await?
+            {
+                update_user_password(db, backend, &student_user_id, &password_hash).await?;
+            }
             skipped += 1;
             continue;
         }
@@ -232,6 +238,25 @@ async fn user_exists(
         ))
         .await?;
     Ok(row.is_some())
+}
+
+async fn update_user_password(
+    db: &sea_orm::DatabaseTransaction,
+    backend: DatabaseBackend,
+    user_id: &Uuid,
+    password_hash: &str,
+) -> Result<()> {
+    execute_with_values(
+        db,
+        backend,
+        "UPDATE users SET password_hash = ?, status = 'active', is_deleted = 0, updated_at = ? WHERE id = ?",
+        vec![
+            password_hash.to_string().into(),
+            Utc::now().to_rfc3339().into(),
+            (*user_id).into(),
+        ],
+    )
+    .await
 }
 
 async fn insert_person(

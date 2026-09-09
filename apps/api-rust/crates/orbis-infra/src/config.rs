@@ -22,11 +22,11 @@ pub fn resolve_database_url() -> String {
     // 1. Windows standard AppData Roaming paths
     if let Ok(appdata) = std::env::var("APPDATA") {
         let dev_db = PathBuf::from(&appdata).join("com.mulverse.orbis.dev").join("orbis.db");
-        if dev_db.exists() {
+        if is_non_empty_file(&dev_db) {
             return format!("sqlite://{}?mode=rwc", dev_db.display());
         }
         let prod_db = PathBuf::from(&appdata).join("com.mulverse.orbis").join("orbis.db");
-        if prod_db.exists() {
+        if is_non_empty_file(&prod_db) {
             return format!("sqlite://{}?mode=rwc", prod_db.display());
         }
     }
@@ -34,15 +34,22 @@ pub fn resolve_database_url() -> String {
     // 2. macOS & Linux Application Support / Local Share paths
     if let Ok(home) = std::env::var("HOME") {
         let mac_db = PathBuf::from(&home).join("Library/Application Support/com.mulverse.orbis.dev/orbis.db");
-        if mac_db.exists() {
+        if is_non_empty_file(&mac_db) {
             return format!("sqlite://{}?mode=rwc", mac_db.display());
         }
         let linux_db = PathBuf::from(&home).join(".local/share/com.mulverse.orbis.dev/orbis.db");
-        if linux_db.exists() {
+        if is_non_empty_file(&linux_db) {
             return format!("sqlite://{}?mode=rwc", linux_db.display());
         }
     }
 
     // 3. Current Working Directory fallback
     "sqlite://orbis.db?mode=rwc".to_string()
+}
+
+fn is_non_empty_file(path: &PathBuf) -> bool {
+    path.is_file()
+        && std::fs::metadata(path)
+            .map(|metadata| metadata.len() > 0)
+            .unwrap_or(false)
 }
