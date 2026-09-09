@@ -32,7 +32,7 @@ import {
   LinkedChildrenSection,
   SettingsMenuList,
 } from '@/components/profile';
-import { Spacing, Typography } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
