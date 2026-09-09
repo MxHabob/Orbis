@@ -17,7 +17,6 @@ import {
 import {
   Gesture,
   GestureDetector,
-  GestureHandlerRootView,
   type PanGesture,
 } from 'react-native-gesture-handler';
 import Animated, {
@@ -177,18 +176,16 @@ export function Drawer({
         statusBarTranslucent
         onRequestClose={onClose}
       >
-        <GestureHandlerRootView style={StyleSheet.absoluteFill}>
-          <View style={styles.modalContainer}>
-            <Animated.View style={[styles.backdrop, animatedBackdropStyle]}>
-              <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-            </Animated.View>
-            {disableContentDrag ? (
-              content
-            ) : (
-              <GestureDetector gesture={pan}>{content}</GestureDetector>
-            )}
-          </View>
-        </GestureHandlerRootView>
+        <View style={styles.modalContainer}>
+          <Animated.View style={[styles.backdrop, animatedBackdropStyle]}>
+            <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+          </Animated.View>
+          {disableContentDrag ? (
+            content
+          ) : (
+            <GestureDetector gesture={pan}>{content}</GestureDetector>
+          )}
+        </View>
       </Modal>
     </DrawerContext.Provider>
   );

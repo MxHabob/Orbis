@@ -1,17 +1,27 @@
+/**
+ * @module @orbis/mobile/components/gradient-header
+ *
+ * Reusable animated gradient surface.
+ */
+
 import React, { useEffect } from 'react';
+
 import {
   StyleSheet,
   type ColorValue,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+
 import { LinearGradient } from 'expo-linear-gradient';
+
 import Svg, {
   Defs,
   Ellipse,
   RadialGradient,
   Stop,
 } from 'react-native-svg';
+
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -35,13 +45,27 @@ type GradientHeaderLocations = readonly [
 type GradientHeaderProps = {
   colors: GradientHeaderColors;
   locations?: GradientHeaderLocations;
+
   height?: number;
-  start?: { x: number; y: number };
-  end?: { x: number; y: number };
+
+  start?: {
+    x: number;
+    y: number;
+  };
+
+  end?: {
+    x: number;
+    y: number;
+  };
+
   style?: StyleProp<ViewStyle>;
 
   animated?: boolean;
   duration?: number;
+
+  blobPrimary?: string;
+  blobSecondary?: string;
+  blobTertiary?: string;
 };
 
 const AnimatedView = Animated.View;
@@ -51,7 +75,7 @@ function FluidBlob({
   opacity,
   duration,
   delay = 0,
-  color = '#7628F5',
+  color,
   initialX = 0,
   initialY = 0,
 }: {
@@ -59,7 +83,7 @@ function FluidBlob({
   opacity: number;
   duration: number;
   delay?: number;
-  color?: string;
+  color: string;
   initialX?: number;
   initialY?: number;
 }) {
@@ -85,29 +109,28 @@ function FluidBlob({
   const animatedStyle = useAnimatedStyle(() => {
     const p = progress.value;
 
+    const waveX = Math.sin(p * Math.PI * 2);
+    const waveY = Math.cos(p * Math.PI * 2);
+
     return {
       transform: [
         {
-          translateX:
-            initialX +
-            Math.sin(p * Math.PI * 2) * 28,
+          translateX: initialX + waveX * 35,
         },
         {
-          translateY:
-            initialY +
-            Math.cos(p * Math.PI * 2) * 18,
+          translateY: initialY + waveY * 24,
         },
         {
-          scale:
-            1 +
-            Math.sin(p * Math.PI * 2) * 0.08,
+          scale: 1 + waveX * 0.06,
         },
         {
-          rotate: `${Math.sin(p * Math.PI * 2) * 5}deg`,
+          rotate: `${waveX * 4}deg`,
         },
       ],
     };
   });
+
+  const gradientId = `fluid-${size}-${delay}`;
 
   return (
     <AnimatedView
@@ -118,39 +141,38 @@ function FluidBlob({
           width: size,
           height: size * 0.72,
           opacity,
-          borderRadius: size,
         },
         animatedStyle,
-      ]}
-    >
+      ]}>
       <Svg
         width="100%"
         height="100%"
-        viewBox="0 0 100 72"
-      >
+        viewBox="0 0 100 72">
         <Defs>
           <RadialGradient
-            id={`blob-${size}-${delay}`}
+            id={gradientId}
             cx="50%"
             cy="50%"
             rx="50%"
-            ry="50%"
-          >
+            ry="50%">
             <Stop
               offset="0%"
               stopColor={color}
               stopOpacity="0.9"
             />
+
             <Stop
               offset="45%"
               stopColor={color}
               stopOpacity="0.45"
             />
+
             <Stop
               offset="75%"
               stopColor={color}
               stopOpacity="0.12"
             />
+
             <Stop
               offset="100%"
               stopColor={color}
@@ -164,7 +186,7 @@ function FluidBlob({
           cy="36"
           rx="50"
           ry="36"
-          fill={`url(#blob-${size}-${delay})`}
+          fill={`url(#${gradientId})`}
         />
       </Svg>
     </AnimatedView>
@@ -174,22 +196,38 @@ function FluidBlob({
 export function GradientHeader({
   colors,
   locations,
-  height = 180,
-  start = { x: 0.5, y: 0 },
-  end = { x: 0.5, y: 1 },
+
+  height = 500,
+
+  start = {
+    x: 0.5,
+    y: 0,
+  },
+
+  end = {
+    x: 0.5,
+    y: 1,
+  },
+
   style,
+
   animated = false,
   duration = 16000,
+
+  blobPrimary = '#7C3AED',
+  blobSecondary = '#A855F7',
+  blobTertiary = '#C084FC',
 }: GradientHeaderProps) {
   return (
     <AnimatedView
+      pointerEvents="none"
       style={[
         styles.container,
-        { height },
+        {
+          height,
+        },
         style,
-      ]}
-    >
-      {/* Base gradient */}
+      ]}>
       <LinearGradient
         colors={colors}
         locations={locations}
@@ -201,37 +239,34 @@ export function GradientHeader({
       {animated && (
         <AnimatedView
           pointerEvents="none"
-          style={StyleSheet.absoluteFill}
-        >
-          {/* Large fluid mass */}
+          style={StyleSheet.absoluteFill}>
+          <FluidBlob
+            size={430}
+            opacity={0.35}
+            duration={duration}
+            color={blobPrimary}
+            initialX={-80}
+            initialY={80}
+          />
+
           <FluidBlob
             size={360}
-            opacity={0.52}
-            duration={duration}
-            initialX={-90}
-            initialY={-45}
+            opacity={0.25}
+            duration={duration + 2600}
+            delay={900}
+            color={blobSecondary}
+            initialX={100}
+            initialY={160}
           />
 
-          {/* Secondary fluid mass */}
           <FluidBlob
             size={300}
-            opacity={0.38}
-            duration={duration + 2500}
-            delay={900}
-            initialX={110}
-            initialY={10}
-            color="#893BF2"
-          />
-
-          {/* Small softer mass */}
-          <FluidBlob
-            size={250}
-            opacity={0.28}
+            opacity={0.20}
             duration={duration + 4200}
             delay={1800}
-            initialX={20}
-            initialY={65}
-            color="#A75AF0"
+            color={blobTertiary}
+            initialX={0}
+            initialY={220}
           />
         </AnimatedView>
       )}
@@ -241,7 +276,14 @@ export function GradientHeader({
 
 const styles = StyleSheet.create({
   container: {
+    position: 'absolute',
+
+    left: 0,
+    right: 0,
+    bottom: 0,
+
     width: '100%',
+
     overflow: 'hidden',
   },
 
