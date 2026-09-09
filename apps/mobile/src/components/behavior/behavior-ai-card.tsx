@@ -29,10 +29,12 @@ export const BehaviorAiCard = React.memo<BehaviorAiCardProps>(
     }
 
     return (
-      <Card variant="outline" style={styles.card}>
+      <Card
+        variant="outline"
+        style={[styles.card, { borderColor: theme.primaryLight, backgroundColor: theme.accentLight }]}>
         <View style={styles.header}>
           <View style={styles.titleBox}>
-            <Ionicons name="sparkles" size={18} color="#7C3AED" />
+            <Ionicons name="sparkles" size={18} color={theme.primary} />
             <Text style={[styles.title, { color: theme.text }]}>{t('behavior_ai_title')}</Text>
           </View>
           <Badge label={t('behavior_badge_live')} variant="primary" size="sm" />
@@ -54,8 +56,6 @@ const styles = StyleSheet.create({
   card: {
     padding: Spacing.four,
     borderWidth: 1.5,
-    borderColor: '#E9D5FF',
-    backgroundColor: '#FAF5FF',
     gap: Spacing.two,
   },
   header: {

@@ -19,6 +19,7 @@ export * from './empty-state';
 export * from './error-boundary';
 export * from './input';
 export * from './keyboard-aware-view';
+export * from './metric-progress';
 export * from './organization-logo';
 export * from './skeleton';
 export * from './switch';

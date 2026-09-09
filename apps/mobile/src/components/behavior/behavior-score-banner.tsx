@@ -7,8 +7,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Card } from '@/components/ui/card';
 import { SkeletonCard } from '@/components/ui/skeleton';
+import { MetricProgress } from '@/components/ui/metric-progress';
 import { useTheme } from '@/hooks/use-theme';
 import { useI18n } from '@/lib/i18n';
 import { Spacing, Typography } from '@/constants/theme';
@@ -30,24 +30,19 @@ export const BehaviorScoreBanner = React.memo<BehaviorScoreBannerProps>(
     const isPositive = totalPoints >= 0;
 
     return (
-      <Card variant="elevated" style={styles.card}>
+      <View style={styles.container}>
         <View style={styles.row}>
-          <View style={styles.col}>
-            <Text style={[styles.label, { color: theme.textSecondary }]}>
-              {t('behavior_score_net')}
-            </Text>
-            <Text
-              style={[
-                styles.value,
-                { color: isPositive ? theme.success : theme.error },
-              ]}>
-              {t('behavior_score_unit', {
+          <View style={styles.metric}>
+            <MetricProgress
+              title={t('behavior_score_net')}
+              displayValue={t('behavior_score_unit', {
                 count: totalPoints > 0 ? `+${totalPoints}` : totalPoints,
               })}
-            </Text>
-            <Text style={[styles.status, { color: theme.textSecondary }]}>
-              {t('behavior_status_regular')}
-            </Text>
+              segments={[
+                { label: t('behavior_status_regular'), value: Math.max(totalPoints, 0), tone: 'success' },
+                { label: t('behavior_score_net'), value: Math.max(-totalPoints, 0), tone: 'destructive' },
+              ]}
+            />
           </View>
 
           <View
@@ -62,7 +57,7 @@ export const BehaviorScoreBanner = React.memo<BehaviorScoreBannerProps>(
             />
           </View>
         </View>
-      </Card>
+      </View>
     );
   },
 );
@@ -70,30 +65,13 @@ export const BehaviorScoreBanner = React.memo<BehaviorScoreBannerProps>(
 BehaviorScoreBanner.displayName = 'BehaviorScoreBanner';
 
 const styles = StyleSheet.create({
-  card: {
-    padding: Spacing.four,
-  },
+  container: { gap: Spacing.four },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  col: {
-    gap: 2,
-  },
-  label: {
-    ...Typography.small,
-    fontSize: 12,
-  },
-  value: {
-    ...Typography.h1,
-    fontSize: 32,
-    marginTop: 2,
-  },
-  status: {
-    ...Typography.small,
-    marginTop: 4,
-  },
+  metric: { flex: 1 },
   badgeCircle: {
     width: 64,
     height: 64,

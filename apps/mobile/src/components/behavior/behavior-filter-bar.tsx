@@ -44,7 +44,7 @@ export const BehaviorFilterBar = React.memo<BehaviorFilterBarProps>(
                 <Text
                   style={[
                     styles.label,
-                    { color: isSelected ? '#FFFFFF' : theme.textSecondary },
+                    { color: isSelected ? theme.primaryForeground : theme.textSecondary },
                   ]}>
                   {f.label}
                 </Text>
