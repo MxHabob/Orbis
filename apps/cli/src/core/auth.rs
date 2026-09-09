@@ -3,6 +3,7 @@ use colored::*;
 use sea_orm::{ConnectionTrait, DatabaseConnection, Statement};
 use orbis_app::ports::security::TotpService;
 use orbis_infra::security::totp::TotpServiceImpl;
+use uuid::Uuid;
 
 use crate::ui::output::{self, COLOR_CYAN, COLOR_EMERALD, COLOR_MUTED, COLOR_PURPLE, COLOR_ROSE, COLOR_WHITE};
 
@@ -100,6 +101,8 @@ pub async fn authenticate_admin(db: &DatabaseConnection) -> Result<Authenticated
     let password_hash = selected_admin.password_hash.as_deref().ok_or_else(|| {
         anyhow!("Selected administrator has no password set. Please use password recovery.")
     })?;
+    let selected_admin_id = Uuid::parse_str(&selected_admin.id)
+        .map_err(|_| anyhow!("Administrator ID is not a valid UUID."))?;
 
     // 3. Password Verification Loop (up to 3 attempts)
     let max_attempts = 3;
@@ -139,40 +142,35 @@ pub async fn authenticate_admin(db: &DatabaseConnection) -> Result<Authenticated
         SELECT id, secret_encrypted, is_verified
         FROM user_mfa_factors
         WHERE user_id = $1 AND factor_type = 'totp' AND is_verified = 1
-        LIMIT 1;
     "#;
 
-    let mfa_row = db
-        .query_one(Statement::from_sql_and_values(
+    let mfa_rows = db
+        .query_all(Statement::from_sql_and_values(
             backend,
             mfa_sql,
-            vec![selected_admin.id.clone().into()],
+            vec![selected_admin_id.into()],
         ))
         .await
-        .ok()
-        .flatten();
+        .unwrap_or_default();
 
-    let requires_mfa = selected_admin.mfa_enabled || mfa_row.is_some();
+    let requires_mfa = selected_admin.mfa_enabled || !mfa_rows.is_empty();
 
     if requires_mfa {
         println!("  {} {}", "●".truecolor(COLOR_CYAN.0, COLOR_CYAN.1, COLOR_CYAN.2), "Two-Factor Verification (TOTP / Recovery Code)".truecolor(COLOR_WHITE.0, COLOR_WHITE.1, COLOR_WHITE.2).bold());
 
         let totp_service = TotpServiceImpl;
-        let secret = mfa_row.as_ref().and_then(|r| r.try_get::<String>("", "secret_encrypted").ok());
-
         let mut mfa_verified = false;
 
         for attempt in 1..=max_attempts {
             let code_input = crate::ui::prompts::prompt_text("Authenticator Code / Recovery Code:")?;
             let trimmed = code_input.trim();
 
-            // Try TOTP code first
-            if let Some(ref sec) = secret {
-                if totp_service.verify_code(sec, trimmed) {
-                    mfa_verified = true;
-                    // Update factor last_used_at
-                    if let Some(ref r) = mfa_row {
-                        if let Ok(factor_id) = r.try_get::<String>("", "id") {
+            // Try every verified TOTP factor; users may have re-enrolled MFA.
+            for mfa_row in &mfa_rows {
+                if let Ok(secret) = mfa_row.try_get::<String>("", "secret_encrypted") {
+                    if totp_service.verify_code(&secret, trimmed) {
+                        mfa_verified = true;
+                        if let Ok(factor_id) = mfa_row.try_get::<Uuid>("", "id") {
                             let now = chrono::Utc::now().to_rfc3339();
                             let _ = db.execute(Statement::from_sql_and_values(
                                 backend,
@@ -180,9 +178,13 @@ pub async fn authenticate_admin(db: &DatabaseConnection) -> Result<Authenticated
                                 vec![now.into(), factor_id.into()],
                             )).await;
                         }
+                        break;
                     }
-                    break;
                 }
+            }
+
+            if mfa_verified {
+                break;
             }
 
             // If not verified by TOTP, check if it's an unused recovery code
@@ -195,11 +197,11 @@ pub async fn authenticate_admin(db: &DatabaseConnection) -> Result<Authenticated
             if let Ok(rec_rows) = db.query_all(Statement::from_sql_and_values(
                 backend,
                 rec_sql,
-                vec![selected_admin.id.clone().into()],
+                vec![selected_admin_id.into()],
             )).await {
                 for rec_row in rec_rows {
                     if let (Ok(rec_id), Ok(code_hash)) = (
-                        rec_row.try_get::<String>("", "id"),
+                        rec_row.try_get::<Uuid>("", "id"),
                         rec_row.try_get::<String>("", "code_hash"),
                     ) {
                         if bcrypt::verify(trimmed, &code_hash).unwrap_or(false) {

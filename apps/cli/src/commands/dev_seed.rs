@@ -10,7 +10,8 @@ use crate::ui::output;
 
 const DEFAULT_TEACHER_COUNT: u32 = 5;
 const MAX_TEACHER_COUNT: u32 = 500;
-const DEV_PASSWORD: &str = "Teacher123!";
+const DEV_PASSWORD: &str = "Super.12";
+const TEST_FAMILY_PASSWORD: &str = "Super.12";
 
 pub async fn execute() -> Result<()> {
     if !is_development() {
@@ -40,9 +41,9 @@ pub async fn execute() -> Result<()> {
             continue;
         }
 
-        let person_id = Uuid::new_v4().to_string();
-        let user_id = Uuid::new_v4().to_string();
-        let assignment_id = Uuid::new_v4().to_string();
+        let person_id = Uuid::new_v4();
+        let user_id = Uuid::new_v4();
+        let assignment_id = Uuid::new_v4();
         let first_name = format!("Dev Teacher {index}");
 
         execute_with_values(
@@ -50,7 +51,7 @@ pub async fn execute() -> Result<()> {
             backend,
             "INSERT INTO persons (id, org_id, first_name, last_name, full_name, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
             vec![
-                person_id.clone().into(), org_id.clone().into(),
+                person_id.into(), org_id.into(),
                 first_name.clone().into(), "".into(), first_name.clone().into(),
                 now.clone().into(), now.clone().into(),
             ],
@@ -60,7 +61,7 @@ pub async fn execute() -> Result<()> {
             backend,
             "INSERT INTO users (id, person_id, org_id, email, email_verified, password_hash, full_name, status, is_deleted, created_at, updated_at) VALUES (?, ?, ?, ?, 1, ?, ?, 'active', 0, ?, ?)",
             vec![
-                user_id.clone().into(), person_id.into(), org_id.clone().into(), email.into(),
+                user_id.into(), person_id.into(), org_id.into(), email.into(),
                 password_hash.clone().into(), first_name.into(),
                 now.clone().into(), now.clone().into(),
             ],
@@ -70,11 +71,14 @@ pub async fn execute() -> Result<()> {
             backend,
             "INSERT INTO user_role_assignments (id, user_id, role_id, org_id, scope_type, scope_id, assigned_by, created_at) VALUES (?, ?, 'teacher', ?, 'global', NULL, NULL, ?)",
             vec![
-                assignment_id.into(), user_id.into(), org_id.clone().into(), now.clone().into(),
+                assignment_id.into(), user_id.into(), org_id.into(), now.clone().into(),
             ],
         ).await?;
         created += 1;
     }
+
+    let (created_families, skipped_families) =
+        seed_test_families(&txn, backend, &org_id, &password_hash, &now).await?;
 
     txn.commit().await?;
     
@@ -85,9 +89,213 @@ pub async fn execute() -> Result<()> {
         ("Skipped (Existing)", &skipped_str),
         ("Default Password", DEV_PASSWORD),
         ("Assigned Role", "teacher (Global Scope)"),
+        ("Test Families Created", &created_families.to_string()),
+        ("Test Families Skipped", &skipped_families.to_string()),
+        ("Student/Parent Password", TEST_FAMILY_PASSWORD),
     ]);
     output::print_success("Development data successfully seeded.");
     Ok(())
+}
+
+async fn seed_test_families(
+    db: &sea_orm::DatabaseTransaction,
+    backend: DatabaseBackend,
+    org_id: &Uuid,
+    _teacher_password_hash: &str,
+    now: &str,
+) -> Result<(u32, u32)> {
+    let password_hash = hash(TEST_FAMILY_PASSWORD, DEFAULT_COST)?;
+    let families = [
+        (
+            "Mohamed Student one",
+            "student1@orbis.edu",
+            "STU-TEST-001",
+            "male",
+        ),
+        (
+            "Mohamed Student two",
+            "student2@orbis.edu",
+            "STU-TEST-002",
+            "female",
+        ),
+    ];
+    let parent_name = "Mohamed Parent";
+    let parent_email = "parent@orbis.edu";
+    let (_parent_user_id, parent_person_id) =
+        if let Some(identity) = find_user_identity(db, backend, org_id, parent_email).await? {
+            identity
+        } else {
+            let parent_person_id = Uuid::new_v4();
+            let parent_user_id = Uuid::new_v4();
+            insert_person(db, backend, org_id, &parent_person_id, parent_name, now).await?;
+            insert_user(
+                db,
+                backend,
+                org_id,
+                &parent_user_id,
+                &parent_person_id,
+                parent_email,
+                parent_name,
+                &password_hash,
+                now,
+            )
+            .await?;
+            assign_role(db, backend, org_id, &parent_user_id, "parent", now).await?;
+            (parent_user_id, parent_person_id)
+        };
+    let mut created = 0;
+    let mut skipped = 0;
+
+    for (student_name, student_email, student_number, gender) in families {
+        if user_exists(db, backend, org_id, student_email).await? {
+            skipped += 1;
+            continue;
+        }
+
+        let student_person_id = Uuid::new_v4();
+        let student_user_id = Uuid::new_v4();
+        let student_id = Uuid::new_v4();
+
+        insert_person(db, backend, org_id, &student_person_id, student_name, now).await?;
+        insert_user(
+            db,
+            backend,
+            org_id,
+            &student_user_id,
+            &student_person_id,
+            student_email,
+            student_name,
+            &password_hash,
+            now,
+        )
+        .await?;
+        assign_role(db, backend, org_id, &student_user_id, "student", now).await?;
+
+        execute_with_values(
+            db,
+            backend,
+            "INSERT INTO students (id, org_id, person_id, user_id, student_number, first_name, last_name, full_name, gender, nationality, status, standing, admitted_at, is_deleted, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 'good_standing', ?, 0, ?, ?)",
+            vec![
+                student_id.into(), (*org_id).into(), student_person_id.into(),
+                student_user_id.into(), student_number.into(), student_name.into(), "Test".into(),
+                student_name.into(), gender.into(), "Yemeni".into(), now.into(), now.into(), now.into(),
+            ],
+        )
+        .await?;
+        execute_with_values(
+            db,
+            backend,
+            "INSERT INTO student_guardians (id, student_id, guardian_id, relationship, relationship_ar, is_primary, is_emergency_contact, is_authorized_pickup, can_view_grades, can_view_attendance, can_view_behavior, can_view_finance, can_view_schedule, can_receive_notifications, is_payer, payment_share_percent, created_at, updated_at) VALUES (?, ?, ?, 'parent', 'ولي أمر', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 100, ?, ?)",
+            vec![
+                Uuid::new_v4().into(), student_id.into(), parent_person_id.into(),
+                now.into(), now.into(),
+            ],
+        )
+        .await?;
+        created += 1;
+    }
+
+    Ok((created, skipped))
+}
+
+async fn find_user_identity(
+    db: &sea_orm::DatabaseTransaction,
+    backend: DatabaseBackend,
+    org_id: &Uuid,
+    email: &str,
+) -> Result<Option<(Uuid, Uuid)>> {
+    let row = db
+        .query_one(Statement::from_sql_and_values(
+            backend,
+            "SELECT id, person_id FROM users WHERE org_id = ? AND email = ? AND is_deleted = 0 LIMIT 1",
+            vec![org_id.to_string().into(), email.to_string().into()],
+        ))
+        .await?;
+    Ok(row.and_then(|value| {
+        let user_id = value.try_get::<Uuid>("", "id").ok()?;
+        let person_id = value.try_get::<Uuid>("", "person_id").ok()?;
+        Some((user_id, person_id))
+    }))
+}
+
+async fn user_exists(
+    db: &sea_orm::DatabaseTransaction,
+    backend: DatabaseBackend,
+    org_id: &Uuid,
+    email: &str,
+) -> Result<bool> {
+    let row = db
+        .query_one(Statement::from_sql_and_values(
+            backend,
+            "SELECT id FROM users WHERE org_id = ? AND email = ? AND is_deleted = 0 LIMIT 1",
+            vec![org_id.to_string().into(), email.to_string().into()],
+        ))
+        .await?;
+    Ok(row.is_some())
+}
+
+async fn insert_person(
+    db: &sea_orm::DatabaseTransaction,
+    backend: DatabaseBackend,
+    org_id: &Uuid,
+    person_id: &Uuid,
+    full_name: &str,
+    now: &str,
+) -> Result<()> {
+    execute_with_values(
+        db,
+        backend,
+        "INSERT INTO persons (id, org_id, first_name, last_name, full_name, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        vec![
+            (*person_id).into(), (*org_id).into(), full_name.to_string().into(),
+            "Test".into(), full_name.to_string().into(), now.to_string().into(), now.to_string().into(),
+        ],
+    )
+    .await
+}
+
+async fn insert_user(
+    db: &sea_orm::DatabaseTransaction,
+    backend: DatabaseBackend,
+    org_id: &Uuid,
+    user_id: &Uuid,
+    person_id: &Uuid,
+    email: &str,
+    full_name: &str,
+    password_hash: &str,
+    now: &str,
+) -> Result<()> {
+    execute_with_values(
+        db,
+        backend,
+        "INSERT INTO users (id, person_id, org_id, email, email_verified, password_hash, full_name, status, is_deleted, created_at, updated_at) VALUES (?, ?, ?, ?, 1, ?, ?, 'active', 0, ?, ?)",
+        vec![
+            (*user_id).into(), (*person_id).into(), (*org_id).into(),
+            email.to_string().into(), password_hash.to_string().into(), full_name.to_string().into(),
+            now.to_string().into(), now.to_string().into(),
+        ],
+    )
+    .await
+}
+
+async fn assign_role(
+    db: &sea_orm::DatabaseTransaction,
+    backend: DatabaseBackend,
+    org_id: &Uuid,
+    user_id: &Uuid,
+    role_id: &str,
+    now: &str,
+) -> Result<()> {
+    execute_with_values(
+        db,
+        backend,
+        "INSERT INTO user_role_assignments (id, user_id, role_id, org_id, scope_type, scope_id, assigned_by, created_at) VALUES (?, ?, ?, ?, 'global', NULL, NULL, ?)",
+        vec![
+            Uuid::new_v4().into(), (*user_id).into(), role_id.to_string().into(),
+            (*org_id).into(), now.to_string().into(),
+        ],
+    )
+    .await
 }
 
 fn is_development() -> bool {
@@ -115,7 +323,7 @@ fn prompt_teacher_count() -> Result<u32> {
 async fn find_organization(
     db: &sea_orm::DatabaseTransaction,
     backend: DatabaseBackend,
-) -> Result<Option<String>> {
+) -> Result<Option<Uuid>> {
     let row = db
         .query_one(Statement::from_sql_and_values(
             backend,
@@ -123,20 +331,20 @@ async fn find_organization(
             vec![],
         ))
         .await?;
-    Ok(row.and_then(|value| value.try_get::<String>("", "id").ok()))
+    Ok(row.and_then(|value| value.try_get::<Uuid>("", "id").ok()))
 }
 
 async fn teacher_exists(
     db: &sea_orm::DatabaseTransaction,
     backend: DatabaseBackend,
-    org_id: &str,
+    org_id: &Uuid,
     email: &str,
 ) -> Result<bool> {
     let row = db
         .query_one(Statement::from_sql_and_values(
             backend,
             "SELECT id FROM users WHERE org_id = ? AND email = ? AND is_deleted = 0 LIMIT 1",
-            vec![org_id.to_string().into(), email.to_string().into()],
+            vec![(*org_id).into(), email.to_string().into()],
         ))
         .await?;
     Ok(row.is_some())
