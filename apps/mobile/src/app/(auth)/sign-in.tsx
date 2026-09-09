@@ -17,7 +17,6 @@ import { useToast } from '@/components/ui/toast';
 import { SignInBrandHeader, SignInForm } from '@/components/auth';
 import { GradientHeader } from '@/components/gradient-header';
 import { KeyboardAwareView } from '@/components/ui/keyboard-aware-view';
-import { ThemedStatusBar } from '@/components/ui/themed-status-bar';
 import { Spacing } from '@/constants/theme';
 
 export default function SignInScreen() {
@@ -63,7 +62,6 @@ export default function SignInScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <ThemedStatusBar backgroundColor={theme.primary} style="light" />
       <GradientHeader
         colors={['#7628F5', '#893BF2', '#FFFFFF'] as const}
         locations={[0, 0.82, 1] as const}

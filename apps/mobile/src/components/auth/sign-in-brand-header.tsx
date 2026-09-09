@@ -29,11 +29,6 @@ export const SignInBrandHeader = React.memo(() => {
     <View
       style={[
         styles.container,
-        {
-          backgroundColor: theme.primary,
-          marginHorizontal: -Spacing.four,
-          paddingHorizontal: Spacing.four,
-        },
       ]}>
       {/* Top Language Switcher Toggle */}
       <View style={styles.topBar}>
