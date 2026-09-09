@@ -131,6 +131,7 @@ export type BatchPrintRequest = {
 };
 
 export type CalculateGradesRequest = {
+    class_subject_id?: string | null;
     scheme_id: string;
     student_id: string;
 };
@@ -810,7 +811,7 @@ export type SubjectDto = {
 };
 
 export type SubmitOverrideRequest = {
-    approver_role?: string | null;
+    approver_role: string;
     entity_id: string;
     entity_type: string;
     field_name?: string | null;
@@ -1451,7 +1452,7 @@ export type DeleteDocumentData = {
     body?: never;
     path: {
         /**
-         * Document ID
+         * Document deleted
          */
         id: string;
     };
