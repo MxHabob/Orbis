@@ -17,7 +17,6 @@ import {
 import {
   Gesture,
   GestureDetector,
-  type PanGesture,
 } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
@@ -40,7 +39,7 @@ interface DrawerContextValue {
   onClose: () => void;
   theme: ReturnType<typeof useTheme>;
   isDark: boolean;
-  pan: PanGesture;
+  pan: ReturnType<typeof Gesture.Pan>;
   hasCloseButton: boolean;
   setHasCloseButton: (val: boolean) => void;
 }

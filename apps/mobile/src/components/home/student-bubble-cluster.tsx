@@ -107,7 +107,6 @@ export const StudentBubbleCluster = React.memo<StudentBubbleClusterProps>(
 
     return (
         <View style={styles.cluster}> 
-        {/* Two large bubbles above three smaller bubbles, matching the reference layout. */}
         <View style={styles.rowTop}>
           {topItems.map((item, idx) => {
             const ItemIllustration = item.Illustration;

@@ -178,8 +178,7 @@ export default function HomeScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.primary }]}>
-      {isFocused && <ThemedStatusBar style="light" backgroundColor={theme.primary} />}
+    <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -187,16 +186,29 @@ export default function HomeScreen() {
         refreshControl={
           <RefreshControl refreshing={isQueryLoading} onRefresh={onRefresh} tintColor="#FFFFFF" />
         }>
-        <GradientHeader
-          colors={['#7628F5', '#893BF2', '#F8F3FA'] as const}
-          locations={[0, 0.62, 1] as const}
-          height={190}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.homeGradient}
-          animated
-          duration={16000}
-        />
+ <GradientHeader
+  height={300}
+  animated
+  duration={16000}
+  colors={[
+    '#7628F5',
+    '#893BF2',
+    '#A75AF0',
+    '#C98DF0',
+    '#E8CFF4',
+    '#F8F3FA',
+    '#FFFFFF',
+  ]}
+  locations={[
+    0,
+    0.12,
+    0.27,
+    0.43,
+    0.58,
+    0.72,
+    1,
+  ]}
+/>
 
         {/* 1. Primary Hero Header */}
         <View style={[styles.heroSection, { paddingTop: Math.max(insets.top, 16) + 4 }]}>
