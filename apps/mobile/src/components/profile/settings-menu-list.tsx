@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Card } from '@/components/ui/card';
 import { useTheme } from '@/hooks/use-theme';
 import { useI18n } from '@/lib/i18n';
-import { Spacing, Typography } from '@/constants/theme';
+import { Spacing, Typography, Radii } from '@/constants/theme';
 
 export const SettingsMenuList = React.memo(() => {
   const theme = useTheme();
@@ -46,11 +46,9 @@ export const SettingsMenuList = React.memo(() => {
 
   return (
     <View style={styles.section}>
-      <Text style={[styles.title, { color: theme.text }]}>
-        {t('profile_settings_title')}
-      </Text>
+      <Text style={[styles.title, { color: theme.foreground }]}>Settings</Text>
 
-      <Card variant="flat" style={styles.card}>
+      <Card variant="flat" style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         {menuItems.map((item, idx) => (
           <Pressable
             key={item.id}
@@ -64,14 +62,13 @@ export const SettingsMenuList = React.memo(() => {
               pressed && { backgroundColor: theme.backgroundElement },
             ]}>
             <View style={styles.itemLeft}>
-              <View
-                style={[styles.iconBox, { backgroundColor: theme.backgroundElement }]}>
+              <View style={[styles.iconBox, { backgroundColor: theme.backgroundElement }]}>
                 <Ionicons name={item.icon as any} size={20} color={theme.primary} />
               </View>
-              <Text style={[styles.itemTitle, { color: theme.text }]}>{item.title}</Text>
+              <Text style={[styles.itemTitle, { color: theme.foreground }]}>{item.title}</Text>
             </View>
 
-            <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+            <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
           </Pressable>
         ))}
       </Card>
@@ -84,15 +81,19 @@ SettingsMenuList.displayName = 'SettingsMenuList';
 const styles = StyleSheet.create({
   section: {
     gap: Spacing.two,
+    width: '100%',
   },
   title: {
     ...Typography.h3,
-    fontSize: 16,
+    fontSize: 18,
     paddingHorizontal: Spacing.one,
+    marginBottom: Spacing.one,
   },
   card: {
     padding: 0,
     overflow: 'hidden',
+    borderRadius: Radii.lg,
+    borderWidth: 1,
   },
   item: {
     flexDirection: 'row',
@@ -107,14 +108,14 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   iconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: Radii.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
   itemTitle: {
     ...Typography.bodyBold,
-    fontSize: 14,
+    fontSize: 15,
   },
 });
