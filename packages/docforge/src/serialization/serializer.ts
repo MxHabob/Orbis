@@ -5,8 +5,8 @@
 // ═══════════════════════════════════════════════════════════════
 
 import type { TemplateDocument } from "../model/document";
-import type { PageNode } from "../model/nodes";
 import { DOCUMENT_SCHEMA_VERSION } from "../model/document";
+import type { PageNode } from "../model/nodes";
 
 /**
  * Serialize a TemplateDocument to a JSON string.

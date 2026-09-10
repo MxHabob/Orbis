@@ -5,8 +5,8 @@
 // ═══════════════════════════════════════════════════════════════
 
 import {
-  toArabicNumerals,
   formatArabicNumber,
+  toArabicNumerals,
   toArabicOrdinal,
 } from "../utils/arabic";
 

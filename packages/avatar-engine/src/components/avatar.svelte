@@ -1,16 +1,15 @@
 <script lang="ts">
 import { onDestroy } from "svelte";
 import { spring } from "svelte/motion";
-import { AvatarController } from "../core/avatar-controller.svelte";
-import AvatarHats from "./avatar-hats.svelte";
-import { ALL_AVATAR_HATS, type AvatarHat } from "../core/types.js";
-import { idleAnimation } from "../animations/idle.js";
 import { blinkAnimation } from "../animations/blink.js";
-import { thinkAnimation } from "../animations/think.js";
-import { happyAnimation } from "../animations/happy.js";
 import { errorAnimation } from "../animations/error.js";
+import { happyAnimation } from "../animations/happy.js";
+import { idleAnimation } from "../animations/idle.js";
+import { thinkAnimation } from "../animations/think.js";
+import { AvatarController } from "../core/avatar-controller.svelte";
+import { ALL_AVATAR_HATS, type AvatarHat } from "../core/types.js";
 
-let {
+const {
   controller,
   hat = "random",
   width = "100%",
@@ -28,7 +27,7 @@ const fallbackController = new AvatarController();
 const activeController = $derived(controller ?? fallbackController);
 
 // Idiomatic Svelte 5 Rune: pure reactivity derived state
-const resolvedHat = $derived.by<AvatarHat>(() => {
+const _resolvedHat = $derived.by<AvatarHat>(() => {
   if (hat === "random") {
     const idx = Math.floor(Math.random() * ALL_AVATAR_HATS.length);
     return ALL_AVATAR_HATS[idx];
@@ -51,8 +50,8 @@ const rightEyebrowYSpring = spring(0);
 const leftEyebrowRotateSpring = spring(0);
 const rightEyebrowRotateSpring = spring(0);
 
-let isShaking = $state(false);
-let containerEl = $state<HTMLDivElement | null>(null);
+let _isShaking = $state(false);
+const _containerEl = $state<HTMLDivElement | null>(null);
 let mouseX = $state(0);
 let mouseY = $state(0);
 let isHovered = $state(false);
@@ -130,14 +129,14 @@ $effect(() => {
     rightEyebrowRotateSpring.set(0);
   }
 
-  isShaking = config.bodyShake ?? false;
+  _isShaking = config.bodyShake ?? false;
 });
 
 // Mouse move handler for interactive parallax effect
-function handleMouseMove(e: MouseEvent) {
-  if (!containerEl || activeController.state !== "idle") return;
+function _handleMouseMove(e: MouseEvent) {
+  if (!_containerEl || activeController.state !== "idle") return;
 
-  const rect = containerEl.getBoundingClientRect();
+  const rect = _containerEl.getBoundingClientRect();
   const centerX = rect.left + rect.width / 2;
   const centerY = rect.top + rect.height / 2;
 
@@ -155,7 +154,7 @@ function handleMouseMove(e: MouseEvent) {
   bodyScaleSpring.set(1.01);
 }
 
-function handleMouseLeave() {
+function _handleMouseLeave() {
   isHovered = false;
   mouseX = 0;
   mouseY = 0;
@@ -174,16 +173,16 @@ onDestroy(() => {
 </script>
 
 <div
-  bind:this={containerEl}
-  onmousemove={(e) => handleMouseMove(e)}
-  onmouseleave={() => handleMouseLeave()}
-  class="relative flex items-center justify-center select-none {className}"
-  style:width
-  style:height
+  bind:this={_containerEl}
+  onmousemove={(e) => _handleMouseMove(e)}
+  onmouseleave={() => _handleMouseLeave()}
+  class={`relative flex items-center justify-center select-none ${className}`}
+  style:width={width}
+  style:height={height}
   role="presentation"
 >
   <svg
-    class="avatar-svg {isShaking ? 'shake' : ''}"
+    class="avatar-svg {_isShaking ? 'shake' : ''}"
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 200 200"
     width="100%"
@@ -267,7 +266,7 @@ onDestroy(() => {
       </g>
 
       <!-- Layer 3: Render Hats Component -->
-      <AvatarHats hat={resolvedHat} />
+      <AvatarHats hat={_resolvedHat} />
     </g>
   </svg>
 </div>

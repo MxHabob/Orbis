@@ -3,11 +3,9 @@
 // Validates template documents for correctness and completeness
 // ═══════════════════════════════════════════════════════════════
 
-import type { TemplateDocument } from "../model/document";
-import type { TemplateNode } from "../model/nodes";
-import { isContainerNode } from "../model/nodes";
-import { walkNodes } from "../operations/node-ops";
 import { extractVariableRefs } from "../expression/parser";
+import type { TemplateDocument } from "../model/document";
+import { walkNodes } from "../operations/node-ops";
 
 // ── Validation Result Types ──────────────────────────────────
 
@@ -218,8 +216,8 @@ function validateLayout(
   const pageHeight = pageSetup.height ?? (pageSetup.size === "A4" ? 297 : 297);
   const margins = pageSetup.margins;
 
-  const printableWidth = pageWidth - margins.left - margins.right;
-  const printableHeight = pageHeight - margins.top - margins.bottom;
+  const _printableWidth = pageWidth - margins.left - margins.right;
+  const _printableHeight = pageHeight - margins.top - margins.bottom;
 
   walkNodes(doc, (node) => {
     if ("props" in node) {

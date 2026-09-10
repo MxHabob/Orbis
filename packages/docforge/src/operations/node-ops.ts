@@ -6,9 +6,9 @@
 // v2.0: All operations work across `pages[]` instead of `root`.
 // ═══════════════════════════════════════════════════════════════
 
-import type { TemplateDocument, PageSetup, Spacing } from "../model/document";
+import type { PageSetup, Spacing, TemplateDocument } from "../model/document";
 import { getPages } from "../model/document";
-import type { TemplateNode, PageNode, NodeType } from "../model/nodes";
+import type { NodeType, PageNode, TemplateNode } from "../model/nodes";
 import { isContainerNode } from "../model/nodes";
 import { generateNodeId } from "../utils/id-generator";
 
@@ -476,7 +476,7 @@ function updateNodeInTree(
       updateNodeInTree(child, targetId, updater),
     );
 
-    let updatedElse = undefined;
+    let updatedElse: TemplateNode[] | undefined;
     if (node.type === "Conditional" && node.elseChildren) {
       updatedElse = node.elseChildren.map((child) =>
         updateNodeInTree(child, targetId, updater),
@@ -505,7 +505,7 @@ function removeNodeFromTree(
       .filter((child) => child.id !== targetId)
       .map((child) => removeNodeFromTree(child, targetId));
 
-    let filteredElse = undefined;
+    let filteredElse: TemplateNode[] | undefined;
     if (node.type === "Conditional" && node.elseChildren) {
       filteredElse = node.elseChildren
         .filter((child) => child.id !== targetId)

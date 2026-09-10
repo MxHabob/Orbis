@@ -1,7 +1,7 @@
 <script lang="ts">
-import Avatar from "./avatar.svelte";
+    import Avatar from "./avatar.svelte";
 
-let {
+const {
   mood = "steady",
   width = "138px",
   height = "82px",

@@ -3,7 +3,7 @@
 // All dimensions in millimeters
 // ═══════════════════════════════════════════════════════════════
 
-import type { PageSize, Orientation } from "../model/document";
+import type { Orientation, PageSize } from "../model/document";
 
 export interface PageDimensions {
   width: number;

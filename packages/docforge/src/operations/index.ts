@@ -1,12 +1,12 @@
 export {
-  createNode,
+  addNode,
   cloneNode,
+  createDocument,
+  createNode,
   findNode,
   findNodePath,
-  walkNodes,
-  updateNodeProps,
-  addNode,
-  removeNode,
   moveNode,
-  createDocument,
+  removeNode,
+  updateNodeProps,
+  walkNodes,
 } from "./node-ops";

@@ -6,8 +6,7 @@
 // The Rust engine is the source of truth for PDF rendering.
 // ═══════════════════════════════════════════════════════════════
 
-import { PAGE_SIZES, mmToPt } from "./utils";
-import type { PageSize, Orientation } from "./model";
+import type { Orientation } from "./model/document";
 
 // ── Types ────────────────────────────────────────────────────
 

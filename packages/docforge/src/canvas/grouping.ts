@@ -5,7 +5,7 @@
 
 import type { TemplateDocument } from "../model/document";
 import { getPages } from "../model/document";
-import type { TemplateNode, FrameNode, PageNode } from "../model/nodes";
+import type { FrameNode, PageNode, TemplateNode } from "../model/nodes";
 import { isContainerNode } from "../model/nodes";
 import { generateNodeId } from "../utils/id-generator";
 import type { BoundingBox } from "./hit-testing";

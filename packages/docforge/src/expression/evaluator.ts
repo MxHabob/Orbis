@@ -3,8 +3,8 @@
 // Evaluates parsed template expressions against a data context
 // ═══════════════════════════════════════════════════════════════
 
+import { getFormatter } from "./formatters";
 import { parseExpression, type Token } from "./parser";
-import { getFormatter, type FormatterFn } from "./formatters";
 
 // ── Data Context ─────────────────────────────────────────────
 
@@ -224,9 +224,9 @@ function resolveValue(token: string, context: DataContext): unknown {
 function compareValues(left: unknown, right: unknown, op: string): boolean {
   switch (op) {
     case "==":
-      return left == right;
+      return left === right;
     case "!=":
-      return left != right;
+      return left !== right;
     case ">":
       return Number(left) > Number(right);
     case ">=":

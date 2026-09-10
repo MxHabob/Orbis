@@ -10,11 +10,12 @@ let counter = 0;
  * Format: "{type}_{shortId}" e.g., "text_a3f8b2"
  */
 export function generateNodeId(nodeType: string): string {
-  counter++;
+  const currentCounter = counter;
+  counter += 1;
   const timestamp = Date.now().toString(36);
   const random = Math.random().toString(36).substring(2, 6);
   const prefix = nodeType.toLowerCase().replace(/[^a-z]/g, "");
-  return `${prefix}_${timestamp}${random}`;
+  return `${prefix}_${timestamp}${random}_${currentCounter.toString(36)}`;
 }
 
 /**

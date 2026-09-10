@@ -4,8 +4,7 @@
 // Used by the Canvas editor for selection and interaction.
 // ═══════════════════════════════════════════════════════════════
 
-import type { TemplateNode, PageNode } from "../model/nodes";
-import { isContainerNode, hasPosition } from "../model/nodes";
+import type { TemplateNode } from "../model/nodes";
 
 // ── Types ────────────────────────────────────────────────────
 

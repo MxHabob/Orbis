@@ -1,6 +1,6 @@
 import {
-  AvatarStateMachine,
   type AvatarState,
+  AvatarStateMachine,
 } from "./avatar-state-machine.js";
 
 export class AvatarController {

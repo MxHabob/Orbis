@@ -6,7 +6,7 @@ Designs use soft depth shadows, seamless head wrapping, and zero harsh sticker o
 <script lang="ts">
 import type { AvatarHat } from "../core/types.js";
 
-let { hat = "none" }: { hat: AvatarHat } = $props();
+const { hat = "none" }: { hat: AvatarHat } = $props();
 </script>
 
 {#if hat === "crown"}

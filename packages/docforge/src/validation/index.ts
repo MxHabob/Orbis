@@ -1,5 +1,5 @@
 export {
-  validateDocument,
-  type ValidationResult,
   type ValidationIssue,
+  type ValidationResult,
+  validateDocument,
 } from "./validator";

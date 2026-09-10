@@ -9,7 +9,7 @@
 //   - Added `StyleDefinition`, `ThemeDefinition`
 // ═══════════════════════════════════════════════════════════════
 
-import type { PageNode, NodeType, TemplateNode } from "./nodes";
+import type { NodeType, PageNode, TemplateNode } from "./nodes";
 
 // ── Document Root ────────────────────────────────────────────
 

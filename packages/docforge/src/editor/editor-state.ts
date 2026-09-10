@@ -5,16 +5,16 @@
 // ═══════════════════════════════════════════════════════════════
 
 import type { TemplateDocument } from "../model/document";
-import type { TemplateNode, PageNode } from "../model/nodes";
 import { getPages } from "../model/document";
-import { generateNodeId } from "../utils/id-generator";
+import type { PageNode, TemplateNode } from "../model/nodes";
 import {
-  findNode,
-  updateNodeProps as updateOp,
   addNode as addOp,
-  removeNode as removeOp,
+  findNode,
   moveNode as moveOp,
+  removeNode as removeOp,
+  updateNodeProps as updateOp,
 } from "../operations/node-ops";
+import { generateNodeId } from "../utils/id-generator";
 
 // ── History Manager ──────────────────────────────────────────
 
