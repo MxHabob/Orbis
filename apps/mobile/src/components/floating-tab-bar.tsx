@@ -192,8 +192,6 @@ export function FloatingTabBar({
   const behaviorRoute =
     getRoute('behavior');
 
-  const IdCardDialog = getRoute('');
-
 
   const indexFocused =
     isRouteFocused('index');

@@ -62,8 +62,14 @@ export default function SecuritySettingsScreen() {
   const [mfaEnabled, setMfaEnabled] =
     useState(user?.mfa_enabled ?? true);
 
+  const [googleLinked, setGoogleLinked] =
+    useState(true);
+
   const [dialogVisible, setDialogVisible] =
     useState(false);
+
+  const [pendingAction, setPendingAction] =
+    useState<'google' | 'device' | null>(null);
 
   const [dialogMode, setDialogMode] =
     useState<'message' | 'confirm'>(
@@ -119,6 +125,7 @@ export default function SecuritySettingsScreen() {
     deviceId: string,
   ) => {
     setPendingDeviceId(deviceId);
+    setPendingAction('device');
 
     openDialog(
       'إنهاء الجلسة',
@@ -142,7 +149,38 @@ export default function SecuritySettingsScreen() {
     }
 
     setDialogVisible(false);
+    setPendingAction(null);
     setPendingDeviceId(null);
+  };
+
+  const handleGooglePress = () => {
+    if (googleLinked) {
+      setPendingAction('google');
+
+      openDialog(
+        'فصل حساب Google',
+        'هل أنت متأكد من إلغاء ربط حساب Google؟',
+        'confirm',
+      );
+
+      return;
+    }
+
+    setGoogleLinked(true);
+
+    toast.success(
+      'تم ربط حساب Google بنجاح.',
+    );
+  };
+
+  const confirmGoogleDisconnect = () => {
+    setGoogleLinked(false);
+    setDialogVisible(false);
+    setPendingAction(null);
+
+    toast.success(
+      'تم إلغاء ربط حساب Google.',
+    );
   };
 
   const handleUpdatePassword = () => {
@@ -288,6 +326,111 @@ export default function SecuritySettingsScreen() {
               ============================================================ */}
 
           <SectionLabel
+            title="الحسابات المرتبطة"
+            theme={theme}
+            style={styles.sectionSpacing}
+          />
+
+          <View
+            style={[
+              styles.providerRow,
+              {
+                borderBottomColor: theme.border,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.googleIcon,
+                {
+                  backgroundColor:
+                    theme.backgroundElement,
+                },
+              ]}
+            >
+              <Ionicons
+                name="logo-google"
+                size={22}
+                color={theme.text}
+              />
+            </View>
+
+            <View style={styles.providerInfo}>
+              <Text
+                style={[
+                  styles.providerTitle,
+                  {
+                    color: theme.text,
+                  },
+                ]}
+              >
+                Google
+              </Text>
+
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.providerEmail,
+                  {
+                    color: theme.textMuted,
+                  },
+                ]}
+              >
+                {googleLinked
+                  ? 'user@gmail.com'
+                  : 'غير متصل'}
+              </Text>
+            </View>
+
+            <View style={styles.status}>
+              <View
+                style={[
+                  styles.statusDot,
+                  {
+                    backgroundColor:
+                      googleLinked
+                        ? theme.primary
+                        : theme.border,
+                  },
+                ]}
+              />
+
+              <Text
+                style={[
+                  styles.statusText,
+                  {
+                    color: googleLinked
+                      ? theme.textSecondary
+                      : theme.textMuted,
+                  },
+                ]}
+              >
+                {googleLinked
+                  ? 'متصل'
+                  : 'غير متصل'}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.actionArea}>
+            <Button
+              title={
+                googleLinked
+                  ? 'فصل حساب Google'
+                  : 'ربط حساب Google'
+              }
+              onPress={handleGooglePress}
+              variant={
+                googleLinked
+                  ? 'secondary'
+                  : 'primary'
+              }
+              size="md"
+              fullWidth
+            />
+          </View>
+
+          <SectionLabel
             title="كلمة المرور"
             theme={theme}
             style={styles.sectionSpacing}
@@ -392,15 +535,25 @@ export default function SecuritySettingsScreen() {
                 <DialogClose>
                   <Button
                     title="إلغاء"
-                    onPress={() => {}}
+                    onPress={() => {
+                      setPendingAction(null);
+                    }}
                     variant="outline"
                     size="sm"
                   />
                 </DialogClose>
 
                 <Button
-                  title="إنهاء الجلسة"
-                  onPress={confirmRevokeDevice}
+                  title={
+                    pendingAction === 'google'
+                      ? 'فصل الحساب'
+                      : 'إنهاء الجلسة'
+                  }
+                  onPress={
+                    pendingAction === 'google'
+                      ? confirmGoogleDisconnect
+                      : confirmRevokeDevice
+                  }
                   variant="destructive"
                   size="sm"
                 />
@@ -617,6 +770,65 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     marginLeft: Spacing.three,
+  },
+
+  /* Linked Accounts */
+
+  providerRow: {
+    minHeight: 72,
+
+    flexDirection: 'row',
+    alignItems: 'center',
+
+    borderBottomWidth:
+      StyleSheet.hairlineWidth,
+    paddingBottom: Spacing.four,
+  },
+
+  googleIcon: {
+    width: 48,
+    height: 48,
+
+    borderRadius: Radii.full,
+
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  providerInfo: {
+    flex: 1,
+    minWidth: 0,
+    marginLeft: Spacing.three,
+  },
+
+  providerTitle: {
+    ...Typography.bodyBold,
+    fontSize: 15,
+  },
+
+  providerEmail: {
+    ...Typography.small,
+    marginTop: 3,
+  },
+
+  status: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: Radii.full,
+  },
+
+  statusText: {
+    ...Typography.small,
+  },
+
+  actionArea: {
+    marginTop: Spacing.five,
   },
 
   /* Password */

@@ -148,7 +148,7 @@ export default function ProfileScreen() {
 
   const handleLogout = async () => {
     await logout();
-    router.replace('/(auth)');
+    router.replace('/(auth)/sign-in');
   };
 
   return (
@@ -344,8 +344,7 @@ export default function ProfileScreen() {
               ]}
             >
               <OrganizationLogo
-                uri={organizationLogo}
-                name={organizationName}
+                logoUrl={organizationLogo}
                 size={34}
               />
             </View>
@@ -379,7 +378,7 @@ export default function ProfileScreen() {
               <Ionicons
                 name={
                   organizationWebsite
-                    ? 'arrow-up-right'
+                    ? 'arrow-up-right-box-outline'
                     : 'business-outline'
                 }
                 size={16}
@@ -439,15 +438,6 @@ export default function ProfileScreen() {
             theme={theme}
             onPress={() =>
               router.push('/settings/account')
-            }
-          />
-
-          <ActionRow
-            label="Linked Accounts"
-            index="01"
-            theme={theme}
-            onPress={() =>
-              router.push('/settings/linked-accounts')
             }
           />
 

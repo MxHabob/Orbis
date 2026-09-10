@@ -15,6 +15,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 interface OrganizationLogoProps {
   size?: number;
   logoUrl?: string | null;
+  uri?: string | null;
   imageSource?: ImageSourcePropType;
   color?: string;
   dotColor?: string;
@@ -26,6 +27,7 @@ export const OrganizationLogo = React.memo<OrganizationLogoProps>(
   ({
     size = 48,
     logoUrl,
+    uri,
     imageSource,
     color,
     dotColor = '#A821D9',
@@ -41,8 +43,10 @@ export const OrganizationLogo = React.memo<OrganizationLogoProps>(
     const primaryColor = color || (isDark ? '#FFFFFF' : theme.primary);
     const resolvedDotColor = dotColor || '#A821D9';
 
+    const resolvedLogoUrl = logoUrl ?? uri ?? null;
+
     // If an explicit image source or valid logoUrl is provided without error:
-    const hasImage = !imageError && (Boolean(imageSource) || Boolean(logoUrl));
+    const hasImage = !imageError && (Boolean(imageSource) || Boolean(resolvedLogoUrl));
 
     const logoContent = (
       <View
@@ -50,7 +54,7 @@ export const OrganizationLogo = React.memo<OrganizationLogoProps>(
         style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
         {hasImage ? (
           <Image
-            source={imageSource || { uri: logoUrl! }}
+            source={imageSource || { uri: resolvedLogoUrl! }}
             style={{ width: size, height: size, borderRadius: size * 0.25 }}
             resizeMode="contain"
             onError={() => setImageError(true)}

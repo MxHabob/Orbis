@@ -4,7 +4,6 @@
  * Nested Stack Navigator for Settings and Security Workflows.
  */
 
-import React from 'react';
 import { Stack } from 'expo-router';
 
 export default function SettingsLayout() {
@@ -14,10 +13,9 @@ export default function SettingsLayout() {
         headerShown: false,
         animation: 'slide_from_right',
       }}>
-      <Stack.Screen name="profile" options={{ headerShown: false }} />
+      <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="account" options={{ headerShown: false }} />
       <Stack.Screen name="security" options={{ headerShown: false }} />
-      <Stack.Screen name="linked-accounts" options={{ headerShown: false }} />
       <Stack.Screen name="preferences" options={{ headerShown: false }} />
     </Stack>
   );

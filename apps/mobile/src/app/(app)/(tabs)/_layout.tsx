@@ -77,23 +77,10 @@ export default function TabsLayout() {
         >
           <Tabs.Screen
             name="index"
-            options={{
-              title: t('tab_home'),
-            }}
           />
 
           <Tabs.Screen
             name="behavior"
-            options={{
-              title: t('tab_behavior_ai'),
-            }}
-          />
-
-          <Tabs.Screen
-            name="profile"
-            options={{
-              title: t('tab_profile'),
-            }}
           />
         </Tabs>
       )}

@@ -14,36 +14,26 @@ import {
 } from 'expo-status-bar';
 
 
-export function ThemedStatusBar() {
-  const colorScheme =
-    useColorScheme();
+type ThemedStatusBarProps = {
+  backgroundColor?: string;
+};
 
-  const isDark =
-    colorScheme === 'dark';
-
+export function ThemedStatusBar({ backgroundColor }: ThemedStatusBarProps) {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
 
   return (
     <>
       <ExpoStatusBar
-        style={
-          isDark
-            ? 'light'
-            : 'dark'
-        }
-
+        style={isDark ? 'light' : 'dark'}
         animated
       />
 
       {Platform.OS === 'android' && (
         <RNStatusBar
           translucent
-          backgroundColor="transparent"
-          barStyle={
-            isDark
-              ? 'light-content'
-              : 'dark-content'
-          }
-
+          backgroundColor={backgroundColor ?? 'transparent'}
+          barStyle={isDark ? 'light-content' : 'dark-content'}
           animated
         />
       )}

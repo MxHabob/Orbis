@@ -307,12 +307,12 @@ export function GradientHeader({
 
   blobTertiary = '#C084FC',
 }: GradientHeaderProps) {
-  const resolvedLocations =
+  const resolvedLocations: GradientHeaderLocations =
     locations && locations.length === colors.length
       ? locations
-      : Array.from({ length: colors.length }, (_, index) =>
+      : (Array.from({ length: colors.length }, (_, index) =>
           colors.length === 1 ? 0 : index / (colors.length - 1),
-        );
+        ) as unknown as GradientHeaderLocations);
 
   return (
     <AnimatedView
