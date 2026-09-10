@@ -510,61 +510,45 @@ export const SignInForm =
 
           {/* Google */}
 
-          <Pressable
-            onPress={
-              handleGoogle
-            }
+          <Button
+            title={t(
+              'auth_continue_google',
+            )}
+            onPress={handleGoogle}
+            loading={loading}
             disabled={loading}
-            style={({ pressed }) => [
-              styles.googleButton,
-
-              {
-                backgroundColor:
-                  theme.auth
-                    .secondaryButton,
-
-                borderColor:
-                  theme.auth
-                    .surfaceBorder,
-
-                opacity:
-                  pressed
-                    ? 0.75
-                    : 1,
-              },
-            ]}>
-
-            <Text
-              style={[
-                styles.googleText,
-                {
-                  color:
-                    theme.auth
-                      .secondaryButtonText,
-                },
-              ]}>
-
-              {t(
-                'auth_continue_google',
-              )}
-
-            </Text>
-
-            <Text
-              style={[
-                styles.googleIcon,
-                {
-                  color:
-                    theme.auth
-                      .secondaryButtonText,
-                },
-              ]}>
-
-              G
-
-            </Text>
-
-          </Pressable>
+            fullWidth
+            size="lg"
+            variant="secondary"
+            style={{
+              backgroundColor:
+                theme.auth
+                  .secondaryButton,
+              borderColor:
+                theme.auth
+                  .surfaceBorder,
+            }}
+            textStyle={{
+              color:
+                theme.auth
+                  .secondaryButtonText,
+            }}
+            icon={
+              <Text
+                style={[
+                  styles.googleIcon,
+                  {
+                    color:
+                      theme.auth
+                        .secondaryButtonText,
+                  },
+                ]}
+              >
+                G
+              </Text>
+            }
+            iconPosition="right"
+          />
 
           {/* Register */}
 

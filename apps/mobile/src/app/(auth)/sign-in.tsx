@@ -145,10 +145,12 @@ export default function SignInScreen() {
         }
         locations={[
           0,
-          0.08,
-          0.20,
+          0.12,
+          0.26,
           0.40,
-          0.68,
+          0.56,
+          0.72,
+          0.88,
           1,
         ]}
         start={
@@ -157,6 +159,7 @@ export default function SignInScreen() {
         end={
           theme.gradientHeader.end
         }
+        anchor="bottom"
         blobPrimary={
           theme.gradientHeader.blobPrimary
         }

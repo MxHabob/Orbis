@@ -79,6 +79,8 @@ type GradientHeaderProps = {
 
   duration?: number;
 
+  anchor?: 'top' | 'bottom';
+
   blobPrimary?: string;
 
   blobSecondary?: string;
@@ -297,12 +299,21 @@ export function GradientHeader({
 
   duration = 18000,
 
+  anchor = 'top',
+
   blobPrimary = '#7C3AED',
 
   blobSecondary = '#A855F7',
 
   blobTertiary = '#C084FC',
 }: GradientHeaderProps) {
+  const resolvedLocations =
+    locations && locations.length === colors.length
+      ? locations
+      : Array.from({ length: colors.length }, (_, index) =>
+          colors.length === 1 ? 0 : index / (colors.length - 1),
+        );
+
   return (
     <AnimatedView
       pointerEvents="none"
@@ -311,6 +322,7 @@ export function GradientHeader({
 
         {
           height,
+          [anchor === 'top' ? 'top' : 'bottom']: 0,
         },
 
         style,
@@ -318,7 +330,7 @@ export function GradientHeader({
 
       <LinearGradient
         colors={colors}
-        locations={locations}
+        locations={resolvedLocations}
         start={start}
         end={end}
         style={
@@ -380,7 +392,6 @@ const styles = StyleSheet.create({
   container: {
     position: 'absolute',
 
-    top: 0,
     left: 0,
     right: 0,
 
