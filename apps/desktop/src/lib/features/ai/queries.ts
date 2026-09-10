@@ -71,7 +71,6 @@ export function useConfigureAutopilot() {
           mode: vars.mode,
         },
       });
-
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -156,4 +155,3 @@ export function useRejectAgentAction() {
     },
   }));
 }
-

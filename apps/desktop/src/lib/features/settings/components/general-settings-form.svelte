@@ -105,23 +105,27 @@ function handleReset() {
 function handleSubmit(e?: Event) {
   e?.preventDefault();
   settingsForm.values = { name, currency, timezone, locale, dateFormat };
-  settingsForm.submit(async (result) => {
-    onsave({
-      name: result.name,
-      name_ar: nameAr || null,
-      logo: logo || null,
-      primary_color: primaryColor,
-      currency: result.currency,
-      timezone: result.timezone,
-      locale: result.locale,
-      date_format: result.dateFormat,
-      hijri_enabled: hijriEnabled,
+  settingsForm
+    .submit(async (result) => {
+      onsave({
+        name: result.name,
+        name_ar: nameAr || null,
+        logo: logo || null,
+        primary_color: primaryColor,
+        currency: result.currency,
+        timezone: result.timezone,
+        locale: result.locale,
+        date_format: result.dateFormat,
+        hijri_enabled: hijriEnabled,
+      });
+    })
+    .then((submitted) => {
+      if (!submitted) {
+        toast.error(
+          l("بيانات الإعدادات غير صالحة", "Settings contain invalid values"),
+        );
+      }
     });
-  }).then((submitted) => {
-    if (!submitted) {
-      toast.error(l("بيانات الإعدادات غير صالحة", "Settings contain invalid values"));
-    }
-  });
   if (initialValues) {
     initialValues = {
       name,

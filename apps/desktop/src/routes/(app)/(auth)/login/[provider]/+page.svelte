@@ -12,6 +12,8 @@ onMount(() => {
   const provider = page.params.provider || "google";
   const search = page.url.search || "";
   const hash = typeof window !== "undefined" ? window.location.hash : "";
-  goto(localizeHref(`/auth/${provider}${search}${hash}`), { replaceState: true });
+  goto(localizeHref(`/auth/${provider}${search}${hash}`), {
+    replaceState: true,
+  });
 });
 </script>

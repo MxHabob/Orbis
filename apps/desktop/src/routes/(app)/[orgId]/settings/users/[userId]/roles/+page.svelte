@@ -6,7 +6,7 @@ Roles tab for user detail — checklist of available system roles using official
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { onMount } from "svelte";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Card } from "@orbis/ui/card";
@@ -49,8 +49,10 @@ const SYSTEM_ROLES: SystemRoleInfo[] = [
     id: "super_admin",
     nameAr: "مدير عام النظام",
     nameEn: "Super Administrator",
-    descAr: "صلاحيات وتحكم كامل وشامل بجميع إعدادات النظام، والمنظمات، وقواعد الأمان.",
-    descEn: "Full, unrestricted access to all system settings, organizations, and security rules.",
+    descAr:
+      "صلاحيات وتحكم كامل وشامل بجميع إعدادات النظام، والمنظمات، وقواعد الأمان.",
+    descEn:
+      "Full, unrestricted access to all system settings, organizations, and security rules.",
     icon: Crown,
   },
   {
@@ -58,7 +60,8 @@ const SYSTEM_ROLES: SystemRoleInfo[] = [
     nameAr: "مدير النظام",
     nameEn: "System Administrator",
     descAr: "إدارة المستخدمين، الأدوار، الصلاحيات، والتهيئة الإدارية للمؤسسة.",
-    descEn: "Manages users, roles, system permissions, and institutional configurations.",
+    descEn:
+      "Manages users, roles, system permissions, and institutional configurations.",
     icon: Shield,
   },
   {
@@ -66,7 +69,8 @@ const SYSTEM_ROLES: SystemRoleInfo[] = [
     nameAr: "مدير المدرسة / المنشأة",
     nameEn: "School Principal",
     descAr: "الإشراف والاعتماد الأكاديمي والإداري الشامل ومتابعة كافة الأقسام.",
-    descEn: "Comprehensive academic and administrative oversight across all school departments.",
+    descEn:
+      "Comprehensive academic and administrative oversight across all school departments.",
     icon: GraduationCap,
   },
   {
@@ -74,39 +78,48 @@ const SYSTEM_ROLES: SystemRoleInfo[] = [
     nameAr: "معلم / هيئة تدريس",
     nameEn: "Teacher / Faculty",
     descAr: "إدارة الصفوف، والمقررات، وتسجيل الحضور، والتقييمات ورصد الدرجات.",
-    descEn: "Manages assigned classes, subjects, attendance, assessments, and gradebooks.",
+    descEn:
+      "Manages assigned classes, subjects, attendance, assessments, and gradebooks.",
     icon: BookOpen,
   },
   {
     id: "registrar",
     nameAr: "مسجل أكاديمي",
     nameEn: "Academic Registrar",
-    descAr: "إدارة قبول وتسجيل الطلاب، النقل والترقية، وتوثيق الفترات الأكاديمية.",
-    descEn: "Handles student admissions, enrollments, promotions, transfers, and academic periods.",
+    descAr:
+      "إدارة قبول وتسجيل الطلاب، النقل والترقية، وتوثيق الفترات الأكاديمية.",
+    descEn:
+      "Handles student admissions, enrollments, promotions, transfers, and academic periods.",
     icon: ClipboardCheck,
   },
   {
     id: "accountant",
     nameAr: "محاسب مالي",
     nameEn: "Financial Accountant",
-    descAr: "إدارة الرسوم الدراسية، والفواتير، والمدفوعات، وإصدار التقارير المالية.",
-    descEn: "Manages tuition fees, invoicing, payment tracking, and financial ledgers.",
+    descAr:
+      "إدارة الرسوم الدراسية، والفواتير، والمدفوعات، وإصدار التقارير المالية.",
+    descEn:
+      "Manages tuition fees, invoicing, payment tracking, and financial ledgers.",
     icon: Landmark,
   },
   {
     id: "staff",
     nameAr: "كادر إداري",
     nameEn: "Administrative Staff",
-    descAr: "متابعة المهام التشغيلية اليومية، المراسلات، والعمليات الإدارية المساندة.",
-    descEn: "Performs day-to-day administrative duties, messaging, and support workflows.",
+    descAr:
+      "متابعة المهام التشغيلية اليومية، المراسلات، والعمليات الإدارية المساندة.",
+    descEn:
+      "Performs day-to-day administrative duties, messaging, and support workflows.",
     icon: UserCog,
   },
   {
     id: "student",
     nameAr: "طالب",
     nameEn: "Student",
-    descAr: "الاطلاع على الجدول الأكاديمي، نتائج التقييمات، والواجبات المدرسية.",
-    descEn: "Views personal class timetable, assessment results, and course materials.",
+    descAr:
+      "الاطلاع على الجدول الأكاديمي، نتائج التقييمات، والواجبات المدرسية.",
+    descEn:
+      "Views personal class timetable, assessment results, and course materials.",
     icon: User,
   },
   {
@@ -114,7 +127,8 @@ const SYSTEM_ROLES: SystemRoleInfo[] = [
     nameAr: "ولي أمر",
     nameEn: "Parent / Guardian",
     descAr: "متابعة السجل الأكاديمي وسلوك الأبناء، وسداد الرسوم والتواصل.",
-    descEn: "Monitors children's academic progress, attendance records, and fee payments.",
+    descEn:
+      "Monitors children's academic progress, attendance records, and fee payments.",
     icon: Users,
   },
 ];
@@ -130,7 +144,7 @@ let filteredRoles = $derived(
       r.descAr.toLowerCase().includes(q) ||
       r.descEn.toLowerCase().includes(q)
     );
-  })
+  }),
 );
 
 async function loadRoles() {
@@ -191,7 +205,11 @@ async function saveRoles() {
       }
     }
 
-    toast.success(m.settings_user_detail_saved ? m.settings_user_detail_saved() : l("تم حفظ الأدوار بنجاح", "Roles saved successfully"));
+    toast.success(
+      m.settings_user_detail_saved
+        ? m.settings_user_detail_saved()
+        : l("تم حفظ الأدوار بنجاح", "Roles saved successfully"),
+    );
   } catch (e: unknown) {
     toast.error((e as any)?.message || l("فشل الحفظ", "Save failed"));
   } finally {

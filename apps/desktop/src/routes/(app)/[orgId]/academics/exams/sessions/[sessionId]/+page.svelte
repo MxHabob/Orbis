@@ -41,7 +41,7 @@ import {
 import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
 import SubjectAddSheet from "$lib/features/exams/components/subject-add-sheet.svelte";
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { authStore, aiContext, confirmStore } from "$lib/stores";
 
 let { data }: { data: { orgId: string } } = $props();
@@ -257,53 +257,52 @@ async function loadSession() {
   try {
     session = await api.exam.getSession(sessionId as string);
 
-		const [
-			loadedSubjects,
-			loadedSchedules,
-			loadedSeatingNumbers,
-			loadedHalls,
-			loadedProctors,
-			loadedRooms,
-			[classList, subjectList],
-		] = await Promise.all([
-			api.exam.listExamSubjects(sessionId as string).catch((err: unknown) => {
-				console.error("Failed to load subjects", err);
-				return [];
-			}),
-			api.exam.listExamSchedules(sessionId as string).catch((err: unknown) => {
-				console.error("Failed to load schedules", err);
-				return [];
-			}),
-			api.exam.listSecretNumbers(sessionId as string).catch((err: unknown) => {
-				console.error("Failed to load seating numbers", err);
-				return [];
-			}),
-			api.exam.listHalls().catch((err: unknown) => {
-				console.error("Failed to load halls", err);
-				return [];
-			}),
-			Promise.resolve([]),
-			api.listRooms().catch((err: unknown) => {
-				console.error("Failed to load school rooms", err);
-				return [];
-			}),
-			Promise.all([
-				api.listClasses(),
-				api.listSubjects(),
-			]).catch((err: unknown) => {
-				console.error("Failed to load classes/subjects catalogs", err);
-				return [[], []];
-			}),
-		]);
+    const [
+      loadedSubjects,
+      loadedSchedules,
+      loadedSeatingNumbers,
+      loadedHalls,
+      loadedProctors,
+      loadedRooms,
+      [classList, subjectList],
+    ] = await Promise.all([
+      api.exam.listExamSubjects(sessionId as string).catch((err: unknown) => {
+        console.error("Failed to load subjects", err);
+        return [];
+      }),
+      api.exam.listExamSchedules(sessionId as string).catch((err: unknown) => {
+        console.error("Failed to load schedules", err);
+        return [];
+      }),
+      api.exam.listSecretNumbers(sessionId as string).catch((err: unknown) => {
+        console.error("Failed to load seating numbers", err);
+        return [];
+      }),
+      api.exam.listHalls().catch((err: unknown) => {
+        console.error("Failed to load halls", err);
+        return [];
+      }),
+      Promise.resolve([]),
+      api.listRooms().catch((err: unknown) => {
+        console.error("Failed to load school rooms", err);
+        return [];
+      }),
+      Promise.all([api.listClasses(), api.listSubjects()]).catch(
+        (err: unknown) => {
+          console.error("Failed to load classes/subjects catalogs", err);
+          return [[], []];
+        },
+      ),
+    ]);
 
-		subjects = loadedSubjects;
-		schedules = loadedSchedules;
-		seatingNumbers = loadedSeatingNumbers;
-		halls = loadedHalls;
-		proctors = loadedProctors;
-		rooms = loadedRooms;
-		classes = classList;
-		schoolSubjects = subjectList;
+    subjects = loadedSubjects;
+    schedules = loadedSchedules;
+    seatingNumbers = loadedSeatingNumbers;
+    halls = loadedHalls;
+    proctors = loadedProctors;
+    rooms = loadedRooms;
+    classes = classList;
+    schoolSubjects = subjectList;
 
     // Load active solve jobs for exams
     await loadSolveJobs();
@@ -323,7 +322,7 @@ onMount(() => {
 
 // Quick actions
 async function handleGenerateSeating() {
-	const promise = api.exam.generate2(sessionId as string);
+  const promise = api.exam.generate2(sessionId as string);
   toast.promise(promise, {
     loading: "جاري توليد أرقام الجلوس...",
     success: "تم توليد أرقام الجلوس بنجاح!",
@@ -338,7 +337,7 @@ async function handleGenerateSeating() {
 }
 
 async function handleGenerateSecrets() {
-	toast.error("توليد الأرقام السرية غير متاح في نسخة سطح المكتب حاليًا");
+  toast.error("توليد الأرقام السرية غير متاح في نسخة سطح المكتب حاليًا");
 }
 
 // Generate an array of YYYY-MM-DD strings between two dates inclusive
@@ -357,13 +356,13 @@ function generateDatesRange(startStr: string, endStr: string): string[] {
 }
 
 async function loadSolveJobs() {
-	solveJobs = [];
-	activeJob = null;
-	isSolving = false;
+  solveJobs = [];
+  activeJob = null;
+  isSolving = false;
 }
 
 async function handleAutoSchedule() {
-	toast.error("الجدولة التلقائية غير متاحة في نسخة سطح المكتب حاليًا");
+  toast.error("الجدولة التلقائية غير متاحة في نسخة سطح المكتب حاليًا");
 }
 
 async function startPollingJob(jobId: string) {
@@ -418,11 +417,11 @@ function stopPolling() {
 }
 
 async function handleCancelSolve() {
-	toast.error("إلغاء الجدولة التلقائية غير متاح في نسخة سطح المكتب حاليًا");
+  toast.error("إلغاء الجدولة التلقائية غير متاح في نسخة سطح المكتب حاليًا");
 }
 
 async function handleApplySolve() {
-	toast.error("تطبيق الجدولة التلقائية غير متاح في نسخة سطح المكتب حاليًا");
+  toast.error("تطبيق الجدولة التلقائية غير متاح في نسخة سطح المكتب حاليًا");
 }
 
 async function handleDeleteSchedule(scheduleId: string) {
@@ -433,7 +432,7 @@ async function handleDeleteSchedule(scheduleId: string) {
     variant: "destructive",
   });
   if (!confirmed) return;
-	const promise = api.exam.deleteExamSchedule(scheduleId);
+  const promise = api.exam.deleteExamSchedule(scheduleId);
   toast.promise(promise, {
     loading: m.academics_exams_sessions_sessionId_deleting_scheduled_exam(),
     success: m.academics_exams_sessions_sessionId_deleted_exam_successfully(),
@@ -458,12 +457,12 @@ async function handleToggleScheduleStatus(sched: any) {
       ? m.academics_exams_sessions_sessionId_deactivated_successfully()
       : m.academics_exams_sessions_sessionId_activated_successfully();
 
-	const promise = api.exam.updateExamSchedule(
-		sched.id,
-		sched.exam_date || null,
-		sched.start_time || null,
-		newStatus,
-	);
+  const promise = api.exam.updateExamSchedule(
+    sched.id,
+    sched.exam_date || null,
+    sched.start_time || null,
+    newStatus,
+  );
   toast.promise(promise, {
     loading: label,
     success: labelSuccess,
@@ -478,18 +477,18 @@ async function handleToggleScheduleStatus(sched: any) {
 }
 
 async function handleAllocateHalls() {
-	toast.error("توزيع الطلاب على القاعات غير متاح في نسخة سطح المكتب حاليًا");
+  toast.error("توزيع الطلاب على القاعات غير متاح في نسخة سطح المكتب حاليًا");
 }
 
 async function handleActivate() {
   if (!session) return;
-	const promise = api.exam.updateSession(
-		sessionId as string,
-		null,
-		"active",
-		null,
-		null,
-	);
+  const promise = api.exam.updateSession(
+    sessionId as string,
+    null,
+    "active",
+    null,
+    null,
+  );
 
   toast.promise(promise, {
     loading: "جاري تفعيل دورة الامتحانات...",
@@ -528,7 +527,7 @@ async function handleToggleHall(room: any) {
 }
 
 async function handleAssignProctors() {
-	toast.error("تعيين المراقبين غير متاح في نسخة سطح المكتب حاليًا");
+  toast.error("تعيين المراقبين غير متاح في نسخة سطح المكتب حاليًا");
 }
 </script>
 

@@ -4,12 +4,7 @@ A slide-over Sheet component for creating or editing an academic period.
 Uses the shared @orbis/ui/sheet component.
 -->
 <script lang="ts">
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@orbis/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 import PeriodForm from "./period-form.svelte";
 import * as m from "$lib/paraglide/messages";
 

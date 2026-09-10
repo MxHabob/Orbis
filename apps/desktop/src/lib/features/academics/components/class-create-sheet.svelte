@@ -4,12 +4,7 @@ A slide-over Sheet component for creating a new academic class.
 Uses the shared @orbis/ui/sheet component.
 -->
 <script lang="ts">
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@orbis/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 import ClassForm from "./class-form.svelte";
 import * as m from "$lib/paraglide/messages";
 

@@ -5,7 +5,7 @@ Headerless activity logs page adhering to Orbis design tokens, with SearchField,
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { Card } from "@orbis/ui/card";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
@@ -83,7 +83,9 @@ const allLogs = $derived.by<LogItem[]>(() => {
       description: t.reason || t.task_type || "عملية طيار آلي دورية",
       status: t.status || "pending",
       timestamp: t.scheduled_at || t.created_at || new Date().toISOString(),
-      target: t.target_id ? `${t.target_type || ''} (${t.target_id.slice(0, 8)})` : undefined,
+      target: t.target_id
+        ? `${t.target_type || ""} (${t.target_id.slice(0, 8)})`
+        : undefined,
       attempts: t.attempts,
       lastError: t.last_error,
     });
@@ -94,7 +96,7 @@ const allLogs = $derived.by<LogItem[]>(() => {
       id: s.id || `session-${Math.random()}`,
       source: "agent",
       title: s.title || "جلسة معالجة ذكية",
-      description: `وكيل: ${s.agent_id || 'مساعد الذكاء الاصطناعي'}`,
+      description: `وكيل: ${s.agent_id || "مساعد الذكاء الاصطناعي"}`,
       status: s.status === "active" ? "completed" : "pending",
       timestamp: s.created_at || s.updated_at || new Date().toISOString(),
       target: s.acting_as_role || undefined,
@@ -117,10 +119,17 @@ const categories = [
 const filteredLogs = $derived.by(() => {
   return allLogs.filter((item) => {
     // Category filter
-    if (activeCategory === "autopilot" && item.source !== "autopilot") return false;
+    if (activeCategory === "autopilot" && item.source !== "autopilot")
+      return false;
     if (activeCategory === "agent" && item.source !== "agent") return false;
-    if (activeCategory === "completed" && item.status !== "completed") return false;
-    if (activeCategory === "pending" && item.status !== "pending" && item.status !== "executing") return false;
+    if (activeCategory === "completed" && item.status !== "completed")
+      return false;
+    if (
+      activeCategory === "pending" &&
+      item.status !== "pending" &&
+      item.status !== "executing"
+    )
+      return false;
     if (activeCategory === "failed" && item.status !== "failed") return false;
 
     // Search query

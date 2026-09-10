@@ -91,7 +91,8 @@ Connect multiple cameras and NVRs. Each camera appears as a separate feed in the
       id: "auto_events",
       label: "Auto-capture Events",
       label_ar: "التقاط الأحداث تلقائياً",
-      description: "Automatically capture and route motion detection and alarm events.",
+      description:
+        "Automatically capture and route motion detection and alarm events.",
       description_ar: "التقاط وتوجيه أحداث كشف الحركة والإنذارات تلقائياً.",
       type: "switch",
       required: false,

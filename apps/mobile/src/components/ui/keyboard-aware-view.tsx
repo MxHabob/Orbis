@@ -8,7 +8,7 @@
  * - ScrollView tap persistence without swallowing button events
  */
 
-import React from 'react';
+import React from "react";
 import {
   KeyboardAvoidingView,
   ScrollView,
@@ -19,7 +19,7 @@ import {
   ViewStyle,
   StyleProp,
   View,
-} from 'react-native';
+} from "react-native";
 
 interface KeyboardAwareViewProps {
   children: React.ReactNode;
@@ -37,16 +37,23 @@ export const KeyboardAwareView = React.memo<KeyboardAwareViewProps>(
     keyboardVerticalOffset = 0,
     scrollable = true,
   }) => {
-    const defaultOffset = Platform.OS === 'ios' ? (keyboardVerticalOffset || 20) : 0;
+    const defaultOffset =
+      Platform.OS === "ios" ? keyboardVerticalOffset || 20 : 0;
 
     if (!scrollable) {
       return (
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
           keyboardVerticalOffset={defaultOffset}
-          style={[styles.container, style]}>
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-            <View style={[styles.inner, contentContainerStyle]}>{children}</View>
+          style={[styles.container, style]}
+        >
+          <TouchableWithoutFeedback
+            onPress={Keyboard.dismiss}
+            accessible={false}
+          >
+            <View style={[styles.inner, contentContainerStyle]}>
+              {children}
+            </View>
           </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
       );
@@ -54,16 +61,18 @@ export const KeyboardAwareView = React.memo<KeyboardAwareViewProps>(
 
     return (
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={defaultOffset}
-        style={[styles.container, style]}>
+        style={[styles.container, style]}
+      >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <ScrollView
             style={styles.scrollView}
             contentContainerStyle={contentContainerStyle}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
-            showsVerticalScrollIndicator={false}>
+            showsVerticalScrollIndicator={false}
+          >
             {children}
           </ScrollView>
         </TouchableWithoutFeedback>
@@ -72,7 +81,7 @@ export const KeyboardAwareView = React.memo<KeyboardAwareViewProps>(
   },
 );
 
-KeyboardAwareView.displayName = 'KeyboardAwareView';
+KeyboardAwareView.displayName = "KeyboardAwareView";
 
 const styles = StyleSheet.create({
   container: {

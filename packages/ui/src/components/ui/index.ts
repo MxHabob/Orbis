@@ -143,7 +143,12 @@ export { Logo } from "./logo/index.js";
 export { Toaster } from "./sonner/index.js";
 export { default as Spinner } from "./spinner.svelte";
 export { toast, toastStore } from "./sonner/index.js";
-export type { ToastAction, ToastData, ToastHandle, ToastOptions } from "./sonner/index.js";
+export type {
+  ToastAction,
+  ToastData,
+  ToastHandle,
+  ToastOptions,
+} from "./sonner/index.js";
 export {
   TimetableGrid,
   SessionCard,

@@ -116,4 +116,3 @@ export function createTeacherScheduleQuery(
     staleTime: 2 * 60 * 1000,
   }));
 }
-

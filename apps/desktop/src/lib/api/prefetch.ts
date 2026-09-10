@@ -28,7 +28,9 @@ export function prefetchRouteData(route: string, orgId: string) {
         queryKey: queryKeys.finance.accounts(),
         queryFn: async () => {
           const accounts = await api.listAccounts();
-          return accounts.filter((account: any) => ["cash", "bank"].includes(account.account_type || account.sub_type));
+          return accounts.filter((account: any) =>
+            ["cash", "bank"].includes(account.account_type || account.sub_type),
+          );
         },
         staleTime: 5 * 60 * 1000,
       });

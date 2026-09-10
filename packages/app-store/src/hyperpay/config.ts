@@ -10,8 +10,10 @@ const config: OrbisApp = {
   active: true,
   beta: false,
   icon: "Layers",
-  short_description: "Enterprise payment orchestration platform supporting Mada, Apple Pay, Visa, Mastercard, and SADAD.",
-  short_description_ar: "بوابة المدفوعات المتكاملة للربط الموحد مع بطاقات مدى والبطاقات الائتمانية وسداد.",
+  short_description:
+    "Enterprise payment orchestration platform supporting Mada, Apple Pay, Visa, Mastercard, and SADAD.",
+  short_description_ar:
+    "بوابة المدفوعات المتكاملة للربط الموحد مع بطاقات مدى والبطاقات الائتمانية وسداد.",
   description: `HyperPay enterprise multi-channel payment gateway aggregator for educational institutions.
 
 **All-in-One Gateway**

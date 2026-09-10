@@ -10,7 +10,8 @@ export function createCalendarEventsQuery(
   periodId: string | (() => string),
 ) {
   const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
-  const getPeriodId = typeof periodId === "function" ? periodId : () => periodId;
+  const getPeriodId =
+    typeof periodId === "function" ? periodId : () => periodId;
   return createQuery(() => ({
     queryKey: queryKeys.calendar.periods(),
     queryFn: () => api.listAcademicPeriods(),
@@ -20,7 +21,9 @@ export function createCalendarEventsQuery(
 }
 
 /** Pending/active periods. */
-export function createPendingCalendarEventsQuery(orgId: string | (() => string)) {
+export function createPendingCalendarEventsQuery(
+  orgId: string | (() => string),
+) {
   const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
   return createQuery(() => ({
     queryKey: queryKeys.calendar.periods(),
@@ -40,4 +43,3 @@ export function createOrgPolicyQuery(orgId: string | (() => string)) {
     staleTime: 30 * 60 * 1000,
   }));
 }
-

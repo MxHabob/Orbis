@@ -2,7 +2,13 @@
  * Thin Data Source helpers for Orbis grids.
  * TanStack Query remains the server-state cache; this only shapes list/bulk I/O.
  */
-import type { BulkResult, DataPage, DataQuery, GridDataSource, GridRow } from "@orbis/svelte-grid";
+import type {
+  BulkResult,
+  DataPage,
+  DataQuery,
+  GridDataSource,
+  GridRow,
+} from "@orbis/svelte-grid";
 import { shouldUseServerFilter } from "@orbis/svelte-grid";
 
 export { shouldUseServerFilter };
@@ -85,7 +91,11 @@ export function partitionBulk<T>(
 
 export type SelectAllIntent = "filtered" | "visible";
 
-export function describeSelectAll(intent: SelectAllIntent, filteredCount: number, visibleCount: number): string {
+export function describeSelectAll(
+  intent: SelectAllIntent,
+  filteredCount: number,
+  visibleCount: number,
+): string {
   if (intent === "filtered") return `All ${filteredCount} filtered rows`;
   return `${visibleCount} visible rows`;
 }

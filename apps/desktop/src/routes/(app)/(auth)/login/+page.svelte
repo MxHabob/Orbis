@@ -12,7 +12,6 @@ import AnnouncementBanner from "$lib/features/auth/components/announcement-banne
 import BackgroundPattern from "$lib/features/auth/components/background-pattern.svelte";
 import LoginForm from "$lib/features/auth/components/login-form.svelte";
 import EnvironmentSelect from "$lib/features/auth/components/environment-select.svelte";
-
 </script>
 
 <svelte:head>

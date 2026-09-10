@@ -9,7 +9,7 @@
  * title pill, and a right floating control (custom action / crown).
  */
 
-import React from 'react';
+import React from "react";
 import {
   Pressable,
   StyleProp,
@@ -18,20 +18,14 @@ import {
   View,
   ViewStyle,
   useWindowDimensions,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+} from "react-native";
+import { useRouter } from "expo-router";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import {
-  Colors,
-  Fonts,
-  Radii,
-  Spacing,
-  Typography,
-} from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
-import { useI18n } from '@/lib/i18n';
+import { Colors, Fonts, Radii, Spacing, Typography } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
+import { useI18n } from "@/lib/i18n";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -114,14 +108,14 @@ export function Header({
       return;
     }
 
-    router.push('/profile');
+    router.push("/profile");
   };
 
   const handleCrown = () => {
     onCrownPress?.();
   };
 
-  const leftLabel = showBack ? t('header_back') : t('header_profile');
+  const leftLabel = showBack ? t("header_back") : t("header_profile");
 
   return (
     <View
@@ -156,7 +150,7 @@ export function Header({
             ]}
           >
             <Ionicons
-              name={showBack ? 'chevron-back' : 'person-outline'}
+              name={showBack ? "chevron-back" : "person-outline"}
               size={21}
               color={theme.text}
             />
@@ -206,8 +200,8 @@ export function Header({
             rightAction
           ) : showCrown ? (
             <Pressable
-              accessibilityRole={onCrownPress ? 'button' : undefined}
-              accessibilityLabel={t('header_premium')}
+              accessibilityRole={onCrownPress ? "button" : undefined}
+              accessibilityLabel={t("header_premium")}
               disabled={!onCrownPress}
               hitSlop={8}
               onPress={handleCrown}
@@ -246,36 +240,36 @@ export function Header({
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
-    backgroundColor: 'transparent',
+    width: "100%",
+    backgroundColor: "transparent",
     zIndex: 10,
   },
 
   content: {
-    width: '100%',
+    width: "100%",
     minHeight: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
 
   sideSlot: {
     flexShrink: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   centerSlot: {
     flex: 1,
     height: 48,
     marginHorizontal: Spacing.three,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   floatingControl: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: StyleSheet.hairlineWidth,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.055,
@@ -288,8 +282,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     borderRadius: Radii.full,
     borderWidth: StyleSheet.hairlineWidth,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.055,
     shadowRadius: 4,
@@ -297,21 +291,21 @@ const styles = StyleSheet.create({
   },
 
   titleContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    maxWidth: '100%',
+    alignItems: "center",
+    justifyContent: "center",
+    maxWidth: "100%",
   },
 
   title: {
     ...Typography.bodyBold,
     fontFamily: Fonts.sans,
-    textAlign: 'center',
+    textAlign: "center",
   },
 
   subtitle: {
     ...Typography.small,
     fontFamily: Fonts.sans,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 1,
   },
 

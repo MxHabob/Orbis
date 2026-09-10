@@ -19,7 +19,6 @@ import { ArrowLeft, Users, GraduationCap, ArrowRight } from "@lucide/svelte";
 
 import { localizeHref } from "$lib/paraglide/runtime";
 let { data }: { data: { orgId: string } } = $props();
-
 </script>
 
 <div

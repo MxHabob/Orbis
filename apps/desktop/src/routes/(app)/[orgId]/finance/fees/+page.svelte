@@ -7,7 +7,7 @@ Allows triggering FeeAssignSheet to bill a student.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import {
@@ -63,7 +63,11 @@ import { applyFilter } from "@orbis/ui/filter-builder";
 import type { UniversalFilter } from "@orbis/ui/filter-builder";
 import { studentFeeFilterFields } from "$lib/tables/definitions/filter-configs";
 
-let activeFilter = $state<UniversalFilter>({ logic: "AND", conditions: [], groups: [] });
+let activeFilter = $state<UniversalFilter>({
+  logic: "AND",
+  conditions: [],
+  groups: [],
+});
 
 // Derived Filtered List
 const filteredFees = $derived(
@@ -80,8 +84,8 @@ const filteredFees = $derived(
       }
       return matchesSearch;
     }),
-    activeFilter
-  )
+    activeFilter,
+  ),
 );
 
 // Calculations

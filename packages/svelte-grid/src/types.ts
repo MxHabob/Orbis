@@ -106,12 +106,21 @@ export interface OrbisColumnDef {
   format?: string;
   currency?: string;
   accessor?: (row: GridRow) => unknown;
-  validate?: (value: unknown, row: GridRow) => boolean | string | ColumnValidateResult;
+  validate?: (
+    value: unknown,
+    row: GridRow,
+  ) => boolean | string | ColumnValidateResult;
   filterable?: boolean;
   aggregate?: AggregateFn;
 }
 
-export type AggregateFn = "sum" | "avg" | "min" | "max" | "count" | "count_distinct";
+export type AggregateFn =
+  | "sum"
+  | "avg"
+  | "min"
+  | "max"
+  | "count"
+  | "count_distinct";
 
 export interface CellEditEvent {
   row: GridRow;
@@ -217,7 +226,9 @@ export interface GridDataSource<T = GridRow> {
   mode: "client" | "server";
   load: (query: DataQuery) => Promise<DataPage<T>>;
   create?: (rows: Partial<T>[]) => Promise<BulkResult<T>>;
-  update?: (rows: Array<{ id: string; patch: Partial<T> }>) => Promise<BulkResult<T>>;
+  update?: (
+    rows: Array<{ id: string; patch: Partial<T> }>,
+  ) => Promise<BulkResult<T>>;
   delete?: (ids: string[]) => Promise<BulkResult<{ id: string }>>;
 }
 

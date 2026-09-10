@@ -56,7 +56,8 @@ export class FacilitiesInfoState {
 
   deserialize(data: any) {
     if (!data) return;
-    if (Array.isArray(data.rooms) && data.rooms.length > 0) this.rooms = data.rooms;
+    if (Array.isArray(data.rooms) && data.rooms.length > 0)
+      this.rooms = data.rooms;
     if (data.activeBuildingTab) this.activeBuildingTab = data.activeBuildingTab;
     if (Array.isArray(data.buildings) && data.buildings.length > 0) {
       this.buildings = data.buildings;

@@ -14,7 +14,9 @@ export function createCashAccountsQuery(
     queryKey: queryKeys.finance.accounts(),
     queryFn: async () => {
       const accounts = await api.listAccounts();
-      return accounts.filter((account: any) => ["cash", "bank"].includes(account.account_type || account.sub_type));
+      return accounts.filter((account: any) =>
+        ["cash", "bank"].includes(account.account_type || account.sub_type),
+      );
     },
     enabled: !!orgId() && enabled(),
     staleTime: 5 * 60 * 1000,
@@ -66,7 +68,9 @@ export function createStudentFeesQuery(
   enabled: () => boolean = () => true,
 ) {
   return createQuery(() => ({
-    queryKey: queryKeys.finance.studentFees(isOrgId ? undefined : { enrollmentId: orgOrEnrollmentId() }),
+    queryKey: queryKeys.finance.studentFees(
+      isOrgId ? undefined : { enrollmentId: orgOrEnrollmentId() },
+    ),
     queryFn: () =>
       isOrgId
         ? api.listStudentFees()
@@ -85,4 +89,3 @@ export function createCurrenciesQuery(orgId: () => string) {
     staleTime: 10 * 60 * 1000,
   }));
 }
-

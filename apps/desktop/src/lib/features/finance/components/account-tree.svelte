@@ -45,7 +45,7 @@ function checkboxState(node: any): "checked" | "partial" | "unchecked" {
 function toggleIds(ids: string[]) {
   const next = new Set(selectedIds);
   const shouldSelect = ids.some((id) => !next.has(id));
-  ids.forEach((id) => shouldSelect ? next.add(id) : next.delete(id));
+  ids.forEach((id) => (shouldSelect ? next.add(id) : next.delete(id)));
   selectedIds = next;
 }
 

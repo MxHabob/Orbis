@@ -10,10 +10,16 @@ interface Props {
 
 let { row, column }: Props = $props();
 
-const gridAction = getContext<((ev: any) => void) | undefined>("orbis-grid-onaction");
+const gridAction = getContext<((ev: any) => void) | undefined>(
+  "orbis-grid-onaction",
+);
 
 const isHeader = $derived(column?.meta?.isSelectionHeader === true);
-const isChecked = $derived(isHeader ? column?.meta?.selectedAll === true : !!row?.__selected || !!row?.[column?.id]);
+const isChecked = $derived(
+  isHeader
+    ? column?.meta?.selectedAll === true
+    : !!row?.__selected || !!row?.[column?.id],
+);
 
 function toggle() {
   gridAction?.({

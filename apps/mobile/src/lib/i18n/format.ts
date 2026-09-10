@@ -5,7 +5,7 @@
  * 100% parity with desktop format.ts.
  */
 
-import { getLocale } from './locale';
+import { getLocale } from "./locale";
 
 /**
  * Formats a currency amount to the current locale's format.
@@ -13,25 +13,25 @@ import { getLocale } from './locale';
  */
 export function formatCurrency(
   amount: number | null | undefined,
-  currency: string = 'YER',
+  currency: string = "YER",
 ): string {
-  if (amount === null || amount === undefined) return '';
+  if (amount === null || amount === undefined) return "";
   const lang = getLocale();
-  const cleanCurrency = String(currency || 'YER')
+  const cleanCurrency = String(currency || "YER")
     .trim()
     .toUpperCase();
   try {
-    return new Intl.NumberFormat(lang === 'ar' ? 'ar-YE' : 'en-US', {
-      style: 'currency',
+    return new Intl.NumberFormat(lang === "ar" ? "ar-YE" : "en-US", {
+      style: "currency",
       currency: cleanCurrency,
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     }).format(amount);
   } catch (e) {
     // Fallback if the currency code is unrecognized
-    return new Intl.NumberFormat(lang === 'ar' ? 'ar-YE' : 'en-US', {
-      style: 'currency',
-      currency: 'YER',
+    return new Intl.NumberFormat(lang === "ar" ? "ar-YE" : "en-US", {
+      style: "currency",
+      currency: "YER",
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     }).format(amount);
@@ -42,12 +42,12 @@ export function formatCurrency(
  * Formats a date string or object to the current locale's format.
  */
 export function formatDate(date: string | Date | null | undefined): string {
-  if (!date) return '';
-  const d = typeof date === 'string' ? new Date(date) : date;
-  if (isNaN(d.getTime())) return '';
+  if (!date) return "";
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(d.getTime())) return "";
   const lang = getLocale();
-  return new Intl.DateTimeFormat(lang === 'ar' ? 'ar-YE' : 'en-US', {
-    dateStyle: 'medium',
+  return new Intl.DateTimeFormat(lang === "ar" ? "ar-YE" : "en-US", {
+    dateStyle: "medium",
   }).format(d);
 }
 
@@ -55,10 +55,10 @@ export function formatDate(date: string | Date | null | undefined): string {
  * Formats a percentage value (e.g. 95) to the current locale's format.
  */
 export function formatPercent(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '';
+  if (value === null || value === undefined) return "";
   const lang = getLocale();
-  return new Intl.NumberFormat(lang === 'ar' ? 'ar-YE' : 'en-US', {
-    style: 'percent',
+  return new Intl.NumberFormat(lang === "ar" ? "ar-YE" : "en-US", {
+    style: "percent",
     minimumFractionDigits: 0,
     maximumFractionDigits: 1,
   }).format(value / 100);
@@ -68,7 +68,7 @@ export function formatPercent(value: number | null | undefined): string {
  * Formats a number to the current locale's format.
  */
 export function formatNumber(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '';
+  if (value === null || value === undefined) return "";
   const lang = getLocale();
-  return new Intl.NumberFormat(lang === 'ar' ? 'ar-YE' : 'en-US').format(value);
+  return new Intl.NumberFormat(lang === "ar" ? "ar-YE" : "en-US").format(value);
 }

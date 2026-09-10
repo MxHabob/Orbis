@@ -9,7 +9,7 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { localizeHref } from "$lib/paraglide/runtime";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { fade } from "svelte/transition";
 import {
   Plus,
@@ -34,15 +34,17 @@ let isSheetOpen = $state(false);
 const orgId = $derived(data.orgId);
 const queryClient = useQueryClient();
 const periodsQuery = createQuery(() => ({
-	queryKey: ["exam-session-periods", orgId],
-	queryFn: () => api.listAcademicPeriods(),
-	enabled: !!orgId,
-	staleTime: 5 * 60 * 1000,
+  queryKey: ["exam-session-periods", orgId],
+  queryFn: () => api.listAcademicPeriods(),
+  enabled: !!orgId,
+  staleTime: 5 * 60 * 1000,
 }));
 const periods = $derived((periodsQuery.data || []) as any[]);
 const activePeriodId = $derived.by(() => {
-	const active = periods.find((period) => period.status === "active" || period.is_active);
-	return String(active?.id || periods[0]?.id || "");
+  const active = periods.find(
+    (period) => period.status === "active" || period.is_active,
+  );
+  return String(active?.id || periods[0]?.id || "");
 });
 const sessionsQuery = createExamSessionsQuery(() => activePeriodId);
 const sessions = $derived((sessionsQuery.data || []) as any[]);

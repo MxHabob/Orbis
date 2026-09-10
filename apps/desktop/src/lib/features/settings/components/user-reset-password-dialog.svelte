@@ -1,5 +1,31 @@
 <script lang="ts">
-import * as m from "$lib/paraglide/messages"; import { Button } from "@orbis/ui/button"; import { Input } from "@orbis/ui/input"; import { FormField } from "@orbis/ui"; import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@orbis/ui/dialog";
-let { open = $bindable(false), fullName, newPassword = $bindable(""), confirmPassword = $bindable(""), isResettingPassword = false, onsubmit, oncancel }: { open: boolean; fullName: string; newPassword: string; confirmPassword: string; isResettingPassword?: boolean; onsubmit: (event: SubmitEvent) => void; oncancel: () => void } = $props();
+import * as m from "$lib/paraglide/messages";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import { FormField } from "@orbis/ui";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@orbis/ui/dialog";
+let {
+  open = $bindable(false),
+  fullName,
+  newPassword = $bindable(""),
+  confirmPassword = $bindable(""),
+  isResettingPassword = false,
+  onsubmit,
+  oncancel,
+}: {
+  open: boolean;
+  fullName: string;
+  newPassword: string;
+  confirmPassword: string;
+  isResettingPassword?: boolean;
+  onsubmit: (event: SubmitEvent) => void;
+  oncancel: () => void;
+} = $props();
 </script>
 <Dialog bind:open><DialogContent class="max-w-md text-start"><form onsubmit={onsubmit} class="flex flex-col gap-4"><DialogHeader><DialogTitle>{m.settings_user_detail_reset_pass_title()}</DialogTitle><p class="text-sm text-muted-foreground">{m.settings_user_detail_reset_pass_desc({ name: fullName || "User" })}</p></DialogHeader><FormField id="new_password" label={m.settings_security_new_password()} required>{#snippet children()}<Input id="new_password" type="password" bind:value={newPassword} placeholder="••••••••" required minlength={6} disabled={isResettingPassword} />{/snippet}</FormField><FormField id="confirm_password" label={m.settings_security_confirm_password()} required>{#snippet children()}<Input id="confirm_password" type="password" bind:value={confirmPassword} placeholder="••••••••" required disabled={isResettingPassword} />{/snippet}</FormField><DialogFooter class="border-t border-border pt-4 mt-2"><Button type="button" variant="ghost" size="sm" onclick={oncancel} disabled={isResettingPassword}>{m.common_action_cancel()}</Button><Button type="submit" variant="lime" size="sm" class="font-bold" disabled={isResettingPassword}>{isResettingPassword ? "..." : m.settings_user_detail_btn_reset_pass()}</Button></DialogFooter></form></DialogContent></Dialog>

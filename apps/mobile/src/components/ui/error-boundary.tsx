@@ -5,12 +5,12 @@
  * Gracefully catches React rendering errors and displays a themed fallback UI.
  */
 
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@/hooks/use-theme';
-import { Radii, Spacing, Typography } from '@/constants/theme';
-import { Button } from './button';
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "@/hooks/use-theme";
+import { Radii, Spacing, Typography } from "@/constants/theme";
+import { Button } from "./button";
 
 // ─── Error Fallback UI ─────────────────────────────────────────────────────────
 
@@ -37,10 +37,7 @@ export function ErrorFallback({
         ]}
       >
         <View
-          style={[
-            styles.iconWrapper,
-            { backgroundColor: theme.errorLight },
-          ]}
+          style={[styles.iconWrapper, { backgroundColor: theme.errorLight }]}
         >
           <Ionicons name="alert-circle" size={40} color={theme.destructive} />
         </View>
@@ -52,7 +49,7 @@ export function ErrorFallback({
         <Text style={[styles.message, { color: theme.textSecondary }]}>
           {__DEV__
             ? error.message
-            : 'An unexpected error occurred. Please try again.'}
+            : "An unexpected error occurred. Please try again."}
         </Text>
 
         <Button
@@ -91,7 +88,7 @@ export class AppErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     if (__DEV__) {
-      console.warn('[AppErrorBoundary] Caught error:', error, errorInfo);
+      console.warn("[AppErrorBoundary] Caught error:", error, errorInfo);
     }
   }
 
@@ -119,19 +116,19 @@ export const ErrorBoundary = AppErrorBoundary;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: Spacing.six,
   },
   card: {
-    width: '100%',
+    width: "100%",
     maxWidth: 380,
     padding: Spacing.eight,
-    borderRadius: Radii['2xl'],
+    borderRadius: Radii["2xl"],
     borderWidth: 1,
-    alignItems: 'center',
+    alignItems: "center",
     gap: Spacing.four,
-    shadowColor: '#000000',
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
     shadowRadius: 16,
@@ -141,17 +138,17 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: Radii.full,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: Spacing.two,
   },
   title: {
     ...Typography.h2,
-    textAlign: 'center',
+    textAlign: "center",
   },
   message: {
     ...Typography.body,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 20,
   },
   button: {

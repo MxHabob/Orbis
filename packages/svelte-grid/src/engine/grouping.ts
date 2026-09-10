@@ -50,7 +50,11 @@ export function groupRows<T extends GridRow>(
     }
     nodes.push({
       key,
-      value: group[0] ? (col ? getCellValue(group[0], col) : group[0][groupBy]) : key,
+      value: group[0]
+        ? col
+          ? getCellValue(group[0], col)
+          : group[0][groupBy]
+        : key,
       rows: group,
       aggregates,
       collapsed: collapsed.has(key),
@@ -67,7 +71,10 @@ export function flattenGroups<T extends GridRow>(nodes: GroupNode<T>[]): T[] {
   return out;
 }
 
-export function grandTotals(rows: GridRow[], columns: OrbisColumnDef[]): Record<string, number | string | null> {
+export function grandTotals(
+  rows: GridRow[],
+  columns: OrbisColumnDef[],
+): Record<string, number | string | null> {
   const totals: Record<string, number | string | null> = {};
   for (const col of columns) {
     if (!col.aggregate) continue;

@@ -241,7 +241,8 @@ export function transformMatrixToSource(
       __percentage: `${student.percentage.toFixed(1)}%`,
       __percentageRaw: student.percentage,
       __gradeLetter:
-        student.grade_letter || scoreToGradeLetter(student.percentage, scaleItems),
+        student.grade_letter ||
+        scoreToGradeLetter(student.percentage, scaleItems),
     };
 
     for (const grade of student.grades) {

@@ -4,12 +4,7 @@ import { onMount, untrack } from "svelte";
 import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui/button";
 import { ArrowLeft, MoreHorizontal, ChevronDown, Save } from "@lucide/svelte";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@orbis/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
 import {
   DropdownMenu,
   DropdownMenuTrigger,

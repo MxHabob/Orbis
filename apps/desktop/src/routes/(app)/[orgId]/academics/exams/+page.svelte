@@ -89,7 +89,10 @@ const kpiStats = $derived([
   {
     label: m.academics_exams_center_kpi_active(),
     value: examSessions.filter(
-      (s) => s.status === "active" || s.status === "running" || s.status === "ongoing",
+      (s) =>
+        s.status === "active" ||
+        s.status === "running" ||
+        s.status === "ongoing",
     ).length,
   },
   {
@@ -100,9 +103,10 @@ const kpiStats = $derived([
   },
   {
     label: m.academics_exams_center_kpi_control(),
-    value: examSessions.length > 0
-      ? m.academics_exams_center_ready()
-      : m.academics_exams_center_disabled(),
+    value:
+      examSessions.length > 0
+        ? m.academics_exams_center_ready()
+        : m.academics_exams_center_disabled(),
   },
 ]);
 
@@ -113,7 +117,9 @@ const directoryItems = $derived([
     title: m.common_exams_sessions_title(),
     desc: m.academics_exams_center_sessions_desc(),
     icon: ClipboardList,
-    badge: m.academics_exams_center_sessions_badge({ count: examSessions.length }),
+    badge: m.academics_exams_center_sessions_badge({
+      count: examSessions.length,
+    }),
   },
   {
     path: `/${data.orgId}/academics/exams/control`,
@@ -156,7 +162,9 @@ const advisorInsights = $derived.by(() => {
   if (examSessions.length > 0) {
     insights.push({
       id: "sessions-active",
-      text: m.academics_exams_center_sessions_active_insight({ count: examSessions.length }),
+      text: m.academics_exams_center_sessions_active_insight({
+        count: examSessions.length,
+      }),
       variant: "success" as const,
       icon: ClipboardList,
     });

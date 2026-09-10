@@ -121,7 +121,8 @@ class AuthStore {
     try {
       const org = await api.getCurrentOrg();
       const rawSettings = (org as any)?.settings;
-      const settings = typeof rawSettings === "string" ? JSON.parse(rawSettings) : rawSettings;
+      const settings =
+        typeof rawSettings === "string" ? JSON.parse(rawSettings) : rawSettings;
       const orgComplete = settings?.onboarding_completed === true;
       const cached = localStorage.getItem("orbis_is_setup_complete");
       const isComplete = orgComplete || cached === "true";

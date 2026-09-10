@@ -4,20 +4,20 @@
  * User identity summary card with avatar, role badge, and school info.
  */
 
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Card } from '@/components/ui/card';
-import { Avatar } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useTheme } from '@/hooks/use-theme';
-import { useI18n } from '@/lib/i18n';
-import { Radii, Spacing, Typography } from '@/constants/theme';
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { Card } from "@/components/ui/card";
+import { Avatar } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTheme } from "@/hooks/use-theme";
+import { useI18n } from "@/lib/i18n";
+import { Radii, Spacing, Typography } from "@/constants/theme";
 
 interface ProfileIdentityCardProps {
   fullName: string;
   email: string;
-  role: 'student' | 'parent' | 'teacher' | 'admin';
+  role: "student" | "parent" | "teacher" | "admin";
   orgName?: string;
   isLoading?: boolean;
 }
@@ -28,13 +28,13 @@ export const ProfileIdentityCard = React.memo<ProfileIdentityCardProps>(
     const { t } = useI18n();
 
     const roleLabel =
-      role === 'student'
-        ? t('profile_role_student')
-        : role === 'parent'
-          ? t('profile_role_parent')
-          : role === 'teacher'
-            ? t('profile_role_teacher')
-            : t('profile_role_admin');
+      role === "student"
+        ? t("profile_role_student")
+        : role === "parent"
+          ? t("profile_role_parent")
+          : role === "teacher"
+            ? t("profile_role_teacher")
+            : t("profile_role_admin");
 
     return (
       <Card variant="elevated" style={styles.card}>
@@ -52,13 +52,20 @@ export const ProfileIdentityCard = React.memo<ProfileIdentityCardProps>(
             <Avatar name={fullName} size={68} />
 
             <View style={styles.info}>
-              <Text style={[styles.userName, { color: theme.text }]}>{fullName}</Text>
-              <Text style={[styles.userEmail, { color: theme.textSecondary }]}>{email}</Text>
+              <Text style={[styles.userName, { color: theme.text }]}>
+                {fullName}
+              </Text>
+              <Text style={[styles.userEmail, { color: theme.textSecondary }]}>
+                {email}
+              </Text>
 
               <View style={styles.badgeRow}>
                 <Badge label={roleLabel} variant="primary" size="sm" />
                 {orgName ? (
-                  <Text style={[styles.orgName, { color: theme.textMuted }]} numberOfLines={1}>
+                  <Text
+                    style={[styles.orgName, { color: theme.textMuted }]}
+                    numberOfLines={1}
+                  >
                     {orgName}
                   </Text>
                 ) : (
@@ -73,15 +80,15 @@ export const ProfileIdentityCard = React.memo<ProfileIdentityCardProps>(
   },
 );
 
-ProfileIdentityCard.displayName = 'ProfileIdentityCard';
+ProfileIdentityCard.displayName = "ProfileIdentityCard";
 
 const styles = StyleSheet.create({
   card: {
     padding: Spacing.four,
   },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.four,
   },
   info: {
@@ -97,8 +104,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.two,
     marginTop: 4,
   },

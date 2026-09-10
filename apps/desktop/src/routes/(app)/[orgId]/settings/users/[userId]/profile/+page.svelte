@@ -7,7 +7,7 @@ Follows S.C.R.A.P.S. design tokens, strict localization, and backend schema sync
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { confirmStore } from "$lib/stores";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import type { User } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -29,7 +29,10 @@ import { useQueryClient } from "@tanstack/svelte-query";
 const orgId = $derived(page.params.orgId);
 const userId = $derived(page.params.userId);
 
-const userQuery = createUserQuery(() => orgId, () => userId);
+const userQuery = createUserQuery(
+  () => orgId,
+  () => userId,
+);
 const queryClient = useQueryClient();
 const user = $derived((userQuery.data as User | null) ?? null);
 const isLoading = $derived(userQuery.isLoading);
@@ -45,12 +48,32 @@ let role = $state("teacher");
 let isActiveState = $state(true);
 
 const systemRoles = [
-  { value: "super_admin", labelAr: "مدير عام النظام", labelEn: "Super Administrator" },
+  {
+    value: "super_admin",
+    labelAr: "مدير عام النظام",
+    labelEn: "Super Administrator",
+  },
   { value: "admin", labelAr: "مدير النظام", labelEn: "System Administrator" },
-  { value: "principal", labelAr: "مدير المدرسة / المنشأة", labelEn: "School Principal" },
-  { value: "teacher", labelAr: "معلم / هيئة تدريس", labelEn: "Teacher / Faculty" },
-  { value: "registrar", labelAr: "مسجل أكاديمي", labelEn: "Academic Registrar" },
-  { value: "accountant", labelAr: "محاسب مالي", labelEn: "Financial Accountant" },
+  {
+    value: "principal",
+    labelAr: "مدير المدرسة / المنشأة",
+    labelEn: "School Principal",
+  },
+  {
+    value: "teacher",
+    labelAr: "معلم / هيئة تدريس",
+    labelEn: "Teacher / Faculty",
+  },
+  {
+    value: "registrar",
+    labelAr: "مسجل أكاديمي",
+    labelEn: "Academic Registrar",
+  },
+  {
+    value: "accountant",
+    labelAr: "محاسب مالي",
+    labelEn: "Financial Accountant",
+  },
   { value: "staff", labelAr: "كادر إداري", labelEn: "Administrative Staff" },
   { value: "student", labelAr: "طالب", labelEn: "Student" },
   { value: "guardian", labelAr: "ولي أمر", labelEn: "Parent / Guardian" },
@@ -66,7 +89,8 @@ $effect(() => {
   email = fetched.email || "";
   phone = (fetched.phone as string) || "";
   role = fetched.primary_role || fetched.role || "teacher";
-  isActiveState = fetched.is_active !== undefined ? Boolean(fetched.is_active) : true;
+  isActiveState =
+    fetched.is_active !== undefined ? Boolean(fetched.is_active) : true;
   initializedUserId = userId;
 });
 
@@ -74,12 +98,20 @@ async function toggleAccountStatus() {
   if (!userId || !user) return;
   const nextState = !isActiveState;
   const confirmMsg = nextState
-    ? (m.settings_user_detail_activate_confirm ? m.settings_user_detail_activate_confirm() : l("هل أنت متأكد من تفعيل الحساب؟", "Activate account?"))
-    : (m.settings_user_detail_deactivate_confirm ? m.settings_user_detail_deactivate_confirm() : l("هل أنت متأكد من تعطيل الحساب؟", "Deactivate account?"));
+    ? m.settings_user_detail_activate_confirm
+      ? m.settings_user_detail_activate_confirm()
+      : l("هل أنت متأكد من تفعيل الحساب؟", "Activate account?")
+    : m.settings_user_detail_deactivate_confirm
+      ? m.settings_user_detail_deactivate_confirm()
+      : l("هل أنت متأكد من تعطيل الحساب؟", "Deactivate account?");
   const confirmed = await confirmStore.prompt({
-    title: (m.common_word_status ? m.common_word_status() : l("الحالة", "Status")) + "؟",
+    title:
+      (m.common_word_status ? m.common_word_status() : l("الحالة", "Status")) +
+      "؟",
     description: confirmMsg,
-    confirmText: m.common_word_status ? m.common_word_status() : l("تأكيد", "Confirm"),
+    confirmText: m.common_word_status
+      ? m.common_word_status()
+      : l("تأكيد", "Confirm"),
     variant: nextState ? "default" : "destructive",
   });
   if (!confirmed) return;
@@ -91,8 +123,12 @@ async function toggleAccountStatus() {
     isActiveState = nextState;
     toast.success(
       nextState
-        ? (m.settings_user_detail_activate_success ? m.settings_user_detail_activate_success() : l("تم تفعيل الحساب بنجاح", "Account activated"))
-        : (m.settings_user_detail_deactivate_success ? m.settings_user_detail_deactivate_success() : l("تم تعطيل الحساب بنجاح", "Account deactivated")),
+        ? m.settings_user_detail_activate_success
+          ? m.settings_user_detail_activate_success()
+          : l("تم تفعيل الحساب بنجاح", "Account activated")
+        : m.settings_user_detail_deactivate_success
+          ? m.settings_user_detail_deactivate_success()
+          : l("تم تعطيل الحساب بنجاح", "Account deactivated"),
     );
   } catch (e: unknown) {
     toast.error((e as any)?.message || l("فشل التحديث", "Update failed"));
@@ -123,14 +159,23 @@ async function saveProfile() {
       if (!roleList.includes(role)) {
         roleList.unshift(role);
       }
-      await api.iam.saveForUser(userId, roleList.length > 0 ? roleList : [role]);
+      await api.iam.saveForUser(
+        userId,
+        roleList.length > 0 ? roleList : [role],
+      );
     }
 
     await queryClient.invalidateQueries({ queryKey: ["user", orgId, userId] });
     await queryClient.invalidateQueries({ queryKey: ["users", orgId] });
-    await queryClient.invalidateQueries({ queryKey: ["users_paginated", orgId] });
+    await queryClient.invalidateQueries({
+      queryKey: ["users_paginated", orgId],
+    });
 
-    toast.success(m.settings_user_detail_saved ? m.settings_user_detail_saved() : l("تم حفظ البيانات بنجاح", "Profile saved successfully"));
+    toast.success(
+      m.settings_user_detail_saved
+        ? m.settings_user_detail_saved()
+        : l("تم حفظ البيانات بنجاح", "Profile saved successfully"),
+    );
     await userQuery.refetch();
   } catch (e: unknown) {
     toast.error((e as any)?.message || l("فشل الحفظ", "Save failed"));

@@ -17,11 +17,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@orbis/ui/popover";
+import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Label } from "@orbis/ui/label";
 import { ArrowLeft, Upload, Columns3, Trash2, Info } from "@lucide/svelte";

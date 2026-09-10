@@ -11,9 +11,7 @@
  * - Theme-aware UI.
  */
 
-import React, {
-  useState,
-} from 'react';
+import React, { useState } from "react";
 
 import {
   View,
@@ -22,65 +20,35 @@ import {
   ScrollView,
   Pressable,
   Alert,
-} from 'react-native';
+} from "react-native";
 
-import {
-  useLocalSearchParams,
-} from 'expo-router';
+import { useLocalSearchParams } from "expo-router";
 
-import {
-  Ionicons,
-} from '@expo/vector-icons';
+import { Ionicons } from "@expo/vector-icons";
 
-import {
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import {
-  useTheme,
-} from '@/hooks/use-theme';
+import { useTheme } from "@/hooks/use-theme";
 
-import {
-  Header,
-} from '@/components/header';
+import { Header } from "@/components/header";
 
-import {
-  Card,
-} from '@/components/ui/card';
+import { Card } from "@/components/ui/card";
 
-import {
-  Badge,
-} from '@/components/ui/badge';
+import { Badge } from "@/components/ui/badge";
 
-import {
-  Button,
-} from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 
-import {
-  ScreenBackground,
-} from '@/components/screen-background';
+import { ScreenBackground } from "@/components/screen-background";
 
-import {
-  ThemedStatusBar,
-} from '@/components/ui/themed-status-bar';
+import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
 
-import {
-  Radii,
-  Spacing,
-  Typography,
-} from '@/constants/theme';
-
+import { Radii, Spacing, Typography } from "@/constants/theme";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────
 
-type AttendanceStatus =
-  | 'Present'
-  | 'Late'
-  | 'Excused'
-  | 'Absent';
-
+type AttendanceStatus = "Present" | "Late" | "Excused" | "Absent";
 
 interface StudentAttendanceEntry {
   studentId: string;
@@ -92,225 +60,141 @@ interface StudentAttendanceEntry {
   status: AttendanceStatus;
 }
 
-
 // ─────────────────────────────────────────────────────────────────────────
 // Screen
 // ─────────────────────────────────────────────────────────────────────────
 
 export default function ClassAttendanceScreen() {
+  const insets = useSafeAreaInsets();
 
-  const insets =
-    useSafeAreaInsets();
+  const theme = useTheme();
 
-  const theme =
-    useTheme();
-
-  const {
-    id,
-  } =
-    useLocalSearchParams<{
-      id: string;
-    }>();
-
+  const { id } = useLocalSearchParams<{
+    id: string;
+  }>();
 
   // ───────────────────────────────────────────────────────────────────────
   // State
   // ───────────────────────────────────────────────────────────────────────
 
-  const [
-    saving,
-    setSaving,
-  ] =
-    useState(false);
+  const [saving, setSaving] = useState(false);
 
+  const [entries, setEntries] = useState<StudentAttendanceEntry[]>([
+    {
+      studentId: "std-1",
 
-  const [
-    entries,
-    setEntries,
-  ] =
-    useState<StudentAttendanceEntry[]>([
-      {
-        studentId:
-          'std-1',
+      studentName: "عمر خالد المنصور",
 
-        studentName:
-          'عمر خالد المنصور',
+      studentNumber: "STD-081",
 
-        studentNumber:
-          'STD-081',
+      status: "Present",
+    },
 
-        status:
-          'Present',
-      },
+    {
+      studentId: "std-2",
 
-      {
-        studentId:
-          'std-2',
+      studentName: "سلطان عبدالعزيز الراشد",
 
-        studentName:
-          'سلطان عبدالعزيز الراشد',
+      studentNumber: "STD-082",
 
-        studentNumber:
-          'STD-082',
+      status: "Present",
+    },
 
-        status:
-          'Present',
-      },
+    {
+      studentId: "std-3",
 
-      {
-        studentId:
-          'std-3',
+      studentName: "فيصل محمد العتيبي",
 
-        studentName:
-          'فيصل محمد العتيبي',
+      studentNumber: "STD-083",
 
-        studentNumber:
-          'STD-083',
+      status: "Present",
+    },
 
-        status:
-          'Present',
-      },
+    {
+      studentId: "std-4",
 
-      {
-        studentId:
-          'std-4',
+      studentName: "عبدالله ناصر القحطاني",
 
-        studentName:
-          'عبدالله ناصر القحطاني',
+      studentNumber: "STD-084",
 
-        studentNumber:
-          'STD-084',
+      status: "Late",
+    },
 
-        status:
-          'Late',
-      },
+    {
+      studentId: "std-5",
 
-      {
-        studentId:
-          'std-5',
+      studentName: "تركي سعود الشمري",
 
-        studentName:
-          'تركي سعود الشمري',
+      studentNumber: "STD-085",
 
-        studentNumber:
-          'STD-085',
-
-        status:
-          'Absent',
-      },
-    ]);
-
+      status: "Absent",
+    },
+  ]);
 
   // ───────────────────────────────────────────────────────────────────────
   // Attendance Actions
   // ───────────────────────────────────────────────────────────────────────
 
-  const updateStatus = (
-    studentId: string,
-    status: AttendanceStatus,
-  ) => {
-
-    setEntries(
-      previous =>
-        previous.map(
-          entry =>
-            entry.studentId === studentId
-              ? {
-                  ...entry,
-                  status,
-                }
-              : entry,
-        ),
+  const updateStatus = (studentId: string, status: AttendanceStatus) => {
+    setEntries((previous) =>
+      previous.map((entry) =>
+        entry.studentId === studentId
+          ? {
+              ...entry,
+              status,
+            }
+          : entry,
+      ),
     );
   };
-
 
   const markAllPresent = () => {
-
-    setEntries(
-      previous =>
-        previous.map(
-          entry => ({
-            ...entry,
-            status:
-              'Present',
-          }),
-        ),
+    setEntries((previous) =>
+      previous.map((entry) => ({
+        ...entry,
+        status: "Present",
+      })),
     );
   };
-
 
   const handleSave = () => {
+    setSaving(true);
 
-    setSaving(
-      true,
-    );
+    setTimeout(() => {
+      setSaving(false);
 
-
-    setTimeout(
-      () => {
-
-        setSaving(
-          false,
-        );
-
-
-        Alert.alert(
-          'تم الحفظ بنجاح',
-          'تم تسجيل واعتماد كشف الحضور للحصة الحالية وإرسال التنبيهات تلقائياً.',
-        );
-      },
-      800,
-    );
+      Alert.alert(
+        "تم الحفظ بنجاح",
+        "تم تسجيل واعتماد كشف الحضور للحصة الحالية وإرسال التنبيهات تلقائياً.",
+      );
+    }, 800);
   };
-
 
   // ───────────────────────────────────────────────────────────────────────
   // Statistics
   // ───────────────────────────────────────────────────────────────────────
 
-  const presentCount =
-    entries.filter(
-      entry =>
-        entry.status ===
-        'Present',
-    ).length;
+  const presentCount = entries.filter(
+    (entry) => entry.status === "Present",
+  ).length;
 
+  const lateCount = entries.filter((entry) => entry.status === "Late").length;
 
-  const lateCount =
-    entries.filter(
-      entry =>
-        entry.status ===
-        'Late',
-    ).length;
-
-
-  const absentCount =
-    entries.filter(
-      entry =>
-        entry.status ===
-          'Absent' ||
-        entry.status ===
-          'Excused',
-    ).length;
-
+  const absentCount = entries.filter(
+    (entry) => entry.status === "Absent" || entry.status === "Excused",
+  ).length;
 
   // ───────────────────────────────────────────────────────────────────────
   // Render
   // ───────────────────────────────────────────────────────────────────────
 
   return (
-    <ScreenBackground
-      gradientHeight={
-        0.48
-      }>
-
+    <ScreenBackground gradientHeight={0.48}>
       {/* ─────────────────────────────────────────────────────────────
           System Status Bar
         ───────────────────────────────────────────────────────────── */}
 
       <ThemedStatusBar />
-
 
       {/* ─────────────────────────────────────────────────────────────
           Header
@@ -321,110 +205,69 @@ export default function ClassAttendanceScreen() {
 
       <Header
         title="رصد حضور الحصة"
-
         subtitle="الصف 3 علمي - أ • الحصة الأولى"
-
         showBack
       />
-
 
       {/* ─────────────────────────────────────────────────────────────
           Main Content
         ───────────────────────────────────────────────────────────── */}
 
       <ScrollView
-        style={
-          styles.scrollView
-        }
-
+        style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
 
           {
-            paddingBottom:
-              insets.bottom +
-              Spacing.eight,
+            paddingBottom: insets.bottom + Spacing.eight,
           },
         ]}
-
-        showsVerticalScrollIndicator={
-          false
-        }>
-
+        showsVerticalScrollIndicator={false}
+      >
         {/* ─────────────────────────────────────────────────────────
             Attendance Summary
           ───────────────────────────────────────────────────────── */}
 
-        <Card
-          variant="elevated"
-          style={
-            styles.topCard
-          }>
-
-          <View
-            style={
-              styles.topRow
-            }>
-
-            <View
-              style={
-                styles.lessonDetails
-              }>
-
+        <Card variant="elevated" style={styles.topCard}>
+          <View style={styles.topRow}>
+            <View style={styles.lessonDetails}>
               <Text
                 style={[
                   styles.lessonDate,
                   {
-                    color:
-                      theme.text,
+                    color: theme.text,
                   },
-                ]}>
-
+                ]}
+              >
                 اليوم، 7 سبتمبر 2026
-
               </Text>
-
 
               <Text
                 style={[
                   styles.lessonInfo,
                   {
-                    color:
-                      theme.textSecondary,
+                    color: theme.textSecondary,
                   },
-                ]}>
-
+                ]}
+              >
                 الرياضيات المتقدمة • القاعة 104
-
               </Text>
-
             </View>
-
 
             <Button
               title="تحضير الكل كـ حاضر"
-
-              onPress={
-                markAllPresent
-              }
-
+              onPress={markAllPresent}
               variant="outline"
-
               size="sm"
-
               icon={
                 <Ionicons
                   name="checkmark-done"
                   size={16}
-                  color={
-                    theme.primary
-                  }
+                  color={theme.primary}
                 />
               }
             />
-
           </View>
-
 
           {/* ─────────────────────────────────────────────────────
               Statistics
@@ -435,298 +278,184 @@ export default function ClassAttendanceScreen() {
               styles.statsRow,
 
               {
-                borderTopColor:
-                  theme.borderSubtle,
+                borderTopColor: theme.borderSubtle,
               },
-            ]}>
-
+            ]}
+          >
             <Badge
-              label={
-                `حاضر: ${presentCount}`
-              }
-
+              label={`حاضر: ${presentCount}`}
               variant="success"
-
               size="md"
             />
 
+            <Badge label={`متأخر: ${lateCount}`} variant="warning" size="md" />
 
-            <Badge
-              label={
-                `متأخر: ${lateCount}`
-              }
-
-              variant="warning"
-
-              size="md"
-            />
-
-
-            <Badge
-              label={
-                `غياب: ${absentCount}`
-              }
-
-              variant="error"
-
-              size="md"
-            />
-
+            <Badge label={`غياب: ${absentCount}`} variant="error" size="md" />
           </View>
-
         </Card>
-
 
         {/* ─────────────────────────────────────────────────────────
             Section Header
           ───────────────────────────────────────────────────────── */}
 
-        <View
-          style={
-            styles.sectionHeader
-          }>
-
+        <View style={styles.sectionHeader}>
           <Text
             style={[
               styles.sectionTitle,
               {
-                color:
-                  theme.text,
+                color: theme.text,
               },
-            ]}>
-
+            ]}
+          >
             كشف الطلاب ({entries.length})
-
           </Text>
-
         </View>
-
 
         {/* ─────────────────────────────────────────────────────────
             Students
           ───────────────────────────────────────────────────────── */}
 
-        <View
-          style={
-            styles.entriesList
-          }>
-
-          {entries.map(
-            (
-              entry,
-              index,
-            ) => {
-
-              return (
-                <Card
-                  key={
-                    entry.studentId
-                  }
-
-                  variant="flat"
-
-                  style={
-                    styles.entryCard
-                  }>
-
-                  {/* ───────────────────────────────────────────
+        <View style={styles.entriesList}>
+          {entries.map((entry, index) => {
+            return (
+              <Card
+                key={entry.studentId}
+                variant="flat"
+                style={styles.entryCard}
+              >
+                {/* ───────────────────────────────────────────
                       Student Information
                     ─────────────────────────────────────────── */}
 
-                  <View
-                    style={
-                      styles.entryTop
-                    }>
+                <View style={styles.entryTop}>
+                  <Text
+                    style={[
+                      styles.entryNum,
+                      {
+                        color: theme.textSecondary,
+                      },
+                    ]}
+                  >
+                    {index + 1}.
+                  </Text>
+
+                  <View style={styles.studentInfo}>
+                    <Text
+                      style={[
+                        styles.entryName,
+                        {
+                          color: theme.text,
+                        },
+                      ]}
+                    >
+                      {entry.studentName}
+                    </Text>
 
                     <Text
                       style={[
-                        styles.entryNum,
+                        styles.entrySub,
                         {
-                          color:
-                            theme.textSecondary,
+                          color: theme.textSecondary,
                         },
-                      ]}>
-
-                      {index + 1}.
-
+                      ]}
+                    >
+                      {entry.studentNumber}
                     </Text>
-
-
-                    <View
-                      style={
-                        styles.studentInfo
-                      }>
-
-                      <Text
-                        style={[
-                          styles.entryName,
-                          {
-                            color:
-                              theme.text,
-                          },
-                        ]}>
-
-                        {
-                          entry.studentName
-                        }
-
-                      </Text>
-
-
-                      <Text
-                        style={[
-                          styles.entrySub,
-                          {
-                            color:
-                              theme.textSecondary,
-                          },
-                        ]}>
-
-                        {
-                          entry.studentNumber
-                        }
-
-                      </Text>
-
-                    </View>
-
                   </View>
+                </View>
 
-
-                  {/* ───────────────────────────────────────────
+                {/* ───────────────────────────────────────────
                       Status Selector
                     ─────────────────────────────────────────── */}
 
-                  <View
-                    style={
-                      styles.statusButtonsRow
-                    }>
+                <View style={styles.statusButtonsRow}>
+                  {[
+                    {
+                      key: "Present",
 
-                    {[
-                      {
-                        key:
-                          'Present',
+                      label: "حاضر",
 
-                        label:
-                          'حاضر',
+                      color: theme.success,
 
-                        color:
-                          theme.success,
+                      bg: theme.successLight,
+                    },
 
-                        bg:
-                          theme.successLight,
-                      },
+                    {
+                      key: "Late",
 
-                      {
-                        key:
-                          'Late',
+                      label: "متأخر",
 
-                        label:
-                          'متأخر',
+                      color: theme.warning,
 
-                        color:
-                          theme.warning,
+                      bg: theme.warningLight,
+                    },
 
-                        bg:
-                          theme.warningLight,
-                      },
+                    {
+                      key: "Excused",
 
-                      {
-                        key:
-                          'Excused',
+                      label: "بعذر",
 
-                        label:
-                          'بعذر',
+                      color: theme.info,
 
-                        color:
-                          theme.info,
+                      bg: theme.infoLight,
+                    },
 
-                        bg:
-                          theme.infoLight,
-                      },
+                    {
+                      key: "Absent",
 
-                      {
-                        key:
-                          'Absent',
+                      label: "غائب",
 
-                        label:
-                          'غائب',
+                      color: theme.error,
 
-                        color:
-                          theme.error,
+                      bg: theme.errorLight,
+                    },
+                  ].map((status) => {
+                    const isSelected = entry.status === status.key;
 
-                        bg:
-                          theme.errorLight,
-                      },
-                    ].map(
-                      status => {
+                    return (
+                      <Pressable
+                        key={status.key}
+                        onPress={() =>
+                          updateStatus(
+                            entry.studentId,
+                            status.key as AttendanceStatus,
+                          )
+                        }
+                        style={[
+                          styles.statusBtn,
 
-                        const isSelected =
-                          entry.status ===
-                          status.key;
+                          {
+                            backgroundColor: isSelected
+                              ? status.color
+                              : theme.card,
 
+                            borderColor: isSelected
+                              ? status.color
+                              : theme.border,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.statusBtnText,
 
-                        return (
-                          <Pressable
-                            key={
-                              status.key
-                            }
-
-                            onPress={() =>
-                              updateStatus(
-                                entry.studentId,
-                                status.key as AttendanceStatus,
-                              )
-                            }
-
-                            style={[
-                              styles.statusBtn,
-
-                              {
-                                backgroundColor:
-                                  isSelected
-                                    ? status.color
-                                    : theme.card,
-
-                                borderColor:
-                                  isSelected
-                                    ? status.color
-                                    : theme.border,
-                              },
-                            ]}>
-
-                            <Text
-                              style={[
-                                styles.statusBtnText,
-
-                                {
-                                  color:
-                                    isSelected
-                                      ? theme.primaryForeground
-                                      : theme.textSecondary,
-                                },
-                              ]}>
-
-                              {
-                                status.label
-                              }
-
-                            </Text>
-
-                          </Pressable>
-                        );
-                      },
-                    )}
-
-                  </View>
-
-                </Card>
-              );
-            },
-          )}
-
+                            {
+                              color: isSelected
+                                ? theme.primaryForeground
+                                : theme.textSecondary,
+                            },
+                          ]}
+                        >
+                          {status.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </Card>
+            );
+          })}
         </View>
-
 
         {/* ─────────────────────────────────────────────────────────
             Submit
@@ -734,268 +463,190 @@ export default function ClassAttendanceScreen() {
 
         <Button
           title="اعتماد وحفظ الكشف"
-
-          onPress={
-            handleSave
-          }
-
-          loading={
-            saving
-          }
-
+          onPress={handleSave}
+          loading={saving}
           size="lg"
-
           icon={
             <Ionicons
               name="save-outline"
               size={20}
-              color={
-                theme.primaryForeground
-              }
+              color={theme.primaryForeground}
             />
           }
-
           fullWidth
-
-          style={
-            styles.submitButton
-          }
+          style={styles.submitButton}
         />
-
       </ScrollView>
-
     </ScreenBackground>
   );
 }
-
 
 // ─────────────────────────────────────────────────────────────────────────
 // Styles
 // ─────────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-
   // ───────────────────────────────────────────────────────────────────────
   // Scroll
   // ───────────────────────────────────────────────────────────────────────
 
   scrollView: {
-    flex:
-      1,
+    flex: 1,
 
-    width:
-      '100%',
+    width: "100%",
   },
-
 
   scrollContent: {
-    paddingHorizontal:
-      Spacing.four,
+    paddingHorizontal: Spacing.four,
 
-    paddingTop:
-      Spacing.four,
+    paddingTop: Spacing.four,
 
-    gap:
-      Spacing.four,
+    gap: Spacing.four,
   },
-
 
   // ───────────────────────────────────────────────────────────────────────
   // Top Card
   // ───────────────────────────────────────────────────────────────────────
 
   topCard: {
-    padding:
-      Spacing.four,
+    padding: Spacing.four,
 
-    gap:
-      Spacing.three,
+    gap: Spacing.three,
   },
-
 
   topRow: {
-    flexDirection:
-      'row',
+    flexDirection: "row",
 
-    justifyContent:
-      'space-between',
+    justifyContent: "space-between",
 
-    alignItems:
-      'center',
+    alignItems: "center",
 
-    gap:
-      Spacing.three,
+    gap: Spacing.three,
   },
-
 
   lessonDetails: {
-    flex:
-      1,
+    flex: 1,
 
-    minWidth:
-      0,
+    minWidth: 0,
   },
-
 
   lessonDate: {
     ...Typography.bodyBold,
   },
 
-
   lessonInfo: {
     ...Typography.small,
 
-    marginTop:
-      2,
+    marginTop: 2,
   },
-
 
   // ───────────────────────────────────────────────────────────────────────
   // Statistics
   // ───────────────────────────────────────────────────────────────────────
 
   statsRow: {
-    flexDirection:
-      'row',
+    flexDirection: "row",
 
-    gap:
-      Spacing.two,
+    gap: Spacing.two,
 
-    borderTopWidth:
-      1,
+    borderTopWidth: 1,
 
-    paddingTop:
-      Spacing.three,
+    paddingTop: Spacing.three,
   },
-
 
   // ───────────────────────────────────────────────────────────────────────
   // Section
   // ───────────────────────────────────────────────────────────────────────
 
   sectionHeader: {
-    marginTop:
-      Spacing.two,
+    marginTop: Spacing.two,
   },
-
 
   sectionTitle: {
     ...Typography.h3,
   },
-
 
   // ───────────────────────────────────────────────────────────────────────
   // Students
   // ───────────────────────────────────────────────────────────────────────
 
   entriesList: {
-    gap:
-      Spacing.three,
+    gap: Spacing.three,
   },
-
 
   entryCard: {
-    padding:
-      Spacing.four,
+    padding: Spacing.four,
 
-    gap:
-      Spacing.three,
+    gap: Spacing.three,
   },
-
 
   entryTop: {
-    flexDirection:
-      'row',
+    flexDirection: "row",
 
-    alignItems:
-      'center',
+    alignItems: "center",
 
-    gap:
-      8,
+    gap: 8,
   },
-
 
   entryNum: {
     ...Typography.bodyBold,
 
-    width:
-      24,
+    width: 24,
 
-    textAlign:
-      'center',
+    textAlign: "center",
   },
-
 
   studentInfo: {
-    flex:
-      1,
+    flex: 1,
 
-    minWidth:
-      0,
+    minWidth: 0,
   },
-
 
   entryName: {
     ...Typography.bodyBold,
   },
 
-
   entrySub: {
     ...Typography.small,
 
-    marginTop:
-      2,
+    marginTop: 2,
   },
-
 
   // ───────────────────────────────────────────────────────────────────────
   // Status Buttons
   // ───────────────────────────────────────────────────────────────────────
 
   statusButtonsRow: {
-    flexDirection:
-      'row',
+    flexDirection: "row",
 
-    gap:
-      Spacing.two,
+    gap: Spacing.two,
   },
-
 
   statusBtn: {
-    flex:
-      1,
+    flex: 1,
 
-    minHeight:
-      38,
+    minHeight: 38,
 
-    paddingVertical:
-      8,
+    paddingVertical: 8,
 
-    borderRadius:
-      Radii.md,
+    borderRadius: Radii.md,
 
-    borderWidth:
-      1,
+    borderWidth: 1,
 
-    alignItems:
-      'center',
+    alignItems: "center",
 
-    justifyContent:
-      'center',
+    justifyContent: "center",
   },
-
 
   statusBtnText: {
     ...Typography.captionBold,
   },
-
 
   // ───────────────────────────────────────────────────────────────────────
   // Submit
   // ───────────────────────────────────────────────────────────────────────
 
   submitButton: {
-    marginTop:
-      Spacing.two,
+    marginTop: Spacing.two,
   },
 });

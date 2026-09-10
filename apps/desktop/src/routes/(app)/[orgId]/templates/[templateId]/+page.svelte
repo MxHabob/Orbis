@@ -88,7 +88,9 @@ async function initEditor() {
     const data = await api.getTemplate(templateId || "");
     templateRecord = data;
 
-    const doc = deserializeDocument(data.documentJson ?? (data as any).document_json);
+    const doc = deserializeDocument(
+      data.documentJson ?? (data as any).document_json,
+    );
     doc.meta = { ...doc.meta, id: templateId || data.id };
     store.loadDocument(doc);
     isLoading = false;
@@ -181,9 +183,11 @@ async function generatePreview() {
     const pdfBytes = await api.previewTemplate(
       docJson,
       {},
-      templateRecord?.locale ?? "ar"
+      templateRecord?.locale ?? "ar",
     );
-    const blob = new Blob([pdfBytes as unknown as BlobPart], { type: "application/pdf" });
+    const blob = new Blob([pdfBytes as unknown as BlobPart], {
+      type: "application/pdf",
+    });
     if (previewPdfUrl) URL.revokeObjectURL(previewPdfUrl);
     previewPdfUrl = URL.createObjectURL(blob);
     toast.success("Preview generated successfully");

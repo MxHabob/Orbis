@@ -5,7 +5,7 @@ Main dashboard for AI Center — unified background, responsive grid, zero div b
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { fade } from "svelte/transition";
 import {
   Activity,
@@ -38,15 +38,17 @@ let isLoading = $state(true);
 
 onMount(async () => {
   try {
-    const [tasks, diagnostics, sessions, config, integrations] = await Promise.all([
-      api.ai.autopilotGetTasks().catch(() => []),
-      api.ai.autopilotGetDiagnostics().catch(() => null),
-      api.ai.agentGetSessions().catch(() => []),
-      api.ai.aiGetAutopilotConfig(data.orgId).catch(() => null),
-      api.listIntegrations().catch(() => []),
-    ]);
+    const [tasks, diagnostics, sessions, config, integrations] =
+      await Promise.all([
+        api.ai.autopilotGetTasks().catch(() => []),
+        api.ai.autopilotGetDiagnostics().catch(() => null),
+        api.ai.agentGetSessions().catch(() => []),
+        api.ai.aiGetAutopilotConfig(data.orgId).catch(() => null),
+        api.listIntegrations().catch(() => []),
+      ]);
 
-    healthStatus = (diagnostics as any)?.is_healthy === false ? "degraded" : "healthy";
+    healthStatus =
+      (diagnostics as any)?.is_healthy === false ? "degraded" : "healthy";
     activeSessions = Array.isArray(sessions) ? sessions : [];
     sessionCount = activeSessions.length;
 
@@ -58,8 +60,10 @@ onMount(async () => {
     recentLogs = taskList.slice(0, 5);
 
     if (config) {
-      const mode = (config as any).execution_mode || (config as any).autopilot_mode;
-      autopilotMode = mode === "automatic" ? "تلقائي" : mode === "manual" ? "يدوي" : "مقترح";
+      const mode =
+        (config as any).execution_mode || (config as any).autopilot_mode;
+      autopilotMode =
+        mode === "automatic" ? "تلقائي" : mode === "manual" ? "يدوي" : "مقترح";
     }
   } catch (e) {
     console.warn("[AI Center] Overview load:", e);
@@ -69,9 +73,24 @@ onMount(async () => {
 });
 
 const healthConfig = {
-  healthy:  { color: "text-foreground font-semibold", bg: "bg-muted border border-border", label: "متصل ويعمل بكفاءة", icon: CheckCircle },
-  degraded: { color: "text-foreground font-semibold", bg: "bg-muted border border-border", label: "استجابة بطيئة", icon: AlertTriangle },
-  offline:  { color: "text-muted-foreground", bg: "bg-muted border border-border", label: "غير متصل", icon: Clock },
+  healthy: {
+    color: "text-foreground font-semibold",
+    bg: "bg-muted border border-border",
+    label: "متصل ويعمل بكفاءة",
+    icon: CheckCircle,
+  },
+  degraded: {
+    color: "text-foreground font-semibold",
+    bg: "bg-muted border border-border",
+    label: "استجابة بطيئة",
+    icon: AlertTriangle,
+  },
+  offline: {
+    color: "text-muted-foreground",
+    bg: "bg-muted border border-border",
+    label: "غير متصل",
+    icon: Clock,
+  },
 };
 
 const healthInfo = $derived(healthConfig[healthStatus]);

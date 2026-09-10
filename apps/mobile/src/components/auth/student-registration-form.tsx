@@ -5,24 +5,24 @@
  * Allows parents to submit student admission applications to the educational institution.
  */
 
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Keyboard } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { useTheme } from '@/hooks/use-theme';
-import { useI18n } from '@/lib/i18n';
-import { Radii, Spacing, Typography } from '@/constants/theme';
+import React, { useState } from "react";
+import { View, Text, StyleSheet, Pressable, Keyboard } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "@/hooks/use-theme";
+import { useI18n } from "@/lib/i18n";
+import { Radii, Spacing, Typography } from "@/constants/theme";
 
 export interface StudentRegistrationData {
   studentName: string;
   studentId: string;
   dob: string;
   grade: string;
-  gender: 'male' | 'female';
+  gender: "male" | "female";
   guardianName: string;
-  guardianRelation: 'father' | 'mother' | 'other';
+  guardianRelation: "father" | "mother" | "other";
   guardianPhone: string;
   guardianEmail: string;
   guardianId: string;
@@ -43,34 +43,36 @@ export const StudentRegistrationForm = React.memo<StudentRegistrationFormProps>(
     const [error, setError] = useState<string | null>(null);
 
     // Student Information
-    const [studentName, setStudentName] = useState('');
-    const [studentId, setStudentId] = useState('');
-    const [dob, setDob] = useState('');
-    const [grade, setGrade] = useState('');
-    const [gender, setGender] = useState<'male' | 'female'>('male');
+    const [studentName, setStudentName] = useState("");
+    const [studentId, setStudentId] = useState("");
+    const [dob, setDob] = useState("");
+    const [grade, setGrade] = useState("");
+    const [gender, setGender] = useState<"male" | "female">("male");
 
     // Guardian Information
-    const [guardianName, setGuardianName] = useState('');
-    const [guardianRelation, setGuardianRelation] = useState<'father' | 'mother' | 'other'>('father');
-    const [guardianPhone, setGuardianPhone] = useState('');
-    const [guardianEmail, setGuardianEmail] = useState('');
-    const [guardianId, setGuardianId] = useState('');
-    const [notes, setNotes] = useState('');
+    const [guardianName, setGuardianName] = useState("");
+    const [guardianRelation, setGuardianRelation] = useState<
+      "father" | "mother" | "other"
+    >("father");
+    const [guardianPhone, setGuardianPhone] = useState("");
+    const [guardianEmail, setGuardianEmail] = useState("");
+    const [guardianId, setGuardianId] = useState("");
+    const [notes, setNotes] = useState("");
 
     const handleNextStep = () => {
       Keyboard.dismiss();
       setError(null);
 
       if (!studentName.trim()) {
-        setError(t('admission_err_student_name'));
+        setError(t("admission_err_student_name"));
         return;
       }
       if (!studentId.trim()) {
-        setError(t('admission_err_student_id'));
+        setError(t("admission_err_student_id"));
         return;
       }
       if (!grade.trim()) {
-        setError(t('admission_err_grade'));
+        setError(t("admission_err_grade"));
         return;
       }
 
@@ -88,15 +90,15 @@ export const StudentRegistrationForm = React.memo<StudentRegistrationFormProps>(
       setError(null);
 
       if (!guardianName.trim()) {
-        setError(t('admission_err_guardian_name'));
+        setError(t("admission_err_guardian_name"));
         return;
       }
       if (!guardianPhone.trim()) {
-        setError(t('admission_err_guardian_phone'));
+        setError(t("admission_err_guardian_phone"));
         return;
       }
-      if (!guardianEmail.trim() || !guardianEmail.includes('@')) {
-        setError(t('admission_err_guardian_email'));
+      if (!guardianEmail.trim() || !guardianEmail.includes("@")) {
+        setError(t("admission_err_guardian_email"));
         return;
       }
 
@@ -126,10 +128,10 @@ export const StudentRegistrationForm = React.memo<StudentRegistrationFormProps>(
                 style={[
                   styles.stepBadge,
                   {
-                    backgroundColor:
-                      step === 1 ? theme.primary : theme.success,
+                    backgroundColor: step === 1 ? theme.primary : theme.success,
                   },
-                ]}>
+                ]}
+              >
                 {step > 1 ? (
                   <Ionicons name="checkmark" size={14} color="#FFFFFF" />
                 ) : (
@@ -140,8 +142,9 @@ export const StudentRegistrationForm = React.memo<StudentRegistrationFormProps>(
                 style={[
                   styles.stepLabel,
                   { color: step === 1 ? theme.primary : theme.textSecondary },
-                ]}>
-                {t('admission_step_student')}
+                ]}
+              >
+                {t("admission_step_student")}
               </Text>
             </View>
 
@@ -160,18 +163,18 @@ export const StudentRegistrationForm = React.memo<StudentRegistrationFormProps>(
                   styles.stepBadge,
                   {
                     backgroundColor:
-                      step === 2
-                        ? theme.primary
-                        : theme.backgroundElement,
+                      step === 2 ? theme.primary : theme.backgroundElement,
                     borderColor: step === 2 ? theme.primary : theme.border,
                     borderWidth: step === 2 ? 0 : 1.5,
                   },
-                ]}>
+                ]}
+              >
                 <Text
                   style={[
                     styles.stepNumber,
-                    { color: step === 2 ? '#FFFFFF' : theme.textMuted },
-                  ]}>
+                    { color: step === 2 ? "#FFFFFF" : theme.textMuted },
+                  ]}
+                >
                   2
                 </Text>
               </View>
@@ -179,17 +182,22 @@ export const StudentRegistrationForm = React.memo<StudentRegistrationFormProps>(
                 style={[
                   styles.stepLabel,
                   { color: step === 2 ? theme.primary : theme.textMuted },
-                ]}>
-                {t('admission_step_guardian')}
+                ]}
+              >
+                {t("admission_step_guardian")}
               </Text>
             </View>
           </View>
         </View>
 
         {error && (
-          <View style={[styles.errorBox, { backgroundColor: theme.errorLight }]}>
+          <View
+            style={[styles.errorBox, { backgroundColor: theme.errorLight }]}
+          >
             <Ionicons name="alert-circle" size={18} color={theme.error} />
-            <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
+            <Text style={[styles.errorText, { color: theme.error }]}>
+              {error}
+            </Text>
           </View>
         )}
 
@@ -198,29 +206,35 @@ export const StudentRegistrationForm = React.memo<StudentRegistrationFormProps>(
           <Card variant="elevated" style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={[styles.title, { color: theme.text }]}>
-                {t('admission_student_info')}
+                {t("admission_student_info")}
               </Text>
               <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-                {t('admission_student_sub')}
+                {t("admission_student_sub")}
               </Text>
             </View>
 
             <View style={styles.fields}>
               <Input
-                label={t('admission_student_name')}
-                placeholder={t('admission_student_name_ph')}
+                label={t("admission_student_name")}
+                placeholder={t("admission_student_name_ph")}
                 value={studentName}
                 onChangeText={(text) => {
                   setStudentName(text);
                   setError(null);
                 }}
                 returnKeyType="next"
-                icon={<Ionicons name="person-outline" size={20} color={theme.textMuted} />}
+                icon={
+                  <Ionicons
+                    name="person-outline"
+                    size={20}
+                    color={theme.textMuted}
+                  />
+                }
               />
 
               <Input
-                label={t('admission_student_id')}
-                placeholder={t('admission_student_id_ph')}
+                label={t("admission_student_id")}
+                placeholder={t("admission_student_id_ph")}
                 value={studentId}
                 onChangeText={(text) => {
                   setStudentId(text);
@@ -228,90 +242,129 @@ export const StudentRegistrationForm = React.memo<StudentRegistrationFormProps>(
                 }}
                 keyboardType="number-pad"
                 returnKeyType="next"
-                icon={<Ionicons name="card-outline" size={20} color={theme.textMuted} />}
+                icon={
+                  <Ionicons
+                    name="card-outline"
+                    size={20}
+                    color={theme.textMuted}
+                  />
+                }
               />
 
               {/* Gender Selector */}
               <View style={styles.selectorGroup}>
                 <Text style={[styles.inputLabel, { color: theme.text }]}>
-                  {t('admission_gender_label')}
+                  {t("admission_gender_label")}
                 </Text>
                 <View style={styles.genderRow}>
                   <Pressable
-                    onPress={() => setGender('male')}
+                    onPress={() => setGender("male")}
                     style={[
                       styles.choicePill,
                       {
                         backgroundColor:
-                          gender === 'male' ? theme.primaryLight : theme.backgroundElement,
-                        borderColor: gender === 'male' ? theme.primary : theme.border,
+                          gender === "male"
+                            ? theme.primaryLight
+                            : theme.backgroundElement,
+                        borderColor:
+                          gender === "male" ? theme.primary : theme.border,
                       },
-                    ]}>
+                    ]}
+                  >
                     <Ionicons
                       name="male"
                       size={18}
-                      color={gender === 'male' ? theme.primary : theme.textSecondary}
+                      color={
+                        gender === "male" ? theme.primary : theme.textSecondary
+                      }
                     />
                     <Text
                       style={[
                         styles.choiceText,
-                        { color: gender === 'male' ? theme.primary : theme.text },
-                      ]}>
-                      {t('admission_gender_male')}
+                        {
+                          color: gender === "male" ? theme.primary : theme.text,
+                        },
+                      ]}
+                    >
+                      {t("admission_gender_male")}
                     </Text>
                   </Pressable>
 
                   <Pressable
-                    onPress={() => setGender('female')}
+                    onPress={() => setGender("female")}
                     style={[
                       styles.choicePill,
                       {
                         backgroundColor:
-                          gender === 'female' ? theme.primaryLight : theme.backgroundElement,
-                        borderColor: gender === 'female' ? theme.primary : theme.border,
+                          gender === "female"
+                            ? theme.primaryLight
+                            : theme.backgroundElement,
+                        borderColor:
+                          gender === "female" ? theme.primary : theme.border,
                       },
-                    ]}>
+                    ]}
+                  >
                     <Ionicons
                       name="female"
                       size={18}
-                      color={gender === 'female' ? theme.primary : theme.textSecondary}
+                      color={
+                        gender === "female"
+                          ? theme.primary
+                          : theme.textSecondary
+                      }
                     />
                     <Text
                       style={[
                         styles.choiceText,
-                        { color: gender === 'female' ? theme.primary : theme.text },
-                      ]}>
-                      {t('admission_gender_female')}
+                        {
+                          color:
+                            gender === "female" ? theme.primary : theme.text,
+                        },
+                      ]}
+                    >
+                      {t("admission_gender_female")}
                     </Text>
                   </Pressable>
                 </View>
               </View>
 
               <Input
-                label={t('admission_grade_label')}
-                placeholder={t('admission_grade_ph')}
+                label={t("admission_grade_label")}
+                placeholder={t("admission_grade_ph")}
                 value={grade}
                 onChangeText={(text) => {
                   setGrade(text);
                   setError(null);
                 }}
                 returnKeyType="next"
-                icon={<Ionicons name="school-outline" size={20} color={theme.textMuted} />}
+                icon={
+                  <Ionicons
+                    name="school-outline"
+                    size={20}
+                    color={theme.textMuted}
+                  />
+                }
               />
 
               <Input
-                label={t('admission_student_dob')}
-                placeholder={t('admission_student_dob_ph')}
+                label={t("admission_student_dob")}
+                placeholder={t("admission_student_dob_ph")}
                 value={dob}
                 onChangeText={setDob}
                 keyboardType="numbers-and-punctuation"
                 returnKeyType="done"
                 onSubmitEditing={handleNextStep}
-                icon={<Ionicons name="calendar-outline" size={20} color={theme.textMuted} />}
+                icon={
+                  <Ionicons
+                    name="calendar-outline"
+                    size={20}
+                    color={theme.textMuted}
+                  />
+                }
               />
 
               <Button
-                title={t('admission_next_step')}
+                title={t("admission_next_step")}
                 onPress={handleNextStep}
                 fullWidth
                 size="lg"
@@ -325,36 +378,51 @@ export const StudentRegistrationForm = React.memo<StudentRegistrationFormProps>(
           <Card variant="elevated" style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={[styles.title, { color: theme.text }]}>
-                {t('admission_guardian_info')}
+                {t("admission_guardian_info")}
               </Text>
               <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-                {t('admission_guardian_sub')}
+                {t("admission_guardian_sub")}
               </Text>
             </View>
 
             <View style={styles.fields}>
               <Input
-                label={t('admission_guardian_name')}
-                placeholder={t('admission_guardian_name_ph')}
+                label={t("admission_guardian_name")}
+                placeholder={t("admission_guardian_name_ph")}
                 value={guardianName}
                 onChangeText={(text) => {
                   setGuardianName(text);
                   setError(null);
                 }}
                 returnKeyType="next"
-                icon={<Ionicons name="people-outline" size={20} color={theme.textMuted} />}
+                icon={
+                  <Ionicons
+                    name="people-outline"
+                    size={20}
+                    color={theme.textMuted}
+                  />
+                }
               />
 
               {/* Relationship Selector */}
               <View style={styles.selectorGroup}>
                 <Text style={[styles.inputLabel, { color: theme.text }]}>
-                  {t('admission_guardian_relation')}
+                  {t("admission_guardian_relation")}
                 </Text>
                 <View style={styles.genderRow}>
                   {[
-                    { key: 'father', label: t('admission_guardian_relation_father') },
-                    { key: 'mother', label: t('admission_guardian_relation_mother') },
-                    { key: 'other', label: t('admission_guardian_relation_other') },
+                    {
+                      key: "father",
+                      label: t("admission_guardian_relation_father"),
+                    },
+                    {
+                      key: "mother",
+                      label: t("admission_guardian_relation_mother"),
+                    },
+                    {
+                      key: "other",
+                      label: t("admission_guardian_relation_other"),
+                    },
                   ].map((rel) => {
                     const isSelected = guardianRelation === rel.key;
                     return (
@@ -367,14 +435,18 @@ export const StudentRegistrationForm = React.memo<StudentRegistrationFormProps>(
                             backgroundColor: isSelected
                               ? theme.primaryLight
                               : theme.backgroundElement,
-                            borderColor: isSelected ? theme.primary : theme.border,
+                            borderColor: isSelected
+                              ? theme.primary
+                              : theme.border,
                           },
-                        ]}>
+                        ]}
+                      >
                         <Text
                           style={[
                             styles.choiceText,
                             { color: isSelected ? theme.primary : theme.text },
-                          ]}>
+                          ]}
+                        >
                           {rel.label}
                         </Text>
                       </Pressable>
@@ -384,8 +456,8 @@ export const StudentRegistrationForm = React.memo<StudentRegistrationFormProps>(
               </View>
 
               <Input
-                label={t('admission_guardian_phone')}
-                placeholder={t('admission_guardian_phone_ph')}
+                label={t("admission_guardian_phone")}
+                placeholder={t("admission_guardian_phone_ph")}
                 value={guardianPhone}
                 onChangeText={(text) => {
                   setGuardianPhone(text);
@@ -393,12 +465,18 @@ export const StudentRegistrationForm = React.memo<StudentRegistrationFormProps>(
                 }}
                 keyboardType="phone-pad"
                 returnKeyType="next"
-                icon={<Ionicons name="call-outline" size={20} color={theme.textMuted} />}
+                icon={
+                  <Ionicons
+                    name="call-outline"
+                    size={20}
+                    color={theme.textMuted}
+                  />
+                }
               />
 
               <Input
-                label={t('admission_guardian_email')}
-                placeholder={t('admission_guardian_email_ph')}
+                label={t("admission_guardian_email")}
+                placeholder={t("admission_guardian_email_ph")}
                 value={guardianEmail}
                 onChangeText={(text) => {
                   setGuardianEmail(text);
@@ -407,38 +485,50 @@ export const StudentRegistrationForm = React.memo<StudentRegistrationFormProps>(
                 keyboardType="email-address"
                 autoCapitalize="none"
                 returnKeyType="next"
-                icon={<Ionicons name="mail-outline" size={20} color={theme.textMuted} />}
+                icon={
+                  <Ionicons
+                    name="mail-outline"
+                    size={20}
+                    color={theme.textMuted}
+                  />
+                }
               />
 
               <Input
-                label={t('admission_guardian_id')}
-                placeholder={t('admission_guardian_id_ph')}
+                label={t("admission_guardian_id")}
+                placeholder={t("admission_guardian_id_ph")}
                 value={guardianId}
                 onChangeText={setGuardianId}
                 keyboardType="number-pad"
                 returnKeyType="next"
-                icon={<Ionicons name="card-outline" size={20} color={theme.textMuted} />}
+                icon={
+                  <Ionicons
+                    name="card-outline"
+                    size={20}
+                    color={theme.textMuted}
+                  />
+                }
               />
 
               <Input
-                label={t('admission_notes_label')}
-                placeholder={t('admission_notes_ph')}
+                label={t("admission_notes_label")}
+                placeholder={t("admission_notes_ph")}
                 value={notes}
                 onChangeText={setNotes}
                 multiline
                 numberOfLines={3}
-                style={{ height: 72, textAlignVertical: 'top' }}
+                style={{ height: 72, textAlignVertical: "top" }}
               />
 
               <View style={styles.actionRow}>
                 <Button
-                  title={t('admission_prev_step')}
+                  title={t("admission_prev_step")}
                   onPress={handlePrevStep}
                   variant="outline"
                   style={{ flex: 1 }}
                 />
                 <Button
-                  title={t('admission_submit_btn')}
+                  title={t("admission_submit_btn")}
                   onPress={handleSubmit}
                   loading={loading}
                   style={{ flex: 2 }}
@@ -452,40 +542,40 @@ export const StudentRegistrationForm = React.memo<StudentRegistrationFormProps>(
   },
 );
 
-StudentRegistrationForm.displayName = 'StudentRegistrationForm';
+StudentRegistrationForm.displayName = "StudentRegistrationForm";
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
+    width: "100%",
     gap: Spacing.four,
   },
   stepHeader: {
-    alignItems: 'center',
+    alignItems: "center",
     marginVertical: Spacing.two,
   },
   stepTrack: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: Spacing.two,
-    width: '100%',
+    width: "100%",
     paddingHorizontal: Spacing.two,
   },
   stepItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.two,
   },
   stepBadge: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   stepNumber: {
     ...Typography.captionBold,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   stepLabel: {
     ...Typography.captionBold,
@@ -508,14 +598,14 @@ const styles = StyleSheet.create({
   title: {
     ...Typography.h2,
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   subtitle: {
     ...Typography.caption,
   },
   errorBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.two,
     padding: Spacing.three,
     borderRadius: Radii.md,
@@ -535,14 +625,14 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   genderRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.two,
   },
   choicePill: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 6,
     paddingVertical: Spacing.two + 2,
     paddingHorizontal: Spacing.two,
@@ -554,7 +644,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   actionRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.two,
     marginTop: Spacing.two,
   },

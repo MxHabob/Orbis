@@ -2477,7 +2477,7 @@
   "auth_provider_back_to_login": "Back to Sign In",
   "auth_provider_back_to_settings": "Back to Security Settings",
   "auth_provider_continue_with": "Continue with {provider}",
-   "auth_provider_cancel": "Cancel",
+  "auth_provider_cancel": "Cancel",
   "common_account_identities_section": "Connected Identities & SSO",
   "common_account_identities_google_title": "Google Workspace",
   "common_account_identities_google_desc": "Link your organization Google Workspace account for single sign-on and directory access.",

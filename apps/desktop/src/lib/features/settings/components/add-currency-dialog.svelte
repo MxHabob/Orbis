@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { toast } from "@orbis/ui";
 import { uniqueCurrencies } from "@orbis/location/currencies";
 import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
@@ -65,7 +65,9 @@ let cachedEnDisplayNames: Intl.DisplayNames | null = null;
 function getArDisplayNames(): Intl.DisplayNames | null {
   if (cachedArDisplayNames === null) {
     try {
-      cachedArDisplayNames = new Intl.DisplayNames(["ar"], { type: "currency" });
+      cachedArDisplayNames = new Intl.DisplayNames(["ar"], {
+        type: "currency",
+      });
     } catch {
       cachedArDisplayNames = null;
     }
@@ -76,7 +78,9 @@ function getArDisplayNames(): Intl.DisplayNames | null {
 function getEnDisplayNames(): Intl.DisplayNames | null {
   if (cachedEnDisplayNames === null) {
     try {
-      cachedEnDisplayNames = new Intl.DisplayNames(["en"], { type: "currency" });
+      cachedEnDisplayNames = new Intl.DisplayNames(["en"], {
+        type: "currency",
+      });
     } catch {
       cachedEnDisplayNames = null;
     }
@@ -85,8 +89,12 @@ function getEnDisplayNames(): Intl.DisplayNames | null {
 }
 
 // Pre-computed preset dropdown items (built once for instant opening)
-let cachedPresetItems: { id: string; label: string; value: string }[] | null = null;
-let cachedPresetMap: Map<string, { id: string; label: string; value: string }> | null = null;
+let cachedPresetItems: { id: string; label: string; value: string }[] | null =
+  null;
+let cachedPresetMap: Map<
+  string,
+  { id: string; label: string; value: string }
+> | null = null;
 
 function getPresetItemsData() {
   if (!cachedPresetItems) {
@@ -135,7 +143,13 @@ const form = new FormController({
 const isSubmitting = $derived(form.isSubmitting);
 
 const selectedPresetItem = $derived(
-  code ? presetMap.get(code.toUpperCase()) || { id: code, label: code, value: code } : null,
+  code
+    ? presetMap.get(code.toUpperCase()) || {
+        id: code,
+        label: code,
+        value: code,
+      }
+    : null,
 );
 
 // Formatted Live Preview Text
@@ -148,7 +162,11 @@ let livePreview = $derived.by(() => {
 /**
  * Optimized auto-completion handler using cached Intl instances
  */
-function handlePresetSelect(item: { id: string; label: string; value: string }) {
+function handlePresetSelect(item: {
+  id: string;
+  label: string;
+  value: string;
+}) {
   const curCode = item.value.toUpperCase();
   code = curCode;
 

@@ -12,7 +12,13 @@ interface Props {
   isSaving?: boolean;
 }
 
-let { slug, name = $bindable(), nameAr = $bindable(), organizationId, isSaving = false }: Props = $props();
+let {
+  slug,
+  name = $bindable(),
+  nameAr = $bindable(),
+  organizationId,
+  isSaving = false,
+}: Props = $props();
 </script>
 
 <SettingsCard title={m.settings_general_section_info()}>

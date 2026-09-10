@@ -7,14 +7,14 @@ import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
 import { MetricProgress } from "@orbis/ui";
-import { 
-  AlertCircle, 
-  Users, 
+import {
+  AlertCircle,
+  Users,
   TrendingUp,
   CheckCircle2,
-  FileText, 
-  Bell, 
-  CheckSquare, 
+  FileText,
+  Bell,
+  CheckSquare,
   MessageSquare,
   Sparkles,
   Share2,
@@ -45,7 +45,9 @@ const classQuery = createQuery(() => ({
 const classData = $derived(classQuery.data as any);
 const classDisplayName = $derived.by(() => {
   if (!classData) return "";
-  return isArabic ? classData.name_ar || classData.name : classData.name || classData.name_ar;
+  return isArabic
+    ? classData.name_ar || classData.name
+    : classData.name || classData.name_ar;
 });
 
 const classMetricsQuery = createQuery(() => ({
@@ -62,20 +64,39 @@ const attendanceRate = $derived.by(() => {
   const metrics = (classMetricsQuery.data || []) as any[];
   if (metrics.length === 0) return 0;
   const m = metrics[0];
-  if (!m || !m.total_attendance_records || m.total_attendance_records === 0) return 0;
+  if (!m || !m.total_attendance_records || m.total_attendance_records === 0)
+    return 0;
   return Math.round((m.present_records / m.total_attendance_records) * 100);
 });
 
-const presentCount = $derived.by(() => ((classMetricsQuery.data || [])[0] as any)?.present_records || 0);
-const absentCount = $derived.by(() => ((classMetricsQuery.data || [])[0] as any)?.absent_records || 0);
-const lateCount = $derived.by(() => ((classMetricsQuery.data || [])[0] as any)?.late_records || 0);
-const excusedCount = $derived.by(() => ((classMetricsQuery.data || [])[0] as any)?.excused_records || 0);
-const totalRecords = $derived(presentCount + absentCount + lateCount + excusedCount);
+const presentCount = $derived.by(
+  () => ((classMetricsQuery.data || [])[0] as any)?.present_records || 0,
+);
+const absentCount = $derived.by(
+  () => ((classMetricsQuery.data || [])[0] as any)?.absent_records || 0,
+);
+const lateCount = $derived.by(
+  () => ((classMetricsQuery.data || [])[0] as any)?.late_records || 0,
+);
+const excusedCount = $derived.by(
+  () => ((classMetricsQuery.data || [])[0] as any)?.excused_records || 0,
+);
+const totalRecords = $derived(
+  presentCount + absentCount + lateCount + excusedCount,
+);
 
-const presentPct = $derived(totalRecords > 0 ? (presentCount / totalRecords) * 100 : 0);
-const absentPct = $derived(totalRecords > 0 ? (absentCount / totalRecords) * 100 : 0);
-const latePct = $derived(totalRecords > 0 ? (lateCount / totalRecords) * 100 : 0);
-const excusedPct = $derived(totalRecords > 0 ? (excusedCount / totalRecords) * 100 : 0);
+const presentPct = $derived(
+  totalRecords > 0 ? (presentCount / totalRecords) * 100 : 0,
+);
+const absentPct = $derived(
+  totalRecords > 0 ? (absentCount / totalRecords) * 100 : 0,
+);
+const latePct = $derived(
+  totalRecords > 0 ? (lateCount / totalRecords) * 100 : 0,
+);
+const excusedPct = $derived(
+  totalRecords > 0 ? (excusedCount / totalRecords) * 100 : 0,
+);
 
 function refetchAll() {
   classMetricsQuery.refetch();
@@ -83,13 +104,20 @@ function refetchAll() {
 
 function handleShareLink() {
   navigator.clipboard.writeText(window.location.href);
-  toast.success(isArabic ? "تم نسخ رابط الفصل إلى الحافظة" : "Class link copied to clipboard");
+  toast.success(
+    isArabic
+      ? "تم نسخ رابط الفصل إلى الحافظة"
+      : "Class link copied to clipboard",
+  );
 }
 
 function handleNotifications() {
-  toast.success(isArabic ? "تم تفعيل الإشعارات لهذا الفصل" : "Notifications enabled for this class");
+  toast.success(
+    isArabic
+      ? "تم تفعيل الإشعارات لهذا الفصل"
+      : "Notifications enabled for this class",
+  );
 }
-
 </script>
 
 <div class="h-full w-full flex flex-col font-sans gap-4 pb-6 text-start">

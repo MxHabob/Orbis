@@ -56,7 +56,9 @@ const items = $derived.by(() => {
     const nameStr = c.name_ar || c.name || "";
     return {
       id: codeUpper,
-      label: nameStr ? `${codeUpper} - ${nameStr}${symbolStr}` : `${codeUpper}${symbolStr}`,
+      label: nameStr
+        ? `${codeUpper} - ${nameStr}${symbolStr}`
+        : `${codeUpper}${symbolStr}`,
       value: codeUpper,
     };
   });

@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
@@ -22,41 +22,41 @@ let {
 
 // Form state
 const form = new FormController({
-	initialValues: {
-		name: "",
-		name_ar: "",
-		code: "",
-		grade_level: "",
-		capacity: 30,
-		color: "",
-	},
-	schema: classFormInputSchema,
+  initialValues: {
+    name: "",
+    name_ar: "",
+    code: "",
+    grade_level: "",
+    capacity: 30,
+    color: "",
+  },
+  schema: classFormInputSchema,
 });
 
 function fieldError(field: string): string | undefined {
-	return form.errors[field]?.[0];
+  return form.errors[field]?.[0];
 }
 
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
-	const submitted = await form.submit(async (values) => {
-		await api.createClass({
-			...values,
-			name: values.name || values.name_ar,
-			name_ar: values.name_ar || values.name,
-			code: values.code || undefined,
-			grade_level: values.grade_level || undefined,
-			color: values.color || undefined,
-		} as any);
-		toast.success(m.academics_class_toast_success());
-	});
-	if (submitted) {
-		form.reset();
-		onSuccess();
-	} else if (form.formError) {
-		toast.error(form.formError);
-	} else if (Object.keys(form.errors).length > 0) {
-		toast.error(m.academics_class_toast_error_name());
+  const submitted = await form.submit(async (values) => {
+    await api.createClass({
+      ...values,
+      name: values.name || values.name_ar,
+      name_ar: values.name_ar || values.name,
+      code: values.code || undefined,
+      grade_level: values.grade_level || undefined,
+      color: values.color || undefined,
+    } as any);
+    toast.success(m.academics_class_toast_success());
+  });
+  if (submitted) {
+    form.reset();
+    onSuccess();
+  } else if (form.formError) {
+    toast.error(form.formError);
+  } else if (Object.keys(form.errors).length > 0) {
+    toast.error(m.academics_class_toast_error_name());
   }
 }
 </script>

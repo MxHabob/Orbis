@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { CheckCircle2, Info, TriangleAlert, X, XCircle } from "@lucide/svelte";
-  import { Button } from "../button/index.js";
-  import { Progress } from "../progress/index.js";
-  import Spinner from "../spinner.svelte";
-  import { toastStore } from "./toast-state.svelte.js";
+import { CheckCircle2, Info, TriangleAlert, X, XCircle } from "@lucide/svelte";
+import { Button } from "../button/index.js";
+import { Progress } from "../progress/index.js";
+import Spinner from "../spinner.svelte";
+import { toastStore } from "./toast-state.svelte.js";
 
-  let { ...restProps } = $props();
-  const visibleToasts = $derived(toastStore.toasts.filter((item) => item.open));
+let { ...restProps } = $props();
+const visibleToasts = $derived(toastStore.toasts.filter((item) => item.open));
 </script>
 
 <div class="toaster" {...restProps}>

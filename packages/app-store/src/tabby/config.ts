@@ -10,8 +10,10 @@ const config: OrbisApp = {
   active: true,
   beta: false,
   icon: "CalendarCheck",
-  short_description: "Enable parents to split tuition and school fees into 4 interest-free monthly installments.",
-  short_description_ar: "تمكين أولياء الأمور من تقسيط الرسوم المدرسية على 4 دفعات شهرية ميسرة بدون فوائد.",
+  short_description:
+    "Enable parents to split tuition and school fees into 4 interest-free monthly installments.",
+  short_description_ar:
+    "تمكين أولياء الأمور من تقسيط الرسوم المدرسية على 4 دفعات شهرية ميسرة بدون فوائد.",
   description: `Tabby Buy-Now-Pay-Later (BNPL) tuition installment solution for schools.
 
 **Split School Fees into 4**
@@ -55,7 +57,8 @@ Installment approval and repayment updates sync automatically with the student f
       required: true,
       value: "",
       description: "Tabby public merchant key for the checkout widget.",
-      description_ar: "المفتاح العام الخاص بتابي لعرض خيار التقسيط في واجهة الدفع.",
+      description_ar:
+        "المفتاح العام الخاص بتابي لعرض خيار التقسيط في واجهة الدفع.",
       placeholder: "pk_test_...",
     },
     {
@@ -65,7 +68,8 @@ Installment approval and repayment updates sync automatically with the student f
       type: "password",
       required: true,
       value: "",
-      description: "Tabby private API key for creating checkout sessions and captures.",
+      description:
+        "Tabby private API key for creating checkout sessions and captures.",
       description_ar: "المفتاح السري لإنشاء جلسات الدفع وتأكيد الحجوزات.",
       placeholder: "sk_test_...",
     },

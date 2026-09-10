@@ -106,7 +106,8 @@ export class MoveNodeCommand implements EditorCommand {
 
   execute(doc: TemplateDocument): TemplateDocument {
     const node = findNode(doc, this.nodeId);
-    const position = (node as any)?.props?.position ?? (node as any)?.position ?? {};
+    const position =
+      (node as any)?.props?.position ?? (node as any)?.position ?? {};
     this.prevX = position.x ?? 0;
     this.prevY = position.y ?? 0;
     const nextPosition = { ...position, x: this.newX, y: this.newY };
@@ -117,7 +118,8 @@ export class MoveNodeCommand implements EditorCommand {
 
   undo(doc: TemplateDocument): TemplateDocument {
     const node = findNode(doc, this.nodeId);
-    const position = (node as any)?.props?.position ?? (node as any)?.position ?? {};
+    const position =
+      (node as any)?.props?.position ?? (node as any)?.position ?? {};
     return updateNodeProps(doc, this.nodeId, {
       props: { position: { ...position, x: this.prevX, y: this.prevY } },
     } as any);
@@ -149,21 +151,28 @@ export class ResizeNodeCommand implements EditorCommand {
 
   execute(doc: TemplateDocument): TemplateDocument {
     const node = findNode(doc, this.nodeId);
-    const currentPosition = (node as any)?.props?.position ?? (node as any)?.position ?? {};
+    const currentPosition =
+      (node as any)?.props?.position ?? (node as any)?.position ?? {};
     this.prevWidth = currentPosition.width;
     this.prevHeight = currentPosition.height;
     const pos = { ...currentPosition };
     pos.width = this.newWidth;
     if (this.newHeight !== undefined) pos.height = this.newHeight;
-    return updateNodeProps(doc, this.nodeId, { props: { position: pos } } as any);
+    return updateNodeProps(doc, this.nodeId, {
+      props: { position: pos },
+    } as any);
   }
 
   undo(doc: TemplateDocument): TemplateDocument {
     const node = findNode(doc, this.nodeId);
-    const pos = { ...((node as any)?.props?.position ?? (node as any)?.position ?? {}) };
+    const pos = {
+      ...((node as any)?.props?.position ?? (node as any)?.position ?? {}),
+    };
     pos.width = this.prevWidth;
     pos.height = this.prevHeight;
-    return updateNodeProps(doc, this.nodeId, { props: { position: pos } } as any);
+    return updateNodeProps(doc, this.nodeId, {
+      props: { position: pos },
+    } as any);
   }
 }
 

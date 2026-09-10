@@ -13,7 +13,7 @@ import {
 } from "@orbis/ui/dropdown-menu";
 import { Filter, ChevronDown } from "@lucide/svelte";
 import { onMount } from "svelte";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 
 import { getLocale } from "$lib/paraglide/runtime";
 

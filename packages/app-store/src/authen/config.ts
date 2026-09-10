@@ -9,8 +9,10 @@ const config: OrbisApp = {
   category: "ai-vision",
   active: true,
   icon: "ScanFace",
-  short_description: "A secure digital verification and biometric identity platform developed by Mulverse.",
-  short_description_ar: "منصة آمنة للتحقق الرقمي وإدارة الهوية البيومترية مطورة من قبل Mulverse.",
+  short_description:
+    "A secure digital verification and biometric identity platform developed by Mulverse.",
+  short_description_ar:
+    "منصة آمنة للتحقق الرقمي وإدارة الهوية البيومترية مطورة من قبل Mulverse.",
   description: `Authen is a state-of-the-art digital verification platform to store and manage digital face signatures. Developed by Mulverse, it provides privacy-compliant biometric data storage that integrates seamlessly with Orbis.
 
 **Get Started & Integration**
@@ -79,8 +81,10 @@ Designed to follow strict user consent and privacy standards for facial recognit
       id: "mcp_url",
       label: "MCP WebSocket URL",
       label_ar: "رابط الـ MCP WebSocket",
-      description: "The Authen Model Context Protocol (MCP) real-time WebSocket connection URL.",
-      description_ar: "رابط اتصال WebSocket المباشر لبروتوكول سياق النموذج (MCP) الخاص بـ Authen.",
+      description:
+        "The Authen Model Context Protocol (MCP) real-time WebSocket connection URL.",
+      description_ar:
+        "رابط اتصال WebSocket المباشر لبروتوكول سياق النموذج (MCP) الخاص بـ Authen.",
       type: "url",
       required: false,
       value: "wss://api.authen.io/ws/mcp",

@@ -9,8 +9,10 @@ const config: OrbisApp = {
   category: "identity",
   active: true,
   icon: "AppWindow",
-  short_description: "Sync users, Teams, and enable Microsoft SSO for your organization.",
-  short_description_ar: "مزامنة المستخدمين وفصول Teams وتفعيل تسجيل الدخول الموحد عبر Microsoft.",
+  short_description:
+    "Sync users, Teams, and enable Microsoft SSO for your organization.",
+  short_description_ar:
+    "مزامنة المستخدمين وفصول Teams وتفعيل تسجيل الدخول الموحد عبر Microsoft.",
   description: `Integrate with Microsoft 365 for Education and Azure Active Directory (Entra ID) for centralized enterprise identity management.
 
 **Microsoft SSO**
@@ -53,7 +55,8 @@ Automatically generate Microsoft Teams classes and sync academic timetables to O
       type: "text",
       required: true,
       value: "",
-      description: "Azure Active Directory / Microsoft Entra Directory (Tenant) ID.",
+      description:
+        "Azure Active Directory / Microsoft Entra Directory (Tenant) ID.",
       description_ar: "معرّف دليل المستأجر في Azure Active Directory.",
       placeholder: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
     },
@@ -85,8 +88,10 @@ Automatically generate Microsoft Teams classes and sync academic timetables to O
       type: "text",
       required: false,
       value: "",
-      description: "Primary Microsoft 365 domain (e.g., school.onmicrosoft.com).",
-      description_ar: "نطاق البريد المعتمد للمؤسسة (مثال: school.edu أو school.onmicrosoft.com).",
+      description:
+        "Primary Microsoft 365 domain (e.g., school.onmicrosoft.com).",
+      description_ar:
+        "نطاق البريد المعتمد للمؤسسة (مثال: school.edu أو school.onmicrosoft.com).",
       placeholder: "school.edu.sa",
     },
     {
@@ -96,8 +101,10 @@ Automatically generate Microsoft Teams classes and sync academic timetables to O
       type: "switch",
       required: false,
       value: true,
-      description: "Allow users to authenticate using organization Microsoft 365 credentials.",
-      description_ar: "تمكين المستخدمين من تسجيل الدخول وربط الحسابات ببريد مايكروسوفت المؤسسي.",
+      description:
+        "Allow users to authenticate using organization Microsoft 365 credentials.",
+      description_ar:
+        "تمكين المستخدمين من تسجيل الدخول وربط الحسابات ببريد مايكروسوفت المؤسسي.",
     },
     {
       id: "sync_teams",
@@ -106,8 +113,10 @@ Automatically generate Microsoft Teams classes and sync academic timetables to O
       type: "switch",
       required: false,
       value: false,
-      description: "Automatically provision classes and students into Microsoft Teams.",
-      description_ar: "إنشاء الفصول والمجموعات الدراسية تلقائياً في Microsoft Teams.",
+      description:
+        "Automatically provision classes and students into Microsoft Teams.",
+      description_ar:
+        "إنشاء الفصول والمجموعات الدراسية تلقائياً في Microsoft Teams.",
     },
   ],
   requires_oauth: true,

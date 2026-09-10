@@ -1,7 +1,7 @@
 <script lang="ts">
 import { Save, X } from "@lucide/svelte";
 import { toast } from "@orbis/ui";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { createTimeSlotInputSchema } from "@orbis/schemas";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -64,10 +64,11 @@ function editSlot(slot: any) {
 
 function beginCreate() {
   resetForm();
-  const nextNumber = timeSlots.reduce(
-    (highest, slot) => Math.max(highest, Number(slot.slot_number) || 0),
-    0,
-  ) + 1;
+  const nextNumber =
+    timeSlots.reduce(
+      (highest, slot) => Math.max(highest, Number(slot.slot_number) || 0),
+      0,
+    ) + 1;
   nameAr = m.academics_schedule_placeholder_period({ number: nextNumber });
   name = m.academics_schedule_placeholder_period_en({ number: nextNumber });
   open = true;
@@ -91,10 +92,11 @@ function durationMinutes() {
 
 async function saveSlot(event: SubmitEvent) {
   event.preventDefault();
-  const slotNumber = timeSlots.reduce(
-    (highest, slot) => Math.max(highest, Number(slot.slot_number) || 0),
-    0,
-  ) + 1;
+  const slotNumber =
+    timeSlots.reduce(
+      (highest, slot) => Math.max(highest, Number(slot.slot_number) || 0),
+      0,
+    ) + 1;
   form.values = {
     period_id: periodId,
     slot_number: slotNumber,
@@ -127,7 +129,6 @@ async function saveSlot(event: SubmitEvent) {
   } else if (form.formError) toast.error(form.formError);
   else toast.error(m.academics_schedule_time_slot_required());
 }
-
 </script>
 
 {#if open}

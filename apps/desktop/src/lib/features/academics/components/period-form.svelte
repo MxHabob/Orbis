@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { SheetHeader, SheetTitle } from "@orbis/ui/sheet";
@@ -109,7 +109,10 @@ async function handleSubmit(e: SubmitEvent) {
       ...payload,
       name: payload.name || payload.name_ar || "",
       name_ar: payload.name_ar || payload.name || undefined,
-      parent_id: payload.period_type !== "year" && payload.parent_id ? payload.parent_id : undefined,
+      parent_id:
+        payload.period_type !== "year" && payload.parent_id
+          ? payload.parent_id
+          : undefined,
     };
     if (isEdit && period) {
       await api.calendar.updateAcademicPeriod(period.id, request);
@@ -121,7 +124,8 @@ async function handleSubmit(e: SubmitEvent) {
   });
   if (submitted) onSuccess();
   else if (form.formError) toast.error(form.formError);
-  else if (Object.keys(form.errors).length > 0) toast.error(m.common_period_form_error_dates_required());
+  else if (Object.keys(form.errors).length > 0)
+    toast.error(m.common_period_form_error_dates_required());
 }
 </script>
 

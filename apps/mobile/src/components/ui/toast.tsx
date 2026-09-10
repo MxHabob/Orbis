@@ -11,8 +11,8 @@ import React, {
   useContext,
   useRef,
   useState,
-} from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+} from "react";
+import { StyleSheet, Text, View } from "react-native";
 import Animated, {
   Easing,
   runOnJS,
@@ -20,15 +20,15 @@ import Animated, {
   useSharedValue,
   withSpring,
   withTiming,
-} from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { Radii, Spacing, Typography } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { Radii, Spacing, Typography } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type ToastVariant = 'default' | 'success' | 'error' | 'warning' | 'info';
+export type ToastVariant = "default" | "success" | "error" | "warning" | "info";
 
 export interface ToastPayload {
   message: string;
@@ -50,10 +50,10 @@ export interface ToastContextValue {
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
-export function useToast(): ToastContextValue['toast'] {
+export function useToast(): ToastContextValue["toast"] {
   const ctx = useContext(ToastContext);
   if (!ctx) {
-    throw new Error('useToast must be used within a <ToastProvider />');
+    throw new Error("useToast must be used within a <ToastProvider />");
   }
   return ctx.toast;
 }
@@ -101,10 +101,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         timeoutRef.current = null;
       }
 
-      const message = typeof payload === 'string' ? payload : payload.message;
-      const variant = typeof payload === 'string' ? 'default' : payload.variant || 'default';
+      const message = typeof payload === "string" ? payload : payload.message;
+      const variant =
+        typeof payload === "string" ? "default" : payload.variant || "default";
       const duration =
-        typeof payload === 'string' ? 2600 : (payload.duration ?? 2600);
+        typeof payload === "string" ? 2600 : (payload.duration ?? 2600);
 
       setCurrent({
         id: Date.now().toString(),
@@ -127,34 +128,35 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     (payload: string | ToastPayload) => showToast(payload),
     {
       success: (message: string, duration?: number) =>
-        showToast({ message, variant: 'success', duration }),
+        showToast({ message, variant: "success", duration }),
       error: (message: string, duration?: number) =>
-        showToast({ message, variant: 'error', duration }),
+        showToast({ message, variant: "error", duration }),
       warning: (message: string, duration?: number) =>
-        showToast({ message, variant: 'warning', duration }),
+        showToast({ message, variant: "warning", duration }),
       info: (message: string, duration?: number) =>
-        showToast({ message, variant: 'info', duration }),
+        showToast({ message, variant: "info", duration }),
     },
   );
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
-    transform: [
-      { translateY: translateY.value },
-      { scale: scale.value },
-    ],
+    transform: [{ translateY: translateY.value }, { scale: scale.value }],
   }));
 
   const getVariantIcon = (variant: ToastVariant) => {
     switch (variant) {
-      case 'success':
-        return <Ionicons name="checkmark-circle" size={20} color={theme.success} />;
-      case 'error':
+      case "success":
+        return (
+          <Ionicons name="checkmark-circle" size={20} color={theme.success} />
+        );
+      case "error":
         return <Ionicons name="alert-circle" size={20} color={theme.error} />;
-      case 'warning':
+      case "warning":
         return <Ionicons name="warning" size={20} color={theme.warning} />;
-      case 'info':
-        return <Ionicons name="information-circle" size={20} color={theme.info} />;
+      case "info":
+        return (
+          <Ionicons name="information-circle" size={20} color={theme.info} />
+        );
       default:
         return <Ionicons name="sparkles" size={18} color={theme.primary} />;
     }
@@ -193,25 +195,25 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     zIndex: 99999,
     elevation: 99999,
     paddingHorizontal: Spacing.four,
   },
   toast: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: Spacing.three,
     paddingHorizontal: Spacing.four,
     borderRadius: Radii.full,
     borderWidth: 1,
-    maxWidth: '92%',
+    maxWidth: "92%",
     gap: Spacing.two,
-    shadowColor: '#000000',
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.14,
     shadowRadius: 14,

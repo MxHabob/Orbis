@@ -57,11 +57,19 @@ export class CalendarInfoState {
     if (data.endDate) this.endDate = data.endDate;
     if (data.selectedTemplateId)
       this.selectedTemplateId = data.selectedTemplateId;
-    if (data.periodTemplates && Array.isArray(data.periodTemplates) && data.periodTemplates.length > 0 && data.periodTemplates.some((t: any) => t.structure)) {
+    if (
+      data.periodTemplates &&
+      Array.isArray(data.periodTemplates) &&
+      data.periodTemplates.length > 0 &&
+      data.periodTemplates.some((t: any) => t.structure)
+    ) {
       this.periodTemplates = data.periodTemplates;
     } else {
       this.periodTemplates = DEFAULT_PERIOD_TEMPLATES;
-      if (!this.selectedTemplateId || !this.periodTemplates.some(t => t.id === this.selectedTemplateId)) {
+      if (
+        !this.selectedTemplateId ||
+        !this.periodTemplates.some((t) => t.id === this.selectedTemplateId)
+      ) {
         this.selectedTemplateId = DEFAULT_PERIOD_TEMPLATES[0].id;
       }
     }

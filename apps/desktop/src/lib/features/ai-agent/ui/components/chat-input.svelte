@@ -2,7 +2,7 @@
 import { Button } from "@orbis/ui/button";
 import { Plus, ArrowRight, ArrowLeft } from "@lucide/svelte";
 import * as m from "$lib/paraglide/messages";
-    import { Textarea } from "@orbis/ui/textarea";
+import { Textarea } from "@orbis/ui/textarea";
 
 let {
   value = $bindable(""),
@@ -89,8 +89,16 @@ const commandOptions = [
     label: () => m.agent_command_finance_label(),
     desc: () => m.agent_command_finance_desc(),
   },
-  { id: "exam", label: () => m.agent_command_exam_label(), desc: () => m.agent_command_exam_desc() },
-  { id: "default", label: () => m.agent_command_default_label(), desc: () => m.agent_command_default_desc() },
+  {
+    id: "exam",
+    label: () => m.agent_command_exam_label(),
+    desc: () => m.agent_command_exam_desc(),
+  },
+  {
+    id: "default",
+    label: () => m.agent_command_default_label(),
+    desc: () => m.agent_command_default_desc(),
+  },
 ];
 
 function handleCommandSelect(agentType: string) {

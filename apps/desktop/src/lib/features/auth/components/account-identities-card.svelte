@@ -37,12 +37,16 @@ let isGoogleOrgEnabled = $state(true);
 let isMicrosoftOrgEnabled = $state(true);
 
 const orgId = $derived(page.params.orgId || authStore.orgId || "");
-const integrationsUrl = $derived(orgId ? `/${orgId}/ai-center/integrations` : "/");
+const integrationsUrl = $derived(
+  orgId ? `/${orgId}/ai-center/integrations` : "/",
+);
 
 onMount(async () => {
   // Check organization integration statuses
   try {
-    const googleStatus = await api.getIntegrationStatus("google-workspace").catch(() => null);
+    const googleStatus = await api
+      .getIntegrationStatus("google-workspace")
+      .catch(() => null);
     if (googleStatus !== null) {
       isGoogleOrgEnabled = !!googleStatus?.connected;
     }
@@ -51,7 +55,9 @@ onMount(async () => {
   }
 
   try {
-    const msStatus = await api.getIntegrationStatus("microsoft-365").catch(() => null);
+    const msStatus = await api
+      .getIntegrationStatus("microsoft-365")
+      .catch(() => null);
     if (msStatus !== null) {
       isMicrosoftOrgEnabled = !!msStatus?.connected;
     }
@@ -59,8 +65,13 @@ onMount(async () => {
     // default to true
   }
 
-  const cachedMsLinked = typeof window !== "undefined" && localStorage.getItem("orbis_microsoft_linked") === "true";
-  const cachedMsEmail = typeof window !== "undefined" ? localStorage.getItem("orbis_microsoft_email") : null;
+  const cachedMsLinked =
+    typeof window !== "undefined" &&
+    localStorage.getItem("orbis_microsoft_linked") === "true";
+  const cachedMsEmail =
+    typeof window !== "undefined"
+      ? localStorage.getItem("orbis_microsoft_email")
+      : null;
   if (cachedMsLinked) {
     isMicrosoftLinked = true;
     microsoftEmail = cachedMsEmail;

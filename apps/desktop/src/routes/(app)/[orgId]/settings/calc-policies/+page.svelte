@@ -110,21 +110,31 @@ async function handleDelete(id: string) {
 
 function getRuleLabel(t: string) {
   switch (t) {
-    case "weighted_sum": return "المجموع الموزون";
-    case "simple_average": return "المتوسط البسيط";
-    case "custom_ast": return "صيغة مخصصة (AST)";
-    default: return t;
+    case "weighted_sum":
+      return "المجموع الموزون";
+    case "simple_average":
+      return "المتوسط البسيط";
+    case "custom_ast":
+      return "صيغة مخصصة (AST)";
+    default:
+      return t;
   }
 }
 
 function getRoundingLabel(r: string) {
   switch (r) {
-    case "round_half_up": return "تقريب للأعلى";
-    case "round_half_down": return "تقريب للأسفل";
-    case "truncate": return "قطع الكسور";
-    case "ceiling": return "تقريب للسقف";
-    case "floor": return "تقريب للقاع";
-    default: return r;
+    case "round_half_up":
+      return "تقريب للأعلى";
+    case "round_half_down":
+      return "تقريب للأسفل";
+    case "truncate":
+      return "قطع الكسور";
+    case "ceiling":
+      return "تقريب للسقف";
+    case "floor":
+      return "تقريب للقاع";
+    default:
+      return r;
   }
 }
 </script>

@@ -5,27 +5,27 @@
  * lists, bubbles, cards, and profile headers.
  */
 
-import React, { useEffect } from 'react';
-import { View, StyleSheet, type ViewStyle } from 'react-native';
+import React, { useEffect } from "react";
+import { View, StyleSheet, type ViewStyle } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
   withTiming,
   Easing,
-} from 'react-native-reanimated';
-import { useTheme } from '@/hooks/use-theme';
-import { Radii, Spacing } from '@/constants/theme';
+} from "react-native-reanimated";
+import { useTheme } from "@/hooks/use-theme";
+import { Radii, Spacing } from "@/constants/theme";
 
 export interface SkeletonProps {
-  width?: number | `${number}%` | 'auto';
+  width?: number | `${number}%` | "auto";
   height?: number;
   borderRadius?: number;
   style?: ViewStyle;
 }
 
 export function Skeleton({
-  width = '100%',
+  width = "100%",
   height = 20,
   borderRadius = Radii.md,
   style,
@@ -52,7 +52,7 @@ export function Skeleton({
           width,
           height,
           borderRadius,
-          backgroundColor: theme.backgroundSelected || '#E4E4E7',
+          backgroundColor: theme.backgroundSelected || "#E4E4E7",
         },
         animatedStyle,
         style,
@@ -63,7 +63,7 @@ export function Skeleton({
 
 export function SkeletonBubble({ size = 100 }: { size?: number }) {
   return (
-    <View style={{ alignItems: 'center', gap: 8 }}>
+    <View style={{ alignItems: "center", gap: 8 }}>
       <Skeleton width={size} height={size} borderRadius={size / 2} />
       <Skeleton width={size * 0.75} height={18} borderRadius={9} />
     </View>
@@ -72,7 +72,7 @@ export function SkeletonBubble({ size = 100 }: { size?: number }) {
 
 export function SkeletonFeedCard({ size = 74 }: { size?: number }) {
   return (
-    <View style={{ alignItems: 'center', gap: 6 }}>
+    <View style={{ alignItems: "center", gap: 6 }}>
       <Skeleton width={size} height={size} borderRadius={22} />
       <Skeleton width={size * 0.8} height={12} borderRadius={6} />
     </View>
@@ -100,12 +100,12 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     borderRadius: Radii.lg,
     borderWidth: 1,
-    borderColor: '#E2E8F030',
+    borderColor: "#E2E8F030",
     marginBottom: Spacing.three,
   },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   col: {
     marginLeft: Spacing.three,

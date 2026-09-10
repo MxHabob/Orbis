@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
@@ -43,7 +43,12 @@ const form = new FormController({
     name_ar: null as string | null,
     email: "",
     password: "",
-    primary_role: "teacher" as "admin" | "teacher" | "parent" | "student" | "staff",
+    primary_role: "teacher" as
+      | "admin"
+      | "teacher"
+      | "parent"
+      | "student"
+      | "staff",
     sex: "male" as "male" | "female" | null,
     phone: null as string | null,
     national_id: null as string | null,
@@ -84,7 +89,12 @@ async function handleSubmit(e: SubmitEvent) {
       name_ar: nameAr,
       email,
       password,
-      primary_role: role as "admin" | "teacher" | "parent" | "student" | "staff",
+      primary_role: role as
+        | "admin"
+        | "teacher"
+        | "parent"
+        | "student"
+        | "staff",
       sex: sex as "male" | "female" | null,
       phone,
       national_id: nationalId,
@@ -94,14 +104,17 @@ async function handleSubmit(e: SubmitEvent) {
     const submitted = await form.submit(async (request) => {
       const newUser = await api.registerUser(request);
       const updateRequest: Record<string, any> = {};
-      if (request.full_name.trim()) updateRequest.name_en = request.full_name.trim();
+      if (request.full_name.trim())
+        updateRequest.name_en = request.full_name.trim();
       if (request.address) updateRequest.address = request.address;
       if (Object.keys(updateRequest).length > 0) {
         await api.iam.updateUser(newUser.id, updateRequest);
       }
     });
     if (!submitted) {
-      toast.error(Object.values(form.errors).flat()[0] || "بيانات المستخدم غير صالحة");
+      toast.error(
+        Object.values(form.errors).flat()[0] || "بيانات المستخدم غير صالحة",
+      );
       return;
     }
     toast.success(m.settings_users_create_success());
@@ -112,7 +125,6 @@ async function handleSubmit(e: SubmitEvent) {
     isSubmitting = false;
   }
 }
-
 </script>
 
 <svelte:head>

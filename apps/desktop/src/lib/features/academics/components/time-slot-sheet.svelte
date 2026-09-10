@@ -1,179 +1,188 @@
 <script lang="ts">
-  import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-    SheetFooter,
-  } from "@orbis/ui/sheet";
-  import { Button } from "@orbis/ui/button";
-  import { Input } from "@orbis/ui/input";
-  import { FormField } from "@orbis/ui";
-  import { Label } from "@orbis/ui/label";
-  import { Checkbox } from "@orbis/ui/checkbox";
-  import {
-    Select,
-    SelectTrigger,
-    SelectContent,
-    SelectItem,
-  } from "@orbis/ui/select";
-  import { Clock, Plus, Trash2, Edit2, Coffee, Save, X } from "@lucide/svelte";
-  import { api, extractErrorMessage } from "$lib/api";
-  import { toast } from "@orbis/ui";
-  import * as m from "$lib/paraglide/messages";
-  import { createTimeSlotInputSchema } from "@orbis/schemas";
-  import { FormController } from "$lib/shared/forms/form-controller.svelte";
-  import TimeSlotForm from "./time-slot-form.svelte";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
+} from "@orbis/ui/sheet";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import { FormField } from "@orbis/ui";
+import { Label } from "@orbis/ui/label";
+import { Checkbox } from "@orbis/ui/checkbox";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui/select";
+import { Clock, Plus, Trash2, Edit2, Coffee, Save, X } from "@lucide/svelte";
+import { api, extractErrorMessage } from "$lib/api";
+import { toast } from "@orbis/ui";
+import * as m from "$lib/paraglide/messages";
+import { createTimeSlotInputSchema } from "@orbis/schemas";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import TimeSlotForm from "./time-slot-form.svelte";
 
-  interface Props {
-    open: boolean;
-    periodId: string;
-    timeSlots: any[];
-    onSuccess?: () => void;
+interface Props {
+  open: boolean;
+  periodId: string;
+  timeSlots: any[];
+  onSuccess?: () => void;
+}
+
+let {
+  open = $bindable(false),
+  periodId,
+  timeSlots = [],
+  onSuccess,
+}: Props = $props();
+
+let editingSlotId = $state<string | null>(null);
+let isAdding = $state(false);
+
+// Form State
+let nameAr = $state("");
+let name = $state("");
+let startTime = $state("08:00");
+let endTime = $state("08:45");
+let isBreak = $state(false);
+let breakType = $state("recess");
+let isSubmitting = $state(false);
+
+const form = new FormController({
+  initialValues: {
+    period_id: "",
+    slot_number: 1,
+    name: "",
+    name_ar: "",
+    start_time: "08:00",
+    end_time: "08:45",
+    duration_minutes: 45,
+    is_break: false,
+    applicable_days: "1,2,3,4,5",
+  },
+  schema: createTimeSlotInputSchema,
+});
+
+function resetForm() {
+  editingSlotId = null;
+  isAdding = false;
+  nameAr = "";
+  name = "";
+  startTime = "08:00";
+  endTime = "08:45";
+  isBreak = false;
+  breakType = "recess";
+}
+
+function startEdit(slot: any) {
+  editingSlotId = String(slot.id);
+  isAdding = false;
+  nameAr = slot.name_ar || "";
+  name = slot.name || "";
+  startTime = String(slot.start_time || "").slice(0, 5);
+  endTime = String(slot.end_time || "").slice(0, 5);
+  isBreak = Boolean(slot.is_break);
+  breakType = slot.break_type || "recess";
+}
+
+function startAdd() {
+  resetForm();
+  isAdding = true;
+  const nextSlotNum =
+    timeSlots
+      .filter((s) => !s.is_break)
+      .reduce((max, s) => Math.max(max, Number(s.slot_number) || 0), 0) + 1;
+  nameAr = m.academics_schedule_placeholder_period({ number: nextSlotNum });
+  name = m.academics_schedule_placeholder_period_en({ number: nextSlotNum });
+}
+
+function calcDuration(start: string, end: string): number {
+  const [sh, sm] = start.split(":").map(Number);
+  const [eh, em] = end.split(":").map(Number);
+  return eh * 60 + em - (sh * 60 + sm);
+}
+
+async function handleSaveSlot(e: SubmitEvent) {
+  e.preventDefault();
+  form.values = {
+    period_id: periodId,
+    slot_number:
+      timeSlots.reduce(
+        (max, s) => Math.max(max, Number(s.slot_number) || 0),
+        0,
+      ) + 1,
+    name: name.trim() || nameAr.trim(),
+    name_ar: nameAr.trim(),
+    start_time: startTime,
+    end_time: endTime,
+    duration_minutes: calcDuration(startTime, endTime),
+    is_break: isBreak,
+    applicable_days: "1,2,3,4,5",
+  };
+  if (!form.validate()) {
+    toast.error(m.academics_schedule_time_slot_end_error());
+    return;
   }
 
-  let {
-    open = $bindable(false),
-    periodId,
-    timeSlots = [],
-    onSuccess,
-  }: Props = $props();
+  isSubmitting = true;
+  try {
+    if (editingSlotId) {
+      // Update
+      await api.scheduling.updateTimeSlot(editingSlotId, {
+        name: name.trim() || nameAr.trim(),
+        name_ar: nameAr.trim(),
+        start_time: startTime,
+        end_time: endTime,
+        duration_minutes: calcDuration(startTime, endTime),
+        is_break: isBreak ? 1 : 0,
+        break_type: isBreak ? breakType : null,
+      } as any);
+      toast.success(m.academics_schedule_time_slot_updated());
+    } else {
+      // Create
+      const slotNumber =
+        timeSlots.reduce(
+          (max, s) => Math.max(max, Number(s.slot_number) || 0),
+          0,
+        ) + 1;
 
-  let editingSlotId = $state<string | null>(null);
-  let isAdding = $state(false);
+      await api.createTimeSlot({
+        period_id: periodId,
+        slot_number: slotNumber,
+        name: name.trim() || nameAr.trim(),
+        name_ar: nameAr.trim(),
+        start_time: startTime,
+        end_time: endTime,
+        duration_minutes: calcDuration(startTime, endTime),
+        is_break: isBreak ? 1 : 0,
+        break_type: isBreak ? breakType : null,
+        applicable_days: "1,2,3,4,5",
+      } as any);
+      toast.success(m.academics_schedule_time_slot_added());
+    }
 
-  // Form State
-  let nameAr = $state("");
-  let name = $state("");
-  let startTime = $state("08:00");
-  let endTime = $state("08:45");
-  let isBreak = $state(false);
-  let breakType = $state("recess");
-  let isSubmitting = $state(false);
-
-  const form = new FormController({
-    initialValues: {
-      period_id: "",
-      slot_number: 1,
-      name: "",
-      name_ar: "",
-      start_time: "08:00",
-      end_time: "08:45",
-      duration_minutes: 45,
-      is_break: false,
-      applicable_days: "1,2,3,4,5",
-    },
-    schema: createTimeSlotInputSchema,
-  });
-
-  function resetForm() {
-    editingSlotId = null;
-    isAdding = false;
-    nameAr = "";
-    name = "";
-    startTime = "08:00";
-    endTime = "08:45";
-    isBreak = false;
-    breakType = "recess";
-  }
-
-  function startEdit(slot: any) {
-    editingSlotId = String(slot.id);
-    isAdding = false;
-    nameAr = slot.name_ar || "";
-    name = slot.name || "";
-    startTime = String(slot.start_time || "").slice(0, 5);
-    endTime = String(slot.end_time || "").slice(0, 5);
-    isBreak = Boolean(slot.is_break);
-    breakType = slot.break_type || "recess";
-  }
-
-  function startAdd() {
     resetForm();
-    isAdding = true;
-    const nextSlotNum =
-      timeSlots.filter((s) => !s.is_break).reduce((max, s) => Math.max(max, Number(s.slot_number) || 0), 0) + 1;
-    nameAr = m.academics_schedule_placeholder_period({ number: nextSlotNum });
-    name = m.academics_schedule_placeholder_period_en({ number: nextSlotNum });
+    onSuccess?.();
+  } catch (err) {
+    toast.error(extractErrorMessage(err));
+  } finally {
+    isSubmitting = false;
   }
+}
 
-  function calcDuration(start: string, end: string): number {
-    const [sh, sm] = start.split(":").map(Number);
-    const [eh, em] = end.split(":").map(Number);
-    return eh * 60 + em - (sh * 60 + sm);
+async function handleDeleteSlot(id: string) {
+  try {
+    await api.scheduling.deleteTimeSlot(id);
+    toast.success(m.academics_schedule_time_slot_deleted());
+    if (editingSlotId === id) resetForm();
+    onSuccess?.();
+  } catch (err) {
+    toast.error(extractErrorMessage(err));
   }
-
-  async function handleSaveSlot(e: SubmitEvent) {
-    e.preventDefault();
-    form.values = {
-      period_id: periodId,
-      slot_number: timeSlots.reduce((max, s) => Math.max(max, Number(s.slot_number) || 0), 0) + 1,
-      name: name.trim() || nameAr.trim(),
-      name_ar: nameAr.trim(),
-      start_time: startTime,
-      end_time: endTime,
-      duration_minutes: calcDuration(startTime, endTime),
-      is_break: isBreak,
-      applicable_days: "1,2,3,4,5",
-    };
-    if (!form.validate()) {
-      toast.error(m.academics_schedule_time_slot_end_error());
-      return;
-    }
-
-    isSubmitting = true;
-    try {
-      if (editingSlotId) {
-        // Update
-        await api.scheduling.updateTimeSlot(editingSlotId, {
-          name: name.trim() || nameAr.trim(),
-          name_ar: nameAr.trim(),
-          start_time: startTime,
-          end_time: endTime,
-          duration_minutes: calcDuration(startTime, endTime),
-          is_break: isBreak ? 1 : 0,
-          break_type: isBreak ? breakType : null,
-        } as any);
-        toast.success(m.academics_schedule_time_slot_updated());
-      } else {
-        // Create
-        const slotNumber =
-          timeSlots.reduce((max, s) => Math.max(max, Number(s.slot_number) || 0), 0) + 1;
-
-        await api.createTimeSlot({
-          period_id: periodId,
-          slot_number: slotNumber,
-          name: name.trim() || nameAr.trim(),
-          name_ar: nameAr.trim(),
-          start_time: startTime,
-          end_time: endTime,
-          duration_minutes: calcDuration(startTime, endTime),
-          is_break: isBreak ? 1 : 0,
-          break_type: isBreak ? breakType : null,
-          applicable_days: "1,2,3,4,5",
-        } as any);
-        toast.success(m.academics_schedule_time_slot_added());
-      }
-
-      resetForm();
-      onSuccess?.();
-    } catch (err) {
-      toast.error(extractErrorMessage(err));
-    } finally {
-      isSubmitting = false;
-    }
-  }
-
-  async function handleDeleteSlot(id: string) {
-    try {
-      await api.scheduling.deleteTimeSlot(id);
-      toast.success(m.academics_schedule_time_slot_deleted());
-      if (editingSlotId === id) resetForm();
-      onSuccess?.();
-    } catch (err) {
-      toast.error(extractErrorMessage(err));
-    }
-  }
+}
 </script>
 
 <Sheet bind:open>

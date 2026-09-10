@@ -24,8 +24,12 @@ let message = $derived.by(() => {
   const capacity = onboardingState.facilities.totalCapacity;
   const stageCount = onboardingState.academics.enabledStages;
   const orgDisplayName = isAr
-    ? (onboardingState.profile.orgNameAr || onboardingState.profile.orgName || "المؤسسة")
-    : (onboardingState.profile.orgName || onboardingState.profile.orgNameAr || "your institution");
+    ? onboardingState.profile.orgNameAr ||
+      onboardingState.profile.orgName ||
+      "المؤسسة"
+    : onboardingState.profile.orgName ||
+      onboardingState.profile.orgNameAr ||
+      "your institution";
 
   if (isAr) {
     const bldText = bldCount === 1 ? "مبنى واحد" : `${bldCount} مباني`;
@@ -69,7 +73,10 @@ async function handleCompleteSetup() {
         isLaunching = false;
         authStore.markSetupComplete();
         await authStore.checkSetupStatus();
-        goto(localizeHref(`/${orgId}`), { invalidateAll: true, replaceState: true });
+        goto(localizeHref(`/${orgId}`), {
+          invalidateAll: true,
+          replaceState: true,
+        });
       }, 800); // slight delay for smooth visual transition
     } else {
       clearInterval(interval);

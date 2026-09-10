@@ -1,117 +1,127 @@
 <script lang="ts">
-  import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
-  } from "@orbis/ui/dialog";
-  import { Button } from "@orbis/ui/button";
-  import { Label } from "@orbis/ui/label";
-  import {
-    Select,
-    SelectTrigger,
-    SelectContent,
-    SelectItem,
-  } from "@orbis/ui/select";
-  import { Printer, FileText, Download, Users, User, MapPin, Layers } from "@lucide/svelte";
-  import * as m from "$lib/paraglide/messages";
-  import { l } from "$lib/core/i18n";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@orbis/ui/dialog";
+import { Button } from "@orbis/ui/button";
+import { Label } from "@orbis/ui/label";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui/select";
+import {
+  Printer,
+  FileText,
+  Download,
+  Users,
+  User,
+  MapPin,
+  Layers,
+} from "@lucide/svelte";
+import * as m from "$lib/paraglide/messages";
+import { l } from "$lib/core/i18n";
 
-  interface Props {
-    open: boolean;
-    periodName: string;
-    viewMode: "class" | "teacher" | "room" | "subject" | "matrix";
-    selectedClassId: string;
-    selectedTeacherId: string;
-    selectedRoomId: string;
-    classes: any[];
-    teachers: any[];
-    rooms: any[];
-    timeSlots: any[];
-    weekdays: any[];
-    lessons: any[];
-    getSubjectName: (id: string) => string;
-    getTeacherName: (id: string) => string;
-    getClassName: (id: string) => string;
-    getRoomName: (id: string) => string;
+interface Props {
+  open: boolean;
+  periodName: string;
+  viewMode: "class" | "teacher" | "room" | "subject" | "matrix";
+  selectedClassId: string;
+  selectedTeacherId: string;
+  selectedRoomId: string;
+  classes: any[];
+  teachers: any[];
+  rooms: any[];
+  timeSlots: any[];
+  weekdays: any[];
+  lessons: any[];
+  getSubjectName: (id: string) => string;
+  getTeacherName: (id: string) => string;
+  getClassName: (id: string) => string;
+  getRoomName: (id: string) => string;
+}
+
+let {
+  open = $bindable(false),
+  periodName = "",
+  viewMode = "class",
+  selectedClassId = "",
+  selectedTeacherId = "",
+  selectedRoomId = "",
+  classes = [],
+  teachers = [],
+  rooms = [],
+  timeSlots = [],
+  weekdays = [],
+  lessons = [],
+  getSubjectName,
+  getTeacherName,
+  getClassName,
+  getRoomName,
+}: Props = $props();
+
+let exportType = $state<"class" | "teacher" | "room" | "master">("class");
+let exportTargetId = $state("");
+
+$effect(() => {
+  if (open) {
+    if (viewMode === "teacher") {
+      exportType = "teacher";
+      exportTargetId = selectedTeacherId;
+    } else if (viewMode === "room") {
+      exportType = "room";
+      exportTargetId = selectedRoomId;
+    } else {
+      exportType = "class";
+      exportTargetId = selectedClassId;
+    }
   }
+});
 
-  let {
-    open = $bindable(false),
-    periodName = "",
-    viewMode = "class",
-    selectedClassId = "",
-    selectedTeacherId = "",
-    selectedRoomId = "",
-    classes = [],
-    teachers = [],
-    rooms = [],
-    timeSlots = [],
-    weekdays = [],
-    lessons = [],
-    getSubjectName,
-    getTeacherName,
-    getClassName,
-    getRoomName,
-  }: Props = $props();
-
-  let exportType = $state<"class" | "teacher" | "room" | "master">("class");
-  let exportTargetId = $state("");
-
-  $effect(() => {
-    if (open) {
-      if (viewMode === "teacher") {
-        exportType = "teacher";
-        exportTargetId = selectedTeacherId;
-      } else if (viewMode === "room") {
-        exportType = "room";
-        exportTargetId = selectedRoomId;
-      } else {
-        exportType = "class";
-        exportTargetId = selectedClassId;
-      }
-    }
-  });
-
-  const exportTitle = $derived.by(() => {
-    if (exportType === "class") {
-      const cls = classes.find((c) => String(c.id) === exportTargetId);
-      return cls ? l(cls.name_ar, cls.name) : m.academics_schedule_period_title();
-    }
-    if (exportType === "teacher") {
-      const teach = teachers.find((t) => String(t.id) === exportTargetId);
-      return teach ? l(teach.name_ar, teach.full_name) : m.academics_schedule_teacher_title();
-    }
-    if (exportType === "room") {
-      const rm = rooms.find((r) => String(r.id) === exportTargetId);
-      return rm ? l(rm.name_ar, rm.name) : m.academics_schedule_room_title();
-    }
-    return m.academics_schedule_master_title();
-  });
-
-  const targetLessons = $derived.by(() => {
-    if (exportType === "class") {
-      return lessons.filter((l) => String(l.class_id) === exportTargetId);
-    }
-    if (exportType === "teacher") {
-      return lessons.filter((l) => String(l.teacher_id) === exportTargetId);
-    }
-    if (exportType === "room") {
-      return lessons.filter((l) => String(l.room_id) === exportTargetId);
-    }
-    return lessons;
-  });
-
-  function getLessonInSlot(day: number, slotId: string) {
-    return targetLessons.find(
-      (l) => Number(l.day_of_week) === day && String(l.time_slot_id) === slotId
-    );
+const exportTitle = $derived.by(() => {
+  if (exportType === "class") {
+    const cls = classes.find((c) => String(c.id) === exportTargetId);
+    return cls ? l(cls.name_ar, cls.name) : m.academics_schedule_period_title();
   }
-
-  function handlePrint() {
-    window.print();
+  if (exportType === "teacher") {
+    const teach = teachers.find((t) => String(t.id) === exportTargetId);
+    return teach
+      ? l(teach.name_ar, teach.full_name)
+      : m.academics_schedule_teacher_title();
   }
+  if (exportType === "room") {
+    const rm = rooms.find((r) => String(r.id) === exportTargetId);
+    return rm ? l(rm.name_ar, rm.name) : m.academics_schedule_room_title();
+  }
+  return m.academics_schedule_master_title();
+});
+
+const targetLessons = $derived.by(() => {
+  if (exportType === "class") {
+    return lessons.filter((l) => String(l.class_id) === exportTargetId);
+  }
+  if (exportType === "teacher") {
+    return lessons.filter((l) => String(l.teacher_id) === exportTargetId);
+  }
+  if (exportType === "room") {
+    return lessons.filter((l) => String(l.room_id) === exportTargetId);
+  }
+  return lessons;
+});
+
+function getLessonInSlot(day: number, slotId: string) {
+  return targetLessons.find(
+    (l) => Number(l.day_of_week) === day && String(l.time_slot_id) === slotId,
+  );
+}
+
+function handlePrint() {
+  window.print();
+}
 </script>
 
 <Dialog bind:open>

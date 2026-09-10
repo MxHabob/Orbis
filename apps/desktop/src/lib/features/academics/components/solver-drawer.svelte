@@ -1,115 +1,115 @@
 <script lang="ts">
-  import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-    SheetFooter,
-  } from "@orbis/ui/sheet";
-  import { Button } from "@orbis/ui/button";
-  import { Badge } from "@orbis/ui/badge";
-  import { Checkbox } from "@orbis/ui/checkbox";
-  import { Label } from "@orbis/ui/label";
-  import {
-    WandSparkles,
-    Loader2,
-    CheckCircle2,
-    AlertTriangle,
-    Eye,
-    Check,
-    Clock,
-    Sparkles,
-  } from "@lucide/svelte";
-  import { api, extractErrorMessage } from "$lib/api";
-  import { toast } from "@orbis/ui";
-  import * as m from "$lib/paraglide/messages";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
+} from "@orbis/ui/sheet";
+import { Button } from "@orbis/ui/button";
+import { Badge } from "@orbis/ui/badge";
+import { Checkbox } from "@orbis/ui/checkbox";
+import { Label } from "@orbis/ui/label";
+import {
+  WandSparkles,
+  Loader2,
+  CheckCircle2,
+  AlertTriangle,
+  Eye,
+  Check,
+  Clock,
+  Sparkles,
+} from "@lucide/svelte";
+import { api, extractErrorMessage } from "$lib/api";
+import { toast } from "@orbis/ui";
+import * as m from "$lib/paraglide/messages";
 
-  interface Props {
-    open: boolean;
-    periodId: string;
-    previewDraft: boolean;
-    activeJob: any;
-    onApply?: () => void;
+interface Props {
+  open: boolean;
+  periodId: string;
+  previewDraft: boolean;
+  activeJob: any;
+  onApply?: () => void;
+}
+
+let {
+  open = $bindable(false),
+  periodId,
+  previewDraft = $bindable(false),
+  activeJob = $bindable(null),
+  onApply,
+}: Props = $props();
+
+let isLaunching = $state(false);
+let isApplying = $state(false);
+let solveJobs = $state<any[]>([]);
+let pollTimer: ReturnType<typeof setInterval> | null = null;
+
+$effect(() => {
+  if (open && periodId) {
+    loadJobs();
+    pollTimer = setInterval(() => {
+      if (periodId) loadJobs();
+    }, 3000);
   }
-
-  let {
-    open = $bindable(false),
-    periodId,
-    previewDraft = $bindable(false),
-    activeJob = $bindable(null),
-    onApply,
-  }: Props = $props();
-
-  let isLaunching = $state(false);
-  let isApplying = $state(false);
-  let solveJobs = $state<any[]>([]);
-  let pollTimer: ReturnType<typeof setInterval> | null = null;
-
-  $effect(() => {
-    if (open && periodId) {
-      loadJobs();
-      pollTimer = setInterval(() => {
-        if (periodId) loadJobs();
-      }, 3000);
+  return () => {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
     }
-    return () => {
-      if (pollTimer) {
-        clearInterval(pollTimer);
-        pollTimer = null;
-      }
-    };
-  });
+  };
+});
 
-  async function loadJobs() {
-    try {
-      const jobs = await api.scheduling.listJobs(periodId);
-      solveJobs = jobs || [];
-      if (jobs.length > 0) {
-        activeJob = jobs[0];
-      }
-    } catch (e) {
-      console.error("Error loading solve jobs:", e);
+async function loadJobs() {
+  try {
+    const jobs = await api.scheduling.listJobs(periodId);
+    solveJobs = jobs || [];
+    if (jobs.length > 0) {
+      activeJob = jobs[0];
     }
+  } catch (e) {
+    console.error("Error loading solve jobs:", e);
   }
+}
 
-  async function handleStartSolve() {
-    isLaunching = true;
-    try {
-      const res = await api.scheduling.start(periodId);
-      activeJob = res;
-      toast.success(m.academics_schedule_solver_started());
-      await loadJobs();
-    } catch (err) {
-      toast.error(extractErrorMessage(err));
-    } finally {
-      isLaunching = false;
-    }
+async function handleStartSolve() {
+  isLaunching = true;
+  try {
+    const res = await api.scheduling.start(periodId);
+    activeJob = res;
+    toast.success(m.academics_schedule_solver_started());
+    await loadJobs();
+  } catch (err) {
+    toast.error(extractErrorMessage(err));
+  } finally {
+    isLaunching = false;
   }
+}
 
-  async function handleApplySolve(jobId: string) {
-    isApplying = true;
-    try {
-      await api.scheduling.apply(jobId);
-      toast.success(m.academics_schedule_solver_applied());
-      previewDraft = false;
-      open = false;
-      onApply?.();
-    } catch (err) {
-      toast.error(extractErrorMessage(err));
-    } finally {
-      isApplying = false;
-    }
+async function handleApplySolve(jobId: string) {
+  isApplying = true;
+  try {
+    await api.scheduling.apply(jobId);
+    toast.success(m.academics_schedule_solver_applied());
+    previewDraft = false;
+    open = false;
+    onApply?.();
+  } catch (err) {
+    toast.error(extractErrorMessage(err));
+  } finally {
+    isApplying = false;
   }
+}
 
-  async function handleCancelJob(jobId: string) {
-    try {
-      await api.scheduling.cancel(jobId);
-      toast.info(m.academics_schedule_solver_cancelled());
-      loadJobs();
-    } catch (err) {
-      toast.error(extractErrorMessage(err));
-    }
+async function handleCancelJob(jobId: string) {
+  try {
+    await api.scheduling.cancel(jobId);
+    toast.info(m.academics_schedule_solver_cancelled());
+    loadJobs();
+  } catch (err) {
+    toast.error(extractErrorMessage(err));
   }
+}
 </script>
 
 <Sheet bind:open>

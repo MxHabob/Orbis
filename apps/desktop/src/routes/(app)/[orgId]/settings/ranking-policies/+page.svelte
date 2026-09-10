@@ -15,14 +15,7 @@ import {
   SelectItem,
 } from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
-import {
-  Sliders,
-  Plus,
-  Trash2,
-  Loader2,
-  Pencil,
-  Award,
-} from "@lucide/svelte";
+import { Sliders, Plus, Trash2, Loader2, Pencil, Award } from "@lucide/svelte";
 import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
 import RankingPolicyDialog from "$lib/features/settings/components/ranking-policy-dialog.svelte";
 

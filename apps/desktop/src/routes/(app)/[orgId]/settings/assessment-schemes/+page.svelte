@@ -36,18 +36,24 @@ const schemesQuery = createQuery(() => ({
 
 let selectedSchemeId = $state<string | null>(null);
 const selectedScheme = $derived(
-  (schemesQuery.data as any[] | undefined)?.find((s: any) => s.id === selectedSchemeId) ?? null,
+  (schemesQuery.data as any[] | undefined)?.find(
+    (s: any) => s.id === selectedSchemeId,
+  ) ?? null,
 );
 
 const componentsQuery = createQuery(() => ({
   queryKey: ["scheme-components", selectedSchemeId],
-  queryFn: () => (selectedSchemeId ? api.assessment.listComponents(selectedSchemeId) : []),
+  queryFn: () =>
+    selectedSchemeId ? api.assessment.listComponents(selectedSchemeId) : [],
   enabled: !!selectedSchemeId,
 }));
 
 // ── Weight summary ───────────────────────────────────────────
 const totalWeight = $derived(
-  ((componentsQuery.data ?? []) as any[]).reduce((sum: number, c: any) => sum + (c.weight || 0), 0),
+  ((componentsQuery.data ?? []) as any[]).reduce(
+    (sum: number, c: any) => sum + (c.weight || 0),
+    0,
+  ),
 );
 
 // ── Create Scheme Dialog ─────────────────────────────────────
@@ -89,7 +95,13 @@ let componentForm = $state({
 
 function resetComponentForm() {
   editingComponentId = null;
-  componentForm = { name: "", component_type: "exam", weight: 30, max_score: 100, passing_score: 50 };
+  componentForm = {
+    name: "",
+    component_type: "exam",
+    weight: 30,
+    max_score: 100,
+    passing_score: 50,
+  };
 }
 
 function openAddComponent() {
@@ -159,13 +171,20 @@ async function handleDeleteComponent(id: string) {
 
 function getTypeLabel(t: string) {
   switch (t) {
-    case "exam": return "اختبار";
-    case "quiz": return "اختبار قصير";
-    case "homework": return "واجبات";
-    case "participation": return "مشاركة";
-    case "project": return "مشروع";
-    case "practical": return "عملي";
-    default: return t;
+    case "exam":
+      return "اختبار";
+    case "quiz":
+      return "اختبار قصير";
+    case "homework":
+      return "واجبات";
+    case "participation":
+      return "مشاركة";
+    case "project":
+      return "مشروع";
+    case "practical":
+      return "عملي";
+    default:
+      return t;
   }
 }
 

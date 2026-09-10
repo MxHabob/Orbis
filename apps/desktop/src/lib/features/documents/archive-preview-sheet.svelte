@@ -1,12 +1,15 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
+import { Sheet, SheetContent, SheetFooter } from "@orbis/ui/sheet";
 import {
-  Sheet,
-  SheetContent,
-  SheetFooter,
-} from "@orbis/ui/sheet";
-import { Download, File, Trash2, ZoomIn, ZoomOut, Maximize2 } from "@lucide/svelte";
+  Download,
+  File,
+  Trash2,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+} from "@lucide/svelte";
 import type { Documents } from "@orbis/sdk";
 
 let {
@@ -49,7 +52,10 @@ $effect(() => {
 
 function formatDate(value?: string) {
   if (!value) return "-";
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
 }
 
 function removeDocument() {

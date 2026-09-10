@@ -13,15 +13,27 @@ export interface CategoryDef {
 
 export const categories: CategoryDef[] = [
   { id: "all", name: "All", name_ar: "الكل" },
-  { id: "ai-provider", name: "AI Providers", name_ar: "مزودي الذكاء الاصطناعي" },
+  {
+    id: "ai-provider",
+    name: "AI Providers",
+    name_ar: "مزودي الذكاء الاصطناعي",
+  },
   { id: "surveillance", name: "Surveillance", name_ar: "المراقبة" },
   { id: "communication", name: "Communication", name_ar: "التواصل" },
   { id: "identity", name: "Identity", name_ar: "الهوية" },
   { id: "hardware", name: "Hardware", name_ar: "الأجهزة" },
   { id: "storage", name: "Storage", name_ar: "التخزين" },
   { id: "ai-service", name: "AI Services", name_ar: "خدمات الذكاء الاصطناعي" },
-  { id: "ai-vision", name: "AI & Computer Vision", name_ar: "الذكاء الاصطناعي و الرؤية الحاسوبية" },
-  { id: "payment-gateway", name: "Payment Gateways", name_ar: "بوابات الدفع الإلكتروني" },
+  {
+    id: "ai-vision",
+    name: "AI & Computer Vision",
+    name_ar: "الذكاء الاصطناعي و الرؤية الحاسوبية",
+  },
+  {
+    id: "payment-gateway",
+    name: "Payment Gateways",
+    name_ar: "بوابات الدفع الإلكتروني",
+  },
   { id: "automation", name: "Automation", name_ar: "الأتمتة" },
 ];
 

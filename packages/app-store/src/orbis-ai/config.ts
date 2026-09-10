@@ -9,8 +9,10 @@ const config: OrbisApp = {
   category: "ai-provider",
   active: true,
   icon: "Sparkles",
-  short_description: "The native intelligent core AI of the Orbis platform, developed by Mulverse.",
-  short_description_ar: "الذكاء الاصطناعي الذكي الأصلي لمنصة Orbis، والمطور من قبل Mulverse.",
+  short_description:
+    "The native intelligent core AI of the Orbis platform, developed by Mulverse.",
+  short_description_ar:
+    "الذكاء الاصطناعي الذكي الأصلي لمنصة Orbis، والمطور من قبل Mulverse.",
   description: `Orbis AI is the native artificial intelligence built specifically for this platform. Developed by [Mulverse](https://www.mulverse.com/), it powers intelligent agentic workflows, natural language commands, scheduling assistants, and automated administrative operations.
 
 **Native Platform Integration**
@@ -50,8 +52,10 @@ Leverages the robust infrastructure of the Mulverse Network for advanced reasoni
       id: "api_key",
       label: "Mulverse API Key",
       label_ar: "مفتاح API الخاص بـ Mulverse",
-      description: "Your Mulverse Cloud API key to authorize Orbis AI requests.",
-      description_ar: "مفتاح API الخاص بـ Mulverse Cloud لتفويض طلبات Orbis AI.",
+      description:
+        "Your Mulverse Cloud API key to authorize Orbis AI requests.",
+      description_ar:
+        "مفتاح API الخاص بـ Mulverse Cloud لتفويض طلبات Orbis AI.",
       type: "password",
       required: true,
       value: "",

@@ -16,7 +16,14 @@ import {
 } from "@orbis/ui/dialog";
 import { Progress } from "@orbis/ui/progress";
 import { toast } from "@orbis/ui";
-import { Printer, RefreshCw, FileText, Download, CheckCircle2, XCircle } from "@lucide/svelte";
+import {
+  Printer,
+  RefreshCw,
+  FileText,
+  Download,
+  CheckCircle2,
+  XCircle,
+} from "@lucide/svelte";
 
 let {
   open = $bindable(false),
@@ -62,7 +69,7 @@ async function generateReport() {
       format: "pdf",
       parameters,
     });
-    
+
     currentJobId = jobId;
     progress = 30;
     statusText = "Generating document...";
@@ -75,7 +82,7 @@ async function generateReport() {
       }
 
       const { status } = await api.reports.getJobStatus(jobId);
-      
+
       if (status === "completed") {
         progress = 80;
         statusText = "Fetching document...";
@@ -91,17 +98,18 @@ async function generateReport() {
 
     // 3. Fetch PDF Bytes
     const pdfBytes = await api.reports.downloadFile(jobId);
-    
+
     if (pdfBytes && pdfBytes.length > 0) {
       const base64 = uint8ArrayToBase64(pdfBytes);
       pdfUrl = `data:application/pdf;base64,${base64}`;
       progress = 100;
       statusText = "Ready to print";
     } else {
-        throw new Error("Received empty document.");
+      throw new Error("Received empty document.");
     }
   } catch (e: any) {
-    errorMessage = e.message || "An error occurred while generating the report.";
+    errorMessage =
+      e.message || "An error occurred while generating the report.";
     toast.error(errorMessage);
   } finally {
     isGenerating = false;
@@ -113,17 +121,19 @@ $effect(() => {
   if (open && templateId && !pdfUrl && !isGenerating) {
     generateReport();
   }
-  
+
   if (!open) {
-      currentJobId = null; // Cancel polling
+    currentJobId = null; // Cancel polling
   }
 });
 
 function handleNativePrint() {
   if (!pdfUrl) return;
-  
+
   // Find the iframe
-  const iframe = document.getElementById("report-viewer-iframe") as HTMLIFrameElement;
+  const iframe = document.getElementById(
+    "report-viewer-iframe",
+  ) as HTMLIFrameElement;
   if (iframe && iframe.contentWindow) {
     // Calling print() on the iframe contentWindow triggers the OS Native Print Dialog
     iframe.contentWindow.print();

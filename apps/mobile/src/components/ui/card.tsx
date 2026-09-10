@@ -5,13 +5,19 @@
  * 100% synchronized with @orbis/ui (packages/ui/globals.css .card-tactile & .card-tactile-interactive).
  */
 
-import React from 'react';
-import { View, StyleSheet, type ViewProps, type ViewStyle, Pressable } from 'react-native';
-import { useTheme } from '@/hooks/use-theme';
-import { Radii, Spacing } from '@/constants/theme';
+import React from "react";
+import {
+  View,
+  StyleSheet,
+  type ViewProps,
+  type ViewStyle,
+  Pressable,
+} from "react-native";
+import { useTheme } from "@/hooks/use-theme";
+import { Radii, Spacing } from "@/constants/theme";
 
 export interface CardProps extends ViewProps {
-  variant?: 'default' | 'elevated' | 'outline' | 'flat' | 'interactive';
+  variant?: "default" | "elevated" | "outline" | "flat" | "interactive";
   onPress?: () => void;
   padding?: keyof typeof Spacing;
   children?: React.ReactNode;
@@ -19,9 +25,9 @@ export interface CardProps extends ViewProps {
 
 export const Card = React.memo<CardProps>(
   ({
-    variant = 'default',
+    variant = "default",
     onPress,
-    padding = 'four',
+    padding = "four",
     style,
     children,
     ...props
@@ -30,23 +36,23 @@ export const Card = React.memo<CardProps>(
 
     const getVariantStyle = (): ViewStyle => {
       switch (variant) {
-        case 'elevated':
-        case 'interactive':
+        case "elevated":
+        case "interactive":
           return {
             backgroundColor: theme.card,
             borderWidth: 0,
             shadowOpacity: 0,
             elevation: 0,
           };
-        case 'outline':
+        case "outline":
           return {
-            backgroundColor: 'transparent',
+            backgroundColor: "transparent",
             borderColor: theme.border,
             borderWidth: 1,
           };
-        case 'flat':
-          return { backgroundColor: 'transparent', borderWidth: 0 };
-        case 'default':
+        case "flat":
+          return { backgroundColor: "transparent", borderWidth: 0 };
+        case "default":
         default:
           return {
             backgroundColor: theme.card,
@@ -72,7 +78,8 @@ export const Card = React.memo<CardProps>(
             style,
             pressed && { opacity: 0.88, transform: [{ translateY: 1 }] },
           ]}
-          {...props}>
+          {...props}
+        >
           {children}
         </Pressable>
       );
@@ -86,4 +93,4 @@ export const Card = React.memo<CardProps>(
   },
 );
 
-Card.displayName = 'Card';
+Card.displayName = "Card";

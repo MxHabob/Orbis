@@ -8,20 +8,26 @@
  * - EmptyState when assessments are pending
  */
 
-import React, { useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useMemo, useCallback } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  RefreshControl,
+} from "react-native";
+import { useLocalSearchParams } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useTheme } from '@/hooks/use-theme';
-import { useGradesQuery } from '@/hooks/use-api-queries';
-import { Header } from '@/components/header';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { SkeletonCard } from '@/components/ui/skeleton';
-import { EmptyState } from '@/components/ui/empty-state';
-import { Radii, Spacing, Typography } from '@/constants/theme';
+import { useTheme } from "@/hooks/use-theme";
+import { useGradesQuery } from "@/hooks/use-api-queries";
+import { Header } from "@/components/header";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { SkeletonCard } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Radii, Spacing, Typography } from "@/constants/theme";
 
 export default function StudentGradesScreen() {
   const insets = useSafeAreaInsets();
@@ -47,7 +53,7 @@ export default function StudentGradesScreen() {
       name: (g as any).subject_name || `المقرر الدراسي ${idx + 1}`,
       score: (g as any).score ?? 95,
       maxScore: (g as any).max_score ?? 100,
-      letter: (g as any).letter_grade || 'A+',
+      letter: (g as any).letter_grade || "A+",
     }));
   }, [gradesData]);
 
@@ -67,7 +73,8 @@ export default function StudentGradesScreen() {
             onRefresh={onRefresh}
             tintColor={theme.primary}
           />
-        }>
+        }
+      >
         {/* GPA Summary Card */}
         {isLoading ? (
           <SkeletonCard />
@@ -79,14 +86,19 @@ export default function StudentGradesScreen() {
                   المعدل الفصلي التراكمي
                 </Text>
                 <Text style={[styles.gpaValue, { color: theme.primary }]}>
-                  {gradesList.length > 0 ? '97.8%' : '0.0%'}
+                  {gradesList.length > 0 ? "97.8%" : "0.0%"}
                 </Text>
                 <Text style={[styles.gpaStatus, { color: theme.success }]}>
                   المرتبة الأكاديمية: ممتاز مرتفع
                 </Text>
               </View>
 
-              <View style={[styles.gpaBadgeCircle, { backgroundColor: theme.primaryLight }]}>
+              <View
+                style={[
+                  styles.gpaBadgeCircle,
+                  { backgroundColor: theme.primaryLight },
+                ]}
+              >
                 <Ionicons name="ribbon" size={32} color={theme.primary} />
               </View>
             </View>
@@ -95,7 +107,9 @@ export default function StudentGradesScreen() {
 
         {/* Grades Breakdown Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>تفاصيل المقررات والدرجات</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
+            تفاصيل المقررات والدرجات
+          </Text>
 
           {isLoading ? (
             <>
@@ -113,16 +127,30 @@ export default function StudentGradesScreen() {
               <Card key={subj.id} variant="flat" style={styles.subjectCard}>
                 <View style={styles.subjectHeaderRow}>
                   <View style={styles.subjectTitleBox}>
-                    <Text style={[styles.subjectName, { color: theme.text }]}>{subj.name}</Text>
-                    <Text style={[styles.subjectCode, { color: theme.textSecondary }]}>
+                    <Text style={[styles.subjectName, { color: theme.text }]}>
+                      {subj.name}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.subjectCode,
+                        { color: theme.textSecondary },
+                      ]}
+                    >
                       {subj.code}
                     </Text>
                   </View>
                   <Badge label={subj.letter} variant="success" size="md" />
                 </View>
 
-                <View style={[styles.scoreRow, { borderTopColor: theme.borderSubtle }]}>
-                  <Text style={[styles.scoreLabel, { color: theme.textSecondary }]}>
+                <View
+                  style={[
+                    styles.scoreRow,
+                    { borderTopColor: theme.borderSubtle },
+                  ]}
+                >
+                  <Text
+                    style={[styles.scoreLabel, { color: theme.textSecondary }]}
+                  >
                     المجموع الكلي:
                   </Text>
                   <Text style={[styles.scoreTotalText, { color: theme.text }]}>
@@ -150,9 +178,9 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
   },
   gpaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   gpaCol: {
     gap: 2,
@@ -168,15 +196,15 @@ const styles = StyleSheet.create({
   },
   gpaStatus: {
     ...Typography.small,
-    fontWeight: '700',
+    fontWeight: "700",
     marginTop: 4,
   },
   gpaBadgeCircle: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   section: {
     gap: Spacing.three,
@@ -190,9 +218,9 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   subjectHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   subjectTitleBox: {
     flex: 1,
@@ -207,9 +235,9 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   scoreRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingTop: Spacing.two,
     borderTopWidth: 1,
   },

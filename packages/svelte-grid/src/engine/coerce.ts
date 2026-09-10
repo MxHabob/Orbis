@@ -3,17 +3,28 @@ import type { ColumnValidateResult, OrbisColumnDef } from "../types";
 const TRUE_SET = new Set(["true", "1", "yes", "y", "نعم", "صح"]);
 const FALSE_SET = new Set(["false", "0", "no", "n", "لا"]);
 
-export function coerceValue(raw: unknown, col: OrbisColumnDef): ColumnValidateResult {
+export function coerceValue(
+  raw: unknown,
+  col: OrbisColumnDef,
+): ColumnValidateResult {
   if (col.validate) {
     const result = col.validate(raw, {});
-    if (typeof result === "boolean") return { ok: result, value: raw, message: result ? undefined : "Invalid value" };
-    if (typeof result === "string") return { ok: false, value: raw, message: result };
+    if (typeof result === "boolean")
+      return {
+        ok: result,
+        value: raw,
+        message: result ? undefined : "Invalid value",
+      };
+    if (typeof result === "string")
+      return { ok: false, value: raw, message: result };
     return result;
   }
 
   const type = col.type ?? inferType(col);
   if (raw === null || raw === undefined || raw === "") {
-    return type === "boolean" ? { ok: true, value: false } : { ok: true, value: null };
+    return type === "boolean"
+      ? { ok: true, value: false }
+      : { ok: true, value: null };
   }
 
   const text = String(raw).trim();
@@ -21,7 +32,8 @@ export function coerceValue(raw: unknown, col: OrbisColumnDef): ColumnValidateRe
   switch (type) {
     case "integer": {
       const n = Number(text.replace(/,/g, ""));
-      if (!Number.isInteger(n)) return { ok: false, value: raw, message: "Must be an integer" };
+      if (!Number.isInteger(n))
+        return { ok: false, value: raw, message: "Must be an integer" };
       return { ok: true, value: n };
     }
     case "number":
@@ -29,7 +41,8 @@ export function coerceValue(raw: unknown, col: OrbisColumnDef): ColumnValidateRe
     case "currency":
     case "percentage": {
       const n = Number(text.replace(/[%$,\s]/g, ""));
-      if (!Number.isFinite(n)) return { ok: false, value: raw, message: "Must be a number" };
+      if (!Number.isFinite(n))
+        return { ok: false, value: raw, message: "Must be a number" };
       return { ok: true, value: n };
     }
     case "boolean": {
@@ -48,9 +61,12 @@ export function coerceValue(raw: unknown, col: OrbisColumnDef): ColumnValidateRe
     case "badge": {
       if (!col.options?.length) return { ok: true, value: text };
       const hit = col.options.find(
-        (o) => String(o.value).toLowerCase() === text.toLowerCase() || o.label.toLowerCase() === text.toLowerCase(),
+        (o) =>
+          String(o.value).toLowerCase() === text.toLowerCase() ||
+          o.label.toLowerCase() === text.toLowerCase(),
       );
-      if (!hit) return { ok: false, value: raw, message: "Value is not allowed" };
+      if (!hit)
+        return { ok: false, value: raw, message: "Value is not allowed" };
       return { ok: true, value: hit.value };
     }
     default:

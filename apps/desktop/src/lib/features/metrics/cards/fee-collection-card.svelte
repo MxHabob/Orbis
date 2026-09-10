@@ -2,7 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui";
 import { onMount } from "svelte";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import DragIndicator from "../components/drag-indicator.svelte";
 
 import { getLocale } from "$lib/paraglide/runtime";
@@ -49,7 +49,9 @@ async function loadData() {
     const lastYearMap = Array(12).fill(0) as number[];
 
     for (const payment of payments ?? []) {
-      const dateString = String((payment as any).payment_date ?? payment.created_at ?? "");
+      const dateString = String(
+        (payment as any).payment_date ?? payment.created_at ?? "",
+      );
       const date = new Date(dateString);
       if (!dateString || Number.isNaN(date.getTime())) continue;
 

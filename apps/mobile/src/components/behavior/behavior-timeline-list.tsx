@@ -4,20 +4,20 @@
  * Timeline list of behavioral events or empty state placeholder.
  */
 
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { EmptyState } from '@/components/ui/empty-state';
-import { SkeletonCard } from '@/components/ui/skeleton';
-import { useTheme } from '@/hooks/use-theme';
-import { useI18n } from '@/lib/i18n';
-import { Spacing, Typography } from '@/constants/theme';
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SkeletonCard } from "@/components/ui/skeleton";
+import { useTheme } from "@/hooks/use-theme";
+import { useI18n } from "@/lib/i18n";
+import { Spacing, Typography } from "@/constants/theme";
 
 export interface BehaviorRecordItem {
   id: string;
-  type: 'merit' | 'violation';
+  type: "merit" | "violation";
   category: string;
   points: number;
   description: string;
@@ -48,8 +48,8 @@ export const BehaviorTimelineList = React.memo<BehaviorTimelineListProps>(
       return (
         <EmptyState
           icon="shield-checkmark-outline"
-          title={t('behavior_empty_title')}
-          description={t('behavior_empty_desc')}
+          title={t("behavior_empty_title")}
+          description={t("behavior_empty_desc")}
         />
       );
     }
@@ -57,17 +57,22 @@ export const BehaviorTimelineList = React.memo<BehaviorTimelineListProps>(
     return (
       <View style={styles.container}>
         {records.map((item) => {
-          const isMerit = item.type === 'merit';
+          const isMerit = item.type === "merit";
           return (
             <Card key={item.id} variant="flat" style={styles.card}>
               <View style={styles.row}>
                 <View
                   style={[
                     styles.iconBox,
-                    { backgroundColor: isMerit ? theme.successLight : theme.errorLight },
-                  ]}>
+                    {
+                      backgroundColor: isMerit
+                        ? theme.successLight
+                        : theme.errorLight,
+                    },
+                  ]}
+                >
                   <Ionicons
-                    name={isMerit ? 'star' : 'warning'}
+                    name={isMerit ? "star" : "warning"}
                     size={20}
                     color={isMerit ? theme.success : theme.error}
                   />
@@ -79,8 +84,10 @@ export const BehaviorTimelineList = React.memo<BehaviorTimelineListProps>(
                       {item.category}
                     </Text>
                     <Badge
-                      label={item.points > 0 ? `+${item.points}` : `${item.points}`}
-                      variant={isMerit ? 'success' : 'error'}
+                      label={
+                        item.points > 0 ? `+${item.points}` : `${item.points}`
+                      }
+                      variant={isMerit ? "success" : "error"}
                       size="sm"
                     />
                   </View>
@@ -104,7 +111,7 @@ export const BehaviorTimelineList = React.memo<BehaviorTimelineListProps>(
   },
 );
 
-BehaviorTimelineList.displayName = 'BehaviorTimelineList';
+BehaviorTimelineList.displayName = "BehaviorTimelineList";
 
 const styles = StyleSheet.create({
   container: {
@@ -114,24 +121,24 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
   },
   row: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.three,
   },
   iconBox: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   details: {
     flex: 1,
     gap: 4,
   },
   topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   category: {
     ...Typography.bodyBold,
@@ -142,8 +149,8 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 2,
   },
   meta: {

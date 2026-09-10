@@ -37,7 +37,9 @@ let {
 let customProjects = $state<{ id: string; label: string; logoType: string }[]>(
   [],
 );
-let branches = $state<{ id: string; name: string; name_ar?: string | null }[]>([]);
+let branches = $state<{ id: string; name: string; name_ar?: string | null }[]>(
+  [],
+);
 
 const orgNameDisplay = $derived.by(() => {
   if (initialOrgName && initialOrgName !== "Orbis School")
@@ -62,9 +64,12 @@ onMount(() => {
       customProjects = JSON.parse(storedCustom);
     } catch {}
   }
-  api.listOrgUnits()
+  api
+    .listOrgUnits()
     .then((units) => {
-      branches = units.filter((unit) => unit.is_active && unit.unit_type === "branch");
+      branches = units.filter(
+        (unit) => unit.is_active && unit.unit_type === "branch",
+      );
     })
     .catch(() => {
       branches = [];

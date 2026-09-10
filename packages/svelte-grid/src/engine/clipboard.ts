@@ -1,10 +1,19 @@
-import type { BulkCellError, BulkResult, CellRange, GridRow, OrbisColumnDef } from "../types";
+import type {
+  BulkCellError,
+  BulkResult,
+  CellRange,
+  GridRow,
+  OrbisColumnDef,
+} from "../types";
 import { columnId, getCellValue } from "../types";
 import { normalizeRange } from "./selection";
 import { coerceValue } from "./coerce";
 
 export function parseClipboard(text: string): string[][] {
-  const raw = text.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const raw = text
+    .replace(/^\uFEFF/, "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n");
   if (!raw.trim()) return [];
   const delimiter = raw.includes("\t") ? "\t" : ",";
   return raw
@@ -119,7 +128,8 @@ export function applyPaste(args: {
     for (const err of errors) map.set(err.columnId, err.message);
     next.__errors = map;
     rows[targetIndex] = next;
-    if (errors.length) rejected.push({ rowIndex: targetIndex, row: next, errors });
+    if (errors.length)
+      rejected.push({ rowIndex: targetIndex, row: next, errors });
     else accepted.push(next);
   }
 
@@ -134,7 +144,11 @@ export function applyPaste(args: {
   };
 }
 
-export function fillDown(rows: GridRow[], columns: OrbisColumnDef[], range: CellRange): GridRow[] {
+export function fillDown(
+  rows: GridRow[],
+  columns: OrbisColumnDef[],
+  range: CellRange,
+): GridRow[] {
   const n = normalizeRange(range);
   if (n.startRow >= rows.length) return rows;
   const source = rows[n.startRow]!;
@@ -151,7 +165,11 @@ export function fillDown(rows: GridRow[], columns: OrbisColumnDef[], range: Cell
   return next;
 }
 
-export function fillRight(rows: GridRow[], columns: OrbisColumnDef[], range: CellRange): GridRow[] {
+export function fillRight(
+  rows: GridRow[],
+  columns: OrbisColumnDef[],
+  range: CellRange,
+): GridRow[] {
   const n = normalizeRange(range);
   const next = rows.slice();
   for (let r = n.startRow; r <= n.endRow && r < next.length; r++) {
@@ -169,7 +187,11 @@ export function fillRight(rows: GridRow[], columns: OrbisColumnDef[], range: Cel
   return next;
 }
 
-export function duplicateRows(rows: GridRow[], indexes: number[], createId?: () => string): GridRow[] {
+export function duplicateRows(
+  rows: GridRow[],
+  indexes: number[],
+  createId?: () => string,
+): GridRow[] {
   const next = rows.slice();
   const copies: GridRow[] = [];
   const unique = [...new Set(indexes)].sort((a, b) => a - b);
@@ -186,7 +208,11 @@ export function duplicateRows(rows: GridRow[], indexes: number[], createId?: () 
   return next;
 }
 
-export function clearRange(rows: GridRow[], columns: OrbisColumnDef[], range: CellRange): GridRow[] {
+export function clearRange(
+  rows: GridRow[],
+  columns: OrbisColumnDef[],
+  range: CellRange,
+): GridRow[] {
   const n = normalizeRange(range);
   const next = rows.slice();
   for (let r = n.startRow; r <= n.endRow && r < next.length; r++) {

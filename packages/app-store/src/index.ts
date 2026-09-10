@@ -96,4 +96,3 @@ export function getAllAppIds(): string[] {
 export type { OrbisApp, AppCategory, AppSetting, AppStatus } from "./types";
 export { categories, getCategoryName, getCategoryNameAr } from "./categories";
 export type { CategoryDef } from "./categories";
-

@@ -1,36 +1,36 @@
 <script lang="ts">
-  import { Sheet, SheetContent } from "@orbis/ui/sheet";
-  import LessonForm from "./lesson-form.svelte";
+import { Sheet, SheetContent } from "@orbis/ui/sheet";
+import LessonForm from "./lesson-form.svelte";
 
-  let {
-    open = $bindable(false),
-    orgId,
-    periodId,
-    classId,
-    dayOfWeek,
-    timeSlotId,
-    timeSlots = [],
-    lesson = null,
-    classes = [],
-    subjects = [],
-    teachers = [],
-    rooms = [],
-    onSuccess,
-  }: {
-    open: boolean;
-    orgId: string;
-    periodId: string;
-    classId: string;
-    dayOfWeek: number;
-    timeSlotId: string;
-    timeSlots?: any[];
-    lesson?: any | null;
-    classes?: any[];
-    subjects: any[];
-    teachers: any[];
-    rooms: any[];
-    onSuccess: () => void;
-  } = $props();
+let {
+  open = $bindable(false),
+  orgId,
+  periodId,
+  classId,
+  dayOfWeek,
+  timeSlotId,
+  timeSlots = [],
+  lesson = null,
+  classes = [],
+  subjects = [],
+  teachers = [],
+  rooms = [],
+  onSuccess,
+}: {
+  open: boolean;
+  orgId: string;
+  periodId: string;
+  classId: string;
+  dayOfWeek: number;
+  timeSlotId: string;
+  timeSlots?: any[];
+  lesson?: any | null;
+  classes?: any[];
+  subjects: any[];
+  teachers: any[];
+  rooms: any[];
+  onSuccess: () => void;
+} = $props();
 </script>
 
 <Sheet bind:open>

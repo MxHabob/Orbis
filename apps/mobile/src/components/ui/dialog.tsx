@@ -5,7 +5,7 @@
  * Synchronized with @orbis/ui design system tokens.
  */
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from "react";
 import {
   Modal,
   Pressable,
@@ -15,11 +15,11 @@ import {
   type TextStyle,
   View,
   type ViewStyle,
-} from 'react-native';
-import Animated, { ZoomIn } from 'react-native-reanimated';
-import { useTheme } from '@/hooks/use-theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Radii, Spacing, Typography } from '@/constants/theme';
+} from "react-native";
+import Animated, { ZoomIn } from "react-native-reanimated";
+import { useTheme } from "@/hooks/use-theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Radii, Spacing, Typography } from "@/constants/theme";
 
 // ─── Dialog Context ─────────────────────────────────────────────────────────
 
@@ -34,7 +34,9 @@ const DialogContext = createContext<DialogContextValue | null>(null);
 export function useDialog() {
   const context = useContext(DialogContext);
   if (!context) {
-    throw new Error('Dialog compound components must be used within a <Dialog />');
+    throw new Error(
+      "Dialog compound components must be used within a <Dialog />",
+    );
   }
   return context;
 }
@@ -50,7 +52,7 @@ export interface DialogProps {
 export function Dialog({ visible, onClose, children }: DialogProps) {
   const theme = useTheme();
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = colorScheme === "dark";
   const [shouldRender, setShouldRender] = useState(visible);
 
   // Synchronize render status to prevent 1-frame React delay when mounting
@@ -149,9 +151,7 @@ export function DialogTitle({ children, style }: DialogTitleProps) {
   const { theme } = useDialog();
 
   return (
-    <Text style={[styles.title, { color: theme.text }, style]}>
-      {children}
-    </Text>
+    <Text style={[styles.title, { color: theme.text }, style]}>{children}</Text>
   );
 }
 
@@ -201,18 +201,18 @@ export function DialogClose({ children }: DialogCloseProps) {
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.52)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.52)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: Spacing.six,
   },
   container: {
-    width: '100%',
+    width: "100%",
     maxWidth: 380,
-    borderRadius: Radii['2xl'],
+    borderRadius: Radii["2xl"],
     borderWidth: 1,
     padding: Spacing.six,
-    shadowColor: '#000000',
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.16,
     shadowRadius: 18,
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.h2,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: -0.3,
   },
   description: {
@@ -232,9 +232,9 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   footer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
     gap: Spacing.three,
     marginTop: Spacing.six,
   },

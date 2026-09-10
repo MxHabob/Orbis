@@ -6,7 +6,7 @@ Wired to SDK: api.aiCenter.getIntegrationStatus('hikvision-camera')
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import {
   Video,
   VideoOff,
@@ -55,10 +55,15 @@ let events = $state<CameraEvent[]>([]);
 
 onMount(async () => {
   try {
-    const status = await api.getIntegrationStatus("hikvision-camera").catch(() => null);
+    const status = await api
+      .getIntegrationStatus("hikvision-camera")
+      .catch(() => null);
     if (status && (status as any).cameras) {
       cameras = (status as any).cameras;
-    } else if (status?.config?.settings && (status.config.settings as any)?.cameras) {
+    } else if (
+      status?.config?.settings &&
+      (status.config.settings as any)?.cameras
+    ) {
       cameras = (status.config.settings as any).cameras;
     }
   } catch (e) {
@@ -68,7 +73,11 @@ onMount(async () => {
   }
 });
 
-const gridCols: Record<GridLayout, string> = { "1x1": "grid-cols-1", "2x2": "grid-cols-2", "3x3": "grid-cols-3" };
+const gridCols: Record<GridLayout, string> = {
+  "1x1": "grid-cols-1",
+  "2x2": "grid-cols-2",
+  "3x3": "grid-cols-3",
+};
 const gridSlots: Record<GridLayout, number> = { "1x1": 1, "2x2": 4, "3x3": 9 };
 
 const eventStyles: Record<string, { color: string; icon: typeof Bell }> = {

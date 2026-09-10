@@ -25,9 +25,10 @@ async function handleSave(registrationConfig: any) {
   let settingsObj: Record<string, any> = {};
   if (org.settings) {
     try {
-      settingsObj = typeof org.settings === "string"
-        ? JSON.parse(org.settings)
-        : org.settings;
+      settingsObj =
+        typeof org.settings === "string"
+          ? JSON.parse(org.settings)
+          : org.settings;
     } catch {
       settingsObj = {};
     }

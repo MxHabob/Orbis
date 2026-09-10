@@ -1,10 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@orbis/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui/popover";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Megaphone } from "@lucide/svelte";

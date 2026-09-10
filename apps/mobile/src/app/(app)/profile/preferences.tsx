@@ -4,7 +4,7 @@
  * App Preferences, Language, Theme, and Push Notification Settings.
  */
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Appearance,
   Pressable,
@@ -12,19 +12,16 @@ import {
   StyleSheet,
   Text,
   View,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useTheme } from '@/hooks/use-theme';
-import { useI18n } from '@/lib/i18n';
-import { useToast } from '@/components/ui/toast';
-import { Header } from '@/components/header';
-import { Switch } from '@/components/ui/switch';
-import {
-  Spacing,
-  Typography,
-} from '@/constants/theme';
+import { useTheme } from "@/hooks/use-theme";
+import { useI18n } from "@/lib/i18n";
+import { useToast } from "@/components/ui/toast";
+import { Header } from "@/components/header";
+import { Switch } from "@/components/ui/switch";
+import { Spacing, Typography } from "@/constants/theme";
 
 export default function PreferencesScreen() {
   const insets = useSafeAreaInsets();
@@ -32,59 +29,38 @@ export default function PreferencesScreen() {
   const toast = useToast();
   const { locale, setLocale, t } = useI18n();
 
-  const [themePref, setThemePref] =
-    useState<'system' | 'dark' | 'light'>(
-      'system',
-    );
+  const [themePref, setThemePref] = useState<"system" | "dark" | "light">(
+    "system",
+  );
 
-  const [notifyAbsence, setNotifyAbsence] =
-    useState(true);
+  const [notifyAbsence, setNotifyAbsence] = useState(true);
 
-  const [notifyGrades, setNotifyGrades] =
-    useState(true);
+  const [notifyGrades, setNotifyGrades] = useState(true);
 
-  const [notifyExams, setNotifyExams] =
-    useState(true);
+  const [notifyExams, setNotifyExams] = useState(true);
 
-  const [
-    notifyAnnouncements,
-    setNotifyAnnouncements,
-  ] = useState(false);
+  const [notifyAnnouncements, setNotifyAnnouncements] = useState(false);
 
-  const handleLanguageChange = (
-    lang: 'ar' | 'en',
-  ) => {
+  const handleLanguageChange = (lang: "ar" | "en") => {
     setLocale(lang);
 
     toast.success(
-      lang === 'ar'
-        ? 'تم تحويل اللغة إلى العربية'
-        : 'Language switched to English',
+      lang === "ar"
+        ? "تم تحويل اللغة إلى العربية"
+        : "Language switched to English",
     );
   };
 
-  const handleThemeChange = (
-    pref: 'system' | 'dark' | 'light',
-  ) => {
+  const handleThemeChange = (pref: "system" | "dark" | "light") => {
     setThemePref(pref);
 
-    Appearance.setColorScheme(
-      pref === 'system'
-        ? 'unspecified'
-        : pref,
-    );
+    Appearance.setColorScheme(pref === "system" ? "unspecified" : pref);
 
-    toast.success(
-      `${t('pref_theme')}: ${t(
-        `pref_theme_${pref}`,
-      )}`,
-    );
+    toast.success(`${t("pref_theme")}: ${t(`pref_theme_${pref}`)}`);
   };
 
   const handleToggle = (
-    setter: React.Dispatch<
-      React.SetStateAction<boolean>
-    >,
+    setter: React.Dispatch<React.SetStateAction<boolean>>,
     current: boolean,
     label: string,
   ) => {
@@ -92,11 +68,7 @@ export default function PreferencesScreen() {
 
     setter(next);
 
-    toast.info(
-      `${label}: ${
-        next ? 'مفعّل' : 'معطّل'
-      }`,
-    );
+    toast.info(`${label}: ${next ? "مفعّل" : "معطّل"}`);
   };
 
   return (
@@ -113,24 +85,16 @@ export default function PreferencesScreen() {
         contentContainerStyle={[
           styles.content,
           {
-            paddingBottom:
-              insets.bottom + 120,
+            paddingBottom: insets.bottom + 120,
           },
         ]}
       >
-        <Header
-          title={t('pref_title')}
-          showBack
-          showCrown={false}
-        />
+        <Header title={t("pref_title")} showBack showCrown={false} />
 
         <View style={styles.main}>
           {/* LANGUAGE */}
 
-          <SectionLabel
-            title={t('pref_language')}
-            theme={theme}
-          />
+          <SectionLabel title={t("pref_language")} theme={theme} />
 
           <View
             style={[
@@ -142,26 +106,18 @@ export default function PreferencesScreen() {
             ]}
           >
             <SelectionRow
-              title={t('pref_language_ar')}
-              subtitle={t(
-                'pref_language_ar_sub',
-              )}
-              selected={locale === 'ar'}
-              onPress={() =>
-                handleLanguageChange('ar')
-              }
+              title={t("pref_language_ar")}
+              subtitle={t("pref_language_ar_sub")}
+              selected={locale === "ar"}
+              onPress={() => handleLanguageChange("ar")}
               theme={theme}
             />
 
             <SelectionRow
-              title={t('pref_language_en')}
-              subtitle={t(
-                'pref_language_en_sub',
-              )}
-              selected={locale === 'en'}
-              onPress={() =>
-                handleLanguageChange('en')
-              }
+              title={t("pref_language_en")}
+              subtitle={t("pref_language_en_sub")}
+              selected={locale === "en"}
+              onPress={() => handleLanguageChange("en")}
               theme={theme}
               divider
             />
@@ -170,7 +126,7 @@ export default function PreferencesScreen() {
           {/* APPEARANCE */}
 
           <SectionLabel
-            title={t('pref_theme')}
+            title={t("pref_theme")}
             theme={theme}
             style={styles.sectionSpacing}
           />
@@ -186,44 +142,26 @@ export default function PreferencesScreen() {
           >
             <ThemeRow
               icon="phone-portrait-outline"
-              title={t(
-                'pref_theme_system',
-              )}
-              selected={
-                themePref === 'system'
-              }
-              onPress={() =>
-                handleThemeChange('system')
-              }
+              title={t("pref_theme_system")}
+              selected={themePref === "system"}
+              onPress={() => handleThemeChange("system")}
               theme={theme}
             />
 
             <ThemeRow
               icon="sunny-outline"
-              title={t(
-                'pref_theme_light',
-              )}
-              selected={
-                themePref === 'light'
-              }
-              onPress={() =>
-                handleThemeChange('light')
-              }
+              title={t("pref_theme_light")}
+              selected={themePref === "light"}
+              onPress={() => handleThemeChange("light")}
               theme={theme}
               divider
             />
 
             <ThemeRow
               icon="moon-outline"
-              title={t(
-                'pref_theme_dark',
-              )}
-              selected={
-                themePref === 'dark'
-              }
-              onPress={() =>
-                handleThemeChange('dark')
-              }
+              title={t("pref_theme_dark")}
+              selected={themePref === "dark"}
+              onPress={() => handleThemeChange("dark")}
               theme={theme}
               divider
             />
@@ -232,7 +170,7 @@ export default function PreferencesScreen() {
           {/* NOTIFICATIONS */}
 
           <SectionLabel
-            title={t('pref_notifications')}
+            title={t("pref_notifications")}
             theme={theme}
             style={styles.sectionSpacing}
           />
@@ -247,40 +185,28 @@ export default function PreferencesScreen() {
             ]}
           >
             <NotificationRow
-              title={t(
-                'pref_notify_absence',
-              )}
-              subtitle={t(
-                'pref_notify_absence_desc',
-              )}
+              title={t("pref_notify_absence")}
+              subtitle={t("pref_notify_absence_desc")}
               value={notifyAbsence}
               onValueChange={() =>
                 handleToggle(
                   setNotifyAbsence,
                   notifyAbsence,
-                  t(
-                    'pref_notify_absence',
-                  ),
+                  t("pref_notify_absence"),
                 )
               }
               theme={theme}
             />
 
             <NotificationRow
-              title={t(
-                'pref_notify_grades',
-              )}
-              subtitle={t(
-                'pref_notify_grades_desc',
-              )}
+              title={t("pref_notify_grades")}
+              subtitle={t("pref_notify_grades_desc")}
               value={notifyGrades}
               onValueChange={() =>
                 handleToggle(
                   setNotifyGrades,
                   notifyGrades,
-                  t(
-                    'pref_notify_grades',
-                  ),
+                  t("pref_notify_grades"),
                 )
               }
               theme={theme}
@@ -288,20 +214,14 @@ export default function PreferencesScreen() {
             />
 
             <NotificationRow
-              title={t(
-                'pref_notify_exams',
-              )}
-              subtitle={t(
-                'pref_notify_exams_desc',
-              )}
+              title={t("pref_notify_exams")}
+              subtitle={t("pref_notify_exams_desc")}
               value={notifyExams}
               onValueChange={() =>
                 handleToggle(
                   setNotifyExams,
                   notifyExams,
-                  t(
-                    'pref_notify_exams',
-                  ),
+                  t("pref_notify_exams"),
                 )
               }
               theme={theme}
@@ -309,20 +229,14 @@ export default function PreferencesScreen() {
             />
 
             <NotificationRow
-              title={t(
-                'pref_notify_announcements',
-              )}
-              subtitle={t(
-                'pref_notify_announcements_desc',
-              )}
+              title={t("pref_notify_announcements")}
+              subtitle={t("pref_notify_announcements_desc")}
               value={notifyAnnouncements}
               onValueChange={() =>
                 handleToggle(
                   setNotifyAnnouncements,
                   notifyAnnouncements,
-                  t(
-                    'pref_notify_announcements',
-                  ),
+                  t("pref_notify_announcements"),
                 )
               }
               theme={theme}
@@ -388,8 +302,7 @@ function SelectionRow({
       style={({ pressed }) => [
         styles.selectionRow,
         divider && {
-          borderTopWidth:
-            StyleSheet.hairlineWidth,
+          borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: theme.border,
         },
         {
@@ -422,11 +335,7 @@ function SelectionRow({
       </View>
 
       {selected && (
-        <Ionicons
-          name="checkmark"
-          size={20}
-          color={theme.primary}
-        />
+        <Ionicons name="checkmark" size={20} color={theme.primary} />
       )}
     </Pressable>
   );
@@ -457,8 +366,7 @@ function ThemeRow({
       style={({ pressed }) => [
         styles.themeRow,
         divider && {
-          borderTopWidth:
-            StyleSheet.hairlineWidth,
+          borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: theme.border,
         },
         {
@@ -469,11 +377,7 @@ function ThemeRow({
       <Ionicons
         name={icon}
         size={19}
-        color={
-          selected
-            ? theme.primary
-            : theme.textSecondary
-        }
+        color={selected ? theme.primary : theme.textSecondary}
       />
 
       <Text
@@ -488,11 +392,7 @@ function ThemeRow({
       </Text>
 
       {selected && (
-        <Ionicons
-          name="checkmark"
-          size={20}
-          color={theme.primary}
-        />
+        <Ionicons name="checkmark" size={20} color={theme.primary} />
       )}
     </Pressable>
   );
@@ -522,8 +422,7 @@ function NotificationRow({
       style={[
         styles.notificationRow,
         divider && {
-          borderTopWidth:
-            StyleSheet.hairlineWidth,
+          borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: theme.border,
         },
       ]}
@@ -576,9 +475,9 @@ const styles = StyleSheet.create({
   },
 
   main: {
-    width: '100%',
+    width: "100%",
     maxWidth: 520,
-    alignSelf: 'center',
+    alignSelf: "center",
     marginTop: Spacing.six,
   },
 
@@ -594,17 +493,15 @@ const styles = StyleSheet.create({
   },
 
   list: {
-    borderTopWidth:
-      StyleSheet.hairlineWidth,
-    borderBottomWidth:
-      StyleSheet.hairlineWidth,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
 
   selectionRow: {
     minHeight: 66,
 
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
 
     paddingVertical: Spacing.three,
   },
@@ -612,8 +509,8 @@ const styles = StyleSheet.create({
   themeRow: {
     minHeight: 56,
 
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
 
     gap: Spacing.three,
   },
@@ -621,9 +518,9 @@ const styles = StyleSheet.create({
   notificationRow: {
     minHeight: 76,
 
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
 
     gap: Spacing.four,
   },

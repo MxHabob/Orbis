@@ -21,7 +21,9 @@ import { AcademicsInfoState } from "./state/academics-info.svelte";
 import { FinanceInfoState } from "./state/finance-info.svelte";
 
 function formatTime(totalMinutes: number): string {
-  const hours = Math.floor(totalMinutes / 60).toString().padStart(2, "0");
+  const hours = Math.floor(totalMinutes / 60)
+    .toString()
+    .padStart(2, "0");
   const minutes = (totalMinutes % 60).toString().padStart(2, "0");
   return `${hours}:${minutes}`;
 }
@@ -256,33 +258,45 @@ class OnboardingState {
         const buildingUnits = (units || []).filter((unit: any) => {
           const unitType = unit.unit_type || unit.unitType;
           const isRootChild = rootUnit?.id && unit.parent_id === rootUnit.id;
-          return unitType === "building" || unitType === "branch" || unitType === "campus" || isRootChild;
+          return (
+            unitType === "building" ||
+            unitType === "branch" ||
+            unitType === "campus" ||
+            isRootChild
+          );
         });
         if (buildingUnits.length > 0) {
           this.facilities.buildings = buildingUnits
             .map((unit: any) => String(unit.name || unit.name_ar || "").trim())
             .filter(Boolean);
-          this.facilities.activeBuildingTab = this.facilities.buildings[0] || "";
+          this.facilities.activeBuildingTab =
+            this.facilities.buildings[0] || "";
         }
 
         const rooms = await api.listRooms().catch(() => []);
         if (rooms.length > 0) {
-          this.facilities.rooms = (rooms || []).map((room: any): Room => ({
-            id: String(room.id),
-            name: String(room.name || room.name_ar || ""),
-            name_ar: String(room.name_ar || room.name || ""),
-            capacity: Number(room.capacity) || 0,
-            room_type: String(room.room_type || "classroom"),
-            building: String(room.building || ""),
-            floor: Number(room.floor) || 0,
-          }));
+          this.facilities.rooms = (rooms || []).map(
+            (room: any): Room => ({
+              id: String(room.id),
+              name: String(room.name || room.name_ar || ""),
+              name_ar: String(room.name_ar || room.name || ""),
+              capacity: Number(room.capacity) || 0,
+              room_type: String(room.room_type || "classroom"),
+              building: String(room.building || ""),
+              floor: Number(room.floor) || 0,
+            }),
+          );
           for (const room of this.facilities.rooms) {
-            if (room.building && !this.facilities.buildings.includes(room.building)) {
+            if (
+              room.building &&
+              !this.facilities.buildings.includes(room.building)
+            ) {
               this.facilities.buildings.push(room.building);
             }
           }
           if (!this.facilities.activeBuildingTab) {
-            this.facilities.activeBuildingTab = this.facilities.buildings[0] || "";
+            this.facilities.activeBuildingTab =
+              this.facilities.buildings[0] || "";
           }
         }
 
@@ -469,7 +483,12 @@ class OnboardingState {
       ? trimmed.replace(/\s+/g, " ")
       : "";
     if (!gl || !normalized) return;
-    if (gl.divisions.some((division, divisionIndex) => divisionIndex !== index && division === normalized)) {
+    if (
+      gl.divisions.some(
+        (division, divisionIndex) =>
+          divisionIndex !== index && division === normalized,
+      )
+    ) {
       toast.error(m.onboarding_toast_invalid_division());
       return;
     }
@@ -502,7 +521,9 @@ class OnboardingState {
       if (
         this.calendar.periodTemplates.length > 0 &&
         (!this.calendar.selectedTemplateId ||
-          !this.calendar.periodTemplates.some((t) => t.id === this.calendar.selectedTemplateId))
+          !this.calendar.periodTemplates.some(
+            (t) => t.id === this.calendar.selectedTemplateId,
+          ))
       ) {
         this.calendar.selectedTemplateId = this.calendar.periodTemplates[0].id;
       }
@@ -595,7 +616,9 @@ class OnboardingState {
       end_time: endTime,
       is_break: options.isBreak ?? false,
       break_type: options.breakType,
-      applicable_days: [...(options.applicableDays ?? this.academics.workingDays)],
+      applicable_days: [
+        ...(options.applicableDays ?? this.academics.workingDays),
+      ],
     });
     this.academics.timeSlots = [...this.academics.timeSlots];
     toast.success(m.onboarding_toast_period_added());
@@ -720,7 +743,9 @@ class OnboardingState {
           timezone: this.profile.timezone || org.timezone,
           locale: this.profile.locale || org.locale,
         };
-        await api.updateCurrentOrg(updateRequest).catch((e: any) => console.warn("Update org warning:", e));
+        await api
+          .updateCurrentOrg(updateRequest)
+          .catch((e: any) => console.warn("Update org warning:", e));
       }
 
       // ── Step 2: Create Organizational Structure (Org Units) ──────────
@@ -729,12 +754,11 @@ class OnboardingState {
       let existingUnits: any[] = [];
       try {
         existingUnits = await api.listOrgUnits().catch(() => []);
-        
+
         // 1. Root Organization Unit
         const root = existingUnits?.find(
           (u: any) =>
-            (u.unit_type === "root" || u.unitType === "root") &&
-            !u.parent_id,
+            (u.unit_type === "root" || u.unitType === "root") && !u.parent_id,
         );
         if (root) {
           rootUnitId = root.id;
@@ -785,14 +809,18 @@ class OnboardingState {
             (unit: any) =>
               unit.parent_id === branchUnitId &&
               (unit.unit_type === "building" || unit.unitType === "building") &&
-              String(unit.name || "").trim().toLowerCase() === normalizedBuildingName,
+              String(unit.name || "")
+                .trim()
+                .toLowerCase() === normalizedBuildingName,
           );
-          const building = existingBuilding || await api.createOrgUnit({
+          const building =
+            existingBuilding ||
+            (await api.createOrgUnit({
               name: bldName.trim(),
               parent_id: branchUnitId,
               unit_type: "building",
               data_isolation: "standard",
-            });
+            }));
           if (!building?.id) continue;
           buildingUnitIds[bldName] = building.id;
           if (!existingBuilding) existingUnits = [...existingUnits, building];

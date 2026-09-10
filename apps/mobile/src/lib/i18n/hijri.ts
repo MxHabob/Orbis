@@ -5,7 +5,7 @@
  * 100% parity with desktop hijri.ts.
  */
 
-import { t } from './locale';
+import { t } from "./locale";
 
 export interface HijriDate {
   hy: number; // Hijri Year
@@ -20,23 +20,29 @@ export function gregorianToHijri(
   date: Date | string | null | undefined,
 ): HijriDate | null {
   if (!date) return null;
-  const d = typeof date === 'string' ? new Date(date) : date;
+  const d = typeof date === "string" ? new Date(date) : date;
   if (isNaN(d.getTime())) return null;
 
   try {
-    const parts = new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura', {
-      day: 'numeric',
-      month: 'numeric',
-      year: 'numeric',
+    const parts = new Intl.DateTimeFormat("en-US-u-ca-islamic-umalqura", {
+      day: "numeric",
+      month: "numeric",
+      year: "numeric",
     }).formatToParts(d);
 
-    const hd = parseInt(parts.find((p) => p.type === 'day')?.value || '1', 10);
-    const hm = parseInt(parts.find((p) => p.type === 'month')?.value || '1', 10);
-    const hy = parseInt(parts.find((p) => p.type === 'year')?.value || '1447', 10);
+    const hd = parseInt(parts.find((p) => p.type === "day")?.value || "1", 10);
+    const hm = parseInt(
+      parts.find((p) => p.type === "month")?.value || "1",
+      10,
+    );
+    const hy = parseInt(
+      parts.find((p) => p.type === "year")?.value || "1447",
+      10,
+    );
 
     return { hy, hm, hd };
   } catch (e) {
-    console.warn('Hijri conversion failed:', e);
+    console.warn("Hijri conversion failed:", e);
     return null;
   }
 }
@@ -69,16 +75,16 @@ export function hijriToGregorian(hy: number, hm: number, hd: number): Date {
 }
 
 export const getHijriMonths = (): string[] => [
-  t('common_hijri_month_1'),
-  t('common_hijri_month_2'),
-  t('common_hijri_month_3'),
-  t('common_hijri_month_4'),
-  t('common_hijri_month_5'),
-  t('common_hijri_month_6'),
-  t('common_hijri_month_7'),
-  t('common_hijri_month_8'),
-  t('common_hijri_month_9'),
-  t('common_hijri_month_10'),
-  t('common_hijri_month_11'),
-  t('common_hijri_month_12'),
+  t("common_hijri_month_1"),
+  t("common_hijri_month_2"),
+  t("common_hijri_month_3"),
+  t("common_hijri_month_4"),
+  t("common_hijri_month_5"),
+  t("common_hijri_month_6"),
+  t("common_hijri_month_7"),
+  t("common_hijri_month_8"),
+  t("common_hijri_month_9"),
+  t("common_hijri_month_10"),
+  t("common_hijri_month_11"),
+  t("common_hijri_month_12"),
 ];

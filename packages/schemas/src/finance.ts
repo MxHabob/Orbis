@@ -4,7 +4,14 @@ export const feeTemplateInputSchema = z.object({
   name: z.string().trim().min(3).max(100),
   name_ar: z.string().trim().nullable().optional(),
   code: z.string().trim().nullable().optional(),
-  category: z.enum(["tuition", "transport", "books", "uniform", "exam", "other"]),
+  category: z.enum([
+    "tuition",
+    "transport",
+    "books",
+    "uniform",
+    "exam",
+    "other",
+  ]),
   default_amount: z.number().finite().positive(),
   revenue_account_id: z.string().trim().nullable().optional(),
   receivable_account_id: z.string().trim().nullable().optional(),
@@ -39,7 +46,10 @@ export const paymentRecordInputSchema = z.object({
   reference: z.string().trim().optional(),
   notes: z.string().trim().optional(),
   cash_account_id: z.string().trim().min(1),
-  currency: z.string().trim().regex(/^[A-Za-z]{3}$/),
+  currency: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z]{3}$/),
   exchange_rate: z.number().finite().positive().optional(),
 });
 
@@ -54,13 +64,15 @@ export const currencyInputSchema = z.object({
   is_base: z.boolean(),
 });
 
-const accountName = z.object({
-  name: z.string().trim().optional(),
-  name_ar: z.string().trim().optional(),
-}).refine((value) => Boolean(value.name || value.name_ar), {
-  path: ["name"],
-  message: "Name is required",
-});
+const accountName = z
+  .object({
+    name: z.string().trim().optional(),
+    name_ar: z.string().trim().optional(),
+  })
+  .refine((value) => Boolean(value.name || value.name_ar), {
+    path: ["name"],
+    message: "Name is required",
+  });
 
 export const generalLedgerAccountInputSchema = accountName.extend({
   parent_id: z.string().trim().min(1),
@@ -86,6 +98,8 @@ export type FeeTemplateInput = z.infer<typeof feeTemplateInputSchema>;
 export type DiscountTemplateInput = z.infer<typeof discountTemplateInputSchema>;
 export type PaymentRecordInput = z.infer<typeof paymentRecordInputSchema>;
 export type CurrencyInput = z.infer<typeof currencyInputSchema>;
-export type GeneralLedgerAccountInput = z.infer<typeof generalLedgerAccountInputSchema>;
+export type GeneralLedgerAccountInput = z.infer<
+  typeof generalLedgerAccountInputSchema
+>;
 export type CashAccountInput = z.infer<typeof cashAccountInputSchema>;
 export type EntityAccountInput = z.infer<typeof entityAccountInputSchema>;

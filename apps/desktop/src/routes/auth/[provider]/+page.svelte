@@ -69,19 +69,21 @@ function parseHashParams(hash: string): Record<string, string> {
 
 function createDevIdToken(email: string, name: string) {
   const header = btoa(JSON.stringify({ alg: "RS256", typ: "JWT" }));
-  const payload = btoa(JSON.stringify({
-    email,
-    email_verified: true,
-    name,
-    given_name: name.split(" ")[0] || name,
-    family_name: name.split(" ")[1] || "",
-    picture: "https://lh3.googleusercontent.com/a/default-user",
-    locale: "ar",
-    sub: `google-${Date.now()}`,
-    aud: "orbis-app",
-    iss: "https://accounts.google.com",
-    exp: Math.floor(Date.now() / 1000) + 3600,
-  }));
+  const payload = btoa(
+    JSON.stringify({
+      email,
+      email_verified: true,
+      name,
+      given_name: name.split(" ")[0] || name,
+      family_name: name.split(" ")[1] || "",
+      picture: "https://lh3.googleusercontent.com/a/default-user",
+      locale: "ar",
+      sub: `google-${Date.now()}`,
+      aud: "orbis-app",
+      iss: "https://accounts.google.com",
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    }),
+  );
   return `${header}.${payload}.dev_signature`;
 }
 
@@ -90,11 +92,13 @@ async function processAuth() {
   errorMessage = "";
 
   const urlParams = page.url.searchParams;
-  const hashParams = typeof window !== "undefined" ? parseHashParams(window.location.hash) : {};
+  const hashParams =
+    typeof window !== "undefined" ? parseHashParams(window.location.hash) : {};
 
   // Check for error parameters
   const errorParam = urlParams.get("error") || hashParams.error;
-  const errorDesc = urlParams.get("error_description") || hashParams.error_description;
+  const errorDesc =
+    urlParams.get("error_description") || hashParams.error_description;
   if (errorParam) {
     status = "error";
     errorMessage = errorDesc || errorParam || m.auth_provider_failed();
@@ -102,12 +106,17 @@ async function processAuth() {
   }
 
   // Extract tokens / codes
-  const idToken = urlParams.get("id_token") || hashParams.id_token || urlParams.get("token") || hashParams.access_token;
+  const idToken =
+    urlParams.get("id_token") ||
+    hashParams.id_token ||
+    urlParams.get("token") ||
+    hashParams.access_token;
   const code = urlParams.get("code");
   const mode = urlParams.get("mode") || urlParams.get("action");
 
   await authStore.restore();
-  isLinking = mode === "link" || (authStore.isAuthenticated && mode !== "login");
+  isLinking =
+    mode === "link" || (authStore.isAuthenticated && mode !== "login");
 
   if (idToken) {
     try {
@@ -116,7 +125,10 @@ async function processAuth() {
         if (providerParam === "google") {
           await api.linkGoogle({ id_token: idToken });
         } else {
-          await (api as any).post(`/api/v1/auth/identities/${providerParam}/link`, { id_token: idToken });
+          await (api as any).post(
+            `/api/v1/auth/identities/${providerParam}/link`,
+            { id_token: idToken },
+          );
         }
         status = "success";
         if (typeof window !== "undefined") {
@@ -124,7 +136,9 @@ async function processAuth() {
           const userEmail = authStore.user?.email || "Google Account";
           localStorage.setItem(`orbis_${providerParam}_email`, userEmail);
         }
-        toast.success(m.auth_provider_linking_success({ provider: providerConfig.name }));
+        toast.success(
+          m.auth_provider_linking_success({ provider: providerConfig.name }),
+        );
 
         // Redirect back to account security settings
         setTimeout(() => {
@@ -143,7 +157,10 @@ async function processAuth() {
         if (providerParam === "google") {
           res = await api.loginWithGoogle({ id_token: idToken });
         } else {
-          res = await (api as any).post(`/api/v1/auth/identities/${providerParam}/login`, { id_token: idToken });
+          res = await (api as any).post(
+            `/api/v1/auth/identities/${providerParam}/login`,
+            { id_token: idToken },
+          );
         }
 
         if (res?.token && res?.user) {
@@ -151,14 +168,19 @@ async function processAuth() {
           if (typeof window !== "undefined") {
             localStorage.setItem(`orbis_${providerParam}_linked`, "true");
             if (res.user.email) {
-              localStorage.setItem(`orbis_${providerParam}_email`, res.user.email);
+              localStorage.setItem(
+                `orbis_${providerParam}_email`,
+                res.user.email,
+              );
             }
             if (res.user?.mfa_enabled) {
               localStorage.setItem("orbis_mfa_enabled", "true");
             }
           }
           status = "success";
-          toast.success(m.auth_provider_login_success({ provider: providerConfig.name }));
+          toast.success(
+            m.auth_provider_login_success({ provider: providerConfig.name }),
+          );
 
           setTimeout(() => {
             if (window.opener) {
@@ -185,22 +207,34 @@ async function processAuth() {
     try {
       if (isLinking) {
         status = "linking";
-        await (api as any).post(`/api/v1/auth/identities/${providerParam}/callback`, { code });
+        await (api as any).post(
+          `/api/v1/auth/identities/${providerParam}/callback`,
+          { code },
+        );
         status = "success";
         if (typeof window !== "undefined") {
           localStorage.setItem(`orbis_${providerParam}_linked`, "true");
         }
-        toast.success(m.auth_provider_linking_success({ provider: providerConfig.name }));
+        toast.success(
+          m.auth_provider_linking_success({ provider: providerConfig.name }),
+        );
         setTimeout(() => {
           const orgId = authStore.orgId;
-          goto(localizeHref(orgId ? `/${orgId}/account/security` : "/"), { replaceState: true });
+          goto(localizeHref(orgId ? `/${orgId}/account/security` : "/"), {
+            replaceState: true,
+          });
         }, 1200);
       } else {
-        const res = await (api as any).post(`/api/v1/auth/identities/${providerParam}/callback`, { code });
+        const res = await (api as any).post(
+          `/api/v1/auth/identities/${providerParam}/callback`,
+          { code },
+        );
         if (res?.token && res?.user) {
           await authStore.setSession(res);
           status = "success";
-          toast.success(m.auth_provider_login_success({ provider: providerConfig.name }));
+          toast.success(
+            m.auth_provider_login_success({ provider: providerConfig.name }),
+          );
           setTimeout(() => {
             goto(localizeHref(`/${res.user.org_id}`), { replaceState: true });
           }, 1000);
@@ -223,7 +257,10 @@ async function handleInitiateOAuth() {
   status = isLinking ? "linking" : "authenticating";
   errorMessage = "";
 
-  const configuredClientId = typeof window !== "undefined" ? (window as any).__ORBIS_GOOGLE_CLIENT_ID__ : null;
+  const configuredClientId =
+    typeof window !== "undefined"
+      ? (window as any).__ORBIS_GOOGLE_CLIENT_ID__
+      : null;
 
   if (configuredClientId && providerParam === "google") {
     const redirectUri = `${window.location.origin}/auth/google`;
@@ -242,14 +279,19 @@ async function handleInitiateOAuth() {
       if (providerParam === "google") {
         await api.linkGoogle({ id_token: devToken });
       } else {
-        await (api as any).post(`/api/v1/auth/identities/${providerParam}/link`, { id_token: devToken });
+        await (api as any).post(
+          `/api/v1/auth/identities/${providerParam}/link`,
+          { id_token: devToken },
+        );
       }
       status = "success";
       if (typeof window !== "undefined") {
         localStorage.setItem(`orbis_${providerParam}_linked`, "true");
         localStorage.setItem(`orbis_${providerParam}_email`, targetEmail);
       }
-      toast.success(m.auth_provider_linking_success({ provider: providerConfig.name }));
+      toast.success(
+        m.auth_provider_linking_success({ provider: providerConfig.name }),
+      );
 
       setTimeout(() => {
         if (window.opener) {
@@ -265,7 +307,10 @@ async function handleInitiateOAuth() {
       if (providerParam === "google") {
         res = await api.loginWithGoogle({ id_token: devToken });
       } else {
-        res = await (api as any).post(`/api/v1/auth/identities/${providerParam}/login`, { id_token: devToken });
+        res = await (api as any).post(
+          `/api/v1/auth/identities/${providerParam}/login`,
+          { id_token: devToken },
+        );
       }
 
       if (res?.token && res?.user) {
@@ -273,14 +318,19 @@ async function handleInitiateOAuth() {
         if (typeof window !== "undefined") {
           localStorage.setItem(`orbis_${providerParam}_linked`, "true");
           if (res.user.email) {
-            localStorage.setItem(`orbis_${providerParam}_email`, res.user.email);
+            localStorage.setItem(
+              `orbis_${providerParam}_email`,
+              res.user.email,
+            );
           }
           if (res.user?.mfa_enabled) {
             localStorage.setItem("orbis_mfa_enabled", "true");
           }
         }
         status = "success";
-        toast.success(m.auth_provider_login_success({ provider: providerConfig.name }));
+        toast.success(
+          m.auth_provider_login_success({ provider: providerConfig.name }),
+        );
 
         setTimeout(() => {
           if (window.opener) {

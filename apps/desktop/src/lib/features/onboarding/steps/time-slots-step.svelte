@@ -36,7 +36,9 @@ function getDuration(start: string, end: string) {
 function validateSlotTime(slot: TimeSlot) {
   if (getDuration(slot.start_time, slot.end_time) > 0) return;
   slot.end_time = slot.start_time;
-  onboardingState.academics.timeSlots = [...onboardingState.academics.timeSlots];
+  onboardingState.academics.timeSlots = [
+    ...onboardingState.academics.timeSlots,
+  ];
   onboardingState.save();
 }
 
@@ -50,12 +52,15 @@ function toggleWorkingDay(day: number) {
   for (const slot of onboardingState.academics.timeSlots) {
     const slotDays = slot.applicable_days ?? current;
     const followsGlobalDays =
-      slotDays.length === current.length && slotDays.every((value) => current.includes(value));
+      slotDays.length === current.length &&
+      slotDays.every((value) => current.includes(value));
     if (followsGlobalDays) slot.applicable_days = [...next];
   }
 
   onboardingState.academics.workingDays = next;
-  onboardingState.academics.timeSlots = [...onboardingState.academics.timeSlots];
+  onboardingState.academics.timeSlots = [
+    ...onboardingState.academics.timeSlots,
+  ];
   onboardingState.save();
 }
 
@@ -65,17 +70,28 @@ function toggleSlotDay(slot: TimeSlot, day: number) {
   slot.applicable_days = current.includes(day)
     ? current.filter((value) => value !== day)
     : [...current, day].sort((a, b) => a - b);
-  onboardingState.academics.timeSlots = [...onboardingState.academics.timeSlots];
+  onboardingState.academics.timeSlots = [
+    ...onboardingState.academics.timeSlots,
+  ];
   onboardingState.save();
 }
 
 function handleAddSlot() {
-  if (!newSlotName.trim() || !newSlotNameAr.trim() || newSlotDuration <= 0) return;
+  if (!newSlotName.trim() || !newSlotNameAr.trim() || newSlotDuration <= 0)
+    return;
   const isBreak = newSlotType === "break";
-  if (onboardingState.addTimeSlot(newSlotName, newSlotNameAr, newSlotStart, newSlotEnd, {
-    isBreak,
-    breakType: isBreak ? newBreakType : undefined,
-  })) {
+  if (
+    onboardingState.addTimeSlot(
+      newSlotName,
+      newSlotNameAr,
+      newSlotStart,
+      newSlotEnd,
+      {
+        isBreak,
+        breakType: isBreak ? newBreakType : undefined,
+      },
+    )
+  ) {
     newSlotName = "";
     newSlotNameAr = "";
     newSlotType = "lesson";

@@ -40,7 +40,8 @@ const selectedScale = $derived(
 
 const itemsQuery = createQuery(() => ({
   queryKey: ["grade-scale-items", selectedScaleId],
-  queryFn: () => (selectedScaleId ? api.assessment.listGradeScaleItems(selectedScaleId) : []),
+  queryFn: () =>
+    selectedScaleId ? api.assessment.listGradeScaleItems(selectedScaleId) : [],
   enabled: !!selectedScaleId,
 }));
 
@@ -72,7 +73,13 @@ async function handleCreateScale() {
 
 // ── Create Item Dialog ───────────────────────────────────────
 let showItemDialog = $state(false);
-let newItem = $state({ grade_label: "", min_score: 0, max_score: 100, gpa_points: 0, is_passing: true });
+let newItem = $state({
+  grade_label: "",
+  min_score: 0,
+  max_score: 100,
+  gpa_points: 0,
+  is_passing: true,
+});
 let isCreatingItem = $state(false);
 
 async function handleCreateItem() {
@@ -86,7 +93,13 @@ async function handleCreateItem() {
     toast.success("تم إضافة عنصر التقدير بنجاح");
     queryClient.invalidateQueries({ queryKey: ["grade-scale-items"] });
     showItemDialog = false;
-    newItem = { grade_label: "", min_score: 0, max_score: 100, gpa_points: 0, is_passing: true };
+    newItem = {
+      grade_label: "",
+      min_score: 0,
+      max_score: 100,
+      gpa_points: 0,
+      is_passing: true,
+    };
   } catch (err: unknown) {
     toast.error(extractErrorMessage(err));
   } finally {
@@ -118,10 +131,14 @@ async function handleDeleteItem(id: string) {
 
 function getTypeLabel(t: string) {
   switch (t) {
-    case "percentage": return "نسبة مئوية";
-    case "gpa_4_0": return "GPA 4.0";
-    case "pass_fail": return "ناجح/راسب";
-    default: return t;
+    case "percentage":
+      return "نسبة مئوية";
+    case "gpa_4_0":
+      return "GPA 4.0";
+    case "pass_fail":
+      return "ناجح/راسب";
+    default:
+      return t;
   }
 }
 </script>

@@ -4,8 +4,15 @@
  * React Context and Hook for Reactive Internationalization in Orbis Mobile.
  */
 
-import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
-import { I18nContextValue, SupportedLocale } from './types';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+} from "react";
+import { I18nContextValue, SupportedLocale } from "./types";
 import {
   getLocale,
   setLocale as setStoredLocale,
@@ -14,13 +21,13 @@ import {
   t as translateKey,
   l as localizeValue,
   isAr as checkIsAr,
-} from './locale';
+} from "./locale";
 import {
   formatCurrency as formatCurr,
   formatDate as formatDt,
   formatPercent as formatPct,
   formatNumber as formatNum,
-} from './format';
+} from "./format";
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
@@ -48,7 +55,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const contextValue: I18nContextValue = useMemo(() => {
     return {
       locale,
-      isArabic: locale === 'ar',
+      isArabic: locale === "ar",
       setLocale: handleSetLocale,
       t: (key, params) => translateKey(key, params),
       l: (arVal, enVal) => localizeValue(arVal, enVal),
@@ -59,7 +66,9 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     };
   }, [locale, handleSetLocale]);
 
-  return <I18nContext.Provider value={contextValue}>{children}</I18nContext.Provider>;
+  return (
+    <I18nContext.Provider value={contextValue}>{children}</I18nContext.Provider>
+  );
 }
 
 export function useI18n(): I18nContextValue {

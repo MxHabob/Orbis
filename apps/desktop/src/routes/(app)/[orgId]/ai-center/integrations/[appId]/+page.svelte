@@ -7,7 +7,12 @@ Sidebar: CTA card + settings form + related apps.
 -->
 <script lang="ts">
 import { onMount } from "svelte";
-import { getAppById, getAppsByCategory, getCategoryName, getCategoryNameAr } from "@orbis/app-store";
+import {
+  getAppById,
+  getAppsByCategory,
+  getCategoryName,
+  getCategoryNameAr,
+} from "@orbis/app-store";
 import type { OrbisApp } from "@orbis/app-store";
 import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
@@ -23,7 +28,7 @@ const relatedApps = $derived(
     ? getAppsByCategory(app.category)
         .filter((a: OrbisApp) => a.id !== app.id)
         .slice(0, 4)
-    : []
+    : [],
 );
 const basePath = $derived(`/${data.orgId}/ai-center/integrations`);
 
@@ -34,7 +39,8 @@ let connectError = $state<string | null>(null);
 // Check current status on mount
 onMount(() => {
   if (data.appId) {
-    api.getIntegrationStatus(data.appId)
+    api
+      .getIntegrationStatus(data.appId)
       .then((status) => {
         isConnected = status?.connected ?? false;
       })
@@ -47,9 +53,18 @@ onMount(() => {
 /** Simple markdown bold and link parser */
 function renderDescription(text: string): string {
   return text
-    .replace(/\*\*(.*?)\*\*/g, "<strong class='text-foreground font-medium'>$1</strong>")
-    .replace(/\[(.*?)\]\((.*?)\)/g, "<a href='$2' target='_blank' rel='noopener noreferrer' class='text-primary hover:underline'>$1</a>")
-    .replace(/\n\n/g, "</p><p class='mb-3 text-sm text-muted-foreground leading-relaxed'>")
+    .replace(
+      /\*\*(.*?)\*\*/g,
+      "<strong class='text-foreground font-medium'>$1</strong>",
+    )
+    .replace(
+      /\[(.*?)\]\((.*?)\)/g,
+      "<a href='$2' target='_blank' rel='noopener noreferrer' class='text-primary hover:underline'>$1</a>",
+    )
+    .replace(
+      /\n\n/g,
+      "</p><p class='mb-3 text-sm text-muted-foreground leading-relaxed'>",
+    )
     .replace(/\n/g, "<br />");
 }
 
@@ -64,7 +79,12 @@ async function handleConnect(values: Record<string, unknown>) {
       for (const s of app.settings) {
         const val = values[s.id];
         if (val !== undefined && val !== null && val !== "") {
-          if (s.type === "password" || s.id.includes("secret") || s.id.includes("key") || s.id.includes("token")) {
+          if (
+            s.type === "password" ||
+            s.id.includes("secret") ||
+            s.id.includes("key") ||
+            s.id.includes("token")
+          ) {
             secrets[s.id] = String(val);
           } else {
             settings[s.id] = val;
@@ -74,7 +94,12 @@ async function handleConnect(values: Record<string, unknown>) {
     }
     for (const [k, v] of Object.entries(values)) {
       if (k in secrets || k in settings) continue;
-      if (k.includes("secret") || k.includes("key") || k.includes("token") || k.includes("password")) {
+      if (
+        k.includes("secret") ||
+        k.includes("key") ||
+        k.includes("token") ||
+        k.includes("password")
+      ) {
         secrets[k] = String(v);
       } else {
         settings[k] = v;
@@ -105,11 +130,7 @@ async function handleDisconnect() {
   }
 }
 
-const activeFeatures = $derived(
-  app
-    ? l(app.features_ar, app.features)
-    : []
-);
+const activeFeatures = $derived(app ? l(app.features_ar, app.features) : []);
 </script>
 
 {#if app}

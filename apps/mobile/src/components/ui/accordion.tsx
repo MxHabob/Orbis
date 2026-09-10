@@ -1,9 +1,9 @@
-import { PropsWithChildren, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
-import {  Spacing, Typography } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { PropsWithChildren, useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
+import { Spacing, Typography } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 
 export interface AccordionProps extends PropsWithChildren {
   title: string;
@@ -36,18 +36,20 @@ export function Accordion({
         accessibilityState={{ expanded: open, disabled }}
         disabled={disabled}
         onPress={toggle}
-        style={({ pressed }) => [styles.trigger, pressed && styles.pressed]}>
-        <Text style={styles.title}>
-          {title}
-        </Text>
+        style={({ pressed }) => [styles.trigger, pressed && styles.pressed]}
+      >
+        <Text style={styles.title}>{title}</Text>
         <Ionicons
-          name={open ? 'chevron-up' : 'chevron-down'}
+          name={open ? "chevron-up" : "chevron-down"}
           size={18}
           color={theme.textSecondary}
         />
       </Pressable>
       {open && (
-        <Animated.View entering={FadeIn.duration(160)} exiting={FadeOut.duration(120)}>
+        <Animated.View
+          entering={FadeIn.duration(160)}
+          exiting={FadeOut.duration(120)}
+        >
           <View style={styles.content}>{children}</View>
         </Animated.View>
       )}
@@ -62,9 +64,9 @@ const styles = StyleSheet.create({
   trigger: {
     minHeight: 48,
     paddingVertical: Spacing.three,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     gap: Spacing.three,
   },
   title: {

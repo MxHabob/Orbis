@@ -6,7 +6,7 @@ Provides barcode/ID lookup, outstanding fee checklist, and payment history.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { queryClient } from "$lib/api";
 import { authStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
@@ -79,7 +79,16 @@ async function loadData() {
   try {
     const [studentList, treasuryList] = await Promise.all([
       api.listEnrollments(),
-      api.listAccounts().then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type) && account.is_active === 1 && account.is_control_account !== 1)),
+      api
+        .listAccounts()
+        .then((accounts) =>
+          accounts.filter(
+            (account: any) =>
+              ["cash", "bank"].includes(account.sub_type) &&
+              account.is_active === 1 &&
+              account.is_control_account !== 1,
+          ),
+        ),
     ]);
     students = studentList;
     treasuries = treasuryList;

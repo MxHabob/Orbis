@@ -12,7 +12,7 @@ import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
 import { Plus, Users2, Edit2, Trash2 } from "@lucide/svelte";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import type { GuardianLink, JsonRecord } from "@orbis/sdk";
 import GuardianLinkSheet from "$lib/features/students/components/guardian-link-sheet.svelte";
 

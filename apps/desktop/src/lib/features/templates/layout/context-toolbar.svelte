@@ -20,11 +20,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@orbis/ui/tooltip";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@orbis/ui/popover";
+import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
 import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
 import {
   ArrowLeft,

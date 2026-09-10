@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { orgUnitInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { FormField } from "@orbis/ui";
@@ -84,7 +84,11 @@ const unitTypeOptions = [
   { value: "stage", label: m.common_org_unit_stage(), icon: Layers },
   { value: "section", label: m.common_org_unit_section(), icon: Users },
   { value: "college", label: m.common_org_unit_college(), icon: GraduationCap },
-  { value: "department", label: m.common_org_unit_department(), icon: Briefcase },
+  {
+    value: "department",
+    label: m.common_org_unit_department(),
+    icon: Briefcase,
+  },
   { value: "program", label: m.common_org_unit_program(), icon: BookOpen },
   { value: "building", label: m.common_org_unit_building(), icon: Building2 },
   { value: "facility", label: m.common_org_unit_facility(), icon: DoorOpen },
@@ -132,7 +136,8 @@ async function handleSubmit(e: SubmitEvent) {
   });
   if (submitted) onSuccess();
   else if (form.formError) toast.error(form.formError);
-  else if (Object.keys(form.errors).length > 0) toast.error(m.common_org_unit_error_name_required());
+  else if (Object.keys(form.errors).length > 0)
+    toast.error(m.common_org_unit_error_name_required());
 }
 </script>
 

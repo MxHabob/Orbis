@@ -1,87 +1,87 @@
 <script lang="ts">
-  import {
-    Calendar as CalendarIcon,
-    Search,
-    WandSparkles,
-    Printer,
-    Clock,
-    Users,
-    User,
-    MapPin,
-    BookOpen,
-    Layers,
-  } from "@lucide/svelte";
-  import { Button } from "@orbis/ui/button";
-  import { Input } from "@orbis/ui/input";
-  import {
-    Select,
-    SelectTrigger,
-    SelectContent,
-    SelectItem,
-  } from "@orbis/ui/select";
-  import { l } from "$lib/core/i18n";
-  import * as m from "$lib/paraglide/messages";
+import {
+  Calendar as CalendarIcon,
+  Search,
+  WandSparkles,
+  Printer,
+  Clock,
+  Users,
+  User,
+  MapPin,
+  BookOpen,
+  Layers,
+} from "@lucide/svelte";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui/select";
+import { l } from "$lib/core/i18n";
+import * as m from "$lib/paraglide/messages";
 
-  type ViewMode = "class" | "teacher" | "room" | "subject" | "matrix";
+type ViewMode = "class" | "teacher" | "room" | "subject" | "matrix";
 
-  interface Props {
-    activePeriodId: string;
-    periods: any[];
-    viewMode: ViewMode;
-    selectedClassId: string;
-    selectedTeacherId: string;
-    selectedRoomId: string;
-    selectedSubjectId: string;
-    searchTerm?: string;
-    compactView?: boolean;
-    classes: any[];
-    teachers: any[];
-    rooms: any[];
-    subjects: any[];
-    onPeriodChange?: (periodId: string) => void;
-    onAutoScheduleClick?: () => void;
-    onTimeSlotsClick?: () => void;
-    onExportClick?: () => void;
-    onNewLessonClick?: () => void;
-  }
+interface Props {
+  activePeriodId: string;
+  periods: any[];
+  viewMode: ViewMode;
+  selectedClassId: string;
+  selectedTeacherId: string;
+  selectedRoomId: string;
+  selectedSubjectId: string;
+  searchTerm?: string;
+  compactView?: boolean;
+  classes: any[];
+  teachers: any[];
+  rooms: any[];
+  subjects: any[];
+  onPeriodChange?: (periodId: string) => void;
+  onAutoScheduleClick?: () => void;
+  onTimeSlotsClick?: () => void;
+  onExportClick?: () => void;
+  onNewLessonClick?: () => void;
+}
 
-  let {
-    activePeriodId = $bindable(""),
-    periods = [],
-    viewMode = $bindable("class"),
-    selectedClassId = $bindable(""),
-    selectedTeacherId = $bindable(""),
-    selectedRoomId = $bindable(""),
-    selectedSubjectId = $bindable(""),
-    searchTerm = $bindable(""),
-    compactView = $bindable(false),
-    classes = [],
-    teachers = [],
-    rooms = [],
-    subjects = [],
-    onPeriodChange,
-    onAutoScheduleClick,
-    onTimeSlotsClick,
-    onExportClick,
-    onNewLessonClick,
-  }: Props = $props();
+let {
+  activePeriodId = $bindable(""),
+  periods = [],
+  viewMode = $bindable("class"),
+  selectedClassId = $bindable(""),
+  selectedTeacherId = $bindable(""),
+  selectedRoomId = $bindable(""),
+  selectedSubjectId = $bindable(""),
+  searchTerm = $bindable(""),
+  compactView = $bindable(false),
+  classes = [],
+  teachers = [],
+  rooms = [],
+  subjects = [],
+  onPeriodChange,
+  onAutoScheduleClick,
+  onTimeSlotsClick,
+  onExportClick,
+  onNewLessonClick,
+}: Props = $props();
 
-  const selectedPeriod = $derived(
-    periods.find((p) => String(p.id) === String(activePeriodId))
-  );
-  function handlePeriodSelect(val: string | null) {
-    if (!val) return;
-    activePeriodId = val;
-    onPeriodChange?.(val);
-  }
+const selectedPeriod = $derived(
+  periods.find((p) => String(p.id) === String(activePeriodId)),
+);
+function handlePeriodSelect(val: string | null) {
+  if (!val) return;
+  activePeriodId = val;
+  onPeriodChange?.(val);
+}
 
-  const viewModes: { id: ViewMode; label: () => string; icon: any }[] = [
-    { id: "class", label: m.academics_studio_classes, icon: Users },
-    { id: "teacher", label: m.academics_studio_teachers, icon: User },
-    { id: "room", label: m.academics_studio_rooms, icon: MapPin },
-    { id: "subject", label: m.academics_studio_subject, icon: BookOpen },
-    { id: "matrix", label: m.academics_planning_studio_title, icon: Layers },
-  ];
+const viewModes: { id: ViewMode; label: () => string; icon: any }[] = [
+  { id: "class", label: m.academics_studio_classes, icon: Users },
+  { id: "teacher", label: m.academics_studio_teachers, icon: User },
+  { id: "room", label: m.academics_studio_rooms, icon: MapPin },
+  { id: "subject", label: m.academics_studio_subject, icon: BookOpen },
+  { id: "matrix", label: m.academics_planning_studio_title, icon: Layers },
+];
 </script>
 
 <div class="w-full shrink-0 border-b border-border/60 bg-card select-none">

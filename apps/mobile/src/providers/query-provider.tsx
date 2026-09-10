@@ -4,8 +4,8 @@
  * Configures and provides TanStack Query client for server-state management.
  */
 
-import React, { useState } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React, { useState } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 export function AppQueryProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -22,5 +22,7 @@ export function AppQueryProvider({ children }: { children: React.ReactNode }) {
       }),
   );
 
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
 }

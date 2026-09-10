@@ -1,30 +1,30 @@
 <script lang="ts">
-  import { page } from "$app/state";
-  import { onMount } from "svelte";
-  import { api } from "$lib/api";
-  import { Button } from "@orbis/ui/button";
-  import { Skeleton } from "@orbis/ui/skeleton";
-  import { BarChart3, FileText, AlertCircle } from "@lucide/svelte";
+import { page } from "$app/state";
+import { onMount } from "svelte";
+import { api } from "$lib/api";
+import { Button } from "@orbis/ui/button";
+import { Skeleton } from "@orbis/ui/skeleton";
+import { BarChart3, FileText, AlertCircle } from "@lucide/svelte";
 
-  let reports = $state<any[]>([]);
-  let isLoading = $state(true);
-  let error = $state<string | null>(null);
+let reports = $state<any[]>([]);
+let isLoading = $state(true);
+let error = $state<string | null>(null);
 
-  async function loadReports() {
-    try {
-      isLoading = true;
-      error = null;
-      reports = await api.listReportDefinitions("academics");
-    } catch (e: any) {
-      error = e.message || "Failed to load reports";
-    } finally {
-      isLoading = false;
-    }
+async function loadReports() {
+  try {
+    isLoading = true;
+    error = null;
+    reports = await api.listReportDefinitions("academics");
+  } catch (e: any) {
+    error = e.message || "Failed to load reports";
+  } finally {
+    isLoading = false;
   }
+}
 
-  onMount(() => {
-    loadReports();
-  });
+onMount(() => {
+  loadReports();
+});
 </script>
 
 <div class="p-6 flex flex-col gap-6">

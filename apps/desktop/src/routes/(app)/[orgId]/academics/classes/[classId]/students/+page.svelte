@@ -1,37 +1,43 @@
 <script lang="ts">
-  import { page } from "$app/state";
-  import { createQuery } from "@tanstack/svelte-query";
-  import { api, extractErrorMessage } from "$lib/api";
-  import { Badge } from "@orbis/ui/badge";
-  import { Button } from "@orbis/ui/button";
-  import { Skeleton } from "@orbis/ui/skeleton";
-  import { MetricProgress } from "@orbis/ui";
-  import { Users, AlertCircle, RefreshCcw, MoreHorizontal } from "@lucide/svelte";
-  import { localizeHref, getLocale } from "$lib/paraglide/runtime";
-  import * as m from "$lib/paraglide/messages";
+import { page } from "$app/state";
+import { createQuery } from "@tanstack/svelte-query";
+import { api, extractErrorMessage } from "$lib/api";
+import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
+import { Skeleton } from "@orbis/ui/skeleton";
+import { MetricProgress } from "@orbis/ui";
+import { Users, AlertCircle, RefreshCcw, MoreHorizontal } from "@lucide/svelte";
+import { localizeHref, getLocale } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
 
-  const classId = $derived(String(page.params.classId || ""));
-  const orgId = $derived(String(page.params.orgId || ""));
-  const isArabic = $derived(getLocale() === "ar");
+const classId = $derived(String(page.params.classId || ""));
+const orgId = $derived(String(page.params.orgId || ""));
+const isArabic = $derived(getLocale() === "ar");
 
-  const studentsQuery = createQuery(() => ({
-    queryKey: ["class-students-enriched-natural", classId],
-    queryFn: () => api.academic.listEnrichedStudents(classId),
-    enabled: !!classId,
-    staleTime: 5 * 60 * 1000,
-  }));
+const studentsQuery = createQuery(() => ({
+  queryKey: ["class-students-enriched-natural", classId],
+  queryFn: () => api.academic.listEnrichedStudents(classId),
+  enabled: !!classId,
+  staleTime: 5 * 60 * 1000,
+}));
 
-  const students = $derived((studentsQuery.data || []) as any[]);
-  const isLoading = $derived(studentsQuery.isLoading);
-  const error = $derived(studentsQuery.error);
+const students = $derived((studentsQuery.data || []) as any[]);
+const isLoading = $derived(studentsQuery.isLoading);
+const error = $derived(studentsQuery.error);
 
-  function studentName(student: any): string {
-    return student.full_name || student.name_ar || student.name || student.student_id || "-";
-  }
+function studentName(student: any): string {
+  return (
+    student.full_name ||
+    student.name_ar ||
+    student.name ||
+    student.student_id ||
+    "-"
+  );
+}
 
-  function refetch() {
-    studentsQuery.refetch();
-  }
+function refetch() {
+  studentsQuery.refetch();
+}
 </script>
 
 <div class="flex flex-col gap-5 text-start h-full font-sans">

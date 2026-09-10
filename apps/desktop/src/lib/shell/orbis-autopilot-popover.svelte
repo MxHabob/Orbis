@@ -2,11 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@orbis/ui/popover";
+import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
 import {
   Tooltip,
   TooltipContent,
@@ -14,12 +10,7 @@ import {
   TooltipProvider,
 } from "@orbis/ui/tooltip";
 import { Skeleton } from "@orbis/ui/skeleton";
-import {
-  Activity,
-  RefreshCw,
-  AlertTriangle,
-  Settings,
-} from "@lucide/svelte";
+import { Activity, RefreshCw, AlertTriangle, Settings } from "@lucide/svelte";
 import { academicContext } from "$lib/stores";
 import { Avatar } from "@orbis/avatar-engine";
 

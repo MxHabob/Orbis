@@ -1,80 +1,96 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { api } from "$lib/api";
-  import type { ReportDefinition, ReportDataset, ColumnDef } from "@orbis/sdk";
-  import { Button } from "@orbis/ui/button";
-  import { Input } from "@orbis/ui/input";
-  import { Loader2, Download, Filter, RefreshCw, AlertCircle } from "@lucide/svelte";
-  import { OrbisGrid } from "@orbis/svelte-grid";
-  import * as m from "$lib/paraglide/messages";
-  import ReportExportDialog from "./report-export-dialog.svelte";
-  import { getLocale } from "$lib/paraglide/runtime";
+import { onMount } from "svelte";
+import { api } from "$lib/api";
+import type { ReportDefinition, ReportDataset, ColumnDef } from "@orbis/sdk";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import {
+  Loader2,
+  Download,
+  Filter,
+  RefreshCw,
+  AlertCircle,
+} from "@lucide/svelte";
+import { OrbisGrid } from "@orbis/svelte-grid";
+import * as m from "$lib/paraglide/messages";
+import ReportExportDialog from "./report-export-dialog.svelte";
+import { getLocale } from "$lib/paraglide/runtime";
 
-  interface Props {
-    definitionId: string;
-  }
+interface Props {
+  definitionId: string;
+}
 
-  let { definitionId }: Props = $props();
+let { definitionId }: Props = $props();
 
-  let isLoading = $state(true);
-  let error = $state<string | null>(null);
-  let definition = $state<ReportDefinition | null>(null);
-  let dataset = $state<ReportDataset | null>(null);
-  let filters = $state<Record<string, any>>({});
-  
-  let isExportDialogOpen = $state(false);
-  let gridColumns = $state<any[]>([]);
+let isLoading = $state(true);
+let error = $state<string | null>(null);
+let definition = $state<ReportDefinition | null>(null);
+let dataset = $state<ReportDataset | null>(null);
+let filters = $state<Record<string, any>>({});
 
-  // Map Rust ReportColumn to OrbisGrid column
-  function buildGridColumns(cols: ColumnDef[]) {
-    return cols.map(c => ({
-      name: c.key,
-      header: getLocale() === "ar" ? c.headerAr : c.header,
-      width: c.width ? Number.parseInt(c.width, 10) || 120 : 120,
-      type: c.dataType === "number" || c.dataType === "currency" || c.dataType === "decimal" ? "number" : "string",
-      align: c.dataType === "number" || c.dataType === "currency" || c.dataType === "decimal" ? "right" : "left",
-      editable: false,
-    }));
-  }
+let isExportDialogOpen = $state(false);
+let gridColumns = $state<any[]>([]);
 
-  async function loadDefinition() {
-    try {
-      isLoading = true;
-      error = null;
-      definition = await api.getReportDefinition(definitionId);
-      // Initialize default filters
-      if (definition) {
-        filters = {};
-        for (const p of definition.parameters) {
-          filters[p.key] = null;
-        }
+// Map Rust ReportColumn to OrbisGrid column
+function buildGridColumns(cols: ColumnDef[]) {
+  return cols.map((c) => ({
+    name: c.key,
+    header: getLocale() === "ar" ? c.headerAr : c.header,
+    width: c.width ? Number.parseInt(c.width, 10) || 120 : 120,
+    type:
+      c.dataType === "number" ||
+      c.dataType === "currency" ||
+      c.dataType === "decimal"
+        ? "number"
+        : "string",
+    align:
+      c.dataType === "number" ||
+      c.dataType === "currency" ||
+      c.dataType === "decimal"
+        ? "right"
+        : "left",
+    editable: false,
+  }));
+}
+
+async function loadDefinition() {
+  try {
+    isLoading = true;
+    error = null;
+    definition = await api.getReportDefinition(definitionId);
+    // Initialize default filters
+    if (definition) {
+      filters = {};
+      for (const p of definition.parameters) {
+        filters[p.key] = null;
       }
-    } catch (e: any) {
-      error = e.message || "Failed to load report definition";
-    } finally {
-      isLoading = false;
     }
+  } catch (e: any) {
+    error = e.message || "Failed to load report definition";
+  } finally {
+    isLoading = false;
   }
+}
 
-  async function queryData() {
-    if (!definition) return;
-    try {
-      isLoading = true;
-      error = null;
-      dataset = await api.reporting.queryReport(definitionId, filters);
-      if (dataset) {
-        gridColumns = buildGridColumns(dataset.columns);
-      }
-    } catch (e: any) {
-      error = e.message || "Failed to query report data";
-    } finally {
-      isLoading = false;
+async function queryData() {
+  if (!definition) return;
+  try {
+    isLoading = true;
+    error = null;
+    dataset = await api.reporting.queryReport(definitionId, filters);
+    if (dataset) {
+      gridColumns = buildGridColumns(dataset.columns);
     }
+  } catch (e: any) {
+    error = e.message || "Failed to query report data";
+  } finally {
+    isLoading = false;
   }
+}
 
-  onMount(() => {
-    loadDefinition();
-  });
+onMount(() => {
+  loadDefinition();
+});
 </script>
 
 <div class="h-full w-full flex flex-col bg-background relative overflow-hidden">

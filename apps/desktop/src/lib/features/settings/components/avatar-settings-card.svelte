@@ -12,7 +12,13 @@ interface Props {
   onsave: (e: Event) => void;
 }
 
-let { logo = $bindable(), name, orgId, isSaving = false, onsave }: Props = $props();
+let {
+  logo = $bindable(),
+  name,
+  orgId,
+  isSaving = false,
+  onsave,
+}: Props = $props();
 </script>
 
 <SettingsCard title={m.common_account_avatar_section()}>

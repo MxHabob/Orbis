@@ -1,6 +1,3 @@
 import Root from "./metric-progress.svelte";
 
-export {
-  Root,
-  Root as MetricProgress,
-};
+export { Root, Root as MetricProgress };

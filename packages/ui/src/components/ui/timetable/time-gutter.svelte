@@ -1,27 +1,27 @@
 <script lang="ts">
-  import { Coffee, Clock } from "@lucide/svelte";
+import { Coffee, Clock } from "@lucide/svelte";
 
-  interface Props {
-    timeSlots: any[];
-    locale?: string;
-    compact?: boolean;
-  }
+interface Props {
+  timeSlots: any[];
+  locale?: string;
+  compact?: boolean;
+}
 
-  let { timeSlots = [], locale = "ar", compact = false }: Props = $props();
+let { timeSlots = [], locale = "ar", compact = false }: Props = $props();
 
-  const isArabic = $derived(locale === "ar");
+const isArabic = $derived(locale === "ar");
 
-  function formatTime(val: string): string {
-    if (!val) return "";
-    const clean = val.slice(0, 5);
-    const [hStr, mStr] = clean.split(":");
-    let h = parseInt(hStr, 10);
-    const m = mStr || "00";
-    if (isNaN(h)) return val;
-    const period = h >= 12 ? (isArabic ? "م" : "PM") : (isArabic ? "ص" : "AM");
-    h = h % 12 || 12;
-    return `${h}:${m} ${period}`;
-  }
+function formatTime(val: string): string {
+  if (!val) return "";
+  const clean = val.slice(0, 5);
+  const [hStr, mStr] = clean.split(":");
+  let h = parseInt(hStr, 10);
+  const m = mStr || "00";
+  if (isNaN(h)) return val;
+  const period = h >= 12 ? (isArabic ? "م" : "PM") : isArabic ? "ص" : "AM";
+  h = h % 12 || 12;
+  return `${h}:${m} ${period}`;
+}
 </script>
 
 <div class="flex flex-col shrink-0 select-none border-e border-border/60 bg-muted/20 {compact ? 'w-20' : 'w-28'}">

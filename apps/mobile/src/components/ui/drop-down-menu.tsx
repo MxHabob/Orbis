@@ -16,7 +16,7 @@ import React, {
   useContext,
   useRef,
   useState,
-} from 'react';
+} from "react";
 import {
   Modal,
   Platform,
@@ -26,18 +26,18 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   View,
-} from 'react-native';
+} from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   withTiming,
-} from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { Radii, Spacing, Typography } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { Radii, Spacing, Typography } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -73,7 +73,9 @@ interface DropdownMenuContextValue {
   };
 }
 
-const DropdownMenuContext = createContext<DropdownMenuContextValue | null>(null);
+const DropdownMenuContext = createContext<DropdownMenuContextValue | null>(
+  null,
+);
 
 // ─── Trigger Measurement ────────────────────────────────────────────────────────
 
@@ -350,7 +352,7 @@ export const DropdownMenuItem = ({
             styles.menuItemText,
             {
               color: selected ? theme.primary : theme.text,
-              fontWeight: selected ? '700' : '500',
+              fontWeight: selected ? "700" : "500",
             },
           ]}
         >
@@ -370,11 +372,7 @@ export const DropdownMenuItem = ({
 export const DropdownMenuSeparator = () => {
   const theme = useTheme();
 
-  return (
-    <View
-      style={[styles.separator, { backgroundColor: theme.border }]}
-    />
-  );
+  return <View style={[styles.separator, { backgroundColor: theme.border }]} />;
 };
 
 // ─── DropdownMenuLabel ──────────────────────────────────────────────────────────
@@ -388,7 +386,9 @@ export const DropdownMenuLabel = ({
 
   return (
     <View style={styles.labelContainer}>
-      <Text style={[styles.labelText, { color: theme.textSecondary }]}>{children}</Text>
+      <Text style={[styles.labelText, { color: theme.textSecondary }]}>
+        {children}
+      </Text>
     </View>
   );
 };
@@ -400,7 +400,7 @@ export const DropDownMenu = DropdownMenu;
 
 const styles = StyleSheet.create({
   modalContainer: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     top: 0,
@@ -409,13 +409,13 @@ const styles = StyleSheet.create({
     elevation: 99998,
   },
   menuContainer: {
-    position: 'absolute',
+    position: "absolute",
     borderRadius: Radii.xl,
-    overflow: 'hidden',
+    overflow: "hidden",
     borderWidth: 1,
     ...Platform.select({
       ios: {
-        shadowColor: '#000000',
+        shadowColor: "#000000",
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.16,
         shadowRadius: 18,
@@ -429,9 +429,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.one,
   },
   menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.three,
     marginHorizontal: Spacing.one,
@@ -439,8 +439,8 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   menuItemLeading: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.two,
     flex: 1,
   },
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
   },
   labelText: {
     ...Typography.captionBold,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 0.5,
   },
 });

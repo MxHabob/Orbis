@@ -1,78 +1,97 @@
 <script lang="ts">
-  import { Button } from "@orbis/ui/button";
-  import { Input } from "@orbis/ui/input";
-  import { Label } from "@orbis/ui/label";
-  import { api, extractErrorMessage } from "$lib/api";
-  import { toast } from "@orbis/ui";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import { Label } from "@orbis/ui/label";
+import { api, extractErrorMessage } from "$lib/api";
+import { toast } from "@orbis/ui";
 
-  type AuthenticationSettings = {
-    max_failed_logins: number;
-    lockout_minutes: number;
-    session_days: number;
-    refresh_token_days: number;
-  };
+type AuthenticationSettings = {
+  max_failed_logins: number;
+  lockout_minutes: number;
+  session_days: number;
+  refresh_token_days: number;
+};
 
-  let { org, isSaving = false }: { org: any; isSaving?: boolean } = $props();
+let { org, isSaving = false }: { org: any; isSaving?: boolean } = $props();
 
-  const defaults = (): AuthenticationSettings => ({
-    max_failed_logins: 5,
-    lockout_minutes: 15,
-    session_days: 30,
-    refresh_token_days: 30,
-  });
+const defaults = (): AuthenticationSettings => ({
+  max_failed_logins: 5,
+  lockout_minutes: 15,
+  session_days: 30,
+  refresh_token_days: 30,
+});
 
-  function readSettings(): AuthenticationSettings {
-    const settings = typeof org?.settings === "string"
-      ? (() => { try { return JSON.parse(org.settings); } catch { return {}; } })()
-      : (org?.settings || {});
-    return { ...defaults(), ...(settings.authentication || {}) };
+function readSettings(): AuthenticationSettings {
+  const settings =
+    typeof org?.settings === "string"
+      ? (() => {
+          try {
+            return JSON.parse(org.settings);
+          } catch {
+            return {};
+          }
+        })()
+      : org?.settings || {};
+  return { ...defaults(), ...(settings.authentication || {}) };
+}
+
+let values = $state<AuthenticationSettings>(defaults());
+let savedValues = $state<AuthenticationSettings | null>(null);
+
+$effect(() => {
+  if (org && !savedValues) {
+    values = readSettings();
+    savedValues = { ...values };
   }
+});
 
-  let values = $state<AuthenticationSettings>(defaults());
-  let savedValues = $state<AuthenticationSettings | null>(null);
+const isDirty = $derived(
+  savedValues !== null &&
+    JSON.stringify(values) !== JSON.stringify(savedValues),
+);
 
-  $effect(() => {
-    if (org && !savedValues) {
-      values = readSettings();
-      savedValues = { ...values };
-    }
-  });
+function setNumber(
+  key: keyof AuthenticationSettings,
+  raw: string,
+  minimum: number,
+) {
+  values[key] = Math.max(minimum, Number.parseInt(raw, 10) || minimum);
+}
 
-  const isDirty = $derived(
-    savedValues !== null && JSON.stringify(values) !== JSON.stringify(savedValues),
-  );
+function validate(): string | null {
+  if (values.max_failed_logins < 1 || values.max_failed_logins > 20)
+    return "عدد محاولات الدخول يجب أن يكون بين 1 و20";
+  if (values.lockout_minutes < 1 || values.lockout_minutes > 1440)
+    return "مدة القفل يجب أن تكون بين دقيقة و1440 دقيقة";
+  if (values.session_days < 1 || values.session_days > 365)
+    return "مدة الجلسة يجب أن تكون بين يوم و365 يوماً";
+  if (
+    values.refresh_token_days < values.session_days ||
+    values.refresh_token_days > 730
+  )
+    return "مدة التجديد يجب أن تكون أكبر أو مساوية لمدة الجلسة ولا تتجاوز 730 يوماً";
+  return null;
+}
 
-  function setNumber(key: keyof AuthenticationSettings, raw: string, minimum: number) {
-    values[key] = Math.max(minimum, Number.parseInt(raw, 10) || minimum);
+async function save() {
+  const validationError = validate();
+  if (validationError) {
+    toast.error(validationError);
+    return;
   }
-
-  function validate(): string | null {
-    if (values.max_failed_logins < 1 || values.max_failed_logins > 20) return "عدد محاولات الدخول يجب أن يكون بين 1 و20";
-    if (values.lockout_minutes < 1 || values.lockout_minutes > 1440) return "مدة القفل يجب أن تكون بين دقيقة و1440 دقيقة";
-    if (values.session_days < 1 || values.session_days > 365) return "مدة الجلسة يجب أن تكون بين يوم و365 يوماً";
-    if (values.refresh_token_days < values.session_days || values.refresh_token_days > 730) return "مدة التجديد يجب أن تكون أكبر أو مساوية لمدة الجلسة ولا تتجاوز 730 يوماً";
-    return null;
+  try {
+    await api.updateSettings({ authentication: values });
+    savedValues = { ...values };
+    toast.success("تم حفظ إعدادات المصادقة");
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
   }
+}
 
-  async function save() {
-    const validationError = validate();
-    if (validationError) {
-      toast.error(validationError);
-      return;
-    }
-    try {
-      await api.updateSettings({ authentication: values });
-      savedValues = { ...values };
-      toast.success("تم حفظ إعدادات المصادقة");
-    } catch (error) {
-      toast.error(extractErrorMessage(error));
-    }
-  }
-
-  function reset() {
-    if (!savedValues) return;
-    values = { ...savedValues };
-  }
+function reset() {
+  if (!savedValues) return;
+  values = { ...savedValues };
+}
 </script>
 
 <section class="border border-border rounded-md overflow-hidden flex flex-col">

@@ -1,14 +1,17 @@
-import { Button } from '@/components/ui/button';
-import { useI18n } from '@/lib/i18n';
-import { useTheme } from '@/hooks/use-theme';
-import { Ionicons } from '@expo/vector-icons';
+import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n";
+import { useTheme } from "@/hooks/use-theme";
+import { Ionicons } from "@expo/vector-icons";
 
 export interface BackButtonProps {
   onPress: () => void;
   accessibilityLabel?: string;
 }
 
-export function BackButton({ onPress, accessibilityLabel = 'Back' }: BackButtonProps) {
+export function BackButton({
+  onPress,
+  accessibilityLabel = "Back",
+}: BackButtonProps) {
   const theme = useTheme();
   const { isArabic } = useI18n();
 

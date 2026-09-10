@@ -25,7 +25,10 @@ export function loadViews(tableId: string): TableViewState[] {
   }
 }
 
-export function saveView(tableId: string, view: TableViewState): TableViewState[] {
+export function saveView(
+  tableId: string,
+  view: TableViewState,
+): TableViewState[] {
   const views = loadViews(tableId).filter((v) => v.id !== view.id);
   views.push(view);
   localStorage.setItem(keyFor(tableId), JSON.stringify(views));

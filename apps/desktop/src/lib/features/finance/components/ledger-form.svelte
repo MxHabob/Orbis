@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -21,7 +21,14 @@ import {
 } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { FormField } from "@orbis/ui";
-import { BookOpen, Landmark, Users, Info, Check, Loader2 } from "@lucide/svelte";
+import {
+  BookOpen,
+  Landmark,
+  Users,
+  Info,
+  Check,
+  Loader2,
+} from "@lucide/svelte";
 
 let {
   orgId,
@@ -123,7 +130,10 @@ function handleTabChange(tab: "gl" | "cash_account" | "entity") {
   activeTab = tab;
 }
 
-async function submitAccount(schema: any, values: Record<string, unknown>): Promise<boolean> {
+async function submitAccount(
+  schema: any,
+  values: Record<string, unknown>,
+): Promise<boolean> {
   const form = new FormController({ initialValues: values, schema });
   const submitted = await form.submit(async (payload) => {
     await api.createAccount(payload as any);
@@ -162,7 +172,8 @@ async function handleSubmit(e: SubmitEvent) {
         sub_type: undefined,
       };
 
-      if (!(await submitAccount(generalLedgerAccountInputSchema, request))) return;
+      if (!(await submitAccount(generalLedgerAccountInputSchema, request)))
+        return;
       toast.success(m.common_ledger_toast_success());
 
       // Reset

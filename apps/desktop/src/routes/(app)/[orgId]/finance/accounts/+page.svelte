@@ -2,7 +2,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import {
   Select,
@@ -17,10 +17,7 @@ import { fade } from "svelte/transition";
 import LedgerCreateSheet from "$lib/features/finance/components/ledger-create-sheet.svelte";
 
 import { DataTable } from "$lib/tables";
-import {
-  cashAccounts as tDef,
-  withIndex,
-} from "$lib/tables/definitions";
+import { cashAccounts as tDef, withIndex } from "$lib/tables/definitions";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -45,7 +42,16 @@ async function loadData() {
   isLoading = true;
   try {
     const [accounts, currencies] = await Promise.all([
-      api.listAccounts().then((accounts) => accounts.filter((account: any) => !accounts.some((candidate: any) => candidate.parent_id === account.id))),
+      api
+        .listAccounts()
+        .then((accounts) =>
+          accounts.filter(
+            (account: any) =>
+              !accounts.some(
+                (candidate: any) => candidate.parent_id === account.id,
+              ),
+          ),
+        ),
       api.listCurrencies(),
     ]);
     childAccounts = accounts;
@@ -65,7 +71,9 @@ onMount(() => {
 // ── Helpers ─────────────────────────────────────────────────────────────
 
 function getAccountTypeLabel(account: any) {
-  const type = String(account.type || account.item_type || account.sub_type || "asset").toLowerCase();
+  const type = String(
+    account.type || account.item_type || account.sub_type || "asset",
+  ).toLowerCase();
   const managedTypes: Record<string, string> = {
     partner: getLocale() === "ar" ? "شريك" : "Partner",
     investor: getLocale() === "ar" ? "مستثمر" : "Investor",
@@ -90,14 +98,22 @@ function getAccountTypeLabel(account: any) {
 // ── Grid Sources ────────────────────────────────────────────────────────
 
 const availableCurrencies = $derived(
-  [...new Set(childAccounts.map((account) => account.currency || baseCurrency))].sort(),
+  [
+    ...new Set(
+      childAccounts.map((account) => account.currency || baseCurrency),
+    ),
+  ].sort(),
 );
 
 import { applyFilter } from "@orbis/ui/filter-builder";
 import type { UniversalFilter } from "@orbis/ui/filter-builder";
 import { accountFilterFields } from "$lib/tables/definitions/filter-configs";
 
-let activeFilter = $state<UniversalFilter>({ logic: "AND", conditions: [], groups: [] });
+let activeFilter = $state<UniversalFilter>({
+  logic: "AND",
+  conditions: [],
+  groups: [],
+});
 
 const filteredAccounts = $derived(
   applyFilter(
@@ -105,10 +121,10 @@ const filteredAccounts = $derived(
       const query = searchQuery.trim().toLowerCase();
       const name = String(account.name_ar || account.name || "").toLowerCase();
       const code = String(account.code || "").toLowerCase();
-      return (!query || name.includes(query) || code.includes(query));
+      return !query || name.includes(query) || code.includes(query);
     }),
-    activeFilter
-  )
+    activeFilter,
+  ),
 );
 
 const treasurySource = $derived(
@@ -152,9 +168,15 @@ function exportAccounts() {
     ["Code", "Name", "Type", "Balance", "Currency", "Status"],
     ...rows,
   ]
-    .map((row) => row.map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`).join(","))
+    .map((row) =>
+      row
+        .map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`)
+        .join(","),
+    )
     .join("\n");
-  const url = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }));
+  const url = URL.createObjectURL(
+    new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }),
+  );
   const link = document.createElement("a");
   link.href = url;
   link.download = "orbis-accounts.csv";

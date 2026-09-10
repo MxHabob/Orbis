@@ -10,8 +10,10 @@ const config: OrbisApp = {
   active: true,
   beta: false,
   icon: "CreditCard",
-  short_description: "Accept Mada debit cards, Apple Pay, STC Pay, and credit cards directly with Moyasar.",
-  short_description_ar: "قبول بطاقات مدى والبطاقات الائتمانية والمحافظ الرقمية مباشرة عبر بوابة ميسر.",
+  short_description:
+    "Accept Mada debit cards, Apple Pay, STC Pay, and credit cards directly with Moyasar.",
+  short_description_ar:
+    "قبول بطاقات مدى والبطاقات الائتمانية والمحافظ الرقمية مباشرة عبر بوابة ميسر.",
   description: `Integrate Moyasar to collect tuition, admission, and school service fees seamlessly.
 
 **Saudi Local Payment Methods**
@@ -67,8 +69,10 @@ PCI-DSS Level 1 certified gateway compliant with Saudi Central Bank (SAMA) stand
       type: "password",
       required: true,
       value: "",
-      description: "Private API key for server-to-server transaction verification.",
-      description_ar: "المفتاح السري المستخدم للتحقق من العمليات وإجراء التسويات من الخادم.",
+      description:
+        "Private API key for server-to-server transaction verification.",
+      description_ar:
+        "المفتاح السري المستخدم للتحقق من العمليات وإجراء التسويات من الخادم.",
       placeholder: "sk_live_...",
     },
     {
@@ -103,7 +107,8 @@ PCI-DSS Level 1 certified gateway compliant with Saudi Central Bank (SAMA) stand
       type: "switch",
       required: false,
       value: true,
-      description: "Enable test mode to simulate transactions without real charges.",
+      description:
+        "Enable test mode to simulate transactions without real charges.",
       description_ar: "تفعيل الوضع التجريبي لمحاكاة عمليات الدفع دون خصم فعلي.",
     },
   ],

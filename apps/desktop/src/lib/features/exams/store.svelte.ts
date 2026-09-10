@@ -40,4 +40,3 @@ class ExamsStore {
 }
 
 export const examsStore = new ExamsStore();
-

@@ -5,9 +5,21 @@
  * and user state management in the Orbis Mobile Application.
  */
 
-import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
-import { api } from './client';
-import { getSecureItem, setSecureItem, deleteSecureItem, STORAGE_KEYS } from './storage';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+} from "react";
+import { api } from "./client";
+import {
+  getSecureItem,
+  setSecureItem,
+  deleteSecureItem,
+  STORAGE_KEYS,
+} from "./storage";
 import {
   type UserDto,
   type LoginResponse,
@@ -15,7 +27,7 @@ import {
   type MfaVerifyEnrollmentRequest,
   OrbisError,
   ApiRequestError,
-} from './types';
+} from "./types";
 
 export interface AuthState {
   user: UserDto | null;
@@ -51,8 +63,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isSetupComplete, setIsSetupComplete] = useState<boolean | null>(null);
 
   const isAuthenticated = useMemo(() => !!token && !!user, [token, user]);
-  const orgId = useMemo(() => user?.org_id ?? '', [user]);
-  const userId = useMemo(() => user?.id ?? '', [user]);
+  const orgId = useMemo(() => user?.org_id ?? "", [user]);
+  const userId = useMemo(() => user?.id ?? "", [user]);
   const needsOnboarding = useMemo(
     () => isAuthenticated && isSetupComplete === false,
     [isAuthenticated, isSetupComplete],
@@ -65,7 +77,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const org = await api.getCurrentOrg();
       const complete = !!org && !!org.id;
       setIsSetupComplete(complete);
-      await setSecureItem(STORAGE_KEYS.SETUP_COMPLETE, complete ? 'true' : 'false');
+      await setSecureItem(
+        STORAGE_KEYS.SETUP_COMPLETE,
+        complete ? "true" : "false",
+      );
       return complete;
     } catch {
       // If unable to fetch org, retain existing or default to true
@@ -198,23 +213,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           api.setToken(savedToken);
 
           if (savedSetup !== null) {
-            setIsSetupComplete(savedSetup === 'true');
+            setIsSetupComplete(savedSetup === "true");
           }
 
           // Revalidate session with backend in background
           const session = await api.getSession();
           if (session?.user) {
             setUser(session.user);
-            await setSecureItem(STORAGE_KEYS.USER, JSON.stringify(session.user));
+            await setSecureItem(
+              STORAGE_KEYS.USER,
+              JSON.stringify(session.user),
+            );
           }
         } catch (sessionErr) {
-          console.warn('[Auth] Session validation notice:', sessionErr);
+          console.warn("[Auth] Session validation notice:", sessionErr);
           const isInvalidToken =
-            (sessionErr instanceof ApiRequestError && (sessionErr.status === 401 || sessionErr.status === 403)) ||
+            (sessionErr instanceof ApiRequestError &&
+              (sessionErr.status === 401 || sessionErr.status === 403)) ||
             (sessionErr instanceof Error &&
-              (sessionErr.message.toLowerCase().includes('unauthorized') ||
-                sessionErr.message.toLowerCase().includes('invalid or expired token') ||
-                sessionErr.message.toLowerCase().includes('invalidsignature')));
+              (sessionErr.message.toLowerCase().includes("unauthorized") ||
+                sessionErr.message
+                  .toLowerCase()
+                  .includes("invalid or expired token") ||
+                sessionErr.message.toLowerCase().includes("invalidsignature")));
 
           if (isInvalidToken) {
             await logout();
@@ -222,7 +243,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch (err) {
-      console.warn('[Auth] Failed to restore session from storage:', err);
+      console.warn("[Auth] Failed to restore session from storage:", err);
     } finally {
       setIsLoading(false);
     }
@@ -275,13 +296,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ],
   );
 
-  return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
+  );
 }
 
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

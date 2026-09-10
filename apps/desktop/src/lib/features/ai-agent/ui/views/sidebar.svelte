@@ -13,7 +13,7 @@ import { toast } from "@orbis/ui";
 import ChatInput from "../components/chat-input.svelte";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { createAgentSessionsQuery } from "$lib/features/ai/queries";
 import AgentHeader from "../components/agent-header.svelte";
 import AgentCockpit from "../components/agent-cockpit.svelte";
@@ -182,7 +182,8 @@ async function submitMessage(queryText?: string) {
     const finalMsgIndex = messages.findIndex(
       (m) => m.id === assistantMessageId,
     );
-    const responseText = typeof response === "string" ? response : response.message;
+    const responseText =
+      typeof response === "string" ? response : response.message;
     if (!responseText) {
       throw new Error("AI provider returned an empty response");
     }
@@ -194,7 +195,10 @@ async function submitMessage(queryText?: string) {
     const failedMessageIndex = messages.findIndex(
       (m) => m.id === assistantMessageId,
     );
-    if (failedMessageIndex !== -1 && !messages[failedMessageIndex].content.trim()) {
+    if (
+      failedMessageIndex !== -1 &&
+      !messages[failedMessageIndex].content.trim()
+    ) {
       messages[failedMessageIndex].content = m.agent_error_response_failed();
     }
   } finally {

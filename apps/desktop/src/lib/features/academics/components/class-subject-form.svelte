@@ -114,7 +114,9 @@ const selectedTeacher = $derived(
 const selectedPeriod = $derived(periods.find((c) => String(c.id) === periodId));
 const availablePeriods = $derived(
   fixedClassId && selectedClass?.period_id
-    ? periods.filter((period) => String(period.id) === String(selectedClass.period_id))
+    ? periods.filter(
+        (period) => String(period.id) === String(selectedClass.period_id),
+      )
     : periods,
 );
 

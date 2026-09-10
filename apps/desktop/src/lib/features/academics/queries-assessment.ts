@@ -62,7 +62,9 @@ export function createAssessmentSchemesQuery(orgId: () => string) {
 }
 
 /** Components for a specific assessment scheme. */
-export function createSchemeComponentsQuery(schemeId: () => string | undefined) {
+export function createSchemeComponentsQuery(
+  schemeId: () => string | undefined,
+) {
   return createQuery(() => ({
     queryKey: queryKeys.assessment.scheme(schemeId()!),
     queryFn: () => api.getAssessmentScheme(schemeId()!),
@@ -70,4 +72,3 @@ export function createSchemeComponentsQuery(schemeId: () => string | undefined) 
     staleTime: 10 * 60 * 1000,
   }));
 }
-

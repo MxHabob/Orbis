@@ -29,7 +29,8 @@ const filteredApps = $derived.by(() => {
         (app.name_ar && app.name_ar.toLowerCase().includes(q)) ||
         app.id.toLowerCase().includes(q) ||
         app.short_description.toLowerCase().includes(q) ||
-        (app.short_description_ar && app.short_description_ar.toLowerCase().includes(q))
+        (app.short_description_ar &&
+          app.short_description_ar.toLowerCase().includes(q)),
     );
   }
 

@@ -2,7 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui";
 import { onMount } from "svelte";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import DragIndicator from "../components/drag-indicator.svelte";
 
 import { academicContext } from "$lib/stores";
@@ -42,7 +42,10 @@ async function loadData() {
     const gradeDistribution: Record<string, number> = {};
     for (const score of scores) {
       const label = String(score.grade_label || "").toUpperCase();
-      const key = label.replace("+", "_plus").replace("-", "_minus").toLowerCase();
+      const key = label
+        .replace("+", "_plus")
+        .replace("-", "_minus")
+        .toLowerCase();
       gradeDistribution[key] = (gradeDistribution[key] || 0) + 1;
     }
     stats = { grade_distribution: gradeDistribution };

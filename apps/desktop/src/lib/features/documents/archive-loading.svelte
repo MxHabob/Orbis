@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Skeleton } from "@orbis/ui/skeleton";
+import { Skeleton } from "@orbis/ui/skeleton";
 
-  let { count = 12 }: { count?: number } = $props();
+let { count = 12 }: { count?: number } = $props();
 </script>
 
 <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">

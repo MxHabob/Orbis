@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { confirmStore } from "$lib/stores";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import {
   Select,
@@ -36,7 +36,11 @@ import type { GridActionEvent, ActionItem } from "@orbis/svelte-grid";
 let searchQuery = $state("");
 let selectedRole = $state("all");
 let overlayEl = $state<any>();
-let activeFilter = $state<UniversalFilter>({ logic: "AND", conditions: [], groups: [] });
+let activeFilter = $state<UniversalFilter>({
+  logic: "AND",
+  conditions: [],
+  groups: [],
+});
 
 const userActions: ActionItem[] = [
   { id: "edit", label: "Edit / View", icon: "Pencil" },
@@ -45,9 +49,9 @@ const userActions: ActionItem[] = [
 
 // ── Data Loading ────────────────────────────────────────────────────────
 const usersQuery = createUsersPaginatedQuery(
-  () => data.orgId, 
-  50, 
-  () => activeFilter
+  () => data.orgId,
+  50,
+  () => activeFilter,
 );
 const users = $derived(
   usersQuery.data?.pages?.flatMap((page: any) => page.items) ?? [],
@@ -126,8 +130,12 @@ async function handleAction(event: GridActionEvent) {
     if (confirmed) {
       try {
         await api.iam.deleteUser(user.id);
-        await queryClient.invalidateQueries({ queryKey: ["users", data.orgId] });
-        await queryClient.invalidateQueries({ queryKey: ["users_paginated", data.orgId] });
+        await queryClient.invalidateQueries({
+          queryKey: ["users", data.orgId],
+        });
+        await queryClient.invalidateQueries({
+          queryKey: ["users_paginated", data.orgId],
+        });
         queryClient.removeQueries({ queryKey: ["user", data.orgId, user.id] });
         toast.success("User deleted successfully");
         loadUsers();

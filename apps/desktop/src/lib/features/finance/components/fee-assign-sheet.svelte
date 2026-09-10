@@ -5,12 +5,7 @@ Uses the shared @orbis/ui/sheet component.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@orbis/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 import { Wallet } from "@lucide/svelte";
 import FeeAssignForm from "./fee-assign-form.svelte";
 

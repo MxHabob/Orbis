@@ -25,7 +25,8 @@ let {
 } = $props();
 
 function parseMessageParts(text: string) {
-  const regex = /\*\*([^*]+)\*\*|\[([^\]]+)\]\(([^)]+)\)|\[نتيجة الأداة ([^:]+):\s*([^\]]+)\]/g;
+  const regex =
+    /\*\*([^*]+)\*\*|\[([^\]]+)\]\(([^)]+)\)|\[نتيجة الأداة ([^:]+):\s*([^\]]+)\]/g;
   const parts: any[] = [];
   let lastIndex = 0;
   let match;

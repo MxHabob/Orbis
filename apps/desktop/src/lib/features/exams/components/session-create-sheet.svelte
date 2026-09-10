@@ -5,19 +5,19 @@ Includes choosing the academic period.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@orbis/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
 import PeriodSelect from "$lib/features/academics/components/period-select.svelte";
 import { toast } from "@orbis/ui";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { examSessionInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
@@ -85,7 +85,14 @@ $effect(() => {
 });
 
 async function handleSubmit() {
-  form.values = { name, name_ar: nameAr, session_type: sessionType, start_date: startDate, end_date: endDate, period_id: periodId };
+  form.values = {
+    name,
+    name_ar: nameAr,
+    session_type: sessionType,
+    start_date: startDate,
+    end_date: endDate,
+    period_id: periodId,
+  };
   const submitted = await form.submit(async (payload) => {
     if (isEdit && session) {
       await api.exam.updateSession(

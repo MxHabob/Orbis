@@ -7,7 +7,7 @@ Excludes any hardcoded fake/placeholder data.
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { confirmStore } from "$lib/stores";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import {
   Table,
   TableBody,

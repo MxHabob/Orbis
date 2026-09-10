@@ -1,7 +1,11 @@
 /**
  * Policy queries — TanStack Query wrappers for academic policy.
  */
-import { createQuery, createMutation, useQueryClient } from "@tanstack/svelte-query";
+import {
+  createQuery,
+  createMutation,
+  useQueryClient,
+} from "@tanstack/svelte-query";
 import { api, queryKeys } from "$lib/api";
 
 export function createOrgAcademicPolicyQuery(orgId: () => string) {
@@ -31,12 +35,16 @@ export function createPromotionPolicyQuery(orgId: () => string) {
 export function useUpdateAcademicPolicy() {
   const queryClient = useQueryClient();
   return createMutation(() => ({
-    mutationFn: async (vars: { orgId: string; payload: Record<string, any> }) => {
+    mutationFn: async (vars: {
+      orgId: string;
+      payload: Record<string, any>;
+    }) => {
       const current = await api.getSettings();
       return api.updateSettings({
         ...current,
         academic: {
-          default_grading_system: current.academic?.default_grading_system || "standard",
+          default_grading_system:
+            current.academic?.default_grading_system || "standard",
           ...vars.payload,
         },
       });
@@ -48,4 +56,3 @@ export function useUpdateAcademicPolicy() {
     },
   }));
 }
-

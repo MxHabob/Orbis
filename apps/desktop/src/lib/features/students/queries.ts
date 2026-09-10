@@ -18,12 +18,8 @@ export function createEnrollmentsQuery(
   }));
 }
 
-
-
 /** Single enrollment for detail pages. */
-export function createEnrollmentQuery(
-  enrollmentId: () => string,
-) {
+export function createEnrollmentQuery(enrollmentId: () => string) {
   return createQuery(() => ({
     queryKey: queryKeys.student.enrollment(enrollmentId()),
     queryFn: () => api.getEnrollment(enrollmentId()),
@@ -33,9 +29,7 @@ export function createEnrollmentQuery(
 }
 
 /** Guardians list for a student. */
-export function createGuardiansQuery(
-  studentId: () => string,
-) {
+export function createGuardiansQuery(studentId: () => string) {
   return createQuery(() => ({
     queryKey: queryKeys.student.guardians(studentId()),
     queryFn: () => api.listGuardians(studentId()),

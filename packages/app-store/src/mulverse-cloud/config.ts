@@ -9,8 +9,10 @@ const config: OrbisApp = {
   category: "storage",
   active: true,
   icon: "Cloud",
-  short_description: "Secure, reliable, and scalable cloud storage solutions developed by Mulverse for student records and file backups.",
-  short_description_ar: "حلول تخزين سحابية آمنة وموثوقة وقابلة للتوسع مطورة من قبل Mulverse لملفات الطلاب والنسخ الاحتياطي.",
+  short_description:
+    "Secure, reliable, and scalable cloud storage solutions developed by Mulverse for student records and file backups.",
+  short_description_ar:
+    "حلول تخزين سحابية آمنة وموثوقة وقابلة للتوسع مطورة من قبل Mulverse لملفات الطلاب والنسخ الاحتياطي.",
   description: `Mulverse Cloud is a secure cloud storage provider that integrates directly with Orbis. Store, share, and backup academic documents, school media, and biometric templates with enterprise-grade encryption.
 
 **Developed by Mulverse**

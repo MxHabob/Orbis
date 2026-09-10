@@ -2,17 +2,13 @@
  * @module @orbis/mobile/components/ui/themed-status-bar
  */
 
-
 import {
   Platform,
   useColorScheme,
   StatusBar as RNStatusBar,
-} from 'react-native';
+} from "react-native";
 
-import {
-  StatusBar as ExpoStatusBar,
-} from 'expo-status-bar';
-
+import { StatusBar as ExpoStatusBar } from "expo-status-bar";
 
 type ThemedStatusBarProps = {
   backgroundColor?: string;
@@ -20,20 +16,17 @@ type ThemedStatusBarProps = {
 
 export function ThemedStatusBar({ backgroundColor }: ThemedStatusBarProps) {
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = colorScheme === "dark";
 
   return (
     <>
-      <ExpoStatusBar
-        style={isDark ? 'light' : 'dark'}
-        animated
-      />
+      <ExpoStatusBar style={isDark ? "light" : "dark"} animated />
 
-      {Platform.OS === 'android' && (
+      {Platform.OS === "android" && (
         <RNStatusBar
           translucent
-          backgroundColor={backgroundColor ?? 'transparent'}
-          barStyle={isDark ? 'light-content' : 'dark-content'}
+          backgroundColor={backgroundColor ?? "transparent"}
+          barStyle={isDark ? "light-content" : "dark-content"}
           animated
         />
       )}

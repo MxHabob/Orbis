@@ -1,66 +1,77 @@
 <script lang="ts">
-    import { Button } from "../components/ui/button";
-    import { Save, FolderOpen, Trash2 } from "@lucide/svelte";
-    import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "../components/ui/dialog";
-    import { Input } from "../components/ui/input";
-    import type { UniversalFilter } from "./types";
-    import { onMount } from "svelte";
+import { Button } from "../components/ui/button";
+import { Save, FolderOpen, Trash2 } from "@lucide/svelte";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogTrigger,
+} from "../components/ui/dialog";
+import { Input } from "../components/ui/input";
+import type { UniversalFilter } from "./types";
+import { onMount } from "svelte";
 
-    let {
-        filter = $bindable()
-    }: {
-        filter: UniversalFilter;
-    } = $props();
+let {
+  filter = $bindable(),
+}: {
+  filter: UniversalFilter;
+} = $props();
 
-    interface Template {
-        id: string;
-        name: string;
-        filter: UniversalFilter;
+interface Template {
+  id: string;
+  name: string;
+  filter: UniversalFilter;
+}
+
+let templates: Template[] = $state([]);
+let templateName = $state("");
+let isSaveDialogOpen = $state(false);
+let isLoadDialogOpen = $state(false);
+
+onMount(() => {
+  const stored = localStorage.getItem("orbis_filter_templates");
+  if (stored) {
+    try {
+      templates = JSON.parse(stored);
+    } catch (e) {
+      console.error("Failed to load templates", e);
     }
+  }
+});
 
-    let templates: Template[] = $state([]);
-    let templateName = $state("");
-    let isSaveDialogOpen = $state(false);
-    let isLoadDialogOpen = $state(false);
+function saveTemplates() {
+  localStorage.setItem("orbis_filter_templates", JSON.stringify(templates));
+}
 
-    onMount(() => {
-        const stored = localStorage.getItem('orbis_filter_templates');
-        if (stored) {
-            try {
-                templates = JSON.parse(stored);
-            } catch (e) {
-                console.error("Failed to load templates", e);
-            }
-        }
-    });
+function handleSave() {
+  if (!templateName.trim()) return;
 
-    function saveTemplates() {
-        localStorage.setItem('orbis_filter_templates', JSON.stringify(templates));
-    }
+  templates = [
+    ...templates,
+    {
+      id: Date.now().toString(),
+      name: templateName,
+      filter: JSON.parse(JSON.stringify(filter)),
+    },
+  ];
 
-    function handleSave() {
-        if (!templateName.trim()) return;
-        
-        templates = [...templates, {
-            id: Date.now().toString(),
-            name: templateName,
-            filter: JSON.parse(JSON.stringify(filter))
-        }];
-        
-        saveTemplates();
-        templateName = "";
-        isSaveDialogOpen = false;
-    }
+  saveTemplates();
+  templateName = "";
+  isSaveDialogOpen = false;
+}
 
-    function loadTemplate(t: Template) {
-        filter = JSON.parse(JSON.stringify(t.filter));
-        isLoadDialogOpen = false;
-    }
+function loadTemplate(t: Template) {
+  filter = JSON.parse(JSON.stringify(t.filter));
+  isLoadDialogOpen = false;
+}
 
-    function removeTemplate(id: string) {
-        templates = templates.filter(t => t.id !== id);
-        saveTemplates();
-    }
+function removeTemplate(id: string) {
+  templates = templates.filter((t) => t.id !== id);
+  saveTemplates();
+}
 </script>
 
 <div class="flex items-center gap-2">

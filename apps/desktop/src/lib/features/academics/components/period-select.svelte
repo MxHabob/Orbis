@@ -45,8 +45,14 @@ const selectedPeriod = $derived(
 const displayLabel = $derived(
   value === "all" || value === "" || !value
     ? showAllOption
-      ? allOptionLabel || (m.common_ledger_period_all ? m.common_ledger_period_all() : "جميع الفترات")
-      : placeholder || (m.common_metrics_period ? m.common_metrics_period() : "اختر الفترة الدراسية...")
+      ? allOptionLabel ||
+        (m.common_ledger_period_all
+          ? m.common_ledger_period_all()
+          : "جميع الفترات")
+      : placeholder ||
+        (m.common_metrics_period
+          ? m.common_metrics_period()
+          : "اختر الفترة الدراسية...")
     : selectedPeriod
       ? getPeriodLabel(selectedPeriod)
       : value,

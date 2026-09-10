@@ -17,12 +17,7 @@ import HistoryPanel from "../panels/history-panel.svelte";
 import ElementsPanel from "../panels/elements-panel.svelte";
 import TextPresetsPanel from "../panels/text-presets-panel.svelte";
 import PageSetupPanel from "../panels/page-setup-panel.svelte";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@orbis/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
 import { Layers, Variable, History, Search } from "@lucide/svelte";
 import { Input } from "@orbis/ui/input";
 

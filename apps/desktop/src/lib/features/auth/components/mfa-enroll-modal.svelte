@@ -1,14 +1,29 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import QRCode from "qrcode";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@orbis/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@orbis/ui/dialog";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { toast } from "@orbis/ui";
 import { api, type MfaEnrollResponse } from "$lib/api";
 import { authStore } from "$lib/stores";
-import { ShieldCheck, Copy, Check, Download, AlertTriangle, ArrowRight, ArrowLeft } from "@lucide/svelte";
+import {
+  ShieldCheck,
+  Copy,
+  Check,
+  Download,
+  AlertTriangle,
+  ArrowRight,
+  ArrowLeft,
+} from "@lucide/svelte";
 
 interface Props {
   open: boolean;
@@ -83,9 +98,10 @@ async function copyToClipboard(text: string, type: "secret" | "codes") {
 
 function downloadRecoveryCodes() {
   if (!enrollData) return;
-  const content = `ORBIS SECURITY RECOVERY CODES\nGenerated on: ${new Date().toISOString()}\n\nKeep these codes in a safe place. Each code can only be used once.\n\n` +
+  const content =
+    `ORBIS SECURITY RECOVERY CODES\nGenerated on: ${new Date().toISOString()}\n\nKeep these codes in a safe place. Each code can only be used once.\n\n` +
     enrollData.recovery_codes.map((c, i) => `${i + 1}. ${c}`).join("\n");
-  
+
   const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");

@@ -2,7 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/core/i18n";
 import { Button } from "@orbis/ui/button";
@@ -45,7 +45,10 @@ async function loadData() {
     currencies = currencyList || [];
     payments = paymentList || [];
 
-    const leaves = accounts.filter((account) => !accounts.some((candidate) => candidate.parent_id === account.id));
+    const leaves = accounts.filter(
+      (account) =>
+        !accounts.some((candidate) => candidate.parent_id === account.id),
+    );
     selectedIds = new Set(leaves.map((account) => account.id));
     if (!selectedAccountId && leaves[0]) selectedAccountId = leaves[0].id;
   } catch (cause) {
@@ -60,7 +63,9 @@ onMount(() => {
 });
 
 function buildTree(items: any[]): any[] {
-  const nodes = new Map(items.map((account) => [account.id, { ...account, children: [] }]));
+  const nodes = new Map(
+    items.map((account) => [account.id, { ...account, children: [] }]),
+  );
   const roots: any[] = [];
   for (const account of items) {
     const node = nodes.get(account.id);
@@ -83,46 +88,85 @@ const treeCategories = $derived.by(() => {
     id,
     name_ar,
     name_en,
-    accounts: buildTree(accounts.filter((account) => String(account.type || account.item_type || "asset").toLowerCase() === id)),
+    accounts: buildTree(
+      accounts.filter(
+        (account) =>
+          String(account.type || account.item_type || "asset").toLowerCase() ===
+          id,
+      ),
+    ),
   }));
 });
 
 const activeCurrencies = $derived(
   currencies
-    .map((currency) => ({ code: String(currency.code || "").toUpperCase(), name: currency.name_ar || currency.name || currency.code }))
+    .map((currency) => ({
+      code: String(currency.code || "").toUpperCase(),
+      name: currency.name_ar || currency.name || currency.code,
+    }))
     .filter((currency) => currency.code),
 );
 
 const visibleCurrencies = $derived(
-  selectedCurrency === "all" ? activeCurrencies : activeCurrencies.filter((currency) => currency.code === selectedCurrency),
+  selectedCurrency === "all"
+    ? activeCurrencies
+    : activeCurrencies.filter((currency) => currency.code === selectedCurrency),
 );
 
-const leafAccounts = $derived(accounts.filter((account) => !accounts.some((candidate) => candidate.parent_id === account.id)));
-const accountItems = $derived(leafAccounts.map((account) => ({
-  id: account.id,
-  value: account.id,
-  label: `${account.code} - ${account.name_ar || account.name || "-"}`,
-})));
-const selectedAccountItem = $derived(accountItems.find((item) => item.value === selectedAccountId));
+const leafAccounts = $derived(
+  accounts.filter(
+    (account) =>
+      !accounts.some((candidate) => candidate.parent_id === account.id),
+  ),
+);
+const accountItems = $derived(
+  leafAccounts.map((account) => ({
+    id: account.id,
+    value: account.id,
+    label: `${account.code} - ${account.name_ar || account.name || "-"}`,
+  })),
+);
+const selectedAccountItem = $derived(
+  accountItems.find((item) => item.value === selectedAccountId),
+);
 
 function balanceFor(account: any, code: string) {
-  return Number(account.balances?.[code] || account.balances?.[code.toUpperCase()] || 0);
+  return Number(
+    account.balances?.[code] || account.balances?.[code.toUpperCase()] || 0,
+  );
 }
 
 function accountRows() {
   const query = searchQuery.trim().toLowerCase();
   return accounts
-    .filter((account) => !accounts.some((candidate) => candidate.parent_id === account.id))
+    .filter(
+      (account) =>
+        !accounts.some((candidate) => candidate.parent_id === account.id),
+    )
     .filter((account) => selectedIds.has(account.id))
-    .filter((account) => !query || String(account.name_ar || account.name || "").toLowerCase().includes(query) || String(account.code || "").includes(query))
-    .filter((account) => activeView === "all" || account.id === selectedAccountId)
+    .filter(
+      (account) =>
+        !query ||
+        String(account.name_ar || account.name || "")
+          .toLowerCase()
+          .includes(query) ||
+        String(account.code || "").includes(query),
+    )
+    .filter(
+      (account) => activeView === "all" || account.id === selectedAccountId,
+    )
     .filter((account) => {
-      const balances = visibleCurrencies.map((currency) => balanceFor(account, currency.code));
+      const balances = visibleCurrencies.map((currency) =>
+        balanceFor(account, currency.code),
+      );
       const hasMovement = balances.some((balance) => balance !== 0);
       const isDebit = balances.some((balance) => balance > 0);
       const isCredit = balances.some((balance) => balance < 0);
-      return (movementFilter === "all" || hasMovement) &&
-        (balanceFilter === "all" || (balanceFilter === "debit" ? isDebit : isCredit));
+      return (
+        (movementFilter === "all" || hasMovement) &&
+        (balanceFilter === "all" ||
+          (balanceFilter === "debit" ? isDebit : isCredit))
+      );
     })
     .map((account, index) => {
       const row: Record<string, unknown> = {
@@ -133,8 +177,10 @@ function accountRows() {
       };
       for (const currency of visibleCurrencies) {
         const balance = balanceFor(account, currency.code);
-        row[`${currency.code}_debit`] = balance > 0 ? formatCurrency(balance, currency.code) : "-";
-        row[`${currency.code}_credit`] = balance < 0 ? formatCurrency(Math.abs(balance), currency.code) : "-";
+        row[`${currency.code}_debit`] =
+          balance > 0 ? formatCurrency(balance, currency.code) : "-";
+        row[`${currency.code}_credit`] =
+          balance < 0 ? formatCurrency(Math.abs(balance), currency.code) : "-";
       }
       return row;
     });
@@ -144,18 +190,43 @@ function statementRows() {
   const account = accounts.find((item) => item.id === selectedAccountId);
   if (!account) return [];
   const query = searchQuery.trim().toLowerCase();
-  const currency = selectedCurrency === "all" ? String(account.currency || activeCurrencies[0]?.code || "YER").toUpperCase() : selectedCurrency;
+  const currency =
+    selectedCurrency === "all"
+      ? String(
+          account.currency || activeCurrencies[0]?.code || "YER",
+        ).toUpperCase()
+      : selectedCurrency;
   const rows = payments
-    .filter((payment) => payment.cash_account_id === selectedAccountId || payment.account_id === selectedAccountId || payment.ledger_account_id === selectedAccountId)
-    .filter((payment) => String(payment.currency || currency).toUpperCase() === currency)
+    .filter(
+      (payment) =>
+        payment.cash_account_id === selectedAccountId ||
+        payment.account_id === selectedAccountId ||
+        payment.ledger_account_id === selectedAccountId,
+    )
+    .filter(
+      (payment) =>
+        String(payment.currency || currency).toUpperCase() === currency,
+    )
     .map((payment) => ({
-      date: String(payment.paid_at || payment.created_at || "").split("T")[0] || "-",
-      reference: payment.receipt_number || payment.reference || payment.id?.slice(0, 8) || "-",
+      date:
+        String(payment.paid_at || payment.created_at || "").split("T")[0] ||
+        "-",
+      reference:
+        payment.receipt_number ||
+        payment.reference ||
+        payment.id?.slice(0, 8) ||
+        "-",
       description: payment.notes || payment.payer_name || "Payment",
       debit: Number(payment.amount || 0),
       credit: 0,
     }))
-    .filter((row) => !query || `${row.date} ${row.reference} ${row.description}`.toLowerCase().includes(query))
+    .filter(
+      (row) =>
+        !query ||
+        `${row.date} ${row.reference} ${row.description}`
+          .toLowerCase()
+          .includes(query),
+    )
     .sort((first, second) => first.date.localeCompare(second.date));
 
   let running = Number(account.opening_balance || 0);
@@ -173,29 +244,142 @@ function statementRows() {
   });
 }
 
-const source = $derived(activeView === "single" ? statementRows() : accountRows());
+const source = $derived(
+  activeView === "single" ? statementRows() : accountRows(),
+);
 const columns = $derived.by((): OrbisColumnDef[] => {
   if (activeView === "single") {
     return [
-      { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true },
-      { id: "date", prop: "date", header: "Date", name: "Date", width: 115, size: 115, readonly: true },
-      { id: "reference", prop: "reference", header: "Reference", name: "Reference", width: 125, size: 125, readonly: true, cellClass: "font-mono" },
-      { id: "description", prop: "description", header: "Description", name: "Description", width: 260, size: 260, readonly: true },
-      { id: "debit", prop: "debit", header: "Debit", name: "Debit", width: 130, size: 130, readonly: true, cellClass: "orbis-cell-number" },
-      { id: "credit", prop: "credit", header: "Credit", name: "Credit", width: 130, size: 130, readonly: true, cellClass: "orbis-cell-number" },
-      { id: "balance", prop: "balance", header: "Running balance", name: "Running balance", width: 145, size: 145, readonly: true, cellClass: "orbis-cell-number" },
+      {
+        id: "__idx",
+        prop: "__idx",
+        header: "#",
+        name: "#",
+        width: 48,
+        size: 48,
+        readonly: true,
+      },
+      {
+        id: "date",
+        prop: "date",
+        header: "Date",
+        name: "Date",
+        width: 115,
+        size: 115,
+        readonly: true,
+      },
+      {
+        id: "reference",
+        prop: "reference",
+        header: "Reference",
+        name: "Reference",
+        width: 125,
+        size: 125,
+        readonly: true,
+        cellClass: "font-mono",
+      },
+      {
+        id: "description",
+        prop: "description",
+        header: "Description",
+        name: "Description",
+        width: 260,
+        size: 260,
+        readonly: true,
+      },
+      {
+        id: "debit",
+        prop: "debit",
+        header: "Debit",
+        name: "Debit",
+        width: 130,
+        size: 130,
+        readonly: true,
+        cellClass: "orbis-cell-number",
+      },
+      {
+        id: "credit",
+        prop: "credit",
+        header: "Credit",
+        name: "Credit",
+        width: 130,
+        size: 130,
+        readonly: true,
+        cellClass: "orbis-cell-number",
+      },
+      {
+        id: "balance",
+        prop: "balance",
+        header: "Running balance",
+        name: "Running balance",
+        width: 145,
+        size: 145,
+        readonly: true,
+        cellClass: "orbis-cell-number",
+      },
     ];
   }
   const currencyColumns = visibleCurrencies.flatMap((currency) => [
-    { id: `${currency.code}_debit`, prop: `${currency.code}_debit`, header: `${currency.name} - Debit`, name: `${currency.name} - Debit`, width: 125, size: 125, readonly: true, cellClass: "orbis-cell-number" },
-    { id: `${currency.code}_credit`, prop: `${currency.code}_credit`, header: `${currency.name} - Credit`, name: `${currency.name} - Credit`, width: 125, size: 125, readonly: true, cellClass: "orbis-cell-number" },
+    {
+      id: `${currency.code}_debit`,
+      prop: `${currency.code}_debit`,
+      header: `${currency.name} - Debit`,
+      name: `${currency.name} - Debit`,
+      width: 125,
+      size: 125,
+      readonly: true,
+      cellClass: "orbis-cell-number",
+    },
+    {
+      id: `${currency.code}_credit`,
+      prop: `${currency.code}_credit`,
+      header: `${currency.name} - Credit`,
+      name: `${currency.name} - Credit`,
+      width: 125,
+      size: 125,
+      readonly: true,
+      cellClass: "orbis-cell-number",
+    },
   ]);
   return [
-    { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true },
-    { id: "account_name", prop: "account_name", header: m.common_ledger_col_name(), name: m.common_ledger_col_name(), width: 220, size: 220, readonly: true },
-    { id: "account_code", prop: "account_code", header: m.common_ledger_col_code(), name: m.common_ledger_col_code(), width: 105, size: 105, readonly: true, cellClass: "font-mono" },
+    {
+      id: "__idx",
+      prop: "__idx",
+      header: "#",
+      name: "#",
+      width: 48,
+      size: 48,
+      readonly: true,
+    },
+    {
+      id: "account_name",
+      prop: "account_name",
+      header: m.common_ledger_col_name(),
+      name: m.common_ledger_col_name(),
+      width: 220,
+      size: 220,
+      readonly: true,
+    },
+    {
+      id: "account_code",
+      prop: "account_code",
+      header: m.common_ledger_col_code(),
+      name: m.common_ledger_col_code(),
+      width: 105,
+      size: 105,
+      readonly: true,
+      cellClass: "font-mono",
+    },
     ...currencyColumns,
-    { id: "account_type", prop: "account_type", header: "Type", name: "Type", width: 110, size: 110, readonly: true },
+    {
+      id: "account_type",
+      prop: "account_type",
+      header: "Type",
+      name: "Type",
+      width: 110,
+      size: 110,
+      readonly: true,
+    },
   ];
 });
 

@@ -1,30 +1,40 @@
 <script lang="ts">
-  import { page } from "$app/state";
-  import { createQuery } from "@tanstack/svelte-query";
-  import { api, extractErrorMessage } from "$lib/api";
-  import { Badge } from "@orbis/ui/badge";
-  import { Button } from "@orbis/ui/button";
-  import { AlertCircle, RefreshCcw, FileCheck2, Printer, CheckCircle2, XCircle } from "@lucide/svelte";
-  import { academicContext } from "$lib/stores";
-  import { getLocale } from "$lib/paraglide/runtime";
+import { page } from "$app/state";
+import { createQuery } from "@tanstack/svelte-query";
+import { api, extractErrorMessage } from "$lib/api";
+import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
+import {
+  AlertCircle,
+  RefreshCcw,
+  FileCheck2,
+  Printer,
+  CheckCircle2,
+  XCircle,
+} from "@lucide/svelte";
+import { academicContext } from "$lib/stores";
+import { getLocale } from "$lib/paraglide/runtime";
 
-  const classSubjectId = $derived(String(page.params.classSubjectId || ""));
-  const selectedPeriodId = $derived(academicContext.effectivePeriodId || "");
-  const isArabic = $derived(getLocale() === "ar");
+const classSubjectId = $derived(String(page.params.classSubjectId || ""));
+const selectedPeriodId = $derived(academicContext.effectivePeriodId || "");
+const isArabic = $derived(getLocale() === "ar");
 
-  const termResultsQuery = createQuery(() => ({
-    queryKey: ["term-results-enriched", selectedPeriodId, classSubjectId],
-    queryFn: () => api.assessment.listTermResultsEnriched(selectedPeriodId, classSubjectId),
-    enabled: !!selectedPeriodId && !!classSubjectId,
-  }));
+const termResultsQuery = createQuery(() => ({
+  queryKey: ["term-results-enriched", selectedPeriodId, classSubjectId],
+  queryFn: () =>
+    api.assessment.listTermResultsEnriched(selectedPeriodId, classSubjectId),
+  enabled: !!selectedPeriodId && !!classSubjectId,
+}));
 
-  const termResults = $derived((termResultsQuery.data || []) as any[]);
+const termResults = $derived((termResultsQuery.data || []) as any[]);
 
-  function getStudentName(enrollmentId: string): string {
-    const s = termResults.find((r: any) => r.enrollment_id === enrollmentId);
-    if (!s) return "-";
-    return isArabic ? s.student_name_ar || s.student_name || s.student_number : s.student_name || s.student_name_ar || s.student_number;
-  }
+function getStudentName(enrollmentId: string): string {
+  const s = termResults.find((r: any) => r.enrollment_id === enrollmentId);
+  if (!s) return "-";
+  return isArabic
+    ? s.student_name_ar || s.student_name || s.student_number
+    : s.student_name || s.student_name_ar || s.student_number;
+}
 </script>
 
 <div class="flex flex-col h-full w-full gap-2.5 font-sans">

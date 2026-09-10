@@ -1,7 +1,7 @@
-import React from 'react';
-import { Pressable, StyleSheet } from 'react-native';
-import { Radii } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import React from "react";
+import { Pressable, StyleSheet } from "react-native";
+import { Radii } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 
 export interface CheckboxProps {
   value: boolean;
@@ -28,14 +28,14 @@ export function Checkbox({
       style={({ pressed }) => [
         styles.box,
         {
-          backgroundColor: 'transparent',
+          backgroundColor: "transparent",
           borderColor: value ? theme.primary : theme.input,
           borderWidth: value ? 4 : 1,
         },
         disabled && styles.disabled,
         pressed && styles.pressed,
-      ]}>
-    </Pressable>
+      ]}
+    ></Pressable>
   );
 }
 
@@ -44,8 +44,8 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: Radii.full,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   disabled: {
     opacity: 0.5,

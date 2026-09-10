@@ -6,7 +6,10 @@ using <MainViewport>. Uses the shared SidebarNav component.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { createCashAccountsQuery, createStudentFeesQuery } from "$lib/features/finance";
+import {
+  createCashAccountsQuery,
+  createStudentFeesQuery,
+} from "$lib/features/finance";
 import {
   Wallet,
   CreditCard,

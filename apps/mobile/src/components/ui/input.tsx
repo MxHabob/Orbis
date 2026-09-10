@@ -11,7 +11,7 @@
  * - Clean RTL / LTR layout and transparent native input surface
  */
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -20,11 +20,11 @@ import {
   StyleSheet,
   Pressable,
   type ViewStyle,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@/hooks/use-theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Radii, Spacing, Typography } from '@/constants/theme';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "@/hooks/use-theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Radii, Spacing, Typography } from "@/constants/theme";
 
 export interface InputProps extends TextInputProps {
   label?: string;
@@ -47,7 +47,7 @@ export const Input = React.memo<InputProps>(
   }) => {
     const theme = useTheme();
     const colorScheme = useColorScheme();
-    const isDark = colorScheme === 'dark';
+    const isDark = colorScheme === "dark";
 
     const [isFocused, setIsFocused] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
@@ -58,9 +58,7 @@ export const Input = React.memo<InputProps>(
     return (
       <View style={[styles.wrapper, containerStyle]}>
         {label && (
-          <Text style={[styles.label, { color: theme.text }]}>
-            {label}
-          </Text>
+          <Text style={[styles.label, { color: theme.text }]}>{label}</Text>
         )}
 
         {/* Sunken Recessed Input Container */}
@@ -68,20 +66,23 @@ export const Input = React.memo<InputProps>(
           style={[
             styles.inputContainer,
             {
-              backgroundColor: isDark ? theme.backgroundElement : theme.background,
+              backgroundColor: isDark
+                ? theme.backgroundElement
+                : theme.background,
               borderColor: error
                 ? theme.error
                 : isFocused
                   ? theme.primary
                   : theme.border,
               borderWidth: 1,
-              shadowColor: isFocused ? theme.primary : '#000000',
+              shadowColor: isFocused ? theme.primary : "#000000",
               shadowOffset: { width: 0, height: 1 },
               shadowOpacity: isFocused ? 0.15 : isDark ? 0.2 : 0.04,
               shadowRadius: isFocused ? 4 : 2,
               elevation: isFocused ? 2 : 1,
             },
-          ]}>
+          ]}
+        >
           {icon && <View style={styles.iconBox}>{icon}</View>}
 
           <TextInput
@@ -89,7 +90,7 @@ export const Input = React.memo<InputProps>(
               styles.input,
               {
                 color: theme.text,
-                backgroundColor: 'transparent',
+                backgroundColor: "transparent",
               },
               style,
             ]}
@@ -110,9 +111,10 @@ export const Input = React.memo<InputProps>(
             <Pressable
               onPress={() => setShowPassword(!showPassword)}
               style={styles.eyeButton}
-              hitSlop={8}>
+              hitSlop={8}
+            >
               <Ionicons
-                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                name={showPassword ? "eye-off-outline" : "eye-outline"}
                 size={18}
                 color={theme.textSecondary}
               />
@@ -121,21 +123,25 @@ export const Input = React.memo<InputProps>(
         </View>
 
         {error ? (
-          <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
+          <Text style={[styles.errorText, { color: theme.error }]}>
+            {error}
+          </Text>
         ) : hint ? (
-          <Text style={[styles.hintText, { color: theme.textMuted }]}>{hint}</Text>
+          <Text style={[styles.hintText, { color: theme.textMuted }]}>
+            {hint}
+          </Text>
         ) : null}
       </View>
     );
   },
 );
 
-Input.displayName = 'Input';
+Input.displayName = "Input";
 
 const styles = StyleSheet.create({
   wrapper: {
     gap: 4,
-    width: '100%',
+    width: "100%",
   },
   label: {
     ...Typography.captionBold,
@@ -143,16 +149,16 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: Radii.md,
     paddingHorizontal: 12,
     minHeight: 44,
   },
   iconBox: {
     marginEnd: Spacing.two,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   input: {
     flex: 1,

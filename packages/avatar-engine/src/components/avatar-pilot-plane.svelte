@@ -1,15 +1,15 @@
 <script lang="ts">
-  import Avatar from "./avatar.svelte";
+import Avatar from "./avatar.svelte";
 
-  let {
-    mood = "steady",
-    width = "138px",
-    height = "82px",
-  }: {
-    mood?: "steady" | "alert" | "working";
-    width?: string;
-    height?: string;
-  } = $props();
+let {
+  mood = "steady",
+  width = "138px",
+  height = "82px",
+}: {
+  mood?: "steady" | "alert" | "working";
+  width?: string;
+  height?: string;
+} = $props();
 </script>
 
 <div class="pilot-flight {mood}" style:width style:height role="img" aria-label="Pilot assistant">

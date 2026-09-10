@@ -1,11 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@orbis/ui/popover";
+import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@orbis/ui";
 import { GitBranch } from "@lucide/svelte";
 </script>

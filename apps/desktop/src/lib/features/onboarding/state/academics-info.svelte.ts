@@ -39,11 +39,11 @@ export class AcademicsInfoState {
     if (!data) return;
     if (data.gradeLevels) {
       const arabicDivisionLetters: Record<string, string> = {
-        "أ": "A",
-        "ب": "B",
-        "ج": "C",
-        "د": "D",
-        "هـ": "E",
+        أ: "A",
+        ب: "B",
+        ج: "C",
+        د: "D",
+        هـ: "E",
       };
       this.gradeLevels = data.gradeLevels.map((gradeLevel: GradeLevel) => ({
         ...gradeLevel,

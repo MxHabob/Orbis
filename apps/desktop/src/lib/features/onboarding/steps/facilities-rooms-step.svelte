@@ -4,16 +4,11 @@
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@orbis/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
 import { Badge } from "@orbis/ui/badge";
 import { Label } from "@orbis/ui/label";
 import { Input } from "@orbis/ui/input";
- import { FormField } from "@orbis/ui";
+import { FormField } from "@orbis/ui";
 import {
   Select,
   SelectTrigger,
@@ -53,10 +48,22 @@ let newRoomType = $state("classroom");
 let newRoomFloor = $state(0);
 
 const roomTypeOptions = [
-  { value: "classroom", label: () => m.common_onboarding_room_type_classroom() },
-  { value: "lecture_hall", label: () => m.common_onboarding_room_type_lecture_hall() },
-  { value: "computer_lab", label: () => m.common_onboarding_room_type_computer() },
-  { value: "science_lab", label: () => m.common_onboarding_room_type_science() },
+  {
+    value: "classroom",
+    label: () => m.common_onboarding_room_type_classroom(),
+  },
+  {
+    value: "lecture_hall",
+    label: () => m.common_onboarding_room_type_lecture_hall(),
+  },
+  {
+    value: "computer_lab",
+    label: () => m.common_onboarding_room_type_computer(),
+  },
+  {
+    value: "science_lab",
+    label: () => m.common_onboarding_room_type_science(),
+  },
   { value: "workshop", label: () => m.common_onboarding_room_type_workshop() },
   { value: "library", label: () => m.common_onboarding_room_type_library() },
   { value: "studio", label: () => m.common_onboarding_room_type_studio() },
@@ -64,7 +71,7 @@ const roomTypeOptions = [
 ];
 
 function getRoomTypeLabel(type: string) {
-  return roomTypeOptions.find(o => o.value === type)?.label() || type;
+  return roomTypeOptions.find((o) => o.value === type)?.label() || type;
 }
 
 function handleAddRoom() {

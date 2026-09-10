@@ -77,68 +77,89 @@ const examSessions = $derived((examSessionsQuery.data as any[]) ?? []);
 // System Document Templates Query
 const documentTemplatesQuery = createQuery(() => ({
   queryKey: ["document-templates", data.orgId],
-  queryFn: () => api.listTemplates({
-    documentType: "EXAM_REGISTER",
-  }),
+  queryFn: () =>
+    api.listTemplates({
+      documentType: "EXAM_REGISTER",
+    }),
   enabled: !!data.orgId,
   staleTime: 5 * 60 * 1000,
 }));
 
-const documentTemplates = $derived((documentTemplatesQuery.data as any[]) ?? []);
-
-const isLoading = $derived(
-  periodsQuery.isLoading || examSessionsQuery.isLoading || documentTemplatesQuery.isLoading,
+const documentTemplates = $derived(
+  (documentTemplatesQuery.data as any[]) ?? [],
 );
 
-const error = $derived(periodsQuery.error || examSessionsQuery.error || documentTemplatesQuery.error);
+const isLoading = $derived(
+  periodsQuery.isLoading ||
+    examSessionsQuery.isLoading ||
+    documentTemplatesQuery.isLoading,
+);
+
+const error = $derived(
+  periodsQuery.error || examSessionsQuery.error || documentTemplatesQuery.error,
+);
 
 // Directory list of available exam reports
 const reportItems = $derived([
   {
     id: "timetable",
-    title: m.common_exams_reports_timetable ? m.common_exams_reports_timetable() : "جدول مواعيد الاختبارات",
+    title: m.common_exams_reports_timetable
+      ? m.common_exams_reports_timetable()
+      : "جدول مواعيد الاختبارات",
     desc: "كشف تفصيلي بمواعيد الاختبارات اليومية حسب الصفوف والمواد والفترات.",
     icon: Calendar,
     badge: "جدول الاختبارات",
   },
   {
     id: "seating_list",
-    title: m.common_exams_reports_seating_list ? m.common_exams_reports_seating_list() : "كشوفات أرقام الجلوس واللجان",
+    title: m.common_exams_reports_seating_list
+      ? m.common_exams_reports_seating_list()
+      : "كشوفات أرقام الجلوس واللجان",
     desc: "قوائم أسماء الطلاب الموزعين على اللجان مع أرقام الجلوس والأرقام السرية.",
     icon: Hash,
     badge: "أرقام الجلوس",
   },
   {
     id: "hall_map",
-    title: m.common_exams_reports_hall_map ? m.common_exams_reports_hall_map() : "خريطة توزيع قاعات الامتحان",
+    title: m.common_exams_reports_hall_map
+      ? m.common_exams_reports_hall_map()
+      : "خريطة توزيع قاعات الامتحان",
     desc: "توزيع القاعات والسعة الاستيعابية ومواقع الجلوس لكل لجنة امتحانية.",
     icon: Building2,
     badge: "توزيع القاعات",
   },
   {
     id: "proctor_sheet",
-    title: m.common_exams_reports_proctor_sheet ? m.common_exams_reports_proctor_sheet() : "جدول تكليف الملاحظين والمراقبين",
+    title: m.common_exams_reports_proctor_sheet
+      ? m.common_exams_reports_proctor_sheet()
+      : "جدول تكليف الملاحظين والمراقبين",
     desc: "جدول توزيع المعلمين والملاحظين على اللجان والفترات الامتحانية اليومية.",
     icon: UserCheck,
     badge: "الملاحظين",
   },
   {
     id: "student_cards",
-    title: m.common_exams_reports_student_cards ? m.common_exams_reports_student_cards() : "بطاقات دخول الامتحان للطلاب",
+    title: m.common_exams_reports_student_cards
+      ? m.common_exams_reports_student_cards()
+      : "بطاقات دخول الامتحان للطلاب",
     desc: "بطاقات تعريفية رسمية تحتوي على رقم الجلوس واللجنة والقاعة الامتحانية.",
     icon: CreditCard,
     badge: "بطاقات الجلوس",
   },
   {
     id: "attendance",
-    title: m.common_exams_reports_attendance ? m.common_exams_reports_attendance() : "كشوفات توقيع حضور الامتحانات",
+    title: m.common_exams_reports_attendance
+      ? m.common_exams_reports_attendance()
+      : "كشوفات توقيع حضور الامتحانات",
     desc: "محاضر التحضير والتوقيع اليومي للطلاب داخل اللجان أثناء سير الامتحان.",
     icon: ClipboardCheck,
     badge: "كشوف الحضور",
   },
   {
     id: "summary",
-    title: m.common_exams_reports_summary ? m.common_exams_reports_summary() : "سجل رصد الدرجات الشامل (الشيت)",
+    title: m.common_exams_reports_summary
+      ? m.common_exams_reports_summary()
+      : "سجل رصد الدرجات الشامل (الشيت)",
     desc: "الشيت المعتمد لرصد درجات الاختبارات الشفهية والتحريرية ونتيجة الكنترول.",
     icon: BarChart3,
     badge: "شيت الدرجات",

@@ -109,7 +109,9 @@ export class StudentFormState {
 
       // Load document templates for printing
       try {
-        const templatesList = await api.listTemplates({ entityType: "student" }).catch(() => []);
+        const templatesList = await api
+          .listTemplates({ entityType: "student" })
+          .catch(() => []);
         this.availableTemplates = templatesList || [];
         if (this.availableTemplates.length > 0) {
           this.selectedTemplateId = this.availableTemplates[0].id;
@@ -182,7 +184,9 @@ export class StudentFormState {
   }
 
   get selectedClassName() {
-    const cls = this.classes.find((c) => String(c.id) === this.personal.classId);
+    const cls = this.classes.find(
+      (c) => String(c.id) === this.personal.classId,
+    );
     if (!cls) return m.common_form_select_class();
     return l(cls.name_ar, cls.name) || String(cls.id);
   }
@@ -209,7 +213,9 @@ export class StudentFormState {
 
           if (targetLevels.length > 0) {
             const matchesLevel = level ? targetLevels.includes(level) : false;
-            const matchesClassId = classId ? targetLevels.includes(classId) : false;
+            const matchesClassId = classId
+              ? targetLevels.includes(classId)
+              : false;
             return matchesLevel || matchesClassId;
           }
         } catch {
@@ -221,7 +227,10 @@ export class StudentFormState {
   }
 
   get mandatoryTotal() {
-    return this.mandatoryFeesList.reduce((sum, t) => sum + (Number(t.default_amount) || 0), 0);
+    return this.mandatoryFeesList.reduce(
+      (sum, t) => sum + (Number(t.default_amount) || 0),
+      0,
+    );
   }
 
   get discountTotal() {
@@ -292,8 +301,12 @@ export class StudentFormState {
       if (!this.isEditMode) {
         // 1. Create Student User
         const user = await api.registerUser({
-          email: this.personal.email.trim() || `student.${Date.now()}@orbis.local`,
-          full_name: this.personal.nameAr.trim() || this.personal.nameEn.trim() || "طالب جديد",
+          email:
+            this.personal.email.trim() || `student.${Date.now()}@orbis.local`,
+          full_name:
+            this.personal.nameAr.trim() ||
+            this.personal.nameEn.trim() ||
+            "طالب جديد",
           role: "student",
         });
         targetStudentId = user.id;
@@ -320,7 +333,8 @@ export class StudentFormState {
         let guardianUserId = guardian.user_id;
 
         if (!guardianUserId) {
-          const guardEmail = guardian.email.trim() || `parent.${Date.now()}@orbis.local`;
+          const guardEmail =
+            guardian.email.trim() || `parent.${Date.now()}@orbis.local`;
           const guardUser = await api.registerUser({
             email: guardEmail,
             full_name: guardian.full_name.trim(),
@@ -330,12 +344,14 @@ export class StudentFormState {
         }
 
         if (targetStudentId) {
-          await api.assignGuardian({
-            student_id: targetStudentId,
-            guardian_id: guardianUserId,
-            relationship: guardian.relationship || "parent",
-            is_primary: !!guardian.is_primary,
-          }).catch((err) => console.warn("Assign guardian error:", err));
+          await api
+            .assignGuardian({
+              student_id: targetStudentId,
+              guardian_id: guardianUserId,
+              relationship: guardian.relationship || "parent",
+              is_primary: !!guardian.is_primary,
+            })
+            .catch((err) => console.warn("Assign guardian error:", err));
         }
       }
 
@@ -363,7 +379,11 @@ export class StudentFormState {
       goto(localizeHref(`/${this.orgId}/students`));
     } catch (e) {
       console.error("Save error:", e);
-      toast.error(m.common_form_error_save({ error: e instanceof Error ? e.message : String(e) }));
+      toast.error(
+        m.common_form_error_save({
+          error: e instanceof Error ? e.message : String(e),
+        }),
+      );
     } finally {
       this.isSaving = false;
     }
@@ -377,9 +397,7 @@ export class StudentFormState {
     }
     this.isDownloadingForm = true;
     try {
-      const templateRecord = await api.getTemplate(
-        this.selectedTemplateId,
-      );
+      const templateRecord = await api.getTemplate(this.selectedTemplateId);
       if (!templateRecord) {
         toast.error(
           `القالب '${this.selectedTemplateId}' غير موجود في قاعدة البيانات`,
@@ -387,7 +405,6 @@ export class StudentFormState {
         return;
       }
       const docJson = templateRecord.document_json;
-
 
       const printVariables = {
         orgName: this.orgName,
@@ -410,14 +427,12 @@ export class StudentFormState {
         net_fees: this.netTotal.toString(),
       };
 
-      const pdfBytes = await api.previewTemplate(
-        docJson,
-        printVariables,
-        "ar",
-      );
+      const pdfBytes = await api.previewTemplate(docJson, printVariables, "ar");
 
       if (pdfBytes && pdfBytes.length > 0) {
-        const blob = new Blob([pdfBytes as unknown as BlobPart], { type: "application/pdf" });
+        const blob = new Blob([pdfBytes as unknown as BlobPart], {
+          type: "application/pdf",
+        });
         const pdfUrl = URL.createObjectURL(blob);
 
         const link = document.createElement("a");

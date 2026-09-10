@@ -5,7 +5,7 @@
  * Built with high-performance gesture physics and fluid spring curves.
  */
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from "react";
 import {
   Modal,
   Platform,
@@ -13,11 +13,8 @@ import {
   StyleSheet,
   Text,
   View,
-} from 'react-native';
-import {
-  Gesture,
-  GestureDetector,
-} from 'react-native-gesture-handler';
+} from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Easing,
   runOnJS,
@@ -26,11 +23,11 @@ import Animated, {
   useSharedValue,
   withSpring,
   withTiming,
-} from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '@/hooks/use-theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Radii, Spacing, Typography } from '@/constants/theme';
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "@/hooks/use-theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Radii, Spacing, Typography } from "@/constants/theme";
 
 // ─── Drawer Context ─────────────────────────────────────────────────────────
 
@@ -49,7 +46,9 @@ const DrawerContext = createContext<DrawerContextValue | null>(null);
 export function useDrawer() {
   const context = useContext(DrawerContext);
   if (!context) {
-    throw new Error('Drawer compound components must be used within a <Drawer />');
+    throw new Error(
+      "Drawer compound components must be used within a <Drawer />",
+    );
   }
   return context;
 }
@@ -70,7 +69,7 @@ export function Drawer({
   disableContentDrag = true,
 }: DrawerProps) {
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = colorScheme === "dark";
   const theme = useTheme();
 
   const [shouldRender, setShouldRender] = useState(visible);
@@ -221,7 +220,7 @@ export function DrawerContent({
           backgroundColor: theme.card,
           paddingBottom: hasCloseButton
             ? 0
-            : Math.max(insets.bottom, Platform.OS === 'ios' ? 34 : 16),
+            : Math.max(insets.bottom, Platform.OS === "ios" ? 34 : 16),
         },
       ]}
     >
@@ -277,7 +276,7 @@ export function DrawerSeparator() {
 
 // ─── Drawer Close Button ────────────────────────────────────────────────────
 
-export function DrawerCloseButton({ title = 'Cancel' }: { title?: string }) {
+export function DrawerCloseButton({ title = "Cancel" }: { title?: string }) {
   const { onClose, theme, setHasCloseButton } = useDrawer();
   const insets = useSafeAreaInsets();
 
@@ -295,7 +294,10 @@ export function DrawerCloseButton({ title = 'Cancel' }: { title?: string }) {
         {
           borderColor: theme.border,
           backgroundColor: theme.card,
-          paddingBottom: Math.max(insets.bottom, Platform.OS === 'ios' ? 34 : 16),
+          paddingBottom: Math.max(
+            insets.bottom,
+            Platform.OS === "ios" ? 34 : 16,
+          ),
         },
       ]}
     >
@@ -311,8 +313,8 @@ export function DrawerCloseButton({ title = 'Cancel' }: { title?: string }) {
             styles.menuItemText,
             {
               color: theme.text,
-              fontWeight: '700',
-              textAlign: 'center',
+              fontWeight: "700",
+              textAlign: "center",
               flex: 1,
             },
           ]}
@@ -329,54 +331,54 @@ export function DrawerCloseButton({ title = 'Cancel' }: { title?: string }) {
 const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
+    justifyContent: "flex-end",
+    alignItems: "center",
   },
   backdrop: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     top: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.52)',
+    backgroundColor: "rgba(0, 0, 0, 0.52)",
   },
   sheetContainer: {
-    width: '100%',
+    width: "100%",
     maxWidth: 540,
     paddingHorizontal: 0,
     paddingBottom: 0,
   },
   menuWrapper: {
-    overflow: 'hidden',
+    overflow: "hidden",
     borderTopWidth: 1,
     borderLeftWidth: 1,
     borderRightWidth: 1,
     borderBottomWidth: 0,
     marginBottom: 0,
-    borderTopLeftRadius: Radii['3xl'],
-    borderTopRightRadius: Radii['3xl'],
-    shadowColor: '#000000',
+    borderTopLeftRadius: Radii["3xl"],
+    borderTopRightRadius: Radii["3xl"],
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.1,
     shadowRadius: 16,
     elevation: 10,
   },
   cancelWrapper: {
-    overflow: 'hidden',
+    overflow: "hidden",
     marginTop: Spacing.three,
     borderTopWidth: 1,
     borderLeftWidth: 1,
     borderRightWidth: 1,
     borderBottomWidth: 0,
-    borderTopLeftRadius: Radii['2xl'],
-    borderTopRightRadius: Radii['2xl'],
+    borderTopLeftRadius: Radii["2xl"],
+    borderTopRightRadius: Radii["2xl"],
   },
   bodyContent: {
     paddingVertical: 0,
   },
   dragHandleContainer: {
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
     paddingTop: Spacing.three,
     paddingBottom: Spacing.two,
   },
@@ -389,7 +391,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.five,
     paddingTop: Spacing.two,
     paddingBottom: Spacing.four,
-    alignItems: 'center',
+    alignItems: "center",
     gap: Spacing.half,
   },
   footer: {
@@ -399,18 +401,18 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.h3,
-    fontWeight: '700',
-    textAlign: 'center',
+    fontWeight: "700",
+    textAlign: "center",
   },
   description: {
     ...Typography.small,
     marginTop: 2,
-    textAlign: 'center',
+    textAlign: "center",
   },
   menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: Spacing.five,
     paddingVertical: Spacing.four,
   },

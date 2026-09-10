@@ -1,35 +1,40 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { Button } from "@orbis/ui/button";
-  import { Checkbox } from "@orbis/ui/checkbox";
-  import { getDocumentSource, resolveDocumentUrl } from "$lib/features/documents/queries";
-  import { Download, FileText, Music, Play, Trash2 } from "@lucide/svelte";
-  import type { Documents } from "@orbis/sdk";
+import * as m from "$lib/paraglide/messages";
+import { Button } from "@orbis/ui/button";
+import { Checkbox } from "@orbis/ui/checkbox";
+import {
+  getDocumentSource,
+  resolveDocumentUrl,
+} from "$lib/features/documents/queries";
+import { Download, FileText, Music, Play, Trash2 } from "@lucide/svelte";
+import type { Documents } from "@orbis/sdk";
 
-  let {
-    document,
-    selected = false,
-    onpreview,
-    ondelete,
-    ontoggle,
-  }: {
-    document: Documents;
-    selected?: boolean;
-    onpreview: (document: Documents) => void;
-    ondelete: (id: string) => void;
-    ontoggle: (id: string, selected: boolean) => void;
-  } = $props();
+let {
+  document,
+  selected = false,
+  onpreview,
+  ondelete,
+  ontoggle,
+}: {
+  document: Documents;
+  selected?: boolean;
+  onpreview: (document: Documents) => void;
+  ondelete: (id: string) => void;
+  ontoggle: (id: string, selected: boolean) => void;
+} = $props();
 
-  const mimeType = $derived(document.mime_type?.toLowerCase() ?? "");
-  const isVideo = $derived(mimeType.startsWith("video/"));
-  const isAudio = $derived(mimeType.startsWith("audio/"));
-  const extension = $derived(document.extension?.toUpperCase() || "FILE");
-  const source = $derived(getDocumentSource(document));
+const mimeType = $derived(document.mime_type?.toLowerCase() ?? "");
+const isVideo = $derived(mimeType.startsWith("video/"));
+const isAudio = $derived(mimeType.startsWith("audio/"));
+const extension = $derived(document.extension?.toUpperCase() || "FILE");
+const source = $derived(getDocumentSource(document));
 
-  function formatDate(value?: string) {
-    if (!value) return "-";
-    return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(value));
-  }
+function formatDate(value?: string) {
+  if (!value) return "-";
+  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(
+    new Date(value),
+  );
+}
 </script>
 
 <div class="grid grid-cols-[minmax(0,2fr)_minmax(90px,0.8fr)_minmax(90px,0.8fr)_minmax(90px,0.8fr)_auto] items-center gap-3 border-b border-border/40 px-3 py-2.5 text-xs transition-colors hover:bg-muted/30">

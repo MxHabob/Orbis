@@ -114,14 +114,19 @@ function fieldError(field: string) {
   return fieldErrors[field] ?? "";
 }
 
-function syncField<K extends keyof GuardianFormInput>(field: K, value: GuardianFormInput[K]) {
+function syncField<K extends keyof GuardianFormInput>(
+  field: K,
+  value: GuardianFormInput[K],
+) {
   guardianForm.setFieldValue(field as any, value as any);
   validateField(String(field));
 }
 
 $effect(() => {
   guardianUserId = editData ? String(editData.guardian_id ?? "") : "";
-  relationship = editData ? String(editData.relationship ?? "father") : "father";
+  relationship = editData
+    ? String(editData.relationship ?? "father")
+    : "father";
   job = editData
     ? String(
         (editData as unknown as JsonRecord).occupation ??
@@ -133,12 +138,19 @@ $effect(() => {
     ? Boolean(editData.is_primary === 1 || editData.is_primary === true)
     : false;
   isEmergencyContact = editData
-    ? Boolean(editData.is_authorized_pickup === 1 || editData.is_authorized_pickup === true)
+    ? Boolean(
+        editData.is_authorized_pickup === 1 ||
+          editData.is_authorized_pickup === true,
+      )
     : false;
   isPayer = editData
-    ? Boolean(editData.can_view_finance === 1 || editData.can_view_finance === true)
+    ? Boolean(
+        editData.can_view_finance === 1 || editData.can_view_finance === true,
+      )
     : false;
-  paymentSharePercent = editData ? Number(editData.payment_share_percent ?? 0) : 0;
+  paymentSharePercent = editData
+    ? Number(editData.payment_share_percent ?? 0)
+    : 0;
 
   if (editData && editData.guardian_id) {
     api.iam
@@ -180,9 +192,7 @@ const allUsers = $derived(
 );
 const enrollments = $derived((enrollmentsQuery.data as any[]) ?? []);
 
-const isLoading = $derived(
-  usersQuery.isLoading || enrollmentsQuery.isLoading,
-);
+const isLoading = $derived(usersQuery.isLoading || enrollmentsQuery.isLoading);
 let isSaving = $state(false);
 
 const relationships = $derived([
@@ -258,7 +268,14 @@ function clearSelectedUser() {
 }
 
 async function handleSubmit() {
-  const validation = guardianFormInputSchema.safeParse({ fullName, phone, email, nationalId, relationship, paymentSharePercent });
+  const validation = guardianFormInputSchema.safeParse({
+    fullName,
+    phone,
+    email,
+    nationalId,
+    relationship,
+    paymentSharePercent,
+  });
   if (!validation.success) {
     fieldErrors = {};
     for (const issue of validation.error.issues) {
@@ -271,7 +288,11 @@ async function handleSubmit() {
 
   fieldErrors = {};
 
-  const { fullName: fullNameClean, phone: phoneClean, email: emailClean } = validation.data;
+  const {
+    fullName: fullNameClean,
+    phone: phoneClean,
+    email: emailClean,
+  } = validation.data;
 
   isSaving = true;
   try {

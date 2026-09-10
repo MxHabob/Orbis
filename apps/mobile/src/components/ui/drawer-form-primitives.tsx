@@ -5,19 +5,19 @@
  * Synchronized with S.C.R.A.P.S. design system tokens.
  */
 
-import React from 'react';
+import React from "react";
 import {
   Pressable,
   StyleSheet,
   Text,
   type TextInputProps,
   View,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Button } from '@/components/ui/button';
-import { useDrawer } from '@/components/ui/drawer';
-import { Input } from '@/components/ui/input';
-import { Radii, Spacing, Typography } from '@/constants/theme';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Button } from "@/components/ui/button";
+import { useDrawer } from "@/components/ui/drawer";
+import { Input } from "@/components/ui/input";
+import { Radii, Spacing, Typography } from "@/constants/theme";
 
 // ─── DrawerFormField ─────────────────────────────────────────────────────────
 // A labeled text input styled for use inside a Drawer form.
@@ -142,23 +142,23 @@ const formStyles = StyleSheet.create({
     marginBottom: Spacing.two,
   },
   optionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: Spacing.five,
     paddingVertical: Spacing.four,
   },
   optionLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   optionIcon: {
     width: 36,
     height: 36,
     borderRadius: Radii.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: Spacing.three,
   },
   optionLabels: {

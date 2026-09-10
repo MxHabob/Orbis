@@ -31,14 +31,15 @@ const orgId = $derived(page.params.orgId || "");
 const studentId = $derived(page.params.studentId || ""); // Enrollment ID
 
 // TanStack Queries
-const studentQuery = createEnrollmentQuery(() => orgId, () => studentId);
+const studentQuery = createEnrollmentQuery(
+  () => orgId,
+  () => studentId,
+);
 const classesQuery = createClassesQuery(() => orgId);
 
 const student = $derived(studentQuery.data as any);
 const classes = $derived(classesQuery.data ?? []);
-const isLoading = $derived(
-  studentQuery.isLoading || classesQuery.isLoading,
-);
+const isLoading = $derived(studentQuery.isLoading || classesQuery.isLoading);
 
 let isSaving = $state(false);
 
@@ -57,8 +58,10 @@ let isActiveState = $state(true);
 const selectedClassName = $derived(
   (() => {
     const cls = classes.find((c: any) => String(c.id) === classId);
-    return cls ? (l(cls.name_ar, cls.name) || String(cls.id)) : m.common_form_select_class();
-  })()
+    return cls
+      ? l(cls.name_ar, cls.name) || String(cls.id)
+      : m.common_form_select_class();
+  })(),
 );
 
 // Date picker options and reactive values
@@ -134,12 +137,8 @@ onMount(async () => {
       academicContext.effectivePeriodId || student?.period_id || "";
     if (periodId && studentId) {
       const [gRes, aRes, bRes] = await Promise.all([
-        api.assessment
-          .reportCard(studentId, periodId)
-          .catch(() => null),
-        api.assessment
-          .getReport(periodId, studentId)
-          .catch(() => null),
+        api.assessment.reportCard(studentId, periodId).catch(() => null),
+        api.assessment.getReport(periodId, studentId).catch(() => null),
         api.assessment.listBehaviors(studentId).catch(() => []),
       ]);
       gradesReport = gRes;

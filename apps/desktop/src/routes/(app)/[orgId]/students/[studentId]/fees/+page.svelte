@@ -5,7 +5,7 @@ Assigned fees + payment history using OrbisGrid, with summary statistics.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { CreditCard, Wallet, CheckCircle2, AlertCircle } from "@lucide/svelte";
 import { onMount } from "svelte";

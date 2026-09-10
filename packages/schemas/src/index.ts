@@ -49,8 +49,14 @@ export {
   generalSettingsInputSchema,
 } from "./settings.js";
 export type { GeneralSettingsInput } from "./settings.js";
-export { guardianFormInputSchema, studentRegistrationSchema } from "./students.js";
-export type { GuardianFormInput, StudentRegistrationInput } from "./students.js";
+export {
+  guardianFormInputSchema,
+  studentRegistrationSchema,
+} from "./students.js";
+export type {
+  GuardianFormInput,
+  StudentRegistrationInput,
+} from "./students.js";
 export { examSessionInputSchema, examSubjectInputSchema } from "./exams.js";
 export type { ExamSessionInput, ExamSubjectInput } from "./exams.js";
 export { buildingInputSchema, templateInputSchema } from "./templates.js";

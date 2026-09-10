@@ -4,191 +4,139 @@
  * Organization branding for authentication.
  */
 
-import React from 'react';
+import React from "react";
 
-import {
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-} from 'react-native';
+import { View, Text, StyleSheet, Pressable } from "react-native";
 
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from "@expo/vector-icons";
 
-import { useTheme } from '@/hooks/use-theme';
-import { useI18n } from '@/lib/i18n';
+import { useTheme } from "@/hooks/use-theme";
+import { useI18n } from "@/lib/i18n";
 
-import {
-  useCurrentOrgQuery,
-} from '@/hooks/use-api-queries';
+import { useCurrentOrgQuery } from "@/hooks/use-api-queries";
 
-import {
-  OrganizationLogo,
-} from '@/components/ui/organization-logo';
+import { OrganizationLogo } from "@/components/ui/organization-logo";
 
-import {
-  Radii,
-  Spacing,
-  Typography,
-} from '@/constants/theme';
+import { Radii, Spacing, Typography } from "@/constants/theme";
 
-export const SignInBrandHeader =
-  React.memo(() => {
-    const theme = useTheme();
+export const SignInBrandHeader = React.memo(() => {
+  const theme = useTheme();
 
-    const {
-      t,
-      locale,
-      setLocale,
-    } = useI18n();
+  const { t, locale, setLocale } = useI18n();
 
-    const {
-      data: orgData,
-    } = useCurrentOrgQuery();
+  const { data: orgData } = useCurrentOrgQuery();
 
-    const orgName =
-      orgData?.name ||
-      t('auth_org_portal');
+  const orgName = orgData?.name || t("auth_org_portal");
 
-    const toggleLanguage =
-      async () => {
-        await setLocale(
-          locale === 'ar'
-            ? 'en'
-            : 'ar',
-        );
-      };
+  const toggleLanguage = async () => {
+    await setLocale(locale === "ar" ? "en" : "ar");
+  };
 
-    return (
-      <View
-        style={styles.container}>
+  return (
+    <View style={styles.container}>
+      {/* Language */}
 
-        {/* Language */}
+      <View style={styles.topBar}>
+        <Pressable
+          onPress={toggleLanguage}
+          accessibilityRole="button"
+          hitSlop={8}
+          style={({ pressed }) => [
+            styles.langPill,
 
-        <View
-          style={styles.topBar}>
-          <Pressable
-            onPress={toggleLanguage}
-            accessibilityRole="button"
-            hitSlop={8}
-            style={({ pressed }) => [
-              styles.langPill,
-
-              {
-                backgroundColor:
-                  theme.backgroundElement,
-
-                borderColor:
-                  theme.border,
-
-                opacity:
-                  pressed
-                    ? 0.75
-                    : 1,
-              },
-            ]}>
-
-            <Text
-              style={[
-                styles.langText,
-                {
-                  color:
-                    theme.text,
-                },
-              ]}>
-              {locale === 'ar'
-                ? 'English'
-                : 'العربية'}
-            </Text>
-
-            <Ionicons
-              name="globe-outline"
-              size={15}
-              color={
-                theme.textSecondary
-              }
-            />
-
-          </Pressable>
-        </View>
-
-        {/* Organization Logo */}
-
-        <OrganizationLogo
-          size={64}
-          color={
-            theme.primary
-          }
-          dotColor={
-            theme.brandPink
-          }
-        />
-
-        {/* Organization Name */}
-
-        <Text
-          style={[
-            styles.title,
             {
-              color:
-                theme.text,
+              backgroundColor: theme.backgroundElement,
+
+              borderColor: theme.border,
+
+              opacity: pressed ? 0.75 : 1,
             },
           ]}
-          numberOfLines={2}>
+        >
+          <Text
+            style={[
+              styles.langText,
+              {
+                color: theme.text,
+              },
+            ]}
+          >
+            {locale === "ar" ? "English" : "العربية"}
+          </Text>
 
-          {orgName}
-
-        </Text>
-
-        {/* Subtitle */}
-
-        <Text
-          style={[
-            styles.subtitle,
-            {
-              color:
-                theme.textSecondary,
-            },
-          ]}>
-
-          {t('auth_welcome_sub')}
-
-        </Text>
+          <Ionicons
+            name="globe-outline"
+            size={15}
+            color={theme.textSecondary}
+          />
+        </Pressable>
       </View>
-    );
-  });
 
-SignInBrandHeader.displayName =
-  'SignInBrandHeader';
+      {/* Organization Logo */}
+
+      <OrganizationLogo
+        size={64}
+        color={theme.primary}
+        dotColor={theme.brandPink}
+      />
+
+      {/* Organization Name */}
+
+      <Text
+        style={[
+          styles.title,
+          {
+            color: theme.text,
+          },
+        ]}
+        numberOfLines={2}
+      >
+        {orgName}
+      </Text>
+
+      {/* Subtitle */}
+
+      <Text
+        style={[
+          styles.subtitle,
+          {
+            color: theme.textSecondary,
+          },
+        ]}
+      >
+        {t("auth_welcome_sub")}
+      </Text>
+    </View>
+  );
+});
+
+SignInBrandHeader.displayName = "SignInBrandHeader";
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
+    alignItems: "center",
 
-    width: '100%',
+    width: "100%",
 
-    paddingTop:
-      Spacing.three,
+    paddingTop: Spacing.three,
 
-    paddingBottom:
-      Spacing.six,
+    paddingBottom: Spacing.six,
   },
 
   topBar: {
-    width: '100%',
+    width: "100%",
 
-    flexDirection: 'row',
+    flexDirection: "row",
 
-    justifyContent: 'flex-start',
+    justifyContent: "flex-start",
 
-    marginBottom:
-      Spacing.ten,
+    marginBottom: Spacing.ten,
   },
 
   langPill: {
-    flexDirection: 'row',
+    flexDirection: "row",
 
-    alignItems: 'center',
+    alignItems: "center",
 
     gap: 7,
 
@@ -196,8 +144,7 @@ const styles = StyleSheet.create({
 
     paddingVertical: 8,
 
-    borderRadius:
-      Radii.full,
+    borderRadius: Radii.full,
 
     borderWidth: 1,
 
@@ -217,14 +164,13 @@ const styles = StyleSheet.create({
 
     lineHeight: 32,
 
-    fontWeight: '800',
+    fontWeight: "800",
 
-    textAlign: 'center',
+    textAlign: "center",
 
-    marginTop:
-      Spacing.two,
+    marginTop: Spacing.two,
 
-    maxWidth: '90%',
+    maxWidth: "90%",
   },
 
   subtitle: {
@@ -234,11 +180,10 @@ const styles = StyleSheet.create({
 
     lineHeight: 23,
 
-    textAlign: 'center',
+    textAlign: "center",
 
-    maxWidth: '90%',
+    maxWidth: "90%",
 
-    marginTop:
-      Spacing.one,
+    marginTop: Spacing.one,
   },
 });

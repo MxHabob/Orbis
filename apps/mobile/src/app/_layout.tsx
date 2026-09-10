@@ -6,28 +6,28 @@
  * and declares root Stack navigation with synchronized StatusBar background and SystemUI window color.
  */
 
-import React, { useEffect, useMemo } from 'react';
-import { Stack, DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import * as SystemUI from 'expo-system-ui';
-import { useColorScheme } from 'react-native';
+import React, { useEffect, useMemo } from "react";
+import { Stack, DarkTheme, DefaultTheme, ThemeProvider } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import * as SystemUI from "expo-system-ui";
+import { useColorScheme } from "react-native";
 
-import { Colors } from '@/constants/theme';
-import { AuthProvider } from '@/lib/api';
-import { AppQueryProvider } from '@/providers/query-provider';
-import { EffectiveContextProvider } from '@/providers/effective-context';
-import { I18nProvider } from '@/lib/i18n';
-import { ThemedStatusBar } from '@/components/ui/themed-status-bar';
-import { ToastProvider } from '@/components/ui/toast';
-import { AppErrorBoundary } from '@/components/ui/error-boundary';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Colors } from "@/constants/theme";
+import { AuthProvider } from "@/lib/api";
+import { AppQueryProvider } from "@/providers/query-provider";
+import { EffectiveContextProvider } from "@/providers/effective-context";
+import { I18nProvider } from "@/lib/i18n";
+import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
+import { ToastProvider } from "@/components/ui/toast";
+import { AppErrorBoundary } from "@/components/ui/error-boundary";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const currentColors = Colors[isDark ? 'dark' : 'light'];
+  const isDark = colorScheme === "dark";
+  const currentColors = Colors[isDark ? "dark" : "light"];
 
   const navigationTheme = useMemo(() => {
     const base = isDark ? DarkTheme : DefaultTheme;
@@ -59,25 +59,39 @@ export default function RootLayout() {
       <AuthProvider>
         <AppQueryProvider>
           <GestureHandlerRootView>
-          <EffectiveContextProvider>
-            <ThemeProvider value={navigationTheme}>
-              <ToastProvider>
-                <AppErrorBoundary>
-                  <ThemedStatusBar backgroundColor={currentColors.background} />
-                  <Stack
-                    screenOptions={{
-                      headerShown: false,
-                      animation: 'slide_from_right',
-                      contentStyle: { backgroundColor: currentColors.background },
-                    }}>
-                    <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                    <Stack.Screen name="(app)" options={{ headerShown: false }} />
-                    <Stack.Screen name="+not-found" options={{ title: 'Oops!', headerShown: true }} />
-                  </Stack>
-                </AppErrorBoundary>
-              </ToastProvider>
-            </ThemeProvider>
-          </EffectiveContextProvider>
+            <EffectiveContextProvider>
+              <ThemeProvider value={navigationTheme}>
+                <ToastProvider>
+                  <AppErrorBoundary>
+                    <ThemedStatusBar
+                      backgroundColor={currentColors.background}
+                    />
+                    <Stack
+                      screenOptions={{
+                        headerShown: false,
+                        animation: "slide_from_right",
+                        contentStyle: {
+                          backgroundColor: currentColors.background,
+                        },
+                      }}
+                    >
+                      <Stack.Screen
+                        name="(auth)"
+                        options={{ headerShown: false }}
+                      />
+                      <Stack.Screen
+                        name="(app)"
+                        options={{ headerShown: false }}
+                      />
+                      <Stack.Screen
+                        name="+not-found"
+                        options={{ title: "Oops!", headerShown: true }}
+                      />
+                    </Stack>
+                  </AppErrorBoundary>
+                </ToastProvider>
+              </ThemeProvider>
+            </EffectiveContextProvider>
           </GestureHandlerRootView>
         </AppQueryProvider>
       </AuthProvider>

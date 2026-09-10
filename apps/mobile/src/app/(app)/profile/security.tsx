@@ -4,22 +4,17 @@
  * Security, Password, MFA, and Active Devices Management Screen.
  */
 
-import React, { useState } from 'react';
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useState } from "react";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useAuth } from '@/lib/api';
-import { useTheme } from '@/hooks/use-theme';
-import { Header } from '@/components/header';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
+import { useAuth } from "@/lib/api";
+import { useTheme } from "@/hooks/use-theme";
+import { Header } from "@/components/header";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogClose,
@@ -28,18 +23,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { useToast } from '@/components/ui/toast';
-import {
-  Radii,
-  Spacing,
-  Typography,
-} from '@/constants/theme';
+} from "@/components/ui/dialog";
+import { useToast } from "@/components/ui/toast";
+import { Radii, Spacing, Typography } from "@/constants/theme";
 
 interface DeviceItem {
   id: string;
   name: string;
-  type: 'mobile' | 'desktop' | 'web';
+  type: "mobile" | "desktop" | "web";
   lastActive: string;
   isCurrent: boolean;
 }
@@ -50,70 +41,60 @@ export default function SecuritySettingsScreen() {
   const { user } = useAuth();
   const toast = useToast();
 
-  const [currentPass, setCurrentPass] =
-    useState('');
+  const [currentPass, setCurrentPass] = useState("");
 
-  const [newPass, setNewPass] =
-    useState('');
+  const [newPass, setNewPass] = useState("");
 
-  const [confirmPass, setConfirmPass] =
-    useState('');
+  const [confirmPass, setConfirmPass] = useState("");
 
-  const [mfaEnabled, setMfaEnabled] =
-    useState(user?.mfa_enabled ?? true);
+  const [mfaEnabled, setMfaEnabled] = useState(user?.mfa_enabled ?? true);
 
-  const [googleLinked, setGoogleLinked] =
-    useState(true);
+  const [googleLinked, setGoogleLinked] = useState(true);
 
-  const [dialogVisible, setDialogVisible] =
-    useState(false);
+  const [dialogVisible, setDialogVisible] = useState(false);
 
-  const [pendingAction, setPendingAction] =
-    useState<'google' | 'device' | null>(null);
+  const [pendingAction, setPendingAction] = useState<
+    "google" | "device" | null
+  >(null);
 
-  const [dialogMode, setDialogMode] =
-    useState<'message' | 'confirm'>(
-      'message',
-    );
+  const [dialogMode, setDialogMode] = useState<"message" | "confirm">(
+    "message",
+  );
 
-  const [dialogTitle, setDialogTitle] =
-    useState('');
+  const [dialogTitle, setDialogTitle] = useState("");
 
-  const [dialogDescription, setDialogDescription] =
-    useState('');
+  const [dialogDescription, setDialogDescription] = useState("");
 
-  const [pendingDeviceId, setPendingDeviceId] =
-    useState<string | null>(null);
+  const [pendingDeviceId, setPendingDeviceId] = useState<string | null>(null);
 
-  const [devices, setDevices] =
-    useState<DeviceItem[]>([
-      {
-        id: 'dev-1',
-        name: 'iPhone 15 Pro',
-        type: 'mobile',
-        lastActive: 'نشط الآن',
-        isCurrent: true,
-      },
-      {
-        id: 'dev-2',
-        name: 'Orbis Desktop App',
-        type: 'desktop',
-        lastActive: 'منذ ساعتين',
-        isCurrent: false,
-      },
-      {
-        id: 'dev-3',
-        name: 'Chrome Web',
-        type: 'web',
-        lastActive: 'أمس، 04:30 م',
-        isCurrent: false,
-      },
-    ]);
+  const [devices, setDevices] = useState<DeviceItem[]>([
+    {
+      id: "dev-1",
+      name: "iPhone 15 Pro",
+      type: "mobile",
+      lastActive: "نشط الآن",
+      isCurrent: true,
+    },
+    {
+      id: "dev-2",
+      name: "Orbis Desktop App",
+      type: "desktop",
+      lastActive: "منذ ساعتين",
+      isCurrent: false,
+    },
+    {
+      id: "dev-3",
+      name: "Chrome Web",
+      type: "web",
+      lastActive: "أمس، 04:30 م",
+      isCurrent: false,
+    },
+  ]);
 
   const openDialog = (
     title: string,
     description: string,
-    mode: 'message' | 'confirm' = 'message',
+    mode: "message" | "confirm" = "message",
   ) => {
     setDialogTitle(title);
     setDialogDescription(description);
@@ -121,31 +102,24 @@ export default function SecuritySettingsScreen() {
     setDialogVisible(true);
   };
 
-  const handleRevokeDevice = (
-    deviceId: string,
-  ) => {
+  const handleRevokeDevice = (deviceId: string) => {
     setPendingDeviceId(deviceId);
-    setPendingAction('device');
+    setPendingAction("device");
 
     openDialog(
-      'إنهاء الجلسة',
-      'هل أنت متأكد من رغبتك في تسجيل الخروج من هذا الجهاز؟',
-      'confirm',
+      "إنهاء الجلسة",
+      "هل أنت متأكد من رغبتك في تسجيل الخروج من هذا الجهاز؟",
+      "confirm",
     );
   };
 
   const confirmRevokeDevice = () => {
     if (pendingDeviceId) {
       setDevices((current) =>
-        current.filter(
-          (device) =>
-            device.id !== pendingDeviceId,
-        ),
+        current.filter((device) => device.id !== pendingDeviceId),
       );
 
-      toast.success(
-        'تم إنهاء الجلسة عن بعد بنجاح.',
-      );
+      toast.success("تم إنهاء الجلسة عن بعد بنجاح.");
     }
 
     setDialogVisible(false);
@@ -155,12 +129,12 @@ export default function SecuritySettingsScreen() {
 
   const handleGooglePress = () => {
     if (googleLinked) {
-      setPendingAction('google');
+      setPendingAction("google");
 
       openDialog(
-        'فصل حساب Google',
-        'هل أنت متأكد من إلغاء ربط حساب Google؟',
-        'confirm',
+        "فصل حساب Google",
+        "هل أنت متأكد من إلغاء ربط حساب Google؟",
+        "confirm",
       );
 
       return;
@@ -168,9 +142,7 @@ export default function SecuritySettingsScreen() {
 
     setGoogleLinked(true);
 
-    toast.success(
-      'تم ربط حساب Google بنجاح.',
-    );
+    toast.success("تم ربط حساب Google بنجاح.");
   };
 
   const confirmGoogleDisconnect = () => {
@@ -178,54 +150,37 @@ export default function SecuritySettingsScreen() {
     setDialogVisible(false);
     setPendingAction(null);
 
-    toast.success(
-      'تم إلغاء ربط حساب Google.',
-    );
+    toast.success("تم إلغاء ربط حساب Google.");
   };
 
   const handleUpdatePassword = () => {
     if (!currentPass || !newPass) {
-      openDialog(
-        'تنبيه',
-        'يرجى إدخال كلمة المرور الحالية والجديدة.',
-      );
+      openDialog("تنبيه", "يرجى إدخال كلمة المرور الحالية والجديدة.");
 
       return;
     }
 
     if (newPass !== confirmPass) {
-      openDialog(
-        'تنبيه',
-        'كلمات المرور الجديدة غير متطابقة.',
-      );
+      openDialog("تنبيه", "كلمات المرور الجديدة غير متطابقة.");
 
       return;
     }
 
-    openDialog(
-      'تم التحديث',
-      'تم تغيير كلمة المرور بنجاح.',
-    );
+    openDialog("تم التحديث", "تم تغيير كلمة المرور بنجاح.");
 
-    toast.success(
-      'تم تغيير كلمة المرور بنجاح.',
-    );
+    toast.success("تم تغيير كلمة المرور بنجاح.");
 
-    setCurrentPass('');
-    setNewPass('');
-    setConfirmPass('');
+    setCurrentPass("");
+    setNewPass("");
+    setConfirmPass("");
   };
 
-  const handleMfaChange = (
-    value: boolean,
-  ) => {
+  const handleMfaChange = (value: boolean) => {
     setMfaEnabled(value);
 
     openDialog(
-      'حالة الأمان',
-      value
-        ? 'تم تفعيل التحقق بخطوتين.'
-        : 'تم تعطيل التحقق بخطوتين.',
+      "حالة الأمان",
+      value ? "تم تفعيل التحقق بخطوتين." : "تم تعطيل التحقق بخطوتين.",
     );
   };
 
@@ -244,26 +199,18 @@ export default function SecuritySettingsScreen() {
         contentContainerStyle={[
           styles.content,
           {
-            paddingBottom:
-              insets.bottom + 120,
+            paddingBottom: insets.bottom + 120,
           },
         ]}
       >
-        <Header
-          title="Security"
-          showBack
-          showCrown={false}
-        />
+        <Header title="Security" showBack showCrown={false} />
 
         <View style={styles.main}>
           {/* ============================================================
               MFA
               ============================================================ */}
 
-          <SectionLabel
-            title="التحقق بخطوتين"
-            theme={theme}
-          />
+          <SectionLabel title="التحقق بخطوتين" theme={theme} />
 
           <View
             style={[
@@ -278,8 +225,7 @@ export default function SecuritySettingsScreen() {
               style={[
                 styles.securityIcon,
                 {
-                  backgroundColor:
-                    theme.backgroundElement,
+                  backgroundColor: theme.backgroundElement,
                 },
               ]}
             >
@@ -343,16 +289,11 @@ export default function SecuritySettingsScreen() {
               style={[
                 styles.googleIcon,
                 {
-                  backgroundColor:
-                    theme.backgroundElement,
+                  backgroundColor: theme.backgroundElement,
                 },
               ]}
             >
-              <Ionicons
-                name="logo-google"
-                size={22}
-                color={theme.text}
-              />
+              <Ionicons name="logo-google" size={22} color={theme.text} />
             </View>
 
             <View style={styles.providerInfo}>
@@ -376,9 +317,7 @@ export default function SecuritySettingsScreen() {
                   },
                 ]}
               >
-                {googleLinked
-                  ? 'user@gmail.com'
-                  : 'غير متصل'}
+                {googleLinked ? "user@gmail.com" : "غير متصل"}
               </Text>
             </View>
 
@@ -387,10 +326,9 @@ export default function SecuritySettingsScreen() {
                 style={[
                   styles.statusDot,
                   {
-                    backgroundColor:
-                      googleLinked
-                        ? theme.primary
-                        : theme.border,
+                    backgroundColor: googleLinked
+                      ? theme.primary
+                      : theme.border,
                   },
                 ]}
               />
@@ -399,32 +337,20 @@ export default function SecuritySettingsScreen() {
                 style={[
                   styles.statusText,
                   {
-                    color: googleLinked
-                      ? theme.textSecondary
-                      : theme.textMuted,
+                    color: googleLinked ? theme.textSecondary : theme.textMuted,
                   },
                 ]}
               >
-                {googleLinked
-                  ? 'متصل'
-                  : 'غير متصل'}
+                {googleLinked ? "متصل" : "غير متصل"}
               </Text>
             </View>
           </View>
 
           <View style={styles.actionArea}>
             <Button
-              title={
-                googleLinked
-                  ? 'فصل حساب Google'
-                  : 'ربط حساب Google'
-              }
+              title={googleLinked ? "فصل حساب Google" : "ربط حساب Google"}
               onPress={handleGooglePress}
-              variant={
-                googleLinked
-                  ? 'secondary'
-                  : 'primary'
-              }
+              variant={googleLinked ? "secondary" : "primary"}
               size="md"
               fullWidth
             />
@@ -501,36 +427,23 @@ export default function SecuritySettingsScreen() {
                 device={device}
                 theme={theme}
                 divider={index > 0}
-                onRevoke={() =>
-                  handleRevokeDevice(
-                    device.id,
-                  )
-                }
+                onRevoke={() => handleRevokeDevice(device.id)}
               />
             ))}
           </View>
         </View>
       </ScrollView>
 
-      <Dialog
-        visible={dialogVisible}
-        onClose={() =>
-          setDialogVisible(false)
-        }
-      >
+      <Dialog visible={dialogVisible} onClose={() => setDialogVisible(false)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {dialogTitle}
-            </DialogTitle>
+            <DialogTitle>{dialogTitle}</DialogTitle>
           </DialogHeader>
 
-          <DialogDescription>
-            {dialogDescription}
-          </DialogDescription>
+          <DialogDescription>{dialogDescription}</DialogDescription>
 
           <DialogFooter>
-            {dialogMode === 'confirm' ? (
+            {dialogMode === "confirm" ? (
               <>
                 <DialogClose>
                   <Button
@@ -545,12 +458,10 @@ export default function SecuritySettingsScreen() {
 
                 <Button
                   title={
-                    pendingAction === 'google'
-                      ? 'فصل الحساب'
-                      : 'إنهاء الجلسة'
+                    pendingAction === "google" ? "فصل الحساب" : "إنهاء الجلسة"
                   }
                   onPress={
-                    pendingAction === 'google'
+                    pendingAction === "google"
                       ? confirmGoogleDisconnect
                       : confirmRevokeDevice
                   }
@@ -619,19 +530,18 @@ function DeviceRow({
   onRevoke: () => void;
 }) {
   const icon =
-    device.type === 'mobile'
-      ? 'phone-portrait-outline'
-      : device.type === 'desktop'
-        ? 'laptop-outline'
-        : 'globe-outline';
+    device.type === "mobile"
+      ? "phone-portrait-outline"
+      : device.type === "desktop"
+        ? "laptop-outline"
+        : "globe-outline";
 
   return (
     <View
       style={[
         styles.deviceRow,
         divider && {
-          borderTopWidth:
-            StyleSheet.hairlineWidth,
+          borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: theme.border,
         },
       ]}
@@ -639,11 +549,7 @@ function DeviceRow({
       <Ionicons
         name={icon}
         size={21}
-        color={
-          device.isCurrent
-            ? theme.text
-            : theme.textSecondary
-        }
+        color={device.isCurrent ? theme.text : theme.textSecondary}
       />
 
       <View style={styles.deviceInfo}>
@@ -677,8 +583,7 @@ function DeviceRow({
             style={[
               styles.currentDot,
               {
-                backgroundColor:
-                  theme.primary,
+                backgroundColor: theme.primary,
               },
             ]}
           />
@@ -724,9 +629,9 @@ const styles = StyleSheet.create({
   },
 
   main: {
-    width: '100%',
+    width: "100%",
     maxWidth: 520,
-    alignSelf: 'center',
+    alignSelf: "center",
     marginTop: Spacing.six,
   },
 
@@ -746,14 +651,12 @@ const styles = StyleSheet.create({
   securityRow: {
     minHeight: 76,
 
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
 
-    borderTopWidth:
-      StyleSheet.hairlineWidth,
+    borderTopWidth: StyleSheet.hairlineWidth,
 
-    borderBottomWidth:
-      StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
 
   securityIcon: {
@@ -762,8 +665,8 @@ const styles = StyleSheet.create({
 
     borderRadius: Radii.lg,
 
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   securityInfo: {
@@ -777,11 +680,10 @@ const styles = StyleSheet.create({
   providerRow: {
     minHeight: 72,
 
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
 
-    borderBottomWidth:
-      StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     paddingBottom: Spacing.four,
   },
 
@@ -791,8 +693,8 @@ const styles = StyleSheet.create({
 
     borderRadius: Radii.full,
 
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   providerInfo: {
@@ -812,8 +714,8 @@ const styles = StyleSheet.create({
   },
 
   status: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.two,
   },
 
@@ -834,8 +736,7 @@ const styles = StyleSheet.create({
   /* Password */
 
   passwordSection: {
-    borderTopWidth:
-      StyleSheet.hairlineWidth,
+    borderTopWidth: StyleSheet.hairlineWidth,
 
     paddingTop: Spacing.four,
 
@@ -845,18 +746,16 @@ const styles = StyleSheet.create({
   /* Devices */
 
   devicesList: {
-    borderTopWidth:
-      StyleSheet.hairlineWidth,
+    borderTopWidth: StyleSheet.hairlineWidth,
 
-    borderBottomWidth:
-      StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
 
   deviceRow: {
     minHeight: 72,
 
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
 
     gap: Spacing.three,
   },
@@ -878,8 +777,8 @@ const styles = StyleSheet.create({
   },
 
   currentDevice: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.two,
   },
 

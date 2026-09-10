@@ -130,7 +130,11 @@ async function loadGradeMatrix() {
         : [];
     }
 
-    gridSource = transformMatrixToSource(result, getLocale(), academicContext.gradeScaleItems);
+    gridSource = transformMatrixToSource(
+      result,
+      getLocale(),
+      academicContext.gradeScaleItems,
+    );
   } catch (e: unknown) {
     toast.error((e as any)?.message || "Error loading grade matrix");
   } finally {

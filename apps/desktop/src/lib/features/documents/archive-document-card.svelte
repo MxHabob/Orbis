@@ -1,50 +1,52 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { Button } from "@orbis/ui/button";
-  import { Checkbox } from "@orbis/ui/checkbox";
-  import { getDocumentSource, resolveDocumentUrl } from "$lib/features/documents/queries";
-  import { Download, FileText, Music, Play, Trash2 } from "@lucide/svelte";
-  import type { Documents } from "@orbis/sdk";
+import * as m from "$lib/paraglide/messages";
+import { Button } from "@orbis/ui/button";
+import { Checkbox } from "@orbis/ui/checkbox";
+import {
+  getDocumentSource,
+  resolveDocumentUrl,
+} from "$lib/features/documents/queries";
+import { Download, FileText, Music, Play, Trash2 } from "@lucide/svelte";
+import type { Documents } from "@orbis/sdk";
 
-  let {
-    document,
-    selected = false,
-    onpreview,
-    ondelete,
-    ontoggle,
-  }: {
-    document: Documents;
-    selected?: boolean;
-    onpreview: (document: Documents) => void;
-    ondelete: (id: string) => void;
-    ontoggle: (id: string, selected: boolean) => void;
-  } = $props();
+let {
+  document,
+  selected = false,
+  onpreview,
+  ondelete,
+  ontoggle,
+}: {
+  document: Documents;
+  selected?: boolean;
+  onpreview: (document: Documents) => void;
+  ondelete: (id: string) => void;
+  ontoggle: (id: string, selected: boolean) => void;
+} = $props();
 
-  const mimeType = $derived(document.mime_type?.toLowerCase() ?? "");
-  const isImage = $derived(mimeType.startsWith("image/"));
-  const isVideo = $derived(mimeType.startsWith("video/"));
-  const isAudio = $derived(mimeType.startsWith("audio/"));
-  const source = $derived(getDocumentSource(document));
-  const extension = $derived(document.extension?.toUpperCase() || "FILE");
-  let isNearViewport = $state(false);
+const mimeType = $derived(document.mime_type?.toLowerCase() ?? "");
+const isImage = $derived(mimeType.startsWith("image/"));
+const isVideo = $derived(mimeType.startsWith("video/"));
+const isAudio = $derived(mimeType.startsWith("audio/"));
+const source = $derived(getDocumentSource(document));
+const extension = $derived(document.extension?.toUpperCase() || "FILE");
+let isNearViewport = $state(false);
 
-  function stopPropagation(event: MouseEvent) {
-    event.stopPropagation();
-  }
+function stopPropagation(event: MouseEvent) {
+  event.stopPropagation();
+}
 
-  function loadWhenVisible(node: HTMLDivElement) {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry?.isIntersecting) return;
-        isNearViewport = true;
-        observer.disconnect();
-      },
-      { rootMargin: "240px" },
-    );
-    observer.observe(node);
-    return { destroy: () => observer.disconnect() };
-  }
-
+function loadWhenVisible(node: HTMLDivElement) {
+  const observer = new IntersectionObserver(
+    ([entry]) => {
+      if (!entry?.isIntersecting) return;
+      isNearViewport = true;
+      observer.disconnect();
+    },
+    { rootMargin: "240px" },
+  );
+  observer.observe(node);
+  return { destroy: () => observer.disconnect() };
+}
 </script>
 
 <article class="archive-card group">

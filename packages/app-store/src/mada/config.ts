@@ -10,8 +10,10 @@ const config: OrbisApp = {
   active: true,
   beta: false,
   icon: "CreditCard",
-  short_description: "Saudi national payment network for direct debit card processing with zero exchange fees.",
-  short_description_ar: "شبكة المدفوعات الوطنية السعودية لمعالجة بطاقات الحسم المباشر دون رسوم تحويل إضافية.",
+  short_description:
+    "Saudi national payment network for direct debit card processing with zero exchange fees.",
+  short_description_ar:
+    "شبكة المدفوعات الوطنية السعودية لمعالجة بطاقات الحسم المباشر دون رسوم تحويل إضافية.",
   description: `Direct integration with the Saudi National Payment Scheme (Mada).
 
 **Domestic Processing**

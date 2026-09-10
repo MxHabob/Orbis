@@ -13,29 +13,49 @@ export function normalizeRange(range: CellRange): CellRange {
   };
 }
 
-export function rangeContains(range: CellRange | null, row: number, col: number): boolean {
+export function rangeContains(
+  range: CellRange | null,
+  row: number,
+  col: number,
+): boolean {
   if (!range) return false;
   const n = normalizeRange(range);
-  return row >= n.startRow && row <= n.endRow && col >= n.startCol && col <= n.endCol;
+  return (
+    row >= n.startRow && row <= n.endRow && col >= n.startCol && col <= n.endCol
+  );
 }
 
-export function rangeSize(range: CellRange | null): { rows: number; cols: number } {
+export function rangeSize(range: CellRange | null): {
+  rows: number;
+  cols: number;
+} {
   if (!range) return { rows: 0, cols: 0 };
   const n = normalizeRange(range);
   return { rows: n.endRow - n.startRow + 1, cols: n.endCol - n.startCol + 1 };
 }
 
-export function isRowSelected(sel: SelectionSnapshot, id: string, filteredCount: number): boolean {
+export function isRowSelected(
+  sel: SelectionSnapshot,
+  id: string,
+  filteredCount: number,
+): boolean {
   if (sel.mode === "allMatching") return !sel.ids.has(id);
   return sel.ids.has(id);
 }
 
-export function selectedCount(sel: SelectionSnapshot, filteredCount: number): number {
-  if (sel.mode === "allMatching") return Math.max(0, filteredCount - sel.ids.size);
+export function selectedCount(
+  sel: SelectionSnapshot,
+  filteredCount: number,
+): number {
+  if (sel.mode === "allMatching")
+    return Math.max(0, filteredCount - sel.ids.size);
   return sel.ids.size;
 }
 
-export function toggleId(sel: SelectionSnapshot, id: string): SelectionSnapshot {
+export function toggleId(
+  sel: SelectionSnapshot,
+  id: string,
+): SelectionSnapshot {
   const ids = new Set(sel.ids);
   if (sel.mode === "allMatching") {
     if (ids.has(id)) ids.delete(id);
@@ -47,7 +67,11 @@ export function toggleId(sel: SelectionSnapshot, id: string): SelectionSnapshot 
   return { ...sel, ids, mode: "explicit" };
 }
 
-export function selectIds(sel: SelectionSnapshot, ids: Iterable<string>, additive: boolean): SelectionSnapshot {
+export function selectIds(
+  sel: SelectionSnapshot,
+  ids: Iterable<string>,
+  additive: boolean,
+): SelectionSnapshot {
   const next = additive ? new Set(sel.ids) : new Set<string>();
   for (const id of ids) next.add(id);
   return { ...sel, mode: "explicit", ids: next };

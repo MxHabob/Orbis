@@ -302,11 +302,19 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     }
   }
 
-  function updateNodeProps(nodeId: string, props: Record<string, unknown>): void {
-    executeCommand(new UpdatePropsCommand(nodeId, props, findNode(document, nodeId)?.name));
+  function updateNodeProps(
+    nodeId: string,
+    props: Record<string, unknown>,
+  ): void {
+    executeCommand(
+      new UpdatePropsCommand(nodeId, props, findNode(document, nodeId)?.name),
+    );
   }
 
-  function addAsset(assetId: string, type: "image" | "logo" | "signature" | "stamp" = "image"): void {
+  function addAsset(
+    assetId: string,
+    type: "image" | "logo" | "signature" | "stamp" = "image",
+  ): void {
     if (!assetId || document.assets[assetId]) return;
     const previousAssets = { ...document.assets };
     executeCommand({

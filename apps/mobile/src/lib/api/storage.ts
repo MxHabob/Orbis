@@ -6,21 +6,21 @@
  * with graceful fallback to localStorage / in-memory on Web and unsupported platforms.
  */
 
-import * as SecureStore from 'expo-secure-store';
-import { Platform } from 'react-native';
+import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 
 export const STORAGE_KEYS = {
-  TOKEN: 'orbis_token',
-  USER: 'orbis_user',
-  DEVICE_ID: 'orbis_device_id',
-  SETUP_COMPLETE: 'orbis_is_setup_complete',
-  API_BASE_URL: 'orbis_api_base_url',
+  TOKEN: "orbis_token",
+  USER: "orbis_user",
+  DEVICE_ID: "orbis_device_id",
+  SETUP_COMPLETE: "orbis_is_setup_complete",
+  API_BASE_URL: "orbis_api_base_url",
 } as const;
 
 const memoryFallback = new Map<string, string>();
 
 async function isSecureStoreSupported(): Promise<boolean> {
-  if (Platform.OS === 'web') return false;
+  if (Platform.OS === "web") return false;
   try {
     return await SecureStore.isAvailableAsync();
   } catch {
@@ -39,7 +39,7 @@ export async function getSecureItem(key: string): Promise<string | null> {
   }
 
   // Fallback to localStorage (Web) or in-memory
-  if (typeof window !== 'undefined' && window.localStorage) {
+  if (typeof window !== "undefined" && window.localStorage) {
     return window.localStorage.getItem(key);
   }
   return memoryFallback.get(key) ?? null;
@@ -58,7 +58,7 @@ export async function setSecureItem(key: string, value: string): Promise<void> {
     console.warn(`[SecureStore] Error writing key "${key}":`, err);
   }
 
-  if (typeof window !== 'undefined' && window.localStorage) {
+  if (typeof window !== "undefined" && window.localStorage) {
     window.localStorage.setItem(key, value);
     return;
   }
@@ -76,7 +76,7 @@ export async function deleteSecureItem(key: string): Promise<void> {
     console.warn(`[SecureStore] Error deleting key "${key}":`, err);
   }
 
-  if (typeof window !== 'undefined' && window.localStorage) {
+  if (typeof window !== "undefined" && window.localStorage) {
     window.localStorage.removeItem(key);
     return;
   }

@@ -4,17 +4,17 @@
  * Examination Operations, Seating Numbers, and Exam Schedule Screen.
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React from "react";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { useLocalSearchParams } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useTheme } from '@/hooks/use-theme';
-import { Header } from '@/components/header';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Radii, Spacing, Typography } from '@/constants/theme';
+import { useTheme } from "@/hooks/use-theme";
+import { Header } from "@/components/header";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Radii, Spacing, Typography } from "@/constants/theme";
 
 interface ExamItem {
   id: string;
@@ -24,7 +24,7 @@ interface ExamItem {
   time: string;
   room: string;
   duration: string;
-  status: 'Upcoming' | 'Completed';
+  status: "Upcoming" | "Completed";
 }
 
 export default function StudentExamsScreen() {
@@ -34,44 +34,44 @@ export default function StudentExamsScreen() {
 
   const exams: ExamItem[] = [
     {
-      id: 'ex-1',
-      subject: 'الرياضيات المتقدمة (تفاضل وتكامل)',
-      code: 'MATH-301',
-      date: 'الأحد، 15 نوفمبر 2026',
-      time: '08:30 ص - 10:30 ص',
-      duration: 'ساعتان',
-      room: 'المسرح الأكاديمي (القاعة 1)',
-      status: 'Upcoming',
+      id: "ex-1",
+      subject: "الرياضيات المتقدمة (تفاضل وتكامل)",
+      code: "MATH-301",
+      date: "الأحد، 15 نوفمبر 2026",
+      time: "08:30 ص - 10:30 ص",
+      duration: "ساعتان",
+      room: "المسرح الأكاديمي (القاعة 1)",
+      status: "Upcoming",
     },
     {
-      id: 'ex-2',
-      subject: 'الفيزياء التطبيقية',
-      code: 'PHYS-302',
-      date: 'الثلاثاء، 17 نوفمبر 2026',
-      time: '08:30 ص - 10:30 ص',
-      duration: 'ساعتان',
-      room: 'المسرح الأكاديمي (القاعة 1)',
-      status: 'Upcoming',
+      id: "ex-2",
+      subject: "الفيزياء التطبيقية",
+      code: "PHYS-302",
+      date: "الثلاثاء، 17 نوفمبر 2026",
+      time: "08:30 ص - 10:30 ص",
+      duration: "ساعتان",
+      room: "المسرح الأكاديمي (القاعة 1)",
+      status: "Upcoming",
     },
     {
-      id: 'ex-3',
-      subject: 'الكيمياء العضوية',
-      code: 'CHEM-303',
-      date: 'الخميس، 19 نوفمبر 2026',
-      time: '08:30 ص - 10:00 ص',
-      duration: 'ساعة ونصف',
-      room: 'المسرح الأكاديمي (القاعة 1)',
-      status: 'Upcoming',
+      id: "ex-3",
+      subject: "الكيمياء العضوية",
+      code: "CHEM-303",
+      date: "الخميس، 19 نوفمبر 2026",
+      time: "08:30 ص - 10:00 ص",
+      duration: "ساعة ونصف",
+      room: "المسرح الأكاديمي (القاعة 1)",
+      status: "Upcoming",
     },
     {
-      id: 'ex-4',
-      subject: 'اللغة الإنجليزية الأكاديمية',
-      code: 'ENG-304',
-      date: 'الأحد، 22 نوفمبر 2026',
-      time: '08:30 ص - 10:00 ص',
-      duration: 'ساعة ونصف',
-      room: 'قاعة 104',
-      status: 'Upcoming',
+      id: "ex-4",
+      subject: "اللغة الإنجليزية الأكاديمية",
+      code: "ENG-304",
+      date: "الأحد، 22 نوفمبر 2026",
+      time: "08:30 ص - 10:00 ص",
+      duration: "ساعة ونصف",
+      room: "قاعة 104",
+      status: "Upcoming",
     },
   ];
 
@@ -84,7 +84,8 @@ export default function StudentExamsScreen() {
           styles.scrollContent,
           { paddingBottom: insets.bottom + Spacing.eight },
         ]}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+      >
         {/* Seating Card */}
         <Card variant="elevated" style={styles.seatingCard}>
           <View style={styles.seatingHeader}>
@@ -100,30 +101,53 @@ export default function StudentExamsScreen() {
           </View>
 
           <View style={styles.seatingDetailsGrid}>
-            <View style={[styles.seatingBox, { backgroundColor: theme.primaryLight }]}>
-              <Text style={[styles.seatingLbl, { color: theme.primary }]}>رقم الجلوس</Text>
-              <Text style={[styles.seatingNum, { color: theme.primary }]}>418</Text>
+            <View
+              style={[
+                styles.seatingBox,
+                { backgroundColor: theme.primaryLight },
+              ]}
+            >
+              <Text style={[styles.seatingLbl, { color: theme.primary }]}>
+                رقم الجلوس
+              </Text>
+              <Text style={[styles.seatingNum, { color: theme.primary }]}>
+                418
+              </Text>
             </View>
 
-            <View style={[styles.seatingBox, { backgroundColor: theme.backgroundElement }]}>
-              <Text style={[styles.seatingLbl, { color: theme.textSecondary }]}>مقر الاختبار</Text>
-              <Text style={[styles.seatingNum, { color: theme.text, fontSize: 16 }]}>
+            <View
+              style={[
+                styles.seatingBox,
+                { backgroundColor: theme.backgroundElement },
+              ]}
+            >
+              <Text style={[styles.seatingLbl, { color: theme.textSecondary }]}>
+                مقر الاختبار
+              </Text>
+              <Text
+                style={[styles.seatingNum, { color: theme.text, fontSize: 16 }]}
+              >
                 المسرح الأكاديمي
               </Text>
             </View>
           </View>
 
-          <View style={[styles.secretBox, { backgroundColor: theme.infoLight }]}>
+          <View
+            style={[styles.secretBox, { backgroundColor: theme.infoLight }]}
+          >
             <Ionicons name="shield-checkmark" size={18} color={theme.info} />
             <Text style={[styles.secretText, { color: theme.info }]}>
-              نظام التصحيح السري الإلكتروني مفعل لضمان العدالة والموضوعية التامة.
+              نظام التصحيح السري الإلكتروني مفعل لضمان العدالة والموضوعية
+              التامة.
             </Text>
           </View>
         </Card>
 
         {/* Exams Timetable List */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>مواعيد الاختبارات</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
+            مواعيد الاختبارات
+          </Text>
         </View>
 
         <View style={styles.examsList}>
@@ -131,22 +155,40 @@ export default function StudentExamsScreen() {
             <Card key={exam.id} variant="flat" style={styles.examCard}>
               <View style={styles.examHeader}>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.examSubject, { color: theme.text }]}>{exam.subject}</Text>
-                  <Text style={[styles.examDate, { color: theme.primary }]}>{exam.date}</Text>
+                  <Text style={[styles.examSubject, { color: theme.text }]}>
+                    {exam.subject}
+                  </Text>
+                  <Text style={[styles.examDate, { color: theme.primary }]}>
+                    {exam.date}
+                  </Text>
                 </View>
                 <Badge label={exam.duration} variant="neutral" size="sm" />
               </View>
 
-              <View style={[styles.examDetailsRow, { backgroundColor: theme.card }]}>
+              <View
+                style={[styles.examDetailsRow, { backgroundColor: theme.card }]}
+              >
                 <View style={styles.detailItem}>
-                  <Ionicons name="time-outline" size={14} color={theme.textSecondary} />
-                  <Text style={[styles.detailText, { color: theme.textSecondary }]}>
+                  <Ionicons
+                    name="time-outline"
+                    size={14}
+                    color={theme.textSecondary}
+                  />
+                  <Text
+                    style={[styles.detailText, { color: theme.textSecondary }]}
+                  >
                     {exam.time}
                   </Text>
                 </View>
                 <View style={styles.detailItem}>
-                  <Ionicons name="location-outline" size={14} color={theme.textSecondary} />
-                  <Text style={[styles.detailText, { color: theme.textSecondary }]}>
+                  <Ionicons
+                    name="location-outline"
+                    size={14}
+                    color={theme.textSecondary}
+                  />
+                  <Text
+                    style={[styles.detailText, { color: theme.textSecondary }]}
+                  >
                     {exam.room}
                   </Text>
                 </View>
@@ -173,9 +215,9 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   seatingHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
   },
   sessionTitle: {
     ...Typography.bodyBold,
@@ -185,14 +227,14 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   seatingDetailsGrid: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.two,
   },
   seatingBox: {
     flex: 1,
     padding: Spacing.three,
     borderRadius: Radii.md,
-    alignItems: 'center',
+    alignItems: "center",
     gap: 2,
   },
   seatingLbl: {
@@ -200,11 +242,11 @@ const styles = StyleSheet.create({
   },
   seatingNum: {
     ...Typography.h2,
-    fontWeight: '800',
+    fontWeight: "800",
   },
   secretBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: Spacing.three,
     borderRadius: Radii.md,
     gap: Spacing.two,
@@ -227,9 +269,9 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   examHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
   },
   examSubject: {
     ...Typography.bodyBold,
@@ -239,15 +281,15 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   examDetailsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     padding: Spacing.two,
     borderRadius: Radii.sm,
     marginTop: 4,
   },
   detailItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   detailText: {

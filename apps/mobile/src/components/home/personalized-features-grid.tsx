@@ -41,11 +41,7 @@ export const PersonalizedFeaturesGrid =
       const cardSize = (SCREEN_WIDTH - 56) / 4;
 
       return (
-        <View
-          style={[
-            styles.card,
-          ]}
-        >
+        <View style={[styles.card]}>
           <View style={styles.content}>
             {/* 4 Feature Cards */}
             {isLoading ? (

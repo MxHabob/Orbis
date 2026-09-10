@@ -1,6 +1,13 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@orbis/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@orbis/ui/dialog";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -33,7 +40,9 @@ async function handleSubmitChallenge() {
       user_id: userId,
       code: code.trim(),
       remember_device: rememberDevice,
-      device_id: "desktop-client-" + navigator.userAgent.replace(/[^a-zA-Z0-9]/g, "").slice(0, 16),
+      device_id:
+        "desktop-client-" +
+        navigator.userAgent.replace(/[^a-zA-Z0-9]/g, "").slice(0, 16),
     });
     toast.success(m.common_mfa_challenge_success());
     open = false;

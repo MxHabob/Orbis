@@ -44,12 +44,26 @@ let {
 }: Props = $props();
 
 const form = new FormController({
-  initialValues: { name: "", name_ar: "", description: "", entity_type: "", document_type: "", preset: "" },
+  initialValues: {
+    name: "",
+    name_ar: "",
+    description: "",
+    entity_type: "",
+    document_type: "",
+    preset: "",
+  },
   schema: templateInputSchema,
 });
 
 async function handleSubmit() {
-  form.values = { name, name_ar: nameAr, description: desc, entity_type: entityType, document_type: docType, preset };
+  form.values = {
+    name,
+    name_ar: nameAr,
+    description: desc,
+    entity_type: entityType,
+    document_type: docType,
+    preset,
+  };
   if (await form.submit(async () => {})) onsubmit();
 }
 
@@ -82,9 +96,13 @@ const entityDocuments: Record<string, string[]> = {
 const allEntities = $derived(
   Array.from(new Set([...Object.keys(entityLabels), ...Object.keys(schemas)])),
 );
-const availableDocumentTypes = $derived(entityDocuments[entityType] ?? ["CUSTOM"]);
+const availableDocumentTypes = $derived(
+  entityDocuments[entityType] ?? ["CUSTOM"],
+);
 const schemaFieldCount = $derived(
-  Object.keys(schemas[entityType] ?? {}).filter((key) => key !== "type" && key !== "description").length,
+  Object.keys(schemas[entityType] ?? {}).filter(
+    (key) => key !== "type" && key !== "description",
+  ).length,
 );
 
 $effect(() => {

@@ -20,13 +20,15 @@ import {
   TableHeader,
   TableRow,
 } from "@orbis/ui/table";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
 import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@orbis/ui/tabs";
-import { Plus, Trash2, Sparkles, ShieldCheck, Layers, BookOpen } from "@lucide/svelte";
+  Plus,
+  Trash2,
+  Sparkles,
+  ShieldCheck,
+  Layers,
+  BookOpen,
+} from "@lucide/svelte";
 import { toast } from "@orbis/ui";
 
 import { getLocale } from "$lib/paraglide/runtime";
@@ -102,20 +104,44 @@ let preventDuplicates = $state<Record<string, boolean>>({
 });
 
 const SYSTEM_FIELDS = [
-  { key: "national_id", label: m.common_form_profile_nid_label(), supportsDuplicate: true },
+  {
+    key: "national_id",
+    label: m.common_form_profile_nid_label(),
+    supportsDuplicate: true,
+  },
   { key: "email", label: m.common_word_email(), supportsDuplicate: true },
   { key: "phone", label: m.common_word_phone(), supportsDuplicate: true },
-  { key: "birth_date", label: m.common_bulk_col_dob(), supportsDuplicate: false },
+  {
+    key: "birth_date",
+    label: m.common_bulk_col_dob(),
+    supportsDuplicate: false,
+  },
   { key: "sex", label: m.common_form_sex(), supportsDuplicate: false },
   { key: "address", label: m.common_word_address(), supportsDuplicate: false },
   { key: "nationality", label: "الجنسية الرسمية", supportsDuplicate: false },
   { key: "place_of_birth", label: "مكان الميلاد", supportsDuplicate: false },
   { key: "passport_number", label: "رقم جواز السفر", supportsDuplicate: false },
   { key: "blood_type", label: "فصيلة الدم للطوارئ", supportsDuplicate: false },
-  { key: "emergency_contact", label: "جهة الاتصال بالطوارئ", supportsDuplicate: false },
-  { key: "medical_notes", label: "الملاحظات والبيانات الطبية", supportsDuplicate: false },
-  { key: "previous_school", label: m.settings_registration_field_previous_school(), supportsDuplicate: false },
-  { key: "documents", label: m.common_form_tab_documents(), supportsDuplicate: false },
+  {
+    key: "emergency_contact",
+    label: "جهة الاتصال بالطوارئ",
+    supportsDuplicate: false,
+  },
+  {
+    key: "medical_notes",
+    label: "الملاحظات والبيانات الطبية",
+    supportsDuplicate: false,
+  },
+  {
+    key: "previous_school",
+    label: m.settings_registration_field_previous_school(),
+    supportsDuplicate: false,
+  },
+  {
+    key: "documents",
+    label: m.common_form_tab_documents(),
+    supportsDuplicate: false,
+  },
 ];
 
 let isInitialized = $state(false);
@@ -159,7 +185,9 @@ function getFormSnapshot() {
 }
 
 const isDirty = $derived(
-  isInitialized && initialSnapshot !== "" && getFormSnapshot() !== initialSnapshot,
+  isInitialized &&
+    initialSnapshot !== "" &&
+    getFormSnapshot() !== initialSnapshot,
 );
 
 function restoreSnapshot() {
@@ -189,14 +217,17 @@ $effect(() => {
           ? JSON.parse(org.settings)
           : org.settings || {};
     } catch {}
-    
+
     // Single Source of Truth: org.settings.registration (fallback to registration_config if legacy data)
-    const reg = settingsObj.registration || settingsObj.registration_config || {};
+    const reg =
+      settingsObj.registration || settingsObj.registration_config || {};
 
     if (reg.institution_type) institutionType = reg.institution_type;
-    if (reg.student_number_pattern) studentNumberPattern = reg.student_number_pattern;
+    if (reg.student_number_pattern)
+      studentNumberPattern = reg.student_number_pattern;
     if (Array.isArray(reg.stages)) rawStages = reg.stages;
-    if (Array.isArray(reg.required_documents)) requiredDocuments = reg.required_documents;
+    if (Array.isArray(reg.required_documents))
+      requiredDocuments = reg.required_documents;
 
     if (reg.active_fields) {
       if (Array.isArray(reg.active_fields)) {
@@ -229,17 +260,25 @@ $effect(() => {
     }
 
     const pol = reg.policy_settings || reg;
-    if (pol.requires_approval !== undefined) requiresApproval = !!pol.requires_approval;
-    if (pol.allow_no_guardian !== undefined) allowNoGuardian = !!pol.allow_no_guardian;
-    if (pol.auto_assign_fees !== undefined) autoAssignFees = pol.auto_assign_fees !== false;
-    if (pol.allow_duplicate_national_id !== undefined) allowDuplicateNationalId = !!pol.allow_duplicate_national_id;
-    if (pol.max_class_capacity !== undefined) maxClassCapacity = pol.max_class_capacity == null ? null : Number(pol.max_class_capacity);
+    if (pol.requires_approval !== undefined)
+      requiresApproval = !!pol.requires_approval;
+    if (pol.allow_no_guardian !== undefined)
+      allowNoGuardian = !!pol.allow_no_guardian;
+    if (pol.auto_assign_fees !== undefined)
+      autoAssignFees = pol.auto_assign_fees !== false;
+    if (pol.allow_duplicate_national_id !== undefined)
+      allowDuplicateNationalId = !!pol.allow_duplicate_national_id;
+    if (pol.max_class_capacity !== undefined)
+      maxClassCapacity =
+        pol.max_class_capacity == null ? null : Number(pol.max_class_capacity);
 
     initialSnapshot = getFormSnapshot();
   }
 });
 
-const currentProfile = $derived(INSTITUTION_PROFILES[institutionType] || INSTITUTION_PROFILES.school);
+const currentProfile = $derived(
+  INSTITUTION_PROFILES[institutionType] || INSTITUTION_PROFILES.school,
+);
 
 function applySmartPreset(type?: string) {
   const targetType = type || institutionType;
@@ -259,7 +298,8 @@ function applySmartPreset(type?: string) {
     requiresApproval = profile.policySettings.requires_approval;
     allowNoGuardian = profile.policySettings.allow_no_guardian;
     autoAssignFees = profile.policySettings.auto_assign_fees;
-    allowDuplicateNationalId = profile.policySettings.allow_duplicate_national_id;
+    allowDuplicateNationalId =
+      profile.policySettings.allow_duplicate_national_id;
   }
 
   toast.success(`تم تطبيق الإعدادات الموصى بها لـ (${profile.name_ar}) بنجاح`);
@@ -292,9 +332,15 @@ function removeDocument(doc: string) {
 function handleSubmit(e?: Event) {
   e?.preventDefault();
 
-  const activeFieldsArray = Object.keys(activeFields).filter((k) => activeFields[k]);
-  const requiredFieldsArray = Object.keys(requiredFields).filter((k) => requiredFields[k] && activeFields[k]);
-  const preventDuplicatesArray = Object.keys(preventDuplicates).filter((k) => preventDuplicates[k] && activeFields[k]);
+  const activeFieldsArray = Object.keys(activeFields).filter(
+    (k) => activeFields[k],
+  );
+  const requiredFieldsArray = Object.keys(requiredFields).filter(
+    (k) => requiredFields[k] && activeFields[k],
+  );
+  const preventDuplicatesArray = Object.keys(preventDuplicates).filter(
+    (k) => preventDuplicates[k] && activeFields[k],
+  );
 
   const registrationSettings = {
     institution_type: institutionType,
@@ -315,11 +361,13 @@ function handleSubmit(e?: Event) {
   };
 
   registrationForm.values = registrationSettings;
-  registrationForm.submit(async (result) => {
-    onsave({ registration: result });
-  }).then((submitted) => {
-    if (!submitted) toast.error("تحقق من قواعد التسجيل والحقول المطلوبة");
-  });
+  registrationForm
+    .submit(async (result) => {
+      onsave({ registration: result });
+    })
+    .then((submitted) => {
+      if (!submitted) toast.error("تحقق من قواعد التسجيل والحقول المطلوبة");
+    });
 }
 </script>
 

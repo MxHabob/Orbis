@@ -8,9 +8,14 @@ import {
   getDocumentSource,
 } from "$lib/features/documents/queries";
 import { page } from "$app/state";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
 import ArchivePreviewSheet from "$lib/features/documents/archive-preview-sheet.svelte";
 import ArchiveDocumentCard from "$lib/features/documents/archive-document-card.svelte";
 import ArchiveFilters from "$lib/features/documents/archive-filters.svelte";
@@ -50,11 +55,14 @@ let selectedDocumentUrl = $state("");
 let archiveScroller: HTMLDivElement | undefined = $state();
 
 $effect(() => {
-  api.listAcademicPeriods().then((periods) => {
-    academicPeriods = periods || [];
-  }).catch(() => {
-    academicPeriods = [];
-  });
+  api
+    .listAcademicPeriods()
+    .then((periods) => {
+      academicPeriods = periods || [];
+    })
+    .catch(() => {
+      academicPeriods = [];
+    });
 });
 
 $effect(() => {
@@ -115,7 +123,9 @@ async function handleBulkDelete() {
   });
   if (!confirmed) return;
 
-  await Promise.all([...selectedIds].map((id) => deleteMutation.mutateAsync(id)));
+  await Promise.all(
+    [...selectedIds].map((id) => deleteMutation.mutateAsync(id)),
+  );
   selectedIds = new Set();
   await documentsQuery.refetch();
 }
@@ -126,16 +136,33 @@ let documents = $derived(
 );
 let availableCategories = $derived.by(() => {
   const labels = new Map(archiveCategories);
-  const values = new Set(documents.map((document) => document.category).filter(Boolean));
-  return [...values].sort().map((value) => [value, labels.get(value) || value] as const);
+  const values = new Set(
+    documents.map((document) => document.category).filter(Boolean),
+  );
+  return [...values]
+    .sort()
+    .map((value) => [value, labels.get(value) || value] as const);
 });
 function periodOption(period: any) {
-  const value = String(period.code || period.name || period.name_en || period.name_ar || period.id);
+  const value = String(
+    period.code || period.name || period.name_en || period.name_ar || period.id,
+  );
   const label = period.name_ar || period.name || period.name_en || value;
   return [value, label] as const;
 }
-let archiveTerms = $derived(academicPeriods.filter((period) => period.period_type === "term").map(periodOption));
-let archiveSchoolYears = $derived(academicPeriods.filter((period) => period.period_type === "academic_year" || period.period_type === "year").map(periodOption));
+let archiveTerms = $derived(
+  academicPeriods
+    .filter((period) => period.period_type === "term")
+    .map(periodOption),
+);
+let archiveSchoolYears = $derived(
+  academicPeriods
+    .filter(
+      (period) =>
+        period.period_type === "academic_year" || period.period_type === "year",
+    )
+    .map(periodOption),
+);
 let groupedDocs = $derived(
   documents.reduce(
     (acc: Record<string, Documents[]>, doc: Documents) => {
@@ -150,24 +177,76 @@ let groupedDocs = $derived(
 let groupedEntries = $derived(
   Object.entries(groupedDocs) as [string, Documents[]][],
 );
-let allVisibleSelected = $derived(documents.length > 0 && documents.every((document) => selectedIds.has(document.id)));
+let allVisibleSelected = $derived(
+  documents.length > 0 &&
+    documents.every((document) => selectedIds.has(document.id)),
+);
 let selectedCount = $derived(selectedIds.size);
 let tableSource = $derived(
   documents.map((document) => ({
     ...document,
     __selected: selectedIds.has(document.id),
     size_display: `${((document.size || 0) / 1024).toFixed(1)} KB`,
-    type_display: document.asset_type || document.extension?.toUpperCase() || "FILE",
-    date_display: document.created_at ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(document.created_at)) : "-",
+    type_display:
+      document.asset_type || document.extension?.toUpperCase() || "FILE",
+    date_display: document.created_at
+      ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(
+          new Date(document.created_at),
+        )
+      : "-",
   })),
 );
 let archiveTableColumns = $derived<OrbisColumnDef[]>([
-  { id: "__selected", prop: "__selected", header: "", name: "", width: 44, size: 44, cell: CheckboxCell, sort: false },
-  { id: "name", prop: "name", header: "الملف", name: "الملف", width: 300, size: 300 },
-  { id: "category", prop: "category", header: "التصنيف", name: "التصنيف", width: 140, size: 140 },
-  { id: "type_display", prop: "type_display", header: "النوع", name: "النوع", width: 110, size: 110 },
-  { id: "size_display", prop: "size_display", header: "الحجم", name: "الحجم", width: 110, size: 110 },
-  { id: "date_display", prop: "date_display", header: "التاريخ", name: "التاريخ", width: 150, size: 150 },
+  {
+    id: "__selected",
+    prop: "__selected",
+    header: "",
+    name: "",
+    width: 44,
+    size: 44,
+    cell: CheckboxCell,
+    sort: false,
+  },
+  {
+    id: "name",
+    prop: "name",
+    header: "الملف",
+    name: "الملف",
+    width: 300,
+    size: 300,
+  },
+  {
+    id: "category",
+    prop: "category",
+    header: "التصنيف",
+    name: "التصنيف",
+    width: 140,
+    size: 140,
+  },
+  {
+    id: "type_display",
+    prop: "type_display",
+    header: "النوع",
+    name: "النوع",
+    width: 110,
+    size: 110,
+  },
+  {
+    id: "size_display",
+    prop: "size_display",
+    header: "الحجم",
+    name: "الحجم",
+    width: 110,
+    size: 110,
+  },
+  {
+    id: "date_display",
+    prop: "date_display",
+    header: "التاريخ",
+    name: "التاريخ",
+    width: 150,
+    size: 150,
+  },
 ]);
 
 function openFilePicker() {

@@ -1,29 +1,34 @@
 <script lang="ts">
-    import { Select, SelectTrigger, SelectContent, SelectItem } from "../components/ui/select";
-    import type { FieldDefinition, FilterCondition } from "./types";
-    import { FilterOperator } from "./types";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "../components/ui/select";
+import type { FieldDefinition, FilterCondition } from "./types";
+import { FilterOperator } from "./types";
 
-    let {
-        condition = $bindable(),
-        fields = []
-    }: {
-        condition: FilterCondition;
-        fields: FieldDefinition[];
-    } = $props();
+let {
+  condition = $bindable(),
+  fields = [],
+}: {
+  condition: FilterCondition;
+  fields: FieldDefinition[];
+} = $props();
 
-    let selectedField = $derived(fields.find(f => f.id === condition.field));
+let selectedField = $derived(fields.find((f) => f.id === condition.field));
 
-    function handleFieldChange(v: string | undefined) {
-        if (!v) return;
-        const newField = fields.find(f => f.id === v);
-        const oldField = fields.find(f => f.id === condition.field);
-        condition.field = v;
-        
-        if (newField?.type !== oldField?.type) {
-            condition.value = "";
-            condition.operator = FilterOperator.Eq;
-        }
-    }
+function handleFieldChange(v: string | undefined) {
+  if (!v) return;
+  const newField = fields.find((f) => f.id === v);
+  const oldField = fields.find((f) => f.id === condition.field);
+  condition.field = v;
+
+  if (newField?.type !== oldField?.type) {
+    condition.value = "";
+    condition.operator = FilterOperator.Eq;
+  }
+}
 </script>
 
 <Select type="single" value={condition.field} onValueChange={handleFieldChange}>

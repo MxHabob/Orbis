@@ -5,7 +5,7 @@ Renders subject grades report card using OrbisGrid + summary analytics.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { GraduationCap, Award, Calendar, RefreshCcw } from "@lucide/svelte";
 import { onMount } from "svelte";
@@ -36,10 +36,7 @@ async function loadGrades() {
       (e: any) => e.student_id === studentId,
     );
     if (activeEnrollment) {
-      report = await api.assessment.reportCard(
-        activeEnrollment.id,
-        periodId,
-      );
+      report = await api.assessment.reportCard(activeEnrollment.id, periodId);
     }
   } catch (e) {
     console.error(e);
@@ -52,13 +49,14 @@ import { applyFilter } from "@orbis/ui/filter-builder";
 import type { UniversalFilter } from "@orbis/ui/filter-builder";
 import { gradesFilterFields } from "$lib/tables/definitions/filter-configs";
 
-let activeFilter = $state<UniversalFilter>({ logic: "AND", conditions: [], groups: [] });
+let activeFilter = $state<UniversalFilter>({
+  logic: "AND",
+  conditions: [],
+  groups: [],
+});
 
 const filteredGrades = $derived(
-  applyFilter(
-    (report?.grades || []),
-    activeFilter
-  )
+  applyFilter(report?.grades || [], activeFilter),
 );
 
 // ── Grid Source ─────────────────────────────────────────────────────────

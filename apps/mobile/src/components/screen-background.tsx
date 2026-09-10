@@ -1,21 +1,10 @@
-import React, {
-  type ReactNode,
-} from 'react';
+import React, { type ReactNode } from "react";
 
-import {
-  StyleSheet,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from "react-native";
 
-import {
-  GradientHeader,
-} from '@/components/gradient-header';
+import { GradientHeader } from "@/components/gradient-header";
 
-import {
-  useTheme,
-} from '@/hooks/use-theme';
-
+import { useTheme } from "@/hooks/use-theme";
 
 interface ScreenBackgroundProps {
   children: ReactNode;
@@ -28,19 +17,13 @@ interface ScreenBackgroundProps {
   gradientHeight?: number;
 }
 
-
 export function ScreenBackground({
   children,
   gradientHeight = 0.52,
 }: ScreenBackgroundProps) {
+  const { height } = useWindowDimensions();
 
-  const {
-    height,
-  } = useWindowDimensions();
-
-  const theme =
-    useTheme();
-
+  const theme = useTheme();
 
   return (
     <View
@@ -48,11 +31,10 @@ export function ScreenBackground({
         styles.container,
 
         {
-          backgroundColor:
-            theme.background,
+          backgroundColor: theme.background,
         },
-      ]}>
-
+      ]}
+    >
       {/* ─────────────────────────────────────────────────────────────
           FULL SCREEN BACKGROUND
 
@@ -68,118 +50,62 @@ export function ScreenBackground({
         ───────────────────────────────────────────────────────────── */}
 
       <GradientHeader
-        height={
-          height *
-          gradientHeight
-        }
-
-        colors={
-          theme.homeGradient.colors
-        }
-
-        locations={[
-          0,
-          0.14,
-          0.30,
-          0.46,
-          0.62,
-          0.78,
-          1,
-        ]}
-
+        height={height * gradientHeight}
+        colors={theme.homeGradient.colors}
+        locations={[0, 0.14, 0.3, 0.46, 0.62, 0.78, 1]}
         start={{
           x: 0.5,
           y: 0,
         }}
-
         end={{
           x: 0.5,
           y: 1,
         }}
-
-        blobPrimary={
-          theme.homeGradient.blobPrimary
-        }
-
-        blobSecondary={
-          theme.homeGradient.blobSecondary
-        }
-
-        blobTertiary={
-          theme.homeGradient.blobTertiary
-        }
-
+        blobPrimary={theme.homeGradient.blobPrimary}
+        blobSecondary={theme.homeGradient.blobSecondary}
+        blobTertiary={theme.homeGradient.blobTertiary}
         animated
-
-        duration={
-          18000
-        }
-
-        style={
-          styles.gradient
-        }
+        duration={18000}
+        style={styles.gradient}
       />
-
 
       {/* ─────────────────────────────────────────────────────────────
           Screen Content
         ───────────────────────────────────────────────────────────── */}
 
-      <View
-        style={
-          styles.content
-        }>
-
-        {children}
-
-      </View>
-
+      <View style={styles.content}>{children}</View>
     </View>
   );
 }
 
-
 const styles = StyleSheet.create({
-
   container: {
     flex: 1,
 
-    width:
-      '100%',
+    width: "100%",
 
-    position:
-      'relative',
+    position: "relative",
   },
-
 
   gradient: {
-    position:
-      'absolute',
+    position: "absolute",
 
-    top:
-      0,
+    top: 0,
 
-    left:
-      0,
+    left: 0,
 
-    right:
-      0,
+    right: 0,
 
-    width:
-      '100%',
+    width: "100%",
 
-    zIndex:
-      0,
+    zIndex: 0,
   },
-
 
   content: {
     flex: 1,
 
-    width:
-      '100%',
+    width: "100%",
 
-    zIndex:
-      1,
+    zIndex: 1,
   },
 });

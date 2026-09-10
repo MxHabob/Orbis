@@ -4,23 +4,17 @@
  * Account and Personal Profile Settings Screen.
  */
 
-import React, { useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useAuth, api } from '@/lib/api';
-import { useTheme } from '@/hooks/use-theme';
-import { Header } from '@/components/header';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/toast';
-import { Spacing, Typography } from '@/constants/theme';
+import { useAuth, api } from "@/lib/api";
+import { useTheme } from "@/hooks/use-theme";
+import { Header } from "@/components/header";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
+import { Spacing, Typography } from "@/constants/theme";
 
 export default function AccountSettingsScreen() {
   const insets = useSafeAreaInsets();
@@ -28,13 +22,11 @@ export default function AccountSettingsScreen() {
   const { user } = useAuth();
   const toast = useToast();
 
-  const [fullName, setFullName] = useState(
-    user?.full_name || '',
-  );
+  const [fullName, setFullName] = useState(user?.full_name || "");
 
-  const email = user?.email || '';
+  const email = user?.email || "";
 
-  const [phone, setPhone] = useState('0501234567');
+  const [phone, setPhone] = useState("0501234567");
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -47,11 +39,9 @@ export default function AccountSettingsScreen() {
         });
       }
 
-      toast.success('تم حفظ التعديلات بنجاح');
+      toast.success("تم حفظ التعديلات بنجاح");
     } catch (err: any) {
-      toast.error(
-        err?.message || 'فشل حفظ التعديلات.',
-      );
+      toast.error(err?.message || "فشل حفظ التعديلات.");
     } finally {
       setSaving(false);
     }
@@ -72,22 +62,14 @@ export default function AccountSettingsScreen() {
         contentContainerStyle={[
           styles.content,
           {
-            paddingBottom:
-              insets.bottom + 120,
+            paddingBottom: insets.bottom + 120,
           },
         ]}
       >
-        <Header
-          title="Account"
-          showBack
-          showCrown={false}
-        />
+        <Header title="Account" showBack showCrown={false} />
 
         <View style={styles.form}>
-          <FieldBlock
-            label="الاسم الكامل"
-            theme={theme}
-          >
+          <FieldBlock label="الاسم الكامل" theme={theme}>
             <Input
               value={fullName}
               onChangeText={setFullName}
@@ -95,10 +77,7 @@ export default function AccountSettingsScreen() {
             />
           </FieldBlock>
 
-          <FieldBlock
-            label="البريد الإلكتروني"
-            theme={theme}
-          >
+          <FieldBlock label="البريد الإلكتروني" theme={theme}>
             <Input
               value={email}
               editable={false}
@@ -117,10 +96,7 @@ export default function AccountSettingsScreen() {
             </Text>
           </FieldBlock>
 
-          <FieldBlock
-            label="رقم الهاتف"
-            theme={theme}
-          >
+          <FieldBlock label="رقم الهاتف" theme={theme}>
             <Input
               value={phone}
               onChangeText={setPhone}
@@ -182,9 +158,9 @@ const styles = StyleSheet.create({
   },
 
   form: {
-    width: '100%',
+    width: "100%",
     maxWidth: 520,
-    alignSelf: 'center',
+    alignSelf: "center",
     marginTop: Spacing.six,
     gap: Spacing.five,
   },
@@ -205,9 +181,9 @@ const styles = StyleSheet.create({
   },
 
   saveArea: {
-    width: '100%',
+    width: "100%",
     maxWidth: 520,
-    alignSelf: 'center',
+    alignSelf: "center",
     marginTop: Spacing.six,
   },
 });

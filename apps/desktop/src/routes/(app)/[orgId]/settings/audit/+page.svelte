@@ -5,7 +5,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import {
   Select,
   SelectTrigger,
@@ -25,7 +25,9 @@ let { data }: { data: { orgId: string } } = $props();
 // ── State ──────────────────────────────────────────────────────────────
 let auditLogs = $state<any[]>([]);
 let users = $state<any[]>([]);
-const usersById = $derived(new Map(users.map((user) => [String(user.id), user])));
+const usersById = $derived(
+  new Map(users.map((user) => [String(user.id), user])),
+);
 let isLoading = $state(true);
 let actionFilter = $state("all");
 let selectedLog = $state<any | null>(null);
@@ -88,7 +90,11 @@ import { applyFilter } from "@orbis/ui/filter-builder";
 import type { UniversalFilter } from "@orbis/ui/filter-builder";
 import { auditFilterFields } from "$lib/tables/definitions/filter-configs";
 
-let activeFilter = $state<UniversalFilter>({ logic: "AND", conditions: [], groups: [] });
+let activeFilter = $state<UniversalFilter>({
+  logic: "AND",
+  conditions: [],
+  groups: [],
+});
 
 const uniqueActions = $derived([
   ...new Set(auditLogs.map((l) => l.action).filter(Boolean)),

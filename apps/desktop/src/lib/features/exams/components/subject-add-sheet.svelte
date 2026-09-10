@@ -5,12 +5,7 @@ Allows selecting an existing subject or creating a new one on-the-fly.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@orbis/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
@@ -28,7 +23,7 @@ import {
   AccordionTrigger,
 } from "@orbis/ui/accordion";
 
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { examSubjectInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
@@ -138,11 +133,11 @@ async function handleSubmit() {
   }
 
   form.values = {
-      session_id: sessionId,
-      subject_id: targetSubjectId,
-      max_score: Number(maxScore),
-      duration_minutes: Number(durationMinutes),
-      exam_type: examType as "written" | "oral" | "practical" | "mixed",
+    session_id: sessionId,
+    subject_id: targetSubjectId,
+    max_score: Number(maxScore),
+    duration_minutes: Number(durationMinutes),
+    exam_type: examType as "written" | "oral" | "practical" | "mixed",
   };
   const submitted = await form.submit(async (payload) => {
     await api.exam.add(payload);

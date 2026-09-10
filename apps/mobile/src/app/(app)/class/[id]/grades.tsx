@@ -10,9 +10,7 @@
  * - Theme-aware UI.
  */
 
-import React, {
-  useState,
-} from 'react';
+import React, { useState } from "react";
 
 import {
   View,
@@ -22,50 +20,27 @@ import {
   TextInput,
   Alert,
   Pressable,
-} from 'react-native';
+} from "react-native";
 
-import {
-  useLocalSearchParams,
-} from 'expo-router';
+import { useLocalSearchParams } from "expo-router";
 
-import {
-  Ionicons,
-} from '@expo/vector-icons';
+import { Ionicons } from "@expo/vector-icons";
 
-import {
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import {
-  useTheme,
-} from '@/hooks/use-theme';
+import { useTheme } from "@/hooks/use-theme";
 
-import {
-  Header,
-} from '@/components/header';
+import { Header } from "@/components/header";
 
-import {
-  Card,
-} from '@/components/ui/card';
+import { Card } from "@/components/ui/card";
 
-import {
-  Button,
-} from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 
-import {
-  ScreenBackground,
-} from '@/components/screen-background';
+import { ScreenBackground } from "@/components/screen-background";
 
-import {
-  ThemedStatusBar,
-} from '@/components/ui/themed-status-bar';
+import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
 
-import {
-  Radii,
-  Spacing,
-  Typography,
-} from '@/constants/theme';
-
+import { Radii, Spacing, Typography } from "@/constants/theme";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Types
@@ -85,207 +60,129 @@ interface StudentGradeRow {
   isExcused?: boolean;
 }
 
-
-type AssessmentScheme =
-  | 'midterm'
-  | 'coursework'
-  | 'practical';
-
+type AssessmentScheme = "midterm" | "coursework" | "practical";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Screen
 // ─────────────────────────────────────────────────────────────────────────
 
 export default function ClassGradesScreen() {
+  const insets = useSafeAreaInsets();
 
-  const insets =
-    useSafeAreaInsets();
+  const theme = useTheme();
 
-  const theme =
-    useTheme();
-
-  const {
-    id,
-  } =
-    useLocalSearchParams<{
-      id: string;
-    }>();
-
+  const { id } = useLocalSearchParams<{
+    id: string;
+  }>();
 
   // ───────────────────────────────────────────────────────────────────────
   // State
   // ───────────────────────────────────────────────────────────────────────
 
-  const [
-    activeScheme,
-    setActiveScheme,
-  ] =
-    useState<AssessmentScheme>(
-      'midterm',
-    );
+  const [activeScheme, setActiveScheme] = useState<AssessmentScheme>("midterm");
 
+  const [saving, setSaving] = useState(false);
 
-  const [
-    saving,
-    setSaving,
-  ] =
-    useState(false);
+  const [grades, setGrades] = useState<StudentGradeRow[]>([
+    {
+      id: "std-1",
 
+      name: "عمر خالد المنصور",
 
-  const [
-    grades,
-    setGrades,
-  ] =
-    useState<StudentGradeRow[]>([
-      {
-        id:
-          'std-1',
+      studentNumber: "STD-081",
 
-        name:
-          'عمر خالد المنصور',
+      score: "29",
+    },
 
-        studentNumber:
-          'STD-081',
+    {
+      id: "std-2",
 
-        score:
-          '29',
-      },
+      name: "سلطان عبدالعزيز الراشد",
 
-      {
-        id:
-          'std-2',
+      studentNumber: "STD-082",
 
-        name:
-          'سلطان عبدالعزيز الراشد',
+      score: "30",
+    },
 
-        studentNumber:
-          'STD-082',
+    {
+      id: "std-3",
 
-        score:
-          '30',
-      },
+      name: "فيصل محمد العتيبي",
 
-      {
-        id:
-          'std-3',
+      studentNumber: "STD-083",
 
-        name:
-          'فيصل محمد العتيبي',
+      score: "26",
+    },
 
-        studentNumber:
-          'STD-083',
+    {
+      id: "std-4",
 
-        score:
-          '26',
-      },
+      name: "عبدالله ناصر القحطاني",
 
-      {
-        id:
-          'std-4',
+      studentNumber: "STD-084",
 
-        name:
-          'عبدالله ناصر القحطاني',
+      score: "24",
+    },
 
-        studentNumber:
-          'STD-084',
+    {
+      id: "std-5",
 
-        score:
-          '24',
-      },
+      name: "تركي سعود الشمري",
 
-      {
-        id:
-          'std-5',
+      studentNumber: "STD-085",
 
-        name:
-          'تركي سعود الشمري',
-
-        studentNumber:
-          'STD-085',
-
-        score:
-          '28',
-      },
-    ]);
-
+      score: "28",
+    },
+  ]);
 
   // ───────────────────────────────────────────────────────────────────────
   // Actions
   // ───────────────────────────────────────────────────────────────────────
 
-  const updateScore = (
-    studentId: string,
-    score: string,
-  ) => {
-
-    setGrades(
-      previous =>
-        previous.map(
-          grade =>
-            grade.id === studentId
-              ? {
-                  ...grade,
-                  score,
-                }
-              : grade,
-        ),
+  const updateScore = (studentId: string, score: string) => {
+    setGrades((previous) =>
+      previous.map((grade) =>
+        grade.id === studentId
+          ? {
+              ...grade,
+              score,
+            }
+          : grade,
+      ),
     );
   };
-
 
   const handleSave = () => {
+    setSaving(true);
 
-    setSaving(
-      true,
-    );
+    setTimeout(() => {
+      setSaving(false);
 
-
-    setTimeout(
-      () => {
-
-        setSaving(
-          false,
-        );
-
-
-        Alert.alert(
-          'تم حفظ الدرجات',
-          'تم تسجيل درجات التقييم بنجاح وتحديث السجلات الأكاديمية للطلاب.',
-        );
-      },
-      700,
-    );
+      Alert.alert(
+        "تم حفظ الدرجات",
+        "تم تسجيل درجات التقييم بنجاح وتحديث السجلات الأكاديمية للطلاب.",
+      );
+    }, 700);
   };
-
 
   // ───────────────────────────────────────────────────────────────────────
   // Maximum Score
   // ───────────────────────────────────────────────────────────────────────
 
   const maxScore =
-    activeScheme === 'midterm'
-      ? 30
-      : activeScheme === 'coursework'
-        ? 20
-        : 10;
-
+    activeScheme === "midterm" ? 30 : activeScheme === "coursework" ? 20 : 10;
 
   // ───────────────────────────────────────────────────────────────────────
   // Render
   // ───────────────────────────────────────────────────────────────────────
 
   return (
-    <ScreenBackground
-      gradientHeight={
-        0.48
-      }>
-
+    <ScreenBackground gradientHeight={0.48}>
       {/* ─────────────────────────────────────────────────────────────
           Status Bar
         ───────────────────────────────────────────────────────────── */}
 
       <ThemedStatusBar />
-
 
       {/* ─────────────────────────────────────────────────────────────
           Header
@@ -295,330 +192,194 @@ export default function ClassGradesScreen() {
 
       <Header
         title="دفتر رصد الدرجات"
-
         subtitle="الصف 3 علمي - أ • الرياضيات"
-
         showBack
       />
-
 
       {/* ─────────────────────────────────────────────────────────────
           Main Content
         ───────────────────────────────────────────────────────────── */}
 
       <ScrollView
-        style={
-          styles.scrollView
-        }
-
+        style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
 
           {
-            paddingBottom:
-              insets.bottom +
-              Spacing.eight,
+            paddingBottom: insets.bottom + Spacing.eight,
           },
         ]}
-
-        showsVerticalScrollIndicator={
-          false
-        }>
-
+        showsVerticalScrollIndicator={false}
+      >
         {/* ─────────────────────────────────────────────────────────
             Assessment Scheme Selector
           ───────────────────────────────────────────────────────── */}
 
-        <View
-          style={
-            styles.schemeSelector
-          }>
-
+        <View style={styles.schemeSelector}>
           {[
             {
-              key:
-                'midterm' as const,
+              key: "midterm" as const,
 
-              label:
-                'الاختبار النصفي (30 درجة)',
+              label: "الاختبار النصفي (30 درجة)",
             },
 
             {
-              key:
-                'coursework' as const,
+              key: "coursework" as const,
 
-              label:
-                'الأعمال والمشاريع (20 درجة)',
+              label: "الأعمال والمشاريع (20 درجة)",
             },
 
             {
-              key:
-                'practical' as const,
+              key: "practical" as const,
 
-              label:
-                'التقييم العملي (10 درجات)',
+              label: "التقييم العملي (10 درجات)",
             },
-          ].map(
-            scheme => {
+          ].map((scheme) => {
+            const isSelected = activeScheme === scheme.key;
 
-              const isSelected =
-                activeScheme ===
-                scheme.key;
+            return (
+              <Pressable
+                key={scheme.key}
+                onPress={() => setActiveScheme(scheme.key)}
+                style={[
+                  styles.schemeTab,
 
+                  {
+                    backgroundColor: isSelected ? theme.primary : theme.card,
 
-              return (
-                <Pressable
-                  key={
-                    scheme.key
-                  }
-
-                  onPress={() =>
-                    setActiveScheme(
-                      scheme.key,
-                    )
-                  }
-
+                    borderColor: isSelected ? theme.primary : theme.border,
+                  },
+                ]}
+              >
+                <Text
                   style={[
-                    styles.schemeTab,
+                    styles.schemeText,
 
                     {
-                      backgroundColor:
-                        isSelected
-                          ? theme.primary
-                          : theme.card,
-
-                      borderColor:
-                        isSelected
-                          ? theme.primary
-                          : theme.border,
+                      color: isSelected
+                        ? theme.primaryForeground
+                        : theme.textSecondary,
                     },
-                  ]}>
-
-                  <Text
-                    style={[
-                      styles.schemeText,
-
-                      {
-                        color:
-                          isSelected
-                            ? theme.primaryForeground
-                            : theme.textSecondary,
-                      },
-                    ]}>
-
-                    {
-                      scheme.label
-                    }
-
-                  </Text>
-
-                </Pressable>
-              );
-            },
-          )}
-
+                  ]}
+                >
+                  {scheme.label}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
-
 
         {/* ─────────────────────────────────────────────────────────
             Section Header
           ───────────────────────────────────────────────────────── */}
 
-        <View
-          style={
-            styles.sectionHeader
-          }>
-
+        <View style={styles.sectionHeader}>
           <Text
             style={[
               styles.sectionTitle,
 
               {
-                color:
-                  theme.text,
+                color: theme.text,
               },
-            ]}>
-
+            ]}
+          >
             درجات الطلاب
-
           </Text>
-
 
           <Text
             style={[
               styles.sectionSub,
 
               {
-                color:
-                  theme.textSecondary,
+                color: theme.textSecondary,
               },
-            ]}>
-
-            الدرجة العظمى: {
-              maxScore
-            }
-
+            ]}
+          >
+            الدرجة العظمى: {maxScore}
           </Text>
-
         </View>
-
 
         {/* ─────────────────────────────────────────────────────────
             Student Score List
           ───────────────────────────────────────────────────────── */}
 
-        <View
-          style={
-            styles.gradesList
-          }>
-
-          {grades.map(
-            (
-              item,
-              index,
-            ) => {
-
-              return (
-                <Card
-                  key={
-                    item.id
-                  }
-
-                  variant="elevated"
-
-                  style={
-                    styles.gradeCard
-                  }>
-
-                  <View
-                    style={
-                      styles.gradeRow
-                    }>
-
-                    {/* ───────────────────────────────────────
+        <View style={styles.gradesList}>
+          {grades.map((item, index) => {
+            return (
+              <Card key={item.id} variant="elevated" style={styles.gradeCard}>
+                <View style={styles.gradeRow}>
+                  {/* ───────────────────────────────────────
                         Student
                       ─────────────────────────────────────── */}
 
-                    <View
-                      style={
-                        styles.stdCol
-                      }>
-
-                      <Text
-                        style={[
-                          styles.stdName,
-
-                          {
-                            color:
-                              theme.text,
-                          },
-                        ]}
-
-                        numberOfLines={
-                          1
-                        }>
+                  <View style={styles.stdCol}>
+                    <Text
+                      style={[
+                        styles.stdName,
 
                         {
-                          index + 1
-                        }. {
-                          item.name
-                        }
+                          color: theme.text,
+                        },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {index + 1}. {item.name}
+                    </Text>
 
-                      </Text>
-
-
-                      <Text
-                        style={[
-                          styles.stdNum,
-
-                          {
-                            color:
-                              theme.textSecondary,
-                          },
-                        ]}>
+                    <Text
+                      style={[
+                        styles.stdNum,
 
                         {
-                          item.studentNumber
-                        }
+                          color: theme.textSecondary,
+                        },
+                      ]}
+                    >
+                      {item.studentNumber}
+                    </Text>
+                  </View>
 
-                      </Text>
-
-                    </View>
-
-
-                    {/* ───────────────────────────────────────
+                  {/* ───────────────────────────────────────
                         Score
                       ─────────────────────────────────────── */}
 
-                    <View
-                      style={
-                        styles.scoreInputBox
-                      }>
+                  <View style={styles.scoreInputBox}>
+                    <TextInput
+                      value={item.score}
+                      onChangeText={(value) => updateScore(item.id, value)}
+                      keyboardType="numeric"
+                      maxLength={3}
+                      selectTextOnFocus
+                      style={[
+                        styles.scoreInput,
 
-                      <TextInput
-                        value={
-                          item.score
-                        }
+                        {
+                          backgroundColor: theme.backgroundElement,
 
-                        onChangeText={value =>
-                          updateScore(
-                            item.id,
-                            value,
-                          )
-                        }
+                          color: theme.text,
 
-                        keyboardType="numeric"
+                          borderColor: theme.border,
+                        },
+                      ]}
+                    />
 
-                        maxLength={
-                          3
-                        }
+                    <Text
+                      style={[
+                        styles.maxScoreLbl,
 
-                        selectTextOnFocus
-
-                        style={[
-                          styles.scoreInput,
-
-                          {
-                            backgroundColor:
-                              theme.backgroundElement,
-
-                            color:
-                              theme.text,
-
-                            borderColor:
-                              theme.border,
-                          },
-                        ]}
-                      />
-
-
-                      <Text
-                        style={[
-                          styles.maxScoreLbl,
-
-                          {
-                            color:
-                              theme.textSecondary,
-                          },
-                        ]}>
-
-                        / {
-                          maxScore
-                        }
-
-                      </Text>
-
-                    </View>
-
+                        {
+                          color: theme.textSecondary,
+                        },
+                      ]}
+                    >
+                      / {maxScore}
+                    </Text>
                   </View>
-
-                </Card>
-              );
-            },
-          )}
-
+                </View>
+              </Card>
+            );
+          })}
         </View>
-
 
         {/* ─────────────────────────────────────────────────────────
             Save
@@ -626,265 +387,186 @@ export default function ClassGradesScreen() {
 
         <Button
           title="حفظ واعتماد الدرجات"
-
-          onPress={
-            handleSave
-          }
-
-          loading={
-            saving
-          }
-
+          onPress={handleSave}
+          loading={saving}
           size="lg"
-
           icon={
             <Ionicons
               name="cloud-upload-outline"
               size={20}
-              color={
-                theme.primaryForeground
-              }
+              color={theme.primaryForeground}
             />
           }
-
           fullWidth
-
-          style={
-            styles.saveButton
-          }
+          style={styles.saveButton}
         />
-
       </ScrollView>
-
     </ScreenBackground>
   );
 }
-
 
 // ─────────────────────────────────────────────────────────────────────────
 // Styles
 // ─────────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-
   // ───────────────────────────────────────────────────────────────────────
   // Scroll
   // ───────────────────────────────────────────────────────────────────────
 
   scrollView: {
-    flex:
-      1,
+    flex: 1,
 
-    width:
-      '100%',
+    width: "100%",
   },
-
 
   scrollContent: {
-    paddingHorizontal:
-      Spacing.four,
+    paddingHorizontal: Spacing.four,
 
-    paddingTop:
-      Spacing.four,
+    paddingTop: Spacing.four,
 
-    gap:
-      Spacing.four,
+    gap: Spacing.four,
   },
-
 
   // ───────────────────────────────────────────────────────────────────────
   // Assessment Scheme
   // ───────────────────────────────────────────────────────────────────────
 
   schemeSelector: {
-    width:
-      '100%',
+    width: "100%",
 
-    gap:
-      Spacing.two,
+    gap: Spacing.two,
   },
-
 
   schemeTab: {
-    width:
-      '100%',
+    width: "100%",
 
-    paddingVertical:
-      Spacing.three,
+    paddingVertical: Spacing.three,
 
-    paddingHorizontal:
-      Spacing.four,
+    paddingHorizontal: Spacing.four,
 
-    borderRadius:
-      Radii.md,
+    borderRadius: Radii.md,
 
-    borderWidth:
-      1,
+    borderWidth: 1,
 
-    alignItems:
-      'center',
+    alignItems: "center",
 
-    justifyContent:
-      'center',
+    justifyContent: "center",
   },
-
 
   schemeText: {
     ...Typography.captionBold,
 
-    textAlign:
-      'center',
+    textAlign: "center",
   },
-
 
   // ───────────────────────────────────────────────────────────────────────
   // Section Header
   // ───────────────────────────────────────────────────────────────────────
 
   sectionHeader: {
-    flexDirection:
-      'row',
+    flexDirection: "row",
 
-    justifyContent:
-      'space-between',
+    justifyContent: "space-between",
 
-    alignItems:
-      'center',
+    alignItems: "center",
 
-    marginTop:
-      Spacing.two,
+    marginTop: Spacing.two,
 
-    gap:
-      Spacing.two,
+    gap: Spacing.two,
   },
-
 
   sectionTitle: {
     ...Typography.h3,
   },
 
-
   sectionSub: {
     ...Typography.captionBold,
   },
-
 
   // ───────────────────────────────────────────────────────────────────────
   // Grades
   // ───────────────────────────────────────────────────────────────────────
 
   gradesList: {
-    width:
-      '100%',
+    width: "100%",
 
-    gap:
-      Spacing.two,
+    gap: Spacing.two,
   },
-
 
   gradeCard: {
-    padding:
-      Spacing.three,
+    padding: Spacing.three,
   },
-
 
   gradeRow: {
-    width:
-      '100%',
+    width: "100%",
 
-    flexDirection:
-      'row',
+    flexDirection: "row",
 
-    justifyContent:
-      'space-between',
+    justifyContent: "space-between",
 
-    alignItems:
-      'center',
+    alignItems: "center",
 
-    gap:
-      Spacing.three,
+    gap: Spacing.three,
   },
-
 
   stdCol: {
-    flex:
-      1,
+    flex: 1,
 
-    minWidth:
-      0,
+    minWidth: 0,
 
-    gap:
-      2,
+    gap: 2,
   },
-
 
   stdName: {
     ...Typography.bodyBold,
   },
 
-
   stdNum: {
     ...Typography.small,
   },
-
 
   // ───────────────────────────────────────────────────────────────────────
   // Score
   // ───────────────────────────────────────────────────────────────────────
 
   scoreInputBox: {
-    flexDirection:
-      'row',
+    flexDirection: "row",
 
-    alignItems:
-      'center',
+    alignItems: "center",
 
-    gap:
-      6,
+    gap: 6,
 
-    flexShrink:
-      0,
+    flexShrink: 0,
   },
-
 
   scoreInput: {
-    width:
-      60,
+    width: 60,
 
-    height:
-      44,
+    height: 44,
 
-    borderRadius:
-      Radii.md,
+    borderRadius: Radii.md,
 
-    borderWidth:
-      1.5,
+    borderWidth: 1.5,
 
-    textAlign:
-      'center',
+    textAlign: "center",
 
-    fontSize:
-      18,
+    fontSize: 18,
 
-    fontWeight:
-      '700',
+    fontWeight: "700",
   },
-
 
   maxScoreLbl: {
     ...Typography.captionBold,
 
-    minWidth:
-      28,
+    minWidth: 28,
   },
-
 
   // ───────────────────────────────────────────────────────────────────────
   // Save
   // ───────────────────────────────────────────────────────────────────────
 
   saveButton: {
-    marginTop:
-      Spacing.two,
+    marginTop: Spacing.two,
   },
 });

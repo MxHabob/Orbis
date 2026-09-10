@@ -4,11 +4,7 @@ Displays a popover of recent agent sessions with search capability.
 -->
 <script lang="ts">
 import { Button } from "@orbis/ui/button";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@orbis/ui/popover";
+import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
 import { History } from "@lucide/svelte";
 import SearchField from "$lib/shared/components/search-field.svelte";
 import { createAgentSessionsQuery } from "$lib/features/ai/queries";

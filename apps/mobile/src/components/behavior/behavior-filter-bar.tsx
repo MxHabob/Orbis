@@ -4,13 +4,13 @@
  * Filter tabs allowing toggling between All, Merits, and Violations.
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { useTheme } from '@/hooks/use-theme';
-import { useI18n } from '@/lib/i18n';
-import { Radii, Spacing, Typography } from '@/constants/theme';
+import React from "react";
+import { View, Text, StyleSheet, Pressable } from "react-native";
+import { useTheme } from "@/hooks/use-theme";
+import { useI18n } from "@/lib/i18n";
+import { Radii, Spacing, Typography } from "@/constants/theme";
 
-export type BehaviorFilterType = 'all' | 'merit' | 'violation';
+export type BehaviorFilterType = "all" | "merit" | "violation";
 
 interface BehaviorFilterBarProps {
   activeFilter: BehaviorFilterType;
@@ -23,14 +23,16 @@ export const BehaviorFilterBar = React.memo<BehaviorFilterBarProps>(
     const { t } = useI18n();
 
     const filters: { key: BehaviorFilterType; label: string }[] = [
-      { key: 'all', label: t('behavior_filter_all') },
-      { key: 'merit', label: t('behavior_filter_merit') },
-      { key: 'violation', label: t('behavior_filter_violation') },
+      { key: "all", label: t("behavior_filter_all") },
+      { key: "merit", label: t("behavior_filter_merit") },
+      { key: "violation", label: t("behavior_filter_violation") },
     ];
 
     return (
       <View style={styles.container}>
-        <View style={[styles.bar, { backgroundColor: theme.backgroundElement }]}>
+        <View
+          style={[styles.bar, { backgroundColor: theme.backgroundElement }]}
+        >
           {filters.map((f) => {
             const isSelected = activeFilter === f.key;
             return (
@@ -40,12 +42,18 @@ export const BehaviorFilterBar = React.memo<BehaviorFilterBarProps>(
                 style={[
                   styles.pill,
                   isSelected && { backgroundColor: theme.primary },
-                ]}>
+                ]}
+              >
                 <Text
                   style={[
                     styles.label,
-                    { color: isSelected ? theme.primaryForeground : theme.textSecondary },
-                  ]}>
+                    {
+                      color: isSelected
+                        ? theme.primaryForeground
+                        : theme.textSecondary,
+                    },
+                  ]}
+                >
                   {f.label}
                 </Text>
               </Pressable>
@@ -57,14 +65,14 @@ export const BehaviorFilterBar = React.memo<BehaviorFilterBarProps>(
   },
 );
 
-BehaviorFilterBar.displayName = 'BehaviorFilterBar';
+BehaviorFilterBar.displayName = "BehaviorFilterBar";
 
 const styles = StyleSheet.create({
   container: {
     marginVertical: Spacing.one,
   },
   bar: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: 4,
     borderRadius: Radii.lg,
     gap: 4,
@@ -73,8 +81,8 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 8,
     borderRadius: Radii.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   label: {
     ...Typography.bodyBold,

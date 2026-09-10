@@ -22,10 +22,7 @@ import {
 } from "@lucide/svelte";
 import { fly } from "svelte/transition";
 import { quintOut } from "svelte/easing";
-import {
-  studentsStore,
-  createEnrollmentsQuery,
-} from "$lib/features/students";
+import { studentsStore, createEnrollmentsQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
 import { academicContext, authStore } from "$lib/stores";
 import StudentsTableSkeleton from "$lib/shared/skeletons/students-table-skeleton.svelte";
@@ -52,7 +49,6 @@ const classesQuery = createClassesQuery(() => data.orgId);
 const enrollments = $derived(enrollmentsQuery.data ?? []);
 const classes = $derived(classesQuery.data ?? []);
 const filteredStudents = $derived(studentsStore.filterList(enrollments));
-
 
 let showOverrideDialog = $state(false);
 const isLoading = $derived(

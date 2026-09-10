@@ -1,8 +1,8 @@
 // app/(app)/(tabs)/profile.tsx
 
-import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { useMemo } from "react";
 import {
   Pressable,
   ScrollView,
@@ -10,46 +10,34 @@ import {
   Text,
   useWindowDimensions,
   View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Header } from '@/components/header';
-import { OrganizationLogo } from '@/components/ui/organization-logo';
-import { Radii, Spacing, Typography } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
-import { useCurrentOrgQuery } from '@/hooks/use-api-queries';
-import { useAuth } from '@/lib/api';
-import { Button } from '@/components/ui/button';
+import { Header } from "@/components/header";
+import { OrganizationLogo } from "@/components/ui/organization-logo";
+import { Radii, Spacing, Typography } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
+import { useCurrentOrgQuery } from "@/hooks/use-api-queries";
+import { useAuth } from "@/lib/api";
+import { Button } from "@/components/ui/button";
 
 const DEFAULT_WEB_URL =
-  process.env.EXPO_PUBLIC_ORBIS_WEB_URL?.trim() ||
-  'https://www.mulverse.com/';
+  process.env.EXPO_PUBLIC_ORBIS_WEB_URL?.trim() || "https://www.mulverse.com/";
 
 const WEB_LINKS = {
-  help:
-    process.env.EXPO_PUBLIC_ORBIS_HELP_URL?.trim() ||
-    DEFAULT_WEB_URL,
+  help: process.env.EXPO_PUBLIC_ORBIS_HELP_URL?.trim() || DEFAULT_WEB_URL,
 
-  about:
-    process.env.EXPO_PUBLIC_ORBIS_ABOUT_URL?.trim() ||
-    DEFAULT_WEB_URL,
+  about: process.env.EXPO_PUBLIC_ORBIS_ABOUT_URL?.trim() || DEFAULT_WEB_URL,
 
-  privacy:
-    process.env.EXPO_PUBLIC_ORBIS_PRIVACY_URL?.trim() ||
-    DEFAULT_WEB_URL,
+  privacy: process.env.EXPO_PUBLIC_ORBIS_PRIVACY_URL?.trim() || DEFAULT_WEB_URL,
 
-  terms:
-    process.env.EXPO_PUBLIC_ORBIS_TERMS_URL?.trim() ||
-    DEFAULT_WEB_URL,
+  terms: process.env.EXPO_PUBLIC_ORBIS_TERMS_URL?.trim() || DEFAULT_WEB_URL,
 };
 
 function getInitials(name: string) {
-  const words = name
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
+  const words = name.trim().split(/\s+/).filter(Boolean);
 
-  if (words.length === 0) return 'OR';
+  if (words.length === 0) return "OR";
 
   if (words.length === 1) {
     return words[0].slice(0, 2).toUpperCase();
@@ -60,7 +48,7 @@ function getInitials(name: string) {
 
 function openWeb(url: string, title: string) {
   router.push({
-    pathname: '/webviewer',
+    pathname: "/webviewer",
     params: {
       url,
       title,
@@ -97,29 +85,20 @@ export default function ProfileScreen() {
     | undefined;
 
   const name = useMemo(
-    () =>
-      userData?.name?.trim() ||
-      userData?.full_name?.trim() ||
-      'Orbis User',
+    () => userData?.name?.trim() || userData?.full_name?.trim() || "Orbis User",
     [userData?.name, userData?.full_name],
   );
 
-  const email = userData?.email?.trim() || '';
+  const email = userData?.email?.trim() || "";
   const role = userData?.role?.trim();
 
   const organizationName =
-    orgData?.display_name?.trim() ||
-    orgData?.name?.trim() ||
-    'Organization';
+    orgData?.display_name?.trim() || orgData?.name?.trim() || "Organization";
 
-  const organizationLogo =
-    orgData?.logo_url ||
-    orgData?.logo ||
-    undefined;
+  const organizationLogo = orgData?.logo_url || orgData?.logo || undefined;
 
   const organizationWebsite =
-    orgData?.website_url?.trim() ||
-    orgData?.website?.trim();
+    orgData?.website_url?.trim() || orgData?.website?.trim();
 
   const initials = getInitials(name);
 
@@ -127,28 +106,19 @@ export default function ProfileScreen() {
    * Responsive ID card.
    * Compact on phones and capped on tablets.
    */
-  const cardWidth = Math.min(
-    width - Spacing.six,
-    520,
-  );
+  const cardWidth = Math.min(width - Spacing.six, 520);
 
-  const cardHeight = Math.min(
-    cardWidth * 1.38,
-    610,
-  );
+  const cardHeight = Math.min(cardWidth * 1.38, 610);
 
   const handleOrganizationPress = () => {
     if (!organizationWebsite) return;
 
-    openWeb(
-      organizationWebsite,
-      organizationName,
-    );
+    openWeb(organizationWebsite, organizationName);
   };
 
   const handleLogout = async () => {
     await logout();
-    router.replace('/(auth)/sign-in');
+    router.replace("/(auth)/sign-in");
   };
 
   return (
@@ -328,10 +298,7 @@ export default function ProfileScreen() {
             style={({ pressed }) => [
               styles.organization,
               {
-                opacity:
-                  pressed && organizationWebsite
-                    ? 0.55
-                    : 1,
+                opacity: pressed && organizationWebsite ? 0.55 : 1,
               },
             ]}
           >
@@ -343,10 +310,7 @@ export default function ProfileScreen() {
                 },
               ]}
             >
-              <OrganizationLogo
-                logoUrl={organizationLogo}
-                size={34}
-              />
+              <OrganizationLogo logoUrl={organizationLogo} size={34} />
             </View>
 
             <View style={styles.orgInfo}>
@@ -378,8 +342,8 @@ export default function ProfileScreen() {
               <Ionicons
                 name={
                   organizationWebsite
-                    ? 'arrow-up-right-box-outline'
-                    : 'business-outline'
+                    ? "arrow-up-right-box-outline"
+                    : "business-outline"
                 }
                 size={16}
                 color={theme.textSecondary}
@@ -410,7 +374,7 @@ export default function ProfileScreen() {
                   },
                 ]}
               >
-                ••••  ••••  ••••
+                •••• •••• ••••
               </Text>
             </View>
 
@@ -436,27 +400,21 @@ export default function ProfileScreen() {
             label="Account"
             index="01"
             theme={theme}
-            onPress={() =>
-              router.push('/settings/account')
-            }
+            onPress={() => router.push("/settings/account")}
           />
 
           <ActionRow
             label="Preferences"
             index="02"
             theme={theme}
-            onPress={() =>
-              router.push('/settings/preferences')
-            }
+            onPress={() => router.push("/settings/preferences")}
           />
 
           <ActionRow
             label="Security"
             index="03"
             theme={theme}
-            onPress={() =>
-              router.push('/settings/security')
-            }
+            onPress={() => router.push("/settings/security")}
           />
         </View>
 
@@ -479,45 +437,25 @@ export default function ProfileScreen() {
           <WebRow
             label="Help Center"
             theme={theme}
-            onPress={() =>
-              openWeb(
-                WEB_LINKS.help,
-                'Help Center',
-              )
-            }
+            onPress={() => openWeb(WEB_LINKS.help, "Help Center")}
           />
 
           <WebRow
             label="About Orbis"
             theme={theme}
-            onPress={() =>
-              openWeb(
-                WEB_LINKS.about,
-                'About Orbis',
-              )
-            }
+            onPress={() => openWeb(WEB_LINKS.about, "About Orbis")}
           />
 
           <WebRow
             label="Privacy"
             theme={theme}
-            onPress={() =>
-              openWeb(
-                WEB_LINKS.privacy,
-                'Privacy',
-              )
-            }
+            onPress={() => openWeb(WEB_LINKS.privacy, "Privacy")}
           />
 
           <WebRow
             label="Terms"
             theme={theme}
-            onPress={() =>
-              openWeb(
-                WEB_LINKS.terms,
-                'Terms',
-              )
-            }
+            onPress={() => openWeb(WEB_LINKS.terms, "Terms")}
           />
         </View>
 
@@ -525,13 +463,8 @@ export default function ProfileScreen() {
             LOGOUT
             ============================================================ */}
 
-        <Button
-          variant="destructive"
-          onPress={handleLogout}
-        >
-          <Text>
-            Log out
-          </Text>
+        <Button variant="destructive" onPress={handleLogout}>
+          <Text>Log out</Text>
         </Button>
       </ScrollView>
     </View>
@@ -582,14 +515,9 @@ function ActionRow({
               color: theme.textMuted,
             },
           ]}
-        >
-        </Text>
+        ></Text>
 
-        <Ionicons
-          name="arrow-forward"
-          size={15}
-          color={theme.textMuted}
-        />
+        <Ionicons name="arrow-forward" size={15} color={theme.textMuted} />
       </View>
     </Pressable>
   );
@@ -629,11 +557,7 @@ function WebRow({
         {label}
       </Text>
 
-      <Ionicons
-       name="open-outline"
-        size={15}
-        color={theme.textMuted}
-      />
+      <Ionicons name="open-outline" size={15} color={theme.textMuted} />
     </Pressable>
   );
 }
@@ -648,7 +572,7 @@ const styles = StyleSheet.create({
   },
 
   content: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingHorizontal: Spacing.three,
   },
 
@@ -658,20 +582,20 @@ const styles = StyleSheet.create({
     maxWidth: 520,
     minHeight: 430,
 
-    borderRadius: Radii['3xl'],
+    borderRadius: Radii["3xl"],
     borderWidth: StyleSheet.hairlineWidth,
 
     padding: Spacing.six,
 
-    overflow: 'hidden',
+    overflow: "hidden",
 
     marginTop: Spacing.three,
   },
 
   cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
 
   orbisMark: {
@@ -681,8 +605,8 @@ const styles = StyleSheet.create({
   },
 
   cardNumber: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 7,
   },
 
@@ -694,15 +618,15 @@ const styles = StyleSheet.create({
 
   cardIndex: {
     ...Typography.small,
-    fontVariant: ['tabular-nums'],
+    fontVariant: ["tabular-nums"],
   },
 
   /* Identity */
 
   identityArea: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
 
     paddingVertical: Spacing.eight,
   },
@@ -714,8 +638,8 @@ const styles = StyleSheet.create({
     borderRadius: Radii.full,
     borderWidth: StyleSheet.hairlineWidth,
 
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
 
     marginBottom: Spacing.four,
   },
@@ -731,12 +655,12 @@ const styles = StyleSheet.create({
     ...Typography.h1,
     fontSize: 25,
     lineHeight: 30,
-    fontWeight: '800',
+    fontWeight: "800",
     letterSpacing: -0.7,
 
-    textAlign: 'center',
+    textAlign: "center",
 
-    maxWidth: '90%',
+    maxWidth: "90%",
   },
 
   email: {
@@ -744,7 +668,7 @@ const styles = StyleSheet.create({
 
     marginTop: 5,
 
-    maxWidth: '90%',
+    maxWidth: "90%",
   },
 
   role: {
@@ -757,8 +681,8 @@ const styles = StyleSheet.create({
     borderRadius: Radii.full,
     borderWidth: StyleSheet.hairlineWidth,
 
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   roleText: {
@@ -768,7 +692,7 @@ const styles = StyleSheet.create({
   },
 
   divider: {
-    width: '100%',
+    width: "100%",
     height: StyleSheet.hairlineWidth,
   },
 
@@ -777,8 +701,8 @@ const styles = StyleSheet.create({
   organization: {
     minHeight: 64,
 
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
 
     gap: Spacing.three,
 
@@ -791,10 +715,10 @@ const styles = StyleSheet.create({
 
     borderRadius: Radii.lg,
 
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
 
-    overflow: 'hidden',
+    overflow: "hidden",
   },
 
   orgInfo: {
@@ -820,16 +744,16 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
 
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   /* Card footer */
 
   cardFooter: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
 
     paddingTop: Spacing.four,
   },
@@ -858,19 +782,18 @@ const styles = StyleSheet.create({
   /* Actions */
 
   actions: {
-    width: '100%',
+    width: "100%",
     maxWidth: 520,
 
     marginTop: 44,
-
   },
 
   actionRow: {
     minHeight: 62,
 
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
 
   actionLabel: {
@@ -880,20 +803,20 @@ const styles = StyleSheet.create({
   },
 
   actionMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.three,
   },
 
   actionIndex: {
     ...Typography.small,
-    fontVariant: ['tabular-nums'],
+    fontVariant: ["tabular-nums"],
   },
 
   /* Orbis links */
 
   links: {
-    width: '100%',
+    width: "100%",
     maxWidth: 520,
 
     marginTop: 42,
@@ -910,9 +833,9 @@ const styles = StyleSheet.create({
   webRow: {
     minHeight: 42,
 
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
 
   webLabel: {
@@ -923,9 +846,9 @@ const styles = StyleSheet.create({
   /* Logout */
 
   logout: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
 
-    width: '100%',
+    width: "100%",
     maxWidth: 520,
     marginTop: 38,
 

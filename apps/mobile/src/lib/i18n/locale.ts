@@ -5,14 +5,14 @@
  * 100% parity with desktop i18n APIs (l, isAr, getLocale, setLocale).
  */
 
-import * as Localization from 'expo-localization';
-import { I18nManager } from 'react-native';
-import { SupportedLocale } from './types';
-import { ar, TranslationKey } from './dictionaries/ar';
-import { en } from './dictionaries/en';
-import { getSecureItem, setSecureItem } from '@/lib/api/storage';
+import * as Localization from "expo-localization";
+import { I18nManager } from "react-native";
+import { SupportedLocale } from "./types";
+import { ar, TranslationKey } from "./dictionaries/ar";
+import { en } from "./dictionaries/en";
+import { getSecureItem, setSecureItem } from "@/lib/api/storage";
 
-const LOCALE_STORAGE_KEY = 'orbis_app_language';
+const LOCALE_STORAGE_KEY = "orbis_app_language";
 
 const dictionaries: Record<SupportedLocale, Record<string, string>> = {
   ar,
@@ -20,21 +20,24 @@ const dictionaries: Record<SupportedLocale, Record<string, string>> = {
 };
 
 // Internal active locale state (defaults to device language or 'ar')
-let currentLocale: SupportedLocale = 'ar';
+let currentLocale: SupportedLocale = "ar";
 
 // Initialize default from device
 try {
   const deviceLocales = Localization.getLocales();
   const primaryLang = deviceLocales[0]?.languageCode?.toLowerCase();
-  if (primaryLang && (primaryLang === 'ar' || primaryLang.startsWith('ar'))) {
-    currentLocale = 'ar';
-  } else if (primaryLang && (primaryLang === 'en' || primaryLang.startsWith('en'))) {
-    currentLocale = 'en';
+  if (primaryLang && (primaryLang === "ar" || primaryLang.startsWith("ar"))) {
+    currentLocale = "ar";
+  } else if (
+    primaryLang &&
+    (primaryLang === "en" || primaryLang.startsWith("en"))
+  ) {
+    currentLocale = "en";
   } else {
-    currentLocale = 'ar';
+    currentLocale = "ar";
   }
 } catch {
-  currentLocale = 'ar';
+  currentLocale = "ar";
 }
 
 /**
@@ -48,7 +51,7 @@ export function getLocale(): SupportedLocale {
  * Checks if the active locale is Arabic.
  */
 export function isAr(): boolean {
-  return currentLocale === 'ar';
+  return currentLocale === "ar";
 }
 
 /**
@@ -57,13 +60,13 @@ export function isAr(): boolean {
  * Matches desktop `l(arValue, enValue)` 100%.
  */
 export function l<T>(arValue: T, enValue: T): T {
-  const isArabic = currentLocale === 'ar';
+  const isArabic = currentLocale === "ar";
   if (isArabic) {
-    return arValue !== undefined && arValue !== null && (arValue as any) !== ''
+    return arValue !== undefined && arValue !== null && (arValue as any) !== ""
       ? arValue
       : enValue;
   } else {
-    return enValue !== undefined && enValue !== null && (enValue as any) !== ''
+    return enValue !== undefined && enValue !== null && (enValue as any) !== ""
       ? enValue
       : arValue;
   }
@@ -73,13 +76,20 @@ export function l<T>(arValue: T, enValue: T): T {
  * Translates a key with optional parameter substitution.
  * e.g. t('dashboard_greeting', { name: 'Ali' }) -> "أهلاً بك، Ali"
  */
-export function t(key: TranslationKey, params?: Record<string, string | number>): string {
+export function t(
+  key: TranslationKey,
+  params?: Record<string, string | number>,
+): string {
   const dict = dictionaries[currentLocale] || dictionaries.ar;
-  let text = dict[key] || (dictionaries.ar as Record<string, string>)[key] || key;
+  let text =
+    dict[key] || (dictionaries.ar as Record<string, string>)[key] || key;
 
   if (params) {
     for (const [paramKey, paramVal] of Object.entries(params)) {
-      text = text.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(paramVal));
+      text = text.replace(
+        new RegExp(`\\{${paramKey}\\}`, "g"),
+        String(paramVal),
+      );
     }
   }
   return text;
@@ -106,7 +116,7 @@ export async function setLocale(locale: SupportedLocale): Promise<void> {
 export async function loadPersistedLocale(): Promise<SupportedLocale> {
   try {
     const saved = await getSecureItem(LOCALE_STORAGE_KEY);
-    if (saved === 'ar' || saved === 'en') {
+    if (saved === "ar" || saved === "en") {
       currentLocale = saved;
       return saved;
     }

@@ -9,8 +9,10 @@ const config: OrbisApp = {
   category: "identity",
   active: true,
   icon: "Chrome",
-  short_description: "Sync users, classes, and enable Google SSO for your organization.",
-  short_description_ar: "مزامنة المستخدمين والفصول وتفعيل تسجيل الدخول الموحد عبر حساب Google للمؤسسة.",
+  short_description:
+    "Sync users, classes, and enable Google SSO for your organization.",
+  short_description_ar:
+    "مزامنة المستخدمين والفصول وتفعيل تسجيل الدخول الموحد عبر حساب Google للمؤسسة.",
   description: `Integrate with Google Workspace for Education to manage enterprise authentication and directory synchronization.
 
 **SSO & Google Login**
@@ -54,7 +56,8 @@ Sync Orbis classes and timetables directly with Google Classroom and Google Cale
       required: true,
       value: "",
       description: "Primary Google Workspace domain (e.g., school.edu.sa).",
-      description_ar: "نطاق البريد الإلكتروني المعتمد للمؤسسة (مثال: school.edu.sa).",
+      description_ar:
+        "نطاق البريد الإلكتروني المعتمد للمؤسسة (مثال: school.edu.sa).",
       placeholder: "school.edu.sa",
     },
     {
@@ -65,7 +68,8 @@ Sync Orbis classes and timetables directly with Google Classroom and Google Cale
       required: false,
       value: "",
       description: "Google Cloud OAuth 2.0 Web Client ID for organization SSO.",
-      description_ar: "معرّف عميل OAuth 2.0 من Google Cloud لتفعيل الدخول الموحد.",
+      description_ar:
+        "معرّف عميل OAuth 2.0 من Google Cloud لتفعيل الدخول الموحد.",
       placeholder: "xxxxxx.apps.googleusercontent.com",
     },
     {
@@ -85,8 +89,10 @@ Sync Orbis classes and timetables directly with Google Classroom and Google Cale
       type: "switch",
       required: false,
       value: true,
-      description: "Allow users to log in and link their account using the organization Google domain.",
-      description_ar: "السماح للمستخدمين بتسجيل الدخول وربط حساباتهم باستخدام بريد المؤسسة الرسمي.",
+      description:
+        "Allow users to log in and link their account using the organization Google domain.",
+      description_ar:
+        "السماح للمستخدمين بتسجيل الدخول وربط حساباتهم باستخدام بريد المؤسسة الرسمي.",
     },
     {
       id: "sync_classroom",
@@ -95,8 +101,10 @@ Sync Orbis classes and timetables directly with Google Classroom and Google Cale
       type: "switch",
       required: false,
       value: false,
-      description: "Automatically synchronize classes and courses with Google Classroom.",
-      description_ar: "مزامنة الفصول الدراسية والمقررات تلقائياً مع Google Classroom.",
+      description:
+        "Automatically synchronize classes and courses with Google Classroom.",
+      description_ar:
+        "مزامنة الفصول الدراسية والمقررات تلقائياً مع Google Classroom.",
     },
     {
       id: "admin_email",
@@ -105,8 +113,10 @@ Sync Orbis classes and timetables directly with Google Classroom and Google Cale
       type: "text",
       required: false,
       value: "",
-      description: "Google Workspace super admin email for API directory access.",
-      description_ar: "البريد الإلكتروني لمدير النظام بصلاحيات Super Admin لإدارة المزامنة.",
+      description:
+        "Google Workspace super admin email for API directory access.",
+      description_ar:
+        "البريد الإلكتروني لمدير النظام بصلاحيات Super Admin لإدارة المزامنة.",
       placeholder: "admin@school.edu.sa",
     },
   ],

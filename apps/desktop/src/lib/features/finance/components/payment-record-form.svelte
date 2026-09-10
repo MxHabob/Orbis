@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { toast } from "@orbis/ui";
@@ -41,16 +41,16 @@ let referenceNumber = $state("");
 let notes = $state("");
 
 const form = new FormController({
-	initialValues: {
-		fee_id: "",
-		amount: 0,
-		method: "cash",
-		reference: "",
-		notes: "",
-		cash_account_id: "",
-		currency: "YER",
-	},
-	schema: paymentRecordInputSchema,
+  initialValues: {
+    fee_id: "",
+    amount: 0,
+    method: "cash",
+    reference: "",
+    notes: "",
+    cash_account_id: "",
+    currency: "YER",
+  },
+  schema: paymentRecordInputSchema,
 });
 const isSubmitting = $derived(form.isSubmitting);
 
@@ -73,9 +73,13 @@ async function loadDropdownData() {
   try {
     const [studentList, treasuryList, currencyList] = await Promise.all([
       api.listEnrollments(),
-			api.finance
-				.listAccounts()
-				.then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type))),
+      api.finance
+        .listAccounts()
+        .then((accounts) =>
+          accounts.filter((account: any) =>
+            ["cash", "bank"].includes(account.sub_type),
+          ),
+        ),
       api.listCurrencies(),
     ]);
     students = studentList;
@@ -108,9 +112,7 @@ async function loadStudentFees(enrollId: string) {
     } else {
       selectedFeeId = "";
       amount = null;
-      toast.info(
-				m.finance_payment_no_fees(),
-      );
+      toast.info(m.finance_payment_no_fees());
     }
   } catch (e) {
     console.error("Error loading student fees:", e);
@@ -145,40 +147,40 @@ $effect(() => {
 
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
-	if (!selectedEnrollmentId) {
-		toast.error(m.common_fee_toast_error_student());
+  if (!selectedEnrollmentId) {
+    toast.error(m.common_fee_toast_error_student());
     return;
   }
-	form.values = {
-      fee_id: selectedFeeId,
-      amount: Number(amount),
-      method:
-        paymentMethod === "Cash"
-          ? "cash"
-          : paymentMethod === "Bank Transfer"
-            ? "bank_transfer"
-            : "card",
-      reference: referenceNumber || undefined,
-      notes: notes || undefined,
-      cash_account_id: selectedTreasuryId,
-      currency: currency.trim().toUpperCase(),
-    };
-	const submitted = await form.submit(async (payload) => {
-		await api.finance.record({ ...payload, exchange_rate: undefined });
-		toast.success(m.common_payment_toast_success());
-	});
-	if (submitted) {
-		form.reset();
-		amount = null;
-		receiptNumber = "";
-		referenceNumber = "";
-		notes = "";
-		onSuccess();
-	} else if (form.formError) {
-		toast.error(form.formError);
-	} else {
-		toast.error(m.common_fee_toast_error_amount());
-	}
+  form.values = {
+    fee_id: selectedFeeId,
+    amount: Number(amount),
+    method:
+      paymentMethod === "Cash"
+        ? "cash"
+        : paymentMethod === "Bank Transfer"
+          ? "bank_transfer"
+          : "card",
+    reference: referenceNumber || undefined,
+    notes: notes || undefined,
+    cash_account_id: selectedTreasuryId,
+    currency: currency.trim().toUpperCase(),
+  };
+  const submitted = await form.submit(async (payload) => {
+    await api.finance.record({ ...payload, exchange_rate: undefined });
+    toast.success(m.common_payment_toast_success());
+  });
+  if (submitted) {
+    form.reset();
+    amount = null;
+    receiptNumber = "";
+    referenceNumber = "";
+    notes = "";
+    onSuccess();
+  } else if (form.formError) {
+    toast.error(form.formError);
+  } else {
+    toast.error(m.common_fee_toast_error_amount());
+  }
 }
 </script>
 

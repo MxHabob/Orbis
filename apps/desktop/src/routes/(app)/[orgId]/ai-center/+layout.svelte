@@ -22,7 +22,9 @@ const basePath = $derived(`/${data.orgId}/ai-center`);
 const navItems = $derived([
   {
     path: "",
-    label: m.ai_center_nav_overview ? m.ai_center_nav_overview() : "النظرة العامة",
+    label: m.ai_center_nav_overview
+      ? m.ai_center_nav_overview()
+      : "النظرة العامة",
     icon: Compass,
   },
   {
@@ -32,12 +34,16 @@ const navItems = $derived([
   },
   {
     path: "integrations",
-    label: m.ai_center_nav_integrations ? m.ai_center_nav_integrations() : "التكاملات",
+    label: m.ai_center_nav_integrations
+      ? m.ai_center_nav_integrations()
+      : "التكاملات",
     icon: Plug,
   },
   {
     path: "permissions",
-    label: m.ai_center_nav_permissions ? m.ai_center_nav_permissions() : "الصلاحيات",
+    label: m.ai_center_nav_permissions
+      ? m.ai_center_nav_permissions()
+      : "الصلاحيات",
     icon: Shield,
   },
   {

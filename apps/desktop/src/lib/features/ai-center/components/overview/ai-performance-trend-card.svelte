@@ -24,10 +24,12 @@ const displayData = $derived(
         { label: "14:00", requests: 0, latencyMs: 0 },
         { label: "16:00", requests: 0, latencyMs: 0 },
         { label: "18:00", requests: 0, latencyMs: 0 },
-      ]
+      ],
 );
 
-const maxVal = $derived(Math.max(10, ...displayData.map((d) => d.requests)) * 1.2);
+const maxVal = $derived(
+  Math.max(10, ...displayData.map((d) => d.requests)) * 1.2,
+);
 
 const bars = $derived(
   displayData.map((item) => ({
@@ -36,7 +38,7 @@ const bars = $derived(
     latPct: Math.min(100, (item.latencyMs / 500) * 100),
     requests: item.requests,
     latencyMs: item.latencyMs,
-  }))
+  })),
 );
 
 let hoveredIdx = $state<number | null>(null);
@@ -52,7 +54,7 @@ function handleMouseMove(e: MouseEvent & { currentTarget: HTMLDivElement }) {
   const rawIdx = Math.floor(mouseX / colWidth);
   const idx = Math.min(
     displayData.length - 1,
-    Math.max(0, isRtl ? displayData.length - 1 - rawIdx : rawIdx)
+    Math.max(0, isRtl ? displayData.length - 1 - rawIdx : rawIdx),
   );
 
   hoveredIdx = idx;

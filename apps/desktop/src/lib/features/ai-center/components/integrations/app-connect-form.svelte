@@ -41,7 +41,9 @@ function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   const result = createAppSettingsSchema(settings).safeParse(values);
   if (!result.success) {
-    toast.error(l("يرجى مراجعة بيانات الاتصال", "Please review the connection settings"));
+    toast.error(
+      l("يرجى مراجعة بيانات الاتصال", "Please review the connection settings"),
+    );
     return;
   }
   onsubmit?.(result.data);

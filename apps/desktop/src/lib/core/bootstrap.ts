@@ -55,9 +55,12 @@ async function registerTauriListeners(): Promise<void> {
 
     // Startup automation sends pending calendar suggestions
     unlistenCalendarSuggestions?.();
-    unlistenCalendarSuggestions = await listen<unknown[]>("calendar:pending-suggestions", (event) => {
-      workflowInbox.addSuggestions(event.payload);
-    });
+    unlistenCalendarSuggestions = await listen<unknown[]>(
+      "calendar:pending-suggestions",
+      (event) => {
+        workflowInbox.addSuggestions(event.payload);
+      },
+    );
   } catch (e) {
     // Silently fail — event listeners are non-critical
     console.warn("Failed to register Tauri event listeners:", e);

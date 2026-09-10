@@ -1,60 +1,60 @@
 <script lang="ts">
-  import { createQuery } from "@tanstack/svelte-query";
-  import { api, } from "$lib/api";
-  import { Skeleton } from "@orbis/ui/skeleton";
-  import { Sparkles, AlertTriangle, CheckCircle2, Info } from "@lucide/svelte";
-  import { getLocale } from "$lib/paraglide/runtime";
-  import WorkspaceCard from "./workspace-card.svelte";
+import { createQuery } from "@tanstack/svelte-query";
+import { api } from "$lib/api";
+import { Skeleton } from "@orbis/ui/skeleton";
+import { Sparkles, AlertTriangle, CheckCircle2, Info } from "@lucide/svelte";
+import { getLocale } from "$lib/paraglide/runtime";
+import WorkspaceCard from "./workspace-card.svelte";
 
-  let { classId, periodId }: { classId: string; periodId: string } = $props();
+let { classId, periodId }: { classId: string; periodId: string } = $props();
 
-  const isArabic = $derived(getLocale() === "ar");
+const isArabic = $derived(getLocale() === "ar");
 
-  // Fetch metrics to generate contextual recommendations
-  const classMetricsQuery = createQuery(() => ({
-    queryKey: ["class-metrics", classId, periodId],
-    queryFn: () => api.assessment.classMetrics(periodId, classId).catch(() => []),
-    enabled: !!classId && !!periodId,
-    staleTime: 5 * 60 * 1000,
-  }));
+// Fetch metrics to generate contextual recommendations
+const classMetricsQuery = createQuery(() => ({
+  queryKey: ["class-metrics", classId, periodId],
+  queryFn: () => api.assessment.classMetrics(periodId, classId).catch(() => []),
+  enabled: !!classId && !!periodId,
+  staleTime: 5 * 60 * 1000,
+}));
 
-  const metrics = $derived((classMetricsQuery.data || []) as any[]);
-  const isLoading = $derived(classMetricsQuery.isLoading);
+const metrics = $derived((classMetricsQuery.data || []) as any[]);
+const isLoading = $derived(classMetricsQuery.isLoading);
 
-  const attendanceRate = $derived.by(() => {
-    if (metrics.length === 0) return null;
-    const m = metrics[0];
-    if (!m || !m.total_attendance_records || m.total_attendance_records === 0) return null;
-    return Math.round((m.present_records / m.total_attendance_records) * 100);
-  });
+const attendanceRate = $derived.by(() => {
+  if (metrics.length === 0) return null;
+  const m = metrics[0];
+  if (!m || !m.total_attendance_records || m.total_attendance_records === 0)
+    return null;
+  return Math.round((m.present_records / m.total_attendance_records) * 100);
+});
 
-  const recommendations = $derived.by(() => {
-    if (isLoading || attendanceRate === null) return [];
-    
-    const recs = [];
-    
-    // Attendance based recommendation
-    if (attendanceRate < 90) {
-      recs.push({
-        id: "attendance-low",
-        title: "Review Attendance Records",
-        desc: `Overall attendance is ${attendanceRate}%. Action required.`,
-        icon: AlertTriangle,
-        colorClass: "bg-rose-100 text-rose-600",
-      });
-    } else {
-      recs.push({
-        id: "attendance-good",
-        title: "Attendance on Track",
-        desc: `Overall attendance is healthy at ${attendanceRate}%.`,
-        icon: CheckCircle2,
-        colorClass: "bg-green-100 text-green-600",
-      });
-    }
+const recommendations = $derived.by(() => {
+  if (isLoading || attendanceRate === null) return [];
 
-    return recs;
-  });
+  const recs = [];
 
+  // Attendance based recommendation
+  if (attendanceRate < 90) {
+    recs.push({
+      id: "attendance-low",
+      title: "Review Attendance Records",
+      desc: `Overall attendance is ${attendanceRate}%. Action required.`,
+      icon: AlertTriangle,
+      colorClass: "bg-rose-100 text-rose-600",
+    });
+  } else {
+    recs.push({
+      id: "attendance-good",
+      title: "Attendance on Track",
+      desc: `Overall attendance is healthy at ${attendanceRate}%.`,
+      icon: CheckCircle2,
+      colorClass: "bg-green-100 text-green-600",
+    });
+  }
+
+  return recs;
+});
 </script>
 
 <WorkspaceCard title={isArabic ? "توصيات الذكاء الاصطناعي" : "AI Recommendations"}>

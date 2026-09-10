@@ -1,199 +1,246 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { api, extractErrorMessage } from "$lib/api";
-  import { l } from "$lib/core/i18n";
-  import { getLocale } from "$lib/paraglide/runtime";
-  import { createClassSubjectsQuery } from "$lib/features/academics/queries";
-  import { lessonFormInputSchema } from "@orbis/schemas";
-  import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@orbis/ui/accordion";
-  import { Button } from "@orbis/ui/button";
-  import { Input } from "@orbis/ui/input";
-  import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui/select";
-  import { SheetHeader, SheetTitle } from "@orbis/ui/sheet";
-  import { Textarea } from "@orbis/ui/textarea";
-  import { BookOpen, Clock, MapPin, ShieldAlert, User, Users } from "@lucide/svelte";
-  import { toast } from "@orbis/ui";
-  import { FormController } from "$lib/shared/forms/form-controller.svelte";
-  import { FormField } from "@orbis/ui";
+import * as m from "$lib/paraglide/messages";
+import { api, extractErrorMessage } from "$lib/api";
+import { l } from "$lib/core/i18n";
+import { getLocale } from "$lib/paraglide/runtime";
+import { createClassSubjectsQuery } from "$lib/features/academics/queries";
+import { lessonFormInputSchema } from "@orbis/schemas";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@orbis/ui/accordion";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
+import { SheetHeader, SheetTitle } from "@orbis/ui/sheet";
+import { Textarea } from "@orbis/ui/textarea";
+import {
+  BookOpen,
+  Clock,
+  MapPin,
+  ShieldAlert,
+  User,
+  Users,
+} from "@lucide/svelte";
+import { toast } from "@orbis/ui";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { FormField } from "@orbis/ui";
 
-  type Props = {
-    orgId: string;
-    periodId: string;
-    classId: string;
-    dayOfWeek: number;
-    timeSlotId: string;
-    timeSlots?: any[];
-    lesson?: any | null;
-    classes?: any[];
-    subjects: any[];
-    teachers: any[];
-    rooms: any[];
-    onSuccess: () => void;
-    onCancel: () => void;
-  };
+type Props = {
+  orgId: string;
+  periodId: string;
+  classId: string;
+  dayOfWeek: number;
+  timeSlotId: string;
+  timeSlots?: any[];
+  lesson?: any | null;
+  classes?: any[];
+  subjects: any[];
+  teachers: any[];
+  rooms: any[];
+  onSuccess: () => void;
+  onCancel: () => void;
+};
 
-  let {
-    orgId: _orgId,
-    periodId,
-    classId,
-    dayOfWeek,
-    timeSlotId,
-    timeSlots = [],
-    lesson = null,
-    classes = [],
-    subjects = [],
-    teachers = [],
-    rooms = [],
-    onSuccess,
-    onCancel,
-  }: Props = $props();
+let {
+  orgId: _orgId,
+  periodId,
+  classId,
+  dayOfWeek,
+  timeSlotId,
+  timeSlots = [],
+  lesson = null,
+  classes = [],
+  subjects = [],
+  teachers = [],
+  rooms = [],
+  onSuccess,
+  onCancel,
+}: Props = $props();
 
-  let selectedClassId = $state("");
-  let selectedSubjectId = $state("");
-  let selectedTeacherId = $state("");
-  let selectedRoomId = $state("");
-  let selectedDay = $state(1);
-  let selectedSlotId = $state("");
-  let topic = $state("");
-  let homework = $state("");
-  let notes = $state("");
-  let conflictMessage = $state<string | null>(null);
-  let isCheckingConflict = $state(false);
+let selectedClassId = $state("");
+let selectedSubjectId = $state("");
+let selectedTeacherId = $state("");
+let selectedRoomId = $state("");
+let selectedDay = $state(1);
+let selectedSlotId = $state("");
+let topic = $state("");
+let homework = $state("");
+let notes = $state("");
+let conflictMessage = $state<string | null>(null);
+let isCheckingConflict = $state(false);
 
-  const form = new FormController({
-    initialValues: {
-      period_id: "",
-      class_id: "",
-      subject_id: "",
-      teacher_id: "",
-      time_slot_id: "",
-      day_of_week: 1,
-    },
-    schema: lessonFormInputSchema,
-  });
-  const isEditing = $derived(Boolean(lesson?.id));
-  const isSubmitting = $derived(form.isSubmitting);
-  const classSubjectsQuery = createClassSubjectsQuery(() => selectedClassId, () => periodId);
-  const classSubjects = $derived(classSubjectsQuery.data ?? []);
-  const availableSubjects = $derived.by(() => {
-    const linkedIds = new Set(classSubjects.map((item: any) => String(item.subject_id)));
-    return subjects.filter((subject: any) => linkedIds.has(String(subject.id)));
-  });
-  const selectedClassSubject = $derived(
-    classSubjects.find((item: any) => String(item.subject_id) === selectedSubjectId),
+const form = new FormController({
+  initialValues: {
+    period_id: "",
+    class_id: "",
+    subject_id: "",
+    teacher_id: "",
+    time_slot_id: "",
+    day_of_week: 1,
+  },
+  schema: lessonFormInputSchema,
+});
+const isEditing = $derived(Boolean(lesson?.id));
+const isSubmitting = $derived(form.isSubmitting);
+const classSubjectsQuery = createClassSubjectsQuery(
+  () => selectedClassId,
+  () => periodId,
+);
+const classSubjects = $derived(classSubjectsQuery.data ?? []);
+const availableSubjects = $derived.by(() => {
+  const linkedIds = new Set(
+    classSubjects.map((item: any) => String(item.subject_id)),
   );
-  const availableTeachers = $derived.by(() => {
-    const linkedIds = classSubjects
-      .filter((item: any) => !selectedSubjectId || String(item.subject_id) === selectedSubjectId)
-      .map((item: any) => String(item.primary_teacher_id || item.teacher_id))
-      .filter(Boolean);
-    return teachers.filter((teacher: any) => linkedIds.includes(String(teacher.id)));
-  });
-  const weekdays = $derived(
-    Array.from({ length: 7 }, (_, index) => {
-      const value = index + 1;
-      return { value, label: new Intl.DateTimeFormat(getLocale(), { weekday: "long" }).format(new Date(Date.UTC(2023, 0, value))) };
-    }),
+  return subjects.filter((subject: any) => linkedIds.has(String(subject.id)));
+});
+const selectedClassSubject = $derived(
+  classSubjects.find(
+    (item: any) => String(item.subject_id) === selectedSubjectId,
+  ),
+);
+const availableTeachers = $derived.by(() => {
+  const linkedIds = classSubjects
+    .filter(
+      (item: any) =>
+        !selectedSubjectId || String(item.subject_id) === selectedSubjectId,
+    )
+    .map((item: any) => String(item.primary_teacher_id || item.teacher_id))
+    .filter(Boolean);
+  return teachers.filter((teacher: any) =>
+    linkedIds.includes(String(teacher.id)),
   );
-
-  $effect(() => {
-    selectedClassId = String(lesson?.class_id || classId || "");
-    selectedSubjectId = String(lesson?.subject_id || "");
-    selectedTeacherId = String(lesson?.teacher_id || "");
-    selectedRoomId = String(lesson?.room_id || "");
-    selectedDay = Number(lesson?.day_of_week || dayOfWeek || 1);
-    selectedSlotId = String(lesson?.time_slot_id || timeSlotId || "");
-    topic = lesson?.topic || "";
-    homework = lesson?.homework || "";
-    notes = lesson?.notes || "";
-  });
-
-  $effect(() => {
-    if (selectedSubjectId && selectedClassSubject?.primary_teacher_id) {
-      selectedTeacherId = String(selectedClassSubject.primary_teacher_id);
-    }
-  });
-
-  $effect(() => {
-    if (selectedClassId && selectedSubjectId && selectedSlotId) checkConflict();
-  });
-
-  async function checkConflict() {
-    isCheckingConflict = true;
-    conflictMessage = null;
-    try {
-      const results = await api.scheduling.checkConflicts(
-        periodId,
-        selectedClassId,
-        selectedTeacherId || "no_teacher",
-        selectedSlotId,
-        selectedDay,
-        selectedRoomId || null,
-      );
-      const conflicts = (results ?? []).filter((item: any) => !lesson?.id || String(item.lesson_id) !== String(lesson.id));
-      if (conflicts.length > 0) {
-        const conflictType = (conflicts[0] as unknown as { conflict_type?: string }).conflict_type;
-        conflictMessage = m.common_lesson_sheet_conflict_err({ type: String(conflictType || "") });
-      }
-    } catch (error) {
-      console.warn("Conflict check bypassed:", error);
-    } finally {
-      isCheckingConflict = false;
-    }
-  }
-
-  async function handleSubmit(event: SubmitEvent) {
-    event.preventDefault();
-    form.values = {
-      period_id: periodId,
-      class_id: selectedClassId,
-      subject_id: selectedSubjectId,
-      teacher_id: selectedTeacherId,
-      time_slot_id: selectedSlotId,
-      day_of_week: selectedDay,
+});
+const weekdays = $derived(
+  Array.from({ length: 7 }, (_, index) => {
+    const value = index + 1;
+    return {
+      value,
+      label: new Intl.DateTimeFormat(getLocale(), { weekday: "long" }).format(
+        new Date(Date.UTC(2023, 0, value)),
+      ),
     };
-    if (!form.validate()) {
-      toast.error(m.common_lesson_required_fields());
-      return;
-    }
-    if (!selectedClassSubject) {
-      toast.error(m.common_lesson_error_subject_link());
-      return;
-    }
-    if (conflictMessage) {
-      toast.error(conflictMessage);
-      return;
-    }
+  }),
+);
 
-    const submitted = await form.submit(async (values) => {
-      const content = {
-        topic: topic.trim() || undefined,
-        homework: homework.trim() || undefined,
-        notes: notes.trim() || undefined,
-      };
-      if (isEditing) {
-        await api.scheduling.updateLesson(lesson.id, {
-          teacher_id: values.teacher_id || undefined,
-          time_slot_id: values.time_slot_id,
-          day_of_week: values.day_of_week,
-          room_id: selectedRoomId || undefined,
-          ...content,
-        } as any);
-      } else {
-        await api.scheduling.createLesson({
-          ...values,
-          class_subject_id: selectedClassSubject.id,
-          room_id: selectedRoomId || undefined,
-          ...content,
-        } as any);
-      }
-      toast.success(isEditing ? m.common_lesson_edit_success() : m.common_lesson_toast_success());
-      onSuccess();
-    });
-    if (!submitted && form.formError) {
-      toast.error(m.common_lesson_toast_error(), { description: extractErrorMessage(form.formError) });
-    }
+$effect(() => {
+  selectedClassId = String(lesson?.class_id || classId || "");
+  selectedSubjectId = String(lesson?.subject_id || "");
+  selectedTeacherId = String(lesson?.teacher_id || "");
+  selectedRoomId = String(lesson?.room_id || "");
+  selectedDay = Number(lesson?.day_of_week || dayOfWeek || 1);
+  selectedSlotId = String(lesson?.time_slot_id || timeSlotId || "");
+  topic = lesson?.topic || "";
+  homework = lesson?.homework || "";
+  notes = lesson?.notes || "";
+});
+
+$effect(() => {
+  if (selectedSubjectId && selectedClassSubject?.primary_teacher_id) {
+    selectedTeacherId = String(selectedClassSubject.primary_teacher_id);
   }
+});
+
+$effect(() => {
+  if (selectedClassId && selectedSubjectId && selectedSlotId) checkConflict();
+});
+
+async function checkConflict() {
+  isCheckingConflict = true;
+  conflictMessage = null;
+  try {
+    const results = await api.scheduling.checkConflicts(
+      periodId,
+      selectedClassId,
+      selectedTeacherId || "no_teacher",
+      selectedSlotId,
+      selectedDay,
+      selectedRoomId || null,
+    );
+    const conflicts = (results ?? []).filter(
+      (item: any) =>
+        !lesson?.id || String(item.lesson_id) !== String(lesson.id),
+    );
+    if (conflicts.length > 0) {
+      const conflictType = (
+        conflicts[0] as unknown as { conflict_type?: string }
+      ).conflict_type;
+      conflictMessage = m.common_lesson_sheet_conflict_err({
+        type: String(conflictType || ""),
+      });
+    }
+  } catch (error) {
+    console.warn("Conflict check bypassed:", error);
+  } finally {
+    isCheckingConflict = false;
+  }
+}
+
+async function handleSubmit(event: SubmitEvent) {
+  event.preventDefault();
+  form.values = {
+    period_id: periodId,
+    class_id: selectedClassId,
+    subject_id: selectedSubjectId,
+    teacher_id: selectedTeacherId,
+    time_slot_id: selectedSlotId,
+    day_of_week: selectedDay,
+  };
+  if (!form.validate()) {
+    toast.error(m.common_lesson_required_fields());
+    return;
+  }
+  if (!selectedClassSubject) {
+    toast.error(m.common_lesson_error_subject_link());
+    return;
+  }
+  if (conflictMessage) {
+    toast.error(conflictMessage);
+    return;
+  }
+
+  const submitted = await form.submit(async (values) => {
+    const content = {
+      topic: topic.trim() || undefined,
+      homework: homework.trim() || undefined,
+      notes: notes.trim() || undefined,
+    };
+    if (isEditing) {
+      await api.scheduling.updateLesson(lesson.id, {
+        teacher_id: values.teacher_id || undefined,
+        time_slot_id: values.time_slot_id,
+        day_of_week: values.day_of_week,
+        room_id: selectedRoomId || undefined,
+        ...content,
+      } as any);
+    } else {
+      await api.scheduling.createLesson({
+        ...values,
+        class_subject_id: selectedClassSubject.id,
+        room_id: selectedRoomId || undefined,
+        ...content,
+      } as any);
+    }
+    toast.success(
+      isEditing
+        ? m.common_lesson_edit_success()
+        : m.common_lesson_toast_success(),
+    );
+    onSuccess();
+  });
+  if (!submitted && form.formError) {
+    toast.error(m.common_lesson_toast_error(), {
+      description: extractErrorMessage(form.formError),
+    });
+  }
+}
 </script>
 
 <form onsubmit={handleSubmit} class="flex h-full flex-col overflow-hidden gap-0">

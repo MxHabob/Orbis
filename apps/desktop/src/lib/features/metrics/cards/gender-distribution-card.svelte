@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import DragIndicator from "../components/drag-indicator.svelte";
 
 let {

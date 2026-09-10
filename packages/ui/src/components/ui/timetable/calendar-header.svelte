@@ -1,28 +1,28 @@
 <script lang="ts">
-  interface Weekday {
-    value: number; // 1 = Sunday, 2 = Monday, etc.
-    label: string;
-    isToday?: boolean;
-    dateLabel?: string;
-  }
+interface Weekday {
+  value: number; // 1 = Sunday, 2 = Monday, etc.
+  label: string;
+  isToday?: boolean;
+  dateLabel?: string;
+}
 
-  interface Props {
-    weekdays: Weekday[];
-    activeDay?: number | null;
-    lessonsByDay?: Record<number, number>;
-    locale?: string;
-    onDaySelect?: (day: number) => void;
-  }
+interface Props {
+  weekdays: Weekday[];
+  activeDay?: number | null;
+  lessonsByDay?: Record<number, number>;
+  locale?: string;
+  onDaySelect?: (day: number) => void;
+}
 
-  let {
-    weekdays = [],
-    activeDay = null,
-    lessonsByDay = {},
-    locale = "ar",
-    onDaySelect,
-  }: Props = $props();
+let {
+  weekdays = [],
+  activeDay = null,
+  lessonsByDay = {},
+  locale = "ar",
+  onDaySelect,
+}: Props = $props();
 
-  const isArabic = $derived(locale === "ar");
+const isArabic = $derived(locale === "ar");
 </script>
 
 <div class="flex flex-1 min-w-0 border-b border-border/60 bg-muted/10">

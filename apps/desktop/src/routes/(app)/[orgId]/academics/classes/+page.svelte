@@ -4,101 +4,99 @@ Lists all academic classes with student counts, capacity utilization progress ba
 and triggers the class creation side sheet. Each card links to the class detail page.
 -->
 <script lang="ts">
-	import * as m from "$lib/paraglide/messages";
-	import { onMount } from "svelte";
-	import { createQuery } from "@tanstack/svelte-query";
-	import { api, } from "$lib/api";
-	import { Button } from "@orbis/ui/button";
-	import { Skeleton } from "@orbis/ui/skeleton";
-	import { MetricProgress } from "@orbis/ui";
-	import { Plus, Users, GraduationCap } from "@lucide/svelte";
-	import { toast } from "@orbis/ui";
-	import { localizeHref } from "$lib/paraglide/runtime";
-	import { l } from "$lib/core/i18n/locale";
-	import { fade } from "svelte/transition";
-	import ClassCreateSheet from "$lib/features/academics/components/class-create-sheet.svelte";
+import * as m from "$lib/paraglide/messages";
+import { onMount } from "svelte";
+import { createQuery } from "@tanstack/svelte-query";
+import { api } from "$lib/api";
+import { Button } from "@orbis/ui/button";
+import { Skeleton } from "@orbis/ui/skeleton";
+import { MetricProgress } from "@orbis/ui";
+import { Plus, Users, GraduationCap } from "@lucide/svelte";
+import { toast } from "@orbis/ui";
+import { localizeHref } from "$lib/paraglide/runtime";
+import { l } from "$lib/core/i18n/locale";
+import { fade } from "svelte/transition";
+import ClassCreateSheet from "$lib/features/academics/components/class-create-sheet.svelte";
 
-	let { data }: { data: { orgId: string } } = $props();
+let { data }: { data: { orgId: string } } = $props();
 
-	// State
-	let classes = $state<any[]>([]);
-	let isLoading = $state(true);
-	let error = $state<string | null>(null);
-	let activePeriodId = $state("");
+// State
+let classes = $state<any[]>([]);
+let isLoading = $state(true);
+let error = $state<string | null>(null);
+let activePeriodId = $state("");
 
-	const periodsQuery = createQuery(() => ({
-		queryKey: ["classes-periods", data.orgId],
-		queryFn: () => api.listAcademicPeriods(),
-		enabled: !!data.orgId,
-		staleTime: 10 * 60 * 1000,
-	}));
+const periodsQuery = createQuery(() => ({
+  queryKey: ["classes-periods", data.orgId],
+  queryFn: () => api.listAcademicPeriods(),
+  enabled: !!data.orgId,
+  staleTime: 10 * 60 * 1000,
+}));
 
-	const classMetricsQuery = createQuery(() => ({
-		queryKey: ["classes-metrics", data.orgId, activePeriodId],
-		queryFn: () => api.assessment.classMetrics(activePeriodId),
-		enabled: !!data.orgId && !!activePeriodId,
-		staleTime: 2 * 60 * 1000,
-	}));
+const classMetricsQuery = createQuery(() => ({
+  queryKey: ["classes-metrics", data.orgId, activePeriodId],
+  queryFn: () => api.assessment.classMetrics(activePeriodId),
+  enabled: !!data.orgId && !!activePeriodId,
+  staleTime: 2 * 60 * 1000,
+}));
 
-	const periods = $derived(periodsQuery.data ?? []);
-	const classMetrics = $derived(classMetricsQuery.data ?? []);
+const periods = $derived(periodsQuery.data ?? []);
+const classMetrics = $derived(classMetricsQuery.data ?? []);
 
-	$effect(() => {
-		if (periods.length > 0 && !activePeriodId) {
-			const active =
-				periods.find((period: any) => period.status === "active") ??
-				periods[0];
-			activePeriodId = String(active.id);
-		}
-	});
+$effect(() => {
+  if (periods.length > 0 && !activePeriodId) {
+    const active =
+      periods.find((period: any) => period.status === "active") ?? periods[0];
+    activePeriodId = String(active.id);
+  }
+});
 
-	// Sheet trigger state
-	let isModalOpen = $state(false);
+// Sheet trigger state
+let isModalOpen = $state(false);
 
-	// Load data
-	async function loadData() {
-		isLoading = true;
-		error = null;
-		try {
-			const classData = await api.listClasses();
-			classes = classData;
-		} catch (e) {
-			error = e instanceof Error ? e.message : String(e);
-			toast.error(m.common_classes_load_error());
-		} finally {
-			isLoading = false;
-		}
-	}
+// Load data
+async function loadData() {
+  isLoading = true;
+  error = null;
+  try {
+    const classData = await api.listClasses();
+    classes = classData;
+  } catch (e) {
+    error = e instanceof Error ? e.message : String(e);
+    toast.error(m.common_classes_load_error());
+  } finally {
+    isLoading = false;
+  }
+}
 
-	onMount(() => {
-		if (data.orgId) {
-			loadData();
-		}
-	});
+onMount(() => {
+  if (data.orgId) {
+    loadData();
+  }
+});
 
-	function getClassMetric(classId: string): any {
-		return classMetrics.find(
-			(metric: any) => String(metric.class_id) === String(classId),
-		);
-	}
+function getClassMetric(classId: string): any {
+  return classMetrics.find(
+    (metric: any) => String(metric.class_id) === String(classId),
+  );
+}
 
-	// Compute statistics
-	const totalClassesCount = $derived(classes.length);
-	const totalStudentsCount = $derived(
-		classMetrics.reduce(
-			(total: number, metric: any) =>
-				total + Number(metric.active_students || 0),
-			0,
-		),
-	);
-	const averageClassSize = $derived(
-		totalClassesCount > 0
-			? Math.round(totalStudentsCount / totalClassesCount)
-			: 0,
-	);
-	const pageLoading = $derived(
-		isLoading || periodsQuery.isLoading || classMetricsQuery.isLoading,
-	);
+// Compute statistics
+const totalClassesCount = $derived(classes.length);
+const totalStudentsCount = $derived(
+  classMetrics.reduce(
+    (total: number, metric: any) => total + Number(metric.active_students || 0),
+    0,
+  ),
+);
+const averageClassSize = $derived(
+  totalClassesCount > 0
+    ? Math.round(totalStudentsCount / totalClassesCount)
+    : 0,
+);
+const pageLoading = $derived(
+  isLoading || periodsQuery.isLoading || classMetricsQuery.isLoading,
+);
 </script>
 
 <div

@@ -6,7 +6,7 @@ and triggers the subject creation side sheet.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import {
@@ -80,49 +80,37 @@ const filteredSubjects = $derived(
 // Map subjects to a themed icon and class
 function getSubjectTheme(nameStr: string) {
   const nameLower = nameStr.toLowerCase();
-  if (
-    nameLower.includes("math")
-  ) {
+  if (nameLower.includes("math")) {
     return {
       icon: Calculator,
       bg: "bg-blue-500/10 text-blue-500 border-blue-500/20",
     };
   }
-  if (
-    nameLower.includes("science")
-  ) {
+  if (nameLower.includes("science")) {
     return {
       icon: FlaskConical,
       bg: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
     };
   }
-  if (
-    nameLower.includes("english")
-  ) {
+  if (nameLower.includes("english")) {
     return {
       icon: Languages,
       bg: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
     };
   }
-  if (
-    nameLower.includes("islam")
-  ) {
+  if (nameLower.includes("islam")) {
     return {
       icon: Heart,
       bg: "bg-amber-500/10 text-amber-500 border-amber-500/20",
     };
   }
-  if (
-    nameLower.includes("art")
-  ) {
+  if (nameLower.includes("art")) {
     return {
       icon: Palette,
       bg: "bg-pink-500/10 text-pink-500 border-pink-500/20",
     };
   }
-  if (
-    nameLower.includes("computer")
-  ) {
+  if (nameLower.includes("computer")) {
     return {
       icon: Atom,
       bg: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20",

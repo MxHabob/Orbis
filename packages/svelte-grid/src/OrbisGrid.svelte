@@ -105,10 +105,18 @@ let viewportW = $state(800);
 let sorts = $state<SortSpec[]>([]);
 let selection = $state<SelectionSnapshot>(emptySelection());
 let editing = $state<{ row: number; col: number; draft: string } | null>(null);
-let menu = $state<{ x: number; y: number; items: ContextMenuItem[]; row: number; col: number } | null>(null);
+let menu = $state<{
+  x: number;
+  y: number;
+  items: ContextMenuItem[];
+  row: number;
+  col: number;
+} | null>(null);
 let pasteBanner = $state<BulkResult | null>(null);
 let columnWidths = $state<Record<string, number>>({});
-let resizing = $state<{ id: string; startX: number; startW: number } | null>(null);
+let resizing = $state<{ id: string; startX: number; startW: number } | null>(
+  null,
+);
 let origin = $state<{ row: number; col: number } | null>(null);
 let editorEl: HTMLInputElement | HTMLSelectElement | null = $state(null);
 let dragging = $state(false);
@@ -120,18 +128,45 @@ setContext("orbis-grid-onaction", (event: GridActionEvent) => {
 
 const visibleCols = $derived(columns.filter((c) => !c.hidden));
 const displayRows = $derived(
-  clientQuery ? queryClient(source, visibleCols, { filter, search, sorts }) : source,
+  clientQuery
+    ? queryClient(source, visibleCols, { filter, search, sorts })
+    : source,
 );
-const rowWindow = $derived(visibleWindow(scrollTop, viewportH - HEADER_H, rowSize, displayRows.length, 10));
+const rowWindow = $derived(
+  visibleWindow(
+    scrollTop,
+    viewportH - HEADER_H,
+    rowSize,
+    displayRows.length,
+    10,
+  ),
+);
 const totalWidth = $derived(
-  visibleCols.reduce((sum, col) => sum + (columnWidths[columnId(col)] ?? columnWidth(col)), 0),
+  visibleCols.reduce(
+    (sum, col) => sum + (columnWidths[columnId(col)] ?? columnWidth(col)),
+    0,
+  ),
 );
 const totalHeight = $derived(displayRows.length * rowSize);
 const colWindow = $derived.by(() => {
-  if (visibleCols.length < 24) return { start: 0, end: visibleCols.length, offset: 0, count: visibleCols.length };
-  return visibleWindow(rtl ? 0 : scrollLeft, viewportW, 120, visibleCols.length, 4);
+  if (visibleCols.length < 24)
+    return {
+      start: 0,
+      end: visibleCols.length,
+      offset: 0,
+      count: visibleCols.length,
+    };
+  return visibleWindow(
+    rtl ? 0 : scrollLeft,
+    viewportW,
+    120,
+    visibleCols.length,
+    4,
+  );
 });
-const windowedCols = $derived(visibleCols.slice(colWindow.start, colWindow.end));
+const windowedCols = $derived(
+  visibleCols.slice(colWindow.start, colWindow.end),
+);
 
 function rowKey(row: GridRow, index: number): string {
   const id = row[rowIdKey];
@@ -164,24 +199,35 @@ function setActive(row: number, col: number, extend = false) {
   const r = clampIndex(row, Math.max(0, displayRows.length - 1));
   const c = clampIndex(col, Math.max(0, visibleCols.length - 1));
   if (extend && origin) {
-    selection = { ...selection, active: { row: r, col: c }, range: extendRange(origin, { row: r, col: c }) };
+    selection = {
+      ...selection,
+      active: { row: r, col: c },
+      range: extendRange(origin, { row: r, col: c }),
+    };
   } else {
     origin = { row: r, col: c };
     selection = {
       ...selection,
       active: { row: r, col: c },
-      range: range ? { startRow: r, startCol: c, endRow: r, endCol: c } : selection.range,
+      range: range
+        ? { startRow: r, startCol: c, endRow: r, endCol: c }
+        : selection.range,
     };
   }
   onselection?.(selection);
   const top = r * rowSize;
   if (bodyEl) {
     if (top < scrollTop) bodyEl.scrollTop = top;
-    if (top + rowSize > scrollTop + viewportH - HEADER_H) bodyEl.scrollTop = top - (viewportH - HEADER_H) + rowSize;
+    if (top + rowSize > scrollTop + viewportH - HEADER_H)
+      bodyEl.scrollTop = top - (viewportH - HEADER_H) + rowSize;
   }
 }
 
-function commitOverlay(rowIndex: number, col: OrbisColumnDef, newValue: unknown) {
+function commitOverlay(
+  rowIndex: number,
+  col: OrbisColumnDef,
+  newValue: unknown,
+) {
   const row = displayRows[rowIndex];
   if (!row) return;
   const id = columnId(col);
@@ -206,8 +252,14 @@ function startEdit(row: number, col: number, seed?: string) {
   if (!column || readonly || column.readonly) return;
   const type = column.type;
   if (type === "boolean" || column.editor === "checkbox") {
-    const current = displayRows[row] ? getCellValue(displayRows[row]!, column) : false;
-    commitOverlay(row, column, !(current === true || current === 1 || current === "true"));
+    const current = displayRows[row]
+      ? getCellValue(displayRows[row]!, column)
+      : false;
+    commitOverlay(
+      row,
+      column,
+      !(current === true || current === 1 || current === "true"),
+    );
     return;
   }
   const value = displayRows[row] ? getCellValue(displayRows[row]!, column) : "";
@@ -278,14 +330,20 @@ async function pasteFromClipboard() {
 function hitFromEvent(e: PointerEvent): { row: number; col: number } | null {
   const node = document.elementFromPoint(e.clientX, e.clientY);
   const cell = node instanceof Element ? node.closest("[data-grid-r]") : null;
-  if (cell instanceof HTMLElement && cell.dataset.gridR != null && cell.dataset.gridC != null) {
+  if (
+    cell instanceof HTMLElement &&
+    cell.dataset.gridR != null &&
+    cell.dataset.gridC != null
+  ) {
     return { row: Number(cell.dataset.gridR), col: Number(cell.dataset.gridC) };
   }
   if (!bodyEl || !displayRows.length) return null;
   const rect = bodyEl.getBoundingClientRect();
   const relY = e.clientY - rect.top + bodyEl.scrollTop;
   const localX = e.clientX - rect.left;
-  const relX = rtl ? bodyEl.scrollWidth - (localX + Math.max(0, bodyEl.scrollLeft)) : localX + bodyEl.scrollLeft;
+  const relX = rtl
+    ? bodyEl.scrollWidth - (localX + Math.max(0, bodyEl.scrollLeft))
+    : localX + bodyEl.scrollLeft;
   return {
     row: rowFromOffset(relY, HEADER_H, rowSize, displayRows.length),
     col: colFromOffset(relX, visibleCols.map(widthOf)),
@@ -351,8 +409,12 @@ function handleKeydown(e: KeyboardEvent) {
   switch (cmd.action) {
     case "move":
       setActive(
-        Number.isFinite(cmd.rowDelta) ? active.row + cmd.rowDelta : cmd.rowDelta,
-        Number.isFinite(cmd.colDelta) ? active.col + cmd.colDelta : cmd.colDelta,
+        Number.isFinite(cmd.rowDelta)
+          ? active.row + cmd.rowDelta
+          : cmd.rowDelta,
+        Number.isFinite(cmd.colDelta)
+          ? active.col + cmd.colDelta
+          : cmd.colDelta,
       );
       break;
     case "extend":
@@ -394,7 +456,10 @@ function handleKeydown(e: KeyboardEvent) {
       onselection?.(selection);
       break;
     case "home":
-      setActive(cmd.rowDelta < 0 ? 0 : active.row, cmd.colDelta < 0 ? 0 : active.col);
+      setActive(
+        cmd.rowDelta < 0 ? 0 : active.row,
+        cmd.colDelta < 0 ? 0 : active.col,
+      );
       break;
     case "end":
       setActive(
@@ -424,7 +489,11 @@ function onHeaderClick(col: OrbisColumnDef, e: MouseEvent) {
 function onContext(row: number, col: number, e: MouseEvent) {
   e.preventDefault();
   setActive(row, col, e.shiftKey);
-  const hasSelection = selectedCount(selection, displayRows.length) > 1 || (selection.range && (normalizeRange(selection.range).endRow !== normalizeRange(selection.range).startRow));
+  const hasSelection =
+    selectedCount(selection, displayRows.length) > 1 ||
+    (selection.range &&
+      normalizeRange(selection.range).endRow !==
+        normalizeRange(selection.range).startRow);
   menu = {
     x: e.clientX,
     y: e.clientY,
@@ -440,7 +509,10 @@ function onContext(row: number, col: number, e: MouseEvent) {
 }
 
 function runMenu(id: string) {
-  const active = selection.active ?? { row: menu?.row ?? 0, col: menu?.col ?? 0 };
+  const active = selection.active ?? {
+    row: menu?.row ?? 0,
+    col: menu?.col ?? 0,
+  };
   const col = visibleCols[active.col];
   menu = null;
   switch (id) {
@@ -452,7 +524,12 @@ function runMenu(id: string) {
       if (selection.active) {
         selection = {
           ...selection,
-          range: { startRow: selection.active.row, startCol: 0, endRow: selection.active.row, endCol: visibleCols.length - 1 },
+          range: {
+            startRow: selection.active.row,
+            startCol: 0,
+            endRow: selection.active.row,
+            endCol: visibleCols.length - 1,
+          },
         };
         copySelection();
       }
@@ -471,7 +548,11 @@ function runMenu(id: string) {
       break;
     case "select-row": {
       const row = displayRows[active.row];
-      if (row) selection = toggleId({ ...selection, mode: "explicit", ids: new Set() }, rowKey(row, active.row));
+      if (row)
+        selection = toggleId(
+          { ...selection, mode: "explicit", ids: new Set() },
+          rowKey(row, active.row),
+        );
       break;
     }
     case "select-all":
@@ -508,8 +589,13 @@ function onResizeStart(col: OrbisColumnDef, e: PointerEvent) {
 
 function onPointerMove(e: PointerEvent) {
   if (resizing) {
-    const delta = rtl ? resizing.startX - e.clientX : e.clientX - resizing.startX;
-    columnWidths = { ...columnWidths, [resizing.id]: Math.max(48, resizing.startW + delta) };
+    const delta = rtl
+      ? resizing.startX - e.clientX
+      : e.clientX - resizing.startX;
+    columnWidths = {
+      ...columnWidths,
+      [resizing.id]: Math.max(48, resizing.startW + delta),
+    };
     return;
   }
   if (!dragging || !range || editing) return;
@@ -540,13 +626,20 @@ function editorInputType(col: OrbisColumnDef): string {
   }
 }
 
-function cellClass(row: GridRow, col: OrbisColumnDef, r: number, c: number): string {
+function cellClass(
+  row: GridRow,
+  col: OrbisColumnDef,
+  r: number,
+  c: number,
+): string {
   const parts: string[] = ["orbis-cell"];
   const errors = row.__errors as Map<string, string> | undefined;
   if (errors?.has(columnId(col))) parts.push("is-error");
-  if (selection.active?.row === r && selection.active?.col === c) parts.push("is-active");
+  if (selection.active?.row === r && selection.active?.col === c)
+    parts.push("is-active");
   if (rangeContains(selection.range, r, c)) parts.push("is-ranged");
-  if (isRowSelected(selection, rowKey(row, r), displayRows.length)) parts.push("is-row-selected");
+  if (isRowSelected(selection, rowKey(row, r), displayRows.length))
+    parts.push("is-row-selected");
   if (cellStyle) {
     const extra = cellStyle(row, col);
     if (extra) parts.push(extra);

@@ -32,7 +32,10 @@ let {
 
 function getSubjectLabel(subj: any) {
   if (!subj) return "";
-  const name = l(subj.name_ar || subj.nameAr, subj.name || subj.nameEn || subj.name_en);
+  const name = l(
+    subj.name_ar || subj.nameAr,
+    subj.name || subj.nameEn || subj.name_en,
+  );
   if (name) return name;
   if (subj.code) return String(subj.code);
   return String(subj.id || "");
@@ -46,7 +49,10 @@ const displayLabel = $derived(
   value === "all" || value === "" || !value
     ? showAllOption
       ? allOptionLabel || "جميع المواد"
-      : placeholder || (m.common_cs_form_select_subject ? m.common_cs_form_select_subject() : "اختر المادة...")
+      : placeholder ||
+        (m.common_cs_form_select_subject
+          ? m.common_cs_form_select_subject()
+          : "اختر المادة...")
     : selectedSubject
       ? getSubjectLabel(selectedSubject)
       : value,

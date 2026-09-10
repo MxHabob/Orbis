@@ -37,20 +37,16 @@ let {
 }: Props = $props();
 
 const displaySaveLabel = $derived(
-  saveLabel || m.settings_action_save_changes()
+  saveLabel || m.settings_action_save_changes(),
 );
 
-const displaySavingLabel = $derived(
-  savingLabel || m.common_state_saving()
-);
+const displaySavingLabel = $derived(savingLabel || m.common_state_saving());
 
 const displayResetLabel = $derived(
-  resetLabel || m.settings_action_discard_changes()
+  resetLabel || m.settings_action_discard_changes(),
 );
 
-const displayMessage = $derived(
-  message || m.settings_unsaved_changes()
-);
+const displayMessage = $derived(message || m.settings_unsaved_changes());
 </script>
 
 {#if visible && isDirty}

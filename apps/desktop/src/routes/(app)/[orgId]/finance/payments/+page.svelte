@@ -7,7 +7,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { queryClient } from "$lib/api";
 import {
   Card,
@@ -177,7 +177,16 @@ async function loadData() {
   try {
     const [paymentsList, treasuriesList, studentsList] = await Promise.all([
       api.listPayments(null, null),
-      api.listAccounts().then((accounts) => accounts.filter((account: any) => ["cash", "bank"].includes(account.sub_type) && account.is_active === 1 && account.is_control_account !== 1)),
+      api
+        .listAccounts()
+        .then((accounts) =>
+          accounts.filter(
+            (account: any) =>
+              ["cash", "bank"].includes(account.sub_type) &&
+              account.is_active === 1 &&
+              account.is_control_account !== 1,
+          ),
+        ),
       api.listEnrollments(),
       loadCurrencies(),
     ]);
@@ -198,7 +207,6 @@ async function loadData() {
     if (treasuries.length > 0 && !treasuryId) {
       treasuryId = treasuries[0].id;
     }
-
   } catch (e) {
     console.error("Error loading data:", e);
     error = e instanceof Error ? e.message : String(e);
@@ -495,7 +503,7 @@ function handlePrintList() {
   printParameters = {
     method: methodFilter,
     start_date: startDateFilter,
-    end_date: endDateFilter
+    end_date: endDateFilter,
   };
   printReportOpen = true;
 }

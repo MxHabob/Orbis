@@ -59,7 +59,8 @@ export class PersonalInfoState {
     this.email = originalStudent.email || "";
     this.phone = originalStudent.phone_number || originalStudent.phone || "";
     this.address = originalStudent.address || "";
-    this.previousSchool = originalStudent.previous_school || originalStudent.previousSchool || "";
+    this.previousSchool =
+      originalStudent.previous_school || originalStudent.previousSchool || "";
     this.district = originalStudent.district || "";
     this.governorate = originalStudent.governorate || "";
     this.nationality = originalStudent.nationality || "";

@@ -4,12 +4,12 @@
  * 404 Fallback Screen.
  */
 
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Link, Stack, router } from 'expo-router';
-import { Header } from '@/components/header';
-import { EmptyState } from '@/components/ui/empty-state';
-import { useTheme } from '@/hooks/use-theme';
+import React from "react";
+import { StyleSheet, View } from "react-native";
+import { Link, Stack, router } from "expo-router";
+import { Header } from "@/components/header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { useTheme } from "@/hooks/use-theme";
 
 export default function NotFoundScreen() {
   const theme = useTheme();
@@ -18,14 +18,18 @@ export default function NotFoundScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <Header title="الصفحة غير موجودة" showBack onBack={() => router.replace('/')} />
+        <Header
+          title="الصفحة غير موجودة"
+          showBack
+          onBack={() => router.replace("/")}
+        />
         <View style={styles.center}>
           <EmptyState
             icon="alert-circle-outline"
             title="لم نتمكن من العثور على هذه الصفحة"
             description="الرابط المطلوب غير متوفر أو تم نقله. يمكنك العودة إلى الصفحة الرئيسية."
             actionTitle="العودة للرئيسية"
-            onAction={() => router.replace('/')}
+            onAction={() => router.replace("/")}
           />
         </View>
       </View>
@@ -39,7 +43,7 @@ const styles = StyleSheet.create({
   },
   center: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

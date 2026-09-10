@@ -5,20 +5,20 @@
  * Allows parents to submit student admission details for school verification and activation.
  */
 
-import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useState } from "react";
+import { View, StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useTheme } from '@/hooks/use-theme';
-import { useI18n } from '@/lib/i18n';
-import { Header } from '@/components/header';
-import { KeyboardAwareView } from '@/components/ui/keyboard-aware-view';
+import { useTheme } from "@/hooks/use-theme";
+import { useI18n } from "@/lib/i18n";
+import { Header } from "@/components/header";
+import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
 import {
   StudentRegistrationForm,
   StudentRegistrationSuccess,
   type StudentRegistrationData,
-} from '@/components/auth';
-import { Spacing } from '@/constants/theme';
+} from "@/components/auth";
+import { Spacing } from "@/constants/theme";
 
 export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
@@ -58,8 +58,8 @@ export default function RegisterScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Header
-        title={t('admission_title')}
-        subtitle={t('admission_subtitle')}
+        title={t("admission_title")}
+        subtitle={t("admission_subtitle")}
         showBack={!submittedData}
       />
 
@@ -67,7 +67,8 @@ export default function RegisterScreen() {
         contentContainerStyle={[
           styles.scrollContent,
           { paddingBottom: insets.bottom + Spacing.six },
-        ]}>
+        ]}
+      >
         {submittedData ? (
           <StudentRegistrationSuccess
             referenceNumber={submittedData.referenceNumber}

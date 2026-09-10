@@ -1,7 +1,24 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Info } from "@lucide/svelte";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@orbis/ui/dialog";
-let { open = $bindable(false), log, userEmail, formatDate, onclose }: { open: boolean; log: any; userEmail: string; formatDate: (value: string) => string; onclose: () => void } = $props();
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@orbis/ui/dialog";
+let {
+  open = $bindable(false),
+  log,
+  userEmail,
+  formatDate,
+  onclose,
+}: {
+  open: boolean;
+  log: any;
+  userEmail: string;
+  formatDate: (value: string) => string;
+  onclose: () => void;
+} = $props();
 </script>
 {#if log}<Dialog open={open} onOpenChange={(value) => { if (!value) onclose(); }}><DialogContent class="max-w-2xl text-start font-sans"><DialogHeader><DialogTitle class="flex items-center gap-2"><Info size={18} class="text-primary" /><span>{m.common_audit_details_title?.() || "Audit Log Details"}</span></DialogTitle></DialogHeader><div class="text-xs text-muted-foreground">{formatDate(log.created_at)}</div><div class="grid grid-cols-2 gap-4 py-2 text-xs"><div class="flex flex-col gap-1"><span class="text-muted-foreground font-semibold">User:</span><span class="text-foreground">{userEmail}</span></div><div class="flex flex-col gap-1"><span class="text-muted-foreground font-semibold">Action:</span><span class="font-mono bg-muted/40 px-2 py-0.5 rounded-md border border-border/50 inline-block">{log.action}</span></div><div class="flex flex-col gap-1"><span class="text-muted-foreground font-semibold">Entity Type:</span><span class="text-foreground font-semibold">{log.entity_type}</span></div><div class="flex flex-col gap-1"><span class="text-muted-foreground font-semibold">Entity ID:</span><span class="text-foreground font-mono">{log.entity_id}</span></div>{#if log.ip_address}<div class="flex flex-col gap-1"><span class="text-muted-foreground font-semibold">IP Address:</span><span class="text-foreground font-mono">{log.ip_address}</span></div>{/if}</div>{#if log.metadata}<div class="flex flex-col gap-1.5 text-xs text-start border-t border-border pt-4"><span class="text-muted-foreground font-semibold">Metadata:</span><pre class="bg-muted p-3 rounded-lg text-[10px] font-mono overflow-x-auto text-foreground whitespace-pre-wrap">{log.metadata}</pre></div>{/if}</DialogContent></Dialog>{/if}

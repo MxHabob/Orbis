@@ -7,7 +7,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import {
   Zap,
   ShieldAlert,
@@ -106,11 +106,11 @@ const currentSnapshot = $derived(
     safety: safetySettings,
     insight: insightSettings,
     memory: memorySettings,
-  })
+  }),
 );
 
 const isDirty = $derived(
-  Boolean(initialSnapshot && currentSnapshot !== initialSnapshot)
+  Boolean(initialSnapshot && currentSnapshot !== initialSnapshot),
 );
 
 function resetToInitial() {

@@ -60,7 +60,9 @@ export function mapCommandError(error: unknown): {
       for (const issue of record.issues) {
         if (!issue || typeof issue !== "object") continue;
         const value = issue as Record<string, unknown>;
-        const path = Array.isArray(value.path) ? value.path.map(String).join(".") : "";
+        const path = Array.isArray(value.path)
+          ? value.path.map(String).join(".")
+          : "";
         if (path && typeof value.message === "string") {
           fieldErrors[path] = [...(fieldErrors[path] ?? []), value.message];
         }
@@ -90,7 +92,9 @@ export class FormController<Values, Payload = Values> {
       defaultValues: structuredClone(options.initialValues),
       validators: {
         onChange: ({ value }: { value: Values }) => {
-          const candidate = options.normalize ? options.normalize(value) : value;
+          const candidate = options.normalize
+            ? options.normalize(value)
+            : value;
           const result = options.schema.safeParse(candidate);
           return result.success ? undefined : result.error.issues[0]?.message;
         },
@@ -99,7 +103,9 @@ export class FormController<Values, Payload = Values> {
   }
 
   private syncToTanStack(): void {
-    for (const [field, value] of Object.entries(this.values as Record<string, unknown>)) {
+    for (const [field, value] of Object.entries(
+      this.values as Record<string, unknown>,
+    )) {
       this.tanstackForm.setFieldValue(field as never, value as never);
     }
   }
@@ -125,7 +131,9 @@ export class FormController<Values, Payload = Values> {
     this.errors = fields
       ? Object.fromEntries(
           Object.entries(nextErrors).filter(([key]) =>
-            fields.some((field) => key === field || key.startsWith(`${field}.`)),
+            fields.some(
+              (field) => key === field || key.startsWith(`${field}.`),
+            ),
           ),
         )
       : nextErrors;
@@ -137,13 +145,18 @@ export class FormController<Values, Payload = Values> {
     this.asyncAbort?.abort();
     const controller = new AbortController();
     this.asyncAbort = controller;
-    const asyncErrors = await this.options.validateAsync(this.values, controller.signal);
+    const asyncErrors = await this.options.validateAsync(
+      this.values,
+      controller.signal,
+    );
     if (controller.signal.aborted) return false;
     this.errors = mergeErrors(this.errors, asyncErrors || undefined);
     return Object.keys(this.errors).length === 0;
   }
 
-  async submit(submit: (payload: Payload) => Promise<unknown>): Promise<boolean> {
+  async submit(
+    submit: (payload: Payload) => Promise<unknown>,
+  ): Promise<boolean> {
     this.formError = undefined;
     this.touched = { ...this.touched, __form: true };
     if (!this.validate()) return false;

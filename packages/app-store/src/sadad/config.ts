@@ -10,8 +10,10 @@ const config: OrbisApp = {
   active: true,
   beta: false,
   icon: "Receipt",
-  short_description: "Saudi national Electronic Bill Presentment and Payment system for automated invoice settlement through online banking.",
-  short_description_ar: "نظام سداد الوطني لعرض وسداد الفواتير الإلكترونية عبر التطبيقات البنكية وأجهزة الصراف الآلي.",
+  short_description:
+    "Saudi national Electronic Bill Presentment and Payment system for automated invoice settlement through online banking.",
+  short_description_ar:
+    "نظام سداد الوطني لعرض وسداد الفواتير الإلكترونية عبر التطبيقات البنكية وأجهزة الصراف الآلي.",
   description: `SADAD payment system integration for automatic bill issuing and settlement.
 
 **Biller Integration**

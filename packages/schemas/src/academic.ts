@@ -66,17 +66,19 @@ export const createTimeSlotInputSchema = z
     message: "End time must be after start time",
   });
 
-export const classFormInputSchema = z.object({
-  name: z.string().trim().optional(),
-  name_ar: z.string().trim().optional(),
-  code: z.string().trim().max(50).optional(),
-  grade_level: z.string().trim().max(50).optional(),
-  capacity: z.number().int().min(1).max(100),
-  color: z.string().trim().optional(),
-}).refine((value) => Boolean(value.name || value.name_ar), {
-  path: ["name"],
-  message: "Name is required",
-});
+export const classFormInputSchema = z
+  .object({
+    name: z.string().trim().optional(),
+    name_ar: z.string().trim().optional(),
+    code: z.string().trim().max(50).optional(),
+    grade_level: z.string().trim().max(50).optional(),
+    capacity: z.number().int().min(1).max(100),
+    color: z.string().trim().optional(),
+  })
+  .refine((value) => Boolean(value.name || value.name_ar), {
+    path: ["name"],
+    message: "Name is required",
+  });
 
 export const classSubjectFormInputSchema = z.object({
   class_id: z.string().trim().min(1),

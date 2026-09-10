@@ -4,11 +4,11 @@
  * Stack navigator for unauthenticated flows (Sign In, Register, Password Recovery, MFA).
  */
 
-import React from 'react';
-import { Stack, Redirect } from 'expo-router';
-import { useAuth } from '@/lib/api';
-import { useTheme } from '@/hooks/use-theme';
-import { ThemedStatusBar } from '@/components/ui/themed-status-bar';
+import React from "react";
+import { Stack, Redirect } from "expo-router";
+import { useAuth } from "@/lib/api";
+import { useTheme } from "@/hooks/use-theme";
+import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
 
 export default function AuthLayout() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -25,8 +25,9 @@ export default function AuthLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-          animation: 'slide_from_right',
-        }}>
+          animation: "slide_from_right",
+        }}
+      >
         <Stack.Screen name="sign-in" options={{ headerShown: false }} />
         <Stack.Screen name="register" options={{ headerShown: false }} />
         <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
@@ -34,7 +35,7 @@ export default function AuthLayout() {
         <Stack.Screen
           name="mfa-challenge"
           options={{
-            presentation: 'modal',
+            presentation: "modal",
             headerShown: false,
           }}
         />

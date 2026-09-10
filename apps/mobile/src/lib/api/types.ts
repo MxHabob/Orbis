@@ -5,33 +5,82 @@
  * Re-exports from @orbis/sdk with mobile error envelopes and client contracts.
  */
 
-export * from '@orbis/sdk';
+export * from "@orbis/sdk";
 
 import type {
-  LoginRequest, LoginResponse, SessionResponse,
-  RegisterUserRequest, UserDto,
-  OrgDto, UpdateOrgRequest, OrgUnitDto, CreateOrgUnitRequest,
-  OrganizationSettingsDto, DashboardCountsDto,
-  AcademicYearDto, AcademicPeriodDto, AcademicContextResponse, PeriodTemplateDto,
-  CreateYearRequest, CreatePeriodRequest,
-  SubjectDto, ClassDto, ClassSubjectDto,
-  CreateSubjectRequest, CreateClassRequest, AssignClassSubjectRequest,
-  EnrollmentDto, GuardianDto,
-  EnrollStudentRequest, AssignGuardianRequest,
-  RoomDto, TimeSlotDto, ScheduledLessonDto,
-  CreateRoomRequest, CreateTimeSlotRequest, ScheduleLessonRequest,
-  AssessmentSchemeDto, GradeDto, AttendanceDto, CalculationResultDto,
-  CreateSchemeRequest, RecordGradeRequest, MarkAttendanceRequest, CalculateGradesRequest,
-  ExamSessionDto, ExamScheduleDto, SeatingDto, SecretDto, ProctorDto,
-  CreateExamSessionRequest, ScheduleExamRequest, AssignSeatingRequest, AssignSecretRequest, AssignProctorRequest,
-  AccountDto, FeeTemplateDto, StudentFeeDto, PaymentDto, CurrencyDto,
-  CreateAccountRequest, CreateFeeTemplateRequest, GenerateFeeRequest, ProcessPaymentRequest,
-  DocumentDto, UploadDocumentRequest,
-  IntegrationDto, ConnectAppRequest,
-  TemplateDto, CreateTemplateRequest, UpdateTemplateRequest,
-  TemplateVersionDto, TemplateBindingDto,
-  ValidationResultDto, ValidationIssueDto, ReportDefinitionDto,
-} from '@orbis/sdk';
+  LoginRequest,
+  LoginResponse,
+  SessionResponse,
+  RegisterUserRequest,
+  UserDto,
+  OrgDto,
+  UpdateOrgRequest,
+  OrgUnitDto,
+  CreateOrgUnitRequest,
+  OrganizationSettingsDto,
+  DashboardCountsDto,
+  AcademicYearDto,
+  AcademicPeriodDto,
+  AcademicContextResponse,
+  PeriodTemplateDto,
+  CreateYearRequest,
+  CreatePeriodRequest,
+  SubjectDto,
+  ClassDto,
+  ClassSubjectDto,
+  CreateSubjectRequest,
+  CreateClassRequest,
+  AssignClassSubjectRequest,
+  EnrollmentDto,
+  GuardianDto,
+  EnrollStudentRequest,
+  AssignGuardianRequest,
+  RoomDto,
+  TimeSlotDto,
+  ScheduledLessonDto,
+  CreateRoomRequest,
+  CreateTimeSlotRequest,
+  ScheduleLessonRequest,
+  AssessmentSchemeDto,
+  GradeDto,
+  AttendanceDto,
+  CalculationResultDto,
+  CreateSchemeRequest,
+  RecordGradeRequest,
+  MarkAttendanceRequest,
+  CalculateGradesRequest,
+  ExamSessionDto,
+  ExamScheduleDto,
+  SeatingDto,
+  SecretDto,
+  ProctorDto,
+  CreateExamSessionRequest,
+  ScheduleExamRequest,
+  AssignSeatingRequest,
+  AssignSecretRequest,
+  AssignProctorRequest,
+  AccountDto,
+  FeeTemplateDto,
+  StudentFeeDto,
+  PaymentDto,
+  CurrencyDto,
+  CreateAccountRequest,
+  CreateFeeTemplateRequest,
+  GenerateFeeRequest,
+  ProcessPaymentRequest,
+  DocumentDto,
+  UploadDocumentRequest,
+  IntegrationDto,
+  ConnectAppRequest,
+  TemplateDto,
+  CreateTemplateRequest,
+  UpdateTemplateRequest,
+  TemplateVersionDto,
+  TemplateBindingDto,
+  ValidationResultDto,
+  ValidationIssueDto,
+  ReportDefinitionDto,
+} from "@orbis/sdk";
 
 export type ValidationResult = ValidationResultDto;
 export type { ValidationIssueDto };
@@ -116,9 +165,14 @@ export class OrbisError extends Error {
   details?: unknown;
   requestId?: string;
 
-  constructor(message: string, code = 'UNKNOWN_ERROR', details?: unknown, requestId?: string) {
+  constructor(
+    message: string,
+    code = "UNKNOWN_ERROR",
+    details?: unknown,
+    requestId?: string,
+  ) {
     super(message);
-    this.name = 'OrbisError';
+    this.name = "OrbisError";
     this.code = code;
     this.details = details;
     this.requestId = requestId;
@@ -127,17 +181,17 @@ export class OrbisError extends Error {
   static fromUnknown(err: unknown): OrbisError {
     if (err instanceof OrbisError) return err;
     if (err instanceof Error) {
-      return new OrbisError(err.message, 'INTERNAL_ERROR', err);
+      return new OrbisError(err.message, "INTERNAL_ERROR", err);
     }
-    if (typeof err === 'object' && err !== null) {
+    if (typeof err === "object" && err !== null) {
       const record = err as Record<string, unknown>;
       return new OrbisError(
-        typeof record.message === 'string' ? record.message : 'Unknown error',
-        typeof record.code === 'string' ? record.code : 'UNKNOWN_ERROR',
+        typeof record.message === "string" ? record.message : "Unknown error",
+        typeof record.code === "string" ? record.code : "UNKNOWN_ERROR",
         record.details ?? record,
-        typeof record.request_id === 'string'
+        typeof record.request_id === "string"
           ? (record.request_id as string)
-          : typeof record.requestId === 'string'
+          : typeof record.requestId === "string"
             ? (record.requestId as string)
             : undefined,
       );
@@ -152,7 +206,7 @@ export class ApiRequestError extends Error {
     public readonly error: OrbisError,
   ) {
     super(error.message);
-    this.name = 'ApiRequestError';
+    this.name = "ApiRequestError";
   }
 }
 
@@ -183,7 +237,9 @@ export interface OrbisApiClient {
   getCurrentOrg(): Promise<OrgDto>;
   updateCurrentOrg(req: UpdateOrgRequest): Promise<OrgDto>;
   getSettings(): Promise<OrganizationSettingsDto>;
-  updateSettings(settings: OrganizationSettingsDto): Promise<OrganizationSettingsDto>;
+  updateSettings(
+    settings: OrganizationSettingsDto,
+  ): Promise<OrganizationSettingsDto>;
   getDashboard(): Promise<DashboardCountsDto>;
 
   // ── OrgUnits ────────────────────────────────────────────────
@@ -211,11 +267,17 @@ export interface OrbisApiClient {
   listClasses(): Promise<ClassDto[]>;
   getClass(id: string): Promise<ClassDto>;
   assignClassSubject(req: AssignClassSubjectRequest): Promise<ClassSubjectDto>;
-  listClassSubjects(classId: string, periodId: string): Promise<ClassSubjectDto[]>;
+  listClassSubjects(
+    classId: string,
+    periodId: string,
+  ): Promise<ClassSubjectDto[]>;
 
   // ── Student ─────────────────────────────────────────────────
   enrollStudent(req: EnrollStudentRequest): Promise<EnrollmentDto>;
-  listEnrollments(filter?: { classId?: string; studentId?: string }): Promise<EnrollmentDto[]>;
+  listEnrollments(filter?: {
+    classId?: string;
+    studentId?: string;
+  }): Promise<EnrollmentDto[]>;
   getEnrollment(id: string): Promise<EnrollmentDto>;
   assignGuardian(req: AssignGuardianRequest): Promise<GuardianDto>;
   listGuardians(studentId: string): Promise<GuardianDto[]>;
@@ -227,18 +289,28 @@ export interface OrbisApiClient {
   createTimeSlot(req: CreateTimeSlotRequest): Promise<TimeSlotDto>;
   listTimeSlots(periodId: string): Promise<TimeSlotDto[]>;
   scheduleLesson(req: ScheduleLessonRequest): Promise<ScheduledLessonDto>;
-  listScheduledLessons(filter?: { classSubjectId?: string; periodId?: string }): Promise<ScheduledLessonDto[]>;
+  listScheduledLessons(filter?: {
+    classSubjectId?: string;
+    periodId?: string;
+  }): Promise<ScheduledLessonDto[]>;
 
   // ── Assessment ──────────────────────────────────────────────
-  createAssessmentScheme(req: CreateSchemeRequest): Promise<AssessmentSchemeDto>;
+  createAssessmentScheme(
+    req: CreateSchemeRequest,
+  ): Promise<AssessmentSchemeDto>;
   listAssessmentSchemes(): Promise<AssessmentSchemeDto[]>;
   getAssessmentScheme(id: string): Promise<AssessmentSchemeDto>;
   recordGrade(req: RecordGradeRequest): Promise<GradeDto>;
-  listGrades(filter?: { studentId?: string; classSubjectId?: string }): Promise<GradeDto[]>;
+  listGrades(filter?: {
+    studentId?: string;
+    classSubjectId?: string;
+  }): Promise<GradeDto[]>;
   calculateGrades(req: CalculateGradesRequest): Promise<CalculationResultDto>;
   markAttendance(req: MarkAttendanceRequest): Promise<AttendanceDto>;
   listAttendance(
-    classIdOrFilter?: string | { classId?: string; studentId?: string; date?: string },
+    classIdOrFilter?:
+      | string
+      | { classId?: string; studentId?: string; date?: string },
     date?: string,
   ): Promise<AttendanceDto[]>;
 
@@ -258,7 +330,10 @@ export interface OrbisApiClient {
   createFeeTemplate(req: CreateFeeTemplateRequest): Promise<FeeTemplateDto>;
   listFeeTemplates(): Promise<FeeTemplateDto[]>;
   generateStudentFee(req: GenerateFeeRequest): Promise<StudentFeeDto>;
-  listStudentFees(filter?: { enrollmentId?: string; studentId?: string }): Promise<StudentFeeDto[]>;
+  listStudentFees(filter?: {
+    enrollmentId?: string;
+    studentId?: string;
+  }): Promise<StudentFeeDto[]>;
   processPayment(req: ProcessPaymentRequest): Promise<PaymentDto>;
   listPayments(filter?: { feeId?: string }): Promise<PaymentDto[]>;
   listCurrencies(): Promise<CurrencyDto[]>;
@@ -272,28 +347,49 @@ export interface OrbisApiClient {
   // ── Integration ─────────────────────────────────────────────
   connectApp(req: ConnectAppRequest): Promise<IntegrationDto>;
   listIntegrations(): Promise<IntegrationDto[]>;
-  getIntegrationStatus(providerName: string): Promise<IntegrationStatusResponse>;
+  getIntegrationStatus(
+    providerName: string,
+  ): Promise<IntegrationStatusResponse>;
   disconnectApp(providerName: string): Promise<boolean>;
   toggleIntegration(providerName: string, isEnabled: boolean): Promise<boolean>;
 
   // ── Templates ───────────────────────────────────────────────
   createTemplate(req: CreateTemplateRequest): Promise<TemplateDto>;
   getTemplate(id: string): Promise<TemplateDto>;
-  listTemplates(filter?: { documentType?: string; entityType?: string; status?: string }): Promise<TemplateDto[]>;
+  listTemplates(filter?: {
+    documentType?: string;
+    entityType?: string;
+    status?: string;
+  }): Promise<TemplateDto[]>;
   updateTemplate(id: string, req: UpdateTemplateRequest): Promise<TemplateDto>;
   deleteTemplate(id: string): Promise<void>;
   publishTemplate(id: string): Promise<TemplateDto>;
   archiveTemplate(id: string): Promise<void>;
   getTemplateVersions(id: string): Promise<TemplateVersionDto[]>;
-  revertTemplateVersion(id: string, targetVersion: number): Promise<TemplateDto>;
-  previewTemplate(documentJson: string, contextData: any, locale?: string): Promise<Uint8Array>;
+  revertTemplateVersion(
+    id: string,
+    targetVersion: number,
+  ): Promise<TemplateDto>;
+  previewTemplate(
+    documentJson: string,
+    contextData: any,
+    locale?: string,
+  ): Promise<Uint8Array>;
   validateTemplate(documentJson: string): Promise<ValidationResult>;
 
   // ── Template Bindings ───────────────────────────────────────
   listTemplateBindings(definitionId: string): Promise<TemplateBindingDto[]>;
-  createTemplateBinding(definitionId: string, templateId: string, locale: string, format: string): Promise<TemplateBindingDto>;
+  createTemplateBinding(
+    definitionId: string,
+    templateId: string,
+    locale: string,
+    format: string,
+  ): Promise<TemplateBindingDto>;
 
   // ── Report Definitions ──────────────────────────────────────
-  listReportDefinitions(domain?: string, category?: string): Promise<ReportDefinitionDto[]>;
+  listReportDefinitions(
+    domain?: string,
+    category?: string,
+  ): Promise<ReportDefinitionDto[]>;
   getReportDefinition(code: string): Promise<ReportDefinitionDto>;
 }

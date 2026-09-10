@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { createSubjectInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { Button } from "@orbis/ui/button";
@@ -10,45 +10,45 @@ import { SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 import InputColor from "$lib/shared/components/input-color.svelte";
 import { toast } from "@orbis/ui";
 type SubjectDraft = {
-	name: string;
-	name_ar: string;
-	code: string;
-	color: string | null;
+  name: string;
+  name_ar: string;
+  code: string;
+  color: string | null;
 };
 
 const form = new FormController<SubjectDraft>({
-	initialValues: { name: "", name_ar: "", code: "", color: null },
-	schema: createSubjectInputSchema,
+  initialValues: { name: "", name_ar: "", code: "", color: null },
+  schema: createSubjectInputSchema,
 });
 
 function fieldError(field: string): string | undefined {
-	return form.errors[field]?.[0];
+  return form.errors[field]?.[0];
 }
 let {
-	onSuccess,
-	onCancel,
+  onSuccess,
+  onCancel,
 }: {
-	orgId: string;
-	onSuccess: () => void;
-	onCancel: () => void;
+  orgId: string;
+  onSuccess: () => void;
+  onCancel: () => void;
 } = $props();
 
 async function handleSubmit(e: SubmitEvent) {
-	e.preventDefault();
-	const submitted = await form.submit(async (draft) => {
-		await api.createSubject({
-			...draft,
-			name: draft.name || draft.name_ar || "",
-		});
-	});
-	if (submitted) {
-		form.reset();
-		onSuccess();
-	} else if (form.formError) {
-		toast.error(form.formError);
-	} else if (Object.keys(form.errors).length > 0) {
-		toast.error(m.common_subject_toast_error_name());
-	}
+  e.preventDefault();
+  const submitted = await form.submit(async (draft) => {
+    await api.createSubject({
+      ...draft,
+      name: draft.name || draft.name_ar || "",
+    });
+  });
+  if (submitted) {
+    form.reset();
+    onSuccess();
+  } else if (form.formError) {
+    toast.error(form.formError);
+  } else if (Object.keys(form.errors).length > 0) {
+    toast.error(m.common_subject_toast_error_name());
+  }
 }
 </script>
 

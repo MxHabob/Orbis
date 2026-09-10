@@ -22,7 +22,10 @@ import type { Snippet } from "svelte";
 import DefaultCell from "../components/DefaultCell.svelte";
 import CheckboxCell from "../components/CheckboxCell.svelte";
 import { FilterTrigger } from "@orbis/ui/filter-builder";
-import type { UniversalFilter, FieldDefinition } from "@orbis/ui/filter-builder";
+import type {
+  UniversalFilter,
+  FieldDefinition,
+} from "@orbis/ui/filter-builder";
 
 interface Props {
   columns: OrbisColumnDef[];
@@ -108,8 +111,10 @@ let localSearch = $state("");
 
 let mappedColumns = $derived(
   columns.map((col) => {
-    if (col.id !== "__selected") return { ...col, cell: col.cell || DefaultCell };
-    const selectedAll = source.length > 0 && source.every((row) => row.__selected === true);
+    if (col.id !== "__selected")
+      return { ...col, cell: col.cell || DefaultCell };
+    const selectedAll =
+      source.length > 0 && source.every((row) => row.__selected === true);
     return {
       ...col,
       cell: col.cell || CheckboxCell,
@@ -124,7 +129,12 @@ let useClientQuery = $derived(clientQuery || (searchable && !onSearch));
 let showGrid = $derived(!loading && hasData);
 let showEmpty = $derived(!loading && !hasData);
 let showToolbar = $derived(
-  searchable || exportable || refreshable || printable || filterable || !!actions,
+  searchable ||
+    exportable ||
+    refreshable ||
+    printable ||
+    filterable ||
+    !!actions,
 );
 let effectiveSearch = $derived(searchValue || localSearch);
 
@@ -133,7 +143,10 @@ function handleExport() {
     onExport();
     return;
   }
-  const text = exportRows(source, columns, { format: "csv", scope: "filtered" });
+  const text = exportRows(source, columns, {
+    format: "csv",
+    scope: "filtered",
+  });
   downloadText("orbis-export.csv", text, "text/csv;charset=utf-8");
 }
 

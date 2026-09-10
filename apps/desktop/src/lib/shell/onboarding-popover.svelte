@@ -29,10 +29,14 @@ function handleGoToWelcomeStep() {
 // Onboarding tasks variables — popover shows 8 tasks (steps 1-8, excluding Welcome and Launch)
 const totalTasks = 8;
 const completedTasks = $derived(
-  authStore.isSetupComplete ? totalTasks : onboardingState.completedSteps.slice(0, 8).filter(Boolean).length,
+  authStore.isSetupComplete
+    ? totalTasks
+    : onboardingState.completedSteps.slice(0, 8).filter(Boolean).length,
 );
 const remainingTasks = $derived(totalTasks - completedTasks);
-const progressPercent = $derived(totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0);
+const progressPercent = $derived(
+  totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0,
+);
 
 const activeIndex = $derived(
   authStore.isSetupComplete

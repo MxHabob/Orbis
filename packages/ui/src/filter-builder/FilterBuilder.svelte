@@ -1,53 +1,70 @@
 <script lang="ts">
-    import { Button } from "../components/ui/button";
-    import { Select, SelectTrigger, SelectContent, SelectItem } from "../components/ui/select";
-    import { Plus, Trash2, GitBranch } from "@lucide/svelte";
-    import { FilterOperator, type UniversalFilter, type FieldDefinition, type FilterTranslations, defaultFilterTranslations } from "./types";
-    import FilterRow from "./FilterRow.svelte";
-    import FilterBuilderSelf from "./FilterBuilder.svelte";
-    import { slide } from "svelte/transition";
+import { Button } from "../components/ui/button";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "../components/ui/select";
+import { Plus, Trash2, GitBranch } from "@lucide/svelte";
+import {
+  FilterOperator,
+  type UniversalFilter,
+  type FieldDefinition,
+  type FilterTranslations,
+  defaultFilterTranslations,
+} from "./types";
+import FilterRow from "./FilterRow.svelte";
+import FilterBuilderSelf from "./FilterBuilder.svelte";
+import { slide } from "svelte/transition";
 
-    let {
-        filter = $bindable(),
-        fields = [],
-        isRoot = true,
-        onRemove = () => {},
-        translations = defaultFilterTranslations
-    }: {
-        filter: UniversalFilter;
-        fields: FieldDefinition[];
-        isRoot?: boolean;
-        onRemove?: () => void;
-        translations?: FilterTranslations;
-    } = $props();
+let {
+  filter = $bindable(),
+  fields = [],
+  isRoot = true,
+  onRemove = () => {},
+  translations = defaultFilterTranslations,
+}: {
+  filter: UniversalFilter;
+  fields: FieldDefinition[];
+  isRoot?: boolean;
+  onRemove?: () => void;
+  translations?: FilterTranslations;
+} = $props();
 
-    function addCondition() {
-        if (!filter.conditions) filter.conditions = [];
-        filter.conditions = [...filter.conditions, {
-            field: fields[0]?.id || "",
-            operator: FilterOperator.Eq,
-            value: ""
-        }];
-    }
+function addCondition() {
+  if (!filter.conditions) filter.conditions = [];
+  filter.conditions = [
+    ...filter.conditions,
+    {
+      field: fields[0]?.id || "",
+      operator: FilterOperator.Eq,
+      value: "",
+    },
+  ];
+}
 
-    function addGroup() {
-        if (!filter.groups) filter.groups = [];
-        filter.groups = [...filter.groups, {
-            logic: "AND",
-            conditions: [],
-            groups: []
-        }];
-    }
+function addGroup() {
+  if (!filter.groups) filter.groups = [];
+  filter.groups = [
+    ...filter.groups,
+    {
+      logic: "AND",
+      conditions: [],
+      groups: [],
+    },
+  ];
+}
 
-    function removeCondition(index: number) {
-        filter.conditions = filter.conditions.filter((_, i) => i !== index);
-    }
+function removeCondition(index: number) {
+  filter.conditions = filter.conditions.filter((_, i) => i !== index);
+}
 
-    function removeGroup(index: number) {
-        if (filter.groups) {
-            filter.groups = filter.groups.filter((_, i) => i !== index);
-        }
-    }
+function removeGroup(index: number) {
+  if (filter.groups) {
+    filter.groups = filter.groups.filter((_, i) => i !== index);
+  }
+}
 </script>
 
 <div

@@ -19,7 +19,10 @@ let orgName = $derived(
 );
 
 // Show what CLI already configured
-let hasOrgData = $derived(onboardingState.profile.orgName !== "" || onboardingState.profile.orgNameAr !== "");
+let hasOrgData = $derived(
+  onboardingState.profile.orgName !== "" ||
+    onboardingState.profile.orgNameAr !== "",
+);
 </script>
 
 <div class="min-h-[55vh] flex flex-col items-center justify-center px-6 select-none w-full max-w-3xl mx-auto space-y-12 animate-in fade-in duration-1000">

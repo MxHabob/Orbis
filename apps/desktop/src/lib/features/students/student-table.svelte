@@ -119,18 +119,19 @@ import { applyFilter } from "@orbis/ui/filter-builder";
 import type { UniversalFilter } from "@orbis/ui/filter-builder";
 import { studentFilterFields } from "$lib/tables/definitions/filter-configs";
 
-let activeFilter = $state<UniversalFilter>({ logic: "AND", conditions: [], groups: [] });
+let activeFilter = $state<UniversalFilter>({
+  logic: "AND",
+  conditions: [],
+  groups: [],
+});
 
-const filteredStudents = $derived(
-  applyFilter(
-    (students || []),
-    activeFilter
-  )
-);
+const filteredStudents = $derived(applyFilter(students || [], activeFilter));
 
 let gridSource = $derived(
   filteredStudents.map((student, i) => {
-    const rawSex = String(student.sex || (student as any).gender || "").toLowerCase();
+    const rawSex = String(
+      student.sex || (student as any).gender || "",
+    ).toLowerCase();
     const studentName =
       student.full_name ||
       (student as any).name ||

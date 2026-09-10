@@ -10,7 +10,7 @@ import { QueryClientProvider } from "@tanstack/svelte-query";
 import { queryClient } from "$lib/api";
 import "./layout.css";
 import favicon from "$lib/assets/favicon.svg";
-    import { Toaster } from "@orbis/ui";
+import { Toaster } from "@orbis/ui";
 
 let { children } = $props();
 

@@ -6,7 +6,12 @@ Wraps all Exams routes under academics.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
-import { ClipboardList, FileText, BarChart3, ShieldCheck } from "@lucide/svelte";
+import {
+  ClipboardList,
+  FileText,
+  BarChart3,
+  ShieldCheck,
+} from "@lucide/svelte";
 import type { Snippet } from "svelte";
 
 let { data, children }: { data: { orgId: string }; children: Snippet } =

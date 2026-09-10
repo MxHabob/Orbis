@@ -34,39 +34,39 @@ let {
 
 // Form state
 const form = new FormController({
-	initialValues: {
-		title: "",
-		title_ar: "",
-		max_score: 100,
-		weight: 15,
-		item_type: "exam" as const,
-	},
-	schema: createAssessmentInputSchema,
-	normalize: (values) => ({
-		class_id: classId,
-		subject_id: subjectId,
-		term_id: periodId,
-		month: defaultMonth,
-		...values,
-	}),
+  initialValues: {
+    title: "",
+    title_ar: "",
+    max_score: 100,
+    weight: 15,
+    item_type: "exam" as const,
+  },
+  schema: createAssessmentInputSchema,
+  normalize: (values) => ({
+    class_id: classId,
+    subject_id: subjectId,
+    term_id: periodId,
+    month: defaultMonth,
+    ...values,
+  }),
 });
 
 function fieldError(field: string): string | undefined {
-	return form.errors[field]?.[0];
+  return form.errors[field]?.[0];
 }
 
 const typeLabels: Record<"exam" | "quiz" | "homework" | "classwork", string> =
   $derived({
-	exam: m.common_assessment_option_exam(),
-	quiz: m.common_assessment_option_quiz(),
-	homework: m.common_assessments_type_homework(),
-	classwork: m.common_assessment_option_classwork(),
+    exam: m.common_assessment_option_exam(),
+    quiz: m.common_assessment_option_quiz(),
+    homework: m.common_assessments_type_homework(),
+    classwork: m.common_assessment_option_classwork(),
   });
 
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   const submitted = await form.submit(async (payload) => {
-		await (api.assessment as any).createAssessment(payload);
+    await (api.assessment as any).createAssessment(payload);
     toast.success(m.common_assessment_toast_success());
   });
   if (submitted) {

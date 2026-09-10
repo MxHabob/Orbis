@@ -19,7 +19,8 @@ export function contextMenuItems(args: {
   if (context === "cell" || context === "row" || context === "selection") {
     items.push({ id: "copy", label: "Copy" });
     if (context === "row") items.push({ id: "copy-row", label: "Copy Row" });
-    if (hasSelection) items.push({ id: "copy-selection", label: "Copy Selection" });
+    if (hasSelection)
+      items.push({ id: "copy-selection", label: "Copy Selection" });
     if (canEdit) {
       items.push({ id: "paste", label: "Paste" });
       items.push({ id: "edit", label: "Edit" });
@@ -44,8 +45,10 @@ export function contextMenuItems(args: {
   }
 
   items.push({ id: "export-visible", label: "Export Visible" });
-  if (hasSelection) items.push({ id: "export-selection", label: "Export Selection" });
-  if (filtered) items.push({ id: "export-filtered", label: "Export Filtered Data" });
+  if (hasSelection)
+    items.push({ id: "export-selection", label: "Export Selection" });
+  if (filtered)
+    items.push({ id: "export-filtered", label: "Export Filtered Data" });
   items.push({ id: "refresh", label: "Refresh" });
   return items;
 }

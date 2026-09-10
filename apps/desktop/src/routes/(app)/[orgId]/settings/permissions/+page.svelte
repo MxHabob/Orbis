@@ -21,7 +21,7 @@ import {
   TableRow,
 } from "@orbis/ui/table";
 import { toast } from "@orbis/ui";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { goto } from "$app/navigation";
 import SearchField from "$lib/shared/components/search-field.svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
@@ -183,7 +183,11 @@ function parseActions(actions: any): string[] {
       const parsed = JSON.parse(actions);
       if (Array.isArray(parsed)) return parsed;
     } catch {
-      if (actions.trim()) return actions.split(",").map((s: string) => s.trim()).filter(Boolean);
+      if (actions.trim())
+        return actions
+          .split(",")
+          .map((s: string) => s.trim())
+          .filter(Boolean);
     }
   }
   return [];
@@ -292,7 +296,7 @@ const filteredUsers = $derived(
 function getActionsForDocType(docType: string): string[] {
   if (!docType) return [];
   const matchKey = Object.keys(actionsByDocType).find(
-    (k) => k.toLowerCase() === docType.toLowerCase()
+    (k) => k.toLowerCase() === docType.toLowerCase(),
   );
   if (matchKey) {
     return actionsByDocType[matchKey];

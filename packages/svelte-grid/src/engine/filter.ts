@@ -1,8 +1,16 @@
-import type { FilterCondition, GridFilter, GridRow, OrbisColumnDef } from "../types";
+import type {
+  FilterCondition,
+  GridFilter,
+  GridRow,
+  OrbisColumnDef,
+} from "../types";
 import { columnId, getCellValue } from "../types";
 
 function normalizeOp(op: string): string {
-  return op.replace(/([a-z])([A-Z])/g, "$1_$2").replace(/-/g, "_").toLowerCase();
+  return op
+    .replace(/([a-z])([A-Z])/g, "$1_$2")
+    .replace(/-/g, "_")
+    .toLowerCase();
 }
 
 function isEmpty(val: unknown): boolean {
@@ -20,7 +28,11 @@ function asString(val: unknown): string {
   return String(val);
 }
 
-function matchCondition(row: GridRow, cond: FilterCondition, columns?: OrbisColumnDef[]): boolean {
+function matchCondition(
+  row: GridRow,
+  cond: FilterCondition,
+  columns?: OrbisColumnDef[],
+): boolean {
   const col = columns?.find((c) => columnId(c) === cond.field);
   const val = col ? getCellValue(row, col) : row[cond.field];
   const target = cond.value;
@@ -34,15 +46,23 @@ function matchCondition(row: GridRow, cond: FilterCondition, columns?: OrbisColu
       return asString(val).toLowerCase() !== asString(target).toLowerCase();
     case "like":
     case "contains":
-      return asString(val).toLowerCase().includes(asString(target).toLowerCase());
+      return asString(val)
+        .toLowerCase()
+        .includes(asString(target).toLowerCase());
     case "notlike":
     case "not_like":
     case "not_contains":
-      return !asString(val).toLowerCase().includes(asString(target).toLowerCase());
+      return !asString(val)
+        .toLowerCase()
+        .includes(asString(target).toLowerCase());
     case "starts_with":
-      return asString(val).toLowerCase().startsWith(asString(target).toLowerCase());
+      return asString(val)
+        .toLowerCase()
+        .startsWith(asString(target).toLowerCase());
     case "ends_with":
-      return asString(val).toLowerCase().endsWith(asString(target).toLowerCase());
+      return asString(val)
+        .toLowerCase()
+        .endsWith(asString(target).toLowerCase());
     case "isnull":
     case "is_null":
       return isEmpty(val);
@@ -66,12 +86,16 @@ function matchCondition(row: GridRow, cond: FilterCondition, columns?: OrbisColu
     }
     case "in": {
       const arr = Array.isArray(target) ? target : [target];
-      return arr.some((t) => asString(t).toLowerCase() === asString(val).toLowerCase());
+      return arr.some(
+        (t) => asString(t).toLowerCase() === asString(val).toLowerCase(),
+      );
     }
     case "notin":
     case "not_in": {
       const arr = Array.isArray(target) ? target : [target];
-      return !arr.some((t) => asString(t).toLowerCase() === asString(val).toLowerCase());
+      return !arr.some(
+        (t) => asString(t).toLowerCase() === asString(val).toLowerCase(),
+      );
     }
     case "bool_true":
       return val === true || val === 1 || val === "true";
@@ -91,7 +115,11 @@ function matchesSearch(row: GridRow, search: string): boolean {
   return false;
 }
 
-export function matchesFilter(row: GridRow, filter: GridFilter | null | undefined, columns?: OrbisColumnDef[]): boolean {
+export function matchesFilter(
+  row: GridRow,
+  filter: GridFilter | null | undefined,
+  columns?: OrbisColumnDef[],
+): boolean {
   if (!filter) return true;
   if (filter.search && !matchesSearch(row, filter.search)) return false;
 
@@ -114,7 +142,8 @@ export function applyFilter<T extends GridRow>(
 ): T[] {
   if (!filter) return items as T[];
   const hasSearch = !!filter.search;
-  const hasRules = (filter.conditions?.length ?? 0) > 0 || (filter.groups?.length ?? 0) > 0;
+  const hasRules =
+    (filter.conditions?.length ?? 0) > 0 || (filter.groups?.length ?? 0) > 0;
   if (!hasSearch && !hasRules) return items as T[];
   const out: T[] = [];
   for (let i = 0; i < items.length; i++) {
@@ -126,5 +155,9 @@ export function applyFilter<T extends GridRow>(
 
 export function isFilterActive(filter: GridFilter | null | undefined): boolean {
   if (!filter) return false;
-  return !!filter.search || (filter.conditions?.length ?? 0) > 0 || (filter.groups?.length ?? 0) > 0;
+  return (
+    !!filter.search ||
+    (filter.conditions?.length ?? 0) > 0 ||
+    (filter.groups?.length ?? 0) > 0
+  );
 }

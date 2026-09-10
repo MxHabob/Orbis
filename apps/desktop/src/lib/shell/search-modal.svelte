@@ -5,7 +5,7 @@ import { goto } from "$app/navigation";
 import { page } from "$app/state";
 import { Dialog, DialogContent } from "@orbis/ui/dialog";
 import { uiStore, authStore } from "$lib/stores";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { queryClient } from "$lib/api";
 
 import { matchStudent } from "$lib/shared/utils/search";
@@ -76,12 +76,9 @@ async function loadSearchData() {
 
   try {
     const [studentsData, classesData, subjectsData] = await Promise.all([
-      cachedStudents ??
-        api.listEnrollments(currentOrgId).catch(() => []),
-      cachedClasses ??
-        api.listClasses(currentOrgId).catch(() => []),
-      cachedSubjects ??
-        api.listSubjects(currentOrgId).catch(() => []),
+      cachedStudents ?? api.listEnrollments(currentOrgId).catch(() => []),
+      cachedClasses ?? api.listClasses(currentOrgId).catch(() => []),
+      cachedSubjects ?? api.listSubjects(currentOrgId).catch(() => []),
     ]);
     students = studentsData;
     classes = classesData;

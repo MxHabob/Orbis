@@ -1,6 +1,9 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { createAccountsQuery, createCurrenciesQuery } from "$lib/features/finance";
+import {
+  createAccountsQuery,
+  createCurrenciesQuery,
+} from "$lib/features/finance";
 import { extractErrorMessage } from "$lib/api";
 import { formatCurrency } from "$lib/core/i18n";
 import { DataTable } from "$lib/tables";
@@ -10,13 +13,21 @@ import { fade } from "svelte/transition";
 import { FinanceSkeleton } from "$lib/shared/components/skeletons";
 import ErrorState from "$lib/shared/components/error-state.svelte";
 
-let { kind, orgId }: { kind: "overview" | "trial_balance" | "income_statement" | "balance_sheet"; orgId: string } = $props();
+let {
+  kind,
+  orgId,
+}: {
+  kind: "overview" | "trial_balance" | "income_statement" | "balance_sheet";
+  orgId: string;
+} = $props();
 
 const accountsQuery = createAccountsQuery(() => orgId);
 const currenciesQuery = createCurrenciesQuery(() => orgId);
 const accounts = $derived(accountsQuery.data ?? []);
 const currencies = $derived(currenciesQuery.data ?? []);
-const isLoading = $derived(accountsQuery.isLoading || currenciesQuery.isLoading);
+const isLoading = $derived(
+  accountsQuery.isLoading || currenciesQuery.isLoading,
+);
 const queryError = $derived(accountsQuery.error || currenciesQuery.error);
 
 function reloadData() {
@@ -24,15 +35,29 @@ function reloadData() {
   currenciesQuery.refetch();
 }
 
-const activeCurrencies = $derived(currencies.filter((currency) => currency.is_active === 1));
-const baseCurrency = $derived(currencies.find((currency) => currency.is_base === 1) || activeCurrencies[0]);
-const leafAccounts = $derived(accounts.filter((account) => !accounts.some((candidate) => candidate.parent_id === account.id)));
+const activeCurrencies = $derived(
+  currencies.filter((currency) => currency.is_active === 1),
+);
+const baseCurrency = $derived(
+  currencies.find((currency) => currency.is_base === 1) || activeCurrencies[0],
+);
+const leafAccounts = $derived(
+  accounts.filter(
+    (account) =>
+      !accounts.some((candidate) => candidate.parent_id === account.id),
+  ),
+);
 function balance(account: any, code: string) {
-  return Number(account.balances?.[code] || account.balances?.[code.toUpperCase()] || 0);
+  return Number(
+    account.balances?.[code] || account.balances?.[code.toUpperCase()] || 0,
+  );
 }
 
 function accountsByType(type: string) {
-  return leafAccounts.filter((account) => String(account.item_type || account.type || "").toLowerCase() === type);
+  return leafAccounts.filter(
+    (account) =>
+      String(account.item_type || account.type || "").toLowerCase() === type,
+  );
 }
 
 const totals = $derived.by(() => {
@@ -40,7 +65,10 @@ const totals = $derived.by(() => {
   for (const type of ["asset", "liability", "equity", "revenue", "expense"]) {
     result[type] = {};
     for (const currency of activeCurrencies) {
-      result[type][currency.code] = accountsByType(type).reduce((sum, account) => sum + balance(account, currency.code), 0);
+      result[type][currency.code] = accountsByType(type).reduce(
+        (sum, account) => sum + balance(account, currency.code),
+        0,
+      );
     }
   }
   return result;
@@ -60,10 +88,30 @@ const overviewMetrics = $derived.by(() => {
 });
 
 const trialColumns = $derived.by((): OrbisColumnDef[] => [
-  { id: "account", prop: "account", name: m.finance_report_account(), size: 260, readonly: true },
+  {
+    id: "account",
+    prop: "account",
+    name: m.finance_report_account(),
+    size: 260,
+    readonly: true,
+  },
   ...activeCurrencies.flatMap((currency) => [
-    { id: `${currency.code}_debit`, prop: `${currency.code}_debit`, name: m.finance_report_debit({ currency: currency.code }), size: 120, readonly: true, cellClass: "orbis-cell-number" },
-    { id: `${currency.code}_credit`, prop: `${currency.code}_credit`, name: m.finance_report_credit({ currency: currency.code }), size: 120, readonly: true, cellClass: "orbis-cell-number" },
+    {
+      id: `${currency.code}_debit`,
+      prop: `${currency.code}_debit`,
+      name: m.finance_report_debit({ currency: currency.code }),
+      size: 120,
+      readonly: true,
+      cellClass: "orbis-cell-number",
+    },
+    {
+      id: `${currency.code}_credit`,
+      prop: `${currency.code}_credit`,
+      name: m.finance_report_credit({ currency: currency.code }),
+      size: 120,
+      readonly: true,
+      cellClass: "orbis-cell-number",
+    },
   ]),
 ]);
 
@@ -74,8 +122,10 @@ const trialSource = $derived(
     };
     for (const currency of activeCurrencies) {
       const amount = balance(account, currency.code);
-      row[`${currency.code}_debit`] = amount > 0 ? formatCurrency(amount, currency.code) : "-";
-      row[`${currency.code}_credit`] = amount < 0 ? formatCurrency(Math.abs(amount), currency.code) : "-";
+      row[`${currency.code}_debit`] =
+        amount > 0 ? formatCurrency(amount, currency.code) : "-";
+      row[`${currency.code}_credit`] =
+        amount < 0 ? formatCurrency(Math.abs(amount), currency.code) : "-";
     }
     return row;
   }),
@@ -83,8 +133,20 @@ const trialSource = $derived(
 
 function reportColumns(): OrbisColumnDef[] {
   return [
-    { id: "section", prop: "section", name: m.finance_report_section(), size: 150, readonly: true },
-    { id: "account", prop: "account", name: m.finance_report_account(), size: 280, readonly: true },
+    {
+      id: "section",
+      prop: "section",
+      name: m.finance_report_section(),
+      size: 150,
+      readonly: true,
+    },
+    {
+      id: "account",
+      prop: "account",
+      name: m.finance_report_account(),
+      size: 280,
+      readonly: true,
+    },
     ...activeCurrencies.map((currency) => ({
       id: currency.code,
       prop: currency.code,
@@ -101,20 +163,23 @@ function reportSource(groups: string[][]) {
   for (const group of groups) {
     const type = group[1]!;
     for (const account of accountsByType(type)) {
-    const row: Record<string, unknown> = {
-      section: group[0],
-      account: `${account.code || "-"} - ${account.name_ar || account.name || "-"}`,
-    };
-    for (const currency of activeCurrencies) {
-      const amount = balance(account, currency.code);
-      row[currency.code] = formatCurrency(amount, currency.code);
-    }
-    rows.push(row);
+      const row: Record<string, unknown> = {
+        section: group[0],
+        account: `${account.code || "-"} - ${account.name_ar || account.name || "-"}`,
+      };
+      for (const currency of activeCurrencies) {
+        const amount = balance(account, currency.code);
+        row[currency.code] = formatCurrency(amount, currency.code);
+      }
+      rows.push(row);
     }
   }
   for (const group of groups) {
     const type = group[1]!;
-    const totalRow: Record<string, unknown> = { section: group[0], account: m.finance_report_total() };
+    const totalRow: Record<string, unknown> = {
+      section: group[0],
+      account: m.finance_report_total(),
+    };
     for (const currency of activeCurrencies) {
       const amount = totals[type][currency.code] || 0;
       totalRow[currency.code] = formatCurrency(amount, currency.code);

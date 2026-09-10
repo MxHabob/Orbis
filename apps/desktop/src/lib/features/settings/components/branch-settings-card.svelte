@@ -1,114 +1,144 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { Button } from "@orbis/ui/button";
-  import { Input } from "@orbis/ui/input";
-  import { Label } from "@orbis/ui/label";
-  import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui/select";
-  import { Switch } from "@orbis/ui/switch";
-  import { api, } from "$lib/api";
-  import { extractErrorMessage } from "$lib/api";
-  import { toast } from "@orbis/ui";
+import { onMount } from "svelte";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import { Label } from "@orbis/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
+import { Switch } from "@orbis/ui/switch";
+import { api } from "$lib/api";
+import { extractErrorMessage } from "$lib/api";
+import { toast } from "@orbis/ui";
 
-  type BranchPolicy = {
-    enabled: boolean;
-    selection_required: boolean;
-    data_isolation: "shared" | "isolated";
-    max_branches: number | null;
-    creation_requires_approval: boolean;
-    default_branch_id: string | null;
+type BranchPolicy = {
+  enabled: boolean;
+  selection_required: boolean;
+  data_isolation: "shared" | "isolated";
+  max_branches: number | null;
+  creation_requires_approval: boolean;
+  default_branch_id: string | null;
+};
+
+type Branch = {
+  id: string;
+  name: string;
+  name_ar?: string | null;
+  is_active: number;
+  unit_type: string;
+};
+
+let { org, isSaving = false }: { org: any; isSaving?: boolean } = $props();
+
+let branches = $state<Branch[]>([]);
+let isLoadingBranches = $state(true);
+let isSavingPolicy = $state(false);
+let savedPolicy = $state<BranchPolicy | null>(null);
+
+const defaultPolicy = (): BranchPolicy => ({
+  enabled: true,
+  selection_required: false,
+  data_isolation: "shared",
+  max_branches: null,
+  creation_requires_approval: false,
+  default_branch_id: null,
+});
+
+function readPolicy(): BranchPolicy {
+  const settings =
+    typeof org?.settings === "string"
+      ? (() => {
+          try {
+            return JSON.parse(org.settings);
+          } catch {
+            return {};
+          }
+        })()
+      : org?.settings || {};
+  const policy = settings.branch_policy || {};
+  return {
+    ...defaultPolicy(),
+    ...policy,
+    max_branches:
+      policy.max_branches == null ? null : Number(policy.max_branches),
   };
+}
 
-  type Branch = { id: string; name: string; name_ar?: string | null; is_active: number; unit_type: string };
+let policy = $state<BranchPolicy>(defaultPolicy());
+let maxBranchesInput = $state("");
 
-  let { org, isSaving = false }: { org: any; isSaving?: boolean } = $props();
+$effect(() => {
+  if (org && !savedPolicy) {
+    policy = readPolicy();
+    maxBranchesInput =
+      policy.max_branches == null ? "" : String(policy.max_branches);
+    savedPolicy = { ...policy };
+  }
+});
 
-  let branches = $state<Branch[]>([]);
-  let isLoadingBranches = $state(true);
-  let isSavingPolicy = $state(false);
-  let savedPolicy = $state<BranchPolicy | null>(null);
+const isDirty = $derived(
+  savedPolicy !== null &&
+    JSON.stringify(policy) !== JSON.stringify(savedPolicy),
+);
 
-  const defaultPolicy = (): BranchPolicy => ({
-    enabled: true,
-    selection_required: false,
-    data_isolation: "shared",
-    max_branches: null,
-    creation_requires_approval: false,
-    default_branch_id: null,
-  });
+const activeBranchCount = $derived(branches.length);
 
-  function readPolicy(): BranchPolicy {
-    const settings = typeof org?.settings === "string"
-      ? (() => { try { return JSON.parse(org.settings); } catch { return {}; } })()
-      : (org?.settings || {});
-    const policy = settings.branch_policy || {};
-    return {
-      ...defaultPolicy(),
-      ...policy,
-      max_branches: policy.max_branches == null ? null : Number(policy.max_branches),
-    };
+onMount(async () => {
+  try {
+    const units = await api.listOrgUnits();
+    branches = units.filter(
+      (unit: Branch) => unit.is_active === 1 && unit.unit_type === "branch",
+    );
+  } catch {
+    branches = [];
+  } finally {
+    isLoadingBranches = false;
+  }
+});
+
+function updateMaxBranches(value: string) {
+  maxBranchesInput = value;
+  const normalized = value.trim();
+  policy.max_branches =
+    normalized === ""
+      ? null
+      : Math.max(1, Number.parseInt(normalized, 10) || 1);
+}
+
+async function savePolicy() {
+  if (policy.max_branches !== null && policy.max_branches < activeBranchCount) {
+    toast.error("الحد الأقصى لا يمكن أن يقل عن عدد الفروع الحالية");
+    return;
+  }
+  if (
+    policy.default_branch_id &&
+    !branches.some((branch) => branch.id === policy.default_branch_id)
+  ) {
+    toast.error("الفرع الافتراضي غير صالح");
+    return;
   }
 
-  let policy = $state<BranchPolicy>(defaultPolicy());
-  let maxBranchesInput = $state("");
-
-  $effect(() => {
-    if (org && !savedPolicy) {
-      policy = readPolicy();
-      maxBranchesInput = policy.max_branches == null ? "" : String(policy.max_branches);
-      savedPolicy = { ...policy };
-    }
-  });
-
-  const isDirty = $derived(
-    savedPolicy !== null && JSON.stringify(policy) !== JSON.stringify(savedPolicy),
-  );
-
-  const activeBranchCount = $derived(branches.length);
-
-  onMount(async () => {
-    try {
-      const units = await api.listOrgUnits();
-      branches = units.filter((unit: Branch) => unit.is_active === 1 && unit.unit_type === "branch");
-    } catch {
-      branches = [];
-    } finally {
-      isLoadingBranches = false;
-    }
-  });
-
-  function updateMaxBranches(value: string) {
-    maxBranchesInput = value;
-    const normalized = value.trim();
-    policy.max_branches = normalized === "" ? null : Math.max(1, Number.parseInt(normalized, 10) || 1);
+  try {
+    isSavingPolicy = true;
+    await api.updateSettings({ branch_policy: policy });
+    savedPolicy = { ...policy };
+    toast.success("تم حفظ إعدادات الفروع");
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
+  } finally {
+    isSavingPolicy = false;
   }
+}
 
-  async function savePolicy() {
-    if (policy.max_branches !== null && policy.max_branches < activeBranchCount) {
-      toast.error("الحد الأقصى لا يمكن أن يقل عن عدد الفروع الحالية");
-      return;
-    }
-    if (policy.default_branch_id && !branches.some((branch) => branch.id === policy.default_branch_id)) {
-      toast.error("الفرع الافتراضي غير صالح");
-      return;
-    }
-
-    try {
-      isSavingPolicy = true;
-      await api.updateSettings({ branch_policy: policy });
-      savedPolicy = { ...policy };
-      toast.success("تم حفظ إعدادات الفروع");
-    } catch (error) {
-      toast.error(extractErrorMessage(error));
-    } finally {
-      isSavingPolicy = false;
-    }
-  }
-
-  function resetPolicy() {
-    if (!savedPolicy) return;
-    policy = { ...savedPolicy };
-    maxBranchesInput = policy.max_branches == null ? "" : String(policy.max_branches);
-  }
+function resetPolicy() {
+  if (!savedPolicy) return;
+  policy = { ...savedPolicy };
+  maxBranchesInput =
+    policy.max_branches == null ? "" : String(policy.max_branches);
+}
 </script>
 
 <section class="border border-border rounded-md overflow-hidden flex flex-col">

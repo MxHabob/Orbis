@@ -33,7 +33,8 @@ const profiles = [
 
 // Check if institution type was pre-configured by CLI
 let isPreConfigured = $derived(
-  onboardingState.profile.orgName !== "" && onboardingState.profile.institutionType !== ""
+  onboardingState.profile.orgName !== "" &&
+    onboardingState.profile.institutionType !== "",
 );
 
 function selectProfile(type: string) {

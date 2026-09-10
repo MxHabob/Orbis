@@ -22,7 +22,10 @@ export function queryClient<T extends GridRow>(
   return applySort(filtered, query.sorts ?? [], columns);
 }
 
-export function shouldUseServerFilter(totalHint: number | undefined, pageSize: number): boolean {
+export function shouldUseServerFilter(
+  totalHint: number | undefined,
+  pageSize: number,
+): boolean {
   if (totalHint == null) return false;
   return totalHint > Math.max(pageSize, 2000);
 }

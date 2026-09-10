@@ -65,7 +65,7 @@ async function loadTemplates() {
         (t) =>
           t.name.toLowerCase().includes(q) ||
           (t.name_ar && t.name_ar.includes(q)) ||
-          (t.description && t.description.toLowerCase().includes(q))
+          (t.description && t.description.toLowerCase().includes(q)),
       );
     }
     templates = result;
@@ -87,9 +87,12 @@ $effect(() => {
 
 // Handle Template Creation
 function getDefaultPageSetup() {
-  if (newTemplateDocType === "ID_CARD") return { size: "ID_CARD", orientation: "landscape" };
-  if (newTemplateDocType === "EXAM_CARD") return { size: "A5", orientation: "portrait" };
-  if (newTemplateDocType === "RECEIPT") return { size: "A4", orientation: "portrait" };
+  if (newTemplateDocType === "ID_CARD")
+    return { size: "ID_CARD", orientation: "landscape" };
+  if (newTemplateDocType === "EXAM_CARD")
+    return { size: "A5", orientation: "portrait" };
+  if (newTemplateDocType === "RECEIPT")
+    return { size: "A4", orientation: "portrait" };
   return { size: "A4", orientation: "portrait" };
 }
 
@@ -108,7 +111,9 @@ function buildInitialDocument() {
   const schema = dataSchemas[newTemplateEntityType] ?? {};
   for (const [field, definition] of Object.entries(schema)) {
     const type = (definition as any)?.type;
-    if (["string", "number", "boolean", "date", "image", "array"].includes(type)) {
+    if (
+      ["string", "number", "boolean", "date", "image", "array"].includes(type)
+    ) {
       document.variables[field] = {
         source: field,
         type,
@@ -136,10 +141,20 @@ function buildInitialDocument() {
   const page = document.pages[0]!;
   if (newTemplatePreset === "certificate") {
     page.children = [
-      { type: "Header", id: "header", props: { height: 25 }, children: [text("header-text", "$org.name_ar", 8, 18)] },
+      {
+        type: "Header",
+        id: "header",
+        props: { height: 25 },
+        children: [text("header-text", "$org.name_ar", 8, 18)],
+      },
       text("title", newTemplateNameAr || newTemplateName, 65, 26),
       text("student", "{{student.nameAr}}", 110, 20),
-      { type: "Footer", id: "footer", props: { height: 15, showPageNumber: true }, children: [text("footer-text", "{{student.nationalId}}", 270, 10)] },
+      {
+        type: "Footer",
+        id: "footer",
+        props: { height: 15, showPageNumber: true },
+        children: [text("footer-text", "{{student.nationalId}}", 270, 10)],
+      },
     ] as any;
   } else if (newTemplatePreset === "transcript") {
     page.children = [
@@ -167,7 +182,13 @@ function buildInitialDocument() {
       text("title", newTemplateNameAr || newTemplateName, 20, 22),
       text("payer", "{{payerName}}", 70, 16),
       text("amount", "{{amount | number:'0.00'}} {{currency}}", 110, 24),
-      { type: "QRCode", id: "receipt-qr", props: { data: "{{receiptNumber}}", size: 25, errorCorrection: "M" }, position: { x: 85, y: 160, width: 25, height: 25 }, positionMode: "absolute" },
+      {
+        type: "QRCode",
+        id: "receipt-qr",
+        props: { data: "{{receiptNumber}}", size: 25, errorCorrection: "M" },
+        position: { x: 85, y: 160, width: 25, height: 25 },
+        positionMode: "absolute",
+      },
     ] as any;
   }
 

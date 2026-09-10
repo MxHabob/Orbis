@@ -10,8 +10,10 @@ const config: OrbisApp = {
   active: true,
   beta: false,
   icon: "Globe",
-  short_description: "Global financial infrastructure supporting international tuition payments, multi-currency cards, and Apple Pay.",
-  short_description_ar: "بنية المدفوعات العالمية لقبول البطاقات الدولية والعملات المتعددة والمحافظ الرقمية.",
+  short_description:
+    "Global financial infrastructure supporting international tuition payments, multi-currency cards, and Apple Pay.",
+  short_description_ar:
+    "بنية المدفوعات العالمية لقبول البطاقات الدولية والعملات المتعددة والمحافظ الرقمية.",
   description: `Accept international payments from expatriate parents and international school students worldwide.
 
 **135+ Currencies Supported**
@@ -77,7 +79,8 @@ Automate recurring monthly and semester installment charging with smart card ret
       required: false,
       value: "",
       description: "Endpoint secret to verify webhook events from Stripe.",
-      description_ar: "رمز التحقق من توقيع الإشعارات التلقائية الصادرة من الخادم.",
+      description_ar:
+        "رمز التحقق من توقيع الإشعارات التلقائية الصادرة من الخادم.",
       placeholder: "whsec_...",
     },
     {

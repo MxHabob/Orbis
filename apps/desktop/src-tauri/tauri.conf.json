@@ -46,10 +46,10 @@
       }
     },
     "updater": {
-        "pubkey": "",
-        "endpoints": [],
-        "createUpdaterArtifacts": false,
-        "dangerousInsecureTransportProtocol": false
+      "pubkey": "",
+      "endpoints": [],
+      "createUpdaterArtifacts": false,
+      "dangerousInsecureTransportProtocol": false
     }
   }
 }

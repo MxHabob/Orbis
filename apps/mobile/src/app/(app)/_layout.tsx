@@ -5,10 +5,10 @@
  * Enforces session requirement and mounts primary App Stack.
  */
 
-import { Stack, Redirect } from 'expo-router';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { useAuth } from '@/lib/api';
-import { useTheme } from '@/hooks/use-theme';
+import { Stack, Redirect } from "expo-router";
+import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { useAuth } from "@/lib/api";
+import { useTheme } from "@/hooks/use-theme";
 
 export default function AppProtectedLayout() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -31,8 +31,9 @@ export default function AppProtectedLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        animation: 'slide_from_right',
-      }}>
+        animation: "slide_from_right",
+      }}
+    >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="student/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="class/[id]" options={{ headerShown: false }} />
@@ -40,7 +41,7 @@ export default function AppProtectedLayout() {
       <Stack.Screen
         name="notifications"
         options={{
-          presentation: 'modal',
+          presentation: "modal",
           headerShown: false,
         }}
       />
@@ -51,7 +52,7 @@ export default function AppProtectedLayout() {
 const styles = StyleSheet.create({
   center: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

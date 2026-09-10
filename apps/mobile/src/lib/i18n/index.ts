@@ -10,7 +10,7 @@ export {
   formatDate,
   formatPercent,
   formatNumber,
-} from './format';
+} from "./format";
 
 export {
   l,
@@ -19,15 +19,15 @@ export {
   setLocale,
   t,
   loadPersistedLocale,
-} from './locale';
+} from "./locale";
 
 export {
   gregorianToHijri,
   hijriToGregorian,
   getHijriMonths,
   type HijriDate,
-} from './hijri';
+} from "./hijri";
 
-export { I18nProvider, useI18n } from './i18n-provider';
-export type { SupportedLocale, I18nContextValue } from './types';
-export type { TranslationKey } from './dictionaries/ar';
+export { I18nProvider, useI18n } from "./i18n-provider";
+export type { SupportedLocale, I18nContextValue } from "./types";
+export type { TranslationKey } from "./dictionaries/ar";

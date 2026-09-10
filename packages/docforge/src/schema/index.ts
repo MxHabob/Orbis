@@ -28,7 +28,10 @@ export interface DataSchemaProperty {
  * Validates the variable bindings in a document against the provided data schema.
  * Returns an array of validation errors, or empty array if valid.
  */
-export function validateBindings(doc: TemplateDocument, schema: DataSchema): string[] {
+export function validateBindings(
+  doc: TemplateDocument,
+  schema: DataSchema,
+): string[] {
   const errors: string[] = [];
 
   for (const [varName, def] of Object.entries(doc.variables)) {
@@ -40,7 +43,9 @@ export function validateBindings(doc: TemplateDocument, schema: DataSchema): str
     const pathParts = def.source.split(".");
     const isValid = checkPathExists(schema, pathParts);
     if (!isValid) {
-      errors.push(`Variable '${varName}' binds to invalid source path '${def.source}'`);
+      errors.push(
+        `Variable '${varName}' binds to invalid source path '${def.source}'`,
+      );
     }
   }
 
@@ -54,7 +59,7 @@ function checkPathExists(schema: DataSchema, path: string[]): boolean {
     if (!current || (current.type !== "object" && current.type !== "array")) {
       return false;
     }
-    
+
     if (current.type === "object" && current.properties) {
       current = current.properties[part];
     } else if (current.type === "array" && (current as any).items) {

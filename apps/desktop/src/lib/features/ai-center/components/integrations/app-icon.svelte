@@ -19,10 +19,12 @@ let {
 } = $props();
 
 // Dynamically resolve the Lucide icon component by name
-const IconComponent = $derived((icons as Record<string, any>)[icon] ?? icons.Package);
+const IconComponent = $derived(
+  (icons as Record<string, any>)[icon] ?? icons.Package,
+);
 
 const logoHtml = $derived(
-  logo ? (typeof logo === "function" ? logo() : logo) : null
+  logo ? (typeof logo === "function" ? logo() : logo) : null,
 );
 </script>
 

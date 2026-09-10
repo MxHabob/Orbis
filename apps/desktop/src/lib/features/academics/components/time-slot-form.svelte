@@ -1,99 +1,113 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { api, extractErrorMessage } from "$lib/api";
-  import { createTimeSlotInputSchema } from "@orbis/schemas";
-  import { Button } from "@orbis/ui/button";
-  import { Checkbox } from "@orbis/ui/checkbox";
-  import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@orbis/ui/dialog";
-  import { Input } from "@orbis/ui/input";
-  import { FormField } from "@orbis/ui";
-  import { Label } from "@orbis/ui/label";
-  import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui/select";
-  import { toast } from "@orbis/ui";
-  import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import * as m from "$lib/paraglide/messages";
+import { api, extractErrorMessage } from "$lib/api";
+import { createTimeSlotInputSchema } from "@orbis/schemas";
+import { Button } from "@orbis/ui/button";
+import { Checkbox } from "@orbis/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@orbis/ui/dialog";
+import { Input } from "@orbis/ui/input";
+import { FormField } from "@orbis/ui";
+import { Label } from "@orbis/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
+import { toast } from "@orbis/ui";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
-  let {
-    open = $bindable(false),
-    periodId,
-    nextSlotNumber,
-    onSuccess,
-  }: {
-    open: boolean;
-    periodId: string;
-    nextSlotNumber: number;
-    onSuccess?: () => void;
-  } = $props();
+let {
+  open = $bindable(false),
+  periodId,
+  nextSlotNumber,
+  onSuccess,
+}: {
+  open: boolean;
+  periodId: string;
+  nextSlotNumber: number;
+  onSuccess?: () => void;
+} = $props();
 
-  let nameAr = $state("");
-  let name = $state("");
-  let startTime = $state("08:00");
-  let endTime = $state("08:45");
-  let isBreak = $state(false);
-  let breakType = $state("recess");
-  const form = new FormController({
-    initialValues: {
-      period_id: "",
-      slot_number: 1,
-      name: "",
-      name_ar: "",
-      start_time: "08:00",
-      end_time: "08:45",
-      duration_minutes: 45,
-      is_break: false,
-      applicable_days: "1,2,3,4,5",
-    },
-    schema: createTimeSlotInputSchema,
-  });
+let nameAr = $state("");
+let name = $state("");
+let startTime = $state("08:00");
+let endTime = $state("08:45");
+let isBreak = $state(false);
+let breakType = $state("recess");
+const form = new FormController({
+  initialValues: {
+    period_id: "",
+    slot_number: 1,
+    name: "",
+    name_ar: "",
+    start_time: "08:00",
+    end_time: "08:45",
+    duration_minutes: 45,
+    is_break: false,
+    applicable_days: "1,2,3,4,5",
+  },
+  schema: createTimeSlotInputSchema,
+});
 
-  $effect(() => {
-    if (open) {
-      nameAr = m.academics_schedule_placeholder_period({ number: nextSlotNumber });
-      name = m.academics_schedule_placeholder_period_en({ number: nextSlotNumber });
-      startTime = "08:00";
-      endTime = "08:45";
-      isBreak = false;
-      breakType = "recess";
-    }
-  });
-
-  function calcDuration(start: string, end: string): number {
-    const [startHours, startMinutes] = start.split(":").map(Number);
-    const [endHours, endMinutes] = end.split(":").map(Number);
-    return endHours * 60 + endMinutes - (startHours * 60 + startMinutes);
-  }
-
-  async function handleSubmit(event: SubmitEvent) {
-    event.preventDefault();
-    const duration = calcDuration(startTime, endTime);
-    form.values = {
-      period_id: periodId,
-      slot_number: nextSlotNumber,
-      name: name.trim() || nameAr.trim(),
-      name_ar: nameAr.trim(),
-      start_time: startTime,
-      end_time: endTime,
-      duration_minutes: duration,
-      is_break: isBreak,
-      applicable_days: "1,2,3,4,5",
-    };
-    if (!form.validate()) {
-      toast.error(m.academics_schedule_time_slot_end_error());
-      return;
-    }
-
-    const submitted = await form.submit(async (values) => {
-      await api.createTimeSlot({
-        ...values,
-        break_type: isBreak ? breakType : null,
-      } as any);
-      toast.success(m.academics_schedule_time_slot_added());
-      open = false;
-      onSuccess?.();
+$effect(() => {
+  if (open) {
+    nameAr = m.academics_schedule_placeholder_period({
+      number: nextSlotNumber,
     });
-    if (!submitted && form.formError) {
-      toast.error(extractErrorMessage(form.formError));
-    }
+    name = m.academics_schedule_placeholder_period_en({
+      number: nextSlotNumber,
+    });
+    startTime = "08:00";
+    endTime = "08:45";
+    isBreak = false;
+    breakType = "recess";
   }
+});
+
+function calcDuration(start: string, end: string): number {
+  const [startHours, startMinutes] = start.split(":").map(Number);
+  const [endHours, endMinutes] = end.split(":").map(Number);
+  return endHours * 60 + endMinutes - (startHours * 60 + startMinutes);
+}
+
+async function handleSubmit(event: SubmitEvent) {
+  event.preventDefault();
+  const duration = calcDuration(startTime, endTime);
+  form.values = {
+    period_id: periodId,
+    slot_number: nextSlotNumber,
+    name: name.trim() || nameAr.trim(),
+    name_ar: nameAr.trim(),
+    start_time: startTime,
+    end_time: endTime,
+    duration_minutes: duration,
+    is_break: isBreak,
+    applicable_days: "1,2,3,4,5",
+  };
+  if (!form.validate()) {
+    toast.error(m.academics_schedule_time_slot_end_error());
+    return;
+  }
+
+  const submitted = await form.submit(async (values) => {
+    await api.createTimeSlot({
+      ...values,
+      break_type: isBreak ? breakType : null,
+    } as any);
+    toast.success(m.academics_schedule_time_slot_added());
+    open = false;
+    onSuccess?.();
+  });
+  if (!submitted && form.formError) {
+    toast.error(extractErrorMessage(form.formError));
+  }
+}
 </script>
 
 <Dialog bind:open>

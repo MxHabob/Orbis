@@ -10,8 +10,10 @@ const config: OrbisApp = {
   active: true,
   beta: false,
   icon: "Coins",
-  short_description: "Saudi Sharia-compliant Buy-Now-Pay-Later payment platform for splitting school fees.",
-  short_description_ar: "منصة التقسيط السعودية المتوافقة مع الشريعة الإسلامية لتقسيط الرسوم الدراسية.",
+  short_description:
+    "Saudi Sharia-compliant Buy-Now-Pay-Later payment platform for splitting school fees.",
+  short_description_ar:
+    "منصة التقسيط السعودية المتوافقة مع الشريعة الإسلامية لتقسيط الرسوم الدراسية.",
   description: `Tamara BNPL integration for easy, Sharia-certified school fee installment plans.
 
 **Flexible Installments**
@@ -65,7 +67,8 @@ High conversion checkout widget embedded within the Orbis parent portal and cash
       required: true,
       value: "",
       description: "Tamara public key for frontend promotional widgets.",
-      description_ar: "المفتاح العام المستخدم لإظهار شارات التقسيط في واجهة المستخدم.",
+      description_ar:
+        "المفتاح العام المستخدم لإظهار شارات التقسيط في واجهة المستخدم.",
     },
     {
       id: "notification_token",

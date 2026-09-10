@@ -5,17 +5,17 @@
  * Ultra-clean component orchestrator powered by @orbis/sdk & TanStack Query.
  */
 
-import { useState, useMemo, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { ThemedStatusBar } from '@/components/ui/themed-status-bar';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useState, useMemo, useCallback } from "react";
+import { View, StyleSheet, ScrollView, RefreshControl } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useTheme } from '@/hooks/use-theme';
-import { useI18n } from '@/lib/i18n';
-import { useEffectiveContext } from '@/providers/effective-context';
-import { useAttendanceQuery, useGradesQuery } from '@/hooks/use-api-queries';
-import { Button } from '@/components/ui/button';
+import { useTheme } from "@/hooks/use-theme";
+import { useI18n } from "@/lib/i18n";
+import { useEffectiveContext } from "@/providers/effective-context";
+import { useAttendanceQuery, useGradesQuery } from "@/hooks/use-api-queries";
+import { Button } from "@/components/ui/button";
 import {
   BehaviorScoreBanner,
   BehaviorAiCard,
@@ -24,26 +24,30 @@ import {
   BehaviorLogModal,
   BehaviorFilterType,
   BehaviorRecordItem,
-} from '@/components/behavior';
-import { Spacing, Typography } from '@/constants/theme';
+} from "@/components/behavior";
+import { Spacing, Typography } from "@/constants/theme";
 
 export default function BehaviorScreen() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const { t } = useI18n();
-  const { isTeacher, isParent, selectedChild, targetStudentId } = useEffectiveContext();
+  const { isTeacher, isParent, selectedChild, targetStudentId } =
+    useEffectiveContext();
 
-  const [filter, setFilter] = useState<BehaviorFilterType>('all');
+  const [filter, setFilter] = useState<BehaviorFilterType>("all");
   const [showLogModal, setShowLogModal] = useState(false);
   const [records, setRecords] = useState<BehaviorRecordItem[]>([]);
 
   // ── TanStack Query Hooks (Zero useEffect) ───────────────────────────────
-  const { isLoading: isAttendanceLoading, refetch: refetchAttendance } = useAttendanceQuery({
-    studentId: targetStudentId || undefined,
-  });
-  const { isLoading: isGradesLoading, refetch: refetchGrades } = useGradesQuery({
-    studentId: targetStudentId || undefined,
-  });
+  const { isLoading: isAttendanceLoading, refetch: refetchAttendance } =
+    useAttendanceQuery({
+      studentId: targetStudentId || undefined,
+    });
+  const { isLoading: isGradesLoading, refetch: refetchGrades } = useGradesQuery(
+    {
+      studentId: targetStudentId || undefined,
+    },
+  );
 
   const isQueryLoading = isAttendanceLoading || isGradesLoading;
 
@@ -56,7 +60,7 @@ export default function BehaviorScreen() {
   }, []);
 
   const filteredRecords = useMemo(() => {
-    if (filter === 'all') return records;
+    if (filter === "all") return records;
     return records.filter((r) => r.type === filter);
   }, [records, filter]);
 
@@ -66,19 +70,21 @@ export default function BehaviorScreen() {
 
   const subtitle = isParent
     ? selectedChild?.name
-      ? t('behavior_sub_parent', { name: selectedChild.name })
-      : t('behavior_sub_parent_default')
+      ? t("behavior_sub_parent", { name: selectedChild.name })
+      : t("behavior_sub_parent_default")
     : isTeacher
-      ? t('behavior_sub_teacher')
-      : t('behavior_sub_student');
+      ? t("behavior_sub_teacher")
+      : t("behavior_sub_student");
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <ThemedStatusBar backgroundColor={theme.background} />
       {isTeacher && (
-        <View style={[styles.actionBar, { paddingTop: insets.top + Spacing.two }]}>
+        <View
+          style={[styles.actionBar, { paddingTop: insets.top + Spacing.two }]}
+        >
           <Button
-            title={t('behavior_btn_log')}
+            title={t("behavior_btn_log")}
             onPress={() => setShowLogModal(true)}
             size="sm"
             icon={<Ionicons name="add-circle" size={16} color="#FFFFFF" />}
@@ -98,18 +104,28 @@ export default function BehaviorScreen() {
             onRefresh={onRefresh}
             tintColor={theme.primary}
           />
-        }>
+        }
+      >
         {/* 1. Score Banner */}
-        <BehaviorScoreBanner totalPoints={totalPoints} isLoading={isQueryLoading} />
+        <BehaviorScoreBanner
+          totalPoints={totalPoints}
+          isLoading={isQueryLoading}
+        />
 
         {/* 2. AI Card */}
-        <BehaviorAiCard hasRecords={records.length > 0} isLoading={isQueryLoading} />
+        <BehaviorAiCard
+          hasRecords={records.length > 0}
+          isLoading={isQueryLoading}
+        />
 
         {/* 3. Filter Bar */}
         <BehaviorFilterBar activeFilter={filter} onFilterChange={setFilter} />
 
         {/* 4. Timeline List */}
-        <BehaviorTimelineList records={filteredRecords} isLoading={isQueryLoading} />
+        <BehaviorTimelineList
+          records={filteredRecords}
+          isLoading={isQueryLoading}
+        />
       </ScrollView>
 
       {/* 5. Teacher Modal */}

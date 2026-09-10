@@ -5,7 +5,7 @@ Attendance stats + log history using OrbisGrid.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { Calendar, UserCheck, Ban, Clock } from "@lucide/svelte";
 import { onMount } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -35,10 +35,7 @@ async function loadAttendance() {
       (e: any) => e.student_id === studentId,
     );
     if (activeEnrollment) {
-      report = await api.assessment.getReport(
-        periodId,
-        activeEnrollment.id,
-      );
+      report = await api.assessment.getReport(periodId, activeEnrollment.id);
     }
   } catch (e) {
     console.error(e);
@@ -51,13 +48,14 @@ import { applyFilter } from "@orbis/ui/filter-builder";
 import type { UniversalFilter } from "@orbis/ui/filter-builder";
 import { attendanceFilterFields } from "$lib/tables/definitions/filter-configs";
 
-let activeFilter = $state<UniversalFilter>({ logic: "AND", conditions: [], groups: [] });
+let activeFilter = $state<UniversalFilter>({
+  logic: "AND",
+  conditions: [],
+  groups: [],
+});
 
 const filteredAttendance = $derived(
-  applyFilter(
-    (report?.logs || []),
-    activeFilter
-  )
+  applyFilter(report?.logs || [], activeFilter),
 );
 
 // ── Grid Source ─────────────────────────────────────────────────────────

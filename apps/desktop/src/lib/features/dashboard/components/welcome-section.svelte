@@ -6,7 +6,12 @@ import { fly } from "svelte/transition";
 import { quadOut } from "svelte/easing";
 
 import { localizeHref } from "$lib/paraglide/runtime";
-import { Avatar, AvatarController, ALL_AVATAR_HATS, type AvatarHat } from "@orbis/avatar-engine";
+import {
+  Avatar,
+  AvatarController,
+  ALL_AVATAR_HATS,
+  type AvatarHat,
+} from "@orbis/avatar-engine";
 
 let {
   type,
@@ -44,8 +49,7 @@ let manualHat = $state<AvatarHat | null>(null);
 
 const userHat = $derived.by<AvatarHat>(() => {
   if (manualHat !== null) return manualHat;
-  const rawRole =
-    authStore.user?.primary_role || "viewer";
+  const rawRole = authStore.user?.primary_role || "viewer";
   const role = String(rawRole).toLowerCase();
   if (role === "admin" || role === "super_admin") return "crown";
   if (role === "teacher") return "graduation";

@@ -6,236 +6,236 @@ Left side: Notion-style interactive database directory list.
 Right side: Linear-style diagnostics panel with Orbis Advisor insights.
 -->
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { Button } from "@orbis/ui/button";
-  import { Skeleton } from "@orbis/ui/skeleton";
-  import { Badge } from "@orbis/ui/badge";
-  import {
-    GraduationCap,
-    Calendar,
-    ShieldCheck,
-    CalendarDays,
-    CalendarClock,
-    TrendingUp,
-    ClipboardList,
-    ArrowRight,
-    Milestone,
-    AlertCircle,
-    Sparkles,
-    Info,
-  } from "@lucide/svelte";
-  import { localizeHref } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
+import { Button } from "@orbis/ui/button";
+import { Skeleton } from "@orbis/ui/skeleton";
+import { Badge } from "@orbis/ui/badge";
+import {
+  GraduationCap,
+  Calendar,
+  ShieldCheck,
+  CalendarDays,
+  CalendarClock,
+  TrendingUp,
+  ClipboardList,
+  ArrowRight,
+  Milestone,
+  AlertCircle,
+  Sparkles,
+  Info,
+} from "@lucide/svelte";
+import { localizeHref } from "$lib/paraglide/runtime";
 
-  import {
-    createClassesQuery,
-    createSubjectsQuery,
-    createPeriodsQuery,
-  } from "$lib/features/academics";
-  import { createPromotionJobsQuery } from "$lib/features/academics/promotion-queries";
-  import { academicContext } from "$lib/stores";
-  import { createExamSessionsQuery } from "$lib/features/exams/queries";
-  import { extractErrorMessage } from "$lib/api";
+import {
+  createClassesQuery,
+  createSubjectsQuery,
+  createPeriodsQuery,
+} from "$lib/features/academics";
+import { createPromotionJobsQuery } from "$lib/features/academics/promotion-queries";
+import { academicContext } from "$lib/stores";
+import { createExamSessionsQuery } from "$lib/features/exams/queries";
+import { extractErrorMessage } from "$lib/api";
 
-  let { data }: { data: { orgId: string } } = $props();
+let { data }: { data: { orgId: string } } = $props();
 
-  // TanStack Queries
-  const classesQuery = createClassesQuery(() => data.orgId);
-  const subjectsQuery = createSubjectsQuery(() => data.orgId);
-  const periodsQuery = createPeriodsQuery(() => data.orgId);
-  const promotionJobsQuery = createPromotionJobsQuery(() => data.orgId);
-  const examSessionsQuery = createExamSessionsQuery(() => data.orgId);
+// TanStack Queries
+const classesQuery = createClassesQuery(() => data.orgId);
+const subjectsQuery = createSubjectsQuery(() => data.orgId);
+const periodsQuery = createPeriodsQuery(() => data.orgId);
+const promotionJobsQuery = createPromotionJobsQuery(() => data.orgId);
+const examSessionsQuery = createExamSessionsQuery(() => data.orgId);
 
-  // Derived Data
-  const classes = $derived(classesQuery.data ?? []);
-  const subjects = $derived(subjectsQuery.data ?? []);
-  const periods = $derived(periodsQuery.data ?? []);
-  const currentYear = $derived(academicContext.currentYear);
-  const promotionJobs = $derived(promotionJobsQuery.data ?? []);
-  const examSessions = $derived(examSessionsQuery.data ?? []);
+// Derived Data
+const classes = $derived(classesQuery.data ?? []);
+const subjects = $derived(subjectsQuery.data ?? []);
+const periods = $derived(periodsQuery.data ?? []);
+const currentYear = $derived(academicContext.currentYear);
+const promotionJobs = $derived(promotionJobsQuery.data ?? []);
+const examSessions = $derived(examSessionsQuery.data ?? []);
 
-  const isLoading = $derived(
-    classesQuery.isLoading ||
-      subjectsQuery.isLoading ||
-      periodsQuery.isLoading ||
-      promotionJobsQuery.isLoading ||
-      examSessionsQuery.isLoading,
-  );
+const isLoading = $derived(
+  classesQuery.isLoading ||
+    subjectsQuery.isLoading ||
+    periodsQuery.isLoading ||
+    promotionJobsQuery.isLoading ||
+    examSessionsQuery.isLoading,
+);
 
-  const error = $derived(
-    classesQuery.error ||
-      subjectsQuery.error ||
-      periodsQuery.error ||
-      promotionJobsQuery.error ||
-      examSessionsQuery.error,
-  );
+const error = $derived(
+  classesQuery.error ||
+    subjectsQuery.error ||
+    periodsQuery.error ||
+    promotionJobsQuery.error ||
+    examSessionsQuery.error,
+);
 
-  function refetchAll() {
-    classesQuery.refetch();
-    subjectsQuery.refetch();
-    periodsQuery.refetch();
-    promotionJobsQuery.refetch();
-    examSessionsQuery.refetch();
+function refetchAll() {
+  classesQuery.refetch();
+  subjectsQuery.refetch();
+  periodsQuery.refetch();
+  promotionJobsQuery.refetch();
+  examSessionsQuery.refetch();
+}
+
+const activeYearName = $derived(academicContext.yearLabelAr);
+
+// Find active period / term
+const activePeriod = $derived(
+  periods.find((c) => c.status === "active") || periods[0],
+);
+
+const activePeriodName = $derived(
+  activePeriod ? activePeriod.name_ar || activePeriod.name : null,
+);
+
+// Grade entry status (based on active period/term)
+const isGradeEntryOpen = $derived(
+  activePeriod
+    ? activePeriod.grade_entry_status === "open" ||
+        activePeriod.is_grade_entry_open === 1
+    : false,
+);
+
+// Dynamic counters for KPIs
+const kpiStats = $derived([
+  {
+    label: m.common_card_active_classes(),
+    value: currentYear?.class_count ?? classes.length,
+  },
+  {
+    label: m.academics_overview_kpi_total_subjects(),
+    value: currentYear?.subject_count ?? subjects.length,
+  },
+  {
+    label: m.academics_overview_kpi_total_teachers(),
+    value: currentYear?.teacher_count ?? 0,
+  },
+  {
+    label: m.common_classes_enrolled_students(),
+    value: currentYear?.student_count ?? 0,
+  },
+]);
+
+// Navigation directories configuration mapping to active sub-routes
+const directoryItems = $derived([
+  {
+    path: `/${data.orgId}/academics/classes`,
+    title: m.common_search_group_classes(),
+    desc: m.academics_overview_card_classes_desc(),
+    icon: GraduationCap,
+    badge: m.academics_overview_card_classes_badge({ count: classes.length }),
+  },
+  {
+    path: `/${data.orgId}/academics/schedule`,
+    title: m.common_exams_detail_schedule(),
+    desc: m.academics_overview_card_schedule_desc(),
+    icon: Calendar,
+    badge: m.academics_overview_card_schedule_badge(),
+  },
+  {
+    path: `/${data.orgId}/academics/promotion`,
+    title: m.academics_overview_card_promotion_title(),
+    desc: m.academics_overview_card_promotion_desc(),
+    icon: TrendingUp,
+    badge: m.common_promo_wizard_title(),
+  },
+  {
+    path: `/${data.orgId}/academics/exams`, // Moved under academics
+    title: m.academics_overview_card_exams_title(),
+    desc: m.academics_overview_card_exams_desc(),
+    icon: ClipboardList,
+    badge: m.academics_overview_card_exams_badge(),
+  },
+]);
+
+// Diagnostic Advisor Alerts
+const advisorInsights = $derived.by(() => {
+  const insights = [];
+
+  // 1. Grade Entry Insight
+  if (activePeriodName) {
+    insights.push({
+      id: "grade-entry",
+      text: isGradeEntryOpen
+        ? m.academics_overview_insight_grades_open({
+            period: activePeriodName,
+          })
+        : m.academics_overview_insight_grades_closed(),
+      variant: isGradeEntryOpen ? ("warning" as const) : ("neutral" as const),
+      icon: ShieldCheck,
+    });
   }
 
-  const activeYearName = $derived(academicContext.yearLabelAr);
+  // 2. Schedule Insight
+  insights.push({
+    id: "schedule",
+    text:
+      classes.length > 0
+        ? m.academics_overview_insight_schedule_ok()
+        : m.academics_overview_insight_schedule_warn(),
+    variant: classes.length > 0 ? ("success" as const) : ("warning" as const),
+    icon: Calendar,
+  });
 
-  // Find active period / term
-  const activePeriod = $derived(
-    periods.find((c) => c.status === "active") || periods[0],
+  // 3. Student Promotion Insight
+  const activePromoJob = promotionJobs.find(
+    (job) =>
+      job.status === "dry_run" ||
+      job.status === "promoting" ||
+      job.status === "pending",
   );
-
-  const activePeriodName = $derived(
-    activePeriod ? activePeriod.name_ar || activePeriod.name : null,
-  );
-
-  // Grade entry status (based on active period/term)
-  const isGradeEntryOpen = $derived(
-    activePeriod
-      ? activePeriod.grade_entry_status === "open" ||
-          activePeriod.is_grade_entry_open === 1
-      : false,
-  );
-
-  // Dynamic counters for KPIs
-  const kpiStats = $derived([
-    {
-      label: m.common_card_active_classes(),
-      value: currentYear?.class_count ?? classes.length,
-    },
-    {
-      label: m.academics_overview_kpi_total_subjects(),
-      value: currentYear?.subject_count ?? subjects.length,
-    },
-    {
-      label: m.academics_overview_kpi_total_teachers(),
-      value: currentYear?.teacher_count ?? 0,
-    },
-    {
-      label: m.common_classes_enrolled_students(),
-      value: currentYear?.student_count ?? 0,
-    },
-  ]);
-
-  // Navigation directories configuration mapping to active sub-routes
-  const directoryItems = $derived([
-    {
-      path: `/${data.orgId}/academics/classes`,
-      title: m.common_search_group_classes(),
-      desc: m.academics_overview_card_classes_desc(),
-      icon: GraduationCap,
-      badge: m.academics_overview_card_classes_badge({ count: classes.length }),
-    },
-    {
-      path: `/${data.orgId}/academics/schedule`,
-      title: m.common_exams_detail_schedule(),
-      desc: m.academics_overview_card_schedule_desc(),
-      icon: Calendar,
-      badge: m.academics_overview_card_schedule_badge(),
-    },
-    {
-      path: `/${data.orgId}/academics/promotion`,
-      title: m.academics_overview_card_promotion_title(),
-      desc: m.academics_overview_card_promotion_desc(),
-      icon: TrendingUp,
-      badge: m.common_promo_wizard_title(),
-    },
-    {
-      path: `/${data.orgId}/academics/exams`, // Moved under academics
-      title: m.academics_overview_card_exams_title(),
-      desc: m.academics_overview_card_exams_desc(),
-      icon: ClipboardList,
-      badge: m.academics_overview_card_exams_badge(),
-    },
-  ]);
-
-  // Diagnostic Advisor Alerts
-  const advisorInsights = $derived.by(() => {
-    const insights = [];
-
-    // 1. Grade Entry Insight
-    if (activePeriodName) {
+  if (activePromoJob) {
+    if (activePromoJob.status === "promoting") {
       insights.push({
-        id: "grade-entry",
-        text: isGradeEntryOpen
-          ? m.academics_overview_insight_grades_open({
-              period: activePeriodName,
-            })
-          : m.academics_overview_insight_grades_closed(),
-        variant: isGradeEntryOpen ? ("warning" as const) : ("neutral" as const),
-        icon: ShieldCheck,
+        id: "promotion",
+        text: m.academics_overview_insight_promo_running(),
+        variant: "warning" as const,
+        icon: TrendingUp,
       });
-    }
-
-    // 2. Schedule Insight
-    insights.push({
-      id: "schedule",
-      text:
-        classes.length > 0
-          ? m.academics_overview_insight_schedule_ok()
-          : m.academics_overview_insight_schedule_warn(),
-      variant: classes.length > 0 ? ("success" as const) : ("warning" as const),
-      icon: Calendar,
-    });
-
-    // 3. Student Promotion Insight
-    const activePromoJob = promotionJobs.find(
-      (job) =>
-        job.status === "dry_run" ||
-        job.status === "promoting" ||
-        job.status === "pending",
-    );
-    if (activePromoJob) {
-      if (activePromoJob.status === "promoting") {
-        insights.push({
-          id: "promotion",
-          text: m.academics_overview_insight_promo_running(),
-          variant: "warning" as const,
-          icon: TrendingUp,
-        });
-      } else {
-        insights.push({
-          id: "promotion",
-          text: m.academics_overview_insight_promo_ready({
-            promoted: activePromoJob.promoted_count ?? 0,
-            retained: activePromoJob.retained_count ?? 0,
-          }),
-          variant: "success" as const,
-          icon: TrendingUp,
-        });
-      }
     } else {
       insights.push({
         id: "promotion",
-        text: m.academics_overview_insight_promo_none(),
-        variant: "neutral" as const,
+        text: m.academics_overview_insight_promo_ready({
+          promoted: activePromoJob.promoted_count ?? 0,
+          retained: activePromoJob.retained_count ?? 0,
+        }),
+        variant: "success" as const,
         icon: TrendingUp,
       });
     }
+  } else {
+    insights.push({
+      id: "promotion",
+      text: m.academics_overview_insight_promo_none(),
+      variant: "neutral" as const,
+      icon: TrendingUp,
+    });
+  }
 
-    // 4. Exams Insight
-    const activeExamSession = examSessions.find(
-      (s: any) => s.status === "active" || s.status === "running",
-    );
-    if (activeExamSession) {
-      insights.push({
-        id: "exams-active",
-        text: m.academics_overview_insight_exams_active({
-          session: activeExamSession.name_ar || activeExamSession.name,
-        }),
-        variant: "success" as const,
-        icon: ClipboardList,
-      });
-    } else {
-      insights.push({
-        id: "exams-none",
-        text: m.academics_overview_insight_exams_none(),
-        variant: "neutral" as const,
-        icon: ClipboardList,
-      });
-    }
+  // 4. Exams Insight
+  const activeExamSession = examSessions.find(
+    (s: any) => s.status === "active" || s.status === "running",
+  );
+  if (activeExamSession) {
+    insights.push({
+      id: "exams-active",
+      text: m.academics_overview_insight_exams_active({
+        session: activeExamSession.name_ar || activeExamSession.name,
+      }),
+      variant: "success" as const,
+      icon: ClipboardList,
+    });
+  } else {
+    insights.push({
+      id: "exams-none",
+      text: m.academics_overview_insight_exams_none(),
+      variant: "neutral" as const,
+      icon: ClipboardList,
+    });
+  }
 
-    return insights;
-  });
+  return insights;
+});
 </script>
 
 <div

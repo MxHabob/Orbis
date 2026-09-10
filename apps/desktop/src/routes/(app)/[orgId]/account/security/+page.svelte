@@ -56,16 +56,28 @@ let activeSessions = $state<any[]>([]);
 async function loadSecurityData() {
   await authStore.restore();
   if (authStore.user) {
-    const cachedMfa = typeof window !== "undefined" && localStorage.getItem("orbis_mfa_enabled") === "true";
+    const cachedMfa =
+      typeof window !== "undefined" &&
+      localStorage.getItem("orbis_mfa_enabled") === "true";
     isMfaEnabled = !!(authStore.user as any).mfa_enabled || cachedMfa;
 
-    const cachedGoogle = typeof window !== "undefined" && localStorage.getItem("orbis_google_linked") === "true";
-    const cachedEmail = typeof window !== "undefined" ? localStorage.getItem("orbis_google_email") : null;
+    const cachedGoogle =
+      typeof window !== "undefined" &&
+      localStorage.getItem("orbis_google_linked") === "true";
+    const cachedEmail =
+      typeof window !== "undefined"
+        ? localStorage.getItem("orbis_google_email")
+        : null;
     isGoogleLinked = cachedGoogle;
     googleEmail = cachedEmail;
 
-    const cachedMs = typeof window !== "undefined" && localStorage.getItem("orbis_microsoft_linked") === "true";
-    const cachedMsEmail = typeof window !== "undefined" ? localStorage.getItem("orbis_microsoft_email") : null;
+    const cachedMs =
+      typeof window !== "undefined" &&
+      localStorage.getItem("orbis_microsoft_linked") === "true";
+    const cachedMsEmail =
+      typeof window !== "undefined"
+        ? localStorage.getItem("orbis_microsoft_email")
+        : null;
     isMicrosoftLinked = cachedMs;
     microsoftEmail = cachedMsEmail;
   }
@@ -79,7 +91,8 @@ async function loadSecurityData() {
         const icon = isMobile ? Smartphone : Laptop;
         return {
           id: d.id,
-          device: d.device_name || `${d.os || "Device"} (${d.browser || "Desktop"})`,
+          device:
+            d.device_name || `${d.os || "Device"} (${d.browser || "Desktop"})`,
           location: d.os ? `${d.os} • ${d.browser || "App"}` : "Local Device",
           ip: "Current Device",
           isCurrent: true,

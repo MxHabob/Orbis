@@ -5,7 +5,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Plus, Percent } from "@lucide/svelte";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -27,7 +27,11 @@ let templates = $state<any[]>([]);
 let isLoading = $state(true);
 let isSheetOpen = $state(false);
 let selectedTemplate = $state<any | null>(null);
-let activeFilter = $state<UniversalFilter>({ logic: "AND", conditions: [], groups: [] });
+let activeFilter = $state<UniversalFilter>({
+  logic: "AND",
+  conditions: [],
+  groups: [],
+});
 
 // ── Data Loading ────────────────────────────────────────────────────────
 
@@ -45,8 +49,6 @@ async function loadTemplates() {
 onMount(() => {
   if (data.orgId) loadTemplates();
 });
-
-
 
 function getFormattedValue(tpl: any): string {
   const val = Number(tpl.value || 0);

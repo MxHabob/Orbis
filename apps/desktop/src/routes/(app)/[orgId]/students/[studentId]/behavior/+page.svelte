@@ -5,7 +5,7 @@ Behavior records + AI summary using OrbisGrid.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import {
   ShieldCheck,
@@ -71,14 +71,13 @@ import { applyFilter } from "@orbis/ui/filter-builder";
 import type { UniversalFilter } from "@orbis/ui/filter-builder";
 import { behaviorFilterFields } from "$lib/tables/definitions/filter-configs";
 
-let activeFilter = $state<UniversalFilter>({ logic: "AND", conditions: [], groups: [] });
+let activeFilter = $state<UniversalFilter>({
+  logic: "AND",
+  conditions: [],
+  groups: [],
+});
 
-const filteredRecords = $derived(
-  applyFilter(
-    records,
-    activeFilter
-  )
-);
+const filteredRecords = $derived(applyFilter(records, activeFilter));
 
 // ── Grid Source ─────────────────────────────────────────────────────────
 

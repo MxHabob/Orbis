@@ -12,11 +12,7 @@
  * - Clean declarative composition powered by @orbis/sdk & TanStack Query.
  */
 
-import React, {
-  useCallback,
-  useMemo,
-  useState,
-} from 'react';
+import React, { useCallback, useMemo, useState } from "react";
 
 import {
   View,
@@ -24,45 +20,33 @@ import {
   ScrollView,
   RefreshControl,
   useWindowDimensions,
-} from 'react-native';
+} from "react-native";
 
-import {
-  router,
-} from 'expo-router';
+import { router } from "expo-router";
 
-import {
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import {
-  ThemedStatusBar,
-} from '@/components/ui/themed-status-bar';
+import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
 
-import {
-  useAuth,
-} from '@/lib/api';
+import { useAuth } from "@/lib/api";
 
-import {
-  useI18n,
-} from '@/lib/i18n';
+import { useI18n } from "@/lib/i18n";
 
-import {
-  useEffectiveContext,
-} from '@/providers/effective-context';
+import { useEffectiveContext } from "@/providers/effective-context";
 
 import {
   useClassesQuery,
   useCurrentOrgQuery,
   useDashboardQuery,
   useEnrollmentsQuery,
-} from '@/hooks/use-api-queries';
+} from "@/hooks/use-api-queries";
 
 import {
   StudentBubbleCluster,
   PersonalizedFeaturesGrid,
   PrimeAiBanner,
   BubbleItemData,
-} from '@/components/home';
+} from "@/components/home";
 
 import {
   StudentSeniorIllustration,
@@ -74,19 +58,13 @@ import {
   AttendanceFeatureIllustration,
   ScheduleFeatureIllustration,
   BehaviorFeatureIllustration,
-} from '@/components/glovo-illustrations';
+} from "@/components/glovo-illustrations";
 
-import {
-  GradientHeader,
-} from '@/components/gradient-header';
+import { GradientHeader } from "@/components/gradient-header";
 
-import {
-  Header,
-} from '@/components/header';
+import { Header } from "@/components/header";
 
-import {
-  useTheme,
-} from '@/hooks/use-theme';
+import { useTheme } from "@/hooks/use-theme";
 
 import {
   Drawer,
@@ -96,16 +74,11 @@ import {
   DrawerDescription,
   DrawerOptionRow,
   DrawerSubmitButton,
-} from '@/components/ui';
+} from "@/components/ui";
 
-import {
-  Spacing,
-} from '@/constants/theme';
+import { Spacing } from "@/constants/theme";
 
-import {
-  Ionicons,
-} from '@expo/vector-icons';
-
+import { Ionicons } from "@expo/vector-icons";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Illustrations
@@ -119,35 +92,22 @@ const ILLUSTRATION_LIST = [
   StudentKGIllustration,
 ];
 
-
 // ─────────────────────────────────────────────────────────────────────────
 // Screen
 // ─────────────────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
-  const {
-    height,
-  } = useWindowDimensions();
+  const { height } = useWindowDimensions();
 
-  const insets =
-    useSafeAreaInsets();
+  const insets = useSafeAreaInsets();
 
-  const theme =
-    useTheme();
+  const theme = useTheme();
 
-  const {
-    user,
-  } = useAuth();
+  const { user } = useAuth();
 
-  const {
-    t,
-  } = useI18n();
+  const { t } = useI18n();
 
-  const [
-    showPrimeDrawer,
-    setShowPrimeDrawer,
-  ] = useState(false);
-
+  const [showPrimeDrawer, setShowPrimeDrawer] = useState(false);
 
   const {
     isTeacher,
@@ -157,7 +117,6 @@ export default function HomeScreen() {
     setSelectedClassId,
     targetStudentId,
   } = useEffectiveContext();
-
 
   // ───────────────────────────────────────────────────────────────────────
   // TanStack Query
@@ -169,12 +128,8 @@ export default function HomeScreen() {
     refetch: refetchOrg,
   } = useCurrentOrgQuery();
 
-
-  const {
-    isLoading: isDashLoading,
-    refetch: refetchDash,
-  } = useDashboardQuery();
-
+  const { isLoading: isDashLoading, refetch: refetchDash } =
+    useDashboardQuery();
 
   const {
     data: classesData,
@@ -182,297 +137,169 @@ export default function HomeScreen() {
     refetch: refetchClasses,
   } = useClassesQuery();
 
-
-  const {
-    isLoading: isEnrollmentsLoading,
-    refetch: refetchEnrollments,
-  } = useEnrollmentsQuery(
-    isParent
-      ? {}
-      : {
-          studentId: user?.id,
-        },
-  );
-
+  const { isLoading: isEnrollmentsLoading, refetch: refetchEnrollments } =
+    useEnrollmentsQuery(
+      isParent
+        ? {}
+        : {
+            studentId: user?.id,
+          },
+    );
 
   const isQueryLoading =
     isOrgLoading ||
     isDashLoading ||
-    (
-      isParent
-        ? isClassesLoading
-        : isEnrollmentsLoading
-    );
+    (isParent ? isClassesLoading : isEnrollmentsLoading);
 
-
-  const onRefresh =
-    useCallback(
-      async () => {
-        await Promise.all([
-          refetchOrg(),
-          refetchDash(),
-          refetchClasses(),
-          refetchEnrollments(),
-        ]);
-      },
-      [
-        refetchOrg,
-        refetchDash,
-        refetchClasses,
-        refetchEnrollments,
-      ],
-    );
-
+  const onRefresh = useCallback(async () => {
+    await Promise.all([
+      refetchOrg(),
+      refetchDash(),
+      refetchClasses(),
+      refetchEnrollments(),
+    ]);
+  }, [refetchOrg, refetchDash, refetchClasses, refetchEnrollments]);
 
   // ───────────────────────────────────────────────────────────────────────
   // Effective Context
   // ───────────────────────────────────────────────────────────────────────
 
-  const effectiveId =
-    targetStudentId ||
-    user?.id ||
-    '';
+  const effectiveId = targetStudentId || user?.id || "";
 
-
-  const campusName =
-    orgData?.name;
-
+  const campusName = orgData?.name;
 
   // ───────────────────────────────────────────────────────────────────────
   // Dynamic Bubble Items
   // ───────────────────────────────────────────────────────────────────────
 
-  const bubbleItems =
-    useMemo<BubbleItemData[]>(
-      () => {
-        // Parent → Children
-        if (isParent) {
-          return childrenList
-            .slice(0, 5)
-            .map(
-              (
-                child,
-                idx,
-              ) => ({
-                id:
-                  child.id,
+  const bubbleItems = useMemo<BubbleItemData[]>(() => {
+    // Parent → Children
+    if (isParent) {
+      return childrenList.slice(0, 5).map((child, idx) => ({
+        id: child.id,
 
-                title:
-                  child.name,
+        title: child.name,
 
-                sub:
-                  child.className ||
-                  child.gradeLevel ||
-                  '',
+        sub: child.className || child.gradeLevel || "",
 
-                avatarUrl:
-                  child.avatarUrl,
+        avatarUrl: child.avatarUrl,
 
-                type:
-                  'child' as const,
+        type: "child" as const,
 
-                Illustration:
-                  ILLUSTRATION_LIST[
-                    idx %
-                      ILLUSTRATION_LIST.length
-                  ],
-              }),
-            );
-        }
+        Illustration: ILLUSTRATION_LIST[idx % ILLUSTRATION_LIST.length],
+      }));
+    }
 
+    // Teacher → Classes
+    if (isTeacher && classesData && classesData.length > 0) {
+      return classesData.slice(0, 5).map((c, idx) => ({
+        id: c.id,
 
-        // Teacher → Classes
-        if (
-          isTeacher &&
-          classesData &&
-          classesData.length > 0
-        ) {
-          return classesData
-            .slice(0, 5)
-            .map(
-              (
-                c,
-                idx,
-              ) => ({
-                id:
-                  c.id,
+        title: c.name,
 
-                title:
-                  c.name,
+        sub: (c as any).grade_level || "",
 
-                sub:
-                  (c as any)
-                    .grade_level ||
-                  '',
+        type: "class" as const,
 
-                type:
-                  'class' as const,
+        Illustration: ILLUSTRATION_LIST[idx % ILLUSTRATION_LIST.length],
+      }));
+    }
 
-                Illustration:
-                  ILLUSTRATION_LIST[
-                    idx %
-                      ILLUSTRATION_LIST.length
-                  ],
-              }),
-            );
-        }
+    // Student → Domains
+    return [
+      {
+        id: "grades",
 
+        title: t("domain_grades"),
 
-        // Student → Domains
-        return [
-          {
-            id:
-              'grades',
+        type: "student_domain" as const,
 
-            title:
-              t('domain_grades'),
+        route: `/(app)/student/${effectiveId}/grades`,
 
-            type:
-              'student_domain' as const,
-
-            route:
-              `/(app)/student/${effectiveId}/grades`,
-
-            Illustration:
-              GradesFeatureIllustration,
-          },
-
-          {
-            id:
-              'attendance',
-
-            title:
-              t('domain_attendance'),
-
-            type:
-              'student_domain' as const,
-
-            route:
-              `/(app)/student/${effectiveId}/attendance`,
-
-            Illustration:
-              AttendanceFeatureIllustration,
-          },
-
-          {
-            id:
-              'schedule',
-
-            title:
-              t('domain_schedule'),
-
-            type:
-              'student_domain' as const,
-
-            route:
-              `/(app)/student/${effectiveId}/schedule`,
-
-            Illustration:
-              ScheduleFeatureIllustration,
-          },
-
-          {
-            id:
-              'behavior',
-
-            title:
-              t('domain_behavior'),
-
-            type:
-              'student_domain' as const,
-
-            route:
-              '/(app)/(tabs)/behavior',
-
-            Illustration:
-              BehaviorFeatureIllustration,
-          },
-
-          {
-            id:
-              'exams',
-
-            title:
-              t('domain_exams'),
-
-            type:
-              'student_domain' as const,
-
-            route:
-              `/(app)/student/${effectiveId}/exams`,
-
-            Illustration:
-              StudentSeniorIllustration,
-          },
-        ];
+        Illustration: GradesFeatureIllustration,
       },
-      [
-        isParent,
-        isTeacher,
-        childrenList,
-        classesData,
-        effectiveId,
-        t,
-      ],
-    );
 
+      {
+        id: "attendance",
+
+        title: t("domain_attendance"),
+
+        type: "student_domain" as const,
+
+        route: `/(app)/student/${effectiveId}/attendance`,
+
+        Illustration: AttendanceFeatureIllustration,
+      },
+
+      {
+        id: "schedule",
+
+        title: t("domain_schedule"),
+
+        type: "student_domain" as const,
+
+        route: `/(app)/student/${effectiveId}/schedule`,
+
+        Illustration: ScheduleFeatureIllustration,
+      },
+
+      {
+        id: "behavior",
+
+        title: t("domain_behavior"),
+
+        type: "student_domain" as const,
+
+        route: "/(app)/(tabs)/behavior",
+
+        Illustration: BehaviorFeatureIllustration,
+      },
+
+      {
+        id: "exams",
+
+        title: t("domain_exams"),
+
+        type: "student_domain" as const,
+
+        route: `/(app)/student/${effectiveId}/exams`,
+
+        Illustration: StudentSeniorIllustration,
+      },
+    ];
+  }, [isParent, isTeacher, childrenList, classesData, effectiveId, t]);
 
   // ───────────────────────────────────────────────────────────────────────
   // Bubble Navigation
   // ───────────────────────────────────────────────────────────────────────
 
-  const handleBubblePress =
-    useCallback(
-      (
-        item: BubbleItemData,
-      ) => {
-        // Parent → Child
-        if (
-          item.type === 'child'
-        ) {
-          setSelectedChildId(
-            item.id,
-          );
+  const handleBubblePress = useCallback(
+    (item: BubbleItemData) => {
+      // Parent → Child
+      if (item.type === "child") {
+        setSelectedChildId(item.id);
 
-          router.push(
-            `/(app)/student/${item.id}` as any,
-          );
+        router.push(`/(app)/student/${item.id}` as any);
 
-          return;
-        }
+        return;
+      }
 
+      // Teacher → Class
+      if (item.type === "class") {
+        setSelectedClassId(item.id);
 
-        // Teacher → Class
-        if (
-          item.type === 'class'
-        ) {
-          setSelectedClassId(
-            item.id,
-          );
+        router.push(`/(app)/class/${item.id}` as any);
 
-          router.push(
-            `/(app)/class/${item.id}` as any,
-          );
+        return;
+      }
 
-          return;
-        }
-
-
-        // Student → Domain
-        if (
-          item.route
-        ) {
-          router.push(
-            item.route as any,
-          );
-        }
-      },
-      [
-        setSelectedChildId,
-        setSelectedClassId,
-      ],
-    );
-
+      // Student → Domain
+      if (item.route) {
+        router.push(item.route as any);
+      }
+    },
+    [setSelectedChildId, setSelectedClassId],
+  );
 
   // ───────────────────────────────────────────────────────────────────────
   // Render
@@ -483,11 +310,10 @@ export default function HomeScreen() {
       style={[
         styles.container,
         {
-          backgroundColor:
-            theme.background,
+          backgroundColor: theme.background,
         },
-      ]}>
-
+      ]}
+    >
       {/* ─────────────────────────────────────────────────────────────
           System Status Bar
 
@@ -497,7 +323,6 @@ export default function HomeScreen() {
         ───────────────────────────────────────────────────────────── */}
 
       <ThemedStatusBar />
-
 
       {/* ─────────────────────────────────────────────────────────────
           HOME GRADIENT
@@ -513,55 +338,18 @@ export default function HomeScreen() {
         ───────────────────────────────────────────────────────────── */}
 
       <GradientHeader
-        height={
-          height * 0.72
-        }
-
-        colors={
-          theme.homeGradient.colors
-        }
-
-        locations={[
-          0,
-          0.16,
-          0.34,
-          0.52,
-          0.68,
-          0.84,
-          1,
-        ]}
-
-        start={
-          theme.homeGradient.start
-        }
-
-        end={
-          theme.homeGradient.end
-        }
-
-        blobPrimary={
-          theme.homeGradient.blobPrimary
-        }
-
-        blobSecondary={
-          theme.homeGradient.blobSecondary
-        }
-
-        blobTertiary={
-          theme.homeGradient.blobTertiary
-        }
-
+        height={height * 0.72}
+        colors={theme.homeGradient.colors}
+        locations={[0, 0.16, 0.34, 0.52, 0.68, 0.84, 1]}
+        start={theme.homeGradient.start}
+        end={theme.homeGradient.end}
+        blobPrimary={theme.homeGradient.blobPrimary}
+        blobSecondary={theme.homeGradient.blobSecondary}
+        blobTertiary={theme.homeGradient.blobTertiary}
         animated
-
-        duration={
-          18000
-        }
-
-        style={
-          styles.homeGradient
-        }
+        duration={18000}
+        style={styles.homeGradient}
       />
-
 
       {/* ─────────────────────────────────────────────────────────────
           Scroll Content
@@ -571,79 +359,35 @@ export default function HomeScreen() {
         ───────────────────────────────────────────────────────────── */}
 
       <ScrollView
-        style={
-          styles.scrollView
-        }
-
-        contentContainerStyle={
-          styles.scrollContent
-        }
-
-        showsVerticalScrollIndicator={
-          false
-        }
-
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={
-              isQueryLoading
-            }
-
-            onRefresh={
-              onRefresh
-            }
-
-            tintColor={
-              theme.primary
-            }
+            refreshing={isQueryLoading}
+            onRefresh={onRefresh}
+            tintColor={theme.primary}
           />
-        }>
-
+        }
+      >
         {/* ─────────────────────────────────────────────────────────
             Hero
           ───────────────────────────────────────────────────────── */}
 
-        <View
-          style={
-            styles.heroSection
-          }>
-
+        <View style={styles.heroSection}>
           <Header
-            title={
-              campusName
-            }
-
-            onCrownPress={() =>
-              setShowPrimeDrawer(
-                true,
-              )
-            }
+            title={campusName}
+            onCrownPress={() => setShowPrimeDrawer(true)}
           />
 
-
-          <View
-            style={
-              styles.bubbleClusterWrapper
-            }>
-
+          <View style={styles.bubbleClusterWrapper}>
             <StudentBubbleCluster
-              items={
-                bubbleItems
-              }
-
-              isLoading={
-                isParent
-              }
-
-              onItemPress={
-                handleBubblePress
-              }
+              items={bubbleItems}
+              isLoading={isParent}
+              onItemPress={handleBubblePress}
             />
-
           </View>
-
         </View>
-
 
         {/* ─────────────────────────────────────────────────────────
             Features
@@ -658,213 +402,109 @@ export default function HomeScreen() {
           style={[
             styles.sheet,
             {
-              paddingBottom:
-                Math.max(
-                  insets.bottom,
-                  Spacing.four,
-                ) +
-                100,
+              paddingBottom: Math.max(insets.bottom, Spacing.four) + 100,
             },
-          ]}>
-
+          ]}
+        >
           <PersonalizedFeaturesGrid
-            isLoading={
-              isQueryLoading
-            }
-
+            isLoading={isQueryLoading}
             onAttendancePress={() =>
               effectiveId &&
-              router.push(
-                `/(app)/student/${effectiveId}/attendance` as any,
-              )
+              router.push(`/(app)/student/${effectiveId}/attendance` as any)
             }
-
             onGradesPress={() =>
               effectiveId &&
-              router.push(
-                `/(app)/student/${effectiveId}/grades` as any,
-              )
+              router.push(`/(app)/student/${effectiveId}/grades` as any)
             }
-
-            onBehaviorPress={() =>
-              router.push(
-                '/(app)/(tabs)/behavior' as any,
-              )
-            }
-
+            onBehaviorPress={() => router.push("/(app)/(tabs)/behavior" as any)}
             onSchedulePress={() =>
               effectiveId &&
-              router.push(
-                `/(app)/student/${effectiveId}/schedule` as any,
-              )
+              router.push(`/(app)/student/${effectiveId}/schedule` as any)
             }
           />
 
-
-          <PrimeAiBanner
-            onPress={() =>
-              setShowPrimeDrawer(
-                true,
-              )
-            }
-          />
-
+          <PrimeAiBanner onPress={() => setShowPrimeDrawer(true)} />
         </View>
-
       </ScrollView>
-
 
       {/* ─────────────────────────────────────────────────────────────
           Prime AI Drawer
         ───────────────────────────────────────────────────────────── */}
 
       <Drawer
-        visible={
-          showPrimeDrawer
-        }
-
-        onClose={() =>
-          setShowPrimeDrawer(
-            false,
-          )
-        }>
-
+        visible={showPrimeDrawer}
+        onClose={() => setShowPrimeDrawer(false)}
+      >
         <DrawerContent>
-
           <DrawerHeader>
+            <Ionicons name="sparkles" size={28} color={theme.primary} />
 
-            <Ionicons
-              name="sparkles"
-              size={28}
-              color={
-                theme.primary
-              }
-            />
-
-            <DrawerTitle>
-              Orbis Prime AI
-            </DrawerTitle>
+            <DrawerTitle>Orbis Prime AI</DrawerTitle>
 
             <DrawerDescription>
-              تحليلات الذكاء الاصطناعي الأكاديمية
-              والتنبؤ بالأداء الدراسي
+              تحليلات الذكاء الاصطناعي الأكاديمية والتنبؤ بالأداء الدراسي
             </DrawerDescription>
-
           </DrawerHeader>
 
-
           <DrawerOptionRow
-            icon={
-              <Ionicons
-                name="analytics"
-                size={20}
-                color={
-                  theme.primary
-                }
-              />
-            }
-
+            icon={<Ionicons name="analytics" size={20} color={theme.primary} />}
             label="التحليل التنبؤي للدرجات"
-
             sublabel="توقعات مبكرة لمستوى التحصيل الدراسي"
-
             onPress={() => {
-              setShowPrimeDrawer(
-                false,
-              );
+              setShowPrimeDrawer(false);
 
-              router.push(
-                '/(app)/(tabs)/behavior' as any,
-              );
+              router.push("/(app)/(tabs)/behavior" as any);
             }}
           />
-
 
           <DrawerOptionRow
-            icon={
-              <Ionicons
-                name="bulb"
-                size={20}
-                color={
-                  theme.warning
-                }
-              />
-            }
-
+            icon={<Ionicons name="bulb" size={20} color={theme.warning} />}
             label="توصيات دراسية مخصصة"
-
             sublabel="اقتراحات يومية لرفع الكفاءة التعليمية"
-
             onPress={() => {
-              setShowPrimeDrawer(
-                false,
-              );
+              setShowPrimeDrawer(false);
 
-              router.push(
-                '/(app)/(tabs)/behavior' as any,
-              );
+              router.push("/(app)/(tabs)/behavior" as any);
             }}
           />
-
 
           <DrawerOptionRow
             icon={
               <Ionicons
                 name="shield-checkmark"
                 size={20}
-                color={
-                  theme.success
-                }
+                color={theme.success}
               />
             }
-
             label="رصد الحضور والسلوك الإيجابي"
-
             sublabel="إشعارات فورية وتقارير أسبوعية تفصيلية"
-
             isLast
-
             onPress={() => {
-              setShowPrimeDrawer(
-                false,
-              );
+              setShowPrimeDrawer(false);
 
-              router.push(
-                '/(app)/(tabs)/behavior' as any,
-              );
+              router.push("/(app)/(tabs)/behavior" as any);
             }}
           />
-
 
           <DrawerSubmitButton
             label="استكشاف جميع ميزات Prime"
-
             onPress={() => {
-              setShowPrimeDrawer(
-                false,
-              );
+              setShowPrimeDrawer(false);
 
-              router.push(
-                '/(app)/(tabs)/behavior' as any,
-              );
+              router.push("/(app)/(tabs)/behavior" as any);
             }}
           />
-
         </DrawerContent>
-
       </Drawer>
-
     </View>
   );
 }
-
 
 // ─────────────────────────────────────────────────────────────────────────
 // Styles
 // ─────────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-
   /**
    * Gradient background layer.
    *
@@ -875,7 +515,7 @@ const styles = StyleSheet.create({
    * must originate from the top of the viewport.
    */
   homeGradient: {
-    position: 'absolute',
+    position: "absolute",
 
     top: 0,
 
@@ -883,11 +523,10 @@ const styles = StyleSheet.create({
 
     right: 0,
 
-    width: '100%',
+    width: "100%",
 
     zIndex: 0,
   },
-
 
   /**
    * Main screen container.
@@ -895,7 +534,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-
 
   /**
    * ScrollView sits above the gradient.
@@ -905,7 +543,6 @@ const styles = StyleSheet.create({
 
     zIndex: 1,
   },
-
 
   /**
    * Scroll content itself remains transparent.
@@ -917,7 +554,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
 
-
   /**
    * Hero section.
    *
@@ -925,9 +561,8 @@ const styles = StyleSheet.create({
    * section no longer applies it directly.
    */
   heroSection: {
-    width: '100%',
+    width: "100%",
   },
-
 
   /**
    * Spacing between the header and the bubble cluster below it.
@@ -936,13 +571,12 @@ const styles = StyleSheet.create({
     marginTop: Spacing.four,
   },
 
-
   /**
    * Features section.
    *
    * No backgroundColor.
    */
   sheet: {
-    width: '100%',
+    width: "100%",
   },
 });

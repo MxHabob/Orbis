@@ -2,7 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui";
 import { onMount } from "svelte";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import DragIndicator from "../components/drag-indicator.svelte";
 
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";

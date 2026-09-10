@@ -1,24 +1,29 @@
 <script lang="ts">
-  import { createQuery } from "@tanstack/svelte-query";
-  import { api, } from "$lib/api";
-  import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
-  import { Badge } from "@orbis/ui/badge";
-  import { Button } from "@orbis/ui/button";
-  import { Skeleton } from "@orbis/ui/skeleton";
-  import { Settings2, AlertCircle } from "@lucide/svelte";
-  import { getLocale } from "$lib/paraglide/runtime";
+import { createQuery } from "@tanstack/svelte-query";
+import { api } from "$lib/api";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
+import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
+import { Skeleton } from "@orbis/ui/skeleton";
+import { Settings2, AlertCircle } from "@lucide/svelte";
+import { getLocale } from "$lib/paraglide/runtime";
 
-  let { open = $bindable(false), classSubjectId, periodId }: { open: boolean, classSubjectId: string, periodId: string } = $props();
+let {
+  open = $bindable(false),
+  classSubjectId,
+  periodId,
+}: { open: boolean; classSubjectId: string; periodId: string } = $props();
 
-  const isArabic = $derived(getLocale() === "ar");
+const isArabic = $derived(getLocale() === "ar");
 
-  const componentsQuery = createQuery(() => ({
-    queryKey: ["assessment-components", classSubjectId, periodId],
-    queryFn: () => api.assessment.listComponentsForClassSubject(classSubjectId, periodId),
-    enabled: !!classSubjectId && !!periodId && open,
-  }));
+const componentsQuery = createQuery(() => ({
+  queryKey: ["assessment-components", classSubjectId, periodId],
+  queryFn: () =>
+    api.assessment.listComponentsForClassSubject(classSubjectId, periodId),
+  enabled: !!classSubjectId && !!periodId && open,
+}));
 
-  const components = $derived((componentsQuery.data || []) as any[]);
+const components = $derived((componentsQuery.data || []) as any[]);
 </script>
 
 <Sheet bind:open>

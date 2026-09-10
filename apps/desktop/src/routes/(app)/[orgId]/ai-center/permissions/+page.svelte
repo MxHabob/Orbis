@@ -6,7 +6,7 @@ Clean Midday inspired layout with elegant subheadings.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import {
   Shield,
   ShieldAlert,
@@ -53,11 +53,18 @@ async function loadData() {
   isLoading = true;
   try {
     const [registered, logs] = await Promise.all([
-      (commands as any).aiCenter?.listRegisteredActions?.().catch(() => []) ?? Promise.resolve([]),
-      (commands as any).aiCenter?.listActionLogs?.(data.orgId).catch(() => []) ?? api.iam?.listAuditLogs?.().catch(() => []) ?? Promise.resolve([]),
+      (commands as any).aiCenter?.listRegisteredActions?.().catch(() => []) ??
+        Promise.resolve([]),
+      (commands as any).aiCenter
+        ?.listActionLogs?.(data.orgId)
+        .catch(() => []) ??
+        api.iam?.listAuditLogs?.().catch(() => []) ??
+        Promise.resolve([]),
     ]);
     actions = (registered as ActionDef[]) ?? [];
-    pendingApprovals = ((logs as any[]) ?? []).filter((l: any) => l.status === "pending" && l.approval_required);
+    pendingApprovals = ((logs as any[]) ?? []).filter(
+      (l: any) => l.status === "pending" && l.approval_required,
+    );
   } catch (e) {
     console.warn("[AI Center] loadData:", e);
     actions = [];
@@ -66,34 +73,50 @@ async function loadData() {
   }
 }
 
-onMount(() => { if (data.orgId) loadData(); });
+onMount(() => {
+  if (data.orgId) loadData();
+});
 
 async function handleApprove(id: string) {
   try {
     await (commands as any).aiCenter?.approveAction?.(id);
-    pendingApprovals = pendingApprovals.filter(a => a.id !== id);
-  } catch (e) { console.error(e); }
+    pendingApprovals = pendingApprovals.filter((a) => a.id !== id);
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 async function handleReject(id: string) {
   try {
-    await (commands as any).aiCenter?.rejectAction?.(id, "تم الرفض بواسطة المسؤول");
-    pendingApprovals = pendingApprovals.filter(a => a.id !== id);
-  } catch (e) { console.error(e); }
+    await (commands as any).aiCenter?.rejectAction?.(
+      id,
+      "تم الرفض بواسطة المسؤول",
+    );
+    pendingApprovals = pendingApprovals.filter((a) => a.id !== id);
+  } catch (e) {
+    console.error(e);
+  }
 }
 
-const domains = $derived([...new Set(actions.map(a => a.domain))]);
+const domains = $derived([...new Set(actions.map((a) => a.domain))]);
 const riskSummary = $derived({
-  low: actions.filter(a => a.risk_level === "low").length,
-  medium: actions.filter(a => a.risk_level === "medium").length,
-  high: actions.filter(a => a.risk_level === "high").length,
-  critical: actions.filter(a => a.risk_level === "critical").length,
+  low: actions.filter((a) => a.risk_level === "low").length,
+  medium: actions.filter((a) => a.risk_level === "medium").length,
+  high: actions.filter((a) => a.risk_level === "high").length,
+  critical: actions.filter((a) => a.risk_level === "critical").length,
 });
-const approvalCount = $derived(actions.filter(a => a.requires_approval).length);
+const approvalCount = $derived(
+  actions.filter((a) => a.requires_approval).length,
+);
 
 const domainLabels: Record<string, string> = {
-  iam: "الهوية والحسابات", academic: "الشؤون الأكاديمية", assessment: "التقييم والنتائج",
-  finance: "الشؤون المالية", lifecycle: "دورة العام الأكاديمي", scheduling: "الجدولة والحصص", exam: "الاختبارات",
+  iam: "الهوية والحسابات",
+  academic: "الشؤون الأكاديمية",
+  assessment: "التقييم والنتائج",
+  finance: "الشؤون المالية",
+  lifecycle: "دورة العام الأكاديمي",
+  scheduling: "الجدولة والحصص",
+  exam: "الاختبارات",
 };
 </script>
 

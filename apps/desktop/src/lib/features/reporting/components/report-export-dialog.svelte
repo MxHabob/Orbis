@@ -1,63 +1,67 @@
 <script lang="ts">
-  import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
-  } from "@orbis/ui/dialog";
-  import { Button } from "@orbis/ui/button";
-  import { Table, Download, Loader2 } from "@lucide/svelte";
-  import { api } from "$lib/api";
-  import { toast } from "@orbis/ui";
-  import * as m from "$lib/paraglide/messages";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@orbis/ui/dialog";
+import { Button } from "@orbis/ui/button";
+import { Table, Download, Loader2 } from "@lucide/svelte";
+import { api } from "$lib/api";
+import { toast } from "@orbis/ui";
+import * as m from "$lib/paraglide/messages";
 
-  interface Props {
-    open: boolean;
-    definitionId: string;
-    filters: any;
-    onOpenChange: (val: boolean) => void;
+interface Props {
+  open: boolean;
+  definitionId: string;
+  filters: any;
+  onOpenChange: (val: boolean) => void;
+}
+
+let {
+  open = $bindable(),
+  definitionId,
+  filters,
+  onOpenChange,
+} = $props<Props>();
+
+let isExporting = $state(false);
+// svc-reporting currently exposes CSV only. Keep the UI aligned with the
+// active backend path until PDF/XLSX are implemented there.
+let selectedFormat = $state<"csv">("csv");
+
+async function handleExport() {
+  if (!definitionId) return;
+  try {
+    isExporting = true;
+    const result = await api.reporting.exportReport(
+      definitionId,
+      filters,
+      selectedFormat,
+      null,
+    );
+
+    // result is the byte array, we need to download it
+    const blob = new Blob([new Uint8Array(result)], {
+      type: "text/csv",
+    });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `report_${definitionId}_${new Date().toISOString()}.${selectedFormat}`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+
+    toast.success(m.common_success());
+    onOpenChange(false);
+  } catch (e: any) {
+    toast.error(e.message || "Export failed");
+  } finally {
+    isExporting = false;
   }
-
-  let {
-    open = $bindable(),
-    definitionId,
-    filters,
-    onOpenChange
-  } = $props<Props>();
-
-  let isExporting = $state(false);
-  // svc-reporting currently exposes CSV only. Keep the UI aligned with the
-  // active backend path until PDF/XLSX are implemented there.
-  let selectedFormat = $state<"csv">("csv");
-
-  async function handleExport() {
-    if (!definitionId) return;
-    try {
-      isExporting = true;
-      const result = await api.reporting.exportReport(definitionId, filters, selectedFormat, null);
-      
-      // result is the byte array, we need to download it
-      const blob = new Blob([new Uint8Array(result)], {
-        type:
-          "text/csv",
-      });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `report_${definitionId}_${new Date().toISOString()}.${selectedFormat}`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-      
-      toast.success(m.common_success());
-      onOpenChange(false);
-    } catch (e: any) {
-      toast.error(e.message || "Export failed");
-    } finally {
-      isExporting = false;
-    }
-  }
+}
 </script>
 
 <Dialog bind:open {onOpenChange}>

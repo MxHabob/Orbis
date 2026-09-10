@@ -21,7 +21,7 @@ Usage:
   </PeriodGateAction>
 -->
 <script lang="ts">
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { createQuery } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";

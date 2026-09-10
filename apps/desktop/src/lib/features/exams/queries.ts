@@ -8,7 +8,12 @@ import {
   useQueryClient,
 } from "@tanstack/svelte-query";
 import { api, queryKeys } from "$lib/api";
-import type { ExamSessionDto, ExamScheduleDto, CreateExamSessionRequest, ScheduleExamRequest } from "@orbis/sdk";
+import type {
+  ExamSessionDto,
+  ExamScheduleDto,
+  CreateExamSessionRequest,
+  ScheduleExamRequest,
+} from "@orbis/sdk";
 
 /** Get all exam sessions for a period. */
 export function createExamSessionsQuery(periodId: () => string | undefined) {
@@ -22,7 +27,8 @@ export function createExamSessionsQuery(periodId: () => string | undefined) {
 
 /** Get a single exam session. */
 export function createExamSessionQuery(sessionId: string | (() => string)) {
-  const getSessionId = typeof sessionId === "function" ? sessionId : () => sessionId;
+  const getSessionId =
+    typeof sessionId === "function" ? sessionId : () => sessionId;
   return createQuery(() => ({
     queryKey: queryKeys.exam.session(getSessionId()),
     queryFn: () => api.getExamSession(getSessionId()),
@@ -33,7 +39,8 @@ export function createExamSessionQuery(sessionId: string | (() => string)) {
 
 /** Get exam schedules for a session. */
 export function createExamSubjectsQuery(sessionId: string | (() => string)) {
-  const getSessionId = typeof sessionId === "function" ? sessionId : () => sessionId;
+  const getSessionId =
+    typeof sessionId === "function" ? sessionId : () => sessionId;
   return createQuery(() => ({
     queryKey: queryKeys.exam.schedules(getSessionId()),
     queryFn: () => api.listExamSchedules(getSessionId()),
@@ -69,4 +76,3 @@ export function addExamSubjectMutation() {
     },
   }));
 }
-

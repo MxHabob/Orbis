@@ -8,7 +8,7 @@
  * multiple sizes (xs, sm, default/md, lg, icon), and smooth active transitions.
  */
 
-import React from 'react';
+import React from "react";
 import {
   Pressable,
   Text,
@@ -17,22 +17,31 @@ import {
   type ViewStyle,
   type TextStyle,
   View,
-} from 'react-native';
-import { useTheme } from '@/hooks/use-theme';
-import { Radii, Spacing, Typography } from '@/constants/theme';
+} from "react-native";
+import { useTheme } from "@/hooks/use-theme";
+import { Radii, Spacing, Typography } from "@/constants/theme";
 
 export type ButtonVariant =
-  | 'default'
-  | 'primary'
-  | 'secondary'
-  | 'outline'
-  | 'destructive'
-  | 'danger'
-  | 'lime'
-  | 'ghost'
-  | 'link';
+  | "default"
+  | "primary"
+  | "secondary"
+  | "outline"
+  | "destructive"
+  | "danger"
+  | "lime"
+  | "ghost"
+  | "link";
 
-export type ButtonSize = 'xs' | 'sm' | 'default' | 'md' | 'lg' | 'icon' | 'icon-xs' | 'icon-sm' | 'icon-lg';
+export type ButtonSize =
+  | "xs"
+  | "sm"
+  | "default"
+  | "md"
+  | "lg"
+  | "icon"
+  | "icon-xs"
+  | "icon-sm"
+  | "icon-lg";
 
 export interface ButtonProps {
   title?: string;
@@ -42,7 +51,7 @@ export interface ButtonProps {
   loading?: boolean;
   disabled?: boolean;
   icon?: React.ReactNode;
-  iconPosition?: 'left' | 'right';
+  iconPosition?: "left" | "right";
   style?: ViewStyle;
   textStyle?: TextStyle;
   fullWidth?: boolean;
@@ -53,12 +62,12 @@ export const Button = React.memo<ButtonProps>(
   ({
     title,
     onPress,
-    variant = 'default',
-    size = 'default',
+    variant = "default",
+    size = "default",
     loading = false,
     disabled = false,
     icon,
-    iconPosition = 'left',
+    iconPosition = "left",
     style,
     textStyle,
     fullWidth = false,
@@ -67,7 +76,11 @@ export const Button = React.memo<ButtonProps>(
     const theme = useTheme();
 
     const normalizedVariant: ButtonVariant =
-      variant === 'primary' ? 'default' : variant === 'danger' ? 'destructive' : variant;
+      variant === "primary"
+        ? "default"
+        : variant === "danger"
+          ? "destructive"
+          : variant;
 
     // 1. Variant Styles (Tactile 3D Depth + Backgrounds + Borders)
     const getVariantStyles = (): {
@@ -76,7 +89,7 @@ export const Button = React.memo<ButtonProps>(
       indicatorColor: string;
     } => {
       switch (normalizedVariant) {
-        case 'secondary':
+        case "secondary":
           return {
             container: {
               backgroundColor: theme.secondary,
@@ -87,12 +100,12 @@ export const Button = React.memo<ButtonProps>(
             },
             text: {
               color: theme.secondaryForeground,
-              fontWeight: '600',
+              fontWeight: "600",
             },
             indicatorColor: theme.secondaryForeground,
           };
 
-        case 'outline':
+        case "outline":
           return {
             container: {
               backgroundColor: theme.card,
@@ -103,12 +116,12 @@ export const Button = React.memo<ButtonProps>(
             },
             text: {
               color: theme.foreground,
-              fontWeight: '600',
+              fontWeight: "600",
             },
             indicatorColor: theme.foreground,
           };
 
-        case 'destructive':
+        case "destructive":
           return {
             container: {
               backgroundColor: theme.destructive,
@@ -119,12 +132,12 @@ export const Button = React.memo<ButtonProps>(
             },
             text: {
               color: theme.destructiveForeground,
-              fontWeight: '700',
+              fontWeight: "700",
             },
             indicatorColor: theme.destructiveForeground,
           };
 
-        case 'lime':
+        case "lime":
           return {
             container: {
               backgroundColor: theme.brandLime,
@@ -134,41 +147,41 @@ export const Button = React.memo<ButtonProps>(
               borderBottomColor: theme.btnShadowLime,
             },
             text: {
-              color: '#152E05',
-              fontWeight: '700',
+              color: "#152E05",
+              fontWeight: "700",
             },
-            indicatorColor: '#152E05',
+            indicatorColor: "#152E05",
           };
 
-        case 'ghost':
+        case "ghost":
           return {
             container: {
-              backgroundColor: 'transparent',
+              backgroundColor: "transparent",
               borderWidth: 0,
             },
             text: {
               color: theme.foreground,
-              fontWeight: '500',
+              fontWeight: "500",
             },
             indicatorColor: theme.foreground,
           };
 
-        case 'link':
+        case "link":
           return {
             container: {
-              backgroundColor: 'transparent',
+              backgroundColor: "transparent",
               borderWidth: 0,
               paddingHorizontal: 0,
             },
             text: {
               color: theme.primary,
-              fontWeight: '600',
-              textDecorationLine: 'underline',
+              fontWeight: "600",
+              textDecorationLine: "underline",
             },
             indicatorColor: theme.primary,
           };
 
-        case 'default':
+        case "default":
         default:
           return {
             container: {
@@ -180,7 +193,7 @@ export const Button = React.memo<ButtonProps>(
             },
             text: {
               color: theme.primaryForeground,
-              fontWeight: '600',
+              fontWeight: "600",
             },
             indicatorColor: theme.primaryForeground,
           };
@@ -197,7 +210,7 @@ export const Button = React.memo<ButtonProps>(
       isIconOnly: boolean;
     } => {
       switch (size) {
-        case 'xs':
+        case "xs":
           return {
             height: 26,
             paddingHorizontal: 8,
@@ -206,7 +219,7 @@ export const Button = React.memo<ButtonProps>(
             gap: 4,
             isIconOnly: false,
           };
-        case 'sm':
+        case "sm":
           return {
             height: 32,
             paddingHorizontal: 12,
@@ -215,7 +228,7 @@ export const Button = React.memo<ButtonProps>(
             gap: 5,
             isIconOnly: false,
           };
-        case 'lg':
+        case "lg":
           return {
             height: 46,
             paddingHorizontal: 18,
@@ -224,7 +237,7 @@ export const Button = React.memo<ButtonProps>(
             gap: 8,
             isIconOnly: false,
           };
-        case 'icon-xs':
+        case "icon-xs":
           return {
             height: 26,
             paddingHorizontal: 0,
@@ -233,7 +246,7 @@ export const Button = React.memo<ButtonProps>(
             gap: 0,
             isIconOnly: true,
           };
-        case 'icon-sm':
+        case "icon-sm":
           return {
             height: 32,
             paddingHorizontal: 0,
@@ -242,7 +255,7 @@ export const Button = React.memo<ButtonProps>(
             gap: 0,
             isIconOnly: true,
           };
-        case 'icon-lg':
+        case "icon-lg":
           return {
             height: 46,
             paddingHorizontal: 0,
@@ -251,7 +264,7 @@ export const Button = React.memo<ButtonProps>(
             gap: 0,
             isIconOnly: true,
           };
-        case 'icon':
+        case "icon":
           return {
             height: 38,
             paddingHorizontal: 0,
@@ -260,8 +273,8 @@ export const Button = React.memo<ButtonProps>(
             gap: 0,
             isIconOnly: true,
           };
-        case 'md':
-        case 'default':
+        case "md":
+        case "default":
         default:
           return {
             height: 38,
@@ -287,21 +300,28 @@ export const Button = React.memo<ButtonProps>(
           vStyles.container,
           {
             height: sStyles.height,
-            width: sStyles.isIconOnly ? sStyles.height : fullWidth ? '100%' : undefined,
+            width: sStyles.isIconOnly
+              ? sStyles.height
+              : fullWidth
+                ? "100%"
+                : undefined,
             paddingHorizontal: sStyles.paddingHorizontal,
             borderRadius: sStyles.borderRadius,
             opacity: isDisabled ? 0.45 : 1,
             transform: [{ translateY: pressed && !isDisabled ? 1 : 0 }],
           },
           style,
-        ]}>
+        ]}
+      >
         {loading ? (
           <ActivityIndicator size="small" color={vStyles.indicatorColor} />
         ) : children ? (
           children
         ) : (
           <View style={[styles.contentRow, { gap: sStyles.gap }]}>
-            {icon && iconPosition === 'left' && <View style={styles.iconBox}>{icon}</View>}
+            {icon && iconPosition === "left" && (
+              <View style={styles.iconBox}>{icon}</View>
+            )}
             {title && (
               <Text
                 style={[
@@ -309,11 +329,14 @@ export const Button = React.memo<ButtonProps>(
                   { fontSize: sStyles.fontSize },
                   vStyles.text,
                   textStyle,
-                ]}>
+                ]}
+              >
                 {title}
               </Text>
             )}
-            {icon && iconPosition === 'right' && <View style={styles.iconBox}>{icon}</View>}
+            {icon && iconPosition === "right" && (
+              <View style={styles.iconBox}>{icon}</View>
+            )}
           </View>
         )}
       </Pressable>
@@ -321,24 +344,24 @@ export const Button = React.memo<ButtonProps>(
   },
 );
 
-Button.displayName = 'Button';
+Button.displayName = "Button";
 
 const styles = StyleSheet.create({
   base: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
   },
   contentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   text: {
-    textAlign: 'center',
+    textAlign: "center",
   },
   iconBox: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

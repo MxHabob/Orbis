@@ -4,7 +4,7 @@
  * Multi-Factor Authentication (TOTP) Challenge Verification Screen.
  */
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -12,39 +12,39 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+} from "react-native";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useAuth } from '@/lib/api';
-import { useTheme } from '@/hooks/use-theme';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Header } from '@/components/header';
-import { KeyboardAwareView } from '@/components/ui/keyboard-aware-view';
-import { Radii, Spacing, Typography } from '@/constants/theme';
+import { useAuth } from "@/lib/api";
+import { useTheme } from "@/hooks/use-theme";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Header } from "@/components/header";
+import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
+import { Radii, Spacing, Typography } from "@/constants/theme";
 
 export default function MfaChallengeScreen() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const { mfaChallenge, user } = useAuth();
 
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleVerify = async () => {
     if (!code.trim() || code.length < 6) {
-      setError('يرجى إدخال رمز التحقق المكون من 6 أرقام');
+      setError("يرجى إدخال رمز التحقق المكون من 6 أرقام");
       return;
     }
 
     setLoading(true);
     setError(null);
     if (!user?.id) {
-      setError('تعذر تحديد جلسة المستخدم، يرجى إعادة تسجيل الدخول');
+      setError("تعذر تحديد جلسة المستخدم، يرجى إعادة تسجيل الدخول");
       setLoading(false);
       return;
     }
@@ -55,10 +55,10 @@ export default function MfaChallengeScreen() {
         code: code.trim(),
       });
       if (res?.token) {
-        router.replace('/(app)/(tabs)');
+        router.replace("/(app)/(tabs)");
       }
     } catch (err: any) {
-      setError(err?.message || 'رمز التحقق غير صحيح أو منتهي الصلاحية');
+      setError(err?.message || "رمز التحقق غير صحيح أو منتهي الصلاحية");
     } finally {
       setLoading(false);
     }
@@ -72,21 +72,31 @@ export default function MfaChallengeScreen() {
         contentContainerStyle={[
           styles.scrollContent,
           { paddingBottom: insets.bottom + Spacing.six },
-        ]}>
+        ]}
+      >
         <Card variant="elevated" style={styles.card}>
-          <View style={[styles.iconCircle, { backgroundColor: theme.primaryLight }]}>
+          <View
+            style={[styles.iconCircle, { backgroundColor: theme.primaryLight }]}
+          >
             <Ionicons name="shield-checkmark" size={36} color={theme.primary} />
           </View>
 
-          <Text style={[styles.title, { color: theme.text }]}>أدخل رمز الأمان</Text>
+          <Text style={[styles.title, { color: theme.text }]}>
+            أدخل رمز الأمان
+          </Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            أدخل الرمز المكون من 6 أرقام من تطبيق المصادقة (Google Authenticator أو ما يماثله)
+            أدخل الرمز المكون من 6 أرقام من تطبيق المصادقة (Google Authenticator
+            أو ما يماثله)
           </Text>
 
           {error && (
-            <View style={[styles.errorBox, { backgroundColor: theme.errorLight }]}>
+            <View
+              style={[styles.errorBox, { backgroundColor: theme.errorLight }]}
+            >
               <Ionicons name="alert-circle" size={18} color={theme.error} />
-              <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
+              <Text style={[styles.errorText, { color: theme.error }]}>
+                {error}
+              </Text>
             </View>
           )}
 
@@ -121,49 +131,49 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: Spacing.four,
-    alignItems: 'center',
+    alignItems: "center",
     paddingTop: Spacing.four,
   },
   card: {
-    width: '100%',
+    width: "100%",
     maxWidth: 440,
     padding: Spacing.five,
-    alignItems: 'center',
+    alignItems: "center",
     gap: Spacing.three,
   },
   iconCircle: {
     width: 68,
     height: 68,
     borderRadius: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: Spacing.two,
   },
   title: {
     ...Typography.h2,
-    textAlign: 'center',
+    textAlign: "center",
   },
   subtitle: {
     ...Typography.caption,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: Spacing.two,
   },
   errorBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: Spacing.three,
     borderRadius: Radii.md,
     gap: Spacing.two,
-    width: '100%',
+    width: "100%",
   },
   errorText: {
     ...Typography.captionBold,
     flex: 1,
   },
   codeInput: {
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 24,
     letterSpacing: 8,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });

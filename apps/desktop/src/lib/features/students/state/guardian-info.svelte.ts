@@ -59,7 +59,8 @@ export class GuardianState {
           relationship: g.relationship || "",
           relationship_ar: g.relationship_ar || g.relationship || "",
           is_primary: g.is_primary === 1 || g.is_primary === true,
-          is_emergency_contact: g.is_emergency_contact === 1 || g.is_emergency_contact === true,
+          is_emergency_contact:
+            g.is_emergency_contact === 1 || g.is_emergency_contact === true,
           is_payer: g.is_payer === 1 || g.is_payer === true,
           payment_share_percent: g.payment_share_percent,
           occupation: g.occupation,
@@ -69,7 +70,6 @@ export class GuardianState {
       console.warn("Failed to load guardians:", e);
     }
   }
-
 
   addGuardian() {
     this.linkedGuardians = [

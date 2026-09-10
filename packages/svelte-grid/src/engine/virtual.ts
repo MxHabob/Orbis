@@ -26,7 +26,11 @@ export function totalSize(count: number, itemSize: number): number {
   return Math.max(0, count) * Math.max(0, itemSize);
 }
 
-export function indexFromOffset(scroll: number, itemSize: number, total: number): number {
+export function indexFromOffset(
+  scroll: number,
+  itemSize: number,
+  total: number,
+): number {
   if (itemSize <= 0 || total <= 0) return 0;
   return Math.min(total - 1, Math.max(0, Math.floor(scroll / itemSize)));
 }

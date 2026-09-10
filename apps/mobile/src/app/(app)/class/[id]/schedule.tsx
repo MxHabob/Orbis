@@ -10,87 +10,44 @@
  * - No hardcoded UI colors.
  */
 
-import React, {
-  useState,
-} from 'react';
+import React, { useState } from "react";
 
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Pressable,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
 
-import {
-  useLocalSearchParams,
-} from 'expo-router';
+import { useLocalSearchParams } from "expo-router";
 
-import {
-  Ionicons,
-} from '@expo/vector-icons';
+import { Ionicons } from "@expo/vector-icons";
 
-import {
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import {
-  useTheme,
-} from '@/hooks/use-theme';
+import { useTheme } from "@/hooks/use-theme";
 
-import {
-  Header,
-} from '@/components/header';
+import { Header } from "@/components/header";
 
-import {
-  Card,
-} from '@/components/ui/card';
+import { Card } from "@/components/ui/card";
 
-import {
-  Badge,
-} from '@/components/ui/badge';
+import { Badge } from "@/components/ui/badge";
 
-import {
-  ScreenBackground,
-} from '@/components/screen-background';
+import { ScreenBackground } from "@/components/screen-background";
 
-import {
-  ThemedStatusBar,
-} from '@/components/ui/themed-status-bar';
+import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
 
-import {
-  Radii,
-  Spacing,
-  Typography,
-} from '@/constants/theme';
-
+import { Radii, Spacing, Typography } from "@/constants/theme";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Screen
 // ─────────────────────────────────────────────────────────────────────────
 
 export default function ClassScheduleScreen() {
+  const insets = useSafeAreaInsets();
 
-  const insets =
-    useSafeAreaInsets();
+  const theme = useTheme();
 
-  const theme =
-    useTheme();
+  const { id } = useLocalSearchParams<{
+    id: string;
+  }>();
 
-  const {
-    id,
-  } =
-    useLocalSearchParams<{
-      id: string;
-    }>();
-
-
-  const [
-    selectedDay,
-    setSelectedDay,
-  ] =
-    useState(0);
-
+  const [selectedDay, setSelectedDay] = useState(0);
 
   // ───────────────────────────────────────────────────────────────────────
   // Days
@@ -99,47 +56,41 @@ export default function ClassScheduleScreen() {
   const days = [
     {
       index: 0,
-      name: 'الأحد',
+      name: "الأحد",
     },
 
     {
       index: 1,
-      name: 'الإثنين',
+      name: "الإثنين",
     },
 
     {
       index: 2,
-      name: 'الثلاثاء',
+      name: "الثلاثاء",
     },
 
     {
       index: 3,
-      name: 'الأربعاء',
+      name: "الأربعاء",
     },
 
     {
       index: 4,
-      name: 'الخميس',
+      name: "الخميس",
     },
   ];
-
 
   // ───────────────────────────────────────────────────────────────────────
   // Render
   // ───────────────────────────────────────────────────────────────────────
 
   return (
-    <ScreenBackground
-      gradientHeight={
-        0.48
-      }>
-
+    <ScreenBackground gradientHeight={0.48}>
       {/* ─────────────────────────────────────────────────────────────
           Status Bar
         ───────────────────────────────────────────────────────────── */}
 
       <ThemedStatusBar />
-
 
       {/* ─────────────────────────────────────────────────────────────
           Header
@@ -147,36 +98,25 @@ export default function ClassScheduleScreen() {
 
       <Header
         title="جدول حصص الفصل"
-
         subtitle="الصف 3 علمي - أ • القاعة 104"
-
         showBack
       />
-
 
       {/* ─────────────────────────────────────────────────────────────
           Main Content
         ───────────────────────────────────────────────────────────── */}
 
       <ScrollView
-        style={
-          styles.scrollView
-        }
-
+        style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
 
           {
-            paddingBottom:
-              insets.bottom +
-              Spacing.eight,
+            paddingBottom: insets.bottom + Spacing.eight,
           },
         ]}
-
-        showsVerticalScrollIndicator={
-          false
-        }>
-
+        showsVerticalScrollIndicator={false}
+      >
         {/* ─────────────────────────────────────────────────────────
             Day Selector
           ───────────────────────────────────────────────────────── */}
@@ -186,443 +126,291 @@ export default function ClassScheduleScreen() {
             styles.dayTabBar,
 
             {
-              backgroundColor:
-                theme.card,
+              backgroundColor: theme.card,
 
-              borderColor:
-                theme.borderSubtle,
+              borderColor: theme.borderSubtle,
             },
-          ]}>
+          ]}
+        >
+          {days.map((day) => {
+            const isSelected = selectedDay === day.index;
 
-          {days.map(
-            day => {
+            return (
+              <Pressable
+                key={day.index}
+                onPress={() => setSelectedDay(day.index)}
+                style={[
+                  styles.dayTab,
 
-              const isSelected =
-                selectedDay ===
-                day.index;
-
-
-              return (
-                <Pressable
-                  key={
-                    day.index
-                  }
-
-                  onPress={() =>
-                    setSelectedDay(
-                      day.index,
-                    )
-                  }
-
+                  {
+                    backgroundColor: isSelected ? theme.primary : "transparent",
+                  },
+                ]}
+              >
+                <Text
                   style={[
-                    styles.dayTab,
+                    styles.dayTabText,
 
                     {
-                      backgroundColor:
-                        isSelected
-                          ? theme.primary
-                          : 'transparent',
+                      color: isSelected
+                        ? theme.primaryForeground
+                        : theme.textSecondary,
                     },
-                  ]}>
-
-                  <Text
-                    style={[
-                      styles.dayTabText,
-
-                      {
-                        color:
-                          isSelected
-                            ? theme.primaryForeground
-                            : theme.textSecondary,
-                      },
-                    ]}>
-
-                    {
-                      day.name
-                    }
-
-                  </Text>
-
-                </Pressable>
-              );
-            },
-          )}
-
+                  ]}
+                >
+                  {day.name}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
-
 
         {/* ─────────────────────────────────────────────────────────
             Schedule
           ───────────────────────────────────────────────────────── */}
 
-        <View
-          style={
-            styles.scheduleList
-          }>
-
+        <View style={styles.scheduleList}>
           {[
             {
-              slot:
-                1,
+              slot: 1,
 
-              time:
-                '08:00 - 08:45',
+              time: "08:00 - 08:45",
 
-              subject:
-                'الرياضيات المتقدمة',
+              subject: "الرياضيات المتقدمة",
 
-              teacher:
-                'أنت (معلم المادة)',
+              teacher: "أنت (معلم المادة)",
 
-              room:
-                'قاعة 104',
+              room: "قاعة 104",
             },
 
             {
-              slot:
-                2,
+              slot: 2,
 
-              time:
-                '08:50 - 09:35',
+              time: "08:50 - 09:35",
 
-              subject:
-                'الفيزياء التطبيقية',
+              subject: "الفيزياء التطبيقية",
 
-              teacher:
-                'د. أحمد العمري',
+              teacher: "د. أحمد العمري",
 
-              room:
-                'مختبر العلوم 2',
+              room: "مختبر العلوم 2",
             },
 
             {
-              slot:
-                3,
+              slot: 3,
 
-              time:
-                '09:40 - 10:25',
+              time: "09:40 - 10:25",
 
-              subject:
-                'اللغة الإنجليزية',
+              subject: "اللغة الإنجليزية",
 
-              teacher:
-                'أ. مايكل براون',
+              teacher: "أ. مايكل براون",
 
-              room:
-                'قاعة 104',
+              room: "قاعة 104",
             },
 
             {
-              slot:
-                4,
+              slot: 4,
 
-              time:
-                '10:55 - 11:40',
+              time: "10:55 - 11:40",
 
-              subject:
-                'الكيمياء العضوية',
+              subject: "الكيمياء العضوية",
 
-              teacher:
-                'أ. عبدالعزيز الغامدي',
+              teacher: "أ. عبدالعزيز الغامدي",
 
-              room:
-                'مختبر الكيمياء',
+              room: "مختبر الكيمياء",
             },
-          ].map(
-            item => (
-
-              <Card
-                key={
-                  item.slot
-                }
-
-                variant="elevated"
-
-                style={
-                  styles.slotCard
-                }>
-
-                <View
-                  style={
-                    styles.slotRow
-                  }>
-
-                  {/* ─────────────────────────────────────────
+          ].map((item) => (
+            <Card key={item.slot} variant="elevated" style={styles.slotCard}>
+              <View style={styles.slotRow}>
+                {/* ─────────────────────────────────────────
                       Time
                     ───────────────────────────────────────── */}
 
-                  <View
-                    style={
-                      styles.timeCol
-                    }>
-
-                    <Text
-                      style={[
-                        styles.timeText,
-
-                        {
-                          color:
-                            theme.text,
-                        },
-                      ]}>
+                <View style={styles.timeCol}>
+                  <Text
+                    style={[
+                      styles.timeText,
 
                       {
-                        item.time
-                      }
+                        color: theme.text,
+                      },
+                    ]}
+                  >
+                    {item.time}
+                  </Text>
 
-                    </Text>
+                  <Badge
+                    label={`الحصة ${item.slot}`}
+                    variant="neutral"
+                    size="sm"
+                  />
+                </View>
 
-
-                    <Badge
-                      label={
-                        `الحصة ${item.slot}`
-                      }
-
-                      variant="neutral"
-
-                      size="sm"
-                    />
-
-                  </View>
-
-
-                  {/* ─────────────────────────────────────────
+                {/* ─────────────────────────────────────────
                       Details
                     ───────────────────────────────────────── */}
 
-                  <View
-                    style={
-                      styles.detailsCol
-                    }>
-
-                    <Text
-                      style={[
-                        styles.subjectName,
-
-                        {
-                          color:
-                            theme.text,
-                        },
-                      ]}>
+                <View style={styles.detailsCol}>
+                  <Text
+                    style={[
+                      styles.subjectName,
 
                       {
-                        item.subject
-                      }
+                        color: theme.text,
+                      },
+                    ]}
+                  >
+                    {item.subject}
+                  </Text>
 
-                    </Text>
-
-
-                    <Text
-                      style={[
-                        styles.metaText,
-
-                        {
-                          color:
-                            theme.textSecondary,
-                        },
-                      ]}>
+                  <Text
+                    style={[
+                      styles.metaText,
 
                       {
-                        item.teacher
-                      }
+                        color: theme.textSecondary,
+                      },
+                    ]}
+                  >
+                    {item.teacher}
 
-                      {' • '}
+                    {" • "}
 
-                      {
-                        item.room
-                      }
-
-                    </Text>
-
-                  </View>
-
+                    {item.room}
+                  </Text>
                 </View>
-
-              </Card>
-            ),
-          )}
-
+              </View>
+            </Card>
+          ))}
         </View>
-
       </ScrollView>
-
     </ScreenBackground>
   );
 }
-
 
 // ─────────────────────────────────────────────────────────────────────────
 // Styles
 // ─────────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-
   // ───────────────────────────────────────────────────────────────────────
   // Screen
   // ───────────────────────────────────────────────────────────────────────
 
   scrollView: {
-    flex:
-      1,
+    flex: 1,
 
-    width:
-      '100%',
+    width: "100%",
   },
-
 
   scrollContent: {
-    width:
-      '100%',
+    width: "100%",
 
-    paddingHorizontal:
-      Spacing.four,
+    paddingHorizontal: Spacing.four,
 
-    paddingTop:
-      Spacing.four,
+    paddingTop: Spacing.four,
 
-    gap:
-      Spacing.four,
+    gap: Spacing.four,
   },
-
 
   // ───────────────────────────────────────────────────────────────────────
   // Day Selector
   // ───────────────────────────────────────────────────────────────────────
 
   dayTabBar: {
-    width:
-      '100%',
+    width: "100%",
 
-    flexDirection:
-      'row',
+    flexDirection: "row",
 
-    padding:
-      Spacing.two,
+    padding: Spacing.two,
 
-    gap:
-      Spacing.one,
+    gap: Spacing.one,
 
-    borderWidth:
-      1,
+    borderWidth: 1,
 
-    borderRadius:
-      Radii.xl,
+    borderRadius: Radii.xl,
   },
-
 
   dayTab: {
-    flex:
-      1,
+    flex: 1,
 
-    minHeight:
-      40,
+    minHeight: 40,
 
-    paddingHorizontal:
-      Spacing.one,
+    paddingHorizontal: Spacing.one,
 
-    paddingVertical:
-      Spacing.two,
+    paddingVertical: Spacing.two,
 
-    borderRadius:
-      Radii.md,
+    borderRadius: Radii.md,
 
-    alignItems:
-      'center',
+    alignItems: "center",
 
-    justifyContent:
-      'center',
+    justifyContent: "center",
   },
-
 
   dayTabText: {
     ...Typography.captionBold,
 
-    textAlign:
-      'center',
+    textAlign: "center",
   },
-
 
   // ───────────────────────────────────────────────────────────────────────
   // Schedule
   // ───────────────────────────────────────────────────────────────────────
 
   scheduleList: {
-    width:
-      '100%',
+    width: "100%",
 
-    gap:
-      Spacing.three,
+    gap: Spacing.three,
   },
-
 
   slotCard: {
-    width:
-      '100%',
+    width: "100%",
 
-    padding:
-      Spacing.four,
+    padding: Spacing.four,
   },
-
 
   slotRow: {
-    width:
-      '100%',
+    width: "100%",
 
-    flexDirection:
-      'row',
+    flexDirection: "row",
 
-    alignItems:
-      'center',
+    alignItems: "center",
 
-    gap:
-      Spacing.three,
+    gap: Spacing.three,
   },
-
 
   // ───────────────────────────────────────────────────────────────────────
   // Time
   // ───────────────────────────────────────────────────────────────────────
 
   timeCol: {
-    width:
-      100,
+    width: 100,
 
-    flexShrink:
-      0,
+    flexShrink: 0,
 
-    gap:
-      4,
+    gap: 4,
   },
-
 
   timeText: {
     ...Typography.small,
 
-    fontWeight:
-      '600',
+    fontWeight: "600",
   },
-
 
   // ───────────────────────────────────────────────────────────────────────
   // Details
   // ───────────────────────────────────────────────────────────────────────
 
   detailsCol: {
-    flex:
-      1,
+    flex: 1,
 
-    minWidth:
-      0,
+    minWidth: 0,
 
-    gap:
-      2,
+    gap: 2,
   },
-
 
   subjectName: {
     ...Typography.bodyBold,
   },
-
 
   metaText: {
     ...Typography.small,

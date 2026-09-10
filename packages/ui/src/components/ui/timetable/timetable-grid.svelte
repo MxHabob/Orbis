@@ -1,122 +1,125 @@
 <script lang="ts">
-  import { Clock, Plus } from "@lucide/svelte";
-  import SessionCard from "./session-card.svelte";
-  import TimeGutter from "./time-gutter.svelte";
-  import CalendarHeader from "./calendar-header.svelte";
-  import BreakRow from "./break-row.svelte";
+import { Clock, Plus } from "@lucide/svelte";
+import SessionCard from "./session-card.svelte";
+import TimeGutter from "./time-gutter.svelte";
+import CalendarHeader from "./calendar-header.svelte";
+import BreakRow from "./break-row.svelte";
 
-  interface Props {
-    timeSlots: any[];
-    weekdays: any[];
-    lessons?: any[];
-    draftLessons?: any[];
-    previewDraft?: boolean;
-    viewMode?: "class" | "teacher" | "room" | "subject" | "matrix";
-    locale?: string;
-    compact?: boolean;
-    conflicts?: any[];
-    class?: string;
-    getSubjectName?: (id: string) => string;
-    getTeacherName?: (id: string) => string;
-    getClassName?: (id: string) => string;
-    getRoomName?: (id: string) => string;
-    getSubjectColor?: (id: string) => string;
-    onCellClick?: (day: number, slotId: string) => void;
-    onDeleteLesson?: (id: string) => void;
-    onEditLesson?: (lesson: any) => void;
-    onLessonClick?: (lesson: any) => void;
-    onMoveLesson?: (lesson: any, targetDay: number, targetSlotId: string) => void;
-  }
+interface Props {
+  timeSlots: any[];
+  weekdays: any[];
+  lessons?: any[];
+  draftLessons?: any[];
+  previewDraft?: boolean;
+  viewMode?: "class" | "teacher" | "room" | "subject" | "matrix";
+  locale?: string;
+  compact?: boolean;
+  conflicts?: any[];
+  class?: string;
+  getSubjectName?: (id: string) => string;
+  getTeacherName?: (id: string) => string;
+  getClassName?: (id: string) => string;
+  getRoomName?: (id: string) => string;
+  getSubjectColor?: (id: string) => string;
+  onCellClick?: (day: number, slotId: string) => void;
+  onDeleteLesson?: (id: string) => void;
+  onEditLesson?: (lesson: any) => void;
+  onLessonClick?: (lesson: any) => void;
+  onMoveLesson?: (lesson: any, targetDay: number, targetSlotId: string) => void;
+}
 
-  let {
-    timeSlots = [],
-    weekdays = [],
-    lessons = [],
-    draftLessons = [],
-    previewDraft = false,
-    viewMode = "class",
-    locale = "ar",
-    compact = false,
-    conflicts = [],
-    class: className = "",
-    getSubjectName = (id) => id,
-    getTeacherName = (id) => id,
-    getClassName = (id) => id,
-    getRoomName = (id) => id,
-    getSubjectColor = () => "var(--primary)",
-    onCellClick,
-    onDeleteLesson,
-    onEditLesson,
-    onLessonClick,
-    onMoveLesson,
-  }: Props = $props();
+let {
+  timeSlots = [],
+  weekdays = [],
+  lessons = [],
+  draftLessons = [],
+  previewDraft = false,
+  viewMode = "class",
+  locale = "ar",
+  compact = false,
+  conflicts = [],
+  class: className = "",
+  getSubjectName = (id) => id,
+  getTeacherName = (id) => id,
+  getClassName = (id) => id,
+  getRoomName = (id) => id,
+  getSubjectColor = () => "var(--primary)",
+  onCellClick,
+  onDeleteLesson,
+  onEditLesson,
+  onLessonClick,
+  onMoveLesson,
+}: Props = $props();
 
-  const isArabic = $derived(locale === "ar");
+const isArabic = $derived(locale === "ar");
 
-  // Build quick map of lessons by day and slot
-  const lessonMatrix = $derived.by(() => {
-    const map = new Map<string, any[]>();
-    const all = previewDraft && draftLessons.length > 0 ? [...lessons, ...draftLessons] : lessons;
+// Build quick map of lessons by day and slot
+const lessonMatrix = $derived.by(() => {
+  const map = new Map<string, any[]>();
+  const all =
+    previewDraft && draftLessons.length > 0
+      ? [...lessons, ...draftLessons]
+      : lessons;
 
-    for (const l of all) {
-      const day = Number(l.day_of_week);
-      const slotId = String(l.time_slot_id);
-      const key = `${day}:${slotId}`;
-      if (!map.has(key)) {
-        map.set(key, []);
-      }
-      map.get(key)!.push(l);
+  for (const l of all) {
+    const day = Number(l.day_of_week);
+    const slotId = String(l.time_slot_id);
+    const key = `${day}:${slotId}`;
+    if (!map.has(key)) {
+      map.set(key, []);
     }
-    return map;
-  });
-
-  // Calculate count of lessons per day for the header
-  const lessonsByDay = $derived.by(() => {
-    const counts: Record<number, number> = {};
-    for (const l of lessons) {
-      const day = Number(l.day_of_week);
-      counts[day] = (counts[day] || 0) + 1;
-    }
-    return counts;
-  });
-
-  // Conflict lesson IDs set
-  const conflictLessonIds = $derived.by(() => {
-    const set = new Set<string>();
-    for (const c of conflicts) {
-      if (c.lesson_id) set.add(String(c.lesson_id));
-      if (c.conflicting_lesson_id) set.add(String(c.conflicting_lesson_id));
-    }
-    return set;
-  });
-
-  let dragOverCellKey = $state<string | null>(null);
-
-  function handleDragOver(e: DragEvent, day: number, slotId: string) {
-    e.preventDefault();
-    e.stopPropagation();
-    dragOverCellKey = `${day}:${slotId}`;
+    map.get(key)!.push(l);
   }
+  return map;
+});
 
-  function handleDragLeave(e: DragEvent) {
-    e.preventDefault();
-    dragOverCellKey = null;
+// Calculate count of lessons per day for the header
+const lessonsByDay = $derived.by(() => {
+  const counts: Record<number, number> = {};
+  for (const l of lessons) {
+    const day = Number(l.day_of_week);
+    counts[day] = (counts[day] || 0) + 1;
   }
+  return counts;
+});
 
-  function handleDrop(e: DragEvent, day: number, slotId: string) {
-    e.preventDefault();
-    dragOverCellKey = null;
-    try {
-      const raw = e.dataTransfer?.getData("text/plain");
-      if (!raw) return;
-      const data = JSON.parse(raw);
-      if (data?.lesson) {
-        onMoveLesson?.(data.lesson, day, slotId);
-      }
-    } catch (err) {
-      console.error("Drop error:", err);
+// Conflict lesson IDs set
+const conflictLessonIds = $derived.by(() => {
+  const set = new Set<string>();
+  for (const c of conflicts) {
+    if (c.lesson_id) set.add(String(c.lesson_id));
+    if (c.conflicting_lesson_id) set.add(String(c.conflicting_lesson_id));
+  }
+  return set;
+});
+
+let dragOverCellKey = $state<string | null>(null);
+
+function handleDragOver(e: DragEvent, day: number, slotId: string) {
+  e.preventDefault();
+  e.stopPropagation();
+  dragOverCellKey = `${day}:${slotId}`;
+}
+
+function handleDragLeave(e: DragEvent) {
+  e.preventDefault();
+  dragOverCellKey = null;
+}
+
+function handleDrop(e: DragEvent, day: number, slotId: string) {
+  e.preventDefault();
+  dragOverCellKey = null;
+  try {
+    const raw = e.dataTransfer?.getData("text/plain");
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (data?.lesson) {
+      onMoveLesson?.(data.lesson, day, slotId);
     }
+  } catch (err) {
+    console.error("Drop error:", err);
   }
+}
 </script>
 
 <div

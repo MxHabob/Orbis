@@ -6,7 +6,7 @@ Steps: Configuration → Class Mapping → Preview → Execute.
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { extractErrorMessage } from "$lib/api";
 import { toast } from "@orbis/ui";
 import { academicContext } from "$lib/stores";
@@ -181,9 +181,7 @@ async function runDryRun() {
   try {
     previewJob = await api.enrollment_workflow.startDryRun(config);
     if (previewJob) {
-      previewDetails = await api.enrollment_workflow.getJob(
-        previewJob.id,
-      );
+      previewDetails = await api.enrollment_workflow.getJob(previewJob.id);
       if (previewJob.dry_run_result) {
         previewStats = JSON.parse(previewJob.dry_run_result);
       }

@@ -38,8 +38,10 @@ export async function resolveDocumentUrl(
 
   try {
     // 2. If it's already an absolute Windows or Unix path, convert directly
-    const isWindowsAbsolute = /^[a-zA-Z]:[\\/]/.test(pathOrUrl) || pathOrUrl.startsWith("\\\\");
-    const isPosixAbsolute = pathOrUrl.startsWith("/") && !pathOrUrl.startsWith("/storage/");
+    const isWindowsAbsolute =
+      /^[a-zA-Z]:[\\/]/.test(pathOrUrl) || pathOrUrl.startsWith("\\\\");
+    const isPosixAbsolute =
+      pathOrUrl.startsWith("/") && !pathOrUrl.startsWith("/storage/");
 
     if (isWindowsAbsolute || isPosixAbsolute) {
       const resolvedUrl = convertFileSrc(pathOrUrl);
@@ -48,7 +50,9 @@ export async function resolveDocumentUrl(
     }
 
     // 3. Handle relative storage paths
-    storageDirectoryPromise ??= appDataDir().then((dataDir) => join(dataDir, "storage"));
+    storageDirectoryPromise ??= appDataDir().then((dataDir) =>
+      join(dataDir, "storage"),
+    );
     const storageDirectory = await storageDirectoryPromise;
 
     let relativePath = pathOrUrl;
@@ -82,16 +86,18 @@ export function getDocumentSource(document: {
   return document.url || document.path || "";
 }
 
-export function useDocuments(filter: () => {
-  ownerId?: string;
-  entityType?: string;
-  category?: string;
-  search?: string;
-  assetType?: string;
-  schoolYear?: string;
-  term?: string;
-  entityId?: string;
-}) {
+export function useDocuments(
+  filter: () => {
+    ownerId?: string;
+    entityType?: string;
+    category?: string;
+    search?: string;
+    assetType?: string;
+    schoolYear?: string;
+    term?: string;
+    entityId?: string;
+  },
+) {
   return createInfiniteQuery(() => ({
     queryKey: queryKeys.document.all,
     placeholderData: (previousData: any) => previousData,
@@ -116,7 +122,9 @@ export function useDocuments(filter: () => {
 
 // --- Mutations ---
 
-export function useUploadDocument(options: { invalidateOnSuccess?: boolean } = {}) {
+export function useUploadDocument(
+  options: { invalidateOnSuccess?: boolean } = {},
+) {
   const queryClient = useQueryClient();
 
   return createMutation(() => ({
@@ -157,4 +165,3 @@ export function useDeleteDocument() {
     },
   }));
 }
-

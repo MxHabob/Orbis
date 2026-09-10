@@ -22,12 +22,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@orbis/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
 import { Progress } from "@orbis/ui/progress";
 import { Separator } from "@orbis/ui/separator";
 import { toast } from "@orbis/ui";
@@ -150,7 +145,9 @@ function updateConfigFromTemplate(template: any) {
         ID_CARD: [85.6, 53.98],
         BADGE: [86, 54],
       };
-      const [presetWidth, presetHeight] = dimensions[pageSetup.size] ?? [90, 50];
+      const [presetWidth, presetHeight] = dimensions[pageSetup.size] ?? [
+        90, 50,
+      ];
       const w = pageSetup.width ?? pageSetup.width_mm ?? presetWidth;
       const h = pageSetup.height ?? pageSetup.height_mm ?? presetHeight;
       multiUpConfig = createDefaultMultiUpConfig(w, h);
@@ -181,7 +178,11 @@ $effect(() => {
 
 let lastProcessedTemplateId = "";
 $effect(() => {
-  if (selectedTemplateId && templates.length > 0 && selectedTemplateId !== lastProcessedTemplateId) {
+  if (
+    selectedTemplateId &&
+    templates.length > 0 &&
+    selectedTemplateId !== lastProcessedTemplateId
+  ) {
     lastProcessedTemplateId = selectedTemplateId;
     const tpl = templates.find((t: any) => t.id === selectedTemplateId);
     if (tpl) {

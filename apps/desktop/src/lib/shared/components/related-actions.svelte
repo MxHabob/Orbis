@@ -3,52 +3,52 @@
 Generic, minimal Related Actions / Support component using Accordion.
 -->
 <script lang="ts">
-  import { 
-    Accordion, 
-    AccordionItem, 
-    AccordionTrigger, 
-    AccordionContent 
-  } from "@orbis/ui/accordion";
-  import { Button } from "@orbis/ui/button";
-  import { Globe, HelpCircle, MessageSquareShare } from "@lucide/svelte";
-  import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@orbis/ui/accordion";
+import { Button } from "@orbis/ui/button";
+import { Globe, HelpCircle, MessageSquareShare } from "@lucide/svelte";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 
-  export interface SubLink {
-    label: string;
-    href?: string;
-    onclick?: () => void;
-  }
+export interface SubLink {
+  label: string;
+  href?: string;
+  onclick?: () => void;
+}
 
-  export interface ActionGroup {
-    id: string;
-    title?: string;
-    icon?: any;
-    subLinks: SubLink[];
-    defaultExpanded?: boolean;
-  }
+export interface ActionGroup {
+  id: string;
+  title?: string;
+  icon?: any;
+  subLinks: SubLink[];
+  defaultExpanded?: boolean;
+}
 
-  export interface FooterAction {
-    label: string;
-    icon?: any;
-    href?: string;
-    onclick?: () => void;
-  }
+export interface FooterAction {
+  label: string;
+  icon?: any;
+  href?: string;
+  onclick?: () => void;
+}
 
-  let {
-    groups = [],
-    footerActions = [],
-    class: className = "",
-  }: {
-    groups: ActionGroup[];
-    footerActions?: FooterAction[];
-    class?: string;
-  } = $props();
+let {
+  groups = [],
+  footerActions = [],
+  class: className = "",
+}: {
+  groups: ActionGroup[];
+  footerActions?: FooterAction[];
+  class?: string;
+} = $props();
 
-  const isArabic = $derived(getLocale() === "ar");
+const isArabic = $derived(getLocale() === "ar");
 
-  const defaultValues = $derived(
-    groups.filter((g) => g.defaultExpanded ?? true).map((g) => g.id)
-  );
+const defaultValues = $derived(
+  groups.filter((g) => g.defaultExpanded ?? true).map((g) => g.id),
+);
 </script>
 
 <div class="flex flex-col w-full font-sans {className}">

@@ -9,7 +9,8 @@ const config: OrbisApp = {
   category: "hardware",
   active: false,
   icon: "ScanBarcode",
-  short_description: "Use barcode and QR code scanners for student ID cards, library books, and inventory.",
+  short_description:
+    "Use barcode and QR code scanners for student ID cards, library books, and inventory.",
   short_description_ar: "استخدام ماسحات الباركود وQR لبطاقات الطلاب والمكتبة.",
   description: `Integrate barcode and QR code scanners for various school operations.
 
@@ -18,9 +19,27 @@ Scan student ID barcodes for quick attendance and identification.
 
 **Library Management**
 Track book checkouts and returns with barcode scanning.`,
-  features: ["Student ID scanning", "Library book tracking", "QR code support", "USB & wireless scanners", "Batch scanning"],
+  features: [
+    "Student ID scanning",
+    "Library book tracking",
+    "QR code support",
+    "USB & wireless scanners",
+    "Batch scanning",
+  ],
   settings: [
-    { id: "scanner_mode", label: "Scanner Mode", type: "select", required: true, value: "usb", description: "How the scanner connects.", options: [{ label: "USB (HID)", value: "usb" }, { label: "Network", value: "network" }, { label: "Bluetooth", value: "bluetooth" }] },
+    {
+      id: "scanner_mode",
+      label: "Scanner Mode",
+      type: "select",
+      required: true,
+      value: "usb",
+      description: "How the scanner connects.",
+      options: [
+        { label: "USB (HID)", value: "usb" },
+        { label: "Network", value: "network" },
+        { label: "Bluetooth", value: "bluetooth" },
+      ],
+    },
   ],
   provider_trait: "IntegrationProvider",
 };

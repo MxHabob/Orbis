@@ -1,7 +1,11 @@
 import type { GridRow, OrbisColumnDef } from "../types";
 import { getCellValue } from "../types";
 
-export function formatCell(row: GridRow, col: OrbisColumnDef, locale = "en"): string {
+export function formatCell(
+  row: GridRow,
+  col: OrbisColumnDef,
+  locale = "en",
+): string {
   const value = getCellValue(row, col);
   if (value == null || value === "") return "";
   const type = col.type;
@@ -21,15 +25,26 @@ export function formatCell(row: GridRow, col: OrbisColumnDef, locale = "en"): st
       return value.toFixed(2);
     }
   }
-  if ((type === "number" || type === "decimal" || type === "integer") && typeof value === "number") {
+  if (
+    (type === "number" || type === "decimal" || type === "integer") &&
+    typeof value === "number"
+  ) {
     return value.toLocaleString(locale);
   }
-  if ((type === "date" || type === "datetime") && (typeof value === "string" || value instanceof Date)) {
+  if (
+    (type === "date" || type === "datetime") &&
+    (typeof value === "string" || value instanceof Date)
+  ) {
     const d = value instanceof Date ? value : new Date(value);
     if (Number.isNaN(d.getTime())) return String(value);
-    return type === "datetime" ? d.toLocaleString(locale) : d.toLocaleDateString(locale);
+    return type === "datetime"
+      ? d.toLocaleString(locale)
+      : d.toLocaleDateString(locale);
   }
-  if ((type === "enum" || type === "status" || type === "badge") && col.options?.length) {
+  if (
+    (type === "enum" || type === "status" || type === "badge") &&
+    col.options?.length
+  ) {
     const hit = col.options.find((o) => String(o.value) === String(value));
     return hit?.label ?? String(value);
   }

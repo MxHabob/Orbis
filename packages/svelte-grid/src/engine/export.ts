@@ -1,4 +1,9 @@
-import type { ExportOptions, GridRow, OrbisColumnDef, SelectionSnapshot } from "../types";
+import type {
+  ExportOptions,
+  GridRow,
+  OrbisColumnDef,
+  SelectionSnapshot,
+} from "../types";
 import { columnId, columnHeader, getCellValue } from "../types";
 import { isRowSelected } from "./selection";
 import { toTsv } from "./clipboard";
@@ -11,14 +16,17 @@ export function exportRows(
   visibleIds?: string[],
   rowIdKey = "id",
 ): string {
-  const cols = (options.columns
-    ? columns.filter((c) => options.columns!.includes(columnId(c)))
-    : columns
+  const cols = (
+    options.columns
+      ? columns.filter((c) => options.columns!.includes(columnId(c)))
+      : columns
   ).filter((c) => !c.hidden && !columnId(c).startsWith("__"));
 
   let subset = rows;
   if (options.scope === "selected" && selection) {
-    subset = rows.filter((row) => isRowSelected(selection, String(row[rowIdKey] ?? ""), rows.length));
+    subset = rows.filter((row) =>
+      isRowSelected(selection, String(row[rowIdKey] ?? ""), rows.length),
+    );
   } else if (options.scope === "visible" && visibleIds) {
     const set = new Set(visibleIds);
     subset = rows.filter((row) => set.has(String(row[rowIdKey] ?? "")));
@@ -35,12 +43,19 @@ export function exportRows(
   }
 
   const header = cols.map(columnHeader);
-  const matrix = [header, ...subset.map((row) => cols.map((col) => getCellValue(row, col)))];
+  const matrix = [
+    header,
+    ...subset.map((row) => cols.map((col) => getCellValue(row, col))),
+  ];
   const text = toTsv(matrix);
   return options.format === "csv" ? text.replace(/\t/g, ",") : text;
 }
 
-export function downloadText(filename: string, text: string, mime = "text/plain;charset=utf-8"): void {
+export function downloadText(
+  filename: string,
+  text: string,
+  mime = "text/plain;charset=utf-8",
+): void {
   if (typeof document === "undefined") return;
   const blob = new Blob([text], { type: mime });
   const url = URL.createObjectURL(blob);

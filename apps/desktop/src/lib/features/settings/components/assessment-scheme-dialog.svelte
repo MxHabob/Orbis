@@ -3,9 +3,27 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
 import { Loader2 } from "@lucide/svelte";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@orbis/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@orbis/ui/dialog";
 
-let { open = $bindable(false), name = $bindable(""), description = $bindable(""), isCreating = false, onsubmit }: { open: boolean; name: string; description: string; isCreating?: boolean; onsubmit: () => void } = $props();
+let {
+  open = $bindable(false),
+  name = $bindable(""),
+  description = $bindable(""),
+  isCreating = false,
+  onsubmit,
+}: {
+  open: boolean;
+  name: string;
+  description: string;
+  isCreating?: boolean;
+  onsubmit: () => void;
+} = $props();
 </script>
 
 <Dialog bind:open>

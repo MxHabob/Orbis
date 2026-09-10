@@ -1,117 +1,114 @@
 <script lang="ts">
-  import { page } from "$app/state";
-  import { createQuery } from "@tanstack/svelte-query";
-  import { api, } from "$lib/api";
-  import { Badge } from "@orbis/ui/badge";
-  import { Skeleton } from "@orbis/ui/skeleton";
-  import { Users, BookOpen, GraduationCap, ChevronRight } from "@lucide/svelte";
-  import { getLocale, localizeHref } from "$lib/paraglide/runtime";
-  import * as m from "$lib/paraglide/messages";
-  import { academicContext } from "$lib/stores";
-  import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
-  import CapacityIndicator from "$lib/shared/components/capacity-indicator.svelte";
+import { page } from "$app/state";
+import { createQuery } from "@tanstack/svelte-query";
+import { api } from "$lib/api";
+import { Badge } from "@orbis/ui/badge";
+import { Skeleton } from "@orbis/ui/skeleton";
+import { Users, BookOpen, GraduationCap, ChevronRight } from "@lucide/svelte";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
+import { academicContext } from "$lib/stores";
+import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
+import CapacityIndicator from "$lib/shared/components/capacity-indicator.svelte";
 
-  let { children } = $props();
+let { children } = $props();
 
-  const classId = $derived(String(page.params.classId || ""));
-  const classSubjectId = $derived(
-    page.params.classSubjectId ? String(page.params.classSubjectId) : null,
-  );
-  const orgId = $derived(String(page.params.orgId || ""));
-  const periodId = $derived(academicContext.effectivePeriodId);
-  const isArabic = $derived(getLocale() === "ar");
+const classId = $derived(String(page.params.classId || ""));
+const classSubjectId = $derived(
+  page.params.classSubjectId ? String(page.params.classSubjectId) : null,
+);
+const orgId = $derived(String(page.params.orgId || ""));
+const periodId = $derived(academicContext.effectivePeriodId);
+const isArabic = $derived(getLocale() === "ar");
 
-  // Class Info Query
-  const classQuery = createQuery(() => ({
-    queryKey: ["class-detail-master-layout", classId, periodId],
-    queryFn: () => api.getClass(classId),
-    enabled: !!classId,
-  }));
+// Class Info Query
+const classQuery = createQuery(() => ({
+  queryKey: ["class-detail-master-layout", classId, periodId],
+  queryFn: () => api.getClass(classId),
+  enabled: !!classId,
+}));
 
-  // Students Count Query
-  const studentsQuery = createQuery(() => ({
-    queryKey: ["class-students-count-master-layout", classId, periodId],
-    queryFn: () => api.academic.listEnrichedStudents(classId),
-    enabled: !!classId,
-  }));
+// Students Count Query
+const studentsQuery = createQuery(() => ({
+  queryKey: ["class-students-count-master-layout", classId, periodId],
+  queryFn: () => api.academic.listEnrichedStudents(classId),
+  enabled: !!classId,
+}));
 
-  // Subject Info Query (only when classSubjectId is present)
-  const subjectQuery = createQuery(() => ({
-    queryKey: ["class-subject-title-layout", classId, classSubjectId, periodId],
-    queryFn: async () => {
-      if (!classSubjectId) return null;
-      const offerings = await api.listClassSubjects(
-        classId,
-        periodId || "",
-      );
-      const offering = offerings.find(
-        (o: any) => String(o.id) === String(classSubjectId),
-      );
-      if (!offering) return null;
-      const catalog = await api.listSubjects();
-      const catSub = catalog.find(
-        (s: any) => String(s.id) === String(offering.subject_id),
-      );
-      return { ...offering, catalog: catSub };
-    },
-    enabled: !!classId && !!classSubjectId,
-  }));
+// Subject Info Query (only when classSubjectId is present)
+const subjectQuery = createQuery(() => ({
+  queryKey: ["class-subject-title-layout", classId, classSubjectId, periodId],
+  queryFn: async () => {
+    if (!classSubjectId) return null;
+    const offerings = await api.listClassSubjects(classId, periodId || "");
+    const offering = offerings.find(
+      (o: any) => String(o.id) === String(classSubjectId),
+    );
+    if (!offering) return null;
+    const catalog = await api.listSubjects();
+    const catSub = catalog.find(
+      (s: any) => String(s.id) === String(offering.subject_id),
+    );
+    return { ...offering, catalog: catSub };
+  },
+  enabled: !!classId && !!classSubjectId,
+}));
 
-  const classData = $derived(classQuery.data as any);
-  const subjectData = $derived(subjectQuery.data as any);
-  const isLoading = $derived(
-    classQuery.isLoading || (!!classSubjectId && subjectQuery.isLoading),
-  );
-  const studentsCount = $derived(((studentsQuery.data || []) as any[]).length);
+const classData = $derived(classQuery.data as any);
+const subjectData = $derived(subjectQuery.data as any);
+const isLoading = $derived(
+  classQuery.isLoading || (!!classSubjectId && subjectQuery.isLoading),
+);
+const studentsCount = $derived(((studentsQuery.data || []) as any[]).length);
 
-  const classDisplayName = $derived.by(() => {
-    if (!classData) return "";
-    return isArabic
-      ? classData.name_ar || classData.name
-      : classData.name || classData.name_ar;
-  });
+const classDisplayName = $derived.by(() => {
+  if (!classData) return "";
+  return isArabic
+    ? classData.name_ar || classData.name
+    : classData.name || classData.name_ar;
+});
 
-  const subjectDisplayName = $derived.by(() => {
-    if (!subjectData) return "";
-    return isArabic
-      ? subjectData.catalog?.name_ar ||
-          subjectData.catalog?.name ||
-          subjectData.subject_id
-      : subjectData.catalog?.name ||
-          subjectData.catalog?.name_ar ||
-          subjectData.subject_id;
-  });
+const subjectDisplayName = $derived.by(() => {
+  if (!subjectData) return "";
+  return isArabic
+    ? subjectData.catalog?.name_ar ||
+        subjectData.catalog?.name ||
+        subjectData.subject_id
+    : subjectData.catalog?.name ||
+        subjectData.catalog?.name_ar ||
+        subjectData.subject_id;
+});
 
-  const currentPath = $derived(page.url.pathname);
-  const isStudentsPage = $derived(
-    currentPath.endsWith("/students") || currentPath.endsWith("/students/"),
-  );
-  const isCurriculumListPage = $derived(
-    (currentPath.endsWith("/curriculum") ||
-      currentPath.endsWith("/curriculum/")) &&
-      !classSubjectId,
-  );
+const currentPath = $derived(page.url.pathname);
+const isStudentsPage = $derived(
+  currentPath.endsWith("/students") || currentPath.endsWith("/students/"),
+);
+const isCurriculumListPage = $derived(
+  (currentPath.endsWith("/curriculum") ||
+    currentPath.endsWith("/curriculum/")) &&
+    !classSubjectId,
+);
 
-  // Dynamic Back navigation
-  const backHref = $derived.by(() => {
-    if (classSubjectId) {
-      return `/${orgId}/academics/classes/${classId}/curriculum`;
-    }
-    if (isStudentsPage || isCurriculumListPage) {
-      return `/${orgId}/academics/classes/${classId}`;
-    }
-    return `/${orgId}/academics/classes`;
-  });
+// Dynamic Back navigation
+const backHref = $derived.by(() => {
+  if (classSubjectId) {
+    return `/${orgId}/academics/classes/${classId}/curriculum`;
+  }
+  if (isStudentsPage || isCurriculumListPage) {
+    return `/${orgId}/academics/classes/${classId}`;
+  }
+  return `/${orgId}/academics/classes`;
+});
 
-  const backLabel = $derived.by(() => {
-    if (classSubjectId) {
-      return isArabic ? "مواد الفصل" : "Class Subjects";
-    }
-    if (isStudentsPage || isCurriculumListPage) {
-      return isArabic ? "لوحة تحكم الفصل" : "Class Dashboard";
-    }
-    return isArabic ? "قائمة الفصول" : "Classes List";
-  });
+const backLabel = $derived.by(() => {
+  if (classSubjectId) {
+    return isArabic ? "مواد الفصل" : "Class Subjects";
+  }
+  if (isStudentsPage || isCurriculumListPage) {
+    return isArabic ? "لوحة تحكم الفصل" : "Class Dashboard";
+  }
+  return isArabic ? "قائمة الفصول" : "Classes List";
+});
 </script>
 
 <div

@@ -1,423 +1,493 @@
 <script lang="ts">
-  import { page } from "$app/state";
-  import { goto } from "$app/navigation";
-  import { api, extractErrorMessage } from "$lib/api";
-  import { getLocale, localizeHref } from "$lib/paraglide/runtime";
-  import { toast } from "@orbis/ui";
-  import { createQuery, useQueryClient } from "@tanstack/svelte-query";
-  import { TimetableGrid } from "@orbis/ui";
-  import { Button } from "@orbis/ui/button";
-  import { Skeleton } from "@orbis/ui/skeleton";
-  import { Badge } from "@orbis/ui/badge";
-  import { AlertTriangle, Clock, Users, User, MapPin, Sparkles } from "@lucide/svelte";
+import { page } from "$app/state";
+import { goto } from "$app/navigation";
+import { api, extractErrorMessage } from "$lib/api";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import { toast } from "@orbis/ui";
+import { createQuery, useQueryClient } from "@tanstack/svelte-query";
+import { TimetableGrid } from "@orbis/ui";
+import { Button } from "@orbis/ui/button";
+import { Skeleton } from "@orbis/ui/skeleton";
+import { Badge } from "@orbis/ui/badge";
+import {
+  AlertTriangle,
+  Clock,
+  Users,
+  User,
+  MapPin,
+  Sparkles,
+} from "@lucide/svelte";
 
-  // Feature Components
-  import {
-    ScheduleToolbar,
-    ScheduleMatrix,
-    LessonSheet,
-    TimeSlotSheet,
-    SolverDrawer,
-    ScheduleExportDialog,
-  } from "$lib/features/academics";
-  import ErrorState from "$lib/shared/components/error-state.svelte";
+// Feature Components
+import {
+  ScheduleToolbar,
+  ScheduleMatrix,
+  LessonSheet,
+  TimeSlotSheet,
+  SolverDrawer,
+  ScheduleExportDialog,
+} from "$lib/features/academics";
+import ErrorState from "$lib/shared/components/error-state.svelte";
 
-  let { data }: { data: { orgId: string } } = $props();
+let { data }: { data: { orgId: string } } = $props();
 
-  const queryClient = useQueryClient();
-  const isArabic = $derived(getLocale() === "ar");
+const queryClient = useQueryClient();
+const isArabic = $derived(getLocale() === "ar");
 
-  // Selection & View State
-  let activePeriodId = $state<string>("");
-  let viewMode = $state<"class" | "teacher" | "room" | "subject" | "matrix">("class");
-  let selectedClassId = $state<string>("");
-  let selectedTeacherId = $state<string>("");
-  let selectedRoomId = $state<string>("");
-  let selectedSubjectId = $state<string>("");
-  let searchTerm = $state("");
-  let compactView = $state(false);
-  let selectedMatrixDay = $state(1);
+// Selection & View State
+let activePeriodId = $state<string>("");
+let viewMode = $state<"class" | "teacher" | "room" | "subject" | "matrix">(
+  "class",
+);
+let selectedClassId = $state<string>("");
+let selectedTeacherId = $state<string>("");
+let selectedRoomId = $state<string>("");
+let selectedSubjectId = $state<string>("");
+let searchTerm = $state("");
+let compactView = $state(false);
+let selectedMatrixDay = $state(1);
 
-  // Dialog & Sheet States
-  let isLessonSheetOpen = $state(false);
-  let isTimeSlotsSheetOpen = $state(false);
-  let isSolverDrawerOpen = $state(false);
-  let isExportDialogOpen = $state(false);
+// Dialog & Sheet States
+let isLessonSheetOpen = $state(false);
+let isTimeSlotsSheetOpen = $state(false);
+let isSolverDrawerOpen = $state(false);
+let isExportDialogOpen = $state(false);
 
-  // Active Lesson for editing / creating
-  let targetLesson = $state<any | null>(null);
-  let activeCellDay = $state(1);
-  let activeCellSlotId = $state("");
+// Active Lesson for editing / creating
+let targetLesson = $state<any | null>(null);
+let activeCellDay = $state(1);
+let activeCellSlotId = $state("");
 
-  // AI Solver Draft State
-  let previewDraft = $state(false);
-  let activeSolveJob = $state<any>(null);
+// AI Solver Draft State
+let previewDraft = $state(false);
+let activeSolveJob = $state<any>(null);
 
-  // ── Queries ───────────────────────────────────────────────
+// ── Queries ───────────────────────────────────────────────
 
-  const periodsQuery = createQuery(() => ({
-    queryKey: ["periods", data.orgId],
-    queryFn: () => api.listAcademicPeriods(),
-    enabled: !!data.orgId,
-    staleTime: 10 * 60 * 1000,
-  }));
+const periodsQuery = createQuery(() => ({
+  queryKey: ["periods", data.orgId],
+  queryFn: () => api.listAcademicPeriods(),
+  enabled: !!data.orgId,
+  staleTime: 10 * 60 * 1000,
+}));
 
-  const classesQuery = createQuery(() => ({
-    queryKey: ["classes", data.orgId],
-    queryFn: () => api.listClasses(),
-    enabled: !!data.orgId,
-    staleTime: 5 * 60 * 1000,
-  }));
+const classesQuery = createQuery(() => ({
+  queryKey: ["classes", data.orgId],
+  queryFn: () => api.listClasses(),
+  enabled: !!data.orgId,
+  staleTime: 5 * 60 * 1000,
+}));
 
-  const subjectsQuery = createQuery(() => ({
-    queryKey: ["subjects", data.orgId],
-    queryFn: () => api.listSubjects(),
-    enabled: !!data.orgId,
-    staleTime: 10 * 60 * 1000,
-  }));
+const subjectsQuery = createQuery(() => ({
+  queryKey: ["subjects", data.orgId],
+  queryFn: () => api.listSubjects(),
+  enabled: !!data.orgId,
+  staleTime: 10 * 60 * 1000,
+}));
 
-  const usersQuery = createQuery(() => ({
-    queryKey: ["users", data.orgId],
-    queryFn: () => api.listUsers(null),
-    enabled: !!data.orgId,
-    staleTime: 5 * 60 * 1000,
-  }));
+const usersQuery = createQuery(() => ({
+  queryKey: ["users", data.orgId],
+  queryFn: () => api.listUsers(null),
+  enabled: !!data.orgId,
+  staleTime: 5 * 60 * 1000,
+}));
 
-  const roomsQuery = createQuery(() => ({
-    queryKey: ["rooms", data.orgId],
-    queryFn: () => api.listRooms(),
-    enabled: !!data.orgId,
-    staleTime: 10 * 60 * 1000,
-  }));
+const roomsQuery = createQuery(() => ({
+  queryKey: ["rooms", data.orgId],
+  queryFn: () => api.listRooms(),
+  enabled: !!data.orgId,
+  staleTime: 10 * 60 * 1000,
+}));
 
-  const periods = $derived(periodsQuery.data ?? []);
-  const classes = $derived(classesQuery.data ?? []);
-  const subjects = $derived(subjectsQuery.data ?? []);
-  const users = $derived(usersQuery.data ?? []);
-  const rooms = $derived(roomsQuery.data ?? []);
+const periods = $derived(periodsQuery.data ?? []);
+const classes = $derived(classesQuery.data ?? []);
+const subjects = $derived(subjectsQuery.data ?? []);
+const users = $derived(usersQuery.data ?? []);
+const rooms = $derived(roomsQuery.data ?? []);
 
-  // Filter teachers exclusively
-  const teachers = $derived(
-    users.filter(
-      (u: any) =>
-        u.primary_role === "teacher" ||
-        u.role === "teacher" ||
-        (Array.isArray(u.roles) && u.roles.includes("teacher"))
-    )
-  );
+// Filter teachers exclusively
+const teachers = $derived(
+  users.filter(
+    (u: any) =>
+      u.primary_role === "teacher" ||
+      u.role === "teacher" ||
+      (Array.isArray(u.roles) && u.roles.includes("teacher")),
+  ),
+);
 
-  // Auto-select active period
-  $effect(() => {
-    if (periods.length > 0 && !activePeriodId) {
-      const active = periods.find((p: any) => p.status === "active" || p.is_active) || periods[0];
-      if (active) {
-        activePeriodId = String(active.id);
-      }
+// Auto-select active period
+$effect(() => {
+  if (periods.length > 0 && !activePeriodId) {
+    const active =
+      periods.find((p: any) => p.status === "active" || p.is_active) ||
+      periods[0];
+    if (active) {
+      activePeriodId = String(active.id);
     }
-  });
+  }
+});
 
-  // URL query param initializers & defaults
-  $effect(() => {
-    if (classes.length > 0 && !selectedClassId) {
-      const param = page.url.searchParams.get("classId") || page.url.searchParams.get("class");
-      if (param && classes.some((c: any) => String(c.id) === param)) {
-        selectedClassId = param;
-        viewMode = "class";
+// URL query param initializers & defaults
+$effect(() => {
+  if (classes.length > 0 && !selectedClassId) {
+    const param =
+      page.url.searchParams.get("classId") ||
+      page.url.searchParams.get("class");
+    if (param && classes.some((c: any) => String(c.id) === param)) {
+      selectedClassId = param;
+      viewMode = "class";
+    } else {
+      selectedClassId = String(classes[0].id);
+    }
+  }
+});
+
+$effect(() => {
+  if (teachers.length > 0 && !selectedTeacherId) {
+    const param =
+      page.url.searchParams.get("teacherId") ||
+      page.url.searchParams.get("teacher");
+    if (param && teachers.some((t: any) => String(t.id) === param)) {
+      selectedTeacherId = param;
+      viewMode = "teacher";
+    } else {
+      selectedTeacherId = String(teachers[0].id);
+    }
+  }
+});
+
+$effect(() => {
+  if (rooms.length > 0 && !selectedRoomId) {
+    selectedRoomId = String(rooms[0].id);
+  }
+});
+
+$effect(() => {
+  if (subjects.length > 0 && !selectedSubjectId) {
+    selectedSubjectId = String(subjects[0].id);
+  }
+});
+
+// Time Slots Query
+const timeSlotsQuery = createQuery(() => ({
+  queryKey: ["time-slots", data.orgId, activePeriodId],
+  queryFn: () => api.listTimeSlots(),
+  enabled: !!data.orgId && !!activePeriodId,
+  staleTime: 5 * 60 * 1000,
+}));
+
+const timeSlots = $derived(
+  (timeSlotsQuery.data ?? []).filter(
+    (slot: any) =>
+      !slot.period_id || String(slot.period_id) === String(activePeriodId),
+  ),
+);
+
+// Schedule Query for active period
+const periodScheduleQuery = createQuery(() => ({
+  queryKey: ["period-schedule", data.orgId, activePeriodId],
+  queryFn: () => api.listScheduledLessons(activePeriodId),
+  enabled: !!data.orgId && !!activePeriodId,
+  staleTime: 60 * 1000,
+}));
+
+const allLessons = $derived((periodScheduleQuery.data ?? []) as any[]);
+
+// Detect duplicate slots / collisions across loaded lessons
+const conflictLessonIds = $derived.by(() => {
+  const ids = new Set<string>();
+  const seenTeacherSlots = new Map<string, string>();
+  const seenClassSlots = new Map<string, string>();
+  const seenRoomSlots = new Map<string, string>();
+
+  for (const l of allLessons) {
+    const slotKey = `${l.day_of_week}_${l.time_slot_id}`;
+    if (l.teacher_id) {
+      const teacherKey = `${l.teacher_id}_${slotKey}`;
+      if (seenTeacherSlots.has(teacherKey)) {
+        ids.add(String(l.id));
+        ids.add(seenTeacherSlots.get(teacherKey)!);
       } else {
-        selectedClassId = String(classes[0].id);
+        seenTeacherSlots.set(teacherKey, String(l.id));
       }
     }
-  });
-
-  $effect(() => {
-    if (teachers.length > 0 && !selectedTeacherId) {
-      const param = page.url.searchParams.get("teacherId") || page.url.searchParams.get("teacher");
-      if (param && teachers.some((t: any) => String(t.id) === param)) {
-        selectedTeacherId = param;
-        viewMode = "teacher";
+    if (l.class_id) {
+      const classKey = `${l.class_id}_${slotKey}`;
+      if (seenClassSlots.has(classKey)) {
+        ids.add(String(l.id));
+        ids.add(seenClassSlots.get(classKey)!);
       } else {
-        selectedTeacherId = String(teachers[0].id);
+        seenClassSlots.set(classKey, String(l.id));
       }
     }
-  });
-
-  $effect(() => {
-    if (rooms.length > 0 && !selectedRoomId) {
-      selectedRoomId = String(rooms[0].id);
-    }
-  });
-
-  $effect(() => {
-    if (subjects.length > 0 && !selectedSubjectId) {
-      selectedSubjectId = String(subjects[0].id);
-    }
-  });
-
-  // Time Slots Query
-  const timeSlotsQuery = createQuery(() => ({
-    queryKey: ["time-slots", data.orgId, activePeriodId],
-    queryFn: () => api.listTimeSlots(),
-    enabled: !!data.orgId && !!activePeriodId,
-    staleTime: 5 * 60 * 1000,
-  }));
-
-  const timeSlots = $derived(
-    (timeSlotsQuery.data ?? []).filter(
-      (slot: any) => !slot.period_id || String(slot.period_id) === String(activePeriodId)
-    )
-  );
-
-  // Schedule Query for active period
-  const periodScheduleQuery = createQuery(() => ({
-    queryKey: ["period-schedule", data.orgId, activePeriodId],
-    queryFn: () => api.listScheduledLessons(activePeriodId),
-    enabled: !!data.orgId && !!activePeriodId,
-    staleTime: 60 * 1000,
-  }));
-
-  const allLessons = $derived((periodScheduleQuery.data ?? []) as any[]);
-
-  // Detect duplicate slots / collisions across loaded lessons
-  const conflictLessonIds = $derived.by(() => {
-    const ids = new Set<string>();
-    const seenTeacherSlots = new Map<string, string>();
-    const seenClassSlots = new Map<string, string>();
-    const seenRoomSlots = new Map<string, string>();
-
-    for (const l of allLessons) {
-      const slotKey = `${l.day_of_week}_${l.time_slot_id}`;
-      if (l.teacher_id) {
-        const teacherKey = `${l.teacher_id}_${slotKey}`;
-        if (seenTeacherSlots.has(teacherKey)) {
-          ids.add(String(l.id));
-          ids.add(seenTeacherSlots.get(teacherKey)!);
-        } else {
-          seenTeacherSlots.set(teacherKey, String(l.id));
-        }
-      }
-      if (l.class_id) {
-        const classKey = `${l.class_id}_${slotKey}`;
-        if (seenClassSlots.has(classKey)) {
-          ids.add(String(l.id));
-          ids.add(seenClassSlots.get(classKey)!);
-        } else {
-          seenClassSlots.set(classKey, String(l.id));
-        }
-      }
-      if (l.room_id) {
-        const roomKey = `${l.room_id}_${slotKey}`;
-        if (seenRoomSlots.has(roomKey)) {
-          ids.add(String(l.id));
-          ids.add(seenRoomSlots.get(roomKey)!);
-        } else {
-          seenRoomSlots.set(roomKey, String(l.id));
-        }
+    if (l.room_id) {
+      const roomKey = `${l.room_id}_${slotKey}`;
+      if (seenRoomSlots.has(roomKey)) {
+        ids.add(String(l.id));
+        ids.add(seenRoomSlots.get(roomKey)!);
+      } else {
+        seenRoomSlots.set(roomKey, String(l.id));
       }
     }
-    return ids;
-  });
+  }
+  return ids;
+});
 
-  // Filter lessons based on active view mode and selections
-  const filteredLessons = $derived.by(() => {
-    let list = allLessons;
-    if (viewMode === "class") {
-      list = allLessons.filter((l) => String(l.class_id) === selectedClassId);
-    } else if (viewMode === "teacher") {
-      list = allLessons.filter((l) => String(l.teacher_id) === selectedTeacherId);
-    } else if (viewMode === "room") {
-      list = allLessons.filter((l) => String(l.room_id) === selectedRoomId);
-    } else if (viewMode === "subject") {
-      list = allLessons.filter((l) => String(l.subject_id) === selectedSubjectId);
-    }
+// Filter lessons based on active view mode and selections
+const filteredLessons = $derived.by(() => {
+  let list = allLessons;
+  if (viewMode === "class") {
+    list = allLessons.filter((l) => String(l.class_id) === selectedClassId);
+  } else if (viewMode === "teacher") {
+    list = allLessons.filter((l) => String(l.teacher_id) === selectedTeacherId);
+  } else if (viewMode === "room") {
+    list = allLessons.filter((l) => String(l.room_id) === selectedRoomId);
+  } else if (viewMode === "subject") {
+    list = allLessons.filter((l) => String(l.subject_id) === selectedSubjectId);
+  }
 
-    // Text search filter
-    const query = searchTerm.trim().toLowerCase();
-    if (query) {
-      list = list.filter((l) => {
-        const sub = getSubjectName(l.subject_id).toLowerCase();
-        const teach = getTeacherName(l.teacher_id).toLowerCase();
-        const cls = getClassName(l.class_id).toLowerCase();
-        const rm = getRoomName(l.room_id).toLowerCase();
-        return sub.includes(query) || teach.includes(query) || cls.includes(query) || rm.includes(query);
-      });
-    }
+  // Text search filter
+  const query = searchTerm.trim().toLowerCase();
+  if (query) {
+    list = list.filter((l) => {
+      const sub = getSubjectName(l.subject_id).toLowerCase();
+      const teach = getTeacherName(l.teacher_id).toLowerCase();
+      const cls = getClassName(l.class_id).toLowerCase();
+      const rm = getRoomName(l.room_id).toLowerCase();
+      return (
+        sub.includes(query) ||
+        teach.includes(query) ||
+        cls.includes(query) ||
+        rm.includes(query)
+      );
+    });
+  }
 
-    return list;
-  });
+  return list;
+});
 
-  // Calculate Weekdays from configured slots or lessons
-  const weekdays = $derived.by(() => {
-    const configuredDays = new Set<number>();
+// Calculate Weekdays from configured slots or lessons
+const weekdays = $derived.by(() => {
+  const configuredDays = new Set<number>();
 
-    for (const slot of timeSlots) {
-      if (!slot.applicable_days) continue;
-      for (const val of String(slot.applicable_days).split(",")) {
-        const d = Number(val.trim());
-        if (Number.isInteger(d) && d >= 1 && d <= 7) configuredDays.add(d);
-      }
-    }
-
-    for (const l of allLessons) {
-      const d = Number(l.day_of_week);
+  for (const slot of timeSlots) {
+    if (!slot.applicable_days) continue;
+    for (const val of String(slot.applicable_days).split(",")) {
+      const d = Number(val.trim());
       if (Number.isInteger(d) && d >= 1 && d <= 7) configuredDays.add(d);
     }
+  }
 
-    const days = configuredDays.size > 0 ? [...configuredDays] : [1, 2, 3, 4, 5];
-    const weekOrder = [7, 1, 2, 3, 4, 5, 6];
-    return days.sort((a, b) => weekOrder.indexOf(a) - weekOrder.indexOf(b)).map((day) => ({
+  for (const l of allLessons) {
+    const d = Number(l.day_of_week);
+    if (Number.isInteger(d) && d >= 1 && d <= 7) configuredDays.add(d);
+  }
+
+  const days = configuredDays.size > 0 ? [...configuredDays] : [1, 2, 3, 4, 5];
+  const weekOrder = [7, 1, 2, 3, 4, 5, 6];
+  return days
+    .sort((a, b) => weekOrder.indexOf(a) - weekOrder.indexOf(b))
+    .map((day) => ({
       value: day,
       label: new Intl.DateTimeFormat(getLocale(), { weekday: "short" }).format(
-        new Date(Date.UTC(2023, 0, day))
+        new Date(Date.UTC(2023, 0, day)),
       ),
       isToday: false,
     }));
-  });
+});
 
-  // Draft solution lessons from solver job
-  const draftLessons = $derived.by(() => {
-    if (!previewDraft || !activeSolveJob?.best_solution) return [];
-    try {
-      const sol = typeof activeSolveJob.best_solution === "string"
+// Draft solution lessons from solver job
+const draftLessons = $derived.by(() => {
+  if (!previewDraft || !activeSolveJob?.best_solution) return [];
+  try {
+    const sol =
+      typeof activeSolveJob.best_solution === "string"
         ? JSON.parse(activeSolveJob.best_solution)
         : activeSolveJob.best_solution;
-      const assignments = sol.assignments || [];
-      return assignments.map((a: any) => ({
-        ...a,
-        isDraft: true,
-      }));
-    } catch {
-      return [];
-    }
+    const assignments = sol.assignments || [];
+    return assignments.map((a: any) => ({
+      ...a,
+      isDraft: true,
+    }));
+  } catch {
+    return [];
+  }
+});
+
+// Name Resolution Helpers
+function getSubjectName(subjectId: string): string {
+  const sub = subjects.find((s) => String(s.id) === String(subjectId));
+  return sub
+    ? isArabic
+      ? sub.name_ar || sub.name
+      : sub.name || sub.name_ar
+    : isArabic
+      ? "مادة غير معروفة"
+      : "Subject";
+}
+
+function getTeacherName(teacherId: string): string {
+  const teach = teachers.find((t) => String(t.id) === String(teacherId));
+  return teach
+    ? isArabic
+      ? teach.name_ar || teach.full_name
+      : teach.full_name || teach.name_ar
+    : "";
+}
+
+function getClassName(clsId: string): string {
+  const cls = classes.find((c) => String(c.id) === String(clsId));
+  return cls
+    ? isArabic
+      ? cls.name_ar || cls.name
+      : cls.name || cls.name_ar
+    : "";
+}
+
+function getRoomName(roomId?: string): string {
+  if (!roomId) return "";
+  const rm = rooms.find((r) => String(r.id) === String(roomId));
+  return rm ? (isArabic ? rm.name_ar || rm.name : rm.name || rm.name_ar) : "";
+}
+
+function getSubjectColor(subjectId: string): string {
+  const sub = subjects.find((s) => String(s.id) === String(subjectId)) as any;
+  if (sub?.color) return sub.color;
+  return "var(--primary)";
+}
+
+// Workload summary for Teacher view
+const teacherWorkload = $derived.by(() => {
+  if (viewMode !== "teacher" || !selectedTeacherId) return null;
+  const teacherLessons = allLessons.filter(
+    (l) => String(l.teacher_id) === selectedTeacherId,
+  );
+  const nonBreakSlotsCount = timeSlots.filter((s) => !s.is_break).length;
+  const totalWeeklySlots = nonBreakSlotsCount * weekdays.length;
+  const teachingCount = teacherLessons.length;
+  const freeCount = Math.max(0, totalWeeklySlots - teachingCount);
+  const assignedRooms = new Set(
+    teacherLessons.map((l) => l.room_id).filter(Boolean),
+  ).size;
+  return { teachingCount, freeCount, assignedRooms, totalWeeklySlots };
+});
+
+// Occupancy summary for Room view
+const roomOccupancy = $derived.by(() => {
+  if (viewMode !== "room" || !selectedRoomId) return null;
+  const roomLessons = allLessons.filter(
+    (l) => String(l.room_id) === selectedRoomId,
+  );
+  const nonBreakSlotsCount = timeSlots.filter((s) => !s.is_break).length;
+  const totalWeeklySlots = nonBreakSlotsCount * weekdays.length;
+  const occupancyRate =
+    totalWeeklySlots > 0
+      ? Math.round((roomLessons.length / totalWeeklySlots) * 100)
+      : 0;
+  const rm = rooms.find((r) => String(r.id) === selectedRoomId);
+  return {
+    occupiedCount: roomLessons.length,
+    totalSlots: totalWeeklySlots,
+    occupancyRate,
+    capacity: rm?.capacity || null,
+  };
+});
+
+// Action Handlers
+function refetchSchedule() {
+  queryClient.invalidateQueries({
+    queryKey: ["period-schedule", data.orgId, activePeriodId],
   });
-
-  // Name Resolution Helpers
-  function getSubjectName(subjectId: string): string {
-    const sub = subjects.find((s) => String(s.id) === String(subjectId));
-    return sub ? (isArabic ? sub.name_ar || sub.name : sub.name || sub.name_ar) : (isArabic ? "مادة غير معروفة" : "Subject");
-  }
-
-  function getTeacherName(teacherId: string): string {
-    const teach = teachers.find((t) => String(t.id) === String(teacherId));
-    return teach ? (isArabic ? teach.name_ar || teach.full_name : teach.full_name || teach.name_ar) : "";
-  }
-
-  function getClassName(clsId: string): string {
-    const cls = classes.find((c) => String(c.id) === String(clsId));
-    return cls ? (isArabic ? cls.name_ar || cls.name : cls.name || cls.name_ar) : "";
-  }
-
-  function getRoomName(roomId?: string): string {
-    if (!roomId) return "";
-    const rm = rooms.find((r) => String(r.id) === String(roomId));
-    return rm ? (isArabic ? rm.name_ar || rm.name : rm.name || rm.name_ar) : "";
-  }
-
-  function getSubjectColor(subjectId: string): string {
-    const sub = subjects.find((s) => String(s.id) === String(subjectId)) as any;
-    if (sub?.color) return sub.color;
-    return "var(--primary)";
-  }
-
-  // Workload summary for Teacher view
-  const teacherWorkload = $derived.by(() => {
-    if (viewMode !== "teacher" || !selectedTeacherId) return null;
-    const teacherLessons = allLessons.filter((l) => String(l.teacher_id) === selectedTeacherId);
-    const nonBreakSlotsCount = timeSlots.filter((s) => !s.is_break).length;
-    const totalWeeklySlots = nonBreakSlotsCount * weekdays.length;
-    const teachingCount = teacherLessons.length;
-    const freeCount = Math.max(0, totalWeeklySlots - teachingCount);
-    const assignedRooms = new Set(teacherLessons.map((l) => l.room_id).filter(Boolean)).size;
-    return { teachingCount, freeCount, assignedRooms, totalWeeklySlots };
+  queryClient.invalidateQueries({
+    queryKey: ["time-slots", data.orgId, activePeriodId],
   });
+}
 
-  // Occupancy summary for Room view
-  const roomOccupancy = $derived.by(() => {
-    if (viewMode !== "room" || !selectedRoomId) return null;
-    const roomLessons = allLessons.filter((l) => String(l.room_id) === selectedRoomId);
-    const nonBreakSlotsCount = timeSlots.filter((s) => !s.is_break).length;
-    const totalWeeklySlots = nonBreakSlotsCount * weekdays.length;
-    const occupancyRate = totalWeeklySlots > 0 ? Math.round((roomLessons.length / totalWeeklySlots) * 100) : 0;
-    const rm = rooms.find((r) => String(r.id) === selectedRoomId);
-    return { occupiedCount: roomLessons.length, totalSlots: totalWeeklySlots, occupancyRate, capacity: rm?.capacity || null };
-  });
+function openNewLessonSheet(day?: number, slotId?: string) {
+  targetLesson = null;
+  activeCellDay = day || 1;
+  activeCellSlotId =
+    slotId || (timeSlots[0]?.id ? String(timeSlots[0].id) : "");
+  isLessonSheetOpen = true;
+}
 
-  // Action Handlers
-  function refetchSchedule() {
-    queryClient.invalidateQueries({ queryKey: ["period-schedule", data.orgId, activePeriodId] });
-    queryClient.invalidateQueries({ queryKey: ["time-slots", data.orgId, activePeriodId] });
-  }
+function openEditLessonSheet(lesson: any) {
+  targetLesson = lesson;
+  activeCellDay = Number(lesson?.day_of_week) || 1;
+  activeCellSlotId = String(lesson?.time_slot_id || "");
+  isLessonSheetOpen = true;
+}
 
-  function openNewLessonSheet(day?: number, slotId?: string) {
-    targetLesson = null;
-    activeCellDay = day || 1;
-    activeCellSlotId = slotId || (timeSlots[0]?.id ? String(timeSlots[0].id) : "");
-    isLessonSheetOpen = true;
-  }
+async function handleMoveLesson(
+  lesson: any,
+  targetDay: number,
+  targetSlotId: string,
+) {
+  try {
+    const conflicts = await api.scheduling.checkConflicts(
+      activePeriodId,
+      lesson.class_id,
+      lesson.teacher_id,
+      targetSlotId,
+      targetDay,
+      lesson.room_id || null,
+    );
 
-  function openEditLessonSheet(lesson: any) {
-    targetLesson = lesson;
-    activeCellDay = Number(lesson?.day_of_week) || 1;
-    activeCellSlotId = String(lesson?.time_slot_id || "");
-    isLessonSheetOpen = true;
-  }
-
-  async function handleMoveLesson(lesson: any, targetDay: number, targetSlotId: string) {
-    try {
-      const conflicts = await api.scheduling.checkConflicts(
-        activePeriodId,
-        lesson.class_id,
-        lesson.teacher_id,
-        targetSlotId,
-        targetDay,
-        lesson.room_id || null
-      );
-
-      const actualConflicts = conflicts.filter((c) => c.lesson_id !== lesson.id);
-      if (actualConflicts.length > 0) {
-        toast.error(isArabic ? "تعذر نقل الحصة بسبب تعارض في الموعد" : "Schedule conflict detected", {
+    const actualConflicts = conflicts.filter((c) => c.lesson_id !== lesson.id);
+    if (actualConflicts.length > 0) {
+      toast.error(
+        isArabic
+          ? "تعذر نقل الحصة بسبب تعارض في الموعد"
+          : "Schedule conflict detected",
+        {
           description: actualConflicts.map((c) => c.message).join("\n"),
-        });
-        return;
-      }
-
-      await api.scheduling.updateLesson(lesson.id, {
-        day_of_week: targetDay,
-        time_slot_id: targetSlotId,
-      } as any);
-
-      toast.success(isArabic ? "تم نقل الحصة بنجاح" : "Lesson moved successfully");
-      refetchSchedule();
-    } catch (err) {
-      toast.error(extractErrorMessage(err));
+        },
+      );
+      return;
     }
-  }
 
-  async function handleDeleteLesson(lessonId: string) {
-    try {
-      await api.scheduling.deleteLesson(lessonId);
-      toast.success(isArabic ? "تم حذف الحصة من الجدول" : "Lesson removed from schedule");
-      refetchSchedule();
-    } catch (err) {
-      toast.error(extractErrorMessage(err));
-    }
-  }
+    await api.scheduling.updateLesson(lesson.id, {
+      day_of_week: targetDay,
+      time_slot_id: targetSlotId,
+    } as any);
 
-  const isLoading = $derived(
-    periodsQuery.isLoading ||
+    toast.success(
+      isArabic ? "تم نقل الحصة بنجاح" : "Lesson moved successfully",
+    );
+    refetchSchedule();
+  } catch (err) {
+    toast.error(extractErrorMessage(err));
+  }
+}
+
+async function handleDeleteLesson(lessonId: string) {
+  try {
+    await api.scheduling.deleteLesson(lessonId);
+    toast.success(
+      isArabic ? "تم حذف الحصة من الجدول" : "Lesson removed from schedule",
+    );
+    refetchSchedule();
+  } catch (err) {
+    toast.error(extractErrorMessage(err));
+  }
+}
+
+const isLoading = $derived(
+  periodsQuery.isLoading ||
     classesQuery.isLoading ||
     subjectsQuery.isLoading ||
     usersQuery.isLoading ||
     roomsQuery.isLoading ||
     timeSlotsQuery.isLoading ||
-    periodScheduleQuery.isLoading
-  );
+    periodScheduleQuery.isLoading,
+);
 
-  const error = $derived(
-    periodsQuery.error ||
+const error = $derived(
+  periodsQuery.error ||
     classesQuery.error ||
     timeSlotsQuery.error ||
-    periodScheduleQuery.error
-  );
+    periodScheduleQuery.error,
+);
 </script>
 
 <div class="h-full w-full flex flex-col items-stretch overflow-hidden">

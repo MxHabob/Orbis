@@ -13,7 +13,7 @@
  * presents the signed-in user's digital ID card.
  */
 
-import React from 'react';
+import React from "react";
 import {
   Pressable,
   StyleSheet,
@@ -21,14 +21,14 @@ import {
   View,
   type StyleProp,
   type ViewStyle,
-} from 'react-native';
+} from "react-native";
 
-import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Fonts, Radii, Spacing, Typography } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
-import { useI18n } from '@/lib/i18n';
+import { Fonts, Radii, Spacing, Typography } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
+import { useI18n } from "@/lib/i18n";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -70,22 +70,15 @@ type FloatingControlProps = {
   style?: StyleProp<ViewStyle>;
 };
 
-const ROUTE_APPS = 'index';
-const ROUTE_ANALYTICS = 'behavior';
+const ROUTE_APPS = "index";
+const ROUTE_ANALYTICS = "behavior";
 
-
-export function FloatingTabBar({
-  state,
-  navigation,
-}: FloatingTabBarProps) {
+export function FloatingTabBar({ state, navigation }: FloatingTabBarProps) {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const { t } = useI18n();
 
-
-
   const bottom = Math.max(insets.bottom, Spacing.three) + Spacing.one;
-
 
   const findRouteIndex = (name: string) =>
     state.routes.findIndex((route) => route.name === name);
@@ -103,7 +96,7 @@ export function FloatingTabBar({
 
     const route = state.routes[routeIndex];
     const event = navigation.emit({
-      type: 'tabPress',
+      type: "tabPress",
       target: route.key,
       canPreventDefault: true,
     });
@@ -113,11 +106,10 @@ export function FloatingTabBar({
     }
   };
 
-
   const isAppsFocused = isRouteFocused(ROUTE_APPS);
   const isAnalyticsFocused = isRouteFocused(ROUTE_ANALYTICS);
 
-  const digitalIdLabel = t('tab_digital_id');
+  const digitalIdLabel = t("tab_digital_id");
 
   // Shared floating surface — identical for every control.
   const surface = theme.cardElevated;
@@ -130,22 +122,31 @@ export function FloatingTabBar({
       <View style={styles.appsWrapper}>
         <View
           pointerEvents="none"
-          style={[styles.newBadge, { backgroundColor: theme.backgroundSelected }]}
+          style={[
+            styles.newBadge,
+            { backgroundColor: theme.backgroundSelected },
+          ]}
         >
           <Text
-            style={[styles.newBadgeText, { color: theme.foreground, fontFamily: Fonts.sans }]}
+            style={[
+              styles.newBadgeText,
+              { color: theme.foreground, fontFamily: Fonts.sans },
+            ]}
           >
-            {t('badge_new')}
+            {t("badge_new")}
           </Text>
         </View>
 
         <FloatingControl
           accessibilityLabel="Apps"
           onPress={() => navigateToRoute(ROUTE_APPS)}
-          style={[styles.iconButton, { backgroundColor: surface, borderColor: border }]}
+          style={[
+            styles.iconButton,
+            { backgroundColor: surface, borderColor: border },
+          ]}
         >
           <Ionicons
-            name={isAppsFocused ? 'grid' : 'grid-outline'}
+            name={isAppsFocused ? "grid" : "grid-outline"}
             size={21}
             color={iconColor}
           />
@@ -154,19 +155,21 @@ export function FloatingTabBar({
 
       {/* CENTER — Digital ID */}
       <FloatingControl
-        accessibilityLabel='Digital ID'
+        accessibilityLabel="Digital ID"
         onPress={() => {}}
-        style={[styles.digitalIdButton, { backgroundColor: surface, borderColor: border }]}
+        style={[
+          styles.digitalIdButton,
+          { backgroundColor: surface, borderColor: border },
+        ]}
       >
-        <Ionicons
-          name={'card-outline'}
-          size={21}
-          color={iconColor}
-        />
+        <Ionicons name={"card-outline"} size={21} color={iconColor} />
 
         <Text
           numberOfLines={1}
-          style={[styles.digitalIdText, { color: theme.foreground, fontFamily: Fonts.sans }]}
+          style={[
+            styles.digitalIdText,
+            { color: theme.foreground, fontFamily: Fonts.sans },
+          ]}
         >
           {digitalIdLabel}
         </Text>
@@ -176,10 +179,13 @@ export function FloatingTabBar({
       <FloatingControl
         accessibilityLabel="Analytics"
         onPress={() => navigateToRoute(ROUTE_ANALYTICS)}
-        style={[styles.iconButton, { backgroundColor: surface, borderColor: border }]}
+        style={[
+          styles.iconButton,
+          { backgroundColor: surface, borderColor: border },
+        ]}
       >
         <Ionicons
-          name={isAnalyticsFocused ? 'bar-chart' : 'bar-chart-outline'}
+          name={isAnalyticsFocused ? "bar-chart" : "bar-chart-outline"}
           size={21}
           color={iconColor}
         />
@@ -203,7 +209,11 @@ function FloatingControl({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
-      style={({ pressed }) => [styles.control, style, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.control,
+        style,
+        pressed && styles.pressed,
+      ]}
     >
       {children}
     </Pressable>
@@ -220,24 +230,24 @@ const styles = StyleSheet.create({
    * No background, no border, no shadow.
    */
   navigation: {
-    position: 'absolute',
+    position: "absolute",
     left: Spacing.four,
     right: Spacing.four,
     minHeight: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     gap: Spacing.two,
     zIndex: 100,
   },
 
   /** Shared floating surface. */
   control: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: StyleSheet.hairlineWidth,
     elevation: 4,
-    shadowColor: '#000000',
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07,
     shadowRadius: 6,
@@ -256,22 +266,22 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     flexShrink: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
   },
 
   /** NEW badge — small and visually subordinate to the button. */
   newBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: -16,
     left: -2,
     minWidth: 58,
     height: 30,
     paddingHorizontal: Spacing.two,
     borderRadius: Radii.full,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     zIndex: 10,
   },
 
@@ -279,7 +289,7 @@ const styles = StyleSheet.create({
     ...Typography.small,
     fontSize: 12,
     lineHeight: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     letterSpacing: 0.1,
   },
 
@@ -291,9 +301,9 @@ const styles = StyleSheet.create({
     maxWidth: 160,
     paddingHorizontal: Spacing.three,
     borderRadius: Radii.full,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: Spacing.one,
   },
 
@@ -301,7 +311,7 @@ const styles = StyleSheet.create({
     ...Typography.body,
     fontSize: 14,
     lineHeight: 18,
-    fontWeight: '500',
+    fontWeight: "500",
     flexShrink: 1,
   },
 

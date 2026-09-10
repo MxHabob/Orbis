@@ -36,4 +36,3 @@ export function createOverrideDetailQuery(requestId: () => string) {
     staleTime: 30 * 1000,
   }));
 }
-

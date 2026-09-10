@@ -8,7 +8,7 @@ import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
 import { confirmStore } from "$lib/stores";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import type { User } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
@@ -32,14 +32,19 @@ const orgId = $derived(page.params.orgId);
 const userId = $derived(page.params.userId);
 
 // Shared user state
-const userQuery = createUserQuery(() => String(orgId || ""), () => String(userId || ""));
+const userQuery = createUserQuery(
+  () => String(orgId || ""),
+  () => String(userId || ""),
+);
 const queryClient = useQueryClient();
 const user = $derived((userQuery.data as any) ?? null);
 const isLoading = $derived(userQuery.isLoading);
 const fullName = $derived(user?.full_name ?? "");
 const email = $derived(user?.email ?? "");
 const role = $derived(user?.primary_role ?? user?.role ?? "teacher");
-const isActiveState = $derived(user?.is_active !== undefined ? Boolean(user.is_active) : true);
+const isActiveState = $derived(
+  user?.is_active !== undefined ? Boolean(user.is_active) : true,
+);
 const avatarUrl = $derived(user?.avatar_url || user?.avatar || null);
 
 function handleAvatarUpload(url: string) {

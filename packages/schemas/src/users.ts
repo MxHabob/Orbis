@@ -13,12 +13,24 @@ export const userCreateInputSchema = z.object({
   primary_role: z.enum(["admin", "teacher", "parent", "student", "staff"]),
   sex: z.enum(["male", "female"]).nullable().optional(),
   phone: z.preprocess(
-    (value) => (typeof value === "string" && value.trim() === "" ? null : value),
-    z.string().trim().regex(/^\+?[0-9]{7,15}$/).nullable().optional(),
+    (value) =>
+      typeof value === "string" && value.trim() === "" ? null : value,
+    z
+      .string()
+      .trim()
+      .regex(/^\+?[0-9]{7,15}$/)
+      .nullable()
+      .optional(),
   ),
   national_id: z.preprocess(
-    (value) => (typeof value === "string" && value.trim() === "" ? null : value),
-    z.string().trim().regex(/^[0-9]{7,15}$/).nullable().optional(),
+    (value) =>
+      typeof value === "string" && value.trim() === "" ? null : value,
+    z
+      .string()
+      .trim()
+      .regex(/^[0-9]{7,15}$/)
+      .nullable()
+      .optional(),
   ),
   date_of_birth: optionalText,
   address: optionalText,

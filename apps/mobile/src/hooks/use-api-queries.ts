@@ -7,8 +7,8 @@
  * Guaranteed to never return `undefined` to satisfy TanStack Query v5 contracts.
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/lib/api/client';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api/client";
 import type {
   OrgDto,
   DashboardCountsDto,
@@ -24,8 +24,8 @@ import type {
   OrganizationSettingsDto,
   MarkAttendanceRequest,
   RecordGradeRequest,
-} from '@/lib/api/types';
-import { queryKeys } from '@/lib/api/query-keys';
+} from "@/lib/api/types";
+import { queryKeys } from "@/lib/api/query-keys";
 
 const STALE_TIME = 1000 * 60 * 5; // 5 minutes cache
 const GC_TIME = 1000 * 60 * 15; // 15 minutes garbage collection
@@ -104,7 +104,7 @@ export function useClassesQuery() {
  */
 export function useClassQuery(classId?: string) {
   return useQuery({
-    queryKey: queryKeys.academic.class(classId || ''),
+    queryKey: queryKeys.academic.class(classId || ""),
     queryFn: async (): Promise<ClassDto | null> => {
       if (!classId) return null;
       try {
@@ -123,7 +123,10 @@ export function useClassQuery(classId?: string) {
 /**
  * Fetch Student Enrollments
  */
-export function useEnrollmentsQuery(filter?: { classId?: string; studentId?: string }) {
+export function useEnrollmentsQuery(filter?: {
+  classId?: string;
+  studentId?: string;
+}) {
   return useQuery({
     queryKey: queryKeys.student.enrollments(filter),
     queryFn: async (): Promise<EnrollmentDto[]> => {
@@ -142,7 +145,10 @@ export function useEnrollmentsQuery(filter?: { classId?: string; studentId?: str
 /**
  * Fetch Grades & Academic Assessments
  */
-export function useGradesQuery(filter?: { studentId?: string; classSubjectId?: string }) {
+export function useGradesQuery(filter?: {
+  studentId?: string;
+  classSubjectId?: string;
+}) {
   return useQuery({
     queryKey: queryKeys.assessment.grades(filter),
     queryFn: async (): Promise<GradeDto[]> => {
@@ -161,9 +167,16 @@ export function useGradesQuery(filter?: { studentId?: string; classSubjectId?: s
 /**
  * Fetch Attendance Logs
  */
-export function useAttendanceQuery(filter?: { classId?: string; studentId?: string; date?: string }) {
+export function useAttendanceQuery(filter?: {
+  classId?: string;
+  studentId?: string;
+  date?: string;
+}) {
   return useQuery({
-    queryKey: queryKeys.assessment.attendance(filter?.classId || '', filter?.date || ''),
+    queryKey: queryKeys.assessment.attendance(
+      filter?.classId || "",
+      filter?.date || "",
+    ),
     queryFn: async (): Promise<AttendanceDto[]> => {
       try {
         const res = await api.listAttendance(filter);
@@ -222,7 +235,7 @@ export function useFeesQuery(studentId?: string) {
  */
 export function useGuardiansQuery(studentId?: string) {
   return useQuery({
-    queryKey: queryKeys.student.guardians(studentId || ''),
+    queryKey: queryKeys.student.guardians(studentId || ""),
     queryFn: async (): Promise<GuardianDto[]> => {
       if (!studentId) return [];
       try {
@@ -243,7 +256,7 @@ export function useGuardiansQuery(studentId?: string) {
  */
 export function useUserQuery(userId?: string) {
   return useQuery({
-    queryKey: queryKeys.auth.user(userId || ''),
+    queryKey: queryKeys.auth.user(userId || ""),
     queryFn: async (): Promise<UserDto | null> => {
       if (!userId) return null;
       try {

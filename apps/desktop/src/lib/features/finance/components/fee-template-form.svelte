@@ -107,7 +107,9 @@ const categoryLabels = $derived(
     {} as Record<string, string>,
   ),
 );
-const selectedCategoryLabel = $derived(categoryLabels[form.values.category] ?? form.values.category);
+const selectedCategoryLabel = $derived(
+  categoryLabels[form.values.category] ?? form.values.category,
+);
 
 const frequencies = $derived([
   {
@@ -235,28 +237,23 @@ async function handleSubmit() {
       ? JSON.stringify({ levels: selectedLevels })
       : null;
   if (!applyToAllGrades && selectedLevels.length === 0) {
-    toast.error(
-      m.common_ft_error_levels_required(),
-    );
+    toast.error(m.common_ft_error_levels_required());
     return;
   }
   const submitted = await form.submit(async (payload) => {
     const request = { ...payload, applicable_levels: applicableLevels };
     if (template) {
       await api.finance.updateFeeTemplate(template.id, request);
-      toast.success(
-        m.common_ft_update_success(),
-      );
+      toast.success(m.common_ft_update_success());
     } else {
       await api.createFeeTemplate(request);
-      toast.success(
-        m.common_ft_create_success(),
-      );
+      toast.success(m.common_ft_create_success());
     }
   });
   if (submitted) onSuccess();
   else if (form.formError) toast.error(form.formError);
-  else if (Object.keys(form.errors).length > 0) toast.error(m.common_ft_error_name_required());
+  else if (Object.keys(form.errors).length > 0)
+    toast.error(m.common_ft_error_name_required());
 }
 </script>
 

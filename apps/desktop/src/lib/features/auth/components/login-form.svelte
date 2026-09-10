@@ -17,27 +17,27 @@ import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
 let showPassword = $state(false);
 const form = new FormController({
-	initialValues: { identifier: "", password: "" },
-	schema: loginInputSchema,
+  initialValues: { identifier: "", password: "" },
+  schema: loginInputSchema,
 });
 
 function fieldError(field: string): string | undefined {
-	return form.errors[field]?.[0];
+  return form.errors[field]?.[0];
 }
 
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
-	const submitted = await form.submit(async (payload) => {
-		await authStore.login(payload.identifier, payload.password);
+  const submitted = await form.submit(async (payload) => {
+    await authStore.login(payload.identifier, payload.password);
     const targetOrgId = authStore.orgId || "default";
     await goto(localizeHref(`/${targetOrgId}`), {
       invalidateAll: true,
       replaceState: true,
     });
-	});
-	if (!submitted && !form.formError && Object.keys(form.errors).length === 0) {
-		form.formError = m.auth_login_failed();
-	}
+  });
+  if (!submitted && !form.formError && Object.keys(form.errors).length === 0) {
+    form.formError = m.auth_login_failed();
+  }
 }
 
 function handleForgotPassword() {

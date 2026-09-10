@@ -9,8 +9,12 @@ import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
 import SettingsRow from "$lib/shared/components/settings-row.svelte";
 
 let {
-  title = m.settings_appearance_language ? m.settings_appearance_language() : "Language & Region",
-  description = m.common_account_preferences_lang_desc ? m.common_account_preferences_lang_desc() : "Choose your preferred language for the interface.",
+  title = m.settings_appearance_language
+    ? m.settings_appearance_language()
+    : "Language & Region",
+  description = m.common_account_preferences_lang_desc
+    ? m.common_account_preferences_lang_desc()
+    : "Choose your preferred language for the interface.",
   currentLocale = $bindable("ar"),
   last = false,
   onchange,

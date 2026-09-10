@@ -3,7 +3,7 @@ import { BarChart, Users } from "@lucide/svelte";
 import * as m from "$lib/paraglide/messages";
 import { Skeleton } from "@orbis/ui";
 import { onMount } from "svelte";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { getLocale } from "$lib/paraglide/runtime";
 import DragIndicator from "../components/drag-indicator.svelte";
 

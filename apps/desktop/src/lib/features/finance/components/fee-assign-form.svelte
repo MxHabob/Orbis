@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api, } from "$lib/api";
+import { api } from "$lib/api";
 import { feeAssignmentInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { FormField } from "@orbis/ui";
@@ -25,12 +25,12 @@ let isLoadingDropdowns = $state(false);
 
 // Form state
 const form = new FormController({
-	initialValues: {
-		enrollment_id: "",
-		fee_template_id: "",
-		amount_override: null as number | null,
-	},
-	schema: feeAssignmentInputSchema,
+  initialValues: {
+    enrollment_id: "",
+    fee_template_id: "",
+    amount_override: null as number | null,
+  },
+  schema: feeAssignmentInputSchema,
 });
 
 let description = $state("");
@@ -42,15 +42,15 @@ async function loadDropdownData() {
   try {
     const [studentList, templateList] = await Promise.all([
       api.listEnrollments(),
-	api.listFeeTemplates(),
+      api.listFeeTemplates(),
     ]);
     students = studentList;
     templates = templateList;
 
     if (studentList.length > 0)
-	form.values.enrollment_id = String(studentList[0].id);
+      form.values.enrollment_id = String(studentList[0].id);
     if (templateList.length > 0)
-	form.values.fee_template_id = String(templateList[0].id);
+      form.values.fee_template_id = String(templateList[0].id);
   } catch (e) {
     console.error("Error loading dropdown data for fee-assign-form:", e);
   } finally {
@@ -67,12 +67,12 @@ $effect(() => {
 
 // Auto-fill template amount when template changes
 $effect(() => {
-	if (form.values.fee_template_id && templates.length > 0) {
+  if (form.values.fee_template_id && templates.length > 0) {
     const tpl = templates.find(
-	(t) => String(t.id) === String(form.values.fee_template_id),
+      (t) => String(t.id) === String(form.values.fee_template_id),
     );
     if (tpl) {
-	form.values.amount_override =
+      form.values.amount_override =
         tpl.default_amount !== undefined ? Number(tpl.default_amount) : null;
     }
   }
@@ -80,16 +80,17 @@ $effect(() => {
 
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
-	const submitted = await form.submit(async (payload) => {
-		await api.finance.assign(payload);
+  const submitted = await form.submit(async (payload) => {
+    await api.finance.assign(payload);
     toast.success(m.common_fee_toast_success());
-		form.reset();
+    form.reset();
     description = "";
     dueDate = new Date().toISOString().split("T")[0];
-	});
-	if (submitted) onSuccess();
-	else if (form.formError) toast.error(form.formError);
-	else if (Object.keys(form.errors).length > 0) toast.error(m.common_fee_toast_error_amount());
+  });
+  if (submitted) onSuccess();
+  else if (form.formError) toast.error(form.formError);
+  else if (Object.keys(form.errors).length > 0)
+    toast.error(m.common_fee_toast_error_amount());
 }
 </script>
 

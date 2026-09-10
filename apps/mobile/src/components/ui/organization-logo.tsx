@@ -6,11 +6,17 @@
  * dynamic image URLs, and polished glow / container styles.
  */
 
-import React, { useState } from 'react';
-import { View, Image, StyleSheet, type ViewStyle, type ImageSourcePropType } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
-import { useTheme } from '@/hooks/use-theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import React, { useState } from "react";
+import {
+  View,
+  Image,
+  StyleSheet,
+  type ViewStyle,
+  type ImageSourcePropType,
+} from "react-native";
+import Svg, { Path } from "react-native-svg";
+import { useTheme } from "@/hooks/use-theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 interface OrganizationLogoProps {
   size?: number;
@@ -30,28 +36,35 @@ export const OrganizationLogo = React.memo<OrganizationLogoProps>(
     uri,
     imageSource,
     color,
-    dotColor = '#A821D9',
+    dotColor = "#A821D9",
     withContainer = false,
     containerStyle,
   }) => {
     const theme = useTheme();
     const colorScheme = useColorScheme();
-    const isDark = colorScheme === 'dark';
+    const isDark = colorScheme === "dark";
     const [imageError, setImageError] = useState(false);
 
     // Primary arc color: in dark theme, high-contrast text/white or custom brand color
-    const primaryColor = color || (isDark ? '#FFFFFF' : theme.primary);
-    const resolvedDotColor = dotColor || '#A821D9';
+    const primaryColor = color || (isDark ? "#FFFFFF" : theme.primary);
+    const resolvedDotColor = dotColor || "#A821D9";
 
     const resolvedLogoUrl = logoUrl ?? uri ?? null;
 
     // If an explicit image source or valid logoUrl is provided without error:
-    const hasImage = !imageError && (Boolean(imageSource) || Boolean(resolvedLogoUrl));
+    const hasImage =
+      !imageError && (Boolean(imageSource) || Boolean(resolvedLogoUrl));
 
     const logoContent = (
       <View
         pointerEvents="none"
-        style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+        style={{
+          width: size,
+          height: size,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         {hasImage ? (
           <Image
             source={imageSource || { uri: resolvedLogoUrl! }}
@@ -60,12 +73,7 @@ export const OrganizationLogo = React.memo<OrganizationLogoProps>(
             onError={() => setImageError(true)}
           />
         ) : (
-          <Svg
-            width={size}
-            height={size}
-            viewBox="0 0 642 660"
-            fill="none"
-          >
+          <Svg width={size} height={size} viewBox="0 0 642 660" fill="none">
             {/* Primary Orbit/Arc Path */}
             <Path
               fillRule="evenodd"
@@ -93,12 +101,15 @@ export const OrganizationLogo = React.memo<OrganizationLogoProps>(
               width: containerSize,
               height: containerSize,
               borderRadius: 24,
-              backgroundColor: isDark ? '#1C1929' : '#F5F3FF',
-              borderColor: isDark ? 'rgba(139, 92, 246, 0.3)' : 'rgba(139, 92, 246, 0.2)',
-              shadowColor: '#8B5CF6',
+              backgroundColor: isDark ? "#1C1929" : "#F5F3FF",
+              borderColor: isDark
+                ? "rgba(139, 92, 246, 0.3)"
+                : "rgba(139, 92, 246, 0.2)",
+              shadowColor: "#8B5CF6",
             },
             containerStyle,
-          ]}>
+          ]}
+        >
           <View
             style={[
               styles.innerBox,
@@ -106,9 +117,12 @@ export const OrganizationLogo = React.memo<OrganizationLogoProps>(
                 width: size + 16,
                 height: size + 16,
                 borderRadius: 18,
-                backgroundColor: isDark ? 'rgba(139, 92, 246, 0.18)' : 'rgba(139, 92, 246, 0.1)',
+                backgroundColor: isDark
+                  ? "rgba(139, 92, 246, 0.18)"
+                  : "rgba(139, 92, 246, 0.1)",
               },
-            ]}>
+            ]}
+          >
             {logoContent}
           </View>
         </View>
@@ -119,12 +133,12 @@ export const OrganizationLogo = React.memo<OrganizationLogoProps>(
   },
 );
 
-OrganizationLogo.displayName = 'OrganizationLogo';
+OrganizationLogo.displayName = "OrganizationLogo";
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1.5,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
@@ -132,7 +146,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   innerBox: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

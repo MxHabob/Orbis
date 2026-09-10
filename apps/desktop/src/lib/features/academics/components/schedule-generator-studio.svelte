@@ -1,411 +1,475 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
-  import { page } from "$app/state";
-  import { getLocale, localizeHref } from "$lib/paraglide/runtime";
-  import * as m from "$lib/paraglide/messages";
-  import { api, extractErrorMessage } from "$lib/api";
-  import { createQuery, useQueryClient } from "@tanstack/svelte-query";
-  import { toast } from "@orbis/ui";
-  import { Button } from "@orbis/ui/button";
-  import { Badge } from "@orbis/ui/badge";
-  import { Switch } from "@orbis/ui/switch";
-  import {
-    Select,
-    SelectTrigger,
-    SelectContent,
-    SelectItem,
-  } from "@orbis/ui/select";
-  import Resizer from "$lib/shell/resizer.svelte";
-  import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
-  import { TimetableGrid } from "@orbis/ui";
-  import {
-    ArrowLeft,
-    Clock,
-    User,
-    Eye,
-    SlidersHorizontal,
-    BookOpen,
-    History
-  } from "@lucide/svelte";
+import { goto } from "$app/navigation";
+import { page } from "$app/state";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
+import { api, extractErrorMessage } from "$lib/api";
+import { createQuery, useQueryClient } from "@tanstack/svelte-query";
+import { toast } from "@orbis/ui";
+import { Button } from "@orbis/ui/button";
+import { Badge } from "@orbis/ui/badge";
+import { Switch } from "@orbis/ui/switch";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui/select";
+import Resizer from "$lib/shell/resizer.svelte";
+import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
+import { TimetableGrid } from "@orbis/ui";
+import {
+  ArrowLeft,
+  Clock,
+  User,
+  Eye,
+  SlidersHorizontal,
+  BookOpen,
+  History,
+} from "@lucide/svelte";
 
-  interface Props {
-    orgId: string;
+interface Props {
+  orgId: string;
+}
+
+let { orgId }: Props = $props();
+
+const queryClient = useQueryClient();
+const locale = $derived(getLocale());
+
+// Selection & Studio State
+let activePeriodId = $state(page.url.searchParams.get("periodId") || "");
+let studioModule = $state<
+  "preview" | "quota" | "constraints" | "teachers" | "history"
+>("preview");
+let previewPerspective = $state<"class" | "teacher" | "room">("class");
+let previewClassId = $state<string>("");
+let previewTeacherId = $state<string>("");
+let previewRoomId = $state<string>("");
+let selectedQuotaClassFilter = $state<string>("all");
+
+// Resizable Panes using $lib/shell/resizer.svelte
+function pxToRem(px: number): number {
+  if (typeof document === "undefined") return px / 16;
+  const base =
+    parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  return px / base;
+}
+
+let navRailDiv = $state<HTMLElement>();
+let preferredNavWidth = $state(pxToRem(240));
+const minNavWidth = $derived(pxToRem(200));
+const maxNavWidth = $derived(pxToRem(320));
+
+// Solver Job State
+let isSolving = $state(false);
+let isApplying = $state(false);
+let pollInterval: ReturnType<typeof setInterval> | null = null;
+let activeJob = $state<any>(null);
+
+// Studio Generator Policies & Constraints
+let maxDailyTeacherLoad = $state(5);
+let allowDoublePeriods = $state(false);
+let balanceWeekdayDistribution = $state(true);
+let prioritizeMorningCoreSubjects = $state(true);
+let strictRoomCapacityCheck = $state(true);
+
+// ── Queries ───────────────────────────────────────────────
+
+const periodsQuery = createQuery(() => ({
+  queryKey: ["periods", orgId],
+  queryFn: () => api.listAcademicPeriods(),
+  enabled: !!orgId,
+  staleTime: 10 * 60 * 1000,
+}));
+
+const classesQuery = createQuery(() => ({
+  queryKey: ["classes", orgId],
+  queryFn: () => api.listClasses(),
+  enabled: !!orgId,
+  staleTime: 5 * 60 * 1000,
+}));
+
+const subjectsQuery = createQuery(() => ({
+  queryKey: ["subjects", orgId],
+  queryFn: () => api.listSubjects(),
+  enabled: !!orgId,
+  staleTime: 10 * 60 * 1000,
+}));
+
+const usersQuery = createQuery(() => ({
+  queryKey: ["users", orgId],
+  queryFn: () => api.listUsers(null),
+  enabled: !!orgId,
+  staleTime: 5 * 60 * 1000,
+}));
+
+const roomsQuery = createQuery(() => ({
+  queryKey: ["rooms", orgId],
+  queryFn: () => api.listRooms(),
+  enabled: !!orgId,
+  staleTime: 10 * 60 * 1000,
+}));
+
+const periods = $derived(periodsQuery.data ?? []);
+const classes = $derived(classesQuery.data ?? []);
+const subjects = $derived(subjectsQuery.data ?? []);
+const users = $derived(usersQuery.data ?? []);
+const rooms = $derived(roomsQuery.data ?? []);
+
+const teachers = $derived(
+  users.filter(
+    (u: any) =>
+      u.primary_role === "teacher" ||
+      u.role === "teacher" ||
+      (Array.isArray(u.roles) && u.roles.includes("teacher")),
+  ),
+);
+
+// Time slots for active period
+const timeSlotsQuery = createQuery(() => ({
+  queryKey: ["time-slots", orgId, activePeriodId],
+  queryFn: () => api.listTimeSlots(),
+  enabled: !!orgId && !!activePeriodId,
+  staleTime: 5 * 60 * 1000,
+}));
+
+const timeSlots = $derived(
+  (timeSlotsQuery.data ?? []).filter(
+    (slot: any) =>
+      !slot.period_id || String(slot.period_id) === String(activePeriodId),
+  ),
+);
+
+// Existing Lessons for this period
+const periodScheduleQuery = createQuery(() => ({
+  queryKey: ["period-schedule", orgId, activePeriodId],
+  queryFn: () => api.listScheduledLessons(activePeriodId || ""),
+  enabled: !!orgId && !!activePeriodId,
+  staleTime: 30 * 1000,
+}));
+
+const allLessons = $derived((periodScheduleQuery.data ?? []) as any[]);
+
+// Solve Jobs Query
+const solveJobsQuery = createQuery(() => ({
+  queryKey: ["solve-jobs", orgId, activePeriodId],
+  queryFn: () => api.scheduling.listJobs(activePeriodId || ""),
+  enabled: !!orgId && !!activePeriodId,
+  staleTime: 5 * 1000,
+}));
+
+const solveJobs = $derived((solveJobsQuery.data ?? []) as any[]);
+
+// ClassSubjects Query for active period
+const allClassSubjectsQuery = createQuery(() => ({
+  queryKey: ["all-class-subjects-matrix", orgId, activePeriodId],
+  queryFn: async () => {
+    if (!activePeriodId || classes.length === 0) return [];
+    const results = await Promise.all(
+      classes.map((cls) =>
+        api.listClassSubjects(String(cls.id), activePeriodId),
+      ),
+    );
+    return results.flat();
+  },
+  enabled: !!orgId && !!activePeriodId && classes.length > 0,
+  staleTime: 30 * 1000,
+}));
+
+const allClassSubjects = $derived((allClassSubjectsQuery.data ?? []) as any[]);
+
+// Auto-select initial period
+$effect(() => {
+  if (periods.length > 0 && !activePeriodId) {
+    const active =
+      periods.find((p: any) => p.status === "active" || p.is_active) ||
+      periods[0];
+    if (active) activePeriodId = String(active.id);
   }
+});
 
-  let { orgId }: Props = $props();
+// Auto-select preview selections
+$effect(() => {
+  if (classes.length > 0 && !previewClassId)
+    previewClassId = String(classes[0].id);
+  if (teachers.length > 0 && !previewTeacherId)
+    previewTeacherId = String(teachers[0].id);
+  if (rooms.length > 0 && !previewRoomId) previewRoomId = String(rooms[0].id);
+});
 
-  const queryClient = useQueryClient();
-  const locale = $derived(getLocale());
-
-  // Selection & Studio State
-  let activePeriodId = $state(page.url.searchParams.get("periodId") || "");
-  let studioModule = $state<"preview" | "quota" | "constraints" | "teachers" | "history">("preview");
-  let previewPerspective = $state<"class" | "teacher" | "room">("class");
-  let previewClassId = $state<string>("");
-  let previewTeacherId = $state<string>("");
-  let previewRoomId = $state<string>("");
-  let selectedQuotaClassFilter = $state<string>("all");
-
-  // Resizable Panes using $lib/shell/resizer.svelte
-  function pxToRem(px: number): number {
-    if (typeof document === "undefined") return px / 16;
-    const base = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-    return px / base;
+// Track latest solve job
+$effect(() => {
+  if (solveJobs.length > 0 && !activeJob) {
+    activeJob = solveJobs[0];
   }
+});
 
-  let navRailDiv = $state<HTMLElement>();
-  let preferredNavWidth = $state(pxToRem(240));
-  const minNavWidth = $derived(pxToRem(200));
-  const maxNavWidth = $derived(pxToRem(320));
-
-  // Solver Job State
-  let isSolving = $state(false);
-  let isApplying = $state(false);
-  let pollInterval: ReturnType<typeof setInterval> | null = null;
-  let activeJob = $state<any>(null);
-
-  // Studio Generator Policies & Constraints
-  let maxDailyTeacherLoad = $state(5);
-  let allowDoublePeriods = $state(false);
-  let balanceWeekdayDistribution = $state(true);
-  let prioritizeMorningCoreSubjects = $state(true);
-  let strictRoomCapacityCheck = $state(true);
-
-  // ── Queries ───────────────────────────────────────────────
-
-  const periodsQuery = createQuery(() => ({
-    queryKey: ["periods", orgId],
-    queryFn: () => api.listAcademicPeriods(),
-    enabled: !!orgId,
-    staleTime: 10 * 60 * 1000,
-  }));
-
-  const classesQuery = createQuery(() => ({
-    queryKey: ["classes", orgId],
-    queryFn: () => api.listClasses(),
-    enabled: !!orgId,
-    staleTime: 5 * 60 * 1000,
-  }));
-
-  const subjectsQuery = createQuery(() => ({
-    queryKey: ["subjects", orgId],
-    queryFn: () => api.listSubjects(),
-    enabled: !!orgId,
-    staleTime: 10 * 60 * 1000,
-  }));
-
-  const usersQuery = createQuery(() => ({
-    queryKey: ["users", orgId],
-    queryFn: () => api.listUsers(null),
-    enabled: !!orgId,
-    staleTime: 5 * 60 * 1000,
-  }));
-
-  const roomsQuery = createQuery(() => ({
-    queryKey: ["rooms", orgId],
-    queryFn: () => api.listRooms(),
-    enabled: !!orgId,
-    staleTime: 10 * 60 * 1000,
-  }));
-
-  const periods = $derived(periodsQuery.data ?? []);
-  const classes = $derived(classesQuery.data ?? []);
-  const subjects = $derived(subjectsQuery.data ?? []);
-  const users = $derived(usersQuery.data ?? []);
-  const rooms = $derived(roomsQuery.data ?? []);
-
-  const teachers = $derived(
-    users.filter(
-      (u: any) =>
-        u.primary_role === "teacher" ||
-        u.role === "teacher" ||
-        (Array.isArray(u.roles) && u.roles.includes("teacher"))
-    )
-  );
-
-  // Time slots for active period
-  const timeSlotsQuery = createQuery(() => ({
-    queryKey: ["time-slots", orgId, activePeriodId],
-    queryFn: () => api.listTimeSlots(),
-    enabled: !!orgId && !!activePeriodId,
-    staleTime: 5 * 60 * 1000,
-  }));
-
-  const timeSlots = $derived(
-    (timeSlotsQuery.data ?? []).filter(
-      (slot: any) => !slot.period_id || String(slot.period_id) === String(activePeriodId)
-    )
-  );
-
-  // Existing Lessons for this period
-  const periodScheduleQuery = createQuery(() => ({
-    queryKey: ["period-schedule", orgId, activePeriodId],
-    queryFn: () => api.listScheduledLessons(activePeriodId || ""),
-    enabled: !!orgId && !!activePeriodId,
-    staleTime: 30 * 1000,
-  }));
-
-  const allLessons = $derived((periodScheduleQuery.data ?? []) as any[]);
-
-  // Solve Jobs Query
-  const solveJobsQuery = createQuery(() => ({
-    queryKey: ["solve-jobs", orgId, activePeriodId],
-    queryFn: () => api.scheduling.listJobs(activePeriodId || ""),
-    enabled: !!orgId && !!activePeriodId,
-    staleTime: 5 * 1000,
-  }));
-
-  const solveJobs = $derived((solveJobsQuery.data ?? []) as any[]);
-
-  // ClassSubjects Query for active period
-  const allClassSubjectsQuery = createQuery(() => ({
-    queryKey: ["all-class-subjects-matrix", orgId, activePeriodId],
-    queryFn: async () => {
-      if (!activePeriodId || classes.length === 0) return [];
-      const results = await Promise.all(
-        classes.map((cls) => api.listClassSubjects(String(cls.id), activePeriodId))
-      );
-      return results.flat();
-    },
-    enabled: !!orgId && !!activePeriodId && classes.length > 0,
-    staleTime: 30 * 1000,
-  }));
-
-  const allClassSubjects = $derived((allClassSubjectsQuery.data ?? []) as any[]);
-
-  // Auto-select initial period
-  $effect(() => {
-    if (periods.length > 0 && !activePeriodId) {
-      const active = periods.find((p: any) => p.status === "active" || p.is_active) || periods[0];
-      if (active) activePeriodId = String(active.id);
-    }
-  });
-
-  // Auto-select preview selections
-  $effect(() => {
-    if (classes.length > 0 && !previewClassId) previewClassId = String(classes[0].id);
-    if (teachers.length > 0 && !previewTeacherId) previewTeacherId = String(teachers[0].id);
-    if (rooms.length > 0 && !previewRoomId) previewRoomId = String(rooms[0].id);
-  });
-
-  // Track latest solve job
-  $effect(() => {
-    if (solveJobs.length > 0 && !activeJob) {
-      activeJob = solveJobs[0];
-    }
-  });
-
-  // Auto-poll when solver is actively processing
-  $effect(() => {
-    if (activeJob?.status === "running" || activeJob?.status === "pending" || isSolving) {
-      if (!pollInterval) {
-        pollInterval = setInterval(async () => {
-          if (activePeriodId) {
-            const jobs = await api.scheduling.listJobs(activePeriodId);
-            if (jobs.length > 0) {
-              activeJob = jobs[0];
-              if (activeJob.status === "completed" || activeJob.status === "failed") {
-                isSolving = false;
-                if (pollInterval) {
-                  clearInterval(pollInterval);
-                  pollInterval = null;
-                }
-                if (activeJob.status === "completed") {
-                  toast.success(m.academics_schedule_ready());
-                }
+// Auto-poll when solver is actively processing
+$effect(() => {
+  if (
+    activeJob?.status === "running" ||
+    activeJob?.status === "pending" ||
+    isSolving
+  ) {
+    if (!pollInterval) {
+      pollInterval = setInterval(async () => {
+        if (activePeriodId) {
+          const jobs = await api.scheduling.listJobs(activePeriodId);
+          if (jobs.length > 0) {
+            activeJob = jobs[0];
+            if (
+              activeJob.status === "completed" ||
+              activeJob.status === "failed"
+            ) {
+              isSolving = false;
+              if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+              }
+              if (activeJob.status === "completed") {
+                toast.success(m.academics_schedule_ready());
               }
             }
           }
-        }, 2000);
-      }
-    } else {
-      if (pollInterval) {
-        clearInterval(pollInterval);
-        pollInterval = null;
-      }
+        }
+      }, 2000);
     }
-    return () => {
-      if (pollInterval) {
-        clearInterval(pollInterval);
-        pollInterval = null;
-      }
-    };
-  });
+  } else {
+    if (pollInterval) {
+      clearInterval(pollInterval);
+      pollInterval = null;
+    }
+  }
+  return () => {
+    if (pollInterval) {
+      clearInterval(pollInterval);
+      pollInterval = null;
+    }
+  };
+});
 
-  // Parse draft solution assignments
-  const solutionAssignments = $derived.by(() => {
-    if (!activeJob?.best_solution) return [];
-    try {
-      const sol = typeof activeJob.best_solution === "string"
+// Parse draft solution assignments
+const solutionAssignments = $derived.by(() => {
+  if (!activeJob?.best_solution) return [];
+  try {
+    const sol =
+      typeof activeJob.best_solution === "string"
         ? JSON.parse(activeJob.best_solution)
         : activeJob.best_solution;
-      return (sol.assignments || []).map((a: any) => ({
-        ...a,
-        isDraft: true,
-      }));
-    } catch {
-      return [];
-    }
-  });
+    return (sol.assignments || []).map((a: any) => ({
+      ...a,
+      isDraft: true,
+    }));
+  } catch {
+    return [];
+  }
+});
 
-  // Filter existing lessons based on active sub-perspective
-  const existingPreviewLessons = $derived.by(() => {
-    if (previewPerspective === "class" && previewClassId) {
-      return allLessons.filter((l: any) => String(l.class_id) === String(previewClassId));
-    }
-    if (previewPerspective === "teacher" && previewTeacherId) {
-      return allLessons.filter((l: any) => String(l.teacher_id) === String(previewTeacherId));
-    }
-    if (previewPerspective === "room" && previewRoomId) {
-      return allLessons.filter((l: any) => String(l.room_id) === String(previewRoomId));
-    }
-    return allLessons;
-  });
+// Filter existing lessons based on active sub-perspective
+const existingPreviewLessons = $derived.by(() => {
+  if (previewPerspective === "class" && previewClassId) {
+    return allLessons.filter(
+      (l: any) => String(l.class_id) === String(previewClassId),
+    );
+  }
+  if (previewPerspective === "teacher" && previewTeacherId) {
+    return allLessons.filter(
+      (l: any) => String(l.teacher_id) === String(previewTeacherId),
+    );
+  }
+  if (previewPerspective === "room" && previewRoomId) {
+    return allLessons.filter(
+      (l: any) => String(l.room_id) === String(previewRoomId),
+    );
+  }
+  return allLessons;
+});
 
-  // Filter draft lessons based on active sub-perspective
-  const currentDraftLessons = $derived.by(() => {
-    if (previewPerspective === "class" && previewClassId) {
-      return solutionAssignments.filter((a: any) => String(a.class_id) === String(previewClassId));
-    }
-    if (previewPerspective === "teacher" && previewTeacherId) {
-      return solutionAssignments.filter((a: any) => String(a.teacher_id) === String(previewTeacherId));
-    }
-    if (previewPerspective === "room" && previewRoomId) {
-      return solutionAssignments.filter((a: any) => String(a.room_id) === String(previewRoomId));
-    }
-    return solutionAssignments;
-  });
+// Filter draft lessons based on active sub-perspective
+const currentDraftLessons = $derived.by(() => {
+  if (previewPerspective === "class" && previewClassId) {
+    return solutionAssignments.filter(
+      (a: any) => String(a.class_id) === String(previewClassId),
+    );
+  }
+  if (previewPerspective === "teacher" && previewTeacherId) {
+    return solutionAssignments.filter(
+      (a: any) => String(a.teacher_id) === String(previewTeacherId),
+    );
+  }
+  if (previewPerspective === "room" && previewRoomId) {
+    return solutionAssignments.filter(
+      (a: any) => String(a.room_id) === String(previewRoomId),
+    );
+  }
+  return solutionAssignments;
+});
 
-  // Calculate Weekdays from time slots
-  const weekdays = $derived.by(() => {
-    const configuredDays = new Set<number>();
-    for (const slot of timeSlots) {
-      if (!slot.applicable_days) continue;
-      for (const val of String(slot.applicable_days).split(",")) {
-        const d = Number(val.trim());
-        if (Number.isInteger(d) && d >= 1 && d <= 7) configuredDays.add(d);
-      }
+// Calculate Weekdays from time slots
+const weekdays = $derived.by(() => {
+  const configuredDays = new Set<number>();
+  for (const slot of timeSlots) {
+    if (!slot.applicable_days) continue;
+    for (const val of String(slot.applicable_days).split(",")) {
+      const d = Number(val.trim());
+      if (Number.isInteger(d) && d >= 1 && d <= 7) configuredDays.add(d);
     }
-    const days = configuredDays.size > 0 ? [...configuredDays] : [1, 2, 3, 4, 5];
-    const weekOrder = [7, 1, 2, 3, 4, 5, 6];
-    return days.sort((a, b) => weekOrder.indexOf(a) - weekOrder.indexOf(b)).map((day) => ({
+  }
+  const days = configuredDays.size > 0 ? [...configuredDays] : [1, 2, 3, 4, 5];
+  const weekOrder = [7, 1, 2, 3, 4, 5, 6];
+  return days
+    .sort((a, b) => weekOrder.indexOf(a) - weekOrder.indexOf(b))
+    .map((day) => ({
       value: day,
       label: new Intl.DateTimeFormat(getLocale(), { weekday: "short" }).format(
-        new Date(Date.UTC(2023, 0, day))
+        new Date(Date.UTC(2023, 0, day)),
       ),
       isToday: false,
     }));
-  });
+});
 
-  // Metrics
-  const totalWeeklyQuota = $derived.by(() => {
-    return allClassSubjects.reduce((sum: number, cs: any) => sum + (Number(cs.weekly_hours) || 0), 0);
-  });
+// Metrics
+const totalWeeklyQuota = $derived.by(() => {
+  return allClassSubjects.reduce(
+    (sum: number, cs: any) => sum + (Number(cs.weekly_hours) || 0),
+    0,
+  );
+});
 
-  const totalWeeklyCapacity = $derived.by(() => {
-    const activeSlots = timeSlots.filter((s) => !s.is_break).length;
-    return activeSlots * weekdays.length * classes.length;
-  });
+const totalWeeklyCapacity = $derived.by(() => {
+  const activeSlots = timeSlots.filter((s) => !s.is_break).length;
+  return activeSlots * weekdays.length * classes.length;
+});
 
-  // Teacher Workload Map
-  const teacherWorkloads = $derived.by(() => {
-    const map = new Map<string, { totalHours: number; subjectsCount: number }>();
-    for (const cs of allClassSubjects) {
-      if (!cs.primary_teacher_id) continue;
-      const tId = String(cs.primary_teacher_id);
-      const existing = map.get(tId) || { totalHours: 0, subjectsCount: 0 };
-      existing.totalHours += Number(cs.weekly_hours) || 0;
-      existing.subjectsCount += 1;
-      map.set(tId, existing);
-    }
-    return map;
-  });
-
-  // Filtered ClassSubjects for the Quota tab
-  const filteredClassSubjects = $derived.by(() => {
-    if (selectedQuotaClassFilter === "all") return allClassSubjects;
-    return allClassSubjects.filter((cs: any) => String(cs.class_id) === selectedQuotaClassFilter);
-  });
-
-  // ── Actions ───────────────────────────────────────────────
-
-  async function handleLaunchSolver() {
-    if (!activePeriodId) return;
-    isSolving = true;
-    try {
-      const res = await api.scheduling.start(activePeriodId);
-      activeJob = res;
-      toast.success(m.academics_schedule_generate());
-      queryClient.invalidateQueries({ queryKey: ["solve-jobs", orgId, activePeriodId] });
-    } catch (err) {
-      isSolving = false;
-      toast.error(extractErrorMessage(err));
-    }
+// Teacher Workload Map
+const teacherWorkloads = $derived.by(() => {
+  const map = new Map<string, { totalHours: number; subjectsCount: number }>();
+  for (const cs of allClassSubjects) {
+    if (!cs.primary_teacher_id) continue;
+    const tId = String(cs.primary_teacher_id);
+    const existing = map.get(tId) || { totalHours: 0, subjectsCount: 0 };
+    existing.totalHours += Number(cs.weekly_hours) || 0;
+    existing.subjectsCount += 1;
+    map.set(tId, existing);
   }
+  return map;
+});
 
-  async function handleApplySolution() {
-    if (!activeJob?.id) return;
-    isApplying = true;
-    try {
-      await api.scheduling.apply(activeJob.id);
-      toast.success(m.academics_schedule_publish());
-      queryClient.invalidateQueries({ queryKey: ["period-schedule"] });
-      queryClient.invalidateQueries({ queryKey: ["class-schedule"] });
-      goto(localizeHref(`/${orgId}/academics/schedule`));
-    } catch (err) {
-      toast.error(extractErrorMessage(err));
-    } finally {
-      isApplying = false;
-    }
-  }
+// Filtered ClassSubjects for the Quota tab
+const filteredClassSubjects = $derived.by(() => {
+  if (selectedQuotaClassFilter === "all") return allClassSubjects;
+  return allClassSubjects.filter(
+    (cs: any) => String(cs.class_id) === selectedQuotaClassFilter,
+  );
+});
 
-  async function handleUpdateClassSubjectHours(csId: string, hours: number) {
-    try {
-      await api.academic.updateClassSubject(csId, { weekly_hours: hours });
-      queryClient.invalidateQueries({ queryKey: ["all-class-subjects-matrix", orgId, activePeriodId] });
-      toast.success(m.academics_studio_weekly_hours());
-    } catch (err) {
-      toast.error(extractErrorMessage(err));
-    }
-  }
+// ── Actions ───────────────────────────────────────────────
 
-  async function handleUpdateClassSubjectTeacher(csId: string, teacherId: string) {
-    try {
-      await api.academic.updateClassSubject(csId, { primary_teacher_id: teacherId || null });
-      queryClient.invalidateQueries({ queryKey: ["all-class-subjects-matrix", orgId, activePeriodId] });
-      toast.success(m.academics_studio_assigned_teacher());
-    } catch (err) {
-      toast.error(extractErrorMessage(err));
-    }
+async function handleLaunchSolver() {
+  if (!activePeriodId) return;
+  isSolving = true;
+  try {
+    const res = await api.scheduling.start(activePeriodId);
+    activeJob = res;
+    toast.success(m.academics_schedule_generate());
+    queryClient.invalidateQueries({
+      queryKey: ["solve-jobs", orgId, activePeriodId],
+    });
+  } catch (err) {
+    isSolving = false;
+    toast.error(extractErrorMessage(err));
   }
+}
 
-  function getSubjectName(subjectId: string): string {
-    const sub = subjects.find((s) => String(s.id) === String(subjectId));
-    return sub ? (locale === "ar" ? sub.name_ar || sub.name : sub.name || sub.name_ar) : m.academics_studio_unknown_subject();
+async function handleApplySolution() {
+  if (!activeJob?.id) return;
+  isApplying = true;
+  try {
+    await api.scheduling.apply(activeJob.id);
+    toast.success(m.academics_schedule_publish());
+    queryClient.invalidateQueries({ queryKey: ["period-schedule"] });
+    queryClient.invalidateQueries({ queryKey: ["class-schedule"] });
+    goto(localizeHref(`/${orgId}/academics/schedule`));
+  } catch (err) {
+    toast.error(extractErrorMessage(err));
+  } finally {
+    isApplying = false;
   }
+}
 
-  function getTeacherName(teacherId?: string): string {
-    if (!teacherId) return "";
-    const teach = teachers.find((t) => String(t.id) === String(teacherId));
-    return teach ? (locale === "ar" ? teach.name_ar || teach.full_name : teach.full_name || teach.name_ar) : "";
+async function handleUpdateClassSubjectHours(csId: string, hours: number) {
+  try {
+    await api.academic.updateClassSubject(csId, { weekly_hours: hours });
+    queryClient.invalidateQueries({
+      queryKey: ["all-class-subjects-matrix", orgId, activePeriodId],
+    });
+    toast.success(m.academics_studio_weekly_hours());
+  } catch (err) {
+    toast.error(extractErrorMessage(err));
   }
+}
 
-  function getClassName(clsId: string): string {
-    const cls = classes.find((c) => String(c.id) === String(clsId));
-    return cls ? (locale === "ar" ? cls.name_ar || cls.name : cls.name || cls.name_ar) : "";
+async function handleUpdateClassSubjectTeacher(
+  csId: string,
+  teacherId: string,
+) {
+  try {
+    await api.academic.updateClassSubject(csId, {
+      primary_teacher_id: teacherId || null,
+    });
+    queryClient.invalidateQueries({
+      queryKey: ["all-class-subjects-matrix", orgId, activePeriodId],
+    });
+    toast.success(m.academics_studio_assigned_teacher());
+  } catch (err) {
+    toast.error(extractErrorMessage(err));
   }
+}
 
-  function getRoomName(roomId?: string): string {
-    if (!roomId) return "";
-    const rm = rooms.find((r) => String(r.id) === String(roomId));
-    return rm ? (locale === "ar" ? rm.name_ar || rm.name : rm.name || rm.name_ar) : "";
-  }
+function getSubjectName(subjectId: string): string {
+  const sub = subjects.find((s) => String(s.id) === String(subjectId));
+  return sub
+    ? locale === "ar"
+      ? sub.name_ar || sub.name
+      : sub.name || sub.name_ar
+    : m.academics_studio_unknown_subject();
+}
 
-  function getSubjectColor(subjectId: string): string {
-    const sub = subjects.find((s) => String(s.id) === String(subjectId)) as any;
-    if (sub?.color) return sub.color;
-    return "var(--primary)";
-  }
+function getTeacherName(teacherId?: string): string {
+  if (!teacherId) return "";
+  const teach = teachers.find((t) => String(t.id) === String(teacherId));
+  return teach
+    ? locale === "ar"
+      ? teach.name_ar || teach.full_name
+      : teach.full_name || teach.name_ar
+    : "";
+}
+
+function getClassName(clsId: string): string {
+  const cls = classes.find((c) => String(c.id) === String(clsId));
+  return cls
+    ? locale === "ar"
+      ? cls.name_ar || cls.name
+      : cls.name || cls.name_ar
+    : "";
+}
+
+function getRoomName(roomId?: string): string {
+  if (!roomId) return "";
+  const rm = rooms.find((r) => String(r.id) === String(roomId));
+  return rm
+    ? locale === "ar"
+      ? rm.name_ar || rm.name
+      : rm.name || rm.name_ar
+    : "";
+}
+
+function getSubjectColor(subjectId: string): string {
+  const sub = subjects.find((s) => String(s.id) === String(subjectId)) as any;
+  if (sub?.color) return sub.color;
+  return "var(--primary)";
+}
 </script>
 
 <div class="flex h-full w-full flex-col overflow-hidden bg-background">

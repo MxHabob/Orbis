@@ -1,114 +1,130 @@
 <script lang="ts">
-  import { page } from "$app/state";
-  import { api, } from "$lib/api";
-  import { Badge } from "@orbis/ui/badge";
-  import { Button } from "@orbis/ui/button";
-  import { toast } from "@orbis/ui";
-  import { getLocale } from "$lib/paraglide/runtime";
-  import * as m from "$lib/paraglide/messages";
-  import { academicContext } from "$lib/stores";
-  import type { CellEditEvent } from "@orbis/svelte-grid";
-  import { DataTable, buildGradeColumns, transformMatrixToSource, recalculateRowTotals } from "$lib/tables";
+import { page } from "$app/state";
+import { api } from "$lib/api";
+import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
+import { toast } from "@orbis/ui";
+import { getLocale } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
+import { academicContext } from "$lib/stores";
+import type { CellEditEvent } from "@orbis/svelte-grid";
+import {
+  DataTable,
+  buildGradeColumns,
+  transformMatrixToSource,
+  recalculateRowTotals,
+} from "$lib/tables";
 
-  const classSubjectId = $derived(String(page.params.classSubjectId || ""));
-  const isArabic = $derived(getLocale() === "ar");
+const classSubjectId = $derived(String(page.params.classSubjectId || ""));
+const isArabic = $derived(getLocale() === "ar");
 
-  // Matrix Data (Coursework)
-  const selectedPeriodId = $derived(academicContext.effectivePeriodId || "");
-  const canEnterGrades = $derived(!academicContext.isReadOnly);
+// Matrix Data (Coursework)
+const selectedPeriodId = $derived(academicContext.effectivePeriodId || "");
+const canEnterGrades = $derived(!academicContext.isReadOnly);
 
-  let matrixData = $state<any>(null);
-  let gridSource = $state<any[]>([]);
-  let assessmentKeys = $state<string[]>([]);
-  let isMatrixLoading = $state(false);
-  let isSaving = $state(false);
-  let isDirty = $state(false);
+let matrixData = $state<any>(null);
+let gridSource = $state<any[]>([]);
+let assessmentKeys = $state<string[]>([]);
+let isMatrixLoading = $state(false);
+let isSaving = $state(false);
+let isDirty = $state(false);
 
-  const gridColumns = $derived.by(() => {
-    if (!matrixData) return [];
-    return buildGradeColumns(matrixData, {
-      readonly: !canEnterGrades,
-      locale: getLocale(),
-    });
+const gridColumns = $derived.by(() => {
+  if (!matrixData) return [];
+  return buildGradeColumns(matrixData, {
+    readonly: !canEnterGrades,
+    locale: getLocale(),
   });
+});
 
-  async function loadGradeMatrix() {
-    isMatrixLoading = true;
-    try {
-      const result = await api.assessment.matrix(selectedPeriodId, classSubjectId);
-      matrixData = result;
-      if (result?.students?.length > 0) {
-        const first = result.students[0];
-        assessmentKeys = first ? first.grades.map((g: any) => g.assessment_id || g.exam_type) : [];
-      }
-      gridSource = transformMatrixToSource(result, getLocale(), academicContext.gradeScaleItems);
-      isDirty = false;
-    } catch (e: any) {
-      toast.error(e?.message || "Error loading grade matrix");
-    } finally {
-      isMatrixLoading = false;
+async function loadGradeMatrix() {
+  isMatrixLoading = true;
+  try {
+    const result = await api.assessment.matrix(
+      selectedPeriodId,
+      classSubjectId,
+    );
+    matrixData = result;
+    if (result?.students?.length > 0) {
+      const first = result.students[0];
+      assessmentKeys = first
+        ? first.grades.map((g: any) => g.assessment_id || g.exam_type)
+        : [];
     }
+    gridSource = transformMatrixToSource(
+      result,
+      getLocale(),
+      academicContext.gradeScaleItems,
+    );
+    isDirty = false;
+  } catch (e: any) {
+    toast.error(e?.message || "Error loading grade matrix");
+  } finally {
+    isMatrixLoading = false;
   }
+}
 
-  $effect(() => {
-    if (selectedPeriodId && classSubjectId) {
-      loadGradeMatrix();
-    }
-  });
-
-  function handleCellEdit(event: CellEditEvent) {
-    const { rowIndex, columnId, newValue } = event;
-    const field = columnId;
-    if (rowIndex < 0 || rowIndex >= gridSource.length) return;
-
-    const updatedSource = [...gridSource];
-    const row = { ...updatedSource[rowIndex]! };
-    row[field] = newValue;
-    recalculateRowTotals(row, assessmentKeys, academicContext.gradeScaleItems);
-
-    updatedSource[rowIndex] = row;
-    gridSource = updatedSource;
-    isDirty = true;
+$effect(() => {
+  if (selectedPeriodId && classSubjectId) {
+    loadGradeMatrix();
   }
+});
 
-  async function handleSaveAll() {
-    if (!matrixData || !canEnterGrades) return;
-    isSaving = true;
-    try {
-      const studentsToSave: any[] = [];
-      for (const row of gridSource) {
-        for (const key of assessmentKeys) {
-          const score = row[`score_${key}`];
-          if (score !== null && score !== undefined) {
-            studentsToSave.push({
-              enrollment_id: row.enrollment_id,
-              score: Number(score),
-              notes: null,
-              exam_type: key,
-            });
-          }
+function handleCellEdit(event: CellEditEvent) {
+  const { rowIndex, columnId, newValue } = event;
+  const field = columnId;
+  if (rowIndex < 0 || rowIndex >= gridSource.length) return;
+
+  const updatedSource = [...gridSource];
+  const row = { ...updatedSource[rowIndex]! };
+  row[field] = newValue;
+  recalculateRowTotals(row, assessmentKeys, academicContext.gradeScaleItems);
+
+  updatedSource[rowIndex] = row;
+  gridSource = updatedSource;
+  isDirty = true;
+}
+
+async function handleSaveAll() {
+  if (!matrixData || !canEnterGrades) return;
+  isSaving = true;
+  try {
+    const studentsToSave: any[] = [];
+    for (const row of gridSource) {
+      for (const key of assessmentKeys) {
+        const score = row[`score_${key}`];
+        if (score !== null && score !== undefined) {
+          studentsToSave.push({
+            enrollment_id: row.enrollment_id,
+            score: Number(score),
+            notes: null,
+            exam_type: key,
+          });
         }
       }
-
-      if (studentsToSave.length === 0) {
-        toast.info(isArabic ? "لا توجد درجات جديدة للحفظ" : "No changes to save");
-        return;
-      }
-
-      await api.assessment.bulkSubjectEntry({
-        period_id: selectedPeriodId,
-        class_subject_id: classSubjectId,
-        students: studentsToSave,
-      });
-
-      toast.success(isArabic ? "تم حفظ جميع الدرجات بنجاح" : "Grades saved successfully");
-      isDirty = false;
-    } catch (e: any) {
-      toast.error(e?.message || "Failed to save grades");
-    } finally {
-      isSaving = false;
     }
+
+    if (studentsToSave.length === 0) {
+      toast.info(isArabic ? "لا توجد درجات جديدة للحفظ" : "No changes to save");
+      return;
+    }
+
+    await api.assessment.bulkSubjectEntry({
+      period_id: selectedPeriodId,
+      class_subject_id: classSubjectId,
+      students: studentsToSave,
+    });
+
+    toast.success(
+      isArabic ? "تم حفظ جميع الدرجات بنجاح" : "Grades saved successfully",
+    );
+    isDirty = false;
+  } catch (e: any) {
+    toast.error(e?.message || "Failed to save grades");
+  } finally {
+    isSaving = false;
   }
+}
 </script>
 
 <div class="flex flex-col h-full w-full gap-2.5">

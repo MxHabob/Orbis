@@ -154,21 +154,18 @@ async function handleSubmit() {
         request.value,
         request.is_active,
       );
-      toast.success(
-        m.common_dt_update_success(),
-      );
+      toast.success(m.common_dt_update_success());
     } else {
       await api.finance.createDiscount(request);
-      toast.success(
-        m.common_dt_create_success(),
-      );
+      toast.success(m.common_dt_create_success());
     }
 
     onSuccess();
   });
   if (submitted) onSuccess();
   else if (form.formError) toast.error(form.formError);
-  else if (Object.keys(form.errors).length > 0) toast.error(m.common_dt_error_name_required());
+  else if (Object.keys(form.errors).length > 0)
+    toast.error(m.common_dt_error_name_required());
 }
 </script>
 

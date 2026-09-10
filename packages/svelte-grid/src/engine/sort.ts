@@ -6,8 +6,12 @@ function compareValues(a: unknown, b: unknown): number {
   if (a == null) return 1;
   if (b == null) return -1;
   if (typeof a === "number" && typeof b === "number") return a - b;
-  if (typeof a === "boolean" && typeof b === "boolean") return Number(a) - Number(b);
-  return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: "base" });
+  if (typeof a === "boolean" && typeof b === "boolean")
+    return Number(a) - Number(b);
+  return String(a).localeCompare(String(b), undefined, {
+    numeric: true,
+    sensitivity: "base",
+  });
 }
 
 export function applySort<T extends GridRow>(
@@ -23,7 +27,10 @@ export function applySort<T extends GridRow>(
       const col = colById.get(spec.id);
       const av = col ? getCellValue(left.row, col) : left.row[spec.id];
       const bv = col ? getCellValue(right.row, col) : right.row[spec.id];
-      const cmp = typeof col?.sort === "function" ? col.sort(av, bv) : compareValues(av, bv);
+      const cmp =
+        typeof col?.sort === "function"
+          ? col.sort(av, bv)
+          : compareValues(av, bv);
       if (cmp !== 0) return spec.dir === "desc" ? -cmp : cmp;
     }
     return left.index - right.index;
@@ -31,7 +38,11 @@ export function applySort<T extends GridRow>(
   return indexed.map((entry) => entry.row);
 }
 
-export function toggleSort(sorts: SortSpec[], id: string, additive: boolean): SortSpec[] {
+export function toggleSort(
+  sorts: SortSpec[],
+  id: string,
+  additive: boolean,
+): SortSpec[] {
   const existing = sorts.find((s) => s.id === id);
   if (!additive) {
     if (!existing) return [{ id, dir: "asc" }];

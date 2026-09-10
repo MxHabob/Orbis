@@ -9,7 +9,6 @@ import { ClassSelect } from "$lib/features/academics";
 import DateOfBirthField from "../components/date-of-birth-field.svelte";
 
 let { state }: { state: StudentFormState } = $props();
-
 </script>
 
 <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">

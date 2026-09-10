@@ -10,7 +10,13 @@ import {
   rangeContains,
   normalizeRange,
 } from "./selection";
-import { applyPaste, parseClipboard, toTsv, fillDown, duplicateRows } from "./clipboard";
+import {
+  applyPaste,
+  parseClipboard,
+  toTsv,
+  fillDown,
+  duplicateRows,
+} from "./clipboard";
 import { interpretKey, clampIndex } from "./keyboard";
 import { visibleWindow } from "./virtual";
 import { groupRows, grandTotals } from "./grouping";
@@ -22,7 +28,12 @@ import type { GridRow, OrbisColumnDef } from "../types";
 const cols: OrbisColumnDef[] = [
   { id: "name", header: "Name", type: "text" },
   { id: "gpa", header: "GPA", type: "decimal" },
-  { id: "dept", header: "Dept", type: "enum", options: [{ value: "cs", label: "CS" }] },
+  {
+    id: "dept",
+    header: "Dept",
+    type: "enum",
+    options: [{ value: "cs", label: "CS" }],
+  },
   { id: "active", header: "Active", type: "boolean" },
 ];
 
@@ -53,7 +64,9 @@ describe("filter", () => {
   });
 
   test("search is case-insensitive", () => {
-    expect(applyFilter(rows(), { logic: "AND", conditions: [], search: "ali" })).toHaveLength(1);
+    expect(
+      applyFilter(rows(), { logic: "AND", conditions: [], search: "ali" }),
+    ).toHaveLength(1);
   });
 });
 
@@ -64,11 +77,15 @@ describe("sort", () => {
       { id: "b", dept: "cs", gpa: 3, name: "A" },
       { id: "c", dept: "ee", gpa: 4, name: "C" },
     ];
-    const sorted = applySort(data, [
-      { id: "dept", dir: "asc" },
-      { id: "gpa", dir: "desc" },
-      { id: "name", dir: "asc" },
-    ], cols);
+    const sorted = applySort(
+      data,
+      [
+        { id: "dept", dir: "asc" },
+        { id: "gpa", dir: "desc" },
+        { id: "name", dir: "asc" },
+      ],
+      cols,
+    );
     expect(sorted.map((r) => r.id)).toEqual(["b", "a", "c"]);
   });
 
@@ -94,7 +111,12 @@ describe("selection", () => {
   });
 
   test("range contains", () => {
-    const r = normalizeRange({ startRow: 4, startCol: 2, endRow: 1, endCol: 0 });
+    const r = normalizeRange({
+      startRow: 4,
+      startCol: 2,
+      endRow: 1,
+      endCol: 0,
+    });
     expect(r).toEqual({ startRow: 1, startCol: 0, endRow: 4, endCol: 2 });
     expect(rangeContains(r, 2, 1)).toBe(true);
     expect(rangeContains(r, 5, 1)).toBe(false);
@@ -120,7 +142,13 @@ describe("clipboard", () => {
         ["Bad", "nope", "cs", "true"],
         ["Lina", "2.2", "math", "true"],
       ],
-      createEmptyRow: () => ({ id: crypto.randomUUID(), name: "", gpa: null, dept: "cs", active: true }),
+      createEmptyRow: () => ({
+        id: crypto.randomUUID(),
+        name: "",
+        gpa: null,
+        dept: "cs",
+        active: true,
+      }),
     });
     expect(result.acceptedCount).toBe(1);
     expect(result.rejectedCount).toBe(2);
@@ -129,7 +157,12 @@ describe("clipboard", () => {
   });
 
   test("fill down and tsv roundtrip", () => {
-    const filled = fillDown(rows(), cols, { startRow: 0, startCol: 1, endRow: 2, endCol: 1 });
+    const filled = fillDown(rows(), cols, {
+      startRow: 0,
+      startCol: 1,
+      endRow: 2,
+      endCol: 1,
+    });
     expect(filled[2]?.gpa).toBe(3.9);
     expect(toTsv([["a", "b"]])).toBe("a\tb");
   });
@@ -141,7 +174,17 @@ describe("clipboard", () => {
 
 describe("keyboard + rtl", () => {
   test("arrow left moves +1 in RTL", () => {
-    const cmd = interpretKey({ key: "ArrowLeft", shiftKey: false, ctrlKey: false, metaKey: false, altKey: false }, false, true);
+    const cmd = interpretKey(
+      {
+        key: "ArrowLeft",
+        shiftKey: false,
+        ctrlKey: false,
+        metaKey: false,
+        altKey: false,
+      },
+      false,
+      true,
+    );
     expect(cmd.action).toBe("move");
     expect(cmd.colDelta).toBe(1);
   });
@@ -174,7 +217,10 @@ describe("grouping", () => {
 describe("query + coerce", () => {
   test("client query combines filter and sort", () => {
     const out = queryClient(rows(), cols, {
-      filter: { logic: "AND", conditions: [{ field: "active", operator: "bool_true" }] },
+      filter: {
+        logic: "AND",
+        conditions: [{ field: "active", operator: "bool_true" }],
+      },
       sorts: [{ id: "gpa", dir: "desc" }],
     });
     expect(out.map((r) => r.id)).toEqual(["1", "2"]);
@@ -183,7 +229,9 @@ describe("query + coerce", () => {
     expect(coerceValue("12", { type: "integer" }).value).toBe(12);
     expect(coerceValue("nope", { type: "integer" }).ok).toBe(false);
     expect(coerceValue("نعم", { type: "boolean" }).value).toBe(true);
-    expect(coerceValue("31/12/2024", { type: "date" }).value).toBe("2024-12-31");
+    expect(coerceValue("31/12/2024", { type: "date" }).value).toBe(
+      "2024-12-31",
+    );
   });
 });
 
@@ -206,7 +254,13 @@ describe("performance", () => {
     const n = 100_000;
     const data: GridRow[] = new Array(n);
     for (let i = 0; i < n; i++) {
-      data[i] = { id: String(i), name: `S${i}`, gpa: (i % 400) / 100, dept: i % 2 ? "cs" : "ee", active: i % 3 !== 0 };
+      data[i] = {
+        id: String(i),
+        name: `S${i}`,
+        gpa: (i % 400) / 100,
+        dept: i % 2 ? "cs" : "ee",
+        active: i % 3 !== 0,
+      };
     }
     const t0 = performance.now();
     const filtered = applyFilter(data, {
@@ -218,7 +272,14 @@ describe("performance", () => {
       ],
     });
     const t1 = performance.now();
-    applySort(filtered, [{ id: "gpa", dir: "desc" }, { id: "name", dir: "asc" }], cols);
+    applySort(
+      filtered,
+      [
+        { id: "gpa", dir: "desc" },
+        { id: "name", dir: "asc" },
+      ],
+      cols,
+    );
     const t2 = performance.now();
     const sel = selectScope([], "filtered", [], []);
     expect(selectedCount(sel, filtered.length)).toBe(filtered.length);

@@ -1,4 +1,7 @@
-import { AvatarStateMachine, type AvatarState } from "./avatar-state-machine.js";
+import {
+  AvatarStateMachine,
+  type AvatarState,
+} from "./avatar-state-machine.js";
 
 export class AvatarController {
   private machine: AvatarStateMachine;

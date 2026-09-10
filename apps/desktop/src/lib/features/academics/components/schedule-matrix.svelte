@@ -1,46 +1,48 @@
 <script lang="ts">
-  import { Users, User, MapPin } from "@lucide/svelte";
-  import * as m from "$lib/paraglide/messages";
-  import { l } from "$lib/core/i18n";
+import { Users, User, MapPin } from "@lucide/svelte";
+import * as m from "$lib/paraglide/messages";
+import { l } from "$lib/core/i18n";
 
-  interface Props {
-    timeSlots: any[];
-    classes: any[];
-    selectedDay: number;
-    lessons: any[];
-    getSubjectName: (id: string) => string;
-    getTeacherName: (id: string) => string;
-    getClassName: (id: string) => string;
-    getRoomName: (id: string) => string;
-    getSubjectColor: (id: string) => string;
-    onLessonClick?: (lesson: any) => void;
-    onCellClick?: (classId: string, slotId: string, day: number) => void;
-  }
+interface Props {
+  timeSlots: any[];
+  classes: any[];
+  selectedDay: number;
+  lessons: any[];
+  getSubjectName: (id: string) => string;
+  getTeacherName: (id: string) => string;
+  getClassName: (id: string) => string;
+  getRoomName: (id: string) => string;
+  getSubjectColor: (id: string) => string;
+  onLessonClick?: (lesson: any) => void;
+  onCellClick?: (classId: string, slotId: string, day: number) => void;
+}
 
-  let {
-    timeSlots = [],
-    classes = [],
-    selectedDay = 1,
-    lessons = [],
-    getSubjectName,
-    getTeacherName,
-    getClassName,
-    getRoomName,
-    getSubjectColor,
-    onLessonClick,
-    onCellClick,
-  }: Props = $props();
+let {
+  timeSlots = [],
+  classes = [],
+  selectedDay = 1,
+  lessons = [],
+  getSubjectName,
+  getTeacherName,
+  getClassName,
+  getRoomName,
+  getSubjectColor,
+  onLessonClick,
+  onCellClick,
+}: Props = $props();
 
-  // Day Lessons
-  const dayLessons = $derived(
-    lessons.filter((l) => Number(l.day_of_week) === selectedDay)
+// Day Lessons
+const dayLessons = $derived(
+  lessons.filter((l) => Number(l.day_of_week) === selectedDay),
+);
+
+function getLessonForClassSlot(classId: string, slotId: string) {
+  return dayLessons.find(
+    (l) =>
+      String(l.class_id) === String(classId) &&
+      String(l.time_slot_id) === String(slotId),
   );
-
-  function getLessonForClassSlot(classId: string, slotId: string) {
-    return dayLessons.find(
-      (l) => String(l.class_id) === String(classId) && String(l.time_slot_id) === String(slotId)
-    );
-  }
+}
 </script>
 
 <div class="flex flex-1 min-h-0 w-full flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-xs">

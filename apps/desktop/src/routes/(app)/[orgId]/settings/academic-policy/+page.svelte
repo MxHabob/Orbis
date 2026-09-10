@@ -4,125 +4,126 @@ Manages organization-wide academic, grading, enrollment, and evaluation policies
 Follows standard settings layout pattern (section headers, clean two-column grid, top right save action).
 -->
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { useQueryClient } from "@tanstack/svelte-query";
-  import { untrack } from "svelte";
-  import {
-    createOrgAcademicPolicyQuery,
-    useUpdateAcademicPolicy,
-  } from "$lib/features/academics/queries-policy";
-  import { extractErrorMessage } from "$lib/api";
-  import { Button } from "@orbis/ui/button";
-  import { Input } from "@orbis/ui/input";
-  import { Label } from "@orbis/ui/label";
-  import { Switch } from "@orbis/ui/switch";
-  import {
-    Select,
-    SelectTrigger,
-    SelectContent,
-    SelectItem,
-  } from "@orbis/ui/select";
-  import { toast } from "@orbis/ui";
+import * as m from "$lib/paraglide/messages";
+import { useQueryClient } from "@tanstack/svelte-query";
+import { untrack } from "svelte";
+import {
+  createOrgAcademicPolicyQuery,
+  useUpdateAcademicPolicy,
+} from "$lib/features/academics/queries-policy";
+import { extractErrorMessage } from "$lib/api";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import { Label } from "@orbis/ui/label";
+import { Switch } from "@orbis/ui/switch";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui/select";
+import { toast } from "@orbis/ui";
 
-  import {
-    ShieldAlert,
-    Award,
-    Loader2,
-    BookCheck,
-    GraduationCap,
-    LockKeyhole,
-  } from "@lucide/svelte";
-  import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
-  import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
+import {
+  ShieldAlert,
+  Award,
+  Loader2,
+  BookCheck,
+  GraduationCap,
+  LockKeyhole,
+} from "@lucide/svelte";
+import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
+import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
-  let { data }: { data: { orgId: string } } = $props();
-  const orgId = $derived(data.orgId);
+let { data }: { data: { orgId: string } } = $props();
+const orgId = $derived(data.orgId);
 
-  const policyQuery = createOrgAcademicPolicyQuery(() => orgId);
-  const updateMutation = useUpdateAcademicPolicy();
+const policyQuery = createOrgAcademicPolicyQuery(() => orgId);
+const updateMutation = useUpdateAcademicPolicy();
 
-  // Form states
-  let isSaving = $state(false);
-  let initialSnapshot = $state("");
-  let form = $state({
-    default_grading_system: "percentage",
-    default_passing_grade: 50,
-    default_max_grade: 100,
-    min_attendance_rate: 75,
-    enrollment_auto_close: true,
-    allow_late_enrollment: false,
-    late_enrollment_approval: true,
-    grade_entry_auto_close: true,
-    allow_grade_edit_after_close: false,
-    grade_edit_approval: true,
-    auto_graduate_final_level: false,
-    exclude_withdrawn: true,
-  });
+// Form states
+let isSaving = $state(false);
+let initialSnapshot = $state("");
+let form = $state({
+  default_grading_system: "percentage",
+  default_passing_grade: 50,
+  default_max_grade: 100,
+  min_attendance_rate: 75,
+  enrollment_auto_close: true,
+  allow_late_enrollment: false,
+  late_enrollment_approval: true,
+  grade_entry_auto_close: true,
+  allow_grade_edit_after_close: false,
+  grade_edit_approval: true,
+  auto_graduate_final_level: false,
+  exclude_withdrawn: true,
+});
 
-  // Sync database record to local form state
-  $effect(() => {
-    if (policyQuery.data) {
-      const d = policyQuery.data as any;
-      form = {
-        default_grading_system: d.default_grading_system || "percentage",
-        default_passing_grade: d.default_passing_score ?? d.default_passing_grade ?? 50,
-        default_max_grade: d.default_max_score ?? d.default_max_grade ?? 100,
-        min_attendance_rate: d.min_attendance_rate ?? 75,
-        enrollment_auto_close: d.enrollment_auto_close === 1,
-        allow_late_enrollment: d.allow_late_enrollment === 1,
-        late_enrollment_approval: d.late_enrollment_approval === 1,
-        grade_entry_auto_close: d.grade_entry_auto_close === 1,
-        allow_grade_edit_after_close: d.allow_grade_edit_after_close === 1,
-        grade_edit_approval: d.grade_edit_approval === 1,
-        auto_graduate_final_level: d.auto_graduate_final_level === 1,
-        exclude_withdrawn: d.exclude_withdrawn !== 0,
-      };
-      initialSnapshot = untrack(() => JSON.stringify(form));
-    }
-  });
-
-  const isDirty = $derived(
-    initialSnapshot !== "" && JSON.stringify(form) !== initialSnapshot,
-  );
-
-  function handleReset() {
-    if (!initialSnapshot) return;
-    form = JSON.parse(initialSnapshot);
+// Sync database record to local form state
+$effect(() => {
+  if (policyQuery.data) {
+    const d = policyQuery.data as any;
+    form = {
+      default_grading_system: d.default_grading_system || "percentage",
+      default_passing_grade:
+        d.default_passing_score ?? d.default_passing_grade ?? 50,
+      default_max_grade: d.default_max_score ?? d.default_max_grade ?? 100,
+      min_attendance_rate: d.min_attendance_rate ?? 75,
+      enrollment_auto_close: d.enrollment_auto_close === 1,
+      allow_late_enrollment: d.allow_late_enrollment === 1,
+      late_enrollment_approval: d.late_enrollment_approval === 1,
+      grade_entry_auto_close: d.grade_entry_auto_close === 1,
+      allow_grade_edit_after_close: d.allow_grade_edit_after_close === 1,
+      grade_edit_approval: d.grade_edit_approval === 1,
+      auto_graduate_final_level: d.auto_graduate_final_level === 1,
+      exclude_withdrawn: d.exclude_withdrawn !== 0,
+    };
+    initialSnapshot = untrack(() => JSON.stringify(form));
   }
+});
 
-  async function handleSave(e?: Event) {
-    e?.preventDefault();
-    isSaving = true;
-    try {
-      const payload = {
-        default_grading_system: form.default_grading_system,
-        default_passing_score: Number(form.default_passing_grade),
-        default_max_score: Number(form.default_max_grade),
-        min_attendance_rate: Number(form.min_attendance_rate),
-        enrollment_auto_close: form.enrollment_auto_close ? 1 : 0,
-        allow_late_enrollment: form.allow_late_enrollment ? 1 : 0,
-        late_enrollment_approval: form.late_enrollment_approval ? 1 : 0,
-        grade_entry_auto_close: form.grade_entry_auto_close ? 1 : 0,
-        allow_grade_edit_after_close: form.allow_grade_edit_after_close ? 1 : 0,
-        grade_edit_approval: form.grade_edit_approval ? 1 : 0,
-        auto_graduate_final_level: form.auto_graduate_final_level ? 1 : 0,
-        exclude_withdrawn: form.exclude_withdrawn ? 1 : 0,
-      };
+const isDirty = $derived(
+  initialSnapshot !== "" && JSON.stringify(form) !== initialSnapshot,
+);
 
-      await updateMutation.mutateAsync({ orgId: data.orgId, payload });
-      initialSnapshot = JSON.stringify(form);
+function handleReset() {
+  if (!initialSnapshot) return;
+  form = JSON.parse(initialSnapshot);
+}
 
-      toast.success(
-        m.settings_general_save_success
-          ? m.settings_general_save_success()
-          : "تم حفظ السياسات الأكاديمية بنجاح",
-      );
-    } catch (err: unknown) {
-      toast.error(extractErrorMessage(err));
-    } finally {
-      isSaving = false;
-    }
+async function handleSave(e?: Event) {
+  e?.preventDefault();
+  isSaving = true;
+  try {
+    const payload = {
+      default_grading_system: form.default_grading_system,
+      default_passing_score: Number(form.default_passing_grade),
+      default_max_score: Number(form.default_max_grade),
+      min_attendance_rate: Number(form.min_attendance_rate),
+      enrollment_auto_close: form.enrollment_auto_close ? 1 : 0,
+      allow_late_enrollment: form.allow_late_enrollment ? 1 : 0,
+      late_enrollment_approval: form.late_enrollment_approval ? 1 : 0,
+      grade_entry_auto_close: form.grade_entry_auto_close ? 1 : 0,
+      allow_grade_edit_after_close: form.allow_grade_edit_after_close ? 1 : 0,
+      grade_edit_approval: form.grade_edit_approval ? 1 : 0,
+      auto_graduate_final_level: form.auto_graduate_final_level ? 1 : 0,
+      exclude_withdrawn: form.exclude_withdrawn ? 1 : 0,
+    };
+
+    await updateMutation.mutateAsync({ orgId: data.orgId, payload });
+    initialSnapshot = JSON.stringify(form);
+
+    toast.success(
+      m.settings_general_save_success
+        ? m.settings_general_save_success()
+        : "تم حفظ السياسات الأكاديمية بنجاح",
+    );
+  } catch (err: unknown) {
+    toast.error(extractErrorMessage(err));
+  } finally {
+    isSaving = false;
   }
+}
 </script>
 
 <svelte:head>
