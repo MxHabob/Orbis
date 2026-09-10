@@ -1,515 +1,361 @@
-/**
- * @module @orbis/mobile/components/header
- *
- * Universal Screen Header.
- *
- * The Header is intentionally background-free.
- * Screen-level gradients/backgrounds must be rendered by the screen
- * itself, not by this component.
- */
+// components/header.tsx
 
 import React from 'react';
-
 import {
-  View,
-  Text,
-  StyleSheet,
   Pressable,
-  type StyleProp,
-  type ViewStyle,
+  StyleProp,
+  StyleSheet,
+  Text,
+  View,
+  ViewStyle,
+  useWindowDimensions,
 } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
-  router,
-} from 'expo-router';
-
-import {
-  Ionicons,
-} from '@expo/vector-icons';
-
-import {
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
-
-import {
-  useTheme,
-} from '@/hooks/use-theme';
-
-import {
+  Colors,
+  Fonts,
+  Radii,
   Spacing,
   Typography,
 } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
-
-export interface HeaderProps {
-  title: string;
-
+type HeaderProps = {
+  title?: string;
   subtitle?: string;
 
   showBack?: boolean;
-
   onBack?: () => void;
+
+  onProfilePress?: () => void;
+  onCrownPress?: () => void;
 
   rightAction?: React.ReactNode;
 
-  style?: StyleProp<ViewStyle>;
+  /**
+   * Kept for compatibility with existing screens.
+   * Progress is no longer displayed in the header.
+   */
+  progress?: number;
+  progressTotal?: number;
+  onProgressPress?: () => void;
 
   /**
-   * Kept for API compatibility.
-   *
-   * Header itself never renders a background.
+   * Show the center page title.
    */
-  transparent?: boolean;
-}
+  showTitle?: boolean;
 
+  /**
+   * Show crown on the right.
+   */
+  showCrown?: boolean;
+
+  transparent?: boolean;
+
+  style?: StyleProp<ViewStyle>;
+};
 
 export function Header({
   title,
   subtitle,
+
   showBack = false,
   onBack,
+
+  onProfilePress,
+  onCrownPress,
+
   rightAction,
+
+  showTitle = true,
+  showCrown = true,
+
   style,
 }: HeaderProps) {
+  const router = useRouter();
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
 
-  const insets =
-    useSafeAreaInsets();
+  const sideSize = width < 360 ? 46 : 48;
 
-  const theme =
-    useTheme();
-
-
-  // ───────────────────────────────────────────────────────────────────────
-  // Back Navigation
-  // ───────────────────────────────────────────────────────────────────────
+  const titleWidth = Math.min(
+    Math.max(width * 0.42, 128),
+    190,
+  );
 
   const handleBack = () => {
-
     if (onBack) {
       onBack();
-
       return;
     }
 
-
-    if (router.canGoBack()) {
-      router.back();
-
-      return;
-    }
-
-
-    router.replace('/');
+    router.back();
   };
 
+  const handleProfile = () => {
+    if (onProfilePress) {
+      onProfilePress();
+      return;
+    }
 
-  // ───────────────────────────────────────────────────────────────────────
-  // Render
-  // ───────────────────────────────────────────────────────────────────────
+    router.push('/profile');
+  };
+
+  const handleCrown = () => {
+    onCrownPress?.();
+  };
 
   return (
     <View
       style={[
         styles.container,
-
         {
-          paddingTop:
-            insets.top +
-            Spacing.two,
+          paddingTop: insets.top + Spacing.two,
+          paddingHorizontal: Spacing.three,
         },
-
         style,
-      ]}>
-
-      <View
-        style={
-          styles.contentRow
-        }>
-
-        {/* ─────────────────────────────────────────────────────────
-            Left Group
-          ───────────────────────────────────────────────────────── */}
-
+      ]}
+    >
+      <View style={styles.content}>
+        {/* LEFT */}
         <View
-          style={
-            styles.leftGroup
-          }>
+          style={[
+            styles.sideSlot,
+            {
+              width: sideSize,
+              height: sideSize,
+            },
+          ]}
+        >
+          <Pressable
+            onPress={showBack ? handleBack : handleProfile}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={
+              showBack ? 'Go back' : 'Open profile'
+            }
+            style={({ pressed }) => [
+              styles.floatingControl,
+              {
+                width: sideSize,
+                height: sideSize,
+                borderRadius: sideSize / 2,
+                backgroundColor: theme.card,
+                borderColor: theme.border,
+                shadowColor: Colors.light.text,
+              },
+              pressed && styles.pressed,
+            ]}
+          >
+            <Ionicons
+              name={
+                showBack
+                  ? 'chevron-back'
+                  : 'person-outline'
+              }
+              size={21}
+              color={theme.text}
+            />
+          </Pressable>
+        </View>
 
-          {showBack && (
+        {/* CENTER — PAGE TITLE */}
+        <View style={styles.centerSlot}>
+          {showTitle && title ? (
             <View
               style={[
-                styles.floatingLeft,
-
+                styles.titleControl,
                 {
-                  backgroundColor:
-                    theme.backgroundElement,
-
-                  borderColor:
-                    theme.border,
-
-                  shadowColor:
-                    theme.foreground,
+                  width: titleWidth,
+                  backgroundColor: theme.card,
+                  borderColor: theme.border,
+                  shadowColor: Colors.light.text,
                 },
-              ]}>
-
-              <Pressable
-                onPress={
-                  handleBack
-                }
-
-                style={({
-                  pressed,
-                }) => [
-                  styles.backButton,
-
-                  pressed && {
-                    opacity:
-                      0.7,
-                  },
-                ]}
-
-                hitSlop={
-                  8
-                }>
-
-                <Ionicons
-                  name="chevron-back"
-                  size={22}
-                  color={
-                    theme.text
-                  }
-                />
-
-              </Pressable>
-
-            </View>
-          )}
-
-
-          {title ? (
-            <View
-              style={[
-                styles.titleWrap,
-
-                {
-                  backgroundColor:
-                    theme.backgroundElement,
-
-                  borderColor:
-                    theme.border,
-
-                  shadowColor:
-                    theme.foreground,
-                },
-              ]}>
-
-              <Text
-                style={[
-                  styles.title,
-
-                  {
-                    color:
-                      theme.text,
-                  },
-                ]}
-
-                numberOfLines={
-                  1
-                }>
-
-                {title}
-
-              </Text>
-
-
-              {subtitle ? (
+              ]}
+            >
+              <View style={styles.titleContent}>
                 <Text
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
                   style={[
-                    styles.subtitle,
-
-                    {
-                      color:
-                        theme.textSecondary,
-                    },
+                    styles.title,
+                    { color: theme.text },
                   ]}
-
-                  numberOfLines={
-                    1
-                  }>
-
-                  {subtitle}
-
+                >
+                  {title}
                 </Text>
-              ) : null}
 
+                {subtitle ? (
+                  <Text
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    style={[
+                      styles.subtitle,
+                      { color: theme.textSecondary },
+                    ]}
+                  >
+                    {subtitle}
+                  </Text>
+                ) : null}
+              </View>
             </View>
           ) : null}
-
         </View>
 
-
-        {/* ─────────────────────────────────────────────────────────
-            Right Action
-          ───────────────────────────────────────────────────────── */}
-
+        {/* RIGHT */}
         <View
-          style={
-            styles.rightSlot
-          }>
-
+          style={[
+            styles.sideSlot,
+            {
+              width: sideSize,
+              height: sideSize,
+            },
+          ]}
+        >
           {rightAction ? (
-            <View
-              style={[
-                styles.floatingRight,
-
+            rightAction
+          ) : showCrown ? (
+            <Pressable
+              onPress={handleCrown}
+              disabled={!onCrownPress}
+              hitSlop={8}
+              accessibilityRole={
+                onCrownPress ? 'button' : undefined
+              }
+              accessibilityLabel="Premium"
+              style={({ pressed }) => [
+                styles.floatingControl,
                 {
-                  backgroundColor:
-                    theme.backgroundElement,
-
-                  borderColor:
-                    theme.border,
-
-                  shadowColor:
-                    theme.foreground,
+                  width: sideSize,
+                  height: sideSize,
+                  borderRadius: sideSize / 2,
+                  backgroundColor: theme.card,
+                  borderColor: theme.border,
+                  shadowColor: Colors.light.text,
+                  opacity: onCrownPress ? 1 : 0.96,
                 },
-              ]}>
-
-              {rightAction}
-
-            </View>
-          ) : null}
-
+                pressed &&
+                  onCrownPress &&
+                  styles.pressed,
+              ]}
+            >
+              <MaterialCommunityIcons
+                name="crown-outline"
+                size={21}
+                color={theme.text}
+              />
+            </Pressable>
+          ) : (
+            <View
+              style={{
+                width: sideSize,
+                height: sideSize,
+              }}
+            />
+          )}
         </View>
-
       </View>
-
     </View>
   );
 }
 
-
-// ─────────────────────────────────────────────────────────────────────────
-// Styles
-// ─────────────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
-
   container: {
-    width:
-      '100%',
-
-    paddingHorizontal:
-      Spacing.four,
-
-    paddingBottom:
-      0,
-
-    backgroundColor:
-      'transparent',
+    width: '100%',
+    backgroundColor: 'transparent',
+    zIndex: 10,
   },
 
+  content: {
+    width: '100%',
+    minHeight: 48,
 
-  contentRow: {
-    width:
-      '100%',
-
-    flexDirection:
-      'row',
-
-    alignItems:
-      'center',
-
-    justifyContent:
-      'space-between',
-
-    minHeight:
-      56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
 
-
-  leftGroup: {
-    flexDirection:
-      'row',
-
-    alignItems:
-      'center',
-
-    flexShrink:
-      1,
-
-    gap:
-      Spacing.one,
+  sideSlot: {
+    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
+  centerSlot: {
+    flex: 1,
+    height: 48,
 
-  floatingLeft: {
-    borderRadius:
-      20,
+    marginHorizontal: Spacing.three,
 
-    borderWidth:
-      1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
-    overflow:
-      'hidden',
+  floatingControl: {
+    alignItems: 'center',
+    justifyContent: 'center',
+
+    borderWidth: StyleSheet.hairlineWidth,
 
     shadowOffset: {
-      width:
-        0,
-
-      height:
-        3,
+      width: 0,
+      height: 2,
     },
 
-    shadowOpacity:
-      0.10,
+    shadowOpacity: 0.055,
+    shadowRadius: 4,
 
-    shadowRadius:
-      8,
-
-    elevation:
-      3,
+    elevation: 2,
   },
 
+  titleControl: {
+    height: 40,
 
-  backButton: {
-    width:
-      36,
+    paddingHorizontal: Spacing.four,
 
-    height:
-      36,
+    borderRadius: Radii.full,
+    borderWidth: StyleSheet.hairlineWidth,
 
-    borderRadius:
-      18,
-
-    alignItems:
-      'center',
-
-    justifyContent:
-      'center',
-  },
-
-
-  titleWrap: {
-    alignItems:
-      'center',
-
-    justifyContent:
-      'center',
-
-    paddingHorizontal:
-      Spacing.three,
-
-    paddingVertical:
-      Spacing.one,
-
-    borderRadius:
-      22,
-
-    borderWidth:
-      1,
-
-    minWidth:
-      170,
-
-    maxWidth:
-      260,
+    alignItems: 'center',
+    justifyContent: 'center',
 
     shadowOffset: {
-      width:
-        0,
-
-      height:
-        4,
+      width: 0,
+      height: 2,
     },
 
-    shadowOpacity:
-      0.08,
+    shadowOpacity: 0.055,
+    shadowRadius: 4,
 
-    shadowRadius:
-      12,
-
-    elevation:
-      3,
+    elevation: 2,
   },
 
+  titleContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    maxWidth: '100%',
+  },
 
   title: {
     ...Typography.bodyBold,
-
-    fontSize:
-      17,
-
-    textAlign:
-      'center',
+    fontFamily: Fonts.sans,
+    textAlign: 'center',
   },
-
 
   subtitle: {
-    ...Typography.caption,
-
-    fontSize:
-      11,
-
-    textAlign:
-      'center',
-
-    marginTop:
-      2,
+    ...Typography.small,
+    fontFamily: Fonts.sans,
+    textAlign: 'center',
+    marginTop: 1,
   },
 
-
-  rightSlot: {
-    width:
-      44,
-
-    alignItems:
-      'flex-end',
-
-    justifyContent:
-      'center',
-
-    marginLeft:
-      Spacing.two,
-  },
-
-
-  floatingRight: {
-    minWidth:
-      38,
-
-    minHeight:
-      38,
-
-    borderRadius:
-      20,
-
-    borderWidth:
-      1,
-
-    alignItems:
-      'center',
-
-    justifyContent:
-      'center',
-
-    paddingHorizontal:
-      Spacing.one,
-
-    shadowOffset: {
-      width:
-        0,
-
-      height:
-        3,
-    },
-
-    shadowOpacity:
-      0.10,
-
-    shadowRadius:
-      8,
-
-    elevation:
-      3,
+  pressed: {
+    transform: [{ scale: 0.94 }],
   },
 });
+
+export default Header;

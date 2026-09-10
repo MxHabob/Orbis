@@ -5,115 +5,264 @@
  */
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/hooks/use-theme';
 import { Header } from '@/components/header';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/toast';
-import { Spacing, Typography } from '@/constants/theme';
+import {
+  Radii,
+  Spacing,
+  Typography,
+} from '@/constants/theme';
 
 export default function LinkedAccountsScreen() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const toast = useToast();
 
-  const [googleLinked, setGoogleLinked] = useState(true);
-  const [dialogVisible, setDialogVisible] = useState(false);
-  const [dialogMode, setDialogMode] = useState<'confirm' | 'message'>('confirm');
-  const [dialogTitle, setDialogTitle] = useState('');
-  const [dialogDescription, setDialogDescription] = useState('');
+  const [googleLinked, setGoogleLinked] =
+    useState(true);
 
-  const openDialog = (title: string, description: string, mode: 'confirm' | 'message' = 'message') => {
+  const [dialogVisible, setDialogVisible] =
+    useState(false);
+
+  const [dialogMode, setDialogMode] =
+    useState<'confirm' | 'message'>('confirm');
+
+  const [dialogTitle, setDialogTitle] =
+    useState('');
+
+  const [dialogDescription, setDialogDescription] =
+    useState('');
+
+  const openDialog = (
+    title: string,
+    description: string,
+    mode: 'confirm' | 'message' = 'message',
+  ) => {
     setDialogTitle(title);
     setDialogDescription(description);
     setDialogMode(mode);
     setDialogVisible(true);
   };
 
-  const toggleGoogle = () => {
+  const handleGooglePress = () => {
     if (googleLinked) {
-      openDialog('فصل الحساب', 'هل أنت متأكد من إلغاء ربط حساب Google؟', 'confirm');
-    } else {
-      setGoogleLinked(true);
-      toast.success('تم ربط حساب Google بنجاح.');
-      openDialog('تم الربط', 'تم ربط حساب Google بنجاح.');
+      openDialog(
+        'فصل حساب Google',
+        'هل أنت متأكد من إلغاء ربط حساب Google؟',
+        'confirm',
+      );
+
+      return;
     }
+
+    setGoogleLinked(true);
+
+    toast.success(
+      'تم ربط حساب Google بنجاح.',
+    );
   };
 
   const confirmDisconnect = () => {
     setGoogleLinked(false);
     setDialogVisible(false);
-    toast.success('تم إلغاء ربط الحساب.');
-    openDialog('تم', 'تم إلغاء ربط الحساب.');
+
+    toast.success(
+      'تم إلغاء ربط حساب Google.',
+    );
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Header title="الحسابات المرتبطة" showBack />
-
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: theme.background,
+        },
+      ]}
+    >
       <ScrollView
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: insets.bottom + Spacing.six },
+          styles.content,
+          {
+            paddingBottom:
+              insets.bottom + 120,
+          },
         ]}
-        showsVerticalScrollIndicator={false}>
-        <Card variant="elevated" style={styles.card}>
-          <View style={styles.providerRow}>
-            <View style={[styles.providerIcon, { backgroundColor: theme.backgroundElement }]}>
-              <Ionicons name="logo-google" size={26} color={theme.text} />
+      >
+        <Header
+          title="Linked Accounts"
+          showBack
+          showCrown={false}
+        />
+
+        <View style={styles.main}>
+          <View
+            style={[
+              styles.providerRow,
+              {
+                borderBottomColor: theme.border,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.googleIcon,
+                {
+                  backgroundColor:
+                    theme.backgroundElement,
+                },
+              ]}
+            >
+              <Ionicons
+                name="logo-google"
+                size={22}
+                color={theme.text}
+              />
             </View>
 
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.providerTitle, { color: theme.text }]}>حساب Google</Text>
-              <Text style={[styles.providerEmail, { color: theme.textSecondary }]}>
-                {googleLinked ? 'user@gmail.com' : 'غير متصل'}
+            <View style={styles.providerInfo}>
+              <Text
+                style={[
+                  styles.providerTitle,
+                  {
+                    color: theme.text,
+                  },
+                ]}
+              >
+                Google
+              </Text>
+
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.providerEmail,
+                  {
+                    color: theme.textMuted,
+                  },
+                ]}
+              >
+                {googleLinked
+                  ? 'user@gmail.com'
+                  : 'غير متصل'}
               </Text>
             </View>
 
-            <Badge
-              label={googleLinked ? 'متصل' : 'غير متصل'}
-              variant={googleLinked ? 'success' : 'neutral'}
-              size="sm"
-            />
+            <View style={styles.status}>
+              <View
+                style={[
+                  styles.statusDot,
+                  {
+                    backgroundColor:
+                      googleLinked
+                        ? theme.primary
+                        : theme.border,
+                  },
+                ]}
+              />
+
+              <Text
+                style={[
+                  styles.statusText,
+                  {
+                    color: googleLinked
+                      ? theme.textSecondary
+                      : theme.textMuted,
+                  },
+                ]}
+              >
+                {googleLinked
+                  ? 'متصل'
+                  : 'غير متصل'}
+              </Text>
+            </View>
           </View>
 
-          <Text style={[styles.desc, { color: theme.textSecondary }]}>
-            يتيح لك ربط حساب Google تسجيل الدخول السريع بلمسة واحدة دون الحاجة لإدخال كلمة المرور في كل مرة.
-          </Text>
-
-          <Button
-            title={googleLinked ? 'فصل حساب Google' : 'ربط حساب Google'}
-            onPress={toggleGoogle}
-            variant={googleLinked ? 'secondary' : 'primary'}
-            size="md"
-            fullWidth
-          />
-        </Card>
+          <View style={styles.actionArea}>
+            <Button
+              title={
+                googleLinked
+                  ? 'فصل حساب Google'
+                  : 'ربط حساب Google'
+              }
+              onPress={handleGooglePress}
+              variant={
+                googleLinked
+                  ? 'secondary'
+                  : 'primary'
+              }
+              size="md"
+              fullWidth
+            />
+          </View>
+        </View>
       </ScrollView>
 
-      <Dialog visible={dialogVisible} onClose={() => setDialogVisible(false)}>
+      <Dialog
+        visible={dialogVisible}
+        onClose={() =>
+          setDialogVisible(false)
+        }
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{dialogTitle}</DialogTitle>
+            <DialogTitle>
+              {dialogTitle}
+            </DialogTitle>
           </DialogHeader>
-          <DialogDescription>{dialogDescription}</DialogDescription>
+
+          <DialogDescription>
+            {dialogDescription}
+          </DialogDescription>
+
           <DialogFooter>
             {dialogMode === 'confirm' ? (
               <>
                 <DialogClose>
-                  <Button title="إلغاء" onPress={() => {}} variant="outline" size="sm" />
+                  <Button
+                    title="إلغاء"
+                    onPress={() => {}}
+                    variant="outline"
+                    size="sm"
+                  />
                 </DialogClose>
-                <Button title="فصل" onPress={confirmDisconnect} variant="destructive" size="sm" />
+
+                <Button
+                  title="فصل الحساب"
+                  onPress={confirmDisconnect}
+                  variant="destructive"
+                  size="sm"
+                />
               </>
             ) : (
               <DialogClose>
-                <Button title="تم" onPress={() => {}} variant="default" size="sm" />
+                <Button
+                  title="تم"
+                  onPress={() => {}}
+                  variant="default"
+                  size="sm"
+                />
               </DialogClose>
             )}
           </DialogFooter>
@@ -127,35 +276,74 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollContent: {
+
+  content: {
     paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.four,
+    paddingTop: Spacing.two,
   },
-  card: {
-    padding: Spacing.five,
-    gap: Spacing.three,
+
+  main: {
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'center',
+    marginTop: Spacing.six,
   },
+
   providerRow: {
+    minHeight: 72,
+
+    flexDirection: 'row',
+    alignItems: 'center',
+
+    borderBottomWidth:
+      StyleSheet.hairlineWidth,
+
+    paddingBottom: Spacing.four,
+  },
+
+  googleIcon: {
+    width: 48,
+    height: 48,
+
+    borderRadius: Radii.full,
+
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  providerInfo: {
+    flex: 1,
+    minWidth: 0,
+    marginLeft: Spacing.three,
+  },
+
+  providerTitle: {
+    ...Typography.bodyBold,
+    fontSize: 15,
+  },
+
+  providerEmail: {
+    ...Typography.small,
+    marginTop: 3,
+  },
+
+  status: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
   },
-  providerIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: Radii.full,
   },
-  providerTitle: {
-    ...Typography.bodyBold,
-  },
-  providerEmail: {
+
+  statusText: {
     ...Typography.small,
-    marginTop: 2,
   },
-  desc: {
-    ...Typography.caption,
-    lineHeight: 20,
+
+  actionArea: {
+    marginTop: Spacing.five,
   },
 });

@@ -61,19 +61,6 @@ export default function TabsLayout() {
               {t('tab_behavior_ai')}
             </NativeTabs.Trigger.Label>
           </NativeTabs.Trigger>
-
-          <NativeTabs.Trigger name="profile">
-            <NativeTabs.Trigger.Icon
-              sf={{
-                default: 'person',
-                selected: 'person.fill',
-              }}
-            />
-
-            <NativeTabs.Trigger.Label>
-              {t('tab_profile')}
-            </NativeTabs.Trigger.Label>
-          </NativeTabs.Trigger>
         </NativeTabs>
       ) : (
         <Tabs
