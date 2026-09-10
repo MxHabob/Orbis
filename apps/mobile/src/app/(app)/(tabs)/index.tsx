@@ -58,7 +58,6 @@ import {
 } from '@/hooks/use-api-queries';
 
 import {
-  CampusHeaderPill,
   StudentBubbleCluster,
   PersonalizedFeaturesGrid,
   PrimeAiBanner,
@@ -80,6 +79,10 @@ import {
 import {
   GradientHeader,
 } from '@/components/gradient-header';
+
+import {
+  Header,
+} from '@/components/header';
 
 import {
   useTheme,
@@ -601,38 +604,43 @@ export default function HomeScreen() {
           ───────────────────────────────────────────────────────── */}
 
         <View
-          style={[
-            styles.heroSection,
-            {
-              paddingTop:
-                Math.max(
-                  insets.top,
-                  Spacing.four,
-                ) +
-                Spacing.one,
-            },
-          ]}>
+          style={
+            styles.heroSection
+          }>
 
-          <CampusHeaderPill
-            campusName={
+          <Header
+            title={
               campusName
             }
-          />
 
-
-          <StudentBubbleCluster
-            items={
-              bubbleItems
-            }
-
-            isLoading={
-              isParent
-            }
-
-            onItemPress={
-              handleBubblePress
+            onCrownPress={() =>
+              setShowPrimeDrawer(
+                true,
+              )
             }
           />
+
+
+          <View
+            style={
+              styles.bubbleClusterWrapper
+            }>
+
+            <StudentBubbleCluster
+              items={
+                bubbleItems
+              }
+
+              isLoading={
+                isParent
+              }
+
+              onItemPress={
+                handleBubblePress
+              }
+            />
+
+          </View>
 
         </View>
 
@@ -913,10 +921,19 @@ const styles = StyleSheet.create({
   /**
    * Hero section.
    *
-   * Safe-area padding is applied dynamically in JSX.
+   * Top safe-area padding is now handled inside <Header />, so this
+   * section no longer applies it directly.
    */
   heroSection: {
     width: '100%',
+  },
+
+
+  /**
+   * Spacing between the header and the bubble cluster below it.
+   */
+  bubbleClusterWrapper: {
+    marginTop: Spacing.four,
   },
 
 

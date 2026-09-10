@@ -13,6 +13,11 @@ export const ar = {
   nav_campus_default: 'مجمع الرياض التعليمي',
   nav_for_you: 'هذه مخصصة لك',
   nav_for_you_user: '{name}، هذه مخصصة لك',
+  header_back: 'رجوع',
+  header_profile: 'الملف الشخصي',
+  header_premium: 'PRIME',
+  badge_new: 'جديد',
+  tab_digital_id: 'الهوية الرقمية',
 
   // Tab titles (compatibility keys)
   tab_home: 'الرئيسية',

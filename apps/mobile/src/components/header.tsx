@@ -1,5 +1,14 @@
 // components/header.tsx
 
+/**
+ * @module @orbis/mobile/components/header
+ *
+ * Orbis screen header.
+ *
+ * A left floating control (back / profile), an optional centered floating
+ * title pill, and a right floating control (custom action / crown).
+ */
+
 import React from 'react';
 import {
   Pressable,
@@ -22,6 +31,11 @@ import {
   Typography,
 } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useI18n } from '@/lib/i18n';
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 type HeaderProps = {
   title?: string;
@@ -43,20 +57,20 @@ type HeaderProps = {
   progressTotal?: number;
   onProgressPress?: () => void;
 
-  /**
-   * Show the center page title.
-   */
+  /** Show the center page title. */
   showTitle?: boolean;
 
-  /**
-   * Show crown on the right.
-   */
+  /** Show crown on the right. */
   showCrown?: boolean;
 
   transparent?: boolean;
 
   style?: StyleProp<ViewStyle>;
 };
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
 export function Header({
   title,
@@ -79,13 +93,11 @@ export function Header({
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
+  const { t } = useI18n();
 
   const sideSize = width < 360 ? 46 : 48;
 
-  const titleWidth = Math.min(
-    Math.max(width * 0.42, 128),
-    190,
-  );
+  const titleWidth = Math.min(Math.max(width * 0.42, 128), 190);
 
   const handleBack = () => {
     if (onBack) {
@@ -109,6 +121,8 @@ export function Header({
     onCrownPress?.();
   };
 
+  const leftLabel = showBack ? t('header_back') : t('header_profile');
+
   return (
     <View
       style={[
@@ -122,22 +136,12 @@ export function Header({
     >
       <View style={styles.content}>
         {/* LEFT */}
-        <View
-          style={[
-            styles.sideSlot,
-            {
-              width: sideSize,
-              height: sideSize,
-            },
-          ]}
-        >
+        <View style={[styles.sideSlot, { width: sideSize, height: sideSize }]}>
           <Pressable
-            onPress={showBack ? handleBack : handleProfile}
-            hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel={
-              showBack ? 'Go back' : 'Open profile'
-            }
+            accessibilityLabel={leftLabel}
+            hitSlop={8}
+            onPress={showBack ? handleBack : handleProfile}
             style={({ pressed }) => [
               styles.floatingControl,
               {
@@ -152,11 +156,7 @@ export function Header({
             ]}
           >
             <Ionicons
-              name={
-                showBack
-                  ? 'chevron-back'
-                  : 'person-outline'
-              }
+              name={showBack ? 'chevron-back' : 'person-outline'}
               size={21}
               color={theme.text}
             />
@@ -181,10 +181,7 @@ export function Header({
                 <Text
                   numberOfLines={1}
                   ellipsizeMode="tail"
-                  style={[
-                    styles.title,
-                    { color: theme.text },
-                  ]}
+                  style={[styles.title, { color: theme.text }]}
                 >
                   {title}
                 </Text>
@@ -193,10 +190,7 @@ export function Header({
                   <Text
                     numberOfLines={1}
                     ellipsizeMode="tail"
-                    style={[
-                      styles.subtitle,
-                      { color: theme.textSecondary },
-                    ]}
+                    style={[styles.subtitle, { color: theme.textSecondary }]}
                   >
                     {subtitle}
                   </Text>
@@ -207,26 +201,16 @@ export function Header({
         </View>
 
         {/* RIGHT */}
-        <View
-          style={[
-            styles.sideSlot,
-            {
-              width: sideSize,
-              height: sideSize,
-            },
-          ]}
-        >
+        <View style={[styles.sideSlot, { width: sideSize, height: sideSize }]}>
           {rightAction ? (
             rightAction
           ) : showCrown ? (
             <Pressable
-              onPress={handleCrown}
+              accessibilityRole={onCrownPress ? 'button' : undefined}
+              accessibilityLabel={t('header_premium')}
               disabled={!onCrownPress}
               hitSlop={8}
-              accessibilityRole={
-                onCrownPress ? 'button' : undefined
-              }
-              accessibilityLabel="Premium"
+              onPress={handleCrown}
               style={({ pressed }) => [
                 styles.floatingControl,
                 {
@@ -238,9 +222,7 @@ export function Header({
                   shadowColor: Colors.light.text,
                   opacity: onCrownPress ? 1 : 0.96,
                 },
-                pressed &&
-                  onCrownPress &&
-                  styles.pressed,
+                pressed && onCrownPress && styles.pressed,
               ]}
             >
               <MaterialCommunityIcons
@@ -250,18 +232,17 @@ export function Header({
               />
             </Pressable>
           ) : (
-            <View
-              style={{
-                width: sideSize,
-                height: sideSize,
-              }}
-            />
+            <View style={{ width: sideSize, height: sideSize }} />
           )}
         </View>
       </View>
     </View>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Styles
+// ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
   container: {
@@ -273,7 +254,6 @@ const styles = StyleSheet.create({
   content: {
     width: '100%',
     minHeight: 48,
-
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -288,9 +268,7 @@ const styles = StyleSheet.create({
   centerSlot: {
     flex: 1,
     height: 48,
-
     marginHorizontal: Spacing.three,
-
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -298,39 +276,23 @@ const styles = StyleSheet.create({
   floatingControl: {
     alignItems: 'center',
     justifyContent: 'center',
-
     borderWidth: StyleSheet.hairlineWidth,
-
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.055,
     shadowRadius: 4,
-
     elevation: 2,
   },
 
   titleControl: {
     height: 40,
-
     paddingHorizontal: Spacing.four,
-
     borderRadius: Radii.full,
     borderWidth: StyleSheet.hairlineWidth,
-
     alignItems: 'center',
     justifyContent: 'center',
-
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.055,
     shadowRadius: 4,
-
     elevation: 2,
   },
 

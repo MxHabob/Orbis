@@ -1,17 +1,19 @@
 /**
- * @module @orbis/mobile/components/ui/floating-tab-bar
+ * @module @orbis/mobile/components/floating-tab-bar
  *
  * Orbis Floating Tab Bar.
  *
- * Three independent floating controls:
+ * Three independent floating controls — there is intentionally no shared
+ * floating container:
  *
- *   [ Apps ]       [ Practice ]       [ Analytics ]
+ *   [ Apps ]        [ Digital ID ]        [ Analytics ]
  *
- * There is intentionally no shared floating container.
+ * The left and right controls navigate between tab routes as usual. The
+ * center control does not navigate: it opens `DigitalIdDialog`, which
+ * presents the signed-in user's digital ID card.
  */
 
 import React from 'react';
-
 import {
   Pressable,
   StyleSheet,
@@ -22,434 +24,173 @@ import {
 } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {
-  Fonts,
-  Radii,
-  Spacing,
-  Typography,
-} from '@/constants/theme';
-
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
+import { Fonts, Radii, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useI18n } from '@/lib/i18n';
 
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
-type Route = {
+type TabRoute = {
   key: string;
   name: string;
   params?: unknown;
 };
 
-
-type FloatingTabBarProps = {
-  state: {
-    index: number;
-    routes: Route[];
-  };
-
-  navigation: {
-    emit: (event: {
-      type: string;
-      target: string;
-      canPreventDefault: boolean;
-    }) => {
-      defaultPrevented: boolean;
-    };
-
-    navigate: (
-      name: string,
-      params?: unknown,
-    ) => void;
-  };
-
-  descriptors: Record<
-    string,
-    {
-      options: {
-        title?: string;
-      };
-    }
-  >;
+type TabBarState = {
+  index: number;
+  routes: TabRoute[];
 };
 
+type TabBarNavigation = {
+  emit: (event: {
+    type: string;
+    target: string;
+    canPreventDefault: boolean;
+  }) => { defaultPrevented: boolean };
+
+  navigate: (name: string, params?: unknown) => void;
+};
+
+type TabBarDescriptors = Record<string, { options: { title?: string } }>;
+
+type FloatingTabBarProps = {
+  state: TabBarState;
+  navigation: TabBarNavigation;
+  descriptors: TabBarDescriptors;
+};
 
 type FloatingControlProps = {
   children: React.ReactNode;
-
   onPress: () => void;
-
   accessibilityLabel: string;
-
   style?: StyleProp<ViewStyle>;
 };
+
+const ROUTE_APPS = 'index';
+const ROUTE_ANALYTICS = 'behavior';
 
 
 export function FloatingTabBar({
   state,
   navigation,
-  descriptors,
 }: FloatingTabBarProps) {
-
-  const insets =
-    useSafeAreaInsets();
-
-  const theme =
-    useTheme();
-
-  const colorScheme =
-    useColorScheme();
-
-  const isDark =
-    colorScheme === 'dark';
+  const insets = useSafeAreaInsets();
+  const theme = useTheme();
+  const { t } = useI18n();
 
 
-  // ───────────────────────────────────────────────────────────────────────
-  // Bottom Position
-  // ───────────────────────────────────────────────────────────────────────
 
-  const bottom =
-    Math.max(
-      insets.bottom,
-      Spacing.three,
-    ) +
-    Spacing.one;
+  const bottom = Math.max(insets.bottom, Spacing.three) + Spacing.one;
 
 
-  // ───────────────────────────────────────────────────────────────────────
-  // Routes
-  // ───────────────────────────────────────────────────────────────────────
+  const findRouteIndex = (name: string) =>
+    state.routes.findIndex((route) => route.name === name);
 
-  const getRoute = (
-    name: string,
-  ) =>
-    state.routes.find(
-      (route) =>
-        route.name === name,
-    );
-
-
-  const getRouteIndex = (
-    name: string,
-  ) =>
-    state.routes.findIndex(
-      (route) =>
-        route.name === name,
-    );
-
-
-  const isRouteFocused = (
-    name: string,
-  ) => {
-
-    const index =
-      getRouteIndex(name);
-
-    return (
-      index !== -1 &&
-      state.index === index
-    );
+  const isRouteFocused = (name: string) => {
+    const index = findRouteIndex(name);
+    return index !== -1 && state.index === index;
   };
 
-
-  const navigateToRoute = (
-    name: string,
-  ) => {
-
-    const routeIndex =
-      getRouteIndex(name);
-
+  const navigateToRoute = (name: string) => {
+    const routeIndex = findRouteIndex(name);
     if (routeIndex === -1) {
       return;
     }
 
-    const route =
-      state.routes[routeIndex];
+    const route = state.routes[routeIndex];
+    const event = navigation.emit({
+      type: 'tabPress',
+      target: route.key,
+      canPreventDefault: true,
+    });
 
-    const event =
-      navigation.emit({
-        type: 'tabPress',
-        target: route.key,
-        canPreventDefault: true,
-      });
-
-    if (
-      !event.defaultPrevented
-    ) {
-      navigation.navigate(
-        route.name,
-        route.params,
-      );
+    if (!event.defaultPrevented) {
+      navigation.navigate(route.name, route.params);
     }
   };
 
 
-  const indexRoute =
-    getRoute('index');
+  const isAppsFocused = isRouteFocused(ROUTE_APPS);
+  const isAnalyticsFocused = isRouteFocused(ROUTE_ANALYTICS);
 
-  const behaviorRoute =
-    getRoute('behavior');
+  const digitalIdLabel = t('tab_digital_id');
 
-
-  const indexFocused =
-    isRouteFocused('index');
-
-  const behaviorFocused =
-    isRouteFocused('behavior');
-
-  const profileFocused =
-    isRouteFocused('profile');
-
-
-  // ───────────────────────────────────────────────────────────────────────
-  // Surface
-  // ───────────────────────────────────────────────────────────────────────
-
-  const surface =
-    isDark
-      ? theme.cardElevated
-      : theme.cardElevated;
-
-  const border =
-    theme.cardBorder;
-
-  const iconColor =
-    theme.foreground;
-
-
-  // ───────────────────────────────────────────────────────────────────────
-  // Render
-  // ───────────────────────────────────────────────────────────────────────
+  // Shared floating surface — identical for every control.
+  const surface = theme.cardElevated;
+  const border = theme.cardBorder;
+  const iconColor = theme.foreground;
 
   return (
-    <View
-      pointerEvents="box-none"
-      style={[
-        styles.navigation,
-
-        {
-          bottom,
-        },
-      ]}>
-
-      {/* ─────────────────────────────────────────────────────────────
-          LEFT — Apps
-        ───────────────────────────────────────────────────────────── */}
-
-      <View
-        style={
-          styles.appsWrapper
-        }>
-
+    <View pointerEvents="box-none" style={[styles.navigation, { bottom }]}>
+      {/* LEFT — Apps */}
+      <View style={styles.appsWrapper}>
         <View
           pointerEvents="none"
-          style={[
-            styles.newBadge,
-
-            {
-              backgroundColor:
-                theme.backgroundSelected,
-            },
-          ]}>
-
+          style={[styles.newBadge, { backgroundColor: theme.backgroundSelected }]}
+        >
           <Text
-            style={[
-              styles.newBadgeText,
-
-              {
-                color:
-                  theme.foreground,
-
-                fontFamily:
-                  Fonts.sans,
-              },
-            ]}>
-
-            NEW
-
+            style={[styles.newBadgeText, { color: theme.foreground, fontFamily: Fonts.sans }]}
+          >
+            {t('badge_new')}
           </Text>
-
         </View>
 
-
         <FloatingControl
-          accessibilityLabel={
-            indexRoute
-              ? descriptors[
-                  indexRoute.key
-                ]?.options.title ??
-                'Apps'
-              : 'Apps'
-          }
-
-          onPress={() =>
-            navigateToRoute(
-              'index',
-            )
-          }
-
-          style={[
-            styles.iconButton,
-
-            {
-              backgroundColor:
-                surface,
-
-              borderColor:
-                border,
-            },
-          ]}>
-
+          accessibilityLabel="Apps"
+          onPress={() => navigateToRoute(ROUTE_APPS)}
+          style={[styles.iconButton, { backgroundColor: surface, borderColor: border }]}
+        >
           <Ionicons
-            name={
-              indexFocused
-                ? 'grid'
-                : 'grid-outline'
-            }
-
+            name={isAppsFocused ? 'grid' : 'grid-outline'}
             size={21}
-
-            color={
-              iconColor
-            }
+            color={iconColor}
           />
-
         </FloatingControl>
-
       </View>
 
-
-      {/* ─────────────────────────────────────────────────────────────
-          CENTER — Practice
-        ───────────────────────────────────────────────────────────── */}
-
+      {/* CENTER — Digital ID */}
       <FloatingControl
-        accessibilityLabel={
-          behaviorRoute
-            ? descriptors[
-                behaviorRoute.key
-              ]?.options.title ??
-              'Practice'
-            : 'Practice'
-        }
-
-        onPress={() =>
-          navigateToRoute(
-            'behavior',
-          )
-        }
-
-        style={[
-          styles.practiceButton,
-
-          {
-            backgroundColor:
-              surface,
-
-            borderColor:
-              border,
-          },
-        ]}>
-
+        accessibilityLabel='Digital ID'
+        onPress={() => {}}
+        style={[styles.digitalIdButton, { backgroundColor: surface, borderColor: border }]}
+      >
         <Ionicons
-          name={
-            behaviorFocused
-              ? 'school'
-              : 'school-outline'
-          }
-
+          name={'card-outline'}
           size={21}
-
-          color={
-            iconColor
-          }
+          color={iconColor}
         />
-
 
         <Text
           numberOfLines={1}
-          style={[
-            styles.practiceText,
-
-            {
-              color:
-                theme.foreground,
-
-              fontFamily:
-                Fonts.sans,
-            },
-          ]}>
-
-          {behaviorRoute
-            ? descriptors[
-                behaviorRoute.key
-              ]?.options.title ??
-              'Practice'
-            : 'Practice'}
-
+          style={[styles.digitalIdText, { color: theme.foreground, fontFamily: Fonts.sans }]}
+        >
+          {digitalIdLabel}
         </Text>
-
       </FloatingControl>
 
-
-      {/* ─────────────────────────────────────────────────────────────
-          RIGHT — Analytics
-        ───────────────────────────────────────────────────────────── */}
-
+      {/* RIGHT — Analytics */}
       <FloatingControl
-        accessibilityLabel={
-          behaviorRoute
-            ? descriptors[
-                behaviorRoute.key
-              ]?.options.title ??
-              'Analytics'
-            : 'Analytics'
-        }
-
-        onPress={() =>
-          navigateToRoute(
-            'profile',
-          )
-        }
-
-        style={[
-          styles.iconButton,
-
-          {
-            backgroundColor:
-              surface,
-
-            borderColor:
-              border,
-          },
-        ]}>
-
+        accessibilityLabel="Analytics"
+        onPress={() => navigateToRoute(ROUTE_ANALYTICS)}
+        style={[styles.iconButton, { backgroundColor: surface, borderColor: border }]}
+      >
         <Ionicons
-          name={
-            profileFocused
-              ? 'bar-chart'
-              : 'bar-chart-outline'
-          }
-
+          name={isAnalyticsFocused ? 'bar-chart' : 'bar-chart-outline'}
           size={21}
-
-          color={
-            iconColor
-          }
+          color={iconColor}
         />
-
       </FloatingControl>
-
     </View>
   );
 }
 
-
-// ─────────────────────────────────────────────────────────────────────────
-// Floating Control
-// ─────────────────────────────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
+// Floating control
+// ---------------------------------------------------------------------------
 
 function FloatingControl({
   children,
@@ -457,272 +198,116 @@ function FloatingControl({
   accessibilityLabel,
   style,
 }: FloatingControlProps) {
-
   return (
     <Pressable
       accessibilityRole="button"
-
-      accessibilityLabel={
-        accessibilityLabel
-      }
-
-      onPress={
-        onPress
-      }
-
-      style={({
-        pressed,
-      }) => [
-        styles.control,
-
-        style,
-
-        pressed &&
-        styles.pressed,
-      ]}>
-
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      style={({ pressed }) => [styles.control, style, pressed && styles.pressed]}
+    >
       {children}
-
     </Pressable>
   );
 }
 
-
-// ─────────────────────────────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
 // Styles
-// ─────────────────────────────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
-
   /**
    * The navigation container is only a layout container.
-   *
-   * No background.
-   * No border.
-   * No shadow.
+   * No background, no border, no shadow.
    */
   navigation: {
     position: 'absolute',
-
-    left:
-      Spacing.four,
-
-    right:
-      Spacing.four,
-
-    minHeight:
-      48,
-
-    flexDirection:
-      'row',
-
-    alignItems:
-      'center',
-
-    justifyContent:
-      'space-between',
-
-    gap:
-      Spacing.two,
-
-    zIndex:
-      100,
+    left: Spacing.four,
+    right: Spacing.four,
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+    zIndex: 100,
   },
 
-
-  /**
-   * Shared floating surface.
-   */
+  /** Shared floating surface. */
   control: {
-    alignItems:
-      'center',
-
-    justifyContent:
-      'center',
-
-    borderWidth:
-      StyleSheet.hairlineWidth,
-
-    elevation:
-      4,
-
-    shadowColor:
-      '#000000',
-
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-
-    shadowOpacity:
-      0.07,
-
-    shadowRadius:
-      6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    elevation: 4,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
   },
 
-
-  /**
-   * LEFT + RIGHT.
-   *
-   * 48 × 48
-   */
+  /** LEFT + RIGHT. 48 × 48. */
   iconButton: {
-    width:
-      48,
-
-    height:
-      48,
-
-    flexShrink:
-      0,
-
-    borderRadius:
-      Radii.full,
+    width: 48,
+    height: 48,
+    flexShrink: 0,
+    borderRadius: Radii.full,
   },
 
-
-  /**
-   * Wrapper only exists so NEW can sit above Apps.
-   */
+  /** Wrapper only exists so NEW can sit above Apps. */
   appsWrapper: {
-    width:
-      48,
-
-    height:
-      48,
-
-    flexShrink:
-      0,
-
-    alignItems:
-      'center',
-
-    justifyContent:
-      'center',
-
-    position:
-      'relative',
+    width: 48,
+    height: 48,
+    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
   },
 
-
-  /**
-   * NEW badge.
-   *
-   * Small and visually subordinate to the button.
-   */
+  /** NEW badge — small and visually subordinate to the button. */
   newBadge: {
-    position:
-      'absolute',
-
-    top:
-      -16,
-
-    left:
-      -2,
-
-    minWidth:
-      58,
-
-    height:
-      30,
-
-    paddingHorizontal:
-      Spacing.two,
-
-    borderRadius:
-      Radii.full,
-
-    alignItems:
-      'center',
-
-    justifyContent:
-      'center',
-
-    zIndex:
-      10,
+    position: 'absolute',
+    top: -16,
+    left: -2,
+    minWidth: 58,
+    height: 30,
+    paddingHorizontal: Spacing.two,
+    borderRadius: Radii.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
   },
-
 
   newBadgeText: {
     ...Typography.small,
-
-    fontSize:
-      12,
-
-    lineHeight:
-      14,
-
-    fontWeight:
-      '500',
-
-    letterSpacing:
-      0.1,
+    fontSize: 12,
+    lineHeight: 14,
+    fontWeight: '500',
+    letterSpacing: 0.1,
   },
 
-
-  /**
-   * CENTER.
-   *
-   * Flexible width.
-   *
-   * Typical:
-   *   140–160 × 44
-   */
-  practiceButton: {
+  /** CENTER. Flexible width, typical 140–160 × 44. */
+  digitalIdButton: {
     flex: 1,
-
-    height:
-      44,
-
-    minWidth:
-      120,
-
-    maxWidth:
-      160,
-
-    paddingHorizontal:
-      Spacing.three,
-
-    borderRadius:
-      Radii.full,
-
-    flexDirection:
-      'row',
-
-    alignItems:
-      'center',
-
-    justifyContent:
-      'center',
-
-    gap:
-      Spacing.one,
+    height: 44,
+    minWidth: 120,
+    maxWidth: 160,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Radii.full,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.one,
   },
 
-
-  practiceText: {
+  digitalIdText: {
     ...Typography.body,
-
-    fontSize:
-      14,
-
-    lineHeight:
-      18,
-
-    fontWeight:
-      '500',
-
-    flexShrink:
-      1,
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: '500',
+    flexShrink: 1,
   },
-
 
   pressed: {
-    transform: [
-      {
-        scale: 0.96,
-      },
-    ],
+    transform: [{ scale: 0.96 }],
   },
 });
+
+export default FloatingTabBar;

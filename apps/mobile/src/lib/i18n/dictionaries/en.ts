@@ -15,6 +15,11 @@ export const en: Record<TranslationKey, string> = {
   nav_campus_default: 'Riyadh Educational Complex',
   nav_for_you: 'These are for you',
   nav_for_you_user: '{name}, these are for you',
+  header_back: 'Back',
+  header_profile: 'Profile',
+  header_premium: 'PRIME',
+  badge_new: 'New',
+  tab_digital_id: 'Digital ID',
 
   // Tab titles (compatibility keys)
   tab_home: 'Home',

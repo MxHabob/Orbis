@@ -36,7 +36,7 @@ export default function AppProtectedLayout() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="student/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="class/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="settings" options={{ headerShown: false }} />
+      <Stack.Screen name="profile" options={{ headerShown: false }} />
       <Stack.Screen
         name="notifications"
         options={{
