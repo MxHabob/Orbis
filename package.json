@@ -32,9 +32,6 @@
     "build:desktop:prod": "turbo run tauri:build:prod --filter=@orbis/desktop",
     "format": "biome format --write .",
     "lint": "turbo run lint && manypkg check",
-    "lint:root": "biome check .",
-    "lint:mobile": "bun run --cwd apps/mobile lint",
-    "quality": "bun run lint:root && bun run lint:mobile",
     "typecheck": "turbo run typecheck",
     "cli": "cargo run --manifest-path apps/cli/Cargo.toml",
     "cli:init": "cargo run --manifest-path apps/cli/Cargo.toml -- init"
