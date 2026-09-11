@@ -8,7 +8,6 @@ import React from "react";
 import {
   Pressable,
   SafeAreaView,
-  StatusBar,
   StyleSheet,
   Text,
   View,
@@ -28,12 +27,6 @@ export function WalletSetupDemo() {
 
   return (
     <View style={styles.container}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="transparent"
-        translucent
-      />
-
       <GradientHeader
         height={300}
         animated

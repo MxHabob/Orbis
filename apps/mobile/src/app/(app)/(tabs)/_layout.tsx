@@ -8,9 +8,8 @@
  * - System StatusBar follows the current color scheme.
  */
 
-import { Platform, useColorScheme } from "react-native";
+import { Platform } from "react-native";
 
-import { StatusBar } from "expo-status-bar";
 import { Tabs } from "expo-router";
 import { NativeTabs } from "expo-router/unstable-native-tabs";
 
@@ -19,12 +18,9 @@ import { useI18n } from "@/lib/i18n";
 
 export default function TabsLayout() {
   const { t } = useI18n();
-  const colorScheme = useColorScheme();
 
   return (
     <>
-      <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-
       {Platform.OS === "ios" ? (
         <NativeTabs>
           <NativeTabs.Trigger name="index">

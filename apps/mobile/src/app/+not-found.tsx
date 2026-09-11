@@ -4,9 +4,8 @@
  * 404 Fallback Screen.
  */
 
-import React from "react";
 import { StyleSheet, View } from "react-native";
-import { Link, Stack, router } from "expo-router";
+import { Stack, router } from "expo-router";
 import { Header } from "@/components/header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useTheme } from "@/hooks/use-theme";

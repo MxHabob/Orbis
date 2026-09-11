@@ -10,7 +10,6 @@ import { Redirect, Stack } from "expo-router";
 
 export default function AuthLayout() {
   const { isAuthenticated, isLoading } = useAuth();
-  const theme = useTheme();
 
   // If already authenticated and not loading, redirect into app
   if (!isLoading && isAuthenticated) {
