@@ -5,27 +5,26 @@
  * Ultra-clean component orchestrator powered by @orbis/sdk & TanStack Query.
  */
 
-import { useState, useMemo, useCallback } from "react";
-import { View, StyleSheet, ScrollView, RefreshControl } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
+import { useCallback, useMemo, useState } from "react";
+import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import {
+  BehaviorAiCard,
+  BehaviorFilterBar,
+  BehaviorFilterType,
+  BehaviorLogModal,
+  BehaviorRecordItem,
+  BehaviorScoreBanner,
+  BehaviorTimelineList,
+} from "@/components/behavior";
+import { Button } from "@/components/ui/button";
+import { Spacing } from "@/constants/theme";
+import { useAttendanceQuery, useGradesQuery } from "@/hooks/use-api-queries";
 import { useTheme } from "@/hooks/use-theme";
 import { useI18n } from "@/lib/i18n";
 import { useEffectiveContext } from "@/providers/effective-context";
-import { useAttendanceQuery, useGradesQuery } from "@/hooks/use-api-queries";
-import { Button } from "@/components/ui/button";
-import {
-  BehaviorScoreBanner,
-  BehaviorAiCard,
-  BehaviorFilterBar,
-  BehaviorTimelineList,
-  BehaviorLogModal,
-  BehaviorFilterType,
-  BehaviorRecordItem,
-} from "@/components/behavior";
-import { Spacing, Typography } from "@/constants/theme";
 
 export default function BehaviorScreen() {
   const insets = useSafeAreaInsets();
@@ -78,7 +77,6 @@ export default function BehaviorScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <ThemedStatusBar backgroundColor={theme.background} />
       {isTeacher && (
         <View
           style={[styles.actionBar, { paddingTop: insets.top + Spacing.two }]}

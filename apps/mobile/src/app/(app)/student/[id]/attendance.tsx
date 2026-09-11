@@ -4,35 +4,34 @@
  * Student Attendance & Absence History Screen.
  */
 
-import React, { useState } from "react";
+import { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
   RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 
-import { useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useTheme } from "@/hooks/use-theme";
 import { Header } from "@/components/header";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/toast";
+import { useTheme } from "@/hooks/use-theme";
 
 import {
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuTrigger,
 } from "@/components/ui/drop-down-menu";
 
 import { ScreenBackground } from "@/components/screen-background";
-import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
 
 import { Radii, Spacing, Typography } from "@/constants/theme";
 
@@ -189,12 +188,6 @@ export default function StudentAttendanceScreen() {
 
   return (
     <ScreenBackground gradientHeight={0.48}>
-      {/* ─────────────────────────────────────────────────────────────
-          Status Bar
-        ───────────────────────────────────────────────────────────── */}
-
-      <ThemedStatusBar />
-
       {/* ─────────────────────────────────────────────────────────────
           Header
         ───────────────────────────────────────────────────────────── */}

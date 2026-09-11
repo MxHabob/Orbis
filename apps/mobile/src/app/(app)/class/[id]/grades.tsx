@@ -10,16 +10,16 @@
  * - Theme-aware UI.
  */
 
-import React, { useState } from "react";
+import { useState } from "react";
 
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TextInput,
   Alert,
   Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 
 import { useLocalSearchParams } from "expo-router";
@@ -38,7 +38,6 @@ import { Button } from "@/components/ui/button";
 
 import { ScreenBackground } from "@/components/screen-background";
 
-import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
 
 import { Radii, Spacing, Typography } from "@/constants/theme";
 
@@ -178,12 +177,6 @@ export default function ClassGradesScreen() {
 
   return (
     <ScreenBackground gradientHeight={0.48}>
-      {/* ─────────────────────────────────────────────────────────────
-          Status Bar
-        ───────────────────────────────────────────────────────────── */}
-
-      <ThemedStatusBar />
-
       {/* ─────────────────────────────────────────────────────────────
           Header
 

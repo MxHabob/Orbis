@@ -12,21 +12,19 @@
  * - Clean declarative composition powered by @orbis/sdk & TanStack Query.
  */
 
-import React, { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import {
-  View,
-  StyleSheet,
-  ScrollView,
   RefreshControl,
+  ScrollView,
+  StyleSheet,
   useWindowDimensions,
+  View,
 } from "react-native";
 
 import { router } from "expo-router";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
 
 import { useAuth } from "@/lib/api";
 
@@ -42,22 +40,22 @@ import {
 } from "@/hooks/use-api-queries";
 
 import {
-  StudentBubbleCluster,
+  BubbleItemData,
   PersonalizedFeaturesGrid,
   PrimeAiBanner,
-  BubbleItemData,
+  StudentBubbleCluster,
 } from "@/components/home";
 
 import {
-  StudentSeniorIllustration,
-  StudentSophomoreIllustration,
-  StudentMiddleIllustration,
+  AttendanceFeatureIllustration,
+  BehaviorFeatureIllustration,
+  GradesFeatureIllustration,
+  ScheduleFeatureIllustration,
   StudentElementaryIllustration,
   StudentKGIllustration,
-  GradesFeatureIllustration,
-  AttendanceFeatureIllustration,
-  ScheduleFeatureIllustration,
-  BehaviorFeatureIllustration,
+  StudentMiddleIllustration,
+  StudentSeniorIllustration,
+  StudentSophomoreIllustration,
 } from "@/components/glovo-illustrations";
 
 import { GradientHeader } from "@/components/gradient-header";
@@ -69,11 +67,11 @@ import { useTheme } from "@/hooks/use-theme";
 import {
   Drawer,
   DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
   DrawerDescription,
+  DrawerHeader,
   DrawerOptionRow,
   DrawerSubmitButton,
+  DrawerTitle,
 } from "@/components/ui";
 
 import { Spacing } from "@/constants/theme";
@@ -314,16 +312,6 @@ export default function HomeScreen() {
         },
       ]}
     >
-      {/* ─────────────────────────────────────────────────────────────
-          System Status Bar
-
-          IMPORTANT:
-          The StatusBar component does not participate in layout.
-          The gradient is positioned independently underneath it.
-        ───────────────────────────────────────────────────────────── */}
-
-      <ThemedStatusBar backgroundColor={theme.homeGradient.colors[0]} />
-
       {/* ─────────────────────────────────────────────────────────────
           HOME GRADIENT
 

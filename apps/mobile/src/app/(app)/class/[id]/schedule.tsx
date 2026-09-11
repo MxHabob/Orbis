@@ -10,13 +10,12 @@
  * - No hardcoded UI colors.
  */
 
-import React, { useState } from "react";
+import { useState } from "react";
 
-import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { useLocalSearchParams } from "expo-router";
 
-import { Ionicons } from "@expo/vector-icons";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -30,7 +29,6 @@ import { Badge } from "@/components/ui/badge";
 
 import { ScreenBackground } from "@/components/screen-background";
 
-import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
 
 import { Radii, Spacing, Typography } from "@/constants/theme";
 
@@ -86,12 +84,6 @@ export default function ClassScheduleScreen() {
 
   return (
     <ScreenBackground gradientHeight={0.48}>
-      {/* ─────────────────────────────────────────────────────────────
-          Status Bar
-        ───────────────────────────────────────────────────────────── */}
-
-      <ThemedStatusBar />
-
       {/* ─────────────────────────────────────────────────────────────
           Header
         ───────────────────────────────────────────────────────────── */}
