@@ -369,7 +369,6 @@ export default function HomeScreen() {
         <View style={styles.heroSection}>
           <Header
             title={campusName}
-            onCrownPress={() => setShowPrimeDrawer(true)}
           />
 
           <View style={styles.bubbleClusterWrapper}>

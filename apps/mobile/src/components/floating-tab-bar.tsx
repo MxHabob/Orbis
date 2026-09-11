@@ -24,6 +24,7 @@ import {
 } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Fonts, Radii, Spacing, Typography } from "@/constants/theme";
@@ -76,6 +77,7 @@ const ROUTE_ANALYTICS = "behavior";
 export function FloatingTabBar({ state, navigation }: FloatingTabBarProps) {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
+  const router = useRouter();
   const { t } = useI18n();
 
   const bottom = Math.max(insets.bottom, Spacing.three) + Spacing.one;
@@ -156,7 +158,7 @@ export function FloatingTabBar({ state, navigation }: FloatingTabBarProps) {
       {/* CENTER — Digital ID */}
       <FloatingControl
         accessibilityLabel="Digital ID"
-        onPress={() => {}}
+        onPress={() => router.push("/Id")}
         style={[
           styles.digitalIdButton,
           { backgroundColor: surface, borderColor: border },

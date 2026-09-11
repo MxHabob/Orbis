@@ -152,7 +152,12 @@ export function Header({
   };
 
   const handleCrown = () => {
-    onCrownPress?.();
+    if (onCrownPress) {
+      onCrownPress();
+      return;
+    }
+
+    router.push("/notifications");
   };
 
   const leftLabel = showBack ? t("header_back") : t("header_profile");
@@ -262,9 +267,8 @@ export function Header({
             rightAction
           ) : showCrown ? (
             <Pressable
-              accessibilityRole={onCrownPress ? "button" : undefined}
-              accessibilityLabel={t("header_premium")}
-              disabled={!onCrownPress}
+              accessibilityRole="button"
+              accessibilityLabel="Notifications"
               hitSlop={8}
               onPress={handleCrown}
               style={({ pressed }) => [
@@ -280,14 +284,14 @@ export function Header({
                     ? "rgba(255,255,255,0.16)"
                     : theme.border,
                   shadowColor: Colors.light.text,
-                  opacity: onCrownPress ? 1 : 0.96,
+                  opacity: 1,
                 },
-                pressed && onCrownPress && styles.pressed,
+                pressed && styles.pressed,
               ]}
             >
-              <MaterialCommunityIcons
-                name="crown-outline"
-                size={21}
+              <Ionicons
+                name="notifications-outline"
+                size={20}
                 color={transparent ? "#FFFFFF" : theme.text}
               />
             </Pressable>
