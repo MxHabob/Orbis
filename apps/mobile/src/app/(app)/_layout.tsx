@@ -35,17 +35,7 @@ export default function AppProtectedLayout() {
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="(modal)"
-        options={{
-          headerShown: false,
-          presentation: "transparentModal",
-          animation: "slide_from_bottom",
-          contentStyle: {
-            backgroundColor: "transparent",
-          },
-        }}
-      />
+      <Stack.Screen name="(modal)" options={{ headerShown: false }} />
       <Stack.Screen name="student/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="class/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="profile" options={{ headerShown: false }} />

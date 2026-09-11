@@ -4,12 +4,9 @@ export default function ModalLayout() {
   return (
     <Stack
       screenOptions={{
-        presentation: "transparentModal",
+        presentation: "modal",  
         animation: "slide_from_bottom",
         headerShown: false,
-        contentStyle: {
-          backgroundColor: "transparent",
-        },
       }}
     />
   );

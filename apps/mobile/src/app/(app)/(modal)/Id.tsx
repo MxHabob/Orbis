@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
 import { useMemo } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Spacing } from "@/constants/theme";
@@ -9,6 +8,7 @@ import { useCurrentOrgQuery } from "@/hooks/use-api-queries";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/api";
 import { useEffectiveContext } from "@/providers/effective-context";
+import Header from "@/components/header";
 
 export type IdCardInfo = {
   fullName: string;
@@ -27,114 +27,240 @@ export type IdCardInfo = {
 
 function getInitials(name: string) {
   const words = name.trim().split(/\s+/).filter(Boolean);
+
   if (!words.length) return "OR";
   if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+
   return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase();
+}
+
+function Barcode({ value }: { value?: string }) {
+  const theme = useTheme();
+
+  const bars = useMemo(() => {
+    const source = value || "ORBIS";
+
+    return Array.from({ length: 48 }, (_, index) => {
+      const charCode = source.charCodeAt(index % source.length);
+      return 2 + ((charCode + index * 7) % 5);
+    });
+  }, [value]);
+
+  return (
+    <View
+      style={[
+        styles.barcodeCard,
+        {
+          backgroundColor: theme.background,
+          borderColor: theme.border,
+        },
+      ]}
+    >
+      <View style={styles.barcode}>
+        {bars.map((height, index) => (
+          <View
+            key={index}
+            style={[
+              styles.bar,
+              {
+                height: height * 5,
+                backgroundColor: theme.text,
+                opacity: index % 4 === 0 ? 0.65 : 1,
+              },
+            ]}
+          />
+        ))}
+      </View>
+
+      <Text
+        style={[
+          styles.barcodeLabel,
+          {
+            color: theme.textMuted,
+          },
+        ]}
+      >
+        DIGITAL ID
+      </Text>
+    </View>
+  );
 }
 
 export function IdentityCard({ data }: { data: IdCardInfo }) {
   const theme = useTheme();
+
   const initials = getInitials(data.fullName || "Orbis");
   const status = (data.status || "ACTIVE").toUpperCase();
-  const barcodeBars = [
-    8, 4, 2, 6, 3, 8, 4, 2, 5, 2, 7, 3, 4, 6, 2, 9, 5, 2, 6, 3, 7, 2,
-    4, 5, 3, 7, 8, 5, 2, 6, 4, 6, 3, 10, 4, 2, 5, 7, 3, 4, 9, 2, 6, 2,
-    5, 8, 3, 6, 4, 7, 2, 5, 3, 8, 6,
-  ];
+
+  const isActive =
+    status === "ACTIVE" ||
+    status === "VERIFIED" ||
+    status === "ENABLED";
 
   return (
-    <View style={styles.sheetCard}>
+    <View
+      style={[
+        styles.identityCard,
+        {
+          backgroundColor: theme.background,
+          borderColor: theme.border,
+        },
+      ]}
+    >
+      {/* Header */}
       <View style={styles.cardHeader}>
-        <View style={styles.cardHeaderLeft}>
-          <Text style={[styles.brandText, { color: theme.text }]}>ORBIS</Text>
-          <Text style={[styles.cardLabel, { color: theme.textMuted }]}>DIGITAL ID</Text>
+        <View>
+          <Text
+            style={[
+              styles.brand,
+              {
+                color: theme.text,
+              },
+            ]}
+          >
+            ORBIS
+          </Text>
+
+          <Text
+            style={[
+              styles.cardTitle,
+              {
+                color: theme.textMuted,
+              },
+            ]}
+          >
+            DIGITAL ID
+          </Text>
         </View>
 
         <View
           style={[
-            styles.statusBadge,
+            styles.status,
             {
-              backgroundColor: "rgba(255,255,255,0.04)",
-              borderColor: "rgba(255,255,255,0.1)",
-            },
-          ]}
-        >
-          <View style={[styles.statusDot, { backgroundColor: theme.primary }]} />
-          <Text style={[styles.statusText, { color: theme.primary }]}>{status}</Text>
-        </View>
-      </View>
-
-      <View style={styles.routeSection}>
-        <View style={styles.routeBlock}>
-          <Text style={[styles.routeLabel, { color: theme.textMuted }]}>FROM</Text>
-          <Text style={[styles.routeValue, { color: theme.text }]}>{data.orgName || "ORBIS"}</Text>
-        </View>
-
-        <View style={styles.routeDivider}>
-          <Ionicons name="arrow-forward" size={18} color={theme.textMuted} />
-        </View>
-
-        <View style={styles.routeBlock}>
-          <Text style={[styles.routeLabel, { color: theme.textMuted }]}>TO</Text>
-          <Text style={[styles.routeValue, { color: theme.text }]}>{data.role || "MEMBER"}</Text>
-        </View>
-      </View>
-
-      <View style={styles.identityMain}>
-        <View
-          style={[
-            styles.avatar,
-            {
-              backgroundColor: theme.background,
+              backgroundColor: theme.primary + "08",
               borderColor: theme.border,
             },
           ]}
         >
-          <Text style={[styles.avatarText, { color: theme.text }]}>{initials}</Text>
-        </View>
+          <View
+            style={[
+              styles.statusDot,
+              {
+                backgroundColor: isActive
+                  ? theme.primary
+                  : theme.textMuted,
+              },
+            ]}
+          />
 
-        <View style={styles.userInfo}>
-          <Text style={[styles.nameText, { color: theme.text }]}>{data.fullName}</Text>
-          {!!data.email && (
-            <Text style={[styles.emailText, { color: theme.textMuted }]}>{data.email}</Text>
-          )}
+          <Text
+            style={[
+              styles.statusText,
+              {
+                color: isActive
+                  ? theme.primary
+                  : theme.textMuted,
+              },
+            ]}
+          >
+            {status}
+          </Text>
         </View>
       </View>
 
-      <View style={styles.dataGrid}>
-        <View style={styles.dataCell}>
-          <Text style={[styles.dataLabel, { color: theme.textMuted }]}>ID</Text>
-          <Text style={[styles.dataValue, { color: theme.text }]}>{data.userId || "—"}</Text>
+      {/* Identity */}
+      <View style={styles.identity}>
+        <View
+          style={[
+            styles.avatar,
+            {
+              backgroundColor: theme.primary + "08",
+              borderColor: theme.border,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.avatarText,
+              {
+                color: theme.primary,
+              },
+            ]}
+          >
+            {initials}
+          </Text>
         </View>
 
-        <View style={styles.dataCell}>
-          <Text style={[styles.dataLabel, { color: theme.textMuted }]}>STATUS</Text>
-          <Text style={[styles.dataValue, { color: theme.text }]}>{status}</Text>
-        </View>
+        <View style={styles.identityInfo}>
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.name,
+              {
+                color: theme.text,
+              },
+            ]}
+          >
+            {data.fullName}
+          </Text>
 
-        <View style={styles.dataCell}>
-          <Text style={[styles.dataLabel, { color: theme.textMuted }]}>NATIONAL ID</Text>
-          <Text style={[styles.dataValue, { color: theme.text }]}>{data.nationalId || "—"}</Text>
-        </View>
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.role,
+              {
+                color: theme.textMuted,
+              },
+            ]}
+          >
+            {data.role || "Member"}
+          </Text>
 
-        <View style={styles.dataCell}>
-          <Text style={[styles.dataLabel, { color: theme.textMuted }]}>PASSPORT</Text>
-          <Text style={[styles.dataValue, { color: theme.text }]}>{data.passportNumber || "—"}</Text>
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.organization,
+              {
+                color: theme.textMuted,
+              },
+            ]}
+          >
+            {data.orgName || "Organization"}
+          </Text>
         </View>
       </View>
 
-      <View style={styles.barcodeWrap}>
-        <View style={styles.barcodeRow}>
-          {barcodeBars.map((height, index) => (
-            <View
-              key={`${height}-${index}`}
-              style={[
-                styles.barcodeBar,
-                { height, opacity: index % 2 === 0 ? 1 : 0.85 },
-              ]}
-            />
-          ))}
-        </View>
+      {/* ID */}
+      <View
+        style={[
+          styles.idRow,
+          {
+            borderTopColor: theme.border,
+          },
+        ]}
+      >
+        <Text
+          style={[
+            styles.idLabel,
+            {
+              color: theme.textMuted,
+            },
+          ]}
+        >
+          ID
+        </Text>
+
+        <Text
+          numberOfLines={1}
+          style={[
+            styles.idValue,
+            {
+              color: theme.text,
+            },
+          ]}
+        >
+          {data.userId || "—"}
+        </Text>
       </View>
     </View>
   );
@@ -143,6 +269,7 @@ export function IdentityCard({ data }: { data: IdCardInfo }) {
 export default function IdScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+
   const { user } = useAuth();
   const { data: orgData } = useCurrentOrgQuery();
   const { role } = useEffectiveContext();
@@ -160,13 +287,33 @@ export default function IdScreen() {
     | undefined;
 
   const orgName =
-    (orgData as { display_name?: string; name?: string } | undefined)?.display_name ||
-    (orgData as { display_name?: string; name?: string } | undefined)?.name ||
+    (orgData as
+      | {
+          display_name?: string;
+          name?: string;
+        }
+      | undefined)?.display_name ||
+    (orgData as
+      | {
+          display_name?: string;
+          name?: string;
+        }
+      | undefined)?.name ||
     "Organization";
 
   const orgLogo =
-    (orgData as { logo_url?: string; logo?: string } | undefined)?.logo_url ||
-    (orgData as { logo_url?: string; logo?: string } | undefined)?.logo;
+    (orgData as
+      | {
+          logo_url?: string;
+          logo?: string;
+        }
+      | undefined)?.logo_url ||
+    (orgData as
+      | {
+          logo_url?: string;
+          logo?: string;
+        }
+      | undefined)?.logo;
 
   const data = useMemo<IdCardInfo>(
     () => ({
@@ -174,14 +321,23 @@ export default function IdScreen() {
         userData?.full_name?.trim() ||
         userData?.email?.split("@")[0] ||
         "Orbis User",
+
       email: userData?.email || undefined,
+
       orgName,
+
       orgLogo,
+
       role: role || userData?.role || "Member",
+
       status: userData?.status || "active",
+
       userId: userData?.id || "unknown",
+
       nationalId: userData?.id || "N/A",
+
       mfaEnabled: Boolean(userData?.mfa_enabled),
+
       isVerified: true,
     }),
     [orgName, orgLogo, role, userData],
@@ -190,217 +346,187 @@ export default function IdScreen() {
   return (
     <View
       style={[
-        styles.overlay,
+        styles.screen,
         {
+          backgroundColor: theme.background,
           paddingTop: insets.top,
           paddingBottom: insets.bottom,
-          backgroundColor: "rgba(0,0,0,0.5)",
         },
       ]}
     >
-      <Pressable style={styles.backdrop} onPress={() => router.back()} />
+      <View style={styles.container}>
+        <Header title="Digital ID" showCrown={false} />
 
-      <View style={styles.sheetContainer}>
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => router.back()} style={styles.closeButton}>
-            <Ionicons name="chevron-back" size={22} color="#FFF" />
-          </Pressable>
+        <View style={styles.content}>
+          <IdentityCard data={data} />
 
-          <Text style={[styles.screenTitle, { color: "#FFF" }]}>Identity</Text>
-
-          <View style={styles.spacer} />
+          <Barcode value={data.userId} />
         </View>
-
-        <IdentityCard data={data} />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-  backdrop: {
+  screen: {
     flex: 1,
   },
-  sheetContainer: {
+
+  container: {
+    flex: 1,
     paddingHorizontal: Spacing.five,
-    paddingBottom: Spacing.five,
   },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: Spacing.three,
-    paddingHorizontal: Spacing.one,
-  },
-  closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
+
+  content: {
+    flex: 1,
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.08)",
+    paddingBottom: Spacing.five,
+    gap: Spacing.three,
   },
-  spacer: {
-    width: 40,
-  },
-  screenTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    letterSpacing: 0.2,
-  },
-  sheetCard: {
-    backgroundColor: "#111214",
-    borderRadius: 28,
+
+  identityCard: {
+    width: "100%",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
-    overflow: "hidden",
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.three,
-    paddingBottom: Spacing.four,
-    minHeight: 420,
+    borderRadius: 20,
+    padding: Spacing.four,
   },
+
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: Spacing.three,
   },
-  cardHeaderLeft: {
-    gap: 2,
-  },
-  brandText: {
-    fontSize: 26,
+
+  brand: {
+    fontSize: 14,
     fontWeight: "800",
     letterSpacing: 1.5,
   },
-  cardLabel: {
-    fontSize: 10,
-    letterSpacing: 1.8,
+
+  cardTitle: {
+    marginTop: 2,
+    fontSize: 8,
     fontWeight: "600",
+    letterSpacing: 1,
   },
-  statusBadge: {
+
+  status: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingHorizontal: 10,
+    paddingHorizontal: 9,
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
   },
+
   statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 999,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
+
   statusText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: "700",
-    letterSpacing: 1,
-    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
-  routeSection: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderRadius: 18,
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.two,
-    backgroundColor: "rgba(255,255,255,0.02)",
-    marginBottom: Spacing.three,
-  },
-  routeBlock: {
-    flex: 1,
-  },
-  routeDivider: {
-    width: 32,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  routeLabel: {
-    fontSize: 10,
-    letterSpacing: 1,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  routeValue: {
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  identityMain: {
+
+  identity: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.three,
-    marginBottom: Spacing.three,
+    marginTop: Spacing.four,
   },
+
   avatar: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
+    width: 64,
+    height: 64,
+    borderRadius: 18,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
+
   avatarText: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: "700",
   },
-  userInfo: {
+
+  identityInfo: {
     flex: 1,
+    minWidth: 0,
   },
-  nameText: {
-    fontSize: 22,
+
+  name: {
+    fontSize: 20,
+    lineHeight: 25,
     fontWeight: "700",
-    marginBottom: 2,
+    letterSpacing: -0.3,
   },
-  emailText: {
+
+  role: {
+    marginTop: 3,
     fontSize: 12,
-    opacity: 0.8,
+    fontWeight: "500",
   },
-  dataGrid: {
+
+  organization: {
+    marginTop: 2,
+    fontSize: 11,
+  },
+
+  idRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginBottom: Spacing.three,
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: Spacing.three,
+    marginTop: Spacing.four,
+    paddingTop: Spacing.three,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
-  dataCell: {
-    width: "48%",
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.02)",
-  },
-  dataLabel: {
+
+  idLabel: {
     fontSize: 10,
-    letterSpacing: 1,
-    fontWeight: "600",
-    marginBottom: 4,
-    textTransform: "uppercase",
-  },
-  dataValue: {
-    fontSize: 13,
     fontWeight: "600",
   },
-  barcodeWrap: {
-    paddingTop: Spacing.two,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.08)",
-    overflow: "hidden",
+
+  idValue: {
+    flex: 1,
+    textAlign: "right",
+    fontSize: 11,
+    fontWeight: "600",
   },
-  barcodeRow: {
+
+  barcodeCard: {
+    width: "100%",
+    minHeight: 92,
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.three,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  barcode: {
+    height: 38,
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "center",
     gap: 2,
-    height: 52,
-    paddingHorizontal: Spacing.two,
+    width: "100%",
   },
-  barcodeBar: {
-    width: 3,
-    borderRadius: 3,
-    backgroundColor: "#F4F4F5",
+
+  bar: {
+    width: 2,
+    borderRadius: 1,
+  },
+
+  barcodeLabel: {
+    marginTop: 7,
+    fontSize: 8,
+    fontWeight: "600",
+    letterSpacing: 1.2,
   },
 });
