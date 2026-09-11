@@ -80,6 +80,7 @@ export function Header({
 
   showTitle = true,
   showCrown = true,
+  transparent = false,
 
   style,
 }: HeaderProps) {
@@ -142,8 +143,12 @@ export function Header({
                 width: sideSize,
                 height: sideSize,
                 borderRadius: sideSize / 2,
-                backgroundColor: theme.card,
-                borderColor: theme.border,
+                backgroundColor: transparent
+                  ? "rgba(255,255,255,0.10)"
+                  : theme.card,
+                borderColor: transparent
+                  ? "rgba(255,255,255,0.16)"
+                  : theme.border,
                 shadowColor: Colors.light.text,
               },
               pressed && styles.pressed,
@@ -152,7 +157,7 @@ export function Header({
             <Ionicons
               name={showBack ? "chevron-back" : "person-outline"}
               size={21}
-              color={theme.text}
+              color={transparent ? "#FFFFFF" : theme.text}
             />
           </Pressable>
         </View>
@@ -165,8 +170,12 @@ export function Header({
                 styles.titleControl,
                 {
                   width: titleWidth,
-                  backgroundColor: theme.card,
-                  borderColor: theme.border,
+                  backgroundColor: transparent
+                    ? "rgba(255,255,255,0.10)"
+                    : theme.card,
+                  borderColor: transparent
+                    ? "rgba(255,255,255,0.16)"
+                    : theme.border,
                   shadowColor: Colors.light.text,
                 },
               ]}
@@ -175,7 +184,7 @@ export function Header({
                 <Text
                   numberOfLines={1}
                   ellipsizeMode="tail"
-                  style={[styles.title, { color: theme.text }]}
+                  style={[styles.title, { color: transparent ? "#FFFFFF" : theme.text }]}
                 >
                   {title}
                 </Text>
@@ -184,7 +193,10 @@ export function Header({
                   <Text
                     numberOfLines={1}
                     ellipsizeMode="tail"
-                    style={[styles.subtitle, { color: theme.textSecondary }]}
+                    style={[
+                      styles.subtitle,
+                      { color: transparent ? "rgba(255,255,255,0.72)" : theme.textSecondary },
+                    ]}
                   >
                     {subtitle}
                   </Text>
@@ -211,8 +223,12 @@ export function Header({
                   width: sideSize,
                   height: sideSize,
                   borderRadius: sideSize / 2,
-                  backgroundColor: theme.card,
-                  borderColor: theme.border,
+                  backgroundColor: transparent
+                    ? "rgba(255,255,255,0.10)"
+                    : theme.card,
+                  borderColor: transparent
+                    ? "rgba(255,255,255,0.16)"
+                    : theme.border,
                   shadowColor: Colors.light.text,
                   opacity: onCrownPress ? 1 : 0.96,
                 },
@@ -222,7 +238,7 @@ export function Header({
               <MaterialCommunityIcons
                 name="crown-outline"
                 size={21}
-                color={theme.text}
+                color={transparent ? "#FFFFFF" : theme.text}
               />
             </Pressable>
           ) : (

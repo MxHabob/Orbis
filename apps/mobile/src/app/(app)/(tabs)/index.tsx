@@ -322,7 +322,7 @@ export default function HomeScreen() {
           The gradient is positioned independently underneath it.
         ───────────────────────────────────────────────────────────── */}
 
-      <ThemedStatusBar />
+      <ThemedStatusBar backgroundColor={theme.homeGradient.colors[0]} />
 
       {/* ─────────────────────────────────────────────────────────────
           HOME GRADIENT

@@ -18,14 +18,17 @@ export function ThemedStatusBar({ backgroundColor }: ThemedStatusBarProps) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
+  const shouldRenderAndroidBar =
+    Platform.OS === "android" && backgroundColor !== undefined;
+
   return (
     <>
       <ExpoStatusBar style={isDark ? "light" : "dark"} animated />
 
-      {Platform.OS === "android" && (
+      {shouldRenderAndroidBar && (
         <RNStatusBar
-          translucent
-          backgroundColor={backgroundColor ?? "transparent"}
+          translucent={backgroundColor === "transparent"}
+          backgroundColor={backgroundColor}
           barStyle={isDark ? "light-content" : "dark-content"}
           animated
         />
