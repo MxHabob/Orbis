@@ -44,15 +44,17 @@ export default function AppWebViewerScreen() {
         },
       ]}
     >
-      <Header title={title} showBack onBack={() => router.back()} transparent />
+      <Header title={title} showBack onBack={() => router.back()}  />
 
       <View style={styles.webviewContainer}>
         {loading && (
           <View pointerEvents="none" style={styles.loading}>
-            <View style={styles.skeletonCard}>
-              <Skeleton width="92%" height={18} borderRadius={10} />
-              <Skeleton width="74%" height={14} style={{ marginTop: 10 }} />
+            <View style={styles.skeletonBlock}>
+              <Skeleton width="80%" height={16} borderRadius={8} />
+              <Skeleton width="55%" height={12} style={{ marginTop: 10 }} />
               <Skeleton width="100%" height={220} style={{ marginTop: 18 }} />
+              <Skeleton width="100%" height={12} style={{ marginTop: 12 }} />
+              <Skeleton width="88%" height={12} style={{ marginTop: 10 }} />
             </View>
           </View>
         )}
@@ -100,14 +102,12 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.18)",
+    backgroundColor: "transparent",
   },
 
-  skeletonCard: {
-    width: "92%",
-    padding: Spacing.four,
-    borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.08)",
+  skeletonBlock: {
+    width: "100%",
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
   },
 });
