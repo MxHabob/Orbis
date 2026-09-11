@@ -400,21 +400,21 @@ export default function ProfileScreen() {
             label="Account"
             index="01"
             theme={theme}
-            onPress={() => router.push("/settings/account")}
+            onPress={() => router.push("/profile/account")}
           />
 
           <ActionRow
             label="Preferences"
             index="02"
             theme={theme}
-            onPress={() => router.push("/settings/preferences")}
+            onPress={() => router.push("/profile/preferences")}
           />
 
           <ActionRow
             label="Security"
             index="03"
             theme={theme}
-            onPress={() => router.push("/settings/security")}
+            onPress={() => router.push("/profile/security")}
           />
         </View>
 

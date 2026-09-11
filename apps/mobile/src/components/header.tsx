@@ -9,8 +9,12 @@
  * title pill, and a right floating control (custom action / crown).
  */
 
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React from "react";
 import {
+  Animated,
+  Easing,
   Pressable,
   StyleProp,
   StyleSheet,
@@ -19,8 +23,6 @@ import {
   ViewStyle,
   useWindowDimensions,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors, Fonts, Radii, Spacing, Typography } from "@/constants/theme";
@@ -93,6 +95,43 @@ export function Header({
   const sideSize = width < 360 ? 46 : 48;
 
   const titleWidth = Math.min(Math.max(width * 0.42, 128), 190);
+
+  const marqueeX = React.useRef(new Animated.Value(0)).current;
+  const estimatedTitleWidth = Math.max((title?.length ?? 0) * 8.6, 0);
+  const shouldAnimateTitle = Boolean(title) && estimatedTitleWidth > titleWidth;
+
+  React.useEffect(() => {
+    if (!shouldAnimateTitle) {
+      marqueeX.stopAnimation();
+      marqueeX.setValue(0);
+      return;
+    }
+
+    const distance = Math.max(estimatedTitleWidth - titleWidth + 18, 20);
+
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(marqueeX, {
+          toValue: -distance,
+          duration: 3800 + distance * 14,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.delay(800),
+        Animated.timing(marqueeX, {
+          toValue: 0,
+          duration: 0,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    animation.start();
+
+    return () => {
+      animation.stop();
+    };
+  }, [estimatedTitleWidth, marqueeX, shouldAnimateTitle, titleWidth]);
 
   const handleBack = () => {
     if (onBack) {
@@ -181,13 +220,24 @@ export function Header({
               ]}
             >
               <View style={styles.titleContent}>
-                <Text
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                  style={[styles.title, { color: transparent ? "#FFFFFF" : theme.text }]}
+                <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    styles.titleMarquee,
+                    {
+                      width: shouldAnimateTitle ? estimatedTitleWidth + 28 : "100%",
+                      transform: [{ translateX: shouldAnimateTitle ? marqueeX : 0 }],
+                    },
+                  ]}
                 >
-                  {title}
-                </Text>
+                  <Text
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    style={[styles.title, { color: transparent ? "#FFFFFF" : theme.text }]}
+                  >
+                    {title}
+                  </Text>
+                </Animated.View>
 
                 {subtitle ? (
                   <Text
@@ -300,6 +350,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.055,
     shadowRadius: 4,
@@ -310,6 +361,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     maxWidth: "100%",
+    overflow: "hidden",
+  },
+
+  titleMarquee: {
+    alignSelf: "center",
   },
 
   title: {
