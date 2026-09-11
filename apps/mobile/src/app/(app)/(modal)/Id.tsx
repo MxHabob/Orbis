@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Rect, Svg } from "react-native-svg";
 
 import Header from "@/components/header";
@@ -25,7 +24,6 @@ function getInitials(name: string) {
   const words = name.trim().split(/\s+/).filter(Boolean);
   if (!words.length) return "OR";
   if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-
   return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase();
 }
 
@@ -93,20 +91,19 @@ function Barcode({ value }: { value?: string }) {
   const theme = useTheme();
   const { bars, full } = useMemo(() => generateEan13(value || "123456789012"), [value]);
 
-  const barWidth = 2.1;
-  const width = bars.length * barWidth;
   const rects: Array<{ x: number; width: number; height: number; fill: string }> = [];
-
+  const width = bars.length * 2.1;
   let x = 0;
+
   for (let i = 0; i < bars.length; i += 1) {
     if (bars[i] === 1) {
-      rects.push({ x, width: barWidth, height: 72, fill: theme.text });
+      rects.push({ x, width: 2.1, height: 72, fill: theme.text });
     }
-    x += barWidth;
+    x += 2.1;
   }
 
   return (
-    <View style={[styles.barcodeCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+    <View style={styles.barcodeWrap}>
       <Svg width="100%" height={72} viewBox={`0 0 ${width} 72`}>
         {rects.map((rect, index) => (
           <Rect key={`${rect.x}-${index}`} x={rect.x} y={0} width={rect.width} height={rect.height} fill={rect.fill} />
@@ -124,22 +121,12 @@ export function IdentityCard({ data }: { data: IdCardInfo }) {
   const isActive = status === "ACTIVE" || status === "VERIFIED" || status === "ENABLED";
 
   return (
-    <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
-      <View style={styles.cardTop}>
-        <View
-          style={[
-            styles.status,
-            {
-              backgroundColor: isActive ? "#10B9811A" : "#EF44441A",
-              borderColor: isActive ? "#10B98155" : "#EF444455",
-            },
-          ]}
-        >
-          <View style={[styles.dot, { backgroundColor: isActive ? "#10B981" : "#EF4444" }]} />
-          <Text style={[styles.statusText, { color: isActive ? "#10B981" : "#EF4444" }]}>
-            {isActive ? "ACTIVE" : status}
-          </Text>
-        </View>
+    <View style={[styles.card, { backgroundColor: theme.cardElevated, borderColor: theme.cardBorder }]}>
+      <View style={[styles.status, { backgroundColor: isActive ? "#10B9811A" : "#EF44441A", borderColor: isActive ? "#10B98155" : "#EF444455" }]}>
+        <View style={[styles.dot, { backgroundColor: isActive ? "#10B981" : "#EF4444" }]} />
+        <Text style={[styles.statusText, { color: isActive ? "#10B981" : "#EF4444" }]}>
+          {isActive ? "ACTIVE" : status}
+        </Text>
       </View>
 
       <View style={styles.photoWrap}>
@@ -155,14 +142,13 @@ export function IdentityCard({ data }: { data: IdCardInfo }) {
       </View>
 
       <Text style={[styles.name, { color: theme.text }]}>{data.fullName}</Text>
-      <Text style={[styles.role, { color: theme.primary }]}>{data.role || "Member"}</Text>
+      <Text style={[styles.role, { color: theme.text }]}>{data.role || ""}</Text>
     </View>
   );
 }
 
 export default function IdScreen() {
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { data: orgData } = useCurrentOrgQuery();
   const { role } = useEffectiveContext();
@@ -202,26 +188,17 @@ export default function IdScreen() {
   );
 
   return (
-    <View
-      style={[
-        styles.screen,
-        { backgroundColor: theme.background, paddingTop: insets.top, paddingBottom: insets.bottom },
-      ]}
-    >
-      <View style={styles.container}>
-        <Header title="Digital ID" showBack={true} showCrown={false} />
+    <View style={[styles.screen, { backgroundColor: theme.background }]}>
+      <Header title="Digital ID" showBack showCrown={false} />
 
-        <View style={styles.content}>
-          <View style={styles.orgHeader}>
-            {data.orgLogo ? (
-              <Image source={{ uri: data.orgLogo }} style={styles.orgLogo} resizeMode="contain" />
-            ) : null}
-            <Text style={[styles.orgName, { color: theme.text }]}>{data.orgName}</Text>
-          </View>
-
-          <IdentityCard data={data} />
-          <Barcode value={data.userId} />
+      <View style={styles.content}>
+        <View style={styles.headerRow}>
+          {data.orgLogo ? <Image source={{ uri: data.orgLogo }} style={styles.orgLogo} resizeMode="contain" /> : null}
+          <Text style={[styles.orgName, { color: theme.text }]}>{data.orgName}</Text>
         </View>
+
+        <IdentityCard data={data} />
+        <Barcode value={data.userId} />
       </View>
     </View>
   );
@@ -229,9 +206,8 @@ export default function IdScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: Spacing.five },
-  content: { flex: 1, justifyContent: "center", paddingBottom: Spacing.five, gap: Spacing.three },
-  orgHeader: { alignItems: "center", justifyContent: "center", gap: 8, paddingTop: Spacing.one },
+  content: { flex: 1, justifyContent: "center", paddingHorizontal: Spacing.four, paddingBottom: Spacing.five },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: Spacing.three },
   orgLogo: { width: 36, height: 36, borderRadius: 10 },
   orgName: {
     fontFamily: Fonts.sans,
@@ -248,11 +224,12 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.three,
     paddingBottom: Spacing.four,
     alignItems: "center",
+    marginBottom: Spacing.three,
   },
-  cardTop: { width: "100%", flexDirection: "row", justifyContent: "flex-end" },
   status: {
     flexDirection: "row",
     alignItems: "center",
+    alignSelf: "flex-end",
     gap: 6,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -296,14 +273,11 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     textTransform: "uppercase",
   },
-  barcodeCard: {
+  barcodeWrap: {
     width: "100%",
-    borderWidth: 1,
-    borderRadius: 18,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: Spacing.one,
   },
   barcodeNumber: {
     marginTop: 8,
