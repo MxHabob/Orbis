@@ -1,9 +1,10 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { WebView } from "react-native-webview";
 
 import { Header } from "@/components/header";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -48,7 +49,11 @@ export default function AppWebViewerScreen() {
       <View style={styles.webviewContainer}>
         {loading && (
           <View pointerEvents="none" style={styles.loading}>
-            <ActivityIndicator size="small" color={theme.primary} />
+            <View style={styles.skeletonCard}>
+              <Skeleton width="92%" height={18} borderRadius={10} />
+              <Skeleton width="74%" height={14} style={{ marginTop: 10 }} />
+              <Skeleton width="100%" height={220} style={{ marginTop: 18 }} />
+            </View>
           </View>
         )}
 
@@ -90,9 +95,19 @@ const styles = StyleSheet.create({
   loading: {
     position: "absolute",
     zIndex: 10,
-    top: Spacing.two,
+    top: 0,
     left: 0,
     right: 0,
+    bottom: 0,
+    justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.18)",
+  },
+
+  skeletonCard: {
+    width: "92%",
+    padding: Spacing.four,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.08)",
   },
 });

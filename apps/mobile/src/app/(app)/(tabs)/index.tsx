@@ -26,6 +26,8 @@ import { router } from "expo-router";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
+
 import { useAuth } from "@/lib/api";
 
 import { useI18n } from "@/lib/i18n";
@@ -312,6 +314,8 @@ export default function HomeScreen() {
         },
       ]}
     >
+      <ThemedStatusBar backgroundColor="transparent" />
+
       {/* ─────────────────────────────────────────────────────────────
           HOME GRADIENT
 
