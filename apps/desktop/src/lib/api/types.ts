@@ -132,6 +132,32 @@ export interface UserIdentityDto {
   connected_at: string;
 }
 
+export interface RoleDto {
+  id: string;
+  name: string;
+  name_ar?: string;
+  description?: string;
+  is_system: boolean;
+  permissions?: Record<string, string[]>;
+}
+
+export interface SaveRoleRequest {
+  id: string;
+  name: string;
+  name_ar?: string;
+  description?: string;
+  permissions?: Record<string, string[]>;
+}
+
+export interface PermissionRuleDto {
+  id?: string;
+  role: string;
+  document_type: string;
+  level?: number;
+  only_if_creator?: boolean;
+  actions: string[];
+}
+
 export interface PaginatedResponse<T> {
   items: T[];
   count: number;
@@ -653,6 +679,10 @@ export interface OrbisApiClient {
   listUsers(): Promise<UserDto[]>;
   getUser(id: string): Promise<UserDto>;
   updateUser(id: string, req: UpdateUserRequest): Promise<UserDto>;
+  listRoles(): Promise<RoleDto[]>;
+  saveRole(req: SaveRoleRequest): Promise<RoleDto>;
+  listPermissions(): Promise<PermissionRuleDto[]>;
+  savePermissions(req: PermissionRuleDto[]): Promise<boolean>;
 
   // ── Organization ────────────────────────────────────────────
   getCurrentOrg(): Promise<OrgDto>;

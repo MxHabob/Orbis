@@ -14,6 +14,9 @@ import type {
   RegisterUserRequest,
   UpdateUserRequest,
   UserDto,
+  RoleDto,
+  SaveRoleRequest,
+  PermissionRuleDto,
   OrgDto,
   UpdateOrgRequest,
   OrgUnitDto,
@@ -252,6 +255,18 @@ export class RemoteClient implements OrbisApiClient {
   }
   async updateUser(id: string, req: UpdateUserRequest): Promise<UserDto> {
     return this.put(`/api/v1/iam/users/${id}`, req);
+  }
+  async listRoles(): Promise<RoleDto[]> {
+    return this.get("/api/v1/iam/roles");
+  }
+  async saveRole(req: SaveRoleRequest): Promise<RoleDto> {
+    return this.post("/api/v1/iam/roles", req);
+  }
+  async listPermissions(): Promise<PermissionRuleDto[]> {
+    return this.get("/api/v1/iam/permissions");
+  }
+  async savePermissions(req: PermissionRuleDto[]): Promise<boolean> {
+    return this.post("/api/v1/iam/permissions", req);
   }
 
   // ── Organization ────────────────────────────────────────────

@@ -1,7 +1,7 @@
 //! Tauri IPC commands — Auth & IAM.
 
 use tauri::State;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use crate::state::AppState;
 use orbis_domain::entities::user::Role as DomainRole;
 use uuid::Uuid;
@@ -418,3 +418,217 @@ pub async fn auth_revoke_device(id: String, state: State<'_, AppState>) -> Resul
     state.auth_service.revoke_device(&ctx, device_uuid).await.map_err(|e| e.to_string())?;
     Ok(ok(true))
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct RoleDto {
+    pub id: String,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub is_system: bool,
+    pub permissions: std::collections::HashMap<String, Vec<String>>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SaveRoleRequest {
+    pub id: String,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub permissions: Option<std::collections::HashMap<String, Vec<String>>>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct PermissionRuleDto {
+    pub id: Option<String>,
+    pub role: String,
+    pub document_type: String,
+    pub level: Option<i32>,
+    pub only_if_creator: Option<bool>,
+    pub actions: Vec<String>,
+}
+
+#[tauri::command]
+pub async fn iam_list_roles(state: State<'_, AppState>) -> Result<ApiResponse<Vec<RoleDto>>, String> {
+    let ctx = make_ctx(&state);
+    use orbis_infra::models::{role, role_permission};
+    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
+
+    // 1. Base system roles
+    let system_role_defs = vec![
+        ("super_admin", "Super Admin", Some("مدير النظام العام".to_string())),
+        ("admin", "Organization Admin", Some("مدير المنظمة".to_string())),
+        ("principal", "Principal", Some("مدير المدرسة".to_string())),
+        ("teacher", "Teacher", Some("معلم".to_string())),
+        ("accountant", "Accountant", Some("محاسب".to_string())),
+        ("registrar", "Registrar", Some("مسجل شؤون الطلاب".to_string())),
+        ("student", "Student", Some("طالب".to_string())),
+        ("parent", "Parent", Some("ولي أمر".to_string())),
+    ];
+
+    let mut result_roles = Vec::new();
+    let permissions = role_permission::Entity::find()
+        .filter(role_permission::Column::OrgId.eq(ctx.tenant_id))
+        .all(&state.db)
+        .await
+        .unwrap_or_default();
+
+    // Map permissions by role
+    let mut perm_map: std::collections::HashMap<String, std::collections::HashMap<String, Vec<String>>> = std::collections::HashMap::new();
+    for p in permissions {
+        let role_perms = perm_map.entry(p.role_id.clone()).or_default();
+        let acts = role_perms.entry(p.resource.clone()).or_default();
+        if !acts.contains(&p.action) {
+            acts.push(p.action);
+        }
+    }
+
+    // Add system roles
+    for (id, name, name_ar) in system_role_defs {
+        let role_perms = perm_map.remove(id).unwrap_or_default();
+        result_roles.push(RoleDto {
+            id: id.to_string(),
+            name: name.to_string(),
+            name_ar,
+            is_system: true,
+            permissions: role_perms,
+        });
+    }
+
+    // Add custom roles from DB
+    if let Ok(db_roles) = role::Entity::find()
+        .filter(role::Column::OrgId.eq(ctx.tenant_id))
+        .all(&state.db)
+        .await
+    {
+        for r in db_roles {
+            if !result_roles.iter().any(|existing| existing.id == r.id) {
+                let role_perms = perm_map.remove(&r.id).unwrap_or_default();
+                result_roles.push(RoleDto {
+                    id: r.id,
+                    name: r.name,
+                    name_ar: r.name_ar,
+                    is_system: r.is_system,
+                    permissions: role_perms,
+                });
+            }
+        }
+    }
+
+    Ok(ok(result_roles))
+}
+
+#[tauri::command]
+pub async fn iam_save_role(request: SaveRoleRequest, state: State<'_, AppState>) -> Result<ApiResponse<RoleDto>, String> {
+    let ctx = make_ctx(&state);
+    use orbis_infra::models::{role, role_permission};
+    use sea_orm::{ActiveModelTrait, EntityTrait, QueryFilter, ColumnTrait, Set};
+
+    let role_id = request.id.clone();
+    let now = chrono::Utc::now();
+
+    // Insert or update role
+    let active_role = role::ActiveModel {
+        id: Set(role_id.clone()),
+        org_id: Set(ctx.tenant_id),
+        name: Set(request.name.clone()),
+        name_ar: Set(request.name_ar.clone()),
+        is_system: Set(false),
+        created_at: Set(now),
+        updated_at: Set(now),
+    };
+
+    let _ = active_role.insert(&state.db).await;
+
+    // If permissions provided, save them
+    if let Some(perms) = request.permissions {
+        let _ = role_permission::Entity::delete_many()
+            .filter(role_permission::Column::OrgId.eq(ctx.tenant_id))
+            .filter(role_permission::Column::RoleId.eq(&role_id))
+            .exec(&state.db)
+            .await;
+
+        for (resource, actions) in &perms {
+            for action in actions {
+                let p_model = role_permission::ActiveModel {
+                    id: Set(Uuid::new_v4()),
+                    role_id: Set(role_id.clone()),
+                    org_id: Set(ctx.tenant_id),
+                    resource: Set(resource.clone()),
+                    action: Set(action.clone()),
+                    condition: Set(None),
+                    created_at: Set(now),
+                };
+                let _ = p_model.insert(&state.db).await;
+            }
+        }
+    }
+
+    Ok(ok(RoleDto {
+        id: role_id,
+        name: request.name,
+        name_ar: request.name_ar,
+        is_system: false,
+        permissions: std::collections::HashMap::new(),
+    }))
+}
+
+#[tauri::command]
+pub async fn iam_list_permissions(state: State<'_, AppState>) -> Result<ApiResponse<Vec<PermissionRuleDto>>, String> {
+    let ctx = make_ctx(&state);
+    use orbis_infra::models::role_permission;
+    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
+
+    let permissions = role_permission::Entity::find()
+        .filter(role_permission::Column::OrgId.eq(ctx.tenant_id))
+        .all(&state.db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let mut grouped: std::collections::HashMap<(String, String), Vec<String>> = std::collections::HashMap::new();
+    for p in permissions {
+        grouped.entry((p.role_id, p.resource)).or_default().push(p.action);
+    }
+
+    let result = grouped.into_iter().map(|((role, document_type), actions)| PermissionRuleDto {
+        id: None,
+        role,
+        document_type,
+        level: Some(10),
+        only_if_creator: Some(false),
+        actions,
+    }).collect();
+
+    Ok(ok(result))
+}
+
+#[tauri::command]
+pub async fn iam_save_permissions(request: Vec<PermissionRuleDto>, state: State<'_, AppState>) -> Result<ApiResponse<bool>, String> {
+    let ctx = make_ctx(&state);
+    use orbis_infra::models::role_permission;
+    use sea_orm::{ActiveModelTrait, EntityTrait, QueryFilter, ColumnTrait, Set};
+
+    let now = chrono::Utc::now();
+    for rule in request {
+        let _ = role_permission::Entity::delete_many()
+            .filter(role_permission::Column::OrgId.eq(ctx.tenant_id))
+            .filter(role_permission::Column::RoleId.eq(&rule.role))
+            .filter(role_permission::Column::Resource.eq(&rule.document_type))
+            .exec(&state.db)
+            .await;
+
+        for action in rule.actions {
+            let p_model = role_permission::ActiveModel {
+                id: Set(Uuid::new_v4()),
+                role_id: Set(rule.role.clone()),
+                org_id: Set(ctx.tenant_id),
+                resource: Set(rule.document_type.clone()),
+                action: Set(action),
+                condition: Set(None),
+                created_at: Set(now),
+            };
+            let _ = p_model.insert(&state.db).await;
+        }
+    }
+
+    Ok(ok(true))
+}
+
