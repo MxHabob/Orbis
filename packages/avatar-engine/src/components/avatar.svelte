@@ -8,6 +8,7 @@ import { idleAnimation } from "../animations/idle.js";
 import { thinkAnimation } from "../animations/think.js";
 import { AvatarController } from "../core/avatar-controller.svelte";
 import { ALL_AVATAR_HATS, type AvatarHat } from "../core/types.js";
+import AvatarHats from "./avatar-hats.svelte";
 
 const {
   controller,
